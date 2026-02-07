@@ -51,13 +51,16 @@ test.describe
               ['repository', 'down', E2E.REPO_BACKUP, '--machine', machine, '--option', 'unmount'],
               { timeout: 120_000 }
             );
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
           try {
-            await runner.run(
-              ['repository', 'delete', E2E.REPO_BACKUP, '--machine', machine],
-              { timeout: 120_000 }
-            );
-          } catch { /* ignore */ }
+            await runner.run(['repository', 'delete', E2E.REPO_BACKUP, '--machine', machine], {
+              timeout: 120_000,
+            });
+          } catch {
+            /* ignore */
+          }
         }
       }
       await cleanup?.();
@@ -69,13 +72,34 @@ test.describe
 
       // Force-delete stale repos from previous runs (ignore errors)
       for (const machine of [E2E.MACHINE_VM1, E2E.MACHINE_VM2]) {
-        try { await runner.run(['repository', 'down', E2E.REPO_BACKUP, '--machine', machine, '--option', 'unmount'], { timeout: 60_000 }); } catch { /* ignore */ }
-        try { await runner.run(['repository', 'delete', E2E.REPO_BACKUP, '--machine', machine], { timeout: 60_000 }); } catch { /* ignore */ }
+        try {
+          await runner.run(
+            ['repository', 'down', E2E.REPO_BACKUP, '--machine', machine, '--option', 'unmount'],
+            { timeout: 60_000 }
+          );
+        } catch {
+          /* ignore */
+        }
+        try {
+          await runner.run(['repository', 'delete', E2E.REPO_BACKUP, '--machine', machine], {
+            timeout: 60_000,
+          });
+        } catch {
+          /* ignore */
+        }
       }
 
       // Create repo on vm1
       const createResult1 = await runner.run(
-        ['repository', 'create', E2E.REPO_BACKUP, '--machine', E2E.MACHINE_VM1, '--size', E2E.REPO_SIZE],
+        [
+          'repository',
+          'create',
+          E2E.REPO_BACKUP,
+          '--machine',
+          E2E.MACHINE_VM1,
+          '--size',
+          E2E.REPO_SIZE,
+        ],
         { timeout: E2E.TEST_TIMEOUT }
       );
       runner.expectSuccess(createResult1);
@@ -87,7 +111,15 @@ test.describe
 
       // Create repo on vm2 (backup target)
       const createResult2 = await runner.run(
-        ['repository', 'create', E2E.REPO_BACKUP, '--machine', E2E.MACHINE_VM2, '--size', E2E.REPO_SIZE],
+        [
+          'repository',
+          'create',
+          E2E.REPO_BACKUP,
+          '--machine',
+          E2E.MACHINE_VM2,
+          '--size',
+          E2E.REPO_SIZE,
+        ],
         { timeout: E2E.TEST_TIMEOUT }
       );
       runner.expectSuccess(createResult2);
@@ -101,13 +133,20 @@ test.describe
 
       const result = await runner.run(
         [
-          'backup', 'push',
-          '--repository', E2E.REPO_BACKUP,
-          '--machine', E2E.MACHINE_VM1,
-          '--destination-type', 'machine',
-          '--to', E2E.MACHINE_VM2,
-          '--dest', E2E.REPO_BACKUP,
-          '--extra-machine', extraMachineEntry,
+          'backup',
+          'push',
+          '--repository',
+          E2E.REPO_BACKUP,
+          '--machine',
+          E2E.MACHINE_VM1,
+          '--destination-type',
+          'machine',
+          '--to',
+          E2E.MACHINE_VM2,
+          '--dest',
+          E2E.REPO_BACKUP,
+          '--extra-machine',
+          extraMachineEntry,
         ],
         { timeout: E2E.SETUP_TIMEOUT }
       );
@@ -130,13 +169,20 @@ test.describe
 
       const result = await runner.run(
         [
-          'backup', 'push',
-          '--repository', E2E.REPO_BACKUP,
-          '--machine', E2E.MACHINE_VM1,
-          '--destination-type', 'machine',
-          '--to', E2E.MACHINE_VM2,
-          '--dest', E2E.REPO_BACKUP,
-          '--extra-machine', extraMachineEntry,
+          'backup',
+          'push',
+          '--repository',
+          E2E.REPO_BACKUP,
+          '--machine',
+          E2E.MACHINE_VM1,
+          '--destination-type',
+          'machine',
+          '--to',
+          E2E.MACHINE_VM2,
+          '--dest',
+          E2E.REPO_BACKUP,
+          '--extra-machine',
+          extraMachineEntry,
         ],
         { timeout: E2E.SETUP_TIMEOUT }
       );
@@ -164,12 +210,18 @@ test.describe
 
       const result = await runner.run(
         [
-          'backup', 'pull',
-          '--repository', E2E.REPO_BACKUP,
-          '--machine', E2E.MACHINE_VM1,
-          '--source-type', 'machine',
-          '--from', E2E.MACHINE_VM2,
-          '--extra-machine', extraMachineEntry,
+          'backup',
+          'pull',
+          '--repository',
+          E2E.REPO_BACKUP,
+          '--machine',
+          E2E.MACHINE_VM1,
+          '--source-type',
+          'machine',
+          '--from',
+          E2E.MACHINE_VM2,
+          '--extra-machine',
+          extraMachineEntry,
         ],
         { timeout: E2E.SETUP_TIMEOUT }
       );

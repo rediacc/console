@@ -32,11 +32,10 @@ test.describe
       // Re-install renet after the uninstall test so subsequent test files still work
       if (runner) {
         try {
-          await runner.run(
-            ['setup', '--machine', E2E.MACHINE_VM1],
-            { timeout: E2E.SETUP_TIMEOUT }
-          );
-        } catch { /* best-effort */ }
+          await runner.run(['setup', '--machine', E2E.MACHINE_VM1], { timeout: E2E.SETUP_TIMEOUT });
+        } catch {
+          /* best-effort */
+        }
       }
       await cleanup?.();
     });
@@ -45,10 +44,9 @@ test.describe
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runner.run(
-        ['run', 'machine_ping', '--machine', E2E.MACHINE_VM1],
-        { timeout: E2E.TEST_TIMEOUT }
-      );
+      const result = await runner.run(['run', 'machine_ping', '--machine', E2E.MACHINE_VM1], {
+        timeout: E2E.TEST_TIMEOUT,
+      });
       runner.expectSuccess(result);
     });
 
@@ -56,10 +54,9 @@ test.describe
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runner.run(
-        ['run', 'machine_ssh_test', '--machine', E2E.MACHINE_VM1],
-        { timeout: E2E.TEST_TIMEOUT }
-      );
+      const result = await runner.run(['run', 'machine_ssh_test', '--machine', E2E.MACHINE_VM1], {
+        timeout: E2E.TEST_TIMEOUT,
+      });
       runner.expectSuccess(result);
 
       // Also verify SSH independently
@@ -72,10 +69,9 @@ test.describe
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runner.run(
-        ['run', 'machine_version', '--machine', E2E.MACHINE_VM1],
-        { timeout: E2E.TEST_TIMEOUT }
-      );
+      const result = await runner.run(['run', 'machine_version', '--machine', E2E.MACHINE_VM1], {
+        timeout: E2E.TEST_TIMEOUT,
+      });
       runner.expectSuccess(result);
 
       // The output should contain a version string
@@ -87,10 +83,9 @@ test.describe
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.SETUP_TIMEOUT);
 
-      const result = await runner.run(
-        ['run', 'machine_uninstall', '--machine', E2E.MACHINE_VM1],
-        { timeout: E2E.SETUP_TIMEOUT }
-      );
+      const result = await runner.run(['run', 'machine_uninstall', '--machine', E2E.MACHINE_VM1], {
+        timeout: E2E.SETUP_TIMEOUT,
+      });
       runner.expectSuccess(result);
 
       // SSH validation: renet binary should no longer exist at the system install path

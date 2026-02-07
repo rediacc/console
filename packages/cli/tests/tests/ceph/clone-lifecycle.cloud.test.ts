@@ -91,17 +91,18 @@ test.describe('Ceph Clone Lifecycle (Cloud) @cli @ceph', () => {
       await ctx.runner
         .run(['ceph', 'pool', 'delete', poolName, '--team', ctx.teamName!, '--force'])
         .catch(() => {});
-      await ctx.runner
-        .run(['ceph', 'cluster', 'delete', clusterName, '--force'])
-        .catch(() => {});
+      await ctx.runner.run(['ceph', 'cluster', 'delete', clusterName, '--force']).catch(() => {});
       await ctx.cleanup();
     }
   });
 
-  cephCloneLifecycleScenario(() => ctx, () => ({
-    poolName,
-    imageName,
-    snapshotName,
-    sshValidation: false,
-  }));
+  cephCloneLifecycleScenario(
+    () => ctx,
+    () => ({
+      poolName,
+      imageName,
+      snapshotName,
+      sshValidation: false,
+    })
+  );
 });

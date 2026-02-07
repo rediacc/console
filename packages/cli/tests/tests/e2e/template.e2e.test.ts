@@ -29,12 +29,42 @@ test.describe
       runner = CliTestRunner.withContext(ctxName);
 
       // Force-delete stale repo from previous runs (ignore errors)
-      try { await runner.run(['repository', 'down', E2E.REPO_TEMPLATE, '--machine', E2E.MACHINE_VM1, '--option', 'unmount'], { timeout: 60_000 }); } catch { /* ignore */ }
-      try { await runner.run(['repository', 'delete', E2E.REPO_TEMPLATE, '--machine', E2E.MACHINE_VM1], { timeout: 60_000 }); } catch { /* ignore */ }
+      try {
+        await runner.run(
+          [
+            'repository',
+            'down',
+            E2E.REPO_TEMPLATE,
+            '--machine',
+            E2E.MACHINE_VM1,
+            '--option',
+            'unmount',
+          ],
+          { timeout: 60_000 }
+        );
+      } catch {
+        /* ignore */
+      }
+      try {
+        await runner.run(
+          ['repository', 'delete', E2E.REPO_TEMPLATE, '--machine', E2E.MACHINE_VM1],
+          { timeout: 60_000 }
+        );
+      } catch {
+        /* ignore */
+      }
 
       // Create repository for template tests
       const createResult = await runner.run(
-        ['repository', 'create', E2E.REPO_TEMPLATE, '--machine', E2E.MACHINE_VM1, '--size', E2E.REPO_SIZE],
+        [
+          'repository',
+          'create',
+          E2E.REPO_TEMPLATE,
+          '--machine',
+          E2E.MACHINE_VM1,
+          '--size',
+          E2E.REPO_SIZE,
+        ],
         { timeout: E2E.TEST_TIMEOUT }
       );
       runner.expectSuccess(createResult);
@@ -44,16 +74,28 @@ test.describe
       if (runner) {
         try {
           await runner.run(
-            ['repository', 'down', E2E.REPO_TEMPLATE, '--machine', E2E.MACHINE_VM1, '--option', 'unmount'],
+            [
+              'repository',
+              'down',
+              E2E.REPO_TEMPLATE,
+              '--machine',
+              E2E.MACHINE_VM1,
+              '--option',
+              'unmount',
+            ],
             { timeout: 120_000 }
           );
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
         try {
           await runner.run(
             ['repository', 'delete', E2E.REPO_TEMPLATE, '--machine', E2E.MACHINE_VM1],
             { timeout: 120_000 }
           );
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       }
       await cleanup?.();
     });
@@ -72,10 +114,16 @@ test.describe
 
       const result = await runner.run(
         [
-          'repository', 'template', 'apply', E2E.REPO_TEMPLATE,
-          '--machine', E2E.MACHINE_VM1,
-          '--tmpl', tmplBase64,
-          '--grand', grand,
+          'repository',
+          'template',
+          'apply',
+          E2E.REPO_TEMPLATE,
+          '--machine',
+          E2E.MACHINE_VM1,
+          '--tmpl',
+          tmplBase64,
+          '--grand',
+          grand,
         ],
         { timeout: E2E.TEST_TIMEOUT }
       );

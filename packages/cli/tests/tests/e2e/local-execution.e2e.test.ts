@@ -56,10 +56,9 @@ test.describe('E2E Local Execution @cli @e2e', () => {
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(300000);
 
-      const result = await runner.run(
-        ['run', 'machine_ping', '--machine', 'vm1', '--debug'],
-        { timeout: 300000 }
-      );
+      const result = await runner.run(['run', 'machine_ping', '--machine', 'vm1', '--debug'], {
+        timeout: 300000,
+      });
 
       expect(
         result.success,
@@ -71,10 +70,9 @@ test.describe('E2E Local Execution @cli @e2e', () => {
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(300000);
 
-      const result = await runner.run(
-        ['run', 'machine_ping', '--machine', 'vm1'],
-        { timeout: 300000 }
-      );
+      const result = await runner.run(['run', 'machine_ping', '--machine', 'vm1'], {
+        timeout: 300000,
+      });
 
       const output = result.stdout + result.stderr;
       const hasDuration =
@@ -89,10 +87,9 @@ test.describe('E2E Local Execution @cli @e2e', () => {
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(300000);
 
-      const result = await runner.run(
-        ['run', 'machine_ping', '--machine', 'vm1', '--debug'],
-        { timeout: 300000 }
-      );
+      const result = await runner.run(['run', 'machine_ping', '--machine', 'vm1', '--debug'], {
+        timeout: 300000,
+      });
 
       const output = result.stdout + result.stderr;
       const hasDebugOutput =
@@ -108,9 +105,7 @@ test.describe('E2E Local Execution @cli @e2e', () => {
     test('should handle non-existent machine', async () => {
       test.skip(!config.enabled, 'E2E not configured');
 
-      const result = await runner.run(
-        ['run', 'machine_ping', '--machine', 'nonexistent-machine']
-      );
+      const result = await runner.run(['run', 'machine_ping', '--machine', 'nonexistent-machine']);
 
       expect(result.success).toBe(false);
       expect(result.stdout + result.stderr).toContain('not found');
@@ -119,9 +114,7 @@ test.describe('E2E Local Execution @cli @e2e', () => {
     test('should handle unknown function', async () => {
       test.skip(!config.enabled, 'E2E not configured');
 
-      const result = await runner.run(
-        ['run', 'unknown_function_xyz_123', '--machine', 'vm1']
-      );
+      const result = await runner.run(['run', 'unknown_function_xyz_123', '--machine', 'vm1']);
 
       expect(result.success).toBe(false);
     });
@@ -133,7 +126,13 @@ test.describe('E2E Local Execution @cli @e2e', () => {
       const baseRunner = new CliTestRunner();
       const timeoutContext = `timeout-test-${Date.now()}`;
 
-      await baseRunner.run(['context', 'create-local', timeoutContext, '--ssh-key', config.sshKeyPath]);
+      await baseRunner.run([
+        'context',
+        'create-local',
+        timeoutContext,
+        '--ssh-key',
+        config.sshKeyPath,
+      ]);
 
       // Add a non-routable machine
       const timeoutRunner = CliTestRunner.withContext(timeoutContext);
@@ -183,17 +182,15 @@ test.describe('E2E Local Execution @cli @e2e', () => {
       test.setTimeout(600000);
 
       // Execute on vm1
-      const result1 = await runner.run(
-        ['run', 'machine_ping', '--machine', 'vm1'],
-        { timeout: 300000 }
-      );
+      const result1 = await runner.run(['run', 'machine_ping', '--machine', 'vm1'], {
+        timeout: 300000,
+      });
       console.warn('VM1 result:', result1.success);
 
       // Execute on vm2
-      const result2 = await runner.run(
-        ['run', 'machine_ping', '--machine', 'vm2'],
-        { timeout: 300000 }
-      );
+      const result2 = await runner.run(['run', 'machine_ping', '--machine', 'vm2'], {
+        timeout: 300000,
+      });
       console.warn('VM2 result:', result2.success);
 
       expect(result1.success || result2.success).toBe(true);

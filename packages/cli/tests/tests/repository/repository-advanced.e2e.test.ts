@@ -26,10 +26,9 @@ test.describe
 
     /** Helper to run a repo command on vm1 */
     const repoCmd = (cmd: string, repo: string, extraFlags: string[] = []) =>
-      runner.run(
-        ['repository', cmd, repo, '--machine', E2E.MACHINE_VM1, ...extraFlags],
-        { timeout: E2E.TEST_TIMEOUT }
-      );
+      runner.run(['repository', cmd, repo, '--machine', E2E.MACHINE_VM1, ...extraFlags], {
+        timeout: E2E.TEST_TIMEOUT,
+      });
 
     test.beforeAll(async () => {
       test.skip(!config.enabled, 'E2E VMs not configured');
@@ -38,12 +37,42 @@ test.describe
       runner = CliTestRunner.withContext(ctxName);
 
       // Force-delete stale repo from previous runs (ignore errors)
-      try { await runner.run(['repository', 'down', E2E.REPO_ADVANCED, '--machine', E2E.MACHINE_VM1, '--option', 'unmount'], { timeout: 60_000 }); } catch { /* ignore */ }
-      try { await runner.run(['repository', 'delete', E2E.REPO_ADVANCED, '--machine', E2E.MACHINE_VM1], { timeout: 60_000 }); } catch { /* ignore */ }
+      try {
+        await runner.run(
+          [
+            'repository',
+            'down',
+            E2E.REPO_ADVANCED,
+            '--machine',
+            E2E.MACHINE_VM1,
+            '--option',
+            'unmount',
+          ],
+          { timeout: 60_000 }
+        );
+      } catch {
+        /* ignore */
+      }
+      try {
+        await runner.run(
+          ['repository', 'delete', E2E.REPO_ADVANCED, '--machine', E2E.MACHINE_VM1],
+          { timeout: 60_000 }
+        );
+      } catch {
+        /* ignore */
+      }
 
       // Create the test repository for this phase
       const createResult = await runner.run(
-        ['repository', 'create', E2E.REPO_ADVANCED, '--machine', E2E.MACHINE_VM1, '--size', E2E.REPO_SIZE],
+        [
+          'repository',
+          'create',
+          E2E.REPO_ADVANCED,
+          '--machine',
+          E2E.MACHINE_VM1,
+          '--size',
+          E2E.REPO_SIZE,
+        ],
         { timeout: E2E.TEST_TIMEOUT }
       );
       runner.expectSuccess(createResult);
@@ -58,13 +87,16 @@ test.describe
               ['repository', 'down', repo, '--machine', E2E.MACHINE_VM1, '--option', 'unmount'],
               { timeout: 120_000 }
             );
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
           try {
-            await runner.run(
-              ['repository', 'delete', repo, '--machine', E2E.MACHINE_VM1],
-              { timeout: 120_000 }
-            );
-          } catch { /* ignore */ }
+            await runner.run(['repository', 'delete', repo, '--machine', E2E.MACHINE_VM1], {
+              timeout: 120_000,
+            });
+          } catch {
+            /* ignore */
+          }
         }
       }
       await cleanup?.();
@@ -172,7 +204,15 @@ test.describe
       await ssh1.writeFile(`${repoMountPath}/fork-test.txt`, 'fork-test-data');
 
       const result = await runner.run(
-        ['repository', 'fork', E2E.REPO_ADVANCED, '--machine', E2E.MACHINE_VM1, '--tag', E2E.REPO_ADVANCED_2],
+        [
+          'repository',
+          'fork',
+          E2E.REPO_ADVANCED,
+          '--machine',
+          E2E.MACHINE_VM1,
+          '--tag',
+          E2E.REPO_ADVANCED_2,
+        ],
         { timeout: E2E.TEST_TIMEOUT }
       );
       runner.expectSuccess(result);

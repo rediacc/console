@@ -55,9 +55,17 @@ test.describe
       if (config.enabled && cephConfigured && runner) {
         const cleanupOps = [
           cephCmd('client', 'unmount', { image: IMAGE_NAME, pool: POOL }),
-          cephCmd('clone', 'unmount', { clone: CLONE_NAME, 'mount-point': CLONE_MOUNT_POINT, pool: POOL }),
+          cephCmd('clone', 'unmount', {
+            clone: CLONE_NAME,
+            'mount-point': CLONE_MOUNT_POINT,
+            pool: POOL,
+          }),
           cephCmd('clone', 'delete', { clone: CLONE_NAME, pool: POOL }),
-          cephCmd('snapshot', 'unprotect', { image: IMAGE_NAME, snapshot: SNAPSHOT_NAME, pool: POOL }),
+          cephCmd('snapshot', 'unprotect', {
+            image: IMAGE_NAME,
+            snapshot: SNAPSHOT_NAME,
+            pool: POOL,
+          }),
           cephCmd('snapshot', 'delete', { image: IMAGE_NAME, snapshot: SNAPSHOT_NAME, pool: POOL }),
           cephCmd('image', 'unmap', { image: IMAGE_NAME, pool: POOL }),
           cephCmd('image', 'delete', { image: IMAGE_NAME, pool: POOL }),
@@ -94,10 +102,9 @@ test.describe
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runner.run(
-        cephCmd('image', 'list', { pool: POOL }),
-        { timeout: E2E.TEST_TIMEOUT }
-      );
+      const result = await runner.run(cephCmd('image', 'list', { pool: POOL }), {
+        timeout: E2E.TEST_TIMEOUT,
+      });
       runner.expectSuccess(result);
 
       const output = result.stdout + result.stderr;
@@ -108,10 +115,9 @@ test.describe
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runner.run(
-        cephCmd('image', 'info', { image: IMAGE_NAME, pool: POOL }),
-        { timeout: E2E.TEST_TIMEOUT }
-      );
+      const result = await runner.run(cephCmd('image', 'info', { image: IMAGE_NAME, pool: POOL }), {
+        timeout: E2E.TEST_TIMEOUT,
+      });
       runner.expectSuccess(result);
 
       const output = result.stdout + result.stderr;
@@ -177,10 +183,9 @@ test.describe
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runner.run(
-        cephCmd('image', 'map', { image: IMAGE_NAME, pool: POOL }),
-        { timeout: E2E.TEST_TIMEOUT }
-      );
+      const result = await runner.run(cephCmd('image', 'map', { image: IMAGE_NAME, pool: POOL }), {
+        timeout: E2E.TEST_TIMEOUT,
+      });
       runner.expectSuccess(result);
 
       const mapped = await ssh1.rbdShowMapped();
@@ -338,7 +343,11 @@ test.describe
       test.setTimeout(E2E.TEST_TIMEOUT);
 
       const result = await runner.run(
-        cephCmd('snapshot', 'unprotect', { image: IMAGE_NAME, snapshot: SNAPSHOT_NAME, pool: POOL }),
+        cephCmd('snapshot', 'unprotect', {
+          image: IMAGE_NAME,
+          snapshot: SNAPSHOT_NAME,
+          pool: POOL,
+        }),
         { timeout: E2E.TEST_TIMEOUT }
       );
       runner.expectSuccess(result);

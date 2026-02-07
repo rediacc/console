@@ -47,10 +47,9 @@ test.describe
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.SETUP_TIMEOUT);
 
-      const result = await runner.run(
-        ['run', 'setup', '--machine', E2E.MACHINE_VM1],
-        { timeout: E2E.SETUP_TIMEOUT }
-      );
+      const result = await runner.run(['run', 'setup', '--machine', E2E.MACHINE_VM1], {
+        timeout: E2E.SETUP_TIMEOUT,
+      });
       runner.expectSuccess(result);
 
       // SSH validation: datastore directory exists
@@ -73,10 +72,9 @@ test.describe
       test.skip(!config.enabled || !config.vm2Ip, 'E2E not configured or VM2 not available');
       test.setTimeout(E2E.SETUP_TIMEOUT);
 
-      const result = await runner.run(
-        ['run', 'setup', '--machine', E2E.MACHINE_VM2],
-        { timeout: E2E.SETUP_TIMEOUT }
-      );
+      const result = await runner.run(['run', 'setup', '--machine', E2E.MACHINE_VM2], {
+        timeout: E2E.SETUP_TIMEOUT,
+      });
       runner.expectSuccess(result);
 
       // SSH validation: datastore directory exists on vm2

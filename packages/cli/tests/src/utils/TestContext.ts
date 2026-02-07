@@ -7,11 +7,7 @@
 import { SYSTEM_DEFAULTS } from '@rediacc/shared/config';
 import { type CliResult, CliTestRunner } from './CliTestRunner';
 import { E2E } from './e2e-constants';
-import {
-  createEditionContext,
-  type EditionTestContext,
-  type SubscriptionPlan,
-} from './edition';
+import { createEditionContext, type EditionTestContext, type SubscriptionPlan } from './edition';
 import { getE2EConfig, setupE2EEnvironment } from './local';
 import { SSHValidator } from './SSHValidator';
 
@@ -28,6 +24,7 @@ export interface TestContext {
   /** Team name (cloud: from global state; local: null) */
   teamName: string | null;
   /** SSH validator (local only, for infrastructure assertions) */
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   ssh: SSHValidator | null;
   /** Cleanup function to call in afterAll */
   cleanup: () => Promise<void>;
@@ -96,9 +93,7 @@ export async function createCloudTestContext(
  *
  * Returns null if E2E environment is not configured.
  */
-export async function createLocalTestContext(
-  prefix: string
-): Promise<TestContext | null> {
+export async function createLocalTestContext(prefix: string): Promise<TestContext | null> {
   const config = getE2EConfig();
   if (!config.enabled) {
     return null;
@@ -127,10 +122,8 @@ export async function createLocalTestContext(
  * Helper to safely run a CLI command for cleanup.
  * Never throws — suitable for afterAll blocks.
  */
-export async function safeRun(
-  runner: CliTestRunner,
-  args: string[]
-): Promise<CliResult | null> {
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+export async function safeRun(runner: CliTestRunner, args: string[]): Promise<CliResult | null> {
   try {
     return await runner.run(args, { timeout: 120_000 });
   } catch {

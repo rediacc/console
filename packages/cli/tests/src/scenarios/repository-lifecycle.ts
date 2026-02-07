@@ -62,10 +62,9 @@ export function repositoryLifecycleScenario(
     const ctx = getCtx();
     test.setTimeout(ctx.defaultTimeout);
 
-    const result = await ctx.runner.run(
-      buildCommand(['repository', 'list'], ctx),
-      { timeout: ctx.defaultTimeout }
-    );
+    const result = await ctx.runner.run(buildCommand(['repository', 'list'], ctx), {
+      timeout: ctx.defaultTimeout,
+    });
     ctx.runner.expectSuccess(result);
 
     const output = result.stdout + result.stderr;
@@ -94,10 +93,9 @@ export function repositoryLifecycleScenario(
       const ctx = getCtx();
       test.setTimeout(ctx.defaultTimeout);
 
-      const result = await ctx.runner.run(
-        buildCommand(['repository', 'status', repoName], ctx),
-        { timeout: ctx.defaultTimeout }
-      );
+      const result = await ctx.runner.run(buildCommand(['repository', 'status', repoName], ctx), {
+        timeout: ctx.defaultTimeout,
+      });
       ctx.runner.expectSuccess(result);
 
       const output = result.stdout + result.stderr;
