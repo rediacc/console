@@ -34,9 +34,4 @@ runs:
     - name: Cleanup Services
       if: always() && inputs.keep-alive != 'true'
       shell: bash
-      run: |
-        echo "Cleaning up backend services..."
-        cd ${{ github.action_path }}/../../../.ci/docker/ci
-        docker compose down --volumes --remove-orphans || true
-        rm -rf mssql || true
-        echo "Cleanup complete"
+      run: ${{ github.action_path }}/../../../.ci/scripts/infra/ci-stop.sh

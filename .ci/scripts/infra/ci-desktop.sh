@@ -3,7 +3,8 @@
 # Installs and starts a desktop environment accessible via browser
 #
 # Supported environments:
-#   - xfce  (default): Lightweight, fast startup (~300MB)
+#   - none  (default): No desktop environment
+#   - xfce:  Lightweight, fast startup (~300MB)
 #   - gnome: GNOME Flashback with Metacity (~400MB) - classic GNOME experience
 #   - mate:  GNOME 2 fork, stable (~350MB)
 #
@@ -376,7 +377,7 @@ start_novnc() {
 # ============================================================================
 
 # Configuration (can be overridden by environment variables)
-DESKTOP_ENVIRONMENT="${DESKTOP_ENVIRONMENT:-xfce}"
+DESKTOP_ENVIRONMENT="${DESKTOP_ENVIRONMENT:-none}"
 DISPLAY_NUM="${DESKTOP_DISPLAY:-99}"
 VNC_PORT="${DESKTOP_VNC_PORT:-5999}"
 NOVNC_PORT="${DESKTOP_NOVNC_PORT:-6080}"

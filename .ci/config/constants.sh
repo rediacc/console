@@ -57,6 +57,18 @@ readonly CI_CONTAINER_SQL="rediacc-sql"
 # Backend state file
 readonly BACKEND_STATE_FILE="$CONSOLE_ROOT_DIR/.backend-state"
 
+# Provision state file
+readonly PROVISION_STATE_FILE="$CONSOLE_ROOT_DIR/.provision-state"
+
+# =============================================================================
+# VM PROVISIONING DEFAULTS
+# =============================================================================
+readonly VM_OS_DEFAULT="ubuntu-24.04"
+readonly VM_NET_BASE_DEFAULT="192.168.111"
+readonly VM_BRIDGE_DEFAULT=1
+readonly VM_WORKERS_DEFAULT="11 12"
+readonly VM_IMAGE_DIR_DEFAULT="/tmp/rediacc-vm-image"
+
 # Default System Configuration (can be overridden by .env)
 SYSTEM_ADMIN_EMAIL="${SYSTEM_ADMIN_EMAIL:-admin@rediacc.io}"
 SYSTEM_ADMIN_PASSWORD="${SYSTEM_ADMIN_PASSWORD:-admin}"

@@ -18,7 +18,6 @@
     },
     "packages/web": {
       "entry": [
-        "src/main.tsx",
         "index.html",
         "src/types/index.ts",
         "src/api/queries/*.ts",

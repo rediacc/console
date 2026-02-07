@@ -51,6 +51,7 @@ Thumbs.db
 # Temporary files
 *.tmp
 .backend-state
+.provision-state
 
 # Build artifacts
 .build_cache/
@@ -88,6 +89,10 @@ playwright/**/*.png
 playwright_env/
 .playwright-mcp/
 packages/cli/reports/
+reports/
 
 # CI backend data (SQL Server volumes)
 .ci/docker/ci/mssql/
+
+# Git worktrees
+.worktrees/

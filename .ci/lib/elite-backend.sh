@@ -1,6 +1,6 @@
 #!/bin/bash
-# Backend management for local development and CI
-# Uses console's self-contained docker-compose (.ci/docker/ci/)
+# Backend management for local development
+# Thin wrappers around CI scripts (.ci/scripts/infra/)
 #
 # Usage:
 #   source .ci/lib/elite-backend.sh
@@ -32,7 +32,6 @@ backend_pull_images() {
         }
     fi
 
-    # Pull images (using ELITE_IMAGE_* for backward compatibility)
     local images=("${DOCKER_REGISTRY}/web:${DOCKER_TAG}" "${DOCKER_REGISTRY}/api:${DOCKER_TAG}" "$ELITE_IMAGE_SQL")
     local image
 
@@ -51,33 +50,15 @@ backend_pull_images() {
 # SERVICE LIFECYCLE
 # =============================================================================
 
-# Start backend services
+# Start backend services (delegates to CI script)
 backend_start() {
     check_docker
-
-    log_step "Starting backend services"
-
-    # Source CI environment
-    source "$CI_DIR/scripts/infra/ci-env.sh"
-
-    # Prepare mssql directory for SQL Server
-    local mssql_dir="$CI_DOCKER_DIR/mssql"
-    if [[ -d "$mssql_dir" ]]; then
-        rm -rf "$mssql_dir"
-    fi
-    mkdir -p "$mssql_dir"
-    # Set ownership for SQL Server (UID 10001)
-    sudo chown -R 10001:10001 "$mssql_dir" 2>/dev/null || chmod -R 777 "$mssql_dir"
-
-    # Start services
-    (cd "$CI_DOCKER_DIR" && docker compose -f docker-compose.yml up -d) || {
+    "$CI_SCRIPTS_DIR/infra/ci-start.sh" || {
         log_error "Failed to start backend services"
         return 1
     }
 
-    log_info "Backend services started"
-
-    # Save backend state
+    # Save backend state for uptime tracking
     echo "started=$(date +%s)" >"$BACKEND_STATE_FILE"
 }
 
@@ -110,27 +91,11 @@ backend_health() {
     return 1
 }
 
-# Stop backend services
+# Stop backend services (delegates to CI script)
 backend_stop() {
     check_docker
-
     log_step "Stopping backend services"
-
-    if [[ -d "$CI_DOCKER_DIR" ]]; then
-        (cd "$CI_DOCKER_DIR" && docker compose -f docker-compose.yml down --volumes --remove-orphans) || {
-            log_warn "Docker compose down failed, forcing container removal"
-        }
-        # Clean up mssql data
-        rm -rf "$CI_DOCKER_DIR/mssql" 2>/dev/null || true
-    fi
-
-    # Force remove containers if they still exist
-    docker stop "$CI_CONTAINER_WEB" "$CI_CONTAINER_API" "$CI_CONTAINER_SQL" 2>/dev/null || true
-    docker rm "$CI_CONTAINER_WEB" "$CI_CONTAINER_API" "$CI_CONTAINER_SQL" 2>/dev/null || true
-
-    # Remove state file
-    rm -f "$BACKEND_STATE_FILE"
-
+    "$CI_SCRIPTS_DIR/infra/ci-stop.sh"
     log_info "Backend services stopped"
 }
 
@@ -214,6 +179,70 @@ backend_status() {
     fi
 }
 
+# =============================================================================
+# VM PROVISIONING
+# =============================================================================
+
+# Provision KVM VMs (delegates to CI script)
+provision_start() {
+    ensure_renet_built
+    "$CI_SCRIPTS_DIR/infra/ci-provision-start.sh" "$@" || {
+        log_error "Failed to provision VMs"
+        return 1
+    }
+}
+
+# Stop provisioned VMs (delegates to CI script)
+provision_stop() {
+    "$CI_SCRIPTS_DIR/infra/ci-provision-stop.sh"
+    log_info "VMs stopped"
+}
+
+# Show VM provision status
+provision_status() {
+    log_info "VM Provision Status"
+    log_info "==================="
+    echo ""
+
+    # Check state file
+    if [[ -f "$PROVISION_STATE_FILE" ]]; then
+        local bridge_ip worker_ips vm_os started
+        while IFS='=' read -r key value; do
+            case "$key" in
+                bridge_ip) bridge_ip="$value" ;;
+                worker_ips) worker_ips="$value" ;;
+                vm_os) vm_os="$value" ;;
+                started) started="$value" ;;
+            esac
+        done <"$PROVISION_STATE_FILE"
+
+        echo "  OS:         ${vm_os:-unknown}"
+        echo "  Bridge IP:  ${bridge_ip:-unknown}"
+        echo "  Worker IPs: ${worker_ips:-unknown}"
+
+        if [[ -n "$started" ]]; then
+            local uptime=$(($(date +%s) - started))
+            echo "  Uptime:     $(printf '%02d:%02d:%02d' $((uptime / 3600)) $((uptime % 3600 / 60)) $((uptime % 60)))"
+        fi
+        echo ""
+    else
+        echo "  No provision state file found"
+        echo "  Start VMs with: ./run.sh provision start"
+        echo ""
+    fi
+
+    # Show virsh status if available
+    if command -v virsh &>/dev/null; then
+        echo "  VM List (virsh):"
+        sudo virsh list --all 2>/dev/null | sed 's/^/    /' || echo "    (virsh not available or no VMs)"
+        echo ""
+    fi
+}
+
+# =============================================================================
+# BACKEND MANAGEMENT (continued)
+# =============================================================================
+
 # Reset backend (stop, remove volumes, fresh start)
 backend_reset() {
     check_docker
@@ -227,7 +256,6 @@ backend_reset() {
 
     log_step "Resetting backend"
 
-    # Stop services
     backend_stop
 
     # Remove any leftover volumes
@@ -236,14 +264,3 @@ backend_reset() {
     log_info "Backend reset complete"
     log_info "Start fresh with: ./run.sh backend start"
 }
-
-# =============================================================================
-# ALIASES (backward compatibility for existing scripts)
-# =============================================================================
-elite_start() { backend_start "$@"; }
-elite_stop() { backend_stop "$@"; }
-elite_health() { backend_health "$@"; }
-elite_logs() { backend_logs "$@"; }
-elite_status() { backend_status "$@"; }
-elite_reset() { backend_reset "$@"; }
-elite_pull_images() { backend_pull_images "$@"; }

@@ -103,7 +103,43 @@ export function buildLocalVault(opts: {
   sshPublicKey: string;
   sshKnownHosts: string;
   params: Record<string, unknown>;
+  extraMachines?: Record<string, { ip: string; port?: number; user: string }>;
 }): string {
+  // Build extra_machines map with SSH credentials
+  const extraMachines: Record<string, unknown> = {};
+  if (opts.extraMachines) {
+    for (const [name, cfg] of Object.entries(opts.extraMachines)) {
+      extraMachines[name] = {
+        ip: cfg.ip,
+        user: cfg.user,
+        port: cfg.port ?? DEFAULTS.SSH.PORT,
+        datastore: NETWORK_DEFAULTS.DATASTORE_PATH,
+        known_hosts: opts.sshKnownHosts,
+        ssh: {
+          private_key: opts.sshPrivateKey,
+          public_key: opts.sshPublicKey,
+        },
+      };
+    }
+  }
+
+  // Build repositories section when a repository is specified.
+  // This mirrors production vault structure where each repository entry
+  // carries its network_id for Docker daemon socket routing.
+  const repoName = (opts.params.repository ?? '') as string;
+  const repositories: Record<string, unknown> = {};
+  if (repoName) {
+    const repoEntry: Record<string, unknown> = {
+      guid: `local-${repoName}`,
+      name: repoName,
+    };
+    const networkId = opts.params.network_id;
+    if (networkId !== undefined && networkId !== '') {
+      repoEntry.network_id = typeof networkId === 'number' ? networkId : Number(networkId);
+    }
+    repositories[repoName] = repoEntry;
+  }
+
   const vault = {
     $schema: 'queue-vault-v2',
     version: '2.0',
@@ -111,7 +147,7 @@ export function buildLocalVault(opts: {
       function: opts.functionName,
       machine: opts.machineName,
       team: 'local',
-      repository: (opts.params.repository ?? '') as string,
+      repository: repoName,
     },
     ssh: {
       private_key: opts.sshPrivateKey,
@@ -127,10 +163,10 @@ export function buildLocalVault(opts: {
       known_hosts: opts.sshKnownHosts,
     },
     params: opts.params,
-    extra_machines: {},
+    extra_machines: extraMachines,
     storage_systems: {},
     repository_credentials: {},
-    repositories: {},
+    repositories,
     context: {
       organization_id: '',
       api_url: '',

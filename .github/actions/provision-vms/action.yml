@@ -7,9 +7,6 @@ branding:
   color: 'purple'
 
 inputs:
-  bridge-tag:
-    description: 'Docker image tag for bridge (to extract renet)'
-    required: true
   vm-image-path:
     description: 'Path to pre-built VM image directory (optional - builds if not provided)'
     required: false
@@ -51,7 +48,7 @@ outputs:
     value: ${{ steps.provision.outputs.worker_ips }}
   vm-image-path:
     description: 'Path to VM image used'
-    value: ${{ steps.image.outputs.vm_image_path }}
+    value: ${{ steps.provision.outputs.vm_image_path }}
   machine-user:
     description: 'Username for VM SSH access'
     value: ${{ steps.provision.outputs.machine_user }}
@@ -75,49 +72,7 @@ runs:
           echo "::warning::KVM is NOT available - VM provisioning will be skipped"
         fi
 
-    # Step 2: Extract renet binary from bridge Docker image
-    - name: Extract renet binary
-      if: steps.kvm-check.outputs.kvm_available == 'true'
-      shell: bash
-      env:
-        RENET_DOCKER_IMAGE: ghcr.io/rediacc/elite/bridge:${{ inputs.bridge-tag }}
-      run: ${{ github.action_path }}/../../../.ci/scripts/infra/extract-renet-binary.sh --image "$RENET_DOCKER_IMAGE"
-
-    # Step 3: Setup KVM host (installs libvirt, QEMU, etc.)
-    - name: Setup KVM Host
-      if: steps.kvm-check.outputs.kvm_available == 'true'
-      shell: bash
-      run: sudo /tmp/renet ops host setup
-
-    # Step 4: Build VM image if not provided
-    - name: Build VM Image
-      id: build-image
-      if: steps.kvm-check.outputs.kvm_available == 'true' && inputs.vm-image-path == ''
-      shell: bash
-      run: |
-        echo "Building VM image (no pre-built image provided)..."
-        echo "  OS: ${{ inputs.vm-os }}"
-        ${{ github.action_path }}/../../../.ci/scripts/image/build-vm-image.sh \
-          --output "$RUNNER_TEMP/vm-image" \
-          --os "${{ inputs.vm-os }}"
-        echo "vm_image_built=true" >> $GITHUB_OUTPUT
-
-    # Step 5: Determine VM image path
-    - name: Determine VM Image Path
-      id: image
-      if: steps.kvm-check.outputs.kvm_available == 'true'
-      shell: bash
-      run: |
-        if [ -n "${{ inputs.vm-image-path }}" ]; then
-          VM_IMAGE_PATH="${{ inputs.vm-image-path }}"
-        else
-          VM_IMAGE_PATH="$RUNNER_TEMP/vm-image"
-        fi
-        echo "vm_image_path=$VM_IMAGE_PATH" >> $GITHUB_OUTPUT
-        echo "Using VM image path: $VM_IMAGE_PATH"
-        ls -la "$VM_IMAGE_PATH" || true
-
-    # Step 6: Create bridge environment file (optional)
+    # Step 2: Create bridge environment file (optional, before provisioning)
     - name: Create Bridge Test Environment
       if: steps.kvm-check.outputs.kvm_available == 'true' && inputs.bridge-env-output != ''
       shell: bash
@@ -134,43 +89,17 @@ runs:
           --vm-bridge "$VM_BRIDGE" \
           --vm-workers "$VM_WORKERS"
 
-    # Step 7: Provision VMs
+    # Step 4: Provision VMs (setup host, build image, run ops up)
     - name: Provision VMs
       id: provision
       if: steps.kvm-check.outputs.kvm_available == 'true'
       shell: bash
       env:
-        REDIACC_OPS_DISKS_PATH: ${{ steps.image.outputs.vm_image_path }}
         VM_NET_BASE: ${{ inputs.vm-net-base }}
         VM_NET_OFFSET: ${{ inputs.vm-net-offset }}
         VM_BRIDGE: ${{ inputs.vm-bridge }}
         VM_WORKERS: ${{ inputs.vm-workers }}
-        VM_CEPH_NODES: ''  # Disable Ceph (renet defaults to [21,22,23] which causes OOM)
-      run: |
-        echo "Provisioning VMs..."
-        echo "  Bridge: $VM_BRIDGE"
-        echo "  Workers: $VM_WORKERS"
-        echo "  Disk path: $REDIACC_OPS_DISKS_PATH"
-
-        # Generate VM password if not already set (used by cloud-init via VM_PASSWORD env var)
-        export VM_PASSWORD="${VM_PASSWORD:-$(head -c 100 /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 14)}"
-
-        # Run VM provisioning
-        sudo -E /tmp/renet ops up --force --parallel
-
-        # Calculate IP addresses for outputs (add offset to IDs)
-        BRIDGE_IP="${VM_NET_BASE}.$((VM_BRIDGE + VM_NET_OFFSET))"
-        echo "bridge_ip=$BRIDGE_IP" >> $GITHUB_OUTPUT
-
-        # Build worker IPs list (comma-separated, with offset)
-        WORKER_IPS=$(for ID in $VM_WORKERS; do echo "${VM_NET_BASE}.$((ID + VM_NET_OFFSET))"; done | paste -sd, -)
-        echo "worker_ips=$WORKER_IPS" >> $GITHUB_OUTPUT
-
-        # Output VM credentials for display in CI
-        echo "machine_user=$USER" >> $GITHUB_OUTPUT
-        echo "machine_password=$VM_PASSWORD" >> $GITHUB_OUTPUT
-
-        echo ""
-        echo "VMs provisioned successfully!"
-        echo "  Bridge IP:  $BRIDGE_IP"
-        echo "  Worker IPs: $WORKER_IPS"
+        VM_CEPH_NODES: ''
+        VM_OS: ${{ inputs.vm-os }}
+        VM_IMAGE_DIR: ${{ inputs.vm-image-path || format('{0}/vm-image', runner.temp) }}
+      run: ${{ github.action_path }}/../../../.ci/scripts/infra/ci-provision-start.sh
