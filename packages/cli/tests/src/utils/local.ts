@@ -208,6 +208,15 @@ function isValidParam(functionName: string, key: string): boolean {
   return false;
 }
 
+/** Check if a function param is a boolean type (flag-only, no value). */
+function isBoolParam(functionName: string, key: string): boolean {
+  if (!isBridgeFunction(functionName)) return false;
+  const def = FUNCTION_DEFINITIONS[functionName];
+  if (!def) return false;
+  const paramDef = def.params[key];
+  return paramDef?.type === 'bool';
+}
+
 /** Append --kebab-case param flags to args, skipping invalid params. */
 function appendParamFlags(
   args: string[],
@@ -221,6 +230,11 @@ function appendParamFlags(
     if (!useRunFallback && !isValidParam(functionName, key)) continue;
     if (useRunFallback) {
       args.push('--param', `${key}=${value}`);
+    } else if (isBoolParam(functionName, key)) {
+      // Boolean flags don't take values in Commander
+      if (value === 'true' || value === '1') {
+        args.push(`--${toKebabCase(key)}`);
+      }
     } else {
       args.push(`--${toKebabCase(key)}`, value);
     }
