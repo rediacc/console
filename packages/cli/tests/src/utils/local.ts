@@ -8,6 +8,7 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS, VM_NETWORK } from '@rediacc/shared/config';
+import { isBridgeFunction } from '@rediacc/shared/queue-vault';
 import { type CliResult, CliTestRunner } from './CliTestRunner';
 
 /**
@@ -160,7 +161,16 @@ function buildCommandArgs(
   functionName: string,
   machineName: string,
   params?: Record<string, string>
-): { args: string[]; usedPositional: boolean } {
+): { args: string[]; usedPositional: boolean; useRunFallback: boolean } {
+  // Fallback to `rdc run <function>` for functions not in BRIDGE_FUNCTIONS
+  if (!isBridgeFunction(functionName)) {
+    return {
+      args: ['run', functionName, '--machine', machineName],
+      usedPositional: false,
+      useRunFallback: true,
+    };
+  }
+
   const args = [...functionName.split('_')];
   const usePositional = REPO_POSITIONAL_FUNCTIONS.has(functionName) && params?.repository;
 
@@ -169,18 +179,23 @@ function buildCommandArgs(
   }
 
   args.push('--machine', machineName);
-  return { args, usedPositional: !!usePositional };
+  return { args, usedPositional: !!usePositional, useRunFallback: false };
 }
 
 /** Append --kebab-case param flags to args, skipping positional repository. */
 function appendParamFlags(
   args: string[],
   params: Record<string, string>,
-  usedPositional: boolean
+  usedPositional: boolean,
+  useRunFallback: boolean
 ): void {
   for (const [key, value] of Object.entries(params)) {
     if (key === 'repository' && usedPositional) continue;
-    args.push(`--${toKebabCase(key)}`, value);
+    if (useRunFallback) {
+      args.push('--param', `${key}=${value}`);
+    } else {
+      args.push(`--${toKebabCase(key)}`, value);
+    }
   }
 }
 
@@ -204,10 +219,10 @@ export function runLocalFunction(
     ? CliTestRunner.withContext(options.contextName)
     : new CliTestRunner();
 
-  const { args, usedPositional } = buildCommandArgs(functionName, machineName, options?.params);
+  const { args, usedPositional, useRunFallback } = buildCommandArgs(functionName, machineName, options?.params);
 
   if (options?.params) {
-    appendParamFlags(args, options.params, usedPositional);
+    appendParamFlags(args, options.params, usedPositional, useRunFallback);
   }
 
   for (const entry of options?.extraMachines ?? []) {
