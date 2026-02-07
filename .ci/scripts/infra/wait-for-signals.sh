@@ -8,6 +8,10 @@
 # Options:
 #   --timeout     Maximum wait time in seconds (default: 7200)
 #   --interval    Polling interval in seconds (default: 30)
+#   --mode        Signal mode: workers, ceph, or all (default: workers)
+#                 workers: cli-workers-* + e2e-* + e2e-electron-*
+#                 ceph:    cli-ceph-* only
+#                 all:     cli-* + e2e-* + e2e-electron-* (legacy)
 #
 # Required environment variables:
 #   GH_TOKEN            GitHub token for API calls
@@ -16,14 +20,16 @@
 #   E2E_BROWSERS        Space-separated list of browsers (e.g., "chromium firefox webkit")
 #
 # Example:
-#   .ci/scripts/infra/wait-for-signals.sh --timeout 7200
+#   .ci/scripts/infra/wait-for-signals.sh --timeout 7200 --mode workers
+#   .ci/scripts/infra/wait-for-signals.sh --timeout 7200 --mode ceph
 #
 # Signals expected (created by .ci/scripts/signal/create-complete.sh):
-#   - test-complete-cli-{Linux,Windows,macOS}
-#   - test-complete-e2e-{browser}
-#   - test-complete-e2e-resolution-{resolution}
-#   - test-complete-e2e-{device}
-#   - test-complete-e2e-electron-{platform}-{arch}
+#   workers mode:
+#     - test-complete-cli-workers-{Linux,Windows,macOS}
+#     - test-complete-e2e-{browser}
+#     - test-complete-e2e-electron-{platform}-{arch}
+#   ceph mode:
+#     - test-complete-cli-ceph-{Linux,Windows,macOS}
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -37,6 +43,7 @@ parse_args "$@"
 
 TIMEOUT="${ARG_TIMEOUT:-7200}"
 INTERVAL="${ARG_INTERVAL:-30}"
+MODE="${ARG_MODE:-workers}"
 
 # Validate required environment variables
 require_var GH_TOKEN
@@ -47,29 +54,47 @@ require_var GITHUB_RUN_ID
 RUN_ATTEMPT="${GITHUB_RUN_ATTEMPT:-1}"
 ATTEMPT_SUFFIX="-attempt-${RUN_ATTEMPT}"
 
-# Define expected signals
+# Define expected signals based on mode
 CLI_PLATFORMS=("Linux" "Windows" "macOS")
-# TODO: Re-enable when resolution/device tests are active
-# E2E_RESOLUTIONS=("resolution-1920x1080" "resolution-1366x768" "resolution-1536x864")
-# E2E_DEVICES=("galaxy-s24" "galaxy-tab-s9" "iphone-15-pro-max" "ipad-pro-11")
 E2E_RESOLUTIONS=()
 E2E_DEVICES=()
-E2E_ELECTRON=("electron-linux-x64" "electron-linux-arm64" "electron-macos-x64" "electron-macos-arm64" "electron-windows-x64" "electron-windows-arm64")
 
-# Parse E2E_BROWSERS from environment
-E2E_BROWSERS_STR="${E2E_BROWSERS:-chromium}"
-IFS=' ' read -ra E2E_BROWSERS_ARR <<<"$E2E_BROWSERS_STR"
+case "$MODE" in
+    workers)
+        CLI_SIGNAL_PREFIX="cli-workers"
+        E2E_ELECTRON=("electron-linux-x64" "electron-linux-arm64" "electron-macos-x64" "electron-macos-arm64" "electron-windows-x64" "electron-windows-arm64")
+        E2E_BROWSERS_STR="${E2E_BROWSERS:-chromium}"
+        IFS=' ' read -ra E2E_BROWSERS_ARR <<<"$E2E_BROWSERS_STR"
+        ;;
+    ceph)
+        CLI_SIGNAL_PREFIX="cli-ceph"
+        E2E_ELECTRON=()
+        E2E_BROWSERS_ARR=()
+        ;;
+    all)
+        CLI_SIGNAL_PREFIX="cli"
+        E2E_ELECTRON=("electron-linux-x64" "electron-linux-arm64" "electron-macos-x64" "electron-macos-arm64" "electron-windows-x64" "electron-windows-arm64")
+        E2E_BROWSERS_STR="${E2E_BROWSERS:-chromium}"
+        IFS=' ' read -ra E2E_BROWSERS_ARR <<<"$E2E_BROWSERS_STR"
+        ;;
+    *)
+        log_error "Unknown mode: $MODE (expected: workers, ceph, all)"
+        exit 1
+        ;;
+esac
 
 # Calculate expected count
 EXPECTED_COUNT=$((${#CLI_PLATFORMS[@]} + ${#E2E_BROWSERS_ARR[@]} + ${#E2E_RESOLUTIONS[@]} + ${#E2E_DEVICES[@]} + ${#E2E_ELECTRON[@]}))
 
-log_step "Waiting for $EXPECTED_COUNT completion signals (attempt: ${RUN_ATTEMPT}, timeout: ${TIMEOUT}s)..."
+log_step "Waiting for $EXPECTED_COUNT completion signals (mode: ${MODE}, attempt: ${RUN_ATTEMPT}, timeout: ${TIMEOUT}s)..."
+log_info "CLI signal prefix: ${CLI_SIGNAL_PREFIX}"
 log_info "CLI platforms: ${CLI_PLATFORMS[*]}"
-log_info "E2E browsers: ${E2E_BROWSERS_ARR[*]}"
-# TODO: Re-enable when resolution/device tests are active
-# log_info "E2E resolutions: ${E2E_RESOLUTIONS[*]}"
-# log_info "E2E devices: ${E2E_DEVICES[*]}"
-log_info "E2E Electron: ${E2E_ELECTRON[*]}"
+if [[ ${#E2E_BROWSERS_ARR[@]} -gt 0 ]]; then
+    log_info "E2E browsers: ${E2E_BROWSERS_ARR[*]}"
+fi
+if [[ ${#E2E_ELECTRON[@]} -gt 0 ]]; then
+    log_info "E2E Electron: ${E2E_ELECTRON[*]}"
+fi
 
 # Track completed signals and failed signals
 declare -a COMPLETED=()
@@ -201,9 +226,9 @@ fetch_and_check_signals() {
     local artifacts
     artifacts=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" --paginate --jq '.artifacts[].name' 2>/dev/null || echo "")
 
-    # Check CLI platforms
+    # Check CLI platforms (using mode-specific prefix)
     for platform in "${CLI_PLATFORMS[@]}"; do
-        try_signal "cli-${platform}" "test-complete-cli-${platform}" "$artifacts"
+        try_signal "${CLI_SIGNAL_PREFIX}-${platform}" "test-complete-${CLI_SIGNAL_PREFIX}-${platform}" "$artifacts"
     done
 
     # Check E2E browsers
@@ -270,18 +295,11 @@ fi
 # List missing signals
 log_error "Missing signals:"
 for platform in "${CLI_PLATFORMS[@]}"; do
-    is_completed "cli-${platform}" || echo "  - cli-${platform}"
+    is_completed "${CLI_SIGNAL_PREFIX}-${platform}" || echo "  - ${CLI_SIGNAL_PREFIX}-${platform}"
 done
 for browser in "${E2E_BROWSERS_ARR[@]}"; do
     is_completed "e2e-${browser}" || echo "  - e2e-${browser}"
 done
-# TODO: Re-enable when resolution/device tests are active
-# for resolution in "${E2E_RESOLUTIONS[@]}"; do
-#     is_completed "e2e-${resolution}" || echo "  - e2e-${resolution}"
-# done
-# for device in "${E2E_DEVICES[@]}"; do
-#     is_completed "e2e-${device}" || echo "  - e2e-${device}"
-# done
 for platform in "${E2E_ELECTRON[@]}"; do
     is_completed "e2e-${platform}" || echo "  - e2e-${platform}"
 done

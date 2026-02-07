@@ -1,16 +1,18 @@
 #!/bin/bash
 # Run CLI integration tests
-# Usage: run-cli.sh [--filter <pattern>] [--backend <url|preset>]
+# Usage: run-cli.sh [--filter <pattern>] [--backend <url|preset>] [--projects <list>]
 #
 # Options:
 #   --filter            Filter tests by pattern
 #   --backend           Backend URL or preset (local, sandbox, or custom URL)
 #   --skip-health-check Skip backend health validation
+#   --projects          Comma-separated Playwright projects to run (e.g. core,resources,ceph)
 #
 # Example:
 #   .ci/scripts/test/run-cli.sh --filter "auth"
 #   .ci/scripts/test/run-cli.sh --backend https://abc123.trycloudflare.com
 #   .ci/scripts/test/run-cli.sh --backend sandbox
+#   .ci/scripts/test/run-cli.sh --projects core,resources,operations,security,errors,edition
 #
 # ⚠️  IMPORTANT: When modifying this script:
 # ⚠️  1. Test the script locally
@@ -27,6 +29,7 @@ parse_args "$@"
 FILTER="${ARG_FILTER:-}"
 BACKEND="${ARG_BACKEND:-}"
 SKIP_HEALTH_CHECK="${ARG_SKIP_HEALTH_CHECK:-false}"
+PROJECTS="${ARG_PROJECTS:-}"
 
 # Handle --backend option
 if [[ -n "$BACKEND" ]]; then
@@ -69,9 +72,21 @@ fi
 
 log_step "Running CLI integration tests..."
 
-CMD=("npm" "test")
-if [[ -n "$FILTER" ]]; then
-    CMD+=("--" "--grep" "$FILTER")
+# Build command: use npx playwright directly when --projects is specified
+if [[ -n "$PROJECTS" ]]; then
+    CMD=("npx" "playwright" "test" "--config" "tests/playwright.config.ts")
+    IFS=',' read -ra PROJ_ARR <<<"$PROJECTS"
+    for proj in "${PROJ_ARR[@]}"; do
+        CMD+=("--project=$proj")
+    done
+    if [[ -n "$FILTER" ]]; then
+        CMD+=("--grep" "$FILTER")
+    fi
+else
+    CMD=("npm" "test")
+    if [[ -n "$FILTER" ]]; then
+        CMD+=("--" "--grep" "$FILTER")
+    fi
 fi
 
 if (cd "$CLI_DIR" && "${CMD[@]}"); then
