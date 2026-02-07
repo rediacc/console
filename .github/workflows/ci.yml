@@ -28,6 +28,7 @@ permissions:
   pages: write
   id-token: write
   packages: write  # For GHCR push
+  statuses: write  # For submodule merge readiness commit status
 
 # E2E Browser Configuration
 # Default: chromium only. Use workflow_dispatch with "all-browsers" to test all.

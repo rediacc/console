@@ -207,6 +207,24 @@ branch_has_merged_pr() {
     [[ "$merged_count" -gt 0 ]]
 }
 
+SUBMODULE_STATUS_CONTEXT="quality/submodule-merge-readiness"
+
+# Set merge readiness commit status via GitHub API
+# Usage: set_merge_readiness_status <state> <description>
+#   state: "success" or "pending"
+set_merge_readiness_status() {
+    local state="$1"  # success | pending
+    local description="$2"
+    local sha="${COMMIT_SHA:-}"
+    local repo="${GITHUB_REPOSITORY:-}"
+    [[ -z "$sha" || -z "$repo" ]] && return 0
+    gh api "repos/${repo}/statuses/${sha}" \
+        -f state="$state" \
+        -f context="$SUBMODULE_STATUS_CONTEXT" \
+        -f description="$description" \
+        2>/dev/null || log_warn "Failed to set commit status (non-fatal)"
+}
+
 # Get console PR description
 get_console_pr_body() {
     local pr_number="${PR_NUMBER:-}"
@@ -326,6 +344,8 @@ main() {
     local errors=0
     local warnings=0
     local console_pr_body=""
+    local has_unmerged_submodule_prs=false
+    local pending_submodule_repos=()
 
     log_step "Validating submodule branches (console branch: $current_branch)"
 
@@ -373,11 +393,15 @@ main() {
                         else
                             log_error "✗ $sm_path: no open PR found for branch '$current_branch' in $repo"
                             log_error "  AI FIX: cd $sm_path && gh pr create --title 'Your PR title' --body 'Description'"
+                            has_unmerged_submodule_prs=true
+                            pending_submodule_repos+=("$repo")
                             ((errors++))
                         fi
                     else
                         submodule_pr_number="${pr_info%%|*}"
                         submodule_pr_url="${pr_info##*|}"
+                        has_unmerged_submodule_prs=true
+                        pending_submodule_repos+=("$repo")
 
                         if [[ -n "$console_pr_body" ]] && ! pr_is_linked "$submodule_pr_url" "$console_pr_body"; then
                             log_error "✗ $sm_path: PR $submodule_pr_url not linked in console PR description"
@@ -419,6 +443,17 @@ main() {
             fi
         fi
     done
+
+    # Set merge readiness commit status (only in PR context with commit SHA)
+    if [[ -n "${PR_NUMBER:-}" ]] && [[ -n "${COMMIT_SHA:-}" ]]; then
+        if [[ "$has_unmerged_submodule_prs" == "true" ]]; then
+            local desc="Waiting: ${pending_submodule_repos[*]}"
+            [[ ${#desc} -gt 140 ]] && desc="${desc:0:137}..."
+            set_merge_readiness_status "pending" "$desc"
+        else
+            set_merge_readiness_status "success" "All submodule PRs merged (or no submodule changes)"
+        fi
+    fi
 
     echo ""
     if [[ $errors -gt 0 ]]; then

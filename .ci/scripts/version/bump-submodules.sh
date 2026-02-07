@@ -86,6 +86,25 @@ sync_to_origin_main() {
     git -C "$dir" fetch origin main >/dev/null 2>&1 || true
     local origin
     origin="$(git -C "$dir" rev-parse origin/main)"
+
+    # Safety: refuse to regress the submodule pointer.
+    # If console tracks a commit that is ahead of origin/main (i.e., origin/main
+    # is an ancestor of the tracked commit but not equal), syncing to origin/main
+    # would silently lose those changes.  This can happen when
+    # merge-submodule-branches.sh fails to merge the feature branch first.
+    local tracked_commit
+    tracked_commit=$(git -C "$REPO_ROOT" ls-tree HEAD -- "$dir" 2>/dev/null | awk '{ print $3 }')
+
+    if [[ -n "$tracked_commit" ]] && [[ "$tracked_commit" != "$origin" ]]; then
+        if git -C "$dir" merge-base --is-ancestor "$origin" "$tracked_commit" 2>/dev/null; then
+            log_error "$dir: REFUSING to regress submodule pointer"
+            log_error "  Console tracks $tracked_commit which is AHEAD of origin/main ($origin)"
+            log_error "  This means merge-submodule-branches.sh did not merge the feature branch."
+            log_error "  Merge the submodule PR first, then re-run CD."
+            exit 1
+        fi
+    fi
+
     if [[ "$DRY_RUN" != "true" ]]; then
         git -C "$dir" checkout -B main "$origin" --force >/dev/null 2>&1
     fi

@@ -410,7 +410,22 @@ jobs:
           GITHUB_HEAD_REF: ${{ github.head_ref }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+  quality-submodule-branches-bot:
+    name: Submodule Branches
+    runs-on: ubuntu-slim
+    if: inputs.is_bot == 'true' && github.event_name == 'pull_request'
+    steps:
+      - name: Auto-pass for bot PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/statuses/${{ github.event.pull_request.head.sha }}" \
+            -f state="success" \
+            -f context="quality/submodule-merge-readiness" \
+            -f description="Bot PR — no submodule gate needed"
 
   quality-review-comments:
     name: Review Comments
