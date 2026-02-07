@@ -86,7 +86,7 @@ MISSING=()
 for fn in "${FUNCTIONS[@]}"; do
     # Look for the function name as a string literal in test files
     # Matches: 'function_name' or "function_name" (in runLocalFunction calls, test descriptions, etc.)
-    if ! grep -ql "'${fn}'\|\"${fn}\"" "${E2E_FILES[@]}" >/dev/null 2>&1; then
+    if ! grep -Eql "'${fn}'|\"${fn}\"" "${E2E_FILES[@]}" >/dev/null 2>&1; then
         MISSING+=("$fn")
     fi
 done

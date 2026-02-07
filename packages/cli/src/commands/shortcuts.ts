@@ -66,13 +66,16 @@ async function runLocalMode(functionName: string, options: RunLocalOptions): Pro
   if (options.extraMachine?.length) {
     extraMachines = {};
     for (const entry of options.extraMachine) {
-      const parts = entry.split(':');
-      if (parts.length < 3) {
+      const firstColon = entry.indexOf(':');
+      const lastColon = entry.lastIndexOf(':');
+      if (firstColon === -1 || firstColon === lastColon) {
         throw new ValidationError(
           `Invalid --extra-machine format: '${entry}'. Expected name:ip:user`
         );
       }
-      const [name, ip, user] = parts;
+      const name = entry.slice(0, firstColon);
+      const ip = entry.slice(firstColon + 1, lastColon);
+      const user = entry.slice(lastColon + 1);
       extraMachines[name] = { ip, user };
     }
   }
