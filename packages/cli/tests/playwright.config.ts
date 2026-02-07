@@ -50,23 +50,23 @@ export default test.defineConfig({
 
   /* Projects for category-based execution */
   projects: [
-    // Cloud API tests — run against backend via tunnel
-    { name: 'cloud', testMatch: '**/*.cloud.test.ts' },
-    // Error handling — subset of cloud tests
+    // Cloud API tests (non-ceph) — run against workers backend
+    { name: 'cloud', testMatch: '**/*.cloud.test.ts', testIgnore: 'ceph/**' },
+    // Error handling — subset of cloud tests (for targeted runs)
     { name: 'errors', testMatch: '**/*.errors.cloud.test.ts' },
-    // E2E tests — run on Linux with local VMs (requires renet)
-    { name: 'e2e', testMatch: '**/*.e2e.test.ts' },
+    // E2E tests (non-ceph) — run on Linux with local VMs (requires renet)
+    { name: 'e2e', testMatch: '**/*.e2e.test.ts', testIgnore: 'ceph/**' },
     // Context management — standalone, no backend needed
     { name: 'context', testMatch: 'context/**/*.test.ts' },
     // VSCode — standalone detection + cloud integration
     { name: 'vscode', testMatch: 'vscode/**/*.test.ts' },
     // S3 — requires RustFS
     { name: 's3', testMatch: 's3/**/*.test.ts' },
-    // Edition-specific tests — ENTERPRISE context
+    // Edition-specific tests — ENTERPRISE context (for targeted runs)
     { name: 'edition', testMatch: 'edition/**/*.cloud.test.ts' },
-    // Ceph cloud tests only (for ceph-specific CI job)
+    // Ceph cloud tests — run against ceph backend
     { name: 'ceph-cloud', testMatch: 'ceph/**/*.cloud.test.ts' },
-    // Ceph E2E tests only (for ceph VM CI job)
+    // Ceph E2E tests — run on Linux with ceph VMs
     { name: 'ceph-e2e', testMatch: 'ceph/**/*.e2e.test.ts' },
   ],
 });

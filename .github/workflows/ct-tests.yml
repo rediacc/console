@@ -683,7 +683,7 @@ jobs:
         shell: bash
       - run: .ci/scripts/setup/install-vscode.sh
         shell: bash
-      - run: .ci/scripts/test/run-cli.sh --projects core,resources,operations,security,errors,edition
+      - run: .ci/scripts/test/run-cli.sh --projects cloud
         shell: bash
       - if: always()
         run: .ci/scripts/signal/create-complete.sh --name "cli-workers-${{ matrix.platform }}" --status ${{ job.status }}
@@ -757,7 +757,7 @@ jobs:
           echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
       - run: .ci/scripts/env/create-cli-env.sh --api-url "${{ steps.tunnel.outputs.tunnel-url }}/api" --email ${{ env.REDIACC_TEST_EMAIL }} --password ${{ env.REDIACC_TEST_PASSWORD }} --output packages/cli/tests/.env
         shell: bash
-      - run: .ci/scripts/test/run-cli.sh --projects ceph
+      - run: .ci/scripts/test/run-cli.sh --projects ceph-cloud
         shell: bash
       - if: always()
         run: .ci/scripts/signal/create-complete.sh --name "cli-ceph-${{ matrix.platform }}" --status ${{ job.status }}
