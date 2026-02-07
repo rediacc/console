@@ -217,6 +217,22 @@ function isBoolParam(functionName: string, key: string): boolean {
   return paramDef?.type === 'bool';
 }
 
+/** Build CLI flag tokens for a single param entry, or empty array to skip. */
+function buildParamTokens(
+  functionName: string,
+  key: string,
+  value: string,
+  useRunFallback: boolean
+): string[] {
+  if (useRunFallback) {
+    return ['--param', `${key}=${value}`];
+  }
+  if (isBoolParam(functionName, key)) {
+    return value === 'true' || value === '1' ? [`--${toKebabCase(key)}`] : [];
+  }
+  return [`--${toKebabCase(key)}`, value];
+}
+
 /** Append --kebab-case param flags to args, skipping invalid params. */
 function appendParamFlags(
   args: string[],
@@ -228,16 +244,7 @@ function appendParamFlags(
   for (const [key, value] of Object.entries(params)) {
     if (key === 'repository' && usedPositional) continue;
     if (!useRunFallback && !isValidParam(functionName, key)) continue;
-    if (useRunFallback) {
-      args.push('--param', `${key}=${value}`);
-    } else if (isBoolParam(functionName, key)) {
-      // Boolean flags don't take values in Commander
-      if (value === 'true' || value === '1') {
-        args.push(`--${toKebabCase(key)}`);
-      }
-    } else {
-      args.push(`--${toKebabCase(key)}`, value);
-    }
+    args.push(...buildParamTokens(functionName, key, value, useRunFallback));
   }
 }
 
