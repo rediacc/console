@@ -151,9 +151,12 @@ const REPO_POSITIONAL_FUNCTIONS = new Set([
   'repository_validate',
 ]);
 
-/** Convert a camelCase key to kebab-case for CLI flags, consistent with production camelToKebab. */
+/** Convert a camelCase or snake_case key to kebab-case for CLI flags. */
 function toKebabCase(key: string): string {
-  return key.replaceAll(/([A-Z])/g, '-$1').toLowerCase();
+  return key
+    .replaceAll(/([A-Z])/g, '-$1')
+    .replaceAll('_', '-')
+    .toLowerCase();
 }
 
 /** Build the base command args from a function name and optional positional repository param. */
