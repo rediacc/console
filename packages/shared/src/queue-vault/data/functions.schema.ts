@@ -36,6 +36,12 @@ export const BackupPushParamsSchema = z.object({
   grand: z.string().optional().describe('Grand repository GUID for differential/CoW optimization'),
 });
 
+/** Bootstrap Ceph cluster */
+export const CephBootstrapClusterParamsSchema = z.object({
+  cluster: z.string().default('rediacc').optional().describe('Cluster name'),
+  monitor: z.string().optional().describe('Monitor node address'),
+});
+
 /** Mount RBD image on client */
 export const CephClientMountParamsSchema = z.object({
   image: z.string().optional().describe('Image name (defaults to repository)'),
@@ -50,6 +56,12 @@ export const CephClientMountParamsSchema = z.object({
 /** Unmount RBD image from client */
 export const CephClientUnmountParamsSchema = z.object({
   image: z.string().optional().describe('Image name (defaults to repository)'),
+  pool: z.string().default('rbd').optional().describe('Pool name'),
+  cluster: z.string().default('rediacc').optional().describe('Cluster name'),
+});
+
+/** Clean up orphan clones */
+export const CephCloneCleanupParamsSchema = z.object({
   pool: z.string().default('rbd').optional().describe('Pool name'),
   cluster: z.string().default('rediacc').optional().describe('Cluster name'),
 });
@@ -103,6 +115,33 @@ export const CephCloneUnmountParamsSchema = z.object({
   keepCow: z.boolean().optional().describe('Keep COW file to preserve changes'),
   force: z.boolean().optional().describe('Force cleanup even on errors'),
   pool: z.string().default('rbd').optional().describe('Pool name'),
+  cluster: z.string().default('rediacc').optional().describe('Cluster name'),
+});
+
+/** Create Ceph cluster */
+export const CephClusterCreateParamsSchema = z.object({
+  cluster: z.string().default('rediacc').optional().describe('Cluster name'),
+  nodes: z.string().optional().describe('Comma-separated node list'),
+  osdDevice: z.string().optional().describe('OSD device path'),
+});
+
+/** Get dashboard URL */
+export const CephClusterDashboardParamsSchema = z.object({
+  cluster: z.string().default('rediacc').optional().describe('Cluster name'),
+});
+
+/** Destroy Ceph cluster */
+export const CephClusterDestroyParamsSchema = z.object({
+  cluster: z.string().default('rediacc').optional().describe('Cluster name'),
+});
+
+/** Get cluster status */
+export const CephClusterStatusParamsSchema = z.object({
+  cluster: z.string().default('rediacc').optional().describe('Cluster name'),
+});
+
+/** Check Ceph cluster health */
+export const CephHealthParamsSchema = z.object({
   cluster: z.string().default('rediacc').optional().describe('Cluster name'),
 });
 
@@ -165,6 +204,39 @@ export const CephImageUnmapParamsSchema = z.object({
   cluster: z.string().default('rediacc').optional().describe('Cluster name'),
 });
 
+/** Install Ceph prerequisites */
+export const CephInstallPrerequisitesParamsSchema = z.object({});
+
+/** Create storage pool */
+export const CephPoolCreateParamsSchema = z.object({
+  pool: z.string().default('rbd').optional().describe('Pool name'),
+  cluster: z.string().default('rediacc').optional().describe('Cluster name'),
+  pgNum: z.number().int().optional().describe('Placement group count'),
+});
+
+/** Delete storage pool */
+export const CephPoolDeleteParamsSchema = z.object({
+  pool: z.string().min(1).describe('Pool name'),
+  cluster: z.string().default('rediacc').optional().describe('Cluster name'),
+});
+
+/** Get pool info */
+export const CephPoolInfoParamsSchema = z.object({
+  pool: z.string().min(1).describe('Pool name'),
+  cluster: z.string().default('rediacc').optional().describe('Cluster name'),
+});
+
+/** List storage pools */
+export const CephPoolListParamsSchema = z.object({
+  cluster: z.string().default('rediacc').optional().describe('Cluster name'),
+});
+
+/** Get pool statistics */
+export const CephPoolStatsParamsSchema = z.object({
+  pool: z.string().min(1).describe('Pool name'),
+  cluster: z.string().default('rediacc').optional().describe('Cluster name'),
+});
+
 /** Create image snapshot */
 export const CephSnapshotCreateParamsSchema = z.object({
   image: z.string().optional().describe('Image name (defaults to repository)'),
@@ -210,6 +282,27 @@ export const CephSnapshotUnprotectParamsSchema = z.object({
   snapshot: z.string().min(1).describe('Snapshot name'),
   pool: z.string().default('rbd').optional().describe('Pool name'),
   cluster: z.string().default('rediacc').optional().describe('Cluster name'),
+});
+
+/** Check CRIU checkpoint compatibility */
+export const CheckpointCheckCompatParamsSchema = z.object({});
+
+/** Clean up checkpoint files */
+export const CheckpointCleanupParamsSchema = z.object({});
+
+/** Create checkpoint of running containers */
+export const CheckpointCreateParamsSchema = z.object({
+  checkpointName: z.string().optional().describe('Checkpoint identifier'),
+});
+
+/** Restore containers from checkpoint */
+export const CheckpointRestoreParamsSchema = z.object({
+  checkpointName: z.string().optional().describe('Checkpoint identifier to restore'),
+});
+
+/** Validate checkpoint integrity */
+export const CheckpointValidateParamsSchema = z.object({
+  checkpointPath: z.string().optional().describe('Path to checkpoint directory'),
 });
 
 /** Execute command in container */
@@ -282,6 +375,109 @@ export const ContainerUnpauseParamsSchema = z.object({
   container: z.string().min(1).describe('Container name'),
 });
 
+/** Get daemon logs */
+export const DaemonLogsParamsSchema = z.object({
+  lines: z.number().int().default(100).optional().describe('Number of lines to show'),
+  follow: z.boolean().optional().describe('Follow log output'),
+});
+
+/** No operation (test command) */
+export const DaemonNopParamsSchema = z.object({
+  message: z.string().optional().describe('Optional message'),
+});
+
+/** Restart daemon */
+export const DaemonRestartParamsSchema = z.object({});
+
+/** Set up and start daemon */
+export const DaemonSetupParamsSchema = z.object({});
+
+/** Start daemon */
+export const DaemonStartParamsSchema = z.object({});
+
+/** Get daemon status */
+export const DaemonStatusParamsSchema = z.object({});
+
+/** Stop daemon */
+export const DaemonStopParamsSchema = z.object({});
+
+/** Tear down daemon */
+export const DaemonTeardownParamsSchema = z.object({});
+
+/** Wait for Docker to be ready */
+export const DaemonWaitDockerParamsSchema = z.object({});
+
+/** Expand datastore size */
+export const DatastoreExpandParamsSchema = z.object({
+  size: z.string().min(1).describe('Size to add'),
+});
+
+/** Initialize datastore on disk */
+export const DatastoreInitParamsSchema = z.object({
+  size: z.string().min(1).describe('Datastore size'),
+  force: z.boolean().optional().describe('Force recreation if exists'),
+});
+
+/** Mount datastore */
+export const DatastoreMountParamsSchema = z.object({});
+
+/** Resize datastore */
+export const DatastoreResizeParamsSchema = z.object({
+  size: z.string().min(1).describe('New datastore size'),
+});
+
+/** Check datastore status */
+export const DatastoreStatusParamsSchema = z.object({});
+
+/** Unmount datastore */
+export const DatastoreUnmountParamsSchema = z.object({});
+
+/** Validate datastore integrity */
+export const DatastoreValidateParamsSchema = z.object({});
+
+/** Check BTRFS filesystem */
+export const MachineCheckBtrfsParamsSchema = z.object({});
+
+/** Check renet CLI installation */
+export const MachineCheckCliParamsSchema = z.object({});
+
+/** Check CRIU installation */
+export const MachineCheckCriuParamsSchema = z.object({});
+
+/** Check GPU drivers */
+export const MachineCheckDriversParamsSchema = z.object({});
+
+/** Check kernel compatibility */
+export const MachineCheckKernelParamsSchema = z.object({});
+
+/** Check system memory */
+export const MachineCheckMemoryParamsSchema = z.object({});
+
+/** Check renet installation */
+export const MachineCheckRenetParamsSchema = z.object({});
+
+/** Check if renet is set up */
+export const MachineCheckSetupParamsSchema = z.object({});
+
+/** Check sudo access */
+export const MachineCheckSudoParamsSchema = z.object({});
+
+/** Run system checks */
+export const MachineCheckSystemParamsSchema = z.object({});
+
+/** Check required tools */
+export const MachineCheckToolsParamsSchema = z.object({});
+
+/** Check user configuration */
+export const MachineCheckUsersParamsSchema = z.object({
+  uid: z.string().optional().describe('User ID to check'),
+});
+
+/** Fix user group membership */
+export const MachineFixGroupsParamsSchema = z.object({
+  uid: z.string().optional().describe('User ID to fix'),
+});
+
 /** Test SSH connectivity */
 export const MachinePingParamsSchema = z.object({});
 
@@ -293,6 +489,29 @@ export const MachineUninstallParamsSchema = z.object({});
 
 /** Get renet version */
 export const MachineVersionParamsSchema = z.object({});
+
+/** Clean up unused IP addresses */
+export const NetworkCleanupIpsParamsSchema = z.object({});
+
+/** Ensure IP addresses are allocated */
+export const NetworkEnsureIpsParamsSchema = z.object({
+  count: z.number().int().optional().describe('Number of IPs to ensure'),
+});
+
+/** Prune unused resources */
+export const NetworkPruneParamsSchema = z.object({});
+
+/** Get process status */
+export const NetworkPsStatusParamsSchema = z.object({});
+
+/** Start plugins */
+export const PluginStartParamsSchema = z.object({});
+
+/** Get plugin status */
+export const PluginStatusParamsSchema = z.object({});
+
+/** Stop plugins */
+export const PluginStopParamsSchema = z.object({});
 
 /** Create a new repository */
 export const RepositoryCreateParamsSchema = z.object({
@@ -418,14 +637,21 @@ export const SetupParamsSchema = z.object({
 export const FUNCTION_SCHEMAS = {
   backup_pull: BackupPullParamsSchema,
   backup_push: BackupPushParamsSchema,
+  ceph_bootstrap_cluster: CephBootstrapClusterParamsSchema,
   ceph_client_mount: CephClientMountParamsSchema,
   ceph_client_unmount: CephClientUnmountParamsSchema,
+  ceph_clone_cleanup: CephCloneCleanupParamsSchema,
   ceph_clone_delete: CephCloneDeleteParamsSchema,
   ceph_clone_flatten: CephCloneFlattenParamsSchema,
   ceph_clone_image: CephCloneImageParamsSchema,
   ceph_clone_list: CephCloneListParamsSchema,
   ceph_clone_mount: CephCloneMountParamsSchema,
   ceph_clone_unmount: CephCloneUnmountParamsSchema,
+  ceph_cluster_create: CephClusterCreateParamsSchema,
+  ceph_cluster_dashboard: CephClusterDashboardParamsSchema,
+  ceph_cluster_destroy: CephClusterDestroyParamsSchema,
+  ceph_cluster_status: CephClusterStatusParamsSchema,
+  ceph_health: CephHealthParamsSchema,
   ceph_image_create: CephImageCreateParamsSchema,
   ceph_image_delete: CephImageDeleteParamsSchema,
   ceph_image_format: CephImageFormatParamsSchema,
@@ -434,12 +660,23 @@ export const FUNCTION_SCHEMAS = {
   ceph_image_map: CephImageMapParamsSchema,
   ceph_image_resize: CephImageResizeParamsSchema,
   ceph_image_unmap: CephImageUnmapParamsSchema,
+  ceph_install_prerequisites: CephInstallPrerequisitesParamsSchema,
+  ceph_pool_create: CephPoolCreateParamsSchema,
+  ceph_pool_delete: CephPoolDeleteParamsSchema,
+  ceph_pool_info: CephPoolInfoParamsSchema,
+  ceph_pool_list: CephPoolListParamsSchema,
+  ceph_pool_stats: CephPoolStatsParamsSchema,
   ceph_snapshot_create: CephSnapshotCreateParamsSchema,
   ceph_snapshot_delete: CephSnapshotDeleteParamsSchema,
   ceph_snapshot_list: CephSnapshotListParamsSchema,
   ceph_snapshot_protect: CephSnapshotProtectParamsSchema,
   ceph_snapshot_rollback: CephSnapshotRollbackParamsSchema,
   ceph_snapshot_unprotect: CephSnapshotUnprotectParamsSchema,
+  checkpoint_check_compat: CheckpointCheckCompatParamsSchema,
+  checkpoint_cleanup: CheckpointCleanupParamsSchema,
+  checkpoint_create: CheckpointCreateParamsSchema,
+  checkpoint_restore: CheckpointRestoreParamsSchema,
+  checkpoint_validate: CheckpointValidateParamsSchema,
   container_exec: ContainerExecParamsSchema,
   container_inspect: ContainerInspectParamsSchema,
   container_kill: ContainerKillParamsSchema,
@@ -452,10 +689,46 @@ export const FUNCTION_SCHEMAS = {
   container_stats: ContainerStatsParamsSchema,
   container_stop: ContainerStopParamsSchema,
   container_unpause: ContainerUnpauseParamsSchema,
+  daemon_logs: DaemonLogsParamsSchema,
+  daemon_nop: DaemonNopParamsSchema,
+  daemon_restart: DaemonRestartParamsSchema,
+  daemon_setup: DaemonSetupParamsSchema,
+  daemon_start: DaemonStartParamsSchema,
+  daemon_status: DaemonStatusParamsSchema,
+  daemon_stop: DaemonStopParamsSchema,
+  daemon_teardown: DaemonTeardownParamsSchema,
+  daemon_wait_docker: DaemonWaitDockerParamsSchema,
+  datastore_expand: DatastoreExpandParamsSchema,
+  datastore_init: DatastoreInitParamsSchema,
+  datastore_mount: DatastoreMountParamsSchema,
+  datastore_resize: DatastoreResizeParamsSchema,
+  datastore_status: DatastoreStatusParamsSchema,
+  datastore_unmount: DatastoreUnmountParamsSchema,
+  datastore_validate: DatastoreValidateParamsSchema,
+  machine_check_btrfs: MachineCheckBtrfsParamsSchema,
+  machine_check_cli: MachineCheckCliParamsSchema,
+  machine_check_criu: MachineCheckCriuParamsSchema,
+  machine_check_drivers: MachineCheckDriversParamsSchema,
+  machine_check_kernel: MachineCheckKernelParamsSchema,
+  machine_check_memory: MachineCheckMemoryParamsSchema,
+  machine_check_renet: MachineCheckRenetParamsSchema,
+  machine_check_setup: MachineCheckSetupParamsSchema,
+  machine_check_sudo: MachineCheckSudoParamsSchema,
+  machine_check_system: MachineCheckSystemParamsSchema,
+  machine_check_tools: MachineCheckToolsParamsSchema,
+  machine_check_users: MachineCheckUsersParamsSchema,
+  machine_fix_groups: MachineFixGroupsParamsSchema,
   machine_ping: MachinePingParamsSchema,
   machine_ssh_test: MachineSshTestParamsSchema,
   machine_uninstall: MachineUninstallParamsSchema,
   machine_version: MachineVersionParamsSchema,
+  network_cleanup_ips: NetworkCleanupIpsParamsSchema,
+  network_ensure_ips: NetworkEnsureIpsParamsSchema,
+  network_prune: NetworkPruneParamsSchema,
+  network_ps_status: NetworkPsStatusParamsSchema,
+  plugin_start: PluginStartParamsSchema,
+  plugin_status: PluginStatusParamsSchema,
+  plugin_stop: PluginStopParamsSchema,
   repository_create: RepositoryCreateParamsSchema,
   repository_delete: RepositoryDeleteParamsSchema,
   repository_down: RepositoryDownParamsSchema,
