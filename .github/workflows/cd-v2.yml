@@ -214,6 +214,16 @@ jobs:
         run: .ci/scripts/private/run-license-server.sh deploy
 
       # -----------------------------------------------------------------------
+      # Step 1c: Merge submodule PRs to main
+      # Must run BEFORE bump-submodules.sh which resets submodules to origin/main
+      # -----------------------------------------------------------------------
+      - name: Merge submodule branches
+        run: .ci/scripts/release/merge-submodule-branches.sh
+        env:
+          GITHUB_PAT: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      # -----------------------------------------------------------------------
       # Step 2: Bump version & commit (includes all submodules)
       # -----------------------------------------------------------------------
       - name: Download staging release artifact
