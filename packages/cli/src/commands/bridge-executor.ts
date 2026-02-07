@@ -59,16 +59,20 @@ async function runLocalMode(options: BridgeExecuteOptions): Promise<void> {
   if (options.extraMachine?.length) {
     extraMachines = {};
     for (const entry of options.extraMachine) {
-      const firstColon = entry.indexOf(':');
-      const lastColon = entry.lastIndexOf(':');
-      if (firstColon === -1 || firstColon === lastColon) {
+      const parts = entry.split(':');
+      if (parts.length < 3) {
         throw new ValidationError(
           `Invalid --extra-machine format: '${entry}'. Expected name:ip:user`
         );
       }
-      const name = entry.slice(0, firstColon);
-      const ip = entry.slice(firstColon + 1, lastColon);
-      const user = entry.slice(lastColon + 1);
+      const name = parts[0];
+      const user = parts[parts.length - 1];
+      const ip = parts.slice(1, -1).join(':');
+      if (!ip) {
+        throw new ValidationError(
+          `Invalid --extra-machine format: '${entry}'. IP address cannot be empty.`
+        );
+      }
       extraMachines[name] = { ip, user };
     }
   }

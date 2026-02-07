@@ -62,9 +62,6 @@ E2E_DEVICES=()
 case "$MODE" in
     workers)
         CLI_SIGNAL_PREFIX="cli-workers"
-        E2E_ELECTRON=("electron-linux-x64" "electron-linux-arm64" "electron-macos-x64" "electron-macos-arm64" "electron-windows-x64" "electron-windows-arm64")
-        E2E_BROWSERS_STR="${E2E_BROWSERS:-chromium}"
-        IFS=' ' read -ra E2E_BROWSERS_ARR <<<"$E2E_BROWSERS_STR"
         ;;
     ceph)
         CLI_SIGNAL_PREFIX="cli-ceph"
@@ -73,15 +70,18 @@ case "$MODE" in
         ;;
     all)
         CLI_SIGNAL_PREFIX="cli"
-        E2E_ELECTRON=("electron-linux-x64" "electron-linux-arm64" "electron-macos-x64" "electron-macos-arm64" "electron-windows-x64" "electron-windows-arm64")
-        E2E_BROWSERS_STR="${E2E_BROWSERS:-chromium}"
-        IFS=' ' read -ra E2E_BROWSERS_ARR <<<"$E2E_BROWSERS_STR"
         ;;
     *)
         log_error "Unknown mode: $MODE (expected: workers, ceph, all)"
         exit 1
         ;;
 esac
+
+if [[ "$MODE" == "workers" || "$MODE" == "all" ]]; then
+    E2E_ELECTRON=("electron-linux-x64" "electron-linux-arm64" "electron-macos-x64" "electron-macos-arm64" "electron-windows-x64" "electron-windows-arm64")
+    E2E_BROWSERS_STR="${E2E_BROWSERS:-chromium}"
+    IFS=' ' read -ra E2E_BROWSERS_ARR <<<"$E2E_BROWSERS_STR"
+fi
 
 # Calculate expected count
 EXPECTED_COUNT=$((${#CLI_PLATFORMS[@]} + ${#E2E_BROWSERS_ARR[@]} + ${#E2E_RESOLUTIONS[@]} + ${#E2E_DEVICES[@]} + ${#E2E_ELECTRON[@]}))
