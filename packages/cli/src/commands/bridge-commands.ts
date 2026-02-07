@@ -125,29 +125,43 @@ function addContextOptions(cmd: Command, funcDef: FunctionDefinition, functionNa
   }
 }
 
+/** Add a single typed option to a command, using requiredOption when the param is required. */
+function addSingleParamOption(
+  cmd: Command,
+  kebab: string,
+  desc: string,
+  paramDef: { type: string; required?: boolean }
+): void {
+  switch (paramDef.type) {
+    case 'bool':
+      cmd.option(`--${kebab}`, desc);
+      break;
+    case 'int':
+      if (paramDef.required) {
+        cmd.requiredOption(`--${kebab} <n>`, desc, (v: string) => Number.parseInt(v, 10));
+      } else {
+        cmd.option(`--${kebab} <n>`, desc, (v: string) => Number.parseInt(v, 10));
+      }
+      break;
+    case 'array':
+      cmd.option(`--${kebab} <value>`, desc, collect, [] as string[]);
+      break;
+    case 'string':
+    default:
+      if (paramDef.required) {
+        cmd.requiredOption(`--${kebab} <value>`, desc);
+      } else {
+        cmd.option(`--${kebab} <value>`, desc);
+      }
+      break;
+  }
+}
+
 function addParamOptions(cmd: Command, funcDef: FunctionDefinition): void {
   for (const [paramName, paramDef] of Object.entries(funcDef.params)) {
     const kebab = camelToKebab(paramName);
-
-    switch (paramDef.type) {
-      case 'bool':
-        cmd.option(`--${kebab}`, paramDef.help ?? paramName);
-        break;
-      case 'int': {
-        const flag = `--${kebab} <n>`;
-        cmd.option(flag, paramDef.help ?? paramName, (v: string) => Number.parseInt(v, 10));
-        break;
-      }
-      case 'array':
-        cmd.option(`--${kebab} <value>`, paramDef.help ?? paramName, collect, [] as string[]);
-        break;
-      case 'string':
-      default: {
-        const flag = `--${kebab} <value>`;
-        cmd.option(flag, paramDef.help ?? paramName);
-        break;
-      }
-    }
+    const desc = paramDef.help ?? paramName;
+    addSingleParamOption(cmd, kebab, desc, paramDef);
   }
 }
 
