@@ -2,10 +2,8 @@ import { Command } from 'commander';
 import { parseGetOrganizationVaults, parseGetTeamRepositories } from '@rediacc/shared/api';
 import { DEFAULT_REPOSITORY_TAG } from '@rediacc/shared/api/typedApi/defaults';
 import {
-  canDeleteGrandRepo,
   canPromoteToGrand,
   findSiblingClones,
-  isCredential,
   type RepositoryWithRelations,
 } from '@rediacc/shared/services/repository';
 import type { GetOrganizationVaults_ResultSet1 } from '@rediacc/shared/types';
@@ -14,121 +12,21 @@ import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
+import { addCloudOnlyGuard, markCloudOnly } from '../utils/cloud-guard.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
+import { getOrCreateCommand } from './bridge-utils.js';
 import type { OutputFormat } from '../types/index.js';
 
-function validateGrandRepoDeletion(
-  repository: RepositoryWithRelations,
-  allRepositories: RepositoryWithRelations[]
-): void {
-  if (!isCredential(repository)) return;
+export function registerRepositoryMetadataCommands(program: Command): void {
+  const repository = getOrCreateCommand(
+    program,
+    'repository',
+    t('commands.repository.description')
+  );
 
-  const validation = canDeleteGrandRepo(repository, allRepositories);
-  if (validation.canDelete) return;
-
-  let errorMessage = t('errors.cannotDeleteGrandRepo', { reason: validation.reason });
-
-  if (validation.childClones.length > 0) {
-    const cloneNames = validation.childClones
-      .map(
-        (clone) => `${clone.repositoryName}${clone.repositoryTag ? `:${clone.repositoryTag}` : ''}`
-      )
-      .join(', ');
-    errorMessage += t('errors.affectedChildClones', { clones: cloneNames });
-  }
-
-  throw new ValidationError(errorMessage);
-}
-
-async function confirmDeletion(
-  repository: RepositoryWithRelations,
-  name: string,
-  tag: string
-): Promise<boolean> {
-  const { askConfirm } = await import('../utils/prompt.js');
-
-  if (isCredential(repository)) {
-    outputService.warn(t('commands.repository.delete.grandRepoWarning'));
-  }
-
-  return askConfirm(t('commands.repository.delete.confirm', { name, tag }));
-}
-
-export function registerRepositoryCommands(program: Command): void {
-  const repository = program
-    .command('repository')
-    .description(t('commands.repository.description'));
-
-  // repository list
-  repository
-    .command('list')
-    .description(t('commands.repository.list.description'))
-    .option('-t, --team <name>', t('options.team'))
-    .action(async (options) => {
-      try {
-        await authService.requireAuth();
-        const opts = await contextService.applyDefaults(options);
-
-        if (!opts.team) {
-          throw new ValidationError(t('errors.teamRequired'));
-        }
-
-        const apiResponse = await withSpinner(
-          t('commands.repository.list.fetching'),
-          () => typedApi.GetTeamRepositories({ teamName: opts.team as string }),
-          t('commands.repository.list.success')
-        );
-
-        const repositories = parseGetTeamRepositories(apiResponse as never);
-
-        const format = program.opts().output as OutputFormat;
-
-        outputService.print(repositories, format);
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  // repository create
-  repository
-    .command('create <name>')
-    .description(t('commands.repository.create.description'))
-    .option('-t, --team <name>', t('options.team'))
-    .option('--tag <tag>', t('options.repositoryTag'), DEFAULT_REPOSITORY_TAG)
-    .option('--parent <name>', t('options.parentRepository'))
-    .option('--parent-tag <tag>', t('options.parentRepositoryTag'))
-    .action(async (name, options) => {
-      try {
-        await authService.requireAuth();
-        const opts = await contextService.applyDefaults(options);
-
-        if (!opts.team) {
-          throw new ValidationError(t('errors.teamRequired'));
-        }
-
-        const createParams = {
-          teamName: opts.team,
-          repositoryName: name,
-          repositoryTag: options.tag,
-          parentRepositoryName: options.parent,
-          parentRepositoryTag: options.parent
-            ? (options.parentTag ?? DEFAULT_REPOSITORY_TAG)
-            : undefined,
-        };
-
-        await withSpinner(
-          t('commands.repository.create.creating', { name, tag: options.tag }),
-          () => typedApi.CreateRepository(createParams as never),
-          t('commands.repository.create.success', { name, tag: options.tag })
-        );
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  // repository rename
-  repository
+  // repository rename (cloud-only)
+  const renameCmd = repository
     .command('rename <oldName> <newName>')
     .description(t('commands.repository.rename.description'))
     .option('-t, --team <name>', t('options.team'))
@@ -156,67 +54,11 @@ export function registerRepositoryCommands(program: Command): void {
         handleError(error);
       }
     });
+  addCloudOnlyGuard(renameCmd);
+  markCloudOnly(renameCmd);
 
-  // repository delete - enhanced with shared orchestration
-  repository
-    .command('delete <name>')
-    .description(t('commands.repository.delete.description'))
-    .option('-t, --team <name>', t('options.team'))
-    .option('--tag <tag>', t('options.repositoryTag'), DEFAULT_REPOSITORY_TAG)
-    .option('-f, --force', t('options.force'))
-    .action(async (name, options) => {
-      try {
-        await authService.requireAuth();
-        const opts = await contextService.applyDefaults(options);
-
-        if (!opts.team) {
-          throw new ValidationError(t('errors.teamRequired'));
-        }
-
-        const apiResponse = await withSpinner(
-          t('commands.repository.delete.checkingRelationships'),
-          () => typedApi.GetTeamRepositories({ teamName: opts.team as string }),
-          t('commands.repository.delete.relationshipsChecked')
-        );
-
-        const allRepositories = parseGetTeamRepositories(apiResponse as never);
-
-        const targetRepository = allRepositories.find(
-          (r: RepositoryWithRelations) =>
-            r.repositoryName === name && (r.repositoryTag === options.tag || !options.tag)
-        );
-
-        if (!targetRepository) {
-          throw new ValidationError(t('errors.repositoryNotFound', { name, tag: options.tag }));
-        }
-
-        validateGrandRepoDeletion(targetRepository, allRepositories);
-
-        if (!options.force) {
-          const confirmed = await confirmDeletion(targetRepository, name, options.tag);
-          if (!confirmed) {
-            outputService.info(t('prompts.cancelled'));
-            return;
-          }
-        }
-
-        await withSpinner(
-          t('commands.repository.delete.deleting', { name, tag: options.tag }),
-          () =>
-            typedApi.DeleteRepository({
-              teamName: opts.team as string,
-              repositoryName: name,
-              repositoryTag: options.tag,
-            }),
-          t('commands.repository.delete.success', { name, tag: options.tag })
-        );
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  // repository promote - enhanced with shared orchestration
-  repository
+  // repository promote (cloud-only)
+  const promoteCmd = repository
     .command('promote <name>')
     .description(t('commands.repository.promote.description'))
     .option('-t, --team <name>', t('options.team'))
@@ -297,9 +139,13 @@ export function registerRepositoryCommands(program: Command): void {
         handleError(error);
       }
     });
+  addCloudOnlyGuard(promoteCmd);
+  markCloudOnly(promoteCmd);
 
-  // repository vault subcommand
+  // repository vault subcommand (cloud-only)
   const vault = repository.command('vault').description(t('commands.repository.vault.description'));
+  addCloudOnlyGuard(vault);
+  markCloudOnly(vault);
 
   // repository vault get
   vault

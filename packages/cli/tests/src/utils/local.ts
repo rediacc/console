@@ -132,8 +132,28 @@ export async function setupE2EEnvironment(
   };
 }
 
+/** Set of repository_* functions that take <name> as a positional argument. */
+const REPO_POSITIONAL_FUNCTIONS = new Set([
+  'repository_create',
+  'repository_delete',
+  'repository_down',
+  'repository_expand',
+  'repository_fork',
+  'repository_info',
+  'repository_mount',
+  'repository_ownership',
+  'repository_resize',
+  'repository_status',
+  'repository_template_apply',
+  'repository_unmount',
+  'repository_up',
+  'repository_validate',
+]);
+
 /**
  * Execute a function in local mode and return the result.
+ * Builds native CLI command args (e.g. `rdc repository create x --size 4G --machine vm1`)
+ * instead of the `rdc run` escape hatch.
  */
 export function runLocalFunction(
   functionName: string,
@@ -150,11 +170,33 @@ export function runLocalFunction(
     ? CliTestRunner.withContext(options.contextName)
     : new CliTestRunner();
 
-  const args = ['run', functionName, '--machine', machineName];
+  // Convert function_name → command path segments: repository_create → ['repository', 'create']
+  const commandParts = functionName.split('_');
+  const args = [...commandParts];
 
+  // For repository_* functions with positional <name>, extract 'repository' from params
+  const usePositional =
+    REPO_POSITIONAL_FUNCTIONS.has(functionName) && options?.params?.repository;
+
+  if (usePositional) {
+    args.push(options!.params!.repository);
+  }
+
+  args.push('--machine', machineName);
+
+  // Convert remaining params to --kebab-case options
   if (options?.params) {
     for (const [key, value] of Object.entries(options.params)) {
-      args.push('--param', `${key}=${value}`);
+      // Skip repository param if already used as positional
+      if (key === 'repository' && usePositional) continue;
+
+      // Convert camelCase and snake_case to kebab-case
+      const kebabKey = key
+        .replace(/([A-Z])/g, '-$1')
+        .toLowerCase()
+        .replace(/^-/, '')
+        .replace(/_/g, '-');
+      args.push(`--${kebabKey}`, value);
     }
   }
 
