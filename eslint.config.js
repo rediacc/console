@@ -713,7 +713,7 @@ export default tseslint.config(
 
   // Disable rules for auto-generated files
   {
-    files: ['**/*.generated.ts', '**/*.generated.tsx', '**/api-schema.zod.ts'],
+    files: ['**/*.generated.ts', '**/*.generated.tsx', '**/api-schema.zod.ts', '**/functions.schema.ts'],
     rules: {
       'max-lines': 'off',
       '@typescript-eslint/no-unnecessary-condition': 'off',
