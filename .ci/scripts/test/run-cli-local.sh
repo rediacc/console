@@ -1,6 +1,6 @@
 #!/bin/bash
 # Run CLI local mode E2E tests
-# Usage: run-cli-local.sh
+# Usage: run-cli-local.sh [-- <extra playwright args>]
 #
 # Builds the CLI and runs only the 'e2e' Playwright project,
 # which contains local execution E2E tests.
@@ -11,10 +11,20 @@
 #
 # Example:
 #   .ci/scripts/test/run-cli-local.sh
+#   .ci/scripts/test/run-cli-local.sh -- --grep "ceph"
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/common.sh"
+
+# Parse extra args (everything after --)
+EXTRA_ARGS=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --) shift; EXTRA_ARGS=("$@"); break ;;
+        *) shift ;;
+    esac
+done
 
 cd "$(get_repo_root)"
 
@@ -37,7 +47,7 @@ fi
 log_info "renet: $(which renet)"
 
 log_step "Running CLI local mode E2E tests..."
-if (cd "$CLI_DIR" && npx playwright test --config tests/playwright.config.ts --project=e2e --workers=1 --reporter=list); then
+if (cd "$CLI_DIR" && npx playwright test --config tests/playwright.config.ts --project=e2e --workers=1 --reporter=list "${EXTRA_ARGS[@]}"); then
     log_info "CLI local mode E2E tests passed"
 else
     log_error "CLI local mode E2E tests failed"
