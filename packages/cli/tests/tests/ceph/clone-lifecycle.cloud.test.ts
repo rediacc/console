@@ -1,7 +1,7 @@
 import { test } from '@playwright/test';
 import { cephCloneLifecycleScenario } from '../../src/scenarios/ceph-clone-lifecycle';
-import { createCloudTestContext, type TestContext } from '../../src/utils/TestContext';
 import { uniqueName } from '../../src/utils/edition';
+import { createCloudTestContext, type TestContext } from '../../src/utils/TestContext';
 
 test.describe('Ceph Clone Lifecycle (Cloud) @cli @ceph', () => {
   let ctx: TestContext;
