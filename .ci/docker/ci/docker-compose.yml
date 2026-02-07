@@ -6,13 +6,14 @@
 #   source .ci/scripts/infra/ci-env.sh
 #   docker compose -f .ci/docker/ci/docker-compose.yml up -d
 #
-# For local testing, build images first:
-#   docker build -t rediacc/api:local private/middleware
-#   docker build -t rediacc/web:local .
+# Images are pre-pulled in CI; locally, compose builds from source via ci-start.sh.
 
 services:
   web:
     image: ${DOCKER_REGISTRY:-rediacc}/web:${WEB_TAG:-${TAG:-local}}
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
     pull_policy: never
     container_name: rediacc-web
     hostname: rediacc-web
@@ -40,6 +41,9 @@ services:
 
   api:
     image: ${DOCKER_REGISTRY:-rediacc}/api:${API_TAG:-${TAG:-local}}
+    build:
+      context: ../../../private/middleware
+      dockerfile: Dockerfile
     pull_policy: never
     container_name: rediacc-api
     hostname: rediacc-api

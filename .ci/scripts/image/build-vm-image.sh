@@ -14,7 +14,7 @@
 #
 # Required:
 #   - KVM/libvirt installed (run: renet ops host setup)
-#   - renet binary available at RENET_BINARY or /tmp/renet
+#   - renet binary available at RENET_BINARY or private/renet/bin/renet
 #
 # Options:
 #   --output      Output directory for the image (default: $RUNNER_TEMP/vm-image)
@@ -63,7 +63,8 @@ fi
 BASE_IMAGE_URL="${ARG_BASE_IMAGE:-${OS_IMAGES[$OS_NAME]}}"
 BASE_IMAGE_NAME="$(basename "$BASE_IMAGE_URL")"
 OS_VARIANT="${OS_VARIANTS[$OS_NAME]}"
-RENET_BINARY="${RENET_BINARY:-/tmp/renet}"
+CONSOLE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+RENET_BINARY="${RENET_BINARY:-$CONSOLE_ROOT/private/renet/bin/renet}"
 
 # VM configuration (matches renet defaults)
 VM_RAM="${VM_RAM:-4096}"

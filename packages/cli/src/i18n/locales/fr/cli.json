@@ -1223,6 +1223,7 @@
     "excludePatterns": "Motifs à exclure de la synchronisation",
     "expires": "Expiration en heures (1-720)",
     "external": "Forcer le lancement dans une fenêtre de terminal externe",
+    "extraMachine": "Machine supplémentaire pour les opérations multi-machines (nom:ip:utilisateur)",
     "filterStatus": "Filtrer par état",
     "folder": "Chemin du dossier distant à ouvrir",
     "follow": "Suivre la sortie des journaux",

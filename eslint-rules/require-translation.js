@@ -117,6 +117,8 @@ const isNotTranslationKey = (key) => {
   if (/^\[.+\]\s/.test(key)) return true;
   // Pure numbers or punctuation
   if (/^[\d\s.,;:!?-]+$/.test(key)) return true;
+  // Commander option flags (e.g., --extra-machine <name:ip:user>)
+  if (/^-/.test(key)) return true;
   return false;
 };
 

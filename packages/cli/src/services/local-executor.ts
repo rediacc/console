@@ -30,6 +30,8 @@ interface LocalExecuteOptions {
   machineName: string;
   /** Parameters to pass to the function */
   params?: Record<string, unknown>;
+  /** Extra machines for multi-machine operations (e.g. backup) */
+  extraMachines?: Record<string, { ip: string; port?: number; user: string }>;
   /** Timeout in milliseconds (default: 10 minutes) */
   timeout?: number;
   /** Enable debug output */
@@ -88,6 +90,7 @@ class LocalExecutorService {
         sshPublicKey,
         sshKnownHosts,
         params: options.params ?? {},
+        extraMachines: options.extraMachines,
       });
 
       // Get local renet path (dev: from config, SEA: extract to temp)

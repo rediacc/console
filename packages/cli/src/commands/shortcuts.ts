@@ -3,6 +3,7 @@ import { DEFAULTS } from '@rediacc/shared/config';
 import {
   type CreateActionOptions,
   cancelAction,
+  coerceCliParams,
   createAction,
   parseParamOptions,
   retryAction,
@@ -19,6 +20,7 @@ import { handleError, ValidationError } from '../utils/errors.js';
 interface RunLocalOptions {
   machine?: string;
   param?: string[];
+  extraMachine?: string[];
   debug?: boolean;
 }
 
@@ -31,7 +33,8 @@ async function resolveRunParams(
   if (!machineName) {
     throw new ValidationError(t('errors.machineRequiredLocal'));
   }
-  const params: Record<string, unknown> = parseParamOptions(options.param);
+  const rawParams = parseParamOptions(options.param);
+  const params = coerceCliParams(functionName, rawParams);
   validateFunctionParams(functionName, params);
   return { machineName, params };
 }
@@ -57,10 +60,31 @@ async function runLocalMode(functionName: string, options: RunLocalOptions): Pro
   outputService.info(
     t('commands.shortcuts.run.executingLocal', { function: functionName, machine: machineName })
   );
+
+  // Parse --extra-machine entries (format: name:ip:user)
+  let extraMachines: Record<string, { ip: string; user: string }> | undefined;
+  if (options.extraMachine?.length) {
+    extraMachines = {};
+    for (const entry of options.extraMachine) {
+      const firstColon = entry.indexOf(':');
+      const lastColon = entry.lastIndexOf(':');
+      if (firstColon === -1 || firstColon === lastColon) {
+        throw new ValidationError(
+          `Invalid --extra-machine format: '${entry}'. Expected name:ip:user`
+        );
+      }
+      const name = entry.slice(0, firstColon);
+      const ip = entry.slice(firstColon + 1, lastColon);
+      const user = entry.slice(lastColon + 1);
+      extraMachines[name] = { ip, user };
+    }
+  }
+
   const result = await localExecutorService.execute({
     functionName,
     machineName,
     params,
+    extraMachines,
     debug: options.debug,
   });
   handleExecutionResult(result);
@@ -157,6 +181,15 @@ export function registerShortcuts(program: Command): void {
         return acc;
       },
       []
+    )
+    .option(
+      '--extra-machine <name:ip:user>',
+      t('options.extraMachine'),
+      (val: string, acc: string[]) => {
+        acc.push(val);
+        return acc;
+      },
+      [] as string[]
     )
     .option('-w, --watch', t('options.watch'))
     .option('--debug', t('options.debug'))

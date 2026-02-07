@@ -59,6 +59,14 @@ sudo chown -R 10001:10001 "$MSSQL_DIR" 2>/dev/null || {
 echo "Starting Docker Compose services..."
 cd "$CI_DOCKER_DIR"
 
+# When running locally (not in CI or Codespaces), build images from source
+# to ensure they match the current codebase.
+# In CI/Codespaces, images are pre-built and pre-pulled — skip building.
+if [[ -z "${GITHUB_ACTIONS:-}" && -z "${CODESPACES:-}" ]]; then
+    echo "Building Docker images from source..."
+    docker compose -f docker-compose.yml build
+fi
+
 docker compose -f docker-compose.yml up -d
 
 # =============================================================================

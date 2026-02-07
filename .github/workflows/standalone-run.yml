@@ -44,7 +44,7 @@ on:
       vm-os:
         description: 'VM OS (none = disabled)'
         type: string
-        default: 'none'
+        default: 'ubuntu-24.04'
       vm-os-list:
         description: 'JSON array of VM OS variants for matrix runs (overrides vm-os)'
         type: string
@@ -106,7 +106,7 @@ on:
       vm-os:
         description: 'VM OS (none = disabled, or select OS)'
         type: choice
-        default: 'none'
+        default: 'ubuntu-24.04'
         options:
           - 'none'
           - 'ubuntu-24.04'
@@ -201,24 +201,13 @@ jobs:
           TAG: ${{ env.TAG }}
           CI_MODE: ${{ inputs.ci-mode && 'true' || 'false' }}
 
-      # VM Provisioning (optional - builds image on-demand since no pre-built artifact)
-      - name: Pull Bridge Image for VM Provisioning
-        if: matrix.vm-os != 'none'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
-        run: .ci/scripts/infra/docker-pull-ghcr.sh --image "ghcr.io/rediacc/elite/bridge:${{ env.TAG }}" --quiet
-
+      # VM Provisioning (optional - builds renet from source and image on-demand)
       - name: Provision VMs
         id: vms
         if: matrix.vm-os != 'none'
         uses: ./.github/actions/provision-vms
         with:
-          bridge-tag: ${{ env.TAG }}
           vm-os: ${{ matrix.vm-os }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
 
       - name: Setup Desktop Environment
         if: inputs.desktop-environment != 'none'
@@ -419,23 +408,17 @@ jobs:
           # Stop VMs if enabled
           if [ "${{ matrix.vm-os }}" != "none" ]; then
             echo "Stopping VMs..."
-            sudo /tmp/renet ops down || true
+            .ci/scripts/infra/ci-provision-stop.sh || true
           fi
 
-          # Stop Docker services
-          echo "Stopping Docker services..."
-          cd .ci/docker/ci
-
-          # Stop gateway if running
+          # Stop gateway if running (desktop overlay)
           if docker ps --format "{{.Names}}" | grep -q "^rediacc-gateway$"; then
+            cd .ci/docker/ci
             docker compose -f docker-compose.yml -f docker-compose.desktop.yml down gateway || true
           fi
 
           # Stop all backend services
-          docker compose down --volumes --remove-orphans || true
-
-          # Cleanup mssql directory
-          sudo rm -rf mssql || rm -rf mssql || true
+          .ci/scripts/infra/ci-stop.sh
 
           echo "Cleanup complete"
 

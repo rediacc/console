@@ -1126,6 +1126,7 @@
     "priority": "Priority (1=highest)",
     "param": "Function parameters",
     "debug": "Enable debug output (local mode)",
+    "extraMachine": "Extra machine for multi-machine ops (name:ip:user)",
     "pollInterval": "Poll interval in milliseconds",
     "folder": "Remote folder path to open",
     "urlOnly": "Print the VS Code URI instead of launching",
