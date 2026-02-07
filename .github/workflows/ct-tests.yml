@@ -935,9 +935,7 @@ jobs:
             done
           done
 
-      # Ceph cluster provisioning
-      - name: Provision Ceph cluster
-        run: sudo -E $RENET_BINARY ops ceph provision
+      # Post-Ceph setup (ops up already provisions Ceph when VM_CEPH_NODES is set)
       - name: Post-Ceph setup
         run: |
           CEPH_IP="${VM_NET_BASE}.21"
