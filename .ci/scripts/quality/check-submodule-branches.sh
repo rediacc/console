@@ -213,7 +213,7 @@ SUBMODULE_STATUS_CONTEXT="quality/submodule-merge-readiness"
 # Usage: set_merge_readiness_status <state> <description>
 #   state: "success" or "pending"
 set_merge_readiness_status() {
-    local state="$1"  # success | pending
+    local state="$1" # success | pending
     local description="$2"
     local sha="${COMMIT_SHA:-}"
     local repo="${GITHUB_REPOSITORY:-}"

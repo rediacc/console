@@ -110,4 +110,4 @@ while IFS=' ' read -r pr_number pr_sha branch; do
             -f description="All submodule PRs merged" 2>/dev/null || true
         log_info "PR #$pr_number: success"
     fi
-done <<< "$pr_list"
+done <<<"$pr_list"
