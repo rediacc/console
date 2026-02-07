@@ -1,11 +1,9 @@
 import { expect, test } from '@playwright/test';
 import { CliTestRunner } from '../../src/utils/CliTestRunner';
 import {
-  assertSuccess,
   checkSSHKeyExists,
   generateTestContextName,
   getE2EConfig,
-  runLocalFunction,
   setupE2EEnvironment,
 } from '../../src/utils/local';
 
@@ -27,6 +25,7 @@ test.describe('E2E Local Execution @cli @e2e', () => {
   const config = getE2EConfig();
   const contextName = generateTestContextName('e2e-local');
   let cleanup: (() => Promise<void>) | null = null;
+  let runner: CliTestRunner;
 
   test.beforeAll(async () => {
     if (!config.enabled) {
@@ -43,6 +42,7 @@ test.describe('E2E Local Execution @cli @e2e', () => {
 
     // Set up E2E environment
     cleanup = await setupE2EEnvironment(contextName);
+    runner = CliTestRunner.withContext(contextName);
   });
 
   test.afterAll(async () => {
@@ -56,11 +56,10 @@ test.describe('E2E Local Execution @cli @e2e', () => {
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(300000);
 
-      const result = await runLocalFunction('machine_ping', 'vm1', {
-        contextName,
-        debug: true,
-        timeout: 300000,
-      });
+      const result = await runner.run(
+        ['run', 'machine_ping', '--machine', 'vm1', '--debug'],
+        { timeout: 300000 }
+      );
 
       expect(
         result.success,
@@ -72,10 +71,10 @@ test.describe('E2E Local Execution @cli @e2e', () => {
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(300000);
 
-      const result = await runLocalFunction('machine_ping', 'vm1', {
-        contextName,
-        timeout: 300000,
-      });
+      const result = await runner.run(
+        ['run', 'machine_ping', '--machine', 'vm1'],
+        { timeout: 300000 }
+      );
 
       const output = result.stdout + result.stderr;
       const hasDuration =
@@ -90,11 +89,10 @@ test.describe('E2E Local Execution @cli @e2e', () => {
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(300000);
 
-      const result = await runLocalFunction('machine_ping', 'vm1', {
-        contextName,
-        debug: true,
-        timeout: 300000,
-      });
+      const result = await runner.run(
+        ['run', 'machine_ping', '--machine', 'vm1', '--debug'],
+        { timeout: 300000 }
+      );
 
       const output = result.stdout + result.stderr;
       const hasDebugOutput =
@@ -110,7 +108,9 @@ test.describe('E2E Local Execution @cli @e2e', () => {
     test('should handle non-existent machine', async () => {
       test.skip(!config.enabled, 'E2E not configured');
 
-      const result = await runLocalFunction('machine_ping', 'nonexistent-machine', { contextName });
+      const result = await runner.run(
+        ['run', 'machine_ping', '--machine', 'nonexistent-machine']
+      );
 
       expect(result.success).toBe(false);
       expect(result.stdout + result.stderr).toContain('not found');
@@ -119,7 +119,9 @@ test.describe('E2E Local Execution @cli @e2e', () => {
     test('should handle unknown function', async () => {
       test.skip(!config.enabled, 'E2E not configured');
 
-      const result = await runLocalFunction('unknown_function_xyz_123', 'vm1', { contextName });
+      const result = await runner.run(
+        ['run', 'unknown_function_xyz_123', '--machine', 'vm1']
+      );
 
       expect(result.success).toBe(false);
     });
@@ -128,10 +130,10 @@ test.describe('E2E Local Execution @cli @e2e', () => {
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(60000);
 
-      const runner = new CliTestRunner();
+      const baseRunner = new CliTestRunner();
       const timeoutContext = `timeout-test-${Date.now()}`;
 
-      await runner.run(['context', 'create-local', timeoutContext, '--ssh-key', config.sshKeyPath]);
+      await baseRunner.run(['context', 'create-local', timeoutContext, '--ssh-key', config.sshKeyPath]);
 
       // Add a non-routable machine
       const timeoutRunner = CliTestRunner.withContext(timeoutContext);
@@ -153,7 +155,7 @@ test.describe('E2E Local Execution @cli @e2e', () => {
       expect(result.success).toBe(false);
 
       // Cleanup
-      await runner.run(['context', 'delete', timeoutContext]);
+      await baseRunner.run(['context', 'delete', timeoutContext]);
     });
   });
 
@@ -162,12 +164,10 @@ test.describe('E2E Local Execution @cli @e2e', () => {
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(300000);
 
-      const result = await runLocalFunction('machine_ping', 'vm1', {
-        contextName,
-        params: { test_param: 'test_value' },
-        debug: true,
-        timeout: 300000,
-      });
+      const result = await runner.run(
+        ['run', 'machine_ping', '--machine', 'vm1', '--param', 'test_param=test_value', '--debug'],
+        { timeout: 300000 }
+      );
 
       const output = result.stdout + result.stderr;
       console.warn('Param test output:', output);
@@ -183,17 +183,17 @@ test.describe('E2E Local Execution @cli @e2e', () => {
       test.setTimeout(600000);
 
       // Execute on vm1
-      const result1 = await runLocalFunction('machine_ping', 'vm1', {
-        contextName,
-        timeout: 300000,
-      });
+      const result1 = await runner.run(
+        ['run', 'machine_ping', '--machine', 'vm1'],
+        { timeout: 300000 }
+      );
       console.warn('VM1 result:', result1.success);
 
       // Execute on vm2
-      const result2 = await runLocalFunction('machine_ping', 'vm2', {
-        contextName,
-        timeout: 300000,
-      });
+      const result2 = await runner.run(
+        ['run', 'machine_ping', '--machine', 'vm2'],
+        { timeout: 300000 }
+      );
       console.warn('VM2 result:', result2.success);
 
       expect(result1.success || result2.success).toBe(true);
@@ -205,16 +205,16 @@ test.describe('E2E Context Switching @cli @e2e', () => {
   const config = getE2EConfig();
   const localContext = generateTestContextName('e2e-switch-local');
   const cloudContext = generateTestContextName('e2e-switch-cloud');
-  let runner: CliTestRunner;
+  let baseRunner: CliTestRunner;
 
   test.beforeAll(async () => {
     test.skip(!config.enabled, 'E2E not configured');
 
-    runner = new CliTestRunner();
+    baseRunner = new CliTestRunner();
 
     // Create both contexts
-    await runner.run(['context', 'create-local', localContext, '--ssh-key', config.sshKeyPath]);
-    await runner.run([
+    await baseRunner.run(['context', 'create-local', localContext, '--ssh-key', config.sshKeyPath]);
+    await baseRunner.run([
       'context',
       'create',
       cloudContext,
@@ -236,9 +236,9 @@ test.describe('E2E Context Switching @cli @e2e', () => {
   });
 
   test.afterAll(async () => {
-    if (runner) {
-      await runner.run(['context', 'delete', localContext]).catch(() => {});
-      await runner.run(['context', 'delete', cloudContext]).catch(() => {});
+    if (baseRunner) {
+      await baseRunner.run(['context', 'delete', localContext]).catch(() => {});
+      await baseRunner.run(['context', 'delete', cloudContext]).catch(() => {});
     }
   });
 
@@ -278,18 +278,18 @@ test.describe('E2E Renet Availability @cli @e2e', () => {
     test.skip(!config.enabled, 'E2E not configured');
     test.setTimeout(300000);
 
-    const runner = new CliTestRunner();
+    const baseRunner = new CliTestRunner();
     const renetContextName = generateTestContextName('renet-check');
 
     // Create minimal local context
-    const createResult = await runner.run([
+    const createResult = await baseRunner.run([
       'context',
       'create-local',
       renetContextName,
       '--ssh-key',
       config.sshKeyPath,
     ]);
-    assertSuccess(createResult, 'Failed to create local context');
+    baseRunner.expectSuccess(createResult);
 
     // Add machine
     const contextRunner = CliTestRunner.withContext(renetContextName);
@@ -319,6 +319,6 @@ test.describe('E2E Renet Availability @cli @e2e', () => {
     }
 
     // Cleanup
-    await runner.run(['context', 'delete', renetContextName]);
+    await baseRunner.run(['context', 'delete', renetContextName]);
   });
 });

@@ -1285,7 +1285,7 @@ jobs:
       - name: Create CLI local Ceph E2E env
         run: .ci/scripts/env/create-cli-local-env.sh --output packages/cli/tests/.env --ssh-user "$USER" --vm-net-base "$VM_NET_BASE" --vm-workers "21"
       - name: Run CLI local Ceph E2E tests
-        run: .ci/scripts/test/run-cli-local.sh -- tests/tests/08-e2e/09-ceph-operations.test.ts
+        run: .ci/scripts/test/run-cli-local.sh -- --project=ceph-e2e
 
       # Artifacts
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6

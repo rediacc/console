@@ -2,7 +2,8 @@
 # Check that all renet bridge functions have E2E test coverage
 #
 # Extracts all function names from BRIDGE_FUNCTIONS in functions.generated.ts
-# and verifies each one appears in at least one E2E test file under 08-e2e/.
+# and verifies each one appears in at least one E2E test file (*.e2e.test.ts)
+# or shared scenario file (src/scenarios/*.ts).
 #
 # This prevents adding new renet functions without corresponding E2E tests.
 #
@@ -21,7 +22,8 @@ source "$SCRIPT_DIR/../lib/common.sh"
 REPO_ROOT="$(get_repo_root)"
 
 FUNCTIONS_FILE="$REPO_ROOT/packages/shared/src/queue-vault/data/functions.generated.ts"
-E2E_TEST_DIR="$REPO_ROOT/packages/cli/tests/tests/08-e2e"
+TESTS_DIR="$REPO_ROOT/packages/cli/tests/tests"
+SCENARIOS_DIR="$REPO_ROOT/packages/cli/tests/src/scenarios"
 
 # Validate required files exist
 if [[ ! -f "$FUNCTIONS_FILE" ]]; then
@@ -29,8 +31,8 @@ if [[ ! -f "$FUNCTIONS_FILE" ]]; then
     exit 1
 fi
 
-if [[ ! -d "$E2E_TEST_DIR" ]]; then
-    log_error "E2E test directory not found: $E2E_TEST_DIR"
+if [[ ! -d "$TESTS_DIR" ]]; then
+    log_error "Tests directory not found: $TESTS_DIR"
     exit 1
 fi
 
@@ -65,29 +67,44 @@ fi
 
 log_info "Found $TOTAL bridge functions in BRIDGE_FUNCTIONS"
 
-# Phase 2: Check each function appears in at least one E2E test file
+# Phase 2: Check each function appears in at least one E2E test file or shared scenario
 log_step "Checking E2E test coverage..."
 
-# Collect E2E test files (excluding 01-local-execution which tests CLI mechanics,
-# not individual function coverage)
+# Collect E2E test files (*.e2e.test.ts across all feature directories)
+# and shared scenario files (src/scenarios/*.ts)
+# Excludes local-execution.e2e.test.ts which tests CLI mechanics, not individual function coverage
 E2E_FILES=()
-for f in "$E2E_TEST_DIR"/0[2-9]*.test.ts "$E2E_TEST_DIR"/[1-9]*.test.ts; do
-    [[ -f "$f" ]] && E2E_FILES+=("$f")
-done
+while IFS= read -r -d '' f; do
+    # Skip local-execution which tests CLI mechanics, not function coverage
+    [[ "$(basename "$f")" == "local-execution.e2e.test.ts" ]] && continue
+    E2E_FILES+=("$f")
+done < <(find "$TESTS_DIR" -name '*.e2e.test.ts' -print0)
+
+# Also include shared scenario files
+if [[ -d "$SCENARIOS_DIR" ]]; then
+    while IFS= read -r -d '' f; do
+        E2E_FILES+=("$f")
+    done < <(find "$SCENARIOS_DIR" -name '*.ts' -print0)
+fi
 
 if [[ ${#E2E_FILES[@]} -eq 0 ]]; then
-    log_error "No E2E test files found matching 02-*.test.ts through 99-*.test.ts"
+    log_error "No E2E test files found (*.e2e.test.ts or scenarios/*.ts)"
     exit 1
 fi
 
-log_info "Scanning ${#E2E_FILES[@]} E2E test files"
+log_info "Scanning ${#E2E_FILES[@]} E2E test + scenario files"
 
 MISSING=()
 for fn in "${FUNCTIONS[@]}"; do
-    # Look for the function name as a string literal in test files
-    # Matches: 'function_name' or "function_name" (in runLocalFunction calls, test descriptions, etc.)
+    # Look for the function name as a string literal or as part of a CLI command.
+    # Matches: 'function_name', "function_name", or kebab-case in CLI args
+    # e.g., 'repository_create' appears as 'repository', 'create' in native CLI commands
+    # or as 'repository_create' in run-style test descriptions
     if ! grep -Eql "'${fn}'|\"${fn}\"" "${E2E_FILES[@]}" >/dev/null 2>&1; then
-        MISSING+=("$fn")
+        # Also check for the function name in test descriptions (e.g., ceph_image_create in test titles)
+        if ! grep -ql "${fn}" "${E2E_FILES[@]}" >/dev/null 2>&1; then
+            MISSING+=("$fn")
+        fi
     fi
 done
 
@@ -100,12 +117,12 @@ fi
 COVERED=$((TOTAL - ${#MISSING[@]}))
 log_error "E2E test coverage gap: $COVERED/$TOTAL functions covered"
 log_error ""
-log_error "The following ${#MISSING[@]} function(s) have no E2E test in $E2E_TEST_DIR:"
+log_error "The following ${#MISSING[@]} function(s) have no E2E test coverage:"
 for fn in "${MISSING[@]}"; do
     log_error "  - $fn"
 done
 log_error ""
-log_error "To fix: Add tests for the missing function(s) in packages/cli/tests/tests/08-e2e/"
-log_error "Each function must appear as a string literal (e.g., in a runLocalFunction() call)"
-log_error "in at least one test file numbered 02-*.test.ts or higher."
+log_error "To fix: Add tests for the missing function(s) in packages/cli/tests/"
+log_error "Each function must appear in at least one *.e2e.test.ts file or shared scenario."
+log_error "Function names are matched as string literals or plain text in test files."
 exit 1

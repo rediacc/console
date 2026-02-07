@@ -1,11 +1,7 @@
 import { expect, test } from '@playwright/test';
+import { CliTestRunner } from '../../src/utils/CliTestRunner';
 import { E2E } from '../../src/utils/e2e-constants';
-import {
-  assertSuccess,
-  getE2EConfig,
-  runLocalFunction,
-  setupE2EEnvironment,
-} from '../../src/utils/local';
+import { getE2EConfig, setupE2EEnvironment } from '../../src/utils/local';
 import { SSHValidator } from '../../src/utils/SSHValidator';
 
 /**
@@ -23,6 +19,7 @@ test.describe
     let ssh1: SSHValidator;
     let ssh2: SSHValidator;
     let cleanup: (() => Promise<void>) | null = null;
+    let runner: CliTestRunner;
     const ctxName = `e2e-phase2-${Date.now()}`;
 
     // Setup marker path matches renet's SetupMarkerPath(7111) = /var/lib/rediacc/setup_7111_completed
@@ -33,10 +30,9 @@ test.describe
       ssh1 = new SSHValidator(config.vm1Ip, config.sshUser, config.sshKeyPath);
       ssh2 = new SSHValidator(config.vm2Ip, config.sshUser, config.sshKeyPath);
       cleanup = await setupE2EEnvironment(ctxName);
+      runner = CliTestRunner.withContext(ctxName);
 
       // Remove setup markers to force fresh setup with datastore initialization.
-      // This is necessary because setup is idempotent and skips datastore creation
-      // if the marker already exists from a previous provisioning run.
       await ssh1.exec(`sudo rm -f ${SETUP_MARKER}`);
       if (config.vm2Ip) {
         await ssh2.exec(`sudo rm -f ${SETUP_MARKER}`);
@@ -51,11 +47,11 @@ test.describe
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.SETUP_TIMEOUT);
 
-      const result = await runLocalFunction('setup', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        timeout: E2E.SETUP_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        ['run', 'setup', '--machine', E2E.MACHINE_VM1],
+        { timeout: E2E.SETUP_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
       // SSH validation: datastore directory exists
       expect(await ssh1.dirExists(E2E.DATASTORE_PATH)).toBe(true);
@@ -77,11 +73,11 @@ test.describe
       test.skip(!config.enabled || !config.vm2Ip, 'E2E not configured or VM2 not available');
       test.setTimeout(E2E.SETUP_TIMEOUT);
 
-      const result = await runLocalFunction('setup', E2E.MACHINE_VM2, {
-        contextName: ctxName,
-        timeout: E2E.SETUP_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        ['run', 'setup', '--machine', E2E.MACHINE_VM2],
+        { timeout: E2E.SETUP_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
       // SSH validation: datastore directory exists on vm2
       expect(await ssh2.dirExists(E2E.DATASTORE_PATH)).toBe(true);

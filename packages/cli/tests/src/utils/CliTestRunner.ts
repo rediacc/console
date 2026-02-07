@@ -354,7 +354,7 @@ export class CliTestRunner {
   }
 
   async repositoryDelete(name: string, teamName: string): Promise<CliResult> {
-    return this.run(['repository', 'delete', name, '--team', teamName, '--force']);
+    return this.run(['repository', 'delete', name, '--team', teamName]);
   }
 
   // ===========================================================================

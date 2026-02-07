@@ -1,12 +1,7 @@
 import { expect, test } from '@playwright/test';
+import { CliTestRunner } from '../../src/utils/CliTestRunner';
 import { E2E } from '../../src/utils/e2e-constants';
-import {
-  assertSuccess,
-  getE2EConfig,
-  runLocalFunction,
-  setupE2EEnvironment,
-} from '../../src/utils/local';
-import { createRepo, safeDeleteRepo } from '../../src/utils/local-operations';
+import { getE2EConfig, setupE2EEnvironment } from '../../src/utils/local';
 import { SSHValidator } from '../../src/utils/SSHValidator';
 
 /**
@@ -33,8 +28,9 @@ test.describe
     let ssh1: SSHValidator;
     let ssh2: SSHValidator;
     let cleanup: (() => Promise<void>) | null = null;
+    let runner: CliTestRunner;
     const ctxName = `e2e-phase7-${Date.now()}`;
-    const repoMountPath = `${E2E.REPO_MOUNTS_BASE}/${E2E.TEST_REPO}`;
+    const repoMountPath = `${E2E.REPO_MOUNTS_BASE}/${E2E.REPO_BACKUP}`;
     let originalChecksum: string;
     let secondChecksum: string;
 
@@ -43,12 +39,27 @@ test.describe
       ssh1 = new SSHValidator(config.vm1Ip, config.sshUser, config.sshKeyPath);
       ssh2 = new SSHValidator(config.vm2Ip, config.sshUser, config.sshKeyPath);
       cleanup = await setupE2EEnvironment(ctxName);
+      runner = CliTestRunner.withContext(ctxName);
     });
 
     test.afterAll(async () => {
       // Cleanup repos on both VMs
-      await safeDeleteRepo(E2E.MACHINE_VM1, E2E.TEST_REPO, ctxName);
-      await safeDeleteRepo(E2E.MACHINE_VM2, E2E.TEST_REPO, ctxName);
+      if (runner) {
+        for (const machine of [E2E.MACHINE_VM1, E2E.MACHINE_VM2]) {
+          try {
+            await runner.run(
+              ['repository', 'down', E2E.REPO_BACKUP, '--machine', machine, '--option', 'unmount'],
+              { timeout: 120_000 }
+            );
+          } catch { /* ignore */ }
+          try {
+            await runner.run(
+              ['repository', 'delete', E2E.REPO_BACKUP, '--machine', machine],
+              { timeout: 120_000 }
+            );
+          } catch { /* ignore */ }
+        }
+      }
       await cleanup?.();
     });
 
@@ -56,8 +67,18 @@ test.describe
       test.skip(!config.enabled || !config.vm2Ip, 'E2E not configured');
       test.setTimeout(E2E.SETUP_TIMEOUT);
 
+      // Force-delete stale repos from previous runs (ignore errors)
+      for (const machine of [E2E.MACHINE_VM1, E2E.MACHINE_VM2]) {
+        try { await runner.run(['repository', 'down', E2E.REPO_BACKUP, '--machine', machine, '--option', 'unmount'], { timeout: 60_000 }); } catch { /* ignore */ }
+        try { await runner.run(['repository', 'delete', E2E.REPO_BACKUP, '--machine', machine], { timeout: 60_000 }); } catch { /* ignore */ }
+      }
+
       // Create repo on vm1
-      await createRepo(E2E.MACHINE_VM1, E2E.TEST_REPO, E2E.REPO_SIZE, ctxName);
+      const createResult1 = await runner.run(
+        ['repository', 'create', E2E.REPO_BACKUP, '--machine', E2E.MACHINE_VM1, '--size', E2E.REPO_SIZE],
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(createResult1);
 
       // Write a test file (10MB) to vm1 repo
       await ssh1.createTestFile(`${repoMountPath}/testfile.bin`, 10);
@@ -65,7 +86,11 @@ test.describe
       expect(originalChecksum.length).toBeGreaterThan(0);
 
       // Create repo on vm2 (backup target)
-      await createRepo(E2E.MACHINE_VM2, E2E.TEST_REPO, E2E.REPO_SIZE, ctxName);
+      const createResult2 = await runner.run(
+        ['repository', 'create', E2E.REPO_BACKUP, '--machine', E2E.MACHINE_VM2, '--size', E2E.REPO_SIZE],
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(createResult2);
     });
 
     test('backup_push - should push repository to second machine', async () => {
@@ -74,18 +99,19 @@ test.describe
 
       const extraMachineEntry = `${E2E.MACHINE_VM2}:${config.vm2Ip}:${config.sshUser}`;
 
-      const result = await runLocalFunction('backup_push', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: {
-          repository: E2E.TEST_REPO,
-          destinationType: 'machine',
-          to: E2E.MACHINE_VM2,
-          dest: E2E.TEST_REPO,
-        },
-        extraMachines: [extraMachineEntry],
-        timeout: E2E.SETUP_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        [
+          'backup', 'push',
+          '--repository', E2E.REPO_BACKUP,
+          '--machine', E2E.MACHINE_VM1,
+          '--destination-type', 'machine',
+          '--to', E2E.MACHINE_VM2,
+          '--dest', E2E.REPO_BACKUP,
+          '--extra-machine', extraMachineEntry,
+        ],
+        { timeout: E2E.SETUP_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
       // SSH validation: file should exist on vm2 with matching checksum
       const vm2Checksum = await ssh2.fileChecksum(`${repoMountPath}/testfile.bin`);
@@ -102,18 +128,19 @@ test.describe
 
       const extraMachineEntry = `${E2E.MACHINE_VM2}:${config.vm2Ip}:${config.sshUser}`;
 
-      const result = await runLocalFunction('backup_push', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: {
-          repository: E2E.TEST_REPO,
-          destinationType: 'machine',
-          to: E2E.MACHINE_VM2,
-          dest: E2E.TEST_REPO,
-        },
-        extraMachines: [extraMachineEntry],
-        timeout: E2E.SETUP_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        [
+          'backup', 'push',
+          '--repository', E2E.REPO_BACKUP,
+          '--machine', E2E.MACHINE_VM1,
+          '--destination-type', 'machine',
+          '--to', E2E.MACHINE_VM2,
+          '--dest', E2E.REPO_BACKUP,
+          '--extra-machine', extraMachineEntry,
+        ],
+        { timeout: E2E.SETUP_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
       // SSH validation: both files should exist on vm2 with matching checksums
       const vm2Checksum1 = await ssh2.fileChecksum(`${repoMountPath}/testfile.bin`);
@@ -135,17 +162,18 @@ test.describe
 
       const extraMachineEntry = `${E2E.MACHINE_VM2}:${config.vm2Ip}:${config.sshUser}`;
 
-      const result = await runLocalFunction('backup_pull', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: {
-          repository: E2E.TEST_REPO,
-          sourceType: 'machine',
-          from: E2E.MACHINE_VM2,
-        },
-        extraMachines: [extraMachineEntry],
-        timeout: E2E.SETUP_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        [
+          'backup', 'pull',
+          '--repository', E2E.REPO_BACKUP,
+          '--machine', E2E.MACHINE_VM1,
+          '--source-type', 'machine',
+          '--from', E2E.MACHINE_VM2,
+          '--extra-machine', extraMachineEntry,
+        ],
+        { timeout: E2E.SETUP_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
       // SSH validation: files should be restored on vm1 with matching checksums
       const vm1Checksum1 = await ssh1.fileChecksum(`${repoMountPath}/testfile.bin`);

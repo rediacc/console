@@ -51,7 +51,17 @@ fi
 log_info "renet: $(which renet)"
 
 log_step "Running CLI local mode E2E tests..."
-if (cd "$CLI_DIR" && npx playwright test --config tests/playwright.config.ts --project=e2e --workers=1 --reporter=list "${EXTRA_ARGS[@]}"); then
+
+# Default to --project=e2e unless extra args already specify a project
+PROJECT_ARG="--project=e2e"
+for arg in "${EXTRA_ARGS[@]}"; do
+    if [[ "$arg" == --project=* ]]; then
+        PROJECT_ARG=""
+        break
+    fi
+done
+
+if (cd "$CLI_DIR" && npx playwright test --config tests/playwright.config.ts $PROJECT_ARG --workers=1 --reporter=list "${EXTRA_ARGS[@]}"); then
     log_info "CLI local mode E2E tests passed"
 else
     log_error "CLI local mode E2E tests failed"

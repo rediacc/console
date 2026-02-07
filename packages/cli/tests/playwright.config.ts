@@ -50,15 +50,23 @@ export default test.defineConfig({
 
   /* Projects for category-based execution */
   projects: [
-    { name: 'core', testMatch: '01-core/**/*.test.ts' },
-    { name: 'resources', testMatch: '02-resources/**/*.test.ts' },
-    { name: 'operations', testMatch: '03-operations/**/*.test.ts' },
-    { name: 'security', testMatch: '04-security/**/*.test.ts' },
-    { name: 'ceph', testMatch: '05-ceph/**/*.test.ts' },
-    { name: 'errors', testMatch: '06-errors/**/*.test.ts' },
-    { name: 'edition', testMatch: '07-edition/**/*.test.ts' },
-    { name: 'e2e', testMatch: '08-e2e/**/*.test.ts' },
-    { name: 'vscode', testMatch: '09-vscode/**/*.test.ts' },
-    { name: 's3', testMatch: '10-s3/**/*.test.ts' },
+    // Cloud API tests — run against backend via tunnel
+    { name: 'cloud', testMatch: '**/*.cloud.test.ts' },
+    // Error handling — subset of cloud tests
+    { name: 'errors', testMatch: '**/*.errors.cloud.test.ts' },
+    // E2E tests — run on Linux with local VMs (requires renet)
+    { name: 'e2e', testMatch: '**/*.e2e.test.ts' },
+    // Context management — standalone, no backend needed
+    { name: 'context', testMatch: 'context/**/*.test.ts' },
+    // VSCode — standalone detection + cloud integration
+    { name: 'vscode', testMatch: 'vscode/**/*.test.ts' },
+    // S3 — requires RustFS
+    { name: 's3', testMatch: 's3/**/*.test.ts' },
+    // Edition-specific tests — ENTERPRISE context
+    { name: 'edition', testMatch: 'edition/**/*.cloud.test.ts' },
+    // Ceph cloud tests only (for ceph-specific CI job)
+    { name: 'ceph-cloud', testMatch: 'ceph/**/*.cloud.test.ts' },
+    // Ceph E2E tests only (for ceph VM CI job)
+    { name: 'ceph-e2e', testMatch: 'ceph/**/*.e2e.test.ts' },
   ],
 });

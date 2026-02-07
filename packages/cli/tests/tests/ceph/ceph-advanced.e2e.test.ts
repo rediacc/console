@@ -1,11 +1,7 @@
 import { expect, test } from '@playwright/test';
+import { CliTestRunner } from '../../src/utils/CliTestRunner';
 import { E2E } from '../../src/utils/e2e-constants';
-import {
-  assertSuccess,
-  getE2EConfig,
-  runLocalFunction,
-  setupE2EEnvironment,
-} from '../../src/utils/local';
+import { getE2EConfig, setupE2EEnvironment } from '../../src/utils/local';
 import { SSHValidator } from '../../src/utils/SSHValidator';
 
 /**
@@ -26,6 +22,7 @@ test.describe
     const cephConfigured = !!process.env.E2E_CEPH_NODES;
     let ssh1: SSHValidator;
     let cleanup: (() => Promise<void>) | null = null;
+    let runner: CliTestRunner;
     const ctxName = `e2e-phase8-${Date.now()}`;
 
     const IMAGE_NAME = 'e2e-test-image';
@@ -37,40 +34,37 @@ test.describe
     const IMAGE_SIZE = '1G';
     const RESIZED_SIZE = '2G';
 
+    /** Build ceph command args with common flags */
+    const cephCmd = (group: string, cmd: string, flags: Record<string, string> = {}) => {
+      const args = ['ceph', group, cmd, '--machine', E2E.MACHINE_VM1];
+      for (const [key, value] of Object.entries(flags)) {
+        args.push(`--${key}`, value);
+      }
+      return args;
+    };
+
     test.beforeAll(async () => {
       test.skip(!config.enabled || !cephConfigured, 'E2E VMs or Ceph not configured');
       ssh1 = new SSHValidator(config.vm1Ip, config.sshUser, config.sshKeyPath);
       cleanup = await setupE2EEnvironment(ctxName);
+      runner = CliTestRunner.withContext(ctxName);
     });
 
     test.afterAll(async () => {
       // Best-effort cleanup in reverse dependency order
-      if (config.enabled && cephConfigured) {
+      if (config.enabled && cephConfigured && runner) {
         const cleanupOps = [
-          { fn: 'ceph_client_unmount', params: { image: IMAGE_NAME, pool: POOL } },
-          {
-            fn: 'ceph_clone_unmount',
-            params: { clone: CLONE_NAME, mountPoint: CLONE_MOUNT_POINT, pool: POOL },
-          },
-          { fn: 'ceph_clone_delete', params: { clone: CLONE_NAME, pool: POOL } },
-          {
-            fn: 'ceph_snapshot_unprotect',
-            params: { image: IMAGE_NAME, snapshot: SNAPSHOT_NAME, pool: POOL },
-          },
-          {
-            fn: 'ceph_snapshot_delete',
-            params: { image: IMAGE_NAME, snapshot: SNAPSHOT_NAME, pool: POOL },
-          },
-          { fn: 'ceph_image_unmap', params: { image: IMAGE_NAME, pool: POOL } },
-          { fn: 'ceph_image_delete', params: { image: IMAGE_NAME, pool: POOL } },
+          cephCmd('client', 'unmount', { image: IMAGE_NAME, pool: POOL }),
+          cephCmd('clone', 'unmount', { clone: CLONE_NAME, 'mount-point': CLONE_MOUNT_POINT, pool: POOL }),
+          cephCmd('clone', 'delete', { clone: CLONE_NAME, pool: POOL }),
+          cephCmd('snapshot', 'unprotect', { image: IMAGE_NAME, snapshot: SNAPSHOT_NAME, pool: POOL }),
+          cephCmd('snapshot', 'delete', { image: IMAGE_NAME, snapshot: SNAPSHOT_NAME, pool: POOL }),
+          cephCmd('image', 'unmap', { image: IMAGE_NAME, pool: POOL }),
+          cephCmd('image', 'delete', { image: IMAGE_NAME, pool: POOL }),
         ];
-        for (const op of cleanupOps) {
+        for (const args of cleanupOps) {
           try {
-            await runLocalFunction(op.fn, E2E.MACHINE_VM1, {
-              contextName: ctxName,
-              params: op.params,
-              timeout: 120_000,
-            });
+            await runner.run(args, { timeout: 120_000 });
           } catch {
             // ignore cleanup errors
           }
@@ -85,12 +79,11 @@ test.describe
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('ceph_image_create', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: { image: IMAGE_NAME, size: IMAGE_SIZE, pool: POOL },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        cephCmd('image', 'create', { image: IMAGE_NAME, size: IMAGE_SIZE, pool: POOL }),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
       // SSH validation: image should appear in rbd ls
       const images = await ssh1.rbdList(POOL);
@@ -101,12 +94,11 @@ test.describe
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('ceph_image_list', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: { pool: POOL },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        cephCmd('image', 'list', { pool: POOL }),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
       const output = result.stdout + result.stderr;
       expect(output).toContain(IMAGE_NAME);
@@ -116,12 +108,11 @@ test.describe
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('ceph_image_info', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: { image: IMAGE_NAME, pool: POOL },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        cephCmd('image', 'info', { image: IMAGE_NAME, pool: POOL }),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
       const output = result.stdout + result.stderr;
       expect(output.length).toBeGreaterThan(0);
@@ -131,12 +122,11 @@ test.describe
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('ceph_image_resize', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: { image: IMAGE_NAME, size: RESIZED_SIZE, pool: POOL },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        cephCmd('image', 'resize', { image: IMAGE_NAME, size: RESIZED_SIZE, pool: POOL }),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
       // SSH validation: rbd info should show new size
       const info = await ssh1.rbdInfo(IMAGE_NAME, POOL);
@@ -147,28 +137,25 @@ test.describe
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('ceph_image_format', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: { image: IMAGE_NAME, pool: POOL, filesystem: 'ext4' },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        cephCmd('image', 'format', { image: IMAGE_NAME, pool: POOL, filesystem: 'ext4' }),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
     });
 
-    // --- CephFS client operations (image exists, formatted, not yet mapped) ---
+    // --- CephFS client operations ---
 
     test('ceph_client_mount - should mount RBD image via client', async () => {
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('ceph_client_mount', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: { image: IMAGE_NAME, mountPoint: MOUNT_POINT, pool: POOL },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        cephCmd('client', 'mount', { image: IMAGE_NAME, 'mount-point': MOUNT_POINT, pool: POOL }),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
-      // SSH validation: mount point should exist and be mounted
       expect(await ssh1.dirExists(MOUNT_POINT)).toBe(true);
       expect(await ssh1.mountExists(MOUNT_POINT)).toBe(true);
     });
@@ -177,14 +164,12 @@ test.describe
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('ceph_client_unmount', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: { image: IMAGE_NAME, pool: POOL },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        cephCmd('client', 'unmount', { image: IMAGE_NAME, pool: POOL }),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
-      // SSH validation: mount point should no longer be mounted
       expect(await ssh1.mountExists(MOUNT_POINT)).toBe(false);
     });
 
@@ -192,14 +177,12 @@ test.describe
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('ceph_image_map', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: { image: IMAGE_NAME, pool: POOL },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        cephCmd('image', 'map', { image: IMAGE_NAME, pool: POOL }),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
-      // SSH validation: image should appear in rbd showmapped
       const mapped = await ssh1.rbdShowMapped();
       expect(mapped).toContain(IMAGE_NAME);
     });
@@ -210,14 +193,12 @@ test.describe
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('ceph_snapshot_create', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: { image: IMAGE_NAME, snapshot: SNAPSHOT_NAME, pool: POOL },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        cephCmd('snapshot', 'create', { image: IMAGE_NAME, snapshot: SNAPSHOT_NAME, pool: POOL }),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
-      // SSH validation: snapshot should appear in rbd snap ls
       const snaps = await ssh1.rbdSnapList(IMAGE_NAME, POOL);
       const hasSnapshot = snaps.some((s) => s.includes(SNAPSHOT_NAME));
       expect(hasSnapshot).toBe(true);
@@ -227,12 +208,11 @@ test.describe
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('ceph_snapshot_list', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: { image: IMAGE_NAME, pool: POOL },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        cephCmd('snapshot', 'list', { image: IMAGE_NAME, pool: POOL }),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
       const output = result.stdout + result.stderr;
       expect(output).toContain(SNAPSHOT_NAME);
@@ -242,16 +222,13 @@ test.describe
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('ceph_snapshot_protect', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: { image: IMAGE_NAME, snapshot: SNAPSHOT_NAME, pool: POOL },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        cephCmd('snapshot', 'protect', { image: IMAGE_NAME, snapshot: SNAPSHOT_NAME, pool: POOL }),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
-      // SSH validation: snapshot should be protected (rbd snap ls shows 'yes' in protected column)
       const snaps = await ssh1.rbdSnapList(IMAGE_NAME, POOL);
-      // Protected snapshots show differently in the output
       expect(snaps.length).toBeGreaterThan(0);
     });
 
@@ -261,19 +238,17 @@ test.describe
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('ceph_clone_image', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: {
+      const result = await runner.run(
+        cephCmd('clone', 'image', {
           image: IMAGE_NAME,
           snapshot: SNAPSHOT_NAME,
           clone: CLONE_NAME,
           pool: POOL,
-        },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+        }),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
-      // SSH validation: clone should appear in rbd ls
       const images = await ssh1.rbdList(POOL);
       expect(images).toContain(CLONE_NAME);
     });
@@ -282,12 +257,11 @@ test.describe
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('ceph_clone_list', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: { image: IMAGE_NAME, snapshot: SNAPSHOT_NAME, pool: POOL },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        cephCmd('clone', 'list', { image: IMAGE_NAME, snapshot: SNAPSHOT_NAME, pool: POOL }),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
       const output = result.stdout + result.stderr;
       expect(output).toContain(CLONE_NAME);
@@ -297,19 +271,17 @@ test.describe
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('ceph_clone_mount', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: {
+      const result = await runner.run(
+        cephCmd('clone', 'mount', {
           clone: CLONE_NAME,
-          mountPoint: CLONE_MOUNT_POINT,
+          'mount-point': CLONE_MOUNT_POINT,
           pool: POOL,
           filesystem: 'ext4',
-        },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+        }),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
-      // SSH validation: mount point should exist and be mounted
       expect(await ssh1.dirExists(CLONE_MOUNT_POINT)).toBe(true);
       expect(await ssh1.mountExists(CLONE_MOUNT_POINT)).toBe(true);
     });
@@ -318,18 +290,16 @@ test.describe
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('ceph_clone_unmount', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: {
+      const result = await runner.run(
+        cephCmd('clone', 'unmount', {
           clone: CLONE_NAME,
-          mountPoint: CLONE_MOUNT_POINT,
+          'mount-point': CLONE_MOUNT_POINT,
           pool: POOL,
-        },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+        }),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
-      // SSH validation: mount point should no longer be mounted
       expect(await ssh1.mountExists(CLONE_MOUNT_POINT)).toBe(false);
     });
 
@@ -337,16 +307,13 @@ test.describe
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('ceph_clone_flatten', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: { clone: CLONE_NAME, pool: POOL },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        cephCmd('clone', 'flatten', { clone: CLONE_NAME, pool: POOL }),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
-      // SSH validation: clone should now be independent (rbd info shows no parent)
       const info = await ssh1.rbdInfo(CLONE_NAME, POOL);
-      // Flattened clones don't have a parent field
       expect(info).not.toContain('parent');
     });
 
@@ -354,14 +321,12 @@ test.describe
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('ceph_clone_delete', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: { clone: CLONE_NAME, pool: POOL },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        cephCmd('clone', 'delete', { clone: CLONE_NAME, pool: POOL }),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
-      // SSH validation: clone should be removed
       const images = await ssh1.rbdList(POOL);
       expect(images).not.toContain(CLONE_NAME);
     });
@@ -372,38 +337,34 @@ test.describe
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('ceph_snapshot_unprotect', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: { image: IMAGE_NAME, snapshot: SNAPSHOT_NAME, pool: POOL },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        cephCmd('snapshot', 'unprotect', { image: IMAGE_NAME, snapshot: SNAPSHOT_NAME, pool: POOL }),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
     });
 
     test('ceph_snapshot_rollback - should rollback image to snapshot', async () => {
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('ceph_snapshot_rollback', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: { image: IMAGE_NAME, snapshot: SNAPSHOT_NAME, pool: POOL },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        cephCmd('snapshot', 'rollback', { image: IMAGE_NAME, snapshot: SNAPSHOT_NAME, pool: POOL }),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
     });
 
     test('ceph_snapshot_delete - should delete snapshot', async () => {
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('ceph_snapshot_delete', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: { image: IMAGE_NAME, snapshot: SNAPSHOT_NAME, pool: POOL },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        cephCmd('snapshot', 'delete', { image: IMAGE_NAME, snapshot: SNAPSHOT_NAME, pool: POOL }),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
-      // SSH validation: snapshot should be gone
       const snaps = await ssh1.rbdSnapList(IMAGE_NAME, POOL);
       const hasSnapshot = snaps.some((s) => s.includes(SNAPSHOT_NAME));
       expect(hasSnapshot).toBe(false);
@@ -415,14 +376,12 @@ test.describe
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('ceph_image_unmap', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: { image: IMAGE_NAME, pool: POOL },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        cephCmd('image', 'unmap', { image: IMAGE_NAME, pool: POOL }),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
-      // SSH validation: image should not appear in rbd showmapped
       const mapped = await ssh1.rbdShowMapped();
       expect(mapped).not.toContain(IMAGE_NAME);
     });
@@ -431,14 +390,12 @@ test.describe
       test.skip(!config.enabled || !cephConfigured, 'Ceph not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('ceph_image_delete', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: { image: IMAGE_NAME, pool: POOL },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        cephCmd('image', 'delete', { image: IMAGE_NAME, pool: POOL }),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
-      // SSH validation: image should be removed
       const images = await ssh1.rbdList(POOL);
       expect(images).not.toContain(IMAGE_NAME);
     });

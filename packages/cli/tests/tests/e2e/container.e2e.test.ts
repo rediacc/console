@@ -1,12 +1,7 @@
 import { expect, test } from '@playwright/test';
+import { CliTestRunner } from '../../src/utils/CliTestRunner';
 import { E2E } from '../../src/utils/e2e-constants';
-import {
-  assertSuccess,
-  getE2EConfig,
-  runLocalFunction,
-  setupE2EEnvironment,
-} from '../../src/utils/local';
-import { createRepo, safeDeleteRepo } from '../../src/utils/local-operations';
+import { getE2EConfig, setupE2EEnvironment } from '../../src/utils/local';
 import { SSHValidator } from '../../src/utils/SSHValidator';
 
 /**
@@ -21,12 +16,15 @@ import { SSHValidator } from '../../src/utils/SSHValidator';
  * daemon_setup/daemon_start (matching production behavior where each repo
  * has its own isolated Docker daemon identified by network_id), then creates
  * a test container on that daemon.
+ *
+ * @covers daemon_setup, daemon_start, daemon_teardown
  */
 test.describe
   .serial('Phase 5: Container Operations @e2e', () => {
     const config = getE2EConfig();
     let ssh1: SSHValidator;
     let cleanup: (() => Promise<void>) | null = null;
+    let runner: CliTestRunner;
     const ctxName = `e2e-phase5-${Date.now()}`;
     const containerName = 'web';
 
@@ -35,36 +33,45 @@ test.describe
     /** Helper to run docker commands on the network-specific daemon via SSH */
     const dockerCmd = (cmd: string) => `sudo env DOCKER_HOST=${dockerSocket} docker ${cmd}`;
 
-    /** Common params for all container operations (network_id routes to correct daemon) */
-    const containerParams = (extra: Record<string, string> = {}) => ({
-      repository: E2E.TEST_REPO,
-      network_id: E2E.NETWORK_ID_STR,
-      container: containerName,
-      ...extra,
-    });
+    /** Build container command args */
+    const containerCmd = (cmd: string, extraFlags: string[] = []) => [
+      'container', cmd,
+      '--machine', E2E.MACHINE_VM1,
+      '--repository', E2E.REPO_CONTAINER,
+      '--network-id', E2E.NETWORK_ID_STR,
+      '--container', containerName,
+      ...extraFlags,
+    ];
 
     test.beforeAll(async () => {
       test.skip(!config.enabled, 'E2E VMs not configured');
       ssh1 = new SSHValidator(config.vm1Ip, config.sshUser, config.sshKeyPath);
       cleanup = await setupE2EEnvironment(ctxName);
+      runner = CliTestRunner.withContext(ctxName);
+
+      // Force-delete stale repo from previous runs (ignore errors)
+      try { await runner.run(['repository', 'down', E2E.REPO_CONTAINER, '--machine', E2E.MACHINE_VM1, '--option', 'unmount'], { timeout: 60_000 }); } catch { /* ignore */ }
+      try { await runner.run(['repository', 'delete', E2E.REPO_CONTAINER, '--machine', E2E.MACHINE_VM1], { timeout: 60_000 }); } catch { /* ignore */ }
 
       // Create repository for container tests
-      await createRepo(E2E.MACHINE_VM1, E2E.TEST_REPO, E2E.REPO_SIZE, ctxName);
+      const createResult = await runner.run(
+        ['repository', 'create', E2E.REPO_CONTAINER, '--machine', E2E.MACHINE_VM1, '--size', E2E.REPO_SIZE],
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(createResult);
 
-      // Set up network-specific Docker daemon (mirrors production: each repo gets isolated daemon)
-      const setupResult = await runLocalFunction('daemon_setup', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: { network_id: E2E.NETWORK_ID_STR },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(setupResult, 'daemon_setup failed');
+      // Set up network-specific Docker daemon
+      const setupResult = await runner.run(
+        ['daemon', 'setup', '--machine', E2E.MACHINE_VM1, '--network-id', E2E.NETWORK_ID_STR],
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(setupResult);
 
-      const startResult = await runLocalFunction('daemon_start', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: { network_id: E2E.NETWORK_ID_STR },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(startResult, 'daemon_start failed');
+      const startResult = await runner.run(
+        ['daemon', 'start', '--machine', E2E.MACHINE_VM1, '--network-id', E2E.NETWORK_ID_STR],
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(startResult);
 
       // Wait for Docker daemon to be ready on the network socket
       const waitResult = await ssh1.exec(
@@ -75,33 +82,39 @@ test.describe
       }
 
       // Create test container on the network-specific daemon (stopped state)
-      // Using 'docker create' so container_start test actually starts it
-      const createResult = await ssh1.exec(
+      const createContainerResult = await ssh1.exec(
         dockerCmd(`create --name ${containerName} -p 8080:80 nginx:alpine`)
       );
-      if (!createResult.success) {
-        throw new Error(`Failed to create test container: ${createResult.stderr}`);
+      if (!createContainerResult.success) {
+        throw new Error(`Failed to create test container: ${createContainerResult.stderr}`);
       }
     });
 
     test.afterAll(async () => {
-      // Best-effort cleanup: kill + remove container on network socket
+      // Best-effort cleanup
       try {
         await ssh1?.exec(dockerCmd(`rm -f ${containerName}`));
-      } catch {
-        // ignore
-      }
-      // Tear down the Docker daemon
+      } catch { /* ignore */ }
       try {
-        await runLocalFunction('daemon_teardown', E2E.MACHINE_VM1, {
-          contextName: ctxName,
-          params: { network_id: E2E.NETWORK_ID_STR },
-          timeout: E2E.TEST_TIMEOUT,
-        });
-      } catch {
-        // ignore
+        await runner?.run(
+          ['daemon', 'teardown', '--machine', E2E.MACHINE_VM1, '--network-id', E2E.NETWORK_ID_STR],
+          { timeout: E2E.TEST_TIMEOUT }
+        );
+      } catch { /* ignore */ }
+      if (runner) {
+        try {
+          await runner.run(
+            ['repository', 'down', E2E.REPO_CONTAINER, '--machine', E2E.MACHINE_VM1, '--option', 'unmount'],
+            { timeout: 120_000 }
+          );
+        } catch { /* ignore */ }
+        try {
+          await runner.run(
+            ['repository', 'delete', E2E.REPO_CONTAINER, '--machine', E2E.MACHINE_VM1],
+            { timeout: 120_000 }
+          );
+        } catch { /* ignore */ }
       }
-      await safeDeleteRepo(E2E.MACHINE_VM1, E2E.TEST_REPO, ctxName);
       await cleanup?.();
     });
 
@@ -109,12 +122,8 @@ test.describe
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('container_start', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: containerParams(),
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(containerCmd('start'), { timeout: E2E.TEST_TIMEOUT });
+      runner.expectSuccess(result);
 
       // SSH validation: container should be running on the network-specific daemon
       const check = await ssh1.exec(
@@ -127,12 +136,11 @@ test.describe
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('container_list', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: { repository: E2E.TEST_REPO, network_id: E2E.NETWORK_ID_STR },
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        ['container', 'list', '--machine', E2E.MACHINE_VM1, '--network-id', E2E.NETWORK_ID_STR],
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
       const output = result.stdout + result.stderr;
       expect(output.length).toBeGreaterThan(0);
@@ -142,12 +150,8 @@ test.describe
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('container_stats', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: containerParams(),
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(containerCmd('stats'), { timeout: E2E.TEST_TIMEOUT });
+      runner.expectSuccess(result);
 
       const output = result.stdout + result.stderr;
       expect(output.length).toBeGreaterThan(0);
@@ -157,24 +161,19 @@ test.describe
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('container_logs', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: containerParams({ lines: '50' }),
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        containerCmd('logs', ['--lines', '50']),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
     });
 
     test('container_inspect - should return container configuration', async () => {
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('container_inspect', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: containerParams(),
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(containerCmd('inspect'), { timeout: E2E.TEST_TIMEOUT });
+      runner.expectSuccess(result);
 
       const output = result.stdout + result.stderr;
       expect(output.length).toBeGreaterThan(0);
@@ -184,12 +183,11 @@ test.describe
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('container_exec', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: containerParams({ command: 'echo hello' }),
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        containerCmd('exec', ['--command', 'echo hello']),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
       const output = result.stdout + result.stderr;
       expect(output).toContain('hello');
@@ -199,12 +197,8 @@ test.describe
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('container_pause', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: containerParams(),
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(containerCmd('pause'), { timeout: E2E.TEST_TIMEOUT });
+      runner.expectSuccess(result);
 
       // SSH validation: container should be paused on the network daemon
       const pauseCheck = await ssh1.exec(
@@ -217,12 +211,8 @@ test.describe
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('container_unpause', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: containerParams(),
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(containerCmd('unpause'), { timeout: E2E.TEST_TIMEOUT });
+      runner.expectSuccess(result);
 
       // SSH validation: no paused containers on the network daemon
       const pauseCheck = await ssh1.exec(
@@ -235,12 +225,8 @@ test.describe
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('container_stop', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: containerParams(),
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(containerCmd('stop'), { timeout: E2E.TEST_TIMEOUT });
+      runner.expectSuccess(result);
 
       // SSH validation: container should not be running on the network daemon
       const check = await ssh1.exec(
@@ -255,12 +241,8 @@ test.describe
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('container_restart', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: containerParams(),
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(containerCmd('restart'), { timeout: E2E.TEST_TIMEOUT });
+      runner.expectSuccess(result);
 
       // SSH validation: container should be running again
       const check = await ssh1.exec(
@@ -275,12 +257,8 @@ test.describe
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('container_kill', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: containerParams(),
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(containerCmd('kill'), { timeout: E2E.TEST_TIMEOUT });
+      runner.expectSuccess(result);
 
       // SSH validation: container should be stopped/exited
       const check = await ssh1.exec(
@@ -295,12 +273,11 @@ test.describe
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      const result = await runLocalFunction('container_remove', E2E.MACHINE_VM1, {
-        contextName: ctxName,
-        params: containerParams({ force: 'true' }),
-        timeout: E2E.TEST_TIMEOUT,
-      });
-      assertSuccess(result);
+      const result = await runner.run(
+        containerCmd('remove', ['--force']),
+        { timeout: E2E.TEST_TIMEOUT }
+      );
+      runner.expectSuccess(result);
 
       // SSH validation: container should be completely removed from the network daemon
       const check = await ssh1.exec(
