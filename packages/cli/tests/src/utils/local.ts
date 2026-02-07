@@ -219,7 +219,11 @@ export function runLocalFunction(
     ? CliTestRunner.withContext(options.contextName)
     : new CliTestRunner();
 
-  const { args, usedPositional, useRunFallback } = buildCommandArgs(functionName, machineName, options?.params);
+  const { args, usedPositional, useRunFallback } = buildCommandArgs(
+    functionName,
+    machineName,
+    options?.params
+  );
 
   if (options?.params) {
     appendParamFlags(args, options.params, usedPositional, useRunFallback);
