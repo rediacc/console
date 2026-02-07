@@ -20,10 +20,14 @@ source "$SCRIPT_DIR/../lib/common.sh"
 # Parse extra args (everything after --)
 EXTRA_ARGS=()
 while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --) shift; EXTRA_ARGS=("$@"); break ;;
-        *) shift ;;
-    esac
+	case "$1" in
+	--)
+		shift
+		EXTRA_ARGS=("$@")
+		break
+		;;
+	*) shift ;;
+	esac
 done
 
 cd "$(get_repo_root)"
@@ -33,23 +37,23 @@ CLI_DIR="packages/cli"
 # Build CLI (required for cli-bundle.cjs)
 log_step "Building CLI..."
 if "$SCRIPT_DIR/../build/build-cli.sh"; then
-    log_info "CLI build completed"
+	log_info "CLI build completed"
 else
-    log_error "CLI build failed"
-    exit 1
+	log_error "CLI build failed"
+	exit 1
 fi
 
 # Verify renet is available
 if ! command -v renet &>/dev/null; then
-    log_error "renet not found in PATH"
-    exit 1
+	log_error "renet not found in PATH"
+	exit 1
 fi
 log_info "renet: $(which renet)"
 
 log_step "Running CLI local mode E2E tests..."
 if (cd "$CLI_DIR" && npx playwright test --config tests/playwright.config.ts --project=e2e --workers=1 --reporter=list "${EXTRA_ARGS[@]}"); then
-    log_info "CLI local mode E2E tests passed"
+	log_info "CLI local mode E2E tests passed"
 else
-    log_error "CLI local mode E2E tests failed"
-    exit 1
+	log_error "CLI local mode E2E tests failed"
+	exit 1
 fi
