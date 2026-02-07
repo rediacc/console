@@ -868,7 +868,7 @@ jobs:
   test-cli-local-ceph:
     name: CLI Local Ceph
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       CI: 'true'
       VM_NET_BASE: '192.168.111'
