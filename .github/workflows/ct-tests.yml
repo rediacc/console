@@ -935,13 +935,18 @@ jobs:
             done
           done
 
+      # Prepare Ceph VM: install renet and run setup to create rediacc user, directories, etc.
+      - name: Setup Ceph VM
+        run: |
+          CEPH_IP="${VM_NET_BASE}.21"
+          scp /usr/bin/renet $USER@$CEPH_IP:/tmp/renet
+          ssh $USER@$CEPH_IP "sudo mv /tmp/renet /usr/bin/renet && sudo chmod 755 /usr/bin/renet"
+          ssh $USER@$CEPH_IP "sudo renet setup"
+
       # Post-Ceph setup (ops up already provisions Ceph when VM_CEPH_NODES is set)
       - name: Post-Ceph setup
         run: |
           CEPH_IP="${VM_NET_BASE}.21"
-          # Create rediacc user (UID 7111) — bridge executor runs commands as sudo -u rediacc
-          ssh $USER@$CEPH_IP "sudo useradd -u 7111 -m -s /bin/bash rediacc 2>/dev/null || true"
-          ssh $USER@$CEPH_IP "echo 'rediacc ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/rediacc"
           # Create 'rbd' pool used by CLI local tests (provisioner creates 'rediacc_rbd_pool')
           ssh $USER@$CEPH_IP "sudo ceph osd pool create rbd 32"
           ssh $USER@$CEPH_IP "sudo ceph osd pool application enable rbd rbd"
