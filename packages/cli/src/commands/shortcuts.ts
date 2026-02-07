@@ -1,6 +1,12 @@
 import { Command } from 'commander';
-import { coerceCliParams, parseParamOptions, cancelAction, retryAction, traceAction } from './queue.js';
 import { executeBridgeFunction } from './bridge-executor.js';
+import {
+  cancelAction,
+  coerceCliParams,
+  parseParamOptions,
+  retryAction,
+  traceAction,
+} from './queue.js';
 import { t } from '../i18n/index.js';
 import { handleError } from '../utils/errors.js';
 

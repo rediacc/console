@@ -1,12 +1,12 @@
-import type { Command } from 'commander';
+import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
 import {
   FUNCTION_DEFINITIONS,
   type FunctionDefinition,
 } from '@rediacc/shared/queue-vault/data/definitions';
-import type { BridgeFunctionName } from '@rediacc/shared/queue-vault';
-import { t } from '../i18n/index.js';
-import { camelToKebab, getOrCreateCommand, kebabToCamel } from './bridge-utils.js';
 import { executeBridgeFunction } from './bridge-executor.js';
+import { camelToKebab, getOrCreateCommand, kebabToCamel } from './bridge-utils.js';
+import { t } from '../i18n/index.js';
+import type { Command } from 'commander';
 
 /** Collector for repeatable --option <value> flags (arrays). */
 function collect(val: string, acc: string[]): string[] {
@@ -66,9 +66,7 @@ function registerSingleFunction(
 
   const hasPositional = usesRepositoryPositional(functionName, funcDef);
   const cmdSignature = hasPositional ? `${leafName} <name>` : leafName;
-  const description = funcDef.params
-    ? `${getDescriptionFromName(functionName)}`
-    : getDescriptionFromName(functionName);
+  const description = getDescriptionFromName(functionName);
 
   const cmd = parent.command(cmdSignature).description(description);
 
@@ -106,11 +104,7 @@ function registerSingleFunction(
   }
 }
 
-function addContextOptions(
-  cmd: Command,
-  funcDef: FunctionDefinition,
-  functionName: string
-): void {
+function addContextOptions(cmd: Command, funcDef: FunctionDefinition, functionName: string): void {
   const reqs = funcDef.requirements;
 
   if (reqs.machine) {
@@ -127,7 +121,7 @@ function addContextOptions(
     cmd.option('-b, --bridge <name>', t('options.bridge'));
   }
   if (reqs.network_id) {
-    cmd.option('--network-id <id>', 'Network ID');
+    cmd.option('--network-id <id>', t('options.networkId'));
   }
 }
 
@@ -140,19 +134,12 @@ function addParamOptions(cmd: Command, funcDef: FunctionDefinition): void {
         cmd.option(`--${kebab}`, paramDef.help ?? paramName);
         break;
       case 'int': {
-        const flag = paramDef.required
-          ? `--${kebab} <n>`
-          : `--${kebab} <n>`;
-        cmd.option(flag, paramDef.help ?? paramName, (v: string) => parseInt(v, 10));
+        const flag = `--${kebab} <n>`;
+        cmd.option(flag, paramDef.help ?? paramName, (v: string) => Number.parseInt(v, 10));
         break;
       }
       case 'array':
-        cmd.option(
-          `--${kebab} <value>`,
-          paramDef.help ?? paramName,
-          collect,
-          [] as string[]
-        );
+        cmd.option(`--${kebab} <value>`, paramDef.help ?? paramName, collect, [] as string[]);
         break;
       case 'string':
       default: {
@@ -223,69 +210,63 @@ function buildBridgeOptions(
 
 /** Generate a human-readable description from the function name. */
 function getDescriptionFromName(functionName: string): string {
-  // Use the function definition's first param help as a hint, or generate from name
-  const def = FUNCTION_DEFINITIONS[functionName as BridgeFunctionName];
-  if (def) {
-    // Use the interface doc comment pattern: function name → description
-    const nameMap: Record<string, string> = {
-      setup: 'Install and configure renet',
-      machine_ping: 'Test SSH connectivity',
-      machine_ssh_test: 'Test SSH connectivity',
-      machine_version: 'Get renet version',
-      machine_uninstall: 'Uninstall renet',
-      repository_create: 'Create a new repository',
-      repository_delete: 'Remove a repository',
-      repository_list: 'List repositories on machine',
-      repository_up: 'Start repository services',
-      repository_down: 'Stop repository services',
-      repository_mount: 'Mount a repository',
-      repository_unmount: 'Unmount a repository',
-      repository_info: 'Get repository information',
-      repository_status: 'Get repository status',
-      repository_resize: 'Resize a repository',
-      repository_expand: 'Expand a repository',
-      repository_fork: 'Create a CoW fork of a repository',
-      repository_ownership: 'Change repository ownership',
-      repository_validate: 'Validate repository configuration',
-      repository_template_apply: 'Apply template to repository',
-      backup_pull: 'Pull repository from remote source',
-      backup_push: 'Push repository to remote destination',
-      ceph_client_mount: 'Mount RBD image on client',
-      ceph_client_unmount: 'Unmount RBD image from client',
-      ceph_image_create: 'Create RBD image',
-      ceph_image_delete: 'Delete RBD image',
-      ceph_image_format: 'Format RBD image with filesystem',
-      ceph_image_info: 'Get image info',
-      ceph_image_list: 'List RBD images',
-      ceph_image_map: 'Map RBD image to local device',
-      ceph_image_resize: 'Resize RBD image',
-      ceph_image_unmap: 'Unmap RBD image from local device',
-      ceph_snapshot_create: 'Create image snapshot',
-      ceph_snapshot_delete: 'Delete image snapshot',
-      ceph_snapshot_list: 'List image snapshots',
-      ceph_snapshot_protect: 'Protect snapshot from deletion',
-      ceph_snapshot_rollback: 'Rollback image to snapshot',
-      ceph_snapshot_unprotect: 'Unprotect snapshot for deletion',
-      ceph_clone_delete: 'Delete a clone image',
-      ceph_clone_flatten: 'Flatten clone to remove parent dependency',
-      ceph_clone_image: 'Clone image from snapshot',
-      ceph_clone_list: 'List snapshot clones',
-      ceph_clone_mount: 'Mount clone with COW overlay',
-      ceph_clone_unmount: 'Unmount clone and cleanup COW resources',
-      container_exec: 'Execute command in container',
-      container_inspect: 'Inspect container details',
-      container_kill: 'Kill a container',
-      container_list: 'List all containers',
-      container_logs: 'Get container logs',
-      container_pause: 'Pause a container',
-      container_remove: 'Remove a container',
-      container_restart: 'Restart a container',
-      container_start: 'Start a container',
-      container_stats: 'Get container statistics',
-      container_stop: 'Stop a container',
-      container_unpause: 'Unpause a container',
-    };
-    return nameMap[functionName] ?? functionName.replace(/_/g, ' ');
-  }
-  return functionName.replace(/_/g, ' ');
+  const nameMap: Record<string, string> = {
+    setup: 'Install and configure renet',
+    machine_ping: 'Test SSH connectivity',
+    machine_ssh_test: 'Test SSH connectivity',
+    machine_version: 'Get renet version',
+    machine_uninstall: 'Uninstall renet',
+    repository_create: 'Create a new repository',
+    repository_delete: 'Remove a repository',
+    repository_list: 'List repositories on machine',
+    repository_up: 'Start repository services',
+    repository_down: 'Stop repository services',
+    repository_mount: 'Mount a repository',
+    repository_unmount: 'Unmount a repository',
+    repository_info: 'Get repository information',
+    repository_status: 'Get repository status',
+    repository_resize: 'Resize a repository',
+    repository_expand: 'Expand a repository',
+    repository_fork: 'Create a CoW fork of a repository',
+    repository_ownership: 'Change repository ownership',
+    repository_validate: 'Validate repository configuration',
+    repository_template_apply: 'Apply template to repository',
+    backup_pull: 'Pull repository from remote source',
+    backup_push: 'Push repository to remote destination',
+    ceph_client_mount: 'Mount RBD image on client',
+    ceph_client_unmount: 'Unmount RBD image from client',
+    ceph_image_create: 'Create RBD image',
+    ceph_image_delete: 'Delete RBD image',
+    ceph_image_format: 'Format RBD image with filesystem',
+    ceph_image_info: 'Get image info',
+    ceph_image_list: 'List RBD images',
+    ceph_image_map: 'Map RBD image to local device',
+    ceph_image_resize: 'Resize RBD image',
+    ceph_image_unmap: 'Unmap RBD image from local device',
+    ceph_snapshot_create: 'Create image snapshot',
+    ceph_snapshot_delete: 'Delete image snapshot',
+    ceph_snapshot_list: 'List image snapshots',
+    ceph_snapshot_protect: 'Protect snapshot from deletion',
+    ceph_snapshot_rollback: 'Rollback image to snapshot',
+    ceph_snapshot_unprotect: 'Unprotect snapshot for deletion',
+    ceph_clone_delete: 'Delete a clone image',
+    ceph_clone_flatten: 'Flatten clone to remove parent dependency',
+    ceph_clone_image: 'Clone image from snapshot',
+    ceph_clone_list: 'List snapshot clones',
+    ceph_clone_mount: 'Mount clone with COW overlay',
+    ceph_clone_unmount: 'Unmount clone and cleanup COW resources',
+    container_exec: 'Execute command in container',
+    container_inspect: 'Inspect container details',
+    container_kill: 'Kill a container',
+    container_list: 'List all containers',
+    container_logs: 'Get container logs',
+    container_pause: 'Pause a container',
+    container_remove: 'Remove a container',
+    container_restart: 'Restart a container',
+    container_start: 'Start a container',
+    container_stats: 'Get container statistics',
+    container_stop: 'Stop a container',
+    container_unpause: 'Unpause a container',
+  };
+  return nameMap[functionName] ?? functionName.replaceAll('_', ' ');
 }

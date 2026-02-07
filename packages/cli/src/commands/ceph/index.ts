@@ -1,10 +1,10 @@
 import { Command } from 'commander';
+import { t } from '../../i18n/index.js';
+import { addCloudOnlyGuard, markCloudOnly } from '../../utils/cloud-guard.js';
+import { getOrCreateCommand } from '../bridge-utils.js';
 import { registerCloneCommands } from './clone.js';
 import { registerClusterCommands } from './cluster.js';
 import { registerPoolCommands } from './pool.js';
-import { t } from '../../i18n/index.js';
-import { getOrCreateCommand } from '../bridge-utils.js';
-import { addCloudOnlyGuard, markCloudOnly } from '../../utils/cloud-guard.js';
 
 export function registerCephCommands(program: Command): void {
   const ceph = getOrCreateCommand(program, 'ceph', t('commands.ceph.description'));

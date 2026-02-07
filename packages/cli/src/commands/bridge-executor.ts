@@ -1,6 +1,11 @@
 import { Command } from 'commander';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { type CreateActionOptions, createAction, traceAction, validateFunctionParams } from './queue.js';
+import {
+  type CreateActionOptions,
+  createAction,
+  traceAction,
+  validateFunctionParams,
+} from './queue.js';
 import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { contextService } from '../services/context.js';
@@ -122,27 +127,29 @@ async function runS3Mode(options: BridgeExecuteOptions): Promise<void> {
   handleExecutionResult(result);
 }
 
-async function runCloudMode(options: BridgeExecuteOptions, program: Command): Promise<void> {
-  // Convert pre-typed params to key=value strings for createAction compatibility
-  const paramStrings: string[] = [];
-  for (const [key, value] of Object.entries(options.params)) {
-    if (value !== undefined && value !== null) {
-      if (Array.isArray(value)) {
-        for (const item of value) {
-          paramStrings.push(`${key}=${item}`);
-        }
-      } else {
-        paramStrings.push(`${key}=${value}`);
+/** Convert pre-typed params to key=value strings for createAction compatibility. */
+function paramsToStrings(params: Record<string, unknown>): string[] {
+  const result: string[] = [];
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null) continue;
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        result.push(`${key}=${item}`);
       }
+    } else {
+      result.push(`${key}=${value}`);
     }
   }
+  return result;
+}
 
+async function runCloudMode(options: BridgeExecuteOptions, program: Command): Promise<void> {
   const createOptions: CreateActionOptions = {
     function: options.functionName,
     team: options.team,
     machine: options.machine,
     bridge: options.bridge,
-    param: paramStrings,
+    param: paramsToStrings(options.params),
     priority: options.priority ?? String(DEFAULTS.PRIORITY.QUEUE_PRIORITY),
   };
 

@@ -150,6 +150,44 @@ const REPO_POSITIONAL_FUNCTIONS = new Set([
   'repository_validate',
 ]);
 
+/** Convert a camelCase or snake_case key to kebab-case for CLI flags. */
+function toKebabCase(key: string): string {
+  return key
+    .replaceAll(/([A-Z])/g, '-$1')
+    .toLowerCase()
+    .replace(/^-/, '')
+    .replaceAll('_', '-');
+}
+
+/** Build the base command args from a function name and optional positional repository param. */
+function buildCommandArgs(
+  functionName: string,
+  machineName: string,
+  params?: Record<string, string>
+): { args: string[]; usedPositional: boolean } {
+  const args = [...functionName.split('_')];
+  const usePositional = REPO_POSITIONAL_FUNCTIONS.has(functionName) && params?.repository;
+
+  if (usePositional) {
+    args.push(params.repository);
+  }
+
+  args.push('--machine', machineName);
+  return { args, usedPositional: !!usePositional };
+}
+
+/** Append --kebab-case param flags to args, skipping positional repository. */
+function appendParamFlags(
+  args: string[],
+  params: Record<string, string>,
+  usedPositional: boolean
+): void {
+  for (const [key, value] of Object.entries(params)) {
+    if (key === 'repository' && usedPositional) continue;
+    args.push(`--${toKebabCase(key)}`, value);
+  }
+}
+
 /**
  * Execute a function in local mode and return the result.
  * Builds native CLI command args (e.g. `rdc repository create x --size 4G --machine vm1`)
@@ -170,40 +208,14 @@ export function runLocalFunction(
     ? CliTestRunner.withContext(options.contextName)
     : new CliTestRunner();
 
-  // Convert function_name → command path segments: repository_create → ['repository', 'create']
-  const commandParts = functionName.split('_');
-  const args = [...commandParts];
+  const { args, usedPositional } = buildCommandArgs(functionName, machineName, options?.params);
 
-  // For repository_* functions with positional <name>, extract 'repository' from params
-  const usePositional =
-    REPO_POSITIONAL_FUNCTIONS.has(functionName) && options?.params?.repository;
-
-  if (usePositional) {
-    args.push(options!.params!.repository);
-  }
-
-  args.push('--machine', machineName);
-
-  // Convert remaining params to --kebab-case options
   if (options?.params) {
-    for (const [key, value] of Object.entries(options.params)) {
-      // Skip repository param if already used as positional
-      if (key === 'repository' && usePositional) continue;
-
-      // Convert camelCase and snake_case to kebab-case
-      const kebabKey = key
-        .replace(/([A-Z])/g, '-$1')
-        .toLowerCase()
-        .replace(/^-/, '')
-        .replace(/_/g, '-');
-      args.push(`--${kebabKey}`, value);
-    }
+    appendParamFlags(args, options.params, usedPositional);
   }
 
-  if (options?.extraMachines) {
-    for (const entry of options.extraMachines) {
-      args.push('--extra-machine', entry);
-    }
+  for (const entry of options?.extraMachines ?? []) {
+    args.push('--extra-machine', entry);
   }
 
   if (options?.debug) {

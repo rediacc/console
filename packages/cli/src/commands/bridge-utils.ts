@@ -5,7 +5,7 @@ import type { Command } from 'commander';
  * e.g. ownerUid → owner-uid, mountPoint → mount-point
  */
 export function camelToKebab(str: string): string {
-  return str.replace(/([A-Z])/g, '-$1').toLowerCase();
+  return str.replaceAll(/([A-Z])/g, '-$1').toLowerCase();
 }
 
 /**
@@ -13,7 +13,7 @@ export function camelToKebab(str: string): string {
  * e.g. owner-uid → ownerUid, mount-point → mountPoint
  */
 export function kebabToCamel(str: string): string {
-  return str.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+  return str.replaceAll(/-([a-z])/g, (_, c) => c.toUpperCase());
 }
 
 /**

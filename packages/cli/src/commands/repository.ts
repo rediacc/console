@@ -7,6 +7,7 @@ import {
   type RepositoryWithRelations,
 } from '@rediacc/shared/services/repository';
 import type { GetOrganizationVaults_ResultSet1 } from '@rediacc/shared/types';
+import { getOrCreateCommand } from './bridge-utils.js';
 import { t } from '../i18n/index.js';
 import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
@@ -15,7 +16,6 @@ import { outputService } from '../services/output.js';
 import { addCloudOnlyGuard, markCloudOnly } from '../utils/cloud-guard.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
-import { getOrCreateCommand } from './bridge-utils.js';
 import type { OutputFormat } from '../types/index.js';
 
 export function registerRepositoryMetadataCommands(program: Command): void {

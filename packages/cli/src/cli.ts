@@ -1,8 +1,8 @@
 import { Command } from 'commander';
 import { registerAuditCommands } from './commands/audit.js';
 import { registerAuthCommands } from './commands/auth.js';
-import { registerBridgeCommands } from './commands/bridge.js';
 import { registerBridgeFunctionCommands } from './commands/bridge-commands.js';
+import { registerBridgeCommands } from './commands/bridge.js';
 import { registerCephCommands } from './commands/ceph/index.js';
 import { registerContextCommands } from './commands/context.js';
 import { registerDoctorCommand } from './commands/doctor.js';

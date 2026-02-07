@@ -1224,6 +1224,7 @@
     "expires": "Saat cinsinden sona erme süresi (1-720)",
     "external": "Dış terminal penceresinde başlatmaya zorla",
     "extraMachine": "Çoklu makine işlemleri için ek makine (ad:ip:kullanıcı)",
+    "networkId": "Ağ kimliği",
     "filterStatus": "Duruma göre filtreleyin",
     "folder": "Uzak klasör yolu",
     "follow": "Günlük çıkışını izleyin",
