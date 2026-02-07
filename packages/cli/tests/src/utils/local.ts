@@ -155,8 +155,8 @@ const REPO_POSITIONAL_FUNCTIONS = new Set([
 /** Convert a camelCase or snake_case key to kebab-case for CLI flags. */
 function toKebabCase(key: string): string {
   return key
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-    .replace(/([A-Z])([A-Z][a-z])/g, '$1-$2')
+    .replaceAll(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replaceAll(/([A-Z])([A-Z][a-z])/g, '$1-$2')
     .replaceAll('_', '-')
     .toLowerCase();
 }
