@@ -9,6 +9,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS, VM_NETWORK } from '@rediacc/shared/config';
 import { isBridgeFunction } from '@rediacc/shared/queue-vault';
+import { FUNCTION_DEFINITIONS } from '@rediacc/shared/queue-vault/data/definitions';
 import { type CliResult, CliTestRunner } from './CliTestRunner';
 
 /**
@@ -185,15 +186,39 @@ function buildCommandArgs(
   return { args, usedPositional: !!usePositional, useRunFallback: false };
 }
 
-/** Append --kebab-case param flags to args, skipping positional repository. */
+/** Context keys that are handled by addContextOptions in bridge-commands.ts, not as generic params. */
+const CONTEXT_KEYS = new Set(['machine', 'team', 'repository', 'bridge', 'network_id']);
+
+/**
+ * Check if a param key is accepted by the CLI command for this function.
+ * Context keys (machine, repository, etc.) are only valid if the function's
+ * requirements include them. Function params are always valid.
+ */
+function isValidParam(functionName: string, key: string): boolean {
+  if (!isBridgeFunction(functionName)) return true;
+  const def = FUNCTION_DEFINITIONS[functionName];
+  if (!def) return true;
+  // Function params are always valid
+  if (key in def.params) return true;
+  // Context keys are valid only if required by the function
+  if (CONTEXT_KEYS.has(key)) {
+    return !!(def.requirements as Record<string, unknown>)[key];
+  }
+  // Unknown params would cause Commander to error — skip them
+  return false;
+}
+
+/** Append --kebab-case param flags to args, skipping invalid params. */
 function appendParamFlags(
   args: string[],
+  functionName: string,
   params: Record<string, string>,
   usedPositional: boolean,
   useRunFallback: boolean
 ): void {
   for (const [key, value] of Object.entries(params)) {
     if (key === 'repository' && usedPositional) continue;
+    if (!useRunFallback && !isValidParam(functionName, key)) continue;
     if (useRunFallback) {
       args.push('--param', `${key}=${value}`);
     } else {
@@ -229,7 +254,7 @@ export function runLocalFunction(
   );
 
   if (options?.params) {
-    appendParamFlags(args, options.params, usedPositional, useRunFallback);
+    appendParamFlags(args, functionName, options.params, usedPositional, useRunFallback);
   }
 
   for (const entry of options?.extraMachines ?? []) {
