@@ -218,7 +218,9 @@ set_merge_readiness_status() {
     local sha="${COMMIT_SHA:-}"
     local repo="${GITHUB_REPOSITORY:-}"
     [[ -z "$sha" || -z "$repo" ]] && return 0
-    gh api "repos/${repo}/statuses/${sha}" \
+    # Use STATUS_TOKEN (github.token with statuses:write) instead of GH_TOKEN
+    # (app token) since the GitHub App may not have statuses permission.
+    GH_TOKEN="${STATUS_TOKEN:-${GH_TOKEN}}" gh api "repos/${repo}/statuses/${sha}" \
         -f state="$state" \
         -f context="$SUBMODULE_STATUS_CONTEXT" \
         -f description="$description" \

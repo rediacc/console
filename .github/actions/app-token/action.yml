@@ -44,7 +44,6 @@ runs:
             echo "perm-contents=write" >> "$GITHUB_OUTPUT"
             echo "perm-pull-requests=read" >> "$GITHUB_OUTPUT"
             echo "perm-actions=write" >> "$GITHUB_OUTPUT"
-            echo "perm-statuses=write" >> "$GITHUB_OUTPUT"
             ;;
           cd)
             echo "perm-contents=write" >> "$GITHUB_OUTPUT"
@@ -68,4 +67,3 @@ runs:
         permission-contents: ${{ steps.perms.outputs.perm-contents }}
         permission-pull-requests: ${{ steps.perms.outputs.perm-pull-requests }}
         permission-actions: ${{ steps.perms.outputs.perm-actions }}
-        permission-statuses: ${{ steps.perms.outputs.perm-statuses }}

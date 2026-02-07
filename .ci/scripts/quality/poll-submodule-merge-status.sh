@@ -98,13 +98,13 @@ while IFS=' ' read -r pr_number pr_sha branch; do
     if [[ "$has_unmerged" == "true" ]]; then
         desc="Waiting: ${pending[*]}"
         [[ ${#desc} -gt 140 ]] && desc="${desc:0:137}..."
-        gh api "repos/${GITHUB_REPOSITORY}/statuses/${pr_sha}" \
+        GH_TOKEN="${STATUS_TOKEN:-${GH_TOKEN}}" gh api "repos/${GITHUB_REPOSITORY}/statuses/${pr_sha}" \
             -f state="pending" \
             -f context="$SUBMODULE_STATUS_CONTEXT" \
             -f description="$desc" 2>/dev/null || true
         log_info "PR #$pr_number: pending (${pending[*]})"
     else
-        gh api "repos/${GITHUB_REPOSITORY}/statuses/${pr_sha}" \
+        GH_TOKEN="${STATUS_TOKEN:-${GH_TOKEN}}" gh api "repos/${GITHUB_REPOSITORY}/statuses/${pr_sha}" \
             -f state="success" \
             -f context="$SUBMODULE_STATUS_CONTEXT" \
             -f description="All submodule PRs merged" 2>/dev/null || true

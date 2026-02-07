@@ -34,4 +34,5 @@ jobs:
         run: .ci/scripts/quality/poll-submodule-merge-status.sh
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          STATUS_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
