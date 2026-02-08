@@ -13,8 +13,9 @@ inputs:
   preset:
     description: >
       Permission preset: readonly (contents:read), ci (contents:write +
-      pull_requests:read + actions:write), cd (contents:write +
-      pull_requests:write + actions:write)
+      pull_requests:read + actions:write + statuses:write),
+      cd (contents:write + pull_requests:write + actions:write +
+      statuses:write)
     required: false
     default: readonly
   repositories:
@@ -44,11 +45,13 @@ runs:
             echo "perm-contents=write" >> "$GITHUB_OUTPUT"
             echo "perm-pull-requests=read" >> "$GITHUB_OUTPUT"
             echo "perm-actions=write" >> "$GITHUB_OUTPUT"
+            echo "perm-statuses=write" >> "$GITHUB_OUTPUT"
             ;;
           cd)
             echo "perm-contents=write" >> "$GITHUB_OUTPUT"
             echo "perm-pull-requests=write" >> "$GITHUB_OUTPUT"
             echo "perm-actions=write" >> "$GITHUB_OUTPUT"
+            echo "perm-statuses=write" >> "$GITHUB_OUTPUT"
             ;;
           *)
             echo "::error::Unknown preset: ${{ inputs.preset }}"
@@ -67,3 +70,4 @@ runs:
         permission-contents: ${{ steps.perms.outputs.perm-contents }}
         permission-pull-requests: ${{ steps.perms.outputs.perm-pull-requests }}
         permission-actions: ${{ steps.perms.outputs.perm-actions }}
+        permission-statuses: ${{ steps.perms.outputs.perm-statuses }}

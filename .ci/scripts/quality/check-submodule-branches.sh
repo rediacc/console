@@ -321,12 +321,41 @@ check_pr_review_comments() {
     echo "$unreplied_count"
 }
 
+# Post a GitHub commit status for submodule merge readiness.
+# Usage: post_commit_status <state> <description>
+# States: pending, success, failure
+post_commit_status() {
+    local state="$1"
+    local description="$2"
+    local sha="${COMMIT_SHA:-}"
+    local repo="${GITHUB_REPOSITORY:-}"
+
+    if [[ -z "$sha" || -z "$repo" ]]; then
+        log_warn "COMMIT_SHA or GITHUB_REPOSITORY not set — skipping status post"
+        return 0
+    fi
+
+    if ! command -v gh &>/dev/null; then
+        log_warn "gh CLI not available — skipping status post"
+        return 0
+    fi
+
+    log_info "Posting commit status: $state ($description)"
+    gh api "repos/${repo}/statuses/${sha}" \
+        -X POST \
+        -f state="$state" \
+        -f context="quality/submodule-merge-readiness" \
+        -f description="$description" \
+        2>/dev/null || log_warn "Failed to post commit status"
+}
+
 # Main validation
 main() {
     local current_branch
     current_branch="$(get_current_branch)"
     local errors=0
     local warnings=0
+    local has_open_submodule_prs=false
     local console_pr_body=""
 
     log_step "Validating submodule branches (console branch: $current_branch)"
@@ -390,6 +419,7 @@ main() {
                     else
                         submodule_pr_number="${pr_info%%|*}"
                         submodule_pr_url="${pr_info##*|}"
+                        has_open_submodule_prs=true
 
                         if [[ -n "$console_pr_body" ]] && ! pr_is_linked "$submodule_pr_url" "$console_pr_body"; then
                             log_error "✗ $sm_path: PR $submodule_pr_url not linked in console PR description"
@@ -433,6 +463,16 @@ main() {
     done
 
     echo ""
+
+    # Post commit status for submodule merge readiness
+    if [[ $errors -gt 0 ]]; then
+        post_commit_status "failure" "Submodule validation failed with $errors error(s)"
+    elif [[ "$has_open_submodule_prs" == "true" ]]; then
+        post_commit_status "pending" "Submodule PRs still open — merge them first"
+    else
+        post_commit_status "success" "All submodule PRs merged or no submodule changes"
+    fi
+
     if [[ $errors -gt 0 ]]; then
         log_error "Submodule branch validation failed with $errors error(s)"
         exit 1
