@@ -1224,6 +1224,7 @@
     "expires": "Expiración en horas (1-720)",
     "external": "Forzar lanzamiento en ventana de terminal externa",
     "extraMachine": "Máquina adicional para operaciones multi-máquina (nombre:ip:usuario)",
+    "networkId": "ID de red",
     "filterStatus": "Filtrar por estado",
     "folder": "Ruta de carpeta remota a abrir",
     "follow": "Seguir salida de logs",

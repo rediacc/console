@@ -74,6 +74,10 @@ vi.mock('../../services/queue.js', () => ({
 const { cli } = await import('../../cli.js');
 
 describe('Cloud-only command guards', () => {
+  // Top-level cloud-only commands — entire groups blocked in local/s3 mode.
+  // Note: 'ceph' and 'repository' are excluded because bridge subcommands
+  // under these groups must work in local/s3 mode. Cloud-only guards are
+  // applied at the individual subcommand level instead.
   const expectedCloudOnlyCommands = [
     'auth',
     'bridge',
@@ -83,8 +87,6 @@ describe('Cloud-only command guards', () => {
     'user',
     'permission',
     'audit',
-    'ceph',
-    'repository',
   ];
 
   describe('CLOUD_ONLY_COMMANDS set', () => {
@@ -113,6 +115,44 @@ describe('Cloud-only command guards', () => {
           expect(cmd.description()).not.toContain('[cloud only]');
         }
       }
+    });
+  });
+
+  describe('Mixed-mode groups (bridge + cloud-only subcommands)', () => {
+    it('"ceph" group should NOT have [cloud only] (bridge subcommands work in all modes)', () => {
+      const cephCmd = cli.commands.find((c) => c.name() === 'ceph');
+      expect(cephCmd).toBeDefined();
+      expect(cephCmd!.description()).not.toContain('[cloud only]');
+    });
+
+    it('"repository" group should NOT have [cloud only] (bridge subcommands work in all modes)', () => {
+      const repoCmd = cli.commands.find((c) => c.name() === 'repository');
+      expect(repoCmd).toBeDefined();
+      expect(repoCmd!.description()).not.toContain('[cloud only]');
+    });
+
+    it('repository "rename" subcommand should have [cloud only] annotation', () => {
+      const repoCmd = cli.commands.find((c) => c.name() === 'repository');
+      expect(repoCmd).toBeDefined();
+      const renameCmd = repoCmd!.commands.find((c) => c.name() === 'rename');
+      expect(renameCmd).toBeDefined();
+      expect(renameCmd!.description()).toContain('[cloud only]');
+    });
+
+    it('repository "promote" subcommand should have [cloud only] annotation', () => {
+      const repoCmd = cli.commands.find((c) => c.name() === 'repository');
+      expect(repoCmd).toBeDefined();
+      const promoteCmd = repoCmd!.commands.find((c) => c.name() === 'promote');
+      expect(promoteCmd).toBeDefined();
+      expect(promoteCmd!.description()).toContain('[cloud only]');
+    });
+
+    it('repository "vault" subcommand should have [cloud only] annotation', () => {
+      const repoCmd = cli.commands.find((c) => c.name() === 'repository');
+      expect(repoCmd).toBeDefined();
+      const vaultCmd = repoCmd!.commands.find((c) => c.name() === 'vault');
+      expect(vaultCmd).toBeDefined();
+      expect(vaultCmd!.description()).toContain('[cloud only]');
     });
   });
 
