@@ -340,8 +340,14 @@ post_commit_status() {
         return 0
     fi
 
+    local token="${STATUS_TOKEN:-${GH_TOKEN:-}}"
+    if [[ -z "$token" ]]; then
+        log_warn "No token available for status posting"
+        return 0
+    fi
+
     log_info "Posting commit status: $state ($description)"
-    gh api "repos/${repo}/statuses/${sha}" \
+    GH_TOKEN="$token" gh api "repos/${repo}/statuses/${sha}" \
         -X POST \
         -f state="$state" \
         -f context="quality/submodule-merge-readiness" \

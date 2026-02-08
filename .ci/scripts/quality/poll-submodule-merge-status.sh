@@ -11,7 +11,8 @@
 #   poll-submodule-merge-status.sh [--dry-run]
 #
 # Environment:
-#   GH_TOKEN              Token with statuses:write and contents:read
+#   GH_TOKEN              Token with contents:read (app token for cross-repo access)
+#   STATUS_TOKEN          Token with statuses:write (github.token)
 #   GITHUB_REPOSITORY     owner/repo (e.g., rediacc/console)
 
 set -euo pipefail
@@ -51,17 +52,18 @@ declare -A SUBMODULE_REPOS=(
     ["license-server"]="rediacc/license-server"
 )
 
-# Post commit status via GitHub API.
+# Post commit status via GitHub API using STATUS_TOKEN (github.token).
 # Usage: post_status <sha> <state> <description>
 post_status() {
     local sha="$1" state="$2" description="$3"
+    local token="${STATUS_TOKEN:-${GH_TOKEN:-}}"
 
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "[DRY-RUN] Would post $state on ${sha:0:8}: $description"
         return 0
     fi
 
-    gh api "repos/${GITHUB_REPOSITORY}/statuses/${sha}" \
+    GH_TOKEN="$token" gh api "repos/${GITHUB_REPOSITORY}/statuses/${sha}" \
         -X POST \
         -f state="$state" \
         -f context="$STATUS_CONTEXT" \
