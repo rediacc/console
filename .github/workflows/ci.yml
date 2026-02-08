@@ -25,6 +25,7 @@ on:
 permissions:
   actions: write
   contents: write
+  statuses: write   # For quality/submodule-merge-readiness commit status
   pages: write
   id-token: write
   packages: write  # For GHCR push

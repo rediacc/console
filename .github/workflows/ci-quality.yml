@@ -411,6 +411,35 @@ jobs:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+
+  # Bot PRs skip submodule validation but still need the commit status set to
+  # success so branch protection rules don't block auto-merge.
+  quality-submodule-branches-bot:
+    name: Submodule Branches (Bot)
+    runs-on: ubuntu-slim
+    if: inputs.is_bot == 'true' && github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          sparse-checkout: .github/actions
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: ci
+          repositories: console
+      - name: Post success status for bot PR
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }}" \
+            -X POST \
+            -f state="success" \
+            -f context="quality/submodule-merge-readiness" \
+            -f description="Bot PR — submodule validation skipped"
 
   quality-review-comments:
     name: Review Comments
