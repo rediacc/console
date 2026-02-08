@@ -54,6 +54,7 @@ jobs:
       next_version: ${{ steps.init.outputs.next_version }}
       bump_type: ${{ steps.init.outputs.bump_type }}
       staging_tag: ${{ steps.staging.outputs.staging_tag }}
+      skip_release: ${{ steps.skip-check.outputs.skip_release }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
@@ -92,8 +93,38 @@ jobs:
             echo "Resolved from workflow_dispatch: run=${CI_RUN_ID}, sha=${CI_SHA}"
           fi
 
+      # Check if the merged PR has skip-release label (skips entire CD pipeline)
+      - name: Check for skip-release label
+        id: skip-check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ "${{ github.event_name }}" != "workflow_run" ]]; then
+            echo "skip_release=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          CI_SHA="${{ steps.resolve.outputs.ci_sha }}"
+          COMMIT_MSG=$(git log -1 --format="%B" "$CI_SHA" 2>/dev/null || true)
+          PR_NUM=$(echo "$COMMIT_MSG" | grep -oE '\(#[0-9]+\)' | grep -oE '[0-9]+' | head -1 || true)
+
+          if [[ -z "$PR_NUM" ]]; then
+            echo "No PR number found in commit message, proceeding with release"
+            echo "skip_release=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          LABELS=$(gh pr view "$PR_NUM" --repo "${{ github.repository }}" --json labels --jq '.labels[].name' 2>/dev/null || true)
+          if echo "$LABELS" | grep -qx "skip-release"; then
+            echo "::notice::Skipping release — PR #$PR_NUM has 'skip-release' label"
+            echo "skip_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip_release=false" >> $GITHUB_OUTPUT
+          fi
+
       # Recalculate version independently (reads current version from git)
       - name: Initialize CI
+        if: steps.skip-check.outputs.skip_release != 'true'
         id: init
         env:
           GITHUB_PAT: ${{ steps.app-token.outputs.token }}
@@ -105,6 +136,7 @@ jobs:
           .ci/scripts/ci/initialize.sh --output "$GITHUB_OUTPUT"
 
       - name: Generate staging tag
+        if: steps.skip-check.outputs.skip_release != 'true'
         id: staging
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.dry_run }}" == "true" ]]; then
@@ -115,6 +147,7 @@ jobs:
 
       # Version guard: fail early if this version was already published
       - name: Check for existing release
+        if: steps.skip-check.outputs.skip_release != 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
@@ -127,6 +160,7 @@ jobs:
 
       # Submodule guard: fail early if any submodule has diverged from origin/main
       - name: Check submodule branches
+        if: steps.skip-check.outputs.skip_release != 'true'
         run: .ci/scripts/release/merge-submodule-branches.sh --dry-run
         env:
           GITHUB_PAT: ${{ steps.app-token.outputs.token }}
@@ -140,7 +174,7 @@ jobs:
     needs: [init]
     runs-on: ubuntu-latest
     timeout-minutes: 240  # 4 hours (CD builds take longer than CI)
-    if: ${{ !cancelled() && needs.init.result == 'success' }}
+    if: ${{ !cancelled() && needs.init.result == 'success' && needs.init.outputs.skip_release != 'true' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
@@ -165,6 +199,7 @@ jobs:
     needs: [init]
     if: >-
       success() &&
+      needs.init.outputs.skip_release != 'true' &&
       !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
     environment:
       name: github-pages
@@ -412,6 +447,7 @@ jobs:
     needs: [init, publish]
     if: >-
       success() &&
+      needs.init.outputs.skip_release != 'true' &&
       !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
     uses: ./.github/workflows/ct-install-methods.yml
     with:
@@ -427,6 +463,7 @@ jobs:
     needs: [init, publish]
     if: |
       always() &&
+      needs.init.outputs.skip_release != 'true' &&
       !(github.event_name == 'workflow_dispatch' && inputs.dry_run) &&
       needs.publish.result == 'failure'
     steps:
