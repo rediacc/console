@@ -65,7 +65,13 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
-          repositories: console,middleware,renet,license-server,homebrew-tap
+          repositories: console,middleware,renet,license-server,homebrew-tap,elite
+
+      # Re-checkout with submodules using app token (needed for submodule branch check)
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
 
       # Resolve CI run context from workflow_run event or workflow_dispatch input
       - name: Resolve CI run context
@@ -119,6 +125,13 @@ jobs:
           fi
           echo "Version v${VERSION} is available for publishing."
 
+      # Submodule guard: fail early if any submodule has diverged from origin/main
+      - name: Check submodule branches
+        run: .ci/scripts/release/merge-submodule-branches.sh --dry-run
+        env:
+          GITHUB_PAT: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
   # ============================================================================
   # CD WATCHDOG - monitors jobs, auto-retries transient build failures
   # ============================================================================
@@ -165,7 +178,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
-          repositories: console,middleware,renet,license-server,homebrew-tap
+          repositories: console,middleware,renet,license-server,homebrew-tap,elite
 
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
