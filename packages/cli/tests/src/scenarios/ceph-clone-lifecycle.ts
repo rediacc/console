@@ -75,14 +75,12 @@ export function cephCloneLifecycleScenario(
 
   test('delete clone', async () => {
     const ctx = getCtx();
-    const { poolName, imageName, snapshotName, sshValidation } = getOptions();
+    const { poolName, sshValidation } = getOptions();
     test.setTimeout(ctx.defaultTimeout);
 
     const result = await ctx.runner.run(
       buildDeleteCommand(['ceph', 'clone', 'delete'], ctx, {
         clone: cloneName,
-        snapshot: snapshotName,
-        image: imageName,
         pool: poolName,
       }),
       { timeout: ctx.defaultTimeout }
