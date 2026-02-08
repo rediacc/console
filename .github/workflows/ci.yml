@@ -76,7 +76,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,middleware,renet,license-server
+          repositories: console,middleware,renet,license-server,elite
 
       # PR Validation (PR events only)
       - name: Validate PR
@@ -337,6 +337,91 @@ jobs:
     secrets: inherit
 
   # ============================================================================
+  # COLUMN 4C: ELITE RUN TEST
+  # Validates the elite on-premise docker-compose stack starts correctly
+  # Tests the same setup customers use before changes affect them
+  # Dependencies: build-docker (needs Docker images)
+  # ============================================================================
+  elite-run-test:
+    name: Elite Run
+    needs: [initialize, build-docker]
+    if: always() && needs.initialize.result == 'success' && needs.build-docker.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: ci
+          repositories: console,middleware,renet,license-server,elite
+
+      - name: Checkout with Submodules
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          submodules: recursive
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Set Image Tags
+        run: |
+          .ci/scripts/ci/derive-image-tag.sh \
+            ${{ needs.initialize.outputs.image_tag && format('--version "{0}"', needs.initialize.outputs.image_tag) || '' }} \
+            --env-file
+
+          # Override individual tags from initialize job
+          if [[ -n "${{ needs.initialize.outputs.api_tag }}" ]]; then
+            echo "API_TAG=${{ needs.initialize.outputs.api_tag }}" >> $GITHUB_ENV
+          fi
+          if [[ -n "${{ needs.initialize.outputs.web_tag }}" ]]; then
+            echo "WEB_TAG=${{ needs.initialize.outputs.web_tag }}" >> $GITHUB_ENV
+          fi
+          if [[ -n "${{ needs.initialize.outputs.bridge_tag }}" ]]; then
+            echo "BRIDGE_TAG=${{ needs.initialize.outputs.bridge_tag }}" >> $GITHUB_ENV
+          fi
+
+      - name: Pre-pull Docker Images
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          TAG: ${{ env.TAG }}
+        run: .ci/scripts/infra/ci-pull-images.sh
+
+      - name: Install sqlcmd
+        run: |
+          curl -fsSL https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.0/sqlcmd-linux-amd64.tar.bz2 | \
+            sudo tar -xjf - -C /usr/local/bin sqlcmd
+
+      - name: Start Elite Services
+        env:
+          TAG: ${{ env.TAG }}
+          CI_MODE: 'true'
+          LICENSE_SERVER_API_KEY: ${{ secrets.LICENSE_SERVER_API_KEY }}
+          ED25519_PUBLIC_KEY: ${{ secrets.LICENSE_ED25519_PUBLIC_KEY }}
+          LICENSE_SERVER_URL: "https://lic.rediacc.com"
+        run: .ci/scripts/infra/ci-start-elite.sh
+
+      - name: Run Health Check
+        run: ./private/elite/scripts/healthcheck.sh
+
+      - name: Final Service Status
+        if: always()
+        run: |
+          echo "Final Container Status:"
+          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(NAME|rediacc)" || true
+          echo ""
+          echo "Recent API Logs (last 50 lines):"
+          docker logs rediacc-api --tail=50 2>&1 || true
+
+      - name: Cleanup
+        if: always()
+        run: .ci/scripts/infra/ci-stop-elite.sh
+
+  # ============================================================================
   # COLUMN 5: DEPLOY PREVIEW
   # Deploys pages preview to Cloudflare Pages for PR validation
   # Dependencies: deploy-dryrun, tests, standalone-run-test (ALL must pass)
@@ -395,7 +480,7 @@ jobs:
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, review-gate, build-docker, build-desktop, build-cli, deploy-dryrun, tests, standalone-run-test, deploy-preview]
+    needs: [initialize, quality, review-gate, build-docker, build-desktop, build-cli, deploy-dryrun, tests, standalone-run-test, elite-run-test, deploy-preview]
     if: always() && !cancelled()
     steps:
       - name: Check all jobs passed
@@ -421,6 +506,7 @@ jobs:
              [[ "${{ needs.deploy-dryrun.result }}" != "success" ]] || \
              [[ "${{ needs.tests.result }}" != "success" ]] || \
              [[ "${{ needs.standalone-run-test.result }}" != "success" ]] || \
+             [[ "${{ needs.elite-run-test.result }}" != "success" ]] || \
              [[ "$DEPLOY_PREVIEW_OK" != "true" ]]; then
             echo "One or more jobs failed:"
             echo "  initialize: ${{ needs.initialize.result }}"
@@ -432,6 +518,7 @@ jobs:
             echo "  deploy-dryrun: ${{ needs.deploy-dryrun.result }}"
             echo "  tests: ${{ needs.tests.result }}"
             echo "  standalone-run-test: ${{ needs.standalone-run-test.result }}"
+            echo "  elite-run-test: ${{ needs.elite-run-test.result }}"
             echo "  deploy-preview: ${{ needs.deploy-preview.result }}"
             exit 1
           fi

@@ -14,3 +14,7 @@
 	path = private/license-server
 	url = https://github.com/rediacc/license-server.git
 	branch = main
+[submodule "private/elite"]
+	path = private/elite
+	url = https://github.com/rediacc/elite.git
+	branch = main
