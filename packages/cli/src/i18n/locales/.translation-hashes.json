@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 922
+    "keyCount": 923
   },
   "hashes": {
     "cli.description": "8c564b05",
@@ -833,6 +833,7 @@
     "options.masterPassword": "66ea3d73",
     "options.mirrorDownload": "e6908307",
     "options.mirrorUpload": "c7969706",
+    "options.networkId": "8a08a346",
     "options.newPasswordNonInteractive": "9cf28de7",
     "options.newWindow": "8d4d30ac",
     "options.organization": "320b057f",

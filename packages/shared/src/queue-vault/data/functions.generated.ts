@@ -40,6 +40,14 @@ export interface BackupPushParams {
   grand?: string;
 }
 
+/** Bootstrap Ceph cluster */
+export interface CephBootstrapClusterParams {
+  /** Cluster name */
+  cluster?: string;
+  /** Monitor node address */
+  monitor?: string;
+}
+
 /** Mount RBD image on client */
 export interface CephClientMountParams {
   /** Image name (defaults to repository) */
@@ -62,6 +70,14 @@ export interface CephClientMountParams {
 export interface CephClientUnmountParams {
   /** Image name (defaults to repository) */
   image?: string;
+  /** Pool name */
+  pool?: string;
+  /** Cluster name */
+  cluster?: string;
+}
+
+/** Clean up orphan clones */
+export interface CephCloneCleanupParams {
   /** Pool name */
   pool?: string;
   /** Cluster name */
@@ -144,6 +160,40 @@ export interface CephCloneUnmountParams {
   force?: boolean;
   /** Pool name */
   pool?: string;
+  /** Cluster name */
+  cluster?: string;
+}
+
+/** Create Ceph cluster */
+export interface CephClusterCreateParams {
+  /** Cluster name */
+  cluster?: string;
+  /** Comma-separated node list */
+  nodes?: string;
+  /** OSD device path */
+  osdDevice?: string;
+}
+
+/** Get dashboard URL */
+export interface CephClusterDashboardParams {
+  /** Cluster name */
+  cluster?: string;
+}
+
+/** Destroy Ceph cluster */
+export interface CephClusterDestroyParams {
+  /** Cluster name */
+  cluster?: string;
+}
+
+/** Get cluster status */
+export interface CephClusterStatusParams {
+  /** Cluster name */
+  cluster?: string;
+}
+
+/** Check Ceph cluster health */
+export interface CephHealthParams {
   /** Cluster name */
   cluster?: string;
 }
@@ -234,6 +284,49 @@ export interface CephImageUnmapParams {
   cluster?: string;
 }
 
+/** Install Ceph prerequisites */
+export interface CephInstallPrerequisitesParams {}
+
+/** Create storage pool */
+export interface CephPoolCreateParams {
+  /** Pool name */
+  pool?: string;
+  /** Cluster name */
+  cluster?: string;
+  /** Placement group count */
+  pgNum?: number;
+}
+
+/** Delete storage pool */
+export interface CephPoolDeleteParams {
+  /** Pool name */
+  pool: string;
+  /** Cluster name */
+  cluster?: string;
+}
+
+/** Get pool info */
+export interface CephPoolInfoParams {
+  /** Pool name */
+  pool: string;
+  /** Cluster name */
+  cluster?: string;
+}
+
+/** List storage pools */
+export interface CephPoolListParams {
+  /** Cluster name */
+  cluster?: string;
+}
+
+/** Get pool statistics */
+export interface CephPoolStatsParams {
+  /** Pool name */
+  pool: string;
+  /** Cluster name */
+  cluster?: string;
+}
+
 /** Create image snapshot */
 export interface CephSnapshotCreateParams {
   /** Image name (defaults to repository) */
@@ -302,6 +395,30 @@ export interface CephSnapshotUnprotectParams {
   pool?: string;
   /** Cluster name */
   cluster?: string;
+}
+
+/** Check CRIU checkpoint compatibility */
+export interface CheckpointCheckCompatParams {}
+
+/** Clean up checkpoint files */
+export interface CheckpointCleanupParams {}
+
+/** Create checkpoint of running containers */
+export interface CheckpointCreateParams {
+  /** Checkpoint identifier */
+  checkpointName?: string;
+}
+
+/** Restore containers from checkpoint */
+export interface CheckpointRestoreParams {
+  /** Checkpoint identifier to restore */
+  checkpointName?: string;
+}
+
+/** Validate checkpoint integrity */
+export interface CheckpointValidateParams {
+  /** Path to checkpoint directory */
+  checkpointPath?: string;
 }
 
 /** Execute command in container */
@@ -396,6 +513,118 @@ export interface ContainerUnpauseParams {
   container: string;
 }
 
+/** Get daemon logs */
+export interface DaemonLogsParams {
+  /** Number of lines to show */
+  lines?: number;
+  /** Follow log output */
+  follow?: boolean;
+}
+
+/** No operation (test command) */
+export interface DaemonNopParams {
+  /** Optional message */
+  message?: string;
+}
+
+/** Restart daemon */
+export interface DaemonRestartParams {}
+
+/** Set up and start daemon */
+export interface DaemonSetupParams {}
+
+/** Start daemon */
+export interface DaemonStartParams {}
+
+/** Get daemon status */
+export interface DaemonStatusParams {}
+
+/** Stop daemon */
+export interface DaemonStopParams {}
+
+/** Tear down daemon */
+export interface DaemonTeardownParams {}
+
+/** Wait for Docker to be ready */
+export interface DaemonWaitDockerParams {}
+
+/** Expand datastore size */
+export interface DatastoreExpandParams {
+  /** Size to add */
+  size: string;
+}
+
+/** Initialize datastore on disk */
+export interface DatastoreInitParams {
+  /** Datastore size */
+  size: string;
+  /** Force recreation if exists */
+  force?: boolean;
+}
+
+/** Mount datastore */
+export interface DatastoreMountParams {}
+
+/** Resize datastore */
+export interface DatastoreResizeParams {
+  /** New datastore size */
+  size: string;
+}
+
+/** Check datastore status */
+export interface DatastoreStatusParams {}
+
+/** Unmount datastore */
+export interface DatastoreUnmountParams {}
+
+/** Validate datastore integrity */
+export interface DatastoreValidateParams {}
+
+/** Check BTRFS filesystem */
+export interface MachineCheckBtrfsParams {}
+
+/** Check renet CLI installation */
+export interface MachineCheckCliParams {}
+
+/** Check CRIU installation */
+export interface MachineCheckCriuParams {}
+
+/** Check GPU drivers */
+export interface MachineCheckDriversParams {}
+
+/** Check kernel compatibility */
+export interface MachineCheckKernelParams {}
+
+/** Check system memory */
+export interface MachineCheckMemoryParams {}
+
+/** Check renet installation */
+export interface MachineCheckRenetParams {}
+
+/** Check if renet is set up */
+export interface MachineCheckSetupParams {}
+
+/** Check sudo access */
+export interface MachineCheckSudoParams {}
+
+/** Run system checks */
+export interface MachineCheckSystemParams {}
+
+/** Check required tools */
+export interface MachineCheckToolsParams {}
+
+/** Check user configuration */
+export interface MachineCheckUsersParams {
+  /** User ID to check */
+  uid?: string;
+}
+
+/** Fix user group membership */
+export interface MachineFixGroupsParams {
+  /** User ID to fix */
+  uid?: string;
+}
+
 /** Test SSH connectivity */
 export interface MachinePingParams {}
 
@@ -407,6 +636,30 @@ export interface MachineUninstallParams {}
 
 /** Get renet version */
 export interface MachineVersionParams {}
+
+/** Clean up unused IP addresses */
+export interface NetworkCleanupIpsParams {}
+
+/** Ensure IP addresses are allocated */
+export interface NetworkEnsureIpsParams {
+  /** Number of IPs to ensure */
+  count?: number;
+}
+
+/** Prune unused resources */
+export interface NetworkPruneParams {}
+
+/** Get process status */
+export interface NetworkPsStatusParams {}
+
+/** Start plugins */
+export interface PluginStartParams {}
+
+/** Get plugin status */
+export interface PluginStatusParams {}
+
+/** Stop plugins */
+export interface PluginStopParams {}
 
 /** Create a new repository */
 export interface RepositoryCreateParams {
@@ -533,14 +786,21 @@ export interface SetupParams {
 export const BRIDGE_FUNCTIONS = [
   'backup_pull',
   'backup_push',
+  'ceph_bootstrap_cluster',
   'ceph_client_mount',
   'ceph_client_unmount',
+  'ceph_clone_cleanup',
   'ceph_clone_delete',
   'ceph_clone_flatten',
   'ceph_clone_image',
   'ceph_clone_list',
   'ceph_clone_mount',
   'ceph_clone_unmount',
+  'ceph_cluster_create',
+  'ceph_cluster_dashboard',
+  'ceph_cluster_destroy',
+  'ceph_cluster_status',
+  'ceph_health',
   'ceph_image_create',
   'ceph_image_delete',
   'ceph_image_format',
@@ -549,12 +809,23 @@ export const BRIDGE_FUNCTIONS = [
   'ceph_image_map',
   'ceph_image_resize',
   'ceph_image_unmap',
+  'ceph_install_prerequisites',
+  'ceph_pool_create',
+  'ceph_pool_delete',
+  'ceph_pool_info',
+  'ceph_pool_list',
+  'ceph_pool_stats',
   'ceph_snapshot_create',
   'ceph_snapshot_delete',
   'ceph_snapshot_list',
   'ceph_snapshot_protect',
   'ceph_snapshot_rollback',
   'ceph_snapshot_unprotect',
+  'checkpoint_check_compat',
+  'checkpoint_cleanup',
+  'checkpoint_create',
+  'checkpoint_restore',
+  'checkpoint_validate',
   'container_exec',
   'container_inspect',
   'container_kill',
@@ -567,10 +838,46 @@ export const BRIDGE_FUNCTIONS = [
   'container_stats',
   'container_stop',
   'container_unpause',
+  'daemon_logs',
+  'daemon_nop',
+  'daemon_restart',
+  'daemon_setup',
+  'daemon_start',
+  'daemon_status',
+  'daemon_stop',
+  'daemon_teardown',
+  'daemon_wait_docker',
+  'datastore_expand',
+  'datastore_init',
+  'datastore_mount',
+  'datastore_resize',
+  'datastore_status',
+  'datastore_unmount',
+  'datastore_validate',
+  'machine_check_btrfs',
+  'machine_check_cli',
+  'machine_check_criu',
+  'machine_check_drivers',
+  'machine_check_kernel',
+  'machine_check_memory',
+  'machine_check_renet',
+  'machine_check_setup',
+  'machine_check_sudo',
+  'machine_check_system',
+  'machine_check_tools',
+  'machine_check_users',
+  'machine_fix_groups',
   'machine_ping',
   'machine_ssh_test',
   'machine_uninstall',
   'machine_version',
+  'network_cleanup_ips',
+  'network_ensure_ips',
+  'network_prune',
+  'network_ps_status',
+  'plugin_start',
+  'plugin_status',
+  'plugin_stop',
   'repository_create',
   'repository_delete',
   'repository_down',
@@ -589,21 +896,28 @@ export const BRIDGE_FUNCTIONS = [
   'setup',
 ] as const;
 
-export const BRIDGE_FUNCTIONS_VERSION = '0.4.30-2-gf80cea0';
+export const BRIDGE_FUNCTIONS_VERSION = 'v0.4.88-8-g3953f101';
 
 export type BridgeFunctionName = (typeof BRIDGE_FUNCTIONS)[number];
 
 export type FunctionParamsMap = {
   backup_pull: BackupPullParams;
   backup_push: BackupPushParams;
+  ceph_bootstrap_cluster: CephBootstrapClusterParams;
   ceph_client_mount: CephClientMountParams;
   ceph_client_unmount: CephClientUnmountParams;
+  ceph_clone_cleanup: CephCloneCleanupParams;
   ceph_clone_delete: CephCloneDeleteParams;
   ceph_clone_flatten: CephCloneFlattenParams;
   ceph_clone_image: CephCloneImageParams;
   ceph_clone_list: CephCloneListParams;
   ceph_clone_mount: CephCloneMountParams;
   ceph_clone_unmount: CephCloneUnmountParams;
+  ceph_cluster_create: CephClusterCreateParams;
+  ceph_cluster_dashboard: CephClusterDashboardParams;
+  ceph_cluster_destroy: CephClusterDestroyParams;
+  ceph_cluster_status: CephClusterStatusParams;
+  ceph_health: CephHealthParams;
   ceph_image_create: CephImageCreateParams;
   ceph_image_delete: CephImageDeleteParams;
   ceph_image_format: CephImageFormatParams;
@@ -612,12 +926,23 @@ export type FunctionParamsMap = {
   ceph_image_map: CephImageMapParams;
   ceph_image_resize: CephImageResizeParams;
   ceph_image_unmap: CephImageUnmapParams;
+  ceph_install_prerequisites: CephInstallPrerequisitesParams;
+  ceph_pool_create: CephPoolCreateParams;
+  ceph_pool_delete: CephPoolDeleteParams;
+  ceph_pool_info: CephPoolInfoParams;
+  ceph_pool_list: CephPoolListParams;
+  ceph_pool_stats: CephPoolStatsParams;
   ceph_snapshot_create: CephSnapshotCreateParams;
   ceph_snapshot_delete: CephSnapshotDeleteParams;
   ceph_snapshot_list: CephSnapshotListParams;
   ceph_snapshot_protect: CephSnapshotProtectParams;
   ceph_snapshot_rollback: CephSnapshotRollbackParams;
   ceph_snapshot_unprotect: CephSnapshotUnprotectParams;
+  checkpoint_check_compat: CheckpointCheckCompatParams;
+  checkpoint_cleanup: CheckpointCleanupParams;
+  checkpoint_create: CheckpointCreateParams;
+  checkpoint_restore: CheckpointRestoreParams;
+  checkpoint_validate: CheckpointValidateParams;
   container_exec: ContainerExecParams;
   container_inspect: ContainerInspectParams;
   container_kill: ContainerKillParams;
@@ -630,10 +955,46 @@ export type FunctionParamsMap = {
   container_stats: ContainerStatsParams;
   container_stop: ContainerStopParams;
   container_unpause: ContainerUnpauseParams;
+  daemon_logs: DaemonLogsParams;
+  daemon_nop: DaemonNopParams;
+  daemon_restart: DaemonRestartParams;
+  daemon_setup: DaemonSetupParams;
+  daemon_start: DaemonStartParams;
+  daemon_status: DaemonStatusParams;
+  daemon_stop: DaemonStopParams;
+  daemon_teardown: DaemonTeardownParams;
+  daemon_wait_docker: DaemonWaitDockerParams;
+  datastore_expand: DatastoreExpandParams;
+  datastore_init: DatastoreInitParams;
+  datastore_mount: DatastoreMountParams;
+  datastore_resize: DatastoreResizeParams;
+  datastore_status: DatastoreStatusParams;
+  datastore_unmount: DatastoreUnmountParams;
+  datastore_validate: DatastoreValidateParams;
+  machine_check_btrfs: MachineCheckBtrfsParams;
+  machine_check_cli: MachineCheckCliParams;
+  machine_check_criu: MachineCheckCriuParams;
+  machine_check_drivers: MachineCheckDriversParams;
+  machine_check_kernel: MachineCheckKernelParams;
+  machine_check_memory: MachineCheckMemoryParams;
+  machine_check_renet: MachineCheckRenetParams;
+  machine_check_setup: MachineCheckSetupParams;
+  machine_check_sudo: MachineCheckSudoParams;
+  machine_check_system: MachineCheckSystemParams;
+  machine_check_tools: MachineCheckToolsParams;
+  machine_check_users: MachineCheckUsersParams;
+  machine_fix_groups: MachineFixGroupsParams;
   machine_ping: MachinePingParams;
   machine_ssh_test: MachineSshTestParams;
   machine_uninstall: MachineUninstallParams;
   machine_version: MachineVersionParams;
+  network_cleanup_ips: NetworkCleanupIpsParams;
+  network_ensure_ips: NetworkEnsureIpsParams;
+  network_prune: NetworkPruneParams;
+  network_ps_status: NetworkPsStatusParams;
+  plugin_start: PluginStartParams;
+  plugin_status: PluginStatusParams;
+  plugin_stop: PluginStopParams;
   repository_create: RepositoryCreateParams;
   repository_delete: RepositoryDeleteParams;
   repository_down: RepositoryDownParams;
@@ -659,10 +1020,16 @@ export const FUNCTION_REQUIREMENTS: Record<BridgeFunctionName, { requirements: P
   'backup_push': {
     requirements: { machine: true, team: true, repository: true, storage: true },
   },
+  'ceph_bootstrap_cluster': {
+    requirements: { machine: true, team: true },
+  },
   'ceph_client_mount': {
     requirements: { machine: true, team: true },
   },
   'ceph_client_unmount': {
+    requirements: { machine: true, team: true },
+  },
+  'ceph_clone_cleanup': {
     requirements: { machine: true, team: true },
   },
   'ceph_clone_delete': {
@@ -681,6 +1048,21 @@ export const FUNCTION_REQUIREMENTS: Record<BridgeFunctionName, { requirements: P
     requirements: { machine: true, team: true },
   },
   'ceph_clone_unmount': {
+    requirements: { machine: true, team: true },
+  },
+  'ceph_cluster_create': {
+    requirements: { machine: true, team: true },
+  },
+  'ceph_cluster_dashboard': {
+    requirements: { machine: true, team: true },
+  },
+  'ceph_cluster_destroy': {
+    requirements: { machine: true, team: true },
+  },
+  'ceph_cluster_status': {
+    requirements: { machine: true, team: true },
+  },
+  'ceph_health': {
     requirements: { machine: true, team: true },
   },
   'ceph_image_create': {
@@ -707,6 +1089,24 @@ export const FUNCTION_REQUIREMENTS: Record<BridgeFunctionName, { requirements: P
   'ceph_image_unmap': {
     requirements: { machine: true, team: true },
   },
+  'ceph_install_prerequisites': {
+    requirements: { machine: true, team: true },
+  },
+  'ceph_pool_create': {
+    requirements: { machine: true, team: true },
+  },
+  'ceph_pool_delete': {
+    requirements: { machine: true, team: true },
+  },
+  'ceph_pool_info': {
+    requirements: { machine: true, team: true },
+  },
+  'ceph_pool_list': {
+    requirements: { machine: true, team: true },
+  },
+  'ceph_pool_stats': {
+    requirements: { machine: true, team: true },
+  },
   'ceph_snapshot_create': {
     requirements: { machine: true, team: true },
   },
@@ -724,6 +1124,21 @@ export const FUNCTION_REQUIREMENTS: Record<BridgeFunctionName, { requirements: P
   },
   'ceph_snapshot_unprotect': {
     requirements: { machine: true, team: true },
+  },
+  'checkpoint_check_compat': {
+    requirements: { machine: true, team: true },
+  },
+  'checkpoint_cleanup': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'checkpoint_create': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'checkpoint_restore': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'checkpoint_validate': {
+    requirements: { machine: true, team: true, repository: true },
   },
   'container_exec': {
     requirements: { machine: true, team: true, repository: true, network_id: true },
@@ -761,6 +1176,93 @@ export const FUNCTION_REQUIREMENTS: Record<BridgeFunctionName, { requirements: P
   'container_unpause': {
     requirements: { machine: true, team: true, repository: true, network_id: true },
   },
+  'daemon_logs': {
+    requirements: { machine: true, team: true, network_id: true },
+  },
+  'daemon_nop': {
+    requirements: { machine: true, team: true },
+  },
+  'daemon_restart': {
+    requirements: { machine: true, team: true, network_id: true },
+  },
+  'daemon_setup': {
+    requirements: { machine: true, team: true, network_id: true },
+  },
+  'daemon_start': {
+    requirements: { machine: true, team: true, network_id: true },
+  },
+  'daemon_status': {
+    requirements: { machine: true, team: true, network_id: true },
+  },
+  'daemon_stop': {
+    requirements: { machine: true, team: true, network_id: true },
+  },
+  'daemon_teardown': {
+    requirements: { machine: true, team: true, network_id: true },
+  },
+  'daemon_wait_docker': {
+    requirements: { machine: true, team: true, network_id: true },
+  },
+  'datastore_expand': {
+    requirements: { machine: true, team: true },
+  },
+  'datastore_init': {
+    requirements: { machine: true, team: true },
+  },
+  'datastore_mount': {
+    requirements: { machine: true, team: true },
+  },
+  'datastore_resize': {
+    requirements: { machine: true, team: true },
+  },
+  'datastore_status': {
+    requirements: { machine: true, team: true },
+  },
+  'datastore_unmount': {
+    requirements: { machine: true, team: true },
+  },
+  'datastore_validate': {
+    requirements: { machine: true, team: true },
+  },
+  'machine_check_btrfs': {
+    requirements: { machine: true, team: true },
+  },
+  'machine_check_cli': {
+    requirements: { machine: true, team: true },
+  },
+  'machine_check_criu': {
+    requirements: { machine: true, team: true },
+  },
+  'machine_check_drivers': {
+    requirements: { machine: true, team: true },
+  },
+  'machine_check_kernel': {
+    requirements: { machine: true, team: true },
+  },
+  'machine_check_memory': {
+    requirements: { machine: true, team: true },
+  },
+  'machine_check_renet': {
+    requirements: { machine: true, team: true },
+  },
+  'machine_check_setup': {
+    requirements: { machine: true, team: true },
+  },
+  'machine_check_sudo': {
+    requirements: { machine: true, team: true },
+  },
+  'machine_check_system': {
+    requirements: { machine: true, team: true },
+  },
+  'machine_check_tools': {
+    requirements: { machine: true, team: true },
+  },
+  'machine_check_users': {
+    requirements: { machine: true, team: true },
+  },
+  'machine_fix_groups': {
+    requirements: { machine: true, team: true },
+  },
   'machine_ping': {
     requirements: { machine: true, team: true },
   },
@@ -772,6 +1274,27 @@ export const FUNCTION_REQUIREMENTS: Record<BridgeFunctionName, { requirements: P
   },
   'machine_version': {
     requirements: { machine: true, team: true },
+  },
+  'network_cleanup_ips': {
+    requirements: { machine: true, team: true, network_id: true },
+  },
+  'network_ensure_ips': {
+    requirements: { machine: true, team: true, network_id: true },
+  },
+  'network_prune': {
+    requirements: { machine: true, team: true },
+  },
+  'network_ps_status': {
+    requirements: { machine: true, team: true },
+  },
+  'plugin_start': {
+    requirements: { machine: true, team: true, network_id: true },
+  },
+  'plugin_status': {
+    requirements: { machine: true, team: true, network_id: true },
+  },
+  'plugin_stop': {
+    requirements: { machine: true, team: true, network_id: true },
   },
   'repository_create': {
     requirements: { machine: true, team: true, repository: true },
@@ -826,8 +1349,12 @@ export const FUNCTION_REQUIREMENTS: Record<BridgeFunctionName, { requirements: P
 export const FUNCTION_CATEGORIES = [
   'backup',
   'ceph',
+  'checkpoint',
   'container',
+  'daemon',
+  'datastore',
   'machine',
+  'network',
   'repository',
 ] as const;
 
@@ -988,6 +1515,23 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
       },
     },
   },
+  'ceph_bootstrap_cluster': {
+    name: 'ceph_bootstrap_cluster',
+    category: 'ceph',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+      cluster: {
+        type: 'string',
+        default: 'rediacc',
+        help: 'Cluster name',
+      },
+      monitor: {
+        type: 'string',
+        help: 'Monitor node address',
+      },
+    },
+  },
   'ceph_client_mount': {
     name: 'ceph_client_mount',
     category: 'ceph',
@@ -1037,6 +1581,24 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
         type: 'string',
         help: 'Image name (defaults to repository)',
       },
+      pool: {
+        type: 'string',
+        default: 'rbd',
+        help: 'Pool name',
+      },
+      cluster: {
+        type: 'string',
+        default: 'rediacc',
+        help: 'Cluster name',
+      },
+    },
+  },
+  'ceph_clone_cleanup': {
+    name: 'ceph_clone_cleanup',
+    category: 'ceph',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
       pool: {
         type: 'string',
         default: 'rbd',
@@ -1225,6 +1787,79 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
         default: 'rbd',
         help: 'Pool name',
       },
+      cluster: {
+        type: 'string',
+        default: 'rediacc',
+        help: 'Cluster name',
+      },
+    },
+  },
+  'ceph_cluster_create': {
+    name: 'ceph_cluster_create',
+    category: 'ceph',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+      cluster: {
+        type: 'string',
+        default: 'rediacc',
+        help: 'Cluster name',
+      },
+      nodes: {
+        type: 'string',
+        help: 'Comma-separated node list',
+      },
+      osdDevice: {
+        type: 'string',
+        help: 'OSD device path',
+      },
+    },
+  },
+  'ceph_cluster_dashboard': {
+    name: 'ceph_cluster_dashboard',
+    category: 'ceph',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+      cluster: {
+        type: 'string',
+        default: 'rediacc',
+        help: 'Cluster name',
+      },
+    },
+  },
+  'ceph_cluster_destroy': {
+    name: 'ceph_cluster_destroy',
+    category: 'ceph',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+      cluster: {
+        type: 'string',
+        default: 'rediacc',
+        help: 'Cluster name',
+      },
+    },
+  },
+  'ceph_cluster_status': {
+    name: 'ceph_cluster_status',
+    category: 'ceph',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+      cluster: {
+        type: 'string',
+        default: 'rediacc',
+        help: 'Cluster name',
+      },
+    },
+  },
+  'ceph_health': {
+    name: 'ceph_health',
+    category: 'ceph',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
       cluster: {
         type: 'string',
         default: 'rediacc',
@@ -1426,6 +2061,103 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
       },
     },
   },
+  'ceph_install_prerequisites': {
+    name: 'ceph_install_prerequisites',
+    category: 'ceph',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+    },
+  },
+  'ceph_pool_create': {
+    name: 'ceph_pool_create',
+    category: 'ceph',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+      pool: {
+        type: 'string',
+        default: 'rbd',
+        help: 'Pool name',
+      },
+      cluster: {
+        type: 'string',
+        default: 'rediacc',
+        help: 'Cluster name',
+      },
+      pgNum: {
+        type: 'int',
+        help: 'Placement group count',
+      },
+    },
+  },
+  'ceph_pool_delete': {
+    name: 'ceph_pool_delete',
+    category: 'ceph',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+      pool: {
+        type: 'string',
+        required: true,
+        help: 'Pool name',
+      },
+      cluster: {
+        type: 'string',
+        default: 'rediacc',
+        help: 'Cluster name',
+      },
+    },
+  },
+  'ceph_pool_info': {
+    name: 'ceph_pool_info',
+    category: 'ceph',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+      pool: {
+        type: 'string',
+        required: true,
+        help: 'Pool name',
+      },
+      cluster: {
+        type: 'string',
+        default: 'rediacc',
+        help: 'Cluster name',
+      },
+    },
+  },
+  'ceph_pool_list': {
+    name: 'ceph_pool_list',
+    category: 'ceph',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+      cluster: {
+        type: 'string',
+        default: 'rediacc',
+        help: 'Cluster name',
+      },
+    },
+  },
+  'ceph_pool_stats': {
+    name: 'ceph_pool_stats',
+    category: 'ceph',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+      pool: {
+        type: 'string',
+        required: true,
+        help: 'Pool name',
+      },
+      cluster: {
+        type: 'string',
+        default: 'rediacc',
+        help: 'Cluster name',
+      },
+    },
+  },
   'ceph_snapshot_create': {
     name: 'ceph_snapshot_create',
     category: 'ceph',
@@ -1580,6 +2312,58 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
         type: 'string',
         default: 'rediacc',
         help: 'Cluster name',
+      },
+    },
+  },
+  'checkpoint_check_compat': {
+    name: 'checkpoint_check_compat',
+    category: 'checkpoint',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+    },
+  },
+  'checkpoint_cleanup': {
+    name: 'checkpoint_cleanup',
+    category: 'checkpoint',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+    },
+  },
+  'checkpoint_create': {
+    name: 'checkpoint_create',
+    category: 'checkpoint',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      checkpointName: {
+        type: 'string',
+        help: 'Checkpoint identifier',
+      },
+    },
+  },
+  'checkpoint_restore': {
+    name: 'checkpoint_restore',
+    category: 'checkpoint',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      checkpointName: {
+        type: 'string',
+        help: 'Checkpoint identifier to restore',
+      },
+    },
+  },
+  'checkpoint_validate': {
+    name: 'checkpoint_validate',
+    category: 'checkpoint',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      checkpointPath: {
+        type: 'string',
+        help: 'Path to checkpoint directory',
       },
     },
   },
@@ -1784,6 +2568,282 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
       },
     },
   },
+  'daemon_logs': {
+    name: 'daemon_logs',
+    category: 'daemon',
+    showInMenu: false,
+    requirements: { machine: true, team: true, network_id: true },
+    params: {
+      lines: {
+        type: 'int',
+        default: '100',
+        help: 'Number of lines to show',
+      },
+      follow: {
+        type: 'bool',
+        help: 'Follow log output',
+        options: ['true', 'false'],
+      },
+    },
+  },
+  'daemon_nop': {
+    name: 'daemon_nop',
+    category: 'daemon',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+      message: {
+        type: 'string',
+        help: 'Optional message',
+      },
+    },
+  },
+  'daemon_restart': {
+    name: 'daemon_restart',
+    category: 'daemon',
+    showInMenu: false,
+    requirements: { machine: true, team: true, network_id: true },
+    params: {
+    },
+  },
+  'daemon_setup': {
+    name: 'daemon_setup',
+    category: 'daemon',
+    showInMenu: false,
+    requirements: { machine: true, team: true, network_id: true },
+    params: {
+    },
+  },
+  'daemon_start': {
+    name: 'daemon_start',
+    category: 'daemon',
+    showInMenu: false,
+    requirements: { machine: true, team: true, network_id: true },
+    params: {
+    },
+  },
+  'daemon_status': {
+    name: 'daemon_status',
+    category: 'daemon',
+    showInMenu: false,
+    requirements: { machine: true, team: true, network_id: true },
+    params: {
+    },
+  },
+  'daemon_stop': {
+    name: 'daemon_stop',
+    category: 'daemon',
+    showInMenu: false,
+    requirements: { machine: true, team: true, network_id: true },
+    params: {
+    },
+  },
+  'daemon_teardown': {
+    name: 'daemon_teardown',
+    category: 'daemon',
+    showInMenu: false,
+    requirements: { machine: true, team: true, network_id: true },
+    params: {
+    },
+  },
+  'daemon_wait_docker': {
+    name: 'daemon_wait_docker',
+    category: 'daemon',
+    showInMenu: false,
+    requirements: { machine: true, team: true, network_id: true },
+    params: {
+    },
+  },
+  'datastore_expand': {
+    name: 'datastore_expand',
+    category: 'datastore',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+      size: {
+        type: 'string',
+        required: true,
+        help: 'Size to add',
+        format: 'size',
+      },
+    },
+  },
+  'datastore_init': {
+    name: 'datastore_init',
+    category: 'datastore',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+      size: {
+        type: 'string',
+        required: true,
+        help: 'Datastore size',
+        format: 'size',
+      },
+      force: {
+        type: 'bool',
+        help: 'Force recreation if exists',
+      },
+    },
+  },
+  'datastore_mount': {
+    name: 'datastore_mount',
+    category: 'datastore',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+    },
+  },
+  'datastore_resize': {
+    name: 'datastore_resize',
+    category: 'datastore',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+      size: {
+        type: 'string',
+        required: true,
+        help: 'New datastore size',
+        format: 'size',
+      },
+    },
+  },
+  'datastore_status': {
+    name: 'datastore_status',
+    category: 'datastore',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+    },
+  },
+  'datastore_unmount': {
+    name: 'datastore_unmount',
+    category: 'datastore',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+    },
+  },
+  'datastore_validate': {
+    name: 'datastore_validate',
+    category: 'datastore',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+    },
+  },
+  'machine_check_btrfs': {
+    name: 'machine_check_btrfs',
+    category: 'machine',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+    },
+  },
+  'machine_check_cli': {
+    name: 'machine_check_cli',
+    category: 'machine',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+    },
+  },
+  'machine_check_criu': {
+    name: 'machine_check_criu',
+    category: 'machine',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+    },
+  },
+  'machine_check_drivers': {
+    name: 'machine_check_drivers',
+    category: 'machine',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+    },
+  },
+  'machine_check_kernel': {
+    name: 'machine_check_kernel',
+    category: 'machine',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+    },
+  },
+  'machine_check_memory': {
+    name: 'machine_check_memory',
+    category: 'machine',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+    },
+  },
+  'machine_check_renet': {
+    name: 'machine_check_renet',
+    category: 'machine',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+    },
+  },
+  'machine_check_setup': {
+    name: 'machine_check_setup',
+    category: 'machine',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+    },
+  },
+  'machine_check_sudo': {
+    name: 'machine_check_sudo',
+    category: 'machine',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+    },
+  },
+  'machine_check_system': {
+    name: 'machine_check_system',
+    category: 'machine',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+    },
+  },
+  'machine_check_tools': {
+    name: 'machine_check_tools',
+    category: 'machine',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+    },
+  },
+  'machine_check_users': {
+    name: 'machine_check_users',
+    category: 'machine',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+      uid: {
+        type: 'string',
+        help: 'User ID to check',
+      },
+    },
+  },
+  'machine_fix_groups': {
+    name: 'machine_fix_groups',
+    category: 'machine',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+      uid: {
+        type: 'string',
+        help: 'User ID to fix',
+      },
+    },
+  },
   'machine_ping': {
     name: 'machine_ping',
     category: 'machine',
@@ -1813,6 +2873,66 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
     category: 'machine',
     showInMenu: true,
     requirements: { machine: true, team: true },
+    params: {
+    },
+  },
+  'network_cleanup_ips': {
+    name: 'network_cleanup_ips',
+    category: 'network',
+    showInMenu: false,
+    requirements: { machine: true, team: true, network_id: true },
+    params: {
+    },
+  },
+  'network_ensure_ips': {
+    name: 'network_ensure_ips',
+    category: 'network',
+    showInMenu: false,
+    requirements: { machine: true, team: true, network_id: true },
+    params: {
+      count: {
+        type: 'int',
+        help: 'Number of IPs to ensure',
+      },
+    },
+  },
+  'network_prune': {
+    name: 'network_prune',
+    category: 'network',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+    },
+  },
+  'network_ps_status': {
+    name: 'network_ps_status',
+    category: 'network',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+    },
+  },
+  'plugin_start': {
+    name: 'plugin_start',
+    category: 'daemon',
+    showInMenu: false,
+    requirements: { machine: true, team: true, network_id: true },
+    params: {
+    },
+  },
+  'plugin_status': {
+    name: 'plugin_status',
+    category: 'daemon',
+    showInMenu: false,
+    requirements: { machine: true, team: true, network_id: true },
+    params: {
+    },
+  },
+  'plugin_stop': {
+    name: 'plugin_stop',
+    category: 'daemon',
+    showInMenu: false,
+    requirements: { machine: true, team: true, network_id: true },
     params: {
     },
   },
@@ -2141,14 +3261,21 @@ export type QueueFunctionsType = {
 export const queueFunctions: QueueFunctionsType = {
   backup_pull: (params) => ({ functionName: 'backup_pull', params }),
   backup_push: (params) => ({ functionName: 'backup_push', params }),
+  ceph_bootstrap_cluster: (params) => ({ functionName: 'ceph_bootstrap_cluster', params }),
   ceph_client_mount: (params) => ({ functionName: 'ceph_client_mount', params }),
   ceph_client_unmount: (params) => ({ functionName: 'ceph_client_unmount', params }),
+  ceph_clone_cleanup: (params) => ({ functionName: 'ceph_clone_cleanup', params }),
   ceph_clone_delete: (params) => ({ functionName: 'ceph_clone_delete', params }),
   ceph_clone_flatten: (params) => ({ functionName: 'ceph_clone_flatten', params }),
   ceph_clone_image: (params) => ({ functionName: 'ceph_clone_image', params }),
   ceph_clone_list: (params) => ({ functionName: 'ceph_clone_list', params }),
   ceph_clone_mount: (params) => ({ functionName: 'ceph_clone_mount', params }),
   ceph_clone_unmount: (params) => ({ functionName: 'ceph_clone_unmount', params }),
+  ceph_cluster_create: (params) => ({ functionName: 'ceph_cluster_create', params }),
+  ceph_cluster_dashboard: (params) => ({ functionName: 'ceph_cluster_dashboard', params }),
+  ceph_cluster_destroy: (params) => ({ functionName: 'ceph_cluster_destroy', params }),
+  ceph_cluster_status: (params) => ({ functionName: 'ceph_cluster_status', params }),
+  ceph_health: (params) => ({ functionName: 'ceph_health', params }),
   ceph_image_create: (params) => ({ functionName: 'ceph_image_create', params }),
   ceph_image_delete: (params) => ({ functionName: 'ceph_image_delete', params }),
   ceph_image_format: (params) => ({ functionName: 'ceph_image_format', params }),
@@ -2157,12 +3284,23 @@ export const queueFunctions: QueueFunctionsType = {
   ceph_image_map: (params) => ({ functionName: 'ceph_image_map', params }),
   ceph_image_resize: (params) => ({ functionName: 'ceph_image_resize', params }),
   ceph_image_unmap: (params) => ({ functionName: 'ceph_image_unmap', params }),
+  ceph_install_prerequisites: (params) => ({ functionName: 'ceph_install_prerequisites', params }),
+  ceph_pool_create: (params) => ({ functionName: 'ceph_pool_create', params }),
+  ceph_pool_delete: (params) => ({ functionName: 'ceph_pool_delete', params }),
+  ceph_pool_info: (params) => ({ functionName: 'ceph_pool_info', params }),
+  ceph_pool_list: (params) => ({ functionName: 'ceph_pool_list', params }),
+  ceph_pool_stats: (params) => ({ functionName: 'ceph_pool_stats', params }),
   ceph_snapshot_create: (params) => ({ functionName: 'ceph_snapshot_create', params }),
   ceph_snapshot_delete: (params) => ({ functionName: 'ceph_snapshot_delete', params }),
   ceph_snapshot_list: (params) => ({ functionName: 'ceph_snapshot_list', params }),
   ceph_snapshot_protect: (params) => ({ functionName: 'ceph_snapshot_protect', params }),
   ceph_snapshot_rollback: (params) => ({ functionName: 'ceph_snapshot_rollback', params }),
   ceph_snapshot_unprotect: (params) => ({ functionName: 'ceph_snapshot_unprotect', params }),
+  checkpoint_check_compat: (params) => ({ functionName: 'checkpoint_check_compat', params }),
+  checkpoint_cleanup: (params) => ({ functionName: 'checkpoint_cleanup', params }),
+  checkpoint_create: (params) => ({ functionName: 'checkpoint_create', params }),
+  checkpoint_restore: (params) => ({ functionName: 'checkpoint_restore', params }),
+  checkpoint_validate: (params) => ({ functionName: 'checkpoint_validate', params }),
   container_exec: (params) => ({ functionName: 'container_exec', params }),
   container_inspect: (params) => ({ functionName: 'container_inspect', params }),
   container_kill: (params) => ({ functionName: 'container_kill', params }),
@@ -2175,10 +3313,46 @@ export const queueFunctions: QueueFunctionsType = {
   container_stats: (params) => ({ functionName: 'container_stats', params }),
   container_stop: (params) => ({ functionName: 'container_stop', params }),
   container_unpause: (params) => ({ functionName: 'container_unpause', params }),
+  daemon_logs: (params) => ({ functionName: 'daemon_logs', params }),
+  daemon_nop: (params) => ({ functionName: 'daemon_nop', params }),
+  daemon_restart: (params) => ({ functionName: 'daemon_restart', params }),
+  daemon_setup: (params) => ({ functionName: 'daemon_setup', params }),
+  daemon_start: (params) => ({ functionName: 'daemon_start', params }),
+  daemon_status: (params) => ({ functionName: 'daemon_status', params }),
+  daemon_stop: (params) => ({ functionName: 'daemon_stop', params }),
+  daemon_teardown: (params) => ({ functionName: 'daemon_teardown', params }),
+  daemon_wait_docker: (params) => ({ functionName: 'daemon_wait_docker', params }),
+  datastore_expand: (params) => ({ functionName: 'datastore_expand', params }),
+  datastore_init: (params) => ({ functionName: 'datastore_init', params }),
+  datastore_mount: (params) => ({ functionName: 'datastore_mount', params }),
+  datastore_resize: (params) => ({ functionName: 'datastore_resize', params }),
+  datastore_status: (params) => ({ functionName: 'datastore_status', params }),
+  datastore_unmount: (params) => ({ functionName: 'datastore_unmount', params }),
+  datastore_validate: (params) => ({ functionName: 'datastore_validate', params }),
+  machine_check_btrfs: (params) => ({ functionName: 'machine_check_btrfs', params }),
+  machine_check_cli: (params) => ({ functionName: 'machine_check_cli', params }),
+  machine_check_criu: (params) => ({ functionName: 'machine_check_criu', params }),
+  machine_check_drivers: (params) => ({ functionName: 'machine_check_drivers', params }),
+  machine_check_kernel: (params) => ({ functionName: 'machine_check_kernel', params }),
+  machine_check_memory: (params) => ({ functionName: 'machine_check_memory', params }),
+  machine_check_renet: (params) => ({ functionName: 'machine_check_renet', params }),
+  machine_check_setup: (params) => ({ functionName: 'machine_check_setup', params }),
+  machine_check_sudo: (params) => ({ functionName: 'machine_check_sudo', params }),
+  machine_check_system: (params) => ({ functionName: 'machine_check_system', params }),
+  machine_check_tools: (params) => ({ functionName: 'machine_check_tools', params }),
+  machine_check_users: (params) => ({ functionName: 'machine_check_users', params }),
+  machine_fix_groups: (params) => ({ functionName: 'machine_fix_groups', params }),
   machine_ping: (params) => ({ functionName: 'machine_ping', params }),
   machine_ssh_test: (params) => ({ functionName: 'machine_ssh_test', params }),
   machine_uninstall: (params) => ({ functionName: 'machine_uninstall', params }),
   machine_version: (params) => ({ functionName: 'machine_version', params }),
+  network_cleanup_ips: (params) => ({ functionName: 'network_cleanup_ips', params }),
+  network_ensure_ips: (params) => ({ functionName: 'network_ensure_ips', params }),
+  network_prune: (params) => ({ functionName: 'network_prune', params }),
+  network_ps_status: (params) => ({ functionName: 'network_ps_status', params }),
+  plugin_start: (params) => ({ functionName: 'plugin_start', params }),
+  plugin_status: (params) => ({ functionName: 'plugin_status', params }),
+  plugin_stop: (params) => ({ functionName: 'plugin_stop', params }),
   repository_create: (params) => ({ functionName: 'repository_create', params }),
   repository_delete: (params) => ({ functionName: 'repository_delete', params }),
   repository_down: (params) => ({ functionName: 'repository_down', params }),

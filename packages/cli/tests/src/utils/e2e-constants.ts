@@ -6,10 +6,16 @@ import { MIN_NETWORK_ID } from '@rediacc/shared/queue-vault';
 export const E2E = {
   /** Prefix for E2E test context names */
   CONTEXT_PREFIX: 'e2e-local',
-  /** Default test repository name */
+  /** Default test repository name (legacy — prefer per-phase names below) */
   TEST_REPO: 'test-repo-e2e',
   /** Second test repository name (for fork/backup tests) */
   TEST_REPO_2: 'test-repo-e2e-2',
+  /** Per-phase repo names — eliminates cross-file name collisions */
+  REPO_ADVANCED: 'test-repo-adv',
+  REPO_ADVANCED_2: 'test-repo-adv-2',
+  REPO_CONTAINER: 'test-repo-ctr',
+  REPO_TEMPLATE: 'test-repo-tpl',
+  REPO_BACKUP: 'test-repo-bak',
   /** Default datastore path on VMs */
   DATASTORE_PATH: '/mnt/rediacc',
   /** Base path for repository mount points */

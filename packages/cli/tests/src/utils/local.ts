@@ -133,45 +133,6 @@ export async function setupE2EEnvironment(
 }
 
 /**
- * Execute a function in local mode and return the result.
- */
-export function runLocalFunction(
-  functionName: string,
-  machineName: string,
-  options?: {
-    contextName?: string;
-    params?: Record<string, string>;
-    extraMachines?: string[];
-    debug?: boolean;
-    timeout?: number;
-  }
-): Promise<CliResult> {
-  const runner = options?.contextName
-    ? CliTestRunner.withContext(options.contextName)
-    : new CliTestRunner();
-
-  const args = ['run', functionName, '--machine', machineName];
-
-  if (options?.params) {
-    for (const [key, value] of Object.entries(options.params)) {
-      args.push('--param', `${key}=${value}`);
-    }
-  }
-
-  if (options?.extraMachines) {
-    for (const entry of options.extraMachines) {
-      args.push('--extra-machine', entry);
-    }
-  }
-
-  if (options?.debug) {
-    args.push('--debug');
-  }
-
-  return runner.run(args, { timeout: options?.timeout });
-}
-
-/**
  * Wait for condition to be true with timeout.
  */
 export async function waitFor(
@@ -219,38 +180,6 @@ export async function checkSSHKeyExists(keyPath: string): Promise<boolean> {
  */
 export function generateTestContextName(prefix = 'test'): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-/**
- * Type guard for checking if a result is successful.
- */
-export function isSuccessfulResult(result: CliResult): boolean {
-  return result.success && result.exitCode === 0;
-}
-
-/**
- * Extract error message from CLI result.
- */
-export function getErrorFromResult(result: CliResult): string {
-  if (result.json && typeof result.json === 'object') {
-    const json = result.json as { error?: { message?: string } };
-    if (json.error?.message) {
-      return json.error.message;
-    }
-  }
-  return result.stderr ?? result.stdout ?? 'Unknown error';
-}
-
-/**
- * Assert that a CLI result was successful.
- * Throws with detailed error message if not.
- */
-export function assertSuccess(result: CliResult, message?: string): void {
-  if (!isSuccessfulResult(result)) {
-    const errorMsg = message ?? 'CLI command failed';
-    const details = getErrorFromResult(result);
-    throw new Error(`${errorMsg}: ${details}`);
-  }
 }
 
 /**

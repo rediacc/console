@@ -2,6 +2,7 @@ import { Page, Locator } from '@playwright/test';
 import { BasePage } from '../../src/base/BasePage';
 import { loadGlobalState } from '../../src/setup/global-state';
 import { getEnvVarWithDefault } from '../../src/utils/env';
+import { waitForNetworkIdleWithRetry } from '../../src/utils/retry';
 
 export class LoginPage extends BasePage {
   private readonly emailInput: Locator;
@@ -42,6 +43,10 @@ export class LoginPage extends BasePage {
       '[data-testid="registration-activation-code-input"]'
     );
     this.registrationVerifyButton = page.locator('[data-testid="registration-verify-button"]');
+  }
+
+  async waitForPageLoad(): Promise<void> {
+    await waitForNetworkIdleWithRetry(this.page, '[data-testid="login-submit-button"]');
   }
 
   getPageLocators(): Record<string, Locator> {

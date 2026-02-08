@@ -1127,6 +1127,7 @@
     "param": "Function parameters",
     "debug": "Enable debug output (local mode)",
     "extraMachine": "Extra machine for multi-machine ops (name:ip:user)",
+    "networkId": "Network ID",
     "pollInterval": "Poll interval in milliseconds",
     "folder": "Remote folder path to open",
     "urlOnly": "Print the VS Code URI instead of launching",

@@ -1,0 +1,119 @@
+import { expect, test } from '@playwright/test';
+import { SYSTEM_DEFAULTS } from '@rediacc/shared/config';
+import { CliTestRunner } from '../../src/utils/CliTestRunner';
+import { ErrorPatterns, expectError, nonExistentName } from '../../src/utils/errors';
+
+/**
+ * Negative test cases for repository commands.
+ */
+test.describe('Repository Error Scenarios @cli @errors', () => {
+  let runner: CliTestRunner;
+  let defaultTeamName: string;
+
+  test.beforeAll(async () => {
+    runner = CliTestRunner.fromGlobalState();
+
+    // Get default team for tests
+    const teamsResult = await runner.teamList();
+    const teams = runner.expectSuccessArray<{ teamName: string }>(teamsResult);
+    defaultTeamName =
+      teams.find((t) => t.teamName !== 'Private Team')?.teamName ?? SYSTEM_DEFAULTS.TEAM_NAME;
+  });
+
+  test.describe('CreateRepository errors', () => {
+    test('should fail when creating repository with non-existent team', async () => {
+      const result = await runner.run([
+        'repository',
+        'create',
+        'test-repo',
+        '--team',
+        nonExistentName('team'),
+        '--size',
+        '1G',
+      ]);
+      // Bridge function validates team at queue creation time
+      expectError(runner, result, { messageContains: 'not found' });
+    });
+  });
+
+  test.describe('DeleteRepository errors', () => {
+    test('should fail when deleting from non-existent team', async () => {
+      const result = await runner.run([
+        'repository',
+        'delete',
+        'some-repo',
+        '--team',
+        nonExistentName('team'),
+      ]);
+      // Bridge function validates team at queue creation time
+      expectError(runner, result, { messageContains: 'not found' });
+    });
+
+    test('should fail when deleting non-existent repository', async () => {
+      const result = await runner.run([
+        'repository',
+        'delete',
+        nonExistentName('repo'),
+        '--team',
+        defaultTeamName,
+      ]);
+      // Bridge function creates a queue task (repo validation happens on bridge execution)
+      // Queue creation succeeds — the task will fail when the bridge processes it
+      expect(result.success).toBe(true);
+    });
+  });
+
+  test.describe('RenameRepository errors', () => {
+    test('should fail when renaming from non-existent team', async () => {
+      const result = await runner.run([
+        'repository',
+        'rename',
+        'old-name',
+        'new-name',
+        '--team',
+        nonExistentName('team'),
+      ]);
+      expectError(runner, result, { messageContains: ErrorPatterns.TEAM_NOT_FOUND });
+    });
+
+    test('should fail when renaming non-existent repository', async () => {
+      const result = await runner.run([
+        'repository',
+        'rename',
+        nonExistentName('repo'),
+        'new-name',
+        '--team',
+        defaultTeamName,
+      ]);
+      expectError(runner, result, { messageContains: ErrorPatterns.REPOSITORY_NOT_FOUND });
+    });
+  });
+
+  test.describe('PromoteRepository errors', () => {
+    test('should fail when promoting from non-existent team', async () => {
+      const result = await runner.run([
+        'repository',
+        'promote',
+        'some-repo',
+        '--team',
+        nonExistentName('team'),
+        '--force',
+      ]);
+      // CLI does client-side validation - shows "not found"
+      expectError(runner, result, { messageContains: 'not found' });
+    });
+
+    test('should fail when promoting non-existent repository', async () => {
+      const result = await runner.run([
+        'repository',
+        'promote',
+        nonExistentName('repo'),
+        '--team',
+        defaultTeamName,
+        '--force',
+      ]);
+      // CLI does client-side validation - shows "not found"
+      expectError(runner, result, { messageContains: 'not found' });
+    });
+  });
+});
