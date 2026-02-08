@@ -104,7 +104,7 @@ echo "Writing .env to $ELITE_DIR..."
     echo "HTTPS_PORT=${HTTPS_PORT}"
     echo "SQL_PORT=${SQL_PORT}"
     echo "ENABLE_HTTPS=${ENABLE_HTTPS}"
-} > "$ELITE_DIR/.env"
+} >"$ELITE_DIR/.env"
 
 # =============================================================================
 # VERIFY SQLCMD AVAILABILITY
