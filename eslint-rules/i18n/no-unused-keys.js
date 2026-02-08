@@ -48,7 +48,7 @@ export const noUnusedKeys = {
       : path.join(projectRoot, sourceDir);
 
     // Get namespace from filename
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename;
     const namespace = path.basename(filename, '.json');
 
     // Extract all used keys from source files

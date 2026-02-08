@@ -56,7 +56,7 @@ fi
 
 # Phase 4: Commit if changes were made
 # Check all package files that might have changed
-if git diff --quiet package.json package-lock.json packages/*/package.json 2>/dev/null; then
+if git diff --quiet package.json package-lock.json packages/*/package.json private/*/package.json private/*/package-lock.json 2>/dev/null; then
     # No changes - upgrade completed without modifying files
     # This can happen if all outdated packages are in the blocklist
     log_info "No upgradable dependencies found (all may be blocked)"
@@ -71,7 +71,7 @@ else
     git config user.name "github-actions[bot]"
     git config user.email "github-actions[bot]@users.noreply.github.com"
 fi
-git add package.json package-lock.json packages/*/package.json
+git add package.json package-lock.json packages/*/package.json private/*/package.json private/*/package-lock.json
 git commit -m "$(
     cat <<'EOF'
 chore(deps): auto-upgrade dependencies

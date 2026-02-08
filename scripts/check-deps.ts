@@ -190,6 +190,64 @@ function getOutdatedPackages(): Record<string, OutdatedPackageInfo> {
 }
 
 /**
+ * Find private packages that are outside npm workspaces
+ */
+function getPrivatePackageDirs(): string[] {
+  const privateDir = path.join(CONSOLE_ROOT, 'private');
+  if (!fs.existsSync(privateDir)) return [];
+
+  const dirs: string[] = [];
+  for (const dir of fs.readdirSync(privateDir)) {
+    const pkgPath = path.join(privateDir, dir, 'package.json');
+    if (fs.existsSync(pkgPath)) {
+      dirs.push(path.join(privateDir, dir));
+    }
+  }
+  return dirs;
+}
+
+interface PrivateOutdatedResult {
+  dir: string;
+  name: string;
+  packages: Record<string, OutdatedPackageInfo>;
+}
+
+/**
+ * Get outdated packages from private (non-workspace) packages
+ */
+function getPrivateOutdatedPackages(): PrivateOutdatedResult[] {
+  const results: PrivateOutdatedResult[] = [];
+
+  for (const dir of getPrivatePackageDirs()) {
+    // Skip if node_modules doesn't exist (deps not installed)
+    if (!fs.existsSync(path.join(dir, 'node_modules'))) continue;
+
+    try {
+      execSync('npm outdated --json', {
+        cwd: dir,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+    } catch (error) {
+      const execError = error as { stdout?: string };
+      if (execError.stdout) {
+        try {
+          const packages = JSON.parse(execError.stdout) as Record<string, OutdatedPackageInfo>;
+          if (Object.keys(packages).length > 0) {
+            const dirName = path.relative(CONSOLE_ROOT, dir);
+            results.push({ dir, name: dirName, packages });
+          }
+        } catch {
+          // Skip unparseable output
+        }
+      }
+    }
+  }
+
+  return results;
+}
+
+/**
  * Fetch package info from npm registry and extract changelog URL
  */
 async function fetchChangelogUrl(packageName: string): Promise<string | null> {
@@ -295,7 +353,7 @@ function upgradePackages(packages: PackageInfo[]): boolean {
 
   let success = true;
 
-  // Upgrade workspace-wide packages (updates version specifiers in child package.json)
+  // Upgrade workspace packages (target each workspace individually to avoid polluting others)
   if (workspacePackages.length > 0) {
     console.log(`${BLUE}Upgrading ${workspacePackages.length} workspace package(s)...${NC}\n`);
     for (const pkg of workspacePackages) {
@@ -305,13 +363,24 @@ function upgradePackages(packages: PackageInfo[]): boolean {
     }
     console.log();
 
-    const wsInstallArgs = workspacePackages.map((p) => `${p.name}@latest`);
-    const wsResult = spawnSync('npm', ['install', '-ws', ...wsInstallArgs], {
-      cwd: CONSOLE_ROOT,
-      stdio: 'inherit',
-      shell: true,
-    });
-    if (wsResult.status !== 0) success = false;
+    // Group by workspace to batch installs
+    const byWorkspace = new Map<string, string[]>();
+    for (const pkg of workspacePackages) {
+      for (const ws of pkg.workspaces) {
+        const existing = byWorkspace.get(ws) ?? [];
+        existing.push(`${pkg.name}@latest`);
+        byWorkspace.set(ws, existing);
+      }
+    }
+
+    for (const [ws, installArgs] of byWorkspace) {
+      const wsResult = spawnSync('npm', ['install', `-w=packages/${ws}`, ...installArgs], {
+        cwd: CONSOLE_ROOT,
+        stdio: 'inherit',
+        shell: true,
+      });
+      if (wsResult.status !== 0) success = false;
+    }
   }
 
   // Upgrade root-only packages (no -ws flag to avoid corrupting child packages)
@@ -338,6 +407,29 @@ function upgradePackages(packages: PackageInfo[]): boolean {
     console.log(`\n${RED}Some upgrades failed${NC}`);
   }
   return success;
+}
+
+/**
+ * Upgrade outdated packages in a private (non-workspace) package directory
+ */
+function upgradePrivatePackages(dir: string, packages: PackageInfo[]): boolean {
+  if (packages.length === 0) return true;
+
+  console.log(`${BLUE}Upgrading ${packages.length} package(s) in ${path.relative(CONSOLE_ROOT, dir)}...${NC}\n`);
+  for (const pkg of packages) {
+    const majorTag = isMajorUpgrade(pkg.current, pkg.latest) ? ' (major)' : '';
+    console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}${majorTag}`);
+  }
+  console.log();
+
+  const installArgs = packages.map((p) => `${p.name}@latest`);
+  const result = spawnSync('npm', ['install', ...installArgs], {
+    cwd: dir,
+    stdio: 'inherit',
+    shell: true,
+  });
+
+  return result.status === 0;
 }
 
 /**
@@ -422,14 +514,50 @@ async function checkDependencies(): Promise<void> {
     }
   }
 
+  // Also check private (non-workspace) packages
+  const privateOutdated = getPrivateOutdatedPackages();
+  const privateMustUpgrade: Array<{ dir: string; name: string; packages: PackageInfo[] }> = [];
+  const privateBlocked: Array<{ dir: string; name: string; packages: PackageInfo[] }> = [];
+
+  for (const { dir, name, packages } of privateOutdated) {
+    const dirMustUpgrade: PackageInfo[] = [];
+    const dirBlocked: PackageInfo[] = [];
+
+    for (const [pkgName, info] of Object.entries(packages)) {
+      const current = info.current;
+      const latest = info.latest;
+
+      if (!current || current === 'undefined' || !latest || current === latest) continue;
+
+      const blockEntry = blocklist.get(pkgName);
+      if (blockEntry) {
+        dirBlocked.push({ name: pkgName, current, latest, reason: blockEntry.reason });
+      } else {
+        dirMustUpgrade.push({ name: pkgName, current, latest, wanted: info.wanted });
+      }
+    }
+
+    if (dirMustUpgrade.length > 0) privateMustUpgrade.push({ dir, name, packages: dirMustUpgrade });
+    if (dirBlocked.length > 0) privateBlocked.push({ dir, name, packages: dirBlocked });
+  }
+
   // In upgrade mode, upgrade all non-blocked packages
   if (upgradeMode) {
-    if (mustUpgrade.length === 0) {
-      if (blocked.length > 0) {
-        console.log(`${GREEN}All dependencies are up-to-date${NC} (${blocked.length} blocked)\n`);
+    const allEmpty = mustUpgrade.length === 0 && privateMustUpgrade.length === 0;
+
+    if (allEmpty) {
+      const totalBlocked = blocked.length + privateBlocked.reduce((s, p) => s + p.packages.length, 0);
+      if (totalBlocked > 0) {
+        console.log(`${GREEN}All dependencies are up-to-date${NC} (${totalBlocked} blocked)\n`);
         for (const pkg of blocked) {
           const majorTag = isMajorUpgrade(pkg.current, pkg.latest) ? ' (major)' : '';
           console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}${majorTag} (blocked)`);
+        }
+        for (const { name: dirName, packages: pkgs } of privateBlocked) {
+          for (const pkg of pkgs) {
+            const majorTag = isMajorUpgrade(pkg.current, pkg.latest) ? ' (major)' : '';
+            console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}${majorTag} (blocked, ${dirName})`);
+          }
         }
       } else {
         console.log(`${GREEN}All dependencies are up-to-date${NC}`);
@@ -437,12 +565,19 @@ async function checkDependencies(): Promise<void> {
       process.exit(0);
     }
 
-    const success = upgradePackages(mustUpgrade);
+    let success = true;
+    if (mustUpgrade.length > 0) {
+      success = upgradePackages(mustUpgrade) && success;
+    }
+    for (const { dir, packages: pkgs } of privateMustUpgrade) {
+      success = upgradePrivatePackages(dir, pkgs) && success;
+    }
     process.exit(success ? 0 : 1);
   }
 
   // Check mode - fetch changelog URLs for all packages that will be displayed
-  const allPackages = [...mustUpgrade, ...blocked];
+  const allPrivatePackages = privateMustUpgrade.flatMap((p) => p.packages).concat(privateBlocked.flatMap((p) => p.packages));
+  const allPackages = [...mustUpgrade, ...blocked, ...allPrivatePackages];
   const changelogUrls = await fetchChangelogUrls(allPackages);
 
   // Check mode - output results
@@ -460,13 +595,33 @@ async function checkDependencies(): Promise<void> {
       }
     }
     console.log();
+  }
+
+  if (privateMustUpgrade.length > 0) {
+    hasFailure = true;
+    for (const { name: dirName, packages: pkgs } of privateMustUpgrade) {
+      console.log(`${RED}Outdated packages in ${dirName} (must upgrade):${NC}\n`);
+      for (const pkg of pkgs) {
+        const majorTag = isMajorUpgrade(pkg.current, pkg.latest) ? ' (major)' : '';
+        console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}${majorTag}`);
+        const changelog = changelogUrls.get(pkg.name);
+        if (changelog) {
+          console.log(`    Changelog: ${changelog}`);
+        }
+      }
+      console.log();
+    }
+  }
+
+  if (hasFailure) {
     console.log(`Run: npm run check:deps -- --upgrade`);
     console.log(`Or:  npx tsx scripts/check-deps.ts --upgrade`);
     console.log();
   }
 
-  if (blocked.length > 0) {
-    console.log(`${YELLOW}Blocked packages (${blocked.length}):${NC}\n`);
+  if (blocked.length > 0 || privateBlocked.length > 0) {
+    const totalBlocked = blocked.length + privateBlocked.reduce((s, p) => s + p.packages.length, 0);
+    console.log(`${YELLOW}Blocked packages (${totalBlocked}):${NC}\n`);
     for (const pkg of blocked) {
       const majorTag = isMajorUpgrade(pkg.current, pkg.latest) ? ' (major)' : '';
       console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}${majorTag}`);
@@ -478,6 +633,19 @@ async function checkDependencies(): Promise<void> {
         console.log(`    Changelog: ${changelog}`);
       }
     }
+    for (const { name: dirName, packages: pkgs } of privateBlocked) {
+      for (const pkg of pkgs) {
+        const majorTag = isMajorUpgrade(pkg.current, pkg.latest) ? ' (major)' : '';
+        console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}${majorTag} (${dirName})`);
+        if (pkg.reason) {
+          console.log(`    Reason: ${pkg.reason}`);
+        }
+        const changelog = changelogUrls.get(pkg.name);
+        if (changelog) {
+          console.log(`    Changelog: ${changelog}`);
+        }
+      }
+    }
     console.log();
   }
 
@@ -486,8 +654,9 @@ async function checkDependencies(): Promise<void> {
     process.exit(1);
   }
 
-  if (blocked.length > 0) {
-    console.log(`${GREEN}All dependencies are up-to-date${NC} (${blocked.length} blocked)`);
+  const totalBlocked = blocked.length + privateBlocked.reduce((s, p) => s + p.packages.length, 0);
+  if (totalBlocked > 0) {
+    console.log(`${GREEN}All dependencies are up-to-date${NC} (${totalBlocked} blocked)`);
   } else {
     console.log(`${GREEN}All dependencies are up-to-date${NC}`);
   }
