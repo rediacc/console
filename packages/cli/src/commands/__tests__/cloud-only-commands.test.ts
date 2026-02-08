@@ -67,7 +67,9 @@ vi.mock('../../providers/index.js', () => ({
 }));
 
 vi.mock('../../services/queue.js', () => ({
-  queueService: { buildQueueVault: vi.fn() },
+  queueService: {
+    buildQueueVault: vi.fn().mockResolvedValue({ vault: '{}', resolvedBridgeName: undefined }),
+  },
 }));
 
 // Import cli after all mocks are set up

@@ -187,7 +187,18 @@ test.describe('Ceph Clone Commands @cli @ceph', () => {
     });
 
     test('should list clones (initially empty)', async () => {
-      const result = await ctx.runner.run(['ceph', 'clone', 'list']);
+      // ceph_clone_list is a bridge function requiring --snapshot, --team, --machine
+      const result = await ctx.runner.run([
+        'ceph',
+        'clone',
+        'list',
+        '--snapshot',
+        snapshotName,
+        '--team',
+        teamName,
+        '--machine',
+        machineName,
+      ]);
 
       expectEditionSuccess(result);
     });
@@ -256,13 +267,36 @@ test.describe('Ceph Clone Commands @cli @ceph', () => {
       createdClones.push(cloneName);
 
       // Filter by snapshot — bridge function creates a queue task
-      const result = await ctx.runner.run(['ceph', 'clone', 'list', '--snapshot', snapshotName]);
+      const result = await ctx.runner.run([
+        'ceph',
+        'clone',
+        'list',
+        '--snapshot',
+        snapshotName,
+        '--team',
+        teamName,
+        '--machine',
+        machineName,
+      ]);
 
       expectEditionSuccess(result);
     });
 
     test('should list clones filtered by image', async () => {
-      const result = await ctx.runner.run(['ceph', 'clone', 'list', '--image', imageName]);
+      // ceph_clone_list requires --snapshot even when filtering by image
+      const result = await ctx.runner.run([
+        'ceph',
+        'clone',
+        'list',
+        '--snapshot',
+        snapshotName,
+        '--image',
+        imageName,
+        '--team',
+        teamName,
+        '--machine',
+        machineName,
+      ]);
 
       expectEditionSuccess(result);
     });

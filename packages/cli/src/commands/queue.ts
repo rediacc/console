@@ -1,4 +1,3 @@
-import { Command } from 'commander';
 import { parseGetQueueItemTrace } from '@rediacc/shared/api';
 import { DEFAULTS } from '@rediacc/shared/config';
 import {
@@ -19,6 +18,7 @@ import {
   searchInFields,
   unescapeLogOutput,
 } from '@rediacc/shared/utils';
+import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { typedApi } from '../services/api.js';
@@ -26,6 +26,7 @@ import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
 import { queueService } from '../services/queue.js';
+import type { OutputFormat } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { formatLogOutput, getLogHeader } from '../utils/logFormatters.js';
 import {
@@ -37,7 +38,6 @@ import {
   formatStatus,
 } from '../utils/queueFormatters.js';
 import { startSpinner, stopSpinner, withSpinner } from '../utils/spinner.js';
-import type { OutputFormat } from '../types/index.js';
 
 function printTrace(trace: QueueTraceSummary, program: Command): void {
   const format = program.opts().output as OutputFormat;
@@ -165,8 +165,9 @@ export function validateFunctionParams(
 
 async function buildQueueVaultFromParams(
   opts: { team?: string; machine?: string; bridge?: string },
-  options: CreateActionOptions
-): Promise<string> {
+  options: CreateActionOptions,
+  validateConnections?: boolean
+): Promise<{ vault: string; resolvedBridgeName?: string }> {
   const params = parseParamOptions(options.param);
   validateFunctionParams(options.function, params);
   const language = await contextService.getLanguage();
@@ -181,6 +182,7 @@ async function buildQueueVaultFromParams(
         params,
         priority: Number.parseInt(options.priority, 10),
         language,
+        validateConnections,
       }),
     t('commands.queue.create.vaultBuilt')
   );
@@ -195,7 +197,23 @@ export async function createAction(options: CreateActionOptions): Promise<{ task
   if (!opts.team) {
     throw new ValidationError(t('errors.teamRequired'));
   }
-  const queueVault = options.vault ?? (await buildQueueVaultFromParams(opts, options));
+
+  // In cloud mode, skip machine connection validation — the bridge handles connections.
+  // In local/s3 mode, validate connections since the CLI connects directly.
+  const validateConnections = provider.mode !== 'cloud';
+
+  let queueVault: string;
+  if (options.vault) {
+    queueVault = options.vault;
+  } else {
+    const result = await buildQueueVaultFromParams(opts, options, validateConnections);
+    queueVault = result.vault;
+    // Resolve bridge from machine data if not already set (matches web app pattern)
+    if (!opts.bridge && result.resolvedBridgeName) {
+      opts.bridge = result.resolvedBridgeName;
+    }
+  }
+
   const result = await withSpinner(
     t('commands.queue.create.creating', { function: options.function }),
     () =>

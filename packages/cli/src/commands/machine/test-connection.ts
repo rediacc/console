@@ -1,4 +1,3 @@
-import { Command } from 'commander';
 import {
   parseCreateQueueItem,
   parseGetQueueItemTrace,
@@ -7,17 +6,18 @@ import {
 import { isValidHost, isValidPort } from '@rediacc/shared/queue-vault';
 import type { MachineWithVaultStatus } from '@rediacc/shared/services/machine';
 import { parseSshTestResult, unescapeLogOutput } from '@rediacc/shared/utils';
+import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { typedApi } from '../../services/api.js';
 import { authService } from '../../services/auth.js';
 import { contextService } from '../../services/context.js';
 import { outputService } from '../../services/output.js';
 import { queueService } from '../../services/queue.js';
+import type { OutputFormat } from '../../types/index.js';
 import { addCloudOnlyGuard, markCloudOnly } from '../../utils/cloud-guard.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 import { askPassword } from '../../utils/prompt.js';
 import { startSpinner, stopSpinner, withSpinner } from '../../utils/spinner.js';
-import type { OutputFormat } from '../../types/index.js';
 
 interface TestConnectionOptions {
   ip: string;
@@ -291,7 +291,7 @@ export function registerTestConnectionCommand(machine: Command, program: Command
         const bridgeName = opts.bridge;
         const machineName = options.machine ?? '';
 
-        const queueVault = await queueService.buildQueueVault({
+        const { vault: queueVault } = await queueService.buildQueueVault({
           teamName,
           machineName,
           bridgeName,

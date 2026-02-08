@@ -374,6 +374,8 @@ class ContextService {
         masterPassword: credentials.masterPassword,
         team: existing?.team,
         region: existing?.region,
+        bridge: existing?.bridge,
+        machine: existing?.machine,
       };
       return {
         contexts: {

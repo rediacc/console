@@ -32,6 +32,8 @@ interface FetchedVaults {
   vaultContent?: ParsedVaultData;
   storageVault?: ParsedVaultData;
   bridgeVault?: ParsedVaultData;
+  /** Bridge name resolved from the machine's API record (matches web app pattern) */
+  machineBridgeName?: string;
 }
 
 async function fetchOrganizationVault(): Promise<ParsedVaultData | undefined> {
@@ -55,17 +57,25 @@ async function fetchTeamVault(teamName: string): Promise<ParsedVaultData | undef
   }
 }
 
+interface MachineVaultResult {
+  vault: ParsedVaultData | undefined;
+  bridgeName: string | undefined;
+}
+
 async function fetchMachineVault(
   teamName: string,
   machineName: string
-): Promise<ParsedVaultData | undefined> {
+): Promise<MachineVaultResult> {
   try {
     const response = await typedApi.GetTeamMachines({ teamName });
     const machines = parseGetTeamMachines(response as never);
     const machine = machines.find((m: GetTeamMachines_ResultSet1) => m.machineName === machineName);
-    return parseVaultContent<ParsedVaultData>(machine?.vaultContent) ?? undefined;
+    return {
+      vault: parseVaultContent<ParsedVaultData>(machine?.vaultContent) ?? undefined,
+      bridgeName: machine?.bridgeName ?? undefined,
+    };
   } catch {
-    return undefined;
+    return { vault: undefined, bridgeName: undefined };
   }
 }
 
@@ -145,15 +155,23 @@ interface QueueContext {
   machineContext?: MachineContext;
   /** User's preferred language for task output (en, de, es, fr, ja, ar, ru, tr, zh) */
   language?: string;
+  /** Validate machine SSH connection details (default: true for local, false for cloud) */
+  validateConnections?: boolean;
+}
+
+interface BuildVaultResult {
+  vault: string;
+  /** Bridge name resolved from machine API data (undefined if not available) */
+  resolvedBridgeName?: string;
 }
 
 class CliQueueService {
-  private createBuilder(apiUrl: string): QueueVaultBuilder {
+  private createBuilder(apiUrl: string, validateConnections = true): QueueVaultBuilder {
     const builderConfig: QueueVaultBuilderConfig = {
       getApiUrl: () => apiUrl,
       encodeBase64: (value: string) => Buffer.from(value, 'utf-8').toString('base64'),
       validateParams: true,
-      validateConnections: true,
+      validateConnections,
     };
     return new QueueVaultBuilder(builderConfig);
   }
@@ -164,10 +182,11 @@ class CliQueueService {
     return builder.getFunctionRequirements(functionName);
   }
 
-  async buildQueueVault(context: QueueContext): Promise<string> {
+  async buildQueueVault(context: QueueContext): Promise<BuildVaultResult> {
     // Resolve API URL before building vault
     const apiUrl = await apiClient.getApiUrl();
-    const builder = this.createBuilder(apiUrl);
+    const validateConnections = context.validateConnections ?? true;
+    const builder = this.createBuilder(apiUrl, validateConnections);
 
     const requirements = this.getFunctionRequirements(context.functionName);
     const vaults = await this.fetchRequiredVaults(context, requirements);
@@ -209,7 +228,8 @@ class CliQueueService {
       language: context.language,
     };
 
-    return builder.buildQueueVault(requestContext);
+    const vault = await builder.buildQueueVault(requestContext);
+    return { vault, resolvedBridgeName: vaults.machineBridgeName };
   }
 
   private async fetchRequiredVaults(
@@ -226,7 +246,9 @@ class CliQueueService {
     }
 
     if (requirements.machine && context.machineName) {
-      vaults.machineVault = await fetchMachineVault(context.teamName, context.machineName);
+      const machineResult = await fetchMachineVault(context.teamName, context.machineName);
+      vaults.machineVault = machineResult.vault;
+      vaults.machineBridgeName = machineResult.bridgeName;
     }
 
     if (requirements.repository && context.params.repository) {
