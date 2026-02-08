@@ -118,21 +118,23 @@ async function runS3Mode(options: BridgeExecuteOptions): Promise<void> {
   );
   if (taskId) outputService.info(`Task ID: ${taskId}`);
 
-  const result = await localExecutorService.execute({
-    functionName: options.functionName,
-    machineName,
-    params: options.params,
-    debug: options.debug,
-  });
-
-  if (taskId) {
-    try {
-      await provider.queue.delete(taskId);
-    } catch {
-      /* best-effort cleanup */
+  try {
+    const result = await localExecutorService.execute({
+      functionName: options.functionName,
+      machineName,
+      params: options.params,
+      debug: options.debug,
+    });
+    handleExecutionResult(result);
+  } finally {
+    if (taskId) {
+      try {
+        await provider.queue.delete(taskId);
+      } catch {
+        /* best-effort cleanup */
+      }
     }
   }
-  handleExecutionResult(result);
 }
 
 /** Convert pre-typed params to key=value strings for createAction compatibility. */
