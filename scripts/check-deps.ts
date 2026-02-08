@@ -61,6 +61,33 @@ interface PackageInfo {
   reason?: string;
 }
 
+/**
+ * Categorize outdated packages into must-upgrade vs blocked lists
+ */
+function categorizePackages(
+  outdated: Record<string, OutdatedPackageInfo>,
+  blocklist: Map<string, BlocklistEntry>,
+): { mustUpgrade: PackageInfo[]; blocked: PackageInfo[] } {
+  const mustUpgrade: PackageInfo[] = [];
+  const blocked: PackageInfo[] = [];
+
+  for (const [name, info] of Object.entries(outdated)) {
+    const current = info.current;
+    const latest = info.latest;
+
+    if (!current || current === 'undefined' || !latest || current === latest) continue;
+
+    const blockEntry = blocklist.get(name);
+    if (blockEntry) {
+      blocked.push({ name, current, latest, reason: blockEntry.reason });
+    } else {
+      mustUpgrade.push({ name, current, latest, wanted: info.wanted });
+    }
+  }
+
+  return { mustUpgrade, blocked };
+}
+
 // Cache for changelog URLs to avoid duplicate fetches
 const changelogCache = new Map<string, string | null>();
 
@@ -229,7 +256,7 @@ function getPrivateOutdatedPackages(): PrivateOutdatedResult[] {
         stdio: ['pipe', 'pipe', 'pipe'],
       });
     } catch (error) {
-      const execError = error as { stdout?: string };
+      const execError = error as { stdout?: string; stderr?: string };
       if (execError.stdout) {
         try {
           const packages = JSON.parse(execError.stdout) as Record<string, OutdatedPackageInfo>;
@@ -237,9 +264,11 @@ function getPrivateOutdatedPackages(): PrivateOutdatedResult[] {
             const dirName = path.relative(CONSOLE_ROOT, dir);
             results.push({ dir, name: dirName, packages });
           }
-        } catch {
-          // Skip unparseable output
+        } catch (jsonError) {
+          console.error(`Failed to parse 'npm outdated' output for ${dir}:`, jsonError);
         }
+      } else {
+        console.error(`'npm outdated' failed in ${dir}:`, execError.stderr || error);
       }
     }
   }
@@ -477,42 +506,7 @@ async function checkDependencies(): Promise<void> {
   const outdated = getOutdatedPackages();
   const blocklist = loadBlocklist();
 
-  const mustUpgrade: PackageInfo[] = [];
-  const blocked: PackageInfo[] = [];
-
-  for (const [name, info] of Object.entries(outdated)) {
-    const current = info.current;
-    const latest = info.latest;
-
-    // Skip if current equals latest (shouldn't happen, but just in case)
-    if (current === latest) {
-      continue;
-    }
-
-    // Skip optional dependencies that aren't installed (current is undefined)
-    if (!current || current === 'undefined') {
-      continue;
-    }
-
-    if (!latest) {
-      continue;
-    }
-
-    const blockEntry = blocklist.get(name);
-
-    if (blockEntry) {
-      // Package is blocked from upgrading - skip it
-      blocked.push({
-        name,
-        current,
-        latest,
-        reason: blockEntry.reason,
-      });
-    } else {
-      // Not in blocklist - must upgrade
-      mustUpgrade.push({ name, current, latest, wanted: info.wanted });
-    }
-  }
+  const { mustUpgrade, blocked } = categorizePackages(outdated, blocklist);
 
   // Also check private (non-workspace) packages
   const privateOutdated = getPrivateOutdatedPackages();
@@ -520,33 +514,18 @@ async function checkDependencies(): Promise<void> {
   const privateBlocked: Array<{ dir: string; name: string; packages: PackageInfo[] }> = [];
 
   for (const { dir, name, packages } of privateOutdated) {
-    const dirMustUpgrade: PackageInfo[] = [];
-    const dirBlocked: PackageInfo[] = [];
-
-    for (const [pkgName, info] of Object.entries(packages)) {
-      const current = info.current;
-      const latest = info.latest;
-
-      if (!current || current === 'undefined' || !latest || current === latest) continue;
-
-      const blockEntry = blocklist.get(pkgName);
-      if (blockEntry) {
-        dirBlocked.push({ name: pkgName, current, latest, reason: blockEntry.reason });
-      } else {
-        dirMustUpgrade.push({ name: pkgName, current, latest, wanted: info.wanted });
-      }
-    }
-
+    const { mustUpgrade: dirMustUpgrade, blocked: dirBlocked } = categorizePackages(packages, blocklist);
     if (dirMustUpgrade.length > 0) privateMustUpgrade.push({ dir, name, packages: dirMustUpgrade });
     if (dirBlocked.length > 0) privateBlocked.push({ dir, name, packages: dirBlocked });
   }
+
+  const totalBlocked = blocked.length + privateBlocked.reduce((s, p) => s + p.packages.length, 0);
 
   // In upgrade mode, upgrade all non-blocked packages
   if (upgradeMode) {
     const allEmpty = mustUpgrade.length === 0 && privateMustUpgrade.length === 0;
 
     if (allEmpty) {
-      const totalBlocked = blocked.length + privateBlocked.reduce((s, p) => s + p.packages.length, 0);
       if (totalBlocked > 0) {
         console.log(`${GREEN}All dependencies are up-to-date${NC} (${totalBlocked} blocked)\n`);
         for (const pkg of blocked) {
@@ -620,7 +599,6 @@ async function checkDependencies(): Promise<void> {
   }
 
   if (blocked.length > 0 || privateBlocked.length > 0) {
-    const totalBlocked = blocked.length + privateBlocked.reduce((s, p) => s + p.packages.length, 0);
     console.log(`${YELLOW}Blocked packages (${totalBlocked}):${NC}\n`);
     for (const pkg of blocked) {
       const majorTag = isMajorUpgrade(pkg.current, pkg.latest) ? ' (major)' : '';
@@ -654,7 +632,6 @@ async function checkDependencies(): Promise<void> {
     process.exit(1);
   }
 
-  const totalBlocked = blocked.length + privateBlocked.reduce((s, p) => s + p.packages.length, 0);
   if (totalBlocked > 0) {
     console.log(`${GREEN}All dependencies are up-to-date${NC} (${totalBlocked} blocked)`);
   } else {
