@@ -306,6 +306,13 @@ EOF'
         CC=aarch64-linux-gnu-gcc \
         --disable-md2man \
         CFLAGS="-static" LDFLAGS="-static"
+
+    # Pre-create rounding.h for cross-compilation: the build normally generates
+    # this by compiling and executing a test program, which fails when the target
+    # arch (arm64) differs from the host (amd64). 8-byte alignment is correct
+    # for all 64-bit architectures.
+    echo '#define ROUNDING 8' > rounding.h
+
     make -j"$(nproc)"
 
     cp rsync "$output_file"
