@@ -36,7 +36,8 @@ export function cephSnapshotLifecycleScenario(
     test.setTimeout(ctx.defaultTimeout);
 
     const result = await ctx.runner.run(
-      buildCommand(['ceph', 'snapshot', 'create', snapshotName], ctx, {
+      buildCommand(['ceph', 'snapshot', 'create'], ctx, {
+        snapshot: snapshotName,
         image: imageName,
         pool: poolName,
       }),
@@ -75,7 +76,8 @@ export function cephSnapshotLifecycleScenario(
     test.setTimeout(ctx.defaultTimeout);
 
     const result = await ctx.runner.run(
-      buildDeleteCommand(['ceph', 'snapshot', 'delete', snapshotName], ctx, {
+      buildDeleteCommand(['ceph', 'snapshot', 'delete'], ctx, {
+        snapshot: snapshotName,
         image: imageName,
         pool: poolName,
       }),

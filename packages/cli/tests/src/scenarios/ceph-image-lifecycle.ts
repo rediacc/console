@@ -43,14 +43,14 @@ export function cephImageLifecycleScenario(
     test.setTimeout(ctx.defaultTimeout);
 
     const flags: Record<string, string | undefined> = {
+      image: imageName,
       pool: poolName,
       size: imageSize,
     };
 
-    const result = await ctx.runner.run(
-      buildCommand(['ceph', 'image', 'create', imageName], ctx, flags),
-      { timeout: ctx.defaultTimeout }
-    );
+    const result = await ctx.runner.run(buildCommand(['ceph', 'image', 'create'], ctx, flags), {
+      timeout: ctx.defaultTimeout,
+    });
     ctx.runner.expectSuccess(result);
 
     if (sshValidation && ctx.ssh) {
@@ -79,7 +79,7 @@ export function cephImageLifecycleScenario(
 
     const cmd =
       ctx.mode === 'local'
-        ? buildCommand(['ceph', 'image', 'info', imageName], ctx, { pool: poolName })
+        ? buildCommand(['ceph', 'image', 'info'], ctx, { image: imageName, pool: poolName })
         : buildCommand(['ceph', 'image', 'list', '--pool', poolName], ctx);
 
     const result = await ctx.runner.run(cmd, { timeout: ctx.defaultTimeout });
@@ -95,7 +95,8 @@ export function cephImageLifecycleScenario(
       test.setTimeout(ctx.defaultTimeout);
 
       const result = await ctx.runner.run(
-        buildCommand(['ceph', 'image', 'resize', imageName], ctx, {
+        buildCommand(['ceph', 'image', 'resize'], ctx, {
+          image: imageName,
           size: resizedSize,
           pool: poolName,
         }),
@@ -115,7 +116,7 @@ export function cephImageLifecycleScenario(
     test.setTimeout(ctx.defaultTimeout);
 
     const result = await ctx.runner.run(
-      buildDeleteCommand(['ceph', 'image', 'delete', imageName], ctx, { pool: poolName }),
+      buildDeleteCommand(['ceph', 'image', 'delete'], ctx, { image: imageName, pool: poolName }),
       { timeout: ctx.defaultTimeout }
     );
     ctx.runner.expectSuccess(result);
