@@ -13,13 +13,14 @@
 #
 # WHAT IT CHECKS:
 #   1. For each submodule with pointer changes (different from origin/main):
-#      - Verifies a matching branch exists in the submodule repo
-#      - Reports if submodule is on the wrong branch
-#   2. For submodules with matching branches:
-#      - Checks if an open PR exists in the submodule repo
-#      - Verifies the PR is linked in the console PR description
-#      - Checks all review comments on the submodule PR are addressed
-#   3. For submodules without pointer changes:
+#      a. If the commit is an ancestor of origin/main (pointer bump to
+#         already-merged work), it passes automatically — no branch/PR needed.
+#      b. Otherwise (new code beyond main), it requires:
+#         - A matching branch in the submodule repo
+#         - An open PR for that branch
+#         - The PR linked in the console PR description
+#         - All review comments on the submodule PR addressed
+#   2. For submodules without pointer changes:
 #      - Confirms they are on 'main' (expected behavior)
 #
 # AI TROUBLESHOOTING GUIDE:
@@ -355,7 +356,17 @@ main() {
         local repo="${SUBMODULE_REPOS[$sm_path]:-}"
 
         if submodule_has_pointer_changes "$sm_path"; then
-            # Submodule has changes - should be on matching branch
+            # Check if the submodule commit is an ancestor of origin/main.
+            # If so, we're just bumping the pointer to already-merged work
+            # — no coordinated branch/PR needed.
+            local sm_commit
+            sm_commit=$(git ls-tree HEAD -- "$sm_path" 2>/dev/null | awk '{ print $3 }')
+            if git -C "$sm_path" merge-base --is-ancestor "$sm_commit" origin/main 2>/dev/null; then
+                log_info "✓ $sm_path: pointer changed but commit is on main (pointer bump only)"
+                continue
+            fi
+
+            # Submodule has changes beyond main - should be on matching branch
             local sm_branch
             sm_branch="$(get_submodule_branch "$sm_path")"
 

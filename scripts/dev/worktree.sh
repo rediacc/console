@@ -172,6 +172,14 @@ setup_submodule_branch() {
     fi
 }
 
+# Check if submodule commit is already on origin/main (pointer bump only)
+submodule_is_pointer_bump() {
+    local sm_path="$1"
+    local sm_commit
+    sm_commit=$(git ls-tree HEAD -- "$sm_path" 2>/dev/null | awk '{ print $3 }')
+    [[ -n "$sm_commit" ]] && git -C "$sm_path" merge-base --is-ancestor "$sm_commit" origin/main 2>/dev/null
+}
+
 # Setup branches for submodules with pointer changes
 setup_submodule_branches() {
     local branch="$1"
@@ -182,7 +190,11 @@ setup_submodule_branches() {
 
     for sm_path in $(list_submodules); do
         if submodule_has_pointer_changes "$sm_path"; then
-            setup_submodule_branch "$sm_path" "$branch"
+            if submodule_is_pointer_bump "$sm_path"; then
+                log_info "  $sm_path: pointer bump to main (no branch needed)"
+            else
+                setup_submodule_branch "$sm_path" "$branch"
+            fi
         else
             log_info "  $sm_path: no pointer changes, staying on main"
         fi
@@ -515,7 +527,11 @@ worktree_switch() {
 
     for sm_path in $(list_submodules); do
         if submodule_has_pointer_changes "$sm_path"; then
-            setup_submodule_branch "$sm_path" "$branch"
+            if submodule_is_pointer_bump "$sm_path"; then
+                log_info "  $sm_path: pointer bump to main (no branch needed)"
+            else
+                setup_submodule_branch "$sm_path" "$branch"
+            fi
         else
             log_info "  $sm_path: no pointer changes, updating to recorded commit"
             git submodule update --init -- "$sm_path" 2>/dev/null ||
