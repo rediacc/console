@@ -138,7 +138,7 @@ export const translationStaleness = {
     const hashFileName = options.hashFileName || '.translation-hashes.json';
 
     // Get current file info
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename;
     const fileDir = path.dirname(filename);
     const currentLang = path.basename(fileDir);
 

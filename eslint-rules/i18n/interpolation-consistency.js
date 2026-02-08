@@ -98,7 +98,7 @@ export const interpolationConsistency = {
       : path.join(projectRoot, localesDir);
 
     // Get current file info
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename;
     const namespace = path.basename(filename, '.json');
     const currentLang = path.basename(path.dirname(filename));
 

@@ -49,7 +49,7 @@ export const e2eTestNamingConvention = {
 
     return {
       Program(node) {
-        const filename = context.filename || context.getFilename();
+        const filename = context.filename;
 
         // Only check .test.ts files
         if (!filename.endsWith('.test.ts')) return;
