@@ -84,8 +84,22 @@ sed_in_place() {
 sync_to_origin_main() {
     local dir="$1"
     git -C "$dir" fetch origin main >/dev/null 2>&1 || true
-    local origin
+
+    local origin current
     origin="$(git -C "$dir" rev-parse origin/main)"
+    current="$(git -C "$dir" rev-parse HEAD)"
+
+    # Guard: refuse to regress — if current HEAD is NOT an ancestor of
+    # origin/main, resetting would lose commits.
+    if [[ "$current" != "$origin" ]]; then
+        if ! git -C "$dir" merge-base --is-ancestor "$current" "$origin" 2>/dev/null; then
+            log_error "REGRESSION GUARD: $dir HEAD ($current) is not ancestor of origin/main ($origin)"
+            log_error "  Resetting would lose commits. Merge submodule PR first."
+            log_error "  Run: .ci/scripts/release/merge-submodule-branches.sh"
+            exit 1
+        fi
+    fi
+
     if [[ "$DRY_RUN" != "true" ]]; then
         git -C "$dir" checkout -B main "$origin" --force >/dev/null 2>&1
     fi

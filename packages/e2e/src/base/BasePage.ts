@@ -1,5 +1,6 @@
 import { Page, Locator, expect } from '@playwright/test';
 import { TIMEOUT_DEFAULTS } from '../utils/constants';
+import { waitForNetworkIdleWithRetry } from '../utils/retry';
 
 export abstract class BasePage {
   protected page: Page;
@@ -73,13 +74,13 @@ export abstract class BasePage {
       }, normalizedRoute);
       await this.page.waitForTimeout(100);
     } else {
-      await this.page.goto(this.url);
+      await this.page.goto(this.url, { waitUntil: 'domcontentloaded' });
     }
     await this.waitForPageLoad();
   }
 
   async waitForPageLoad(): Promise<void> {
-    await this.page.waitForLoadState('networkidle');
+    await waitForNetworkIdleWithRetry(this.page);
   }
 
   async getTitle(): Promise<string> {
