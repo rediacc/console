@@ -201,7 +201,7 @@ test.describe('Ceph Clone Commands @cli @ceph', () => {
       const result = await ctx.runner.run([
         'ceph',
         'clone',
-        'create',
+        'image',
         '--clone',
         cloneName,
         '--snapshot',
@@ -226,7 +226,7 @@ test.describe('Ceph Clone Commands @cli @ceph', () => {
       const result = await ctx.runner.run([
         'ceph',
         'clone',
-        'create',
+        'image',
         '--clone',
         cloneName,
         '--snapshot',
@@ -251,7 +251,7 @@ test.describe('Ceph Clone Commands @cli @ceph', () => {
       await ctx.runner.run([
         'ceph',
         'clone',
-        'create',
+        'image',
         '--clone',
         cloneName,
         '--snapshot',
@@ -297,7 +297,7 @@ test.describe('Ceph Clone Commands @cli @ceph', () => {
       await ctx.runner.run([
         'ceph',
         'clone',
-        'create',
+        'image',
         '--clone',
         cloneName,
         '--snapshot',
@@ -339,7 +339,7 @@ test.describe('Ceph Clone Commands @cli @ceph', () => {
       await ctx.runner.run([
         'ceph',
         'clone',
-        'create',
+        'image',
         '--clone',
         cloneName,
         '--snapshot',
@@ -382,7 +382,7 @@ test.describe('Ceph Clone Commands @cli @ceph', () => {
       await ctx.runner.run([
         'ceph',
         'clone',
-        'create',
+        'image',
         '--clone',
         cloneName,
         '--snapshot',
@@ -445,7 +445,7 @@ test.describe('Ceph Clone Commands @cli @ceph', () => {
       await ctx.runner.run([
         'ceph',
         'clone',
-        'create',
+        'image',
         '--clone',
         cloneName,
         '--snapshot',

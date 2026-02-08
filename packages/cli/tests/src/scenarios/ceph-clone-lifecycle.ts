@@ -1,12 +1,12 @@
 /**
  * Shared Ceph RBD clone lifecycle scenario.
  *
- * Tests: clone create, list, delete.
+ * Tests: clone image (create), list, delete.
  *
  * Runs in cloud mode (API-backed) or local mode (E2E, with SSH validation).
  * The parent image and a protected snapshot must already exist.
  *
- * @covers ceph_clone_create, ceph_clone_list, ceph_clone_delete
+ * @covers ceph_clone_image, ceph_clone_list, ceph_clone_delete
  */
 import { expect, test } from '@playwright/test';
 import { buildCommand, buildDeleteCommand } from '../utils/command-builder';
@@ -38,7 +38,7 @@ export function cephCloneLifecycleScenario(
     test.setTimeout(ctx.defaultTimeout);
 
     const result = await ctx.runner.run(
-      buildCommand(['ceph', 'clone', 'create'], ctx, {
+      buildCommand(['ceph', 'clone', 'image'], ctx, {
         clone: cloneName,
         snapshot: snapshotName,
         image: imageName,
