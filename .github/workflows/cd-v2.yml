@@ -65,7 +65,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
-          repositories: console,middleware,renet,license-server,homebrew-tap,elite
+          repositories: console,middleware,renet,license-server,homebrew-tap
 
       # Resolve CI run context from workflow_run event or workflow_dispatch input
       - name: Resolve CI run context
@@ -165,7 +165,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
-          repositories: console,middleware,renet,license-server,homebrew-tap,elite
+          repositories: console,middleware,renet,license-server,homebrew-tap
 
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:

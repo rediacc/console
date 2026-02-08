@@ -76,7 +76,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,middleware,renet,license-server,elite
+          repositories: console,middleware,renet,license-server
 
       # PR Validation (PR events only)
       - name: Validate PR
@@ -359,7 +359,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,middleware,renet,license-server,elite
+          repositories: console,middleware,renet,license-server
 
       - name: Checkout with Submodules
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
