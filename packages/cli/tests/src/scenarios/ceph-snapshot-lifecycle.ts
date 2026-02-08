@@ -66,8 +66,11 @@ export function cephSnapshotLifecycleScenario(
     );
     ctx.runner.expectSuccess(result);
 
-    const output = result.stdout + result.stderr;
-    expect(output).toContain(snapshotName);
+    // In cloud mode, bridge functions return a queue task ID, not snapshot data
+    if (ctx.mode !== 'cloud') {
+      const output = result.stdout + result.stderr;
+      expect(output).toContain(snapshotName);
+    }
   });
 
   test('delete snapshot', async () => {

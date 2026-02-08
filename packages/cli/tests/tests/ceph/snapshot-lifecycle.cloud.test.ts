@@ -41,11 +41,14 @@ test.describe('Ceph Snapshot Lifecycle (Cloud) @cli @ceph', () => {
       ctx.teamName!,
       '--machine',
       ctx.machineName,
+      '--size',
+      '1G',
     ]);
   });
 
   test.afterAll(async () => {
     if (ctx) {
+      // Image delete is a bridge function — no --force
       await ctx.runner
         .run([
           'ceph',
@@ -57,9 +60,9 @@ test.describe('Ceph Snapshot Lifecycle (Cloud) @cli @ceph', () => {
           poolName,
           '--team',
           ctx.teamName!,
-          '--force',
         ])
         .catch(() => {});
+      // Pool and cluster are native commands — support --force
       await ctx.runner
         .run(['ceph', 'pool', 'delete', poolName, '--team', ctx.teamName!, '--force'])
         .catch(() => {});

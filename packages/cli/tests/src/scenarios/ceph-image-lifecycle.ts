@@ -69,8 +69,11 @@ export function cephImageLifecycleScenario(
     );
     ctx.runner.expectSuccess(result);
 
-    const output = result.stdout + result.stderr;
-    expect(output).toContain(imageName);
+    // In cloud mode, bridge functions return a queue task ID, not image data
+    if (ctx.mode !== 'cloud') {
+      const output = result.stdout + result.stderr;
+      expect(output).toContain(imageName);
+    }
   });
 
   test('image info should return details', async () => {

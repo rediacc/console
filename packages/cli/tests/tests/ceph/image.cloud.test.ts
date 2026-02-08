@@ -2,9 +2,10 @@
  * Ceph RBD Image CLI Tests
  *
  * Tests for Ceph RBD image CRUD operations.
+ * Image commands are bridge functions that create queue tasks in cloud mode.
  */
 
-import { expect, test } from '@playwright/test';
+import { test } from '@playwright/test';
 import { SYSTEM_DEFAULTS } from '@rediacc/shared/config';
 import {
   createEditionContext,
@@ -39,6 +40,9 @@ test.describe('Ceph Image Commands @cli @ceph', () => {
       const bridges = ctx.runner.expectSuccessArray<{ bridgeName: string }>(bridgeResult);
       const bridgeName = bridges[0]?.bridgeName ?? SYSTEM_DEFAULTS.BRIDGE_NAME;
 
+      // Set bridge in context so bridge-function commands can resolve it
+      await ctx.runner.run(['context', 'set', 'bridge', bridgeName]);
+
       // Create a machine
       machineName = uniqueName('image-test-machine');
       await ctx.runner.run([
@@ -69,7 +73,7 @@ test.describe('Ceph Image Commands @cli @ceph', () => {
     });
 
     test.afterAll(async () => {
-      // Cleanup images
+      // Cleanup images (bridge function — no --force)
       for (const image of createdImages) {
         await ctx.runner
           .run([
@@ -82,18 +86,17 @@ test.describe('Ceph Image Commands @cli @ceph', () => {
             poolName,
             '--team',
             teamName,
-            '--force',
           ])
           .catch(() => {});
       }
 
-      // Cleanup pool and cluster
+      // Cleanup pool and cluster (native commands — support --force)
       await ctx.runner
         .run(['ceph', 'pool', 'delete', poolName, '--team', teamName, '--force'])
         .catch(() => {});
       await ctx.runner.run(['ceph', 'cluster', 'delete', clusterName, '--force']).catch(() => {});
 
-      // Cleanup machine
+      // Cleanup machine (native command)
       await ctx.runner
         .run(['machine', 'delete', machineName, '--team', teamName, '--force'])
         .catch(() => {});
@@ -105,7 +108,6 @@ test.describe('Ceph Image Commands @cli @ceph', () => {
       const result = await ctx.runner.run(['ceph', 'image', 'list']);
 
       expectEditionSuccess(result);
-      expect(result.json).toBeInstanceOf(Array);
     });
 
     test('should create an image', async () => {
@@ -120,17 +122,16 @@ test.describe('Ceph Image Commands @cli @ceph', () => {
         poolName,
         '--team',
         teamName,
-        '--machine',
-        machineName,
+        '--size',
+        '1G',
       ]);
 
       expectEditionSuccess(result);
       createdImages.push(imageName);
     });
 
-    test('should create an image with vault', async () => {
-      const imageName = uniqueName('image-with-vault');
-      const vault = JSON.stringify({ size: '10G' });
+    test('should create an image with size', async () => {
+      const imageName = uniqueName('image-with-size');
       const result = await ctx.runner.run([
         'ceph',
         'image',
@@ -141,10 +142,8 @@ test.describe('Ceph Image Commands @cli @ceph', () => {
         poolName,
         '--team',
         teamName,
-        '--machine',
-        machineName,
-        '--vault',
-        vault,
+        '--size',
+        '2G',
       ]);
 
       expectEditionSuccess(result);
@@ -163,28 +162,21 @@ test.describe('Ceph Image Commands @cli @ceph', () => {
         poolName,
         '--team',
         teamName,
-        '--machine',
-        machineName,
+        '--size',
+        '1G',
       ]);
       createdImages.push(imageName);
 
-      // Filter by pool
+      // Filter by pool — bridge function creates a queue task
       const result = await ctx.runner.run(['ceph', 'image', 'list', '--pool', poolName]);
 
       expectEditionSuccess(result);
-      const images = ctx.runner.expectSuccessArray<{ imageName: string; poolName: string }>(result);
-      const found = images.some((i) => i.imageName === imageName && i.poolName === poolName);
-      expect(found, `Expected to find image "${imageName}" in filtered list`).toBe(true);
     });
 
     test('should list images filtered by team', async () => {
       const result = await ctx.runner.run(['ceph', 'image', 'list', '--team', teamName]);
 
       expectEditionSuccess(result);
-      const images = ctx.runner.expectSuccessArray<{ teamName: string }>(result);
-      if (images.length > 0) {
-        expect(images.every((i) => i.teamName === teamName)).toBe(true);
-      }
     });
 
     test('should delete an image', async () => {
@@ -199,8 +191,8 @@ test.describe('Ceph Image Commands @cli @ceph', () => {
         poolName,
         '--team',
         teamName,
-        '--machine',
-        machineName,
+        '--size',
+        '1G',
       ]);
 
       const result = await ctx.runner.run([
@@ -213,7 +205,6 @@ test.describe('Ceph Image Commands @cli @ceph', () => {
         poolName,
         '--team',
         teamName,
-        '--force',
       ]);
 
       expectEditionSuccess(result);

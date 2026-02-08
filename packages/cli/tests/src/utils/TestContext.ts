@@ -57,6 +57,9 @@ export async function createCloudTestContext(
   const bridges = editionCtx.runner.expectSuccessArray<{ bridgeName: string }>(bridgeResult);
   const bridgeName = bridges[0]?.bridgeName ?? SYSTEM_DEFAULTS.BRIDGE_NAME;
 
+  // Set bridge in context so bridge-function commands can resolve it
+  await editionCtx.runner.run(['context', 'set', 'bridge', bridgeName]);
+
   // Create a machine for the test context
   const machineName = `ctx-machine-${Date.now()}`;
   await editionCtx.runner.run([

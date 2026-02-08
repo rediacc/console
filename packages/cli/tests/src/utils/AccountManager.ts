@@ -255,6 +255,12 @@ export class AccountManager {
       );
     }
 
-    console.warn(`[AccountManager] Default infrastructure verified (region: ${defaultRegion})`);
+    // Set bridge in context so bridge-function commands can resolve it
+    const defaultBridge = bridges[0].bridgeName;
+    await runner.run(['context', 'set', 'bridge', defaultBridge]);
+
+    console.warn(
+      `[AccountManager] Default infrastructure verified (region: ${defaultRegion}, bridge: ${defaultBridge})`
+    );
   }
 }

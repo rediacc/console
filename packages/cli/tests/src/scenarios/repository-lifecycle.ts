@@ -67,19 +67,18 @@ export function repositoryLifecycleScenario(
     });
     ctx.runner.expectSuccess(result);
 
-    const output = result.stdout + result.stderr;
-    expect(output).toContain(repoName);
+    // In cloud mode, bridge functions return a queue task ID, not repo data
+    if (ctx.mode !== 'cloud') {
+      const output = result.stdout + result.stderr;
+      expect(output).toContain(repoName);
+    }
   });
 
   test('repository info should return details', async () => {
     const ctx = getCtx();
     test.setTimeout(ctx.defaultTimeout);
 
-    // Cloud uses `repository inspect <name>`, E2E uses `repository info` via bridge
-    const cmd =
-      ctx.mode === 'cloud'
-        ? buildCommand(['repository', 'inspect', repoName], ctx)
-        : buildCommand(['repository', 'info', repoName], ctx);
+    const cmd = buildCommand(['repository', 'info', repoName], ctx);
 
     const result = await ctx.runner.run(cmd, { timeout: ctx.defaultTimeout });
     ctx.runner.expectSuccess(result);

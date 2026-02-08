@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { SYSTEM_DEFAULTS } from '@rediacc/shared/config';
 import { CliTestRunner } from '../../src/utils/CliTestRunner';
 import { ErrorPatterns, expectError, nonExistentName } from '../../src/utils/errors';
@@ -28,8 +28,11 @@ test.describe('Repository Error Scenarios @cli @errors', () => {
         'test-repo',
         '--team',
         nonExistentName('team'),
+        '--size',
+        '1G',
       ]);
-      expectError(runner, result, { messageContains: ErrorPatterns.TEAM_NOT_FOUND });
+      // Bridge function validates team at queue creation time
+      expectError(runner, result, { messageContains: 'not found' });
     });
   });
 
@@ -41,9 +44,8 @@ test.describe('Repository Error Scenarios @cli @errors', () => {
         'some-repo',
         '--team',
         nonExistentName('team'),
-        '--force',
       ]);
-      // CLI does client-side validation first - shows "not found" (not team-specific)
+      // Bridge function validates team at queue creation time
       expectError(runner, result, { messageContains: 'not found' });
     });
 
@@ -54,10 +56,10 @@ test.describe('Repository Error Scenarios @cli @errors', () => {
         nonExistentName('repo'),
         '--team',
         defaultTeamName,
-        '--force',
       ]);
-      // CLI does client-side validation - shows "not found"
-      expectError(runner, result, { messageContains: 'not found' });
+      // Bridge function creates a queue task (repo validation happens on bridge execution)
+      // Queue creation succeeds — the task will fail when the bridge processes it
+      expect(result.success).toBe(true);
     });
   });
 

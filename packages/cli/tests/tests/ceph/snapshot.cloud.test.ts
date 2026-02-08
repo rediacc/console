@@ -4,7 +4,7 @@
  * Tests for Ceph RBD snapshot CRUD operations.
  */
 
-import { expect, test } from '@playwright/test';
+import { test } from '@playwright/test';
 import { SYSTEM_DEFAULTS } from '@rediacc/shared/config';
 import {
   createEditionContext,
@@ -39,6 +39,9 @@ test.describe('Ceph Snapshot Commands @cli @ceph', () => {
       const bridgeResult = await ctx.runner.run(['bridge', 'list', '--region', regionName]);
       const bridges = ctx.runner.expectSuccessArray<{ bridgeName: string }>(bridgeResult);
       const bridgeName = bridges[0]?.bridgeName ?? SYSTEM_DEFAULTS.BRIDGE_NAME;
+
+      // Set bridge in context so bridge-function commands can resolve it
+      await ctx.runner.run(['context', 'set', 'bridge', bridgeName]);
 
       // Create machine
       machineName = uniqueName('snapshot-test-machine');
@@ -81,11 +84,13 @@ test.describe('Ceph Snapshot Commands @cli @ceph', () => {
         teamName,
         '--machine',
         machineName,
+        '--size',
+        '1G',
       ]);
     });
 
     test.afterAll(async () => {
-      // Cleanup snapshots
+      // Cleanup snapshots (bridge function — no --force)
       for (const snapshot of createdSnapshots) {
         await ctx.runner
           .run([
@@ -100,12 +105,11 @@ test.describe('Ceph Snapshot Commands @cli @ceph', () => {
             poolName,
             '--team',
             teamName,
-            '--force',
           ])
           .catch(() => {});
       }
 
-      // Cleanup image
+      // Cleanup image (bridge function — no --force)
       await ctx.runner
         .run([
           'ceph',
@@ -117,7 +121,6 @@ test.describe('Ceph Snapshot Commands @cli @ceph', () => {
           poolName,
           '--team',
           teamName,
-          '--force',
         ])
         .catch(() => {});
 
@@ -139,7 +142,6 @@ test.describe('Ceph Snapshot Commands @cli @ceph', () => {
       const result = await ctx.runner.run(['ceph', 'snapshot', 'list']);
 
       expectEditionSuccess(result);
-      expect(result.json).toBeInstanceOf(Array);
     });
 
     test('should create a snapshot', async () => {
@@ -162,9 +164,8 @@ test.describe('Ceph Snapshot Commands @cli @ceph', () => {
       createdSnapshots.push(snapshotName);
     });
 
-    test('should create a snapshot with vault', async () => {
-      const snapshotName = uniqueName('snapshot-with-vault');
-      const vault = JSON.stringify({ timestamp: Date.now() });
+    test('should create another snapshot', async () => {
+      const snapshotName = uniqueName('snapshot-two');
       const result = await ctx.runner.run([
         'ceph',
         'snapshot',
@@ -177,8 +178,6 @@ test.describe('Ceph Snapshot Commands @cli @ceph', () => {
         poolName,
         '--team',
         teamName,
-        '--vault',
-        vault,
       ]);
 
       expectEditionSuccess(result);
@@ -202,28 +201,16 @@ test.describe('Ceph Snapshot Commands @cli @ceph', () => {
       ]);
       createdSnapshots.push(snapshotName);
 
-      // Filter by image
+      // Filter by image — bridge function creates a queue task
       const result = await ctx.runner.run(['ceph', 'snapshot', 'list', '--image', imageName]);
 
       expectEditionSuccess(result);
-      const snapshots = ctx.runner.expectSuccessArray<{
-        snapshotName: string;
-        imageName: string;
-      }>(result);
-      const found = snapshots.some(
-        (s) => s.snapshotName === snapshotName && s.imageName === imageName
-      );
-      expect(found, `Expected to find snapshot "${snapshotName}" in filtered list`).toBe(true);
     });
 
     test('should list snapshots filtered by pool', async () => {
       const result = await ctx.runner.run(['ceph', 'snapshot', 'list', '--pool', poolName]);
 
       expectEditionSuccess(result);
-      const snapshots = ctx.runner.expectSuccessArray<{ poolName: string }>(result);
-      if (snapshots.length > 0) {
-        expect(snapshots.every((s) => s.poolName === poolName)).toBe(true);
-      }
     });
 
     test('should delete a snapshot', async () => {
@@ -242,6 +229,7 @@ test.describe('Ceph Snapshot Commands @cli @ceph', () => {
         teamName,
       ]);
 
+      // Bridge function — no --force
       const result = await ctx.runner.run([
         'ceph',
         'snapshot',
@@ -254,7 +242,6 @@ test.describe('Ceph Snapshot Commands @cli @ceph', () => {
         poolName,
         '--team',
         teamName,
-        '--force',
       ]);
 
       expectEditionSuccess(result);

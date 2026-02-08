@@ -13,5 +13,5 @@ test.describe('Repository Lifecycle (Cloud) @cli @resources', () => {
     await ctx?.cleanup();
   });
 
-  repositoryLifecycleScenario(() => ctx);
+  repositoryLifecycleScenario(() => ctx, { repoSize: '1G' });
 });

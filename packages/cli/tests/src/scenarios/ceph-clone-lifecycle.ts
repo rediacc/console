@@ -69,8 +69,11 @@ export function cephCloneLifecycleScenario(
     );
     ctx.runner.expectSuccess(result);
 
-    const output = result.stdout + result.stderr;
-    expect(output).toContain(cloneName);
+    // In cloud mode, bridge functions return a queue task ID, not clone data
+    if (ctx.mode !== 'cloud') {
+      const output = result.stdout + result.stderr;
+      expect(output).toContain(cloneName);
+    }
   });
 
   test('delete clone', async () => {
