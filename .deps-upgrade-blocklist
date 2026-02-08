@@ -15,5 +15,8 @@ antd # v6.x requires CSS-in-JS removal, component API changes, extensive migrati
 # Electron - v40.x has native module compatibility issues (cpu-features, nan)
 electron # v40.x breaks native module rebuild with nan library errors
 
-# ESLint v10 - major version requires config migration and peer dep updates
-@eslint/js # v10.x requires eslint v10, config format changes, plugin compatibility review
+# ESLint v10 - blocked until typescript-eslint, eslint-plugin-import, eslint-plugin-react support v10
+@eslint/js # v10.x requires eslint v10; typescript-eslint/import/react plugins lack v10 peer dep support
+
+# Zod v4 - major rewrite with different API surface
+zod # v4.x requires schema migration, different error handling
