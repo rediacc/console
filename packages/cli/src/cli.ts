@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { registerAuditCommands } from './commands/audit.js';
 import { registerAuthCommands } from './commands/auth.js';
+import { registerBridgeFunctionCommands } from './commands/bridge-commands.js';
 import { registerBridgeCommands } from './commands/bridge.js';
 import { registerCephCommands } from './commands/ceph/index.js';
 import { registerContextCommands } from './commands/context.js';
@@ -11,7 +12,7 @@ import { registerPermissionCommands } from './commands/permission.js';
 import { registerProtocolCommands } from './commands/protocol.js';
 import { registerQueueCommands } from './commands/queue.js';
 import { registerRegionCommands } from './commands/region.js';
-import { registerRepositoryCommands } from './commands/repository.js';
+import { registerRepositoryMetadataCommands } from './commands/repository.js';
 import { registerShortcuts } from './commands/shortcuts.js';
 import { registerStorageCommands } from './commands/storage.js';
 import { registerSyncCommands } from './commands/sync.js';
@@ -121,6 +122,9 @@ cli
   });
 
 // Cloud-only command names — these are not available in s3/local mode
+// Note: 'ceph' and 'repository' are excluded because bridge subcommands under these
+// groups must work in local/s3 mode. Cloud-only guards are applied at the individual
+// subcommand level within their respective registration functions.
 const CLOUD_ONLY_COMMANDS = new Set([
   'auth',
   'bridge',
@@ -130,15 +134,13 @@ const CLOUD_ONLY_COMMANDS = new Set([
   'user',
   'permission',
   'audit',
-  'ceph',
-  'repository',
 ]);
 
 // Register all command groups
 registerAuthCommands(cli);
 registerTeamCommands(cli);
 registerMachineCommands(cli);
-registerRepositoryCommands(cli);
+registerRepositoryMetadataCommands(cli);
 registerStorageCommands(cli);
 registerQueueCommands(cli);
 registerRegionCommands(cli);
@@ -156,6 +158,9 @@ registerProtocolCommands(cli);
 registerVSCodeCommands(cli);
 registerUpdateCommand(cli);
 registerShortcuts(cli);
+
+// Bridge auto-generated commands (LAST — uses getOrCreateCommand to extend existing groups)
+registerBridgeFunctionCommands(cli);
 
 // Apply cloud-only guards and help annotations to the appropriate top-level commands
 for (const cmd of cli.commands) {
