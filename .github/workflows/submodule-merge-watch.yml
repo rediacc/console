@@ -1,0 +1,40 @@
+name: Submodule Merge Watch
+
+# Re-evaluates all open console PRs with submodule pointer changes every 5 min.
+# Updates the quality/submodule-merge-readiness commit status so the merge
+# button unblocks promptly after a submodule PR merges.
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  poll:
+    name: Poll Submodule Merge Status
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          sparse-checkout: |
+            .ci/scripts
+            .github/actions
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: ci
+          repositories: console,middleware,renet,license-server
+
+      - name: Poll submodule merge status
+        run: .ci/scripts/quality/poll-submodule-merge-status.sh
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          STATUS_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
