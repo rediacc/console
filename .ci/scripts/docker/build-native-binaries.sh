@@ -301,16 +301,36 @@ EOF'
     patch -Np1 -i ../security_fix.patch
 
     log_info "Cross-compiling rsync for arm64..."
+    # Force deterministic cross-compilation: QEMU on CI runners makes arm64
+    # binaries executable, so autoconf detects "cross compiling... no" and runs
+    # sizeof test programs under emulation. These probes are flaky (wrong results
+    # under load), leaving SIZEOF_SHORT undefined and breaking uint16 typedefs.
+    # Solution: set cross_compiling=yes + explicit ac_cv_sizeof_* cache vars
+    # for the arm64 LP64 ABI (mathematically certain values).
     ./configure \
         --host=aarch64-linux-gnu \
         CC=aarch64-linux-gnu-gcc \
         --disable-md2man \
-        CFLAGS="-static" LDFLAGS="-static"
+        CFLAGS="-static" LDFLAGS="-static" \
+        cross_compiling=yes \
+        ac_cv_sizeof_short=2 \
+        ac_cv_sizeof_int=4 \
+        ac_cv_sizeof_long=8 \
+        ac_cv_sizeof_long_long=8 \
+        ac_cv_sizeof_off_t=8 \
+        rsync_cv_HAVE_GETTIMEOFDAY_TZ=yes \
+        ac_cv_have_C99_vsnprintf=yes \
+        ac_cv_func_utime_null=yes
 
-    # Pre-create rounding.h for cross-compilation: the build normally generates
-    # this by compiling and executing a test program, which fails when the target
-    # arch (arm64) differs from the host (amd64). 8-byte alignment is correct
-    # for all 64-bit architectures.
+    # Verify SIZEOF macros are correctly set in config.h
+    if ! grep -q 'SIZEOF_SHORT 2' config.h; then
+        log_error "SIZEOF_SHORT not correctly detected in config.h"
+        grep SIZEOF config.h || true
+        exit 1
+    fi
+
+    # Pre-create rounding.h: cross-compilation can't run the test program.
+    # 8-byte alignment is correct for all 64-bit architectures.
     echo '#define ROUNDING 8' >rounding.h
 
     make -j"$(nproc)"
