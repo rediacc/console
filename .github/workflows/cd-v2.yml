@@ -93,8 +93,10 @@ jobs:
             echo "Resolved from workflow_dispatch: run=${CI_RUN_ID}, sha=${CI_SHA}"
           fi
 
-      # Check if the merged PR has skip-release label (skips entire CD pipeline)
-      - name: Check for skip-release label
+      # Check if the merged PR has the 'release' label (opt-in to CD pipeline)
+      # Without the label, CD is skipped — prevents accidental releases from chore PRs.
+      # Manual workflow_dispatch always proceeds (operator explicitly triggered CD).
+      - name: Check for release label
         id: skip-check
         env:
           GH_TOKEN: ${{ github.token }}
@@ -109,17 +111,17 @@ jobs:
           PR_NUM=$(echo "$COMMIT_MSG" | grep -oE '\(#[0-9]+\)' | grep -oE '[0-9]+' | head -1 || true)
 
           if [[ -z "$PR_NUM" ]]; then
-            echo "No PR number found in commit message, proceeding with release"
-            echo "skip_release=false" >> $GITHUB_OUTPUT
+            echo "No PR number found in commit message, skipping release"
+            echo "skip_release=true" >> $GITHUB_OUTPUT
             exit 0
           fi
 
           LABELS=$(gh pr view "$PR_NUM" --repo "${{ github.repository }}" --json labels --jq '.labels[].name' 2>/dev/null || true)
-          if echo "$LABELS" | grep -qx "skip-release"; then
-            echo "::notice::Skipping release — PR #$PR_NUM has 'skip-release' label"
-            echo "skip_release=true" >> $GITHUB_OUTPUT
-          else
+          if echo "$LABELS" | grep -qx "release"; then
             echo "skip_release=false" >> $GITHUB_OUTPUT
+          else
+            echo "::notice::Skipping release — PR #$PR_NUM does not have 'release' label"
+            echo "skip_release=true" >> $GITHUB_OUTPUT
           fi
 
       # Recalculate version independently (reads current version from git)
