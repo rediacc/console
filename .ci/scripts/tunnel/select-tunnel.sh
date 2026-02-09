@@ -16,8 +16,8 @@ source "$SCRIPT_DIR/../lib/common.sh"
 
 # Parse URLs (can't use parse_args for repeated --url flags)
 URLS=()
-MAX_ATTEMPTS=10
-INTERVAL=5
+MAX_ATTEMPTS=20
+INTERVAL=10
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
