@@ -2,8 +2,11 @@ import { Page, Locator } from '@playwright/test';
 import { BasePage } from '../../src/base/BasePage';
 import { loadGlobalState } from '../../src/setup/global-state';
 import { getEnvVarWithDefault } from '../../src/utils/env';
+import { waitForNetworkIdleWithRetry } from '../../src/utils/retry';
 
 export class LoginPage extends BasePage {
+  private static readonly LOGIN_SUBMIT_SELECTOR = '[data-testid="login-submit-button"]';
+
   private readonly emailInput: Locator;
   private readonly passwordInput: Locator;
   private readonly loginButton: Locator;
@@ -24,7 +27,7 @@ export class LoginPage extends BasePage {
 
     this.emailInput = page.locator('[data-testid="login-email-input"]');
     this.passwordInput = page.locator('[data-testid="login-password-input"]');
-    this.loginButton = page.locator('[data-testid="login-submit-button"]');
+    this.loginButton = page.locator(LoginPage.LOGIN_SUBMIT_SELECTOR);
     this.registerLink = page.locator('[data-testid="login-register-link"]');
     this.errorMessage = page.locator('[data-testid="login-error-alert"]');
     this.loadingSpinner = page.locator('.ant-spin').first();
@@ -42,6 +45,10 @@ export class LoginPage extends BasePage {
       '[data-testid="registration-activation-code-input"]'
     );
     this.registrationVerifyButton = page.locator('[data-testid="registration-verify-button"]');
+  }
+
+  async waitForPageLoad(): Promise<void> {
+    await waitForNetworkIdleWithRetry(this.page, LoginPage.LOGIN_SUBMIT_SELECTOR);
   }
 
   getPageLocators(): Record<string, Locator> {
