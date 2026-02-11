@@ -499,7 +499,8 @@ run_ha_tests() {
                 if _ssh "$coord_ip" "curl -sf -H 'X-API-Key: ${COORD_API_KEY}' http://localhost:3000/api/v1/state" >/dev/null 2>&1; then
                     break
                 fi
-                sleep 5; wait=$((wait + 5))
+                sleep 5
+                wait=$((wait + 5))
             done
             log_step "  Coordinator restarted with primary=${actual_primary}"
         fi
