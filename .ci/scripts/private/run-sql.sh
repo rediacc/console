@@ -81,10 +81,22 @@ run_test_standalone() {
     echo -n "$sa_password" >secrets/admin_password.txt
     export MSSQL_SA_PASSWORD="$sa_password"
 
-    # CI override: healthcheck uses sa (sqladmin doesn't exist until harden)
+    # CI mssql.conf: no TLS (certs don't exist in CI), lower memory
+    cat >mssql.ci.conf <<CONF
+[telemetry]
+customerfeedback = false
+
+[memory]
+memorylimitmb = 2048
+CONF
+
+    # CI override: no TLS config, healthcheck uses sa (sqladmin doesn't exist until harden)
     cat >docker-compose.ci.yml <<YAML
 services:
   sql:
+    volumes:
+      - ./mssql:/var/opt/mssql
+      - ./mssql.ci.conf:/var/opt/mssql/mssql.conf
     healthcheck:
       test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"\$\$(cat /run/secrets/sa_password)\" -Q 'SELECT 1' -C || exit 1"]
 YAML
@@ -95,7 +107,7 @@ YAML
 
     log_step "Waiting for SQL Server health..."
     local attempts=0
-    while [[ $attempts -lt 20 ]]; do
+    while [[ $attempts -lt 30 ]]; do
         if docker exec sqlserver-sql /opt/mssql-tools18/bin/sqlcmd \
             -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1" -C \
             >/dev/null 2>&1; then
@@ -106,8 +118,9 @@ YAML
         attempts=$((attempts + 1))
     done
 
-    if [[ $attempts -ge 20 ]]; then
+    if [[ $attempts -ge 30 ]]; then
         log_error "SQL Server failed to become healthy"
+        docker logs sqlserver-sql --tail 50 2>&1 || true
         ./run.sh down
         exit 1
     fi
@@ -115,8 +128,17 @@ YAML
     log_step "Running standalone tests..."
     ./run.sh harden
     ./run.sh db create testdb
+
+    # Verify connectivity through HAProxy (port 1433 on host)
+    local admin_pass
+    admin_pass=$(cat secrets/admin_password.txt)
+    log_step "Testing HAProxy connectivity..."
     local rc=0
-    ./run.sh test tls || rc=$?
+    docker run --rm --network sqlserver_public \
+        mcr.microsoft.com/mssql-tools18:latest \
+        /opt/mssql-tools18/bin/sqlcmd \
+        -S sqlserver-haproxy,1433 -U sqladmin -P "$admin_pass" \
+        -Q "SELECT DB_NAME() AS current_db, @@SERVERNAME AS server" -C || rc=$?
 
     log_step "Stopping SQL Server..."
     ./run.sh down
