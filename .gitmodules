@@ -18,7 +18,3 @@
 	path = private/elite
 	url = https://github.com/rediacc/elite.git
 	branch = main
-[submodule "private/sql"]
-	path = private/sql
-	url = https://github.com/rediacc/sql.git
-	branch = main
