@@ -88,9 +88,10 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"\$\$(cat /run/secrets/sa_password)\" -Q 'SELECT 1' -C || exit 1"]
 YAML
+    export COMPOSE_FILE="docker-compose.yml:docker-compose.ci.yml"
 
     log_step "Starting standalone SQL Server..."
-    docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d
+    ./run.sh up
 
     log_step "Waiting for SQL Server health..."
     local attempts=0
