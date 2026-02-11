@@ -73,8 +73,24 @@ run_test_standalone() {
         fi
     fi
 
+    # Generate secrets (gitignored, required by docker-compose)
+    local sa_password
+    sa_password="SqlCI$(openssl rand -hex 12)!"
+    mkdir -p secrets
+    echo -n "$sa_password" >secrets/sa_password.txt
+    echo -n "$sa_password" >secrets/admin_password.txt
+    export MSSQL_SA_PASSWORD="$sa_password"
+
+    # CI override: healthcheck uses sa (sqladmin doesn't exist until harden)
+    cat >docker-compose.ci.yml <<YAML
+services:
+  sql:
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"\$\$(cat /run/secrets/sa_password)\" -Q 'SELECT 1' -C || exit 1"]
+YAML
+
     log_step "Starting standalone SQL Server..."
-    ./run.sh up
+    docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d
 
     log_step "Waiting for SQL Server health..."
     local attempts=0
