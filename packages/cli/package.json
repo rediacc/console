@@ -63,7 +63,7 @@
     "@rediacc/shared-desktop": "*",
     "@types/inquirer": "^9.0.7",
     "@types/node": "^22.10.2",
-    "axios": "^1.13.2",
+    "axios": "^1.13.5",
     "chalk": "^5.4.1",
     "cli-table3": "^0.6.5",
     "commander": "^14.0.3",
