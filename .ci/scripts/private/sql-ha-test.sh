@@ -56,6 +56,23 @@ _ssh() {
         "${SSH_USER}@${ip}" "$@"
 }
 
+# Portable SSH with command-execution timeout (timeout command not on macOS)
+_ssh_timeout() {
+    local max_secs="$1"
+    local ip="$2"
+    shift 2
+    ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=10 \
+        "${SSH_USER}@${ip}" "$@" &
+    local cmd_pid=$!
+    (sleep "$max_secs" && kill "$cmd_pid" 2>/dev/null) &
+    local timer_pid=$!
+    wait "$cmd_pid" 2>/dev/null
+    local rc=$?
+    kill "$timer_pid" 2>/dev/null
+    wait "$timer_pid" 2>/dev/null
+    return $rc
+}
+
 _scp() {
     scp -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=15 "$@"
 }
@@ -550,10 +567,8 @@ cleanup_ha() {
         # Kill watchdog processes, then kill+rm all containers, then delete data.
         # Each step uses timeout to avoid hanging (docker kill can be slow on SQL containers).
         _ssh "$ip" "pgrep -u ${SSH_USER} -f _wd_main_loop | xargs -r kill" 2>/dev/null || true
-        timeout 30 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=10 \
-            "${SSH_USER}@${ip}" "docker kill \$(docker ps -q) 2>/dev/null; true" 2>/dev/null || true
-        timeout 30 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=10 \
-            "${SSH_USER}@${ip}" "docker rm -f \$(docker ps -aq) 2>/dev/null; docker network prune -f 2>/dev/null; docker volume prune -f 2>/dev/null; true" 2>/dev/null || true
+        _ssh_timeout 30 "$ip" "docker kill \$(docker ps -q) 2>/dev/null; true" 2>/dev/null || true
+        _ssh_timeout 30 "$ip" "docker rm -f \$(docker ps -aq) 2>/dev/null; docker network prune -f 2>/dev/null; docker volume prune -f 2>/dev/null; true" 2>/dev/null || true
         _ssh "$ip" "sudo rm -rf ${REMOTE_SQL_DIR}" 2>/dev/null || true
     done
 }
