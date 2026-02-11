@@ -129,14 +129,12 @@ YAML
     ./run.sh harden
     ./run.sh db create testdb
 
-    # Verify connectivity through HAProxy (port 1433 on host)
+    # Verify connectivity through HAProxy using sqlcmd inside the SQL container
     local admin_pass
     admin_pass=$(cat secrets/admin_password.txt)
     log_step "Testing HAProxy connectivity..."
     local rc=0
-    docker run --rm --network sqlserver_public \
-        mcr.microsoft.com/mssql-tools18:latest \
-        /opt/mssql-tools18/bin/sqlcmd \
+    docker exec sqlserver-sql /opt/mssql-tools18/bin/sqlcmd \
         -S sqlserver-haproxy,1433 -U sqladmin -P "$admin_pass" \
         -Q "SELECT DB_NAME() AS current_db, @@SERVERNAME AS server" -C || rc=$?
 
