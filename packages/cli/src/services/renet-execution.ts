@@ -8,7 +8,7 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS, NETWORK_DEFAULTS, PROCESS_DEFAULTS } from '@rediacc/shared/config';
-import { isSEA } from './embedded-assets.js';
+import { extractRenetToLocal, isSEA } from './embedded-assets.js';
 import { outputService } from './output.js';
 import { renetProvisioner } from './renet-provisioner.js';
 import type { MachineConfig } from '../types/index.js';
@@ -45,6 +45,16 @@ export async function readSSHKey(keyPath: string): Promise<string> {
 export async function readOptionalSSHKey(keyPath: string | undefined): Promise<string> {
   if (!keyPath) return '';
   return readSSHKey(keyPath).catch(() => '');
+}
+
+/**
+ * Get the local path to the renet binary for spawning.
+ * In dev mode, uses the configured renetPath. In SEA mode, extracts the
+ * embedded binary to a local temp file.
+ */
+export async function getLocalRenetPath(config: { renetPath: string }): Promise<string> {
+  if (!isSEA()) return config.renetPath;
+  return extractRenetToLocal();
 }
 
 /**

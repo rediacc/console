@@ -20,6 +20,7 @@ import { contextService } from './context.js';
 import { outputService } from './output.js';
 import {
   buildLocalVault,
+  getLocalRenetPath,
   provisionRenetToRemote,
   readOptionalSSHKey,
   readSSHKey,
@@ -199,8 +200,9 @@ class LocalExecutorService {
   async checkRenetAvailable(): Promise<boolean> {
     try {
       const config = await contextService.getLocalConfig();
+      const renetPath = await getLocalRenetPath(config);
       return new Promise((resolve) => {
-        const child = spawn(config.renetPath, ['version'], {
+        const child = spawn(renetPath, ['version'], {
           stdio: ['ignore', 'pipe', 'pipe'],
         });
         child.on('close', (code) => resolve(code === 0));
