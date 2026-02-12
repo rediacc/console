@@ -24,14 +24,10 @@ export async function getStateProvider(): Promise<IStateProvider> {
   let provider: IStateProvider;
 
   switch (mode) {
-    case 's3': {
-      const { S3StateProvider } = await import('./s3-state-provider.js');
-      provider = await S3StateProvider.create(context!);
-      break;
-    }
+    case 's3':
     case 'local': {
       const { LocalStateProvider } = await import('./local-state-provider.js');
-      provider = new LocalStateProvider();
+      provider = new LocalStateProvider(mode);
       break;
     }
     case 'cloud':

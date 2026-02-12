@@ -3,7 +3,7 @@
  * Extracted from local-executor.ts for reuse by both local and S3 mode.
  */
 
-import { type ChildProcess, execSync, spawn } from 'node:child_process';
+import { execSync } from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -11,7 +11,7 @@ import { DEFAULTS, NETWORK_DEFAULTS, PROCESS_DEFAULTS } from '@rediacc/shared/co
 import { extractRenetToLocal, isSEA } from './embedded-assets.js';
 import { outputService } from './output.js';
 import { renetProvisioner } from './renet-provisioner.js';
-import type { LocalMachineConfig } from '../types/index.js';
+import type { MachineConfig } from '../types/index.js';
 
 /** Options for renet spawning */
 export interface RenetSpawnOptions {
@@ -62,7 +62,7 @@ export async function getLocalRenetPath(config: { renetPath: string }): Promise<
  */
 export async function provisionRenetToRemote(
   config: { renetPath: string },
-  machine: LocalMachineConfig,
+  machine: MachineConfig,
   sshPrivateKey: string,
   options: Pick<RenetSpawnOptions, 'debug'>
 ): Promise<void> {
@@ -92,53 +92,112 @@ export async function provisionRenetToRemote(
   }
 }
 
-/**
- * Build QueueVaultV2 structure for local/s3 execution.
- */
-export function buildLocalVault(opts: {
+interface BuildLocalVaultOptions {
   functionName: string;
   machineName: string;
-  machine: LocalMachineConfig;
+  machine: MachineConfig;
   sshPrivateKey: string;
   sshPublicKey: string;
   sshKnownHosts: string;
   params: Record<string, unknown>;
   extraMachines?: Record<string, { ip: string; port?: number; user: string }>;
-}): string {
-  // Build extra_machines map with SSH credentials
-  const extraMachines: Record<string, unknown> = {};
-  if (opts.extraMachines) {
-    for (const [name, cfg] of Object.entries(opts.extraMachines)) {
-      extraMachines[name] = {
-        ip: cfg.ip,
-        user: cfg.user,
-        port: cfg.port ?? DEFAULTS.SSH.PORT,
-        datastore: NETWORK_DEFAULTS.DATASTORE_PATH,
-        known_hosts: opts.sshKnownHosts,
-        ssh: {
-          private_key: opts.sshPrivateKey,
-          public_key: opts.sshPublicKey,
-        },
-      };
-    }
+  storages?: Record<string, { vaultContent: Record<string, unknown> }>;
+  repositoryCredentials?: Record<string, string>;
+  repositoryConfigs?: Record<string, { guid: string; name: string; networkId?: number }>;
+}
+
+function buildExtraMachines(
+  machines: Record<string, { ip: string; port?: number; user: string }> | undefined,
+  sshKnownHosts: string,
+  sshPrivateKey: string,
+  sshPublicKey: string
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  if (!machines) return result;
+  for (const [name, cfg] of Object.entries(machines)) {
+    result[name] = {
+      ip: cfg.ip,
+      user: cfg.user,
+      port: cfg.port ?? DEFAULTS.SSH.PORT,
+      datastore: NETWORK_DEFAULTS.DATASTORE_PATH,
+      known_hosts: sshKnownHosts,
+      ssh: {
+        private_key: sshPrivateKey,
+        public_key: sshPublicKey,
+      },
+    };
+  }
+  return result;
+}
+
+function buildStorageSection(vault: Record<string, unknown>): Record<string, unknown> | null {
+  const provider = String(vault.provider ?? '');
+  if (!provider) return null;
+
+  const section: Record<string, unknown> = { backend: provider };
+  if (vault.bucket) section.bucket = String(vault.bucket);
+  if (vault.region) section.region = String(vault.region);
+  if (vault.folder !== undefined && vault.folder !== null) {
+    section.folder = String(vault.folder);
   }
 
-  // Build repositories section when a repository is specified.
-  // This mirrors production vault structure where each repository entry
-  // carries its network_id for Docker daemon socket routing.
-  const repoName = (opts.params.repository ?? '') as string;
-  const repositories: Record<string, unknown> = {};
-  if (repoName) {
-    const repoEntry: Record<string, unknown> = {
-      guid: `local-${repoName}`,
-      name: repoName,
-    };
-    const networkId = opts.params.network_id;
-    if (networkId !== undefined && networkId !== '') {
-      repoEntry.network_id = typeof networkId === 'number' ? networkId : Number(networkId);
-    }
-    repositories[repoName] = repoEntry;
+  const parameters: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(vault)) {
+    if (['provider', 'bucket', 'region', 'folder'].includes(key)) continue;
+    parameters[key] = value;
   }
+  if (Object.keys(parameters).length > 0) {
+    section.parameters = parameters;
+  }
+
+  return section;
+}
+
+function buildStorageSystems(
+  storages: Record<string, { vaultContent: Record<string, unknown> }> | undefined
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  if (!storages) return result;
+  for (const [name, storage] of Object.entries(storages)) {
+    const section = buildStorageSection(storage.vaultContent);
+    if (section) result[name] = section;
+  }
+  return result;
+}
+
+function buildRepositories(
+  params: Record<string, unknown>,
+  repositoryConfigs?: Record<string, { guid: string; name: string; networkId?: number }>
+): { repoName: string; repositories: Record<string, unknown> } {
+  const repoName = (params.repository ?? '') as string;
+  const repositories: Record<string, unknown> = {};
+  if (!repoName) return { repoName, repositories };
+
+  const repoConfig = repositoryConfigs?.[repoName];
+  const repoEntry: Record<string, unknown> = {
+    guid: repoConfig?.guid ?? `local-${repoName}`,
+    name: repoName,
+  };
+  const networkId = repoConfig?.networkId ?? params.network_id;
+  if (networkId !== undefined && networkId !== '' && networkId !== 0) {
+    repoEntry.network_id = typeof networkId === 'number' ? networkId : Number(networkId);
+  }
+  repositories[repoName] = repoEntry;
+  return { repoName, repositories };
+}
+
+/**
+ * Build QueueVaultV2 structure for local/s3 execution.
+ */
+export function buildLocalVault(opts: BuildLocalVaultOptions): string {
+  const extraMachines = buildExtraMachines(
+    opts.extraMachines,
+    opts.sshKnownHosts,
+    opts.sshPrivateKey,
+    opts.sshPublicKey
+  );
+  const storageSystems = buildStorageSystems(opts.storages);
+  const { repoName, repositories } = buildRepositories(opts.params, opts.repositoryConfigs);
 
   const vault = {
     $schema: 'queue-vault-v2',
@@ -164,8 +223,8 @@ export function buildLocalVault(opts: {
     },
     params: opts.params,
     extra_machines: extraMachines,
-    storage_systems: {},
-    repository_credentials: {},
+    storage_systems: storageSystems,
+    repository_credentials: opts.repositoryCredentials ?? {},
     repositories,
     context: {
       organization_id: '',
@@ -176,54 +235,4 @@ export function buildLocalVault(opts: {
   };
 
   return JSON.stringify(vault);
-}
-
-/**
- * Spawn renet execute process and stream output.
- */
-export async function spawnRenet(
-  renetPath: string,
-  vault: string,
-  options: RenetSpawnOptions
-): Promise<{ exitCode: number }> {
-  return new Promise((resolve, reject) => {
-    const args = ['execute', '--vault', vault];
-
-    if (options.debug) args.push('--debug');
-    if (options.json) args.push('--json');
-
-    const timeout = options.timeout ?? 10 * 60 * 1000;
-
-    if (options.debug) {
-      outputService.info(`[local] Spawning: ${renetPath} execute ...`);
-    }
-
-    const child: ChildProcess = spawn(renetPath, args, {
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env },
-    });
-
-    const timeoutId = setTimeout(() => {
-      child.kill('SIGTERM');
-      reject(new Error(`Execution timed out after ${timeout}ms`));
-    }, timeout);
-
-    child.stdout?.on('data', (data: Buffer) => {
-      process.stdout.write(data);
-    });
-
-    child.stderr?.on('data', (data: Buffer) => {
-      process.stderr.write(data);
-    });
-
-    child.on('close', (code) => {
-      clearTimeout(timeoutId);
-      resolve({ exitCode: code ?? 1 });
-    });
-
-    child.on('error', (err) => {
-      clearTimeout(timeoutId);
-      reject(new Error(`Failed to spawn renet: ${err.message}`));
-    });
-  });
 }

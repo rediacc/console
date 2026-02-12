@@ -352,6 +352,72 @@
       "use": {
         "description": "Zu einem anderen Kontext wechseln",
         "switched": "Zu Kontext \"{{name}}\" gewechselt"
+      },
+      "scanKeys": {
+        "description": "SSH-Host-Schlüssel für Maschinen im aktuellen Kontext scannen",
+        "keysScanned": "Host-Schlüssel gescannt für \"{{name}}\"",
+        "noKeys": "Host-Schlüssel für \"{{name}}\" konnten nicht gescannt werden",
+        "completed": "{{count}}/{{total}} Maschinen gescannt"
+      },
+      "importStorage": {
+        "description": "Speicher aus einer rclone-Konfigurationsdatei importieren",
+        "optionName": "Nur diesen benannten Abschnitt importieren",
+        "noConfigs": "Keine gültigen Speicherkonfigurationen in der Datei gefunden",
+        "notFound": "Speicher \"{{name}}\" nicht in Konfigurationsdatei gefunden",
+        "unsupported": "Überspringe \"{{name}}\": nicht unterstützter Anbietertyp \"{{type}}\"",
+        "imported": "Speicher \"{{name}}\" importiert ({{type}})",
+        "summary": "{{count}} Speicher importiert"
+      },
+      "removeStorage": {
+        "description": "Einen Speicher aus dem aktuellen lokalen Kontext entfernen",
+        "success": "Speicher \"{{name}}\" entfernt"
+      },
+      "storages": {
+        "description": "Speicher im aktuellen lokalen Kontext auflisten",
+        "noStorages": "Keine Speicher konfiguriert. Importieren mit: rdc context import-storage <file>"
+      },
+      "addRepository": {
+        "description": "Ein Repository-GUID-Mapping zum aktuellen lokalen Kontext hinzufügen",
+        "optionGuid": "Repository-GUID (UUID aus Speicher-Backup-Dateinamen)",
+        "optionTag": "Repository-Tag",
+        "optionCredential": "Repository-Zugangsdaten (Verschlüsselungs-Passphrase)",
+        "optionNetworkId": "Netzwerk-ID für Docker-Isolation (2816, 2880, ...). Wird automatisch zugewiesen, wenn nicht angegeben",
+        "success": "Repository \"{{name}}\" hinzugefügt ({{guid}}, Tag: {{tag}})",
+        "networkIdAssigned": "Netzwerk-ID: {{networkId}}"
+      },
+      "removeRepository": {
+        "description": "Ein Repository-Mapping aus dem aktuellen lokalen Kontext entfernen",
+        "success": "Repository \"{{name}}\" entfernt"
+      },
+      "repositories": {
+        "description": "Repository-GUID-Mappings im aktuellen lokalen Kontext auflisten",
+        "noRepositories": "Keine Repositories konfiguriert. Hinzufügen mit: rdc context add-repository <name> --guid <guid>"
+      },
+      "toS3": {
+        "description": "Den aktuellen lokalen Kontext in den S3-Modus migrieren",
+        "optionEndpoint": "S3-Endpunkt-URL",
+        "optionBucket": "S3-Bucket-Name",
+        "optionAccessKeyId": "S3-Zugriffsschlüssel-ID",
+        "optionSecretAccessKey": "S3-Geheimschlüssel (wird abgefragt, wenn nicht angegeben)",
+        "optionRegion": "S3-Region",
+        "optionPrefix": "Schlüsselpräfix im Bucket",
+        "optionMasterPassword": "Verschlüsselung mit diesem Master-Passwort aktivieren",
+        "promptSecretAccessKey": "S3-Geheimschlüssel eingeben:",
+        "errorNotLocal": "Kontext \"{{name}}\" befindet sich nicht im lokalen Modus (aktuell: {{mode}})",
+        "errorSecretRequired": "Geheimschlüssel ist erforderlich",
+        "verifying": "S3-Zugriff wird überprüft...",
+        "verified": "S3-Zugriff verifiziert",
+        "success": "Zu S3-Modus migriert: {{machines}} Maschinen, {{storages}} Speicher, {{repos}} Repositories"
+      },
+      "toLocal": {
+        "description": "Den aktuellen S3-Kontext in den lokalen Modus migrieren",
+        "optionSshKeyPath": "Pfad für den SSH-Private-Key (Standard: bestehender Pfad)",
+        "errorNotS3": "Kontext \"{{name}}\" befindet sich nicht im S3-Modus (aktuell: {{mode}})",
+        "errorNoS3Config": "Kontext \"{{name}}\" hat keine S3-Konfiguration",
+        "loading": "Status wird aus S3 geladen...",
+        "sshWritten": "SSH-Schlüssel geschrieben nach {{path}}",
+        "success": "Zu lokalem Modus migriert: {{machines}} Maschinen, {{storages}} Speicher, {{repos}} Repositories",
+        "nonDestructive": "State.json verbleibt im S3-Bucket (nicht-destruktiv)"
       }
     },
     "doctor": {
@@ -363,7 +429,7 @@
         "contextMode": "Kontextmodus",
         "dockerAvailable": "Docker",
         "goInstalled": "Go",
-        "machines": "Machines",
+        "machines": "Maschinen",
         "nodeVersion": "Node.js",
         "renetBinary": "Binärdatei",
         "renetCriu": "Eingebettetes CRIU",
@@ -382,7 +448,7 @@
       "seaActive": "ja (Single Executable Application)",
       "sections": {
         "authentication": "Authentifizierung",
-        "configuration": "Configuration",
+        "configuration": "Konfiguration",
         "environment": "Umgebung",
         "renet": "Renet"
       },
@@ -777,6 +843,22 @@
       "list": {
         "description": "Speicheranbieter auflisten",
         "fetching": "Speicheranbieter werden abgerufen..."
+      },
+      "browse": {
+        "description": "Dateien in einem Speichersystem durchsuchen",
+        "pathOption": "Unterverzeichnispfad zum Auflisten",
+        "listing": "Dateien in \"{{name}}\" werden aufgelistet...",
+        "noFiles": "Keine Dateien gefunden",
+        "failed": "Dateien konnten nicht aufgelistet werden: {{error}}"
+      },
+      "pull": {
+        "description": "Ein Backup aus dem Cloud-Speicher auf eine Maschine herunterladen",
+        "repositoryOption": "Name des Repositories zum Herunterladen",
+        "machineOption": "Name der Zielmaschine",
+        "starting": "\"{{repository}}\" wird von \"{{storage}}\" auf \"{{machine}}\" heruntergeladen...",
+        "completed": "Download abgeschlossen in {{duration}}ms",
+        "failed": "Download fehlgeschlagen: {{error}}",
+        "noCredential": "Warnung: Repository \"{{name}}\" hat keine Zugangsdaten. Der Download kann fehlschlagen, wenn das Backup verschlüsselt ist."
       }
     },
     "sync": {
@@ -985,6 +1067,54 @@
         "noConnections": "Keine VS Code-SSH-Verbindungen konfiguriert.",
         "total": "\nGesamt: {{count}} Verbindung(en)"
       }
+    },
+    "repo": {
+      "description": "Repository-Lebenszyklus-Verwaltung (lokaler Modus)",
+      "machineOption": "Name der Zielmaschine",
+      "noCredential": "Warnung: Repository \"{{name}}\" hat keine Zugangsdaten. Operationen auf verschlüsselten Repositories können fehlschlagen.",
+      "mount": {
+        "description": "Repository mounten (LUKS-Container öffnen)",
+        "checkpointOption": "Nach dem Mounten von Checkpoint wiederherstellen",
+        "starting": "\"{{repository}}\" auf \"{{machine}}\" wird gemountet...",
+        "completed": "Mounten abgeschlossen",
+        "failed": "Mounten fehlgeschlagen"
+      },
+      "unmount": {
+        "description": "Repository unmounten",
+        "checkpointOption": "Checkpoint vor dem Unmounten erstellen",
+        "starting": "\"{{repository}}\" auf \"{{machine}}\" wird unmountet...",
+        "completed": "Unmounten abgeschlossen",
+        "failed": "Unmounten fehlgeschlagen"
+      },
+      "up": {
+        "description": "Repository-Dienste starten (Rediaccfile-Orchestrierung)",
+        "mountOption": "Repository vorher mounten",
+        "prepOnlyOption": "Nur den Vorbereitungsschritt ausführen",
+        "grandOption": "Grand-Repository-Name (wird automatisch in GUID aufgelöst)",
+        "starting": "Dienste für \"{{repository}}\" auf \"{{machine}}\" werden gestartet...",
+        "completed": "Dienste gestartet",
+        "failed": "Starten der Dienste fehlgeschlagen"
+      },
+      "down": {
+        "description": "Repository-Dienste stoppen",
+        "unmountOption": "Repository nach dem Stoppen unmounten",
+        "grandOption": "Grand-Repository-Name (wird automatisch in GUID aufgelöst)",
+        "starting": "Dienste für \"{{repository}}\" auf \"{{machine}}\" werden gestoppt...",
+        "completed": "Dienste gestoppt",
+        "failed": "Stoppen der Dienste fehlgeschlagen"
+      },
+      "status": {
+        "description": "Repository-Status abrufen",
+        "starting": "Status von \"{{repository}}\" auf \"{{machine}}\" wird abgerufen...",
+        "completed": "Status abgerufen",
+        "failed": "Statusabfrage fehlgeschlagen"
+      },
+      "list": {
+        "description": "Repositories auf einer Maschine auflisten",
+        "starting": "Repositories auf \"{{machine}}\" werden aufgelistet...",
+        "completed": "Auflistung abgeschlossen",
+        "failed": "Auflistung fehlgeschlagen"
+      }
     }
   },
   "common": {
@@ -1064,7 +1194,8 @@
       "term": "SSH-Terminalzugang",
       "update": "CLI-Updates",
       "user": "Benutzerverwaltung",
-      "vscode": "VS Code-Integration"
+      "vscode": "VS Code-Integration",
+      "repo": "Repository-Lebenszyklus"
     },
     "supplements": {
       "auth": {

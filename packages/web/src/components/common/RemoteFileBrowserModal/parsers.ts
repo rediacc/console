@@ -1,35 +1,27 @@
+/**
+ * Web-specific file list parsers.
+ *
+ * Wraps the shared base parsers with GUID-to-repository mapping
+ * that is only relevant to the web app's RemoteFileBrowserModal.
+ */
+
+import {
+  cleanJsonOutput,
+  FileListParserFactory as BaseFileListParserFactory,
+  parseJsonFileList as baseParseJsonFileList,
+  parseRcloneFileList as baseParseRcloneFileList,
+  type RcloneEntry,
+} from '@rediacc/shared/queue-vault/storage-browser';
+import type { RemoteFile as BaseRemoteFile } from '@rediacc/shared/queue-vault/storage-browser';
+import { isValidGuid } from '@rediacc/shared/validation';
 import type { RemoteFile } from './types';
 
-interface RcloneEntry {
-  name?: string;
-  Name?: string;
-  size?: number | string;
-  Size?: number | string;
-  isDirectory?: boolean;
-  IsDir?: boolean;
-  permissions?: string;
-  date?: string;
-  time?: string;
-  ModTime?: string;
-  Path?: string;
-  MimeType?: string;
-}
-
-const getStringValue = (value: unknown): string | undefined =>
-  typeof value === 'string' ? value : undefined;
-
-const getNumberValue = (value: unknown): number => {
-  if (typeof value === 'number') {
-    return value;
-  }
-  if (typeof value === 'string') {
-    const parsed = Number.parseInt(value, 10);
-    return Number.isNaN(parsed) ? 0 : parsed;
-  }
-  return 0;
-};
-
-const getBooleanValue = (value: unknown): boolean => (typeof value === 'boolean' ? value : false);
+// Re-export shared utilities used directly by the component
+export { cleanJsonOutput };
+export {
+  parsePlainTextFileList,
+  parseFallbackFormats,
+} from '@rediacc/shared/queue-vault/storage-browser';
 
 type RepositoryMapper = (guid: string) => {
   displayName: string;
@@ -38,51 +30,31 @@ type RepositoryMapper = (guid: string) => {
   isUnmapped: boolean;
 };
 
-const isGuidFormat = (fileName: string): boolean => {
-  const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return guidPattern.test(fileName);
-};
+function enrichWithGuid(file: BaseRemoteFile, mapGuidToRepository: RepositoryMapper): RemoteFile {
+  const isGuid = isValidGuid(file.name);
+
+  if (isGuid && !file.isDirectory) {
+    const repoInfo = mapGuidToRepository(file.name);
+    return {
+      ...file,
+      name: repoInfo.displayName,
+      originalGuid: file.name,
+      repositoryName: repoInfo.repositoryName,
+      repositoryTag: repoInfo.repositoryTag,
+      isUnmapped: repoInfo.isUnmapped,
+    };
+  }
+
+  return { ...file, isUnmapped: false };
+}
 
 export function parseJsonFileList(
   data: unknown,
   currentPath: string,
   mapGuidToRepository: RepositoryMapper
 ): RemoteFile[] {
-  if (!Array.isArray(data)) {
-    return [];
-  }
-
-  return data.map((file: RcloneEntry) => {
-    const fileName = getStringValue(file.name) ?? getStringValue(file.Name) ?? '';
-    const isGuid = isGuidFormat(fileName);
-
-    let displayName = fileName;
-    let repoInfo = null;
-
-    const isDirectoryFlag =
-      getBooleanValue(file.isDirectory) ||
-      getBooleanValue(file.IsDir) ||
-      Boolean(getStringValue(file.permissions)?.startsWith('d'));
-
-    if (isGuid && !isDirectoryFlag) {
-      repoInfo = mapGuidToRepository(fileName);
-      displayName = repoInfo.displayName;
-    }
-
-    return {
-      name: displayName,
-      originalGuid: isGuid && !isDirectoryFlag ? fileName : undefined,
-      repositoryName: repoInfo?.repositoryName,
-      repositoryTag: repoInfo?.repositoryTag,
-      isUnmapped: repoInfo?.isUnmapped ?? false,
-      size: getNumberValue(file.size ?? file.Size ?? 0),
-      isDirectory: isDirectoryFlag,
-      modTime: file.date && file.time ? `${file.date} ${file.time}` : getStringValue(file.ModTime),
-      path:
-        getStringValue(file.Path) ??
-        (currentPath && fileName ? `${currentPath}/${fileName}` : fileName),
-    };
-  });
+  const baseFiles = baseParseJsonFileList(data, currentPath);
+  return baseFiles.map((f) => enrichWithGuid(f, mapGuidToRepository));
 }
 
 export function parseRcloneFileList(
@@ -90,148 +62,26 @@ export function parseRcloneFileList(
   currentPath: string,
   mapGuidToRepository: RepositoryMapper
 ): RemoteFile[] {
-  const entries = Array.isArray(data.entries) ? data.entries : [];
-
-  return entries.map((file) => {
-    const fileName = getStringValue(file.Name) ?? '';
-    const isGuid = isGuidFormat(fileName);
-
-    let displayName = fileName;
-    let repoInfo = null;
-
-    const isDirectoryFlag = getBooleanValue(file.IsDir);
-    if (isGuid && !isDirectoryFlag) {
-      repoInfo = mapGuidToRepository(fileName);
-      displayName = repoInfo.displayName;
-    }
-
-    return {
-      name: displayName,
-      originalGuid: isGuid && !isDirectoryFlag ? fileName : undefined,
-      repositoryName: repoInfo?.repositoryName,
-      repositoryTag: repoInfo?.repositoryTag,
-      isUnmapped: repoInfo?.isUnmapped ?? false,
-      size: getNumberValue(file.Size),
-      isDirectory: isDirectoryFlag,
-      modTime: getStringValue(file.ModTime),
-      mimeType: getStringValue(file.MimeType),
-      path:
-        getStringValue(file.Path) ??
-        (currentPath && fileName ? `${currentPath}/${fileName}` : fileName),
-    };
-  });
+  const baseFiles = baseParseRcloneFileList(data, currentPath);
+  return baseFiles.map((f) => enrichWithGuid(f, mapGuidToRepository));
 }
 
-export function parsePlainTextFileList(textData: string, currentPath: string): RemoteFile[] {
-  const lines = textData
-    .trim()
-    .split('\n')
-    .filter((line) => line.trim());
-
-  const fileLines = lines.filter(
-    (line) =>
-      !line.startsWith('Listing') &&
-      !line.startsWith('Setting up') &&
-      !line.startsWith('Error:') &&
-      !line.startsWith('DEBUG:') &&
-      line.trim() !== ''
-  );
-
-  return fileLines.map((line) => {
-    const match = /^\s*(\d+)\s+(.+)$/.exec(line);
-    if (match) {
-      const [, sizeStr, name] = match;
-      return {
-        name: name.trim(),
-        size: Number.parseInt(sizeStr),
-        isDirectory: name.endsWith('/'),
-        path: currentPath ? `${currentPath}/${name.trim()}` : name.trim(),
-      };
-    }
-    return {
-      name: line.trim(),
-      size: 0,
-      isDirectory: line.endsWith('/'),
-      path: currentPath ? `${currentPath}/${line.trim()}` : line.trim(),
-    };
-  });
-}
-
-export function parseFallbackFormats(dataToProcess: string, currentPath: string): RemoteFile[] {
-  if (dataToProcess.includes('"Path":') && dataToProcess.includes('"Name":')) {
-    const jsonObjects = dataToProcess.match(/\{[^}]+\}/g);
-    if (jsonObjects) {
-      return jsonObjects
-        .map((jsonStr) => {
-          try {
-            const file = JSON.parse(jsonStr);
-            return {
-              name: file.Name ?? '',
-              size: file.Size ?? 0,
-              isDirectory: file.IsDir ?? false,
-              modTime: file.ModTime,
-              mimeType: file.MimeType,
-              path: file.Path ?? (currentPath ? `${currentPath}/${file.Name}` : file.Name),
-            };
-          } catch {
-            return null;
-          }
-        })
-        .filter((f) => f !== null) as RemoteFile[];
-    }
-  }
-  return [];
-}
-
-export function cleanJsonOutput(dataToProcess: string): string {
-  if (dataToProcess.includes('DEBUG:')) {
-    const jsonStartIndex = dataToProcess.lastIndexOf('[');
-    const jsonEndIndex = dataToProcess.lastIndexOf(']');
-    if (jsonStartIndex !== -1 && jsonEndIndex !== -1 && jsonStartIndex < jsonEndIndex) {
-      return dataToProcess.substring(jsonStartIndex, jsonEndIndex + 1);
-    }
-  } else if (dataToProcess.includes('[')) {
-    const jsonStartIndex = dataToProcess.indexOf('[');
-    const jsonEndIndex = dataToProcess.lastIndexOf(']');
-    if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
-      const jsonString = dataToProcess.substring(jsonStartIndex, jsonEndIndex + 1);
-      return jsonString.replaceAll('\\\\', '\\').replaceAll('\\n', '\n');
-    }
-  }
-  return dataToProcess;
-}
-
+/**
+ * Web-specific FileListParserFactory that adds GUID-to-repository mapping
+ * on top of the shared base parser.
+ */
 export class FileListParserFactory {
+  private readonly baseFactory: BaseFileListParserFactory;
+
   constructor(
-    private readonly currentPath: string,
+    currentPath: string,
     private readonly mapGuidToRepository: RepositoryMapper
-  ) {}
+  ) {
+    this.baseFactory = new BaseFileListParserFactory(currentPath);
+  }
 
   parse(dataToProcess: string): RemoteFile[] {
-    let fileList: RemoteFile[] = [];
-
-    const cleanedData = cleanJsonOutput(dataToProcess);
-
-    try {
-      const parsedData = JSON.parse(cleanedData);
-
-      if (Array.isArray(parsedData)) {
-        fileList = parseJsonFileList(parsedData, this.currentPath, this.mapGuidToRepository);
-      } else if (parsedData.entries) {
-        fileList = parseRcloneFileList(parsedData, this.currentPath, this.mapGuidToRepository);
-      }
-    } catch (parseError) {
-      console.warn('Parsing remote file data as plain text format failed:', parseError);
-      console.warn('Data that failed to parse:', dataToProcess);
-
-      fileList = parseFallbackFormats(dataToProcess, this.currentPath);
-      if (fileList.length === 0) {
-        const textData =
-          typeof dataToProcess === 'string' ? dataToProcess : JSON.stringify(dataToProcess);
-        fileList = parsePlainTextFileList(textData, this.currentPath);
-      }
-    }
-
-    return fileList.filter((f) => f.name);
+    const baseFiles = this.baseFactory.parse(dataToProcess);
+    return baseFiles.map((f) => enrichWithGuid(f, this.mapGuidToRepository));
   }
 }

@@ -432,3 +432,231 @@ test.describe('Switching Between Local and Cloud Contexts @cli @core', () => {
     expect((cloudResult.json as { mode: string }).mode).toBe('cloud');
   });
 });
+
+// ============================================================================
+// Local Storage Commands
+// ============================================================================
+
+/**
+ * Creates a temporary rclone config file for testing.
+ * Includes s3, drive (supported), and crypt (unsupported) sections.
+ */
+function createTestRcloneConfig(): string {
+  const configPath = path.join(os.tmpdir(), `test-rclone-${Date.now()}.conf`);
+  fs.writeFileSync(
+    configPath,
+    `[my-s3]
+type = s3
+region = us-east-1
+access_key_id = AKIA123456
+secret_access_key = secret123
+
+[my-drive]
+type = drive
+token = {"access_token":"ya29.test","expiry":"2026-01-01T00:00:00Z"}
+
+[unsupported-remote]
+type = crypt
+password = encrypted
+`
+  );
+  return configPath;
+}
+
+test.describe('Local Storage Commands @cli @core', () => {
+  const timestamp = Date.now();
+  const storageContext = `test-storage-${timestamp}`;
+  let runner: CliTestRunner;
+  let rcloneConfigPath: string;
+
+  test.beforeAll(() => {
+    ensureTestSshKeys();
+    runner = new CliTestRunner({});
+    rcloneConfigPath = createTestRcloneConfig();
+  });
+
+  test.afterAll(async () => {
+    await runner.run(['context', 'delete', storageContext], { skipJsonParse: true });
+    try {
+      fs.unlinkSync(rcloneConfigPath);
+    } catch {
+      // Ignore cleanup errors
+    }
+  });
+
+  // Tests are sequential — order matters for stateful storage operations.
+  // No nested test.describe blocks to avoid Playwright retry isolation issues.
+
+  test('should create local context for storage testing', async () => {
+    const result = await runner.run(
+      ['context', 'create-local', storageContext, '--ssh-key', '~/.ssh/id_rsa'],
+      { skipJsonParse: true }
+    );
+    expect(result.success).toBe(true);
+  });
+
+  test('should show no storages on fresh context', async () => {
+    const result = await runner.run(['--context', storageContext, 'context', 'storages'], {
+      skipJsonParse: true,
+    });
+
+    expect(result.success).toBe(true);
+    const output = result.stdout + result.stderr;
+    expect(
+      output.includes('No storages') || output.includes('no storages') || output.includes('[]')
+    ).toBe(true);
+  });
+
+  test('should import all supported storages from rclone config', async () => {
+    const result = await runner.run(
+      ['--context', storageContext, 'context', 'import-storage', rcloneConfigPath],
+      { skipJsonParse: true }
+    );
+
+    expect(result.success).toBe(true);
+    const output = result.stdout + result.stderr;
+    // Should import 2 supported storages (s3, drive)
+    expect(output).toContain('my-s3');
+    expect(output).toContain('my-drive');
+    // Should warn about unsupported type (warning goes to stderr)
+    expect(output).toContain('unsupported');
+  });
+
+  test('should import single storage with --name', async () => {
+    // Create a fresh context to test --name isolation
+    const singleCtx = `test-single-import-${timestamp}`;
+    await runner.run(['context', 'create-local', singleCtx, '--ssh-key', '~/.ssh/id_rsa'], {
+      skipJsonParse: true,
+    });
+
+    const result = await runner.run(
+      ['--context', singleCtx, 'context', 'import-storage', rcloneConfigPath, '--name', 'my-s3'],
+      { skipJsonParse: true }
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.stdout).toContain('my-s3');
+
+    // Verify only one storage was imported
+    const listResult = await runner.run(['--context', singleCtx, 'context', 'storages']);
+    if (Array.isArray(listResult.json)) {
+      expect(listResult.json).toHaveLength(1);
+      expect((listResult.json[0] as { name: string }).name).toBe('my-s3');
+    }
+
+    // Cleanup
+    await runner.run(['context', 'delete', singleCtx], { skipJsonParse: true });
+  });
+
+  test('should fail when --name references non-existent section', async () => {
+    const result = await runner.run(
+      [
+        '--context',
+        storageContext,
+        'context',
+        'import-storage',
+        rcloneConfigPath,
+        '--name',
+        'nonexistent',
+      ],
+      { skipJsonParse: true }
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.stdout + result.stderr).toContain('not found');
+  });
+
+  test('should fail when file does not exist', async () => {
+    const result = await runner.run(
+      ['--context', storageContext, 'context', 'import-storage', '/tmp/nonexistent-rclone.conf'],
+      { skipJsonParse: true }
+    );
+
+    expect(result.success).toBe(false);
+  });
+
+  test('should fail when file has no valid configs', async () => {
+    const emptyConf = path.join(os.tmpdir(), `test-empty-${Date.now()}.conf`);
+    fs.writeFileSync(emptyConf, '# only comments\n; nothing here\n');
+
+    const result = await runner.run(
+      ['--context', storageContext, 'context', 'import-storage', emptyConf],
+      { skipJsonParse: true }
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.stdout + result.stderr).toMatch(/no valid|no storage/i);
+
+    try {
+      fs.unlinkSync(emptyConf);
+    } catch {
+      // Ignore
+    }
+  });
+
+  test('should list imported storages with name and provider', async () => {
+    const result = await runner.run(['--context', storageContext, 'context', 'storages']);
+
+    expect(result.success).toBe(true);
+    expect(Array.isArray(result.json)).toBe(true);
+
+    const storages = result.json as { name: string; provider: string }[];
+    expect(storages.length).toBeGreaterThanOrEqual(2);
+
+    const s3Entry = storages.find((s) => s.name === 'my-s3');
+    expect(s3Entry).toBeDefined();
+    expect(s3Entry?.provider).toBe('s3');
+
+    const driveEntry = storages.find((s) => s.name === 'my-drive');
+    expect(driveEntry).toBeDefined();
+    expect(driveEntry?.provider).toBe('drive');
+  });
+
+  test('should remove a specific storage', async () => {
+    const result = await runner.run(
+      ['--context', storageContext, 'context', 'remove-storage', 'my-drive'],
+      { skipJsonParse: true }
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.stdout).toContain('removed');
+
+    // Verify it's gone
+    const listResult = await runner.run(['--context', storageContext, 'context', 'storages']);
+    if (Array.isArray(listResult.json)) {
+      const names = (listResult.json as { name: string }[]).map((s) => s.name);
+      expect(names).not.toContain('my-drive');
+    }
+  });
+
+  test('should leave other storages intact after removal', async () => {
+    const listResult = await runner.run(['--context', storageContext, 'context', 'storages']);
+
+    expect(listResult.success).toBe(true);
+    if (Array.isArray(listResult.json)) {
+      const names = (listResult.json as { name: string }[]).map((s) => s.name);
+      expect(names).toContain('my-s3');
+    }
+  });
+
+  test('should fail for non-existent storage name on remove', async () => {
+    const result = await runner.run(
+      ['--context', storageContext, 'context', 'remove-storage', 'nonexistent'],
+      { skipJsonParse: true }
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.stdout + result.stderr).toContain('not found');
+  });
+
+  test('should include storage count in context show', async () => {
+    const result = await runner.run(['--context', storageContext, 'context', 'show']);
+
+    expect(result.success).toBe(true);
+    expect(result.json).toBeDefined();
+
+    const ctx = result.json as { storages?: number };
+    expect(ctx.storages).toBeDefined();
+    expect(ctx.storages).toBeGreaterThanOrEqual(1);
+  });
+});

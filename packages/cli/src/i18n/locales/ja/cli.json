@@ -265,6 +265,15 @@
         "description": "現在のローカルコンテキストにマシンを追加する",
         "success": "マシン \"{{name}}\" が追加されました ({{user}}@{{ip}})"
       },
+      "addRepository": {
+        "description": "現在のローカルコンテキストにリポジトリ GUID マッピングを追加する",
+        "networkIdAssigned": "ネットワーク ID: {{networkId}}",
+        "optionCredential": "リポジトリ認証情報 (暗号化パスフレーズ)",
+        "optionGuid": "リポジトリ GUID (ストレージバックアップファイル名の UUID)",
+        "optionNetworkId": "Docker 分離用ネットワーク ID (2816, 2880, ...)。省略時は自動割り当て",
+        "optionTag": "リポジトリタグ",
+        "success": "リポジトリ \"{{name}}\" を追加しました ({{guid}}, タグ: {{tag}})"
+      },
       "clear": {
         "allCleared": "すべてのデフォルトをクリアしました",
         "description": "デフォルトをクリアする (すべて、または特定のキー)",
@@ -308,6 +317,15 @@
         "success": "コンテキスト \"{{name}}\" が削除されました"
       },
       "description": "CLI コンテキストを管理する",
+      "importStorage": {
+        "description": "rclone 設定ファイルからストレージをインポートする",
+        "imported": "ストレージ \"{{name}}\" をインポートしました ({{type}})",
+        "noConfigs": "ファイルに有効なストレージ設定が見つかりません",
+        "notFound": "ストレージ \"{{name}}\" が設定ファイルに見つかりません",
+        "optionName": "この名前のセクションのみインポート",
+        "summary": "{{count}} 個のストレージをインポートしました",
+        "unsupported": "\"{{name}}\" をスキップ: サポートされていないプロバイダータイプ \"{{type}}\""
+      },
       "list": {
         "description": "すべてのコンテキストをリスト表示する",
         "noContexts": "コンテキストが設定されていません"
@@ -320,9 +338,27 @@
         "description": "現在のローカルコンテキストからマシンを削除する",
         "success": "マシン \"{{name}}\" が削除されました"
       },
+      "removeRepository": {
+        "description": "現在のローカルコンテキストからリポジトリマッピングを削除する",
+        "success": "リポジトリ \"{{name}}\" を削除しました"
+      },
+      "removeStorage": {
+        "description": "現在のローカルコンテキストからストレージを削除する",
+        "success": "ストレージ \"{{name}}\" を削除しました"
+      },
       "rename": {
         "description": "コンテキストの名前を変更する",
         "success": "コンテキスト \"{{oldName}}\" を \"{{newName}}\" に名前変更しました"
+      },
+      "repositories": {
+        "description": "現在のローカルコンテキストのリポジトリ GUID マッピングをリスト表示する",
+        "noRepositories": "リポジトリが設定されていません。追加: rdc context add-repository <name> --guid <guid>"
+      },
+      "scanKeys": {
+        "completed": "{{count}}/{{total}} 台のマシンをスキャンしました",
+        "description": "現在のコンテキスト内のマシンの SSH ホストキーをスキャンする",
+        "keysScanned": "\"{{name}}\" のホストキーをスキャンしました",
+        "noKeys": "\"{{name}}\" のホストキーをスキャンできませんでした"
       },
       "set": {
         "description": "デフォルト値を設定する (team, region, bridge, machine)",
@@ -345,6 +381,36 @@
         "description": "現在のコンテキストの詳細を表示する",
         "noContext": "アクティブなコンテキストがありません"
       },
+      "storages": {
+        "description": "現在のローカルコンテキストのストレージをリスト表示する",
+        "noStorages": "ストレージが設定されていません。インポート: rdc context import-storage <file>"
+      },
+      "toLocal": {
+        "description": "現在の S3 コンテキストをローカルモードに移行する",
+        "errorNoS3Config": "コンテキスト \"{{name}}\" に S3 設定がありません",
+        "errorNotS3": "コンテキスト \"{{name}}\" は S3 モードではありません (現在: {{mode}})",
+        "loading": "S3 から状態を読み込み中...",
+        "nonDestructive": "state.json は S3 バケットに残ります (非破壊的)",
+        "optionSshKeyPath": "SSH 秘密鍵の書き込み先 (デフォルト: 既存パス)",
+        "sshWritten": "SSH キーを {{path}} に書き込みました",
+        "success": "ローカルモードに移行しました: {{machines}} 台のマシン、{{storages}} 個のストレージ、{{repos}} 個のリポジトリ"
+      },
+      "toS3": {
+        "description": "現在のローカルコンテキストを S3 モードに移行する",
+        "errorNotLocal": "コンテキスト \"{{name}}\" はローカルモードではありません (現在: {{mode}})",
+        "errorSecretRequired": "シークレットアクセスキーは必須です",
+        "optionAccessKeyId": "S3 アクセスキー ID",
+        "optionBucket": "S3 バケット名",
+        "optionEndpoint": "S3 エンドポイント URL",
+        "optionMasterPassword": "このマスターパスワードで暗号化を有効にする",
+        "optionPrefix": "バケット内のキープレフィックス",
+        "optionRegion": "S3 リージョン",
+        "optionSecretAccessKey": "S3 シークレットアクセスキー (省略時はプロンプト表示)",
+        "promptSecretAccessKey": "S3 シークレットアクセスキーを入力してください:",
+        "success": "S3 モードに移行しました: {{machines}} 台のマシン、{{storages}} 個のストレージ、{{repos}} 個のリポジトリ",
+        "verified": "S3 アクセスが確認されました",
+        "verifying": "S3 アクセスを確認中..."
+      },
       "unset": {
         "description": "コンテキストのデフォルト値を削除する",
         "success": "現在のコンテキストから {{key}} を削除しました"
@@ -358,17 +424,17 @@
       "allPassed": "すべてのチェックに合格しました",
       "checks": {
         "activeContext": "アクティブコンテキスト",
-        "authStatus": "Status",
+        "authStatus": "ステータス",
         "cliVersion": "CLIバージョン",
         "contextMode": "コンテキストモード",
         "dockerAvailable": "Docker",
         "goInstalled": "Go",
-        "machines": "Machines",
+        "machines": "マシン",
         "nodeVersion": "Node.js",
         "renetBinary": "バイナリ",
         "renetCriu": "組み込みCRIU",
         "renetRsync": "組み込みrsync",
-        "renetVersion": "Version",
+        "renetVersion": "バージョン",
         "seaMode": "SEAモード",
         "sshKey": "SSHキー"
       },
@@ -382,7 +448,7 @@
       "seaActive": "はい（単一実行可能アプリケーション）",
       "sections": {
         "authentication": "認証",
-        "configuration": "Configuration",
+        "configuration": "設定",
         "environment": "環境",
         "renet": "Renet"
       },
@@ -703,6 +769,54 @@
         "fetching": "リージョンを取得中です..."
       }
     },
+    "repo": {
+      "description": "リポジトリライフサイクル管理 (ローカルモード)",
+      "down": {
+        "completed": "サービスが停止されました",
+        "description": "リポジトリサービスを停止する",
+        "failed": "サービスの停止に失敗しました",
+        "grandOption": "グランドリポジトリ名 (自動的に GUID に解決)",
+        "starting": "\"{{repository}}\" のサービスを \"{{machine}}\" で停止中...",
+        "unmountOption": "停止後にリポジトリをアンマウントする"
+      },
+      "list": {
+        "completed": "リスト表示が完了しました",
+        "description": "マシン上のリポジトリをリスト表示する",
+        "failed": "リスト表示に失敗しました",
+        "starting": "\"{{machine}}\" のリポジトリをリスト表示中..."
+      },
+      "machineOption": "対象マシン名",
+      "mount": {
+        "checkpointOption": "マウント後にチェックポイントから復元する",
+        "completed": "マウントが完了しました",
+        "description": "リポジトリをマウントする (LUKS コンテナを開く)",
+        "failed": "マウントに失敗しました",
+        "starting": "\"{{repository}}\" を \"{{machine}}\" でマウント中..."
+      },
+      "noCredential": "警告: リポジトリ \"{{name}}\" に認証情報が設定されていません。暗号化されたリポジトリの操作が失敗する可能性があります。",
+      "status": {
+        "completed": "ステータスを取得しました",
+        "description": "リポジトリのステータスを取得する",
+        "failed": "ステータスの確認に失敗しました",
+        "starting": "\"{{repository}}\" のステータスを \"{{machine}}\" で取得中..."
+      },
+      "unmount": {
+        "checkpointOption": "アンマウント前にチェックポイントを作成する",
+        "completed": "アンマウントが完了しました",
+        "description": "リポジトリをアンマウントする",
+        "failed": "アンマウントに失敗しました",
+        "starting": "\"{{repository}}\" を \"{{machine}}\" でアンマウント中..."
+      },
+      "up": {
+        "completed": "サービスが開始されました",
+        "description": "リポジトリサービスを開始する (Rediaccfile オーケストレーション)",
+        "failed": "サービスの開始に失敗しました",
+        "grandOption": "グランドリポジトリ名 (自動的に GUID に解決)",
+        "mountOption": "最初にリポジトリをマウントする",
+        "prepOnlyOption": "準備ステップのみ実行する",
+        "starting": "\"{{repository}}\" のサービスを \"{{machine}}\" で開始中..."
+      }
+    },
     "repository": {
       "create": {
         "creating": "リポジトリ \"{{name}}:{{tag}}\" を作成中です...",
@@ -773,10 +887,26 @@
       }
     },
     "storage": {
+      "browse": {
+        "description": "ストレージシステム内のファイルを参照する",
+        "failed": "ファイルのリスト表示に失敗しました: {{error}}",
+        "listing": "\"{{name}}\" のファイルをリスト表示中...",
+        "noFiles": "ファイルが見つかりません",
+        "pathOption": "リスト表示するサブディレクトリのパス"
+      },
       "description": "ストレージ管理",
       "list": {
         "description": "ストレージプロバイダーをリスト表示する",
         "fetching": "ストレージプロバイダーを取得中です..."
+      },
+      "pull": {
+        "completed": "{{duration}}ms でプルが完了しました",
+        "description": "クラウドストレージからマシンにバックアップをプルする",
+        "failed": "プルに失敗しました: {{error}}",
+        "machineOption": "対象マシン名",
+        "noCredential": "警告: リポジトリ \"{{name}}\" に認証情報が設定されていません。バックアップが暗号化されている場合、プルが失敗する可能性があります。",
+        "repositoryOption": "プルするリポジトリ名",
+        "starting": "\"{{repository}}\" を \"{{storage}}\" から \"{{machine}}\" にプル中..."
       }
     },
     "sync": {
@@ -1056,6 +1186,7 @@
       "protocol": "プロトコルハンドラー",
       "queue": "キュー操作",
       "region": "リージョン管理",
+      "repo": "リポジトリライフサイクル",
       "repository": "リポジトリ管理",
       "shortcuts": "クイックコマンド（ショートカット）",
       "storage": "ストレージ管理",

@@ -5,10 +5,10 @@
 // ============================================================================
 
 /**
- * Machine configuration for local mode.
- * Defines SSH connection details for a machine.
+ * Machine configuration. Defines SSH connection details for a machine.
+ * Used by both local and S3 modes (stored in config.json or state.json).
  */
-export interface LocalMachineConfig {
+export interface MachineConfig {
   /** Machine IP address or hostname */
   ip: string;
   /** SSH username */
@@ -17,13 +17,41 @@ export interface LocalMachineConfig {
   port?: number;
   /** Datastore path on the machine */
   datastore?: string;
+  /** SSH host key(s) for this machine (from ssh-keyscan) */
+  knownHosts?: string;
 }
 
 /**
- * SSH configuration for local mode.
- * Points to local SSH key files.
+ * Storage configuration. Stores rclone-imported storage vault data.
+ * Used by both local and S3 modes.
  */
-export interface LocalSSHConfig {
+export interface StorageConfig {
+  /** Storage provider type (s3, b2, drive, etc.) */
+  provider: string;
+  /** Full vault content (provider, bucket, credentials, etc.) */
+  vaultContent: Record<string, unknown>;
+}
+
+/**
+ * Repository configuration. Maps a human-readable name to its GUID.
+ * Used by both local and S3 modes.
+ */
+export interface RepositoryConfig {
+  /** Repository GUID (the UUID used as filename in storage backups) */
+  repositoryGuid: string;
+  /** Repository tag (default: 'latest') */
+  tag?: string;
+  /** Repository credential (encryption passphrase for the backup) */
+  credential?: string;
+  /** Network ID for Docker isolation (2816 + n*64). Auto-assigned if omitted. */
+  networkId?: number;
+}
+
+/**
+ * SSH configuration. Points to local SSH key files.
+ * Used by both local and S3 modes (always stored in config.json).
+ */
+export interface SSHConfig {
   /** Path to SSH private key file (e.g., ~/.ssh/id_rsa) */
   privateKeyPath: string;
   /** Path to SSH public key file (optional) */
@@ -88,9 +116,13 @@ export interface NamedContext {
   // ============================================================================
 
   /** Machine configurations for local/s3 mode (name -> config) */
-  machines?: Record<string, LocalMachineConfig>;
+  machines?: Record<string, MachineConfig>;
+  /** Storage configurations for local/s3 mode (name -> config) */
+  storages?: Record<string, StorageConfig>;
+  /** Repository name-to-GUID mappings for storage browse (name -> config) */
+  repositories?: Record<string, RepositoryConfig>;
   /** SSH configuration for local/s3 mode */
-  ssh?: LocalSSHConfig;
+  ssh?: SSHConfig;
   /** Path to renet binary (default: 'renet' in PATH) */
   renetPath?: string;
 
@@ -195,6 +227,33 @@ export interface IStorageProvider {
 }
 
 export type { ICryptoProvider } from '@rediacc/shared/encryption';
+
+// ============================================================================
+// S3 State Types (single state.json in bucket)
+// ============================================================================
+
+/** SSH key content stored in state.json for S3 mode portability. */
+export interface SSHContent {
+  /** Actual SSH private key (PEM content) */
+  privateKey: string;
+  /** Actual SSH public key content */
+  publicKey?: string;
+}
+
+/**
+ * Root shape of the S3 state document stored at `state.json` in the bucket.
+ * Uses the same unified types as config.json (MachineConfig, StorageConfig, RepositoryConfig).
+ * When `encrypted` is true, each section value is an AES-256-GCM ciphertext string.
+ * When false, sections are plain objects.
+ */
+export interface S3StateData {
+  version: 1;
+  encrypted: boolean;
+  machines: Record<string, MachineConfig> | string;
+  storages: Record<string, StorageConfig> | string;
+  repositories: Record<string, RepositoryConfig> | string;
+  ssh?: SSHContent | string;
+}
 
 // ============================================================================
 // Auto-Update Types
