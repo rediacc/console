@@ -78,7 +78,10 @@ test.describe('S3 Context Commands (with master password) @cli @s3', () => {
   });
 
   test('should show S3 context details (mode=s3, endpoint, bucket)', async () => {
-    const ctxRunner = CliTestRunner.withContext(encContextName);
+    const ctxRunner = new CliTestRunner({
+      context: encContextName,
+      credentials: { email: '', password: '', masterPassword: encMasterPassword },
+    });
     const result = await ctxRunner.run(['context', 'show']);
 
     runner.expectSuccess(result);
@@ -90,7 +93,10 @@ test.describe('S3 Context Commands (with master password) @cli @s3', () => {
   });
 
   test('should add a machine to S3 context', async () => {
-    const ctxRunner = CliTestRunner.withContext(encContextName);
+    const ctxRunner = new CliTestRunner({
+      context: encContextName,
+      credentials: { email: '', password: '', masterPassword: encMasterPassword },
+    });
     const result = await ctxRunner.run(
       ['context', 'add-machine', 'test-vm', '--ip', '192.168.1.100', '--user', 'root'],
       { skipJsonParse: true }
@@ -136,7 +142,10 @@ test.describe('S3 Context Commands (with master password) @cli @s3', () => {
   });
 
   test('should show machines after adding one', async () => {
-    const ctxRunner = CliTestRunner.withContext(encContextName);
+    const ctxRunner = new CliTestRunner({
+      context: encContextName,
+      credentials: { email: '', password: '', masterPassword: encMasterPassword },
+    });
     const result = await ctxRunner.run(['context', 'machines']);
 
     runner.expectSuccess(result);

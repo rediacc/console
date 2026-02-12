@@ -75,7 +75,10 @@ test.describe('S3 Queue Operations (with master password) @cli @s3', () => {
     );
     setupRunner.expectSuccess(createResult);
 
-    const ctxRunner = CliTestRunner.withContext(encContextName);
+    const ctxRunner = new CliTestRunner({
+      context: encContextName,
+      credentials: { email: '', password: '', masterPassword: encMasterPassword },
+    });
     const addResult = await ctxRunner.run(
       ['context', 'add-machine', 'test-vm', '--ip', '192.168.1.200', '--user', 'root'],
       { skipJsonParse: true }
