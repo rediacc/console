@@ -13,7 +13,7 @@ export function isWSL(): boolean {
   try {
     // WSL1 and WSL2 have /proc/version containing "Microsoft" or "microsoft"
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const fs = require('node:fs') as typeof import('fs');
+    const fs = require('node:fs') as typeof import('node:fs');
     const version = fs.readFileSync('/proc/version', 'utf8').toLowerCase();
     return version.includes('microsoft') || version.includes('wsl');
   } catch {

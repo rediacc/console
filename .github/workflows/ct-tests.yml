@@ -408,7 +408,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-attempt-${{ github.run_attempt }}) || true
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-attempt-${{ github.run_attempt }} --max-wait 300) || true
           echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
       - name: Download Pinggy Tunnel URL
         id: pinggy-tunnel
@@ -416,7 +416,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy-attempt-${{ github.run_attempt }}) || true
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy-attempt-${{ github.run_attempt }} --max-wait 300) || true
           echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
       - name: Select Working Tunnel
         id: tunnel
@@ -469,14 +469,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-attempt-${{ github.run_attempt }}) || true
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-attempt-${{ github.run_attempt }} --max-wait 300) || true
           echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
       - name: Download Pinggy Tunnel URL
         id: pinggy-tunnel
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy-attempt-${{ github.run_attempt }}) || true
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy-attempt-${{ github.run_attempt }} --max-wait 300) || true
           echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
       - name: Select Working Tunnel
         id: tunnel
@@ -573,7 +573,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-attempt-${{ github.run_attempt }}) || true
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-attempt-${{ github.run_attempt }} --max-wait 300) || true
           echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
       - name: Download Pinggy Tunnel URL
         id: pinggy-tunnel
@@ -581,7 +581,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy-attempt-${{ github.run_attempt }}) || true
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy-attempt-${{ github.run_attempt }} --max-wait 300) || true
           echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
       - name: Select Working Tunnel
         id: tunnel
@@ -1023,3 +1023,119 @@ jobs:
           path: private/renet/test-results.xml
           retention-days: 3
           if-no-files-found: ignore
+
+  # ============================================================================
+  # SQL STANDALONE: Single-instance SQL Server + HAProxy
+  # Validates standalone deployment, hardening, and TLS connectivity.
+  # ============================================================================
+  test-sql-standalone:
+    name: SQL Standalone
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: console,middleware,renet,license-server,sql
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Clone SQL submodule
+        run: |
+          git config --global url."https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/".insteadOf "https://github.com/"
+          git clone --depth 1 https://github.com/rediacc/sql.git private/sql
+
+      - name: Run SQL standalone test
+        run: .ci/scripts/private/run-sql.sh test-standalone
+
+  # ============================================================================
+  # SQL HA: Multi-machine Always On Availability Group via renet VMs
+  # Provisions 3 KVM VMs, deploys SQL Server HA cluster, and runs failover
+  # test scenarios (planned failover, kill primary, recovery, data integrity).
+  # ============================================================================
+  test-sql-ha:
+    name: SQL HA
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      CI: 'true'
+      VM_NET: 'renet12'
+      VM_NET_BASE: '192.168.112'
+      VM_WORKERS: '11 12 13'
+      VM_CEPH_NODES: ''
+      VM_BRIDGE: ''
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: console,middleware,renet,license-server,sql
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Clone SQL submodule
+        run: |
+          git config --global url."https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/".insteadOf "https://github.com/"
+          git clone --depth 1 https://github.com/rediacc/sql.git private/sql
+
+      # Build renet for VM provisioning
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+      - name: Build renet
+        run: .ci/scripts/infra/build-renet.sh
+      - name: Install renet
+        run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
+
+      # Provision 3 VMs
+      - name: Setup KVM Host
+        run: sudo $RENET_BINARY ops host setup
+      - name: Generate SSH keypair
+        run: |
+          ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -q
+          cp ~/.ssh/id_ed25519 ~/.ssh/id_rsa
+          cp ~/.ssh/id_ed25519.pub ~/.ssh/id_rsa.pub
+      - name: Provision VMs
+        run: sudo -E $RENET_BINARY ops up --force --parallel --skip-orchestration
+      - name: Fix renet data dir ownership
+        run: sudo chown -R $USER:$USER $RUNNER_TEMP/renet
+      - name: Wait for VM SSH readiness
+        run: |
+          for id in 11 12 13; do
+            vm="${VM_NET_BASE}.${id}"
+            echo "Waiting for $vm as $USER..."
+            for i in {1..30}; do
+              if ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 $USER@$vm echo ready 2>/dev/null; then
+                echo "VM $vm is SSH-ready"
+                ssh-keyscan $vm >> ~/.ssh/known_hosts 2>/dev/null
+                break
+              fi
+              echo "Waiting for VM $vm SSH... ($i/30)"
+              sleep 5
+              if [[ $i -eq 30 ]]; then
+                echo "VM $vm SSH not ready after 150s"
+                exit 1
+              fi
+            done
+          done
+
+      # Deploy SQL HA and run tests
+      - name: Run SQL HA tests
+        run: .ci/scripts/private/sql-ha-test.sh --scenarios "planned coordinator-kill kill recovery integrity"
+        env:
+          VM_NET_BASE: ${{ env.VM_NET_BASE }}
+          SSH_USER: ${{ env.USER }}
+
+      # Cleanup
+      - name: Cleanup VMs
+        if: always()
+        run: sudo -E $RENET_BINARY ops down || true
