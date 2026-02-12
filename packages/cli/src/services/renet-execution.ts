@@ -11,7 +11,7 @@ import { DEFAULTS, NETWORK_DEFAULTS, PROCESS_DEFAULTS } from '@rediacc/shared/co
 import { extractRenetToLocal, isSEA } from './embedded-assets.js';
 import { outputService } from './output.js';
 import { renetProvisioner } from './renet-provisioner.js';
-import type { LocalMachineConfig } from '../types/index.js';
+import type { MachineConfig } from '../types/index.js';
 
 /** Options for renet spawning */
 export interface RenetSpawnOptions {
@@ -62,7 +62,7 @@ export async function getLocalRenetPath(config: { renetPath: string }): Promise<
  */
 export async function provisionRenetToRemote(
   config: { renetPath: string },
-  machine: LocalMachineConfig,
+  machine: MachineConfig,
   sshPrivateKey: string,
   options: Pick<RenetSpawnOptions, 'debug'>
 ): Promise<void> {
@@ -98,12 +98,15 @@ export async function provisionRenetToRemote(
 export function buildLocalVault(opts: {
   functionName: string;
   machineName: string;
-  machine: LocalMachineConfig;
+  machine: MachineConfig;
   sshPrivateKey: string;
   sshPublicKey: string;
   sshKnownHosts: string;
   params: Record<string, unknown>;
   extraMachines?: Record<string, { ip: string; port?: number; user: string }>;
+  storages?: Record<string, { vaultContent: Record<string, unknown> }>;
+  repositoryCredentials?: Record<string, string>;
+  repositoryConfigs?: Record<string, { guid: string; name: string; networkId?: number }>;
 }): string {
   // Build extra_machines map with SSH credentials
   const extraMachines: Record<string, unknown> = {};
@@ -123,18 +126,50 @@ export function buildLocalVault(opts: {
     }
   }
 
+  // Build storage_systems from context storages.
+  // Converts vault content (provider, credentials) to StorageSection format
+  // (backend + parameters) that renet's GetStorageV2() expects.
+  const storageSystems: Record<string, unknown> = {};
+  if (opts.storages) {
+    for (const [name, storage] of Object.entries(opts.storages)) {
+      const vault = storage.vaultContent;
+      const provider = String(vault.provider ?? '');
+      if (!provider) continue;
+
+      const section: Record<string, unknown> = { backend: provider };
+      if (vault.bucket) section.bucket = String(vault.bucket);
+      if (vault.region) section.region = String(vault.region);
+      if (vault.folder !== undefined && vault.folder !== null) {
+        section.folder = String(vault.folder);
+      }
+
+      // All other fields go into parameters (credentials, endpoint, etc.)
+      const parameters: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(vault)) {
+        if (['provider', 'bucket', 'region', 'folder'].includes(key)) continue;
+        parameters[key] = value;
+      }
+      if (Object.keys(parameters).length > 0) {
+        section.parameters = parameters;
+      }
+
+      storageSystems[name] = section;
+    }
+  }
+
   // Build repositories section when a repository is specified.
-  // This mirrors production vault structure where each repository entry
-  // carries its network_id for Docker daemon socket routing.
+  // Uses real GUID from context repository configs when available,
+  // falls back to local-${repoName} for ad-hoc local operations.
   const repoName = (opts.params.repository ?? '') as string;
   const repositories: Record<string, unknown> = {};
   if (repoName) {
+    const repoConfig = opts.repositoryConfigs?.[repoName];
     const repoEntry: Record<string, unknown> = {
-      guid: `local-${repoName}`,
+      guid: repoConfig?.guid ?? `local-${repoName}`,
       name: repoName,
     };
-    const networkId = opts.params.network_id;
-    if (networkId !== undefined && networkId !== '') {
+    const networkId = repoConfig?.networkId ?? opts.params.network_id;
+    if (networkId !== undefined && networkId !== '' && networkId !== 0) {
       repoEntry.network_id = typeof networkId === 'number' ? networkId : Number(networkId);
     }
     repositories[repoName] = repoEntry;
@@ -164,8 +199,8 @@ export function buildLocalVault(opts: {
     },
     params: opts.params,
     extra_machines: extraMachines,
-    storage_systems: {},
-    repository_credentials: {},
+    storage_systems: storageSystems,
+    repository_credentials: opts.repositoryCredentials ?? {},
     repositories,
     context: {
       organization_id: '',

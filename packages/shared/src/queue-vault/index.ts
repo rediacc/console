@@ -41,6 +41,16 @@ export type {
   VaultContent,
 } from './types';
 // Utils
+// Rclone config parsing
+export {
+  mapRcloneToStorageProvider,
+  parseRcloneConfig,
+  processConfigValue,
+  PROVIDER_MAPPING,
+  type RcloneConfig,
+  type RcloneConfigFields,
+  type RcloneConfigFieldValue,
+} from './utils';
 // IP/Port validation
 export {
   formatSizeBytes,
@@ -69,6 +79,16 @@ export {
   // SSH key format validation
   validateSSHPrivateKey,
 } from './utils';
+// Storage browser (types, parsers, rclone arg builder)
+export {
+  buildRcloneArgs,
+  detectGuidFiles,
+  FileListParserFactory,
+  type FileListParserOptions,
+  type RcloneArgs,
+  type RemoteFile,
+  resolveGuidFileNames,
+} from './storage-browser';
 // Validation
 export {
   assertBridgeFunction,

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Checkbox, Flex, Modal, Space, Steps, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { mapRcloneToStorageProvider, parseRcloneConfig } from '@rediacc/shared/queue-vault';
 import { useCreateStorage, useGetTeamStorages } from '@/api/api-hooks.generated';
 import {
   createStatusColumn,
@@ -19,12 +20,7 @@ import {
 import { ConnectionTest } from './ConnectionTest';
 import { ImportProgress } from './ImportProgress';
 import { StepConfigForm } from './StepConfigForm';
-import type {
-  ImportStatus,
-  RcloneConfig,
-  RcloneConfigFields,
-  RcloneImportWizardProps,
-} from './types';
+import type { ImportStatus, RcloneConfig, RcloneImportWizardProps } from './types';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload';
 
@@ -44,115 +40,6 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
 
   const createStorageMutation = useCreateStorage();
   const { data: existingStorages = [] } = useGetTeamStorages(teamName);
-
-  const isSkippableLine = (line: string): boolean => {
-    const trimmed = line.trim();
-    return !trimmed || trimmed.startsWith('#') || trimmed.startsWith(';');
-  };
-
-  const parseKeyValuePair = (line: string): [string, string | Record<string, unknown>] | null => {
-    const kvMatch = /^([^=]+)=(.*)$/.exec(line);
-    if (!kvMatch) return null;
-
-    const key = kvMatch[1].trim();
-    const value = kvMatch[2].trim();
-
-    try {
-      return [key, JSON.parse(value) as Record<string, unknown>];
-    } catch {
-      return [key, value];
-    }
-  };
-
-  const saveCurrentSection = (
-    configs: RcloneConfig[],
-    section: string | null,
-    config: RcloneConfigFields
-  ): void => {
-    if (section && config.type) {
-      configs.push({ name: section, type: config.type, config: { ...config } });
-    }
-  };
-
-  // Parse INI-style rclone config
-  const parseRcloneConfig = (content: string): RcloneConfig[] => {
-    const configs: RcloneConfig[] = [];
-    const lines = content.split('\n');
-    let currentSection: string | null = null;
-    let currentConfig: RcloneConfigFields = {};
-
-    for (const line of lines) {
-      if (isSkippableLine(line)) continue;
-
-      const trimmedLine = line.trim();
-      const sectionMatch = /^\[(.+)\]$/.exec(trimmedLine);
-
-      if (sectionMatch) {
-        saveCurrentSection(configs, currentSection, currentConfig);
-        currentSection = sectionMatch[1];
-        currentConfig = {};
-        continue;
-      }
-
-      if (currentSection) {
-        const parsed = parseKeyValuePair(trimmedLine);
-        if (parsed) {
-          currentConfig[parsed[0]] = parsed[1];
-        }
-      }
-    }
-
-    saveCurrentSection(configs, currentSection, currentConfig);
-    return configs;
-  };
-
-  const PROVIDER_MAPPING: Record<string, string> = {
-    drive: 'drive',
-    onedrive: 'onedrive',
-    s3: 's3',
-    b2: 'b2',
-    mega: 'mega',
-    dropbox: 'dropbox',
-    box: 'box',
-    azureblob: 'azureblob',
-    swift: 'swift',
-    webdav: 'webdav',
-    ftp: 'ftp',
-    sftp: 'sftp',
-  };
-
-  const processConfigValue = (
-    key: string,
-    value: string | number | boolean | Record<string, unknown> | undefined
-  ): string | number | boolean | Record<string, unknown> | undefined => {
-    if (typeof value !== 'string') return value;
-    if (!(key === 'token' || key.endsWith('_token'))) return value;
-    if (!value.startsWith('{')) return value;
-
-    try {
-      return JSON.parse(value);
-    } catch {
-      return value;
-    }
-  };
-
-  // Map rclone config to our storage provider format
-  const mapRcloneToStorageProvider = (
-    rcloneConfig: RcloneConfig
-  ): Record<string, unknown> | null => {
-    const { type, config } = rcloneConfig;
-    const provider = PROVIDER_MAPPING[type];
-    if (!provider) return null;
-
-    const storageVault: Record<string, unknown> = { provider };
-
-    Object.entries(config).forEach(([key, value]) => {
-      if (key === 'type') return; // Skip 'type', we use 'provider' instead
-      storageVault[key] = processConfigValue(key, value);
-    });
-
-    return storageVault;
-  };
 
   const handleFileUpload = async (file: File) => {
     setParsingError(null);

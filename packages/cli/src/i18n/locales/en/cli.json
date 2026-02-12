@@ -357,6 +357,12 @@
         "description": "Add a machine to the current local context",
         "success": "Machine \"{{name}}\" added ({{user}}@{{ip}})"
       },
+      "scanKeys": {
+        "description": "Scan SSH host keys for machines in the current context",
+        "keysScanned": "Host keys scanned for \"{{name}}\"",
+        "noKeys": "Could not scan host keys for \"{{name}}\"",
+        "completed": "Scanned {{count}}/{{total}} machines"
+      },
       "removeMachine": {
         "description": "Remove a machine from the current local context",
         "success": "Machine \"{{name}}\" removed"
@@ -368,6 +374,40 @@
       "setSsh": {
         "description": "Update SSH configuration for the current local context",
         "success": "SSH configuration updated"
+      },
+      "importStorage": {
+        "description": "Import storages from an rclone config file",
+        "optionName": "Import only this named section",
+        "noConfigs": "No valid storage configurations found in file",
+        "notFound": "Storage \"{{name}}\" not found in config file",
+        "unsupported": "Skipping \"{{name}}\": unsupported provider type \"{{type}}\"",
+        "imported": "Imported storage \"{{name}}\" ({{type}})",
+        "summary": "Imported {{count}} storage(s)"
+      },
+      "removeStorage": {
+        "description": "Remove a storage from the current local context",
+        "success": "Storage \"{{name}}\" removed"
+      },
+      "storages": {
+        "description": "List storages in the current local context",
+        "noStorages": "No storages configured. Import with: rdc context import-storage <file>"
+      },
+      "addRepository": {
+        "description": "Add a repository GUID mapping to the current local context",
+        "optionGuid": "Repository GUID (UUID from storage backup filenames)",
+        "optionTag": "Repository tag",
+        "optionCredential": "Repository credential (encryption passphrase)",
+        "optionNetworkId": "Network ID for Docker isolation (2816, 2880, ...). Auto-assigned if omitted",
+        "success": "Repository \"{{name}}\" added ({{guid}}, tag: {{tag}})",
+        "networkIdAssigned": "Network ID: {{networkId}}"
+      },
+      "removeRepository": {
+        "description": "Remove a repository mapping from the current local context",
+        "success": "Repository \"{{name}}\" removed"
+      },
+      "repositories": {
+        "description": "List repository GUID mappings in the current local context",
+        "noRepositories": "No repositories configured. Add one with: rdc context add-repository <name> --guid <guid>"
       },
       "createS3": {
         "accessVerified": "S3 access verified",
@@ -754,11 +794,75 @@
         }
       }
     },
+    "repo": {
+      "description": "Repository lifecycle management (local mode)",
+      "machineOption": "Target machine name",
+      "noCredential": "Warning: Repository \"{{name}}\" has no credential set. Operations on encrypted repos may fail.",
+      "mount": {
+        "description": "Mount a repository (open LUKS container)",
+        "checkpointOption": "Restore from checkpoint after mount",
+        "starting": "Mounting \"{{repository}}\" on \"{{machine}}\"...",
+        "completed": "Mount completed",
+        "failed": "Mount failed"
+      },
+      "unmount": {
+        "description": "Unmount a repository",
+        "checkpointOption": "Create checkpoint before unmount",
+        "starting": "Unmounting \"{{repository}}\" on \"{{machine}}\"...",
+        "completed": "Unmount completed",
+        "failed": "Unmount failed"
+      },
+      "up": {
+        "description": "Start repository services (Rediaccfile orchestration)",
+        "mountOption": "Mount repository first",
+        "prepOnlyOption": "Only run preparation step",
+        "grandOption": "Grand repository name (auto-resolves to GUID)",
+        "starting": "Starting services for \"{{repository}}\" on \"{{machine}}\"...",
+        "completed": "Services started",
+        "failed": "Service start failed"
+      },
+      "down": {
+        "description": "Stop repository services",
+        "unmountOption": "Unmount repository after stopping",
+        "grandOption": "Grand repository name (auto-resolves to GUID)",
+        "starting": "Stopping services for \"{{repository}}\" on \"{{machine}}\"...",
+        "completed": "Services stopped",
+        "failed": "Service stop failed"
+      },
+      "status": {
+        "description": "Get repository status",
+        "starting": "Getting status of \"{{repository}}\" on \"{{machine}}\"...",
+        "completed": "Status retrieved",
+        "failed": "Status check failed"
+      },
+      "list": {
+        "description": "List repositories on a machine",
+        "starting": "Listing repositories on \"{{machine}}\"...",
+        "completed": "List completed",
+        "failed": "List failed"
+      }
+    },
     "storage": {
       "description": "Storage management",
       "list": {
         "description": "List storage providers",
         "fetching": "Fetching storage providers..."
+      },
+      "browse": {
+        "description": "Browse files in a storage system",
+        "pathOption": "Subdirectory path to list",
+        "listing": "Listing files in \"{{name}}\"...",
+        "noFiles": "No files found",
+        "failed": "Failed to list files: {{error}}"
+      },
+      "pull": {
+        "description": "Pull a backup from cloud storage to a machine",
+        "repositoryOption": "Repository name to pull",
+        "machineOption": "Target machine name",
+        "starting": "Pulling \"{{repository}}\" from \"{{storage}}\" to \"{{machine}}\"...",
+        "completed": "Pull completed in {{duration}}ms",
+        "failed": "Pull failed: {{error}}",
+        "noCredential": "Warning: Repository \"{{name}}\" has no credential set. Pull may fail if the backup is encrypted."
       }
     },
     "sync": {
@@ -1276,6 +1380,7 @@
       "bridge": "Bridge Management",
       "machine": "Machine Management",
       "repository": "Repository Management",
+      "repo": "Repository Lifecycle",
       "storage": "Storage Management",
       "queue": "Queue Operations",
       "sync": "File Synchronization",

@@ -1,15 +1,6 @@
 import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 
-export type RcloneConfigFields = {
-  [key: string]: string | number | boolean | Record<string, unknown> | undefined;
-  type?: string;
-};
-
-export interface RcloneConfig {
-  name: string;
-  type: string;
-  config: RcloneConfigFields;
-}
+export type { RcloneConfig, RcloneConfigFields } from '@rediacc/shared/queue-vault';
 
 export interface ImportStatus {
   name: string;

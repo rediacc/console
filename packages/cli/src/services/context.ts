@@ -1,15 +1,27 @@
 import { DEFAULTS } from '@rediacc/shared/config';
+import { MIN_NETWORK_ID, NETWORK_ID_INCREMENT } from '@rediacc/shared/queue-vault';
 import { configStorage } from '../adapters/storage.js';
-import type { LocalMachineConfig, LocalSSHConfig, NamedContext, S3Config } from '../types/index.js';
+import type {
+  MachineConfig,
+  RepositoryConfig,
+  SSHConfig,
+  StorageConfig,
+  NamedContext,
+  S3Config,
+} from '../types/index.js';
+import type { S3StateService } from './s3-state.js';
 
 const DEFAULT_API_URL = 'https://www.rediacc.com/api';
 
 /**
  * Service for managing CLI contexts.
  * Supports multiple named contexts with independent credentials and defaults.
+ * In S3 mode, CRUD operations delegate to S3StateService (state.json in bucket).
+ * In local mode, CRUD operations read/write config.json directly.
  */
 class ContextService {
   private runtimeContextOverride: string | null = null;
+  private s3State: S3StateService | null = null;
 
   /**
    * Set a runtime context override (used by --context flag).
@@ -17,6 +29,43 @@ class ContextService {
    */
   setRuntimeContext(name: string | null): void {
     this.runtimeContextOverride = name;
+    this.s3State = null; // Reset cached S3 state on context switch
+  }
+
+  /**
+   * Get S3StateService for the current context, initializing lazily.
+   * Only called when mode === 's3'. Caches the instance for the session.
+   */
+  private async getS3State(): Promise<S3StateService> {
+    if (this.s3State) return this.s3State;
+
+    const context = await this.getCurrent();
+    if (!context?.s3) throw new Error(`Context "${context?.name}" has no S3 configuration`);
+
+    let decryptedSecret: string;
+    let masterPassword: string | null = null;
+
+    if (context.masterPassword) {
+      const { authService } = await import('./auth.js');
+      masterPassword = await authService.requireMasterPassword();
+      const { nodeCryptoProvider } = await import('../adapters/crypto.js');
+      decryptedSecret = await nodeCryptoProvider.decrypt(
+        context.s3.secretAccessKey,
+        masterPassword
+      );
+    } else {
+      decryptedSecret = context.s3.secretAccessKey;
+    }
+
+    const { S3ClientService } = await import('./s3-client.js');
+    const s3Client = new S3ClientService({
+      ...context.s3,
+      secretAccessKey: decryptedSecret,
+    });
+
+    const { S3StateService: S3StateSvc } = await import('./s3-state.js');
+    this.s3State = await S3StateSvc.load(s3Client, masterPassword);
+    return this.s3State;
   }
 
   /**
@@ -459,6 +508,8 @@ class ContextService {
 
   /**
    * Create a new S3 context.
+   * Only stores S3 credentials, SSH key paths, and master password in config.json.
+   * Machines/storages/repositories live in state.json in the S3 bucket.
    */
   async createS3(
     name: string,
@@ -475,7 +526,6 @@ class ContextService {
         privateKeyPath: sshKeyPath,
         publicKeyPath: `${sshKeyPath}.pub`,
       },
-      machines: {},
       renetPath: options?.renetPath,
       masterPassword: options?.masterPassword,
     };
@@ -499,14 +549,37 @@ class ContextService {
 
   /**
    * Get local configuration for the current context.
-   * Throws if context is not in local or s3 mode.
+   * In S3 mode, reads machines/SSH from state.json; in local mode, from config.json.
    */
   async getLocalConfig(): Promise<{
-    machines: Record<string, LocalMachineConfig | undefined>;
-    ssh: LocalSSHConfig;
+    machines: Record<string, MachineConfig | undefined>;
+    ssh: SSHConfig;
+    sshPrivateKey?: string;
+    sshPublicKey?: string;
     renetPath: string;
   }> {
     const context = await this.requireLocalOrS3Mode();
+
+    if (context.mode === 's3') {
+      const s3 = await this.getS3State();
+      const machines = s3.getMachines();
+      if (!machines || Object.keys(machines).length === 0) {
+        throw new Error(`Context "${context.name}" has no machines configured`);
+      }
+      const sshContent = s3.getSSH();
+      if (!sshContent?.privateKey && !context.ssh?.privateKeyPath) {
+        throw new Error(`Context "${context.name}" has no SSH key configured`);
+      }
+      return {
+        machines,
+        ssh: context.ssh ?? { privateKeyPath: '' },
+        sshPrivateKey: sshContent?.privateKey,
+        sshPublicKey: sshContent?.publicKey,
+        renetPath: context.renetPath ?? DEFAULTS.CONTEXT.RENET_BINARY,
+      };
+    }
+
+    // Local mode
     if (!context.machines || Object.keys(context.machines).length === 0) {
       throw new Error(`Context "${context.name}" has no machines configured`);
     }
@@ -521,9 +594,9 @@ class ContextService {
   }
 
   /**
-   * Get a specific machine configuration from the current local context.
+   * Get a specific machine configuration from the current context.
    */
-  async getLocalMachine(machineName: string): Promise<LocalMachineConfig> {
+  async getLocalMachine(machineName: string): Promise<MachineConfig> {
     const config = await this.getLocalConfig();
     const machine = config.machines[machineName];
     if (!machine) {
@@ -558,9 +631,17 @@ class ContextService {
   /**
    * Add a machine to the current local/s3 context.
    */
-  async addLocalMachine(machineName: string, config: LocalMachineConfig): Promise<void> {
+  async addLocalMachine(machineName: string, config: MachineConfig): Promise<void> {
     const name = this.getEffectiveContextName();
     const context = await this.requireLocalOrS3Mode(name);
+
+    if (context.mode === 's3') {
+      const s3 = await this.getS3State();
+      const machines = s3.getMachines();
+      machines[machineName] = config;
+      await s3.setMachines(machines);
+      return;
+    }
 
     const existingMachines = context.machines ?? {};
     await this.update(name, {
@@ -578,6 +659,15 @@ class ContextService {
     const name = this.getEffectiveContextName();
     const context = await this.requireLocalOrS3Mode(name);
 
+    if (context.mode === 's3') {
+      const s3 = await this.getS3State();
+      const machines = s3.getMachines();
+      if (!machines[machineName]) throw new Error(`Machine "${machineName}" not found`);
+      delete machines[machineName];
+      await s3.setMachines(machines);
+      return;
+    }
+
     if (!context.machines?.[machineName]) {
       throw new Error(`Machine "${machineName}" not found`);
     }
@@ -590,8 +680,14 @@ class ContextService {
   /**
    * List machines in the current local/s3 context.
    */
-  async listLocalMachines(): Promise<{ name: string; config: LocalMachineConfig }[]> {
+  async listLocalMachines(): Promise<{ name: string; config: MachineConfig }[]> {
     const context = await this.requireLocalOrS3Mode();
+
+    if (context.mode === 's3') {
+      const s3 = await this.getS3State();
+      return Object.entries(s3.getMachines()).map(([name, config]) => ({ name, config }));
+    }
+
     return Object.entries(context.machines ?? {}).map(([name, config]) => ({
       name,
       config,
@@ -599,9 +695,41 @@ class ContextService {
   }
 
   /**
+   * Update specific fields of an existing machine in the current local/s3 context.
+   */
+  async updateLocalMachine(
+    machineName: string,
+    updates: Partial<MachineConfig>
+  ): Promise<void> {
+    const name = this.getEffectiveContextName();
+    const context = await this.requireLocalOrS3Mode(name);
+
+    if (context.mode === 's3') {
+      const s3 = await this.getS3State();
+      const machines = s3.getMachines();
+      const existing = machines[machineName];
+      if (!existing) throw new Error(`Machine "${machineName}" not found`);
+      machines[machineName] = { ...existing, ...updates };
+      await s3.setMachines(machines);
+      return;
+    }
+
+    const existing = context.machines?.[machineName];
+    if (!existing) {
+      throw new Error(`Machine "${machineName}" not found`);
+    }
+    await this.update(name, {
+      machines: {
+        ...context.machines,
+        [machineName]: { ...existing, ...updates },
+      },
+    });
+  }
+
+  /**
    * Update SSH configuration for the current local/s3 context.
    */
-  async setLocalSSH(ssh: LocalSSHConfig): Promise<void> {
+  async setLocalSSH(ssh: SSHConfig): Promise<void> {
     const name = this.getEffectiveContextName();
     await this.requireLocalOrS3Mode(name);
     await this.update(name, { ssh });
@@ -614,6 +742,307 @@ class ContextService {
     const name = this.getEffectiveContextName();
     await this.requireLocalOrS3Mode(name);
     await this.update(name, { renetPath });
+  }
+
+  // ============================================================================
+  // Local Storage Management
+  // ============================================================================
+
+  /**
+   * Add a storage to the current local/s3 context.
+   */
+  async addLocalStorage(storageName: string, config: StorageConfig): Promise<void> {
+    const name = this.getEffectiveContextName();
+    const context = await this.requireLocalOrS3Mode(name);
+
+    if (context.mode === 's3') {
+      const s3 = await this.getS3State();
+      const storages = s3.getStorages();
+      storages[storageName] = config;
+      await s3.setStorages(storages);
+      return;
+    }
+
+    const existingStorages = context.storages ?? {};
+    await this.update(name, {
+      storages: {
+        ...existingStorages,
+        [storageName]: config,
+      },
+    });
+  }
+
+  /**
+   * Remove a storage from the current local/s3 context.
+   */
+  async removeLocalStorage(storageName: string): Promise<void> {
+    const name = this.getEffectiveContextName();
+    const context = await this.requireLocalOrS3Mode(name);
+
+    if (context.mode === 's3') {
+      const s3 = await this.getS3State();
+      const storages = s3.getStorages();
+      if (!storages[storageName]) throw new Error(`Storage "${storageName}" not found`);
+      delete storages[storageName];
+      await s3.setStorages(storages);
+      return;
+    }
+
+    if (!context.storages?.[storageName]) {
+      throw new Error(`Storage "${storageName}" not found`);
+    }
+
+    const remaining = { ...context.storages };
+    delete remaining[storageName];
+    await this.update(name, { storages: remaining });
+  }
+
+  /**
+   * List storages in the current local/s3 context.
+   */
+  async listLocalStorages(): Promise<{ name: string; config: StorageConfig }[]> {
+    const context = await this.requireLocalOrS3Mode();
+
+    if (context.mode === 's3') {
+      const s3 = await this.getS3State();
+      return Object.entries(s3.getStorages()).map(([name, config]) => ({ name, config }));
+    }
+
+    return Object.entries(context.storages ?? {}).map(([name, config]) => ({
+      name,
+      config,
+    }));
+  }
+
+  /**
+   * Get a specific storage configuration from the current context.
+   */
+  async getLocalStorage(storageName: string): Promise<StorageConfig> {
+    const context = await this.requireLocalOrS3Mode();
+
+    if (context.mode === 's3') {
+      const s3 = await this.getS3State();
+      const storage = s3.getStorages()[storageName];
+      if (!storage) {
+        const available = Object.keys(s3.getStorages()).join(', ');
+        throw new Error(`Storage "${storageName}" not found. Available: ${available || 'none'}`);
+      }
+      return storage;
+    }
+
+    const storage = context.storages?.[storageName];
+    if (!storage) {
+      const available = Object.keys(context.storages ?? {}).join(', ');
+      throw new Error(`Storage "${storageName}" not found. Available: ${available || 'none'}`);
+    }
+    return storage;
+  }
+
+  // ============================================================================
+  // Local Repository Management
+  // ============================================================================
+
+  /**
+   * Add a repository mapping to the current local/s3 context.
+   */
+  async addLocalRepository(repoName: string, config: RepositoryConfig): Promise<void> {
+    const name = this.getEffectiveContextName();
+    const context = await this.requireLocalOrS3Mode(name);
+
+    if (context.mode === 's3') {
+      const s3 = await this.getS3State();
+      const repos = s3.getRepositories();
+      repos[repoName] = config;
+      await s3.setRepositories(repos);
+      return;
+    }
+
+    const existing = context.repositories ?? {};
+    await this.update(name, {
+      repositories: {
+        ...existing,
+        [repoName]: config,
+      },
+    });
+  }
+
+  /**
+   * Remove a repository mapping from the current local/s3 context.
+   */
+  async removeLocalRepository(repoName: string): Promise<void> {
+    const name = this.getEffectiveContextName();
+    const context = await this.requireLocalOrS3Mode(name);
+
+    if (context.mode === 's3') {
+      const s3 = await this.getS3State();
+      const repos = s3.getRepositories();
+      if (!repos[repoName]) throw new Error(`Repository "${repoName}" not found`);
+      delete repos[repoName];
+      await s3.setRepositories(repos);
+      return;
+    }
+
+    if (!context.repositories?.[repoName]) {
+      throw new Error(`Repository "${repoName}" not found`);
+    }
+
+    const remaining = { ...context.repositories };
+    delete remaining[repoName];
+    await this.update(name, { repositories: remaining });
+  }
+
+  /**
+   * List repository mappings in the current local/s3 context.
+   */
+  async listLocalRepositories(): Promise<{ name: string; config: RepositoryConfig }[]> {
+    const context = await this.requireLocalOrS3Mode();
+
+    if (context.mode === 's3') {
+      const s3 = await this.getS3State();
+      return Object.entries(s3.getRepositories()).map(([name, config]) => ({ name, config }));
+    }
+
+    return Object.entries(context.repositories ?? {}).map(([repoName, config]) => ({
+      name: repoName,
+      config,
+    }));
+  }
+
+  /**
+   * Build a GUID-to-display-name map from all repository configurations.
+   * Works in any context mode — returns empty map if no repositories are configured.
+   */
+  async getRepositoryGuidMap(): Promise<Record<string, string>> {
+    const context = await this.getCurrent();
+    let repos: Record<string, RepositoryConfig> | undefined;
+
+    if (context?.mode === 's3') {
+      const s3 = await this.getS3State();
+      repos = s3.getRepositories();
+    } else {
+      repos = context?.repositories;
+    }
+
+    if (!repos) return {};
+    const map: Record<string, string> = {};
+    for (const [repoName, config] of Object.entries(repos)) {
+      const tag = config.tag ?? DEFAULTS.REPOSITORY.TAG;
+      map[config.repositoryGuid] = `${repoName}:${tag}`;
+    }
+    return map;
+  }
+
+  /**
+   * Build a GUID-to-credential map from all repository configurations.
+   * Used by vault builder to populate repository_credentials section.
+   */
+  async getRepositoryCredentials(): Promise<Record<string, string>> {
+    const context = await this.getCurrent();
+    let repos: Record<string, RepositoryConfig> | undefined;
+
+    if (context?.mode === 's3') {
+      const s3 = await this.getS3State();
+      repos = s3.getRepositories();
+    } else {
+      repos = context?.repositories;
+    }
+
+    if (!repos) return {};
+    const map: Record<string, string> = {};
+    for (const [, config] of Object.entries(repos)) {
+      if (config.credential) {
+        map[config.repositoryGuid] = config.credential;
+      }
+    }
+    return map;
+  }
+
+  /**
+   * Get a repository config by name. Returns undefined if not found.
+   */
+  async getLocalRepository(repoName: string): Promise<RepositoryConfig | undefined> {
+    const context = await this.getCurrent();
+
+    if (context?.mode === 's3') {
+      const s3 = await this.getS3State();
+      return s3.getRepositories()[repoName];
+    }
+
+    return context?.repositories?.[repoName];
+  }
+
+  // ============================================================================
+  // Network ID Allocation
+  // ============================================================================
+
+  /**
+   * Compute the next available network ID based on existing repositories.
+   * Returns MIN_NETWORK_ID (2816) if no repos have IDs, or max + INCREMENT otherwise.
+   */
+  private computeNextNetworkId(repositories: Record<string, RepositoryConfig>): number {
+    const usedIds = Object.values(repositories)
+      .map((r) => r.networkId)
+      .filter((id): id is number => id !== undefined && id > 0);
+
+    if (usedIds.length === 0) return MIN_NETWORK_ID;
+    return Math.max(...usedIds) + NETWORK_ID_INCREMENT;
+  }
+
+  /**
+   * Allocate the next available network ID for a new repository.
+   */
+  async allocateNetworkId(): Promise<number> {
+    const context = await this.requireLocalOrS3Mode();
+
+    if (context.mode === 's3') {
+      const s3 = await this.getS3State();
+      return this.computeNextNetworkId(s3.getRepositories());
+    }
+
+    return this.computeNextNetworkId(context.repositories ?? {});
+  }
+
+  /**
+   * Ensure a repository has a network ID assigned.
+   * If missing, auto-allocates and persists it.
+   * Returns the (possibly newly assigned) network ID.
+   */
+  async ensureRepositoryNetworkId(repoName: string): Promise<number> {
+    const name = this.getEffectiveContextName();
+    const context = await this.requireLocalOrS3Mode(name);
+
+    if (context.mode === 's3') {
+      const s3 = await this.getS3State();
+      const repos = s3.getRepositories();
+      const repo = repos[repoName];
+      if (!repo) throw new Error(`Repository "${repoName}" not found`);
+      if (repo.networkId !== undefined && repo.networkId > 0) return repo.networkId;
+
+      const networkId = this.computeNextNetworkId(repos);
+      repos[repoName] = { ...repo, networkId };
+      await s3.setRepositories(repos);
+      return networkId;
+    }
+
+    const repo = context.repositories?.[repoName];
+    if (!repo) {
+      throw new Error(`Repository "${repoName}" not found`);
+    }
+
+    if (repo.networkId !== undefined && repo.networkId > 0) {
+      return repo.networkId;
+    }
+
+    // Auto-allocate and persist
+    const networkId = this.computeNextNetworkId(context.repositories ?? {});
+    await this.update(name, {
+      repositories: {
+        ...context.repositories,
+        [repoName]: { ...repo, networkId },
+      },
+    });
+
+    return networkId;
   }
 }
 
