@@ -362,6 +362,7 @@ run_ha_tests() {
     _scp "${SSH_USER}@${NODE_IPS[0]}:${REMOTE_SQL_DIR}/secrets/admin_password.txt" "$SQL_DIR/secrets/admin_password.txt"
 
     # Set defaults for optional vars expected by ha.sh/test-ha.sh
+    export HA_DOMAIN="sql.ci.local"
     export HA_DOMAINS="${HA_DOMAINS:-}"
     export HA_THIS_NODE="${HA_THIS_NODE:-${NODE_NAMES[0]}}"
     export ACCEPT_EULA="${ACCEPT_EULA:-Y}"
