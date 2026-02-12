@@ -3,9 +3,9 @@
  * Uses lazy initialization and caching per context name.
  */
 
-import { DEFAULTS } from '@rediacc/shared/config';
-import { contextService } from '../services/context.js';
-import type { IStateProvider } from './types.js';
+import { DEFAULTS } from "@rediacc/shared/config";
+import { contextService } from "../services/context.js";
+import type { IStateProvider } from "./types.js";
 
 const providerCache = new Map<string, IStateProvider>();
 
@@ -24,15 +24,15 @@ export async function getStateProvider(): Promise<IStateProvider> {
   let provider: IStateProvider;
 
   switch (mode) {
-    case 's3':
-    case 'local': {
-      const { LocalStateProvider } = await import('./local-state-provider.js');
+    case "s3":
+    case "local": {
+      const { LocalStateProvider } = await import("./local-state-provider.js");
       provider = new LocalStateProvider(mode);
       break;
     }
-    case 'cloud':
+    case "cloud":
     default: {
-      const { CloudStateProvider } = await import('./cloud-state-provider.js');
+      const { CloudStateProvider } = await import("./cloud-state-provider.js");
       provider = new CloudStateProvider();
       break;
     }

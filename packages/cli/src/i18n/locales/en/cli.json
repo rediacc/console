@@ -431,6 +431,32 @@
       "setRenet": {
         "description": "Set the path to renet binary for local mode",
         "success": "Renet path set to: {{path}}"
+      },
+      "toS3": {
+        "description": "Migrate the current local context to S3 mode",
+        "optionEndpoint": "S3 endpoint URL",
+        "optionBucket": "S3 bucket name",
+        "optionAccessKeyId": "S3 access key ID",
+        "optionSecretAccessKey": "S3 secret access key (prompted if omitted)",
+        "optionRegion": "S3 region",
+        "optionPrefix": "Key prefix in bucket",
+        "optionMasterPassword": "Enable encryption with this master password",
+        "promptSecretAccessKey": "Enter S3 secret access key:",
+        "errorNotLocal": "Context \"{{name}}\" is not in local mode (current: {{mode}})",
+        "errorSecretRequired": "Secret access key is required",
+        "verifying": "Verifying S3 access...",
+        "verified": "S3 access verified",
+        "success": "Migrated to S3 mode: {{machines}} machines, {{storages}} storages, {{repos}} repositories"
+      },
+      "toLocal": {
+        "description": "Migrate the current S3 context to local mode",
+        "optionSshKeyPath": "Where to write SSH private key (default: existing path)",
+        "errorNotS3": "Context \"{{name}}\" is not in S3 mode (current: {{mode}})",
+        "errorNoS3Config": "Context \"{{name}}\" has no S3 configuration",
+        "loading": "Loading state from S3...",
+        "sshWritten": "SSH key written to {{path}}",
+        "success": "Migrated to local mode: {{machines}} machines, {{storages}} storages, {{repos}} repositories",
+        "nonDestructive": "State.json remains in S3 bucket (non-destructive)"
       }
     },
     "machine": {

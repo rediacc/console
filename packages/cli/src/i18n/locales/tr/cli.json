@@ -265,6 +265,15 @@
         "description": "Güncel yerel bağlama bir makine ekleyin",
         "success": "\"{{name}}\" makinesi eklendi ({{user}}@{{ip}})"
       },
+      "addRepository": {
+        "description": "Güncel yerel bağlama bir depo GUID eşlemesi ekle",
+        "networkIdAssigned": "Ağ kimliği: {{networkId}}",
+        "optionCredential": "Depo kimlik bilgisi (şifreleme parolası)",
+        "optionGuid": "Depo GUID değeri (yedek dosya adlarındaki UUID)",
+        "optionNetworkId": "Docker izolasyonu için ağ kimliği (2816, 2880, ...). Belirtilmezse otomatik atanır",
+        "optionTag": "Depo etiketi",
+        "success": "\"{{name}}\" deposu eklendi ({{guid}}, etiket: {{tag}})"
+      },
       "clear": {
         "allCleared": "Tüm varsayılanlar temizlendi",
         "description": "Varsayılanları temizleyin (tümü veya belirli bir anahtar)",
@@ -308,6 +317,15 @@
         "success": "\"{{name}}\" bağlamı silindi"
       },
       "description": "CLI bağlamlarını yönetin",
+      "importStorage": {
+        "description": "Bir rclone yapılandırma dosyasından depolama alanlarını içe aktar",
+        "imported": "\"{{name}}\" depolama alanı içe aktarıldı ({{type}})",
+        "noConfigs": "Dosyada geçerli depolama yapılandırması bulunamadı",
+        "notFound": "\"{{name}}\" depolama alanı yapılandırma dosyasında bulunamadı",
+        "optionName": "Yalnızca bu adlı bölümü içe aktar",
+        "summary": "{{count}} depolama alanı içe aktarıldı",
+        "unsupported": "\"{{name}}\" atlanıyor: desteklenmeyen sağlayıcı türü \"{{type}}\""
+      },
       "list": {
         "description": "Tüm bağlamları listeleyin",
         "noContexts": "Hiç bağlam yapılandırılmadı"
@@ -320,9 +338,27 @@
         "description": "Güncel yerel bağlamdan bir makineyi kaldırın",
         "success": "\"{{name}}\" makinesi kaldırıldı"
       },
+      "removeRepository": {
+        "description": "Güncel yerel bağlamdan bir depo eşlemesini kaldır",
+        "success": "\"{{name}}\" deposu kaldırıldı"
+      },
+      "removeStorage": {
+        "description": "Güncel yerel bağlamdan bir depolama alanını kaldır",
+        "success": "\"{{name}}\" depolama alanı kaldırıldı"
+      },
       "rename": {
         "description": "Bir bağlamı yeniden adlandırın",
         "success": "Bağlam \"{{oldName}}\" adından \"{{newName}}\" adına yeniden adlandırıldı"
+      },
+      "repositories": {
+        "description": "Güncel yerel bağlamdaki depo GUID eşlemelerini listele",
+        "noRepositories": "Yapılandırılmış depo yok. Eklemek için: rdc context add-repository <name> --guid <guid>"
+      },
+      "scanKeys": {
+        "completed": "{{count}}/{{total}} makine tarandı",
+        "description": "Güncel bağlamdaki makineler için SSH sunucu anahtarlarını tara",
+        "keysScanned": "\"{{name}}\" için sunucu anahtarları tarandı",
+        "noKeys": "\"{{name}}\" için sunucu anahtarları taranamadı"
       },
       "set": {
         "description": "Varsayılan bir değer ayarlayın (takım, bölge, köprü, makine)",
@@ -345,6 +381,36 @@
         "description": "Güncel bağlam ayrıntılarını gösterin",
         "noContext": "Etkin bağlam yok"
       },
+      "storages": {
+        "description": "Güncel yerel bağlamdaki depolama alanlarını listele",
+        "noStorages": "Yapılandırılmış depolama alanı yok. İçe aktarmak için: rdc context import-storage <file>"
+      },
+      "toLocal": {
+        "description": "Güncel S3 bağlamını yerel moda geçir",
+        "errorNoS3Config": "\"{{name}}\" bağlamının S3 yapılandırması yok",
+        "errorNotS3": "\"{{name}}\" bağlamı S3 modunda değil (mevcut: {{mode}})",
+        "loading": "S3'ten durum yükleniyor...",
+        "nonDestructive": "state.json S3 bucket'ında kalmaya devam ediyor (yıkıcı değil)",
+        "optionSshKeyPath": "SSH özel anahtarının yazılacağı yer (varsayılan: mevcut yol)",
+        "sshWritten": "SSH anahtarı {{path}} konumuna yazıldı",
+        "success": "Yerel moda geçiş tamamlandı: {{machines}} makine, {{storages}} depolama, {{repos}} depo"
+      },
+      "toS3": {
+        "description": "Güncel yerel bağlamı S3 moduna geçir",
+        "errorNotLocal": "\"{{name}}\" bağlamı yerel modda değil (mevcut: {{mode}})",
+        "errorSecretRequired": "Gizli erişim anahtarı gereklidir",
+        "optionAccessKeyId": "S3 erişim anahtarı kimliği",
+        "optionBucket": "S3 bucket adı",
+        "optionEndpoint": "S3 uç nokta URL'si",
+        "optionMasterPassword": "Bu ana parola ile şifrelemeyi etkinleştir",
+        "optionPrefix": "Bucket içinde anahtar öneki",
+        "optionRegion": "S3 bölgesi",
+        "optionSecretAccessKey": "S3 gizli erişim anahtarı (belirtilmezse sorulur)",
+        "promptSecretAccessKey": "S3 gizli erişim anahtarını girin:",
+        "success": "S3 moduna geçiş tamamlandı: {{machines}} makine, {{storages}} depolama, {{repos}} depo",
+        "verified": "S3 erişimi doğrulandı",
+        "verifying": "S3 erişimi doğrulanıyor..."
+      },
       "unset": {
         "description": "Bir bağlam varsayılan değerini kaldırın",
         "success": "{{key}} güncel bağlamdan kaldırıldı"
@@ -358,17 +424,17 @@
       "allPassed": "Tüm kontroller başarılı",
       "checks": {
         "activeContext": "Aktif bağlam",
-        "authStatus": "Status",
+        "authStatus": "Durum",
         "cliVersion": "CLI sürümü",
         "contextMode": "Bağlam modu",
         "dockerAvailable": "Docker",
         "goInstalled": "Go",
-        "machines": "Machines",
+        "machines": "Makineler",
         "nodeVersion": "Node.js",
         "renetBinary": "İkili dosya",
         "renetCriu": "Gömülü CRIU",
         "renetRsync": "Gömülü rsync",
-        "renetVersion": "Version",
+        "renetVersion": "Sürüm",
         "seaMode": "SEA modu",
         "sshKey": "SSH anahtarı"
       },
@@ -382,7 +448,7 @@
       "seaActive": "evet (Tek Dosya Uygulaması)",
       "sections": {
         "authentication": "Kimlik Doğrulama",
-        "configuration": "Configuration",
+        "configuration": "Yapılandırma",
         "environment": "Ortam",
         "renet": "Renet"
       },
@@ -703,6 +769,54 @@
         "fetching": "Bölgeler alınıyor..."
       }
     },
+    "repo": {
+      "description": "Depo yaşam döngüsü yönetimi (yerel mod)",
+      "down": {
+        "completed": "Servisler durduruldu",
+        "description": "Depo servislerini durdur",
+        "failed": "Servis durdurma başarısız",
+        "grandOption": "Ana depo adı (GUID'ye otomatik çözümlenir)",
+        "starting": "\"{{repository}}\" için servisler \"{{machine}}\" üzerinde durduruluyor...",
+        "unmountOption": "Durdurduktan sonra depoyu ayır"
+      },
+      "list": {
+        "completed": "Listeleme tamamlandı",
+        "description": "Bir makinedeki depoları listele",
+        "failed": "Listeleme başarısız",
+        "starting": "\"{{machine}}\" üzerindeki depolar listeleniyor..."
+      },
+      "machineOption": "Hedef makine adı",
+      "mount": {
+        "checkpointOption": "Bağlamadan sonra kontrol noktasından geri yükle",
+        "completed": "Bağlama tamamlandı",
+        "description": "Bir depoyu bağla (LUKS kapsayıcısını aç)",
+        "failed": "Bağlama başarısız",
+        "starting": "\"{{repository}}\" \"{{machine}}\" üzerinde bağlanıyor..."
+      },
+      "noCredential": "Uyarı: \"{{name}}\" deposunun kimlik bilgisi ayarlanmamış. Şifreli depolardaki işlemler başarısız olabilir.",
+      "status": {
+        "completed": "Durum alındı",
+        "description": "Depo durumunu al",
+        "failed": "Durum kontrolü başarısız",
+        "starting": "\"{{repository}}\" deposunun durumu \"{{machine}}\" üzerinden alınıyor..."
+      },
+      "unmount": {
+        "checkpointOption": "Ayırmadan önce kontrol noktası oluştur",
+        "completed": "Ayırma tamamlandı",
+        "description": "Bir depoyu ayır",
+        "failed": "Ayırma başarısız",
+        "starting": "\"{{repository}}\" \"{{machine}}\" üzerinden ayrılıyor..."
+      },
+      "up": {
+        "completed": "Servisler başlatıldı",
+        "description": "Depo servislerini başlat (Rediaccfile orkestrasyonu)",
+        "failed": "Servis başlatma başarısız",
+        "grandOption": "Ana depo adı (GUID'ye otomatik çözümlenir)",
+        "mountOption": "Önce depoyu bağla",
+        "prepOnlyOption": "Yalnızca hazırlama adımını çalıştır",
+        "starting": "\"{{repository}}\" için servisler \"{{machine}}\" üzerinde başlatılıyor..."
+      }
+    },
     "repository": {
       "create": {
         "creating": "\"{{name}}:{{tag}}\" deposu oluşturuluyor...",
@@ -773,10 +887,26 @@
       }
     },
     "storage": {
+      "browse": {
+        "description": "Bir depolama sistemindeki dosyaları göz at",
+        "failed": "Dosya listeleme başarısız: {{error}}",
+        "listing": "\"{{name}}\" içindeki dosyalar listeleniyor...",
+        "noFiles": "Dosya bulunamadı",
+        "pathOption": "Listelenecek alt dizin yolu"
+      },
       "description": "Depolama yönetimi",
       "list": {
         "description": "Depolama sağlayıcılarını listeleyin",
         "fetching": "Depolama sağlayıcıları alınıyor..."
+      },
+      "pull": {
+        "completed": "İndirme {{duration}}ms içinde tamamlandı",
+        "description": "Bulut depolamadan bir makineye yedek indir",
+        "failed": "İndirme başarısız: {{error}}",
+        "machineOption": "Hedef makine adı",
+        "noCredential": "Uyarı: \"{{name}}\" deposunun kimlik bilgisi ayarlanmamış. Yedek şifreliyse indirme başarısız olabilir.",
+        "repositoryOption": "İndirilecek depo adı",
+        "starting": "\"{{repository}}\" \"{{storage}}\" kaynağından \"{{machine}}\" hedefine indiriliyor..."
       }
     },
     "sync": {
@@ -1056,6 +1186,7 @@
       "protocol": "Protokol İşleyici",
       "queue": "Kuyruk İşlemleri",
       "region": "Bölge Yönetimi",
+      "repo": "Depo Yaşam Döngüsü",
       "repository": "Depo Yönetimi",
       "shortcuts": "Hızlı Komutlar (Kısayollar)",
       "storage": "Depolama Yönetimi",

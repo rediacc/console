@@ -8,17 +8,17 @@
  * Keys (section names, record names) stay in plaintext; only values are encrypted.
  */
 
-import { nodeCryptoProvider } from '../adapters/crypto.js';
-import type { S3ClientService } from './s3-client.js';
+import { nodeCryptoProvider } from "../adapters/crypto.js";
+import type { S3ClientService } from "./s3-client.js";
 import type {
   MachineConfig,
   RepositoryConfig,
   S3StateData,
   SSHContent,
   StorageConfig,
-} from '../types/index.js';
+} from "../types/index.js";
 
-const STATE_KEY = 'state.json';
+const STATE_KEY = "state.json";
 
 export class S3StateService {
   private state: S3StateData;
@@ -26,7 +26,7 @@ export class S3StateService {
   private constructor(
     private readonly s3: S3ClientService,
     private readonly masterPassword: string | null,
-    state: S3StateData
+    state: S3StateData,
   ) {
     this.state = state;
   }
@@ -36,7 +36,7 @@ export class S3StateService {
    */
   static async load(
     s3: S3ClientService,
-    masterPassword: string | null
+    masterPassword: string | null,
   ): Promise<S3StateService> {
     const raw = await s3.getJson<S3StateData>(STATE_KEY);
 
@@ -45,9 +45,15 @@ export class S3StateService {
       const empty: S3StateData = {
         version: 1,
         encrypted: !!masterPassword,
-        machines: masterPassword ? await encryptSection({}, masterPassword) : {},
-        storages: masterPassword ? await encryptSection({}, masterPassword) : {},
-        repositories: masterPassword ? await encryptSection({}, masterPassword) : {},
+        machines: masterPassword
+          ? await encryptSection({}, masterPassword)
+          : {},
+        storages: masterPassword
+          ? await encryptSection({}, masterPassword)
+          : {},
+        repositories: masterPassword
+          ? await encryptSection({}, masterPassword)
+          : {},
       };
       await s3.putJson(STATE_KEY, empty);
 
@@ -65,8 +71,8 @@ export class S3StateService {
     if (raw.encrypted) {
       if (!masterPassword) {
         throw new Error(
-          'State is encrypted but no master password was provided. ' +
-            'Use --master-password or set REDIACC_MASTER_PASSWORD.'
+          "State is encrypted but no master password was provided. " +
+            "Use --master-password or set REDIACC_MASTER_PASSWORD.",
         );
       }
 
@@ -75,15 +81,15 @@ export class S3StateService {
         encrypted: true,
         machines: await decryptSection<Record<string, MachineConfig>>(
           raw.machines as string,
-          masterPassword
+          masterPassword,
         ),
         storages: await decryptSection<Record<string, StorageConfig>>(
           raw.storages as string,
-          masterPassword
+          masterPassword,
         ),
         repositories: await decryptSection<Record<string, RepositoryConfig>>(
           raw.repositories as string,
-          masterPassword
+          masterPassword,
         ),
         ssh: raw.ssh
           ? await decryptSection<SSHContent>(raw.ssh as string, masterPassword)
@@ -114,7 +120,7 @@ export class S3StateService {
 
   getSSH(): SSHContent | null {
     const ssh = this.state.ssh;
-    if (!ssh || typeof ssh === 'string') return null;
+    if (!ssh || typeof ssh === "string") return null;
     return ssh;
   }
 
@@ -132,7 +138,9 @@ export class S3StateService {
     await this.save();
   }
 
-  async setRepositories(repos: Record<string, RepositoryConfig>): Promise<void> {
+  async setRepositories(
+    repos: Record<string, RepositoryConfig>,
+  ): Promise<void> {
     this.state.repositories = repos;
     await this.save();
   }
@@ -160,9 +168,9 @@ export class S3StateService {
         ? await encryptSection(this.state.repositories, this.masterPassword)
         : this.state.repositories,
       ssh: this.state.ssh
-        ? (this.masterPassword
-            ? await encryptSection(this.state.ssh, this.masterPassword)
-            : this.state.ssh)
+        ? this.masterPassword
+          ? await encryptSection(this.state.ssh, this.masterPassword)
+          : this.state.ssh
         : undefined,
     };
 
@@ -174,12 +182,18 @@ export class S3StateService {
 // Helpers
 // =============================================================================
 
-async function encryptSection(data: unknown, password: string): Promise<string> {
+async function encryptSection(
+  data: unknown,
+  password: string,
+): Promise<string> {
   const json = JSON.stringify(data);
   return nodeCryptoProvider.encrypt(json, password);
 }
 
-async function decryptSection<T>(encrypted: string, password: string): Promise<T> {
+async function decryptSection<T>(
+  encrypted: string,
+  password: string,
+): Promise<T> {
   const json = await nodeCryptoProvider.decrypt(encrypted, password);
   return JSON.parse(json) as T;
 }

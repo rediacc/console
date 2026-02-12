@@ -8,19 +8,19 @@
  * GUID-to-repository mapping (that's web-specific).
  */
 
-import { isValidGuid } from '../../validation/index.js';
-import type { RcloneEntry, RemoteFile } from './types.js';
+import { isValidGuid } from "../../validation/index.js";
+import type { RcloneEntry, RemoteFile } from "./types.js";
 
 // ============================================================================
 // Internal Helpers
 // ============================================================================
 
 const getStringValue = (value: unknown): string | undefined =>
-  typeof value === 'string' ? value : undefined;
+  typeof value === "string" ? value : undefined;
 
 const getNumberValue = (value: unknown): number => {
-  if (typeof value === 'number') return value;
-  if (typeof value === 'string') {
+  if (typeof value === "number") return value;
+  if (typeof value === "string") {
     const parsed = Number.parseInt(value, 10);
     return Number.isNaN(parsed) ? 0 : parsed;
   }
@@ -28,22 +28,26 @@ const getNumberValue = (value: unknown): number => {
 };
 
 const getBooleanValue = (value: unknown): boolean =>
-  typeof value === 'boolean' ? value : false;
+  typeof value === "boolean" ? value : false;
 
 // ============================================================================
 // Individual Parsers
 // ============================================================================
 
 /** Parse a JSON array of rclone entries (the standard `rclone lsjson` format). */
-export function parseJsonFileList(data: unknown, currentPath: string): RemoteFile[] {
+export function parseJsonFileList(
+  data: unknown,
+  currentPath: string,
+): RemoteFile[] {
   if (!Array.isArray(data)) return [];
 
   return data.map((file: RcloneEntry) => {
-    const fileName = getStringValue(file.name) ?? getStringValue(file.Name) ?? '';
+    const fileName =
+      getStringValue(file.name) ?? getStringValue(file.Name) ?? "";
     const isDirectoryFlag =
       getBooleanValue(file.isDirectory) ||
       getBooleanValue(file.IsDir) ||
-      Boolean(getStringValue(file.permissions)?.startsWith('d'));
+      Boolean(getStringValue(file.permissions)?.startsWith("d"));
 
     return {
       name: fileName,
@@ -63,12 +67,12 @@ export function parseJsonFileList(data: unknown, currentPath: string): RemoteFil
 /** Parse rclone output in `{ entries: [...] }` wrapper format. */
 export function parseRcloneFileList(
   data: { entries?: RcloneEntry[] },
-  currentPath: string
+  currentPath: string,
 ): RemoteFile[] {
   const entries = Array.isArray(data.entries) ? data.entries : [];
 
   return entries.map((file) => {
-    const fileName = getStringValue(file.Name) ?? '';
+    const fileName = getStringValue(file.Name) ?? "";
     return {
       name: fileName,
       size: getNumberValue(file.Size),
@@ -83,19 +87,22 @@ export function parseRcloneFileList(
 }
 
 /** Parse plain-text listing output (fallback for non-JSON rclone output). */
-export function parsePlainTextFileList(textData: string, currentPath: string): RemoteFile[] {
+export function parsePlainTextFileList(
+  textData: string,
+  currentPath: string,
+): RemoteFile[] {
   const lines = textData
     .trim()
-    .split('\n')
+    .split("\n")
     .filter((line) => line.trim());
 
   const fileLines = lines.filter(
     (line) =>
-      !line.startsWith('Listing') &&
-      !line.startsWith('Setting up') &&
-      !line.startsWith('Error:') &&
-      !line.startsWith('DEBUG:') &&
-      line.trim() !== ''
+      !line.startsWith("Listing") &&
+      !line.startsWith("Setting up") &&
+      !line.startsWith("Error:") &&
+      !line.startsWith("DEBUG:") &&
+      line.trim() !== "",
   );
 
   return fileLines.map((line) => {
@@ -105,21 +112,24 @@ export function parsePlainTextFileList(textData: string, currentPath: string): R
       return {
         name: name.trim(),
         size: Number.parseInt(sizeStr),
-        isDirectory: name.endsWith('/'),
+        isDirectory: name.endsWith("/"),
         path: currentPath ? `${currentPath}/${name.trim()}` : name.trim(),
       };
     }
     return {
       name: line.trim(),
       size: 0,
-      isDirectory: line.endsWith('/'),
+      isDirectory: line.endsWith("/"),
       path: currentPath ? `${currentPath}/${line.trim()}` : line.trim(),
     };
   });
 }
 
 /** Try to extract individual JSON objects from malformed output. */
-export function parseFallbackFormats(dataToProcess: string, currentPath: string): RemoteFile[] {
+export function parseFallbackFormats(
+  dataToProcess: string,
+  currentPath: string,
+): RemoteFile[] {
   if (dataToProcess.includes('"Path":') && dataToProcess.includes('"Name":')) {
     const jsonObjects = dataToProcess.match(/\{[^}]+\}/g);
     if (jsonObjects) {
@@ -128,7 +138,7 @@ export function parseFallbackFormats(dataToProcess: string, currentPath: string)
         try {
           const file = JSON.parse(jsonStr);
           results.push({
-            name: (file.Name as string) ?? '',
+            name: (file.Name as string) ?? "",
             size: (file.Size as number) ?? 0,
             isDirectory: (file.IsDir as boolean) ?? false,
             modTime: file.ModTime as string | undefined,
@@ -149,18 +159,25 @@ export function parseFallbackFormats(dataToProcess: string, currentPath: string)
 
 /** Strip debug output and extract clean JSON array from rclone output. */
 export function cleanJsonOutput(dataToProcess: string): string {
-  if (dataToProcess.includes('DEBUG:')) {
-    const jsonStartIndex = dataToProcess.lastIndexOf('[');
-    const jsonEndIndex = dataToProcess.lastIndexOf(']');
-    if (jsonStartIndex !== -1 && jsonEndIndex !== -1 && jsonStartIndex < jsonEndIndex) {
+  if (dataToProcess.includes("DEBUG:")) {
+    const jsonStartIndex = dataToProcess.lastIndexOf("[");
+    const jsonEndIndex = dataToProcess.lastIndexOf("]");
+    if (
+      jsonStartIndex !== -1 &&
+      jsonEndIndex !== -1 &&
+      jsonStartIndex < jsonEndIndex
+    ) {
       return dataToProcess.substring(jsonStartIndex, jsonEndIndex + 1);
     }
-  } else if (dataToProcess.includes('[')) {
-    const jsonStartIndex = dataToProcess.indexOf('[');
-    const jsonEndIndex = dataToProcess.lastIndexOf(']');
+  } else if (dataToProcess.includes("[")) {
+    const jsonStartIndex = dataToProcess.indexOf("[");
+    const jsonEndIndex = dataToProcess.lastIndexOf("]");
     if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
-      const jsonString = dataToProcess.substring(jsonStartIndex, jsonEndIndex + 1);
-      return jsonString.replaceAll('\\\\', '\\').replaceAll('\\n', '\n');
+      const jsonString = dataToProcess.substring(
+        jsonStartIndex,
+        jsonEndIndex + 1,
+      );
+      return jsonString.replaceAll("\\\\", "\\").replaceAll("\\n", "\n");
     }
   }
   return dataToProcess;
@@ -194,7 +211,7 @@ export function detectGuidFiles(files: RemoteFile[]): RemoteFile[] {
  */
 export function resolveGuidFileNames(
   files: RemoteFile[],
-  guidMap: Record<string, string>
+  guidMap: Record<string, string>,
 ): RemoteFile[] {
   if (Object.keys(guidMap).length === 0) return files;
 
@@ -228,7 +245,7 @@ export class FileListParserFactory {
 
   constructor(
     private readonly currentPath: string,
-    options?: FileListParserOptions
+    options?: FileListParserOptions,
   ) {
     this.options = options ?? {};
   }
@@ -249,7 +266,9 @@ export class FileListParserFactory {
       fileList = parseFallbackFormats(dataToProcess, this.currentPath);
       if (fileList.length === 0) {
         const textData =
-          typeof dataToProcess === 'string' ? dataToProcess : JSON.stringify(dataToProcess);
+          typeof dataToProcess === "string"
+            ? dataToProcess
+            : JSON.stringify(dataToProcess);
         fileList = parsePlainTextFileList(textData, this.currentPath);
       }
     }

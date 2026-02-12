@@ -17,17 +17,17 @@ export interface RcloneArgs {
 }
 
 /** Fields extracted as top-level remote path components (not passed as flags). */
-const PATH_FIELDS = new Set(['provider', 'bucket', 'folder']);
+const PATH_FIELDS = new Set(["provider", "bucket", "folder"]);
 
 /** Fields that use a dedicated `--{backend}-{key}=` flag. */
-const DEDICATED_FIELDS = new Set(['region']);
+const DEDICATED_FIELDS = new Set(["region"]);
 
 /**
  * Fields that map to a different rclone flag name.
  * e.g. `sub_provider` → `--{backend}-provider` (rclone S3 sub-provider like "DigitalOcean").
  */
 const RENAMED_FIELDS: Record<string, string> = {
-  sub_provider: 'provider',
+  sub_provider: "provider",
 };
 
 /**
@@ -39,15 +39,15 @@ const RENAMED_FIELDS: Record<string, string> = {
  */
 export function buildRcloneArgs(
   vaultContent: Record<string, unknown>,
-  subPath?: string
+  subPath?: string,
 ): RcloneArgs {
-  const backend = String(vaultContent.provider ?? '');
-  const bucket = vaultContent.bucket ? String(vaultContent.bucket) : '';
-  const folder = vaultContent.folder ? String(vaultContent.folder) : '';
+  const backend = String(vaultContent.provider ?? "");
+  const bucket = vaultContent.bucket ? String(vaultContent.bucket) : "";
+  const folder = vaultContent.folder ? String(vaultContent.folder) : "";
 
   // Build remote path: :backend:bucket/folder/subPath
-  const pathSegments = [bucket, folder, subPath ?? ''].filter(Boolean);
-  const remote = `:${backend}:${pathSegments.join('/')}`;
+  const pathSegments = [bucket, folder, subPath ?? ""].filter(Boolean);
+  const remote = `:${backend}:${pathSegments.join("/")}`;
 
   // Build parameter flags
   const params: string[] = [];
@@ -60,18 +60,19 @@ export function buildRcloneArgs(
   // Add remaining credential/config fields as --{backend}-{key}={value}
   for (const [key, value] of Object.entries(vaultContent)) {
     if (PATH_FIELDS.has(key) || DEDICATED_FIELDS.has(key)) continue;
-    if (value === undefined || value === null || value === '') continue;
+    if (value === undefined || value === null || value === "") continue;
 
     // Some vault fields map to a different rclone flag name (e.g. sub_provider → provider)
     const rcloneKey = RENAMED_FIELDS[key] ?? key;
-    const flag = `--${backend}-${rcloneKey.replace(/_/g, '-')}`;
-    const flagValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+    const flag = `--${backend}-${rcloneKey.replace(/_/g, "-")}`;
+    const flagValue =
+      typeof value === "object" ? JSON.stringify(value) : String(value);
     params.push(`${flag}=${flagValue}`);
   }
 
   // S3-compatible backends: force path style (works with MinIO, RustFS, DigitalOcean, etc.)
-  if (backend === 's3') {
-    params.push('--s3-force-path-style=true');
+  if (backend === "s3") {
+    params.push("--s3-force-path-style=true");
   }
 
   return { remote, params };
