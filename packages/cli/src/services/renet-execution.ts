@@ -52,7 +52,7 @@ export async function readOptionalSSHKey(keyPath: string | undefined): Promise<s
  * In dev mode, uses the configured renetPath. In SEA mode, extracts the
  * embedded binary to a local temp file.
  */
-export async function getLocalRenetPath(config: { renetPath: string }): Promise<string> {
+async function getLocalRenetPath(config: { renetPath: string }): Promise<string> {
   if (!isSEA()) return config.renetPath;
   return extractRenetToLocal();
 }
@@ -240,7 +240,7 @@ export function buildLocalVault(opts: BuildLocalVaultOptions): string {
 /**
  * Spawn renet execute process and stream output.
  */
-export async function spawnRenet(
+async function spawnRenet(
   renetPath: string,
   vault: string,
   options: RenetSpawnOptions
