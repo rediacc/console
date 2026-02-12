@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -14,9 +14,10 @@ import type { Command } from 'commander';
 
 function scanHostKeys(ip: string, port: number): string {
   try {
-    const result = execSync(`ssh-keyscan -p ${port} ${ip} 2>/dev/null`, {
+    const result = execFileSync('ssh-keyscan', ['-p', String(port), ip], {
       encoding: 'utf-8',
       timeout: 10_000,
+      stdio: ['ignore', 'pipe', 'ignore'],
     });
     return result.trim();
   } catch {
