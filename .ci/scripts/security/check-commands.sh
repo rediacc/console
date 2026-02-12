@@ -83,6 +83,11 @@ main() {
                         if echo "$line_content" | grep -qE "^\s*#"; then
                             continue
                         fi
+                        # Skip YAML keys in heredocs (e.g., "timeout: 3s" in compose files)
+                        # cmd followed by : is never a valid bash command invocation
+                        if echo "$line_content" | grep -qE "\\b${cmd}:"; then
+                            continue
+                        fi
 
                         log_error "$script:$line_num: '$cmd' not available in minimal CI"
                         echo "  Line: $line_content"

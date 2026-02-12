@@ -124,7 +124,7 @@ export async function createAutoCleanTempFile(
   const cleanup = () => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      (require('node:fs') as typeof import('fs')).unlinkSync(filePath);
+      (require('node:fs') as typeof import('node:fs')).unlinkSync(filePath);
     } catch {
       // Ignore
     }
