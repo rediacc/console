@@ -1,30 +1,14 @@
-import React, { useState } from "react";
-import {
-  Button,
-  Checkbox,
-  Flex,
-  Modal,
-  Space,
-  Steps,
-  Tag,
-  Tooltip,
-  Typography,
-} from "antd";
-import { useTranslation } from "react-i18next";
-import {
-  mapRcloneToStorageProvider,
-  parseRcloneConfig,
-} from "@rediacc/shared/queue-vault";
-import {
-  useCreateStorage,
-  useGetTeamStorages,
-} from "@/api/api-hooks.generated";
+import React, { useState } from 'react';
+import { Button, Checkbox, Flex, Modal, Space, Steps, Tag, Tooltip, Typography } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { mapRcloneToStorageProvider, parseRcloneConfig } from '@rediacc/shared/queue-vault';
+import { useCreateStorage, useGetTeamStorages } from '@/api/api-hooks.generated';
 import {
   createStatusColumn,
   createTruncatedColumn,
   RESPONSIVE_HIDE_XS,
-} from "@/components/common/columns";
-import { createSorter } from "@/platform";
+} from '@/components/common/columns';
+import { createSorter } from '@/platform';
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -32,17 +16,13 @@ import {
   CloudOutlined,
   InfoCircleOutlined,
   WarningOutlined,
-} from "@/utils/optimizedIcons";
-import { ConnectionTest } from "./ConnectionTest";
-import { ImportProgress } from "./ImportProgress";
-import { StepConfigForm } from "./StepConfigForm";
-import type {
-  ImportStatus,
-  RcloneConfig,
-  RcloneImportWizardProps,
-} from "./types";
-import type { ColumnsType } from "antd/es/table";
-import type { UploadFile } from "antd/es/upload";
+} from '@/utils/optimizedIcons';
+import { ConnectionTest } from './ConnectionTest';
+import { ImportProgress } from './ImportProgress';
+import { StepConfigForm } from './StepConfigForm';
+import type { ImportStatus, RcloneConfig, RcloneImportWizardProps } from './types';
+import type { ColumnsType } from 'antd/es/table';
+import type { UploadFile } from 'antd/es/upload';
 
 const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
   open,
@@ -50,7 +30,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
   teamName,
   onImportComplete,
 }) => {
-  const { t } = useTranslation(["resources", "common"]);
+  const { t } = useTranslation(['resources', 'common']);
   const [currentStep, setCurrentStep] = useState(0);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [parsedConfigs, setParsedConfigs] = useState<RcloneConfig[]>([]);
@@ -69,7 +49,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
       const configs = parseRcloneConfig(content);
 
       if (configs.length === 0) {
-        setParsingError(t("resources:storage.import.noConfigsFound"));
+        setParsingError(t('resources:storage.import.noConfigsFound'));
         return false;
       }
 
@@ -77,12 +57,10 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
 
       // Initialize import statuses
       const statuses: ImportStatus[] = configs.map((config) => {
-        const exists = existingStorages.some(
-          (s) => s.storageName === config.name,
-        );
+        const exists = existingStorages.some((s) => s.storageName === config.name);
         return {
           name: config.name,
-          status: "pending",
+          status: 'pending',
           exists,
           selected: !exists, // Only select non-existing by default
         };
@@ -92,21 +70,17 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
       setCurrentStep(1);
       return false;
     } catch {
-      setParsingError(t("resources:storage.import.parseError"));
+      setParsingError(t('resources:storage.import.parseError'));
       return false;
     }
   };
 
   const handleImport = async () => {
     setIsImporting(true);
-    const selectedConfigs = parsedConfigs.filter(
-      (_, index) => importStatuses[index].selected,
-    );
+    const selectedConfigs = parsedConfigs.filter((_, index) => importStatuses[index].selected);
 
     for (const config of selectedConfigs) {
-      const statusIndex = parsedConfigs.findIndex(
-        (c) => c.name === config.name,
-      );
+      const statusIndex = parsedConfigs.findIndex((c) => c.name === config.name);
 
       try {
         const mappedConfig = mapRcloneToStorageProvider(config);
@@ -115,8 +89,8 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
             const newStatuses = [...prev];
             newStatuses[statusIndex] = {
               ...newStatuses[statusIndex],
-              status: "error",
-              message: t("resources:storage.import.unsupportedProvider", {
+              status: 'error',
+              message: t('resources:storage.import.unsupportedProvider', {
                 type: config.type,
               }),
             };
@@ -138,21 +112,19 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
           const newStatuses = [...prev];
           newStatuses[statusIndex] = {
             ...newStatuses[statusIndex],
-            status: "success",
-            message: t("resources:storage.import.imported"),
+            status: 'success',
+            message: t('resources:storage.import.imported'),
           };
           return newStatuses;
         });
       } catch (error: unknown) {
         const errorMessage =
-          error instanceof Error
-            ? error.message
-            : t("resources:storage.import.importError");
+          error instanceof Error ? error.message : t('resources:storage.import.importError');
         setImportStatuses((prev) => {
           const newStatuses = [...prev];
           newStatuses[statusIndex] = {
             ...newStatuses[statusIndex],
-            status: "error",
+            status: 'error',
             message: errorMessage,
           };
           return newStatuses;
@@ -174,10 +146,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
     setParsingError(null);
 
     // Call callbacks
-    if (
-      currentStep === 2 &&
-      importStatuses.some((s) => s.status === "success")
-    ) {
+    if (currentStep === 2 && importStatuses.some((s) => s.status === 'success')) {
       onImportComplete?.();
     }
     onClose();
@@ -195,38 +164,36 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
   };
 
   const selectAll = (selected: boolean) => {
-    setImportStatuses((prev) =>
-      prev.map((status) => ({ ...status, selected })),
-    );
+    setImportStatuses((prev) => prev.map((status) => ({ ...status, selected })));
   };
 
   const nameColumn = createTruncatedColumn<ImportStatus>({
-    title: t("resources:storage.storageName"),
-    dataIndex: "name",
-    key: "name",
-    sorter: createSorter<ImportStatus>("name"),
+    title: t('resources:storage.storageName'),
+    dataIndex: 'name',
+    key: 'name',
+    sorter: createSorter<ImportStatus>('name'),
   });
 
   const statusColumn = createStatusColumn<ImportStatus>({
-    title: t("resources:storage.import.status"),
-    dataIndex: "status",
-    key: "status",
+    title: t('resources:storage.import.status'),
+    dataIndex: 'status',
+    key: 'status',
     statusMap: {
       pending: {
         icon: <ClockCircleOutlined />,
-        label: t("resources:storage.import.pending"),
+        label: t('resources:storage.import.pending'),
       },
       success: {
         icon: <CheckCircleOutlined />,
-        label: t("resources:storage.import.success"),
+        label: t('resources:storage.import.success'),
       },
       error: {
         icon: <CloseCircleOutlined />,
-        label: t("resources:storage.import.error"),
+        label: t('resources:storage.import.error'),
       },
       skipped: {
         icon: <WarningOutlined />,
-        label: t("resources:storage.import.skipped"),
+        label: t('resources:storage.import.skipped'),
       },
     },
   });
@@ -237,16 +204,15 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
         <Checkbox
           checked={importStatuses.every((s) => s.selected)}
           indeterminate={
-            importStatuses.some((s) => s.selected) &&
-            !importStatuses.every((s) => s.selected)
+            importStatuses.some((s) => s.selected) && !importStatuses.every((s) => s.selected)
           }
           onChange={(e) => selectAll(e.target.checked)}
           disabled={currentStep === 2}
           data-testid="rclone-wizard-select-all-checkbox"
         />
       ),
-      dataIndex: "selected",
-      key: "selected",
+      dataIndex: 'selected',
+      key: 'selected',
       width: 50,
       render: (_: unknown, record: ImportStatus, index: number) => (
         <Checkbox
@@ -260,19 +226,15 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
     {
       ...nameColumn,
       render: (name: string, record: ImportStatus) => {
-        const truncated = nameColumn.render?.(
-          name,
-          record,
-          0,
-        ) as React.ReactNode;
+        const truncated = nameColumn.render?.(name, record, 0) as React.ReactNode;
         return (
           <Space>
             <CloudOutlined />
             <Typography.Text>{truncated}</Typography.Text>
             {record.exists && (
-              <Tooltip title={t("resources:storage.import.alreadyExists")}>
+              <Tooltip title={t('resources:storage.import.alreadyExists')}>
                 <Tag>
-                  <InfoCircleOutlined /> {t("resources:storage.import.exists")}
+                  <InfoCircleOutlined /> {t('resources:storage.import.exists')}
                 </Tag>
               </Tooltip>
             )}
@@ -281,8 +243,8 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
       },
     },
     {
-      title: t("resources:storage.provider"),
-      key: "provider",
+      title: t('resources:storage.provider'),
+      key: 'provider',
       width: 120,
       responsive: RESPONSIVE_HIDE_XS,
       render: (_: unknown, record: ImportStatus) => {
@@ -290,21 +252,18 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
         if (!config) return null;
 
         // Capitalize provider name for display
-        const displayName =
-          config.type.charAt(0).toUpperCase() + config.type.slice(1);
+        const displayName = config.type.charAt(0).toUpperCase() + config.type.slice(1);
         return <Tag>{displayName}</Tag>;
       },
     },
     {
       ...statusColumn,
-      render: (status: ImportStatus["status"], record) => {
+      render: (status: ImportStatus['status'], record) => {
         if (currentStep < 2) return null;
         return (
           <Space direction="vertical" size={8}>
             {statusColumn.render?.(status, record, 0) as React.ReactNode}
-            {record.message && (
-              <Typography.Text>{record.message}</Typography.Text>
-            )}
+            {record.message && <Typography.Text>{record.message}</Typography.Text>}
           </Space>
         );
       },
@@ -324,13 +283,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
           />
         );
       case 1:
-        return (
-          <ConnectionTest
-            t={t}
-            importStatuses={importStatuses}
-            columns={columns}
-          />
-        );
+        return <ConnectionTest t={t} importStatuses={importStatuses} columns={columns} />;
       case 2:
         return (
           <ImportProgress
@@ -350,7 +303,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
       title={
         <Space>
           <CloudOutlined />
-          {t("resources:storage.import.title")}
+          {t('resources:storage.import.title')}
         </Space>
       }
       width={960}
@@ -360,27 +313,18 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
       footer={(() => {
         if (currentStep === 0) {
           return (
-            <Button
-              onClick={handleClose}
-              data-testid="rclone-wizard-cancel-button"
-            >
-              {t("common:actions.cancel")}
+            <Button onClick={handleClose} data-testid="rclone-wizard-cancel-button">
+              {t('common:actions.cancel')}
             </Button>
           );
         } else if (currentStep === 1) {
           return (
             <>
-              <Button
-                onClick={() => setCurrentStep(0)}
-                data-testid="rclone-wizard-back-button"
-              >
-                {t("common:actions.back")}
+              <Button onClick={() => setCurrentStep(0)} data-testid="rclone-wizard-back-button">
+                {t('common:actions.back')}
               </Button>
-              <Button
-                onClick={handleClose}
-                data-testid="rclone-wizard-cancel-button"
-              >
-                {t("common:actions.cancel")}
+              <Button onClick={handleClose} data-testid="rclone-wizard-cancel-button">
+                {t('common:actions.cancel')}
               </Button>
               <Button
                 type="primary"
@@ -389,18 +333,14 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
                 loading={isImporting}
                 data-testid="rclone-wizard-import-button"
               >
-                {t("resources:storage.import.importSelected")}
+                {t('resources:storage.import.importSelected')}
               </Button>
             </>
           );
         }
         return (
-          <Button
-            type="primary"
-            onClick={handleClose}
-            data-testid="rclone-wizard-close-button"
-          >
-            {t("common:actions.close")}
+          <Button type="primary" onClick={handleClose} data-testid="rclone-wizard-close-button">
+            {t('common:actions.close')}
           </Button>
         );
       })()}
@@ -411,9 +351,9 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
           current={currentStep}
           data-testid="rclone-wizard-steps"
           items={[
-            { title: t("resources:storage.import.step1") },
-            { title: t("resources:storage.import.step2") },
-            { title: t("resources:storage.import.step3") },
+            { title: t('resources:storage.import.step1') },
+            { title: t('resources:storage.import.step2') },
+            { title: t('resources:storage.import.step3') },
           ]}
         />
       </Flex>

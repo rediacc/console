@@ -4,34 +4,27 @@
  * In S3 mode, delegates to S3StateService (state.json); in local mode, reads/writes config.json.
  */
 
-import { DEFAULTS } from "@rediacc/shared/config";
-import {
-  MIN_NETWORK_ID,
-  NETWORK_ID_INCREMENT,
-} from "@rediacc/shared/queue-vault";
-import { ContextServiceBase } from "./context.js";
+import { DEFAULTS } from '@rediacc/shared/config';
+import { MIN_NETWORK_ID, NETWORK_ID_INCREMENT } from '@rediacc/shared/queue-vault';
+import { ContextServiceBase } from './context.js';
 import type {
   MachineConfig,
   NamedContext,
   RepositoryConfig,
   SSHConfig,
   StorageConfig,
-} from "../types/index.js";
+} from '../types/index.js';
 
 class ContextService extends ContextServiceBase {
   /**
    * Require the current context to be in local or S3 mode.
    */
-  protected async requireLocalOrS3Mode(
-    contextName?: string,
-  ): Promise<NamedContext> {
-    const context = contextName
-      ? await this.get(contextName)
-      : await this.getCurrent();
+  protected async requireLocalOrS3Mode(contextName?: string): Promise<NamedContext> {
+    const context = contextName ? await this.get(contextName) : await this.getCurrent();
     if (!context) {
-      throw new Error("No active context");
+      throw new Error('No active context');
     }
-    if (context.mode !== "local" && context.mode !== "s3") {
+    if (context.mode !== 'local' && context.mode !== 's3') {
       throw new Error(`Context "${context.name}" is not in local or S3 mode`);
     }
     return context;
@@ -50,7 +43,7 @@ class ContextService extends ContextServiceBase {
   }> {
     const context = await this.requireLocalOrS3Mode();
 
-    if (context.mode === "s3") {
+    if (context.mode === 's3') {
       const s3 = await this.getS3State();
       const machines = s3.getMachines();
       if (Object.keys(machines).length === 0) {
@@ -62,7 +55,7 @@ class ContextService extends ContextServiceBase {
       }
       return {
         machines,
-        ssh: context.ssh ?? { privateKeyPath: "" },
+        ssh: context.ssh ?? { privateKeyPath: '' },
         sshPrivateKey: sshContent?.privateKey,
         sshPublicKey: sshContent?.publicKey,
         renetPath: context.renetPath ?? DEFAULTS.CONTEXT.RENET_BINARY,
@@ -86,10 +79,8 @@ class ContextService extends ContextServiceBase {
     const config = await this.getLocalConfig();
     const machine = config.machines[machineName];
     if (!machine) {
-      const available = Object.keys(config.machines).join(", ");
-      throw new Error(
-        `Machine "${machineName}" not found. Available: ${available}`,
-      );
+      const available = Object.keys(config.machines).join(', ');
+      throw new Error(`Machine "${machineName}" not found. Available: ${available}`);
     }
     return machine;
   }
@@ -97,12 +88,12 @@ class ContextService extends ContextServiceBase {
   async createLocal(
     name: string,
     sshKeyPath: string,
-    options?: { renetPath?: string },
+    options?: { renetPath?: string }
   ): Promise<void> {
     const context: NamedContext = {
       name,
-      mode: "local",
-      apiUrl: "local://",
+      mode: 'local',
+      apiUrl: 'local://',
       ssh: {
         privateKeyPath: sshKeyPath,
         publicKeyPath: `${sshKeyPath}.pub`,
@@ -117,14 +108,11 @@ class ContextService extends ContextServiceBase {
   // Machine CRUD
   // ============================================================================
 
-  async addLocalMachine(
-    machineName: string,
-    config: MachineConfig,
-  ): Promise<void> {
+  async addLocalMachine(machineName: string, config: MachineConfig): Promise<void> {
     const name = this.getEffectiveContextName();
     const context = await this.requireLocalOrS3Mode(name);
 
-    if (context.mode === "s3") {
+    if (context.mode === 's3') {
       const s3 = await this.getS3State();
       const machines = s3.getMachines();
       machines[machineName] = config;
@@ -142,11 +130,10 @@ class ContextService extends ContextServiceBase {
     const name = this.getEffectiveContextName();
     const context = await this.requireLocalOrS3Mode(name);
 
-    if (context.mode === "s3") {
+    if (context.mode === 's3') {
       const s3 = await this.getS3State();
       const machines = s3.getMachines();
-      if (!(machineName in machines))
-        throw new Error(`Machine "${machineName}" not found`);
+      if (!(machineName in machines)) throw new Error(`Machine "${machineName}" not found`);
       delete machines[machineName];
       await s3.setMachines(machines);
       return;
@@ -160,12 +147,10 @@ class ContextService extends ContextServiceBase {
     await this.update(name, { machines: remaining });
   }
 
-  async listLocalMachines(): Promise<
-    { name: string; config: MachineConfig }[]
-  > {
+  async listLocalMachines(): Promise<{ name: string; config: MachineConfig }[]> {
     const context = await this.requireLocalOrS3Mode();
 
-    if (context.mode === "s3") {
+    if (context.mode === 's3') {
       const s3 = await this.getS3State();
       return Object.entries(s3.getMachines()).map(([name, config]) => ({
         name,
@@ -179,18 +164,14 @@ class ContextService extends ContextServiceBase {
     }));
   }
 
-  async updateLocalMachine(
-    machineName: string,
-    updates: Partial<MachineConfig>,
-  ): Promise<void> {
+  async updateLocalMachine(machineName: string, updates: Partial<MachineConfig>): Promise<void> {
     const name = this.getEffectiveContextName();
     const context = await this.requireLocalOrS3Mode(name);
 
-    if (context.mode === "s3") {
+    if (context.mode === 's3') {
       const s3 = await this.getS3State();
       const machines = s3.getMachines();
-      if (!(machineName in machines))
-        throw new Error(`Machine "${machineName}" not found`);
+      if (!(machineName in machines)) throw new Error(`Machine "${machineName}" not found`);
       machines[machineName] = { ...machines[machineName], ...updates };
       await s3.setMachines(machines);
       return;
@@ -224,14 +205,11 @@ class ContextService extends ContextServiceBase {
   // Storage CRUD
   // ============================================================================
 
-  async addLocalStorage(
-    storageName: string,
-    config: StorageConfig,
-  ): Promise<void> {
+  async addLocalStorage(storageName: string, config: StorageConfig): Promise<void> {
     const name = this.getEffectiveContextName();
     const context = await this.requireLocalOrS3Mode(name);
 
-    if (context.mode === "s3") {
+    if (context.mode === 's3') {
       const s3 = await this.getS3State();
       const storages = s3.getStorages();
       storages[storageName] = config;
@@ -249,11 +227,10 @@ class ContextService extends ContextServiceBase {
     const name = this.getEffectiveContextName();
     const context = await this.requireLocalOrS3Mode(name);
 
-    if (context.mode === "s3") {
+    if (context.mode === 's3') {
       const s3 = await this.getS3State();
       const storages = s3.getStorages();
-      if (!(storageName in storages))
-        throw new Error(`Storage "${storageName}" not found`);
+      if (!(storageName in storages)) throw new Error(`Storage "${storageName}" not found`);
       delete storages[storageName];
       await s3.setStorages(storages);
       return;
@@ -267,12 +244,10 @@ class ContextService extends ContextServiceBase {
     await this.update(name, { storages: remaining });
   }
 
-  async listLocalStorages(): Promise<
-    { name: string; config: StorageConfig }[]
-  > {
+  async listLocalStorages(): Promise<{ name: string; config: StorageConfig }[]> {
     const context = await this.requireLocalOrS3Mode();
 
-    if (context.mode === "s3") {
+    if (context.mode === 's3') {
       const s3 = await this.getS3State();
       return Object.entries(s3.getStorages()).map(([name, config]) => ({
         name,
@@ -289,24 +264,20 @@ class ContextService extends ContextServiceBase {
   async getLocalStorage(storageName: string): Promise<StorageConfig> {
     const context = await this.requireLocalOrS3Mode();
 
-    if (context.mode === "s3") {
+    if (context.mode === 's3') {
       const s3 = await this.getS3State();
       const storages = s3.getStorages();
       if (!(storageName in storages)) {
-        const available = Object.keys(storages).join(", ");
-        throw new Error(
-          `Storage "${storageName}" not found. Available: ${available || "none"}`,
-        );
+        const available = Object.keys(storages).join(', ');
+        throw new Error(`Storage "${storageName}" not found. Available: ${available || 'none'}`);
       }
       return storages[storageName];
     }
 
     const storage = context.storages?.[storageName];
     if (!storage) {
-      const available = Object.keys(context.storages ?? {}).join(", ");
-      throw new Error(
-        `Storage "${storageName}" not found. Available: ${available || "none"}`,
-      );
+      const available = Object.keys(context.storages ?? {}).join(', ');
+      throw new Error(`Storage "${storageName}" not found. Available: ${available || 'none'}`);
     }
     return storage;
   }
@@ -315,14 +286,11 @@ class ContextService extends ContextServiceBase {
   // Repository CRUD
   // ============================================================================
 
-  async addLocalRepository(
-    repoName: string,
-    config: RepositoryConfig,
-  ): Promise<void> {
+  async addLocalRepository(repoName: string, config: RepositoryConfig): Promise<void> {
     const name = this.getEffectiveContextName();
     const context = await this.requireLocalOrS3Mode(name);
 
-    if (context.mode === "s3") {
+    if (context.mode === 's3') {
       const s3 = await this.getS3State();
       const repos = s3.getRepositories();
       repos[repoName] = config;
@@ -340,11 +308,10 @@ class ContextService extends ContextServiceBase {
     const name = this.getEffectiveContextName();
     const context = await this.requireLocalOrS3Mode(name);
 
-    if (context.mode === "s3") {
+    if (context.mode === 's3') {
       const s3 = await this.getS3State();
       const repos = s3.getRepositories();
-      if (!(repoName in repos))
-        throw new Error(`Repository "${repoName}" not found`);
+      if (!(repoName in repos)) throw new Error(`Repository "${repoName}" not found`);
       delete repos[repoName];
       await s3.setRepositories(repos);
       return;
@@ -358,12 +325,10 @@ class ContextService extends ContextServiceBase {
     await this.update(name, { repositories: remaining });
   }
 
-  async listLocalRepositories(): Promise<
-    { name: string; config: RepositoryConfig }[]
-  > {
+  async listLocalRepositories(): Promise<{ name: string; config: RepositoryConfig }[]> {
     const context = await this.requireLocalOrS3Mode();
 
-    if (context.mode === "s3") {
+    if (context.mode === 's3') {
       const s3 = await this.getS3State();
       return Object.entries(s3.getRepositories()).map(([name, config]) => ({
         name,
@@ -371,16 +336,17 @@ class ContextService extends ContextServiceBase {
       }));
     }
 
-    return Object.entries(context.repositories ?? {}).map(
-      ([repoName, config]) => ({ name: repoName, config }),
-    );
+    return Object.entries(context.repositories ?? {}).map(([repoName, config]) => ({
+      name: repoName,
+      config,
+    }));
   }
 
   async getRepositoryGuidMap(): Promise<Record<string, string>> {
     const context = await this.getCurrent();
     let repos: Record<string, RepositoryConfig> | undefined;
 
-    if (context?.mode === "s3") {
+    if (context?.mode === 's3') {
       const s3 = await this.getS3State();
       repos = s3.getRepositories();
     } else {
@@ -400,7 +366,7 @@ class ContextService extends ContextServiceBase {
     const context = await this.getCurrent();
     let repos: Record<string, RepositoryConfig> | undefined;
 
-    if (context?.mode === "s3") {
+    if (context?.mode === 's3') {
       const s3 = await this.getS3State();
       repos = s3.getRepositories();
     } else {
@@ -417,12 +383,10 @@ class ContextService extends ContextServiceBase {
     return map;
   }
 
-  async getLocalRepository(
-    repoName: string,
-  ): Promise<RepositoryConfig | undefined> {
+  async getLocalRepository(repoName: string): Promise<RepositoryConfig | undefined> {
     const context = await this.getCurrent();
 
-    if (context?.mode === "s3") {
+    if (context?.mode === 's3') {
       const s3 = await this.getS3State();
       return s3.getRepositories()[repoName];
     }
@@ -434,9 +398,7 @@ class ContextService extends ContextServiceBase {
   // Network ID Allocation
   // ============================================================================
 
-  private computeNextNetworkId(
-    repositories: Record<string, RepositoryConfig>,
-  ): number {
+  private computeNextNetworkId(repositories: Record<string, RepositoryConfig>): number {
     const usedIds = Object.values(repositories)
       .map((r) => r.networkId)
       .filter((id): id is number => id !== undefined && id > 0);
@@ -448,7 +410,7 @@ class ContextService extends ContextServiceBase {
   async allocateNetworkId(): Promise<number> {
     const context = await this.requireLocalOrS3Mode();
 
-    if (context.mode === "s3") {
+    if (context.mode === 's3') {
       const s3 = await this.getS3State();
       return this.computeNextNetworkId(s3.getRepositories());
     }
@@ -460,14 +422,12 @@ class ContextService extends ContextServiceBase {
     const name = this.getEffectiveContextName();
     const context = await this.requireLocalOrS3Mode(name);
 
-    if (context.mode === "s3") {
+    if (context.mode === 's3') {
       const s3 = await this.getS3State();
       const repos = s3.getRepositories();
-      if (!(repoName in repos))
-        throw new Error(`Repository "${repoName}" not found`);
+      if (!(repoName in repos)) throw new Error(`Repository "${repoName}" not found`);
       const repo = repos[repoName];
-      if (repo.networkId !== undefined && repo.networkId > 0)
-        return repo.networkId;
+      if (repo.networkId !== undefined && repo.networkId > 0) return repo.networkId;
 
       const networkId = this.computeNextNetworkId(repos);
       repos[repoName] = { ...repo, networkId };

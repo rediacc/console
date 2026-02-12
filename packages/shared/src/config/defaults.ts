@@ -23,7 +23,7 @@ export const SSH_DEFAULTS = {
   TERMINAL_ROWS: 24,
 
   /** Terminal type identifier */
-  TERMINAL_TYPE: "xterm-256color",
+  TERMINAL_TYPE: 'xterm-256color',
 
   /** SSH keepalive interval in ms */
   KEEPALIVE_INTERVAL: 10000,
@@ -46,25 +46,25 @@ export const SSH_DEFAULTS = {
  */
 export const REPOSITORY_DEFAULTS = {
   /** Default repository tag */
-  TAG: "latest",
+  TAG: 'latest',
 
   /** Default network mode for containers */
-  NETWORK_MODE: "bridge",
+  NETWORK_MODE: 'bridge',
 
   /** Default container user */
-  UNIVERSAL_USER: "rediacc",
+  UNIVERSAL_USER: 'rediacc',
 
   /** Default universal user ID */
-  UNIVERSAL_USER_ID: "1000",
+  UNIVERSAL_USER_ID: '1000',
 
   /** Default container log lines to show */
-  LOG_LINES: "50",
+  LOG_LINES: '50',
 
   /** Default container lines for protocol URLs */
   CONTAINER_LINES: 100,
 
   /** Default container action */
-  CONTAINER_ACTION: "terminal",
+  CONTAINER_ACTION: 'terminal',
 } as const;
 
 /**
@@ -72,10 +72,10 @@ export const REPOSITORY_DEFAULTS = {
  */
 export const DOCKER_DEFAULTS = {
   /** Default Docker host socket path */
-  SOCKET_PATH: "/var/run/docker.sock",
+  SOCKET_PATH: '/var/run/docker.sock',
 
   /** Default Docker host URI */
-  HOST_URI: "unix:///var/run/docker.sock",
+  HOST_URI: 'unix:///var/run/docker.sock',
 } as const;
 
 /**
@@ -83,10 +83,10 @@ export const DOCKER_DEFAULTS = {
  */
 export const SHELL_DEFAULTS = {
   /** Default bash shell path */
-  BASH: "/bin/bash",
+  BASH: '/bin/bash',
 
   /** Default sh shell path */
-  SH: "/bin/sh",
+  SH: '/bin/sh',
 } as const;
 
 /**
@@ -94,19 +94,19 @@ export const SHELL_DEFAULTS = {
  */
 export const TELEMETRY_DEFAULTS = {
   /** Fallback value for unknown/missing telemetry data */
-  UNKNOWN: "unknown",
+  UNKNOWN: 'unknown',
 
   /** Uppercase variant for backwards compatibility */
-  UNKNOWN_UPPER: "UNKNOWN",
+  UNKNOWN_UPPER: 'UNKNOWN',
 
   /** Default CLI service name */
-  SERVICE_NAME: "rediacc-cli",
+  SERVICE_NAME: 'rediacc-cli',
 
   /** Default environment */
-  ENVIRONMENT: "production",
+  ENVIRONMENT: 'production',
 
   /** Default metric unit */
-  UNIT: "ms",
+  UNIT: 'ms',
 } as const;
 
 /**
@@ -114,10 +114,10 @@ export const TELEMETRY_DEFAULTS = {
  */
 export const PROTOCOL_DEFAULTS = {
   /** Default protocol action */
-  ACTION: "download",
+  ACTION: 'download',
 
   /** Desktop protocol action */
-  ACTION_DESKTOP: "desktop",
+  ACTION_DESKTOP: 'desktop',
 } as const;
 
 /**
@@ -125,7 +125,7 @@ export const PROTOCOL_DEFAULTS = {
  */
 export const PLATFORM_DEFAULTS = {
   /** Default Windows system directory */
-  WINDOWS_SYSTEM: "C:\\Windows",
+  WINDOWS_SYSTEM: 'C:\\Windows',
 } as const;
 
 /**
@@ -133,7 +133,7 @@ export const PLATFORM_DEFAULTS = {
  */
 export const LOCALE_DEFAULTS = {
   /** Default language code */
-  LANGUAGE: "en",
+  LANGUAGE: 'en',
 } as const;
 
 /**
@@ -141,16 +141,16 @@ export const LOCALE_DEFAULTS = {
  */
 export const STATUS_DEFAULTS = {
   /** Unknown status fallback */
-  UNKNOWN: "Unknown",
+  UNKNOWN: 'Unknown',
 
   /** Unknown status fallback (uppercase) */
-  UNKNOWN_UPPERCASE: "UNKNOWN",
+  UNKNOWN_UPPERCASE: 'UNKNOWN',
 
   /** Current version identifier */
-  CURRENT: "Current",
+  CURRENT: 'Current',
 
   /** Original version identifier */
-  ORIGINAL: "original",
+  ORIGINAL: 'original',
 } as const;
 
 /**
@@ -158,10 +158,10 @@ export const STATUS_DEFAULTS = {
  */
 export const HOST_DEFAULTS = {
   /** Default localhost hostname */
-  LOCALHOST: "localhost",
+  LOCALHOST: 'localhost',
 
   /** Default web port string */
-  WEB_PORT_STRING: "7322",
+  WEB_PORT_STRING: '7322',
 } as const;
 
 /**
@@ -172,10 +172,10 @@ export const UI_DEFAULTS = {
   LOADING_DELAY: 200,
 
   /** Default width for Skeleton component */
-  SKELETON_WIDTH: "100%",
+  SKELETON_WIDTH: '100%',
 
   /** Default search input ID */
-  SEARCH_INPUT_ID: "resource-list-search",
+  SEARCH_INPUT_ID: 'resource-list-search',
 
   /** Default action column width */
   ACTION_COLUMN_WIDTH: 120,
@@ -184,10 +184,10 @@ export const UI_DEFAULTS = {
   ADVANCED_COLUMN_WIDTH: 100,
 
   /** Default button type */
-  BUTTON_TYPE: "primary" as const,
+  BUTTON_TYPE: 'primary' as const,
 
   /** Default table alignment */
-  TABLE_ALIGN: "left" as const,
+  TABLE_ALIGN: 'left' as const,
 } as const;
 
 /**
@@ -201,7 +201,7 @@ export const PRIORITY_DEFAULTS = {
   QUEUE_LIST_LIMIT: 50,
 
   /** Default CPU count for containers */
-  CPU_COUNT: "0",
+  CPU_COUNT: '0',
 } as const;
 
 /**
@@ -209,25 +209,25 @@ export const PRIORITY_DEFAULTS = {
  */
 export const RESOURCE_DEFAULTS = {
   /** Default resource type */
-  TYPE: "repository",
+  TYPE: 'repository',
 
   /** Default modal mode */
-  MODE: "create",
+  MODE: 'create',
 
   /** Default infrastructure tab */
-  TAB: "region",
+  TAB: 'region',
 
   /** Default audit filter */
-  AUDIT_FILTER: "All",
+  AUDIT_FILTER: 'All',
 
   /** Default field ID */
-  FIELD_ID: "generated",
+  FIELD_ID: 'generated',
 
   /** Default actor for audit */
-  ACTOR: "System",
+  ACTOR: 'System',
 
   /** Default file type for SFTP */
-  FILE_TYPE: "file",
+  FILE_TYPE: 'file',
 } as const;
 
 /**
@@ -235,10 +235,10 @@ export const RESOURCE_DEFAULTS = {
  */
 export const EDITION_DEFAULTS = {
   /** Default edition type */
-  EDITION: "FREE",
+  EDITION: 'FREE',
 
   /** Default build type */
-  BUILD_TYPE: "DEBUG",
+  BUILD_TYPE: 'DEBUG',
 } as const;
 
 /**
@@ -246,7 +246,7 @@ export const EDITION_DEFAULTS = {
  */
 export const VSCODE_DEFAULTS = {
   /** VSCode installation status */
-  NOT_INSTALLED: "not-installed",
+  NOT_INSTALLED: 'not-installed',
 } as const;
 
 /**
@@ -254,16 +254,16 @@ export const VSCODE_DEFAULTS = {
  */
 export const CONTEXT_DEFAULTS = {
   /** Default context mode */
-  MODE: "cloud",
+  MODE: 'cloud',
 
   /** Default renet path indicator */
-  RENET_PATH: "renet (in PATH)",
+  RENET_PATH: 'renet (in PATH)',
 
   /** Default renet binary name */
-  RENET_BINARY: "renet",
+  RENET_BINARY: 'renet',
 
   /** Default SSH key path for local/S3 contexts */
-  SSH_KEY_PATH: "~/.ssh/rediacc",
+  SSH_KEY_PATH: '~/.ssh/rediacc',
 } as const;
 
 /**
@@ -279,7 +279,7 @@ export const ANALYTICS_DEFAULTS = {
  */
 export const SUBSCRIPTION_DEFAULTS = {
   /** Default subscription plan */
-  PLAN: "COMMUNITY",
+  PLAN: 'COMMUNITY',
 } as const;
 
 /**
@@ -287,13 +287,13 @@ export const SUBSCRIPTION_DEFAULTS = {
  */
 export const PROCESS_DEFAULTS = {
   /** Default stdio option for child processes */
-  STDIO: "inherit" as const,
+  STDIO: 'inherit' as const,
 
   /** Default shell for bash execution */
-  SHELL: "/bin/bash",
+  SHELL: '/bin/bash',
 
   /** Default error message for renet provisioning failure */
-  RENET_PROVISION_ERROR: "Failed to provision renet",
+  RENET_PROVISION_ERROR: 'Failed to provision renet',
 } as const;
 
 /**
@@ -315,16 +315,16 @@ export const TIMEOUT_DEFAULTS = {
  */
 export const CLI_TEST_DEFAULTS = {
   /** Default output directory for test files */
-  OUTPUT_DIR: "test-outputs",
+  OUTPUT_DIR: 'test-outputs',
 
   /** Default output format for CLI commands */
-  OUTPUT_FORMAT: "json",
+  OUTPUT_FORMAT: 'json',
 
   /** Default SSH key path */
-  SSH_KEY_PATH: "~/.ssh/id_rsa",
+  SSH_KEY_PATH: '~/.ssh/id_rsa',
 
   /** Default SSH user for test VMs */
-  VM_USER: "root",
+  VM_USER: 'root',
 } as const;
 
 /**
@@ -359,10 +359,10 @@ export const DEFAULTS = {
  */
 export const API_DEFAULTS = {
   /** Sandbox API URL */
-  SANDBOX_URL: "https://sandbox.rediacc.com/api",
+  SANDBOX_URL: 'https://sandbox.rediacc.com/api',
 
   /** Default console base URL */
-  CONSOLE_URL: "http://localhost:3000/console/",
+  CONSOLE_URL: 'http://localhost:3000/console/',
 } as const;
 
 /**
@@ -370,13 +370,13 @@ export const API_DEFAULTS = {
  */
 export const TERMINAL_DEFAULTS = {
   /** Default shell */
-  DEFAULT_SHELL: "/bin/bash",
+  DEFAULT_SHELL: '/bin/bash',
 
   /** Fallback shell */
-  FALLBACK_SHELL: "/bin/sh",
+  FALLBACK_SHELL: '/bin/sh',
 
   /** Default terminal type */
-  TYPE: "terminal",
+  TYPE: 'terminal',
 } as const;
 
 /**
@@ -384,13 +384,13 @@ export const TERMINAL_DEFAULTS = {
  */
 export const UI_IDS = {
   /** Resource list refresh button */
-  RESOURCE_LIST_REFRESH: "resource-list-refresh",
+  RESOURCE_LIST_REFRESH: 'resource-list-refresh',
 
   /** Resource list table */
-  RESOURCE_LIST_TABLE: "resource-list-table",
+  RESOURCE_LIST_TABLE: 'resource-list-table',
 
   /** Vault editor field generator */
-  VAULT_EDITOR_FIELD: "vault-editor-field-generator",
+  VAULT_EDITOR_FIELD: 'vault-editor-field-generator',
 } as const;
 
 /**
@@ -398,13 +398,13 @@ export const UI_IDS = {
  */
 export const UI_SIZING = {
   /** Center alignment */
-  CENTER: "center" as const,
+  CENTER: 'center' as const,
 
   /** Top left placement */
-  TOP_LEFT: "topLeft" as const,
+  TOP_LEFT: 'topLeft' as const,
 
   /** Default width for skeleton */
-  SKELETON_HEIGHT: "16px",
+  SKELETON_HEIGHT: '16px',
 
   /** Modal width */
   MODAL_WIDTH: 180,
@@ -418,7 +418,7 @@ export const UI_SIZING = {
  */
 export const SEVERITY_DEFAULTS = {
   /** Info level */
-  INFO: "info" as const,
+  INFO: 'info' as const,
 } as const;
 
 /**
@@ -426,7 +426,7 @@ export const SEVERITY_DEFAULTS = {
  */
 export const SSH_KEY_DEFAULTS = {
   /** RSA algorithm */
-  ALGORITHM: "rsa",
+  ALGORITHM: 'rsa',
 
   /** Default key size */
   KEY_SIZE: 2048,
@@ -443,10 +443,10 @@ export const LIMITS_DEFAULTS = {
   SESSION_TIMEOUT: 3600,
 
   /** SSH keepalive interval */
-  KEEPALIVE: "10000",
+  KEEPALIVE: '10000',
 
   /** SSH connection timeout */
-  CONNECTION_TIMEOUT: "30000",
+  CONNECTION_TIMEOUT: '30000',
 
   /** API request timeout (900s) */
   API_TIMEOUT: 900,
@@ -460,7 +460,7 @@ export const LIMITS_DEFAULTS = {
  */
 export const VERSION_DEFAULTS = {
   /** Default version string */
-  DEFAULT: "2.0.0",
+  DEFAULT: '2.0.0',
 } as const;
 
 /**
@@ -468,7 +468,7 @@ export const VERSION_DEFAULTS = {
  */
 export const EDITION_TYPES = {
   /** Community edition */
-  COMMUNITY: "COMMUNITY",
+  COMMUNITY: 'COMMUNITY',
 } as const;
 
 /**
@@ -476,7 +476,7 @@ export const EDITION_TYPES = {
  */
 export const FILE_DEFAULTS = {
   /** PNG image format */
-  PNG: "png",
+  PNG: 'png',
 } as const;
 
 /**
@@ -484,7 +484,7 @@ export const FILE_DEFAULTS = {
  */
 export const STYLE_DEFAULTS = {
   /** Inherit value */
-  INHERIT: "inherit" as const,
+  INHERIT: 'inherit' as const,
 } as const;
 
 /**
@@ -492,10 +492,10 @@ export const STYLE_DEFAULTS = {
  */
 export const E2E_DEFAULTS = {
   /** Default machine name for tests */
-  MACHINE_NAME: "machine-1",
+  MACHINE_NAME: 'machine-1',
 
   /** Default CPU count string */
-  CPU_COUNT_STRING: "0",
+  CPU_COUNT_STRING: '0',
 } as const;
 
 /**
@@ -514,10 +514,10 @@ export const WINDOW_DEFAULTS = {
  */
 export const UPDATE_DEFAULTS = {
   /** Default update provider */
-  PROVIDER: "generic" as const,
+  PROVIDER: 'generic' as const,
 
   /** Default update channel */
-  CHANNEL: "latest" as const,
+  CHANNEL: 'latest' as const,
 } as const;
 
 // Re-export aggregated defaults with new additions

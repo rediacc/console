@@ -10,19 +10,19 @@
  * Delegates to shared utilities in renet-execution.ts.
  */
 
-import { spawn } from "node:child_process";
-import * as fs from "node:fs/promises";
-import * as os from "node:os";
-import * as path from "node:path";
-import { SFTPClient } from "@rediacc/shared-desktop/sftp";
-import { contextService } from "./context.js";
-import { outputService } from "./output.js";
+import { spawn } from 'node:child_process';
+import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import { contextService } from './context.js';
+import { outputService } from './output.js';
 import {
   buildLocalVault,
   provisionRenetToRemote,
   readOptionalSSHKey,
   readSSHKey,
-} from "./renet-execution.js";
+} from './renet-execution.js';
 
 /** Options for local execution */
 interface LocalExecuteOptions {
@@ -75,31 +75,23 @@ class LocalExecutorService {
       const machine = await contextService.getLocalMachine(options.machineName);
 
       if (options.debug) {
-        outputService.info(
-          `[local] Executing '${options.functionName}' on ${options.machineName}`,
-        );
+        outputService.info(`[local] Executing '${options.functionName}' on ${options.machineName}`);
       }
 
       // Read SSH keys (prefer content from S3 state, fallback to filesystem)
-      const sshPrivateKey =
-        config.sshPrivateKey ?? (await readSSHKey(config.ssh.privateKeyPath));
+      const sshPrivateKey = config.sshPrivateKey ?? (await readSSHKey(config.ssh.privateKeyPath));
       const sshPublicKey =
-        config.sshPublicKey ??
-        (await readOptionalSSHKey(config.ssh.publicKeyPath));
+        config.sshPublicKey ?? (await readOptionalSSHKey(config.ssh.publicKeyPath));
 
       // Read known_hosts: prefer per-machine stored keys, fall back to system file
-      let sshKnownHosts = machine.knownHosts ?? "";
+      let sshKnownHosts = machine.knownHosts ?? '';
       if (!sshKnownHosts) {
-        const knownHostsPath = path.join(os.homedir(), ".ssh", "known_hosts");
-        sshKnownHosts = await fs
-          .readFile(knownHostsPath, "utf-8")
-          .catch(() => "");
+        const knownHostsPath = path.join(os.homedir(), '.ssh', 'known_hosts');
+        sshKnownHosts = await fs.readFile(knownHostsPath, 'utf-8').catch(() => '');
       }
 
       // Load storages from context (if any)
-      let storages:
-        | Record<string, { vaultContent: Record<string, unknown> }>
-        | undefined;
+      let storages: Record<string, { vaultContent: Record<string, unknown> }> | undefined;
       try {
         const storageList = await contextService.listLocalStorages();
         if (storageList.length > 0) {
@@ -124,8 +116,7 @@ class LocalExecutorService {
           repositoryConfigs = {};
           for (const r of repoList) {
             if (r.config.credential) {
-              repositoryCredentials[r.config.repositoryGuid] =
-                r.config.credential;
+              repositoryCredentials[r.config.repositoryGuid] = r.config.credential;
             }
             repositoryConfigs[r.name] = {
               guid: r.config.repositoryGuid,
@@ -157,9 +148,7 @@ class LocalExecutorService {
       await provisionRenetToRemote(config, machine, sshPrivateKey, options);
 
       if (options.debug) {
-        outputService.info(
-          `[local] Direct SSH to ${machine.ip}, executor=local`,
-        );
+        outputService.info(`[local] Direct SSH to ${machine.ip}, executor=local`);
       }
 
       // SSH to machine and run renet execute --executor local with vault via stdin
@@ -172,32 +161,27 @@ class LocalExecutorService {
       await sftp.connect();
 
       try {
-        const exitCode = await sftp.execStreaming(
-          "renet execute --executor local",
-          {
-            stdin: vault,
-            onStdout: (data) => {
-              process.stdout.write(data);
-            },
-            onStderr: (data) => {
-              process.stderr.write(data);
-            },
+        const exitCode = await sftp.execStreaming('renet execute --executor local', {
+          stdin: vault,
+          onStdout: (data) => {
+            process.stdout.write(data);
           },
-        );
+          onStderr: (data) => {
+            process.stderr.write(data);
+          },
+        });
 
         return {
           success: exitCode === 0,
           exitCode,
-          error:
-            exitCode === 0 ? undefined : `renet exited with code ${exitCode}`,
+          error: exitCode === 0 ? undefined : `renet exited with code ${exitCode}`,
           durationMs: Date.now() - startTime,
         };
       } finally {
         sftp.close();
       }
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       return {
         success: false,
         exitCode: 1,
@@ -214,11 +198,11 @@ class LocalExecutorService {
     try {
       const config = await contextService.getLocalConfig();
       return new Promise((resolve) => {
-        const child = spawn(config.renetPath, ["version"], {
-          stdio: ["ignore", "pipe", "pipe"],
+        const child = spawn(config.renetPath, ['version'], {
+          stdio: ['ignore', 'pipe', 'pipe'],
         });
-        child.on("close", (code) => resolve(code === 0));
-        child.on("error", () => resolve(false));
+        child.on('close', (code) => resolve(code === 0));
+        child.on('error', () => resolve(false));
       });
     } catch {
       return false;

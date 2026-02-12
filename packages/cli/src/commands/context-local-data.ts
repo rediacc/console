@@ -1,41 +1,34 @@
-import * as fs from "node:fs/promises";
-import * as os from "node:os";
-import * as path from "node:path";
-import { DEFAULTS } from "@rediacc/shared/config";
-import { validateNetworkId } from "@rediacc/shared/queue-vault";
-import { t } from "../i18n/index.js";
-import { contextService } from "../services/context.js";
-import { outputService } from "../services/output.js";
-import { handleError, ValidationError } from "../utils/errors.js";
-import type { OutputFormat, RepositoryConfig } from "../types/index.js";
-import type { Command } from "commander";
+import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import { DEFAULTS } from '@rediacc/shared/config';
+import { validateNetworkId } from '@rediacc/shared/queue-vault';
+import { t } from '../i18n/index.js';
+import { contextService } from '../services/context.js';
+import { outputService } from '../services/output.js';
+import { handleError, ValidationError } from '../utils/errors.js';
+import type { OutputFormat, RepositoryConfig } from '../types/index.js';
+import type { Command } from 'commander';
 
-export function registerLocalDataCommands(
-  context: Command,
-  program: Command,
-): void {
+export function registerLocalDataCommands(context: Command, program: Command): void {
   // context import-storage - Import storages from rclone config file
   context
-    .command("import-storage <file>")
-    .description(t("commands.context.importStorage.description"))
-    .option("--name <name>", t("commands.context.importStorage.optionName"))
+    .command('import-storage <file>')
+    .description(t('commands.context.importStorage.description'))
+    .option('--name <name>', t('commands.context.importStorage.optionName'))
     .action(async (file, options) => {
       try {
-        const {
-          parseRcloneConfig,
-          mapRcloneToStorageProvider,
-          PROVIDER_MAPPING,
-        } = await import("@rediacc/shared/queue-vault");
+        const { parseRcloneConfig, mapRcloneToStorageProvider, PROVIDER_MAPPING } = await import(
+          '@rediacc/shared/queue-vault'
+        );
 
-        const filePath = file.startsWith("~")
-          ? path.join(os.homedir(), file.slice(1))
-          : file;
+        const filePath = file.startsWith('~') ? path.join(os.homedir(), file.slice(1)) : file;
 
-        const content = await fs.readFile(filePath, "utf-8");
+        const content = await fs.readFile(filePath, 'utf-8');
         const configs = parseRcloneConfig(content);
 
         if (configs.length === 0) {
-          throw new Error(t("commands.context.importStorage.noConfigs"));
+          throw new Error(t('commands.context.importStorage.noConfigs'));
         }
 
         const toImport = options.name
@@ -44,9 +37,9 @@ export function registerLocalDataCommands(
 
         if (toImport.length === 0) {
           throw new Error(
-            t("commands.context.importStorage.notFound", {
+            t('commands.context.importStorage.notFound', {
               name: options.name,
-            }),
+            })
           );
         }
 
@@ -55,31 +48,28 @@ export function registerLocalDataCommands(
           const mapped = mapRcloneToStorageProvider(config);
           if (!mapped) {
             outputService.warn(
-              t("commands.context.importStorage.unsupported", {
+              t('commands.context.importStorage.unsupported', {
                 name: config.name,
                 type: config.type,
-              }),
+              })
             );
             continue;
           }
 
           await contextService.addLocalStorage(config.name, {
-            provider:
-              PROVIDER_MAPPING[config.type] ?? (mapped.provider as string),
+            provider: PROVIDER_MAPPING[config.type] ?? (mapped.provider as string),
             vaultContent: mapped,
           });
           outputService.success(
-            t("commands.context.importStorage.imported", {
+            t('commands.context.importStorage.imported', {
               name: config.name,
               type: config.type,
-            }),
+            })
           );
           imported++;
         }
 
-        outputService.info(
-          t("commands.context.importStorage.summary", { count: imported }),
-        );
+        outputService.info(t('commands.context.importStorage.summary', { count: imported }));
       } catch (error) {
         handleError(error);
       }
@@ -87,14 +77,12 @@ export function registerLocalDataCommands(
 
   // context remove-storage - Remove a storage from local context
   context
-    .command("remove-storage <name>")
-    .description(t("commands.context.removeStorage.description"))
+    .command('remove-storage <name>')
+    .description(t('commands.context.removeStorage.description'))
     .action(async (name) => {
       try {
         await contextService.removeLocalStorage(name);
-        outputService.success(
-          t("commands.context.removeStorage.success", { name }),
-        );
+        outputService.success(t('commands.context.removeStorage.success', { name }));
       } catch (error) {
         handleError(error);
       }
@@ -102,15 +90,15 @@ export function registerLocalDataCommands(
 
   // context storages - List storages in local context
   context
-    .command("storages")
-    .description(t("commands.context.storages.description"))
+    .command('storages')
+    .description(t('commands.context.storages.description'))
     .action(async () => {
       try {
         const storages = await contextService.listLocalStorages();
         const format = program.opts().output as OutputFormat;
 
         if (storages.length === 0) {
-          outputService.info(t("commands.context.storages.noStorages"));
+          outputService.info(t('commands.context.storages.noStorages'));
           return;
         }
 
@@ -127,25 +115,12 @@ export function registerLocalDataCommands(
 
   // context add-repository - Add a repository GUID mapping
   context
-    .command("add-repository <name>")
-    .description(t("commands.context.addRepository.description"))
-    .requiredOption(
-      "--guid <guid>",
-      t("commands.context.addRepository.optionGuid"),
-    )
-    .option(
-      "--tag <tag>",
-      t("commands.context.addRepository.optionTag"),
-      DEFAULTS.REPOSITORY.TAG,
-    )
-    .option(
-      "--credential <credential>",
-      t("commands.context.addRepository.optionCredential"),
-    )
-    .option(
-      "--network-id <id>",
-      t("commands.context.addRepository.optionNetworkId"),
-    )
+    .command('add-repository <name>')
+    .description(t('commands.context.addRepository.description'))
+    .requiredOption('--guid <guid>', t('commands.context.addRepository.optionGuid'))
+    .option('--tag <tag>', t('commands.context.addRepository.optionTag'), DEFAULTS.REPOSITORY.TAG)
+    .option('--credential <credential>', t('commands.context.addRepository.optionCredential'))
+    .option('--network-id <id>', t('commands.context.addRepository.optionNetworkId'))
     .action(async (name, options) => {
       try {
         let networkId: number | undefined;
@@ -169,15 +144,13 @@ export function registerLocalDataCommands(
 
         await contextService.addLocalRepository(name, config);
         outputService.success(
-          t("commands.context.addRepository.success", {
+          t('commands.context.addRepository.success', {
             name,
             guid: config.repositoryGuid,
             tag: config.tag ?? DEFAULTS.REPOSITORY.TAG,
-          }),
+          })
         );
-        outputService.info(
-          t("commands.context.addRepository.networkIdAssigned", { networkId }),
-        );
+        outputService.info(t('commands.context.addRepository.networkIdAssigned', { networkId }));
       } catch (error) {
         handleError(error);
       }
@@ -185,14 +158,12 @@ export function registerLocalDataCommands(
 
   // context remove-repository - Remove a repository mapping
   context
-    .command("remove-repository <name>")
-    .description(t("commands.context.removeRepository.description"))
+    .command('remove-repository <name>')
+    .description(t('commands.context.removeRepository.description'))
     .action(async (name) => {
       try {
         await contextService.removeLocalRepository(name);
-        outputService.success(
-          t("commands.context.removeRepository.success", { name }),
-        );
+        outputService.success(t('commands.context.removeRepository.success', { name }));
       } catch (error) {
         handleError(error);
       }
@@ -200,15 +171,15 @@ export function registerLocalDataCommands(
 
   // context repositories - List repository mappings
   context
-    .command("repositories")
-    .description(t("commands.context.repositories.description"))
+    .command('repositories')
+    .description(t('commands.context.repositories.description'))
     .action(async () => {
       try {
         const repos = await contextService.listLocalRepositories();
         const format = program.opts().output as OutputFormat;
 
         if (repos.length === 0) {
-          outputService.info(t("commands.context.repositories.noRepositories"));
+          outputService.info(t('commands.context.repositories.noRepositories'));
           return;
         }
 
@@ -216,8 +187,8 @@ export function registerLocalDataCommands(
           name: r.name,
           guid: r.config.repositoryGuid,
           tag: r.config.tag ?? DEFAULTS.REPOSITORY.TAG,
-          credential: r.config.credential ? "set" : "-",
-          networkId: r.config.networkId ?? "-",
+          credential: r.config.credential ? 'set' : '-',
+          networkId: r.config.networkId ?? '-',
         }));
 
         outputService.print(displayData, format);

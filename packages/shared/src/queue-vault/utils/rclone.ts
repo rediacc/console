@@ -36,18 +36,18 @@ export interface RcloneConfig {
 
 /** Maps rclone backend type names to internal provider names. */
 export const PROVIDER_MAPPING: Record<string, string> = {
-  drive: "drive",
-  onedrive: "onedrive",
-  s3: "s3",
-  b2: "b2",
-  mega: "mega",
-  dropbox: "dropbox",
-  box: "box",
-  azureblob: "azureblob",
-  swift: "swift",
-  webdav: "webdav",
-  ftp: "ftp",
-  sftp: "sftp",
+  drive: 'drive',
+  onedrive: 'onedrive',
+  s3: 's3',
+  b2: 'b2',
+  mega: 'mega',
+  dropbox: 'dropbox',
+  box: 'box',
+  azureblob: 'azureblob',
+  swift: 'swift',
+  webdav: 'webdav',
+  ftp: 'ftp',
+  sftp: 'sftp',
 };
 
 // ============================================================================
@@ -56,12 +56,10 @@ export const PROVIDER_MAPPING: Record<string, string> = {
 
 function isSkippableLine(line: string): boolean {
   const trimmed = line.trim();
-  return !trimmed || trimmed.startsWith("#") || trimmed.startsWith(";");
+  return !trimmed || trimmed.startsWith('#') || trimmed.startsWith(';');
 }
 
-function parseKeyValuePair(
-  line: string,
-): [string, string | Record<string, unknown>] | null {
+function parseKeyValuePair(line: string): [string, string | Record<string, unknown>] | null {
   const kvMatch = /^([^=]+)=(.*)$/.exec(line);
   if (!kvMatch) return null;
 
@@ -78,7 +76,7 @@ function parseKeyValuePair(
 function saveCurrentSection(
   configs: RcloneConfig[],
   section: string | null,
-  config: RcloneConfigFields,
+  config: RcloneConfigFields
 ): void {
   if (section && config.type) {
     configs.push({
@@ -99,7 +97,7 @@ function saveCurrentSection(
  */
 export function parseRcloneConfig(content: string): RcloneConfig[] {
   const configs: RcloneConfig[] = [];
-  const lines = content.split("\n");
+  const lines = content.split('\n');
   let currentSection: string | null = null;
   let currentConfig: RcloneConfigFields = {};
 
@@ -134,11 +132,11 @@ export function parseRcloneConfig(content: string): RcloneConfig[] {
  */
 export function processConfigValue(
   key: string,
-  value: RcloneConfigFieldValue,
+  value: RcloneConfigFieldValue
 ): RcloneConfigFieldValue {
-  if (typeof value !== "string") return value;
-  if (!(key === "token" || key.endsWith("_token"))) return value;
-  if (!value.startsWith("{")) return value;
+  if (typeof value !== 'string') return value;
+  if (!(key === 'token' || key.endsWith('_token'))) return value;
+  if (!value.startsWith('{')) return value;
 
   try {
     return JSON.parse(value);
@@ -155,7 +153,7 @@ export function processConfigValue(
  * (with token values parsed as JSON objects).
  */
 export function mapRcloneToStorageProvider(
-  rcloneConfig: RcloneConfig,
+  rcloneConfig: RcloneConfig
 ): Record<string, unknown> | null {
   const { type, config } = rcloneConfig;
   const provider = PROVIDER_MAPPING[type];
@@ -164,11 +162,11 @@ export function mapRcloneToStorageProvider(
   const storageVault: Record<string, unknown> = { provider };
 
   for (const [key, value] of Object.entries(config)) {
-    if (key === "type") continue; // Skip: mapped via PROVIDER_MAPPING
+    if (key === 'type') continue; // Skip: mapped via PROVIDER_MAPPING
     // Rclone's "provider" field (e.g. "DigitalOcean" for S3) is the sub-provider,
     // distinct from our mapped provider type (e.g. "s3"). Store it as "sub_provider"
     // so buildRcloneArgs can output it as --{backend}-provider={value}.
-    if (key === "provider") {
+    if (key === 'provider') {
       if (value && value !== provider) {
         storageVault.sub_provider = value;
       }

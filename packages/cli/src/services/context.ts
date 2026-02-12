@@ -3,12 +3,12 @@ import {
   getSupportedLanguages as getSupportedLanguagesList,
   isLanguageSupported as isLanguageSupportedCheck,
   normalizeLanguage,
-} from "./context-language.js";
-import { configStorage } from "../adapters/storage.js";
-import type { S3StateService } from "./s3-state.js";
-import type { NamedContext, S3Config } from "../types/index.js";
+} from './context-language.js';
+import { configStorage } from '../adapters/storage.js';
+import type { S3StateService } from './s3-state.js';
+import type { NamedContext, S3Config } from '../types/index.js';
 
-const DEFAULT_API_URL = "https://www.rediacc.com/api";
+const DEFAULT_API_URL = 'https://www.rediacc.com/api';
 
 /**
  * Service for managing CLI contexts.
@@ -37,31 +37,30 @@ export class ContextServiceBase {
     if (this.s3State) return this.s3State;
 
     const context = await this.getCurrent();
-    if (!context?.s3)
-      throw new Error(`Context "${context?.name}" has no S3 configuration`);
+    if (!context?.s3) throw new Error(`Context "${context?.name}" has no S3 configuration`);
 
     let decryptedSecret: string;
     let masterPassword: string | null = null;
 
     if (context.masterPassword) {
-      const { authService } = await import("./auth.js");
+      const { authService } = await import('./auth.js');
       masterPassword = await authService.requireMasterPassword();
-      const { nodeCryptoProvider } = await import("../adapters/crypto.js");
+      const { nodeCryptoProvider } = await import('../adapters/crypto.js');
       decryptedSecret = await nodeCryptoProvider.decrypt(
         context.s3.secretAccessKey,
-        masterPassword,
+        masterPassword
       );
     } else {
       decryptedSecret = context.s3.secretAccessKey;
     }
 
-    const { S3ClientService } = await import("./s3-client.js");
+    const { S3ClientService } = await import('./s3-client.js');
     const s3Client = new S3ClientService({
       ...context.s3,
       secretAccessKey: decryptedSecret,
     });
 
-    const { S3StateService: S3StateSvc } = await import("./s3-state.js");
+    const { S3StateService: S3StateSvc } = await import('./s3-state.js');
     this.s3State = await S3StateSvc.load(s3Client, masterPassword);
     return this.s3State;
   }
@@ -72,7 +71,7 @@ export class ContextServiceBase {
    */
   protected getEffectiveContextName(): string {
     // Only two options: --context flag or "default"
-    return this.runtimeContextOverride ?? "default";
+    return this.runtimeContextOverride ?? 'default';
   }
 
   // ============================================================================
@@ -84,9 +83,7 @@ export class ContextServiceBase {
    */
   async list(): Promise<NamedContext[]> {
     const config = await configStorage.load();
-    return Object.values(config.contexts).filter(
-      (ctx): ctx is NamedContext => ctx !== undefined,
-    );
+    return Object.values(config.contexts).filter((ctx): ctx is NamedContext => ctx !== undefined);
   }
 
   /**
@@ -134,10 +131,7 @@ export class ContextServiceBase {
   /**
    * Update an existing context.
    */
-  async update(
-    name: string,
-    updates: Partial<Omit<NamedContext, "name">>,
-  ): Promise<void> {
+  async update(name: string, updates: Partial<Omit<NamedContext, 'name'>>): Promise<void> {
     await configStorage.update((config) => {
       const existing = config.contexts[name];
       if (!existing) {
@@ -301,15 +295,12 @@ export class ContextServiceBase {
     return context?.machine;
   }
 
-  async set(
-    key: "team" | "region" | "bridge" | "machine",
-    value: string,
-  ): Promise<void> {
+  async set(key: 'team' | 'region' | 'bridge' | 'machine', value: string): Promise<void> {
     const name = this.getEffectiveContextName();
     await this.update(name, { [key]: value });
   }
 
-  async remove(key: "team" | "region" | "bridge" | "machine"): Promise<void> {
+  async remove(key: 'team' | 'region' | 'bridge' | 'machine'): Promise<void> {
     const name = this.getEffectiveContextName();
     await this.update(name, { [key]: undefined });
   }
@@ -349,10 +340,8 @@ export class ContextServiceBase {
   }
 
   async applyDefaults<T extends object>(
-    options: T,
-  ): Promise<
-    T & { team?: string; region?: string; bridge?: string; machine?: string }
-  > {
+    options: T
+  ): Promise<T & { team?: string; region?: string; bridge?: string; machine?: string }> {
     type Result = T & {
       team?: string;
       region?: string;
@@ -383,7 +372,7 @@ export class ContextServiceBase {
       token: string;
       userEmail: string;
       masterPassword?: string;
-    },
+    }
   ): Promise<void> {
     await configStorage.update((config) => {
       const existing = config.contexts[contextName];
@@ -437,7 +426,7 @@ export class ContextServiceBase {
    */
   async isLocalMode(): Promise<boolean> {
     const context = await this.getCurrent();
-    return context?.mode === "local";
+    return context?.mode === 'local';
   }
 
   /**
@@ -445,7 +434,7 @@ export class ContextServiceBase {
    */
   async isLocalContext(name: string): Promise<boolean> {
     const context = await this.get(name);
-    return context?.mode === "local";
+    return context?.mode === 'local';
   }
 
   // ============================================================================
@@ -457,7 +446,7 @@ export class ContextServiceBase {
    */
   async isS3Mode(): Promise<boolean> {
     const context = await this.getCurrent();
-    return context?.mode === "s3";
+    return context?.mode === 's3';
   }
 
   /**
@@ -467,9 +456,9 @@ export class ContextServiceBase {
   async getS3Config(): Promise<S3Config> {
     const context = await this.getCurrent();
     if (!context) {
-      throw new Error("No active context");
+      throw new Error('No active context');
     }
-    if (context.mode !== "s3") {
+    if (context.mode !== 's3') {
       throw new Error(`Context "${context.name}" is not in S3 mode`);
     }
     if (!context.s3) {
@@ -487,12 +476,12 @@ export class ContextServiceBase {
     name: string,
     s3Config: S3Config,
     sshKeyPath: string,
-    options?: { renetPath?: string; masterPassword?: string },
+    options?: { renetPath?: string; masterPassword?: string }
   ): Promise<void> {
     const context: NamedContext = {
       name,
-      mode: "s3",
-      apiUrl: "s3://", // Not used in S3 mode but required by interface
+      mode: 's3',
+      apiUrl: 's3://', // Not used in S3 mode but required by interface
       s3: s3Config,
       ssh: {
         privateKeyPath: sshKeyPath,
@@ -505,4 +494,4 @@ export class ContextServiceBase {
   }
 }
 
-export { contextService } from "./context-resources.js";
+export { contextService } from './context-resources.js';

@@ -11,17 +11,17 @@ import {
   parseJsonFileList as baseParseJsonFileList,
   parseRcloneFileList as baseParseRcloneFileList,
   type RcloneEntry,
-} from "@rediacc/shared/queue-vault/storage-browser";
-import type { RemoteFile as BaseRemoteFile } from "@rediacc/shared/queue-vault/storage-browser";
-import { isValidGuid } from "@rediacc/shared/validation";
-import type { RemoteFile } from "./types";
+} from '@rediacc/shared/queue-vault/storage-browser';
+import type { RemoteFile as BaseRemoteFile } from '@rediacc/shared/queue-vault/storage-browser';
+import { isValidGuid } from '@rediacc/shared/validation';
+import type { RemoteFile } from './types';
 
 // Re-export shared utilities used directly by the component
 export { cleanJsonOutput };
 export {
   parsePlainTextFileList,
   parseFallbackFormats,
-} from "@rediacc/shared/queue-vault/storage-browser";
+} from '@rediacc/shared/queue-vault/storage-browser';
 
 type RepositoryMapper = (guid: string) => {
   displayName: string;
@@ -30,10 +30,7 @@ type RepositoryMapper = (guid: string) => {
   isUnmapped: boolean;
 };
 
-function enrichWithGuid(
-  file: BaseRemoteFile,
-  mapGuidToRepository: RepositoryMapper,
-): RemoteFile {
+function enrichWithGuid(file: BaseRemoteFile, mapGuidToRepository: RepositoryMapper): RemoteFile {
   const isGuid = isValidGuid(file.name);
 
   if (isGuid && !file.isDirectory) {
@@ -54,7 +51,7 @@ function enrichWithGuid(
 export function parseJsonFileList(
   data: unknown,
   currentPath: string,
-  mapGuidToRepository: RepositoryMapper,
+  mapGuidToRepository: RepositoryMapper
 ): RemoteFile[] {
   const baseFiles = baseParseJsonFileList(data, currentPath);
   return baseFiles.map((f) => enrichWithGuid(f, mapGuidToRepository));
@@ -63,7 +60,7 @@ export function parseJsonFileList(
 export function parseRcloneFileList(
   data: { entries?: RcloneEntry[] },
   currentPath: string,
-  mapGuidToRepository: RepositoryMapper,
+  mapGuidToRepository: RepositoryMapper
 ): RemoteFile[] {
   const baseFiles = baseParseRcloneFileList(data, currentPath);
   return baseFiles.map((f) => enrichWithGuid(f, mapGuidToRepository));
@@ -78,7 +75,7 @@ export class FileListParserFactory {
 
   constructor(
     currentPath: string,
-    private readonly mapGuidToRepository: RepositoryMapper,
+    private readonly mapGuidToRepository: RepositoryMapper
   ) {
     this.baseFactory = new BaseFileListParserFactory(currentPath);
   }

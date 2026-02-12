@@ -7,9 +7,7 @@ const GUID_2 = '34dc6da3-b844-4b36-bb00-00df42df8f03';
 
 describe('resolveGuidFileNames', () => {
   it('should resolve known GUIDs to display names', () => {
-    const files = detectGuidFiles([
-      { name: GUID_1, size: 2048, isDirectory: false },
-    ]);
+    const files = detectGuidFiles([{ name: GUID_1, size: 2048, isDirectory: false }]);
     const guidMap = { [GUID_1]: 'my-repo:latest' };
     const result = resolveGuidFileNames(files, guidMap);
 
@@ -19,9 +17,7 @@ describe('resolveGuidFileNames', () => {
   });
 
   it('should leave unresolved GUIDs unchanged', () => {
-    const files = detectGuidFiles([
-      { name: GUID_2, size: 1024, isDirectory: false },
-    ]);
+    const files = detectGuidFiles([{ name: GUID_2, size: 1024, isDirectory: false }]);
     const guidMap = { [GUID_1]: 'my-repo:latest' };
     const result = resolveGuidFileNames(files, guidMap);
 
@@ -30,9 +26,7 @@ describe('resolveGuidFileNames', () => {
   });
 
   it('should not modify non-GUID files', () => {
-    const files: RemoteFile[] = [
-      { name: 'readme.txt', size: 100, isDirectory: false },
-    ];
+    const files: RemoteFile[] = [{ name: 'readme.txt', size: 100, isDirectory: false }];
     const guidMap = { [GUID_1]: 'my-repo:latest' };
     const result = resolveGuidFileNames(files, guidMap);
 
@@ -40,9 +34,7 @@ describe('resolveGuidFileNames', () => {
   });
 
   it('should return files unchanged when guidMap is empty', () => {
-    const files = detectGuidFiles([
-      { name: GUID_1, size: 2048, isDirectory: false },
-    ]);
+    const files = detectGuidFiles([{ name: GUID_1, size: 2048, isDirectory: false }]);
     const result = resolveGuidFileNames(files, {});
 
     expect(result[0].name).toBe(GUID_1);

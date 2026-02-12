@@ -1,4 +1,4 @@
-import type { RemoteFile as BaseRemoteFile } from "@rediacc/shared/queue-vault/storage-browser";
+import type { RemoteFile as BaseRemoteFile } from '@rediacc/shared/queue-vault/storage-browser';
 
 export interface RemoteFile extends BaseRemoteFile {
   originalGuid?: string;
@@ -23,5 +23,5 @@ export type AdditionalVaultData = Record<string, unknown>;
 export interface SourceOption {
   value: string;
   label: string;
-  type: "machine" | "storage";
+  type: 'machine' | 'storage';
 }

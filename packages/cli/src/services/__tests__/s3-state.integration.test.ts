@@ -241,7 +241,8 @@ describe('S3StateService (encrypted)', () => {
     const service = await S3StateService.load(client, MASTER_PASSWORD);
 
     await service.setSSH({
-      privateKey: '-----BEGIN OPENSSH PRIVATE KEY-----\nencrypted-key\n-----END OPENSSH PRIVATE KEY-----',
+      privateKey:
+        '-----BEGIN OPENSSH PRIVATE KEY-----\nencrypted-key\n-----END OPENSSH PRIVATE KEY-----',
       publicKey: 'ssh-ed25519 BBBB...',
     });
 

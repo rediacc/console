@@ -496,10 +496,9 @@ test.describe('Local Storage Commands @cli @core', () => {
   });
 
   test('should show no storages on fresh context', async () => {
-    const result = await runner.run(
-      ['--context', storageContext, 'context', 'storages'],
-      { skipJsonParse: true }
-    );
+    const result = await runner.run(['--context', storageContext, 'context', 'storages'], {
+      skipJsonParse: true,
+    });
 
     expect(result.success).toBe(true);
     const output = result.stdout + result.stderr;
@@ -526,10 +525,9 @@ test.describe('Local Storage Commands @cli @core', () => {
   test('should import single storage with --name', async () => {
     // Create a fresh context to test --name isolation
     const singleCtx = `test-single-import-${timestamp}`;
-    await runner.run(
-      ['context', 'create-local', singleCtx, '--ssh-key', '~/.ssh/id_rsa'],
-      { skipJsonParse: true }
-    );
+    await runner.run(['context', 'create-local', singleCtx, '--ssh-key', '~/.ssh/id_rsa'], {
+      skipJsonParse: true,
+    });
 
     const result = await runner.run(
       ['--context', singleCtx, 'context', 'import-storage', rcloneConfigPath, '--name', 'my-s3'],

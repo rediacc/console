@@ -81,7 +81,7 @@ export interface S3Config {
  * Context mode: 'cloud' uses middleware API, 'local' uses direct renet execution,
  * 's3' uses S3-compatible storage for state with local renet execution.
  */
-export type ContextMode = "cloud" | "local" | "s3";
+export type ContextMode = 'cloud' | 'local' | 's3';
 
 /**
  * A named context containing all configuration for a specific environment.
@@ -158,7 +158,7 @@ export interface OutputConfig {
   color: boolean;
 }
 
-export type OutputFormat = "table" | "json" | "yaml" | "csv";
+export type OutputFormat = 'table' | 'json' | 'yaml' | 'csv';
 
 export interface CommandOptions {
   team?: string;
@@ -226,7 +226,7 @@ export interface IStorageProvider {
   clear?(): Promise<void>;
 }
 
-export type { ICryptoProvider } from "@rediacc/shared/encryption";
+export type { ICryptoProvider } from '@rediacc/shared/encryption';
 
 // ============================================================================
 // S3 State Types (single state.json in bucket)
@@ -259,7 +259,7 @@ export interface S3StateData {
 // Auto-Update Types
 // ============================================================================
 
-import type { PlatformKey } from "../utils/platform.js";
+import type { PlatformKey } from '../utils/platform.js';
 
 export interface BinaryInfo {
   url: string;

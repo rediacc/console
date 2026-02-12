@@ -9,7 +9,12 @@ function baseOpts() {
   return {
     functionName: 'machine_ping',
     machineName: 'test-machine',
-    machine: { ip: '10.0.0.1', user: 'root' } as { ip: string; user: string; port?: number; datastore?: string },
+    machine: { ip: '10.0.0.1', user: 'root' } as {
+      ip: string;
+      user: string;
+      port?: number;
+      datastore?: string;
+    },
     sshPrivateKey: '---PRIVATE-KEY---',
     sshPublicKey: '---PUBLIC-KEY---',
     sshKnownHosts: '10.0.0.1 ssh-ed25519 AAAA...',

@@ -7,9 +7,7 @@ const GUID_UPPER = '550E8400-E29B-41D4-A716-446655440000';
 
 describe('detectGuidFiles', () => {
   it('should mark GUID-named files with isGuid and originalGuid', () => {
-    const files: RemoteFile[] = [
-      { name: GUID, size: 2048, isDirectory: false },
-    ];
+    const files: RemoteFile[] = [{ name: GUID, size: 2048, isDirectory: false }];
     const result = detectGuidFiles(files);
     expect(result).toHaveLength(1);
     expect(result[0].isGuid).toBe(true);
@@ -18,9 +16,7 @@ describe('detectGuidFiles', () => {
   });
 
   it('should handle uppercase GUIDs (case-insensitive)', () => {
-    const files: RemoteFile[] = [
-      { name: GUID_UPPER, size: 100, isDirectory: false },
-    ];
+    const files: RemoteFile[] = [{ name: GUID_UPPER, size: 100, isDirectory: false }];
     const result = detectGuidFiles(files);
     expect(result[0].isGuid).toBe(true);
     expect(result[0].originalGuid).toBe(GUID_UPPER);
@@ -38,9 +34,7 @@ describe('detectGuidFiles', () => {
   });
 
   it('should mark GUID-named directories', () => {
-    const files: RemoteFile[] = [
-      { name: GUID, size: 0, isDirectory: true },
-    ];
+    const files: RemoteFile[] = [{ name: GUID, size: 0, isDirectory: true }];
     const result = detectGuidFiles(files);
     expect(result[0].isGuid).toBe(true);
     expect(result[0].isDirectory).toBe(true);
@@ -73,9 +67,7 @@ describe('detectGuidFiles', () => {
   });
 
   it('should not mark GUID with extension', () => {
-    const files: RemoteFile[] = [
-      { name: `${GUID}.tar.gz`, size: 100, isDirectory: false },
-    ];
+    const files: RemoteFile[] = [{ name: `${GUID}.tar.gz`, size: 100, isDirectory: false }];
     const result = detectGuidFiles(files);
     // Matches web behavior: only exact GUID filenames match
     expect(result[0].isGuid).toBeUndefined();
@@ -98,9 +90,7 @@ describe('FileListParserFactory with detectGuids option', () => {
   });
 
   it('should NOT annotate when detectGuids is omitted', () => {
-    const data = JSON.stringify([
-      { name: GUID, size: 2048, isDirectory: false },
-    ]);
+    const data = JSON.stringify([{ name: GUID, size: 2048, isDirectory: false }]);
     const parser = new FileListParserFactory('');
     const result = parser.parse(data);
 
@@ -109,9 +99,7 @@ describe('FileListParserFactory with detectGuids option', () => {
   });
 
   it('should NOT annotate when detectGuids is false', () => {
-    const data = JSON.stringify([
-      { name: GUID, size: 2048, isDirectory: false },
-    ]);
+    const data = JSON.stringify([{ name: GUID, size: 2048, isDirectory: false }]);
     const parser = new FileListParserFactory('', { detectGuids: false });
     const result = parser.parse(data);
 

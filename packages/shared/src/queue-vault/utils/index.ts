@@ -1,4 +1,4 @@
-export { minifyJSON } from "./json";
+export { minifyJSON } from './json';
 export {
   mapRcloneToStorageProvider,
   parseRcloneConfig,
@@ -7,7 +7,7 @@ export {
   type RcloneConfig,
   type RcloneConfigFields,
   type RcloneConfigFieldValue,
-} from "./rclone";
+} from './rclone';
 export {
   formatSizeBytes,
   getParamArray,
@@ -34,4 +34,4 @@ export {
   validateSSHConnection,
   // SSH key format validation
   validateSSHPrivateKey,
-} from "./validation";
+} from './validation';
