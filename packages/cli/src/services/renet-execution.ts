@@ -3,12 +3,12 @@
  * Extracted from local-executor.ts for reuse by both local and S3 mode.
  */
 
-import { type ChildProcess, execSync, spawn } from 'node:child_process';
+import { execSync } from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS, NETWORK_DEFAULTS, PROCESS_DEFAULTS } from '@rediacc/shared/config';
-import { extractRenetToLocal, isSEA } from './embedded-assets.js';
+import { isSEA } from './embedded-assets.js';
 import { outputService } from './output.js';
 import { renetProvisioner } from './renet-provisioner.js';
 import type { MachineConfig } from '../types/index.js';
@@ -45,16 +45,6 @@ export async function readSSHKey(keyPath: string): Promise<string> {
 export async function readOptionalSSHKey(keyPath: string | undefined): Promise<string> {
   if (!keyPath) return '';
   return readSSHKey(keyPath).catch(() => '');
-}
-
-/**
- * Get the local path to the renet binary for spawning.
- * In dev mode, uses the configured renetPath. In SEA mode, extracts the
- * embedded binary to a local temp file.
- */
-async function getLocalRenetPath(config: { renetPath: string }): Promise<string> {
-  if (!isSEA()) return config.renetPath;
-  return extractRenetToLocal();
 }
 
 /**
@@ -235,54 +225,4 @@ export function buildLocalVault(opts: BuildLocalVaultOptions): string {
   };
 
   return JSON.stringify(vault);
-}
-
-/**
- * Spawn renet execute process and stream output.
- */
-async function spawnRenet(
-  renetPath: string,
-  vault: string,
-  options: RenetSpawnOptions
-): Promise<{ exitCode: number }> {
-  return new Promise((resolve, reject) => {
-    const args = ['execute', '--vault', vault];
-
-    if (options.debug) args.push('--debug');
-    if (options.json) args.push('--json');
-
-    const timeout = options.timeout ?? 10 * 60 * 1000;
-
-    if (options.debug) {
-      outputService.info(`[local] Spawning: ${renetPath} execute ...`);
-    }
-
-    const child: ChildProcess = spawn(renetPath, args, {
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env },
-    });
-
-    const timeoutId = setTimeout(() => {
-      child.kill('SIGTERM');
-      reject(new Error(`Execution timed out after ${timeout}ms`));
-    }, timeout);
-
-    child.stdout?.on('data', (data: Buffer) => {
-      process.stdout.write(data);
-    });
-
-    child.stderr?.on('data', (data: Buffer) => {
-      process.stderr.write(data);
-    });
-
-    child.on('close', (code) => {
-      clearTimeout(timeoutId);
-      resolve({ exitCode: code ?? 1 });
-    });
-
-    child.on('error', (err) => {
-      clearTimeout(timeoutId);
-      reject(new Error(`Failed to spawn renet: ${err.message}`));
-    });
-  });
 }
