@@ -265,6 +265,15 @@
         "description": "إضافة آلة إلى السياق المحلي الحالي",
         "success": "تمت إضافة الآلة \"{{name}}\" ({{user}}@{{ip}})"
       },
+      "addRepository": {
+        "description": "إضافة ربط GUID لمستودع إلى السياق المحلي الحالي",
+        "networkIdAssigned": "معرّف الشبكة: {{networkId}}",
+        "optionCredential": "بيانات اعتماد المستودع (عبارة مرور التشفير)",
+        "optionGuid": "معرّف GUID للمستودع (UUID من أسماء ملفات النسخ الاحتياطي)",
+        "optionNetworkId": "معرّف الشبكة لعزل Docker (2816، 2880، ...). يُعيَّن تلقائيًا إذا لم يُحدَّد",
+        "optionTag": "وسم المستودع",
+        "success": "تمت إضافة المستودع \"{{name}}\" ({{guid}}، الوسم: {{tag}})"
+      },
       "clear": {
         "allCleared": "تم مسح جميع الإعدادات الافتراضية",
         "description": "مسح الإعدادات الافتراضية (الكل أو مفتاح محدد)",
@@ -308,6 +317,15 @@
         "success": "تم حذف السياق \"{{name}}\""
       },
       "description": "إدارة السياقات في سطر الأوامر",
+      "importStorage": {
+        "description": "استيراد وحدات التخزين من ملف إعدادات rclone",
+        "imported": "تم استيراد التخزين \"{{name}}\" ({{type}})",
+        "noConfigs": "لم يتم العثور على إعدادات تخزين صالحة في الملف",
+        "notFound": "لم يتم العثور على التخزين \"{{name}}\" في ملف الإعدادات",
+        "optionName": "استيراد هذا القسم المُسمّى فقط",
+        "summary": "تم استيراد {{count}} وحدة تخزين",
+        "unsupported": "تخطّي \"{{name}}\": نوع مزوّد غير مدعوم \"{{type}}\""
+      },
       "list": {
         "description": "قائمة جميع السياقات",
         "noContexts": "لا توجد سياقات مكونة"
@@ -320,9 +338,27 @@
         "description": "إزالة آلة من السياق المحلي الحالي",
         "success": "تمت إزالة الآلة \"{{name}}\""
       },
+      "removeRepository": {
+        "description": "إزالة ربط مستودع من السياق المحلي الحالي",
+        "success": "تمت إزالة المستودع \"{{name}}\""
+      },
+      "removeStorage": {
+        "description": "إزالة وحدة تخزين من السياق المحلي الحالي",
+        "success": "تمت إزالة التخزين \"{{name}}\""
+      },
       "rename": {
         "description": "إعادة تسمية سياق",
         "success": "تمت إعادة تسمية السياق من \"{{oldName}}\" إلى \"{{newName}}\""
+      },
+      "repositories": {
+        "description": "عرض روابط GUID للمستودعات في السياق المحلي الحالي",
+        "noRepositories": "لا توجد مستودعات مهيّأة. أضف واحدًا باستخدام: rdc context add-repository <name> --guid <guid>"
+      },
+      "scanKeys": {
+        "completed": "تم فحص {{count}}/{{total}} جهاز",
+        "description": "فحص مفاتيح مضيف SSH للأجهزة في السياق الحالي",
+        "keysScanned": "تم فحص مفاتيح المضيف لـ \"{{name}}\"",
+        "noKeys": "تعذّر فحص مفاتيح المضيف لـ \"{{name}}\""
       },
       "set": {
         "description": "تعيين قيمة افتراضية (فريق، منطقة، جسر، آلة)",
@@ -345,6 +381,36 @@
         "description": "عرض تفاصيل السياق الحالي",
         "noContext": "لا يوجد سياق نشط"
       },
+      "storages": {
+        "description": "عرض وحدات التخزين في السياق المحلي الحالي",
+        "noStorages": "لا توجد وحدات تخزين مهيّأة. استوردها باستخدام: rdc context import-storage <file>"
+      },
+      "toLocal": {
+        "description": "ترحيل سياق S3 الحالي إلى الوضع المحلي",
+        "errorNoS3Config": "السياق \"{{name}}\" لا يحتوي على إعدادات S3",
+        "errorNotS3": "السياق \"{{name}}\" ليس في وضع S3 (الحالي: {{mode}})",
+        "loading": "جارٍ تحميل الحالة من S3...",
+        "nonDestructive": "يبقى ملف State.json في حاوية S3 (عملية غير مدمّرة)",
+        "optionSshKeyPath": "مسار كتابة مفتاح SSH الخاص (الافتراضي: المسار الحالي)",
+        "sshWritten": "تم كتابة مفتاح SSH إلى {{path}}",
+        "success": "تم الترحيل إلى الوضع المحلي: {{machines}} جهاز، {{storages}} وحدة تخزين، {{repos}} مستودع"
+      },
+      "toS3": {
+        "description": "ترحيل السياق المحلي الحالي إلى وضع S3",
+        "errorNotLocal": "السياق \"{{name}}\" ليس في الوضع المحلي (الحالي: {{mode}})",
+        "errorSecretRequired": "مفتاح الوصول السري مطلوب",
+        "optionAccessKeyId": "معرّف مفتاح الوصول لـ S3",
+        "optionBucket": "اسم حاوية S3",
+        "optionEndpoint": "عنوان URL لنقطة نهاية S3",
+        "optionMasterPassword": "تفعيل التشفير بكلمة المرور الرئيسية هذه",
+        "optionPrefix": "بادئة المفتاح في الحاوية",
+        "optionRegion": "منطقة S3",
+        "optionSecretAccessKey": "مفتاح الوصول السري لـ S3 (يُطلب إذا لم يُحدَّد)",
+        "promptSecretAccessKey": "أدخل مفتاح الوصول السري لـ S3:",
+        "success": "تم الترحيل إلى وضع S3: {{machines}} جهاز، {{storages}} وحدة تخزين، {{repos}} مستودع",
+        "verified": "تم التحقق من الوصول إلى S3",
+        "verifying": "جارٍ التحقق من الوصول إلى S3..."
+      },
       "unset": {
         "description": "إزالة قيمة افتراضية للسياق",
         "success": "تمت إزالة {{key}} من السياق الحالي"
@@ -358,17 +424,17 @@
       "allPassed": "نجحت جميع الفحوصات",
       "checks": {
         "activeContext": "السياق النشط",
-        "authStatus": "Status",
+        "authStatus": "الحالة",
         "cliVersion": "إصدار CLI",
         "contextMode": "وضع السياق",
         "dockerAvailable": "Docker",
         "goInstalled": "Go",
-        "machines": "Machines",
+        "machines": "الأجهزة",
         "nodeVersion": "Node.js",
         "renetBinary": "الملف الثنائي",
         "renetCriu": "CRIU مضمّن",
         "renetRsync": "rsync مضمّن",
-        "renetVersion": "Version",
+        "renetVersion": "الإصدار",
         "seaMode": "وضع SEA",
         "sshKey": "مفتاح SSH"
       },
@@ -382,7 +448,7 @@
       "seaActive": "نعم (تطبيق ملف تنفيذي واحد)",
       "sections": {
         "authentication": "المصادقة",
-        "configuration": "Configuration",
+        "configuration": "الإعدادات",
         "environment": "البيئة",
         "renet": "Renet"
       },
@@ -703,6 +769,54 @@
         "fetching": "جاري جلب المناطق..."
       }
     },
+    "repo": {
+      "description": "إدارة دورة حياة المستودعات (الوضع المحلي)",
+      "down": {
+        "completed": "تم إيقاف الخدمات",
+        "description": "إيقاف خدمات المستودع",
+        "failed": "فشل إيقاف الخدمات",
+        "grandOption": "اسم المستودع الرئيسي (يُحلّ تلقائيًا إلى GUID)",
+        "starting": "جارٍ إيقاف الخدمات لـ \"{{repository}}\" على \"{{machine}}\"...",
+        "unmountOption": "إلغاء تثبيت المستودع بعد الإيقاف"
+      },
+      "list": {
+        "completed": "اكتمل العرض",
+        "description": "عرض المستودعات على جهاز",
+        "failed": "فشل العرض",
+        "starting": "جارٍ عرض المستودعات على \"{{machine}}\"..."
+      },
+      "machineOption": "اسم الجهاز المستهدف",
+      "mount": {
+        "checkpointOption": "الاستعادة من نقطة تفتيش بعد التثبيت",
+        "completed": "اكتمل التثبيت",
+        "description": "تثبيت مستودع (فتح حاوية LUKS)",
+        "failed": "فشل التثبيت",
+        "starting": "جارٍ تثبيت \"{{repository}}\" على \"{{machine}}\"..."
+      },
+      "noCredential": "تحذير: المستودع \"{{name}}\" لا يحتوي على بيانات اعتماد. قد تفشل العمليات على المستودعات المشفّرة.",
+      "status": {
+        "completed": "تم جلب الحالة",
+        "description": "الحصول على حالة المستودع",
+        "failed": "فشل التحقق من الحالة",
+        "starting": "جارٍ جلب حالة \"{{repository}}\" على \"{{machine}}\"..."
+      },
+      "unmount": {
+        "checkpointOption": "إنشاء نقطة تفتيش قبل إلغاء التثبيت",
+        "completed": "اكتمل إلغاء التثبيت",
+        "description": "إلغاء تثبيت مستودع",
+        "failed": "فشل إلغاء التثبيت",
+        "starting": "جارٍ إلغاء تثبيت \"{{repository}}\" على \"{{machine}}\"..."
+      },
+      "up": {
+        "completed": "تم بدء الخدمات",
+        "description": "بدء خدمات المستودع (تنسيق Rediaccfile)",
+        "failed": "فشل بدء الخدمات",
+        "grandOption": "اسم المستودع الرئيسي (يُحلّ تلقائيًا إلى GUID)",
+        "mountOption": "تثبيت المستودع أولاً",
+        "prepOnlyOption": "تشغيل خطوة التحضير فقط",
+        "starting": "جارٍ بدء الخدمات لـ \"{{repository}}\" على \"{{machine}}\"..."
+      }
+    },
     "repository": {
       "create": {
         "creating": "جاري إنشاء المستودع \"{{name}}:{{tag}}\"...",
@@ -773,10 +887,26 @@
       }
     },
     "storage": {
+      "browse": {
+        "description": "تصفّح الملفات في نظام تخزين",
+        "failed": "فشل عرض الملفات: {{error}}",
+        "listing": "جارٍ عرض الملفات في \"{{name}}\"...",
+        "noFiles": "لم يتم العثور على ملفات",
+        "pathOption": "مسار الدليل الفرعي للعرض"
+      },
       "description": "إدارة التخزين",
       "list": {
         "description": "قائمة موفري التخزين",
         "fetching": "جاري جلب موفري التخزين..."
+      },
+      "pull": {
+        "completed": "اكتمل السحب في {{duration}} مللي ثانية",
+        "description": "سحب نسخة احتياطية من التخزين السحابي إلى جهاز",
+        "failed": "فشل السحب: {{error}}",
+        "machineOption": "اسم الجهاز المستهدف",
+        "noCredential": "تحذير: المستودع \"{{name}}\" لا يحتوي على بيانات اعتماد. قد يفشل السحب إذا كانت النسخة الاحتياطية مشفّرة.",
+        "repositoryOption": "اسم المستودع المراد سحبه",
+        "starting": "جارٍ سحب \"{{repository}}\" من \"{{storage}}\" إلى \"{{machine}}\"..."
       }
     },
     "sync": {
@@ -1056,6 +1186,7 @@
       "protocol": "معالج البروتوكول",
       "queue": "عمليات قائمة الانتظار",
       "region": "إدارة المناطق",
+      "repo": "دورة حياة المستودعات",
       "repository": "إدارة المستودعات",
       "shortcuts": "أوامر سريعة (اختصارات)",
       "storage": "إدارة التخزين",

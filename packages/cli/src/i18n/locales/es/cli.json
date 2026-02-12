@@ -352,23 +352,89 @@
       "use": {
         "description": "Cambiar a un contexto diferente",
         "switched": "Cambió al contexto \"{{name}}\""
+      },
+      "scanKeys": {
+        "description": "Escanear claves de host SSH para máquinas en el contexto actual",
+        "keysScanned": "Claves de host escaneadas para \"{{name}}\"",
+        "noKeys": "No se pudieron escanear las claves de host para \"{{name}}\"",
+        "completed": "{{count}}/{{total}} máquinas escaneadas"
+      },
+      "importStorage": {
+        "description": "Importar almacenamientos desde un archivo de configuración rclone",
+        "optionName": "Importar solo esta sección con nombre",
+        "noConfigs": "No se encontraron configuraciones de almacenamiento válidas en el archivo",
+        "notFound": "Almacenamiento \"{{name}}\" no encontrado en el archivo de configuración",
+        "unsupported": "Omitiendo \"{{name}}\": tipo de proveedor no soportado \"{{type}}\"",
+        "imported": "Almacenamiento \"{{name}}\" importado ({{type}})",
+        "summary": "{{count}} almacenamiento(s) importado(s)"
+      },
+      "removeStorage": {
+        "description": "Eliminar un almacenamiento del contexto local actual",
+        "success": "Almacenamiento \"{{name}}\" eliminado"
+      },
+      "storages": {
+        "description": "Listar almacenamientos en el contexto local actual",
+        "noStorages": "No hay almacenamientos configurados. Importe con: rdc context import-storage <file>"
+      },
+      "addRepository": {
+        "description": "Agregar un mapeo de GUID de repositorio al contexto local actual",
+        "optionGuid": "GUID del repositorio (UUID de los nombres de archivo de backup)",
+        "optionTag": "Etiqueta del repositorio",
+        "optionCredential": "Credencial del repositorio (frase de cifrado)",
+        "optionNetworkId": "ID de red para aislamiento Docker (2816, 2880, ...). Se asigna automáticamente si se omite",
+        "success": "Repositorio \"{{name}}\" agregado ({{guid}}, etiqueta: {{tag}})",
+        "networkIdAssigned": "ID de red: {{networkId}}"
+      },
+      "removeRepository": {
+        "description": "Eliminar un mapeo de repositorio del contexto local actual",
+        "success": "Repositorio \"{{name}}\" eliminado"
+      },
+      "repositories": {
+        "description": "Listar mapeos de GUID de repositorio en el contexto local actual",
+        "noRepositories": "No hay repositorios configurados. Agregue uno con: rdc context add-repository <name> --guid <guid>"
+      },
+      "toS3": {
+        "description": "Migrar el contexto local actual al modo S3",
+        "optionEndpoint": "URL del endpoint S3",
+        "optionBucket": "Nombre del bucket S3",
+        "optionAccessKeyId": "ID de clave de acceso S3",
+        "optionSecretAccessKey": "Clave de acceso secreta S3 (se solicita si se omite)",
+        "optionRegion": "Región S3",
+        "optionPrefix": "Prefijo de clave en el bucket",
+        "optionMasterPassword": "Activar cifrado con esta contraseña maestra",
+        "promptSecretAccessKey": "Ingrese la clave de acceso secreta S3:",
+        "errorNotLocal": "El contexto \"{{name}}\" no está en modo local (actual: {{mode}})",
+        "errorSecretRequired": "La clave de acceso secreta es obligatoria",
+        "verifying": "Verificando acceso S3...",
+        "verified": "Acceso S3 verificado",
+        "success": "Migrado al modo S3: {{machines}} máquinas, {{storages}} almacenamientos, {{repos}} repositorios"
+      },
+      "toLocal": {
+        "description": "Migrar el contexto S3 actual al modo local",
+        "optionSshKeyPath": "Ruta para escribir la clave privada SSH (por defecto: ruta existente)",
+        "errorNotS3": "El contexto \"{{name}}\" no está en modo S3 (actual: {{mode}})",
+        "errorNoS3Config": "El contexto \"{{name}}\" no tiene configuración S3",
+        "loading": "Cargando estado desde S3...",
+        "sshWritten": "Clave SSH escrita en {{path}}",
+        "success": "Migrado al modo local: {{machines}} máquinas, {{storages}} almacenamientos, {{repos}} repositorios",
+        "nonDestructive": "State.json permanece en el bucket S3 (no destructivo)"
       }
     },
     "doctor": {
       "allPassed": "Todas las comprobaciones pasaron",
       "checks": {
         "activeContext": "Contexto activo",
-        "authStatus": "Status",
+        "authStatus": "Estado",
         "cliVersion": "Versión de CLI",
         "contextMode": "Modo de contexto",
         "dockerAvailable": "Docker",
         "goInstalled": "Go",
-        "machines": "Machines",
+        "machines": "Máquinas",
         "nodeVersion": "Node.js",
         "renetBinary": "Binario",
         "renetCriu": "CRIU integrado",
         "renetRsync": "rsync integrado",
-        "renetVersion": "Version",
+        "renetVersion": "Versión",
         "seaMode": "Modo SEA",
         "sshKey": "Clave SSH"
       },
@@ -382,7 +448,7 @@
       "seaActive": "sí (Single Executable Application)",
       "sections": {
         "authentication": "Autenticación",
-        "configuration": "Configuration",
+        "configuration": "Configuración",
         "environment": "Entorno",
         "renet": "Renet"
       },
@@ -777,6 +843,22 @@
       "list": {
         "description": "Listar proveedores de almacenamiento",
         "fetching": "Obteniendo proveedores de almacenamiento..."
+      },
+      "browse": {
+        "description": "Explorar archivos en un sistema de almacenamiento",
+        "pathOption": "Ruta del subdirectorio a listar",
+        "listing": "Listando archivos en \"{{name}}\"...",
+        "noFiles": "No se encontraron archivos",
+        "failed": "Error al listar archivos: {{error}}"
+      },
+      "pull": {
+        "description": "Descargar un backup del almacenamiento en la nube a una máquina",
+        "repositoryOption": "Nombre del repositorio a descargar",
+        "machineOption": "Nombre de la máquina de destino",
+        "starting": "Descargando \"{{repository}}\" de \"{{storage}}\" a \"{{machine}}\"...",
+        "completed": "Descarga completada en {{duration}}ms",
+        "failed": "Descarga fallida: {{error}}",
+        "noCredential": "Advertencia: El repositorio \"{{name}}\" no tiene credenciales configuradas. La descarga puede fallar si el backup está cifrado."
       }
     },
     "sync": {
@@ -985,6 +1067,54 @@
         "noConnections": "No hay conexiones SSH de VS Code configuradas.",
         "total": "\nTotal: {{count}} conexión(es)"
       }
+    },
+    "repo": {
+      "description": "Gestión del ciclo de vida de repositorios (modo local)",
+      "machineOption": "Nombre de la máquina de destino",
+      "noCredential": "Advertencia: El repositorio \"{{name}}\" no tiene credenciales configuradas. Las operaciones en repositorios cifrados pueden fallar.",
+      "mount": {
+        "description": "Montar un repositorio (abrir contenedor LUKS)",
+        "checkpointOption": "Restaurar desde checkpoint después de montar",
+        "starting": "Montando \"{{repository}}\" en \"{{machine}}\"...",
+        "completed": "Montaje completado",
+        "failed": "Montaje fallido"
+      },
+      "unmount": {
+        "description": "Desmontar un repositorio",
+        "checkpointOption": "Crear checkpoint antes de desmontar",
+        "starting": "Desmontando \"{{repository}}\" en \"{{machine}}\"...",
+        "completed": "Desmontaje completado",
+        "failed": "Desmontaje fallido"
+      },
+      "up": {
+        "description": "Iniciar servicios del repositorio (orquestación Rediaccfile)",
+        "mountOption": "Montar repositorio primero",
+        "prepOnlyOption": "Ejecutar solo el paso de preparación",
+        "grandOption": "Nombre del repositorio Grand (se resuelve automáticamente a GUID)",
+        "starting": "Iniciando servicios para \"{{repository}}\" en \"{{machine}}\"...",
+        "completed": "Servicios iniciados",
+        "failed": "Fallo al iniciar servicios"
+      },
+      "down": {
+        "description": "Detener servicios del repositorio",
+        "unmountOption": "Desmontar repositorio después de detener",
+        "grandOption": "Nombre del repositorio Grand (se resuelve automáticamente a GUID)",
+        "starting": "Deteniendo servicios para \"{{repository}}\" en \"{{machine}}\"...",
+        "completed": "Servicios detenidos",
+        "failed": "Fallo al detener servicios"
+      },
+      "status": {
+        "description": "Obtener estado del repositorio",
+        "starting": "Obteniendo estado de \"{{repository}}\" en \"{{machine}}\"...",
+        "completed": "Estado obtenido",
+        "failed": "Fallo al consultar estado"
+      },
+      "list": {
+        "description": "Listar repositorios en una máquina",
+        "starting": "Listando repositorios en \"{{machine}}\"...",
+        "completed": "Listado completado",
+        "failed": "Fallo en el listado"
+      }
     }
   },
   "common": {
@@ -1064,7 +1194,8 @@
       "term": "Acceso Terminal SSH",
       "update": "Actualizaciones de CLI",
       "user": "Gestión de Usuarios",
-      "vscode": "Integración con VS Code"
+      "vscode": "Integración con VS Code",
+      "repo": "Ciclo de vida de repositorios"
     },
     "supplements": {
       "auth": {

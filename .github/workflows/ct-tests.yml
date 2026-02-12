@@ -992,6 +992,13 @@ jobs:
           cache: true
           cache-dependency-path: private/renet/go.sum
 
+      # Login to Docker Hub to avoid rate limiting
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       # Unit tests
       - name: Run renet tests
         run: .ci/scripts/private/run-renet.sh test
@@ -1049,6 +1056,13 @@ jobs:
           git config --global url."https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/".insteadOf "https://github.com/"
           git clone --depth 1 https://github.com/rediacc/sql.git private/sql
 
+      # Login to Docker Hub to avoid rate limiting
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Run SQL standalone test
         run: .ci/scripts/private/run-sql.sh test-standalone
 
@@ -1084,6 +1098,13 @@ jobs:
         run: |
           git config --global url."https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/".insteadOf "https://github.com/"
           git clone --depth 1 https://github.com/rediacc/sql.git private/sql
+
+      # Login to Docker Hub to avoid rate limiting
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       # Build renet for VM provisioning
       - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6

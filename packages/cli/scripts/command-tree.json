@@ -6,7 +6,7 @@
   "subcommands": [
     {
       "name": "auth",
-      "descriptionKey": "commands.auth.description",
+      "descriptionKey": null,
       "options": [],
       "arguments": [],
       "subcommands": [
@@ -797,7 +797,7 @@
         },
         {
           "name": "test-connection",
-          "descriptionKey": "commands.machine.testConnection.description",
+          "descriptionKey": null,
           "options": [
             {
               "flags": "--ip <address>",
@@ -861,7 +861,7 @@
     },
     {
       "name": "repository",
-      "descriptionKey": "commands.repository.description",
+      "descriptionKey": null,
       "options": [],
       "arguments": [],
       "subcommands": [
@@ -1094,6 +1094,211 @@
       ]
     },
     {
+      "name": "repo",
+      "descriptionKey": "commands.repo.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "mount",
+          "descriptionKey": "commands.repo.mount.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--checkpoint",
+              "descriptionKey": "commands.repo.mount.checkpointOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "unmount",
+          "descriptionKey": "commands.repo.unmount.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--checkpoint",
+              "descriptionKey": "commands.repo.unmount.checkpointOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "up",
+          "descriptionKey": "commands.repo.up.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--mount",
+              "descriptionKey": "commands.repo.up.mountOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--prep-only",
+              "descriptionKey": "commands.repo.up.prepOnlyOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--grand <name>",
+              "descriptionKey": "commands.repo.up.grandOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "down",
+          "descriptionKey": "commands.repo.down.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--unmount",
+              "descriptionKey": "commands.repo.down.unmountOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--grand <name>",
+              "descriptionKey": "commands.repo.up.grandOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "status",
+          "descriptionKey": "commands.repo.status.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "list",
+          "descriptionKey": "commands.repo.list.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        }
+      ]
+    },
+    {
       "name": "storage",
       "descriptionKey": null,
       "options": [],
@@ -1267,6 +1472,60 @@
               "subcommands": []
             }
           ]
+        },
+        {
+          "name": "browse",
+          "descriptionKey": "commands.storage.browse.description",
+          "options": [
+            {
+              "flags": "--path <subpath>",
+              "descriptionKey": "commands.storage.browse.pathOption",
+              "mandatory": false,
+              "defaultValue": ""
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "pull",
+          "descriptionKey": "commands.storage.pull.description",
+          "options": [
+            {
+              "flags": "-r, --repository <name>",
+              "descriptionKey": "commands.storage.pull.repositoryOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "storageName",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
         }
       ]
     },
@@ -1798,7 +2057,7 @@
     },
     {
       "name": "ceph",
-      "descriptionKey": "commands.ceph.description",
+      "descriptionKey": null,
       "options": [],
       "arguments": [],
       "subcommands": [
@@ -2535,7 +2794,7 @@
     },
     {
       "name": "organization",
-      "descriptionKey": "commands.organization.description",
+      "descriptionKey": null,
       "options": [],
       "arguments": [],
       "subcommands": [
@@ -2648,7 +2907,7 @@
     },
     {
       "name": "user",
-      "descriptionKey": "commands.user.description",
+      "descriptionKey": null,
       "options": [],
       "arguments": [],
       "subcommands": [
@@ -3120,6 +3379,20 @@
           "subcommands": []
         },
         {
+          "name": "scan-keys",
+          "descriptionKey": "commands.context.scanKeys.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "machine",
+              "required": false,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
           "name": "remove-machine",
           "descriptionKey": "commands.context.removeMachine.description",
           "options": [],
@@ -3173,6 +3446,172 @@
             }
           ],
           "subcommands": []
+        },
+        {
+          "name": "import-storage",
+          "descriptionKey": "commands.context.importStorage.description",
+          "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "commands.context.importStorage.optionName",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "file",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "remove-storage",
+          "descriptionKey": "commands.context.removeStorage.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "storages",
+          "descriptionKey": "commands.context.storages.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "add-repository",
+          "descriptionKey": "commands.context.addRepository.description",
+          "options": [
+            {
+              "flags": "--guid <guid>",
+              "descriptionKey": "commands.context.addRepository.optionGuid",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--tag <tag>",
+              "descriptionKey": "options.repositoryTag",
+              "mandatory": false,
+              "defaultValue": "latest"
+            },
+            {
+              "flags": "--credential <credential>",
+              "descriptionKey": "commands.context.addRepository.optionCredential",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--network-id <id>",
+              "descriptionKey": "commands.context.addRepository.optionNetworkId",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "remove-repository",
+          "descriptionKey": "commands.context.removeRepository.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "repositories",
+          "descriptionKey": "commands.context.repositories.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "to-s3",
+          "descriptionKey": "commands.context.toS3.description",
+          "options": [
+            {
+              "flags": "--endpoint <url>",
+              "descriptionKey": "commands.context.createS3.optionEndpoint",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--bucket <name>",
+              "descriptionKey": "commands.context.createS3.optionBucket",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--access-key-id <key>",
+              "descriptionKey": "commands.context.createS3.optionAccessKeyId",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--secret-access-key <key>",
+              "descriptionKey": "commands.context.toS3.optionSecretAccessKey",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--region <region>",
+              "descriptionKey": "commands.context.createS3.optionRegion",
+              "mandatory": false,
+              "defaultValue": "auto"
+            },
+            {
+              "flags": "--prefix <prefix>",
+              "descriptionKey": "commands.context.toS3.optionPrefix",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--master-password <password>",
+              "descriptionKey": "commands.context.toS3.optionMasterPassword",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "to-local",
+          "descriptionKey": "commands.context.toLocal.description",
+          "options": [
+            {
+              "flags": "--ssh-key-path <path>",
+              "descriptionKey": "commands.context.toLocal.optionSshKeyPath",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
         }
       ]
     },
@@ -3185,7 +3624,7 @@
     },
     {
       "name": "permission",
-      "descriptionKey": "commands.permission.description",
+      "descriptionKey": null,
       "options": [],
       "arguments": [],
       "subcommands": [
@@ -3297,7 +3736,7 @@
     },
     {
       "name": "audit",
-      "descriptionKey": "commands.audit.description",
+      "descriptionKey": null,
       "options": [],
       "arguments": [],
       "subcommands": [

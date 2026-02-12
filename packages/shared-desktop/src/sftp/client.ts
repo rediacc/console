@@ -439,6 +439,63 @@ export class SFTPClient {
   }
 
   /**
+   * Execute a command with streaming stdin/stdout/stderr support.
+   * Unlike exec(), this streams output in real-time and supports writing to stdin.
+   *
+   * @param command - Command to execute
+   * @param options - Streaming options
+   * @returns Exit code from the remote command
+   */
+  async execStreaming(
+    command: string,
+    options: {
+      stdin?: string;
+      onStdout?: (data: Buffer) => void;
+      onStderr?: (data: Buffer) => void;
+    }
+  ): Promise<number> {
+    if (!this.connected) {
+      throw new Error('SFTP client is not connected');
+    }
+
+    return new Promise((resolve, reject) => {
+      this.ssh.exec(command, (err, channel) => {
+        if (err) {
+          reject(new Error(`Failed to execute command: ${err.message}`));
+          return;
+        }
+
+        if (options.stdin) {
+          channel.write(options.stdin);
+          channel.end();
+        } else {
+          channel.end();
+        }
+
+        channel.on('data', (data: Buffer) => {
+          if (options.onStdout) {
+            options.onStdout(data);
+          }
+        });
+
+        channel.stderr.on('data', (data: Buffer) => {
+          if (options.onStderr) {
+            options.onStderr(data);
+          }
+        });
+
+        channel.on('close', (code: number) => {
+          resolve(code);
+        });
+
+        channel.on('error', (channelErr: Error) => {
+          reject(new Error(`Channel error: ${channelErr.message}`));
+        });
+      });
+    });
+  }
+
+  /**
    * Close the SFTP session and SSH connection
    */
   close(): void {

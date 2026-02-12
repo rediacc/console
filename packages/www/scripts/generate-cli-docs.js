@@ -44,6 +44,7 @@ const COMMAND_ORDER = [
   'bridge',
   'machine',
   'repository',
+  'repo',
   'storage',
   'queue',
   'sync',

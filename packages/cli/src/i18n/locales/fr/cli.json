@@ -265,6 +265,15 @@
         "description": "Ajouter une machine au contexte local actuel",
         "success": "Machine \"{{name}}\" ajoutée ({{user}}@{{ip}})"
       },
+      "addRepository": {
+        "description": "Ajouter un mappage GUID de dépôt au contexte local actuel",
+        "networkIdAssigned": "ID réseau : {{networkId}}",
+        "optionCredential": "Identifiant du dépôt (phrase secrète de chiffrement)",
+        "optionGuid": "GUID du dépôt (UUID issu des noms de fichiers de sauvegarde)",
+        "optionNetworkId": "ID réseau pour l'isolation Docker (2816, 2880, ...). Attribué automatiquement si omis",
+        "optionTag": "Étiquette du dépôt",
+        "success": "Dépôt \"{{name}}\" ajouté ({{guid}}, tag : {{tag}})"
+      },
       "clear": {
         "allCleared": "Toutes les valeurs par défaut effacées",
         "description": "Effacer les valeurs par défaut (toutes ou une clé spécifique)",
@@ -308,6 +317,15 @@
         "success": "Contexte \"{{name}}\" supprimé"
       },
       "description": "Gérer les contextes CLI",
+      "importStorage": {
+        "description": "Importer des stockages depuis un fichier de configuration rclone",
+        "imported": "Stockage \"{{name}}\" importé ({{type}})",
+        "noConfigs": "Aucune configuration de stockage valide trouvée dans le fichier",
+        "notFound": "Stockage \"{{name}}\" introuvable dans le fichier de configuration",
+        "optionName": "Importer uniquement cette section nommée",
+        "summary": "{{count}} stockage(s) importé(s)",
+        "unsupported": "\"{{name}}\" ignoré : type de fournisseur non supporté \"{{type}}\""
+      },
       "list": {
         "description": "Lister tous les contextes",
         "noContexts": "Aucun contexte configuré"
@@ -320,9 +338,27 @@
         "description": "Supprimer une machine du contexte local actuel",
         "success": "Machine \"{{name}}\" supprimée"
       },
+      "removeRepository": {
+        "description": "Supprimer un mappage de dépôt du contexte local actuel",
+        "success": "Dépôt \"{{name}}\" supprimé"
+      },
+      "removeStorage": {
+        "description": "Supprimer un stockage du contexte local actuel",
+        "success": "Stockage \"{{name}}\" supprimé"
+      },
       "rename": {
         "description": "Renommer un contexte",
         "success": "Contexte renommé de \"{{oldName}}\" à \"{{newName}}\""
+      },
+      "repositories": {
+        "description": "Lister les mappages GUID de dépôt dans le contexte local actuel",
+        "noRepositories": "Aucun dépôt configuré. Ajoutez-en un avec : rdc context add-repository <name> --guid <guid>"
+      },
+      "scanKeys": {
+        "completed": "{{count}}/{{total}} machines scannées",
+        "description": "Scanner les clés d'hôte SSH des machines dans le contexte actuel",
+        "keysScanned": "Clés d'hôte scannées pour \"{{name}}\"",
+        "noKeys": "Impossible de scanner les clés d'hôte pour \"{{name}}\""
       },
       "set": {
         "description": "Définir une valeur par défaut (équipe, région, pont, machine)",
@@ -345,6 +381,36 @@
         "description": "Afficher les détails du contexte actuel",
         "noContext": "Aucun contexte actif"
       },
+      "storages": {
+        "description": "Lister les stockages dans le contexte local actuel",
+        "noStorages": "Aucun stockage configuré. Importez avec : rdc context import-storage <file>"
+      },
+      "toLocal": {
+        "description": "Migrer le contexte S3 actuel vers le mode local",
+        "errorNoS3Config": "Le contexte \"{{name}}\" n'a pas de configuration S3",
+        "errorNotS3": "Le contexte \"{{name}}\" n'est pas en mode S3 (actuel : {{mode}})",
+        "loading": "Chargement de l'état depuis S3...",
+        "nonDestructive": "Le fichier state.json reste dans le bucket S3 (non destructif)",
+        "optionSshKeyPath": "Emplacement d'écriture de la clé privée SSH (par défaut : chemin existant)",
+        "sshWritten": "Clé SSH écrite dans {{path}}",
+        "success": "Migration vers le mode local effectuée : {{machines}} machines, {{storages}} stockages, {{repos}} dépôts"
+      },
+      "toS3": {
+        "description": "Migrer le contexte local actuel vers le mode S3",
+        "errorNotLocal": "Le contexte \"{{name}}\" n'est pas en mode local (actuel : {{mode}})",
+        "errorSecretRequired": "La clé d'accès secrète est requise",
+        "optionAccessKeyId": "ID de clé d'accès S3",
+        "optionBucket": "Nom du bucket S3",
+        "optionEndpoint": "URL du point de terminaison S3",
+        "optionMasterPassword": "Activer le chiffrement avec ce mot de passe principal",
+        "optionPrefix": "Préfixe de clé dans le bucket",
+        "optionRegion": "Région S3",
+        "optionSecretAccessKey": "Clé d'accès secrète S3 (demandée si non fournie)",
+        "promptSecretAccessKey": "Entrez la clé d'accès secrète S3 :",
+        "success": "Migration vers le mode S3 effectuée : {{machines}} machines, {{storages}} stockages, {{repos}} dépôts",
+        "verified": "Accès S3 vérifié",
+        "verifying": "Vérification de l'accès S3..."
+      },
       "unset": {
         "description": "Supprimer une valeur par défaut du contexte",
         "success": "{{key}} supprimé du contexte actuel"
@@ -358,7 +424,7 @@
       "allPassed": "Toutes les vérifications réussies",
       "checks": {
         "activeContext": "Contexte actif",
-        "authStatus": "Status",
+        "authStatus": "Statut",
         "cliVersion": "Version CLI",
         "contextMode": "Mode de contexte",
         "dockerAvailable": "Docker",
@@ -703,6 +769,54 @@
         "fetching": "Récupération des régions..."
       }
     },
+    "repo": {
+      "description": "Gestion du cycle de vie des dépôts (mode local)",
+      "down": {
+        "completed": "Services arrêtés",
+        "description": "Arrêter les services du dépôt",
+        "failed": "Échec de l'arrêt des services",
+        "grandOption": "Nom du grand dépôt (résolution automatique vers le GUID)",
+        "starting": "Arrêt des services pour \"{{repository}}\" sur \"{{machine}}\"...",
+        "unmountOption": "Démonter le dépôt après l'arrêt"
+      },
+      "list": {
+        "completed": "Listage terminé",
+        "description": "Lister les dépôts sur une machine",
+        "failed": "Échec du listage",
+        "starting": "Listage des dépôts sur \"{{machine}}\"..."
+      },
+      "machineOption": "Nom de la machine cible",
+      "mount": {
+        "checkpointOption": "Restaurer depuis un point de contrôle après le montage",
+        "completed": "Montage terminé",
+        "description": "Monter un dépôt (ouvrir le conteneur LUKS)",
+        "failed": "Échec du montage",
+        "starting": "Montage de \"{{repository}}\" sur \"{{machine}}\"..."
+      },
+      "noCredential": "Avertissement : Le dépôt \"{{name}}\" n'a pas d'identifiant défini. Les opérations sur les dépôts chiffrés peuvent échouer.",
+      "status": {
+        "completed": "Statut récupéré",
+        "description": "Obtenir le statut du dépôt",
+        "failed": "Échec de la vérification du statut",
+        "starting": "Récupération du statut de \"{{repository}}\" sur \"{{machine}}\"..."
+      },
+      "unmount": {
+        "checkpointOption": "Créer un point de contrôle avant le démontage",
+        "completed": "Démontage terminé",
+        "description": "Démonter un dépôt",
+        "failed": "Échec du démontage",
+        "starting": "Démontage de \"{{repository}}\" sur \"{{machine}}\"..."
+      },
+      "up": {
+        "completed": "Services démarrés",
+        "description": "Démarrer les services du dépôt (orchestration Rediaccfile)",
+        "failed": "Échec du démarrage des services",
+        "grandOption": "Nom du grand dépôt (résolution automatique vers le GUID)",
+        "mountOption": "Monter le dépôt d'abord",
+        "prepOnlyOption": "Exécuter uniquement l'étape de préparation",
+        "starting": "Démarrage des services pour \"{{repository}}\" sur \"{{machine}}\"..."
+      }
+    },
     "repository": {
       "create": {
         "creating": "Création du dépôt \"{{name}}:{{tag}}\"...",
@@ -773,10 +887,26 @@
       }
     },
     "storage": {
+      "browse": {
+        "description": "Parcourir les fichiers dans un système de stockage",
+        "failed": "Échec du listage des fichiers : {{error}}",
+        "listing": "Listage des fichiers dans \"{{name}}\"...",
+        "noFiles": "Aucun fichier trouvé",
+        "pathOption": "Chemin du sous-répertoire à lister"
+      },
       "description": "Gestion du stockage",
       "list": {
         "description": "Lister les fournisseurs de stockage",
         "fetching": "Récupération des fournisseurs de stockage..."
+      },
+      "pull": {
+        "completed": "Téléchargement terminé en {{duration}}ms",
+        "description": "Télécharger une sauvegarde depuis le stockage cloud vers une machine",
+        "failed": "Échec du téléchargement : {{error}}",
+        "machineOption": "Nom de la machine cible",
+        "noCredential": "Avertissement : Le dépôt \"{{name}}\" n'a pas d'identifiant défini. Le téléchargement peut échouer si la sauvegarde est chiffrée.",
+        "repositoryOption": "Nom du dépôt à télécharger",
+        "starting": "Téléchargement de \"{{repository}}\" depuis \"{{storage}}\" vers \"{{machine}}\"..."
       }
     },
     "sync": {
@@ -1056,6 +1186,7 @@
       "protocol": "Gestionnaire de Protocole",
       "queue": "Opérations de File d'Attente",
       "region": "Gestion des Régions",
+      "repo": "Cycle de vie des dépôts",
       "repository": "Gestion des Dépôts",
       "shortcuts": "Commandes Rapides (Raccourcis)",
       "storage": "Gestion du Stockage",

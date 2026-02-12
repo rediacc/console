@@ -99,24 +99,43 @@ class LocalQueueProvider implements QueueProvider {
 }
 
 class LocalStorageProvider implements StorageProvider {
-  list(_params: { teamName: string }): Promise<ResourceRecord[]> {
-    return Promise.reject(new UnsupportedOperationError('storage list'));
+  async list(_params: { teamName: string }): Promise<ResourceRecord[]> {
+    const storages = await contextService.listLocalStorages();
+    return storages.map((s) => ({
+      storageName: s.name,
+      provider: s.config.provider,
+    }));
   }
 
-  create(_params: Record<string, unknown>): Promise<MutationResult> {
-    return Promise.reject(new UnsupportedOperationError('storage create'));
+  async create(params: Record<string, unknown>): Promise<MutationResult> {
+    const storageName = params.storageName as string;
+    const vaultContent = params.vaultContent as string;
+    const parsed = JSON.parse(vaultContent) as Record<string, unknown>;
+    await contextService.addLocalStorage(storageName, {
+      provider: typeof parsed.provider === 'string' ? parsed.provider : 'unknown',
+      vaultContent: parsed,
+    });
+    return { success: true };
   }
 
   rename(_params: Record<string, unknown>): Promise<MutationResult> {
     return Promise.reject(new UnsupportedOperationError('storage rename'));
   }
 
-  delete(_params: Record<string, unknown>): Promise<MutationResult> {
-    return Promise.reject(new UnsupportedOperationError('storage delete'));
+  async delete(params: Record<string, unknown>): Promise<MutationResult> {
+    await contextService.removeLocalStorage(params.storageName as string);
+    return { success: true };
   }
 
-  getVault(_params: Record<string, unknown>): Promise<VaultItem[]> {
-    return Promise.reject(new UnsupportedOperationError('storage vault'));
+  async getVault(params: Record<string, unknown>): Promise<VaultItem[]> {
+    const config = await contextService.getLocalStorage(params.storageName as string);
+    return [
+      {
+        vaultType: 'Storage',
+        vaultContent: JSON.stringify(config.vaultContent),
+        vaultVersion: 1,
+      },
+    ];
   }
 
   updateVault(_params: Record<string, unknown>): Promise<MutationResult> {
@@ -167,20 +186,25 @@ class LocalVaultProvider implements VaultProvider {
     _teamName: string,
     _machineName: string,
     _repositoryName?: string
-  ): Promise<{ machineVault: VaultData; teamVault: VaultData; repositoryVault?: VaultData }> {
+  ): Promise<{
+    machineVault: VaultData;
+    teamVault: VaultData;
+    repositoryVault?: VaultData;
+  }> {
     return Promise.resolve({ machineVault: {}, teamVault: {} });
   }
 }
 
 export class LocalStateProvider implements IStateProvider {
-  readonly mode = 'local' as const;
+  readonly mode: 'local' | 's3';
   readonly machines: MachineProvider;
   readonly queue: QueueProvider;
   readonly storage: StorageProvider;
   readonly repositories: RepositoryProvider;
   readonly vaults: VaultProvider;
 
-  constructor() {
+  constructor(mode: 'local' | 's3' = 'local') {
+    this.mode = mode;
     this.machines = new LocalMachineProvider();
     this.queue = new LocalQueueProvider();
     this.storage = new LocalStorageProvider();

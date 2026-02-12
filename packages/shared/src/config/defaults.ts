@@ -261,6 +261,9 @@ export const CONTEXT_DEFAULTS = {
 
   /** Default renet binary name */
   RENET_BINARY: 'renet',
+
+  /** Default SSH key path for local/S3 contexts */
+  SSH_KEY_PATH: '~/.ssh/rediacc',
 } as const;
 
 /**

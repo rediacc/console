@@ -74,6 +74,10 @@
       "types": "./dist/queue-vault/index.d.ts",
       "default": "./dist/queue-vault/index.js"
     },
+    "./queue-vault/storage-browser": {
+      "types": "./dist/queue-vault/storage-browser/index.d.ts",
+      "default": "./dist/queue-vault/storage-browser/index.js"
+    },
     "./queue-vault/*": {
       "types": "./dist/queue-vault/*.d.ts",
       "default": "./dist/queue-vault/*.js"

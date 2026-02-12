@@ -1,14 +1,10 @@
-export interface RemoteFile {
-  name: string;
+import type { RemoteFile as BaseRemoteFile } from '@rediacc/shared/queue-vault/storage-browser';
+
+export interface RemoteFile extends BaseRemoteFile {
   originalGuid?: string;
   repositoryName?: string;
   repositoryTag?: string;
   isUnmapped?: boolean;
-  size: number;
-  isDirectory: boolean;
-  modTime?: string;
-  mimeType?: string;
-  path?: string;
 }
 
 export interface RemoteFileBrowserModalProps {
