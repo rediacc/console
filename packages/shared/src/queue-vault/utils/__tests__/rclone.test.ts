@@ -25,7 +25,7 @@ describe('PROVIDER_MAPPING', () => {
     'webdav',
     'ftp',
     'sftp',
-  ];
+  ] as const;
 
   it('should contain all 12 supported backends', () => {
     for (const backend of EXPECTED_BACKENDS) {
@@ -35,7 +35,7 @@ describe('PROVIDER_MAPPING', () => {
   });
 
   it('should have string values for all entries', () => {
-    for (const [key, value] of Object.entries(PROVIDER_MAPPING)) {
+    for (const [, value] of Object.entries(PROVIDER_MAPPING)) {
       expect(typeof value).toBe('string');
       expect(value.length).toBeGreaterThan(0);
     }

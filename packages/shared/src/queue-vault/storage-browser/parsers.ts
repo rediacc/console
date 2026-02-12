@@ -114,32 +114,37 @@ export function parsePlainTextFileList(textData: string, currentPath: string): R
   });
 }
 
+function parseSingleJsonObject(jsonStr: string, currentPath: string): RemoteFile | null {
+  try {
+    const file = JSON.parse(jsonStr);
+    const name = getStringValue(file.Name) ?? '';
+    return {
+      name,
+      size: getNumberValue(file.Size),
+      isDirectory: getBooleanValue(file.IsDir),
+      modTime: getStringValue(file.ModTime),
+      mimeType: getStringValue(file.MimeType),
+      path: getStringValue(file.Path) ?? (currentPath ? `${currentPath}/${name}` : name),
+    };
+  } catch {
+    return null;
+  }
+}
+
 /** Try to extract individual JSON objects from malformed output. */
 export function parseFallbackFormats(dataToProcess: string, currentPath: string): RemoteFile[] {
-  if (dataToProcess.includes('"Path":') && dataToProcess.includes('"Name":')) {
-    const jsonObjects = dataToProcess.match(/\{[^}]+\}/g);
-    if (jsonObjects) {
-      const results: RemoteFile[] = [];
-      for (const jsonStr of jsonObjects) {
-        try {
-          const file = JSON.parse(jsonStr);
-          results.push({
-            name: (file.Name as string) ?? '',
-            size: (file.Size as number) ?? 0,
-            isDirectory: (file.IsDir as boolean) ?? false,
-            modTime: file.ModTime as string | undefined,
-            mimeType: file.MimeType as string | undefined,
-            path:
-              (file.Path as string) ?? (currentPath ? `${currentPath}/${file.Name}` : file.Name),
-          });
-        } catch {
-          // Skip malformed entries
-        }
-      }
-      return results;
-    }
+  if (!dataToProcess.includes('"Path":') || !dataToProcess.includes('"Name":')) {
+    return [];
   }
-  return [];
+  const jsonObjects = dataToProcess.match(/\{[^}]+\}/g);
+  if (!jsonObjects) return [];
+
+  const results: RemoteFile[] = [];
+  for (const jsonStr of jsonObjects) {
+    const parsed = parseSingleJsonObject(jsonStr, currentPath);
+    if (parsed) results.push(parsed);
+  }
+  return results;
 }
 
 /** Strip debug output and extract clean JSON array from rclone output. */

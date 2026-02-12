@@ -30,6 +30,19 @@ const RENAMED_FIELDS: Record<string, string> = {
   sub_provider: 'provider',
 };
 
+function buildCredentialFlags(vaultContent: Record<string, unknown>, backend: string): string[] {
+  const params: string[] = [];
+  for (const [key, value] of Object.entries(vaultContent)) {
+    if (PATH_FIELDS.has(key) || DEDICATED_FIELDS.has(key)) continue;
+    if (value === undefined || value === null || value === '') continue;
+    const rcloneKey = RENAMED_FIELDS[key] ?? key;
+    const flag = `--${backend}-${rcloneKey.replaceAll('_', '-')}`;
+    const flagValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+    params.push(`${flag}=${flagValue}`);
+  }
+  return params;
+}
+
 /**
  * Build rclone CLI arguments from storage vault content.
  *
@@ -45,31 +58,17 @@ export function buildRcloneArgs(
   const bucket = vaultContent.bucket ? String(vaultContent.bucket) : '';
   const folder = vaultContent.folder ? String(vaultContent.folder) : '';
 
-  // Build remote path: :backend:bucket/folder/subPath
   const pathSegments = [bucket, folder, subPath ?? ''].filter(Boolean);
   const remote = `:${backend}:${pathSegments.join('/')}`;
 
-  // Build parameter flags
   const params: string[] = [];
 
-  // Add region as a dedicated flag
   if (vaultContent.region) {
     params.push(`--${backend}-region=${String(vaultContent.region)}`);
   }
 
-  // Add remaining credential/config fields as --{backend}-{key}={value}
-  for (const [key, value] of Object.entries(vaultContent)) {
-    if (PATH_FIELDS.has(key) || DEDICATED_FIELDS.has(key)) continue;
-    if (value === undefined || value === null || value === '') continue;
+  params.push(...buildCredentialFlags(vaultContent, backend));
 
-    // Some vault fields map to a different rclone flag name (e.g. sub_provider → provider)
-    const rcloneKey = RENAMED_FIELDS[key] ?? key;
-    const flag = `--${backend}-${rcloneKey.replace(/_/g, '-')}`;
-    const flagValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
-    params.push(`${flag}=${flagValue}`);
-  }
-
-  // S3-compatible backends: force path style (works with MinIO, RustFS, DigitalOcean, etc.)
   if (backend === 's3') {
     params.push('--s3-force-path-style=true');
   }

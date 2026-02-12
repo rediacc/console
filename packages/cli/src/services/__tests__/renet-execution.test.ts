@@ -6,19 +6,21 @@ import { buildLocalVault } from '../renet-execution.js';
  * Override specific fields in individual tests.
  */
 function baseOpts() {
+  const machine: {
+    ip: string;
+    user: string;
+    port?: number;
+    datastore?: string;
+  } = { ip: '10.0.0.1', user: 'root' };
+  const params: Record<string, unknown> = {};
   return {
     functionName: 'machine_ping',
     machineName: 'test-machine',
-    machine: { ip: '10.0.0.1', user: 'root' } as {
-      ip: string;
-      user: string;
-      port?: number;
-      datastore?: string;
-    },
+    machine,
     sshPrivateKey: '---PRIVATE-KEY---',
     sshPublicKey: '---PUBLIC-KEY---',
     sshKnownHosts: '10.0.0.1 ssh-ed25519 AAAA...',
-    params: {} as Record<string, unknown>,
+    params,
   };
 }
 

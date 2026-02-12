@@ -71,7 +71,7 @@ export function parseRcloneFileList(
  * on top of the shared base parser.
  */
 export class FileListParserFactory {
-  private baseFactory: BaseFileListParserFactory;
+  private readonly baseFactory: BaseFileListParserFactory;
 
   constructor(
     currentPath: string,

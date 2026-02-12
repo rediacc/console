@@ -92,10 +92,7 @@ export async function provisionRenetToRemote(
   }
 }
 
-/**
- * Build QueueVaultV2 structure for local/s3 execution.
- */
-export function buildLocalVault(opts: {
+interface BuildLocalVaultOptions {
   functionName: string;
   machineName: string;
   machine: MachineConfig;
@@ -107,73 +104,100 @@ export function buildLocalVault(opts: {
   storages?: Record<string, { vaultContent: Record<string, unknown> }>;
   repositoryCredentials?: Record<string, string>;
   repositoryConfigs?: Record<string, { guid: string; name: string; networkId?: number }>;
-}): string {
-  // Build extra_machines map with SSH credentials
-  const extraMachines: Record<string, unknown> = {};
-  if (opts.extraMachines) {
-    for (const [name, cfg] of Object.entries(opts.extraMachines)) {
-      extraMachines[name] = {
-        ip: cfg.ip,
-        user: cfg.user,
-        port: cfg.port ?? DEFAULTS.SSH.PORT,
-        datastore: NETWORK_DEFAULTS.DATASTORE_PATH,
-        known_hosts: opts.sshKnownHosts,
-        ssh: {
-          private_key: opts.sshPrivateKey,
-          public_key: opts.sshPublicKey,
-        },
-      };
-    }
-  }
+}
 
-  // Build storage_systems from context storages.
-  // Converts vault content (provider, credentials) to StorageSection format
-  // (backend + parameters) that renet's GetStorageV2() expects.
-  const storageSystems: Record<string, unknown> = {};
-  if (opts.storages) {
-    for (const [name, storage] of Object.entries(opts.storages)) {
-      const vault = storage.vaultContent;
-      const provider = String(vault.provider ?? '');
-      if (!provider) continue;
-
-      const section: Record<string, unknown> = { backend: provider };
-      if (vault.bucket) section.bucket = String(vault.bucket);
-      if (vault.region) section.region = String(vault.region);
-      if (vault.folder !== undefined && vault.folder !== null) {
-        section.folder = String(vault.folder);
-      }
-
-      // All other fields go into parameters (credentials, endpoint, etc.)
-      const parameters: Record<string, unknown> = {};
-      for (const [key, value] of Object.entries(vault)) {
-        if (['provider', 'bucket', 'region', 'folder'].includes(key)) continue;
-        parameters[key] = value;
-      }
-      if (Object.keys(parameters).length > 0) {
-        section.parameters = parameters;
-      }
-
-      storageSystems[name] = section;
-    }
-  }
-
-  // Build repositories section when a repository is specified.
-  // Uses real GUID from context repository configs when available,
-  // falls back to local-${repoName} for ad-hoc local operations.
-  const repoName = (opts.params.repository ?? '') as string;
-  const repositories: Record<string, unknown> = {};
-  if (repoName) {
-    const repoConfig = opts.repositoryConfigs?.[repoName];
-    const repoEntry: Record<string, unknown> = {
-      guid: repoConfig?.guid ?? `local-${repoName}`,
-      name: repoName,
+function buildExtraMachines(
+  machines: Record<string, { ip: string; port?: number; user: string }> | undefined,
+  sshKnownHosts: string,
+  sshPrivateKey: string,
+  sshPublicKey: string
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  if (!machines) return result;
+  for (const [name, cfg] of Object.entries(machines)) {
+    result[name] = {
+      ip: cfg.ip,
+      user: cfg.user,
+      port: cfg.port ?? DEFAULTS.SSH.PORT,
+      datastore: NETWORK_DEFAULTS.DATASTORE_PATH,
+      known_hosts: sshKnownHosts,
+      ssh: {
+        private_key: sshPrivateKey,
+        public_key: sshPublicKey,
+      },
     };
-    const networkId = repoConfig?.networkId ?? opts.params.network_id;
-    if (networkId !== undefined && networkId !== '' && networkId !== 0) {
-      repoEntry.network_id = typeof networkId === 'number' ? networkId : Number(networkId);
-    }
-    repositories[repoName] = repoEntry;
   }
+  return result;
+}
+
+function buildStorageSection(vault: Record<string, unknown>): Record<string, unknown> | null {
+  const provider = String(vault.provider ?? '');
+  if (!provider) return null;
+
+  const section: Record<string, unknown> = { backend: provider };
+  if (vault.bucket) section.bucket = String(vault.bucket);
+  if (vault.region) section.region = String(vault.region);
+  if (vault.folder !== undefined && vault.folder !== null) {
+    section.folder = String(vault.folder);
+  }
+
+  const parameters: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(vault)) {
+    if (['provider', 'bucket', 'region', 'folder'].includes(key)) continue;
+    parameters[key] = value;
+  }
+  if (Object.keys(parameters).length > 0) {
+    section.parameters = parameters;
+  }
+
+  return section;
+}
+
+function buildStorageSystems(
+  storages: Record<string, { vaultContent: Record<string, unknown> }> | undefined
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  if (!storages) return result;
+  for (const [name, storage] of Object.entries(storages)) {
+    const section = buildStorageSection(storage.vaultContent);
+    if (section) result[name] = section;
+  }
+  return result;
+}
+
+function buildRepositories(
+  params: Record<string, unknown>,
+  repositoryConfigs?: Record<string, { guid: string; name: string; networkId?: number }>
+): { repoName: string; repositories: Record<string, unknown> } {
+  const repoName = (params.repository ?? '') as string;
+  const repositories: Record<string, unknown> = {};
+  if (!repoName) return { repoName, repositories };
+
+  const repoConfig = repositoryConfigs?.[repoName];
+  const repoEntry: Record<string, unknown> = {
+    guid: repoConfig?.guid ?? `local-${repoName}`,
+    name: repoName,
+  };
+  const networkId = repoConfig?.networkId ?? params.network_id;
+  if (networkId !== undefined && networkId !== '' && networkId !== 0) {
+    repoEntry.network_id = typeof networkId === 'number' ? networkId : Number(networkId);
+  }
+  repositories[repoName] = repoEntry;
+  return { repoName, repositories };
+}
+
+/**
+ * Build QueueVaultV2 structure for local/s3 execution.
+ */
+export function buildLocalVault(opts: BuildLocalVaultOptions): string {
+  const extraMachines = buildExtraMachines(
+    opts.extraMachines,
+    opts.sshKnownHosts,
+    opts.sshPrivateKey,
+    opts.sshPublicKey
+  );
+  const storageSystems = buildStorageSystems(opts.storages);
+  const { repoName, repositories } = buildRepositories(opts.params, opts.repositoryConfigs);
 
   const vault = {
     $schema: 'queue-vault-v2',

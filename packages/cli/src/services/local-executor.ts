@@ -15,6 +15,7 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { contextService } from './context.js';
 import { outputService } from './output.js';
 import {
@@ -54,6 +55,54 @@ interface LocalExecuteResult {
   durationMs: number;
 }
 
+async function resolveKnownHosts(machineKnownHosts: string | undefined): Promise<string> {
+  const hosts = machineKnownHosts ?? '';
+  if (hosts) return hosts;
+  const knownHostsPath = path.join(os.homedir(), '.ssh', 'known_hosts');
+  return fs.readFile(knownHostsPath, 'utf-8').catch(() => '');
+}
+
+async function loadContextStorages(): Promise<
+  Record<string, { vaultContent: Record<string, unknown> }> | undefined
+> {
+  try {
+    const storageList = await contextService.listLocalStorages();
+    if (storageList.length === 0) return undefined;
+    const storages: Record<string, { vaultContent: Record<string, unknown> }> = {};
+    for (const s of storageList) {
+      storages[s.name] = { vaultContent: s.config.vaultContent };
+    }
+    return storages;
+  } catch {
+    return undefined;
+  }
+}
+
+async function loadContextRepositories(): Promise<{
+  credentials: Record<string, string> | undefined;
+  configs: Record<string, { guid: string; name: string; networkId?: number }> | undefined;
+}> {
+  try {
+    const repoList = await contextService.listLocalRepositories();
+    if (repoList.length === 0) return { credentials: undefined, configs: undefined };
+    const credentials: Record<string, string> = {};
+    const configs: Record<string, { guid: string; name: string; networkId?: number }> = {};
+    for (const r of repoList) {
+      if (r.config.credential) {
+        credentials[r.config.repositoryGuid] = r.config.credential;
+      }
+      configs[r.name] = {
+        guid: r.config.repositoryGuid,
+        name: r.name,
+        networkId: r.config.networkId,
+      };
+    }
+    return { credentials, configs };
+  } catch {
+    return { credentials: undefined, configs: undefined };
+  }
+}
+
 /**
  * Service for executing tasks directly via renet subprocess.
  * Bypasses middleware for single-machine local deployments.
@@ -70,7 +119,6 @@ class LocalExecutorService {
     const startTime = Date.now();
 
     try {
-      // Get local config from context
       const config = await contextService.getLocalConfig();
       const machine = await contextService.getLocalMachine(options.machineName);
 
@@ -78,58 +126,14 @@ class LocalExecutorService {
         outputService.info(`[local] Executing '${options.functionName}' on ${options.machineName}`);
       }
 
-      // Read SSH keys (prefer content from S3 state, fallback to filesystem)
       const sshPrivateKey = config.sshPrivateKey ?? (await readSSHKey(config.ssh.privateKeyPath));
       const sshPublicKey =
         config.sshPublicKey ?? (await readOptionalSSHKey(config.ssh.publicKeyPath));
+      const sshKnownHosts = await resolveKnownHosts(machine.knownHosts);
+      const storages = await loadContextStorages();
+      const { credentials: repositoryCredentials, configs: repositoryConfigs } =
+        await loadContextRepositories();
 
-      // Read known_hosts: prefer per-machine stored keys, fall back to system file
-      let sshKnownHosts = machine.knownHosts ?? '';
-      if (!sshKnownHosts) {
-        const knownHostsPath = path.join(os.homedir(), '.ssh', 'known_hosts');
-        sshKnownHosts = await fs.readFile(knownHostsPath, 'utf-8').catch(() => '');
-      }
-
-      // Load storages from context (if any)
-      let storages: Record<string, { vaultContent: Record<string, unknown> }> | undefined;
-      try {
-        const storageList = await contextService.listLocalStorages();
-        if (storageList.length > 0) {
-          storages = {};
-          for (const s of storageList) {
-            storages[s.name] = { vaultContent: s.config.vaultContent };
-          }
-        }
-      } catch {
-        // Storages are optional, ignore errors
-      }
-
-      // Load repository data from context (if any)
-      let repositoryCredentials: Record<string, string> | undefined;
-      let repositoryConfigs:
-        | Record<string, { guid: string; name: string; networkId?: number }>
-        | undefined;
-      try {
-        const repoList = await contextService.listLocalRepositories();
-        if (repoList.length > 0) {
-          repositoryCredentials = {};
-          repositoryConfigs = {};
-          for (const r of repoList) {
-            if (r.config.credential) {
-              repositoryCredentials[r.config.repositoryGuid] = r.config.credential;
-            }
-            repositoryConfigs[r.name] = {
-              guid: r.config.repositoryGuid,
-              name: r.name,
-              networkId: r.config.networkId,
-            };
-          }
-        }
-      } catch {
-        // Repositories are optional, ignore errors
-      }
-
-      // Build vault JSON for renet execute
       const vault = buildLocalVault({
         functionName: options.functionName,
         machineName: options.machineName,
@@ -144,17 +148,15 @@ class LocalExecutorService {
         repositoryConfigs,
       });
 
-      // Provision renet to remote machine (/usr/bin/renet)
       await provisionRenetToRemote(config, machine, sshPrivateKey, options);
 
       if (options.debug) {
         outputService.info(`[local] Direct SSH to ${machine.ip}, executor=local`);
       }
 
-      // SSH to machine and run renet execute --executor local with vault via stdin
       const sftp = new SFTPClient({
         host: machine.ip,
-        port: machine.port ?? 22,
+        port: machine.port ?? DEFAULTS.SSH.PORT,
         username: machine.user,
         privateKey: sshPrivateKey,
       });

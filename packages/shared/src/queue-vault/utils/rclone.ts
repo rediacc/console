@@ -81,7 +81,7 @@ function saveCurrentSection(
   if (section && config.type) {
     configs.push({
       name: section,
-      type: config.type as string,
+      type: config.type,
       config: { ...config },
     });
   }

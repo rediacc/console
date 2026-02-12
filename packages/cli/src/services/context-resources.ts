@@ -6,7 +6,7 @@
 
 import { DEFAULTS } from '@rediacc/shared/config';
 import { MIN_NETWORK_ID, NETWORK_ID_INCREMENT } from '@rediacc/shared/queue-vault';
-import { ContextServiceBase } from './context.js';
+import { ContextServiceBase } from './context-base.js';
 import type {
   MachineConfig,
   NamedContext,
