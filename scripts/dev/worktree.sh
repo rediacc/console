@@ -151,18 +151,6 @@ list_submodules() {
     git config --file .gitmodules --get-regexp path 2>/dev/null | awk '{ print $2 }'
 }
 
-# Check if submodule pointer differs from origin/main
-# Returns: 0 if different (has changes), 1 if same
-submodule_has_pointer_changes() {
-    local sm_path="$1"
-    local head_commit origin_commit
-
-    head_commit=$(git ls-tree HEAD -- "$sm_path" 2>/dev/null | awk '{ print $3 }')
-    origin_commit=$(git ls-tree origin/main -- "$sm_path" 2>/dev/null | awk '{ print $3 }')
-
-    [[ -n "$head_commit" && -n "$origin_commit" && "$head_commit" != "$origin_commit" ]]
-}
-
 # Create or checkout branch in submodule
 setup_submodule_branch() {
     local sm_path="$1"
@@ -187,15 +175,7 @@ setup_submodule_branch() {
     fi
 }
 
-# Check if submodule commit is already on origin/main (pointer bump only)
-submodule_is_pointer_bump() {
-    local sm_path="$1"
-    local sm_commit
-    sm_commit=$(git ls-tree HEAD -- "$sm_path" 2>/dev/null | awk '{ print $3 }')
-    [[ -n "$sm_commit" ]] && git -C "$sm_path" merge-base --is-ancestor "$sm_commit" origin/main 2>/dev/null
-}
-
-# Setup branches for submodules with pointer changes
+# Setup matching branches in all submodules
 setup_submodule_branches() {
     local branch="$1"
     local wt_path="$2"
@@ -204,15 +184,7 @@ setup_submodule_branches() {
     pushd "$wt_path" >/dev/null
 
     for sm_path in $(list_submodules); do
-        if submodule_has_pointer_changes "$sm_path"; then
-            if submodule_is_pointer_bump "$sm_path"; then
-                log_info "  $sm_path: pointer bump to main (no branch needed)"
-            else
-                setup_submodule_branch "$sm_path" "$branch"
-            fi
-        else
-            log_info "  $sm_path: no pointer changes, staying on main"
-        fi
+        setup_submodule_branch "$sm_path" "$branch"
     done
 
     popd >/dev/null
@@ -224,28 +196,22 @@ setup_submodule_branches() {
 
 # Create a new worktree with MMDD-X naming
 worktree_create() {
-    local with_submodule_branches=false
     local teams_mode=false
 
     # Parse arguments
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --with-submodule-branches | -s)
-                with_submodule_branches=true
-                shift
-                ;;
             --teams | -t)
                 teams_mode=true
                 shift
                 ;;
             --help | -h)
-                echo "Usage: ./run.sh worktree create [--with-submodule-branches] [--teams]"
+                echo "Usage: ./run.sh worktree create [--teams]"
                 echo ""
                 echo "Options:"
-                echo "  --with-submodule-branches, -s  Create matching branches in submodules with changes"
-                echo "  --teams, -t                    Enable Claude agent teams (experimental)"
-                echo "                                 Spawns lead with --teammate-mode tmux so"
-                echo "                                 teammates get their own tmux panes"
+                echo "  --teams, -t  Enable Claude agent teams (experimental)"
+                echo "               Spawns lead with --teammate-mode tmux so"
+                echo "               teammates get their own tmux panes"
                 return 0
                 ;;
             *)
@@ -290,10 +256,8 @@ worktree_create() {
     log_info "Initializing submodules..."
     git -C "$wt_path" submodule update --init --recursive
 
-    # Setup submodule branches if requested
-    if [[ "$with_submodule_branches" == "true" ]]; then
-        setup_submodule_branches "$branch_name" "$wt_path"
-    fi
+    # Setup matching branches in all submodules
+    setup_submodule_branches "$branch_name" "$wt_path"
 
     # Create tmux session
     create_tmux_session "$session_name" "$wt_path" "$teams_mode"
@@ -564,17 +528,7 @@ worktree_switch() {
     git submodule update --init --quiet
 
     for sm_path in $(list_submodules); do
-        if submodule_has_pointer_changes "$sm_path"; then
-            if submodule_is_pointer_bump "$sm_path"; then
-                log_info "  $sm_path: pointer bump to main (no branch needed)"
-            else
-                setup_submodule_branch "$sm_path" "$branch"
-            fi
-        else
-            log_info "  $sm_path: no pointer changes, updating to recorded commit"
-            git submodule update --init -- "$sm_path" 2>/dev/null ||
-                log_warn "  Could not update submodule $sm_path"
-        fi
+        setup_submodule_branch "$sm_path" "$branch"
     done
 
     popd >/dev/null
@@ -601,19 +555,14 @@ Commands:
   prune             Interactive cleanup of worktrees with merged PRs
 
 Create Options:
-  --with-submodule-branches, -s  Create matching branches in submodules with
-                                 pointer changes (differ from origin/main).
-                                 Submodules without changes stay on main.
-  --teams, -t                    Enable Claude agent teams (experimental).
-                                 Sets CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
-                                 and launches lead with --teammate-mode tmux.
-                                 Teammates spawn in their own tmux panes.
+  --teams, -t  Enable Claude agent teams (experimental).
+               Sets CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+               and launches lead with --teammate-mode tmux.
+               Teammates spawn in their own tmux panes.
 
 Examples:
   ./run.sh worktree create           # Creates 0128-1 with tmux session
-  ./run.sh worktree create -s        # Creates with submodule branches
   ./run.sh worktree create -t        # Creates with agent teams enabled
-  ./run.sh worktree create -s -t     # Submodule branches + agent teams
   ./run.sh worktree list             # Shows all worktrees
   ./run.sh worktree remove 0128-1    # Remove specific worktree
   ./run.sh worktree switch 0204-1    # Switch branch and sync submodules

@@ -14,6 +14,8 @@
 #   GH_TOKEN              Token with contents:read (app token for cross-repo access)
 #   STATUS_TOKEN          Token with statuses:write (github.token)
 #   GITHUB_REPOSITORY     owner/repo (e.g., rediacc/console)
+#   DISPATCH_SUBMODULE    (optional) Submodule name that triggered the dispatch
+#   DISPATCH_BRANCH       (optional) Branch that was merged in the submodule
 
 set -euo pipefail
 
@@ -50,6 +52,7 @@ declare -A SUBMODULE_REPOS=(
     ["middleware"]="rediacc/middleware"
     ["renet"]="rediacc/renet"
     ["license-server"]="rediacc/license-server"
+    ["elite"]="rediacc/elite"
 )
 
 # Post commit status via GitHub API using STATUS_TOKEN (github.token).
@@ -163,6 +166,10 @@ evaluate_pr() {
 
 main() {
     log_step "Polling open PRs for submodule merge readiness..."
+
+    if [[ -n "${DISPATCH_SUBMODULE:-}" ]]; then
+        log_info "Triggered by merge in $DISPATCH_SUBMODULE (branch: ${DISPATCH_BRANCH:-unknown})"
+    fi
 
     # Fetch all open non-draft PRs
     local prs
