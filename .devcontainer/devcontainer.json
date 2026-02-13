@@ -9,10 +9,15 @@
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
-  "forwardPorts": [3000, 8080],
+  "runArgs": ["--init", "--shm-size=1g"],
+  "forwardPorts": [3000, 6080, 8080],
   "portsAttributes": {
     "3000": {
       "label": "Console Dev Server",
+      "onAutoForward": "notify"
+    },
+    "6080": {
+      "label": "Desktop (noVNC)",
       "onAutoForward": "notify"
     },
     "8080": {
@@ -21,9 +26,10 @@
     }
   },
   "postCreateCommand": "bash .devcontainer/init-submodules.sh && npm install && npm run build:packages && npx --prefix packages/e2e playwright install chromium",
-  "postStartCommand": "npm install",
+  "postStartCommand": "start-desktop.sh; npm install",
   "remoteEnv": {
-    "PORT": "3000"
+    "PORT": "3000",
+    "DISPLAY": ":99"
   },
   "customizations": {
     "codespaces": {

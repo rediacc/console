@@ -42,6 +42,22 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # =============================================================================
+# XFCE Desktop + VNC stack (browser-based desktop via noVNC)
+# =============================================================================
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        xfce4 \
+        xfce4-terminal \
+        x11vnc \
+        novnc \
+        websockify \
+        dbus-x11 \
+        netcat-openbsd \
+        gnome-keyring \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# =============================================================================
 # Node.js via NVM (matching devcontainers/features/node pattern)
 # =============================================================================
 ENV NVM_DIR=/usr/local/share/nvm
@@ -171,8 +187,12 @@ RUN ARCH=$(dpkg --print-architecture) \
     done \
     && chown -R vscode:vscode /opt/openvscode-server
 
-# Expose port for self-hosted VS Code browser access
-EXPOSE 8080
+# Desktop startup script (starts Xvfb + XFCE + x11vnc + noVNC)
+COPY start-desktop.sh /usr/local/bin/start-desktop.sh
+RUN chmod +x /usr/local/bin/start-desktop.sh
+
+# Expose ports for self-hosted VS Code and desktop access
+EXPOSE 6080 8080
 
 # =============================================================================
 # Environment setup
@@ -184,7 +204,8 @@ RUN sed -i 's|^PATH=.*|PATH="/home/vscode/.local/bin:/usr/local/share/nvm/curren
     && echo 'NVM_SYMLINK_CURRENT="true"' >> /etc/environment \
     && echo 'DOCKER_BUILDKIT="1"' >> /etc/environment \
     && echo 'DOTNET_ROOT="/usr/share/dotnet"' >> /etc/environment \
-    && echo 'DOTNET_CLI_TELEMETRY_OPTOUT="1"' >> /etc/environment
+    && echo 'DOTNET_CLI_TELEMETRY_OPTOUT="1"' >> /etc/environment \
+    && echo 'DISPLAY=":99"' >> /etc/environment
 
 # OCI Labels
 LABEL org.opencontainers.image.title="Rediacc Console Devcontainer" \
