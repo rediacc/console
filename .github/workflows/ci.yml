@@ -177,11 +177,12 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # REVIEW GATE: Trigger Gemini review, wait for it, check resolved threads
+  # REVIEW GATE: Trigger Gemini review, wait for it, check threads & comments
   # Dependencies: [initialize, quality]
   # Must pass before Build jobs can start
   #
-  # Flow: Quality passes → Trigger Gemini → Wait for response → Check threads
+  # Flow: Quality passes → Trigger Gemini → Wait for response →
+  #        Check resolved threads → Check unreplied comments
   # ============================================================================
   review-gate:
     name: Review Gate
@@ -215,6 +216,12 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
       - name: Check resolved threads
         run: .ci/scripts/quality/check-resolved-threads.sh
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+      - name: Check unreplied review comments
+        run: .ci/scripts/quality/check-review-comments.sh
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
