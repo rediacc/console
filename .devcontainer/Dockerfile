@@ -13,7 +13,7 @@ ARG NODE_VERSION=22
 ARG GO_VERSION=1.24.12
 
 # =============================================================================
-# System packages + GitHub CLI + Python 3
+# System packages + GitHub CLI + Python 3 + XFCE Desktop + VNC stack
 # =============================================================================
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -38,14 +38,7 @@ RUN apt-get update \
         libxtst6 \
         libatspi2.0-0 \
         libsecret-1-0 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# =============================================================================
-# XFCE Desktop + VNC stack (browser-based desktop via noVNC)
-# =============================================================================
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
+        # XFCE desktop + VNC (browser-based desktop via noVNC)
         xfce4 \
         xfce4-terminal \
         x11vnc \

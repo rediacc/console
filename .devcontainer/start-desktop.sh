@@ -21,7 +21,7 @@
 #   DESKTOP_RESOLUTION   - Resolution (default: 1600x900)
 #   DESKTOP_COLOR_DEPTH  - Color depth (default: 24)
 
-set -uo pipefail
+set -euo pipefail
 
 # ============================================================================
 # Configuration
@@ -83,7 +83,12 @@ start_xvfb() {
 	Xvfb ":${DISPLAY_NUM}" -screen 0 "${RESOLUTION}x${COLOR_DEPTH}" \
 		>"$LOG_DIR/xvfb.log" 2>&1 &
 	save_pid xvfb $!
-	sleep 2
+	# Wait up to 5 seconds for Xvfb socket to appear
+	local i
+	for i in $(seq 1 10); do
+		[ -e "/tmp/.X11-unix/X${DISPLAY_NUM}" ] && break
+		sleep 0.5
+	done
 	if ! is_running xvfb; then
 		log_error "Failed to start Xvfb"
 		cat "$LOG_DIR/xvfb.log" 2>/dev/null || true
