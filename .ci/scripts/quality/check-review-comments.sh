@@ -8,7 +8,7 @@
 # considered valid replies - they don't add value to the review process.
 #
 # Usage:
-#   GITHUB_TOKEN=xxx PR_NUMBER=123 ./check-review-comments.sh
+#   GH_TOKEN=xxx PR_NUMBER=123 ./check-review-comments.sh
 
 set -euo pipefail
 
@@ -68,9 +68,9 @@ is_low_effort_reply() {
     return 1 # Is substantive
 }
 
-# Validate required environment variables
-if [[ -z "${GITHUB_TOKEN:-}" ]]; then
-    echo "GITHUB_TOKEN is required"
+# Validate required environment variables (gh CLI prefers GH_TOKEN over GITHUB_TOKEN)
+if [[ -z "${GH_TOKEN:-}" ]] && [[ -z "${GITHUB_TOKEN:-}" ]]; then
+    echo "GH_TOKEN or GITHUB_TOKEN is required"
     exit 1
 fi
 

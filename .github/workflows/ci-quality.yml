@@ -363,7 +363,7 @@ jobs:
   # ==============================================================================
   # PURPOSE: Ensures submodule branches match console branch when coordinated
   #          changes are expected (submodule pointer differs from origin/main),
-  #          verifies submodule PRs are linked, and checks review comments.
+  #          and verifies submodule PRs are linked.
   #
   # AI TROUBLESHOOTING:
   #   If this job fails, check the error message for specific fix commands.
@@ -376,11 +376,6 @@ jobs:
   #   PR linking errors:
   #   - No open PR: cd private/<sm> && gh pr create --title "..." --body "..."
   #   - PR not linked: Edit console PR description to include submodule PR URL
-  #
-  #   Review comment errors:
-  #   - Unreplied comments: Go to submodule PR and reply to all review comments
-  #   - Low-effort replies don't count (e.g., "ok", "done", "fixed")
-  #   - Must provide substantive responses explaining what was done
   #
   # WHEN SUBMODULES STAY ON MAIN:
   #   If submodule pointer matches origin/main, no branch coordination needed.
@@ -432,20 +427,8 @@ jobs:
             -f context="quality/submodule-merge-readiness" \
             -f description="Bot PR — submodule validation skipped"
 
-  quality-review-comments:
-    name: Review Comments
-    runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
-      - name: Check for unreplied review comments
-        run: .ci/scripts/quality/check-review-comments.sh
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-
-  # NOTE: Resolved Threads check is now in review-gate job in ci.yml
-  # It runs AFTER Gemini posts its review, so we can check if threads are resolved
+  # NOTE: Review checks (resolved threads + unreplied comments) are in
+  # review-gate job in ci.yml. They run AFTER Gemini posts its review.
 
   quality-attribution:
     name: Attribution

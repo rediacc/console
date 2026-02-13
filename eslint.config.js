@@ -762,7 +762,7 @@ export default tseslint.config(
       'playwright/no-focused-test': 'error',
       'playwright/no-skipped-test': 'off',
       'playwright/valid-expect': 'error',
-      'playwright/expect-expect': 'off',
+      'playwright/expect-expect': 'error',
 
       // --- General test file rules ---
       'max-lines': 'off',
