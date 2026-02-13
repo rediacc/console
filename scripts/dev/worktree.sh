@@ -3,10 +3,11 @@
 # Creates date-based worktrees with tmux session integration
 #
 # Usage:
-#   ./run.sh worktree create    # Create new worktree with MMDD-X format
-#   ./run.sh worktree list      # List all console worktrees
-#   ./run.sh worktree switch    # Switch branch and sync submodules
-#   ./run.sh worktree prune     # Interactive cleanup of merged PRs
+#   ./run.sh worktree create       # Create new worktree with MMDD-X format
+#   ./run.sh worktree create -t    # Create with Claude agent teams enabled
+#   ./run.sh worktree list         # List all console worktrees
+#   ./run.sh worktree switch       # Switch branch and sync submodules
+#   ./run.sh worktree prune        # Interactive cleanup of merged PRs
 
 set -euo pipefail
 
@@ -64,6 +65,7 @@ tmux_session_exists() {
 create_tmux_session() {
     local session_name="$1"
     local work_dir="$2"
+    local teams_mode="${3:-false}"
 
     if ! command -v tmux &>/dev/null; then
         log_warn "tmux not installed, skipping session creation"
@@ -77,11 +79,24 @@ create_tmux_session() {
 
     tmux new-session -d -s "$session_name" -n "$session_name" -c "$work_dir"
 
+    # Enable agent teams env var if teams mode is on
+    if [[ "$teams_mode" == "true" ]]; then
+        tmux set-environment -t "$session_name" CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS 1
+    fi
+
+    local claude_cmd='claude --dangerously-skip-permissions'
+    if [[ "$teams_mode" == "true" ]]; then
+        claude_cmd='claude --dangerously-skip-permissions --teammate-mode tmux'
+    fi
+
     # New windows (Ctrl+b c) auto-layout: 75% top (claude) + 25% bottom (cli)
     tmux set-hook -t "$session_name" after-new-window \
-        "split-window -v -l 25% -c '#{pane_current_path}' ; select-pane -U ; send-keys 'claude --dangerously-skip-permissions' C-m"
+        "split-window -v -l 25% -c '#{pane_current_path}' ; select-pane -U ; send-keys '${claude_cmd}' C-m"
 
     log_info "Created tmux session: $session_name"
+    if [[ "$teams_mode" == "true" ]]; then
+        log_info "Agent teams enabled (teammates will spawn in tmux panes)"
+    fi
 }
 
 # Check if a PR for a branch is merged using gh CLI
@@ -210,6 +225,7 @@ setup_submodule_branches() {
 # Create a new worktree with MMDD-X naming
 worktree_create() {
     local with_submodule_branches=false
+    local teams_mode=false
 
     # Parse arguments
     while [[ $# -gt 0 ]]; do
@@ -218,11 +234,18 @@ worktree_create() {
                 with_submodule_branches=true
                 shift
                 ;;
+            --teams | -t)
+                teams_mode=true
+                shift
+                ;;
             --help | -h)
-                echo "Usage: ./run.sh worktree create [--with-submodule-branches]"
+                echo "Usage: ./run.sh worktree create [--with-submodule-branches] [--teams]"
                 echo ""
                 echo "Options:"
                 echo "  --with-submodule-branches, -s  Create matching branches in submodules with changes"
+                echo "  --teams, -t                    Enable Claude agent teams (experimental)"
+                echo "                                 Spawns lead with --teammate-mode tmux so"
+                echo "                                 teammates get their own tmux panes"
                 return 0
                 ;;
             *)
@@ -273,18 +296,30 @@ worktree_create() {
     fi
 
     # Create tmux session
-    create_tmux_session "$session_name" "$wt_path"
+    create_tmux_session "$session_name" "$wt_path" "$teams_mode"
 
-    # Run npm install + build shared packages, then set up panes:
-    #   +------------------+------------------+
-    #   | claude (pane 0)  | claude (pane 2)  |  75%
-    #   +------------------+------------------+
-    #   |           cli terminal (pane 1)     |  25%
-    #   +-------------------------------------+
+    # Run npm install + build shared packages, then set up panes
     if command -v tmux &>/dev/null && tmux_session_exists "$session_name"; then
         log_info "Running npm install + build:packages in tmux session..."
-        tmux send-keys -t "${session_name}:0" \
-            "npm install && npm run build:packages && tmux split-window -v -l 25% -c '${wt_path}' && RIGHT_PANE=\$(tmux split-window -h -c '${wt_path}' -P -F '#{pane_id}') && tmux send-keys -t \"\$RIGHT_PANE\" 'claude --dangerously-skip-permissions' C-m && clear && claude --dangerously-skip-permissions" C-m
+        if [[ "$teams_mode" == "true" ]]; then
+            # Teams mode: single lead pane + CLI (teammates spawn their own tmux panes)
+            #   +-------------------------------------+
+            #   |        claude lead (pane 0)         |  75%
+            #   +-------------------------------------+
+            #   |           cli terminal (pane 1)     |  25%
+            #   +-------------------------------------+
+            tmux send-keys -t "${session_name}:0" \
+                "npm install && npm run build:packages && tmux split-window -v -l 25% -c '${wt_path}' && clear && claude --dangerously-skip-permissions --teammate-mode tmux" C-m
+        else
+            # Standard mode: two claude panes + CLI
+            #   +------------------+------------------+
+            #   | claude (pane 0)  | claude (pane 2)  |  75%
+            #   +------------------+------------------+
+            #   |           cli terminal (pane 1)     |  25%
+            #   +-------------------------------------+
+            tmux send-keys -t "${session_name}:0" \
+                "npm install && npm run build:packages && tmux split-window -v -l 25% -c '${wt_path}' && RIGHT_PANE=\$(tmux split-window -h -c '${wt_path}' -P -F '#{pane_id}') && tmux send-keys -t \"\$RIGHT_PANE\" 'claude --dangerously-skip-permissions' C-m && clear && claude --dangerously-skip-permissions" C-m
+        fi
     else
         log_info "Run 'npm install && npm run build:packages' in the worktree to set up dependencies"
     fi
@@ -294,6 +329,9 @@ worktree_create() {
     echo ""
     echo "  Path:    $wt_path"
     echo "  Branch:  $branch_name"
+    if [[ "$teams_mode" == "true" ]]; then
+        echo "  Teams:   enabled (lead + teammate tmux panes)"
+    fi
     if command -v tmux &>/dev/null; then
         echo "  Session: $session_name"
         echo ""
@@ -566,10 +604,16 @@ Create Options:
   --with-submodule-branches, -s  Create matching branches in submodules with
                                  pointer changes (differ from origin/main).
                                  Submodules without changes stay on main.
+  --teams, -t                    Enable Claude agent teams (experimental).
+                                 Sets CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+                                 and launches lead with --teammate-mode tmux.
+                                 Teammates spawn in their own tmux panes.
 
 Examples:
   ./run.sh worktree create           # Creates 0128-1 with tmux session
   ./run.sh worktree create -s        # Creates with submodule branches
+  ./run.sh worktree create -t        # Creates with agent teams enabled
+  ./run.sh worktree create -s -t     # Submodule branches + agent teams
   ./run.sh worktree list             # Shows all worktrees
   ./run.sh worktree remove 0128-1    # Remove specific worktree
   ./run.sh worktree switch 0204-1    # Switch branch and sync submodules
