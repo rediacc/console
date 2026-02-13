@@ -55,6 +55,58 @@ get_next_sequence_number() {
     echo $((max_seq + 1))
 }
 
+# Sync main worktree to latest origin/main and update submodules.
+# Best-effort: warns and continues on failure so worktree commands
+# can proceed with cached state.
+sync_main_repo() {
+    log_step "Syncing main repo to latest origin/$BASE_BRANCH..."
+
+    # Check if main worktree is on the base branch
+    local current_branch
+    current_branch="$(git -C "$ROOT_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null)" || {
+        log_warn "Could not determine branch in $ROOT_DIR, skipping sync"
+        return 0
+    }
+
+    if [[ "$current_branch" != "$BASE_BRANCH" ]]; then
+        log_warn "Main worktree is on '$current_branch', not '$BASE_BRANCH' -- skipping pull"
+        git -C "$ROOT_DIR" fetch origin "$BASE_BRANCH" --quiet 2>/dev/null || {
+            log_warn "Fetch failed (network issue?), continuing with cached state"
+        }
+        return 0
+    fi
+
+    # Check for uncommitted changes
+    if ! git -C "$ROOT_DIR" diff --quiet 2>/dev/null ||
+       ! git -C "$ROOT_DIR" diff --cached --quiet 2>/dev/null; then
+        log_warn "Main worktree has uncommitted changes -- skipping pull"
+        git -C "$ROOT_DIR" fetch origin "$BASE_BRANCH" --quiet 2>/dev/null || true
+        return 0
+    fi
+
+    # Pull latest (fast-forward only)
+    if ! git -C "$ROOT_DIR" pull --ff-only origin "$BASE_BRANCH" --quiet 2>/dev/null; then
+        log_warn "Pull failed (diverged or network issue), falling back to fetch"
+        git -C "$ROOT_DIR" fetch origin "$BASE_BRANCH" --quiet 2>/dev/null || {
+            log_warn "Fetch also failed, continuing with cached state"
+        }
+        return 0
+    fi
+
+    log_info "Pulled latest origin/$BASE_BRANCH"
+
+    # Update submodules
+    log_info "Updating submodules..."
+    pushd "$ROOT_DIR" >/dev/null
+    git submodule sync --quiet 2>/dev/null || true
+    if ! git submodule update --init --recursive --quiet 2>/dev/null; then
+        log_warn "Submodule update failed for some modules, continuing"
+    fi
+    popd >/dev/null
+
+    log_info "Main repo sync complete"
+}
+
 # Check if a tmux session exists
 tmux_session_exists() {
     local session_name="$1"
@@ -221,6 +273,9 @@ worktree_create() {
         esac
     done
 
+    # Sync main repo to latest origin/main before creating worktree
+    sync_main_repo
+
     local date_prefix
     date_prefix="$(get_date_prefix)"
 
@@ -236,10 +291,6 @@ worktree_create() {
 
     # Create worktrees directory if needed
     mkdir -p "$WORKTREE_BASE"
-
-    # Ensure we have latest main
-    log_info "Fetching latest changes..."
-    git -C "$ROOT_DIR" fetch origin "$BASE_BRANCH" --quiet
 
     # Check if branch already exists
     if git -C "$ROOT_DIR" rev-parse --verify "$branch_name" &>/dev/null; then
@@ -380,6 +431,9 @@ worktree_prune() {
         log_info "Install from: https://cli.github.com/"
         exit 1
     fi
+
+    # Sync main repo so merged branches are correctly identified
+    sync_main_repo
 
     log_step "Checking for worktrees with merged PRs..."
     echo ""
