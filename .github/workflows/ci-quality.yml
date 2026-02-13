@@ -73,14 +73,13 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,license-server
+          repositories: console,middleware,renet,license-server
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           fetch-depth: 0
           ref: ${{ github.head_ref || github.ref }}
+          submodules: true
           token: ${{ steps.app-token.outputs.token }}
-      - name: Init license-server submodule
-        run: git submodule update --init private/license-server
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
         with:
           node-version: '22'
