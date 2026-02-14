@@ -332,8 +332,16 @@ export function registerLocalCommands(context: Command, program: Command): void 
   context
     .command('setup-machine <name>')
     .description(t('commands.context.setupMachine.description'))
-    .option('--datastore <path>', t('commands.context.setupMachine.datastoreOption'), '/mnt/rediacc')
-    .option('--datastore-size <size>', t('commands.context.setupMachine.datastoreSizeOption'), '95%')
+    .option(
+      '--datastore <path>',
+      t('commands.context.setupMachine.datastoreOption'),
+      '/mnt/rediacc'
+    )
+    .option(
+      '--datastore-size <size>',
+      t('commands.context.setupMachine.datastoreSizeOption'),
+      '95%'
+    )
     .option('--debug', t('options.debug'))
     .action(async (name, options) => {
       try {
@@ -368,9 +376,7 @@ export function registerLocalCommands(context: Command, program: Command): void 
           });
 
           if (exitCode === 0) {
-            outputService.success(
-              t('commands.context.setupMachine.completed', { machine: name })
-            );
+            outputService.success(t('commands.context.setupMachine.completed', { machine: name }));
           } else {
             outputService.error(
               t('commands.context.setupMachine.failed', {

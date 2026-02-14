@@ -36,8 +36,14 @@ export function cronToOnCalendar(cron: string): string {
 
   // Day of week mapping
   const dowMap: Record<string, string> = {
-    '0': 'Sun', '1': 'Mon', '2': 'Tue', '3': 'Wed',
-    '4': 'Thu', '5': 'Fri', '6': 'Sat', '7': 'Sun',
+    '0': 'Sun',
+    '1': 'Mon',
+    '2': 'Tue',
+    '3': 'Wed',
+    '4': 'Thu',
+    '5': 'Fri',
+    '6': 'Sat',
+    '7': 'Sun',
   };
 
   // Build date part
@@ -169,7 +175,8 @@ export async function pushBackupSchedule(
   }
 
   const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
-  const sshPrivateKey = localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
+  const sshPrivateKey =
+    localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
   // Convert vault to rclone args
   const { remote, params: rcloneParams } = buildRcloneArgs(storage.vaultContent);
@@ -185,12 +192,9 @@ export async function pushBackupSchedule(
 
   // Provision renet binary to remote
   outputService.info(`Provisioning renet to ${machine.ip}...`);
-  await provisionRenetToRemote(
-    { renetPath: localConfig.renetPath },
-    machine,
-    sshPrivateKey,
-    { debug: options.debug }
-  );
+  await provisionRenetToRemote({ renetPath: localConfig.renetPath }, machine, sshPrivateKey, {
+    debug: options.debug,
+  });
 
   // Generate systemd units
   const serviceContent = generateServiceUnit(remote, rcloneParams, datastore);
@@ -217,8 +221,12 @@ export async function pushBackupSchedule(
     const serviceCmd = `sudo tee /etc/systemd/system/rediacc-backup.service > /dev/null`;
     let exitCode = await sftp.execStreaming(serviceCmd, {
       stdin: serviceContent,
-      onStdout: (data) => { if (options.debug) process.stdout.write(data); },
-      onStderr: (data) => { process.stderr.write(data); },
+      onStdout: (data) => {
+        if (options.debug) process.stdout.write(data);
+      },
+      onStderr: (data) => {
+        process.stderr.write(data);
+      },
     });
     if (exitCode !== 0) {
       throw new Error(`Failed to write service unit (exit ${exitCode})`);
@@ -228,18 +236,27 @@ export async function pushBackupSchedule(
     const timerCmd = `sudo tee /etc/systemd/system/rediacc-backup.timer > /dev/null`;
     exitCode = await sftp.execStreaming(timerCmd, {
       stdin: timerContent,
-      onStdout: (data) => { if (options.debug) process.stdout.write(data); },
-      onStderr: (data) => { process.stderr.write(data); },
+      onStdout: (data) => {
+        if (options.debug) process.stdout.write(data);
+      },
+      onStderr: (data) => {
+        process.stderr.write(data);
+      },
     });
     if (exitCode !== 0) {
       throw new Error(`Failed to write timer unit (exit ${exitCode})`);
     }
 
     // Reload systemd and enable timer
-    const enableCmd = 'sudo systemctl daemon-reload && sudo systemctl enable --now rediacc-backup.timer';
+    const enableCmd =
+      'sudo systemctl daemon-reload && sudo systemctl enable --now rediacc-backup.timer';
     exitCode = await sftp.execStreaming(enableCmd, {
-      onStdout: (data) => { if (options.debug) process.stdout.write(data); },
-      onStderr: (data) => { process.stderr.write(data); },
+      onStdout: (data) => {
+        if (options.debug) process.stdout.write(data);
+      },
+      onStderr: (data) => {
+        process.stderr.write(data);
+      },
     });
     if (exitCode !== 0) {
       throw new Error(`Failed to enable timer (exit ${exitCode})`);

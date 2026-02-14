@@ -21,9 +21,7 @@ export function registerSnapshotCommands(program: Command): void {
           throw new Error(t('errors.machineRequiredLocal'));
         }
 
-        outputService.info(
-          t('commands.snapshot.create.creating', { repo, machine: machineName })
-        );
+        outputService.info(t('commands.snapshot.create.creating', { repo, machine: machineName }));
 
         const { runSnapshotCommand } = await import('../services/snapshot-service.js');
         const flags = ['--name', repo];
@@ -107,9 +105,7 @@ export function registerSnapshotCommands(program: Command): void {
         );
 
         const parsed = JSON.parse(result.output);
-        outputService.success(
-          t('commands.snapshot.delete.success', { name: parsed.deleted })
-        );
+        outputService.success(t('commands.snapshot.delete.success', { name: parsed.deleted }));
       } catch (error) {
         handleError(error);
       }

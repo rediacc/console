@@ -262,9 +262,7 @@ export function registerBackupCommands(program: Command): void {
           repoGUIDs.push(repoConfig.repositoryGuid);
         }
 
-        const { runBackupSyncPush, runBackupSyncPull } = await import(
-          '../services/backup-sync.js'
-        );
+        const { runBackupSyncPush, runBackupSyncPull } = await import('../services/backup-sync.js');
 
         if (options.to) {
           await runBackupSyncPush({
@@ -335,9 +333,13 @@ export function registerBackupCommands(program: Command): void {
           return;
         }
 
-        outputService.info(t('commands.backup.schedule.show.destination', { destination: config.defaultDestination }));
+        outputService.info(
+          t('commands.backup.schedule.show.destination', { destination: config.defaultDestination })
+        );
         if (config.schedule) {
-          outputService.info(t('commands.backup.schedule.show.schedule', { schedule: config.schedule }));
+          outputService.info(
+            t('commands.backup.schedule.show.schedule', { schedule: config.schedule })
+          );
         }
         outputService.info(
           t('commands.backup.schedule.show.enabled', { enabled: String(config.enabled !== false) })

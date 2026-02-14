@@ -37,18 +37,16 @@ export async function fetchMachineStatus(
     throw new Error(`Machine "${machineName}" not found. Available: ${available}`);
   }
 
-  const sshPrivateKey = localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
+  const sshPrivateKey =
+    localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
   // Provision renet binary to remote
   if (options.debug) {
     outputService.info(`Provisioning renet to ${machine.ip}...`);
   }
-  await provisionRenetToRemote(
-    { renetPath: localConfig.renetPath },
-    machine,
-    sshPrivateKey,
-    { debug: options.debug }
-  );
+  await provisionRenetToRemote({ renetPath: localConfig.renetPath }, machine, sshPrivateKey, {
+    debug: options.debug,
+  });
 
   // Build command
   const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;

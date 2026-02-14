@@ -1,8 +1,5 @@
 import { Command } from 'commander';
-import type {
-  ListResult,
-  SystemInfo,
-} from '@rediacc/shared/queue-vault/data/list-types.generated';
+import type { ListResult, SystemInfo } from '@rediacc/shared/queue-vault/data/list-types.generated';
 import {
   getContainers,
   getRepositories,
@@ -128,7 +125,8 @@ function printSummary(result: ListResult): void {
 
   parts.push(`${health.repositoriesMounted}/${health.repositoriesTotal} repos mounted`);
 
-  const totalContainers = health.containersHealthy + health.containersUnhealthy + health.containersNoHealth;
+  const totalContainers =
+    health.containersHealthy + health.containersUnhealthy + health.containersNoHealth;
   if (totalContainers > 0) {
     parts.push(`${totalContainers} containers`);
   }

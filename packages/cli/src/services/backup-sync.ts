@@ -99,17 +99,19 @@ export async function runBackupSyncPush(options: SyncOptions): Promise<void> {
 
   // Provision renet binary
   outputService.info(`Provisioning renet to ${machine.ip}...`);
-  await provisionRenetToRemote(
-    { renetPath: localConfig.renetPath },
-    machine,
-    sshPrivateKey,
-    { debug: options.debug }
-  );
+  await provisionRenetToRemote({ renetPath: localConfig.renetPath }, machine, sshPrivateKey, {
+    debug: options.debug,
+  });
 
   // Build SSH command
   const cmdParts = [
-    'sudo', '/usr/bin/renet', 'backup', 'sync', 'push',
-    '--datastore', datastore,
+    'sudo',
+    '/usr/bin/renet',
+    'backup',
+    'sync',
+    'push',
+    '--datastore',
+    datastore,
     ...rcloneFlags,
   ];
 
@@ -188,17 +190,19 @@ export async function runBackupSyncPull(options: SyncOptions): Promise<void> {
 
   // Provision renet binary
   outputService.info(`Provisioning renet to ${machine.ip}...`);
-  await provisionRenetToRemote(
-    { renetPath: localConfig.renetPath },
-    machine,
-    sshPrivateKey,
-    { debug: options.debug }
-  );
+  await provisionRenetToRemote({ renetPath: localConfig.renetPath }, machine, sshPrivateKey, {
+    debug: options.debug,
+  });
 
   // Build SSH command
   const cmdParts = [
-    'sudo', '/usr/bin/renet', 'backup', 'sync', 'pull',
-    '--datastore', datastore,
+    'sudo',
+    '/usr/bin/renet',
+    'backup',
+    'sync',
+    'pull',
+    '--datastore',
+    datastore,
     ...rcloneFlags,
   ];
 

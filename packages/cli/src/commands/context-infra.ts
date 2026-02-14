@@ -28,10 +28,14 @@ export function registerInfraCommands(context: Command, program: Command): void 
         if (options.certEmail) infra.certEmail = options.certEmail;
         if (options.cfDnsToken) infra.cfDnsApiToken = options.cfDnsToken;
         if (options.tcpPorts) {
-          infra.tcpPorts = options.tcpPorts.split(',').map((p: string) => Number.parseInt(p.trim(), 10));
+          infra.tcpPorts = options.tcpPorts
+            .split(',')
+            .map((p: string) => Number.parseInt(p.trim(), 10));
         }
         if (options.udpPorts) {
-          infra.udpPorts = options.udpPorts.split(',').map((p: string) => Number.parseInt(p.trim(), 10));
+          infra.udpPorts = options.udpPorts
+            .split(',')
+            .map((p: string) => Number.parseInt(p.trim(), 10));
         }
 
         if (Object.keys(infra).length === 0) {

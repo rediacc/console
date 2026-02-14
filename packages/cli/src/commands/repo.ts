@@ -363,74 +363,72 @@ export function registerRepoCommands(program: Command): void {
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .requiredOption('--tag <name>', t('commands.repo.fork.tagOption'))
     .option('--debug', t('options.debug'))
-    .action(
-      async (parent: string, options: { machine: string; tag: string; debug?: boolean }) => {
-        const forkName = options.tag;
-        try {
-          // Validate parent exists
-          const parentConfig = await contextService.getLocalRepository(parent);
-          if (!parentConfig) {
-            throw new Error(`Repository "${parent}" not found in context`);
-          }
-
-          // Validate fork doesn't already exist
-          const existing = await contextService.getLocalRepository(forkName);
-          if (existing) {
-            throw new Error(t('commands.repo.fork.alreadyExists', { name: forkName }));
-          }
-
-          // Generate new GUID and allocate networkId; reuse parent's credential (same LUKS password)
-          const repositoryGuid = randomUUID();
-          const networkId = await contextService.allocateNetworkId();
-
-          await contextService.addLocalRepository(forkName, {
-            repositoryGuid,
-            tag: 'latest',
-            credential: parentConfig.credential,
-            networkId,
-          });
-
-          outputService.info(
-            t('commands.repo.fork.registered', {
-              repository: forkName,
-              guid: repositoryGuid.slice(0, 8),
-              networkId,
-            })
-          );
-          outputService.info(
-            t('commands.repo.fork.starting', {
-              parent,
-              repository: forkName,
-              machine: options.machine,
-            })
-          );
-
-          // Execute fork on remote (repository param = parent, tag = fork's GUID)
-          const result = await localExecutorService.execute({
-            functionName: 'repository_fork',
-            machineName: options.machine,
-            params: { repository: parent, tag: repositoryGuid },
-            debug: options.debug,
-          });
-
-          if (result.success) {
-            outputService.success(t('commands.repo.fork.completed'));
-          } else {
-            await contextService.removeLocalRepository(forkName);
-            outputService.warn(t('commands.repo.fork.rollback', { repository: forkName }));
-            outputService.error(result.error ?? t('commands.repo.fork.failed'));
-            process.exitCode = result.exitCode;
-          }
-        } catch (error) {
-          const exists = await contextService.getLocalRepository(forkName);
-          if (exists) {
-            await contextService.removeLocalRepository(forkName);
-            outputService.warn(t('commands.repo.fork.rollback', { repository: forkName }));
-          }
-          handleError(error);
+    .action(async (parent: string, options: { machine: string; tag: string; debug?: boolean }) => {
+      const forkName = options.tag;
+      try {
+        // Validate parent exists
+        const parentConfig = await contextService.getLocalRepository(parent);
+        if (!parentConfig) {
+          throw new Error(`Repository "${parent}" not found in context`);
         }
+
+        // Validate fork doesn't already exist
+        const existing = await contextService.getLocalRepository(forkName);
+        if (existing) {
+          throw new Error(t('commands.repo.fork.alreadyExists', { name: forkName }));
+        }
+
+        // Generate new GUID and allocate networkId; reuse parent's credential (same LUKS password)
+        const repositoryGuid = randomUUID();
+        const networkId = await contextService.allocateNetworkId();
+
+        await contextService.addLocalRepository(forkName, {
+          repositoryGuid,
+          tag: 'latest',
+          credential: parentConfig.credential,
+          networkId,
+        });
+
+        outputService.info(
+          t('commands.repo.fork.registered', {
+            repository: forkName,
+            guid: repositoryGuid.slice(0, 8),
+            networkId,
+          })
+        );
+        outputService.info(
+          t('commands.repo.fork.starting', {
+            parent,
+            repository: forkName,
+            machine: options.machine,
+          })
+        );
+
+        // Execute fork on remote (repository param = parent, tag = fork's GUID)
+        const result = await localExecutorService.execute({
+          functionName: 'repository_fork',
+          machineName: options.machine,
+          params: { repository: parent, tag: repositoryGuid },
+          debug: options.debug,
+        });
+
+        if (result.success) {
+          outputService.success(t('commands.repo.fork.completed'));
+        } else {
+          await contextService.removeLocalRepository(forkName);
+          outputService.warn(t('commands.repo.fork.rollback', { repository: forkName }));
+          outputService.error(result.error ?? t('commands.repo.fork.failed'));
+          process.exitCode = result.exitCode;
+        }
+      } catch (error) {
+        const exists = await contextService.getLocalRepository(forkName);
+        if (exists) {
+          await contextService.removeLocalRepository(forkName);
+          outputService.warn(t('commands.repo.fork.rollback', { repository: forkName }));
+        }
+        handleError(error);
       }
-    );
+    });
 
   // repo resize <name>
   repo
@@ -520,32 +518,23 @@ export function registerRepoCommands(program: Command): void {
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--uid <uid>', t('commands.repo.ownership.uidOption'))
     .option('--debug', t('options.debug'))
-    .action(
-      async (name: string, options: { machine: string; uid?: string; debug?: boolean }) => {
-        try {
-          const params: Record<string, unknown> = {};
-          if (options.uid) params.owner_uid = options.uid;
+    .action(async (name: string, options: { machine: string; uid?: string; debug?: boolean }) => {
+      try {
+        const params: Record<string, unknown> = {};
+        if (options.uid) params.owner_uid = options.uid;
 
-          await executeRepoFunction(
-            'repository_ownership',
-            name,
-            options.machine,
-            params,
-            options,
-            {
-              starting: t('commands.repo.ownership.starting', {
-                repository: name,
-                machine: options.machine,
-              }),
-              completed: t('commands.repo.ownership.completed'),
-              failed: t('commands.repo.ownership.failed'),
-            }
-          );
-        } catch (error) {
-          handleError(error);
-        }
+        await executeRepoFunction('repository_ownership', name, options.machine, params, options, {
+          starting: t('commands.repo.ownership.starting', {
+            repository: name,
+            machine: options.machine,
+          }),
+          completed: t('commands.repo.ownership.completed'),
+          failed: t('commands.repo.ownership.failed'),
+        });
+      } catch (error) {
+        handleError(error);
       }
-    );
+    });
 
   // repo template <name>
   repo

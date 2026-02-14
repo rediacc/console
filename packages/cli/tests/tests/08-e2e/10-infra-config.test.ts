@@ -71,18 +71,22 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
       test.skip(!config.enabled, 'E2E not configured');
 
       const result = await runner.run([
-        'context', 'set-infra', 'vm1',
-        '--public-ipv4', config.vm1Ip,
-        '--base-domain', 'test.rediacc.local',
-        '--cert-email', 'test@test.com',
-        '--tcp-ports', '8025,8143',
-        '--udp-ports', '53',
+        'context',
+        'set-infra',
+        'vm1',
+        '--public-ipv4',
+        config.vm1Ip,
+        '--base-domain',
+        'test.rediacc.local',
+        '--cert-email',
+        'test@test.com',
+        '--tcp-ports',
+        '8025,8143',
+        '--udp-ports',
+        '53',
       ]);
 
-      expect(
-        result.success,
-        `set-infra failed: ${result.stdout}\n${result.stderr}`
-      ).toBe(true);
+      expect(result.success, `set-infra failed: ${result.stdout}\n${result.stderr}`).toBe(true);
     });
 
     test('should show infrastructure config', async () => {
@@ -103,8 +107,11 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
 
       // Update only baseDomain
       const updateResult = await runner.run([
-        'context', 'set-infra', 'vm1',
-        '--base-domain', 'updated.local',
+        'context',
+        'set-infra',
+        'vm1',
+        '--base-domain',
+        'updated.local',
       ]);
       expect(updateResult.success, `set-infra update failed: ${updateResult.stderr}`).toBe(true);
 
@@ -138,18 +145,24 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
 
       // Set infra config with test values before push
       await runner.run([
-        'context', 'set-infra', 'vm1',
-        '--public-ipv4', config.vm1Ip,
-        '--base-domain', 'test.rediacc.local',
-        '--cert-email', 'test@test.com',
-        '--tcp-ports', '8025,8143',
-        '--udp-ports', '53',
+        'context',
+        'set-infra',
+        'vm1',
+        '--public-ipv4',
+        config.vm1Ip,
+        '--base-domain',
+        'test.rediacc.local',
+        '--cert-email',
+        'test@test.com',
+        '--tcp-ports',
+        '8025,8143',
+        '--udp-ports',
+        '53',
       ]);
 
-      const result = await runner.run(
-        ['context', 'push-infra', 'vm1', '--debug'],
-        { timeout: 300_000 }
-      );
+      const result = await runner.run(['context', 'push-infra', 'vm1', '--debug'], {
+        timeout: 300_000,
+      });
 
       expect(
         result.success,
@@ -210,10 +223,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
       );
 
       // Push again
-      const result = await runner.run(
-        ['context', 'push-infra', 'vm1'],
-        { timeout: 300_000 }
-      );
+      const result = await runner.run(['context', 'push-infra', 'vm1'], { timeout: 300_000 });
       expect(result.success).toBe(true);
 
       // Get checksums after second push
@@ -235,33 +245,31 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
       const partialRunner = new CliTestRunner();
 
       await partialRunner.run([
-        'context', 'create-local', partialContext,
-        '--ssh-key', config.sshKeyPath,
+        'context',
+        'create-local',
+        partialContext,
+        '--ssh-key',
+        config.sshKeyPath,
       ]);
 
       const ctxRunner = CliTestRunner.withContext(partialContext);
       await ctxRunner.run([
-        'context', 'add-machine', 'vm1',
-        '--ip', config.vm1Ip,
-        '--user', config.sshUser,
+        'context',
+        'add-machine',
+        'vm1',
+        '--ip',
+        config.vm1Ip,
+        '--user',
+        config.sshUser,
       ]);
 
       // Set only baseDomain
-      await ctxRunner.run([
-        'context', 'set-infra', 'vm1',
-        '--base-domain', 'partial.local',
-      ]);
+      await ctxRunner.run(['context', 'set-infra', 'vm1', '--base-domain', 'partial.local']);
 
       // Push should succeed with partial config
-      const result = await ctxRunner.run(
-        ['context', 'push-infra', 'vm1'],
-        { timeout: 300_000 }
-      );
+      const result = await ctxRunner.run(['context', 'push-infra', 'vm1'], { timeout: 300_000 });
 
-      expect(
-        result.success,
-        `Partial push failed: ${result.stderr}`
-      ).toBe(true);
+      expect(result.success, `Partial push failed: ${result.stderr}`).toBe(true);
 
       // config.env should have the baseDomain with default email
       const content = await ssh.readFile('/opt/rediacc/proxy/config.env');

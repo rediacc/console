@@ -60,19 +60,18 @@ export async function pushInfraConfig(
   }
 
   // Read SSH keys
-  const sshPrivateKey = localConfig.sshPrivateKey ?? await readSSHKey(localConfig.ssh.privateKeyPath);
-  const sshPublicKey = localConfig.sshPublicKey ?? await readOptionalSSHKey(localConfig.ssh.publicKeyPath);
+  const sshPrivateKey =
+    localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
+  const sshPublicKey =
+    localConfig.sshPublicKey ?? (await readOptionalSSHKey(localConfig.ssh.publicKeyPath));
 
   // Provision renet binary to remote
   if (options.debug) {
     outputService.info(`Provisioning renet to ${machine.ip}...`);
   }
-  await provisionRenetToRemote(
-    { renetPath: localConfig.renetPath },
-    machine,
-    sshPrivateKey,
-    { debug: options.debug }
-  );
+  await provisionRenetToRemote({ renetPath: localConfig.renetPath }, machine, sshPrivateKey, {
+    debug: options.debug,
+  });
 
   // Build infra payload
   const infraJSON = buildInfraPayload(machine.infra);
