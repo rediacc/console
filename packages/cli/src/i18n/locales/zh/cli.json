@@ -103,6 +103,70 @@
         }
       }
     },
+    "backup": {
+      "description": "Backup and restore repositories",
+      "list": {
+        "description": "List available backups on storage or machine",
+        "listing": "Listing backups...",
+        "optionFromMachine": "Source machine name",
+        "optionFromStorage": "Source storage name",
+        "sourceRequired": "Specify --from <storage> or --from-machine <machine>"
+      },
+      "pull": {
+        "description": "Pull repository backup from storage or machine",
+        "optionForce": "Force overwrite existing repository",
+        "optionFromMachine": "Source machine name",
+        "optionFromStorage": "Source storage name",
+        "pulling": "Pulling backup of \"{{repo}}\"...",
+        "sourceRequired": "Specify --from <storage> or --from-machine <machine>"
+      },
+      "push": {
+        "description": "Push repository backup to storage or machine",
+        "destIgnoredForStorage": "Ignoring --dest {{provided}}: storage backups use repository GUID ({{dest}})",
+        "destRequired": "Specify --to <storage> or --to-machine <machine>",
+        "optionCheckpoint": "Create container checkpoint (hot backup)",
+        "optionDest": "Destination filename",
+        "optionForce": "Force overwrite existing backup",
+        "optionTag": "Deployment tag for versioning",
+        "optionToMachine": "Destination machine name",
+        "optionToStorage": "Destination storage name",
+        "pushing": "Pushing backup of \"{{repo}}\" to {{dest}}..."
+      },
+      "schedule": {
+        "description": "Manage scheduled backup configuration",
+        "push": {
+          "description": "Push backup schedule to remote machine (systemd timer)",
+          "success": "Backup schedule pushed to {{machine}}"
+        },
+        "set": {
+          "description": "Configure backup schedule settings",
+          "noOptions": "Specify at least one option: --destination, --cron, --enable, or --disable",
+          "optionCron": "Cron expression for backup schedule (e.g., \"0 2 * * *\")",
+          "optionDestination": "Default storage destination name",
+          "optionDisable": "Disable scheduled backups",
+          "optionEnable": "Enable scheduled backups",
+          "saved": "Backup schedule configuration saved"
+        },
+        "show": {
+          "description": "Show current backup schedule configuration",
+          "destination": "Destination: {{destination}}",
+          "enabled": "Enabled: {{enabled}}",
+          "notConfigured": "No backup schedule configured",
+          "schedule": "Schedule: {{schedule}}"
+        }
+      },
+      "sync": {
+        "description": "Bulk push/pull all repositories to/from cloud storage",
+        "directionConflict": "Cannot specify both --to and --from",
+        "directionRequired": "Specify --to <storage> (push) or --from <storage> (pull)",
+        "optionFrom": "Source storage name (pull mode)",
+        "optionOverride": "Override existing unmounted repos on pull",
+        "optionRepo": "Filter to specific repository (repeatable)",
+        "optionTo": "Destination storage name (push mode)",
+        "pullSuccess": "Sync pull completed",
+        "pushSuccess": "Sync push completed"
+      }
+    },
     "bridge": {
       "description": "网桥管理",
       "list": {
@@ -334,6 +398,11 @@
         "description": "列出当前本地上下文中的机器",
         "noMachines": "未配置任何机器。使用以下命令添加：rdc context add-machine <name> --ip <ip> --user <user>"
       },
+      "pushInfra": {
+        "description": "Push infrastructure configuration to remote machine",
+        "proxyInstallWarning": "Proxy install failed (code {{code}}). Run manually: sudo renet proxy install",
+        "success": "Infrastructure config pushed to \"{{name}}\""
+      },
       "removeMachine": {
         "description": "从当前本地上下文中移除机器",
         "success": "机器 \"{{name}}\" 已移除"
@@ -364,6 +433,20 @@
         "description": "设置默认值（团队、区域、网桥、机器）",
         "success": "已将 \"{{key}}\" 设置为 \"{{value}}\""
       },
+      "setInfra": {
+        "description": "Set infrastructure configuration for a machine",
+        "invalidIPv4": "Invalid IPv4 address: {{ip}}",
+        "invalidIPv6": "Invalid IPv6 address: {{ip}}",
+        "noOptions": "No options specified. Use --public-ipv4, --base-domain, etc.",
+        "optionBaseDomain": "Base domain for applications",
+        "optionCertEmail": "Email for TLS certificate notifications",
+        "optionCfDnsToken": "Cloudflare DNS API token for ACME DNS-01 challenge",
+        "optionPublicIPv4": "Public IPv4 address",
+        "optionPublicIPv6": "Public IPv6 address",
+        "optionTcpPorts": "TCP ports to forward (comma-separated, e.g., 25,143,465)",
+        "optionUdpPorts": "UDP ports to forward (comma-separated, e.g., 53)",
+        "success": "Infrastructure config updated for \"{{name}}\""
+      },
       "setLanguage": {
         "description": "设置首选语言",
         "success": "语言已设置为 \"{{code}}\"",
@@ -377,9 +460,21 @@
         "description": "更新当前本地上下文的 SSH 配置",
         "success": "SSH 配置已更新"
       },
+      "setupMachine": {
+        "completed": "Machine '{{machine}}' setup completed successfully",
+        "datastoreOption": "Datastore path on remote machine",
+        "datastoreSizeOption": "Datastore size (e.g., 95%, 100G)",
+        "description": "Run setup on a remote machine (installs btrfs, Docker, etc.)",
+        "failed": "Machine '{{machine}}' setup failed: {{error}}",
+        "starting": "Setting up machine '{{machine}}'..."
+      },
       "show": {
         "description": "显示当前上下文详情",
         "noContext": "没有活跃的上下文"
+      },
+      "showInfra": {
+        "description": "Show infrastructure configuration for a machine",
+        "noInfra": "No infrastructure config set for \"{{name}}\""
       },
       "storages": {
         "description": "列出当前本地上下文中的存储",
@@ -526,6 +621,12 @@
         "noServices": "此机器上未找到 rediacc 服务",
         "stabilityCheck": "稳定性检查模式 - 如果有失败/重启的服务，将以代码 2 退出",
         "unstableFound": "找到 {{count}} 个不稳定的服务"
+      },
+      "status": {
+        "description": "Show full machine status (system, repos, containers, services)",
+        "fetched": "Status fetched",
+        "fetching": "Fetching status from {{machine}}...",
+        "noData": "No status data available"
       },
       "testConnection": {
         "authMethod": "  认证方法：{{method}}",
@@ -770,6 +871,23 @@
       }
     },
     "repo": {
+      "create": {
+        "alreadyExists": "Repository \"{{name}}\" already exists in context",
+        "completed": "Repository created",
+        "description": "Create a new encrypted repository",
+        "failed": "Repository creation failed",
+        "registered": "Registered \"{{repository}}\" ({{guid}}, network {{networkId}})",
+        "rollback": "Rolled back config for \"{{repository}}\"",
+        "sizeOption": "Repository size (e.g., 10G, 100G, 1T)",
+        "starting": "Creating repository \"{{repository}}\" ({{size}}) on \"{{machine}}\"..."
+      },
+      "delete": {
+        "completed": "Repository deleted",
+        "description": "Delete a repository",
+        "failed": "Repository deletion failed",
+        "removed": "Removed \"{{repository}}\" from config",
+        "starting": "Deleting \"{{repository}}\" on \"{{machine}}\"..."
+      },
       "description": "仓库生命周期管理 (本地模式)",
       "down": {
         "completed": "服务已停止",
@@ -778,6 +896,23 @@
         "grandOption": "主仓库名称 (自动解析为 GUID)",
         "starting": "正在 \"{{machine}}\" 上停止 \"{{repository}}\" 的服务...",
         "unmountOption": "停止后卸载仓库"
+      },
+      "expand": {
+        "completed": "Expansion completed",
+        "description": "Expand a mounted repository online (zero downtime)",
+        "failed": "Expansion failed",
+        "sizeOption": "New repository size (e.g., 10G, 100G, 1T)",
+        "starting": "Expanding \"{{repository}}\" to {{size}} on \"{{machine}}\"..."
+      },
+      "fork": {
+        "alreadyExists": "Repository \"{{name}}\" already exists in context",
+        "completed": "Fork created",
+        "description": "Create a CoW (Copy-on-Write) fork of a repository",
+        "failed": "Fork creation failed",
+        "registered": "Registered fork \"{{repository}}\" ({{guid}}, network {{networkId}})",
+        "rollback": "Rolled back config for \"{{repository}}\"",
+        "starting": "Forking \"{{parent}}\" as \"{{repository}}\" on \"{{machine}}\"...",
+        "tagOption": "Fork name"
       },
       "list": {
         "completed": "列表获取完成",
@@ -794,11 +929,34 @@
         "starting": "正在将 \"{{repository}}\" 挂载到 \"{{machine}}\"..."
       },
       "noCredential": "警告: 仓库 \"{{name}}\" 未设置凭证。对加密仓库的操作可能会失败。",
+      "ownership": {
+        "completed": "Ownership updated",
+        "description": "Change repository directory ownership",
+        "failed": "Ownership update failed",
+        "starting": "Setting ownership of \"{{repository}}\" on \"{{machine}}\"...",
+        "uidOption": "Owner UID (default: 7111)"
+      },
+      "resize": {
+        "completed": "Resize completed",
+        "description": "Resize a repository offline (supports grow and shrink)",
+        "failed": "Resize failed",
+        "sizeOption": "New repository size (e.g., 10G, 100G, 1T)",
+        "starting": "Resizing \"{{repository}}\" to {{size}} on \"{{machine}}\"..."
+      },
       "status": {
         "completed": "状态已获取",
         "description": "获取仓库状态",
         "failed": "状态检查失败",
         "starting": "正在获取 \"{{machine}}\" 上 \"{{repository}}\" 的状态..."
+      },
+      "template": {
+        "completed": "Template applied",
+        "description": "Apply a template to a repository",
+        "failed": "Template application failed",
+        "fileNotFound": "Template file not found: {{path}}",
+        "fileOption": "Path to template JSON file",
+        "grandOption": "Grand repository name (auto-resolves to GUID)",
+        "starting": "Applying template to \"{{repository}}\" on \"{{machine}}\"..."
       },
       "unmount": {
         "checkpointOption": "卸载前创建检查点",
@@ -815,6 +973,12 @@
         "mountOption": "先挂载仓库",
         "prepOnlyOption": "仅运行准备步骤",
         "starting": "正在 \"{{machine}}\" 上启动 \"{{repository}}\" 的服务..."
+      },
+      "validate": {
+        "completed": "Validation completed",
+        "description": "Validate repository integrity",
+        "failed": "Validation failed",
+        "starting": "Validating \"{{repository}}\" on \"{{machine}}\"..."
       }
     },
     "repository": {
@@ -884,6 +1048,24 @@
       },
       "trace": {
         "description": "跟踪任务（快捷方式：queue trace）"
+      }
+    },
+    "snapshot": {
+      "create": {
+        "creating": "Creating snapshot of \"{{repo}}\" on {{machine}}...",
+        "description": "Create a BTRFS snapshot of a repository",
+        "optionSnapshotName": "Explicit snapshot name (auto-generated if empty)",
+        "success": "Snapshot created: {{name}} ({{path}})"
+      },
+      "delete": {
+        "description": "Delete a snapshot from a remote machine",
+        "success": "Snapshot deleted: {{name}}"
+      },
+      "description": "Manage BTRFS snapshots on remote machines",
+      "list": {
+        "description": "List snapshots on a remote machine",
+        "header": "{{count}} snapshot(s) in {{path}}:",
+        "noSnapshots": "No snapshots found."
       }
     },
     "storage": {
