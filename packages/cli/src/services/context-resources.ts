@@ -434,9 +434,12 @@ class ContextService extends ContextServiceBase {
   async setBackupConfig(config: Partial<BackupConfig>): Promise<void> {
     const name = this.getEffectiveContextName();
     const context = await this.requireLocalOrS3Mode(name);
-    await this.update(name, {
-      backup: { ...context.backup, ...config } satisfies BackupConfig,
-    });
+    const backup: BackupConfig = {
+      defaultDestination: '',
+      ...context.backup,
+      ...config,
+    };
+    await this.update(name, { backup });
   }
 
   async getBackupConfig(): Promise<BackupConfig | undefined> {
