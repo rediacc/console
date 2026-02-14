@@ -88,6 +88,7 @@ declare -A SUBMODULE_REPOS=(
     ["private/renet"]="rediacc/renet"
     ["private/license-server"]="rediacc/license-server"
     ["private/elite"]="rediacc/elite"
+    ["private/sql"]="rediacc/sql"
 )
 
 # Patterns for low-effort replies that don't count as real responses
