@@ -1,9 +1,9 @@
 import { Command } from 'commander';
 import { DEFAULTS } from '@rediacc/shared/config';
+import { registerInfraCommands } from './context-infra.js';
 import { registerLocalDataCommands } from './context-local-data.js';
 import { registerLocalCommands } from './context-local.js';
 import { registerMigrationCommands } from './context-migration.js';
-import { registerInfraCommands } from './context-infra.js';
 import { t } from '../i18n/index.js';
 import { apiClient } from '../services/api.js';
 import { contextService } from '../services/context.js';

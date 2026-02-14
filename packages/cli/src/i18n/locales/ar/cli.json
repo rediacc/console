@@ -917,7 +917,7 @@
       "list": {
         "completed": "اكتمل العرض",
         "description": "عرض المستودعات على جهاز",
-        "failed": "فشل العرض",
+        "failed": "فشل العرض: {{error}}",
         "starting": "جارٍ عرض المستودعات على \"{{machine}}\"..."
       },
       "machineOption": "اسم الجهاز المستهدف",

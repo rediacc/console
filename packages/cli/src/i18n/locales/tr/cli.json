@@ -917,7 +917,7 @@
       "list": {
         "completed": "Listeleme tamamlandı",
         "description": "Bir makinedeki depoları listele",
-        "failed": "Listeleme başarısız",
+        "failed": "Listeleme başarısız: {{error}}",
         "starting": "\"{{machine}}\" üzerindeki depolar listeleniyor..."
       },
       "machineOption": "Hedef makine adı",

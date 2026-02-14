@@ -917,7 +917,7 @@
       "list": {
         "completed": "Listage terminé",
         "description": "Lister les dépôts sur une machine",
-        "failed": "Échec du listage",
+        "failed": "Échec du listage : {{error}}",
         "starting": "Listage des dépôts sur \"{{machine}}\"..."
       },
       "machineOption": "Nom de la machine cible",

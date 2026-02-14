@@ -917,7 +917,7 @@
       "list": {
         "completed": "列表获取完成",
         "description": "列出机器上的仓库",
-        "failed": "列表获取失败",
+        "failed": "列出失败: {{error}}",
         "starting": "正在列出 \"{{machine}}\" 上的仓库..."
       },
       "machineOption": "目标机器名称",

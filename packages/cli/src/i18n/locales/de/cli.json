@@ -917,7 +917,7 @@
       "list": {
         "completed": "Auflistung abgeschlossen",
         "description": "Repositories auf einer Maschine auflisten",
-        "failed": "Auflistung fehlgeschlagen",
+        "failed": "Auflistung fehlgeschlagen: {{error}}",
         "starting": "Repositories auf \"{{machine}}\" werden aufgelistet..."
       },
       "machineOption": "Name der Zielmaschine",

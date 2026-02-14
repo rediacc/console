@@ -917,7 +917,7 @@
       "list": {
         "completed": "リスト表示が完了しました",
         "description": "マシン上のリポジトリをリスト表示する",
-        "failed": "リスト表示に失敗しました",
+        "failed": "一覧取得に失敗しました: {{error}}",
         "starting": "\"{{machine}}\" のリポジトリをリスト表示中..."
       },
       "machineOption": "対象マシン名",

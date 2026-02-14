@@ -10,7 +10,6 @@ import {
   getHealthSummary,
 } from '@rediacc/shared/queue-vault/data/list-types.generated';
 import { t } from '../../i18n/index.js';
-import { contextService } from '../../services/context.js';
 import { outputService } from '../../services/output.js';
 import { handleError } from '../../utils/errors.js';
 import { withSpinner } from '../../utils/spinner.js';
@@ -147,7 +146,7 @@ export function registerStatusCommand(machine: Command, program: Command): void 
     .option('--debug', t('options.debug'))
     .action(async (name: string, options: { debug?: boolean }) => {
       try {
-        const machineName = name ?? (await contextService.getMachine());
+        const machineName = name;
         if (!machineName) {
           throw new Error(t('errors.machineRequiredLocal'));
         }
@@ -174,7 +173,7 @@ export function registerStatusCommand(machine: Command, program: Command): void 
           const data = section.getData(listResult);
           if (data.length === 0) continue;
           outputService.info(`\n${section.title}`);
-          console.log(outputService.formatTable(data));
+          process.stdout.write(`${outputService.formatTable(data)}\n`);
         }
       } catch (error) {
         handleError(error);

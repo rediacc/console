@@ -1,8 +1,8 @@
-import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
 import { handleError } from '../utils/errors.js';
+import type { Command } from 'commander';
 
 export function registerSnapshotCommands(program: Command): void {
   const snapshot = program.command('snapshot').description(t('commands.snapshot.description'));

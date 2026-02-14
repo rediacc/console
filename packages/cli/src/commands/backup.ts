@@ -1,11 +1,4 @@
-import type { Command } from 'commander';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { t } from '../i18n/index.js';
-import { getStateProvider } from '../providers/index.js';
-import { contextService } from '../services/context.js';
-import { localExecutorService } from '../services/local-executor.js';
-import { outputService } from '../services/output.js';
-import { handleError, ValidationError } from '../utils/errors.js';
 import {
   type CreateActionOptions,
   coerceCliParams,
@@ -13,6 +6,13 @@ import {
   traceAction,
   validateFunctionParams,
 } from './queue.js';
+import { t } from '../i18n/index.js';
+import { getStateProvider } from '../providers/index.js';
+import { contextService } from '../services/context.js';
+import { localExecutorService } from '../services/local-executor.js';
+import { outputService } from '../services/output.js';
+import { handleError, ValidationError } from '../utils/errors.js';
+import type { Command } from 'commander';
 
 /** Accumulate repeatable option values into an array. */
 function collect(val: string, prev: string[]): string[] {
@@ -99,6 +99,84 @@ async function executeFunction(
   }
 }
 
+/** Validate that exactly one sync direction (--to or --from) is specified. */
+function validateSyncDirection(options: { to?: string; from?: string }): void {
+  if (!options.to && !options.from) {
+    throw new ValidationError(t('commands.backup.sync.directionRequired'));
+  }
+  if (options.to && options.from) {
+    throw new ValidationError(t('commands.backup.sync.directionConflict'));
+  }
+}
+
+/** Resolve an array of repo names to their corresponding GUIDs. */
+async function resolveRepoGUIDs(repoNames: string[]): Promise<string[]> {
+  const guids: string[] = [];
+  for (const repoName of repoNames) {
+    const repoConfig = await contextService.getLocalRepository(repoName);
+    if (!repoConfig) {
+      throw new ValidationError(t('errors.repositoryNotFound', { name: repoName }));
+    }
+    guids.push(repoConfig.repositoryGuid);
+  }
+  return guids;
+}
+
+/** Apply optional backup push flags (checkpoint, force, tag) to params. */
+function applyPushFlags(
+  params: Record<string, unknown>,
+  options: { checkpoint?: boolean; force?: boolean; tag?: string }
+): void {
+  if (options.checkpoint) params.checkpoint = true;
+  if (options.force) params.override = true;
+  if (options.tag) params.tag = options.tag;
+}
+
+/** Build params for a storage-targeted backup push. */
+async function buildStoragePushParams(
+  repo: string,
+  options: { dest?: string; to: string; checkpoint?: boolean; force?: boolean; tag?: string }
+): Promise<{ params: Record<string, unknown>; dest: string }> {
+  const repoConfig = await contextService.getLocalRepository(repo);
+  if (!repoConfig) {
+    throw new ValidationError(t('errors.repositoryNotFound', { name: repo }));
+  }
+  const dest = repoConfig.repositoryGuid;
+  if (options.dest && options.dest !== dest) {
+    outputService.warn(
+      t('commands.backup.push.destIgnoredForStorage', { dest, provided: options.dest })
+    );
+  }
+  const params: Record<string, unknown> = {
+    repository: repo,
+    dest,
+    destinationType: 'storage',
+    to: options.to,
+  };
+  applyPushFlags(params, options);
+  return { params, dest };
+}
+
+/** Build params for a machine-targeted backup push. */
+async function buildMachinePushParams(
+  repo: string,
+  options: { dest?: string; toMachine: string; checkpoint?: boolean; force?: boolean; tag?: string }
+): Promise<{ params: Record<string, unknown>; dest: string }> {
+  const repoConfig = await contextService.getLocalRepository(repo);
+  if (!repoConfig) {
+    throw new ValidationError(t('errors.repositoryNotFound', { name: repo }));
+  }
+  const dest = options.dest ?? repoConfig.repositoryGuid;
+  const params: Record<string, unknown> = {
+    repository: repo,
+    dest,
+    destinationType: 'machine',
+    to: options.toMachine,
+  };
+  applyPushFlags(params, options);
+  return { params, dest };
+}
+
 export function registerBackupCommands(program: Command): void {
   const backup = program.command('backup').description(t('commands.backup.description'));
 
@@ -117,52 +195,19 @@ export function registerBackupCommands(program: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (repo, options) => {
       try {
+        let params: Record<string, unknown>;
+        let dest: string;
+
         if (options.to) {
-          // Storage push: resolve dest to repository GUID automatically
-          const repoConfig = await contextService.getLocalRepository(repo);
-          if (!repoConfig) {
-            throw new ValidationError(t('errors.repositoryNotFound', { name: repo }));
-          }
-          const dest = repoConfig.repositoryGuid;
-          if (options.dest && options.dest !== dest) {
-            outputService.warn(
-              t('commands.backup.push.destIgnoredForStorage', { dest, provided: options.dest })
-            );
-          }
-          const params: Record<string, unknown> = {
-            repository: repo,
-            dest,
-            destinationType: 'storage',
-            to: options.to,
-          };
-          if (options.checkpoint) params.checkpoint = true;
-          if (options.force) params.override = true;
-          if (options.tag) params.tag = options.tag;
-
-          outputService.info(t('commands.backup.push.pushing', { repo, dest }));
-          await executeFunction(`backup_push`, params, options, program);
+          ({ params, dest } = await buildStoragePushParams(repo, options));
         } else if (options.toMachine) {
-          // Machine push: also default dest to repository GUID
-          const repoConfig = await contextService.getLocalRepository(repo);
-          if (!repoConfig) {
-            throw new ValidationError(t('errors.repositoryNotFound', { name: repo }));
-          }
-          const dest = options.dest ?? repoConfig.repositoryGuid;
-          const params: Record<string, unknown> = {
-            repository: repo,
-            dest,
-            destinationType: 'machine',
-            to: options.toMachine,
-          };
-          if (options.checkpoint) params.checkpoint = true;
-          if (options.force) params.override = true;
-          if (options.tag) params.tag = options.tag;
-
-          outputService.info(t('commands.backup.push.pushing', { repo, dest }));
-          await executeFunction(`backup_push`, params, options, program);
+          ({ params, dest } = await buildMachinePushParams(repo, options));
         } else {
           throw new ValidationError(t('commands.backup.push.destRequired'));
         }
+
+        outputService.info(t('commands.backup.push.pushing', { repo, dest }));
+        await executeFunction(`backup_push`, params, options, program);
       } catch (error) {
         handleError(error);
       }
@@ -245,22 +290,10 @@ export function registerBackupCommands(program: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (options) => {
       try {
-        if (!options.to && !options.from) {
-          throw new ValidationError(t('commands.backup.sync.directionRequired'));
-        }
-        if (options.to && options.from) {
-          throw new ValidationError(t('commands.backup.sync.directionConflict'));
-        }
+        validateSyncDirection(options);
 
-        // Resolve repo names → GUIDs
-        const repoGUIDs: string[] = [];
-        for (const repoName of options.repo as string[]) {
-          const repoConfig = await contextService.getLocalRepository(repoName);
-          if (!repoConfig) {
-            throw new ValidationError(t('errors.repositoryNotFound', { name: repoName }));
-          }
-          repoGUIDs.push(repoConfig.repositoryGuid);
-        }
+        const repoGUIDs = await resolveRepoGUIDs(options.repo as string[]);
+        const repos = repoGUIDs.length > 0 ? repoGUIDs : undefined;
 
         const { runBackupSyncPush, runBackupSyncPull } = await import('../services/backup-sync.js');
 
@@ -268,7 +301,7 @@ export function registerBackupCommands(program: Command): void {
           await runBackupSyncPush({
             storageName: options.to,
             machine: options.machine,
-            repos: repoGUIDs.length > 0 ? repoGUIDs : undefined,
+            repos,
             debug: options.debug,
           });
           outputService.success(t('commands.backup.sync.pushSuccess'));
@@ -276,7 +309,7 @@ export function registerBackupCommands(program: Command): void {
           await runBackupSyncPull({
             storageName: options.from,
             machine: options.machine,
-            repos: repoGUIDs.length > 0 ? repoGUIDs : undefined,
+            repos,
             override: options.override,
             debug: options.debug,
           });

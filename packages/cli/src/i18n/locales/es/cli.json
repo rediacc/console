@@ -917,7 +917,7 @@
       "list": {
         "completed": "Listado completado",
         "description": "Listar repositorios en una máquina",
-        "failed": "Fallo en el listado",
+        "failed": "Error al listar: {{error}}",
         "starting": "Listando repositorios en \"{{machine}}\"..."
       },
       "machineOption": "Nombre de la máquina de destino",
