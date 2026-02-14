@@ -6,11 +6,12 @@
  * router.env, and docker-compose.override.yml on the remote machine.
  */
 
-import { DEFAULTS } from '@rediacc/shared/config';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { contextService } from './context.js';
 import { outputService } from './output.js';
-import { provisionRenetToRemote, readSSHKey, readOptionalSSHKey } from './renet-execution.js';
+import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
+import { t } from '../i18n/index.js';
 import type { InfraConfig } from '../types/index.js';
 
 interface PushInfraOptions {
@@ -62,9 +63,6 @@ export async function pushInfraConfig(
   // Read SSH keys
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-  const sshPublicKey =
-    localConfig.sshPublicKey ?? (await readOptionalSSHKey(localConfig.ssh.publicKeyPath));
-
   // Provision renet binary to remote
   if (options.debug) {
     outputService.info(`Provisioning renet to ${machine.ip}...`);
@@ -110,7 +108,7 @@ export async function pushInfraConfig(
     // Step 2: Install and start proxy (idempotent — safe to run multiple times)
     // Creates systemd service for rediacc-router, copies renet binary, starts everything
     if (options.debug) {
-      outputService.info('Installing and starting proxy...');
+      outputService.info(t('commands.context.pushInfra.installingProxy'));
     }
 
     const installExitCode = await sftp.execStreaming('sudo renet proxy install', {

@@ -210,7 +210,7 @@ class RenetProvisionerService {
       const output = await sftp.exec(`${REMOTE_INSTALL_PATH} version`);
       // Version output is i18n-localized but semver is always present.
       // Examples: "renet version 0.5.0", "renet版本 0.5.0", "renet sürümü 0.5.0"
-      const match = output.match(/\d+\.\d+\.\d+/);
+      const match = /\d+\.\d+\.\d+/.exec(output);
       return match ? match[0] : null;
     } catch {
       // Binary missing, corrupted, or can't execute — allow overwrite

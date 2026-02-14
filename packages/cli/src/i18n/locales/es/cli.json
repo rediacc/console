@@ -400,6 +400,7 @@
       },
       "pushInfra": {
         "description": "Enviar la configuración de infraestructura a la máquina remota",
+        "installingProxy": "Instalando e iniciando proxy...",
         "proxyInstallWarning": "Instalación del proxy fallida (código {{code}}). Ejecute manualmente: sudo renet proxy install",
         "success": "Configuración de infraestructura enviada a \"{{name}}\""
       },

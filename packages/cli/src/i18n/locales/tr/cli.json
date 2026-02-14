@@ -400,6 +400,7 @@
       },
       "pushInfra": {
         "description": "Altyapı yapılandırmasını uzak makineye gönder",
+        "installingProxy": "Proxy kuruluyor ve başlatılıyor...",
         "proxyInstallWarning": "Proxy kurulumu başarısız (kod {{code}}). Manuel çalıştırın: sudo renet proxy install",
         "success": "Altyapı yapılandırması \"{{name}}\" makinesine gönderildi"
       },

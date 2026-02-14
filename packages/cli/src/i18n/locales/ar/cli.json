@@ -400,6 +400,7 @@
       },
       "pushInfra": {
         "description": "دفع تكوين البنية التحتية إلى الجهاز البعيد",
+        "installingProxy": "جارٍ تثبيت وتشغيل الوكيل...",
         "proxyInstallWarning": "فشل تثبيت الوكيل (رمز {{code}}). شغّل يدوياً: sudo renet proxy install",
         "success": "تم دفع تكوين البنية التحتية إلى \"{{name}}\""
       },

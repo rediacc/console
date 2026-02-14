@@ -400,6 +400,7 @@
       },
       "pushInfra": {
         "description": "インフラ設定をリモートマシンにプッシュする",
+        "installingProxy": "プロキシをインストールして起動中...",
         "proxyInstallWarning": "プロキシのインストールに失敗しました（コード {{code}}）。手動で実行してください: sudo renet proxy install",
         "success": "\"{{name}}\" にインフラ設定をプッシュしました"
       },

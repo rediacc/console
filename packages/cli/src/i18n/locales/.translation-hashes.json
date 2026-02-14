@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1147
+    "keyCount": 1148
   },
   "hashes": {
     "cli.description": "8c564b05",
@@ -255,6 +255,7 @@
     "commands.context.machines.description": "caf77414",
     "commands.context.machines.noMachines": "fb74458c",
     "commands.context.pushInfra.description": "3a4f7290",
+    "commands.context.pushInfra.installingProxy": "385b599a",
     "commands.context.pushInfra.proxyInstallWarning": "d25f164b",
     "commands.context.pushInfra.success": "87d65737",
     "commands.context.removeMachine.description": "03a925a7",

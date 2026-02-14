@@ -6,9 +6,9 @@
  * on a schedule defined in the context's backup config.
  */
 
+import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { buildRcloneArgs } from '@rediacc/shared/queue-vault';
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { contextService } from './context.js';
 import { outputService } from './output.js';
 import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
@@ -60,7 +60,7 @@ export function cronToOnCalendar(cron: string): string {
   let dowPrefix = '';
   if (dayOfWeek !== '*') {
     const days = dayOfWeek.split(',').map((d) => dowMap[d] ?? d);
-    dowPrefix = days.join(',') + ' ';
+    dowPrefix = `${days.join(',')} `;
   }
 
   return `${dowPrefix}${datePart} ${timePart}`;
@@ -75,7 +75,7 @@ function generateServiceUnit(
   datastore: string
 ): string {
   // Parse backend from remote string ":backend:path"
-  const backendMatch = rcloneRemote.match(/^:([^:]+):(.*)/);
+  const backendMatch = /^:([^:]+):(.*)/.exec(rcloneRemote);
   if (!backendMatch) {
     throw new Error(`Invalid rclone remote format: ${rcloneRemote}`);
   }
@@ -201,10 +201,8 @@ export async function pushBackupSchedule(
   const timerContent = generateTimerUnit(onCalendar);
 
   if (options.debug) {
-    outputService.info('--- rediacc-backup.service ---');
-    outputService.info(serviceContent);
-    outputService.info('--- rediacc-backup.timer ---');
-    outputService.info(timerContent);
+    process.stderr.write(`--- rediacc-backup.service ---\n${serviceContent}\n`);
+    process.stderr.write(`--- rediacc-backup.timer ---\n${timerContent}\n`);
   }
 
   // Connect via SSH

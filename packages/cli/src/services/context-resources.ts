@@ -435,7 +435,7 @@ class ContextService extends ContextServiceBase {
     const name = this.getEffectiveContextName();
     const context = await this.requireLocalOrS3Mode(name);
     await this.update(name, {
-      backup: { ...context.backup, ...config } as BackupConfig,
+      backup: { ...context.backup, ...config } satisfies BackupConfig,
     });
   }
 

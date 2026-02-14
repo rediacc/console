@@ -461,7 +461,8 @@
       "pushInfra": {
         "description": "Push infrastructure configuration to remote machine",
         "success": "Infrastructure config pushed to \"{{name}}\"",
-        "proxyInstallWarning": "Proxy install failed (code {{code}}). Run manually: sudo renet proxy install"
+        "proxyInstallWarning": "Proxy install failed (code {{code}}). Run manually: sudo renet proxy install",
+        "installingProxy": "Installing and starting proxy..."
       },
       "toS3": {
         "description": "Migrate the current local context to S3 mode",

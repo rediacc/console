@@ -400,6 +400,7 @@
       },
       "pushInfra": {
         "description": "将基础设施配置推送到远程机器",
+        "installingProxy": "正在安装并启动代理...",
         "proxyInstallWarning": "代理安装失败（代码 {{code}}）。请手动运行: sudo renet proxy install",
         "success": "基础设施配置已推送到 \"{{name}}\""
       },

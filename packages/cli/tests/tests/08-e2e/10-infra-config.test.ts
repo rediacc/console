@@ -1,12 +1,12 @@
 import { expect, test } from '@playwright/test';
 import { CliTestRunner } from '../../src/utils/CliTestRunner';
-import { SSHValidator } from '../../src/utils/SSHValidator';
 import {
   checkSSHKeyExists,
   generateTestContextName,
   getE2EConfig,
   setupE2EEnvironment,
 } from '../../src/utils/local';
+import { SSHValidator } from '../../src/utils/SSHValidator';
 
 /**
  * End-to-end tests for infrastructure configuration.

@@ -6,9 +6,9 @@
  * because sync operates on ALL repos at once — not a single repo through the queue.
  */
 
+import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { buildRcloneArgs } from '@rediacc/shared/queue-vault';
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { contextService } from './context.js';
 import { outputService } from './output.js';
 import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
@@ -38,7 +38,7 @@ function buildSyncRcloneFlags(vaultContent: Record<string, unknown>): string[] {
   const { remote, params } = buildRcloneArgs(vaultContent);
 
   // Parse ":backend:bucket/folder" from remote
-  const match = remote.match(/^:([^:]+):(.*)/);
+  const match = /^:([^:]+):(.*)/.exec(remote);
   if (!match) {
     throw new Error(`Invalid rclone remote format: ${remote}`);
   }
@@ -157,16 +157,12 @@ export async function runBackupSyncPush(options: SyncOptions): Promise<void> {
   }
 }
 
-/**
- * Run backup sync pull — download all repos from storage to a machine.
- */
-export async function runBackupSyncPull(options: SyncOptions): Promise<void> {
+async function loadSyncConfigs(options: SyncOptions) {
   const machineName = options.machine ?? (await contextService.getMachine());
   if (!machineName) {
     throw new Error('No machine specified. Use -m <machine> or set a default machine.');
   }
 
-  // Load configs
   const localConfig = await contextService.getLocalConfig();
   const machine = localConfig.machines[machineName];
   if (!machine) {
@@ -178,9 +174,17 @@ export async function runBackupSyncPull(options: SyncOptions): Promise<void> {
   const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-
-  // Build rclone flags
   const rcloneFlags = buildSyncRcloneFlags(storage.vaultContent);
+
+  return { machineName, localConfig, machine, storage, datastore, sshPrivateKey, rcloneFlags };
+}
+
+/**
+ * Run backup sync pull — download all repos from storage to a machine.
+ */
+export async function runBackupSyncPull(options: SyncOptions): Promise<void> {
+  const { machineName, localConfig, machine, datastore, sshPrivateKey, rcloneFlags } =
+    await loadSyncConfigs(options);
 
   if (options.debug) {
     outputService.info(`Storage: ${options.storageName}`);

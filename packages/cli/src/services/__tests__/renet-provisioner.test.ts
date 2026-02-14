@@ -17,7 +17,7 @@ import { compareVersions } from '../updater.js';
  * Mirrors the regex used in RenetProvisionerService.getRemoteVersion().
  */
 function parseVersionFromOutput(output: string): string | null {
-  const match = output.match(/\d+\.\d+\.\d+/);
+  const match = /\d+\.\d+\.\d+/.exec(output);
   return match ? match[0] : null;
 }
 

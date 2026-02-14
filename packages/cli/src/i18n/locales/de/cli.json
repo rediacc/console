@@ -400,6 +400,7 @@
       },
       "pushInfra": {
         "description": "Infrastruktur-Konfiguration auf den Remote-Rechner übertragen",
+        "installingProxy": "Proxy wird installiert und gestartet...",
         "proxyInstallWarning": "Proxy-Installation fehlgeschlagen (Code {{code}}). Manuell ausführen: sudo renet proxy install",
         "success": "Infrastruktur-Konfiguration an \"{{name}}\" übertragen"
       },
