@@ -108,11 +108,16 @@ prompt_continue() {
 }
 
 # Ensure npm dependencies are installed
+# Uses a sentinel file to avoid running npm install on every invocation.
+# The sentinel is only outdated when package-lock.json actually changes.
 ensure_deps() {
+    local sentinel="$ROOT_DIR/node_modules/.deps-installed"
     if [[ ! -d "$ROOT_DIR/node_modules" ]] ||
-        [[ "$ROOT_DIR/package-lock.json" -nt "$ROOT_DIR/node_modules" ]]; then
+        [[ ! -f "$sentinel" ]] ||
+        [[ "$ROOT_DIR/package-lock.json" -nt "$sentinel" ]]; then
         log_step "Installing dependencies..."
-        npm install
+        npm install --prefer-offline --no-audit --no-fund 2>&1 | tail -1
+        touch "$sentinel"
     fi
 }
 

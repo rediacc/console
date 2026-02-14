@@ -375,6 +375,14 @@
         "description": "Update SSH configuration for the current local context",
         "success": "SSH configuration updated"
       },
+      "setupMachine": {
+        "description": "Run setup on a remote machine (installs btrfs, Docker, etc.)",
+        "starting": "Setting up machine '{{machine}}'...",
+        "completed": "Machine '{{machine}}' setup completed successfully",
+        "failed": "Machine '{{machine}}' setup failed: {{error}}",
+        "datastoreOption": "Datastore path on remote machine",
+        "datastoreSizeOption": "Datastore size (e.g., 95%, 100G)"
+      },
       "importStorage": {
         "description": "Import storages from an rclone config file",
         "optionName": "Import only this named section",
@@ -431,6 +439,29 @@
       "setRenet": {
         "description": "Set the path to renet binary for local mode",
         "success": "Renet path set to: {{path}}"
+      },
+      "setInfra": {
+        "description": "Set infrastructure configuration for a machine",
+        "optionPublicIPv4": "Public IPv4 address",
+        "optionPublicIPv6": "Public IPv6 address",
+        "optionBaseDomain": "Base domain for applications",
+        "optionCertEmail": "Email for TLS certificate notifications",
+        "optionCfDnsToken": "Cloudflare DNS API token for ACME DNS-01 challenge",
+        "optionTcpPorts": "TCP ports to forward (comma-separated, e.g., 25,143,465)",
+        "optionUdpPorts": "UDP ports to forward (comma-separated, e.g., 53)",
+        "noOptions": "No options specified. Use --public-ipv4, --base-domain, etc.",
+        "invalidIPv4": "Invalid IPv4 address: {{ip}}",
+        "invalidIPv6": "Invalid IPv6 address: {{ip}}",
+        "success": "Infrastructure config updated for \"{{name}}\""
+      },
+      "showInfra": {
+        "description": "Show infrastructure configuration for a machine",
+        "noInfra": "No infrastructure config set for \"{{name}}\""
+      },
+      "pushInfra": {
+        "description": "Push infrastructure configuration to remote machine",
+        "success": "Infrastructure config pushed to \"{{name}}\"",
+        "proxyInstallWarning": "Proxy install failed (code {{code}}). Run manually: sudo renet proxy install"
       },
       "toS3": {
         "description": "Migrate the current local context to S3 mode",
@@ -525,6 +556,12 @@
         "stabilityCheck": "Stability check mode - exits with code 2 if any failed/restarting",
         "allStable": "All services are stable",
         "unstableFound": "{{count}} unstable service(s) found"
+      },
+      "status": {
+        "description": "Show full machine status (system, repos, containers, services)",
+        "fetching": "Fetching status from {{machine}}...",
+        "fetched": "Status fetched",
+        "noData": "No status data available"
       },
       "vaultStatus": {
         "description": "Show parsed vault status for a machine",
@@ -865,7 +902,70 @@
         "description": "List repositories on a machine",
         "starting": "Listing repositories on \"{{machine}}\"...",
         "completed": "List completed",
-        "failed": "List failed"
+        "failed": "List failed: {{error}}"
+      },
+      "create": {
+        "description": "Create a new encrypted repository",
+        "sizeOption": "Repository size (e.g., 10G, 100G, 1T)",
+        "starting": "Creating repository \"{{repository}}\" ({{size}}) on \"{{machine}}\"...",
+        "registered": "Registered \"{{repository}}\" ({{guid}}, network {{networkId}})",
+        "completed": "Repository created",
+        "failed": "Repository creation failed",
+        "rollback": "Rolled back config for \"{{repository}}\"",
+        "alreadyExists": "Repository \"{{name}}\" already exists in context"
+      },
+      "delete": {
+        "description": "Delete a repository",
+        "starting": "Deleting \"{{repository}}\" on \"{{machine}}\"...",
+        "completed": "Repository deleted",
+        "removed": "Removed \"{{repository}}\" from config",
+        "failed": "Repository deletion failed"
+      },
+      "fork": {
+        "description": "Create a CoW (Copy-on-Write) fork of a repository",
+        "tagOption": "Fork name",
+        "starting": "Forking \"{{parent}}\" as \"{{repository}}\" on \"{{machine}}\"...",
+        "registered": "Registered fork \"{{repository}}\" ({{guid}}, network {{networkId}})",
+        "completed": "Fork created",
+        "failed": "Fork creation failed",
+        "rollback": "Rolled back config for \"{{repository}}\"",
+        "alreadyExists": "Repository \"{{name}}\" already exists in context"
+      },
+      "resize": {
+        "description": "Resize a repository offline (supports grow and shrink)",
+        "sizeOption": "New repository size (e.g., 10G, 100G, 1T)",
+        "starting": "Resizing \"{{repository}}\" to {{size}} on \"{{machine}}\"...",
+        "completed": "Resize completed",
+        "failed": "Resize failed"
+      },
+      "expand": {
+        "description": "Expand a mounted repository online (zero downtime)",
+        "sizeOption": "New repository size (e.g., 10G, 100G, 1T)",
+        "starting": "Expanding \"{{repository}}\" to {{size}} on \"{{machine}}\"...",
+        "completed": "Expansion completed",
+        "failed": "Expansion failed"
+      },
+      "validate": {
+        "description": "Validate repository integrity",
+        "starting": "Validating \"{{repository}}\" on \"{{machine}}\"...",
+        "completed": "Validation completed",
+        "failed": "Validation failed"
+      },
+      "ownership": {
+        "description": "Change repository directory ownership",
+        "uidOption": "Owner UID (default: 7111)",
+        "starting": "Setting ownership of \"{{repository}}\" on \"{{machine}}\"...",
+        "completed": "Ownership updated",
+        "failed": "Ownership update failed"
+      },
+      "template": {
+        "description": "Apply a template to a repository",
+        "fileOption": "Path to template JSON file",
+        "grandOption": "Grand repository name (auto-resolves to GUID)",
+        "fileNotFound": "Template file not found: {{path}}",
+        "starting": "Applying template to \"{{repository}}\" on \"{{machine}}\"...",
+        "completed": "Template applied",
+        "failed": "Template application failed"
       }
     },
     "storage": {
@@ -946,6 +1046,88 @@
           "description": "Remove a user from a team",
           "removing": "Removing {{email}} from team \"{{team}}\"...",
           "success": "User removed from team \"{{team}}\""
+        }
+      }
+    },
+    "snapshot": {
+      "description": "Manage BTRFS snapshots on remote machines",
+      "create": {
+        "description": "Create a BTRFS snapshot of a repository",
+        "optionSnapshotName": "Explicit snapshot name (auto-generated if empty)",
+        "creating": "Creating snapshot of \"{{repo}}\" on {{machine}}...",
+        "success": "Snapshot created: {{name}} ({{path}})"
+      },
+      "list": {
+        "description": "List snapshots on a remote machine",
+        "noSnapshots": "No snapshots found.",
+        "header": "{{count}} snapshot(s) in {{path}}:"
+      },
+      "delete": {
+        "description": "Delete a snapshot from a remote machine",
+        "success": "Snapshot deleted: {{name}}"
+      }
+    },
+    "backup": {
+      "description": "Backup and restore repositories",
+      "push": {
+        "description": "Push repository backup to storage or machine",
+        "optionDest": "Destination filename",
+        "optionToStorage": "Destination storage name",
+        "optionToMachine": "Destination machine name",
+        "optionCheckpoint": "Create container checkpoint (hot backup)",
+        "optionForce": "Force overwrite existing backup",
+        "optionTag": "Deployment tag for versioning",
+        "destRequired": "Specify --to <storage> or --to-machine <machine>",
+        "destIgnoredForStorage": "Ignoring --dest {{provided}}: storage backups use repository GUID ({{dest}})",
+        "pushing": "Pushing backup of \"{{repo}}\" to {{dest}}..."
+      },
+      "pull": {
+        "description": "Pull repository backup from storage or machine",
+        "optionFromStorage": "Source storage name",
+        "optionFromMachine": "Source machine name",
+        "optionForce": "Force overwrite existing repository",
+        "sourceRequired": "Specify --from <storage> or --from-machine <machine>",
+        "pulling": "Pulling backup of \"{{repo}}\"..."
+      },
+      "list": {
+        "description": "List available backups on storage or machine",
+        "optionFromStorage": "Source storage name",
+        "optionFromMachine": "Source machine name",
+        "sourceRequired": "Specify --from <storage> or --from-machine <machine>",
+        "listing": "Listing backups..."
+      },
+      "sync": {
+        "description": "Bulk push/pull all repositories to/from cloud storage",
+        "optionTo": "Destination storage name (push mode)",
+        "optionFrom": "Source storage name (pull mode)",
+        "optionRepo": "Filter to specific repository (repeatable)",
+        "optionOverride": "Override existing unmounted repos on pull",
+        "directionRequired": "Specify --to <storage> (push) or --from <storage> (pull)",
+        "directionConflict": "Cannot specify both --to and --from",
+        "pushSuccess": "Sync push completed",
+        "pullSuccess": "Sync pull completed"
+      },
+      "schedule": {
+        "description": "Manage scheduled backup configuration",
+        "set": {
+          "description": "Configure backup schedule settings",
+          "optionDestination": "Default storage destination name",
+          "optionCron": "Cron expression for backup schedule (e.g., \"0 2 * * *\")",
+          "optionEnable": "Enable scheduled backups",
+          "optionDisable": "Disable scheduled backups",
+          "noOptions": "Specify at least one option: --destination, --cron, --enable, or --disable",
+          "saved": "Backup schedule configuration saved"
+        },
+        "show": {
+          "description": "Show current backup schedule configuration",
+          "notConfigured": "No backup schedule configured",
+          "destination": "Destination: {{destination}}",
+          "schedule": "Schedule: {{schedule}}",
+          "enabled": "Enabled: {{enabled}}"
+        },
+        "push": {
+          "description": "Push backup schedule to remote machine (systemd timer)",
+          "success": "Backup schedule pushed to {{machine}}"
         }
       }
     },

@@ -4,6 +4,7 @@ import { registerCrudCommands } from './crud.js';
 import { registerHealthCommand } from './health.js';
 import { registerRepositoriesCommand } from './repositories.js';
 import { registerServicesCommand } from './services.js';
+import { registerStatusCommand } from './status.js';
 import { registerTestConnectionCommand } from './test-connection.js';
 import { registerVaultStatusCommand } from './vault-status.js';
 
@@ -18,4 +19,5 @@ export function registerMachineCommands(program: Command): void {
   registerContainersCommand(machine, program);
   registerServicesCommand(machine, program);
   registerTestConnectionCommand(machine, program);
+  registerStatusCommand(machine, program);
 }

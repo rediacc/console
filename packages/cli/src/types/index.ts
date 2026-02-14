@@ -19,6 +19,30 @@ export interface MachineConfig {
   datastore?: string;
   /** SSH host key(s) for this machine (from ssh-keyscan) */
   knownHosts?: string;
+  /** Infrastructure configuration (public IPs, domain, TLS, ports) */
+  infra?: InfraConfig;
+}
+
+/**
+ * Infrastructure configuration for a machine.
+ * Stores public networking, domain, TLS, and port forwarding settings.
+ * Used by `renet proxy configure` to generate proxy/router config on remote machines.
+ */
+export interface InfraConfig {
+  /** Public IPv4 address for external access (binds Traefik entrypoints) */
+  publicIPv4?: string;
+  /** Public IPv6 address for external access (binds Traefik entrypoints) */
+  publicIPv6?: string;
+  /** Base domain for applications (e.g., "example.com") */
+  baseDomain?: string;
+  /** Email address for TLS certificate notifications (Let's Encrypt) */
+  certEmail?: string;
+  /** Cloudflare DNS API token for ACME DNS-01 challenge */
+  cfDnsApiToken?: string;
+  /** Additional TCP ports to forward (e.g., [25, 143, 465, 587, 993]) */
+  tcpPorts?: number[];
+  /** Additional UDP ports to forward (e.g., [53]) */
+  udpPorts?: number[];
 }
 
 /**
@@ -78,6 +102,20 @@ export interface S3Config {
 }
 
 /**
+ * Backup schedule configuration for a context.
+ * Defines the default storage destination and cron schedule for automated backups.
+ * Used by `rdc backup schedule set|show|push` to configure systemd timers on remote machines.
+ */
+export interface BackupConfig {
+  /** Storage name to use as backup destination (e.g., "microsoft") */
+  defaultDestination: string;
+  /** Cron expression for backup schedule (e.g., "0 2 * * *") */
+  schedule?: string;
+  /** Whether the schedule is enabled (default: true) */
+  enabled?: boolean;
+}
+
+/**
  * Context mode: 'cloud' uses middleware API, 'local' uses direct renet execution,
  * 's3' uses S3-compatible storage for state with local renet execution.
  */
@@ -125,6 +163,8 @@ export interface NamedContext {
   ssh?: SSHConfig;
   /** Path to renet binary (default: 'renet' in PATH) */
   renetPath?: string;
+  /** Backup schedule configuration */
+  backup?: BackupConfig;
 
   // ============================================================================
   // S3 Mode Configuration (only used when mode === 's3')

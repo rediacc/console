@@ -528,9 +528,6 @@ export class BridgeTestRunner {
     if (opts.installSource) {
       flags += ` --install-source ${opts.installSource}`;
     }
-    if (opts.rcloneSource) {
-      flags += ` --rclone-source ${opts.rcloneSource}`;
-    }
     if (opts.dockerSource) {
       flags += ` --docker-source ${opts.dockerSource}`;
     }

@@ -7,11 +7,21 @@ import { execSync } from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS, NETWORK_DEFAULTS, PROCESS_DEFAULTS } from '@rediacc/shared/config';
 import { extractRenetToLocal, isSEA } from './embedded-assets.js';
 import { outputService } from './output.js';
 import { renetProvisioner } from './renet-provisioner.js';
 import type { MachineConfig } from '../types/index.js';
+
+/** Setup marker file created by `renet setup` on successful completion */
+const SETUP_MARKER_PATH = '/var/lib/rediacc/setup_7111_completed';
+
+/** Cache TTL for setup verification (1 hour) */
+const SETUP_CACHE_TTL_MS = 60 * 60 * 1000;
+
+/** In-memory cache: host:port -> timestamp of last successful verification */
+const setupCache = new Map<string, number>();
 
 /** Options for renet spawning */
 export interface RenetSpawnOptions {
@@ -89,6 +99,60 @@ export async function provisionRenetToRemote(
 
   if (result.action === 'uploaded' && options.debug) {
     outputService.info(`[local] Provisioned renet (${result.arch}) to ${machine.ip}`);
+  }
+}
+
+/**
+ * Verify that a remote machine has completed `renet setup`.
+ * Checks for the setup marker file via SSH. Caches results for 1 hour.
+ * Bypass with RDC_SKIP_SETUP_CHECK=1 environment variable.
+ */
+export async function verifyMachineSetup(
+  machine: MachineConfig,
+  sshPrivateKey: string,
+  options: Pick<RenetSpawnOptions, 'debug'>
+): Promise<void> {
+  if (process.env.RDC_SKIP_SETUP_CHECK) return;
+
+  const cacheKey = `${machine.ip}:${machine.port ?? DEFAULTS.SSH.PORT}`;
+  const cached = setupCache.get(cacheKey);
+  if (cached && Date.now() - cached < SETUP_CACHE_TTL_MS) return;
+
+  const sftp = new SFTPClient({
+    host: machine.ip,
+    port: machine.port ?? DEFAULTS.SSH.PORT,
+    username: machine.user,
+    privateKey: sshPrivateKey,
+  });
+
+  try {
+    await sftp.connect();
+    const result = await sftp.exec(`test -f ${SETUP_MARKER_PATH} && echo OK || echo MISSING`);
+    if (result.trim() !== 'OK') {
+      throw new Error(
+        `Machine '${machine.ip}' has not been set up. ` +
+        `Run 'rdc context setup-machine <name>' or 'sudo renet setup --auto' directly on the machine.`
+      );
+    }
+
+    // Verify datastore is BTRFS (not just a plain directory on ext4)
+    const datastorePath = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
+    const fsCheck = await sftp.exec(
+      `findmnt -n -o FSTYPE -T '${datastorePath}' 2>/dev/null || echo UNKNOWN`
+    );
+    if (fsCheck.trim() !== 'btrfs') {
+      throw new Error(
+        `Machine '${machine.ip}' datastore at ${datastorePath} is not BTRFS (found: ${fsCheck.trim()}). ` +
+        `Run 'rdc context setup-machine <name>' to initialize the BTRFS datastore.`
+      );
+    }
+
+    setupCache.set(cacheKey, Date.now());
+    if (options.debug) {
+      outputService.info(`[local] Setup verified on ${machine.ip}`);
+    }
+  } finally {
+    sftp.close();
   }
 }
 

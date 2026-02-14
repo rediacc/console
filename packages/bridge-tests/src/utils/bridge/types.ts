@@ -52,7 +52,6 @@ export interface TestFunctionOptions {
   from?: string;
   // Setup installation parameters (new vault param fixes)
   installSource?: 'apt-repo' | 'tar-static' | 'deb-local';
-  rcloneSource?: 'install-script' | 'package-manager' | 'manual';
   dockerSource?: 'docker-repo' | 'package-manager' | 'snap' | 'manual';
   installAmdDriver?: 'auto' | 'true' | 'false';
   installNvidiaDriver?: 'auto' | 'true' | 'false';

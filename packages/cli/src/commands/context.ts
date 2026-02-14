@@ -3,6 +3,7 @@ import { DEFAULTS } from '@rediacc/shared/config';
 import { registerLocalDataCommands } from './context-local-data.js';
 import { registerLocalCommands } from './context-local.js';
 import { registerMigrationCommands } from './context-migration.js';
+import { registerInfraCommands } from './context-infra.js';
 import { t } from '../i18n/index.js';
 import { apiClient } from '../services/api.js';
 import { contextService } from '../services/context.js';
@@ -233,4 +234,7 @@ export function registerContextCommands(program: Command): void {
 
   // Migration commands (to-s3, to-local)
   registerMigrationCommands(context);
+
+  // Infrastructure commands (set-infra, show-infra, push-infra)
+  registerInfraCommands(context, program);
 }
