@@ -133,15 +133,12 @@ function applyPushFlags(
 }
 
 /** Build params for a storage-targeted backup push. */
-async function buildStoragePushParams(
+function buildStoragePushParams(
   repo: string,
+  repositoryGuid: string,
   options: { dest?: string; to: string; checkpoint?: boolean; force?: boolean; tag?: string }
-): Promise<{ params: Record<string, unknown>; dest: string }> {
-  const repoConfig = await contextService.getLocalRepository(repo);
-  if (!repoConfig) {
-    throw new ValidationError(t('errors.repositoryNotFound', { name: repo }));
-  }
-  const dest = repoConfig.repositoryGuid;
+): { params: Record<string, unknown>; dest: string } {
+  const dest = repositoryGuid;
   if (options.dest && options.dest !== dest) {
     outputService.warn(
       t('commands.backup.push.destIgnoredForStorage', { dest, provided: options.dest })
@@ -158,15 +155,12 @@ async function buildStoragePushParams(
 }
 
 /** Build params for a machine-targeted backup push. */
-async function buildMachinePushParams(
+function buildMachinePushParams(
   repo: string,
+  repositoryGuid: string,
   options: { dest?: string; toMachine: string; checkpoint?: boolean; force?: boolean; tag?: string }
-): Promise<{ params: Record<string, unknown>; dest: string }> {
-  const repoConfig = await contextService.getLocalRepository(repo);
-  if (!repoConfig) {
-    throw new ValidationError(t('errors.repositoryNotFound', { name: repo }));
-  }
-  const dest = options.dest ?? repoConfig.repositoryGuid;
+): { params: Record<string, unknown>; dest: string } {
+  const dest = options.dest ?? repositoryGuid;
   const params: Record<string, unknown> = {
     repository: repo,
     dest,
@@ -195,13 +189,18 @@ export function registerBackupCommands(program: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (repo, options) => {
       try {
+        const repoConfig = await contextService.getLocalRepository(repo);
+        if (!repoConfig) {
+          throw new ValidationError(t('errors.repositoryNotFound', { name: repo }));
+        }
+
         let params: Record<string, unknown>;
         let dest: string;
 
         if (options.to) {
-          ({ params, dest } = await buildStoragePushParams(repo, options));
+          ({ params, dest } = buildStoragePushParams(repo, repoConfig.repositoryGuid, options));
         } else if (options.toMachine) {
-          ({ params, dest } = await buildMachinePushParams(repo, options));
+          ({ params, dest } = buildMachinePushParams(repo, repoConfig.repositoryGuid, options));
         } else {
           throw new ValidationError(t('commands.backup.push.destRequired'));
         }

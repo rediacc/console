@@ -141,7 +141,7 @@ function printSummary(result: ListResult): void {
 
 export function registerStatusCommand(machine: Command, program: Command): void {
   machine
-    .command('info <name>')
+    .command('status <name>')
     .description(t('commands.machine.status.description'))
     .option('--debug', t('options.debug'))
     .action(async (name: string, options: { debug?: boolean }) => {
