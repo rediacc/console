@@ -1371,6 +1371,8 @@
       "region": "Regionsverwaltung",
       "repo": "Repository-Lebenszyklus",
       "repository": "Repository-Verwaltung",
+      "snapshot": "Snapshot-Verwaltung",
+      "backup": "Backup-Verwaltung",
       "shortcuts": "Schnellbefehle (Shortcuts)",
       "storage": "Speicherverwaltung",
       "sync": "Dateisynchronisation",

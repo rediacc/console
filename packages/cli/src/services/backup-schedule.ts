@@ -26,7 +26,7 @@ interface PushScheduleOptions {
  *   "0 2 * * 0"   → "Sun *-*-* 02:00:00"   (weekly Sunday 2 AM)
  *   "30 3 1 * *"  → "*-*-01 03:30:00"      (1st of month at 3:30)
  */
-export function cronToOnCalendar(cron: string): string {
+function cronToOnCalendar(cron: string): string {
   const parts = cron.trim().split(/\s+/);
   if (parts.length !== 5) {
     throw new Error(`Invalid cron expression: "${cron}" (expected 5 fields)`);

@@ -1371,6 +1371,8 @@
       "region": "Gestión de Regiones",
       "repo": "Ciclo de vida de repositorios",
       "repository": "Gestión de Repositorios",
+      "snapshot": "Gestión de instantáneas",
+      "backup": "Gestión de copias de seguridad",
       "shortcuts": "Comandos Rápidos (Atajos)",
       "storage": "Gestión de Almacenamiento",
       "sync": "Sincronización de Archivos",

@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1148
+    "keyCount": 1150
   },
   "hashes": {
     "cli.description": "8c564b05",
@@ -905,6 +905,7 @@
     "docs.pageTitle": "e4a7f240",
     "docs.sectionTitles.audit": "24bdd7b0",
     "docs.sectionTitles.auth": "33d0b125",
+    "docs.sectionTitles.backup": "e58ebc9b",
     "docs.sectionTitles.bridge": "5b1a766a",
     "docs.sectionTitles.ceph": "378229aa",
     "docs.sectionTitles.context": "f954476f",
@@ -918,6 +919,7 @@
     "docs.sectionTitles.repo": "12349d83",
     "docs.sectionTitles.repository": "b002e7cd",
     "docs.sectionTitles.shortcuts": "0d9199d7",
+    "docs.sectionTitles.snapshot": "75b8887d",
     "docs.sectionTitles.storage": "e4d88e14",
     "docs.sectionTitles.sync": "b5622149",
     "docs.sectionTitles.team": "9fd57cf1",

@@ -1371,6 +1371,8 @@
       "region": "Bölge Yönetimi",
       "repo": "Depo Yaşam Döngüsü",
       "repository": "Depo Yönetimi",
+      "snapshot": "Anlık Görüntü Yönetimi",
+      "backup": "Yedekleme Yönetimi",
       "shortcuts": "Hızlı Komutlar (Kısayollar)",
       "storage": "Depolama Yönetimi",
       "sync": "Dosya Senkronizasyonu",

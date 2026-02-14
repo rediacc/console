@@ -1371,6 +1371,8 @@
       "region": "区域管理",
       "repo": "仓库生命周期",
       "repository": "仓库管理",
+      "snapshot": "快照管理",
+      "backup": "备份管理",
       "shortcuts": "快捷命令（快捷方式）",
       "storage": "存储管理",
       "sync": "文件同步",
