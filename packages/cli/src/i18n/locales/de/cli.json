@@ -104,67 +104,67 @@
       }
     },
     "backup": {
-      "description": "Backup and restore repositories",
+      "description": "Repositories sichern und wiederherstellen",
       "list": {
-        "description": "List available backups on storage or machine",
-        "listing": "Listing backups...",
-        "optionFromMachine": "Source machine name",
-        "optionFromStorage": "Source storage name",
-        "sourceRequired": "Specify --from <storage> or --from-machine <machine>"
+        "description": "Verfügbare Backups auf Speicher oder Rechner auflisten",
+        "listing": "Backups werden aufgelistet...",
+        "optionFromMachine": "Name des Quellrechners",
+        "optionFromStorage": "Name des Quellspeichers",
+        "sourceRequired": "Geben Sie --from <storage> oder --from-machine <machine> an"
       },
       "pull": {
-        "description": "Pull repository backup from storage or machine",
-        "optionForce": "Force overwrite existing repository",
-        "optionFromMachine": "Source machine name",
-        "optionFromStorage": "Source storage name",
-        "pulling": "Pulling backup of \"{{repo}}\"...",
-        "sourceRequired": "Specify --from <storage> or --from-machine <machine>"
+        "description": "Repository-Backup von Speicher oder Rechner abrufen",
+        "optionForce": "Vorhandenes Repository überschreiben erzwingen",
+        "optionFromMachine": "Name des Quellrechners",
+        "optionFromStorage": "Name des Quellspeichers",
+        "pulling": "Backup von \"{{repo}}\" wird abgerufen...",
+        "sourceRequired": "Geben Sie --from <storage> oder --from-machine <machine> an"
       },
       "push": {
-        "description": "Push repository backup to storage or machine",
-        "destIgnoredForStorage": "Ignoring --dest {{provided}}: storage backups use repository GUID ({{dest}})",
-        "destRequired": "Specify --to <storage> or --to-machine <machine>",
-        "optionCheckpoint": "Create container checkpoint (hot backup)",
-        "optionDest": "Destination filename",
-        "optionForce": "Force overwrite existing backup",
-        "optionTag": "Deployment tag for versioning",
-        "optionToMachine": "Destination machine name",
-        "optionToStorage": "Destination storage name",
-        "pushing": "Pushing backup of \"{{repo}}\" to {{dest}}..."
+        "description": "Repository-Backup auf Speicher oder Rechner übertragen",
+        "destIgnoredForStorage": "--dest {{provided}} ignoriert: Speicher-Backups verwenden Repository-GUID ({{dest}})",
+        "destRequired": "Geben Sie --to <storage> oder --to-machine <machine> an",
+        "optionCheckpoint": "Container-Checkpoint erstellen (Hot Backup)",
+        "optionDest": "Zieldateiname",
+        "optionForce": "Vorhandenes Backup überschreiben erzwingen",
+        "optionTag": "Deployment-Tag für Versionierung",
+        "optionToMachine": "Name des Zielrechners",
+        "optionToStorage": "Name des Zielspeichers",
+        "pushing": "Backup von \"{{repo}}\" wird nach {{dest}} übertragen..."
       },
       "schedule": {
-        "description": "Manage scheduled backup configuration",
+        "description": "Konfiguration geplanter Backups verwalten",
         "push": {
-          "description": "Push backup schedule to remote machine (systemd timer)",
-          "success": "Backup schedule pushed to {{machine}}"
+          "description": "Backup-Zeitplan auf Remote-Rechner übertragen (systemd-Timer)",
+          "success": "Backup-Zeitplan an {{machine}} übertragen"
         },
         "set": {
-          "description": "Configure backup schedule settings",
-          "noOptions": "Specify at least one option: --destination, --cron, --enable, or --disable",
-          "optionCron": "Cron expression for backup schedule (e.g., \"0 2 * * *\")",
-          "optionDestination": "Default storage destination name",
-          "optionDisable": "Disable scheduled backups",
-          "optionEnable": "Enable scheduled backups",
-          "saved": "Backup schedule configuration saved"
+          "description": "Backup-Zeitplan-Einstellungen konfigurieren",
+          "noOptions": "Geben Sie mindestens eine Option an: --destination, --cron, --enable oder --disable",
+          "optionCron": "Cron-Ausdruck für den Backup-Zeitplan (z.B. \"0 2 * * *\")",
+          "optionDestination": "Standard-Speicherzielname",
+          "optionDisable": "Geplante Backups deaktivieren",
+          "optionEnable": "Geplante Backups aktivieren",
+          "saved": "Backup-Zeitplan-Konfiguration gespeichert"
         },
         "show": {
-          "description": "Show current backup schedule configuration",
-          "destination": "Destination: {{destination}}",
-          "enabled": "Enabled: {{enabled}}",
-          "notConfigured": "No backup schedule configured",
-          "schedule": "Schedule: {{schedule}}"
+          "description": "Aktuelle Backup-Zeitplan-Konfiguration anzeigen",
+          "destination": "Ziel: {{destination}}",
+          "enabled": "Aktiviert: {{enabled}}",
+          "notConfigured": "Kein Backup-Zeitplan konfiguriert",
+          "schedule": "Zeitplan: {{schedule}}"
         }
       },
       "sync": {
-        "description": "Bulk push/pull all repositories to/from cloud storage",
-        "directionConflict": "Cannot specify both --to and --from",
-        "directionRequired": "Specify --to <storage> (push) or --from <storage> (pull)",
-        "optionFrom": "Source storage name (pull mode)",
-        "optionOverride": "Override existing unmounted repos on pull",
-        "optionRepo": "Filter to specific repository (repeatable)",
-        "optionTo": "Destination storage name (push mode)",
-        "pullSuccess": "Sync pull completed",
-        "pushSuccess": "Sync push completed"
+        "description": "Alle Repositories massenhaft zum/vom Cloud-Speicher übertragen",
+        "directionConflict": "--to und --from können nicht gleichzeitig angegeben werden",
+        "directionRequired": "Geben Sie --to <storage> (Push) oder --from <storage> (Pull) an",
+        "optionFrom": "Name des Quellspeichers (Pull-Modus)",
+        "optionOverride": "Vorhandene nicht eingehängte Repos beim Pull überschreiben",
+        "optionRepo": "Auf bestimmtes Repository filtern (wiederholbar)",
+        "optionTo": "Name des Zielspeichers (Push-Modus)",
+        "pullSuccess": "Synchronisierungs-Pull abgeschlossen",
+        "pushSuccess": "Synchronisierungs-Push abgeschlossen"
       }
     },
     "bridge": {
@@ -399,9 +399,9 @@
         "noMachines": "Keine Machines konfiguriert. Fügen Sie eine hinzu mit: rdc context add-machine <name> --ip <ip> --user <user>"
       },
       "pushInfra": {
-        "description": "Push infrastructure configuration to remote machine",
-        "proxyInstallWarning": "Proxy install failed (code {{code}}). Run manually: sudo renet proxy install",
-        "success": "Infrastructure config pushed to \"{{name}}\""
+        "description": "Infrastruktur-Konfiguration auf den Remote-Rechner übertragen",
+        "proxyInstallWarning": "Proxy-Installation fehlgeschlagen (Code {{code}}). Manuell ausführen: sudo renet proxy install",
+        "success": "Infrastruktur-Konfiguration an \"{{name}}\" übertragen"
       },
       "removeMachine": {
         "description": "Entfernen Sie eine Machine aus dem aktuellen lokalen Kontext",
@@ -434,18 +434,18 @@
         "success": "\"{{key}}\" auf \"{{value}}\" gesetzt"
       },
       "setInfra": {
-        "description": "Set infrastructure configuration for a machine",
-        "invalidIPv4": "Invalid IPv4 address: {{ip}}",
-        "invalidIPv6": "Invalid IPv6 address: {{ip}}",
-        "noOptions": "No options specified. Use --public-ipv4, --base-domain, etc.",
-        "optionBaseDomain": "Base domain for applications",
-        "optionCertEmail": "Email for TLS certificate notifications",
-        "optionCfDnsToken": "Cloudflare DNS API token for ACME DNS-01 challenge",
-        "optionPublicIPv4": "Public IPv4 address",
-        "optionPublicIPv6": "Public IPv6 address",
-        "optionTcpPorts": "TCP ports to forward (comma-separated, e.g., 25,143,465)",
-        "optionUdpPorts": "UDP ports to forward (comma-separated, e.g., 53)",
-        "success": "Infrastructure config updated for \"{{name}}\""
+        "description": "Infrastruktur-Konfiguration für eine Maschine festlegen",
+        "invalidIPv4": "Ungültige IPv4-Adresse: {{ip}}",
+        "invalidIPv6": "Ungültige IPv6-Adresse: {{ip}}",
+        "noOptions": "Keine Optionen angegeben. Verwenden Sie --public-ipv4, --base-domain usw.",
+        "optionBaseDomain": "Basis-Domain für Anwendungen",
+        "optionCertEmail": "E-Mail für TLS-Zertifikatbenachrichtigungen",
+        "optionCfDnsToken": "Cloudflare DNS-API-Token für ACME DNS-01-Challenge",
+        "optionPublicIPv4": "Öffentliche IPv4-Adresse",
+        "optionPublicIPv6": "Öffentliche IPv6-Adresse",
+        "optionTcpPorts": "Weiterzuleitende TCP-Ports (kommagetrennt, z.B. 25,143,465)",
+        "optionUdpPorts": "Weiterzuleitende UDP-Ports (kommagetrennt, z.B. 53)",
+        "success": "Infrastruktur-Konfiguration für \"{{name}}\" aktualisiert"
       },
       "setLanguage": {
         "description": "Bevorzugte Sprache festlegen",
@@ -461,20 +461,20 @@
         "success": "SSH-Konfiguration aktualisiert"
       },
       "setupMachine": {
-        "completed": "Machine '{{machine}}' setup completed successfully",
-        "datastoreOption": "Datastore path on remote machine",
-        "datastoreSizeOption": "Datastore size (e.g., 95%, 100G)",
-        "description": "Run setup on a remote machine (installs btrfs, Docker, etc.)",
-        "failed": "Machine '{{machine}}' setup failed: {{error}}",
-        "starting": "Setting up machine '{{machine}}'..."
+        "completed": "Einrichtung der Maschine '{{machine}}' erfolgreich abgeschlossen",
+        "datastoreOption": "Datastore-Pfad auf dem Remote-Rechner",
+        "datastoreSizeOption": "Datastore-Größe (z.B. 95%, 100G)",
+        "description": "Setup auf einem Remote-Rechner ausführen (installiert btrfs, Docker usw.)",
+        "failed": "Einrichtung der Maschine '{{machine}}' fehlgeschlagen: {{error}}",
+        "starting": "Maschine '{{machine}}' wird eingerichtet..."
       },
       "show": {
         "description": "Details zum aktuellen Kontext anzeigen",
         "noContext": "Kein aktiver Kontext"
       },
       "showInfra": {
-        "description": "Show infrastructure configuration for a machine",
-        "noInfra": "No infrastructure config set for \"{{name}}\""
+        "description": "Infrastruktur-Konfiguration einer Maschine anzeigen",
+        "noInfra": "Keine Infrastruktur-Konfiguration für \"{{name}}\" festgelegt"
       },
       "storages": {
         "description": "Speicher im aktuellen lokalen Kontext auflisten",
@@ -623,10 +623,10 @@
         "unstableFound": "{{count}} instabile(r) Dienst(e) gefunden"
       },
       "status": {
-        "description": "Show full machine status (system, repos, containers, services)",
-        "fetched": "Status fetched",
-        "fetching": "Fetching status from {{machine}}...",
-        "noData": "No status data available"
+        "description": "Vollständigen Maschinenstatus anzeigen (System, Repos, Container, Dienste)",
+        "fetched": "Status abgerufen",
+        "fetching": "Status von {{machine}} wird abgerufen...",
+        "noData": "Keine Statusdaten verfügbar"
       },
       "testConnection": {
         "authMethod": "  Auth-Methode: {{method}}",
@@ -872,21 +872,21 @@
     },
     "repo": {
       "create": {
-        "alreadyExists": "Repository \"{{name}}\" already exists in context",
-        "completed": "Repository created",
-        "description": "Create a new encrypted repository",
-        "failed": "Repository creation failed",
-        "registered": "Registered \"{{repository}}\" ({{guid}}, network {{networkId}})",
-        "rollback": "Rolled back config for \"{{repository}}\"",
-        "sizeOption": "Repository size (e.g., 10G, 100G, 1T)",
-        "starting": "Creating repository \"{{repository}}\" ({{size}}) on \"{{machine}}\"..."
+        "alreadyExists": "Repository \"{{name}}\" existiert bereits im Kontext",
+        "completed": "Repository erstellt",
+        "description": "Neues verschlüsseltes Repository erstellen",
+        "failed": "Repository-Erstellung fehlgeschlagen",
+        "registered": "\"{{repository}}\" registriert ({{guid}}, Netzwerk {{networkId}})",
+        "rollback": "Konfiguration für \"{{repository}}\" zurückgesetzt",
+        "sizeOption": "Repository-Größe (z.B. 10G, 100G, 1T)",
+        "starting": "Repository \"{{repository}}\" ({{size}}) wird auf \"{{machine}}\" erstellt..."
       },
       "delete": {
-        "completed": "Repository deleted",
-        "description": "Delete a repository",
-        "failed": "Repository deletion failed",
-        "removed": "Removed \"{{repository}}\" from config",
-        "starting": "Deleting \"{{repository}}\" on \"{{machine}}\"..."
+        "completed": "Repository gelöscht",
+        "description": "Repository löschen",
+        "failed": "Repository-Löschung fehlgeschlagen",
+        "removed": "\"{{repository}}\" aus der Konfiguration entfernt",
+        "starting": "\"{{repository}}\" wird auf \"{{machine}}\" gelöscht..."
       },
       "description": "Repository-Lebenszyklus-Verwaltung (lokaler Modus)",
       "down": {
@@ -898,21 +898,21 @@
         "unmountOption": "Repository nach dem Stoppen unmounten"
       },
       "expand": {
-        "completed": "Expansion completed",
-        "description": "Expand a mounted repository online (zero downtime)",
-        "failed": "Expansion failed",
-        "sizeOption": "New repository size (e.g., 10G, 100G, 1T)",
-        "starting": "Expanding \"{{repository}}\" to {{size}} on \"{{machine}}\"..."
+        "completed": "Erweiterung abgeschlossen",
+        "description": "Eingehängtes Repository online erweitern (ohne Ausfallzeit)",
+        "failed": "Erweiterung fehlgeschlagen",
+        "sizeOption": "Neue Repository-Größe (z.B. 10G, 100G, 1T)",
+        "starting": "\"{{repository}}\" wird auf {{size}} auf \"{{machine}}\" erweitert..."
       },
       "fork": {
-        "alreadyExists": "Repository \"{{name}}\" already exists in context",
-        "completed": "Fork created",
-        "description": "Create a CoW (Copy-on-Write) fork of a repository",
-        "failed": "Fork creation failed",
-        "registered": "Registered fork \"{{repository}}\" ({{guid}}, network {{networkId}})",
-        "rollback": "Rolled back config for \"{{repository}}\"",
-        "starting": "Forking \"{{parent}}\" as \"{{repository}}\" on \"{{machine}}\"...",
-        "tagOption": "Fork name"
+        "alreadyExists": "Repository \"{{name}}\" existiert bereits im Kontext",
+        "completed": "Fork erstellt",
+        "description": "CoW-Fork (Copy-on-Write) eines Repositorys erstellen",
+        "failed": "Fork-Erstellung fehlgeschlagen",
+        "registered": "Fork \"{{repository}}\" registriert ({{guid}}, Netzwerk {{networkId}})",
+        "rollback": "Konfiguration für \"{{repository}}\" zurückgesetzt",
+        "starting": "Fork von \"{{parent}}\" als \"{{repository}}\" auf \"{{machine}}\" wird erstellt...",
+        "tagOption": "Fork-Name"
       },
       "list": {
         "completed": "Auflistung abgeschlossen",
@@ -930,18 +930,18 @@
       },
       "noCredential": "Warnung: Repository \"{{name}}\" hat keine Zugangsdaten. Operationen auf verschlüsselten Repositories können fehlschlagen.",
       "ownership": {
-        "completed": "Ownership updated",
-        "description": "Change repository directory ownership",
-        "failed": "Ownership update failed",
-        "starting": "Setting ownership of \"{{repository}}\" on \"{{machine}}\"...",
-        "uidOption": "Owner UID (default: 7111)"
+        "completed": "Besitz aktualisiert",
+        "description": "Repository-Verzeichnis-Besitz ändern",
+        "failed": "Besitz-Aktualisierung fehlgeschlagen",
+        "starting": "Besitz von \"{{repository}}\" wird auf \"{{machine}}\" gesetzt...",
+        "uidOption": "Besitzer-UID (Standard: 7111)"
       },
       "resize": {
-        "completed": "Resize completed",
-        "description": "Resize a repository offline (supports grow and shrink)",
-        "failed": "Resize failed",
-        "sizeOption": "New repository size (e.g., 10G, 100G, 1T)",
-        "starting": "Resizing \"{{repository}}\" to {{size}} on \"{{machine}}\"..."
+        "completed": "Skalierung abgeschlossen",
+        "description": "Repository offline skalieren (unterstützt Vergrößern und Verkleinern)",
+        "failed": "Skalierung fehlgeschlagen",
+        "sizeOption": "Neue Repository-Größe (z.B. 10G, 100G, 1T)",
+        "starting": "\"{{repository}}\" wird auf {{size}} auf \"{{machine}}\" skaliert..."
       },
       "status": {
         "completed": "Status abgerufen",
@@ -950,13 +950,13 @@
         "starting": "Status von \"{{repository}}\" auf \"{{machine}}\" wird abgerufen..."
       },
       "template": {
-        "completed": "Template applied",
-        "description": "Apply a template to a repository",
-        "failed": "Template application failed",
-        "fileNotFound": "Template file not found: {{path}}",
-        "fileOption": "Path to template JSON file",
-        "grandOption": "Grand repository name (auto-resolves to GUID)",
-        "starting": "Applying template to \"{{repository}}\" on \"{{machine}}\"..."
+        "completed": "Vorlage angewendet",
+        "description": "Vorlage auf ein Repository anwenden",
+        "failed": "Vorlagen-Anwendung fehlgeschlagen",
+        "fileNotFound": "Vorlagendatei nicht gefunden: {{path}}",
+        "fileOption": "Pfad zur JSON-Vorlagendatei",
+        "grandOption": "Grand-Repository-Name (wird automatisch in GUID aufgelöst)",
+        "starting": "Vorlage wird auf \"{{repository}}\" auf \"{{machine}}\" angewendet..."
       },
       "unmount": {
         "checkpointOption": "Checkpoint vor dem Unmounten erstellen",
@@ -975,10 +975,10 @@
         "starting": "Dienste für \"{{repository}}\" auf \"{{machine}}\" werden gestartet..."
       },
       "validate": {
-        "completed": "Validation completed",
-        "description": "Validate repository integrity",
-        "failed": "Validation failed",
-        "starting": "Validating \"{{repository}}\" on \"{{machine}}\"..."
+        "completed": "Überprüfung abgeschlossen",
+        "description": "Repository-Integrität überprüfen",
+        "failed": "Überprüfung fehlgeschlagen",
+        "starting": "\"{{repository}}\" wird auf \"{{machine}}\" überprüft..."
       }
     },
     "repository": {
@@ -1052,20 +1052,20 @@
     },
     "snapshot": {
       "create": {
-        "creating": "Creating snapshot of \"{{repo}}\" on {{machine}}...",
-        "description": "Create a BTRFS snapshot of a repository",
-        "optionSnapshotName": "Explicit snapshot name (auto-generated if empty)",
-        "success": "Snapshot created: {{name}} ({{path}})"
+        "creating": "Snapshot von \"{{repo}}\" auf {{machine}} wird erstellt...",
+        "description": "BTRFS-Snapshot eines Repositorys erstellen",
+        "optionSnapshotName": "Expliziter Snapshot-Name (wird automatisch generiert, wenn leer)",
+        "success": "Snapshot erstellt: {{name}} ({{path}})"
       },
       "delete": {
-        "description": "Delete a snapshot from a remote machine",
-        "success": "Snapshot deleted: {{name}}"
+        "description": "Snapshot von einem Remote-Rechner löschen",
+        "success": "Snapshot gelöscht: {{name}}"
       },
-      "description": "Manage BTRFS snapshots on remote machines",
+      "description": "BTRFS-Snapshots auf Remote-Rechnern verwalten",
       "list": {
-        "description": "List snapshots on a remote machine",
-        "header": "{{count}} snapshot(s) in {{path}}:",
-        "noSnapshots": "No snapshots found."
+        "description": "Snapshots auf einem Remote-Rechner auflisten",
+        "header": "{{count}} Snapshot(s) in {{path}}:",
+        "noSnapshots": "Keine Snapshots gefunden."
       }
     },
     "storage": {

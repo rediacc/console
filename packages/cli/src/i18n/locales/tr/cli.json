@@ -104,67 +104,67 @@
       }
     },
     "backup": {
-      "description": "Backup and restore repositories",
+      "description": "Depoları yedekle ve geri yükle",
       "list": {
-        "description": "List available backups on storage or machine",
-        "listing": "Listing backups...",
-        "optionFromMachine": "Source machine name",
-        "optionFromStorage": "Source storage name",
-        "sourceRequired": "Specify --from <storage> or --from-machine <machine>"
+        "description": "Depolamadaki veya makinedeki mevcut yedekleri listele",
+        "listing": "Yedekler listeleniyor...",
+        "optionFromMachine": "Kaynak makine adı",
+        "optionFromStorage": "Kaynak depolama adı",
+        "sourceRequired": "--from <storage> veya --from-machine <machine> belirtin"
       },
       "pull": {
-        "description": "Pull repository backup from storage or machine",
-        "optionForce": "Force overwrite existing repository",
-        "optionFromMachine": "Source machine name",
-        "optionFromStorage": "Source storage name",
-        "pulling": "Pulling backup of \"{{repo}}\"...",
-        "sourceRequired": "Specify --from <storage> or --from-machine <machine>"
+        "description": "Depo yedeğini depolamadan veya makineden al",
+        "optionForce": "Mevcut deponun üzerine yazmaya zorla",
+        "optionFromMachine": "Kaynak makine adı",
+        "optionFromStorage": "Kaynak depolama adı",
+        "pulling": "\"{{repo}}\" yedeği alınıyor...",
+        "sourceRequired": "--from <storage> veya --from-machine <machine> belirtin"
       },
       "push": {
-        "description": "Push repository backup to storage or machine",
-        "destIgnoredForStorage": "Ignoring --dest {{provided}}: storage backups use repository GUID ({{dest}})",
-        "destRequired": "Specify --to <storage> or --to-machine <machine>",
-        "optionCheckpoint": "Create container checkpoint (hot backup)",
-        "optionDest": "Destination filename",
-        "optionForce": "Force overwrite existing backup",
-        "optionTag": "Deployment tag for versioning",
-        "optionToMachine": "Destination machine name",
-        "optionToStorage": "Destination storage name",
-        "pushing": "Pushing backup of \"{{repo}}\" to {{dest}}..."
+        "description": "Depo yedeğini depolamaya veya makineye gönder",
+        "destIgnoredForStorage": "--dest {{provided}} yoksayıldı: depolama yedekleri depo GUID'sini kullanır ({{dest}})",
+        "destRequired": "--to <storage> veya --to-machine <machine> belirtin",
+        "optionCheckpoint": "Konteyner kontrol noktası oluştur (canlı yedekleme)",
+        "optionDest": "Hedef dosya adı",
+        "optionForce": "Mevcut yedeğin üzerine yazmaya zorla",
+        "optionTag": "Sürüm belirleme için dağıtım etiketi",
+        "optionToMachine": "Hedef makine adı",
+        "optionToStorage": "Hedef depolama adı",
+        "pushing": "\"{{repo}}\" yedeği {{dest}} hedefine gönderiliyor..."
       },
       "schedule": {
-        "description": "Manage scheduled backup configuration",
+        "description": "Zamanlanmış yedekleme yapılandırmasını yönet",
         "push": {
-          "description": "Push backup schedule to remote machine (systemd timer)",
-          "success": "Backup schedule pushed to {{machine}}"
+          "description": "Yedekleme zamanlamasını uzak makineye gönder (systemd zamanlayıcı)",
+          "success": "Yedekleme zamanlaması {{machine}} makinesine gönderildi"
         },
         "set": {
-          "description": "Configure backup schedule settings",
-          "noOptions": "Specify at least one option: --destination, --cron, --enable, or --disable",
-          "optionCron": "Cron expression for backup schedule (e.g., \"0 2 * * *\")",
-          "optionDestination": "Default storage destination name",
-          "optionDisable": "Disable scheduled backups",
-          "optionEnable": "Enable scheduled backups",
-          "saved": "Backup schedule configuration saved"
+          "description": "Yedekleme zamanlama ayarlarını yapılandır",
+          "noOptions": "En az bir seçenek belirtin: --destination, --cron, --enable veya --disable",
+          "optionCron": "Yedekleme zamanlaması için cron ifadesi (ör. \"0 2 * * *\")",
+          "optionDestination": "Varsayılan depolama hedef adı",
+          "optionDisable": "Zamanlanmış yedeklemeleri devre dışı bırak",
+          "optionEnable": "Zamanlanmış yedeklemeleri etkinleştir",
+          "saved": "Yedekleme zamanlama yapılandırması kaydedildi"
         },
         "show": {
-          "description": "Show current backup schedule configuration",
-          "destination": "Destination: {{destination}}",
-          "enabled": "Enabled: {{enabled}}",
-          "notConfigured": "No backup schedule configured",
-          "schedule": "Schedule: {{schedule}}"
+          "description": "Mevcut yedekleme zamanlama yapılandırmasını göster",
+          "destination": "Hedef: {{destination}}",
+          "enabled": "Etkin: {{enabled}}",
+          "notConfigured": "Yedekleme zamanlaması yapılandırılmamış",
+          "schedule": "Zamanlama: {{schedule}}"
         }
       },
       "sync": {
-        "description": "Bulk push/pull all repositories to/from cloud storage",
-        "directionConflict": "Cannot specify both --to and --from",
-        "directionRequired": "Specify --to <storage> (push) or --from <storage> (pull)",
-        "optionFrom": "Source storage name (pull mode)",
-        "optionOverride": "Override existing unmounted repos on pull",
-        "optionRepo": "Filter to specific repository (repeatable)",
-        "optionTo": "Destination storage name (push mode)",
-        "pullSuccess": "Sync pull completed",
-        "pushSuccess": "Sync push completed"
+        "description": "Tüm depoları toplu olarak bulut depolamaya gönder/al",
+        "directionConflict": "--to ve --from aynı anda belirtilemez",
+        "directionRequired": "--to <storage> (gönderme) veya --from <storage> (alma) belirtin",
+        "optionFrom": "Kaynak depolama adı (alma modu)",
+        "optionOverride": "Pull sırasında mevcut bağlı olmayan depoların üzerine yaz",
+        "optionRepo": "Belirli depoya filtrele (tekrarlanabilir)",
+        "optionTo": "Hedef depolama adı (gönderme modu)",
+        "pullSuccess": "Eşitleme alımı tamamlandı",
+        "pushSuccess": "Eşitleme gönderimi tamamlandı"
       }
     },
     "bridge": {
@@ -399,9 +399,9 @@
         "noMachines": "Hiç makine yapılandırılmadı. Eklemek için: rdc context add-machine <name> --ip <ip> --user <user>"
       },
       "pushInfra": {
-        "description": "Push infrastructure configuration to remote machine",
-        "proxyInstallWarning": "Proxy install failed (code {{code}}). Run manually: sudo renet proxy install",
-        "success": "Infrastructure config pushed to \"{{name}}\""
+        "description": "Altyapı yapılandırmasını uzak makineye gönder",
+        "proxyInstallWarning": "Proxy kurulumu başarısız (kod {{code}}). Manuel çalıştırın: sudo renet proxy install",
+        "success": "Altyapı yapılandırması \"{{name}}\" makinesine gönderildi"
       },
       "removeMachine": {
         "description": "Güncel yerel bağlamdan bir makineyi kaldırın",
@@ -434,18 +434,18 @@
         "success": "\"{{key}}\" değeri \"{{value}}\" olarak ayarlandı"
       },
       "setInfra": {
-        "description": "Set infrastructure configuration for a machine",
-        "invalidIPv4": "Invalid IPv4 address: {{ip}}",
-        "invalidIPv6": "Invalid IPv6 address: {{ip}}",
-        "noOptions": "No options specified. Use --public-ipv4, --base-domain, etc.",
-        "optionBaseDomain": "Base domain for applications",
-        "optionCertEmail": "Email for TLS certificate notifications",
-        "optionCfDnsToken": "Cloudflare DNS API token for ACME DNS-01 challenge",
-        "optionPublicIPv4": "Public IPv4 address",
-        "optionPublicIPv6": "Public IPv6 address",
-        "optionTcpPorts": "TCP ports to forward (comma-separated, e.g., 25,143,465)",
-        "optionUdpPorts": "UDP ports to forward (comma-separated, e.g., 53)",
-        "success": "Infrastructure config updated for \"{{name}}\""
+        "description": "Bir makine için altyapı yapılandırmasını ayarla",
+        "invalidIPv4": "Geçersiz IPv4 adresi: {{ip}}",
+        "invalidIPv6": "Geçersiz IPv6 adresi: {{ip}}",
+        "noOptions": "Seçenek belirtilmedi. --public-ipv4, --base-domain vb. kullanın.",
+        "optionBaseDomain": "Uygulamalar için temel alan adı",
+        "optionCertEmail": "TLS sertifika bildirimleri için e-posta",
+        "optionCfDnsToken": "ACME DNS-01 doğrulaması için Cloudflare DNS API anahtarı",
+        "optionPublicIPv4": "Genel IPv4 adresi",
+        "optionPublicIPv6": "Genel IPv6 adresi",
+        "optionTcpPorts": "Yönlendirilecek TCP portları (virgülle ayrılmış, ör. 25,143,465)",
+        "optionUdpPorts": "Yönlendirilecek UDP portları (virgülle ayrılmış, ör. 53)",
+        "success": "\"{{name}}\" için altyapı yapılandırması güncellendi"
       },
       "setLanguage": {
         "description": "Tercih edilen dili ayarlayın",
@@ -461,20 +461,20 @@
         "success": "SSH yapılandırması güncellendi"
       },
       "setupMachine": {
-        "completed": "Machine '{{machine}}' setup completed successfully",
-        "datastoreOption": "Datastore path on remote machine",
-        "datastoreSizeOption": "Datastore size (e.g., 95%, 100G)",
-        "description": "Run setup on a remote machine (installs btrfs, Docker, etc.)",
-        "failed": "Machine '{{machine}}' setup failed: {{error}}",
-        "starting": "Setting up machine '{{machine}}'..."
+        "completed": "'{{machine}}' makinesi kurulumu başarıyla tamamlandı",
+        "datastoreOption": "Uzak makinedeki veri deposu yolu",
+        "datastoreSizeOption": "Veri deposu boyutu (ör. 95%, 100G)",
+        "description": "Uzak makinede kurulum çalıştır (btrfs, Docker vb. yükler)",
+        "failed": "'{{machine}}' makinesi kurulumu başarısız: {{error}}",
+        "starting": "'{{machine}}' makinesi kuruluyor..."
       },
       "show": {
         "description": "Güncel bağlam ayrıntılarını gösterin",
         "noContext": "Etkin bağlam yok"
       },
       "showInfra": {
-        "description": "Show infrastructure configuration for a machine",
-        "noInfra": "No infrastructure config set for \"{{name}}\""
+        "description": "Bir makinenin altyapı yapılandırmasını göster",
+        "noInfra": "\"{{name}}\" için altyapı yapılandırması ayarlanmamış"
       },
       "storages": {
         "description": "Güncel yerel bağlamdaki depolama alanlarını listele",
@@ -623,10 +623,10 @@
         "unstableFound": "{{count}} kararsız servis bulundu"
       },
       "status": {
-        "description": "Show full machine status (system, repos, containers, services)",
-        "fetched": "Status fetched",
-        "fetching": "Fetching status from {{machine}}...",
-        "noData": "No status data available"
+        "description": "Tam makine durumunu göster (sistem, depolar, konteynerler, servisler)",
+        "fetched": "Durum alındı",
+        "fetching": "{{machine}} durumu alınıyor...",
+        "noData": "Durum verisi mevcut değil"
       },
       "testConnection": {
         "authMethod": "  Kimlik Doğrulama Yöntemi: {{method}}",
@@ -872,21 +872,21 @@
     },
     "repo": {
       "create": {
-        "alreadyExists": "Repository \"{{name}}\" already exists in context",
-        "completed": "Repository created",
-        "description": "Create a new encrypted repository",
-        "failed": "Repository creation failed",
-        "registered": "Registered \"{{repository}}\" ({{guid}}, network {{networkId}})",
-        "rollback": "Rolled back config for \"{{repository}}\"",
-        "sizeOption": "Repository size (e.g., 10G, 100G, 1T)",
-        "starting": "Creating repository \"{{repository}}\" ({{size}}) on \"{{machine}}\"..."
+        "alreadyExists": "\"{{name}}\" deposu bağlamda zaten mevcut",
+        "completed": "Depo oluşturuldu",
+        "description": "Yeni şifreli depo oluştur",
+        "failed": "Depo oluşturma başarısız",
+        "registered": "\"{{repository}}\" kaydedildi ({{guid}}, ağ {{networkId}})",
+        "rollback": "\"{{repository}}\" yapılandırması geri alındı",
+        "sizeOption": "Depo boyutu (ör. 10G, 100G, 1T)",
+        "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" ({{size}}) deposu oluşturuluyor..."
       },
       "delete": {
-        "completed": "Repository deleted",
-        "description": "Delete a repository",
-        "failed": "Repository deletion failed",
-        "removed": "Removed \"{{repository}}\" from config",
-        "starting": "Deleting \"{{repository}}\" on \"{{machine}}\"..."
+        "completed": "Depo silindi",
+        "description": "Depoyu sil",
+        "failed": "Depo silme başarısız",
+        "removed": "\"{{repository}}\" yapılandırmadan kaldırıldı",
+        "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" siliniyor..."
       },
       "description": "Depo yaşam döngüsü yönetimi (yerel mod)",
       "down": {
@@ -898,21 +898,21 @@
         "unmountOption": "Durdurduktan sonra depoyu ayır"
       },
       "expand": {
-        "completed": "Expansion completed",
-        "description": "Expand a mounted repository online (zero downtime)",
-        "failed": "Expansion failed",
-        "sizeOption": "New repository size (e.g., 10G, 100G, 1T)",
-        "starting": "Expanding \"{{repository}}\" to {{size}} on \"{{machine}}\"..."
+        "completed": "Genişletme tamamlandı",
+        "description": "Bağlı depoyu çevrimiçi genişlet (sıfır kesinti)",
+        "failed": "Genişletme başarısız",
+        "sizeOption": "Yeni depo boyutu (ör. 10G, 100G, 1T)",
+        "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" {{size}} olarak genişletiliyor..."
       },
       "fork": {
-        "alreadyExists": "Repository \"{{name}}\" already exists in context",
-        "completed": "Fork created",
-        "description": "Create a CoW (Copy-on-Write) fork of a repository",
-        "failed": "Fork creation failed",
-        "registered": "Registered fork \"{{repository}}\" ({{guid}}, network {{networkId}})",
-        "rollback": "Rolled back config for \"{{repository}}\"",
-        "starting": "Forking \"{{parent}}\" as \"{{repository}}\" on \"{{machine}}\"...",
-        "tagOption": "Fork name"
+        "alreadyExists": "\"{{name}}\" deposu bağlamda zaten mevcut",
+        "completed": "Çatal oluşturuldu",
+        "description": "Bir deponun CoW (Copy-on-Write) çatalını oluştur",
+        "failed": "Çatal oluşturma başarısız",
+        "registered": "Çatal \"{{repository}}\" kaydedildi ({{guid}}, ağ {{networkId}})",
+        "rollback": "\"{{repository}}\" yapılandırması geri alındı",
+        "starting": "\"{{machine}}\" üzerinde \"{{parent}}\" deposunun \"{{repository}}\" olarak çatallanıyor...",
+        "tagOption": "Çatal adı"
       },
       "list": {
         "completed": "Listeleme tamamlandı",
@@ -930,18 +930,18 @@
       },
       "noCredential": "Uyarı: \"{{name}}\" deposunun kimlik bilgisi ayarlanmamış. Şifreli depolardaki işlemler başarısız olabilir.",
       "ownership": {
-        "completed": "Ownership updated",
-        "description": "Change repository directory ownership",
-        "failed": "Ownership update failed",
-        "starting": "Setting ownership of \"{{repository}}\" on \"{{machine}}\"...",
-        "uidOption": "Owner UID (default: 7111)"
+        "completed": "Sahiplik güncellendi",
+        "description": "Depo dizini sahipliğini değiştir",
+        "failed": "Sahiplik güncelleme başarısız",
+        "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" sahipliği ayarlanıyor...",
+        "uidOption": "Sahip UID'si (varsayılan: 7111)"
       },
       "resize": {
-        "completed": "Resize completed",
-        "description": "Resize a repository offline (supports grow and shrink)",
-        "failed": "Resize failed",
-        "sizeOption": "New repository size (e.g., 10G, 100G, 1T)",
-        "starting": "Resizing \"{{repository}}\" to {{size}} on \"{{machine}}\"..."
+        "completed": "Yeniden boyutlandırma tamamlandı",
+        "description": "Depoyu çevrimdışı yeniden boyutlandır (büyütme ve küçültme destekler)",
+        "failed": "Yeniden boyutlandırma başarısız",
+        "sizeOption": "Yeni depo boyutu (ör. 10G, 100G, 1T)",
+        "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" {{size}} olarak yeniden boyutlandırılıyor..."
       },
       "status": {
         "completed": "Durum alındı",
@@ -950,13 +950,13 @@
         "starting": "\"{{repository}}\" deposunun durumu \"{{machine}}\" üzerinden alınıyor..."
       },
       "template": {
-        "completed": "Template applied",
-        "description": "Apply a template to a repository",
-        "failed": "Template application failed",
-        "fileNotFound": "Template file not found: {{path}}",
-        "fileOption": "Path to template JSON file",
-        "grandOption": "Grand repository name (auto-resolves to GUID)",
-        "starting": "Applying template to \"{{repository}}\" on \"{{machine}}\"..."
+        "completed": "Şablon uygulandı",
+        "description": "Depoya şablon uygula",
+        "failed": "Şablon uygulama başarısız",
+        "fileNotFound": "Şablon dosyası bulunamadı: {{path}}",
+        "fileOption": "Şablon JSON dosya yolu",
+        "grandOption": "Grand depo adı (otomatik olarak GUID'ye çözülür)",
+        "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" deposuna şablon uygulanıyor..."
       },
       "unmount": {
         "checkpointOption": "Ayırmadan önce kontrol noktası oluştur",
@@ -975,10 +975,10 @@
         "starting": "\"{{repository}}\" için servisler \"{{machine}}\" üzerinde başlatılıyor..."
       },
       "validate": {
-        "completed": "Validation completed",
-        "description": "Validate repository integrity",
-        "failed": "Validation failed",
-        "starting": "Validating \"{{repository}}\" on \"{{machine}}\"..."
+        "completed": "Doğrulama tamamlandı",
+        "description": "Depo bütünlüğünü doğrula",
+        "failed": "Doğrulama başarısız",
+        "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" doğrulanıyor..."
       }
     },
     "repository": {
@@ -1052,20 +1052,20 @@
     },
     "snapshot": {
       "create": {
-        "creating": "Creating snapshot of \"{{repo}}\" on {{machine}}...",
-        "description": "Create a BTRFS snapshot of a repository",
-        "optionSnapshotName": "Explicit snapshot name (auto-generated if empty)",
-        "success": "Snapshot created: {{name}} ({{path}})"
+        "creating": "{{machine}} üzerinde \"{{repo}}\" anlık görüntüsü oluşturuluyor...",
+        "description": "Bir deponun BTRFS anlık görüntüsünü oluştur",
+        "optionSnapshotName": "Açık anlık görüntü adı (boşsa otomatik oluşturulur)",
+        "success": "Anlık görüntü oluşturuldu: {{name}} ({{path}})"
       },
       "delete": {
-        "description": "Delete a snapshot from a remote machine",
-        "success": "Snapshot deleted: {{name}}"
+        "description": "Uzak makineden anlık görüntü sil",
+        "success": "Anlık görüntü silindi: {{name}}"
       },
-      "description": "Manage BTRFS snapshots on remote machines",
+      "description": "Uzak makinelerdeki BTRFS anlık görüntülerini yönet",
       "list": {
-        "description": "List snapshots on a remote machine",
-        "header": "{{count}} snapshot(s) in {{path}}:",
-        "noSnapshots": "No snapshots found."
+        "description": "Uzak makinedeki anlık görüntüleri listele",
+        "header": "{{path}} içinde {{count}} anlık görüntü:",
+        "noSnapshots": "Anlık görüntü bulunamadı."
       }
     },
     "storage": {

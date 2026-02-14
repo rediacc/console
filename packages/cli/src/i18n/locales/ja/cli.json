@@ -104,67 +104,67 @@
       }
     },
     "backup": {
-      "description": "Backup and restore repositories",
+      "description": "リポジトリのバックアップと復元",
       "list": {
-        "description": "List available backups on storage or machine",
-        "listing": "Listing backups...",
-        "optionFromMachine": "Source machine name",
-        "optionFromStorage": "Source storage name",
-        "sourceRequired": "Specify --from <storage> or --from-machine <machine>"
+        "description": "ストレージまたはマシン上の利用可能なバックアップを一覧表示する",
+        "listing": "バックアップを一覧表示中...",
+        "optionFromMachine": "ソースマシン名",
+        "optionFromStorage": "ソースストレージ名",
+        "sourceRequired": "--from <storage> または --from-machine <machine> を指定してください"
       },
       "pull": {
-        "description": "Pull repository backup from storage or machine",
-        "optionForce": "Force overwrite existing repository",
-        "optionFromMachine": "Source machine name",
-        "optionFromStorage": "Source storage name",
-        "pulling": "Pulling backup of \"{{repo}}\"...",
-        "sourceRequired": "Specify --from <storage> or --from-machine <machine>"
+        "description": "ストレージまたはマシンからリポジトリのバックアップをプルする",
+        "optionForce": "既存のリポジトリを強制的に上書きする",
+        "optionFromMachine": "ソースマシン名",
+        "optionFromStorage": "ソースストレージ名",
+        "pulling": "\"{{repo}}\" のバックアップをプル中...",
+        "sourceRequired": "--from <storage> または --from-machine <machine> を指定してください"
       },
       "push": {
-        "description": "Push repository backup to storage or machine",
-        "destIgnoredForStorage": "Ignoring --dest {{provided}}: storage backups use repository GUID ({{dest}})",
-        "destRequired": "Specify --to <storage> or --to-machine <machine>",
-        "optionCheckpoint": "Create container checkpoint (hot backup)",
-        "optionDest": "Destination filename",
-        "optionForce": "Force overwrite existing backup",
-        "optionTag": "Deployment tag for versioning",
-        "optionToMachine": "Destination machine name",
-        "optionToStorage": "Destination storage name",
-        "pushing": "Pushing backup of \"{{repo}}\" to {{dest}}..."
+        "description": "リポジトリのバックアップをストレージまたはマシンにプッシュする",
+        "destIgnoredForStorage": "--dest {{provided}} を無視: ストレージバックアップはリポジトリGUIDを使用します（{{dest}}）",
+        "destRequired": "--to <storage> または --to-machine <machine> を指定してください",
+        "optionCheckpoint": "コンテナチェックポイントを作成（ホットバックアップ）",
+        "optionDest": "宛先ファイル名",
+        "optionForce": "既存のバックアップを強制的に上書きする",
+        "optionTag": "バージョニング用デプロイタグ",
+        "optionToMachine": "宛先マシン名",
+        "optionToStorage": "宛先ストレージ名",
+        "pushing": "\"{{repo}}\" のバックアップを {{dest}} にプッシュ中..."
       },
       "schedule": {
-        "description": "Manage scheduled backup configuration",
+        "description": "スケジュールバックアップ設定を管理する",
         "push": {
-          "description": "Push backup schedule to remote machine (systemd timer)",
-          "success": "Backup schedule pushed to {{machine}}"
+          "description": "バックアップスケジュールをリモートマシンにプッシュする（systemdタイマー）",
+          "success": "バックアップスケジュールを {{machine}} にプッシュしました"
         },
         "set": {
-          "description": "Configure backup schedule settings",
-          "noOptions": "Specify at least one option: --destination, --cron, --enable, or --disable",
-          "optionCron": "Cron expression for backup schedule (e.g., \"0 2 * * *\")",
-          "optionDestination": "Default storage destination name",
-          "optionDisable": "Disable scheduled backups",
-          "optionEnable": "Enable scheduled backups",
-          "saved": "Backup schedule configuration saved"
+          "description": "バックアップスケジュール設定を構成する",
+          "noOptions": "少なくとも1つのオプションを指定してください: --destination、--cron、--enable、または --disable",
+          "optionCron": "バックアップスケジュールのcron式（例: \"0 2 * * *\"）",
+          "optionDestination": "デフォルトのストレージ宛先名",
+          "optionDisable": "スケジュールバックアップを無効にする",
+          "optionEnable": "スケジュールバックアップを有効にする",
+          "saved": "バックアップスケジュール設定を保存しました"
         },
         "show": {
-          "description": "Show current backup schedule configuration",
-          "destination": "Destination: {{destination}}",
-          "enabled": "Enabled: {{enabled}}",
-          "notConfigured": "No backup schedule configured",
-          "schedule": "Schedule: {{schedule}}"
+          "description": "現在のバックアップスケジュール設定を表示する",
+          "destination": "宛先: {{destination}}",
+          "enabled": "有効: {{enabled}}",
+          "notConfigured": "バックアップスケジュールが設定されていません",
+          "schedule": "スケジュール: {{schedule}}"
         }
       },
       "sync": {
-        "description": "Bulk push/pull all repositories to/from cloud storage",
-        "directionConflict": "Cannot specify both --to and --from",
-        "directionRequired": "Specify --to <storage> (push) or --from <storage> (pull)",
-        "optionFrom": "Source storage name (pull mode)",
-        "optionOverride": "Override existing unmounted repos on pull",
-        "optionRepo": "Filter to specific repository (repeatable)",
-        "optionTo": "Destination storage name (push mode)",
-        "pullSuccess": "Sync pull completed",
-        "pushSuccess": "Sync push completed"
+        "description": "すべてのリポジトリをクラウドストレージに一括プッシュ/プルする",
+        "directionConflict": "--to と --from を同時に指定することはできません",
+        "directionRequired": "--to <storage>（プッシュ）または --from <storage>（プル）を指定してください",
+        "optionFrom": "ソースストレージ名（プルモード）",
+        "optionOverride": "プル時に既存の未マウントリポジトリを上書きする",
+        "optionRepo": "特定のリポジトリにフィルタ（繰り返し可能）",
+        "optionTo": "宛先ストレージ名（プッシュモード）",
+        "pullSuccess": "同期プルが完了しました",
+        "pushSuccess": "同期プッシュが完了しました"
       }
     },
     "bridge": {
@@ -399,9 +399,9 @@
         "noMachines": "設定されたマシンがありません。追加: rdc context add-machine <name> --ip <ip> --user <user>"
       },
       "pushInfra": {
-        "description": "Push infrastructure configuration to remote machine",
-        "proxyInstallWarning": "Proxy install failed (code {{code}}). Run manually: sudo renet proxy install",
-        "success": "Infrastructure config pushed to \"{{name}}\""
+        "description": "インフラ設定をリモートマシンにプッシュする",
+        "proxyInstallWarning": "プロキシのインストールに失敗しました（コード {{code}}）。手動で実行してください: sudo renet proxy install",
+        "success": "\"{{name}}\" にインフラ設定をプッシュしました"
       },
       "removeMachine": {
         "description": "現在のローカルコンテキストからマシンを削除する",
@@ -434,18 +434,18 @@
         "success": "\"{{key}}\" を \"{{value}}\" に設定しました"
       },
       "setInfra": {
-        "description": "Set infrastructure configuration for a machine",
-        "invalidIPv4": "Invalid IPv4 address: {{ip}}",
-        "invalidIPv6": "Invalid IPv6 address: {{ip}}",
-        "noOptions": "No options specified. Use --public-ipv4, --base-domain, etc.",
-        "optionBaseDomain": "Base domain for applications",
-        "optionCertEmail": "Email for TLS certificate notifications",
-        "optionCfDnsToken": "Cloudflare DNS API token for ACME DNS-01 challenge",
-        "optionPublicIPv4": "Public IPv4 address",
-        "optionPublicIPv6": "Public IPv6 address",
-        "optionTcpPorts": "TCP ports to forward (comma-separated, e.g., 25,143,465)",
-        "optionUdpPorts": "UDP ports to forward (comma-separated, e.g., 53)",
-        "success": "Infrastructure config updated for \"{{name}}\""
+        "description": "マシンのインフラ設定を行う",
+        "invalidIPv4": "無効な IPv4 アドレス: {{ip}}",
+        "invalidIPv6": "無効な IPv6 アドレス: {{ip}}",
+        "noOptions": "オプションが指定されていません。--public-ipv4、--base-domain などを使用してください。",
+        "optionBaseDomain": "アプリケーション用ベースドメイン",
+        "optionCertEmail": "TLS証明書通知用メールアドレス",
+        "optionCfDnsToken": "ACME DNS-01チャレンジ用のCloudflare DNS APIトークン",
+        "optionPublicIPv4": "パブリック IPv4 アドレス",
+        "optionPublicIPv6": "パブリック IPv6 アドレス",
+        "optionTcpPorts": "転送するTCPポート（カンマ区切り、例: 25,143,465）",
+        "optionUdpPorts": "転送するUDPポート（カンマ区切り、例: 53）",
+        "success": "\"{{name}}\" のインフラ設定を更新しました"
       },
       "setLanguage": {
         "description": "優先言語を設定する",
@@ -461,20 +461,20 @@
         "success": "SSH 設定が更新されました"
       },
       "setupMachine": {
-        "completed": "Machine '{{machine}}' setup completed successfully",
-        "datastoreOption": "Datastore path on remote machine",
-        "datastoreSizeOption": "Datastore size (e.g., 95%, 100G)",
-        "description": "Run setup on a remote machine (installs btrfs, Docker, etc.)",
-        "failed": "Machine '{{machine}}' setup failed: {{error}}",
-        "starting": "Setting up machine '{{machine}}'..."
+        "completed": "マシン '{{machine}}' のセットアップが正常に完了しました",
+        "datastoreOption": "リモートマシン上のデータストアパス",
+        "datastoreSizeOption": "データストアサイズ（例: 95%、100G）",
+        "description": "リモートマシンでセットアップを実行（btrfs、Dockerなどをインストール）",
+        "failed": "マシン '{{machine}}' のセットアップに失敗しました: {{error}}",
+        "starting": "マシン '{{machine}}' をセットアップ中..."
       },
       "show": {
         "description": "現在のコンテキストの詳細を表示する",
         "noContext": "アクティブなコンテキストがありません"
       },
       "showInfra": {
-        "description": "Show infrastructure configuration for a machine",
-        "noInfra": "No infrastructure config set for \"{{name}}\""
+        "description": "マシンのインフラ設定を表示する",
+        "noInfra": "\"{{name}}\" のインフラ設定がありません"
       },
       "storages": {
         "description": "現在のローカルコンテキストのストレージをリスト表示する",
@@ -623,10 +623,10 @@
         "unstableFound": "{{count}} 個の不安定なサービスが見つかりました"
       },
       "status": {
-        "description": "Show full machine status (system, repos, containers, services)",
-        "fetched": "Status fetched",
-        "fetching": "Fetching status from {{machine}}...",
-        "noData": "No status data available"
+        "description": "マシンの完全なステータスを表示（システム、リポジトリ、コンテナ、サービス）",
+        "fetched": "ステータスを取得しました",
+        "fetching": "{{machine}} からステータスを取得中...",
+        "noData": "ステータスデータがありません"
       },
       "testConnection": {
         "authMethod": "  認証方法: {{method}}",
@@ -872,21 +872,21 @@
     },
     "repo": {
       "create": {
-        "alreadyExists": "Repository \"{{name}}\" already exists in context",
-        "completed": "Repository created",
-        "description": "Create a new encrypted repository",
-        "failed": "Repository creation failed",
-        "registered": "Registered \"{{repository}}\" ({{guid}}, network {{networkId}})",
-        "rollback": "Rolled back config for \"{{repository}}\"",
-        "sizeOption": "Repository size (e.g., 10G, 100G, 1T)",
-        "starting": "Creating repository \"{{repository}}\" ({{size}}) on \"{{machine}}\"..."
+        "alreadyExists": "リポジトリ \"{{name}}\" はコンテキスト内に既に存在します",
+        "completed": "リポジトリを作成しました",
+        "description": "新しい暗号化リポジトリを作成する",
+        "failed": "リポジトリの作成に失敗しました",
+        "registered": "\"{{repository}}\" を登録しました（{{guid}}、ネットワーク {{networkId}}）",
+        "rollback": "\"{{repository}}\" の設定をロールバックしました",
+        "sizeOption": "リポジトリサイズ（例: 10G、100G、1T）",
+        "starting": "\"{{machine}}\" でリポジトリ \"{{repository}}\"（{{size}}）を作成中..."
       },
       "delete": {
-        "completed": "Repository deleted",
-        "description": "Delete a repository",
-        "failed": "Repository deletion failed",
-        "removed": "Removed \"{{repository}}\" from config",
-        "starting": "Deleting \"{{repository}}\" on \"{{machine}}\"..."
+        "completed": "リポジトリを削除しました",
+        "description": "リポジトリを削除する",
+        "failed": "リポジトリの削除に失敗しました",
+        "removed": "\"{{repository}}\" を設定から削除しました",
+        "starting": "\"{{machine}}\" で \"{{repository}}\" を削除中..."
       },
       "description": "リポジトリライフサイクル管理 (ローカルモード)",
       "down": {
@@ -898,21 +898,21 @@
         "unmountOption": "停止後にリポジトリをアンマウントする"
       },
       "expand": {
-        "completed": "Expansion completed",
-        "description": "Expand a mounted repository online (zero downtime)",
-        "failed": "Expansion failed",
-        "sizeOption": "New repository size (e.g., 10G, 100G, 1T)",
-        "starting": "Expanding \"{{repository}}\" to {{size}} on \"{{machine}}\"..."
+        "completed": "拡張が完了しました",
+        "description": "マウント済みリポジトリをオンラインで拡張（ゼロダウンタイム）",
+        "failed": "拡張に失敗しました",
+        "sizeOption": "新しいリポジトリサイズ（例: 10G、100G、1T）",
+        "starting": "\"{{machine}}\" で \"{{repository}}\" を {{size}} に拡張中..."
       },
       "fork": {
-        "alreadyExists": "Repository \"{{name}}\" already exists in context",
-        "completed": "Fork created",
-        "description": "Create a CoW (Copy-on-Write) fork of a repository",
-        "failed": "Fork creation failed",
-        "registered": "Registered fork \"{{repository}}\" ({{guid}}, network {{networkId}})",
-        "rollback": "Rolled back config for \"{{repository}}\"",
-        "starting": "Forking \"{{parent}}\" as \"{{repository}}\" on \"{{machine}}\"...",
-        "tagOption": "Fork name"
+        "alreadyExists": "リポジトリ \"{{name}}\" はコンテキスト内に既に存在します",
+        "completed": "フォークを作成しました",
+        "description": "リポジトリのCoW（コピーオンライト）フォークを作成する",
+        "failed": "フォークの作成に失敗しました",
+        "registered": "フォーク \"{{repository}}\" を登録しました（{{guid}}、ネットワーク {{networkId}}）",
+        "rollback": "\"{{repository}}\" の設定をロールバックしました",
+        "starting": "\"{{machine}}\" で \"{{parent}}\" を \"{{repository}}\" としてフォーク中...",
+        "tagOption": "フォーク名"
       },
       "list": {
         "completed": "リスト表示が完了しました",
@@ -930,18 +930,18 @@
       },
       "noCredential": "警告: リポジトリ \"{{name}}\" に認証情報が設定されていません。暗号化されたリポジトリの操作が失敗する可能性があります。",
       "ownership": {
-        "completed": "Ownership updated",
-        "description": "Change repository directory ownership",
-        "failed": "Ownership update failed",
-        "starting": "Setting ownership of \"{{repository}}\" on \"{{machine}}\"...",
-        "uidOption": "Owner UID (default: 7111)"
+        "completed": "所有権を更新しました",
+        "description": "リポジトリディレクトリの所有権を変更する",
+        "failed": "所有権の更新に失敗しました",
+        "starting": "\"{{machine}}\" で \"{{repository}}\" の所有権を設定中...",
+        "uidOption": "所有者UID（デフォルト: 7111）"
       },
       "resize": {
-        "completed": "Resize completed",
-        "description": "Resize a repository offline (supports grow and shrink)",
-        "failed": "Resize failed",
-        "sizeOption": "New repository size (e.g., 10G, 100G, 1T)",
-        "starting": "Resizing \"{{repository}}\" to {{size}} on \"{{machine}}\"..."
+        "completed": "リサイズが完了しました",
+        "description": "リポジトリをオフラインでリサイズ（拡張と縮小をサポート）",
+        "failed": "リサイズに失敗しました",
+        "sizeOption": "新しいリポジトリサイズ（例: 10G、100G、1T）",
+        "starting": "\"{{machine}}\" で \"{{repository}}\" を {{size}} にリサイズ中..."
       },
       "status": {
         "completed": "ステータスを取得しました",
@@ -950,13 +950,13 @@
         "starting": "\"{{repository}}\" のステータスを \"{{machine}}\" で取得中..."
       },
       "template": {
-        "completed": "Template applied",
-        "description": "Apply a template to a repository",
-        "failed": "Template application failed",
-        "fileNotFound": "Template file not found: {{path}}",
-        "fileOption": "Path to template JSON file",
-        "grandOption": "Grand repository name (auto-resolves to GUID)",
-        "starting": "Applying template to \"{{repository}}\" on \"{{machine}}\"..."
+        "completed": "テンプレートを適用しました",
+        "description": "リポジトリにテンプレートを適用する",
+        "failed": "テンプレートの適用に失敗しました",
+        "fileNotFound": "テンプレートファイルが見つかりません: {{path}}",
+        "fileOption": "テンプレートJSONファイルのパス",
+        "grandOption": "グランドリポジトリ名（自動的にGUIDに解決）",
+        "starting": "\"{{machine}}\" で \"{{repository}}\" にテンプレートを適用中..."
       },
       "unmount": {
         "checkpointOption": "アンマウント前にチェックポイントを作成する",
@@ -975,10 +975,10 @@
         "starting": "\"{{repository}}\" のサービスを \"{{machine}}\" で開始中..."
       },
       "validate": {
-        "completed": "Validation completed",
-        "description": "Validate repository integrity",
-        "failed": "Validation failed",
-        "starting": "Validating \"{{repository}}\" on \"{{machine}}\"..."
+        "completed": "検証が完了しました",
+        "description": "リポジトリの整合性を検証する",
+        "failed": "検証に失敗しました",
+        "starting": "\"{{machine}}\" で \"{{repository}}\" を検証中..."
       }
     },
     "repository": {
@@ -1052,20 +1052,20 @@
     },
     "snapshot": {
       "create": {
-        "creating": "Creating snapshot of \"{{repo}}\" on {{machine}}...",
-        "description": "Create a BTRFS snapshot of a repository",
-        "optionSnapshotName": "Explicit snapshot name (auto-generated if empty)",
-        "success": "Snapshot created: {{name}} ({{path}})"
+        "creating": "{{machine}} で \"{{repo}}\" のスナップショットを作成中...",
+        "description": "リポジトリのBTRFSスナップショットを作成する",
+        "optionSnapshotName": "明示的なスナップショット名（空の場合は自動生成）",
+        "success": "スナップショットを作成しました: {{name}}（{{path}}）"
       },
       "delete": {
-        "description": "Delete a snapshot from a remote machine",
-        "success": "Snapshot deleted: {{name}}"
+        "description": "リモートマシンからスナップショットを削除する",
+        "success": "スナップショットを削除しました: {{name}}"
       },
-      "description": "Manage BTRFS snapshots on remote machines",
+      "description": "リモートマシン上のBTRFSスナップショットを管理する",
       "list": {
-        "description": "List snapshots on a remote machine",
-        "header": "{{count}} snapshot(s) in {{path}}:",
-        "noSnapshots": "No snapshots found."
+        "description": "リモートマシン上のスナップショットを一覧表示する",
+        "header": "{{path}} 内に {{count}} 個のスナップショット:",
+        "noSnapshots": "スナップショットが見つかりませんでした。"
       }
     },
     "storage": {
