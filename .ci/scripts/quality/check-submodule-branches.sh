@@ -382,7 +382,7 @@ main() {
     fi
 
     # Check each submodule
-    for sm_path in private/middleware private/renet private/license-server private/elite; do
+    for sm_path in private/middleware private/renet private/license-server private/elite private/sql; do
         if [[ ! -d "$sm_path/.git" ]] && [[ ! -f "$sm_path/.git" ]]; then
             log_warn "Submodule $sm_path not initialized - skipping"
             ((warnings++))
