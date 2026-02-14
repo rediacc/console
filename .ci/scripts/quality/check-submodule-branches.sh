@@ -88,6 +88,7 @@ declare -A SUBMODULE_REPOS=(
     ["private/renet"]="rediacc/renet"
     ["private/license-server"]="rediacc/license-server"
     ["private/elite"]="rediacc/elite"
+    ["private/sql"]="rediacc/sql"
 )
 
 # Patterns for low-effort replies that don't count as real responses
@@ -381,7 +382,7 @@ main() {
     fi
 
     # Check each submodule
-    for sm_path in private/middleware private/renet private/license-server private/elite; do
+    for sm_path in private/middleware private/renet private/license-server private/elite private/sql; do
         if [[ ! -d "$sm_path/.git" ]] && [[ ! -f "$sm_path/.git" ]]; then
             log_warn "Submodule $sm_path not initialized - skipping"
             ((warnings++))
