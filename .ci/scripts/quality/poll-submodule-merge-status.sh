@@ -53,6 +53,7 @@ declare -A SUBMODULE_REPOS=(
     ["renet"]="rediacc/renet"
     ["license-server"]="rediacc/license-server"
     ["elite"]="rediacc/elite"
+    ["sql"]="rediacc/sql"
 )
 
 # Post commit status via GitHub API using STATUS_TOKEN (github.token).
