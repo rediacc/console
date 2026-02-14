@@ -32,7 +32,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,middleware,renet,license-server,elite
+          repositories: console,middleware,renet,license-server,elite,sql
 
       - name: Re-evaluate submodule merge readiness
         run: .ci/scripts/quality/poll-submodule-merge-status.sh
