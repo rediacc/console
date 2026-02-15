@@ -113,9 +113,11 @@ function functionRequiresDatastore(functionName: string): boolean {
 
 /**
  * Verify that a remote machine has completed `renet setup`.
- * Checks for the setup marker file via SSH. Caches results for 1 hour.
- * BTRFS datastore check is only enforced for functions that require
- * the `repository` requirement (backup, snapshot, repo operations).
+ * Checks for the setup marker file and BTRFS datastore via SSH.
+ * Only enforced for functions that require the `repository` requirement
+ * (backup, snapshot, repo operations). System and admin functions
+ * (machine_ping, setup_machine, machine_uninstall, etc.) skip verification
+ * so they can operate on machines regardless of setup state.
  * Bypass with RDC_SKIP_SETUP_CHECK=1 environment variable.
  */
 export async function verifyMachineSetup(
@@ -124,6 +126,15 @@ export async function verifyMachineSetup(
   options: Pick<RenetSpawnOptions, 'debug'> & { functionName?: string }
 ): Promise<void> {
   if (process.env.RDC_SKIP_SETUP_CHECK) return;
+
+  // Only verify setup for functions that require the BTRFS datastore.
+  // System functions (machine_ping, machine_version, setup_machine,
+  // machine_install, machine_uninstall, etc.) must work on machines
+  // regardless of setup state.
+  const needsDatastore = options.functionName
+    ? functionRequiresDatastore(options.functionName)
+    : true;
+  if (!needsDatastore) return;
 
   const cacheKey = `${machine.ip}:${machine.port ?? DEFAULTS.SSH.PORT}`;
   const cached = setupCache.get(cacheKey);
@@ -146,28 +157,20 @@ export async function verifyMachineSetup(
       );
     }
 
-    // Only verify BTRFS datastore for functions that use the repository/datastore.
-    // System functions (machine_ping, machine_version, etc.) don't require BTRFS.
-    const needsDatastore = options.functionName
-      ? functionRequiresDatastore(options.functionName)
-      : true;
-
-    if (needsDatastore) {
-      const datastorePath = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
-      // Use multiple detection methods matching the Go bridge's approach:
-      // 1. findmnt (preferred), 2. stat -f, 3. /proc/mounts grep
-      const fsCheck = await sftp.exec(
-        `findmnt -n -o FSTYPE -T '${datastorePath}' 2>/dev/null || ` +
-          `stat -f -c '%T' '${datastorePath}' 2>/dev/null || ` +
-          `awk '$2 == "${datastorePath}" { print $3 }' /proc/mounts 2>/dev/null || ` +
-          `echo UNKNOWN`
+    const datastorePath = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
+    // Use multiple detection methods matching the Go bridge's approach:
+    // 1. findmnt (preferred), 2. stat -f, 3. /proc/mounts grep
+    const fsCheck = await sftp.exec(
+      `findmnt -n -o FSTYPE -T '${datastorePath}' 2>/dev/null || ` +
+        `stat -f -c '%T' '${datastorePath}' 2>/dev/null || ` +
+        `awk '$2 == "${datastorePath}" { print $3 }' /proc/mounts 2>/dev/null || ` +
+        `echo UNKNOWN`
+    );
+    if (fsCheck.trim() !== 'btrfs') {
+      throw new Error(
+        `Machine '${machine.ip}' datastore at ${datastorePath} is not BTRFS (found: ${fsCheck.trim()}). ` +
+          `Run 'rdc context setup-machine <name>' to initialize the BTRFS datastore.`
       );
-      if (fsCheck.trim() !== 'btrfs') {
-        throw new Error(
-          `Machine '${machine.ip}' datastore at ${datastorePath} is not BTRFS (found: ${fsCheck.trim()}). ` +
-            `Run 'rdc context setup-machine <name>' to initialize the BTRFS datastore.`
-        );
-      }
     }
 
     setupCache.set(cacheKey, Date.now());
