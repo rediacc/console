@@ -5,6 +5,7 @@ import { useDispatch } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import apiClient from '@/api/client';
 import InsecureConnectionWarning from '@/components/common/InsecureConnectionWarning';
+import PreviewWarning from '@/components/common/PreviewWarning';
 import SandboxWarning from '@/components/common/SandboxWarning';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
 import { featureFlags } from '@/config/featureFlags';
@@ -327,7 +328,7 @@ const LoginPage: React.FC = () => {
   return (
     <>
       <SandboxWarning />
-      {}
+      <PreviewWarning />
       <Flex className="w-full max-w-[400px]">
         <Flex vertical className="w-full">
           {error && (

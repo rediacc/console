@@ -800,6 +800,8 @@
     "wslVSCode": "VS Code WSL (Linux)"
   },
   "warnings": {
+    "previewEnvironment": "Aperçu",
+    "previewMessage": "Cette console web est en aperçu et peut ne pas fonctionner comme prévu. Pour une utilisation en production, veuillez utiliser la CLI en mode S3 ou Local. Le mode Cloud partage ce backend et n'est pas non plus disponible jusqu'à la sortie officielle.",
     "sandboxEnvironment": "Environnement bac à sable",
     "sandboxMessage": "Les données peuvent être réinitialisées lors des mises à jour. Pour tests uniquement."
   },

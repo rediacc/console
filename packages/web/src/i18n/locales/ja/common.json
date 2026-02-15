@@ -800,6 +800,8 @@
     "wslVSCode": "WSL版 VS Code (Linux)"
   },
   "warnings": {
+    "previewEnvironment": "プレビュー",
+    "previewMessage": "このWebコンソールはプレビュー版であり、正常に動作しない場合があります。本番環境では、CLIのS3モードまたはローカルモードをご使用ください。クラウドモードは同じバックエンドを共有しており、正式リリースまでご利用いただけません。",
     "sandboxEnvironment": "サンドボックス環境",
     "sandboxMessage": "アップデート中にデータがリセットされる場合があります。 テスト専用。"
   },

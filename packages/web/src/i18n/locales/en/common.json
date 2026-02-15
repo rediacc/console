@@ -738,6 +738,8 @@
     "versionWillIncrement": "Version will increment to {{version}}"
   },
   "warnings": {
+    "previewEnvironment": "Preview",
+    "previewMessage": "This web console is in preview and may not function as expected. For production use, please use the CLI in S3 or Local mode. Cloud mode shares this backend and is also unavailable until official release.",
     "sandboxEnvironment": "Sandbox Environment",
     "sandboxMessage": "Data may be reset during updates. For testing only."
   },
