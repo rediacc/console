@@ -365,7 +365,7 @@ provision_write_vm_info() {
 
     local ssh_cmds="  ssh $bridge_ip     # Bridge"
     local i=1
-    IFS=',' read -ra workers <<< "$worker_ips"
+    IFS=',' read -ra workers <<<"$worker_ips"
     for ip in "${workers[@]}"; do
         ssh_cmds+=$'\n'"  ssh $ip    # Worker $i"
         i=$((i + 1))
