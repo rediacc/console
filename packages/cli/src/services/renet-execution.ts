@@ -9,6 +9,8 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS, NETWORK_DEFAULTS, PROCESS_DEFAULTS } from '@rediacc/shared/config';
+import type { BridgeFunctionName } from '@rediacc/shared/queue-vault/data/functions.generated';
+import { FUNCTION_REQUIREMENTS } from '@rediacc/shared/queue-vault/data/functions.generated';
 import { extractRenetToLocal, isSEA } from './embedded-assets.js';
 import { outputService } from './output.js';
 import { renetProvisioner } from './renet-provisioner.js';
@@ -102,15 +104,24 @@ export async function provisionRenetToRemote(
   }
 }
 
+/** Check whether a bridge function requires the BTRFS datastore. */
+function functionRequiresDatastore(functionName: string): boolean {
+  if (!(functionName in FUNCTION_REQUIREMENTS)) return false;
+  const reqs = FUNCTION_REQUIREMENTS[functionName as BridgeFunctionName];
+  return reqs.requirements.repository === true;
+}
+
 /**
  * Verify that a remote machine has completed `renet setup`.
  * Checks for the setup marker file via SSH. Caches results for 1 hour.
+ * BTRFS datastore check is only enforced for functions that require
+ * the `repository` requirement (backup, snapshot, repo operations).
  * Bypass with RDC_SKIP_SETUP_CHECK=1 environment variable.
  */
 export async function verifyMachineSetup(
   machine: MachineConfig,
   sshPrivateKey: string,
-  options: Pick<RenetSpawnOptions, 'debug'>
+  options: Pick<RenetSpawnOptions, 'debug'> & { functionName?: string }
 ): Promise<void> {
   if (process.env.RDC_SKIP_SETUP_CHECK) return;
 
@@ -135,16 +146,28 @@ export async function verifyMachineSetup(
       );
     }
 
-    // Verify datastore is BTRFS (not just a plain directory on ext4)
-    const datastorePath = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
-    const fsCheck = await sftp.exec(
-      `findmnt -n -o FSTYPE -T '${datastorePath}' 2>/dev/null || echo UNKNOWN`
-    );
-    if (fsCheck.trim() !== 'btrfs') {
-      throw new Error(
-        `Machine '${machine.ip}' datastore at ${datastorePath} is not BTRFS (found: ${fsCheck.trim()}). ` +
-          `Run 'rdc context setup-machine <name>' to initialize the BTRFS datastore.`
+    // Only verify BTRFS datastore for functions that use the repository/datastore.
+    // System functions (machine_ping, machine_version, etc.) don't require BTRFS.
+    const needsDatastore = options.functionName
+      ? functionRequiresDatastore(options.functionName)
+      : true;
+
+    if (needsDatastore) {
+      const datastorePath = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
+      // Use multiple detection methods matching the Go bridge's approach:
+      // 1. findmnt (preferred), 2. stat -f, 3. /proc/mounts grep
+      const fsCheck = await sftp.exec(
+        `findmnt -n -o FSTYPE -T '${datastorePath}' 2>/dev/null || ` +
+          `stat -f -c '%T' '${datastorePath}' 2>/dev/null || ` +
+          `awk '$2 == "${datastorePath}" { print $3 }' /proc/mounts 2>/dev/null || ` +
+          `echo UNKNOWN`
       );
+      if (fsCheck.trim() !== 'btrfs') {
+        throw new Error(
+          `Machine '${machine.ip}' datastore at ${datastorePath} is not BTRFS (found: ${fsCheck.trim()}). ` +
+            `Run 'rdc context setup-machine <name>' to initialize the BTRFS datastore.`
+        );
+      }
     }
 
     setupCache.set(cacheKey, Date.now());

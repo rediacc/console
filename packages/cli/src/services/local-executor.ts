@@ -151,7 +151,10 @@ class LocalExecutorService {
       });
 
       await provisionRenetToRemote(config, machine, sshPrivateKey, options);
-      await verifyMachineSetup(machine, sshPrivateKey, options);
+      await verifyMachineSetup(machine, sshPrivateKey, {
+        ...options,
+        functionName: options.functionName,
+      });
 
       if (options.debug) {
         outputService.info(`[local] Direct SSH to ${machine.ip}, executor=local`);
