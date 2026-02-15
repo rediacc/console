@@ -53,6 +53,8 @@ const COMMAND_ORDER = [
   'ceph',
   'audit',
   'protocol',
+  'snapshot',
+  'backup',
   'shortcuts',
   'update',
   'doctor',

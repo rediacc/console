@@ -12,6 +12,8 @@ import * as fs from 'node:fs/promises';
 import { SFTPClient, type SFTPClientConfig } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { isSEA, getEmbeddedRenetBinary, computeSha256, type LinuxArch } from './embedded-assets.js';
+import { compareVersions } from './updater.js';
+import { VERSION } from '../version.js';
 
 /** Canonical install path on remote machines */
 const REMOTE_INSTALL_PATH = '/usr/bin/renet';
@@ -27,7 +29,7 @@ export interface ProvisionResult {
   /** Whether provisioning succeeded */
   success: boolean;
   /** Action taken: uploaded new binary, verified existing, or failed */
-  action: 'uploaded' | 'verified' | 'failed';
+  action: 'uploaded' | 'verified' | 'failed' | 'version_rejected';
   /** Detected architecture (undefined if detection failed) */
   arch?: LinuxArch;
   /** Error message if failed */
@@ -98,10 +100,26 @@ class RenetProvisionerService {
         return { success: true, action: 'verified', arch };
       }
 
-      // Stage and install: SFTP upload to /tmp, then sudo cp to /usr/bin/renet
+      // Version guard: prevent accidental downgrade unless explicitly allowed
+      if (!process.env.RDC_ALLOW_DOWNGRADE) {
+        const remoteVersion = await this.getRemoteVersion(sftp);
+        if (remoteVersion && compareVersions(VERSION, remoteVersion) < 0) {
+          return {
+            success: false,
+            action: 'version_rejected',
+            arch,
+            error: `Remote has renet v${remoteVersion} but this CLI bundles v${VERSION}. Run \`rdc update\` to upgrade your CLI, or set RDC_ALLOW_DOWNGRADE=1 to force.`,
+          };
+        }
+      }
+
+      // Stage and install: SFTP upload to /tmp, then atomic mv to /usr/bin/renet.
+      // Uses mv (not cp) so the replacement works even when the binary is running
+      // (e.g., during a backup sync). mv replaces the directory entry atomically;
+      // the old inode stays alive until the running process exits.
       await sftp.writeFile(STAGING_PATH, binary);
       await sftp.exec(
-        `sudo cp ${STAGING_PATH} ${REMOTE_INSTALL_PATH} && sudo chmod 755 ${REMOTE_INSTALL_PATH} && rm -f ${STAGING_PATH}`
+        `sudo chmod 755 ${STAGING_PATH} && sudo mv -f ${STAGING_PATH} ${REMOTE_INSTALL_PATH}`
       );
 
       this.cache.set(cacheKey, { hash: localHash, provisionedAt: Date.now() });
@@ -179,6 +197,24 @@ class RenetProvisionerService {
     } catch {
       // Binary doesn't exist or sha256sum failed — needs install
       return true;
+    }
+  }
+
+  /**
+   * Get the version of the renet binary currently on the remote machine.
+   * Returns null if the binary doesn't exist, can't execute, or version
+   * can't be parsed (in all these cases, we allow overwriting).
+   */
+  private async getRemoteVersion(sftp: SFTPClient): Promise<string | null> {
+    try {
+      const output = await sftp.exec(`${REMOTE_INSTALL_PATH} version`);
+      // Version output is i18n-localized but semver is always present.
+      // Examples: "renet version 0.5.0", "renet版本 0.5.0", "renet sürümü 0.5.0"
+      const match = /\d+\.\d+\.\d+/.exec(output);
+      return match ? match[0] : null;
+    } catch {
+      // Binary missing, corrupted, or can't execute — allow overwrite
+      return null;
     }
   }
 

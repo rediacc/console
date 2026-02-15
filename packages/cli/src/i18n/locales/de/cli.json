@@ -103,6 +103,70 @@
         }
       }
     },
+    "backup": {
+      "description": "Repositories sichern und wiederherstellen",
+      "list": {
+        "description": "Verfügbare Backups auf Speicher oder Rechner auflisten",
+        "listing": "Backups werden aufgelistet...",
+        "optionFromMachine": "Name des Quellrechners",
+        "optionFromStorage": "Name des Quellspeichers",
+        "sourceRequired": "Geben Sie --from <storage> oder --from-machine <machine> an"
+      },
+      "pull": {
+        "description": "Repository-Backup von Speicher oder Rechner abrufen",
+        "optionForce": "Vorhandenes Repository überschreiben erzwingen",
+        "optionFromMachine": "Name des Quellrechners",
+        "optionFromStorage": "Name des Quellspeichers",
+        "pulling": "Backup von \"{{repo}}\" wird abgerufen...",
+        "sourceRequired": "Geben Sie --from <storage> oder --from-machine <machine> an"
+      },
+      "push": {
+        "description": "Repository-Backup auf Speicher oder Rechner übertragen",
+        "destIgnoredForStorage": "--dest {{provided}} ignoriert: Speicher-Backups verwenden Repository-GUID ({{dest}})",
+        "destRequired": "Geben Sie --to <storage> oder --to-machine <machine> an",
+        "optionCheckpoint": "Container-Checkpoint erstellen (Hot Backup)",
+        "optionDest": "Zieldateiname",
+        "optionForce": "Vorhandenes Backup überschreiben erzwingen",
+        "optionTag": "Deployment-Tag für Versionierung",
+        "optionToMachine": "Name des Zielrechners",
+        "optionToStorage": "Name des Zielspeichers",
+        "pushing": "Backup von \"{{repo}}\" wird nach {{dest}} übertragen..."
+      },
+      "schedule": {
+        "description": "Konfiguration geplanter Backups verwalten",
+        "push": {
+          "description": "Backup-Zeitplan auf Remote-Rechner übertragen (systemd-Timer)",
+          "success": "Backup-Zeitplan an {{machine}} übertragen"
+        },
+        "set": {
+          "description": "Backup-Zeitplan-Einstellungen konfigurieren",
+          "noOptions": "Geben Sie mindestens eine Option an: --destination, --cron, --enable oder --disable",
+          "optionCron": "Cron-Ausdruck für den Backup-Zeitplan (z.B. \"0 2 * * *\")",
+          "optionDestination": "Standard-Speicherzielname",
+          "optionDisable": "Geplante Backups deaktivieren",
+          "optionEnable": "Geplante Backups aktivieren",
+          "saved": "Backup-Zeitplan-Konfiguration gespeichert"
+        },
+        "show": {
+          "description": "Aktuelle Backup-Zeitplan-Konfiguration anzeigen",
+          "destination": "Ziel: {{destination}}",
+          "enabled": "Aktiviert: {{enabled}}",
+          "notConfigured": "Kein Backup-Zeitplan konfiguriert",
+          "schedule": "Zeitplan: {{schedule}}"
+        }
+      },
+      "sync": {
+        "description": "Alle Repositories massenhaft zum/vom Cloud-Speicher übertragen",
+        "directionConflict": "--to und --from können nicht gleichzeitig angegeben werden",
+        "directionRequired": "Geben Sie --to <storage> (Push) oder --from <storage> (Pull) an",
+        "optionFrom": "Name des Quellspeichers (Pull-Modus)",
+        "optionOverride": "Vorhandene nicht eingehängte Repos beim Pull überschreiben",
+        "optionRepo": "Auf bestimmtes Repository filtern (wiederholbar)",
+        "optionTo": "Name des Zielspeichers (Push-Modus)",
+        "pullSuccess": "Synchronisierungs-Pull abgeschlossen",
+        "pushSuccess": "Synchronisierungs-Push abgeschlossen"
+      }
+    },
     "bridge": {
       "description": "Bridge-Verwaltung",
       "list": {
@@ -265,6 +329,15 @@
         "description": "Fügen Sie dem aktuellen lokalen Kontext eine Machine hinzu",
         "success": "Machine \"{{name}}\" hinzugefügt ({{user}}@{{ip}})"
       },
+      "addRepository": {
+        "description": "Ein Repository-GUID-Mapping zum aktuellen lokalen Kontext hinzufügen",
+        "networkIdAssigned": "Netzwerk-ID: {{networkId}}",
+        "optionCredential": "Repository-Zugangsdaten (Verschlüsselungs-Passphrase)",
+        "optionGuid": "Repository-GUID (UUID aus Speicher-Backup-Dateinamen)",
+        "optionNetworkId": "Netzwerk-ID für Docker-Isolation (2816, 2880, ...). Wird automatisch zugewiesen, wenn nicht angegeben",
+        "optionTag": "Repository-Tag",
+        "success": "Repository \"{{name}}\" hinzugefügt ({{guid}}, Tag: {{tag}})"
+      },
       "clear": {
         "allCleared": "Alle Standardwerte gelöscht",
         "description": "Standardwerte löschen (alle oder einen bestimmten Schlüssel)",
@@ -308,6 +381,15 @@
         "success": "Kontext \"{{name}}\" gelöscht"
       },
       "description": "CLI-Kontexte verwalten",
+      "importStorage": {
+        "description": "Speicher aus einer rclone-Konfigurationsdatei importieren",
+        "imported": "Speicher \"{{name}}\" importiert ({{type}})",
+        "noConfigs": "Keine gültigen Speicherkonfigurationen in der Datei gefunden",
+        "notFound": "Speicher \"{{name}}\" nicht in Konfigurationsdatei gefunden",
+        "optionName": "Nur diesen benannten Abschnitt importieren",
+        "summary": "{{count}} Speicher importiert",
+        "unsupported": "Überspringe \"{{name}}\": nicht unterstützter Anbietertyp \"{{type}}\""
+      },
       "list": {
         "description": "Alle Kontexte auflisten",
         "noContexts": "Keine Kontexte konfiguriert"
@@ -316,17 +398,55 @@
         "description": "Machines im aktuellen lokalen Kontext auflisten",
         "noMachines": "Keine Machines konfiguriert. Fügen Sie eine hinzu mit: rdc context add-machine <name> --ip <ip> --user <user>"
       },
+      "pushInfra": {
+        "description": "Infrastruktur-Konfiguration auf den Remote-Rechner übertragen",
+        "installingProxy": "Proxy wird installiert und gestartet...",
+        "proxyInstallWarning": "Proxy-Installation fehlgeschlagen (Code {{code}}). Manuell ausführen: sudo renet proxy install",
+        "success": "Infrastruktur-Konfiguration an \"{{name}}\" übertragen"
+      },
       "removeMachine": {
         "description": "Entfernen Sie eine Machine aus dem aktuellen lokalen Kontext",
         "success": "Machine \"{{name}}\" entfernt"
+      },
+      "removeRepository": {
+        "description": "Ein Repository-Mapping aus dem aktuellen lokalen Kontext entfernen",
+        "success": "Repository \"{{name}}\" entfernt"
+      },
+      "removeStorage": {
+        "description": "Einen Speicher aus dem aktuellen lokalen Kontext entfernen",
+        "success": "Speicher \"{{name}}\" entfernt"
       },
       "rename": {
         "description": "Einen Kontext umbenennen",
         "success": "Kontext umbenannt von \"{{oldName}}\" in \"{{newName}}\""
       },
+      "repositories": {
+        "description": "Repository-GUID-Mappings im aktuellen lokalen Kontext auflisten",
+        "noRepositories": "Keine Repositories konfiguriert. Hinzufügen mit: rdc context add-repository <name> --guid <guid>"
+      },
+      "scanKeys": {
+        "completed": "{{count}}/{{total}} Maschinen gescannt",
+        "description": "SSH-Host-Schlüssel für Maschinen im aktuellen Kontext scannen",
+        "keysScanned": "Host-Schlüssel gescannt für \"{{name}}\"",
+        "noKeys": "Host-Schlüssel für \"{{name}}\" konnten nicht gescannt werden"
+      },
       "set": {
         "description": "Einen Standardwert festlegen (Team, Region, Bridge, Machine)",
         "success": "\"{{key}}\" auf \"{{value}}\" gesetzt"
+      },
+      "setInfra": {
+        "description": "Infrastruktur-Konfiguration für eine Maschine festlegen",
+        "invalidIPv4": "Ungültige IPv4-Adresse: {{ip}}",
+        "invalidIPv6": "Ungültige IPv6-Adresse: {{ip}}",
+        "noOptions": "Keine Optionen angegeben. Verwenden Sie --public-ipv4, --base-domain usw.",
+        "optionBaseDomain": "Basis-Domain für Anwendungen",
+        "optionCertEmail": "E-Mail für TLS-Zertifikatbenachrichtigungen",
+        "optionCfDnsToken": "Cloudflare DNS-API-Token für ACME DNS-01-Challenge",
+        "optionPublicIPv4": "Öffentliche IPv4-Adresse",
+        "optionPublicIPv6": "Öffentliche IPv6-Adresse",
+        "optionTcpPorts": "Weiterzuleitende TCP-Ports (kommagetrennt, z.B. 25,143,465)",
+        "optionUdpPorts": "Weiterzuleitende UDP-Ports (kommagetrennt, z.B. 53)",
+        "success": "Infrastruktur-Konfiguration für \"{{name}}\" aktualisiert"
       },
       "setLanguage": {
         "description": "Bevorzugte Sprache festlegen",
@@ -341,9 +461,51 @@
         "description": "SSH-Konfiguration für den aktuellen lokalen Kontext aktualisieren",
         "success": "SSH-Konfiguration aktualisiert"
       },
+      "setupMachine": {
+        "completed": "Einrichtung der Maschine '{{machine}}' erfolgreich abgeschlossen",
+        "datastoreOption": "Datastore-Pfad auf dem Remote-Rechner",
+        "datastoreSizeOption": "Datastore-Größe (z.B. 95%, 100G)",
+        "description": "Setup auf einem Remote-Rechner ausführen (installiert btrfs, Docker usw.)",
+        "failed": "Einrichtung der Maschine '{{machine}}' fehlgeschlagen: {{error}}",
+        "starting": "Maschine '{{machine}}' wird eingerichtet..."
+      },
       "show": {
         "description": "Details zum aktuellen Kontext anzeigen",
         "noContext": "Kein aktiver Kontext"
+      },
+      "showInfra": {
+        "description": "Infrastruktur-Konfiguration einer Maschine anzeigen",
+        "noInfra": "Keine Infrastruktur-Konfiguration für \"{{name}}\" festgelegt"
+      },
+      "storages": {
+        "description": "Speicher im aktuellen lokalen Kontext auflisten",
+        "noStorages": "Keine Speicher konfiguriert. Importieren mit: rdc context import-storage <file>"
+      },
+      "toLocal": {
+        "description": "Den aktuellen S3-Kontext in den lokalen Modus migrieren",
+        "errorNoS3Config": "Kontext \"{{name}}\" hat keine S3-Konfiguration",
+        "errorNotS3": "Kontext \"{{name}}\" befindet sich nicht im S3-Modus (aktuell: {{mode}})",
+        "loading": "Status wird aus S3 geladen...",
+        "nonDestructive": "State.json verbleibt im S3-Bucket (nicht-destruktiv)",
+        "optionSshKeyPath": "Pfad für den SSH-Private-Key (Standard: bestehender Pfad)",
+        "sshWritten": "SSH-Schlüssel geschrieben nach {{path}}",
+        "success": "Zu lokalem Modus migriert: {{machines}} Maschinen, {{storages}} Speicher, {{repos}} Repositories"
+      },
+      "toS3": {
+        "description": "Den aktuellen lokalen Kontext in den S3-Modus migrieren",
+        "errorNotLocal": "Kontext \"{{name}}\" befindet sich nicht im lokalen Modus (aktuell: {{mode}})",
+        "errorSecretRequired": "Geheimschlüssel ist erforderlich",
+        "optionAccessKeyId": "S3-Zugriffsschlüssel-ID",
+        "optionBucket": "S3-Bucket-Name",
+        "optionEndpoint": "S3-Endpunkt-URL",
+        "optionMasterPassword": "Verschlüsselung mit diesem Master-Passwort aktivieren",
+        "optionPrefix": "Schlüsselpräfix im Bucket",
+        "optionRegion": "S3-Region",
+        "optionSecretAccessKey": "S3-Geheimschlüssel (wird abgefragt, wenn nicht angegeben)",
+        "promptSecretAccessKey": "S3-Geheimschlüssel eingeben:",
+        "success": "Zu S3-Modus migriert: {{machines}} Maschinen, {{storages}} Speicher, {{repos}} Repositories",
+        "verified": "S3-Zugriff verifiziert",
+        "verifying": "S3-Zugriff wird überprüft..."
       },
       "unset": {
         "description": "Einen Kontext-Standardwert entfernen",
@@ -352,72 +514,6 @@
       "use": {
         "description": "Zu einem anderen Kontext wechseln",
         "switched": "Zu Kontext \"{{name}}\" gewechselt"
-      },
-      "scanKeys": {
-        "description": "SSH-Host-Schlüssel für Maschinen im aktuellen Kontext scannen",
-        "keysScanned": "Host-Schlüssel gescannt für \"{{name}}\"",
-        "noKeys": "Host-Schlüssel für \"{{name}}\" konnten nicht gescannt werden",
-        "completed": "{{count}}/{{total}} Maschinen gescannt"
-      },
-      "importStorage": {
-        "description": "Speicher aus einer rclone-Konfigurationsdatei importieren",
-        "optionName": "Nur diesen benannten Abschnitt importieren",
-        "noConfigs": "Keine gültigen Speicherkonfigurationen in der Datei gefunden",
-        "notFound": "Speicher \"{{name}}\" nicht in Konfigurationsdatei gefunden",
-        "unsupported": "Überspringe \"{{name}}\": nicht unterstützter Anbietertyp \"{{type}}\"",
-        "imported": "Speicher \"{{name}}\" importiert ({{type}})",
-        "summary": "{{count}} Speicher importiert"
-      },
-      "removeStorage": {
-        "description": "Einen Speicher aus dem aktuellen lokalen Kontext entfernen",
-        "success": "Speicher \"{{name}}\" entfernt"
-      },
-      "storages": {
-        "description": "Speicher im aktuellen lokalen Kontext auflisten",
-        "noStorages": "Keine Speicher konfiguriert. Importieren mit: rdc context import-storage <file>"
-      },
-      "addRepository": {
-        "description": "Ein Repository-GUID-Mapping zum aktuellen lokalen Kontext hinzufügen",
-        "optionGuid": "Repository-GUID (UUID aus Speicher-Backup-Dateinamen)",
-        "optionTag": "Repository-Tag",
-        "optionCredential": "Repository-Zugangsdaten (Verschlüsselungs-Passphrase)",
-        "optionNetworkId": "Netzwerk-ID für Docker-Isolation (2816, 2880, ...). Wird automatisch zugewiesen, wenn nicht angegeben",
-        "success": "Repository \"{{name}}\" hinzugefügt ({{guid}}, Tag: {{tag}})",
-        "networkIdAssigned": "Netzwerk-ID: {{networkId}}"
-      },
-      "removeRepository": {
-        "description": "Ein Repository-Mapping aus dem aktuellen lokalen Kontext entfernen",
-        "success": "Repository \"{{name}}\" entfernt"
-      },
-      "repositories": {
-        "description": "Repository-GUID-Mappings im aktuellen lokalen Kontext auflisten",
-        "noRepositories": "Keine Repositories konfiguriert. Hinzufügen mit: rdc context add-repository <name> --guid <guid>"
-      },
-      "toS3": {
-        "description": "Den aktuellen lokalen Kontext in den S3-Modus migrieren",
-        "optionEndpoint": "S3-Endpunkt-URL",
-        "optionBucket": "S3-Bucket-Name",
-        "optionAccessKeyId": "S3-Zugriffsschlüssel-ID",
-        "optionSecretAccessKey": "S3-Geheimschlüssel (wird abgefragt, wenn nicht angegeben)",
-        "optionRegion": "S3-Region",
-        "optionPrefix": "Schlüsselpräfix im Bucket",
-        "optionMasterPassword": "Verschlüsselung mit diesem Master-Passwort aktivieren",
-        "promptSecretAccessKey": "S3-Geheimschlüssel eingeben:",
-        "errorNotLocal": "Kontext \"{{name}}\" befindet sich nicht im lokalen Modus (aktuell: {{mode}})",
-        "errorSecretRequired": "Geheimschlüssel ist erforderlich",
-        "verifying": "S3-Zugriff wird überprüft...",
-        "verified": "S3-Zugriff verifiziert",
-        "success": "Zu S3-Modus migriert: {{machines}} Maschinen, {{storages}} Speicher, {{repos}} Repositories"
-      },
-      "toLocal": {
-        "description": "Den aktuellen S3-Kontext in den lokalen Modus migrieren",
-        "optionSshKeyPath": "Pfad für den SSH-Private-Key (Standard: bestehender Pfad)",
-        "errorNotS3": "Kontext \"{{name}}\" befindet sich nicht im S3-Modus (aktuell: {{mode}})",
-        "errorNoS3Config": "Kontext \"{{name}}\" hat keine S3-Konfiguration",
-        "loading": "Status wird aus S3 geladen...",
-        "sshWritten": "SSH-Schlüssel geschrieben nach {{path}}",
-        "success": "Zu lokalem Modus migriert: {{machines}} Maschinen, {{storages}} Speicher, {{repos}} Repositories",
-        "nonDestructive": "State.json verbleibt im S3-Bucket (nicht-destruktiv)"
       }
     },
     "doctor": {
@@ -526,6 +622,12 @@
         "noServices": "Keine rediacc-Dienste auf dieser Machine gefunden",
         "stabilityCheck": "Stabilitätsprüfungsmodus - beendet mit Code 2 bei fehlgeschlagenen/neu startenden Diensten",
         "unstableFound": "{{count}} instabile(r) Dienst(e) gefunden"
+      },
+      "status": {
+        "description": "Vollständigen Maschinenstatus anzeigen (System, Repos, Container, Dienste)",
+        "fetched": "Status abgerufen",
+        "fetching": "Status von {{machine}} wird abgerufen...",
+        "noData": "Keine Statusdaten verfügbar"
       },
       "testConnection": {
         "authMethod": "  Auth-Methode: {{method}}",
@@ -769,6 +871,117 @@
         "fetching": "Regionen werden abgerufen..."
       }
     },
+    "repo": {
+      "create": {
+        "alreadyExists": "Repository \"{{name}}\" existiert bereits im Kontext",
+        "completed": "Repository erstellt",
+        "description": "Neues verschlüsseltes Repository erstellen",
+        "failed": "Repository-Erstellung fehlgeschlagen",
+        "registered": "\"{{repository}}\" registriert ({{guid}}, Netzwerk {{networkId}})",
+        "rollback": "Konfiguration für \"{{repository}}\" zurückgesetzt",
+        "sizeOption": "Repository-Größe (z.B. 10G, 100G, 1T)",
+        "starting": "Repository \"{{repository}}\" ({{size}}) wird auf \"{{machine}}\" erstellt..."
+      },
+      "delete": {
+        "completed": "Repository gelöscht",
+        "description": "Repository löschen",
+        "failed": "Repository-Löschung fehlgeschlagen",
+        "removed": "\"{{repository}}\" aus der Konfiguration entfernt",
+        "starting": "\"{{repository}}\" wird auf \"{{machine}}\" gelöscht..."
+      },
+      "description": "Repository-Lebenszyklus-Verwaltung (lokaler Modus)",
+      "down": {
+        "completed": "Dienste gestoppt",
+        "description": "Repository-Dienste stoppen",
+        "failed": "Stoppen der Dienste fehlgeschlagen",
+        "grandOption": "Grand-Repository-Name (wird automatisch in GUID aufgelöst)",
+        "starting": "Dienste für \"{{repository}}\" auf \"{{machine}}\" werden gestoppt...",
+        "unmountOption": "Repository nach dem Stoppen unmounten"
+      },
+      "expand": {
+        "completed": "Erweiterung abgeschlossen",
+        "description": "Eingehängtes Repository online erweitern (ohne Ausfallzeit)",
+        "failed": "Erweiterung fehlgeschlagen",
+        "sizeOption": "Neue Repository-Größe (z.B. 10G, 100G, 1T)",
+        "starting": "\"{{repository}}\" wird auf {{size}} auf \"{{machine}}\" erweitert..."
+      },
+      "fork": {
+        "alreadyExists": "Repository \"{{name}}\" existiert bereits im Kontext",
+        "completed": "Fork erstellt",
+        "description": "CoW-Fork (Copy-on-Write) eines Repositorys erstellen",
+        "failed": "Fork-Erstellung fehlgeschlagen",
+        "registered": "Fork \"{{repository}}\" registriert ({{guid}}, Netzwerk {{networkId}})",
+        "rollback": "Konfiguration für \"{{repository}}\" zurückgesetzt",
+        "starting": "Fork von \"{{parent}}\" als \"{{repository}}\" auf \"{{machine}}\" wird erstellt...",
+        "tagOption": "Fork-Name"
+      },
+      "list": {
+        "completed": "Auflistung abgeschlossen",
+        "description": "Repositories auf einer Maschine auflisten",
+        "failed": "Auflistung fehlgeschlagen: {{error}}",
+        "starting": "Repositories auf \"{{machine}}\" werden aufgelistet..."
+      },
+      "machineOption": "Name der Zielmaschine",
+      "mount": {
+        "checkpointOption": "Nach dem Mounten von Checkpoint wiederherstellen",
+        "completed": "Mounten abgeschlossen",
+        "description": "Repository mounten (LUKS-Container öffnen)",
+        "failed": "Mounten fehlgeschlagen",
+        "starting": "\"{{repository}}\" auf \"{{machine}}\" wird gemountet..."
+      },
+      "noCredential": "Warnung: Repository \"{{name}}\" hat keine Zugangsdaten. Operationen auf verschlüsselten Repositories können fehlschlagen.",
+      "ownership": {
+        "completed": "Besitz aktualisiert",
+        "description": "Repository-Verzeichnis-Besitz ändern",
+        "failed": "Besitz-Aktualisierung fehlgeschlagen",
+        "starting": "Besitz von \"{{repository}}\" wird auf \"{{machine}}\" gesetzt...",
+        "uidOption": "Besitzer-UID (Standard: 7111)"
+      },
+      "resize": {
+        "completed": "Skalierung abgeschlossen",
+        "description": "Repository offline skalieren (unterstützt Vergrößern und Verkleinern)",
+        "failed": "Skalierung fehlgeschlagen",
+        "sizeOption": "Neue Repository-Größe (z.B. 10G, 100G, 1T)",
+        "starting": "\"{{repository}}\" wird auf {{size}} auf \"{{machine}}\" skaliert..."
+      },
+      "status": {
+        "completed": "Status abgerufen",
+        "description": "Repository-Status abrufen",
+        "failed": "Statusabfrage fehlgeschlagen",
+        "starting": "Status von \"{{repository}}\" auf \"{{machine}}\" wird abgerufen..."
+      },
+      "template": {
+        "completed": "Vorlage angewendet",
+        "description": "Vorlage auf ein Repository anwenden",
+        "failed": "Vorlagen-Anwendung fehlgeschlagen",
+        "fileNotFound": "Vorlagendatei nicht gefunden: {{path}}",
+        "fileOption": "Pfad zur JSON-Vorlagendatei",
+        "grandOption": "Grand-Repository-Name (wird automatisch in GUID aufgelöst)",
+        "starting": "Vorlage wird auf \"{{repository}}\" auf \"{{machine}}\" angewendet..."
+      },
+      "unmount": {
+        "checkpointOption": "Checkpoint vor dem Unmounten erstellen",
+        "completed": "Unmounten abgeschlossen",
+        "description": "Repository unmounten",
+        "failed": "Unmounten fehlgeschlagen",
+        "starting": "\"{{repository}}\" auf \"{{machine}}\" wird unmountet..."
+      },
+      "up": {
+        "completed": "Dienste gestartet",
+        "description": "Repository-Dienste starten (Rediaccfile-Orchestrierung)",
+        "failed": "Starten der Dienste fehlgeschlagen",
+        "grandOption": "Grand-Repository-Name (wird automatisch in GUID aufgelöst)",
+        "mountOption": "Repository vorher mounten",
+        "prepOnlyOption": "Nur den Vorbereitungsschritt ausführen",
+        "starting": "Dienste für \"{{repository}}\" auf \"{{machine}}\" werden gestartet..."
+      },
+      "validate": {
+        "completed": "Überprüfung abgeschlossen",
+        "description": "Repository-Integrität überprüfen",
+        "failed": "Überprüfung fehlgeschlagen",
+        "starting": "\"{{repository}}\" wird auf \"{{machine}}\" überprüft..."
+      }
+    },
     "repository": {
       "create": {
         "creating": "Repository \"{{name}}:{{tag}}\" wird erstellt...",
@@ -838,27 +1051,45 @@
         "description": "Eine Task nachverfolgen (Kurzform: queue trace)"
       }
     },
+    "snapshot": {
+      "create": {
+        "creating": "Snapshot von \"{{repo}}\" auf {{machine}} wird erstellt...",
+        "description": "BTRFS-Snapshot eines Repositorys erstellen",
+        "optionSnapshotName": "Expliziter Snapshot-Name (wird automatisch generiert, wenn leer)",
+        "success": "Snapshot erstellt: {{name}} ({{path}})"
+      },
+      "delete": {
+        "description": "Snapshot von einem Remote-Rechner löschen",
+        "success": "Snapshot gelöscht: {{name}}"
+      },
+      "description": "BTRFS-Snapshots auf Remote-Rechnern verwalten",
+      "list": {
+        "description": "Snapshots auf einem Remote-Rechner auflisten",
+        "header": "{{count}} Snapshot(s) in {{path}}:",
+        "noSnapshots": "Keine Snapshots gefunden."
+      }
+    },
     "storage": {
+      "browse": {
+        "description": "Dateien in einem Speichersystem durchsuchen",
+        "failed": "Dateien konnten nicht aufgelistet werden: {{error}}",
+        "listing": "Dateien in \"{{name}}\" werden aufgelistet...",
+        "noFiles": "Keine Dateien gefunden",
+        "pathOption": "Unterverzeichnispfad zum Auflisten"
+      },
       "description": "Speicherverwaltung",
       "list": {
         "description": "Speicheranbieter auflisten",
         "fetching": "Speicheranbieter werden abgerufen..."
       },
-      "browse": {
-        "description": "Dateien in einem Speichersystem durchsuchen",
-        "pathOption": "Unterverzeichnispfad zum Auflisten",
-        "listing": "Dateien in \"{{name}}\" werden aufgelistet...",
-        "noFiles": "Keine Dateien gefunden",
-        "failed": "Dateien konnten nicht aufgelistet werden: {{error}}"
-      },
       "pull": {
-        "description": "Ein Backup aus dem Cloud-Speicher auf eine Maschine herunterladen",
-        "repositoryOption": "Name des Repositories zum Herunterladen",
-        "machineOption": "Name der Zielmaschine",
-        "starting": "\"{{repository}}\" wird von \"{{storage}}\" auf \"{{machine}}\" heruntergeladen...",
         "completed": "Download abgeschlossen in {{duration}}ms",
+        "description": "Ein Backup aus dem Cloud-Speicher auf eine Maschine herunterladen",
         "failed": "Download fehlgeschlagen: {{error}}",
-        "noCredential": "Warnung: Repository \"{{name}}\" hat keine Zugangsdaten. Der Download kann fehlschlagen, wenn das Backup verschlüsselt ist."
+        "machineOption": "Name der Zielmaschine",
+        "noCredential": "Warnung: Repository \"{{name}}\" hat keine Zugangsdaten. Der Download kann fehlschlagen, wenn das Backup verschlüsselt ist.",
+        "repositoryOption": "Name des Repositories zum Herunterladen",
+        "starting": "\"{{repository}}\" wird von \"{{storage}}\" auf \"{{machine}}\" heruntergeladen..."
       }
     },
     "sync": {
@@ -1067,54 +1298,6 @@
         "noConnections": "Keine VS Code-SSH-Verbindungen konfiguriert.",
         "total": "\nGesamt: {{count}} Verbindung(en)"
       }
-    },
-    "repo": {
-      "description": "Repository-Lebenszyklus-Verwaltung (lokaler Modus)",
-      "machineOption": "Name der Zielmaschine",
-      "noCredential": "Warnung: Repository \"{{name}}\" hat keine Zugangsdaten. Operationen auf verschlüsselten Repositories können fehlschlagen.",
-      "mount": {
-        "description": "Repository mounten (LUKS-Container öffnen)",
-        "checkpointOption": "Nach dem Mounten von Checkpoint wiederherstellen",
-        "starting": "\"{{repository}}\" auf \"{{machine}}\" wird gemountet...",
-        "completed": "Mounten abgeschlossen",
-        "failed": "Mounten fehlgeschlagen"
-      },
-      "unmount": {
-        "description": "Repository unmounten",
-        "checkpointOption": "Checkpoint vor dem Unmounten erstellen",
-        "starting": "\"{{repository}}\" auf \"{{machine}}\" wird unmountet...",
-        "completed": "Unmounten abgeschlossen",
-        "failed": "Unmounten fehlgeschlagen"
-      },
-      "up": {
-        "description": "Repository-Dienste starten (Rediaccfile-Orchestrierung)",
-        "mountOption": "Repository vorher mounten",
-        "prepOnlyOption": "Nur den Vorbereitungsschritt ausführen",
-        "grandOption": "Grand-Repository-Name (wird automatisch in GUID aufgelöst)",
-        "starting": "Dienste für \"{{repository}}\" auf \"{{machine}}\" werden gestartet...",
-        "completed": "Dienste gestartet",
-        "failed": "Starten der Dienste fehlgeschlagen"
-      },
-      "down": {
-        "description": "Repository-Dienste stoppen",
-        "unmountOption": "Repository nach dem Stoppen unmounten",
-        "grandOption": "Grand-Repository-Name (wird automatisch in GUID aufgelöst)",
-        "starting": "Dienste für \"{{repository}}\" auf \"{{machine}}\" werden gestoppt...",
-        "completed": "Dienste gestoppt",
-        "failed": "Stoppen der Dienste fehlgeschlagen"
-      },
-      "status": {
-        "description": "Repository-Status abrufen",
-        "starting": "Status von \"{{repository}}\" auf \"{{machine}}\" wird abgerufen...",
-        "completed": "Status abgerufen",
-        "failed": "Statusabfrage fehlgeschlagen"
-      },
-      "list": {
-        "description": "Repositories auf einer Maschine auflisten",
-        "starting": "Repositories auf \"{{machine}}\" werden aufgelistet...",
-        "completed": "Auflistung abgeschlossen",
-        "failed": "Auflistung fehlgeschlagen"
-      }
     }
   },
   "common": {
@@ -1186,7 +1369,10 @@
       "protocol": "Protokoll-Handler",
       "queue": "Warteschlangenoperationen",
       "region": "Regionsverwaltung",
+      "repo": "Repository-Lebenszyklus",
       "repository": "Repository-Verwaltung",
+      "snapshot": "Snapshot-Verwaltung",
+      "backup": "Backup-Verwaltung",
       "shortcuts": "Schnellbefehle (Shortcuts)",
       "storage": "Speicherverwaltung",
       "sync": "Dateisynchronisation",
@@ -1194,8 +1380,7 @@
       "term": "SSH-Terminalzugang",
       "update": "CLI-Updates",
       "user": "Benutzerverwaltung",
-      "vscode": "VS Code-Integration",
-      "repo": "Repository-Lebenszyklus"
+      "vscode": "VS Code-Integration"
     },
     "supplements": {
       "auth": {

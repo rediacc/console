@@ -231,7 +231,7 @@ describe('buildLocalVault', () => {
       opts.params = { repository: 'myrepo' };
       const vault = JSON.parse(buildLocalVault(opts));
       expect(vault.repositories.myrepo).toBeDefined();
-      expect(vault.repositories.myrepo.guid).toBe('local-myrepo');
+      expect(vault.repositories.myrepo.guid).toBe('myrepo');
       expect(vault.repositories.myrepo.name).toBe('myrepo');
       expect(vault.task.repository).toBe('myrepo');
     });

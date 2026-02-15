@@ -24,6 +24,7 @@ import {
   provisionRenetToRemote,
   readOptionalSSHKey,
   readSSHKey,
+  verifyMachineSetup,
 } from './renet-execution.js';
 
 /** Options for local execution */
@@ -150,6 +151,10 @@ class LocalExecutorService {
       });
 
       await provisionRenetToRemote(config, machine, sshPrivateKey, options);
+      await verifyMachineSetup(machine, sshPrivateKey, {
+        ...options,
+        functionName: options.functionName,
+      });
 
       if (options.debug) {
         outputService.info(`[local] Direct SSH to ${machine.ip}, executor=local`);

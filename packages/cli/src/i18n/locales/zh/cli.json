@@ -103,6 +103,70 @@
         }
       }
     },
+    "backup": {
+      "description": "备份和恢复仓库",
+      "list": {
+        "description": "列出存储或机器上的可用备份",
+        "listing": "正在列出备份...",
+        "optionFromMachine": "源机器名称",
+        "optionFromStorage": "源存储名称",
+        "sourceRequired": "请指定 --from <storage> 或 --from-machine <machine>"
+      },
+      "pull": {
+        "description": "从存储或机器拉取仓库备份",
+        "optionForce": "强制覆盖现有仓库",
+        "optionFromMachine": "源机器名称",
+        "optionFromStorage": "源存储名称",
+        "pulling": "正在拉取 \"{{repo}}\" 的备份...",
+        "sourceRequired": "请指定 --from <storage> 或 --from-machine <machine>"
+      },
+      "push": {
+        "description": "将仓库备份推送到存储或机器",
+        "destIgnoredForStorage": "忽略 --dest {{provided}}：存储备份使用仓库 GUID（{{dest}}）",
+        "destRequired": "请指定 --to <storage> 或 --to-machine <machine>",
+        "optionCheckpoint": "创建容器检查点（热备份）",
+        "optionDest": "目标文件名",
+        "optionForce": "强制覆盖现有备份",
+        "optionTag": "用于版本控制的部署标签",
+        "optionToMachine": "目标机器名称",
+        "optionToStorage": "目标存储名称",
+        "pushing": "正在将 \"{{repo}}\" 的备份推送到 {{dest}}..."
+      },
+      "schedule": {
+        "description": "管理计划备份配置",
+        "push": {
+          "description": "将备份计划推送到远程机器（systemd 定时器）",
+          "success": "备份计划已推送到 {{machine}}"
+        },
+        "set": {
+          "description": "配置备份计划设置",
+          "noOptions": "至少指定一个选项: --destination、--cron、--enable 或 --disable",
+          "optionCron": "备份计划的 cron 表达式（例如 \"0 2 * * *\"）",
+          "optionDestination": "默认存储目标名称",
+          "optionDisable": "禁用计划备份",
+          "optionEnable": "启用计划备份",
+          "saved": "备份计划配置已保存"
+        },
+        "show": {
+          "description": "显示当前备份计划配置",
+          "destination": "目标: {{destination}}",
+          "enabled": "已启用: {{enabled}}",
+          "notConfigured": "未配置备份计划",
+          "schedule": "计划: {{schedule}}"
+        }
+      },
+      "sync": {
+        "description": "批量推送/拉取所有仓库到/从云存储",
+        "directionConflict": "不能同时指定 --to 和 --from",
+        "directionRequired": "请指定 --to <storage>（推送）或 --from <storage>（拉取）",
+        "optionFrom": "源存储名称（拉取模式）",
+        "optionOverride": "拉取时覆盖现有未挂载的仓库",
+        "optionRepo": "过滤到特定仓库（可重复）",
+        "optionTo": "目标存储名称（推送模式）",
+        "pullSuccess": "同步拉取完成",
+        "pushSuccess": "同步推送完成"
+      }
+    },
     "bridge": {
       "description": "网桥管理",
       "list": {
@@ -334,6 +398,12 @@
         "description": "列出当前本地上下文中的机器",
         "noMachines": "未配置任何机器。使用以下命令添加：rdc context add-machine <name> --ip <ip> --user <user>"
       },
+      "pushInfra": {
+        "description": "将基础设施配置推送到远程机器",
+        "installingProxy": "正在安装并启动代理...",
+        "proxyInstallWarning": "代理安装失败（代码 {{code}}）。请手动运行: sudo renet proxy install",
+        "success": "基础设施配置已推送到 \"{{name}}\""
+      },
       "removeMachine": {
         "description": "从当前本地上下文中移除机器",
         "success": "机器 \"{{name}}\" 已移除"
@@ -364,6 +434,20 @@
         "description": "设置默认值（团队、区域、网桥、机器）",
         "success": "已将 \"{{key}}\" 设置为 \"{{value}}\""
       },
+      "setInfra": {
+        "description": "设置机器的基础设施配置",
+        "invalidIPv4": "无效的 IPv4 地址: {{ip}}",
+        "invalidIPv6": "无效的 IPv6 地址: {{ip}}",
+        "noOptions": "未指定选项。请使用 --public-ipv4、--base-domain 等。",
+        "optionBaseDomain": "应用程序的基础域名",
+        "optionCertEmail": "TLS 证书通知邮箱",
+        "optionCfDnsToken": "用于 ACME DNS-01 验证的 Cloudflare DNS API 令牌",
+        "optionPublicIPv4": "公网 IPv4 地址",
+        "optionPublicIPv6": "公网 IPv6 地址",
+        "optionTcpPorts": "要转发的 TCP 端口（逗号分隔，例如 25,143,465）",
+        "optionUdpPorts": "要转发的 UDP 端口（逗号分隔，例如 53）",
+        "success": "已更新 \"{{name}}\" 的基础设施配置"
+      },
       "setLanguage": {
         "description": "设置首选语言",
         "success": "语言已设置为 \"{{code}}\"",
@@ -377,9 +461,21 @@
         "description": "更新当前本地上下文的 SSH 配置",
         "success": "SSH 配置已更新"
       },
+      "setupMachine": {
+        "completed": "机器 '{{machine}}' 设置成功完成",
+        "datastoreOption": "远程机器上的数据存储路径",
+        "datastoreSizeOption": "数据存储大小（例如 95%、100G）",
+        "description": "在远程机器上运行设置（安装 btrfs、Docker 等）",
+        "failed": "机器 '{{machine}}' 设置失败: {{error}}",
+        "starting": "正在设置机器 '{{machine}}'..."
+      },
       "show": {
         "description": "显示当前上下文详情",
         "noContext": "没有活跃的上下文"
+      },
+      "showInfra": {
+        "description": "显示机器的基础设施配置",
+        "noInfra": "\"{{name}}\" 未设置基础设施配置"
       },
       "storages": {
         "description": "列出当前本地上下文中的存储",
@@ -526,6 +622,12 @@
         "noServices": "此机器上未找到 rediacc 服务",
         "stabilityCheck": "稳定性检查模式 - 如果有失败/重启的服务，将以代码 2 退出",
         "unstableFound": "找到 {{count}} 个不稳定的服务"
+      },
+      "status": {
+        "description": "显示完整机器状态（系统、仓库、容器、服务）",
+        "fetched": "状态已获取",
+        "fetching": "正在从 {{machine}} 获取状态...",
+        "noData": "无可用状态数据"
       },
       "testConnection": {
         "authMethod": "  认证方法：{{method}}",
@@ -770,6 +872,23 @@
       }
     },
     "repo": {
+      "create": {
+        "alreadyExists": "仓库 \"{{name}}\" 已存在于上下文中",
+        "completed": "仓库已创建",
+        "description": "创建新的加密仓库",
+        "failed": "仓库创建失败",
+        "registered": "已注册 \"{{repository}}\"（{{guid}}，网络 {{networkId}}）",
+        "rollback": "已回滚 \"{{repository}}\" 的配置",
+        "sizeOption": "仓库大小（例如 10G、100G、1T）",
+        "starting": "正在 \"{{machine}}\" 上创建仓库 \"{{repository}}\"（{{size}}）..."
+      },
+      "delete": {
+        "completed": "仓库已删除",
+        "description": "删除仓库",
+        "failed": "仓库删除失败",
+        "removed": "已从配置中移除 \"{{repository}}\"",
+        "starting": "正在 \"{{machine}}\" 上删除 \"{{repository}}\"..."
+      },
       "description": "仓库生命周期管理 (本地模式)",
       "down": {
         "completed": "服务已停止",
@@ -779,10 +898,27 @@
         "starting": "正在 \"{{machine}}\" 上停止 \"{{repository}}\" 的服务...",
         "unmountOption": "停止后卸载仓库"
       },
+      "expand": {
+        "completed": "扩展完成",
+        "description": "在线扩展已挂载的仓库（零停机）",
+        "failed": "扩展失败",
+        "sizeOption": "新的仓库大小（例如 10G、100G、1T）",
+        "starting": "正在 \"{{machine}}\" 上将 \"{{repository}}\" 扩展为 {{size}}..."
+      },
+      "fork": {
+        "alreadyExists": "仓库 \"{{name}}\" 已存在于上下文中",
+        "completed": "分支已创建",
+        "description": "创建仓库的 CoW（写时复制）分支",
+        "failed": "分支创建失败",
+        "registered": "已注册分支 \"{{repository}}\"（{{guid}}，网络 {{networkId}}）",
+        "rollback": "已回滚 \"{{repository}}\" 的配置",
+        "starting": "正在 \"{{machine}}\" 上将 \"{{parent}}\" 分支为 \"{{repository}}\"...",
+        "tagOption": "分支名称"
+      },
       "list": {
         "completed": "列表获取完成",
         "description": "列出机器上的仓库",
-        "failed": "列表获取失败",
+        "failed": "列出失败: {{error}}",
         "starting": "正在列出 \"{{machine}}\" 上的仓库..."
       },
       "machineOption": "目标机器名称",
@@ -794,11 +930,34 @@
         "starting": "正在将 \"{{repository}}\" 挂载到 \"{{machine}}\"..."
       },
       "noCredential": "警告: 仓库 \"{{name}}\" 未设置凭证。对加密仓库的操作可能会失败。",
+      "ownership": {
+        "completed": "所有权已更新",
+        "description": "更改仓库目录所有权",
+        "failed": "所有权更新失败",
+        "starting": "正在 \"{{machine}}\" 上设置 \"{{repository}}\" 的所有权...",
+        "uidOption": "所有者 UID（默认: 7111）"
+      },
+      "resize": {
+        "completed": "大小调整完成",
+        "description": "离线调整仓库大小（支持扩展和缩减）",
+        "failed": "大小调整失败",
+        "sizeOption": "新的仓库大小（例如 10G、100G、1T）",
+        "starting": "正在 \"{{machine}}\" 上将 \"{{repository}}\" 调整为 {{size}}..."
+      },
       "status": {
         "completed": "状态已获取",
         "description": "获取仓库状态",
         "failed": "状态检查失败",
         "starting": "正在获取 \"{{machine}}\" 上 \"{{repository}}\" 的状态..."
+      },
+      "template": {
+        "completed": "模板已应用",
+        "description": "将模板应用到仓库",
+        "failed": "模板应用失败",
+        "fileNotFound": "未找到模板文件: {{path}}",
+        "fileOption": "模板 JSON 文件路径",
+        "grandOption": "Grand 仓库名称（自动解析为 GUID）",
+        "starting": "正在 \"{{machine}}\" 上将模板应用到 \"{{repository}}\"..."
       },
       "unmount": {
         "checkpointOption": "卸载前创建检查点",
@@ -815,6 +974,12 @@
         "mountOption": "先挂载仓库",
         "prepOnlyOption": "仅运行准备步骤",
         "starting": "正在 \"{{machine}}\" 上启动 \"{{repository}}\" 的服务..."
+      },
+      "validate": {
+        "completed": "验证完成",
+        "description": "验证仓库完整性",
+        "failed": "验证失败",
+        "starting": "正在 \"{{machine}}\" 上验证 \"{{repository}}\"..."
       }
     },
     "repository": {
@@ -884,6 +1049,24 @@
       },
       "trace": {
         "description": "跟踪任务（快捷方式：queue trace）"
+      }
+    },
+    "snapshot": {
+      "create": {
+        "creating": "正在 {{machine}} 上创建 \"{{repo}}\" 的快照...",
+        "description": "创建仓库的 BTRFS 快照",
+        "optionSnapshotName": "显式快照名称（为空时自动生成）",
+        "success": "快照已创建: {{name}}（{{path}}）"
+      },
+      "delete": {
+        "description": "从远程机器上删除快照",
+        "success": "快照已删除: {{name}}"
+      },
+      "description": "管理远程机器上的 BTRFS 快照",
+      "list": {
+        "description": "列出远程机器上的快照",
+        "header": "{{path}} 中有 {{count}} 个快照:",
+        "noSnapshots": "未找到快照。"
       }
     },
     "storage": {
@@ -1188,6 +1371,8 @@
       "region": "区域管理",
       "repo": "仓库生命周期",
       "repository": "仓库管理",
+      "snapshot": "快照管理",
+      "backup": "备份管理",
       "shortcuts": "快捷命令（快捷方式）",
       "storage": "存储管理",
       "sync": "文件同步",

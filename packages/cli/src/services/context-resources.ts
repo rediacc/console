@@ -8,6 +8,8 @@ import { DEFAULTS } from '@rediacc/shared/config';
 import { MIN_NETWORK_ID, NETWORK_ID_INCREMENT } from '@rediacc/shared/queue-vault';
 import { ContextServiceBase } from './context-base.js';
 import type {
+  BackupConfig,
+  InfraConfig,
   MachineConfig,
   NamedContext,
   RepositoryConfig,
@@ -185,6 +187,37 @@ class ContextService extends ContextServiceBase {
       machines: {
         ...context.machines,
         [machineName]: { ...existing, ...updates },
+      },
+    });
+  }
+
+  async setMachineInfra(machineName: string, infra: Partial<InfraConfig>): Promise<void> {
+    const name = this.getEffectiveContextName();
+    const context = await this.requireLocalOrS3Mode(name);
+
+    if (context.mode === 's3') {
+      const s3 = await this.getS3State();
+      const machines = s3.getMachines();
+      if (!(machineName in machines)) throw new Error(`Machine "${machineName}" not found`);
+      machines[machineName] = {
+        ...machines[machineName],
+        infra: { ...machines[machineName].infra, ...infra },
+      };
+      await s3.setMachines(machines);
+      return;
+    }
+
+    const existing = context.machines?.[machineName];
+    if (!existing) {
+      throw new Error(`Machine "${machineName}" not found`);
+    }
+    await this.update(name, {
+      machines: {
+        ...context.machines,
+        [machineName]: {
+          ...existing,
+          infra: { ...existing.infra, ...infra },
+        },
       },
     });
   }
@@ -392,6 +425,26 @@ class ContextService extends ContextServiceBase {
     }
 
     return context?.repositories?.[repoName];
+  }
+
+  // ============================================================================
+  // Backup Configuration
+  // ============================================================================
+
+  async setBackupConfig(config: Partial<BackupConfig>): Promise<void> {
+    const name = this.getEffectiveContextName();
+    const context = await this.requireLocalOrS3Mode(name);
+    const backup: BackupConfig = {
+      defaultDestination: '',
+      ...context.backup,
+      ...config,
+    };
+    await this.update(name, { backup });
+  }
+
+  async getBackupConfig(): Promise<BackupConfig | undefined> {
+    const context = await this.requireLocalOrS3Mode();
+    return context.backup;
   }
 
   // ============================================================================
