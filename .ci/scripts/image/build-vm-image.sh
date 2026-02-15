@@ -217,14 +217,14 @@ log_info "VM started: $VM_NAME"
 
 # Wait for VM to be ready
 log_info "Waiting for VM to boot and get IP..."
-RETRIES=60
+RETRIES=90
 VM_IP=""
 while [[ $RETRIES -gt 0 ]]; do
     if sudo virsh domstate "$VM_NAME" 2>/dev/null | grep -q "running"; then
         VM_IP=$(sudo virsh domifaddr "$VM_NAME" 2>/dev/null | grep -oE '192\.168\.[0-9]+\.[0-9]+' | head -1 || true)
         if [[ -n "$VM_IP" ]]; then
-            # Try SSH connection
-            if ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            # Try SSH connection (15s timeout: cloud-init on minimal images needs time)
+            if ssh -o ConnectTimeout=15 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
                 -i "$BUILD_KEY" "builder@$VM_IP" true 2>/dev/null; then
                 log_info "VM is ready at $VM_IP"
                 break
@@ -238,6 +238,9 @@ done
 if [[ -z "$VM_IP" ]] || [[ $RETRIES -eq 0 ]]; then
     log_error "Failed to connect to build VM"
     sudo virsh domifaddr "$VM_NAME" 2>/dev/null || true
+    # Show cloud-init status for debugging
+    ssh -o ConnectTimeout=15 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+        -i "$BUILD_KEY" "builder@$VM_IP" "cloud-init status" 2>&1 || true
     exit 1
 fi
 

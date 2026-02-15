@@ -47,8 +47,21 @@ RUN apt-get update \
         dbus-x11 \
         netcat-openbsd \
         gnome-keyring \
+        # KVM/libvirt for local VM provisioning (Standalone Run)
+        qemu-kvm \
+        libvirt-daemon-system \
+        libvirt-clients \
+        bridge-utils \
+        virtinst \
+        cloud-image-utils \
+        genisoimage \
+        dnsmasq-base \
+        iputils-ping \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Allow vscode user to manage VMs via libvirt
+RUN usermod -aG libvirt,kvm vscode
 
 # =============================================================================
 # Node.js via NVM (matching devcontainers/features/node pattern)
@@ -107,6 +120,13 @@ ENV PATH="$PATH:$DOTNET_ROOT"
 
 RUN curl -fsSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 9.0 --install-dir "$DOTNET_ROOT" \
     && ln -sf "$DOTNET_ROOT/dotnet" /usr/local/bin/dotnet
+
+# =============================================================================
+# go-sqlcmd (required by ci-start.sh health checks for SQL Server)
+# Same logic as private/middleware/scripts/install-sqlcmd.sh
+# =============================================================================
+COPY install-sqlcmd.sh /tmp/install-sqlcmd.sh
+RUN /tmp/install-sqlcmd.sh && rm /tmp/install-sqlcmd.sh
 
 # =============================================================================
 # Python packages + uv + kimi-cli
@@ -183,6 +203,10 @@ RUN ARCH=$(dpkg --print-architecture) \
 # Desktop startup script (starts Xvfb + XFCE + x11vnc + noVNC)
 COPY start-desktop.sh /usr/local/bin/start-desktop.sh
 RUN chmod +x /usr/local/bin/start-desktop.sh
+
+# KVM startup script (starts libvirtd + default network if /dev/kvm exists)
+COPY start-kvm.sh /usr/local/bin/start-kvm.sh
+RUN chmod +x /usr/local/bin/start-kvm.sh
 
 # Expose ports for self-hosted VS Code and desktop access
 EXPOSE 6080 8080

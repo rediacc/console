@@ -52,6 +52,7 @@ Thumbs.db
 *.tmp
 .backend-state
 .provision-state
+.vm-info
 
 # Build artifacts
 .build_cache/
