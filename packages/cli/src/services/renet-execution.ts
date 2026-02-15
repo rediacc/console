@@ -265,7 +265,7 @@ function buildRepositories(
 
   const repoConfig = repositoryConfigs?.[repoName];
   const repoEntry: Record<string, unknown> = {
-    guid: repoConfig?.guid ?? `local-${repoName}`,
+    guid: repoConfig?.guid ?? repoName,
     name: repoName,
   };
   const networkId = repoConfig?.networkId ?? params.network_id;
