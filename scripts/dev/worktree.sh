@@ -68,20 +68,28 @@ sync_main_repo() {
         return 0
     }
 
-    if [[ "$current_branch" != "$BASE_BRANCH" ]]; then
-        log_warn "Main worktree is on '$current_branch', not '$BASE_BRANCH' -- skipping pull"
-        git -C "$ROOT_DIR" fetch origin "$BASE_BRANCH" --quiet 2>/dev/null || {
-            log_warn "Fetch failed (network issue?), continuing with cached state"
-        }
-        return 0
-    fi
-
-    # Check for uncommitted changes
+    # Stash uncommitted changes before switching/pulling
+    local needs_stash=false
     if ! git -C "$ROOT_DIR" diff --quiet 2>/dev/null ||
         ! git -C "$ROOT_DIR" diff --cached --quiet 2>/dev/null; then
-        log_warn "Main worktree has uncommitted changes -- skipping pull"
-        git -C "$ROOT_DIR" fetch origin "$BASE_BRANCH" --quiet 2>/dev/null || true
-        return 0
+        needs_stash=true
+        git -C "$ROOT_DIR" stash --quiet --include-untracked 2>/dev/null || {
+            log_warn "Main worktree has uncommitted changes -- stash failed, skipping sync"
+            git -C "$ROOT_DIR" fetch origin "$BASE_BRANCH" --quiet 2>/dev/null || true
+            return 0
+        }
+    fi
+
+    # Checkout base branch if not already on it
+    if [[ "$current_branch" != "$BASE_BRANCH" ]]; then
+        if ! git -C "$ROOT_DIR" checkout "$BASE_BRANCH" --quiet 2>/dev/null; then
+            log_warn "Could not checkout '$BASE_BRANCH', staying on '$current_branch'"
+            if [[ "$needs_stash" == true ]]; then
+                git -C "$ROOT_DIR" stash pop --quiet 2>/dev/null || true
+            fi
+            return 0
+        fi
+        log_info "Checked out $BASE_BRANCH (was on $current_branch)"
     fi
 
     # Pull latest (fast-forward only)
@@ -90,17 +98,37 @@ sync_main_repo() {
         git -C "$ROOT_DIR" fetch origin "$BASE_BRANCH" --quiet 2>/dev/null || {
             log_warn "Fetch also failed, continuing with cached state"
         }
+        if [[ "$needs_stash" == true ]]; then
+            git -C "$ROOT_DIR" stash pop --quiet 2>/dev/null || true
+        fi
         return 0
+    fi
+
+    if [[ "$needs_stash" == true ]]; then
+        git -C "$ROOT_DIR" stash pop --quiet 2>/dev/null || {
+            log_warn "Stash pop had conflicts -- your changes are still in git stash"
+        }
     fi
 
     log_info "Pulled latest origin/$BASE_BRANCH"
 
-    # Update submodules
+    # Update submodules and checkout their main branch
     log_info "Updating submodules..."
     pushd "$ROOT_DIR" >/dev/null
     git submodule sync --quiet 2>/dev/null || true
     if ! git submodule update --init --recursive --quiet 2>/dev/null; then
         log_warn "Submodule update failed for some modules, continuing"
+    fi
+    git submodule foreach --quiet 'git checkout main --quiet 2>/dev/null || true'
+
+    # Auto-commit if submodule pointers changed
+    if ! git diff --quiet 2>/dev/null; then
+        git add -A
+        git commit --quiet -m "chore: sync submodules to latest main"
+        git push --quiet origin "$BASE_BRANCH" 2>/dev/null || {
+            log_warn "Auto-push failed (permissions or network issue)"
+        }
+        log_info "Auto-committed and pushed submodule updates"
     fi
     popd >/dev/null
 
@@ -435,7 +463,7 @@ worktree_prune() {
     # Sync main repo so merged branches are correctly identified
     sync_main_repo
 
-    log_step "Checking for worktrees with merged PRs..."
+    log_step "Checking for worktrees to clean up..."
     echo ""
 
     if [[ ! -d "$WORKTREE_BASE" ]]; then
@@ -443,7 +471,7 @@ worktree_prune() {
         return 0
     fi
 
-    local found_merged=false
+    local found_cleanup=false
 
     # Get list of worktrees
     while IFS= read -r line; do
@@ -465,16 +493,32 @@ worktree_prune() {
 
             # Check if PR is merged
             if is_pr_merged "$branch"; then
-                found_merged=true
+                found_cleanup=true
                 echo "  $wt_name (branch: $branch) - PR MERGED"
                 remove_worktree "$wt_path" "$session_name" "$branch"
                 echo ""
+                continue
+            fi
+
+            # Check if branch has no commits ahead of main (empty worktree)
+            local ahead
+            ahead=$(git -C "$ROOT_DIR" rev-list --count "$BASE_BRANCH".."$branch" 2>/dev/null || echo "")
+            if [[ "$ahead" == "0" ]]; then
+                # Also verify no uncommitted changes in the worktree
+                if [[ -d "$wt_path" ]] &&
+                    git -C "$wt_path" diff --quiet 2>/dev/null &&
+                    git -C "$wt_path" diff --cached --quiet 2>/dev/null; then
+                    found_cleanup=true
+                    echo "  $wt_name (branch: $branch) - NO COMMITS, NO CHANGES"
+                    remove_worktree "$wt_path" "$session_name" "$branch"
+                    echo ""
+                fi
             fi
         fi
     done < <(git -C "$ROOT_DIR" worktree list --porcelain | grep "^worktree " | cut -d' ' -f2-)
 
-    if [[ "$found_merged" == "false" ]]; then
-        log_info "No worktrees with merged PRs found"
+    if [[ "$found_cleanup" == "false" ]]; then
+        log_info "No worktrees to clean up"
     fi
 
     # Clean up any stale worktree entries
