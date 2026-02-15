@@ -11,6 +11,7 @@ export * from './MobileCard';
 export { default as ModalTable } from './ModalTable';
 export * from './menuBuilders';
 export * from './PageHeader';
+export * from './PreviewWarning';
 export * from './QueueItemTraceModal';
 export * from './RemoteFileBrowserModal';
 export * from './ResourceActionsDropdown';

@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3379
+    "keyCount": 3381
   },
   "hashes": {
     "auth.endpointSelector.addCustom": "c27ca9dd",
@@ -903,6 +903,8 @@
     "common.vscodeSelection.title": "6d280435",
     "common.vscodeSelection.windowsVSCode": "25ddb10c",
     "common.vscodeSelection.wslVSCode": "a4e06b37",
+    "common.warnings.previewEnvironment": "763816ac",
+    "common.warnings.previewMessage": "0bea2c6f",
     "common.warnings.sandboxEnvironment": "9336d368",
     "common.warnings.sandboxMessage": "6c9f9977",
     "common.yes": "4daa7349",
