@@ -9,6 +9,7 @@ jobs:
   cleanup:
     name: Cleanup old versions
     runs-on: ubuntu-slim
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - uses: ./.github/actions/app-token
@@ -16,7 +17,7 @@ jobs:
         with:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: ci
+          preset: housekeeping
           repositories: console
       - name: Cleanup old releases, tags, and packages
         run: .ci/scripts/housekeeping/cleanup-versions.sh

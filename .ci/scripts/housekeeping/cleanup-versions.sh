@@ -270,6 +270,7 @@ cleanup_packages() {
 
         local deleted=0
         local index=0
+        local consecutive_failures=0
 
         while IFS= read -r version; do
             local version_id created_at tags
@@ -283,16 +284,21 @@ cleanup_packages() {
                 if [[ "$DRY_RUN" == "true" ]]; then
                     log_warn "  [DRY-RUN] Would delete version: $version_id (tags: $tags, created: $created_at)"
                 else
-                    local http_code
-                    http_code="$(gh api -X DELETE "orgs/$GITHUB_ORG/packages/container/$encoded_package/versions/$version_id" \
-                        2>&1 && echo "204" || echo "failed")"
+                    local api_output
+                    api_output="$(gh api -X DELETE "orgs/$GITHUB_ORG/packages/container/$encoded_package/versions/$version_id" 2>&1)"
+                    local api_exit=$?
 
-                    if [[ "$http_code" == "204" ]]; then
+                    if [[ $api_exit -eq 0 ]]; then
                         log_debug "  Deleted version: $version_id (tags: $tags)"
                         deleted=$((deleted + 1))
+                        consecutive_failures=0
                     else
-                        # Handle 400 errors gracefully (e.g., >5000 downloads)
-                        log_warn "  Could not delete version $version_id (tags: $tags) - may have >5000 downloads"
+                        consecutive_failures=$((consecutive_failures + 1))
+                        log_warn "  Could not delete version $version_id (tags: $tags): $api_output"
+                        if [[ "$consecutive_failures" -ge 5 ]]; then
+                            log_warn "  Skipping remaining versions for $package_name after $consecutive_failures consecutive failures"
+                            break
+                        fi
                     fi
                 fi
             fi

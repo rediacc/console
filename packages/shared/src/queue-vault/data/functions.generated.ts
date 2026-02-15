@@ -518,6 +518,8 @@ export interface SetupParams {
   datastoreSize?: string;
   /** Installation source */
   from?: string;
+  /** Rclone installation source */
+  rcloneSource?: string;
   /** Docker installation source */
   dockerSource?: string;
   /** Install AMD driver */
@@ -587,7 +589,7 @@ export const BRIDGE_FUNCTIONS = [
   'setup',
 ] as const;
 
-export const BRIDGE_FUNCTIONS_VERSION = '0.4.30-2-gf80cea0';
+export const BRIDGE_FUNCTIONS_VERSION = 'v0.4.91-4-g1978a25a';
 
 export type BridgeFunctionName = (typeof BRIDGE_FUNCTIONS)[number];
 
@@ -2085,6 +2087,14 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
         options: ['apt-repo', 'tar-static', 'deb-local'],
         ui: 'dropdown',
         enum: ['apt-repo', 'tar-static', 'deb-local'],
+      },
+      rcloneSource: {
+        type: 'string',
+        default: 'install-script',
+        help: 'Rclone installation source',
+        options: ['install-script', 'package-manager', 'manual'],
+        ui: 'dropdown',
+        enum: ['install-script', 'package-manager', 'manual'],
       },
       dockerSource: {
         type: 'string',
