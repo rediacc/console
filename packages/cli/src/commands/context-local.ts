@@ -2,11 +2,13 @@ import { execFileSync } from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
 import { t } from '../i18n/index.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
+import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { askPassword } from '../utils/prompt.js';
 import type { MachineConfig, OutputFormat, S3Config } from '../types/index.js';
@@ -321,6 +323,72 @@ export function registerLocalCommands(context: Command, program: Command): void 
       try {
         await contextService.setRenetPath(renetPath);
         outputService.success(t('commands.context.setRenet.success', { path: renetPath }));
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // context setup-machine - Run renet setup on a remote machine
+  context
+    .command('setup-machine <name>')
+    .description(t('commands.context.setupMachine.description'))
+    .option(
+      '--datastore <path>',
+      t('commands.context.setupMachine.datastoreOption'),
+      '/mnt/rediacc'
+    )
+    .option(
+      '--datastore-size <size>',
+      t('commands.context.setupMachine.datastoreSizeOption'),
+      '95%'
+    )
+    .option('--debug', t('options.debug'))
+    .action(async (name, options) => {
+      try {
+        const config = await contextService.getLocalConfig();
+        const machine = await contextService.getLocalMachine(name);
+        const sshPrivateKey = config.sshPrivateKey ?? (await readSSHKey(config.ssh.privateKeyPath));
+
+        outputService.info(t('commands.context.setupMachine.starting', { machine: name }));
+
+        // Provision renet binary first (setup needs renet on the machine)
+        await provisionRenetToRemote(config, machine, sshPrivateKey, { debug: options.debug });
+
+        // Run setup via streaming SSH
+        const sftp = new SFTPClient({
+          host: machine.ip,
+          port: machine.port ?? DEFAULTS.SSH.PORT,
+          username: machine.user,
+          privateKey: sshPrivateKey,
+        });
+        await sftp.connect();
+
+        try {
+          const cmd = `sudo renet setup --auto --datastore ${options.datastore} --datastore-size ${options.datastoreSize}`;
+
+          if (options.debug) {
+            outputService.info(`[setup] Running: ${cmd}`);
+          }
+
+          const exitCode = await sftp.execStreaming(cmd, {
+            onStdout: (data) => process.stdout.write(data),
+            onStderr: (data) => process.stderr.write(data),
+          });
+
+          if (exitCode === 0) {
+            outputService.success(t('commands.context.setupMachine.completed', { machine: name }));
+          } else {
+            outputService.error(
+              t('commands.context.setupMachine.failed', {
+                machine: name,
+                error: `exit code ${exitCode}`,
+              })
+            );
+            process.exitCode = exitCode;
+          }
+        } finally {
+          sftp.close();
+        }
       } catch (error) {
         handleError(error);
       }

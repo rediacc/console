@@ -5,9 +5,8 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
 /**
  * Setup Command Installation Parameters Tests
  *
- * Tests the 6 new installation parameters added to the setup command:
+ * Tests the 5 new installation parameters added to the setup command:
  * - from (installation source)
- * - rclone_source
  * - docker_source
  * - install_amd_driver
  * - install_nvidia_driver
@@ -36,15 +35,6 @@ test.describe('Setup Installation Parameters @bridge @setup', () => {
       datastorePath: DEFAULT_DATASTORE_PATH,
       uid: DEFAULT_UID,
       from: 'apt-repo',
-    });
-    expect(runner.isSuccess(result)).toBe(true);
-  });
-
-  test('setup with rclone_source=install-script should succeed', async () => {
-    const result = await runner.setupWithOptions({
-      datastorePath: DEFAULT_DATASTORE_PATH,
-      uid: DEFAULT_UID,
-      rcloneSource: 'install-script',
     });
     expect(runner.isSuccess(result)).toBe(true);
   });
@@ -82,7 +72,6 @@ test.describe('Setup Installation Parameters @bridge @setup', () => {
       datastorePath: DEFAULT_DATASTORE_PATH,
       uid: DEFAULT_UID,
       from: 'apt-repo',
-      rcloneSource: 'install-script',
       dockerSource: 'docker-repo',
       installAmdDriver: 'auto',
       installNvidiaDriver: 'auto',
@@ -101,15 +90,6 @@ test.describe('Setup Installation Parameters Edge Cases @bridge @setup', () => {
   // eslint-disable-next-line @typescript-eslint/require-await
   test.beforeAll(async () => {
     runner = BridgeTestRunner.forWorker();
-  });
-
-  test('setup with manual rclone_source should succeed', async () => {
-    const result = await runner.setupWithOptions({
-      datastorePath: DEFAULT_DATASTORE_PATH,
-      uid: DEFAULT_UID,
-      rcloneSource: 'manual',
-    });
-    expect(runner.isSuccess(result)).toBe(true);
   });
 
   test('setup with manual docker_source should succeed', async () => {

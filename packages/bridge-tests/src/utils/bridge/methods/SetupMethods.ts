@@ -31,7 +31,6 @@ export class SetupMethods {
     datastorePath?: string;
     uid?: string;
     from?: 'apt-repo' | 'tar-static' | 'deb-local';
-    rcloneSource?: 'install-script' | 'package-manager' | 'manual';
     dockerSource?: 'docker-repo' | 'package-manager' | 'snap' | 'manual';
     installAmdDriver?: 'auto' | 'true' | 'false';
     installNvidiaDriver?: 'auto' | 'true' | 'false';
@@ -42,7 +41,6 @@ export class SetupMethods {
       datastorePath: options.datastorePath,
       uid: options.uid,
       installSource: options.from,
-      rcloneSource: options.rcloneSource,
       dockerSource: options.dockerSource,
       installAmdDriver: options.installAmdDriver,
       installNvidiaDriver: options.installNvidiaDriver,

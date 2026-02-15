@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build native binaries for renet embedded assets (CRIU, rsync)
+# Build native binaries for renet embedded assets (CRIU, rsync, rclone)
 # Builds natively for the current architecture to avoid QEMU emulation issues
 #
 # Usage:
@@ -31,6 +31,7 @@ CROSS_RSYNC=false
 CRIU_ONLY=false
 CRIU_VERSION="${CRIU_VERSION:-4.2}"
 RSYNC_VERSION="${RSYNC_VERSION:-3.4.1}"
+RCLONE_VERSION="${RCLONE_VERSION:-1.69.1}"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -101,6 +102,7 @@ esac
 log_step "Building native binaries for $ARCH_SUFFIX"
 log_info "  CRIU version: $CRIU_VERSION"
 log_info "  rsync version: $RSYNC_VERSION"
+log_info "  rclone version: $RCLONE_VERSION"
 log_info "  Output: $OUTPUT_DIR"
 
 if [[ "$DRY_RUN" == "true" ]]; then
@@ -108,6 +110,8 @@ if [[ "$DRY_RUN" == "true" ]]; then
     log_info "  - criu-linux-$ARCH_SUFFIX (native)"
     [[ "$CRIU_ONLY" != "true" ]] && log_info "  - rsync-linux-$ARCH_SUFFIX (native)"
     [[ "$CROSS_RSYNC" == "true" ]] && log_info "  - rsync-linux-$OTHER_ARCH (cross-compile)"
+    [[ "$CRIU_ONLY" != "true" ]] && log_info "  - rclone-linux-$ARCH_SUFFIX (download)"
+    [[ "$CRIU_ONLY" != "true" ]] && log_info "  - rclone-linux-$OTHER_ARCH (download)"
     exit 0
 fi
 
@@ -341,6 +345,33 @@ EOF'
     log_info "Cross-compiled rsync: $output_file"
 }
 
+# Download pre-built rclone binary
+download_rclone() {
+    local arch_suffix="$1"
+    local output_file="$OUTPUT_DIR/rclone-linux-$arch_suffix"
+
+    if [[ -f "$output_file" ]]; then
+        log_info "rclone already exists: $output_file"
+        return 0
+    fi
+
+    log_step "Downloading rclone $RCLONE_VERSION for $arch_suffix..."
+
+    local rclone_arch="$arch_suffix"
+    local download_url="https://downloads.rclone.org/v${RCLONE_VERSION}/rclone-v${RCLONE_VERSION}-linux-${rclone_arch}.zip"
+
+    local tmp_dir
+    tmp_dir=$(mktemp -d)
+
+    retry_with_backoff 3 5 curl -fsSL -o "$tmp_dir/rclone.zip" "$download_url"
+    unzip -q "$tmp_dir/rclone.zip" -d "$tmp_dir"
+    cp "$tmp_dir/rclone-v${RCLONE_VERSION}-linux-${rclone_arch}/rclone" "$output_file"
+    chmod +x "$output_file"
+    rm -rf "$tmp_dir"
+
+    log_info "Downloaded rclone: $output_file"
+}
+
 # Main logic
 main() {
     # Always build CRIU for current architecture
@@ -358,6 +389,10 @@ main() {
                 log_warn "Cross-compilation only supported from amd64 host"
             fi
         fi
+
+        # Download pre-built rclone for both architectures
+        download_rclone "$ARCH_SUFFIX"
+        download_rclone "$OTHER_ARCH"
     fi
 
     # Summary

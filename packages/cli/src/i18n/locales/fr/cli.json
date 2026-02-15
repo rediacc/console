@@ -103,6 +103,70 @@
         }
       }
     },
+    "backup": {
+      "description": "Sauvegarder et restaurer les dépôts",
+      "list": {
+        "description": "Lister les sauvegardes disponibles sur le stockage ou la machine",
+        "listing": "Listage des sauvegardes...",
+        "optionFromMachine": "Nom de la machine source",
+        "optionFromStorage": "Nom du stockage source",
+        "sourceRequired": "Spécifiez --from <storage> ou --from-machine <machine>"
+      },
+      "pull": {
+        "description": "Récupérer la sauvegarde du dépôt depuis le stockage ou une machine",
+        "optionForce": "Forcer l'écrasement du dépôt existant",
+        "optionFromMachine": "Nom de la machine source",
+        "optionFromStorage": "Nom du stockage source",
+        "pulling": "Récupération de la sauvegarde de \"{{repo}}\"...",
+        "sourceRequired": "Spécifiez --from <storage> ou --from-machine <machine>"
+      },
+      "push": {
+        "description": "Pousser la sauvegarde du dépôt vers le stockage ou une machine",
+        "destIgnoredForStorage": "--dest {{provided}} ignoré : les sauvegardes de stockage utilisent le GUID du dépôt ({{dest}})",
+        "destRequired": "Spécifiez --to <storage> ou --to-machine <machine>",
+        "optionCheckpoint": "Créer un point de contrôle du conteneur (sauvegarde à chaud)",
+        "optionDest": "Nom du fichier de destination",
+        "optionForce": "Forcer l'écrasement de la sauvegarde existante",
+        "optionTag": "Tag de déploiement pour le versionnage",
+        "optionToMachine": "Nom de la machine de destination",
+        "optionToStorage": "Nom du stockage de destination",
+        "pushing": "Envoi de la sauvegarde de \"{{repo}}\" vers {{dest}}..."
+      },
+      "schedule": {
+        "description": "Gérer la configuration des sauvegardes planifiées",
+        "push": {
+          "description": "Pousser la planification des sauvegardes vers la machine distante (timer systemd)",
+          "success": "Planification des sauvegardes poussée vers {{machine}}"
+        },
+        "set": {
+          "description": "Configurer les paramètres de planification des sauvegardes",
+          "noOptions": "Spécifiez au moins une option : --destination, --cron, --enable ou --disable",
+          "optionCron": "Expression cron pour la planification des sauvegardes (ex. \"0 2 * * *\")",
+          "optionDestination": "Nom de destination de stockage par défaut",
+          "optionDisable": "Désactiver les sauvegardes planifiées",
+          "optionEnable": "Activer les sauvegardes planifiées",
+          "saved": "Configuration de planification des sauvegardes enregistrée"
+        },
+        "show": {
+          "description": "Afficher la configuration actuelle de planification des sauvegardes",
+          "destination": "Destination : {{destination}}",
+          "enabled": "Activé : {{enabled}}",
+          "notConfigured": "Aucune planification de sauvegarde configurée",
+          "schedule": "Planification : {{schedule}}"
+        }
+      },
+      "sync": {
+        "description": "Pousser/récupérer en masse tous les dépôts depuis/vers le stockage cloud",
+        "directionConflict": "Impossible de spécifier à la fois --to et --from",
+        "directionRequired": "Spécifiez --to <storage> (push) ou --from <storage> (pull)",
+        "optionFrom": "Nom du stockage source (mode pull)",
+        "optionOverride": "Écraser les dépôts non montés existants lors du pull",
+        "optionRepo": "Filtrer par dépôt spécifique (répétable)",
+        "optionTo": "Nom du stockage de destination (mode push)",
+        "pullSuccess": "Pull de synchronisation terminé",
+        "pushSuccess": "Push de synchronisation terminé"
+      }
+    },
     "bridge": {
       "description": "Gestion du pont",
       "list": {
@@ -334,6 +398,12 @@
         "description": "Lister les machines dans le contexte local actuel",
         "noMachines": "Aucune machine configurée. Ajoutez-en une avec : rdc context add-machine <name> --ip <ip> --user <user>"
       },
+      "pushInfra": {
+        "description": "Pousser la configuration d'infrastructure vers la machine distante",
+        "installingProxy": "Installation et démarrage du proxy...",
+        "proxyInstallWarning": "Échec de l'installation du proxy (code {{code}}). Exécutez manuellement : sudo renet proxy install",
+        "success": "Configuration d'infrastructure poussée vers \"{{name}}\""
+      },
       "removeMachine": {
         "description": "Supprimer une machine du contexte local actuel",
         "success": "Machine \"{{name}}\" supprimée"
@@ -364,6 +434,20 @@
         "description": "Définir une valeur par défaut (équipe, région, pont, machine)",
         "success": "\"{{key}}\" défini à \"{{value}}\""
       },
+      "setInfra": {
+        "description": "Définir la configuration d'infrastructure pour une machine",
+        "invalidIPv4": "Adresse IPv4 invalide : {{ip}}",
+        "invalidIPv6": "Adresse IPv6 invalide : {{ip}}",
+        "noOptions": "Aucune option spécifiée. Utilisez --public-ipv4, --base-domain, etc.",
+        "optionBaseDomain": "Domaine de base pour les applications",
+        "optionCertEmail": "E-mail pour les notifications de certificat TLS",
+        "optionCfDnsToken": "Jeton API DNS Cloudflare pour le défi ACME DNS-01",
+        "optionPublicIPv4": "Adresse IPv4 publique",
+        "optionPublicIPv6": "Adresse IPv6 publique",
+        "optionTcpPorts": "Ports TCP à transférer (séparés par des virgules, ex. 25,143,465)",
+        "optionUdpPorts": "Ports UDP à transférer (séparés par des virgules, ex. 53)",
+        "success": "Configuration d'infrastructure mise à jour pour \"{{name}}\""
+      },
       "setLanguage": {
         "description": "Définir la langue préférée",
         "success": "Langue définie à \"{{code}}\"",
@@ -377,9 +461,21 @@
         "description": "Mettre à jour la configuration SSH pour le contexte local actuel",
         "success": "Configuration SSH mise à jour"
       },
+      "setupMachine": {
+        "completed": "Configuration de la machine '{{machine}}' terminée avec succès",
+        "datastoreOption": "Chemin du magasin de données sur la machine distante",
+        "datastoreSizeOption": "Taille du magasin de données (ex. 95%, 100G)",
+        "description": "Exécuter la configuration sur une machine distante (installe btrfs, Docker, etc.)",
+        "failed": "Échec de la configuration de la machine '{{machine}}' : {{error}}",
+        "starting": "Configuration de la machine '{{machine}}'..."
+      },
       "show": {
         "description": "Afficher les détails du contexte actuel",
         "noContext": "Aucun contexte actif"
+      },
+      "showInfra": {
+        "description": "Afficher la configuration d'infrastructure d'une machine",
+        "noInfra": "Aucune configuration d'infrastructure définie pour \"{{name}}\""
       },
       "storages": {
         "description": "Lister les stockages dans le contexte local actuel",
@@ -526,6 +622,12 @@
         "noServices": "Aucun service rediacc trouvé sur cette machine",
         "stabilityCheck": "Mode de vérification de stabilité - sort avec le code 2 si des services échouent/redémarrent",
         "unstableFound": "{{count}} service(s) instable(s) trouvé(s)"
+      },
+      "status": {
+        "description": "Afficher l'état complet de la machine (système, dépôts, conteneurs, services)",
+        "fetched": "Statut récupéré",
+        "fetching": "Récupération du statut de {{machine}}...",
+        "noData": "Aucune donnée de statut disponible"
       },
       "testConnection": {
         "authMethod": "  Méthode d'authentification : {{method}}",
@@ -770,6 +872,23 @@
       }
     },
     "repo": {
+      "create": {
+        "alreadyExists": "Le dépôt \"{{name}}\" existe déjà dans le contexte",
+        "completed": "Dépôt créé",
+        "description": "Créer un nouveau dépôt chiffré",
+        "failed": "Échec de la création du dépôt",
+        "registered": "\"{{repository}}\" enregistré ({{guid}}, réseau {{networkId}})",
+        "rollback": "Configuration annulée pour \"{{repository}}\"",
+        "sizeOption": "Taille du dépôt (ex. 10G, 100G, 1T)",
+        "starting": "Création du dépôt \"{{repository}}\" ({{size}}) sur \"{{machine}}\"..."
+      },
+      "delete": {
+        "completed": "Dépôt supprimé",
+        "description": "Supprimer un dépôt",
+        "failed": "Échec de la suppression du dépôt",
+        "removed": "\"{{repository}}\" supprimé de la configuration",
+        "starting": "Suppression de \"{{repository}}\" sur \"{{machine}}\"..."
+      },
       "description": "Gestion du cycle de vie des dépôts (mode local)",
       "down": {
         "completed": "Services arrêtés",
@@ -779,10 +898,27 @@
         "starting": "Arrêt des services pour \"{{repository}}\" sur \"{{machine}}\"...",
         "unmountOption": "Démonter le dépôt après l'arrêt"
       },
+      "expand": {
+        "completed": "Extension terminée",
+        "description": "Étendre un dépôt monté en ligne (sans interruption)",
+        "failed": "Échec de l'extension",
+        "sizeOption": "Nouvelle taille du dépôt (ex. 10G, 100G, 1T)",
+        "starting": "Extension de \"{{repository}}\" à {{size}} sur \"{{machine}}\"..."
+      },
+      "fork": {
+        "alreadyExists": "Le dépôt \"{{name}}\" existe déjà dans le contexte",
+        "completed": "Fork créé",
+        "description": "Créer un fork CoW (Copy-on-Write) d'un dépôt",
+        "failed": "Échec de la création du fork",
+        "registered": "Fork \"{{repository}}\" enregistré ({{guid}}, réseau {{networkId}})",
+        "rollback": "Configuration annulée pour \"{{repository}}\"",
+        "starting": "Création du fork de \"{{parent}}\" en tant que \"{{repository}}\" sur \"{{machine}}\"...",
+        "tagOption": "Nom du fork"
+      },
       "list": {
         "completed": "Listage terminé",
         "description": "Lister les dépôts sur une machine",
-        "failed": "Échec du listage",
+        "failed": "Échec du listage : {{error}}",
         "starting": "Listage des dépôts sur \"{{machine}}\"..."
       },
       "machineOption": "Nom de la machine cible",
@@ -794,11 +930,34 @@
         "starting": "Montage de \"{{repository}}\" sur \"{{machine}}\"..."
       },
       "noCredential": "Avertissement : Le dépôt \"{{name}}\" n'a pas d'identifiant défini. Les opérations sur les dépôts chiffrés peuvent échouer.",
+      "ownership": {
+        "completed": "Propriété mise à jour",
+        "description": "Changer la propriété du répertoire du dépôt",
+        "failed": "Échec de la mise à jour de la propriété",
+        "starting": "Définition de la propriété de \"{{repository}}\" sur \"{{machine}}\"...",
+        "uidOption": "UID du propriétaire (par défaut : 7111)"
+      },
+      "resize": {
+        "completed": "Redimensionnement terminé",
+        "description": "Redimensionner un dépôt hors ligne (supporte l'expansion et la réduction)",
+        "failed": "Échec du redimensionnement",
+        "sizeOption": "Nouvelle taille du dépôt (ex. 10G, 100G, 1T)",
+        "starting": "Redimensionnement de \"{{repository}}\" à {{size}} sur \"{{machine}}\"..."
+      },
       "status": {
         "completed": "Statut récupéré",
         "description": "Obtenir le statut du dépôt",
         "failed": "Échec de la vérification du statut",
         "starting": "Récupération du statut de \"{{repository}}\" sur \"{{machine}}\"..."
+      },
+      "template": {
+        "completed": "Modèle appliqué",
+        "description": "Appliquer un modèle à un dépôt",
+        "failed": "Échec de l'application du modèle",
+        "fileNotFound": "Fichier de modèle introuvable : {{path}}",
+        "fileOption": "Chemin vers le fichier de modèle JSON",
+        "grandOption": "Nom du dépôt grand (résolu automatiquement en GUID)",
+        "starting": "Application du modèle à \"{{repository}}\" sur \"{{machine}}\"..."
       },
       "unmount": {
         "checkpointOption": "Créer un point de contrôle avant le démontage",
@@ -815,6 +974,12 @@
         "mountOption": "Monter le dépôt d'abord",
         "prepOnlyOption": "Exécuter uniquement l'étape de préparation",
         "starting": "Démarrage des services pour \"{{repository}}\" sur \"{{machine}}\"..."
+      },
+      "validate": {
+        "completed": "Validation terminée",
+        "description": "Valider l'intégrité du dépôt",
+        "failed": "Échec de la validation",
+        "starting": "Validation de \"{{repository}}\" sur \"{{machine}}\"..."
       }
     },
     "repository": {
@@ -884,6 +1049,24 @@
       },
       "trace": {
         "description": "Tracer une tâche (raccourci pour : queue trace)"
+      }
+    },
+    "snapshot": {
+      "create": {
+        "creating": "Création de l'instantané de \"{{repo}}\" sur {{machine}}...",
+        "description": "Créer un instantané BTRFS d'un dépôt",
+        "optionSnapshotName": "Nom explicite de l'instantané (généré automatiquement si vide)",
+        "success": "Instantané créé : {{name}} ({{path}})"
+      },
+      "delete": {
+        "description": "Supprimer un instantané d'une machine distante",
+        "success": "Instantané supprimé : {{name}}"
+      },
+      "description": "Gérer les instantanés BTRFS sur les machines distantes",
+      "list": {
+        "description": "Lister les instantanés sur une machine distante",
+        "header": "{{count}} instantané(s) dans {{path}} :",
+        "noSnapshots": "Aucun instantané trouvé."
       }
     },
     "storage": {
@@ -1188,6 +1371,8 @@
       "region": "Gestion des Régions",
       "repo": "Cycle de vie des dépôts",
       "repository": "Gestion des Dépôts",
+      "snapshot": "Gestion des instantanés",
+      "backup": "Gestion des sauvegardes",
       "shortcuts": "Commandes Rapides (Raccourcis)",
       "storage": "Gestion du Stockage",
       "sync": "Synchronisation de Fichiers",

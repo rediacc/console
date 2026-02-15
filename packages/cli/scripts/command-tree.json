@@ -856,6 +856,27 @@
           ],
           "arguments": [],
           "subcommands": []
+        },
+        {
+          "name": "info",
+          "descriptionKey": "commands.machine.status.description",
+          "options": [
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
         }
       ]
     },
@@ -1100,6 +1121,66 @@
       "arguments": [],
       "subcommands": [
         {
+          "name": "create",
+          "descriptionKey": "commands.repo.create.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--size <size>",
+              "descriptionKey": "commands.repo.create.sizeOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "delete",
+          "descriptionKey": "commands.repository.delete.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
           "name": "mount",
           "descriptionKey": "commands.repo.mount.description",
           "options": [
@@ -1294,6 +1375,204 @@
             }
           ],
           "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "fork",
+          "descriptionKey": "commands.repo.fork.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--tag <name>",
+              "descriptionKey": "commands.repo.fork.tagOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "parent",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "resize",
+          "descriptionKey": "commands.repo.resize.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--size <size>",
+              "descriptionKey": "commands.repo.resize.sizeOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "expand",
+          "descriptionKey": "commands.repo.expand.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--size <size>",
+              "descriptionKey": "commands.repo.resize.sizeOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "validate",
+          "descriptionKey": "commands.repo.validate.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "ownership",
+          "descriptionKey": "commands.repo.ownership.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--uid <uid>",
+              "descriptionKey": "commands.repo.ownership.uidOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "template",
+          "descriptionKey": "commands.repo.template.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--file <path>",
+              "descriptionKey": "commands.repo.template.fileOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--grand <name>",
+              "descriptionKey": "commands.repo.up.grandOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
           "subcommands": []
         }
       ]
@@ -3448,6 +3727,39 @@
           "subcommands": []
         },
         {
+          "name": "setup-machine",
+          "descriptionKey": "commands.context.setupMachine.description",
+          "options": [
+            {
+              "flags": "--datastore <path>",
+              "descriptionKey": "commands.context.setupMachine.datastoreOption",
+              "mandatory": false,
+              "defaultValue": "/mnt/rediacc"
+            },
+            {
+              "flags": "--datastore-size <size>",
+              "descriptionKey": "commands.context.setupMachine.datastoreSizeOption",
+              "mandatory": false,
+              "defaultValue": "95%"
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
           "name": "import-storage",
           "descriptionKey": "commands.context.importStorage.description",
           "options": [
@@ -3611,6 +3923,98 @@
             }
           ],
           "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "set-infra",
+          "descriptionKey": "commands.context.setInfra.description",
+          "options": [
+            {
+              "flags": "--public-ipv4 <ip>",
+              "descriptionKey": "commands.context.setInfra.optionPublicIPv4",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--public-ipv6 <ip>",
+              "descriptionKey": "commands.context.setInfra.optionPublicIPv6",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--base-domain <domain>",
+              "descriptionKey": "commands.context.setInfra.optionBaseDomain",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cert-email <email>",
+              "descriptionKey": "commands.context.setInfra.optionCertEmail",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cf-dns-token <token>",
+              "descriptionKey": "commands.context.setInfra.optionCfDnsToken",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--tcp-ports <ports>",
+              "descriptionKey": "commands.context.setInfra.optionTcpPorts",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--udp-ports <ports>",
+              "descriptionKey": "commands.context.setInfra.optionUdpPorts",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "machine",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "show-infra",
+          "descriptionKey": "commands.context.showInfra.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "machine",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "push-infra",
+          "descriptionKey": "commands.context.pushInfra.description",
+          "options": [
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "machine",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
           "subcommands": []
         }
       ]
@@ -4399,6 +4803,385 @@
       ],
       "arguments": [],
       "subcommands": []
+    },
+    {
+      "name": "snapshot",
+      "descriptionKey": "commands.snapshot.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "create",
+          "descriptionKey": "commands.snapshot.create.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--snapshot-name <name>",
+              "descriptionKey": "commands.snapshot.create.optionSnapshotName",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "repo",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "list",
+          "descriptionKey": "commands.snapshot.list.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "repo",
+              "required": false,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "delete",
+          "descriptionKey": "commands.snapshot.delete.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "repo",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            },
+            {
+              "name": "snapshot-name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "backup",
+      "descriptionKey": "commands.backup.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "push",
+          "descriptionKey": "commands.backup.push.description",
+          "options": [
+            {
+              "flags": "--dest <filename>",
+              "descriptionKey": "commands.backup.push.optionDest",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--to <storage>",
+              "descriptionKey": "commands.backup.push.optionToStorage",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--to-machine <machine>",
+              "descriptionKey": "commands.backup.push.optionToMachine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--checkpoint",
+              "descriptionKey": "commands.backup.push.optionCheckpoint",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--force",
+              "descriptionKey": "commands.backup.push.optionForce",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--tag <tag>",
+              "descriptionKey": "commands.backup.push.optionTag",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-w, --watch",
+              "descriptionKey": "options.watch",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "repo",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "pull",
+          "descriptionKey": "commands.backup.pull.description",
+          "options": [
+            {
+              "flags": "--from <storage>",
+              "descriptionKey": "commands.backup.pull.optionFromStorage",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--from-machine <machine>",
+              "descriptionKey": "commands.backup.pull.optionFromMachine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--force",
+              "descriptionKey": "commands.backup.pull.optionForce",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-w, --watch",
+              "descriptionKey": "options.watch",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "repo",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "list",
+          "descriptionKey": "commands.backup.list.description",
+          "options": [
+            {
+              "flags": "--from <storage>",
+              "descriptionKey": "commands.backup.pull.optionFromStorage",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--from-machine <machine>",
+              "descriptionKey": "commands.backup.pull.optionFromMachine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-w, --watch",
+              "descriptionKey": "options.watch",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "sync",
+          "descriptionKey": "commands.backup.sync.description",
+          "options": [
+            {
+              "flags": "--to <storage>",
+              "descriptionKey": "commands.backup.sync.optionTo",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--from <storage>",
+              "descriptionKey": "commands.backup.sync.optionFrom",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--repo <name>",
+              "descriptionKey": "commands.backup.sync.optionRepo",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--override",
+              "descriptionKey": "commands.backup.sync.optionOverride",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "schedule",
+          "descriptionKey": "commands.backup.schedule.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "set",
+              "descriptionKey": "commands.backup.schedule.set.description",
+              "options": [
+                {
+                  "flags": "--destination <storage>",
+                  "descriptionKey": "commands.backup.schedule.set.optionDestination",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--cron <expression>",
+                  "descriptionKey": "commands.backup.schedule.set.optionCron",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--enable",
+                  "descriptionKey": "commands.backup.schedule.set.optionEnable",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--disable",
+                  "descriptionKey": "commands.backup.schedule.set.optionDisable",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "show",
+              "descriptionKey": "commands.backup.schedule.show.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "push",
+              "descriptionKey": "commands.backup.schedule.push.description",
+              "options": [
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "machine",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
+        }
+      ]
     }
   ]
 }

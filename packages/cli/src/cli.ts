@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { registerAuditCommands } from './commands/audit.js';
 import { registerAuthCommands } from './commands/auth.js';
+import { registerBackupCommands } from './commands/backup.js';
 import { registerBridgeCommands } from './commands/bridge.js';
 import { registerCephCommands } from './commands/ceph/index.js';
 import { registerContextCommands } from './commands/context.js';
@@ -14,6 +15,7 @@ import { registerRegionCommands } from './commands/region.js';
 import { registerRepoCommands } from './commands/repo.js';
 import { registerRepositoryCommands } from './commands/repository.js';
 import { registerShortcuts } from './commands/shortcuts.js';
+import { registerSnapshotCommands } from './commands/snapshot.js';
 import { registerStorageCommands } from './commands/storage.js';
 import { registerSyncCommands } from './commands/sync.js';
 import { registerTeamCommands } from './commands/team.js';
@@ -157,6 +159,8 @@ registerSyncCommands(cli);
 registerProtocolCommands(cli);
 registerVSCodeCommands(cli);
 registerUpdateCommand(cli);
+registerSnapshotCommands(cli);
+registerBackupCommands(cli);
 registerShortcuts(cli);
 
 // Apply cloud-only guards and help annotations to the appropriate top-level commands

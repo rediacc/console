@@ -103,6 +103,70 @@
         }
       }
     },
+    "backup": {
+      "description": "النسخ الاحتياطي واستعادة المستودعات",
+      "list": {
+        "description": "سرد النسخ الاحتياطية المتاحة على التخزين أو الجهاز",
+        "listing": "جارٍ سرد النسخ الاحتياطية...",
+        "optionFromMachine": "اسم الجهاز المصدر",
+        "optionFromStorage": "اسم التخزين المصدر",
+        "sourceRequired": "حدد --from <storage> أو --from-machine <machine>"
+      },
+      "pull": {
+        "description": "سحب نسخة احتياطية للمستودع من التخزين أو جهاز",
+        "optionForce": "فرض الكتابة فوق المستودع الموجود",
+        "optionFromMachine": "اسم الجهاز المصدر",
+        "optionFromStorage": "اسم التخزين المصدر",
+        "pulling": "جارٍ سحب نسخة احتياطية لـ \"{{repo}}\"...",
+        "sourceRequired": "حدد --from <storage> أو --from-machine <machine>"
+      },
+      "push": {
+        "description": "دفع نسخة احتياطية للمستودع إلى التخزين أو جهاز",
+        "destIgnoredForStorage": "تم تجاهل --dest {{provided}}: النسخ الاحتياطية للتخزين تستخدم GUID المستودع ({{dest}})",
+        "destRequired": "حدد --to <storage> أو --to-machine <machine>",
+        "optionCheckpoint": "إنشاء نقطة فحص للحاوية (نسخ احتياطي ساخن)",
+        "optionDest": "اسم ملف الوجهة",
+        "optionForce": "فرض الكتابة فوق النسخة الاحتياطية الموجودة",
+        "optionTag": "علامة النشر للإصدارات",
+        "optionToMachine": "اسم الجهاز الوجهة",
+        "optionToStorage": "اسم التخزين الوجهة",
+        "pushing": "جارٍ دفع نسخة احتياطية لـ \"{{repo}}\" إلى {{dest}}..."
+      },
+      "schedule": {
+        "description": "إدارة تكوين النسخ الاحتياطي المجدول",
+        "push": {
+          "description": "دفع جدولة النسخ الاحتياطي إلى الجهاز البعيد (مؤقت systemd)",
+          "success": "تم دفع جدولة النسخ الاحتياطي إلى {{machine}}"
+        },
+        "set": {
+          "description": "تكوين إعدادات جدولة النسخ الاحتياطي",
+          "noOptions": "حدد خياراً واحداً على الأقل: --destination، --cron، --enable، أو --disable",
+          "optionCron": "تعبير cron لجدولة النسخ الاحتياطي (مثلاً \"0 2 * * *\")",
+          "optionDestination": "اسم وجهة التخزين الافتراضي",
+          "optionDisable": "تعطيل النسخ الاحتياطي المجدول",
+          "optionEnable": "تفعيل النسخ الاحتياطي المجدول",
+          "saved": "تم حفظ تكوين جدولة النسخ الاحتياطي"
+        },
+        "show": {
+          "description": "عرض تكوين جدولة النسخ الاحتياطي الحالي",
+          "destination": "الوجهة: {{destination}}",
+          "enabled": "مفعّل: {{enabled}}",
+          "notConfigured": "لم يتم تكوين جدولة النسخ الاحتياطي",
+          "schedule": "الجدول: {{schedule}}"
+        }
+      },
+      "sync": {
+        "description": "دفع/سحب جميع المستودعات بالجملة من/إلى التخزين السحابي",
+        "directionConflict": "لا يمكن تحديد --to و --from معاً",
+        "directionRequired": "حدد --to <storage> (دفع) أو --from <storage> (سحب)",
+        "optionFrom": "اسم التخزين المصدر (وضع السحب)",
+        "optionOverride": "الكتابة فوق المستودعات غير المُركّبة الموجودة عند السحب",
+        "optionRepo": "تصفية لمستودع محدد (قابل للتكرار)",
+        "optionTo": "اسم التخزين الوجهة (وضع الدفع)",
+        "pullSuccess": "اكتمل سحب المزامنة",
+        "pushSuccess": "اكتمل دفع المزامنة"
+      }
+    },
     "bridge": {
       "description": "إدارة الجسور",
       "list": {
@@ -334,6 +398,12 @@
         "description": "قائمة الآلات في السياق المحلي الحالي",
         "noMachines": "لا توجد آلات مكونة. أضف واحدة باستخدام: rdc context add-machine <name> --ip <ip> --user <user>"
       },
+      "pushInfra": {
+        "description": "دفع تكوين البنية التحتية إلى الجهاز البعيد",
+        "installingProxy": "جارٍ تثبيت وتشغيل الوكيل...",
+        "proxyInstallWarning": "فشل تثبيت الوكيل (رمز {{code}}). شغّل يدوياً: sudo renet proxy install",
+        "success": "تم دفع تكوين البنية التحتية إلى \"{{name}}\""
+      },
       "removeMachine": {
         "description": "إزالة آلة من السياق المحلي الحالي",
         "success": "تمت إزالة الآلة \"{{name}}\""
@@ -364,6 +434,20 @@
         "description": "تعيين قيمة افتراضية (فريق، منطقة، جسر، آلة)",
         "success": "تم تعيين \"{{key}}\" إلى \"{{value}}\""
       },
+      "setInfra": {
+        "description": "تعيين تكوين البنية التحتية لجهاز",
+        "invalidIPv4": "عنوان IPv4 غير صالح: {{ip}}",
+        "invalidIPv6": "عنوان IPv6 غير صالح: {{ip}}",
+        "noOptions": "لم يتم تحديد خيارات. استخدم --public-ipv4، --base-domain، إلخ.",
+        "optionBaseDomain": "النطاق الأساسي للتطبيقات",
+        "optionCertEmail": "البريد الإلكتروني لإشعارات شهادة TLS",
+        "optionCfDnsToken": "رمز Cloudflare DNS API لتحدي ACME DNS-01",
+        "optionPublicIPv4": "عنوان IPv4 العام",
+        "optionPublicIPv6": "عنوان IPv6 العام",
+        "optionTcpPorts": "منافذ TCP للتوجيه (مفصولة بفواصل، مثلاً 25,143,465)",
+        "optionUdpPorts": "منافذ UDP للتوجيه (مفصولة بفواصل، مثلاً 53)",
+        "success": "تم تحديث تكوين البنية التحتية لـ \"{{name}}\""
+      },
       "setLanguage": {
         "description": "تعيين اللغة المفضلة",
         "success": "تم تعيين اللغة إلى \"{{code}}\"",
@@ -377,9 +461,21 @@
         "description": "تحديث إعدادات SSH للسياق المحلي الحالي",
         "success": "تم تحديث إعدادات SSH"
       },
+      "setupMachine": {
+        "completed": "اكتمل إعداد الجهاز '{{machine}}' بنجاح",
+        "datastoreOption": "مسار مخزن البيانات على الجهاز البعيد",
+        "datastoreSizeOption": "حجم مخزن البيانات (مثلاً 95%، 100G)",
+        "description": "تشغيل الإعداد على جهاز بعيد (يثبّت btrfs و Docker وغيرها)",
+        "failed": "فشل إعداد الجهاز '{{machine}}': {{error}}",
+        "starting": "جارٍ إعداد الجهاز '{{machine}}'..."
+      },
       "show": {
         "description": "عرض تفاصيل السياق الحالي",
         "noContext": "لا يوجد سياق نشط"
+      },
+      "showInfra": {
+        "description": "عرض تكوين البنية التحتية لجهاز",
+        "noInfra": "لم يتم تعيين تكوين بنية تحتية لـ \"{{name}}\""
       },
       "storages": {
         "description": "عرض وحدات التخزين في السياق المحلي الحالي",
@@ -450,7 +546,7 @@
         "authentication": "المصادقة",
         "configuration": "الإعدادات",
         "environment": "البيئة",
-        "renet": "Renet"
+        "renet": "رينت"
       },
       "status": {
         "fail": "فشل",
@@ -526,6 +622,12 @@
         "noServices": "لا توجد خدمات rediacc على هذه الآلة",
         "stabilityCheck": "وضع فحص الاستقرار - الخروج برمز 2 إذا وُجدت خدمات فاشلة/تعيد التشغيل",
         "unstableFound": "تم العثور على {{count}} خدمة غير مستقرة"
+      },
+      "status": {
+        "description": "عرض حالة الجهاز الكاملة (النظام، المستودعات، الحاويات، الخدمات)",
+        "fetched": "تم جلب الحالة",
+        "fetching": "جارٍ جلب الحالة من {{machine}}...",
+        "noData": "لا تتوفر بيانات حالة"
       },
       "testConnection": {
         "authMethod": "  طريقة المصادقة: {{method}}",
@@ -770,6 +872,23 @@
       }
     },
     "repo": {
+      "create": {
+        "alreadyExists": "المستودع \"{{name}}\" موجود بالفعل في السياق",
+        "completed": "تم إنشاء المستودع",
+        "description": "إنشاء مستودع مشفر جديد",
+        "failed": "فشل إنشاء المستودع",
+        "registered": "تم تسجيل \"{{repository}}\" ({{guid}}، شبكة {{networkId}})",
+        "rollback": "تم التراجع عن تكوين \"{{repository}}\"",
+        "sizeOption": "حجم المستودع (مثلاً 10G، 100G، 1T)",
+        "starting": "جارٍ إنشاء المستودع \"{{repository}}\" ({{size}}) على \"{{machine}}\"..."
+      },
+      "delete": {
+        "completed": "تم حذف المستودع",
+        "description": "حذف مستودع",
+        "failed": "فشل حذف المستودع",
+        "removed": "تمت إزالة \"{{repository}}\" من التكوين",
+        "starting": "جارٍ حذف \"{{repository}}\" على \"{{machine}}\"..."
+      },
       "description": "إدارة دورة حياة المستودعات (الوضع المحلي)",
       "down": {
         "completed": "تم إيقاف الخدمات",
@@ -779,10 +898,27 @@
         "starting": "جارٍ إيقاف الخدمات لـ \"{{repository}}\" على \"{{machine}}\"...",
         "unmountOption": "إلغاء تثبيت المستودع بعد الإيقاف"
       },
+      "expand": {
+        "completed": "اكتمل التوسيع",
+        "description": "توسيع مستودع مُركّب أثناء التشغيل (بدون توقف)",
+        "failed": "فشل التوسيع",
+        "sizeOption": "حجم المستودع الجديد (مثلاً 10G، 100G، 1T)",
+        "starting": "جارٍ توسيع \"{{repository}}\" إلى {{size}} على \"{{machine}}\"..."
+      },
+      "fork": {
+        "alreadyExists": "المستودع \"{{name}}\" موجود بالفعل في السياق",
+        "completed": "تم إنشاء النسخة",
+        "description": "إنشاء نسخة CoW (نسخ عند الكتابة) من مستودع",
+        "failed": "فشل إنشاء النسخة",
+        "registered": "تم تسجيل النسخة \"{{repository}}\" ({{guid}}، شبكة {{networkId}})",
+        "rollback": "تم التراجع عن تكوين \"{{repository}}\"",
+        "starting": "جارٍ إنشاء نسخة من \"{{parent}}\" باسم \"{{repository}}\" على \"{{machine}}\"...",
+        "tagOption": "اسم النسخة"
+      },
       "list": {
         "completed": "اكتمل العرض",
         "description": "عرض المستودعات على جهاز",
-        "failed": "فشل العرض",
+        "failed": "فشل العرض: {{error}}",
         "starting": "جارٍ عرض المستودعات على \"{{machine}}\"..."
       },
       "machineOption": "اسم الجهاز المستهدف",
@@ -794,11 +930,34 @@
         "starting": "جارٍ تثبيت \"{{repository}}\" على \"{{machine}}\"..."
       },
       "noCredential": "تحذير: المستودع \"{{name}}\" لا يحتوي على بيانات اعتماد. قد تفشل العمليات على المستودعات المشفّرة.",
+      "ownership": {
+        "completed": "تم تحديث الملكية",
+        "description": "تغيير ملكية مجلد المستودع",
+        "failed": "فشل تحديث الملكية",
+        "starting": "جارٍ تعيين ملكية \"{{repository}}\" على \"{{machine}}\"...",
+        "uidOption": "معرّف المالك UID (افتراضي: 7111)"
+      },
+      "resize": {
+        "completed": "اكتمل تغيير الحجم",
+        "description": "تغيير حجم مستودع دون اتصال (يدعم التوسيع والتقليص)",
+        "failed": "فشل تغيير الحجم",
+        "sizeOption": "حجم المستودع الجديد (مثلاً 10G، 100G، 1T)",
+        "starting": "جارٍ تغيير حجم \"{{repository}}\" إلى {{size}} على \"{{machine}}\"..."
+      },
       "status": {
         "completed": "تم جلب الحالة",
         "description": "الحصول على حالة المستودع",
         "failed": "فشل التحقق من الحالة",
         "starting": "جارٍ جلب حالة \"{{repository}}\" على \"{{machine}}\"..."
+      },
+      "template": {
+        "completed": "تم تطبيق القالب",
+        "description": "تطبيق قالب على مستودع",
+        "failed": "فشل تطبيق القالب",
+        "fileNotFound": "ملف القالب غير موجود: {{path}}",
+        "fileOption": "مسار ملف قالب JSON",
+        "grandOption": "اسم المستودع الأصلي (يُحلّ تلقائياً إلى GUID)",
+        "starting": "جارٍ تطبيق القالب على \"{{repository}}\" على \"{{machine}}\"..."
       },
       "unmount": {
         "checkpointOption": "إنشاء نقطة تفتيش قبل إلغاء التثبيت",
@@ -815,6 +974,12 @@
         "mountOption": "تثبيت المستودع أولاً",
         "prepOnlyOption": "تشغيل خطوة التحضير فقط",
         "starting": "جارٍ بدء الخدمات لـ \"{{repository}}\" على \"{{machine}}\"..."
+      },
+      "validate": {
+        "completed": "اكتمل التحقق",
+        "description": "التحقق من سلامة المستودع",
+        "failed": "فشل التحقق",
+        "starting": "جارٍ التحقق من \"{{repository}}\" على \"{{machine}}\"..."
       }
     },
     "repository": {
@@ -884,6 +1049,24 @@
       },
       "trace": {
         "description": "تتبع مهمة (اختصار لـ: queue trace)"
+      }
+    },
+    "snapshot": {
+      "create": {
+        "creating": "جارٍ إنشاء لقطة لـ \"{{repo}}\" على {{machine}}...",
+        "description": "إنشاء لقطة BTRFS لمستودع",
+        "optionSnapshotName": "اسم اللقطة صريح (يُولّد تلقائياً إذا ترك فارغاً)",
+        "success": "تم إنشاء اللقطة: {{name}} ({{path}})"
+      },
+      "delete": {
+        "description": "حذف لقطة من جهاز بعيد",
+        "success": "تم حذف اللقطة: {{name}}"
+      },
+      "description": "إدارة لقطات BTRFS على الأجهزة البعيدة",
+      "list": {
+        "description": "سرد اللقطات على جهاز بعيد",
+        "header": "{{count}} لقطة في {{path}}:",
+        "noSnapshots": "لم يتم العثور على لقطات."
       }
     },
     "storage": {
@@ -1188,6 +1371,8 @@
       "region": "إدارة المناطق",
       "repo": "دورة حياة المستودعات",
       "repository": "إدارة المستودعات",
+      "snapshot": "إدارة اللقطات",
+      "backup": "إدارة النسخ الاحتياطي",
       "shortcuts": "أوامر سريعة (اختصارات)",
       "storage": "إدارة التخزين",
       "sync": "مزامنة الملفات",
