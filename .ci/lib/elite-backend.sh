@@ -91,6 +91,40 @@ backend_health() {
     return 1
 }
 
+# Auto-start backend (idempotent, safe for postStartCommand)
+# Skips gracefully if Docker unavailable or backend already healthy.
+# Never returns non-zero so it doesn't block devcontainer startup.
+backend_auto() {
+    if ! command -v docker &>/dev/null || ! docker info &>/dev/null; then
+        log_info "Docker not available, skipping backend auto-start"
+        return 0
+    fi
+
+    # Idempotency: skip if already healthy
+    if curl -sf --connect-timeout 2 --max-time 5 "${API_URL_LOCAL}${API_HEALTH_ENDPOINT}" &>/dev/null; then
+        log_info "Backend already healthy, skipping auto-start"
+        return 0
+    fi
+
+    log_step "Auto-starting backend services..."
+
+    # In Codespaces, ci-start.sh skips 'docker compose build' and expects
+    # pre-pulled images. Pull them now (web, api, sql from GHCR).
+    # license-server has no GHCR image — compose builds it from source.
+    if [[ -n "${CODESPACES:-}" || -n "${GITHUB_ACTIONS:-}" ]]; then
+        backend_pull_images || {
+            log_warn "Image pull failed, will try compose up anyway"
+        }
+    fi
+
+    backend_start || {
+        log_warn "Backend auto-start failed, continuing without backend"
+        return 0
+    }
+
+    log_info "Backend auto-start complete"
+}
+
 # Stop backend services (delegates to CI script)
 backend_stop() {
     check_docker
@@ -237,6 +271,132 @@ provision_status() {
         sudo virsh list --all 2>/dev/null | sed 's/^/    /' || echo "    (virsh not available or no VMs)"
         echo ""
     fi
+}
+
+# Auto-provision VMs (idempotent, safe for postStartCommand)
+# Skips gracefully if KVM unavailable or VMs already running.
+# Never returns non-zero so it doesn't block devcontainer startup.
+provision_auto() {
+    # Graceful skip if KVM unavailable
+    if [[ ! -e /dev/kvm ]]; then
+        log_info "KVM not available, skipping VM provisioning"
+        return 0
+    fi
+
+    # Graceful skip if libvirtd not running
+    if ! pgrep -x libvirtd >/dev/null 2>&1; then
+        log_warn "libvirtd not running (was start-kvm.sh called first?)"
+        return 0
+    fi
+
+    # Idempotency: skip if VMs are already running
+    if sudo virsh list --all 2>/dev/null | grep -q "running"; then
+        log_info "VMs already running, skipping provisioning"
+        provision_post_setup
+        return 0
+    fi
+
+    # Delegate to existing provisioning
+    provision_start "$@" || {
+        log_warn "VM provisioning failed, continuing without VMs"
+        return 0
+    }
+
+    provision_post_setup
+}
+
+# Post-provision setup: fix SSH keys, configure SSH, write .vm-info
+provision_post_setup() {
+    provision_fix_ssh_keys
+    provision_setup_ssh_config
+    provision_write_vm_info
+}
+
+# Fix root-owned SSH keys created by sudo renet ops up
+provision_fix_ssh_keys() {
+    local renet_dir="$HOME/.renet"
+    if [[ -d "$renet_dir" ]]; then
+        sudo chown -R "$(id -u):$(id -g)" "$renet_dir"
+        log_info "SSH key permissions fixed"
+    fi
+}
+
+# Configure ~/.ssh/config for passwordless SSH to VMs
+provision_setup_ssh_config() {
+    local ssh_config="$HOME/.ssh/config"
+    local marker="# Rediacc VMs (auto-generated)"
+
+    mkdir -p "$(dirname "$ssh_config")"
+
+    if [[ -f "$ssh_config" ]] && grep -q "$marker" "$ssh_config"; then
+        return 0
+    fi
+
+    cat >>"$ssh_config" <<-EOF
+
+	$marker
+	Host 192.168.111.*
+	    User vscode
+	    IdentityFile ~/.renet/staging/.ssh/id_rsa
+	    StrictHostKeyChecking no
+	    UserKnownHostsFile /dev/null
+	    LogLevel ERROR
+	EOF
+    chmod 600 "$ssh_config"
+    log_info "SSH config updated for VM access"
+}
+
+# Generate .vm-info developer info file from .provision-state
+provision_write_vm_info() {
+    if [[ ! -f "$PROVISION_STATE_FILE" ]]; then
+        return 0
+    fi
+
+    local bridge_ip worker_ips vm_password vm_os started
+    while IFS='=' read -r key value; do
+        case "$key" in
+            bridge_ip) bridge_ip="$value" ;;
+            worker_ips) worker_ips="$value" ;;
+            vm_password) vm_password="$value" ;;
+            vm_os) vm_os="$value" ;;
+            started) started="$value" ;;
+        esac
+    done <"$PROVISION_STATE_FILE"
+
+    local ssh_cmds="  ssh $bridge_ip     # Bridge"
+    local i=1
+    IFS=',' read -ra workers <<< "$worker_ips"
+    for ip in "${workers[@]}"; do
+        ssh_cmds+=$'\n'"  ssh $ip    # Worker $i"
+        i=$((i + 1))
+    done
+
+    local ts
+    ts=$(date -d "@$started" '+%Y-%m-%d %H:%M:%S UTC' 2>/dev/null || date '+%Y-%m-%d %H:%M:%S UTC')
+
+    cat >"$CONSOLE_ROOT_DIR/.vm-info" <<-EOF
+	=== Rediacc VM Environment ===
+	Provisioned: $ts
+
+	Bridge VM:    $bridge_ip
+	Worker VMs:   $(echo "$worker_ips" | sed 's/,/, /g')
+	VM OS:        $vm_os
+	SSH User:     vscode
+	SSH Password: $vm_password
+
+	SSH Commands:
+	$ssh_cmds
+
+	SSH Key (auto-configured in ~/.ssh/config):
+	  ~/.renet/staging/.ssh/id_rsa
+
+	Quick Commands:
+	  ./run.sh provision status   # Check VM status
+	  ./run.sh provision stop     # Destroy VMs
+	  ./run.sh provision start    # Re-provision VMs
+	  sudo virsh list --all       # List all VMs
+	EOF
+    log_info "VM info written to .vm-info"
 }
 
 # =============================================================================

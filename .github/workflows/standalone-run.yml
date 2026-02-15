@@ -173,12 +173,8 @@ jobs:
           TAG: ${{ env.TAG }}
         run: .ci/scripts/infra/ci-pull-images.sh
 
-      - name: Install sqlcmd
-        run: |
-          echo "Installing go-sqlcmd..."
-          curl -fsSL https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.0/sqlcmd-linux-amd64.tar.bz2 | \
-            sudo tar -xjf - -C /usr/local/bin sqlcmd
-          sqlcmd --version
+      - name: Install sqlcmd (go-sqlcmd)
+        run: sudo private/middleware/scripts/install-sqlcmd.sh
 
       - name: Create Debug Session
         if: inputs.enable-debug

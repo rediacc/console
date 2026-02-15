@@ -376,6 +376,10 @@ test_e2e() {
             log_info "Or use external backend: ./run.sh test e2e --backend <url>"
             exit 1
         fi
+        # Docker backend healthy on port 80 — inject --backend so Vite
+        # proxies /api to http://localhost instead of default :7322
+        log_info "Docker backend detected, using http://localhost"
+        set -- "--backend" "http://localhost" "$@"
     fi
 
     log_step "Running E2E tests"
@@ -619,6 +623,7 @@ BACKEND COMMANDS:
   backend health             Check backend health
   backend pull               Pull latest ghcr images
   backend reset              Reset backend (deletes data)
+  backend auto               Auto-start backend (idempotent, for devcontainer)
 
 PROVISION COMMANDS:
   provision start            Provision KVM VMs (bridge + workers)
@@ -716,10 +721,11 @@ main() {
                 health) backend_health ;;
                 pull) backend_pull_images ;;
                 reset) backend_reset ;;
+                auto) backend_auto ;;
                 *)
                     log_error "Unknown backend command: ${1:-}"
                     echo ""
-                    echo "Usage: ./run.sh backend [start|stop|status|logs|health|pull|reset]"
+                    echo "Usage: ./run.sh backend [start|stop|status|logs|health|pull|reset|auto]"
                     exit 1
                     ;;
             esac
@@ -735,10 +741,11 @@ main() {
                     ;;
                 stop) provision_stop ;;
                 status) provision_status ;;
+                auto) provision_auto ;;
                 *)
                     log_error "Unknown provision command: ${1:-}"
                     echo ""
-                    echo "Usage: ./run.sh provision [start|stop|status]"
+                    echo "Usage: ./run.sh provision [start|stop|status|auto]"
                     exit 1
                     ;;
             esac
