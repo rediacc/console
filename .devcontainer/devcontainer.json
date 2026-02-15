@@ -25,7 +25,7 @@
       "onAutoForward": "ignore"
     }
   },
-  "postCreateCommand": "bash .devcontainer/init-submodules.sh && npm install && npm run build:packages && npx --prefix packages/e2e playwright install chromium",
+  "postCreateCommand": "bash .devcontainer/init-submodules.sh && npm install && npm install --prefix private/license-server && npm run build:packages && npx --prefix packages/e2e playwright install chromium",
   "postStartCommand": "start-desktop.sh; start-kvm.sh; ./run.sh provision auto; ./run.sh backend auto; npm install",
   "remoteEnv": {
     "PORT": "3000",
