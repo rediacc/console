@@ -388,11 +388,6 @@ export const SetupParamsSchema = z.object({
     .default('apt-repo')
     .optional()
     .describe('Installation source'),
-  rcloneSource: z
-    .enum(['install-script', 'package-manager', 'manual'])
-    .default('install-script')
-    .optional()
-    .describe('Rclone installation source'),
   dockerSource: z
     .enum(['docker-repo', 'package-manager', 'snap', 'manual'])
     .default('docker-repo')
