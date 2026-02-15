@@ -42,6 +42,15 @@ services:
         # Start desktop environment
         start-desktop.sh
 
+        # Start KVM if available
+        start-kvm.sh
+
+        # Provision VMs if KVM available
+        /workspace/run.sh provision auto || true
+
+        # Start backend Docker services (idempotent)
+        /workspace/run.sh backend auto || true
+
         # Check for Codespaces environment
         if [ \"$${CODESPACES:-}\" = 'true' ]; then
           echo '========================================'

@@ -24,6 +24,18 @@
 set -euo pipefail
 
 # ============================================================================
+# Session isolation
+# ============================================================================
+# Re-exec in a new session so that desktop services survive when the calling
+# shell exits (e.g., devcontainer postStartCommand). Without this, SIGHUP is
+# sent to the shared process group, killing XFCE / x11vnc / websockify while
+# only Xvfb (which handles SIGHUP internally) survives.
+if [ "${_DESKTOP_SETSID:-}" != "1" ]; then
+	export _DESKTOP_SETSID=1
+	exec setsid --wait "$0" "$@"
+fi
+
+# ============================================================================
 # Configuration
 # ============================================================================
 DISPLAY_NUM="${DESKTOP_DISPLAY:-99}"
