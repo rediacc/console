@@ -372,7 +372,7 @@ provision_write_vm_info() {
     done
 
     local ts
-    ts=$(date -d "@$started" '+%Y-%m-%d %H:%M:%S UTC' 2>/dev/null || date '+%Y-%m-%d %H:%M:%S UTC')
+    ts=$(date -d "@$started" '+%Y-%m-%d %H:%M:%S UTC' 2>/dev/null || echo "unknown")
 
     cat >"$CONSOLE_ROOT_DIR/.vm-info" <<-EOF
 	=== Rediacc VM Environment ===

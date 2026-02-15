@@ -125,12 +125,8 @@ RUN curl -fsSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 9.0 -
 # go-sqlcmd (required by ci-start.sh health checks for SQL Server)
 # Same logic as private/middleware/scripts/install-sqlcmd.sh
 # =============================================================================
-ARG SQLCMD_VERSION=1.9.0
-
-RUN ARCH=$(dpkg --print-architecture) \
-    && wget -qO- "https://github.com/microsoft/go-sqlcmd/releases/download/v${SQLCMD_VERSION}/sqlcmd-linux-${ARCH}.tar.bz2" \
-        | tar -xj -C /usr/local/bin \
-    && chmod +x /usr/local/bin/sqlcmd
+COPY install-sqlcmd.sh /tmp/install-sqlcmd.sh
+RUN /tmp/install-sqlcmd.sh && rm /tmp/install-sqlcmd.sh
 
 # =============================================================================
 # Python packages + uv + kimi-cli
