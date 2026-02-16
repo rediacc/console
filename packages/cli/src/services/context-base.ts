@@ -1,3 +1,4 @@
+import { DEFAULTS } from '@rediacc/shared/config';
 import {
   detectSystemLanguage,
   getSupportedLanguages as getSupportedLanguagesList,
@@ -440,7 +441,7 @@ export class ContextServiceBase {
    */
   async isSelfHostedMode(): Promise<boolean> {
     const context = await this.getCurrent();
-    const mode = context?.mode ?? 'cloud';
+    const mode = context?.mode ?? DEFAULTS.CONTEXT.MODE;
     return mode !== 'cloud';
   }
 

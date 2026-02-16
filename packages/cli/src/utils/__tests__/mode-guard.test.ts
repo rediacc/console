@@ -25,7 +25,8 @@ const { addModeGuard } = await import('../mode-guard.js');
 type HookFn = (thisCommand: Command, actionCommand: Command) => Promise<void> | void;
 
 async function runGuardHook(cmd: Command): Promise<void> {
-  const hooks = (cmd as unknown as { _lifeCycleHooks: Record<string, HookFn[]> })._lifeCycleHooks;
+  const hooks = (cmd as unknown as { _lifeCycleHooks: Record<string, HookFn[] | undefined> })
+    ._lifeCycleHooks;
   const preActionHooks = hooks.preAction;
   if (!preActionHooks) return;
   for (const hook of preActionHooks) {
@@ -103,12 +104,12 @@ describe('utils/mode-guard', () => {
       expect(exitSpy).not.toHaveBeenCalled();
     });
 
-    it('should not add guard for all-modes command', async () => {
+    it('should not add guard for all-modes command', () => {
       const cmd = new Command('context');
       addModeGuard(cmd, ['cloud', 'local', 's3']);
 
       // No hooks should have been added
-      const hooks = (cmd as unknown as { _lifeCycleHooks: Record<string, HookFn[]> })
+      const hooks = (cmd as unknown as { _lifeCycleHooks: Record<string, HookFn[] | undefined> })
         ._lifeCycleHooks;
       expect(hooks.preAction ?? []).toHaveLength(0);
     });

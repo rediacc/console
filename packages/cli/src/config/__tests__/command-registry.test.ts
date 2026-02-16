@@ -103,17 +103,17 @@ describe('config/command-registry', () => {
 
     it('storage browse is local|s3', () => {
       const def = getCommandDef('storage');
-      expect(def?.subcommands?.browse?.modes).toEqual(SELF_HOSTED_MODES);
+      expect(def?.subcommands?.browse.modes).toEqual(SELF_HOSTED_MODES);
     });
 
     it('backup sync is local|s3', () => {
       const def = getCommandDef('backup');
-      expect(def?.subcommands?.sync?.modes).toEqual(SELF_HOSTED_MODES);
+      expect(def?.subcommands?.sync.modes).toEqual(SELF_HOSTED_MODES);
     });
 
     it('backup schedule is local|s3', () => {
       const def = getCommandDef('backup');
-      expect(def?.subcommands?.schedule?.modes).toEqual(SELF_HOSTED_MODES);
+      expect(def?.subcommands?.schedule.modes).toEqual(SELF_HOSTED_MODES);
     });
   });
 

@@ -12,6 +12,44 @@ import { handleError, ValidationError } from '../utils/errors.js';
 import { askText } from '../utils/prompt.js';
 import type { NamedContext, OutputFormat } from '../types/index.js';
 
+/** Build display data for a self-hosted context (local or S3 mode). */
+async function buildSelfHostedDisplay(ctx: NamedContext): Promise<Record<string, unknown>> {
+  let machineCount = 0;
+  let storageCount = 0;
+  let repoCount = 0;
+  try {
+    const state = await contextService.getResourceState();
+    machineCount = Object.keys(state.getMachines()).length;
+    storageCount = Object.keys(state.getStorages()).length;
+    repoCount = Object.keys(state.getRepositories()).length;
+  } catch {
+    // Fallback to context fields (may be 0 for encrypted/S3)
+    machineCount = Object.keys(ctx.machines ?? {}).length;
+    storageCount = Object.keys(ctx.storages ?? {}).length;
+    repoCount = Object.keys(ctx.repositories ?? {}).length;
+  }
+
+  return {
+    name: ctx.name,
+    mode: ctx.mode,
+    ...(ctx.s3
+      ? {
+          endpoint: ctx.s3.endpoint,
+          bucket: ctx.s3.bucket,
+          s3Region: ctx.s3.region,
+          prefix: ctx.s3.prefix ?? '-',
+        }
+      : {}),
+    encrypted: ctx.encrypted ? 'yes' : 'no',
+    sshKey: ctx.ssh?.privateKeyPath ?? '-',
+    renetPath: ctx.renetPath ?? DEFAULTS.CONTEXT.RENET_PATH,
+    machines: machineCount,
+    storages: storageCount,
+    repositories: repoCount,
+    defaultMachine: ctx.machine ?? '-',
+  };
+}
+
 export function registerContextCommands(program: Command): void {
   const context = program.command('context').description(t('commands.context.description'));
 
@@ -31,7 +69,7 @@ export function registerContextCommands(program: Command): void {
         }
 
         const displayData = contexts.map((ctx) => {
-          const isSelfHosted = (ctx.mode ?? 'cloud') !== 'cloud';
+          const isSelfHosted = (ctx.mode ?? DEFAULTS.CONTEXT.MODE) !== 'cloud';
           const apiUrl = isSelfHosted ? (ctx.s3?.endpoint ?? '-') : ctx.apiUrl;
 
           return {
@@ -130,56 +168,20 @@ export function registerContextCommands(program: Command): void {
           return;
         }
 
-        let display: Record<string, unknown>;
-        if ((ctx.mode ?? 'cloud') === 'cloud') {
-          display = {
-            name: ctx.name,
-            mode: DEFAULTS.CONTEXT.MODE,
-            apiUrl: ctx.apiUrl,
-            userEmail: ctx.userEmail ?? '-',
-            team: ctx.team ?? '-',
-            region: ctx.region ?? '-',
-            bridge: ctx.bridge ?? '-',
-            machine: ctx.machine ?? '-',
-            authenticated: ctx.token ? 'yes' : 'no',
-          };
-        } else {
-          // Self-hosted mode (local or S3)
-          let machineCount = 0;
-          let storageCount = 0;
-          let repoCount = 0;
-          try {
-            const state = await contextService.getResourceState();
-            machineCount = Object.keys(state.getMachines()).length;
-            storageCount = Object.keys(state.getStorages()).length;
-            repoCount = Object.keys(state.getRepositories()).length;
-          } catch {
-            // Fallback to context fields (may be 0 for encrypted/S3)
-            machineCount = Object.keys(ctx.machines ?? {}).length;
-            storageCount = Object.keys(ctx.storages ?? {}).length;
-            repoCount = Object.keys(ctx.repositories ?? {}).length;
-          }
-
-          display = {
-            name: ctx.name,
-            mode: ctx.mode,
-            ...(ctx.s3
-              ? {
-                  endpoint: ctx.s3.endpoint,
-                  bucket: ctx.s3.bucket,
-                  s3Region: ctx.s3.region,
-                  prefix: ctx.s3.prefix ?? '-',
-                }
-              : {}),
-            encrypted: ctx.encrypted ? 'yes' : 'no',
-            sshKey: ctx.ssh?.privateKeyPath ?? '-',
-            renetPath: ctx.renetPath ?? DEFAULTS.CONTEXT.RENET_PATH,
-            machines: machineCount,
-            storages: storageCount,
-            repositories: repoCount,
-            defaultMachine: ctx.machine ?? '-',
-          };
-        }
+        const isCloudMode = (ctx.mode ?? DEFAULTS.CONTEXT.MODE) === 'cloud';
+        const display: Record<string, unknown> = isCloudMode
+          ? {
+              name: ctx.name,
+              mode: DEFAULTS.CONTEXT.MODE,
+              apiUrl: ctx.apiUrl,
+              userEmail: ctx.userEmail ?? '-',
+              team: ctx.team ?? '-',
+              region: ctx.region ?? '-',
+              bridge: ctx.bridge ?? '-',
+              machine: ctx.machine ?? '-',
+              authenticated: ctx.token ? 'yes' : 'no',
+            }
+          : await buildSelfHostedDisplay(ctx);
 
         outputService.print(display, format);
       } catch (error) {

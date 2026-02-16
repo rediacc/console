@@ -102,7 +102,7 @@ function buildOptionTerm(options: { short?: string; long?: string; flags: string
     const longFlag = option.long ?? '';
     const paddedLong = longFlag.padEnd(maxLongLen);
     // Extract argument portion (e.g. " <name>", " [value]") from the raw flags
-    const argIdx = option.flags.search(/\s+[<\[]/);
+    const argIdx = option.flags.search(/\s+[<[]/);
     const argPart = argIdx >= 0 ? option.flags.slice(argIdx) : '';
     return shortPart + paddedLong + argPart;
   };
@@ -116,6 +116,18 @@ function applyHelpConfig(cmd: Command): void {
   });
   for (const sub of cmd.commands) {
     applyHelpConfig(sub);
+  }
+}
+
+/** Apply subcommand-level mode guards for override entries. */
+function applySubcommandGuards(
+  cmd: Command,
+  subcommands: Record<string, { modes: ModeSet }>
+): void {
+  for (const sub of cmd.commands) {
+    if (sub.name() in subcommands) {
+      addModeGuard(sub, subcommands[sub.name()].modes);
+    }
   }
 }
 
@@ -137,12 +149,7 @@ export function applyRegistry(cli: Command): void {
 
     // Subcommand-level mode guards for overrides
     if (def.subcommands) {
-      for (const sub of cmd.commands) {
-        const subDef = def.subcommands[sub.name()];
-        if (subDef) {
-          addModeGuard(sub, subDef.modes);
-        }
-      }
+      applySubcommandGuards(cmd, def.subcommands);
     }
   }
 

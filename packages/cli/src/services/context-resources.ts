@@ -28,7 +28,7 @@ class ContextService extends ContextServiceBase {
     if (!context) {
       throw new Error('No active context');
     }
-    if ((context.mode ?? 'cloud') === 'cloud') {
+    if ((context.mode ?? DEFAULTS.CONTEXT.MODE) === 'cloud') {
       throw new Error(`Context "${context.name}" is not in local or S3 mode`);
     }
     return context;
@@ -234,7 +234,7 @@ class ContextService extends ContextServiceBase {
 
   async getRepositoryGuidMap(): Promise<Record<string, string>> {
     const context = await this.getCurrent();
-    if (!context || (context.mode ?? 'cloud') === 'cloud') return {};
+    if (!context || (context.mode ?? DEFAULTS.CONTEXT.MODE) === 'cloud') return {};
 
     const state = await this.getResourceState();
     const repos = state.getRepositories();
@@ -248,7 +248,7 @@ class ContextService extends ContextServiceBase {
 
   async getRepositoryCredentials(): Promise<Record<string, string>> {
     const context = await this.getCurrent();
-    if (!context || (context.mode ?? 'cloud') === 'cloud') return {};
+    if (!context || (context.mode ?? DEFAULTS.CONTEXT.MODE) === 'cloud') return {};
 
     const state = await this.getResourceState();
     const repos = state.getRepositories();
@@ -263,7 +263,7 @@ class ContextService extends ContextServiceBase {
 
   async getLocalRepository(repoName: string): Promise<RepositoryConfig | undefined> {
     const context = await this.getCurrent();
-    if (!context || (context.mode ?? 'cloud') === 'cloud') return undefined;
+    if (!context || (context.mode ?? DEFAULTS.CONTEXT.MODE) === 'cloud') return undefined;
 
     const state = await this.getResourceState();
     return state.getRepositories()[repoName];

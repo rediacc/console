@@ -66,7 +66,7 @@ interface LocalState {
 export class LocalResourceState implements ResourceState {
   private readonly contextName: string;
   private readonly masterPassword: string | null;
-  private state: LocalState;
+  private readonly state: LocalState;
 
   private constructor(contextName: string, masterPassword: string | null, state: LocalState) {
     this.contextName = contextName;
@@ -95,18 +95,18 @@ export class LocalResourceState implements ResourceState {
       }>(context.encryptedResources, masterPassword);
 
       state = {
-        machines: decrypted.machines ?? {},
-        storages: decrypted.storages ?? {},
-        repositories: decrypted.repositories ?? {},
+        machines: decrypted.machines,
+        storages: decrypted.storages,
+        repositories: decrypted.repositories,
         sshContent: decrypted.sshContent ?? null,
       };
     } else {
       // Unencrypted local mode: read directly from context fields
       state = {
-        machines: (context.machines as Record<string, MachineConfig>) ?? {},
-        storages: (context.storages as Record<string, StorageConfig>) ?? {},
-        repositories: (context.repositories as Record<string, RepositoryConfig>) ?? {},
-        sshContent: (context.sshContent as SSHContent) ?? null,
+        machines: context.machines ?? {},
+        storages: context.storages ?? {},
+        repositories: context.repositories ?? {},
+        sshContent: context.sshContent ?? null,
       };
     }
 
