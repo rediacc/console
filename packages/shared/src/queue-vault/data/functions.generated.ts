@@ -408,6 +408,21 @@ export interface MachineUninstallParams {}
 /** Get renet version */
 export interface MachineVersionParams {}
 
+/** Disable automatic repository start on boot */
+export interface RepositoryAutostartDisableParams {}
+
+/** Disable autostart for all repositories */
+export interface RepositoryAutostartDisableAllParams {}
+
+/** Enable automatic repository start on boot */
+export interface RepositoryAutostartEnableParams {}
+
+/** Enable autostart for all repositories */
+export interface RepositoryAutostartEnableAllParams {}
+
+/** List repositories with autostart enabled */
+export interface RepositoryAutostartListParams {}
+
 /** Create a new repository */
 export interface RepositoryCreateParams {
   /** Repository size (e.g., 100G, 1T) */
@@ -500,6 +515,20 @@ export interface RepositoryUpParams {
   grand?: string;
 }
 
+/** Start all repository services */
+export interface RepositoryUpAllParams {
+  /** Include forked repositories */
+  includeForks?: boolean;
+  /** Only mount, don't start services */
+  mountOnly?: boolean;
+  /** Show what would be done */
+  dryRun?: boolean;
+  /** Start repositories concurrently */
+  parallel?: boolean;
+  /** Max concurrent repositories (default: 3) */
+  concurrency?: number;
+}
+
 /** Validate repository configuration */
 export interface RepositoryValidateParams {
   /** Skip preparation step */
@@ -569,6 +598,11 @@ export const BRIDGE_FUNCTIONS = [
   'machine_ssh_test',
   'machine_uninstall',
   'machine_version',
+  'repository_autostart_disable',
+  'repository_autostart_disable_all',
+  'repository_autostart_enable',
+  'repository_autostart_enable_all',
+  'repository_autostart_list',
   'repository_create',
   'repository_delete',
   'repository_down',
@@ -583,11 +617,12 @@ export const BRIDGE_FUNCTIONS = [
   'repository_template_apply',
   'repository_unmount',
   'repository_up',
+  'repository_up_all',
   'repository_validate',
   'setup',
 ] as const;
 
-export const BRIDGE_FUNCTIONS_VERSION = 'v0.4.92-19-gd844347a';
+export const BRIDGE_FUNCTIONS_VERSION = 'v0.4.92-15-g9ff518a8';
 
 export type BridgeFunctionName = (typeof BRIDGE_FUNCTIONS)[number];
 
@@ -632,6 +667,11 @@ export type FunctionParamsMap = {
   machine_ssh_test: MachineSshTestParams;
   machine_uninstall: MachineUninstallParams;
   machine_version: MachineVersionParams;
+  repository_autostart_disable: RepositoryAutostartDisableParams;
+  repository_autostart_disable_all: RepositoryAutostartDisableAllParams;
+  repository_autostart_enable: RepositoryAutostartEnableParams;
+  repository_autostart_enable_all: RepositoryAutostartEnableAllParams;
+  repository_autostart_list: RepositoryAutostartListParams;
   repository_create: RepositoryCreateParams;
   repository_delete: RepositoryDeleteParams;
   repository_down: RepositoryDownParams;
@@ -646,6 +686,7 @@ export type FunctionParamsMap = {
   repository_template_apply: RepositoryTemplateApplyParams;
   repository_unmount: RepositoryUnmountParams;
   repository_up: RepositoryUpParams;
+  repository_up_all: RepositoryUpAllParams;
   repository_validate: RepositoryValidateParams;
   setup: SetupParams;
 };
@@ -771,6 +812,21 @@ export const FUNCTION_REQUIREMENTS: Record<BridgeFunctionName, { requirements: P
   'machine_version': {
     requirements: { machine: true, team: true },
   },
+  'repository_autostart_disable': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_autostart_disable_all': {
+    requirements: { machine: true },
+  },
+  'repository_autostart_enable': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_autostart_enable_all': {
+    requirements: { machine: true },
+  },
+  'repository_autostart_list': {
+    requirements: { machine: true },
+  },
   'repository_create': {
     requirements: { machine: true, team: true, repository: true },
   },
@@ -812,6 +868,9 @@ export const FUNCTION_REQUIREMENTS: Record<BridgeFunctionName, { requirements: P
   },
   'repository_up': {
     requirements: { machine: true, team: true, repository: true, bridge: true },
+  },
+  'repository_up_all': {
+    requirements: { machine: true },
   },
   'repository_validate': {
     requirements: { machine: true, team: true, repository: true, bridge: true },
@@ -1814,6 +1873,46 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
     params: {
     },
   },
+  'repository_autostart_disable': {
+    name: 'repository_autostart_disable',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+    },
+  },
+  'repository_autostart_disable_all': {
+    name: 'repository_autostart_disable_all',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true },
+    params: {
+    },
+  },
+  'repository_autostart_enable': {
+    name: 'repository_autostart_enable',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+    },
+  },
+  'repository_autostart_enable_all': {
+    name: 'repository_autostart_enable_all',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true },
+    params: {
+    },
+  },
+  'repository_autostart_list': {
+    name: 'repository_autostart_list',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true },
+    params: {
+    },
+  },
   'repository_create': {
     name: 'repository_create',
     category: 'repository',
@@ -2030,6 +2129,38 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
       },
     },
   },
+  'repository_up_all': {
+    name: 'repository_up_all',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true },
+    params: {
+      includeForks: {
+        type: 'bool',
+        help: 'Include forked repositories',
+        options: ['true', 'false'],
+      },
+      mountOnly: {
+        type: 'bool',
+        help: 'Only mount, don\'t start services',
+        options: ['true', 'false'],
+      },
+      dryRun: {
+        type: 'bool',
+        help: 'Show what would be done',
+        options: ['true', 'false'],
+      },
+      parallel: {
+        type: 'bool',
+        help: 'Start repositories concurrently',
+        options: ['true', 'false'],
+      },
+      concurrency: {
+        type: 'int',
+        help: 'Max concurrent repositories (default: 3)',
+      },
+    },
+  },
   'repository_validate': {
     name: 'repository_validate',
     category: 'repository',
@@ -2169,6 +2300,11 @@ export const queueFunctions: QueueFunctionsType = {
   machine_ssh_test: (params) => ({ functionName: 'machine_ssh_test', params }),
   machine_uninstall: (params) => ({ functionName: 'machine_uninstall', params }),
   machine_version: (params) => ({ functionName: 'machine_version', params }),
+  repository_autostart_disable: (params) => ({ functionName: 'repository_autostart_disable', params }),
+  repository_autostart_disable_all: (params) => ({ functionName: 'repository_autostart_disable_all', params }),
+  repository_autostart_enable: (params) => ({ functionName: 'repository_autostart_enable', params }),
+  repository_autostart_enable_all: (params) => ({ functionName: 'repository_autostart_enable_all', params }),
+  repository_autostart_list: (params) => ({ functionName: 'repository_autostart_list', params }),
   repository_create: (params) => ({ functionName: 'repository_create', params }),
   repository_delete: (params) => ({ functionName: 'repository_delete', params }),
   repository_down: (params) => ({ functionName: 'repository_down', params }),
@@ -2183,6 +2319,7 @@ export const queueFunctions: QueueFunctionsType = {
   repository_template_apply: (params) => ({ functionName: 'repository_template_apply', params }),
   repository_unmount: (params) => ({ functionName: 'repository_unmount', params }),
   repository_up: (params) => ({ functionName: 'repository_up', params }),
+  repository_up_all: (params) => ({ functionName: 'repository_up_all', params }),
   repository_validate: (params) => ({ functionName: 'repository_validate', params }),
   setup: (params) => ({ functionName: 'setup', params }),
 };

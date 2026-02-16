@@ -294,6 +294,21 @@ export const MachineUninstallParamsSchema = z.object({});
 /** Get renet version */
 export const MachineVersionParamsSchema = z.object({});
 
+/** Disable automatic repository start on boot */
+export const RepositoryAutostartDisableParamsSchema = z.object({});
+
+/** Disable autostart for all repositories */
+export const RepositoryAutostartDisableAllParamsSchema = z.object({});
+
+/** Enable automatic repository start on boot */
+export const RepositoryAutostartEnableParamsSchema = z.object({});
+
+/** Enable autostart for all repositories */
+export const RepositoryAutostartEnableAllParamsSchema = z.object({});
+
+/** List repositories with autostart enabled */
+export const RepositoryAutostartListParamsSchema = z.object({});
+
 /** Create a new repository */
 export const RepositoryCreateParamsSchema = z.object({
   size: z.string().min(1).describe('Repository size (e.g., 100G, 1T)'),
@@ -365,6 +380,15 @@ export const RepositoryUnmountParamsSchema = z.object({
 export const RepositoryUpParamsSchema = z.object({
   option: z.string().optional().describe('Startup options'),
   grand: z.string().optional().describe('Grand repository GUID'),
+});
+
+/** Start all repository services */
+export const RepositoryUpAllParamsSchema = z.object({
+  includeForks: z.boolean().optional().describe('Include forked repositories'),
+  mountOnly: z.boolean().optional().describe('Only mount, don\'t start services'),
+  dryRun: z.boolean().optional().describe('Show what would be done'),
+  parallel: z.boolean().optional().describe('Start repositories concurrently'),
+  concurrency: z.number().int().optional().describe('Max concurrent repositories (default: 3)'),
 });
 
 /** Validate repository configuration */
@@ -451,6 +475,11 @@ export const FUNCTION_SCHEMAS = {
   machine_ssh_test: MachineSshTestParamsSchema,
   machine_uninstall: MachineUninstallParamsSchema,
   machine_version: MachineVersionParamsSchema,
+  repository_autostart_disable: RepositoryAutostartDisableParamsSchema,
+  repository_autostart_disable_all: RepositoryAutostartDisableAllParamsSchema,
+  repository_autostart_enable: RepositoryAutostartEnableParamsSchema,
+  repository_autostart_enable_all: RepositoryAutostartEnableAllParamsSchema,
+  repository_autostart_list: RepositoryAutostartListParamsSchema,
   repository_create: RepositoryCreateParamsSchema,
   repository_delete: RepositoryDeleteParamsSchema,
   repository_down: RepositoryDownParamsSchema,
@@ -465,6 +494,7 @@ export const FUNCTION_SCHEMAS = {
   repository_template_apply: RepositoryTemplateApplyParamsSchema,
   repository_unmount: RepositoryUnmountParamsSchema,
   repository_up: RepositoryUpParamsSchema,
+  repository_up_all: RepositoryUpAllParamsSchema,
   repository_validate: RepositoryValidateParamsSchema,
   setup: SetupParamsSchema,
 } satisfies Record<BridgeFunctionName, z.ZodType<FunctionParamsMap[BridgeFunctionName]>>;
