@@ -159,7 +159,9 @@ if [[ "${GITHUB_EVENT_NAME:-}" != "pull_request" ]] || [[ -z "${GITHUB_HEAD_REF:
 fi
 
 # Check for recent autofix commits to prevent loops (specific to API types)
-RECENT_AUTOFIX=$(git log --oneline -5 --grep="auto-regenerate middleware API types" 2>/dev/null | head -1 || true)
+# Scope to PR-only commits to avoid false positives from squash merges on the base branch
+BASE_REF="${GITHUB_BASE_REF:-main}"
+RECENT_AUTOFIX=$(git log --oneline -5 "origin/${BASE_REF}..HEAD" --grep="auto-regenerate middleware API types" 2>/dev/null | head -1 || true)
 if [[ -n "$RECENT_AUTOFIX" ]]; then
     log_error "Recent API types autofix commit detected, cannot auto-fix again: $RECENT_AUTOFIX"
     log_error "Please manually regenerate with: ./run.sh deploy prep"
