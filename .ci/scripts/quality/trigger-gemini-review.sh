@@ -44,19 +44,6 @@ REPO="${GITHUB_REPOSITORY##*/}"
 
 log_step "Checking if Gemini review should be triggered..."
 
-# Check if commit message indicates this is a review fix
-# Skip triggering new review when developer is addressing previous feedback
-COMMIT_MSG=$(git log -1 --pretty=%B 2>/dev/null || echo "")
-if echo "$COMMIT_MSG" | grep -qiE "(address|fix|per|apply|resolve).*(review|comment|feedback|suggestion)"; then
-    log_info "Commit addresses review feedback - skipping new review trigger"
-    echo ""
-    echo "------------------------------------------------------------"
-    echo "Detected review-fix commit. Skipping new Gemini review."
-    echo "Resolve existing threads in GitHub UI to pass the review gate."
-    echo "------------------------------------------------------------"
-    exit 0
-fi
-
 # Check for skip label
 LABELS=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name' 2>/dev/null || echo "")
 if echo "$LABELS" | grep -q "no-gemini-review"; then
