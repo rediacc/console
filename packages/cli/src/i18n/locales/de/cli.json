@@ -1163,6 +1163,8 @@
       "testingConnectivity": "Konnektivität zu {{host}}:{{port}} wird getestet..."
     },
     "update": {
+      "applyFailed": "Bereitgestelltes Update konnte nicht angewendet werden: {{error}}",
+      "autoApplied": "Auf v{{version}} aktualisiert (vorher v{{from}}). Änderungen werden beim nächsten Start wirksam.",
       "available": "Update verfügbar: v{{version}} (aktuell: v{{current}})",
       "checking": "Suche nach Updates...",
       "checkOnly": "Nur auf Updates prüfen, ohne herunterzuladen",
@@ -1173,6 +1175,13 @@
       "notSEA": "Update nicht möglich: Keine gepackte Binärdatei. Erst mit SEA bauen.",
       "progress": "Herunterladen... {{percent}}%",
       "releaseNotes": "Versionshinweise: {{url}}",
+      "rollback": "Auf die vorherige Version zurücksetzen",
+      "rollbackFailed": "Rollback fehlgeschlagen: {{error}}",
+      "rollbackNoBackup": "Keine vorherige Version gefunden. Ein Rollback ist nur nach einem Update verfügbar.",
+      "rollbackSuccess": "Erfolgreich zurückgesetzt. Starten Sie rdc neu, um die vorherige Version zu verwenden.",
+      "staged": "Update v{{version}} bereitgestellt (wird beim nächsten Start angewendet)",
+      "stagedFallback": "Update v{{version}} heruntergeladen und bereitgestellt. Es wird beim nächsten Start angewendet.",
+      "statusDescription": "Auto-Update-Status und Diagnose anzeigen",
       "success": "Aktualisiert von v{{from}} auf v{{to}}",
       "unknownError": "Unbekannter Fehler",
       "upToDate": "Bereits aktuell (v{{version}})"
@@ -1359,6 +1368,7 @@
     "sectionTitles": {
       "audit": "Audit und Compliance",
       "auth": "Authentifizierung",
+      "backup": "Backup-Verwaltung",
       "bridge": "Bridge-Verwaltung",
       "ceph": "Ceph-Speicherverwaltung",
       "context": "Kontextverwaltung",
@@ -1371,9 +1381,8 @@
       "region": "Regionsverwaltung",
       "repo": "Repository-Lebenszyklus",
       "repository": "Repository-Verwaltung",
-      "snapshot": "Snapshot-Verwaltung",
-      "backup": "Backup-Verwaltung",
       "shortcuts": "Schnellbefehle (Shortcuts)",
+      "snapshot": "Snapshot-Verwaltung",
       "storage": "Speicherverwaltung",
       "sync": "Dateisynchronisation",
       "team": "Teamverwaltung",

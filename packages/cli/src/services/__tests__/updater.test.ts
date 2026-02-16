@@ -480,5 +480,4 @@ describe('services/updater', () => {
       );
     });
   });
-
 });

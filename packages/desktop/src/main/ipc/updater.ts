@@ -26,7 +26,9 @@ export function registerUpdaterHandlers(): void {
   ipcMain.handle('updater:installUpdate', async () => {
     const allowed = await checkInstallAllowed();
     if (!allowed) {
-      throw new Error('Install retry cap reached. Please restart the application or download a fresh update.');
+      throw new Error(
+        'Install retry cap reached. Please restart the application or download a fresh update.'
+      );
     }
     // Quit and install immediately, but allow app to restart
     autoUpdater.quitAndInstall(false, true);

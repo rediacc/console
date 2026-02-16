@@ -1,9 +1,10 @@
-import { promises as fs } from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import { promises as fs } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { Command } from 'commander';
-import { t } from '../i18n/index.js';
+import { STATUS_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { isCooldownExpired } from '@rediacc/shared/update';
+import { t } from '../i18n/index.js';
 import { applyPendingUpdate } from '../services/background-updater.js';
 import { outputService } from '../services/output.js';
 import { readUpdateState, writeUpdateState } from '../services/update-state.js';
@@ -19,9 +20,7 @@ async function handleCheckOnly(): Promise<void> {
   // Show pending staged update info if present
   const state = await readUpdateState();
   if (state.pendingUpdate) {
-    outputService.info(
-      t('commands.update.staged', { version: state.pendingUpdate.version })
-    );
+    outputService.info(t('commands.update.staged', { version: state.pendingUpdate.version }));
   }
 
   const result = await checkForUpdate();
@@ -41,26 +40,58 @@ async function handleCheckOnly(): Promise<void> {
 }
 
 /**
+ * Try to apply a pending staged update. Returns true if applied successfully.
+ */
+async function tryApplyPending(): Promise<boolean> {
+  const state = await readUpdateState();
+  if (!state.pendingUpdate) return false;
+
+  outputService.info(t('commands.update.downloading', { version: state.pendingUpdate.version }));
+  const applied = await applyPendingUpdate();
+  if (applied) {
+    outputService.success(
+      t('commands.update.success', { from: VERSION, to: state.pendingUpdate.version })
+    );
+  }
+  return applied;
+}
+
+/**
+ * Handle the result from performUpdate.
+ */
+async function handleUpdateResult(
+  result: Awaited<ReturnType<typeof performUpdate>>
+): Promise<void> {
+  if (result.success && result.error === 'update.errors.binaryBusy') {
+    process.stderr.write('\n');
+    outputService.info(t('commands.update.stagedFallback', { version: result.toVersion }));
+    return;
+  }
+  if (result.success && result.fromVersion !== result.toVersion) {
+    process.stderr.write('\n');
+    outputService.success(
+      t('commands.update.success', { from: result.fromVersion, to: result.toVersion })
+    );
+    const state = await readUpdateState();
+    state.pendingUpdate = null;
+    state.lastCheckAt = new Date().toISOString();
+    await writeUpdateState(state);
+    return;
+  }
+  if (result.success) {
+    outputService.success(t('commands.update.upToDate', { version: VERSION }));
+    return;
+  }
+  const errorKey = result.error ?? t('commands.update.unknownError');
+  outputService.error(t('commands.update.failed', { error: errorKey }));
+  process.exit(1);
+}
+
+/**
  * Handle the update execution flow.
  */
 async function handleUpdate(force: boolean): Promise<void> {
-  // If a pending update exists and not forcing, apply it directly
-  if (!force) {
-    const state = await readUpdateState();
-    if (state.pendingUpdate) {
-      outputService.info(
-        t('commands.update.downloading', { version: state.pendingUpdate.version })
-      );
-      const applied = await applyPendingUpdate();
-      if (applied) {
-        outputService.success(
-          t('commands.update.success', { from: VERSION, to: state.pendingUpdate.version })
-        );
-        return;
-      }
-      // Apply failed — fall through to regular update
-    }
-  }
+  if (!force && (await tryApplyPending())) return;
 
   outputService.info(t('commands.update.checking'));
   const checkResult = await checkForUpdate();
@@ -83,29 +114,7 @@ async function handleUpdate(force: boolean): Promise<void> {
     },
   });
 
-  if (result.success && result.error === 'update.errors.binaryBusy') {
-    // Binary was locked — staged for next launch
-    process.stderr.write('\n');
-    outputService.info(
-      t('commands.update.stagedFallback', { version: result.toVersion })
-    );
-  } else if (result.success && result.fromVersion !== result.toVersion) {
-    process.stderr.write('\n');
-    outputService.success(
-      t('commands.update.success', { from: result.fromVersion, to: result.toVersion })
-    );
-    // Clear pending update and reset check timestamp after manual update
-    const state = await readUpdateState();
-    state.pendingUpdate = null;
-    state.lastCheckAt = new Date().toISOString();
-    await writeUpdateState(state);
-  } else if (result.success) {
-    outputService.success(t('commands.update.upToDate', { version: VERSION }));
-  } else {
-    const errorKey = result.error ?? t('commands.update.unknownError');
-    outputService.error(t('commands.update.failed', { error: errorKey }));
-    process.exit(1);
-  }
+  await handleUpdateResult(result);
 }
 
 /**
@@ -129,7 +138,9 @@ async function handleRollback(): Promise<void> {
       stdio: 'ignore',
     });
     if (warmupResult.status !== 0) {
-      outputService.error(t('commands.update.rollbackFailed', { error: 'Previous binary failed warmup validation' }));
+      outputService.error(
+        t('commands.update.rollbackFailed', { error: 'Previous binary failed warmup validation' })
+      );
       process.exit(1);
     }
 
@@ -174,8 +185,8 @@ async function handleStatus(): Promise<void> {
   const lines: string[] = [];
   lines.push(`Current version: ${VERSION}`);
   lines.push(`Auto-update: ${isSEA() ? 'enabled' : 'disabled (not SEA)'}`);
-  lines.push(`Last check: ${state.lastCheckAt ?? 'never'}`);
-  lines.push(`Last attempt: ${state.lastAttemptAt ?? 'never'}`);
+  lines.push(`Last check: ${state.lastCheckAt ?? STATUS_DEFAULTS.NEVER}`);
+  lines.push(`Last attempt: ${state.lastAttemptAt ?? STATUS_DEFAULTS.NEVER}`);
   lines.push(`Consecutive failures: ${state.consecutiveFailures}`);
 
   if (state.lastError) {
@@ -195,7 +206,9 @@ async function handleStatus(): Promise<void> {
   if (state.lastAttemptAt) {
     const cooldownExpired = isCooldownExpired(state);
     lines.push('');
-    lines.push(`Next check: ${cooldownExpired ? 'now (cooldown expired)' : 'waiting for cooldown'}`);
+    lines.push(
+      `Next check: ${cooldownExpired ? 'now (cooldown expired)' : 'waiting for cooldown'}`
+    );
   }
 
   outputService.info(lines.join('\n'));

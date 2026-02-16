@@ -1163,6 +1163,8 @@
       "testingConnectivity": "Probando conectividad a {{host}}:{{port}}..."
     },
     "update": {
+      "applyFailed": "Error al aplicar la actualización preparada: {{error}}",
+      "autoApplied": "Actualizado a v{{version}} (era v{{from}}). Los cambios se aplicarán en la próxima ejecución.",
       "available": "Actualización disponible: v{{version}} (actual: v{{current}})",
       "checking": "Buscando actualizaciones...",
       "checkOnly": "Solo verificar actualizaciones sin descargar",
@@ -1173,6 +1175,13 @@
       "notSEA": "No se puede actualizar: no se ejecuta como binario empaquetado. Compile con SEA primero.",
       "progress": "Descargando... {{percent}}%",
       "releaseNotes": "Notas de la versión: {{url}}",
+      "rollback": "Revertir a la versión anterior",
+      "rollbackFailed": "Error en la reversión: {{error}}",
+      "rollbackNoBackup": "No se encontró una versión anterior. La reversión solo está disponible después de una actualización.",
+      "rollbackSuccess": "Reversión exitosa. Reinicie rdc para usar la versión anterior.",
+      "staged": "Actualización v{{version}} preparada (se aplicará en el próximo inicio)",
+      "stagedFallback": "Actualización v{{version}} descargada y preparada. Se aplicará en el próximo inicio.",
+      "statusDescription": "Mostrar estado y diagnósticos de actualización automática",
       "success": "Actualizado de v{{from}} a v{{to}}",
       "unknownError": "Error desconocido",
       "upToDate": "Ya está actualizado (v{{version}})"
@@ -1359,6 +1368,7 @@
     "sectionTitles": {
       "audit": "Auditoría y Cumplimiento",
       "auth": "Autenticación",
+      "backup": "Gestión de copias de seguridad",
       "bridge": "Gestión de Bridge",
       "ceph": "Gestión de Almacenamiento Ceph",
       "context": "Gestión de Contexto",
@@ -1371,9 +1381,8 @@
       "region": "Gestión de Regiones",
       "repo": "Ciclo de vida de repositorios",
       "repository": "Gestión de Repositorios",
-      "snapshot": "Gestión de instantáneas",
-      "backup": "Gestión de copias de seguridad",
       "shortcuts": "Comandos Rápidos (Atajos)",
+      "snapshot": "Gestión de instantáneas",
       "storage": "Gestión de Almacenamiento",
       "sync": "Sincronización de Archivos",
       "team": "Gestión de Equipos",

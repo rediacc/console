@@ -15,11 +15,7 @@ import {
 } from '../utils/platform.js';
 import { VERSION } from '../version.js';
 import { telemetryService } from './telemetry.js';
-import {
-  getStagedBinaryPath,
-  readUpdateState,
-  writeUpdateState,
-} from './update-state.js';
+import { getStagedBinaryPath, readUpdateState, writeUpdateState } from './update-state.js';
 
 const MANIFEST_URL = 'https://www.rediacc.com/cli/manifest.json';
 const GITHUB_API_FALLBACK = 'https://api.github.com/repos/rediacc/console/releases/latest';
@@ -387,6 +383,24 @@ function errorResult(error: string, toVersion: string = VERSION): UpdateResult {
 }
 
 /**
+ * Handle caught errors during update — return appropriate UpdateResult.
+ */
+function handleUpdateError(err: unknown): UpdateResult {
+  if (err instanceof BinaryBusyError) {
+    telemetryService.trackEvent('update.manual.staged', { version: err.stagedVersion });
+    return {
+      success: true,
+      fromVersion: VERSION,
+      toVersion: err.stagedVersion,
+      error: 'update.errors.binaryBusy',
+    };
+  }
+  const message = err instanceof Error ? err.message : 'update.errors.unknown';
+  telemetryService.trackEvent('update.manual.failed', { error: message });
+  return errorResult(message);
+}
+
+/**
  * Perform the self-update.
  */
 export async function performUpdate(
@@ -428,21 +442,8 @@ export async function performUpdate(
     telemetryService.trackEvent('update.manual.success', { from: VERSION, to: manifest.version });
     return { success: true, fromVersion: VERSION, toVersion: manifest.version };
   } catch (err) {
-    if (err instanceof BinaryBusyError) {
-      // Binary was locked but successfully staged for next launch
-      telemetryService.trackEvent('update.manual.staged', { version: err.stagedVersion });
-      return {
-        success: true,
-        fromVersion: VERSION,
-        toVersion: err.stagedVersion,
-        error: 'update.errors.binaryBusy',
-      };
-    }
-    const message = err instanceof Error ? err.message : 'update.errors.unknown';
-    telemetryService.trackEvent('update.manual.failed', { error: message });
-    return errorResult(message);
+    return handleUpdateError(err);
   } finally {
     await releaseUpdateLock();
   }
 }
-

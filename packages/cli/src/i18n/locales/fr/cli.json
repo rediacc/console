@@ -1163,6 +1163,8 @@
       "testingConnectivity": "Test de la connectivité à {{host}}:{{port}}..."
     },
     "update": {
+      "applyFailed": "Échec de l'application de la mise à jour préparée\u00a0: {{error}}",
+      "autoApplied": "Mis à jour vers v{{version}} (était v{{from}}). Les modifications prendront effet au prochain lancement.",
       "available": "Mise à jour disponible : v{{version}} (actuel : v{{current}})",
       "checking": "Recherche de mises à jour...",
       "checkOnly": "Vérifier les mises à jour sans télécharger",
@@ -1173,6 +1175,13 @@
       "notSEA": "Mise à jour impossible : pas un binaire empaqueté. Compilez avec SEA d'abord.",
       "progress": "Téléchargement... {{percent}}%",
       "releaseNotes": "Notes de version : {{url}}",
+      "rollback": "Revenir à la version précédente",
+      "rollbackFailed": "Échec de la restauration\u00a0: {{error}}",
+      "rollbackNoBackup": "Aucune version précédente trouvée. La restauration n'est disponible qu'après une mise à jour.",
+      "rollbackSuccess": "Restauration réussie. Redémarrez rdc pour utiliser la version précédente.",
+      "staged": "Mise à jour v{{version}} préparée (sera appliquée au prochain lancement)",
+      "stagedFallback": "Mise à jour v{{version}} téléchargée et préparée. Elle sera appliquée au prochain lancement.",
+      "statusDescription": "Afficher l'état et les diagnostics de la mise à jour automatique",
       "success": "Mis à jour de v{{from}} vers v{{to}}",
       "unknownError": "Erreur inconnue",
       "upToDate": "Déjà à jour (v{{version}})"
@@ -1359,6 +1368,7 @@
     "sectionTitles": {
       "audit": "Audit et Conformité",
       "auth": "Authentification",
+      "backup": "Gestion des sauvegardes",
       "bridge": "Gestion des Bridges",
       "ceph": "Gestion du Stockage Ceph",
       "context": "Gestion des Contextes",
@@ -1371,9 +1381,8 @@
       "region": "Gestion des Régions",
       "repo": "Cycle de vie des dépôts",
       "repository": "Gestion des Dépôts",
-      "snapshot": "Gestion des instantanés",
-      "backup": "Gestion des sauvegardes",
       "shortcuts": "Commandes Rapides (Raccourcis)",
+      "snapshot": "Gestion des instantanés",
       "storage": "Gestion du Stockage",
       "sync": "Synchronisation de Fichiers",
       "team": "Gestion des Équipes",

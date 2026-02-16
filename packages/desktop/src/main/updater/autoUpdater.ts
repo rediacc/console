@@ -5,9 +5,9 @@ import log from 'electron-log';
 import { autoUpdater, ProgressInfo, UpdateInfo } from 'electron-updater';
 import { UPDATE_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { isCooldownExpired, UPDATE_STATE_DEFAULTS } from '@rediacc/shared/update';
+import { readDesktopUpdateState, writeDesktopUpdateState } from './update-state';
 import { sendToAllWindows } from '../ipc/updater';
 import { desktopTelemetryService } from '../services/telemetry';
-import { readDesktopUpdateState, writeDesktopUpdateState } from './update-state';
 
 // Configure logging
 autoUpdater.logger = log;
@@ -85,7 +85,9 @@ async function recordSuccessfulCheck(): Promise<void> {
     state.consecutiveFailures = 0;
     state.lastError = null;
     await writeDesktopUpdateState(state);
-  } catch { /* best-effort */ }
+  } catch {
+    /* best-effort */
+  }
 }
 
 export function setupAutoUpdater(): void {
@@ -129,7 +131,7 @@ export function setupAutoUpdater(): void {
       releaseDate: info.releaseDate,
     });
     desktopTelemetryService.trackEvent('desktop.update.available', { version: info.version });
-    recordSuccessfulCheck();
+    void recordSuccessfulCheck();
   });
 
   autoUpdater.on('update-not-available', (info: UpdateInfo) => {
@@ -138,7 +140,7 @@ export function setupAutoUpdater(): void {
       version: info.version,
     });
     desktopTelemetryService.trackEvent('desktop.update.up_to_date', { version: info.version });
-    recordSuccessfulCheck();
+    void recordSuccessfulCheck();
   });
 
   autoUpdater.on('download-progress', (progress: ProgressInfo) => {
@@ -160,13 +162,15 @@ export function setupAutoUpdater(): void {
     desktopTelemetryService.trackEvent('desktop.update.downloaded', { version: info.version });
 
     // Record downloaded version and reset install failures
-    (async () => {
+    void (async () => {
       try {
         const state = await readDesktopUpdateState();
         state.lastDownloadedVersion = info.version;
         state.consecutiveInstallFailures = 0;
         await writeDesktopUpdateState(state);
-      } catch { /* best-effort */ }
+      } catch {
+        /* best-effort */
+      }
     })();
   });
 
@@ -175,7 +179,7 @@ export function setupAutoUpdater(): void {
     sendToAllWindows('updater:error', error.message);
 
     // Record failure in state
-    (async () => {
+    void (async () => {
       try {
         const state = await readDesktopUpdateState();
         state.lastAttemptAt = new Date().toISOString();
@@ -186,19 +190,21 @@ export function setupAutoUpdater(): void {
           error: error.message,
           consecutiveFailures: state.consecutiveFailures,
         });
-      } catch { /* best-effort */ }
+      } catch {
+        /* best-effort */
+      }
     })();
   });
 
   // Check for updates on startup (after 10 seconds delay)
   setTimeout(() => {
-    checkWithCooldown();
+    void checkWithCooldown();
   }, 10000);
 
   // Check for updates every 4 hours
   setInterval(
     () => {
-      checkWithCooldown();
+      void checkWithCooldown();
     },
     4 * 60 * 60 * 1000
   );
@@ -214,7 +220,9 @@ export async function checkInstallAllowed(): Promise<boolean> {
     const attempts = state.consecutiveInstallFailures + 1;
 
     if (attempts > UPDATE_STATE_DEFAULTS.MAX_INSTALL_ATTEMPTS) {
-      log.warn(`Install retry cap reached (${UPDATE_STATE_DEFAULTS.MAX_INSTALL_ATTEMPTS} attempts)`);
+      log.warn(
+        `Install retry cap reached (${UPDATE_STATE_DEFAULTS.MAX_INSTALL_ATTEMPTS} attempts)`
+      );
       desktopTelemetryService.trackEvent('desktop.update.install_skipped_max_retries', {
         version: state.lastDownloadedVersion,
         attempts: state.consecutiveInstallFailures,

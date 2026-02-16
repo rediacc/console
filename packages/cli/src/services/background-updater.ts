@@ -1,6 +1,8 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import { dirname, join } from 'node:path';
+import type { CliUpdateState } from '@rediacc/shared/update';
+import { isCooldownExpired } from '@rediacc/shared/update';
 import { t } from '../i18n/index.js';
 import {
   acquireUpdateLock,
@@ -11,9 +13,8 @@ import {
   isUpdateDisabled,
   releaseUpdateLock,
   STAGED_UPDATE_DIR,
+  type PlatformKey,
 } from '../utils/platform.js';
-import type { CliUpdateState } from '@rediacc/shared/update';
-import { isCooldownExpired } from '@rediacc/shared/update';
 import { VERSION } from '../version.js';
 import { telemetryService } from './telemetry.js';
 import {
@@ -53,11 +54,63 @@ async function renameWithRetry(src: string, dst: string): Promise<void> {
 // ============================================================================
 
 /**
+ * Record a successful check timestamp and reset failure counters.
+ */
+function markSuccessfulCheck(state: CliUpdateState): void {
+  state.lastCheckAt = new Date().toISOString();
+  state.lastAttemptAt = new Date().toISOString();
+  state.consecutiveFailures = 0;
+  state.lastError = null;
+}
+
+/**
+ * Download, verify, and stage a new binary for the given manifest.
+ */
+async function downloadAndStage(
+  state: CliUpdateState,
+  manifest: Awaited<ReturnType<typeof fetchManifest>>,
+  platformKey: PlatformKey
+): Promise<void> {
+  const binaryInfo = manifest.binaries[platformKey];
+  if (!binaryInfo?.url || !binaryInfo.sha256) {
+    throw new Error(`No binary available for ${platformKey}`);
+  }
+
+  await fs.mkdir(STAGED_UPDATE_DIR, { recursive: true });
+  const stagedPath = getStagedBinaryPath(manifest.version);
+  const tmpPath = `${stagedPath}.tmp`;
+
+  await downloadFile(binaryInfo.url, tmpPath);
+
+  const actualHash = await computeSha256(tmpPath);
+  if (actualHash !== binaryInfo.sha256) {
+    await fs.unlink(tmpPath).catch(() => {});
+    throw new Error('SHA256 checksum mismatch after download');
+  }
+
+  await fs.rename(tmpPath, stagedPath);
+  if (process.platform !== 'win32') {
+    await fs.chmod(stagedPath, 0o755);
+  }
+
+  markSuccessfulCheck(state);
+  state.pendingUpdate = {
+    version: manifest.version,
+    stagedPath,
+    sha256: binaryInfo.sha256,
+    platformKey,
+    downloadedAt: new Date().toISOString(),
+    releaseNotesUrl: manifest.releaseNotesUrl,
+  };
+  await writeUpdateState(state);
+  await cleanupStaleStagedFiles(state);
+}
+
+/**
  * Entry point when `--background-update` is detected. Runs in a detached process.
  * Fetches manifest, downloads binary, verifies SHA256, stages for next launch.
  */
 export async function runBackgroundUpdateWorker(): Promise<void> {
-  // Safety kill — prevent zombie processes
   const safetyTimer = setTimeout(() => process.exit(1), WORKER_TIMEOUT_MS);
   safetyTimer.unref();
 
@@ -67,8 +120,6 @@ export async function runBackgroundUpdateWorker(): Promise<void> {
 
     try {
       const state = await readUpdateState();
-
-      // Double-check cooldown (race protection against multiple spawns)
       if (!isCooldownExpired(state)) return;
 
       const platformKey = getPlatformKey();
@@ -77,60 +128,16 @@ export async function runBackgroundUpdateWorker(): Promise<void> {
       const manifest = await fetchManifest(10_000);
 
       if (compareVersions(VERSION, manifest.version) >= 0) {
-        // Already up to date — record successful check
-        state.lastCheckAt = new Date().toISOString();
-        state.lastAttemptAt = new Date().toISOString();
-        state.consecutiveFailures = 0;
-        state.lastError = null;
+        markSuccessfulCheck(state);
         await writeUpdateState(state);
         return;
       }
 
-      const binaryInfo = manifest.binaries[platformKey];
-      if (!binaryInfo?.url || !binaryInfo?.sha256) {
-        throw new Error(`No binary available for ${platformKey}`);
-      }
-
-      // Download to temp file
-      await fs.mkdir(STAGED_UPDATE_DIR, { recursive: true });
-      const stagedPath = getStagedBinaryPath(manifest.version);
-      const tmpPath = `${stagedPath}.tmp`;
-
-      await downloadFile(binaryInfo.url, tmpPath);
-
-      // Verify SHA256
-      const actualHash = await computeSha256(tmpPath);
-      if (actualHash !== binaryInfo.sha256) {
-        await fs.unlink(tmpPath).catch(() => {});
-        throw new Error('SHA256 checksum mismatch after download');
-      }
-
-      // Rename temp to staged
-      await fs.rename(tmpPath, stagedPath);
-      if (process.platform !== 'win32') {
-        await fs.chmod(stagedPath, 0o755);
-      }
-
-      // Update state with pending update
-      state.lastCheckAt = new Date().toISOString();
-      state.lastAttemptAt = new Date().toISOString();
-      state.consecutiveFailures = 0;
-      state.lastError = null;
-      state.pendingUpdate = {
-        version: manifest.version,
-        stagedPath,
-        sha256: binaryInfo.sha256,
-        platformKey,
-        downloadedAt: new Date().toISOString(),
-        releaseNotesUrl: manifest.releaseNotesUrl,
-      };
-      await writeUpdateState(state);
-      await cleanupStaleStagedFiles(state);
+      await downloadAndStage(state, manifest, platformKey);
     } finally {
       await releaseUpdateLock();
     }
   } catch (err) {
-    // Increment failure counter
     try {
       const state = await readUpdateState();
       state.lastAttemptAt = new Date().toISOString();
@@ -173,138 +180,175 @@ export async function maybeSpawnBackgroundUpdate(): Promise<void> {
 // ============================================================================
 
 /**
- * Called at startup before CLI runs. If a staged binary exists and passes
- * SHA256 verification, atomically replaces the current binary.
- * Returns true if an update was applied.
+ * Validate staged binary: existence, SHA256, and warmup check.
+ * Returns null on success, or an error string on failure.
  */
-export async function applyPendingUpdate(): Promise<boolean> {
-  if (!isSEA() || isUpdateDisabled()) return false;
-
-  let state: CliUpdateState;
-  try {
-    state = await readUpdateState();
-  } catch {
-    return false;
-  }
-
-  // Clean up old binary from previous update
-  await cleanupOldBinary();
-
-  if (!state.pendingUpdate) return false;
-
-  const { version, stagedPath, sha256 } = state.pendingUpdate;
-
-  // Downgrade protection: skip if staged version is not newer
-  if (compareVersions(VERSION, version) >= 0) {
-    state.pendingUpdate = null;
-    await writeUpdateState(state).catch(() => {});
-    await cleanupStaleStagedFiles(state).catch(() => {});
-    return false;
-  }
-
-  // Verify staged binary exists
+async function validateStagedBinary(stagedPath: string, sha256: string): Promise<string | null> {
   try {
     await fs.access(stagedPath);
   } catch {
-    // Staged binary missing — clear pending
-    state.pendingUpdate = null;
-    await writeUpdateState(state).catch(() => {});
-    return false;
+    return 'Staged binary missing';
   }
 
-  // Re-verify SHA256 before applying
   try {
     const actualHash = await computeSha256(stagedPath);
     if (actualHash !== sha256) {
       await fs.unlink(stagedPath).catch(() => {});
-      state.pendingUpdate = null;
-      state.lastError = 'SHA256 verification failed before apply';
-      await writeUpdateState(state).catch(() => {});
-      return false;
+      return 'SHA256 verification failed before apply';
     }
   } catch {
-    state.pendingUpdate = null;
-    await writeUpdateState(state).catch(() => {});
-    return false;
+    return 'SHA256 computation failed';
   }
 
-  // Warmup validation: run staged binary with --warmup to verify it works
   const warmupResult = spawnSync(stagedPath, ['--warmup'], {
     timeout: 10_000,
     stdio: 'ignore',
   });
   if (warmupResult.status !== 0) {
     await fs.unlink(stagedPath).catch(() => {});
-    state.pendingUpdate = null;
-    state.lastError = 'Staged binary failed warmup validation';
-    await writeUpdateState(state).catch(() => {});
-    telemetryService.trackEvent('update.apply.validation_failed', { version });
-    return false;
+    return 'Staged binary failed warmup validation';
   }
 
-  // Max apply retries: cap at MAX_APPLY_ATTEMPTS to prevent infinite retry loops
+  return null;
+}
+
+/**
+ * Perform the atomic binary swap: current → old, staged copy → current.
+ */
+async function atomicBinarySwap(stagedPath: string): Promise<void> {
+  const execPath = process.execPath;
+  const execDir = dirname(execPath);
+  const tempPath = join(execDir, `.rdc-apply-${Date.now()}.tmp`);
+
+  await fs.copyFile(stagedPath, tempPath);
+  const oldPath = getOldBinaryPath();
+  await fs.unlink(oldPath).catch(() => {});
+  await renameWithRetry(execPath, oldPath);
+  try {
+    await renameWithRetry(tempPath, execPath);
+  } catch (renameErr) {
+    await fs.rename(oldPath, execPath).catch(() => {});
+    throw renameErr;
+  }
+
+  if (process.platform !== 'win32') {
+    await fs.chmod(execPath, 0o755);
+  }
+}
+
+/**
+ * Clear pending update from state and clean up staged files.
+ */
+async function clearPendingUpdate(state: CliUpdateState, error?: string): Promise<void> {
+  state.pendingUpdate = null;
+  if (error) state.lastError = error;
+  await writeUpdateState(state).catch(() => {});
+  await cleanupStaleStagedFiles(state).catch(() => {});
+}
+
+/**
+ * Pre-flight checks for applying a pending update.
+ * Returns the state if ready to apply, or null if not applicable.
+ */
+async function prepareApply(): Promise<CliUpdateState | null> {
+  if (!isSEA() || isUpdateDisabled()) return null;
+
+  let state: CliUpdateState;
+  try {
+    state = await readUpdateState();
+  } catch {
+    return null;
+  }
+
+  await cleanupOldBinary();
+  if (!state.pendingUpdate) return null;
+
+  // Downgrade protection
+  if (compareVersions(VERSION, state.pendingUpdate.version) >= 0) {
+    await clearPendingUpdate(state);
+    return null;
+  }
+
+  const validationError = await validateStagedBinary(
+    state.pendingUpdate.stagedPath,
+    state.pendingUpdate.sha256
+  );
+  if (validationError) {
+    if (validationError.includes('warmup')) {
+      telemetryService.trackEvent('update.apply.validation_failed', {
+        version: state.pendingUpdate.version,
+      });
+    }
+    await clearPendingUpdate(state, validationError);
+    return null;
+  }
+
+  return state;
+}
+
+/**
+ * Handle swap failure: track telemetry and optionally clear pending state.
+ */
+async function handleSwapError(
+  state: CliUpdateState,
+  err: unknown,
+  version: string,
+  attempts: number
+): Promise<void> {
+  const errCode = (err as NodeJS.ErrnoException).code;
+  const isTransient = errCode === 'EBUSY' || errCode === 'EPERM' || errCode === 'ETXTBSY';
+  const detailedMsg = err instanceof Error ? err.message : String(err);
+  const errorMsg = isTransient ? errCode : detailedMsg;
+
+  telemetryService.trackEvent('update.apply.failed', {
+    version,
+    error: errorMsg,
+    attempts,
+    code: errCode,
+  });
+
+  if (!isTransient) {
+    state.pendingUpdate = null;
+    state.lastError = errorMsg!;
+    await writeUpdateState(state).catch(() => {});
+  }
+}
+
+/**
+ * Called at startup before CLI runs. If a staged binary exists and passes
+ * SHA256 verification, atomically replaces the current binary.
+ * Returns true if an update was applied.
+ */
+export async function applyPendingUpdate(): Promise<boolean> {
+  const state = await prepareApply();
+  if (!state?.pendingUpdate) return false;
+
+  const { version, stagedPath } = state.pendingUpdate;
   const attempts = (state.pendingUpdate.applyAttempts ?? 0) + 1;
   state.pendingUpdate.applyAttempts = attempts;
   await writeUpdateState(state).catch(() => {});
 
   if (attempts > MAX_APPLY_ATTEMPTS) {
     telemetryService.trackEvent('update.apply.skipped_max_retries', { version, attempts });
-    state.pendingUpdate = null;
-    state.lastError = `Update apply failed after ${MAX_APPLY_ATTEMPTS} attempts`;
-    await writeUpdateState(state).catch(() => {});
-    await cleanupStaleStagedFiles(state).catch(() => {});
+    await clearPendingUpdate(state, `Update apply failed after ${MAX_APPLY_ATTEMPTS} attempts`);
     return false;
   }
 
-  // Acquire lock for the atomic swap
   const locked = await acquireUpdateLock();
   if (!locked) return false;
 
   try {
-    const execPath = process.execPath;
-    const execDir = dirname(execPath);
-    const tempPath = join(execDir, `.rdc-apply-${Date.now()}.tmp`);
+    await atomicBinarySwap(stagedPath);
 
-    // Copy staged → temp in exec dir, then atomic rename with rollback
-    await fs.copyFile(stagedPath, tempPath);
-    const oldPath = getOldBinaryPath();
-    await fs.unlink(oldPath).catch(() => {});
-    await renameWithRetry(execPath, oldPath);
-    try {
-      await renameWithRetry(tempPath, execPath);
-    } catch (renameErr) {
-      // Rollback: restore old binary to execPath so CLI isn't broken
-      await fs.rename(oldPath, execPath).catch(() => {});
-      throw renameErr;
-    }
-
-    if (process.platform !== 'win32') {
-      await fs.chmod(execPath, 0o755);
-    }
-
-    // Clear pending update and clean up
     state.pendingUpdate = null;
     await writeUpdateState(state).catch(() => {});
     await cleanupStaleStagedFiles(state).catch(() => {});
 
     telemetryService.trackEvent('update.apply.success', { from: VERSION, to: version });
-    process.stderr.write(
-      `${t('commands.update.autoApplied', { version, from: VERSION })}\n`
-    );
+    process.stderr.write(`${t('commands.update.autoApplied', { version, from: VERSION })}\n`);
     return true;
   } catch (err) {
-    const errCode = (err as NodeJS.ErrnoException).code;
-    if (errCode === 'EBUSY' || errCode === 'EPERM' || errCode === 'ETXTBSY') {
-      // Leave pendingUpdate for retry on next launch (common on Windows)
-      telemetryService.trackEvent('update.apply.failed', { version, error: errCode, attempts, code: errCode });
-      return false;
-    }
-    // Other errors — clear pending to avoid retry loop
-    const errorMsg = err instanceof Error ? err.message : String(err);
-    telemetryService.trackEvent('update.apply.failed', { version, error: errorMsg, attempts, code: errCode });
-    state.pendingUpdate = null;
-    state.lastError = errorMsg;
-    await writeUpdateState(state).catch(() => {});
+    await handleSwapError(state, err, version, attempts);
     return false;
   } finally {
     await releaseUpdateLock();

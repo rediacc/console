@@ -1,4 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { CliUpdateState } from '@rediacc/shared/update';
+import { isCooldownExpired } from '@rediacc/shared/update';
+import {
+  cleanupStaleStagedFiles,
+  getStagedBinaryPath,
+  readUpdateState,
+  writeUpdateState,
+} from '../update-state.js';
 
 const mockFs = vi.hoisted(() => ({
   readFile: vi.fn(),
@@ -18,15 +26,6 @@ vi.mock('../../utils/platform.js', () => ({
   STAGED_UPDATE_DIR: '/home/testuser/.rediacc/staged-update',
   UPDATE_STATE_FILE: '/home/testuser/.rediacc/update-state.json',
 }));
-
-import type { CliUpdateState } from '@rediacc/shared/update';
-import { isCooldownExpired } from '@rediacc/shared/update';
-import {
-  cleanupStaleStagedFiles,
-  getStagedBinaryPath,
-  readUpdateState,
-  writeUpdateState,
-} from '../update-state.js';
 
 function makeState(overrides: Partial<CliUpdateState> = {}): CliUpdateState {
   return {
@@ -188,9 +187,7 @@ describe('services/update-state', () => {
 
       await cleanupStaleStagedFiles(state);
 
-      expect(mockFs.unlink).toHaveBeenCalledWith(
-        '/home/testuser/.rediacc/staged-update/rdc-0.4.0'
-      );
+      expect(mockFs.unlink).toHaveBeenCalledWith('/home/testuser/.rediacc/staged-update/rdc-0.4.0');
       expect(mockFs.unlink).toHaveBeenCalledWith(
         '/home/testuser/.rediacc/staged-update/rdc-0.3.0.tmp'
       );

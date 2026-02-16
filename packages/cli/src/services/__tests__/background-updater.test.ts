@@ -1,7 +1,13 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { CliUpdateState } from '@rediacc/shared/update';
+import {
+  applyPendingUpdate,
+  maybeSpawnBackgroundUpdate,
+  runBackgroundUpdateWorker,
+} from '../background-updater.js';
 
 // ============================================================================
-// Hoisted mocks
+// Hoisted mocks (vi.hoisted + vi.mock are hoisted by vitest's transform)
 // ============================================================================
 
 const mockFs = vi.hoisted(() => ({
@@ -91,17 +97,6 @@ const mockTelemetry = vi.hoisted(() => ({
 }));
 
 vi.mock('../telemetry.js', () => mockTelemetry);
-
-// ============================================================================
-// Import after mocks
-// ============================================================================
-
-import {
-  applyPendingUpdate,
-  maybeSpawnBackgroundUpdate,
-  runBackgroundUpdateWorker,
-} from '../background-updater.js';
-import type { CliUpdateState } from '@rediacc/shared/update';
 
 function makeState(overrides: Partial<CliUpdateState> = {}): CliUpdateState {
   return {
@@ -308,11 +303,10 @@ describe('services/background-updater', () => {
 
       await maybeSpawnBackgroundUpdate();
 
-      expect(mockSpawn).toHaveBeenCalledWith(
-        process.execPath,
-        ['--background-update'],
-        { detached: true, stdio: 'ignore' }
-      );
+      expect(mockSpawn).toHaveBeenCalledWith(process.execPath, ['--background-update'], {
+        detached: true,
+        stdio: 'ignore',
+      });
       expect(mockChild.unref).toHaveBeenCalled();
     });
 
@@ -484,8 +478,9 @@ describe('services/background-updater', () => {
 
       // Capture state snapshots at each writeUpdateState call
       const snapshots: unknown[] = [];
-      mockUpdateState.writeUpdateState.mockImplementation(async (state: CliUpdateState) => {
+      mockUpdateState.writeUpdateState.mockImplementation((state: CliUpdateState) => {
         snapshots.push(JSON.parse(JSON.stringify(state)));
+        return Promise.resolve();
       });
 
       await applyPendingUpdate();
@@ -522,7 +517,7 @@ describe('services/background-updater', () => {
       const writeCalls = mockUpdateState.writeUpdateState.mock.calls;
       for (const call of writeCalls) {
         const state = call[0] as CliUpdateState;
-        if (state?.pendingUpdate === null && state?.lastError) {
+        if (state.pendingUpdate === null && state.lastError) {
           throw new Error('pendingUpdate was incorrectly cleared on EBUSY');
         }
       }
@@ -578,11 +573,12 @@ describe('services/background-updater', () => {
 
       // First rename succeeds (execPath → oldPath), second fails (temp → execPath)
       let renameCallCount = 0;
-      mockFs.rename.mockImplementation(async () => {
+      mockFs.rename.mockImplementation(() => {
         renameCallCount++;
         if (renameCallCount === 2) {
-          throw new Error('disk full');
+          return Promise.reject(new Error('disk full'));
         }
+        return Promise.resolve();
       });
 
       const result = await applyPendingUpdate();
@@ -611,13 +607,14 @@ describe('services/background-updater', () => {
       let renameCallCount = 0;
       const ebusyError = new Error('EBUSY') as NodeJS.ErrnoException;
       ebusyError.code = 'EBUSY';
-      mockFs.rename.mockImplementation(async () => {
+      mockFs.rename.mockImplementation(() => {
         renameCallCount++;
         // Calls 1-2 are EBUSY retries for the first rename, call 3 succeeds
         // Calls 4-5 would be the second rename
         if (renameCallCount <= 2) {
-          throw ebusyError;
+          return Promise.reject(ebusyError);
         }
+        return Promise.resolve();
       });
 
       const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);

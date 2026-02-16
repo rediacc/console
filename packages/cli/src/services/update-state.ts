@@ -46,8 +46,8 @@ export async function cleanupStaleStagedFiles(state: CliUpdateState): Promise<vo
     await fs.mkdir(STAGED_UPDATE_DIR, { recursive: true });
     const entries = await fs.readdir(STAGED_UPDATE_DIR);
     const keepName = state.pendingUpdate
-      ? state.pendingUpdate.stagedPath.split('/').pop() ??
-        state.pendingUpdate.stagedPath.split('\\').pop()
+      ? (state.pendingUpdate.stagedPath.split('/').pop() ??
+        state.pendingUpdate.stagedPath.split('\\').pop())
       : null;
 
     for (const entry of entries) {

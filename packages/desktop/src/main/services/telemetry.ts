@@ -2,7 +2,7 @@ import { trace } from '@opentelemetry/api';
 import log from 'electron-log';
 
 class DesktopTelemetryService {
-  private tracer = trace.getTracer('rediacc-desktop');
+  private readonly tracer = trace.getTracer('rediacc-desktop');
 
   trackEvent(eventName: string, attributes?: Record<string, unknown>): void {
     log.info(`[telemetry] ${eventName}`, attributes ?? {});

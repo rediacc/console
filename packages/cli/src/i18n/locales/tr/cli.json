@@ -1163,6 +1163,8 @@
       "testingConnectivity": "{{host}}:{{port}} adresine bağlantı sınanıyor..."
     },
     "update": {
+      "applyFailed": "Hazırlanan güncelleme uygulanamadı: {{error}}",
+      "autoApplied": "v{{version}} sürümüne güncellendi (önceki: v{{from}}). Değişiklikler bir sonraki çalıştırmada geçerli olacak.",
       "available": "Güncelleme mevcut: v{{version}} (mevcut: v{{current}})",
       "checking": "Güncellemeler kontrol ediliyor...",
       "checkOnly": "Sadece güncellemeleri kontrol et, indirme",
@@ -1173,6 +1175,13 @@
       "notSEA": "Güncellenemiyor: paketlenmiş ikili dosya olarak çalışmıyor. Önce SEA ile derleyin.",
       "progress": "İndiriliyor... {{percent}}%",
       "releaseNotes": "Sürüm notları: {{url}}",
+      "rollback": "Önceki sürüme geri al",
+      "rollbackFailed": "Geri alma başarısız: {{error}}",
+      "rollbackNoBackup": "Önceki sürüm bulunamadı. Geri alma yalnızca bir güncellemeden sonra kullanılabilir.",
+      "rollbackSuccess": "Geri alma başarılı. Önceki sürümü kullanmak için rdc'yi yeniden başlatın.",
+      "staged": "v{{version}} güncellemesi hazırlandı (bir sonraki başlatmada uygulanacak)",
+      "stagedFallback": "v{{version}} güncellemesi indirildi ve hazırlandı. Bir sonraki başlatmada uygulanacak.",
+      "statusDescription": "Otomatik güncelleme durumunu ve tanılama bilgilerini göster",
       "success": "v{{from}} sürümünden v{{to}} sürümüne güncellendi",
       "unknownError": "Bilinmeyen hata",
       "upToDate": "Zaten güncel (v{{version}})"
@@ -1359,6 +1368,7 @@
     "sectionTitles": {
       "audit": "Denetim ve Uyumluluk",
       "auth": "Kimlik Doğrulama",
+      "backup": "Yedekleme Yönetimi",
       "bridge": "Bridge Yönetimi",
       "ceph": "Ceph Depolama Yönetimi",
       "context": "Bağlam Yönetimi",
@@ -1371,9 +1381,8 @@
       "region": "Bölge Yönetimi",
       "repo": "Depo Yaşam Döngüsü",
       "repository": "Depo Yönetimi",
-      "snapshot": "Anlık Görüntü Yönetimi",
-      "backup": "Yedekleme Yönetimi",
       "shortcuts": "Hızlı Komutlar (Kısayollar)",
+      "snapshot": "Anlık Görüntü Yönetimi",
       "storage": "Depolama Yönetimi",
       "sync": "Dosya Senkronizasyonu",
       "team": "Takım Yönetimi",

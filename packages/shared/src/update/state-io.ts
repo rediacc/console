@@ -12,7 +12,7 @@ export async function readUpdateState<T extends UpdateStateBase>(
   try {
     const raw = await fs.readFile(filePath, 'utf-8');
     const parsed = JSON.parse(raw);
-    if (parsed && parsed.schemaVersion === 1) {
+    if (parsed?.schemaVersion === 1) {
       return parsed as T;
     }
     return { ...defaults };
