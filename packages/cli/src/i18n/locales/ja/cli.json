@@ -1163,6 +1163,8 @@
       "testingConnectivity": "{{host}}:{{port}} への接続をテスト中です..."
     },
     "update": {
+      "applyFailed": "準備された更新の適用に失敗しました: {{error}}",
+      "autoApplied": "v{{version}} に更新しました（以前は v{{from}}）。変更は次回の実行時に反映されます。",
       "available": "アップデート利用可能: v{{version}} (現在: v{{current}})",
       "checking": "アップデートを確認中...",
       "checkOnly": "ダウンロードせずにアップデートの確認のみ",
@@ -1173,6 +1175,13 @@
       "notSEA": "アップデートできません：パッケージバイナリとして実行されていません。先にSEAでビルドしてください。",
       "progress": "ダウンロード中... {{percent}}%",
       "releaseNotes": "リリースノート: {{url}}",
+      "rollback": "以前のバージョンにロールバック",
+      "rollbackFailed": "ロールバックに失敗しました: {{error}}",
+      "rollbackNoBackup": "以前のバージョンが見つかりません。ロールバックは更新後にのみ使用できます。",
+      "rollbackSuccess": "ロールバックに成功しました。以前のバージョンを使用するには rdc を再起動してください。",
+      "staged": "更新 v{{version}} が準備されました（次回起動時に適用されます）",
+      "stagedFallback": "更新 v{{version}} がダウンロードされ準備されました。次回起動時に適用されます。",
+      "statusDescription": "自動更新のステータスと診断情報を表示",
       "success": "v{{from}}からv{{to}}にアップデートしました",
       "unknownError": "不明なエラー",
       "upToDate": "最新です (v{{version}})"
@@ -1359,6 +1368,7 @@
     "sectionTitles": {
       "audit": "監査とコンプライアンス",
       "auth": "認証",
+      "backup": "バックアップ管理",
       "bridge": "ブリッジ管理",
       "ceph": "Cephストレージ管理",
       "context": "コンテキスト管理",
@@ -1371,9 +1381,8 @@
       "region": "リージョン管理",
       "repo": "リポジトリライフサイクル",
       "repository": "リポジトリ管理",
-      "snapshot": "スナップショット管理",
-      "backup": "バックアップ管理",
       "shortcuts": "クイックコマンド（ショートカット）",
+      "snapshot": "スナップショット管理",
       "storage": "ストレージ管理",
       "sync": "ファイル同期",
       "team": "チーム管理",

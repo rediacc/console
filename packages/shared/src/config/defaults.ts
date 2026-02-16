@@ -151,6 +151,9 @@ export const STATUS_DEFAULTS = {
 
   /** Original version identifier */
   ORIGINAL: 'original',
+
+  /** Display label when a timestamp has never occurred */
+  NEVER: 'never',
 } as const;
 
 /**

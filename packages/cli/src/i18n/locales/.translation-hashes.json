@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1150
+    "keyCount": 1159
   },
   "hashes": {
     "cli.description": "8c564b05",
@@ -773,6 +773,8 @@
     "commands.term.launchingTerminal": "74f255f0",
     "commands.term.launchSuccess": "a8ad516d",
     "commands.term.testingConnectivity": "7981d3ce",
+    "commands.update.applyFailed": "fb929ef7",
+    "commands.update.autoApplied": "30f8ef64",
     "commands.update.available": "f0e7b879",
     "commands.update.checking": "e38e1c0f",
     "commands.update.checkOnly": "96b361de",
@@ -783,6 +785,13 @@
     "commands.update.notSEA": "74929a65",
     "commands.update.progress": "e8dbdb34",
     "commands.update.releaseNotes": "ebefa464",
+    "commands.update.rollback": "dcb84398",
+    "commands.update.rollbackFailed": "a67cd699",
+    "commands.update.rollbackNoBackup": "e97586e6",
+    "commands.update.rollbackSuccess": "f9cc40f8",
+    "commands.update.staged": "e43852a7",
+    "commands.update.stagedFallback": "0ca44950",
+    "commands.update.statusDescription": "da3c5a27",
     "commands.update.success": "95aaffc9",
     "commands.update.unknownError": "04fcf757",
     "commands.update.upToDate": "d74455ca",
