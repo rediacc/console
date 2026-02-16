@@ -57,15 +57,37 @@ if ! npx tsx "$REPO_ROOT/scripts/check-deps.ts" --upgrade; then
 fi
 
 # Phase 4: Commit if changes were made
-# Check all package files that might have changed
-if git diff --quiet package.json package-lock.json packages/*/package.json private/*/package.json private/*/package-lock.json 2>/dev/null; then
-    # No changes - upgrade completed without modifying files
-    # This can happen if all outdated packages are in the blocklist
+CONSOLE_CHANGED=false
+SUBMODULE_DIRS_CHANGED=()
+
+# Check parent repo files (workspace packages)
+if ! git diff --quiet package.json package-lock.json packages/*/package.json 2>/dev/null; then
+    CONSOLE_CHANGED=true
+fi
+
+# Check submodule directories for changes
+# git diff on submodule paths from parent can't see file-level changes inside submodules,
+# so we check inside each submodule directly
+for dir in private/*/; do
+    dir="${dir%/}" # Remove trailing slash
+    # Only process git submodules (have .git file pointing to parent's .git/modules/)
+    if [[ ! -f "$dir/.git" ]] && [[ ! -d "$dir/.git" ]]; then
+        continue
+    fi
+    # Check for package file changes inside the submodule
+    if (cd "$dir" && ! git diff --quiet package.json package-lock.json 2>/dev/null); then
+        SUBMODULE_DIRS_CHANGED+=("$dir")
+    fi
+done
+
+if [[ "$CONSOLE_CHANGED" == "false" ]] && [[ ${#SUBMODULE_DIRS_CHANGED[@]} -eq 0 ]]; then
     log_info "No upgradable dependencies found (all may be blocked)"
     exit 0
 fi
 
 log_step "Committing fix..."
+
+# Configure git author
 if [[ -n "${PR_AUTHOR:-}" ]]; then
     git config user.name "$PR_AUTHOR"
     git config user.email "${PR_AUTHOR}@users.noreply.github.com"
@@ -73,7 +95,54 @@ else
     git config user.name "github-actions[bot]"
     git config user.email "github-actions[bot]@users.noreply.github.com"
 fi
-git add package.json package-lock.json packages/*/package.json private/*/package.json private/*/package-lock.json
+
+# Handle submodule commits first — must commit inside each submodule,
+# push to its remote, then stage the pointer update in the parent
+for dir in "${SUBMODULE_DIRS_CHANGED[@]}"; do
+    submodule_name=$(basename "$dir")
+    log_info "Committing dependency upgrades in $submodule_name..."
+    (
+        cd "$dir"
+        if [[ -n "${PR_AUTHOR:-}" ]]; then
+            git config user.name "$PR_AUTHOR"
+            git config user.email "${PR_AUTHOR}@users.noreply.github.com"
+        else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+        fi
+        git add package.json package-lock.json
+        git commit -m "$(
+            cat <<'SUBMSG'
+chore(deps): auto-upgrade dependencies
+
+Automatically upgraded by CI.
+SUBMSG
+        )"
+        # Push to submodule remote so the commit is resolvable by future checkouts
+        if ! git push origin HEAD:main 2>/dev/null; then
+            # main may have advanced — fetch, rebase, and retry
+            log_info "Rebasing $submodule_name on latest main..."
+            git fetch origin main
+            if git rebase origin/main; then
+                git push origin HEAD:main
+            else
+                git rebase --abort 2>/dev/null || true
+                log_error "Could not push $submodule_name submodule to remote (rebase conflict)"
+                log_error "Please manually upgrade deps in private/$submodule_name"
+                exit 1
+            fi
+        fi
+        log_info "Pushed $submodule_name submodule to remote"
+    )
+    # Stage the submodule pointer update in parent
+    git add "$dir"
+done
+
+# Stage parent repo files
+if [[ "$CONSOLE_CHANGED" == "true" ]]; then
+    git add package.json package-lock.json packages/*/package.json
+fi
+
 git commit -m "$(
     cat <<'EOF'
 chore(deps): auto-upgrade dependencies
