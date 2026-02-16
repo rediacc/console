@@ -131,7 +131,7 @@ if echo "$ALL_COMMENTS" | grep -q "$TRIGGER_MARKER"; then
 fi
 
 # Limit review triggers per PR to avoid spam (constant defined in common.sh)
-REVIEW_COUNT=$(echo "$ALL_COMMENTS" | grep -c "triggered by CI for commit" || echo "0")
+REVIEW_COUNT=$(echo "$ALL_COMMENTS" | grep -c "triggered by CI for commit" || true)
 if [[ "$REVIEW_COUNT" -ge "$MAX_GEMINI_REVIEWS" ]]; then
     log_info "Maximum review triggers reached ($MAX_GEMINI_REVIEWS) - skipping"
     exit 0
