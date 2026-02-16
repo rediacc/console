@@ -283,7 +283,7 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
  * Thrown when binary replacement fails because the executable is locked (EBUSY/EPERM/ETXTBSY).
  * The downloaded binary has been staged for application on next launch.
  */
-export class BinaryBusyError extends Error {
+class BinaryBusyError extends Error {
   constructor(public readonly stagedVersion: string) {
     super('update.errors.binaryBusy');
   }

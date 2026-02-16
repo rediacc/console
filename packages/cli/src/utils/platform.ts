@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 
-export const REDIACC_DIR = join(homedir(), '.rediacc');
+const REDIACC_DIR = join(homedir(), '.rediacc');
 export const STAGED_UPDATE_DIR = join(REDIACC_DIR, 'staged-update');
 export const UPDATE_STATE_FILE = join(REDIACC_DIR, 'update-state.json');
 

@@ -7,10 +7,13 @@
 # Skips if:
 # - This is the first commit (Gemini reviews automatically)
 # - PR has 'no-gemini-review' label
-# - Gemini already reviewed the latest commit
+# - Gemini already reviewed the latest commit (unless PR description was updated)
 # - Maximum review triggers reached (see MAX_GEMINI_REVIEWS in common.sh)
 # - Unresolved review threads exist (must address previous comments first)
 # - Changed LOC since last review is less than MIN_LOC_FOR_REVIEW (100 lines)
+#
+# Re-triggers when:
+# - PR description was updated after the last review trigger (scope change)
 #
 # Usage:
 #   .ci/scripts/quality/trigger-gemini-review.sh
@@ -35,6 +38,9 @@ if [[ -z "${GH_TOKEN:-}" ]]; then
     log_error "GH_TOKEN not set"
     exit 1
 fi
+
+OWNER="${GITHUB_REPOSITORY%%/*}"
+REPO="${GITHUB_REPOSITORY##*/}"
 
 log_step "Checking if Gemini review should be triggered..."
 
@@ -96,9 +102,32 @@ ALL_COMMENTS=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" 
 
 # Check if this specific commit was already reviewed
 TRIGGER_MARKER="triggered by CI for commit ${SHORT_SHA}"
+DESCRIPTION_UPDATED=false
 if echo "$ALL_COMMENTS" | grep -q "$TRIGGER_MARKER"; then
-    log_info "Review already triggered for commit $SHORT_SHA"
-    exit 0
+    # A PR description update can change the review scope without new commits.
+    # If the description was edited after the last review trigger, re-request review.
+    LAST_TRIGGER_TIME=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+        --jq "[.[] | select(.body | contains(\"$TRIGGER_MARKER\")) | .created_at] | last" 2>/dev/null || echo "")
+
+    DESC_EDIT_TIME=$(gh api graphql \
+        -F owner="$OWNER" -F repo="$REPO" -F number="$PR_NUMBER" \
+        -f query='query($owner: String!, $repo: String!, $number: Int!) { repository(owner: $owner, name: $repo) { pullRequest(number: $number) { lastEditedAt } } }' \
+        --jq '.data.repository.pullRequest.lastEditedAt' 2>/dev/null || echo "")
+
+    if [[ -n "$LAST_TRIGGER_TIME" ]] && [[ -n "$DESC_EDIT_TIME" ]] && [[ "$DESC_EDIT_TIME" != "null" ]]; then
+        TRIGGER_EPOCH=$(date -d "$LAST_TRIGGER_TIME" +%s 2>/dev/null || echo "0")
+        DESC_EPOCH=$(date -d "$DESC_EDIT_TIME" +%s 2>/dev/null || echo "0")
+
+        if [[ "$DESC_EPOCH" -gt "$TRIGGER_EPOCH" ]]; then
+            log_info "PR description updated since last review - re-requesting Gemini review"
+            DESCRIPTION_UPDATED=true
+        fi
+    fi
+
+    if [[ "$DESCRIPTION_UPDATED" != "true" ]]; then
+        log_info "Review already triggered for commit $SHORT_SHA"
+        exit 0
+    fi
 fi
 
 # Limit review triggers per PR to avoid spam (constant defined in common.sh)
@@ -112,55 +141,59 @@ log_info "Review triggers: $REVIEW_COUNT/$MAX_GEMINI_REVIEWS"
 
 # Check if there are enough changes since the last review to warrant a new one
 # Skip if changed LOC (added + removed) is less than 100 lines
+# Bypass when description was updated (scope change doesn't require code changes)
 MIN_LOC_FOR_REVIEW="${MIN_LOC_FOR_REVIEW:-100}"
 
-log_step "Checking LOC changes since last review..."
+if [[ "$DESCRIPTION_UPDATED" == "true" ]]; then
+    log_info "Skipping LOC check - PR description update indicates scope change"
+else
 
-# Get all comments with their body to find the last trigger
-COMMENTS_WITH_SHA=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
-    --jq '[.[] | select(.body | contains("triggered by CI for commit")) | .body]' 2>/dev/null || echo "[]")
+    log_step "Checking LOC changes since last review..."
 
-# Extract the SHA from the last trigger comment
-LAST_REVIEWED_SHA=$(echo "$COMMENTS_WITH_SHA" | jq -r 'last | capture("triggered by CI for commit (?<sha>[a-f0-9]+)") | .sha // empty' 2>/dev/null || echo "")
+    # Get all comments with their body to find the last trigger
+    COMMENTS_WITH_SHA=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+        --jq '[.[] | select(.body | contains("triggered by CI for commit")) | .body]' 2>/dev/null || echo "[]")
 
-if [[ -n "$LAST_REVIEWED_SHA" ]]; then
-    # Calculate diff between last reviewed commit and current HEAD
-    # Use git diff --shortstat to get a summary
-    DIFF_STAT=$(git diff --shortstat "${LAST_REVIEWED_SHA}..HEAD" 2>/dev/null || echo "")
+    # Extract the SHA from the last trigger comment
+    LAST_REVIEWED_SHA=$(echo "$COMMENTS_WITH_SHA" | jq -r 'last | capture("triggered by CI for commit (?<sha>[a-f0-9]+)") | .sha // empty' 2>/dev/null || echo "")
 
-    if [[ -n "$DIFF_STAT" ]]; then
-        # Extract insertions and deletions from shortstat output
-        # Format: " X files changed, Y insertions(+), Z deletions(-)"
-        INSERTIONS=$(echo "$DIFF_STAT" | grep -oE '[0-9]+ insertion' | grep -oE '[0-9]+' || echo "0")
-        DELETIONS=$(echo "$DIFF_STAT" | grep -oE '[0-9]+ deletion' | grep -oE '[0-9]+' || echo "0")
-        TOTAL_LOC=$((${INSERTIONS:-0} + ${DELETIONS:-0}))
+    if [[ -n "$LAST_REVIEWED_SHA" ]]; then
+        # Calculate diff between last reviewed commit and current HEAD
+        # Use git diff --shortstat to get a summary
+        DIFF_STAT=$(git diff --shortstat "${LAST_REVIEWED_SHA}..HEAD" 2>/dev/null || echo "")
 
-        log_info "Changes since last review ($LAST_REVIEWED_SHA): +${INSERTIONS:-0}/-${DELETIONS:-0} = $TOTAL_LOC lines"
+        if [[ -n "$DIFF_STAT" ]]; then
+            # Extract insertions and deletions from shortstat output
+            # Format: " X files changed, Y insertions(+), Z deletions(-)"
+            INSERTIONS=$(echo "$DIFF_STAT" | grep -oE '[0-9]+ insertion' | grep -oE '[0-9]+' || echo "0")
+            DELETIONS=$(echo "$DIFF_STAT" | grep -oE '[0-9]+ deletion' | grep -oE '[0-9]+' || echo "0")
+            TOTAL_LOC=$((${INSERTIONS:-0} + ${DELETIONS:-0}))
 
-        if [[ "$TOTAL_LOC" -lt "$MIN_LOC_FOR_REVIEW" ]]; then
-            log_info "Changed LOC ($TOTAL_LOC) < minimum threshold ($MIN_LOC_FOR_REVIEW)"
-            log_info "Skipping review trigger - not enough changes since last review"
-            echo ""
-            echo "------------------------------------------------------------"
-            echo "Skipping Gemini review: only $TOTAL_LOC lines changed."
-            echo "Minimum threshold is $MIN_LOC_FOR_REVIEW lines."
-            echo "------------------------------------------------------------"
+            log_info "Changes since last review ($LAST_REVIEWED_SHA): +${INSERTIONS:-0}/-${DELETIONS:-0} = $TOTAL_LOC lines"
+
+            if [[ "$TOTAL_LOC" -lt "$MIN_LOC_FOR_REVIEW" ]]; then
+                log_info "Changed LOC ($TOTAL_LOC) < minimum threshold ($MIN_LOC_FOR_REVIEW)"
+                log_info "Skipping review trigger - not enough changes since last review"
+                echo ""
+                echo "------------------------------------------------------------"
+                echo "Skipping Gemini review: only $TOTAL_LOC lines changed."
+                echo "Minimum threshold is $MIN_LOC_FOR_REVIEW lines."
+                echo "------------------------------------------------------------"
+                exit 0
+            fi
+        else
+            log_info "No diff found or empty commit - skipping review trigger"
             exit 0
         fi
     else
-        log_info "No diff found or empty commit - skipping review trigger"
-        exit 0
+        log_info "No previous review trigger found - this will be the first triggered review"
     fi
-else
-    log_info "No previous review trigger found - this will be the first triggered review"
-fi
+
+fi # end DESCRIPTION_UPDATED else block
 
 # Check for unresolved review threads before triggering new review
 # Don't ask Gemini to review again until previous comments are addressed
 log_step "Checking for unresolved review threads..."
-
-OWNER="${GITHUB_REPOSITORY%%/*}"
-REPO="${GITHUB_REPOSITORY##*/}"
 
 THREAD_QUERY='
 query($owner: String!, $repo: String!, $pr: Int!) {
@@ -207,9 +240,15 @@ log_info "No unresolved threads - proceeding with review trigger"
 # Trigger Gemini review
 log_step "Triggering Gemini review for commit $SHORT_SHA..."
 
-COMMENT_BODY="/gemini review
+if [[ "$DESCRIPTION_UPDATED" == "true" ]]; then
+    COMMENT_BODY="/gemini review
+
+<!-- triggered by CI for commit ${SHORT_SHA} (description updated) -->"
+else
+    COMMENT_BODY="/gemini review
 
 <!-- triggered by CI for commit ${SHORT_SHA} -->"
+fi
 
 if gh pr comment "$PR_NUMBER" --body "$COMMENT_BODY"; then
     log_info "Gemini review triggered successfully"
