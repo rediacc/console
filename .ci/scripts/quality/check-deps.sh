@@ -99,11 +99,19 @@ else
     git config user.email "github-actions[bot]@users.noreply.github.com"
 fi
 
-# Handle submodule commits first — must commit inside each submodule,
-# push to its remote, then stage the pointer update in the parent
+# Handle submodule upgrades — commit inside each submodule and push to its main.
+# If main has diverged (push fails), skip the pointer update and warn instead.
+SUBMODULE_PUSHED=()
+SUBMODULE_SKIPPED=()
+
 for dir in "${SUBMODULE_DIRS_CHANGED[@]}"; do
     submodule_name=$(basename "$dir")
     log_info "Committing dependency upgrades in $submodule_name..."
+
+    # Save original commit so we can reset if push fails
+    ORIG_COMMIT=$(git -C "$dir" rev-parse HEAD 2>/dev/null)
+
+    PUSH_OK=false
     (
         cd "$dir"
         if [[ -n "${PR_AUTHOR:-}" ]]; then
@@ -122,17 +130,24 @@ chore(deps): auto-upgrade dependencies
 Automatically upgraded by CI.
 SUBMSG
         )"
-        # Push to submodule remote so the commit is resolvable by future checkouts
-        if ! git push origin HEAD:main 2>/dev/null; then
-            # main has advanced — push to a dedicated branch instead
-            DEPS_BRANCH="ci/deps-upgrade-from-${GITHUB_HEAD_REF}"
-            log_info "main diverged, pushing $submodule_name to branch $DEPS_BRANCH..."
-            git push origin "HEAD:refs/heads/$DEPS_BRANCH" --force
-        fi
-        log_info "Pushed $submodule_name submodule to remote"
-    )
-    # Stage the submodule pointer update in parent
-    git add "$dir"
+        # Push to submodule main so the commit is on main and the submodule
+        # branches check passes (merge-base --is-ancestor check)
+        git push origin HEAD:main 2>/dev/null
+    ) && PUSH_OK=true
+
+    if [[ "$PUSH_OK" == "true" ]]; then
+        log_info "Pushed $submodule_name to main"
+        # Fetch the new main to update the submodule pointer
+        (cd "$dir" && git fetch origin main && git checkout origin/main 2>/dev/null)
+        git add "$dir"
+        SUBMODULE_PUSHED+=("$submodule_name")
+    else
+        log_warn "Could not push $submodule_name to main (diverged) — skipping pointer update"
+        log_warn "Manually upgrade: cd private/$submodule_name && npm outdated && npm update"
+        # Reset submodule HEAD to original commit so the parent pointer stays unchanged
+        (cd "$dir" && git reset --hard "$ORIG_COMMIT" 2>/dev/null) || true
+        SUBMODULE_SKIPPED+=("$submodule_name")
+    fi
 done
 
 # Stage parent repo files
@@ -140,14 +155,23 @@ if [[ "$CONSOLE_CHANGED" == "true" ]]; then
     git add package.json package-lock.json packages/*/package.json
 fi
 
-git commit -m "$(
-    cat <<'EOF'
+# Only commit if there are staged changes
+if [[ "$CONSOLE_CHANGED" == "true" ]] || [[ ${#SUBMODULE_PUSHED[@]} -gt 0 ]]; then
+    git commit -m "$(
+        cat <<'EOF'
 chore(deps): auto-upgrade dependencies
 
 Automatically upgraded by CI.
 EOF
-)"
-git push origin "HEAD:${GITHUB_HEAD_REF}"
+    )"
+    git push origin "HEAD:${GITHUB_HEAD_REF}"
+    log_info "Dependencies fixed and committed"
+fi
 
-log_info "Dependencies fixed and committed"
+# Report skipped submodules but don't fail — they need manual intervention
+if [[ ${#SUBMODULE_SKIPPED[@]} -gt 0 ]]; then
+    log_warn "Submodule deps skipped (main diverged): ${SUBMODULE_SKIPPED[*]}"
+    log_warn "These submodules need their deps upgraded manually or via a submodule PR"
+fi
+
 exit 0
