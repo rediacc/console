@@ -1,11 +1,5 @@
-import { DEFAULTS } from '@rediacc/shared/config';
 import { Command } from 'commander';
-import { t } from '../i18n/index.js';
-import { getStateProvider } from '../providers/index.js';
-import { contextService } from '../services/context.js';
-import { localExecutorService } from '../services/local-executor.js';
-import { outputService } from '../services/output.js';
-import { handleError, ValidationError } from '../utils/errors.js';
+import { DEFAULTS } from '@rediacc/shared/config';
 import {
   type CreateActionOptions,
   coerceCliParams,
@@ -14,6 +8,12 @@ import {
   traceAction,
   validateFunctionParams,
 } from './queue.js';
+import { t } from '../i18n/index.js';
+import { getStateProvider } from '../providers/index.js';
+import { contextService } from '../services/context.js';
+import { localExecutorService } from '../services/local-executor.js';
+import { outputService } from '../services/output.js';
+import { handleError, ValidationError } from '../utils/errors.js';
 
 interface RunLocalOptions {
   machine?: string;

@@ -1,16 +1,16 @@
-import { DEFAULTS } from '@rediacc/shared/config';
 import { Command } from 'commander';
+import { DEFAULTS } from '@rediacc/shared/config';
+import { registerInfraCommands } from './context-infra.js';
+import { registerLocalDataCommands } from './context-local-data.js';
+import { registerLocalCommands } from './context-local.js';
+import { registerMigrationCommands } from './context-migration.js';
 import { t } from '../i18n/index.js';
 import { apiClient } from '../services/api.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
-import type { NamedContext, OutputFormat } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { askText } from '../utils/prompt.js';
-import { registerInfraCommands } from './context-infra.js';
-import { registerLocalCommands } from './context-local.js';
-import { registerLocalDataCommands } from './context-local-data.js';
-import { registerMigrationCommands } from './context-migration.js';
+import type { NamedContext, OutputFormat } from '../types/index.js';
 
 export function registerContextCommands(program: Command): void {
   const context = program.command('context').description(t('commands.context.description'));
@@ -131,7 +131,19 @@ export function registerContextCommands(program: Command): void {
         }
 
         let display: Record<string, unknown>;
-        if ((ctx.mode ?? 'cloud') !== 'cloud') {
+        if ((ctx.mode ?? 'cloud') === 'cloud') {
+          display = {
+            name: ctx.name,
+            mode: DEFAULTS.CONTEXT.MODE,
+            apiUrl: ctx.apiUrl,
+            userEmail: ctx.userEmail ?? '-',
+            team: ctx.team ?? '-',
+            region: ctx.region ?? '-',
+            bridge: ctx.bridge ?? '-',
+            machine: ctx.machine ?? '-',
+            authenticated: ctx.token ? 'yes' : 'no',
+          };
+        } else {
           // Self-hosted mode (local or S3)
           let machineCount = 0;
           let storageCount = 0;
@@ -166,18 +178,6 @@ export function registerContextCommands(program: Command): void {
             storages: storageCount,
             repositories: repoCount,
             defaultMachine: ctx.machine ?? '-',
-          };
-        } else {
-          display = {
-            name: ctx.name,
-            mode: DEFAULTS.CONTEXT.MODE,
-            apiUrl: ctx.apiUrl,
-            userEmail: ctx.userEmail ?? '-',
-            team: ctx.team ?? '-',
-            region: ctx.region ?? '-',
-            bridge: ctx.bridge ?? '-',
-            machine: ctx.machine ?? '-',
-            authenticated: ctx.token ? 'yes' : 'no',
           };
         }
 

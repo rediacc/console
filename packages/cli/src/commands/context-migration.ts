@@ -1,13 +1,13 @@
 import * as fs from 'node:fs/promises';
 import { DEFAULTS } from '@rediacc/shared/config';
-import type { Command } from 'commander';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
 import { t } from '../i18n/index.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
-import type { S3Config } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { askPassword } from '../utils/prompt.js';
+import type { S3Config } from '../types/index.js';
+import type { Command } from 'commander';
 
 export function registerMigrationCommands(context: Command): void {
   // context to-s3 - Migrate the current local context to S3 mode

@@ -7,14 +7,14 @@ import { execSync } from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS, NETWORK_DEFAULTS, PROCESS_DEFAULTS } from '@rediacc/shared/config';
 import type { BridgeFunctionName } from '@rediacc/shared/queue-vault/data/functions.generated';
 import { FUNCTION_REQUIREMENTS } from '@rediacc/shared/queue-vault/data/functions.generated';
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
-import type { MachineConfig } from '../types/index.js';
 import { extractRenetToLocal, isSEA } from './embedded-assets.js';
 import { outputService } from './output.js';
 import { renetProvisioner } from './renet-provisioner.js';
+import type { MachineConfig } from '../types/index.js';
 
 /** Setup marker file created by `renet setup` on successful completion */
 const SETUP_MARKER_PATH = '/var/lib/rediacc/setup_7111_completed';

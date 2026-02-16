@@ -3,7 +3,6 @@
  * Blocks commands from running in unsupported modes and auto-tags help descriptions.
  */
 import { DEFAULTS } from '@rediacc/shared/config';
-import type { Command } from 'commander';
 import {
   ALL_MODES,
   COMMAND_DOMAINS,
@@ -13,6 +12,7 @@ import {
 } from '../config/command-registry.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
+import type { Command } from 'commander';
 
 // Fixed column width for the mode tag (longest tag is "[local|s3]" = 10 chars)
 const TAG_COL_WIDTH = 17;

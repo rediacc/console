@@ -2,17 +2,17 @@ import { execFileSync } from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
-import type { Command } from 'commander';
+import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
 import { t } from '../i18n/index.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
-import type { MachineConfig, OutputFormat, S3Config } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { askPassword } from '../utils/prompt.js';
+import type { MachineConfig, OutputFormat, S3Config } from '../types/index.js';
+import type { Command } from 'commander';
 
 function scanHostKeys(ip: string, port: number): string {
   try {
