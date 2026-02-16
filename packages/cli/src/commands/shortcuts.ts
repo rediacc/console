@@ -89,47 +89,6 @@ async function runLocalMode(functionName: string, options: RunLocalOptions): Pro
 }
 
 /**
- * Run function in S3 mode (local renet execution + S3 state tracking).
- * Creates a queue item in S3 for tracking, executes via renet, then cleans up.
- */
-async function runS3Mode(functionName: string, options: RunLocalOptions): Promise<void> {
-  const provider = await getStateProvider();
-  const { machineName, params } = await resolveRunParams(functionName, options);
-
-  const taskId = (
-    await provider.queue.create({
-      functionName,
-      machineName,
-      teamName: 's3',
-      vaultContent: '',
-      priority: 3,
-      params,
-    })
-  ).taskId;
-
-  outputService.info(
-    t('commands.shortcuts.run.executingLocal', { function: functionName, machine: machineName })
-  );
-  if (taskId) outputService.info(`Task ID: ${taskId}`);
-
-  const result = await localExecutorService.execute({
-    functionName,
-    machineName,
-    params,
-    debug: options.debug,
-  });
-
-  if (taskId) {
-    try {
-      await provider.queue.delete(taskId);
-    } catch {
-      /* best-effort cleanup */
-    }
-  }
-  handleExecutionResult(result);
-}
-
-/**
  * Run function in cloud mode (queue-based execution).
  */
 async function runCloudMode(
@@ -196,15 +155,11 @@ export function registerShortcuts(program: Command): void {
         const provider = await getStateProvider();
 
         switch (provider.mode) {
-          case 'local':
-            await runLocalMode(functionName, options);
-            break;
-          case 's3':
-            await runS3Mode(functionName, options);
-            break;
           case 'cloud':
-          default:
             await runCloudMode(functionName, options, program);
+            break;
+          default:
+            await runLocalMode(functionName, options);
             break;
         }
       } catch (error) {

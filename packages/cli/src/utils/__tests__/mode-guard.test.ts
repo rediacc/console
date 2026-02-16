@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SELF_HOSTED_MODES } from '../../config/command-registry.js';
 import type { NamedContext } from '../../types/index.js';
 
 // Mock contextService and outputService
@@ -74,7 +75,7 @@ describe('utils/mode-guard', () => {
       mockGetCurrent.mockResolvedValue({ name: 'test', mode: 'cloud' } as NamedContext);
 
       const cmd = new Command('repo');
-      addModeGuard(cmd, ['local', 's3']);
+      addModeGuard(cmd, SELF_HOSTED_MODES);
       await runGuardHook(cmd);
 
       expect(mockError).toHaveBeenCalledWith(expect.stringContaining('"repo"'));
@@ -96,7 +97,7 @@ describe('utils/mode-guard', () => {
       mockGetCurrent.mockResolvedValue({ name: 'test', mode: 'local' } as NamedContext);
 
       const cmd = new Command('repo');
-      addModeGuard(cmd, ['local', 's3']);
+      addModeGuard(cmd, SELF_HOSTED_MODES);
       await runGuardHook(cmd);
 
       expect(mockError).not.toHaveBeenCalled();

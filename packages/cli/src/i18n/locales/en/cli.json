@@ -348,7 +348,9 @@
       },
       "createLocal": {
         "description": "Create a new local context for middleware-less operation",
+        "optionMasterPassword": "Encrypt resources with a master password",
         "success": "Local context \"{{name}}\" created",
+        "encryptionEnabled": "Encryption at rest enabled. Resources will be encrypted in config.json.",
         "nextStep": "Add machines with: rdc context add-machine <name> --ip <ip> --user <user>"
       },
       "addMachine": {

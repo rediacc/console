@@ -165,6 +165,12 @@ export interface NamedContext {
   renetPath?: string;
   /** Backup schedule configuration */
   backup?: BackupConfig;
+  /** When true, resources are encrypted in encryptedResources blob */
+  encrypted?: boolean;
+  /** Encrypted blob of {machines, storages, repositories, sshContent} */
+  encryptedResources?: string;
+  /** Inline SSH key content for portability (both local and S3 modes) */
+  sshContent?: SSHContent;
 
   // ============================================================================
   // S3 Mode Configuration (only used when mode === 's3')

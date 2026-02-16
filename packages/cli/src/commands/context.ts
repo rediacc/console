@@ -31,14 +31,10 @@ export function registerContextCommands(program: Command): void {
         }
 
         const displayData = contexts.map((ctx) => {
-          let apiUrl: string | undefined;
-          if (ctx.mode === 'local') {
-            apiUrl = '-';
-          } else if (ctx.mode === 's3') {
-            apiUrl = ctx.s3?.endpoint ?? '-';
-          } else {
-            apiUrl = ctx.apiUrl;
-          }
+          const isSelfHosted = (ctx.mode ?? 'cloud') !== 'cloud';
+          const apiUrl = isSelfHosted
+            ? (ctx.s3?.endpoint ?? '-')
+            : ctx.apiUrl;
 
           return {
             name: ctx.name,
@@ -46,10 +42,9 @@ export function registerContextCommands(program: Command): void {
             apiUrl,
             userEmail: ctx.userEmail ?? '-',
             team: ctx.team ?? '-',
-            machines:
-              ctx.mode === 'local' || ctx.mode === 's3'
-                ? Object.keys(ctx.machines ?? {}).length.toString()
-                : '-',
+            machines: isSelfHosted
+              ? Object.keys(ctx.machines ?? {}).length.toString()
+              : '-',
           };
         });
 
@@ -140,30 +135,38 @@ export function registerContextCommands(program: Command): void {
         }
 
         let display: Record<string, unknown>;
-        if (ctx.mode === 's3') {
+        if ((ctx.mode ?? 'cloud') !== 'cloud') {
+          // Self-hosted mode (local or S3)
+          let machineCount = 0;
+          let storageCount = 0;
+          let repoCount = 0;
+          try {
+            const state = await contextService.getResourceState();
+            machineCount = Object.keys(state.getMachines()).length;
+            storageCount = Object.keys(state.getStorages()).length;
+            repoCount = Object.keys(state.getRepositories()).length;
+          } catch {
+            // Fallback to context fields (may be 0 for encrypted/S3)
+            machineCount = Object.keys(ctx.machines ?? {}).length;
+            storageCount = Object.keys(ctx.storages ?? {}).length;
+            repoCount = Object.keys(ctx.repositories ?? {}).length;
+          }
+
           display = {
             name: ctx.name,
-            mode: 's3',
-            endpoint: ctx.s3?.endpoint ?? '-',
-            bucket: ctx.s3?.bucket ?? '-',
-            region: ctx.s3?.region ?? '-',
-            prefix: ctx.s3?.prefix ?? '-',
+            mode: ctx.mode,
+            ...(ctx.s3 ? {
+              endpoint: ctx.s3.endpoint,
+              bucket: ctx.s3.bucket,
+              s3Region: ctx.s3.region,
+              prefix: ctx.s3.prefix ?? '-',
+            } : {}),
+            encrypted: ctx.encrypted ? 'yes' : 'no',
             sshKey: ctx.ssh?.privateKeyPath ?? '-',
             renetPath: ctx.renetPath ?? DEFAULTS.CONTEXT.RENET_PATH,
-            machines: Object.keys(ctx.machines ?? {}).length,
-            storages: Object.keys(ctx.storages ?? {}).length,
-            repositories: Object.keys(ctx.repositories ?? {}).length,
-            defaultMachine: ctx.machine ?? '-',
-          };
-        } else if (ctx.mode === 'local') {
-          display = {
-            name: ctx.name,
-            mode: 'local',
-            sshKey: ctx.ssh?.privateKeyPath ?? '-',
-            renetPath: ctx.renetPath ?? DEFAULTS.CONTEXT.RENET_PATH,
-            machines: Object.keys(ctx.machines ?? {}).length,
-            storages: Object.keys(ctx.storages ?? {}).length,
-            repositories: Object.keys(ctx.repositories ?? {}).length,
+            machines: machineCount,
+            storages: storageCount,
+            repositories: repoCount,
             defaultMachine: ctx.machine ?? '-',
           };
         } else {

@@ -9,6 +9,7 @@ import type { ContextMode } from '../types/index.js';
 export type ModeSet = readonly ContextMode[];
 
 export const ALL_MODES: ModeSet = ['cloud', 'local', 's3'] as const;
+export const SELF_HOSTED_MODES: ModeSet = ['local', 's3'] as const;
 
 export const COMMAND_DOMAINS = {
   INFRASTRUCTURE: 'Infrastructure',
@@ -47,8 +48,8 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
     modes: ALL_MODES,
     domain: 'INFRASTRUCTURE',
     subcommands: {
-      browse: { modes: ['local', 's3'] },
-      pull: { modes: ['local', 's3'] },
+      browse: { modes: SELF_HOSTED_MODES },
+      pull: { modes: SELF_HOSTED_MODES },
     },
   },
   { name: 'region', modes: ['cloud'], domain: 'INFRASTRUCTURE' },
@@ -56,15 +57,15 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
 
   // ── Repositories ────────────────────────────────────────────────────
   { name: 'repository', modes: ['cloud'], domain: 'REPOSITORIES' },
-  { name: 'repo', modes: ['local', 's3'], domain: 'REPOSITORIES' },
-  { name: 'snapshot', modes: ['local', 's3'], domain: 'REPOSITORIES' },
+  { name: 'repo', modes: SELF_HOSTED_MODES, domain: 'REPOSITORIES' },
+  { name: 'snapshot', modes: SELF_HOSTED_MODES, domain: 'REPOSITORIES' },
   {
     name: 'backup',
     modes: ALL_MODES,
     domain: 'REPOSITORIES',
     subcommands: {
-      sync: { modes: ['local', 's3'] },
-      schedule: { modes: ['local', 's3'] },
+      sync: { modes: SELF_HOSTED_MODES },
+      schedule: { modes: SELF_HOSTED_MODES },
     },
   },
 

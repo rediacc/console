@@ -228,24 +228,34 @@ async function checkConfiguration(): Promise<CheckSection> {
   const mode = context?.mode ?? DEFAULTS.CONTEXT.MODE;
   checks.push({ name: t('commands.doctor.checks.contextMode'), value: mode, status: 'ok' });
 
-  if (mode === 'local') {
-    addLocalModeChecks(checks, context);
+  if (mode !== 'cloud') {
+    await addSelfHostedModeChecks(checks, context);
   }
 
   return { title: t('commands.doctor.sections.configuration'), checks };
 }
 
-function addLocalModeChecks(
+async function addSelfHostedModeChecks(
   checks: CheckResult[],
   context: Awaited<ReturnType<typeof contextService.getCurrent>>
-): void {
-  const machineCount = context?.machines ? Object.keys(context.machines).length : 0;
-  checks.push({
-    name: t('commands.doctor.checks.machines'),
-    value: `${machineCount} configured`,
-    status: machineCount > 0 ? 'ok' : 'warn',
-    hint: machineCount === 0 ? 'Add machines with: rdc context add-machine' : undefined,
-  });
+): Promise<void> {
+  try {
+    const state = await contextService.getResourceState();
+    const machineCount = Object.keys(state.getMachines()).length;
+    checks.push({
+      name: t('commands.doctor.checks.machines'),
+      value: `${machineCount} configured`,
+      status: machineCount > 0 ? 'ok' : 'warn',
+      hint: machineCount === 0 ? 'Add machines with: rdc context add-machine' : undefined,
+    });
+  } catch {
+    checks.push({
+      name: t('commands.doctor.checks.machines'),
+      value: '[unable to load]',
+      status: 'warn',
+      hint: 'Could not load resource state (encrypted or S3 unreachable)',
+    });
+  }
 
   const sshKeyPath = context?.ssh?.privateKeyPath;
   if (sshKeyPath && existsSync(sshKeyPath)) {

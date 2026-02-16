@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ALL_MODES,
   COMMAND_REGISTRY,
+  SELF_HOSTED_MODES,
   formatModeTag,
   getCommandDef,
 } from '../command-registry.js';
@@ -16,8 +17,8 @@ describe('config/command-registry', () => {
       expect(formatModeTag(['cloud'])).toBe('[cloud]');
     });
 
-    it('returns [local|s3] for local+s3', () => {
-      expect(formatModeTag(['local', 's3'])).toBe('[local|s3]');
+    it('returns [local|s3] for self-hosted modes', () => {
+      expect(formatModeTag(SELF_HOSTED_MODES)).toBe('[local|s3]');
     });
   });
 
@@ -76,7 +77,7 @@ describe('config/command-registry', () => {
       it(`"${name}" is local|s3 only`, () => {
         const def = getCommandDef(name);
         expect(def).toBeDefined();
-        expect(def!.modes).toEqual(['local', 's3']);
+        expect(def!.modes).toEqual(SELF_HOSTED_MODES);
       });
     }
 
@@ -102,17 +103,17 @@ describe('config/command-registry', () => {
 
     it('storage browse is local|s3', () => {
       const def = getCommandDef('storage');
-      expect(def?.subcommands?.browse?.modes).toEqual(['local', 's3']);
+      expect(def?.subcommands?.browse?.modes).toEqual(SELF_HOSTED_MODES);
     });
 
     it('backup sync is local|s3', () => {
       const def = getCommandDef('backup');
-      expect(def?.subcommands?.sync?.modes).toEqual(['local', 's3']);
+      expect(def?.subcommands?.sync?.modes).toEqual(SELF_HOSTED_MODES);
     });
 
     it('backup schedule is local|s3', () => {
       const def = getCommandDef('backup');
-      expect(def?.subcommands?.schedule?.modes).toEqual(['local', 's3']);
+      expect(def?.subcommands?.schedule?.modes).toEqual(SELF_HOSTED_MODES);
     });
   });
 

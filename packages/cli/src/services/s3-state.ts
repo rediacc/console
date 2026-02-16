@@ -8,8 +8,8 @@
  * Keys (section names, record names) stay in plaintext; only values are encrypted.
  */
 
-import { nodeCryptoProvider } from '../adapters/crypto.js';
 import type { S3ClientService } from './s3-client.js';
+import { encryptSection, decryptSection, type ResourceState } from './resource-state.js';
 import type {
   MachineConfig,
   RepositoryConfig,
@@ -20,7 +20,7 @@ import type {
 
 const STATE_KEY = 'state.json';
 
-export class S3StateService {
+export class S3StateService implements ResourceState {
   private readonly state: S3StateData;
 
   private constructor(
@@ -179,16 +179,3 @@ export class S3StateService {
   }
 }
 
-// =============================================================================
-// Helpers
-// =============================================================================
-
-async function encryptSection(data: unknown, password: string): Promise<string> {
-  const json = JSON.stringify(data);
-  return nodeCryptoProvider.encrypt(json, password);
-}
-
-async function decryptSection<T>(encrypted: string, password: string): Promise<T> {
-  const json = await nodeCryptoProvider.decrypt(encrypted, password);
-  return JSON.parse(json) as T;
-}

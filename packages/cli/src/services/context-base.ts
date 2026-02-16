@@ -5,7 +5,7 @@ import {
   normalizeLanguage,
 } from './context-language.js';
 import { configStorage } from '../adapters/storage.js';
-import type { S3StateService } from './s3-state.js';
+import type { ResourceState } from './resource-state.js';
 import type { NamedContext, S3Config } from '../types/index.js';
 
 const DEFAULT_API_URL = 'https://www.rediacc.com/api';
@@ -13,12 +13,13 @@ const DEFAULT_API_URL = 'https://www.rediacc.com/api';
 /**
  * Service for managing CLI contexts.
  * Supports multiple named contexts with independent credentials and defaults.
- * In S3 mode, CRUD operations delegate to S3StateService (state.json in bucket).
- * In local mode, CRUD operations read/write config.json directly.
+ * In self-hosted modes (local/S3), resource CRUD delegates to ResourceState:
+ *   - S3 mode: S3StateService (state.json in bucket)
+ *   - Local mode: LocalResourceState (config.json, with optional encryption)
  */
 export class ContextServiceBase {
   private runtimeContextOverride: string | null = null;
-  private s3State: S3StateService | null = null;
+  private _resourceState: ResourceState | null = null;
 
   /**
    * Set a runtime context override (used by --context flag).
@@ -26,43 +27,54 @@ export class ContextServiceBase {
    */
   setRuntimeContext(name: string | null): void {
     this.runtimeContextOverride = name;
-    this.s3State = null; // Reset cached S3 state on context switch
+    this._resourceState = null; // Reset cached state on context switch
   }
 
   /**
-   * Get S3StateService for the current context, initializing lazily.
-   * Only called when mode === 's3'. Caches the instance for the session.
+   * Get the ResourceState for the current context, initializing lazily.
+   * Returns S3StateService for S3 mode or LocalResourceState for local mode.
+   * Caches the instance for the session.
    */
-  protected async getS3State(): Promise<S3StateService> {
-    if (this.s3State) return this.s3State;
+  async getResourceState(): Promise<ResourceState> {
+    if (this._resourceState) return this._resourceState;
 
     const context = await this.getCurrent();
-    if (!context?.s3) throw new Error(`Context "${context?.name}" has no S3 configuration`);
+    if (!context) throw new Error('No active context');
 
-    let decryptedSecret: string;
     let masterPassword: string | null = null;
-
     if (context.masterPassword) {
       const { authService } = await import('./auth.js');
       masterPassword = await authService.requireMasterPassword();
-      const { nodeCryptoProvider } = await import('../adapters/crypto.js');
-      decryptedSecret = await nodeCryptoProvider.decrypt(
-        context.s3.secretAccessKey,
-        masterPassword
-      );
-    } else {
-      decryptedSecret = context.s3.secretAccessKey;
     }
 
-    const { S3ClientService } = await import('./s3-client.js');
-    const s3Client = new S3ClientService({
-      ...context.s3,
-      secretAccessKey: decryptedSecret,
-    });
+    if (context.mode === 's3') {
+      if (!context.s3) throw new Error(`Context "${context.name}" has no S3 configuration`);
 
-    const { S3StateService: S3StateSvc } = await import('./s3-state.js');
-    this.s3State = await S3StateSvc.load(s3Client, masterPassword);
-    return this.s3State;
+      let decryptedSecret: string;
+      if (masterPassword) {
+        const { nodeCryptoProvider } = await import('../adapters/crypto.js');
+        decryptedSecret = await nodeCryptoProvider.decrypt(
+          context.s3.secretAccessKey,
+          masterPassword
+        );
+      } else {
+        decryptedSecret = context.s3.secretAccessKey;
+      }
+
+      const { S3ClientService } = await import('./s3-client.js');
+      const s3Client = new S3ClientService({
+        ...context.s3,
+        secretAccessKey: decryptedSecret,
+      });
+
+      const { S3StateService } = await import('./s3-state.js');
+      this._resourceState = await S3StateService.load(s3Client, masterPassword);
+    } else {
+      const { LocalResourceState } = await import('./resource-state.js');
+      this._resourceState = await LocalResourceState.load(context, masterPassword);
+    }
+
+    return this._resourceState;
   }
 
   /**
@@ -420,8 +432,17 @@ export class ContextServiceBase {
   }
 
   // ============================================================================
-  // Local Mode Support
+  // Mode Helpers
   // ============================================================================
+
+  /**
+   * Check if the current context is in a self-hosted mode (local or S3).
+   */
+  async isSelfHostedMode(): Promise<boolean> {
+    const context = await this.getCurrent();
+    const mode = context?.mode ?? 'cloud';
+    return mode !== 'cloud';
+  }
 
   /**
    * Check if the current context is in local mode.
@@ -438,10 +459,6 @@ export class ContextServiceBase {
     const context = await this.get(name);
     return context?.mode === 'local';
   }
-
-  // ============================================================================
-  // S3 Mode Support
-  // ============================================================================
 
   /**
    * Check if the current context is in S3 mode.
