@@ -112,23 +112,16 @@ sync_main_repo() {
 
     log_info "Pulled latest origin/$BASE_BRANCH"
 
-    # Update submodules and checkout their main branch
+    # Update submodules to the commits recorded in the parent repo.
+    # Do NOT checkout local branches — `submodule update` already sets
+    # the correct detached HEAD. Checking out stale local branches
+    # (e.g. `git checkout main` inside a submodule) can roll back
+    # submodule pointers when the local branch hasn't been fast-forwarded.
     log_info "Updating submodules..."
     pushd "$ROOT_DIR" >/dev/null
     git submodule sync --quiet 2>/dev/null || true
     if ! git submodule update --init --recursive --quiet 2>/dev/null; then
         log_warn "Submodule update failed for some modules, continuing"
-    fi
-    git submodule foreach --quiet 'git checkout main --quiet 2>/dev/null || true'
-
-    # Auto-commit if submodule pointers changed
-    if ! git diff --quiet 2>/dev/null; then
-        git add -A
-        git commit --quiet -m "chore: sync submodules to latest main"
-        git push --quiet origin "$BASE_BRANCH" 2>/dev/null || {
-            log_warn "Auto-push failed (permissions or network issue)"
-        }
-        log_info "Auto-committed and pushed submodule updates"
     fi
     popd >/dev/null
 
