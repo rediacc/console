@@ -385,7 +385,7 @@ export const RepositoryUpParamsSchema = z.object({
 /** Start all repository services */
 export const RepositoryUpAllParamsSchema = z.object({
   includeForks: z.boolean().optional().describe('Include forked repositories'),
-  mountOnly: z.boolean().optional().describe('Only mount, don\'t start services'),
+  mountOnly: z.boolean().optional().describe("Only mount, don't start services"),
   dryRun: z.boolean().optional().describe('Show what would be done'),
   parallel: z.boolean().optional().describe('Start repositories concurrently'),
   concurrency: z.number().int().optional().describe('Max concurrent repositories (default: 3)'),
