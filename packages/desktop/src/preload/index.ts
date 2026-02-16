@@ -14,6 +14,18 @@ export interface UpdateProgress {
   total: number;
 }
 
+export interface UpdateStatus {
+  schemaVersion: number;
+  currentVersion: string;
+  lastCheckAt: string | null;
+  lastAttemptAt: string | null;
+  consecutiveFailures: number;
+  lastError: string | null;
+  lastDownloadedVersion: string | null;
+  consecutiveInstallFailures: number;
+  cooldownExpired: boolean;
+}
+
 // Terminal types
 export interface TerminalConnectParams {
   host: string;
@@ -223,6 +235,7 @@ export interface ElectronAPI {
     downloadUpdate: () => Promise<void>;
     installUpdate: () => Promise<void>;
     getVersion: () => Promise<string>;
+    getStatus: () => Promise<UpdateStatus>;
     onChecking: (callback: () => void) => () => void;
     onAvailable: (callback: (info: UpdateInfo) => void) => () => void;
     onNotAvailable: (callback: (info: UpdateInfo) => void) => () => void;
@@ -326,6 +339,7 @@ const electronAPI: ElectronAPI = {
     downloadUpdate: (): Promise<void> => ipcRenderer.invoke('updater:downloadUpdate'),
     installUpdate: (): Promise<void> => ipcRenderer.invoke('updater:installUpdate'),
     getVersion: (): Promise<string> => ipcRenderer.invoke('updater:getVersion'),
+    getStatus: (): Promise<UpdateStatus> => ipcRenderer.invoke('updater:getStatus'),
     onChecking: (callback: () => void) => {
       const handler = (): void => callback();
       ipcRenderer.on('updater:checking', handler);

@@ -6,14 +6,20 @@ import { dirname, join } from 'node:path';
 import { type UpdateManifest } from '../types/index.js';
 import {
   acquireUpdateLock,
-  cleanupOldBinary,
   getOldBinaryPath,
   getPlatformKey,
   isSEA,
   isUpdateDisabled,
   releaseUpdateLock,
+  STAGED_UPDATE_DIR,
 } from '../utils/platform.js';
 import { VERSION } from '../version.js';
+import { telemetryService } from './telemetry.js';
+import {
+  getStagedBinaryPath,
+  readUpdateState,
+  writeUpdateState,
+} from './update-state.js';
 
 const MANIFEST_URL = 'https://www.rediacc.com/cli/manifest.json';
 const GITHUB_API_FALLBACK = 'https://api.github.com/repos/rediacc/console/releases/latest';
@@ -100,7 +106,7 @@ async function fetchJson<T>(url: string, timeoutMs: number): Promise<T> {
 /**
  * Download a binary file from a URL to a local path with progress callback.
  */
-function downloadFile(
+export function downloadFile(
   url: string,
   destPath: string,
   onProgress?: (downloaded: number, total: number) => void
@@ -148,7 +154,7 @@ function downloadFile(
 /**
  * Compute SHA256 hash of a file.
  */
-async function computeSha256(filePath: string): Promise<string> {
+export async function computeSha256(filePath: string): Promise<string> {
   const hash = createHash('sha256');
   const content = await fs.readFile(filePath);
   hash.update(content);
@@ -241,7 +247,7 @@ async function fetchChecksumForAsset(
 /**
  * Fetch the update manifest (Pages primary, GitHub API fallback).
  */
-async function fetchManifest(timeoutMs: number = CHECK_TIMEOUT_MS): Promise<UpdateManifest> {
+export async function fetchManifest(timeoutMs: number = CHECK_TIMEOUT_MS): Promise<UpdateManifest> {
   try {
     return await fetchJson<UpdateManifest>(MANIFEST_URL, timeoutMs);
   } catch {
@@ -278,11 +284,52 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
 }
 
 /**
+ * Thrown when binary replacement fails because the executable is locked (EBUSY/EPERM/ETXTBSY).
+ * The downloaded binary has been staged for application on next launch.
+ */
+export class BinaryBusyError extends Error {
+  constructor(public readonly stagedVersion: string) {
+    super('update.errors.binaryBusy');
+  }
+}
+
+/**
+ * Stage an already-downloaded binary for application on next launch.
+ * Used as fallback when direct replacement fails (binary locked).
+ */
+async function stageDownloadedBinary(
+  tempPath: string,
+  sha256: string,
+  version: string,
+  platformKey: string,
+  releaseNotesUrl?: string
+): Promise<void> {
+  await fs.mkdir(STAGED_UPDATE_DIR, { recursive: true });
+  const stagedPath = getStagedBinaryPath(version);
+  await fs.rename(tempPath, stagedPath);
+  if (process.platform !== 'win32') {
+    await fs.chmod(stagedPath, 0o755);
+  }
+
+  const state = await readUpdateState();
+  state.pendingUpdate = {
+    version,
+    stagedPath,
+    sha256,
+    platformKey,
+    downloadedAt: new Date().toISOString(),
+    releaseNotesUrl,
+  };
+  await writeUpdateState(state);
+}
+
+/**
  * Download, verify checksum, and atomically replace the current binary.
  */
 async function downloadVerifyAndReplace(
   binaryUrl: string,
   expectedSha256: string,
+  stagingInfo: { version: string; platformKey: string; releaseNotesUrl?: string },
   onProgress?: (downloaded: number, total: number) => void
 ): Promise<void> {
   const execPath = process.execPath;
@@ -302,13 +349,31 @@ async function downloadVerifyAndReplace(
     const oldPath = getOldBinaryPath();
     await fs.unlink(oldPath).catch(() => {});
     await fs.rename(execPath, oldPath);
-    await fs.rename(tempPath, execPath);
+    try {
+      await fs.rename(tempPath, execPath);
+    } catch (renameErr) {
+      // Rollback: restore old binary so CLI isn't broken
+      await fs.rename(oldPath, execPath).catch(() => {});
+      throw renameErr;
+    }
 
     // Set executable permission (no-op on Windows)
     if (process.platform !== 'win32') {
       await fs.chmod(execPath, 0o755);
     }
   } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === 'EBUSY' || code === 'EPERM' || code === 'ETXTBSY') {
+      // Binary is locked — stage for next launch instead
+      await stageDownloadedBinary(
+        tempPath,
+        expectedSha256,
+        stagingInfo.version,
+        stagingInfo.platformKey,
+        stagingInfo.releaseNotesUrl
+      );
+      throw new BinaryBusyError(stagingInfo.version);
+    }
     await fs.unlink(tempPath).catch(() => {});
     throw err;
   }
@@ -353,32 +418,31 @@ export async function performUpdate(
     if (!binaryInfo) return errorResult('update.errors.noBinary', manifest.version);
     if (!binaryInfo.sha256) return errorResult('update.errors.noChecksum', manifest.version);
 
-    await downloadVerifyAndReplace(binaryInfo.url, binaryInfo.sha256, onProgress);
+    await downloadVerifyAndReplace(
+      binaryInfo.url,
+      binaryInfo.sha256,
+      { version: manifest.version, platformKey, releaseNotesUrl: manifest.releaseNotesUrl },
+      onProgress
+    );
 
+    telemetryService.trackEvent('update.manual.success', { from: VERSION, to: manifest.version });
     return { success: true, fromVersion: VERSION, toVersion: manifest.version };
   } catch (err) {
+    if (err instanceof BinaryBusyError) {
+      // Binary was locked but successfully staged for next launch
+      telemetryService.trackEvent('update.manual.staged', { version: err.stagedVersion });
+      return {
+        success: true,
+        fromVersion: VERSION,
+        toVersion: err.stagedVersion,
+        error: 'update.errors.binaryBusy',
+      };
+    }
     const message = err instanceof Error ? err.message : 'update.errors.unknown';
+    telemetryService.trackEvent('update.manual.failed', { error: message });
     return errorResult(message);
   } finally {
     await releaseUpdateLock();
   }
 }
 
-/**
- * Run the startup update check. Non-blocking, prints to stderr.
- * Returns a promise that resolves when the check is done.
- */
-export async function startupUpdateCheck(): Promise<void> {
-  if (!isSEA() || isUpdateDisabled()) return;
-
-  // Clean up old binary from previous update
-  await cleanupOldBinary();
-
-  // Check for updates
-  const result = await checkForUpdate();
-  if (result.updateAvailable && result.latestVersion) {
-    process.stderr.write(
-      `Update available: v${result.latestVersion} (current: v${VERSION}). Run \`rdc update\` to upgrade.\n`
-    );
-  }
-}

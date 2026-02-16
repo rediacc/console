@@ -6,7 +6,8 @@ import {
   isUpdateDisabled,
   releaseUpdateLock,
 } from '../../utils/platform.js';
-import { checkForUpdate, compareVersions, performUpdate, startupUpdateCheck } from '../updater.js';
+// Note: startupUpdateCheck was removed — replaced by background-updater
+import { checkForUpdate, compareVersions, performUpdate } from '../updater.js';
 
 vi.mock('../../utils/platform.js', () => ({
   isSEA: vi.fn(),
@@ -15,7 +16,20 @@ vi.mock('../../utils/platform.js', () => ({
   getOldBinaryPath: vi.fn().mockReturnValue('/usr/local/bin/rdc.old'),
   acquireUpdateLock: vi.fn(),
   releaseUpdateLock: vi.fn(),
-  cleanupOldBinary: vi.fn().mockResolvedValue(undefined),
+  STAGED_UPDATE_DIR: '/home/testuser/.rediacc/staged-update',
+}));
+
+vi.mock('../update-state.js', () => ({
+  getStagedBinaryPath: vi.fn().mockReturnValue('/home/testuser/.rediacc/staged-update/rdc-0.5.0'),
+  readUpdateState: vi.fn().mockResolvedValue({
+    schemaVersion: 1,
+    lastCheckAt: null,
+    lastAttemptAt: null,
+    pendingUpdate: null,
+    consecutiveFailures: 0,
+    lastError: null,
+  }),
+  writeUpdateState: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../version.js', () => ({
@@ -28,6 +42,7 @@ const mockFs = vi.hoisted(() => ({
   unlink: vi.fn().mockResolvedValue(undefined),
   rename: vi.fn().mockResolvedValue(undefined),
   chmod: vi.fn().mockResolvedValue(undefined),
+  mkdir: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('node:fs', () => ({
@@ -47,6 +62,14 @@ vi.mock('node:http', () => ({
 vi.mock('node:crypto', () => ({
   createHash: vi.fn(),
 }));
+
+const mockTelemetry = vi.hoisted(() => ({
+  telemetryService: {
+    trackEvent: vi.fn(),
+  },
+}));
+
+vi.mock('../telemetry.js', () => mockTelemetry);
 
 type EventHandler = (...args: unknown[]) => void;
 
@@ -389,78 +412,73 @@ describe('services/updater', () => {
       expect(result.success).toBe(false);
       expect(result.error).toBe('update.errors.checksumMismatch');
     });
-  });
 
-  describe('startupUpdateCheck()', () => {
-    beforeEach(() => {
-      vi.mocked(isSEA).mockReturnValue(true);
-      vi.mocked(isUpdateDisabled).mockReturnValue(false);
-    });
+    it('stages binary on EBUSY instead of failing', async () => {
+      const binaryContent = Buffer.from('fake-binary-content');
 
-    it('does nothing when not SEA', async () => {
-      vi.mocked(isSEA).mockReturnValue(false);
-      const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
-
-      await startupUpdateCheck();
-
-      expect(stderrSpy).not.toHaveBeenCalled();
-      stderrSpy.mockRestore();
-    });
-
-    it('does nothing when update is disabled', async () => {
-      vi.mocked(isUpdateDisabled).mockReturnValue(true);
-      const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
-
-      await startupUpdateCheck();
-
-      expect(stderrSpy).not.toHaveBeenCalled();
-      stderrSpy.mockRestore();
-    });
-
-    it('prints update notice to stderr when update is available', async () => {
       const manifest = {
         version: '0.5.0',
         releaseDate: '2026-01-01T00:00:00Z',
-        releaseNotesUrl: '',
-        binaries: {},
+        releaseNotesUrl: 'https://example.com/releases/v0.5.0',
+        binaries: {
+          'linux-x64': { url: 'https://example.com/rdc-linux-x64', sha256: 'correct_hash' },
+        },
       };
 
+      let callCount = 0;
       mockHttpsGet.mockImplementation(
         (_url: string, _opts: unknown, callback: (res: unknown) => void) => {
-          callback(createMockResponse(200, JSON.stringify(manifest)));
+          callCount++;
+          if (callCount === 1) {
+            callback(createMockResponse(200, JSON.stringify(manifest)));
+          } else {
+            callback(
+              createMockResponse(200, binaryContent, {
+                'content-length': String(binaryContent.length),
+              })
+            );
+          }
           return createMockRequest();
         }
       );
 
-      const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
-
-      await startupUpdateCheck();
-
-      expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining('Update available: v0.5.0'));
-      stderrSpy.mockRestore();
-    });
-
-    it('stays silent when already up to date', async () => {
-      const manifest = {
-        version: '0.4.42',
-        releaseDate: '2026-01-01T00:00:00Z',
-        releaseNotesUrl: '',
-        binaries: {},
+      // Mock file handle for download
+      const mockFileHandle = {
+        write: vi.fn().mockResolvedValue(undefined),
+        close: vi.fn().mockResolvedValue(undefined),
       };
+      mockFs.open.mockResolvedValue(mockFileHandle);
+      mockFs.readFile.mockResolvedValue(binaryContent);
 
-      mockHttpsGet.mockImplementation(
-        (_url: string, _opts: unknown, callback: (res: unknown) => void) => {
-          callback(createMockResponse(200, JSON.stringify(manifest)));
-          return createMockRequest();
-        }
+      // Hash matches
+      const { createHash } = await import('node:crypto');
+      const mockHashObj = {
+        update: vi.fn(),
+        digest: vi.fn().mockReturnValue('correct_hash'),
+      };
+      mockHashObj.update.mockReturnValue(mockHashObj);
+      vi.mocked(createHash).mockReturnValue(
+        mockHashObj as unknown as ReturnType<typeof createHash>
       );
 
-      const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+      // Make first rename fail with EBUSY (binary is locked), rest succeed (staging)
+      const ebusyError = new Error('EBUSY') as NodeJS.ErrnoException;
+      ebusyError.code = 'EBUSY';
+      mockFs.rename.mockRejectedValueOnce(ebusyError).mockResolvedValue(undefined);
 
-      await startupUpdateCheck();
+      const result = await performUpdate({ force: true });
 
-      expect(stderrSpy).not.toHaveBeenCalled();
-      stderrSpy.mockRestore();
+      // Should succeed with staging fallback
+      expect(result.success).toBe(true);
+      expect(result.toVersion).toBe('0.5.0');
+      expect(result.error).toBe('update.errors.binaryBusy');
+
+      // Should track telemetry event for staging
+      expect(mockTelemetry.telemetryService.trackEvent).toHaveBeenCalledWith(
+        'update.manual.staged',
+        { version: '0.5.0' }
+      );
     });
   });
+
 });

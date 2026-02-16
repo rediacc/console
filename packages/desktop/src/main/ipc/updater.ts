@@ -1,5 +1,8 @@
 import { BrowserWindow, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
+import { isCooldownExpired } from '@rediacc/shared/update';
+import { checkInstallAllowed } from '../updater/autoUpdater';
+import { readDesktopUpdateState } from '../updater/update-state';
 
 export function registerUpdaterHandlers(): void {
   ipcMain.handle('updater:checkForUpdates', async () => {
@@ -20,13 +23,26 @@ export function registerUpdaterHandlers(): void {
     }
   });
 
-  ipcMain.handle('updater:installUpdate', () => {
+  ipcMain.handle('updater:installUpdate', async () => {
+    const allowed = await checkInstallAllowed();
+    if (!allowed) {
+      throw new Error('Install retry cap reached. Please restart the application or download a fresh update.');
+    }
     // Quit and install immediately, but allow app to restart
     autoUpdater.quitAndInstall(false, true);
   });
 
   ipcMain.handle('updater:getVersion', () => {
     return autoUpdater.currentVersion.version;
+  });
+
+  ipcMain.handle('updater:getStatus', async () => {
+    const state = await readDesktopUpdateState();
+    return {
+      ...state,
+      currentVersion: autoUpdater.currentVersion.version,
+      cooldownExpired: isCooldownExpired(state),
+    };
   });
 }
 
