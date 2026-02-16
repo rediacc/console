@@ -9,6 +9,7 @@ import apiClient from '@/api/client';
 import { useOrganizationInfo } from '@/api/hooks-organization';
 import logoBlack from '@/assets/logo_black.png';
 import logoWhite from '@/assets/logo_white.png';
+import PreviewWarning from '@/components/common/PreviewWarning';
 import SandboxWarning from '@/components/common/SandboxWarning';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
 import { featureFlags } from '@/config/featureFlags';
@@ -155,6 +156,7 @@ const MainLayout: React.FC = () => {
   return (
     <>
       <SandboxWarning />
+      <PreviewWarning sidebarOffset={SIDEBAR_EXPANDED_WIDTH} />
       <ProLayout
         layout="side"
         fixSiderbar

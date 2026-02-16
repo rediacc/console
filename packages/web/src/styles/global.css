@@ -13,6 +13,20 @@
     padding: 0;
   }
 
+  body {
+    --banner-preview-height: 0px;
+    --banner-sandbox-height: 0px;
+    padding-top: calc(var(--banner-preview-height) + var(--banner-sandbox-height));
+  }
+
+  body.has-preview-banner {
+    --banner-preview-height: 40px;
+  }
+
+  body.has-sandbox-banner {
+    --banner-sandbox-height: 40px;
+  }
+
   #root {
     min-height: 100vh;
   }
@@ -70,6 +84,15 @@
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
+  }
+
+  .preview-warning-banner {
+    position: fixed;
+    top: 0;
+    left: var(--preview-banner-left, 0px);
+    right: 0;
+    z-index: 1001;
+    min-height: 40px;
   }
 
   .ant-alert .ant-alert-icon {

@@ -800,6 +800,8 @@
     "wslVSCode": "WSL için VS Code (Linux)"
   },
   "warnings": {
+    "previewEnvironment": "Önizleme",
+    "previewMessage": "Bu web konsolu önizleme aşamasındadır ve beklendiği gibi çalışmayabilir. Üretim kullanımı için lütfen CLI'yi S3 veya Yerel modda kullanın. Bulut modu aynı arka ucu paylaşır ve resmi sürüme kadar kullanılamaz.",
     "sandboxEnvironment": "Sandbox Ortamı",
     "sandboxMessage": "Güncellemeler sırasında veriler sıfırlanabilir. Sadece test içindir."
   },

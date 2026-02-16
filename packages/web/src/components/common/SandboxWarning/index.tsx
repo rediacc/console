@@ -18,12 +18,11 @@ const SandboxWarning: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Add padding to body when warning is visible
     if (isVisible) {
-      document.body.style.paddingTop = '40px';
+      document.body.classList.add('has-sandbox-banner');
     }
     return () => {
-      document.body.style.paddingTop = '';
+      document.body.classList.remove('has-sandbox-banner');
     };
   }, [isVisible]);
 
@@ -41,7 +40,7 @@ const SandboxWarning: React.FC = () => {
       // eslint-disable-next-line no-restricted-syntax
       style={{
         position: 'fixed',
-        top: 0,
+        top: 'var(--banner-preview-height, 0px)',
         left: 240,
         right: 0,
         zIndex: 1000,

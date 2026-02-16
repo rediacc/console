@@ -800,6 +800,8 @@
     "wslVSCode": "WSL 版 VS Code (Linux)"
   },
   "warnings": {
+    "previewEnvironment": "预览",
+    "previewMessage": "此Web控制台处于预览阶段，可能无法按预期运行。如需生产使用，请使用CLI的S3或本地模式。云模式共享此后端，在正式发布之前也不可用。",
     "sandboxEnvironment": "沙盒环境",
     "sandboxMessage": "更新期间数据可能会重置。 仅用于测试。"
   },
