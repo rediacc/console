@@ -70,12 +70,15 @@ fi
 # so we check inside each submodule directly
 for dir in private/*/; do
     dir="${dir%/}" # Remove trailing slash
-    # Only process git submodules (have .git file pointing to parent's .git/modules/)
+    # Only process git submodules that have a package.json
     if [[ ! -f "$dir/.git" ]] && [[ ! -d "$dir/.git" ]]; then
         continue
     fi
+    if [[ ! -f "$dir/package.json" ]]; then
+        continue
+    fi
     # Check for package file changes inside the submodule
-    if (cd "$dir" && ! git diff --quiet package.json package-lock.json 2>/dev/null); then
+    if (cd "$dir" && ! git diff --quiet -- package.json package-lock.json 2>/dev/null); then
         SUBMODULE_DIRS_CHANGED+=("$dir")
     fi
 done
@@ -110,7 +113,8 @@ for dir in "${SUBMODULE_DIRS_CHANGED[@]}"; do
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
         fi
-        git add package.json package-lock.json
+        git add package.json
+        [[ -f package-lock.json ]] && git add package-lock.json
         git commit -m "$(
             cat <<'SUBMSG'
 chore(deps): auto-upgrade dependencies
