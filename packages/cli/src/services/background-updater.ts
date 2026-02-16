@@ -227,7 +227,7 @@ async function atomicBinarySwap(stagedPath: string): Promise<void> {
   try {
     await renameWithRetry(tempPath, execPath);
   } catch (renameErr) {
-    await fs.rename(oldPath, execPath).catch((restoreErr) => {
+    await fs.rename(oldPath, execPath).catch((restoreErr: unknown) => {
       const msg = restoreErr instanceof Error ? restoreErr.message : String(restoreErr);
       process.stderr.write(
         `CRITICAL: Failed to restore original binary during update. CLI may be broken — please reinstall. Error: ${msg}\n`
