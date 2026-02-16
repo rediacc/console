@@ -27,7 +27,7 @@ import { changeLanguage, initI18n, SUPPORTED_LANGUAGES, t } from './i18n/index.j
 import { contextService } from './services/context.js';
 import { outputService } from './services/output.js';
 import { telemetryService } from './services/telemetry.js';
-import { addCloudOnlyGuard, markCloudOnly } from './utils/cloud-guard.js';
+import { applyRegistry } from './utils/mode-guard.js';
 import { setOutputFormat } from './utils/errors.js';
 import { VERSION } from './version.js';
 import type { OutputFormat } from './types/index.js';
@@ -123,20 +123,6 @@ cli
     commandContext.delete(commandName);
   });
 
-// Cloud-only command names — these are not available in s3/local mode
-const CLOUD_ONLY_COMMANDS = new Set([
-  'auth',
-  'bridge',
-  'team',
-  'region',
-  'organization',
-  'user',
-  'permission',
-  'audit',
-  'ceph',
-  'repository',
-]);
-
 // Register all command groups
 registerAuthCommands(cli);
 registerTeamCommands(cli);
@@ -163,13 +149,8 @@ registerSnapshotCommands(cli);
 registerBackupCommands(cli);
 registerShortcuts(cli);
 
-// Apply cloud-only guards and help annotations to the appropriate top-level commands
-for (const cmd of cli.commands) {
-  if (CLOUD_ONLY_COMMANDS.has(cmd.name())) {
-    addCloudOnlyGuard(cmd);
-    markCloudOnly(cmd);
-  }
-}
+// Apply mode guards, help tags, and domain grouping from the command registry
+applyRegistry(cli);
 
 // Provide a clear error for unsupported subcommands
 cli.on('command:*', (operands) => {

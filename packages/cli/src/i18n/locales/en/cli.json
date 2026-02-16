@@ -8,7 +8,6 @@
       "login": {
         "authenticating": "Authenticating...",
         "description": "Authenticate with Rediacc",
-        "shortcut": "Authenticate with Rediacc (shortcut for: auth login)",
         "success": "Login successful! Saved to context \"{{context}}\"",
         "tfaPrompt": "Enter 2FA code:",
         "tfaRequired": "Two-factor authentication required",
@@ -18,7 +17,6 @@
       "logout": {
         "description": "Clear stored credentials",
         "loggingOut": "Logging out...",
-        "shortcut": "Clear stored credentials (shortcut for: auth logout)",
         "success": "Logged out successfully"
       },
       "status": {
@@ -859,7 +857,7 @@
       }
     },
     "repo": {
-      "description": "Repository lifecycle management (local mode)",
+      "description": "Repository lifecycle management",
       "machineOption": "Target machine name",
       "noCredential": "Warning: Repository \"{{name}}\" has no credential set. Operations on encrypted repos may fail.",
       "mount": {
@@ -884,6 +882,17 @@
         "starting": "Starting services for \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Services started",
         "failed": "Service start failed"
+      },
+      "upAll": {
+        "description": "Start all repository services on a machine",
+        "includeForksOption": "Also mount/start forked repositories",
+        "mountOnlyOption": "Only mount, don't start services",
+        "dryRunOption": "Show what would be done without executing",
+        "parallelOption": "Start repositories concurrently",
+        "concurrencyOption": "Max concurrent repositories (default: 3)",
+        "starting": "Starting all repositories on \"{{machine}}\"...",
+        "completed": "All repositories started",
+        "failed": "Up-all operation failed"
       },
       "down": {
         "description": "Stop repository services",
@@ -951,6 +960,39 @@
         "starting": "Validating \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Validation completed",
         "failed": "Validation failed"
+      },
+      "autostart": {
+        "description": "Manage automatic repository startup on boot",
+        "enable": {
+          "description": "Enable autostart for a repository",
+          "starting": "Enabling autostart for \"{{repository}}\" on \"{{machine}}\"...",
+          "completed": "Autostart enabled",
+          "failed": "Failed to enable autostart"
+        },
+        "disable": {
+          "description": "Disable autostart for a repository",
+          "starting": "Disabling autostart for \"{{repository}}\" on \"{{machine}}\"...",
+          "completed": "Autostart disabled",
+          "failed": "Failed to disable autostart"
+        },
+        "enableAll": {
+          "description": "Enable autostart for all repositories",
+          "starting": "Enabling autostart for all repositories on \"{{machine}}\"...",
+          "completed": "Autostart enabled for all repositories",
+          "failed": "Failed to enable autostart for all repositories"
+        },
+        "disableAll": {
+          "description": "Disable autostart for all repositories",
+          "starting": "Disabling autostart for all repositories on \"{{machine}}\"...",
+          "completed": "Autostart disabled for all repositories",
+          "failed": "Failed to disable autostart for all repositories"
+        },
+        "list": {
+          "description": "List repositories with autostart enabled",
+          "starting": "Listing autostart repositories on \"{{machine}}\"...",
+          "completed": "Autostart list retrieved",
+          "failed": "Failed to list autostart repositories"
+        }
       },
       "ownership": {
         "description": "Change repository directory ownership",
@@ -1135,19 +1177,10 @@
     "shortcuts": {
       "run": {
         "completedLocal": "[local] Completed in {{duration}}ms",
-        "description": "Run a function (shortcut for: queue create)",
+        "description": "Run a function on a machine",
         "executingLocal": "[local] Executing '{{function}}' on {{machine}}...",
         "failedLocal": "[local] Failed: {{error}}",
         "watching": "Watching for completion..."
-      },
-      "trace": {
-        "description": "Trace a task (shortcut for: queue trace)"
-      },
-      "cancel": {
-        "description": "Cancel a task (shortcut for: queue cancel)"
-      },
-      "retry": {
-        "description": "Retry a failed task (shortcut for: queue retry)"
       }
     },
     "update": {

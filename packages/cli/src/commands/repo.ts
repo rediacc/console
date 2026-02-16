@@ -265,6 +265,60 @@ export function registerRepoCommands(program: Command): void {
       }
     );
 
+  // repo up-all
+  repo
+    .command('up-all')
+    .description(t('commands.repo.upAll.description'))
+    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--include-forks', t('commands.repo.upAll.includeForksOption'))
+    .option('--mount-only', t('commands.repo.upAll.mountOnlyOption'))
+    .option('--dry-run', t('commands.repo.upAll.dryRunOption'))
+    .option('--parallel', t('commands.repo.upAll.parallelOption'))
+    .option('--concurrency <n>', t('commands.repo.upAll.concurrencyOption'), '3')
+    .option('--debug', t('options.debug'))
+    .action(
+      async (options: {
+        machine: string;
+        includeForks?: boolean;
+        mountOnly?: boolean;
+        dryRun?: boolean;
+        parallel?: boolean;
+        concurrency?: string;
+        debug?: boolean;
+      }) => {
+        try {
+          const params: Record<string, unknown> = {};
+          if (options.includeForks) params.include_forks = true;
+          if (options.mountOnly) params.mount_only = true;
+          if (options.dryRun) params.dry_run = true;
+          if (options.parallel) params.parallel = true;
+          if (options.parallel && options.concurrency) {
+            params.concurrency = parseInt(options.concurrency, 10);
+          }
+
+          outputService.info(
+            t('commands.repo.upAll.starting', { machine: options.machine })
+          );
+
+          const result = await localExecutorService.execute({
+            functionName: 'repository_up_all',
+            machineName: options.machine,
+            params,
+            debug: options.debug,
+          });
+
+          if (result.success) {
+            outputService.success(t('commands.repo.upAll.completed'));
+          } else {
+            outputService.error(result.error ?? t('commands.repo.upAll.failed'));
+            process.exitCode = result.exitCode;
+          }
+        } catch (error) {
+          handleError(error);
+        }
+      }
+    );
+
   // repo down <name>
   repo
     .command('down <name>')
@@ -506,6 +560,163 @@ export function registerRepoCommands(program: Command): void {
           completed: t('commands.repo.validate.completed'),
           failed: t('commands.repo.validate.failed'),
         });
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // repo autostart (parent command with subcommands)
+  const autostart = repo
+    .command('autostart')
+    .description(t('commands.repo.autostart.description'));
+
+  // repo autostart enable <name>
+  autostart
+    .command('enable <name>')
+    .description(t('commands.repo.autostart.enable.description'))
+    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--debug', t('options.debug'))
+    .action(async (name: string, options: { machine: string; debug?: boolean }) => {
+      try {
+        await executeRepoFunction(
+          'repository_autostart_enable',
+          name,
+          options.machine,
+          {},
+          options,
+          {
+            starting: t('commands.repo.autostart.enable.starting', {
+              repository: name,
+              machine: options.machine,
+            }),
+            completed: t('commands.repo.autostart.enable.completed'),
+            failed: t('commands.repo.autostart.enable.failed'),
+          }
+        );
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // repo autostart disable <name>
+  autostart
+    .command('disable <name>')
+    .description(t('commands.repo.autostart.disable.description'))
+    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--debug', t('options.debug'))
+    .action(async (name: string, options: { machine: string; debug?: boolean }) => {
+      try {
+        await executeRepoFunction(
+          'repository_autostart_disable',
+          name,
+          options.machine,
+          {},
+          options,
+          {
+            starting: t('commands.repo.autostart.disable.starting', {
+              repository: name,
+              machine: options.machine,
+            }),
+            completed: t('commands.repo.autostart.disable.completed'),
+            failed: t('commands.repo.autostart.disable.failed'),
+          }
+        );
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // repo autostart enable-all
+  autostart
+    .command('enable-all')
+    .description(t('commands.repo.autostart.enableAll.description'))
+    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--debug', t('options.debug'))
+    .action(async (options: { machine: string; debug?: boolean }) => {
+      try {
+        outputService.info(
+          t('commands.repo.autostart.enableAll.starting', { machine: options.machine })
+        );
+
+        const result = await localExecutorService.execute({
+          functionName: 'repository_autostart_enable_all',
+          machineName: options.machine,
+          params: {},
+          debug: options.debug,
+        });
+
+        if (result.success) {
+          outputService.success(t('commands.repo.autostart.enableAll.completed'));
+        } else {
+          outputService.error(
+            result.error ?? t('commands.repo.autostart.enableAll.failed')
+          );
+          process.exitCode = result.exitCode;
+        }
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // repo autostart disable-all
+  autostart
+    .command('disable-all')
+    .description(t('commands.repo.autostart.disableAll.description'))
+    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--debug', t('options.debug'))
+    .action(async (options: { machine: string; debug?: boolean }) => {
+      try {
+        outputService.info(
+          t('commands.repo.autostart.disableAll.starting', { machine: options.machine })
+        );
+
+        const result = await localExecutorService.execute({
+          functionName: 'repository_autostart_disable_all',
+          machineName: options.machine,
+          params: {},
+          debug: options.debug,
+        });
+
+        if (result.success) {
+          outputService.success(t('commands.repo.autostart.disableAll.completed'));
+        } else {
+          outputService.error(
+            result.error ?? t('commands.repo.autostart.disableAll.failed')
+          );
+          process.exitCode = result.exitCode;
+        }
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // repo autostart list
+  autostart
+    .command('list')
+    .description(t('commands.repo.autostart.list.description'))
+    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--debug', t('options.debug'))
+    .action(async (options: { machine: string; debug?: boolean }) => {
+      try {
+        outputService.info(
+          t('commands.repo.autostart.list.starting', { machine: options.machine })
+        );
+
+        const result = await localExecutorService.execute({
+          functionName: 'repository_autostart_list',
+          machineName: options.machine,
+          params: {},
+          debug: options.debug,
+        });
+
+        if (result.success) {
+          outputService.success(t('commands.repo.autostart.list.completed'));
+        } else {
+          outputService.error(
+            result.error ?? t('commands.repo.autostart.list.failed')
+          );
+          process.exitCode = result.exitCode;
+        }
       } catch (error) {
         handleError(error);
       }

@@ -157,7 +157,7 @@ export class ContextServiceBase {
       }
       const remaining = { ...config.contexts };
       delete remaining[name];
-      return { contexts: remaining };
+      return { ...config, contexts: remaining };
     });
   }
 
@@ -176,6 +176,7 @@ export class ContextServiceBase {
       const remaining = { ...config.contexts };
       delete remaining[oldName];
       return {
+        ...config,
         contexts: {
           ...remaining,
           [newName]: { ...existing, name: newName },
@@ -386,6 +387,7 @@ export class ContextServiceBase {
         region: existing?.region,
       };
       return {
+        ...config,
         contexts: {
           ...config.contexts,
           [contextName]: context,

@@ -6,9 +6,11 @@
 
 import { DEFAULTS } from '@rediacc/shared/config';
 import { MIN_NETWORK_ID, NETWORK_ID_INCREMENT } from '@rediacc/shared/queue-vault';
+import { configStorage } from '../adapters/storage.js';
 import { ContextServiceBase } from './context-base.js';
 import type {
   BackupConfig,
+  CliConfig,
   InfraConfig,
   MachineConfig,
   NamedContext,
@@ -448,27 +450,51 @@ class ContextService extends ContextServiceBase {
   }
 
   // ============================================================================
-  // Network ID Allocation
+  // Network ID Allocation (global counter across all contexts)
   // ============================================================================
 
-  private computeNextNetworkId(repositories: Record<string, RepositoryConfig>): number {
-    const usedIds = Object.values(repositories)
-      .map((r) => r.networkId)
-      .filter((id): id is number => id !== undefined && id > 0);
+  /**
+   * Scan all contexts in config.json to compute the next available network ID.
+   * Used as migration fallback when the global counter doesn't exist yet.
+   */
+  private computeGlobalNextNetworkId(config: CliConfig): number {
+    const usedIds: number[] = [];
+
+    for (const context of Object.values(config.contexts)) {
+      if (!context?.repositories) continue;
+      for (const repo of Object.values(context.repositories)) {
+        if (repo.networkId !== undefined && repo.networkId > 0) {
+          usedIds.push(repo.networkId);
+        }
+      }
+    }
 
     if (usedIds.length === 0) return MIN_NETWORK_ID;
     return Math.max(...usedIds) + NETWORK_ID_INCREMENT;
   }
 
+  /**
+   * Allocate a globally unique network ID. Uses an atomic read-modify-write
+   * on the global counter in config.json. On first use (or if the counter is
+   * missing), scans all contexts to compute the correct starting value.
+   */
   async allocateNetworkId(): Promise<number> {
-    const context = await this.requireLocalOrS3Mode();
+    let allocated = 0;
+    await configStorage.update((config) => {
+      let nextId = config.nextNetworkId;
 
-    if (context.mode === 's3') {
-      const s3 = await this.getS3State();
-      return this.computeNextNetworkId(s3.getRepositories());
-    }
+      if (nextId === undefined || nextId < MIN_NETWORK_ID) {
+        // Migration: scan ALL contexts to find max used network ID
+        nextId = this.computeGlobalNextNetworkId(config);
+      }
 
-    return this.computeNextNetworkId(context.repositories ?? {});
+      allocated = nextId;
+      return {
+        ...config,
+        nextNetworkId: nextId + NETWORK_ID_INCREMENT,
+      };
+    });
+    return allocated;
   }
 
   async ensureRepositoryNetworkId(repoName: string): Promise<number> {
@@ -482,7 +508,7 @@ class ContextService extends ContextServiceBase {
       const repo = repos[repoName];
       if (repo.networkId !== undefined && repo.networkId > 0) return repo.networkId;
 
-      const networkId = this.computeNextNetworkId(repos);
+      const networkId = await this.allocateNetworkId();
       repos[repoName] = { ...repo, networkId };
       await s3.setRepositories(repos);
       return networkId;
@@ -497,7 +523,7 @@ class ContextService extends ContextServiceBase {
       return repo.networkId;
     }
 
-    const networkId = this.computeNextNetworkId(context.repositories ?? {});
+    const networkId = await this.allocateNetworkId();
     await this.update(name, {
       repositories: {
         ...context.repositories,

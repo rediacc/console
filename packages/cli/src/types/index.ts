@@ -182,6 +182,8 @@ export interface NamedContext {
 export interface CliConfig {
   /** Map of context names to their configurations */
   contexts: { [name: string]: NamedContext | undefined };
+  /** Global network ID counter. Monotonically increasing across all contexts. */
+  nextNetworkId?: number;
 }
 
 /**

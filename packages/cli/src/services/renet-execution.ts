@@ -261,18 +261,33 @@ function buildRepositories(
 ): { repoName: string; repositories: Record<string, unknown> } {
   const repoName = (params.repository ?? '') as string;
   const repositories: Record<string, unknown> = {};
-  if (!repoName) return { repoName, repositories };
 
-  const repoConfig = repositoryConfigs?.[repoName];
-  const repoEntry: Record<string, unknown> = {
-    guid: repoConfig?.guid ?? repoName,
-    name: repoName,
-  };
-  const networkId = repoConfig?.networkId ?? params.network_id;
-  if (networkId !== undefined && networkId !== '' && networkId !== 0) {
-    repoEntry.network_id = typeof networkId === 'number' ? networkId : Number(networkId);
+  if (repoName) {
+    // Single-repo mode: build entry for just this repo
+    const repoConfig = repositoryConfigs?.[repoName];
+    const repoEntry: Record<string, unknown> = {
+      guid: repoConfig?.guid ?? repoName,
+      name: repoName,
+    };
+    const networkId = repoConfig?.networkId ?? params.network_id;
+    if (networkId !== undefined && networkId !== '' && networkId !== 0) {
+      repoEntry.network_id = typeof networkId === 'number' ? networkId : Number(networkId);
+    }
+    repositories[repoName] = repoEntry;
+  } else if (repositoryConfigs) {
+    // Multi-repo mode (e.g., up-all): include all repos from config
+    for (const [name, config] of Object.entries(repositoryConfigs)) {
+      const repoEntry: Record<string, unknown> = {
+        guid: config.guid,
+        name,
+      };
+      if (config.networkId !== undefined && config.networkId !== 0) {
+        repoEntry.network_id = config.networkId;
+      }
+      repositories[name] = repoEntry;
+    }
   }
-  repositories[repoName] = repoEntry;
+
   return { repoName, repositories };
 }
 
