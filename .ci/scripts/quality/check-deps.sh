@@ -124,17 +124,10 @@ SUBMSG
         )"
         # Push to submodule remote so the commit is resolvable by future checkouts
         if ! git push origin HEAD:main 2>/dev/null; then
-            # main may have advanced — fetch, rebase, and retry
-            log_info "Rebasing $submodule_name on latest main..."
-            git fetch origin main
-            if git rebase origin/main; then
-                git push origin HEAD:main
-            else
-                git rebase --abort 2>/dev/null || true
-                log_error "Could not push $submodule_name submodule to remote (rebase conflict)"
-                log_error "Please manually upgrade deps in private/$submodule_name"
-                exit 1
-            fi
+            # main has advanced — push to a dedicated branch instead
+            DEPS_BRANCH="ci/deps-upgrade-from-${GITHUB_HEAD_REF}"
+            log_info "main diverged, pushing $submodule_name to branch $DEPS_BRANCH..."
+            git push origin "HEAD:refs/heads/$DEPS_BRANCH" --force
         fi
         log_info "Pushed $submodule_name submodule to remote"
     )
