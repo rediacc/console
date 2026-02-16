@@ -519,7 +519,7 @@ export interface RepositoryUpParams {
 export interface RepositoryUpAllParams {
   /** Include forked repositories */
   includeForks?: boolean;
-  /** Only mount, don't start services */
+  /** Only mount, do not start services */
   mountOnly?: boolean;
   /** Show what would be done */
   dryRun?: boolean;
@@ -622,7 +622,7 @@ export const BRIDGE_FUNCTIONS = [
   'setup',
 ] as const;
 
-export const BRIDGE_FUNCTIONS_VERSION = 'v0.4.92-15-g9ff518a8';
+export const BRIDGE_FUNCTIONS_VERSION = 'v0.4.91-25-g2d07e81d';
 
 export type BridgeFunctionName = (typeof BRIDGE_FUNCTIONS)[number];
 
@@ -2142,7 +2142,7 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
       },
       mountOnly: {
         type: 'bool',
-        help: 'Only mount, don\'t start services',
+        help: 'Only mount, do not start services',
         options: ['true', 'false'],
       },
       dryRun: {
