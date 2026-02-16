@@ -93,7 +93,16 @@ describe('Command mode guards and tags', () => {
 
   const localS3Commands = ['repo', 'snapshot'];
 
-  const allModeCommands = ['machine', 'storage', 'context', 'doctor', 'sync', 'run', 'term', 'update'];
+  const allModeCommands = [
+    'machine',
+    'storage',
+    'context',
+    'doctor',
+    'sync',
+    'run',
+    'term',
+    'update',
+  ];
 
   describe('[cloud] tag column in help', () => {
     for (const cmdName of cloudOnlyCommands) {

@@ -1,5 +1,5 @@
-import { Command } from 'commander';
 import type { UpdateMachineAssignedBridgeParams } from '@rediacc/shared/types';
+import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { getStateProvider } from '../../providers/index.js';
 import { typedApi } from '../../services/api.js';

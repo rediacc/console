@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   ALL_MODES,
   COMMAND_REGISTRY,
-  SELF_HOSTED_MODES,
   formatModeTag,
   getCommandDef,
+  SELF_HOSTED_MODES,
 } from '../command-registry.js';
 
 describe('config/command-registry', () => {

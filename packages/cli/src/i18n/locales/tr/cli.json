@@ -36,7 +36,6 @@
       "login": {
         "authenticating": "Kimlik doğrulanıyor...",
         "description": "Rediacc ile kimlik doğrulaması yapın",
-        "shortcut": "Rediacc ile kimlik doğrulaması yapın (kısayol: auth login)",
         "success": "Giriş başarılı! \"{{context}}\" bağlamına kaydedildi",
         "tfaPrompt": "2FA kodunu girin:",
         "tfaRequired": "İki faktörlü kimlik doğrulama gerekli",
@@ -46,7 +45,6 @@
       "logout": {
         "description": "Depolanan kimlik bilgilerini temizleyin",
         "loggingOut": "Çıkış yapılıyor...",
-        "shortcut": "Depolanan kimlik bilgilerini temizleyin (kısayol: auth logout)",
         "success": "Başarıyla çıkış yapıldı"
       },
       "register": {
@@ -349,7 +347,9 @@
       },
       "createLocal": {
         "description": "Middleware olmadan çalışmak için yeni bir yerel bağlam oluşturun",
+        "encryptionEnabled": "Bekleyen veri şifreleme etkinleştirildi. Kaynaklar config.json içinde şifrelenecek.",
         "nextStep": "Makineler ekleyin: rdc context add-machine <name> --ip <ip> --user <user>",
+        "optionMasterPassword": "Kaynakları bir ana parola ile şifrele",
         "success": "\"{{name}}\" yerel bağlamı oluşturuldu"
       },
       "createS3": {
@@ -872,6 +872,39 @@
       }
     },
     "repo": {
+      "autostart": {
+        "description": "Önyüklemede otomatik depo başlatmayı yönet",
+        "disable": {
+          "completed": "Otomatik başlatma devre dışı bırakıldı",
+          "description": "Bir depo için otomatik başlatmayı devre dışı bırak",
+          "failed": "Otomatik başlatmayı devre dışı bırakma başarısız",
+          "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" için otomatik başlatma devre dışı bırakılıyor..."
+        },
+        "disableAll": {
+          "completed": "Tüm depolar için otomatik başlatma devre dışı bırakıldı",
+          "description": "Tüm depolar için otomatik başlatmayı devre dışı bırak",
+          "failed": "Tüm depolar için otomatik başlatmayı devre dışı bırakma başarısız",
+          "starting": "\"{{machine}}\" üzerindeki tüm depolar için otomatik başlatma devre dışı bırakılıyor..."
+        },
+        "enable": {
+          "completed": "Otomatik başlatma etkinleştirildi",
+          "description": "Bir depo için otomatik başlatmayı etkinleştir",
+          "failed": "Otomatik başlatmayı etkinleştirme başarısız",
+          "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" için otomatik başlatma etkinleştiriliyor..."
+        },
+        "enableAll": {
+          "completed": "Tüm depolar için otomatik başlatma etkinleştirildi",
+          "description": "Tüm depolar için otomatik başlatmayı etkinleştir",
+          "failed": "Tüm depolar için otomatik başlatmayı etkinleştirme başarısız",
+          "starting": "\"{{machine}}\" üzerindeki tüm depolar için otomatik başlatma etkinleştiriliyor..."
+        },
+        "list": {
+          "completed": "Otomatik başlatma listesi alındı",
+          "description": "Otomatik başlatma etkin olan depoları listele",
+          "failed": "Otomatik başlatma depolarını listeleme başarısız",
+          "starting": "\"{{machine}}\" üzerindeki otomatik başlatma depoları listeleniyor..."
+        }
+      },
       "create": {
         "alreadyExists": "\"{{name}}\" deposu bağlamda zaten mevcut",
         "completed": "Depo oluşturuldu",
@@ -975,6 +1008,17 @@
         "prepOnlyOption": "Yalnızca hazırlama adımını çalıştır",
         "starting": "\"{{repository}}\" için servisler \"{{machine}}\" üzerinde başlatılıyor..."
       },
+      "upAll": {
+        "completed": "Tüm depolar başlatıldı",
+        "concurrencyOption": "Maksimum eş zamanlı depo sayısı (varsayılan: 3)",
+        "description": "Bir makinedeki tüm depo servislerini başlat",
+        "dryRunOption": "Çalıştırmadan ne yapılacağını göster",
+        "failed": "Toplu başlatma işlemi başarısız",
+        "includeForksOption": "Çatallanmış depoları da bağla/başlat",
+        "mountOnlyOption": "Sadece bağla, servisleri başlatma",
+        "parallelOption": "Depoları eş zamanlı başlat",
+        "starting": "\"{{machine}}\" üzerindeki tüm depolar başlatılıyor..."
+      },
       "validate": {
         "completed": "Doğrulama tamamlandı",
         "description": "Depo bütünlüğünü doğrula",
@@ -1035,10 +1079,10 @@
     },
     "shortcuts": {
       "cancel": {
-        "description": "Bir görevi iptal edin (kısayol: queue cancel)"
+        "description": "Bir görevi iptal et (kısayol: queue cancel)"
       },
       "retry": {
-        "description": "Başarısız bir görevi yeniden deneyin (kısayol: queue retry)"
+        "description": "Başarısız bir görevi yeniden dene (kısayol: queue retry)"
       },
       "run": {
         "completedLocal": "[yerel] {{duration}}ms içinde tamamlandı",
@@ -1048,7 +1092,7 @@
         "watching": "Tamamlanma bekleniyor..."
       },
       "trace": {
-        "description": "Bir görevi izleyin (kısayol: queue trace)"
+        "description": "Bir görevi izle (kısayol: queue trace)"
       }
     },
     "snapshot": {

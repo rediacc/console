@@ -7,7 +7,6 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import { MIN_NETWORK_ID, NETWORK_ID_INCREMENT } from '@rediacc/shared/queue-vault';
 import { configStorage } from '../adapters/storage.js';
-import { ContextServiceBase } from './context-base.js';
 import type {
   BackupConfig,
   CliConfig,
@@ -18,6 +17,7 @@ import type {
   SSHConfig,
   StorageConfig,
 } from '../types/index.js';
+import { ContextServiceBase } from './context-base.js';
 
 class ContextService extends ContextServiceBase {
   /**

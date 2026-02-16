@@ -25,8 +25,7 @@ const { addModeGuard } = await import('../mode-guard.js');
 type HookFn = (thisCommand: Command, actionCommand: Command) => Promise<void> | void;
 
 async function runGuardHook(cmd: Command): Promise<void> {
-  const hooks = (cmd as unknown as { _lifeCycleHooks: Record<string, HookFn[]> })
-    ._lifeCycleHooks;
+  const hooks = (cmd as unknown as { _lifeCycleHooks: Record<string, HookFn[]> })._lifeCycleHooks;
   const preActionHooks = hooks.preAction;
   if (!preActionHooks) return;
   for (const hook of preActionHooks) {

@@ -296,9 +296,7 @@ export function registerRepoCommands(program: Command): void {
             params.concurrency = parseInt(options.concurrency, 10);
           }
 
-          outputService.info(
-            t('commands.repo.upAll.starting', { machine: options.machine })
-          );
+          outputService.info(t('commands.repo.upAll.starting', { machine: options.machine }));
 
           const result = await localExecutorService.execute({
             functionName: 'repository_up_all',
@@ -566,9 +564,7 @@ export function registerRepoCommands(program: Command): void {
     });
 
   // repo autostart (parent command with subcommands)
-  const autostart = repo
-    .command('autostart')
-    .description(t('commands.repo.autostart.description'));
+  const autostart = repo.command('autostart').description(t('commands.repo.autostart.description'));
 
   // repo autostart enable <name>
   autostart
@@ -648,9 +644,7 @@ export function registerRepoCommands(program: Command): void {
         if (result.success) {
           outputService.success(t('commands.repo.autostart.enableAll.completed'));
         } else {
-          outputService.error(
-            result.error ?? t('commands.repo.autostart.enableAll.failed')
-          );
+          outputService.error(result.error ?? t('commands.repo.autostart.enableAll.failed'));
           process.exitCode = result.exitCode;
         }
       } catch (error) {
@@ -680,9 +674,7 @@ export function registerRepoCommands(program: Command): void {
         if (result.success) {
           outputService.success(t('commands.repo.autostart.disableAll.completed'));
         } else {
-          outputService.error(
-            result.error ?? t('commands.repo.autostart.disableAll.failed')
-          );
+          outputService.error(result.error ?? t('commands.repo.autostart.disableAll.failed'));
           process.exitCode = result.exitCode;
         }
       } catch (error) {
@@ -712,9 +704,7 @@ export function registerRepoCommands(program: Command): void {
         if (result.success) {
           outputService.success(t('commands.repo.autostart.list.completed'));
         } else {
-          outputService.error(
-            result.error ?? t('commands.repo.autostart.list.failed')
-          );
+          outputService.error(result.error ?? t('commands.repo.autostart.list.failed'));
           process.exitCode = result.exitCode;
         }
       } catch (error) {

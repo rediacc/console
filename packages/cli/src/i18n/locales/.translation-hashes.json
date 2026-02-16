@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1186
+    "keyCount": 1189
   },
   "hashes": {
     "cli.description": "8c564b05",
@@ -726,11 +726,14 @@
     "commands.repository.vault.update.description": "a09cff9a",
     "commands.repository.vault.update.success": "de5ef49a",
     "commands.repository.vault.update.updating": "13d6d984",
+    "commands.shortcuts.cancel.description": "2835b203",
+    "commands.shortcuts.retry.description": "75533e64",
     "commands.shortcuts.run.completedLocal": "5fed65c8",
     "commands.shortcuts.run.description": "0e71d968",
     "commands.shortcuts.run.executingLocal": "0a5402c3",
     "commands.shortcuts.run.failedLocal": "13f26b72",
     "commands.shortcuts.run.watching": "d43269d4",
+    "commands.shortcuts.trace.description": "686c9eca",
     "commands.snapshot.create.creating": "fd4bfa6d",
     "commands.snapshot.create.description": "83be9f07",
     "commands.snapshot.create.optionSnapshotName": "5aaec5eb",

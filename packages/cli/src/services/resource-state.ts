@@ -79,7 +79,10 @@ export class LocalResourceState implements ResourceState {
    * If encrypted, decrypts the encryptedResources blob.
    * If unencrypted, reads from inline context fields.
    */
-  static async load(context: NamedContext, masterPassword: string | null): Promise<LocalResourceState> {
+  static async load(
+    context: NamedContext,
+    masterPassword: string | null
+  ): Promise<LocalResourceState> {
     let state: LocalState;
 
     if (context.encrypted && context.encryptedResources && masterPassword) {

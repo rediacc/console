@@ -1183,6 +1183,15 @@
         "executingLocal": "[local] Executing '{{function}}' on {{machine}}...",
         "failedLocal": "[local] Failed: {{error}}",
         "watching": "Watching for completion..."
+      },
+      "trace": {
+        "description": "Trace a task (shortcut for: queue trace)"
+      },
+      "cancel": {
+        "description": "Cancel a task (shortcut for: queue cancel)"
+      },
+      "retry": {
+        "description": "Retry a failed task (shortcut for: queue retry)"
       }
     },
     "update": {

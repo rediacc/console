@@ -60,7 +60,11 @@ function resolveTag(cmd: Command): string {
 }
 
 /** Format an argument for display (e.g. `<name>`, `[command]`, `<files...>`). */
-function humanReadableArgName(arg: { name: () => string; required: boolean; variadic: boolean }): string {
+function humanReadableArgName(arg: {
+  name: () => string;
+  required: boolean;
+  variadic: boolean;
+}): string {
   const nameOutput = arg.name() + (arg.variadic ? '...' : '');
   return arg.required ? `<${nameOutput}>` : `[${nameOutput}]`;
 }

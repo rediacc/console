@@ -36,7 +36,6 @@
       "login": {
         "authenticating": "正在身份验证...",
         "description": "使用 Rediacc 进行身份验证",
-        "shortcut": "使用 Rediacc 进行身份验证（快捷方式：auth login）",
         "success": "登录成功！已保存到上下文 \"{{context}}\"",
         "tfaPrompt": "输入双因素认证代码：",
         "tfaRequired": "需要双因素认证",
@@ -46,7 +45,6 @@
       "logout": {
         "description": "清除存储的凭证",
         "loggingOut": "正在登出...",
-        "shortcut": "清除存储的凭证（快捷方式：auth logout）",
         "success": "登出成功"
       },
       "register": {
@@ -349,7 +347,9 @@
       },
       "createLocal": {
         "description": "为无中间件操作创建新的本地上下文",
+        "encryptionEnabled": "已启用静态加密。资源将在 config.json 中加密。",
         "nextStep": "使用以下命令添加机器：rdc context add-machine <name> --ip <ip> --user <user>",
+        "optionMasterPassword": "使用主密码加密资源",
         "success": "本地上下文 \"{{name}}\" 已创建"
       },
       "createS3": {
@@ -872,6 +872,39 @@
       }
     },
     "repo": {
+      "autostart": {
+        "description": "管理开机时仓库的自动启动",
+        "disable": {
+          "completed": "自动启动已禁用",
+          "description": "为仓库禁用自动启动",
+          "failed": "禁用自动启动失败",
+          "starting": "正在 \"{{machine}}\" 上为 \"{{repository}}\" 禁用自动启动..."
+        },
+        "disableAll": {
+          "completed": "所有仓库的自动启动已禁用",
+          "description": "为所有仓库禁用自动启动",
+          "failed": "为所有仓库禁用自动启动失败",
+          "starting": "正在 \"{{machine}}\" 上为所有仓库禁用自动启动..."
+        },
+        "enable": {
+          "completed": "自动启动已启用",
+          "description": "为仓库启用自动启动",
+          "failed": "启用自动启动失败",
+          "starting": "正在 \"{{machine}}\" 上为 \"{{repository}}\" 启用自动启动..."
+        },
+        "enableAll": {
+          "completed": "所有仓库的自动启动已启用",
+          "description": "为所有仓库启用自动启动",
+          "failed": "为所有仓库启用自动启动失败",
+          "starting": "正在 \"{{machine}}\" 上为所有仓库启用自动启动..."
+        },
+        "list": {
+          "completed": "自动启动列表已获取",
+          "description": "列出已启用自动启动的仓库",
+          "failed": "获取自动启动仓库列表失败",
+          "starting": "正在列出 \"{{machine}}\" 上的自动启动仓库..."
+        }
+      },
       "create": {
         "alreadyExists": "仓库 \"{{name}}\" 已存在于上下文中",
         "completed": "仓库已创建",
@@ -975,6 +1008,17 @@
         "prepOnlyOption": "仅运行准备步骤",
         "starting": "正在 \"{{machine}}\" 上启动 \"{{repository}}\" 的服务..."
       },
+      "upAll": {
+        "completed": "所有仓库已启动",
+        "concurrencyOption": "最大并发仓库数 (默认: 3)",
+        "description": "启动机器上的所有仓库服务",
+        "dryRunOption": "显示将要执行的操作而不实际执行",
+        "failed": "全部启动操作失败",
+        "includeForksOption": "同时挂载/启动分叉的仓库",
+        "mountOnlyOption": "仅挂载，不启动服务",
+        "parallelOption": "并发启动仓库",
+        "starting": "正在 \"{{machine}}\" 上启动所有仓库..."
+      },
       "validate": {
         "completed": "验证完成",
         "description": "验证仓库完整性",
@@ -1035,10 +1079,10 @@
     },
     "shortcuts": {
       "cancel": {
-        "description": "取消任务（快捷方式：queue cancel）"
+        "description": "取消任务 (queue cancel 的快捷方式)"
       },
       "retry": {
-        "description": "重试失败的任务（快捷方式：queue retry）"
+        "description": "重试失败的任务 (queue retry 的快捷方式)"
       },
       "run": {
         "completedLocal": "[本地] 在 {{duration}}ms 内完成",
@@ -1048,7 +1092,7 @@
         "watching": "正在监视完成情况..."
       },
       "trace": {
-        "description": "跟踪任务（快捷方式：queue trace）"
+        "description": "跟踪任务 (queue trace 的快捷方式)"
       }
     },
     "snapshot": {

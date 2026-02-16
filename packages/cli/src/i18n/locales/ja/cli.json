@@ -36,7 +36,6 @@
       "login": {
         "authenticating": "認証中です...",
         "description": "Rediacc で認証する",
-        "shortcut": "Rediacc で認証する (短縮形: auth login)",
         "success": "ログインに成功しました！コンテキスト \"{{context}}\" に保存されました",
         "tfaPrompt": "2FA コードを入力してください:",
         "tfaRequired": "二段階認証が必要です",
@@ -46,7 +45,6 @@
       "logout": {
         "description": "保存された認証情報を削除する",
         "loggingOut": "ログアウト中です...",
-        "shortcut": "保存された認証情報を削除する (短縮形: auth logout)",
         "success": "ログアウトに成功しました"
       },
       "register": {
@@ -349,7 +347,9 @@
       },
       "createLocal": {
         "description": "ミドルウェアなしで操作するための新しいローカルコンテキストを作成する",
+        "encryptionEnabled": "保存時の暗号化が有効です。リソースは config.json で暗号化されます。",
         "nextStep": "マシンを追加: rdc context add-machine <name> --ip <ip> --user <user>",
+        "optionMasterPassword": "マスターパスワードでリソースを暗号化する",
         "success": "ローカルコンテキスト \"{{name}}\" が作成されました"
       },
       "createS3": {
@@ -872,6 +872,39 @@
       }
     },
     "repo": {
+      "autostart": {
+        "description": "起動時の自動リポジトリ開始を管理する",
+        "disable": {
+          "completed": "自動開始が無効になりました",
+          "description": "リポジトリの自動開始を無効にする",
+          "failed": "自動開始の無効化に失敗しました",
+          "starting": "\"{{machine}}\" 上の \"{{repository}}\" の自動開始を無効化中..."
+        },
+        "disableAll": {
+          "completed": "すべてのリポジトリの自動開始が無効になりました",
+          "description": "すべてのリポジトリの自動開始を無効にする",
+          "failed": "すべてのリポジトリの自動開始の無効化に失敗しました",
+          "starting": "\"{{machine}}\" 上のすべてのリポジトリの自動開始を無効化中..."
+        },
+        "enable": {
+          "completed": "自動開始が有効になりました",
+          "description": "リポジトリの自動開始を有効にする",
+          "failed": "自動開始の有効化に失敗しました",
+          "starting": "\"{{machine}}\" 上の \"{{repository}}\" の自動開始を有効化中..."
+        },
+        "enableAll": {
+          "completed": "すべてのリポジトリの自動開始が有効になりました",
+          "description": "すべてのリポジトリの自動開始を有効にする",
+          "failed": "すべてのリポジトリの自動開始の有効化に失敗しました",
+          "starting": "\"{{machine}}\" 上のすべてのリポジトリの自動開始を有効化中..."
+        },
+        "list": {
+          "completed": "自動開始リストを取得しました",
+          "description": "自動開始が有効なリポジトリを一覧表示する",
+          "failed": "自動開始リポジトリの一覧取得に失敗しました",
+          "starting": "\"{{machine}}\" 上の自動開始リポジトリを一覧取得中..."
+        }
+      },
       "create": {
         "alreadyExists": "リポジトリ \"{{name}}\" はコンテキスト内に既に存在します",
         "completed": "リポジトリを作成しました",
@@ -975,6 +1008,17 @@
         "prepOnlyOption": "準備ステップのみ実行する",
         "starting": "\"{{repository}}\" のサービスを \"{{machine}}\" で開始中..."
       },
+      "upAll": {
+        "completed": "すべてのリポジトリが開始されました",
+        "concurrencyOption": "最大同時リポジトリ数 (デフォルト: 3)",
+        "description": "マシン上のすべてのリポジトリサービスを開始する",
+        "dryRunOption": "実行せずに行われる内容を表示する",
+        "failed": "全体開始操作に失敗しました",
+        "includeForksOption": "フォークされたリポジトリもマウント/開始する",
+        "mountOnlyOption": "マウントのみ、サービスは開始しない",
+        "parallelOption": "リポジトリを並行して開始する",
+        "starting": "\"{{machine}}\" 上のすべてのリポジトリを開始中..."
+      },
       "validate": {
         "completed": "検証が完了しました",
         "description": "リポジトリの整合性を検証する",
@@ -1035,10 +1079,10 @@
     },
     "shortcuts": {
       "cancel": {
-        "description": "タスクをキャンセルする (短縮形: queue cancel)"
+        "description": "タスクをキャンセルする (queue cancel のショートカット)"
       },
       "retry": {
-        "description": "失敗したタスクを再試行する (短縮形: queue retry)"
+        "description": "失敗したタスクをリトライする (queue retry のショートカット)"
       },
       "run": {
         "completedLocal": "[ローカル] {{duration}}ms で完了しました",
@@ -1048,7 +1092,7 @@
         "watching": "完了を監視中です..."
       },
       "trace": {
-        "description": "タスクをトレースする (短縮形: queue trace)"
+        "description": "タスクをトレースする (queue trace のショートカット)"
       }
     },
     "snapshot": {

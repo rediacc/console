@@ -36,7 +36,6 @@
       "login": {
         "authenticating": "Autenticando...",
         "description": "Autenticarse con Rediacc",
-        "shortcut": "Autenticarse con Rediacc (atajo para: auth login)",
         "success": "¡Inicio de sesión exitoso! Guardado en contexto \"{{context}}\"",
         "tfaPrompt": "Ingrese código 2FA:",
         "tfaRequired": "Autenticación de dos factores requerida",
@@ -46,7 +45,6 @@
       "logout": {
         "description": "Borrar credenciales almacenadas",
         "loggingOut": "Cerrando sesión...",
-        "shortcut": "Borrar credenciales almacenadas (atajo para: auth logout)",
         "success": "Sesión cerrada exitosamente"
       },
       "register": {
@@ -349,7 +347,9 @@
       },
       "createLocal": {
         "description": "Crear un nuevo contexto local para operación sin middleware",
+        "encryptionEnabled": "Cifrado en reposo habilitado. Los recursos se cifrarán en config.json.",
         "nextStep": "Agregue máquinas con: rdc context add-machine <name> --ip <ip> --user <user>",
+        "optionMasterPassword": "Cifrar recursos con una contraseña maestra",
         "success": "Contexto local \"{{name}}\" creado"
       },
       "createS3": {
@@ -872,6 +872,39 @@
       }
     },
     "repo": {
+      "autostart": {
+        "description": "Gestionar el inicio automático de repositorios al arrancar",
+        "disable": {
+          "completed": "Inicio automático deshabilitado",
+          "description": "Deshabilitar inicio automático para un repositorio",
+          "failed": "Fallo al deshabilitar inicio automático",
+          "starting": "Deshabilitando inicio automático para \"{{repository}}\" en \"{{machine}}\"..."
+        },
+        "disableAll": {
+          "completed": "Inicio automático deshabilitado para todos los repositorios",
+          "description": "Deshabilitar inicio automático para todos los repositorios",
+          "failed": "Fallo al deshabilitar inicio automático para todos los repositorios",
+          "starting": "Deshabilitando inicio automático para todos los repositorios en \"{{machine}}\"..."
+        },
+        "enable": {
+          "completed": "Inicio automático habilitado",
+          "description": "Habilitar inicio automático para un repositorio",
+          "failed": "Fallo al habilitar inicio automático",
+          "starting": "Habilitando inicio automático para \"{{repository}}\" en \"{{machine}}\"..."
+        },
+        "enableAll": {
+          "completed": "Inicio automático habilitado para todos los repositorios",
+          "description": "Habilitar inicio automático para todos los repositorios",
+          "failed": "Fallo al habilitar inicio automático para todos los repositorios",
+          "starting": "Habilitando inicio automático para todos los repositorios en \"{{machine}}\"..."
+        },
+        "list": {
+          "completed": "Lista de inicio automático obtenida",
+          "description": "Listar repositorios con inicio automático habilitado",
+          "failed": "Fallo al listar repositorios con inicio automático",
+          "starting": "Listando repositorios con inicio automático en \"{{machine}}\"..."
+        }
+      },
       "create": {
         "alreadyExists": "El repositorio \"{{name}}\" ya existe en el contexto",
         "completed": "Repositorio creado",
@@ -974,6 +1007,17 @@
         "mountOption": "Montar repositorio primero",
         "prepOnlyOption": "Ejecutar solo el paso de preparación",
         "starting": "Iniciando servicios para \"{{repository}}\" en \"{{machine}}\"..."
+      },
+      "upAll": {
+        "completed": "Todos los repositorios iniciados",
+        "concurrencyOption": "Máximo de repositorios concurrentes (predeterminado: 3)",
+        "description": "Iniciar todos los servicios de repositorios en una máquina",
+        "dryRunOption": "Mostrar lo que se haría sin ejecutar",
+        "failed": "Fallo en la operación de inicio masivo",
+        "includeForksOption": "También montar/iniciar repositorios bifurcados",
+        "mountOnlyOption": "Solo montar, no iniciar servicios",
+        "parallelOption": "Iniciar repositorios de forma concurrente",
+        "starting": "Iniciando todos los repositorios en \"{{machine}}\"..."
       },
       "validate": {
         "completed": "Validación completada",

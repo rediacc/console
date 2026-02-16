@@ -1,16 +1,16 @@
-import { Command } from 'commander';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { registerInfraCommands } from './context-infra.js';
-import { registerLocalDataCommands } from './context-local-data.js';
-import { registerLocalCommands } from './context-local.js';
-import { registerMigrationCommands } from './context-migration.js';
+import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { apiClient } from '../services/api.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
+import type { NamedContext, OutputFormat } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { askText } from '../utils/prompt.js';
-import type { NamedContext, OutputFormat } from '../types/index.js';
+import { registerInfraCommands } from './context-infra.js';
+import { registerLocalCommands } from './context-local.js';
+import { registerLocalDataCommands } from './context-local-data.js';
+import { registerMigrationCommands } from './context-migration.js';
 
 export function registerContextCommands(program: Command): void {
   const context = program.command('context').description(t('commands.context.description'));
@@ -32,9 +32,7 @@ export function registerContextCommands(program: Command): void {
 
         const displayData = contexts.map((ctx) => {
           const isSelfHosted = (ctx.mode ?? 'cloud') !== 'cloud';
-          const apiUrl = isSelfHosted
-            ? (ctx.s3?.endpoint ?? '-')
-            : ctx.apiUrl;
+          const apiUrl = isSelfHosted ? (ctx.s3?.endpoint ?? '-') : ctx.apiUrl;
 
           return {
             name: ctx.name,
@@ -42,9 +40,7 @@ export function registerContextCommands(program: Command): void {
             apiUrl,
             userEmail: ctx.userEmail ?? '-',
             team: ctx.team ?? '-',
-            machines: isSelfHosted
-              ? Object.keys(ctx.machines ?? {}).length.toString()
-              : '-',
+            machines: isSelfHosted ? Object.keys(ctx.machines ?? {}).length.toString() : '-',
           };
         });
 
@@ -155,12 +151,14 @@ export function registerContextCommands(program: Command): void {
           display = {
             name: ctx.name,
             mode: ctx.mode,
-            ...(ctx.s3 ? {
-              endpoint: ctx.s3.endpoint,
-              bucket: ctx.s3.bucket,
-              s3Region: ctx.s3.region,
-              prefix: ctx.s3.prefix ?? '-',
-            } : {}),
+            ...(ctx.s3
+              ? {
+                  endpoint: ctx.s3.endpoint,
+                  bucket: ctx.s3.bucket,
+                  s3Region: ctx.s3.region,
+                  prefix: ctx.s3.prefix ?? '-',
+                }
+              : {}),
             encrypted: ctx.encrypted ? 'yes' : 'no',
             sshKey: ctx.ssh?.privateKeyPath ?? '-',
             renetPath: ctx.renetPath ?? DEFAULTS.CONTEXT.RENET_PATH,
