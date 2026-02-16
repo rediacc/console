@@ -272,14 +272,9 @@ Vous n'avez pas besoin de créer `.rediacc.json` manuellement. Lorsque vous exé
 
 ### Calcul des Adresses IP
 
-L'adresse IP d'un service est calculée à partir de l'ID réseau du dépôt et du slot du service :
+L'adresse IP d'un service est calculée à partir de l'ID réseau du dépôt et du slot du service. L'ID réseau est réparti sur les deuxième, troisième et quatrième octets d'une adresse de bouclage `127.x.y.z`. Chaque service reçoit un décalage de `slot + 2` ajouté à l'ID réseau (les décalages 0 et 1 sont réservés pour l'adresse réseau et la passerelle).
 
-```
-IP de base = 127.{networkID / 65536}.{(networkID / 256) % 256}.{networkID % 256}
-IP du service = 127.{(networkID + slot + 2) / 65536}.{((networkID + slot + 2) / 256) % 256}.{(networkID + slot + 2) % 256}
-```
-
-Les deux premiers décalages (0 et 1) sont réservés pour l'adresse réseau et la passerelle. Les slots de services commencent au décalage 2.
+Par exemple, avec l'ID réseau `2816` (`0x0B00`), l'adresse de base est `127.0.11.0` et les services commencent à `127.0.11.2`.
 
 **Exemple** pour l'ID réseau `2816` :
 

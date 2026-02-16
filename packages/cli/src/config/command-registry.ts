@@ -98,7 +98,6 @@ export function getCommandDef(commandName: string): CommandDef | undefined {
 
 /**
  * Format a mode tag for display in help text.
- * Returns empty string for all-modes commands (no tag needed).
  */
 export function formatModeTag(modes: ModeSet): string {
   return `[${modes.join('|')}]`;

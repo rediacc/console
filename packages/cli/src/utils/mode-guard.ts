@@ -14,8 +14,8 @@ import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
 import type { Command } from 'commander';
 
-// Fixed column width for the mode tag (longest tag is "[local|s3]" = 10 chars)
-const TAG_COL_WIDTH = 17;
+// Fixed column width for the mode tag (longest tag is "[cloud|local|s3]" = 16 chars + padding)
+const TAG_COL_WIDTH = 19;
 
 /**
  * Add a preAction hook that blocks the command in unsupported modes.

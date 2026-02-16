@@ -272,14 +272,9 @@ Sie müssen `.rediacc.json` nicht manuell erstellen. Wenn Sie `rdc repo up` ausf
 
 ### IP-Berechnung
 
-Die IP eines Dienstes wird aus der Netzwerk-ID des Repositories und dem Slot des Dienstes berechnet:
+Die IP eines Dienstes wird aus der Netzwerk-ID des Repositories und dem Slot des Dienstes berechnet. Die Netzwerk-ID wird auf das zweite, dritte und vierte Oktett einer `127.x.y.z`-Loopback-Adresse aufgeteilt. Jeder Dienst erhält einen Offset von `slot + 2` zur Netzwerk-ID (Offsets 0 und 1 sind für die Netzwerkadresse und das Gateway reserviert).
 
-```
-Basis-IP = 127.{networkID / 65536}.{(networkID / 256) % 256}.{networkID % 256}
-Dienst-IP = 127.{(networkID + slot + 2) / 65536}.{((networkID + slot + 2) / 256) % 256}.{(networkID + slot + 2) % 256}
-```
-
-Die ersten beiden Offsets (0 und 1) sind für die Netzwerkadresse und das Gateway reserviert. Dienst-Slots beginnen bei Offset 2.
+Zum Beispiel ist bei Netzwerk-ID `2816` (`0x0B00`) die Basisadresse `127.0.11.0` und Dienste beginnen bei `127.0.11.2`.
 
 **Beispiel** für Netzwerk-ID `2816`:
 

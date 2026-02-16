@@ -272,14 +272,9 @@ No necesita crear `.rediacc.json` manualmente. Cuando ejecuta `rdc repo up`, Red
 
 ### Cálculo de IP
 
-La IP de un servicio se calcula a partir del ID de red del repositorio y el slot del servicio:
+La IP de un servicio se calcula a partir del ID de red del repositorio y el slot del servicio. El ID de red se distribuye entre el segundo, tercer y cuarto octeto de una dirección de loopback `127.x.y.z`. Cada servicio recibe un desplazamiento de `slot + 2` sumado al ID de red (los desplazamientos 0 y 1 están reservados para la dirección de red y la puerta de enlace).
 
-```
-IP Base = 127.{networkID / 65536}.{(networkID / 256) % 256}.{networkID % 256}
-IP del Servicio = 127.{(networkID + slot + 2) / 65536}.{((networkID + slot + 2) / 256) % 256}.{(networkID + slot + 2) % 256}
-```
-
-Los primeros dos desplazamientos (0 y 1) están reservados para la dirección de red y la puerta de enlace. Los slots de servicio comienzan en el desplazamiento 2.
+Por ejemplo, con el ID de red `2816` (`0x0B00`), la dirección base es `127.0.11.0` y los servicios comienzan en `127.0.11.2`.
 
 **Ejemplo** para ID de red `2816`:
 

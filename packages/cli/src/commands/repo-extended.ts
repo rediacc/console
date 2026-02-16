@@ -8,6 +8,31 @@ import { handleError } from '../utils/errors.js';
 import type { Command } from 'commander';
 
 /**
+ * Execute a machine-level function (no repository context needed).
+ */
+async function executeMachineFunction(
+  functionName: string,
+  options: { machine: string; debug?: boolean },
+  messages: { starting: string; completed: string; failed: string }
+): Promise<void> {
+  outputService.info(messages.starting);
+
+  const result = await localExecutorService.execute({
+    functionName,
+    machineName: options.machine,
+    params: {},
+    debug: options.debug,
+  });
+
+  if (result.success) {
+    outputService.success(messages.completed);
+  } else {
+    outputService.error(result.error ?? messages.failed);
+    process.exitCode = result.exitCode;
+  }
+}
+
+/**
  * Execute a repository lifecycle function on a remote machine.
  * Validates the repository exists in context and runs the function via localExecutorService.
  */
@@ -275,23 +300,11 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (options: { machine: string; debug?: boolean }) => {
       try {
-        outputService.info(
-          t('commands.repo.autostart.enableAll.starting', { machine: options.machine })
-        );
-
-        const result = await localExecutorService.execute({
-          functionName: 'repository_autostart_enable_all',
-          machineName: options.machine,
-          params: {},
-          debug: options.debug,
+        await executeMachineFunction('repository_autostart_enable_all', options, {
+          starting: t('commands.repo.autostart.enableAll.starting', { machine: options.machine }),
+          completed: t('commands.repo.autostart.enableAll.completed'),
+          failed: t('commands.repo.autostart.enableAll.failed'),
         });
-
-        if (result.success) {
-          outputService.success(t('commands.repo.autostart.enableAll.completed'));
-        } else {
-          outputService.error(result.error ?? t('commands.repo.autostart.enableAll.failed'));
-          process.exitCode = result.exitCode;
-        }
       } catch (error) {
         handleError(error);
       }
@@ -305,23 +318,11 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (options: { machine: string; debug?: boolean }) => {
       try {
-        outputService.info(
-          t('commands.repo.autostart.disableAll.starting', { machine: options.machine })
-        );
-
-        const result = await localExecutorService.execute({
-          functionName: 'repository_autostart_disable_all',
-          machineName: options.machine,
-          params: {},
-          debug: options.debug,
+        await executeMachineFunction('repository_autostart_disable_all', options, {
+          starting: t('commands.repo.autostart.disableAll.starting', { machine: options.machine }),
+          completed: t('commands.repo.autostart.disableAll.completed'),
+          failed: t('commands.repo.autostart.disableAll.failed'),
         });
-
-        if (result.success) {
-          outputService.success(t('commands.repo.autostart.disableAll.completed'));
-        } else {
-          outputService.error(result.error ?? t('commands.repo.autostart.disableAll.failed'));
-          process.exitCode = result.exitCode;
-        }
       } catch (error) {
         handleError(error);
       }
@@ -335,23 +336,11 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (options: { machine: string; debug?: boolean }) => {
       try {
-        outputService.info(
-          t('commands.repo.autostart.list.starting', { machine: options.machine })
-        );
-
-        const result = await localExecutorService.execute({
-          functionName: 'repository_autostart_list',
-          machineName: options.machine,
-          params: {},
-          debug: options.debug,
+        await executeMachineFunction('repository_autostart_list', options, {
+          starting: t('commands.repo.autostart.list.starting', { machine: options.machine }),
+          completed: t('commands.repo.autostart.list.completed'),
+          failed: t('commands.repo.autostart.list.failed'),
         });
-
-        if (result.success) {
-          outputService.success(t('commands.repo.autostart.list.completed'));
-        } else {
-          outputService.error(result.error ?? t('commands.repo.autostart.list.failed'));
-          process.exitCode = result.exitCode;
-        }
       } catch (error) {
         handleError(error);
       }

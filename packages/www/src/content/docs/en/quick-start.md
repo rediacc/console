@@ -272,14 +272,9 @@ You do not need to create `.rediacc.json` manually. When you run `rdc repo up`, 
 
 ### IP Calculation
 
-The IP for a service is calculated from the repository's network ID and the service's slot:
+The IP for a service is calculated from the repository's network ID and the service's slot. The network ID is split across the second, third, and fourth octets of a `127.x.y.z` loopback address. Each service gets an offset of `slot + 2` added to the network ID (offsets 0 and 1 are reserved for the network address and gateway).
 
-```
-Base IP = 127.{networkID / 65536}.{(networkID / 256) % 256}.{networkID % 256}
-Service IP = 127.{(networkID + slot + 2) / 65536}.{((networkID + slot + 2) / 256) % 256}.{(networkID + slot + 2) % 256}
-```
-
-The first two offsets (0 and 1) are reserved for the network address and gateway. Service slots start at offset 2.
+For example, with network ID `2816` (`0x0B00`), the base address is `127.0.11.0` and services start at `127.0.11.2`.
 
 **Example** for network ID `2816`:
 

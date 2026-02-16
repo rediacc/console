@@ -272,14 +272,9 @@ Servisler alfabetik sıraya göre yazılır.
 
 ### IP Hesaplama
 
-Bir servisin IP'si, deponun ağ kimliğinden ve servisin slotundan hesaplanır:
+Bir servisin IP'si, deponun ağ kimliğinden ve servisin slotundan hesaplanır. Ağ kimliği, `127.x.y.z` geri döngü adresinin ikinci, üçüncü ve dördüncü oktetlerine dağıtılır. Her servis, ağ kimliğine `slot + 2` ofseti eklenerek bir adres alır (ofset 0 ve 1, ağ adresi ve ağ geçidi için ayrılmıştır).
 
-```
-Temel IP = 127.{networkID / 65536}.{(networkID / 256) % 256}.{networkID % 256}
-Servis IP = 127.{(networkID + slot + 2) / 65536}.{((networkID + slot + 2) / 256) % 256}.{(networkID + slot + 2) % 256}
-```
-
-İlk iki ofset (0 ve 1) ağ adresi ve ağ geçidi için ayrılmıştır. Servis slotları ofset 2'den başlar.
+Örneğin, ağ kimliği `2816` (`0x0B00`) ile temel adres `127.0.11.0` olur ve servisler `127.0.11.2`'den başlar.
 
 **Örnek**: Ağ kimliği `2816` için:
 
