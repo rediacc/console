@@ -800,6 +800,8 @@
     "wslVSCode": "WSL-VS Code (Linux)"
   },
   "warnings": {
+    "previewEnvironment": "Vorschau",
+    "previewMessage": "Diese Webkonsole befindet sich in der Vorschau und funktioniert möglicherweise nicht wie erwartet. Für den Produktionsbetrieb verwenden Sie bitte die CLI im S3- oder Lokalmodus. Der Cloud-Modus teilt dieses Backend und ist ebenfalls bis zur offiziellen Veröffentlichung nicht verfügbar.",
     "sandboxEnvironment": "Sandbox-Umgebung",
     "sandboxMessage": "Bei Aktualisierungen können Daten zurückgesetzt werden. Nur zum Testen."
   },
