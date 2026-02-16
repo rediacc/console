@@ -1,5 +1,5 @@
 import { promises as fs } from 'node:fs';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import type { CliUpdateState } from '@rediacc/shared/update';
 import {
   readUpdateState as readState,
@@ -45,10 +45,7 @@ export async function cleanupStaleStagedFiles(state: CliUpdateState): Promise<vo
   try {
     await fs.mkdir(STAGED_UPDATE_DIR, { recursive: true });
     const entries = await fs.readdir(STAGED_UPDATE_DIR);
-    const keepName = state.pendingUpdate
-      ? (state.pendingUpdate.stagedPath.split('/').pop() ??
-        state.pendingUpdate.stagedPath.split('\\').pop())
-      : null;
+    const keepName = state.pendingUpdate ? basename(state.pendingUpdate.stagedPath) : null;
 
     for (const entry of entries) {
       if (entry === keepName) continue;

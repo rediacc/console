@@ -154,7 +154,12 @@ async function handleRollback(): Promise<void> {
       await fs.rename(oldPath, execPath);
     } catch (err) {
       // Rollback the rollback: restore current binary
-      await fs.rename(rollbackTmp, execPath).catch(() => {});
+      await fs.rename(rollbackTmp, execPath).catch((restoreErr) => {
+        const msg = restoreErr instanceof Error ? restoreErr.message : String(restoreErr);
+        process.stderr.write(
+          `CRITICAL: Failed to restore binary during rollback. CLI may be broken — please reinstall. Error: ${msg}\n`
+        );
+      });
       throw err;
     }
     await fs.unlink(rollbackTmp).catch(() => {});
