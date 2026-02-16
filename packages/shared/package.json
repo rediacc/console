@@ -185,6 +185,14 @@
     "./config/*": {
       "types": "./dist/config/*.d.ts",
       "default": "./dist/config/*.js"
+    },
+    "./update": {
+      "types": "./dist/update/index.d.ts",
+      "default": "./dist/update/index.js"
+    },
+    "./update/*": {
+      "types": "./dist/update/*.d.ts",
+      "default": "./dist/update/*.js"
     }
   },
   "files": [

@@ -1163,6 +1163,8 @@
       "testingConnectivity": "正在测试与 {{host}}:{{port}} 的连接..."
     },
     "update": {
+      "applyFailed": "应用暂存更新失败: {{error}}",
+      "autoApplied": "已更新到 v{{version}}（之前为 v{{from}}）。更改将在下次运行时生效。",
       "available": "有可用更新: v{{version}} (当前: v{{current}})",
       "checking": "正在检查更新...",
       "checkOnly": "仅检查更新，不下载",
@@ -1173,6 +1175,13 @@
       "notSEA": "无法更新：未作为打包二进制文件运行。请先使用SEA构建。",
       "progress": "正在下载... {{percent}}%",
       "releaseNotes": "发行说明: {{url}}",
+      "rollback": "回滚到上一个版本",
+      "rollbackFailed": "回滚失败: {{error}}",
+      "rollbackNoBackup": "未找到上一个版本。回滚仅在更新后可用。",
+      "rollbackSuccess": "回滚成功。请重启 rdc 以使用上一个版本。",
+      "staged": "更新 v{{version}} 已暂存（将在下次启动时应用）",
+      "stagedFallback": "更新 v{{version}} 已下载并暂存。将在下次启动时应用。",
+      "statusDescription": "显示自动更新状态和诊断信息",
       "success": "已从 v{{from}} 更新到 v{{to}}",
       "unknownError": "未知错误",
       "upToDate": "已是最新版本 (v{{version}})"
@@ -1359,6 +1368,7 @@
     "sectionTitles": {
       "audit": "审计与合规",
       "auth": "身份验证",
+      "backup": "备份管理",
       "bridge": "桥接管理",
       "ceph": "Ceph 存储管理",
       "context": "上下文管理",
@@ -1371,9 +1381,8 @@
       "region": "区域管理",
       "repo": "仓库生命周期",
       "repository": "仓库管理",
-      "snapshot": "快照管理",
-      "backup": "备份管理",
       "shortcuts": "快捷命令（快捷方式）",
+      "snapshot": "快照管理",
       "storage": "存储管理",
       "sync": "文件同步",
       "team": "团队管理",

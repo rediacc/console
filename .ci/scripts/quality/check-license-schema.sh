@@ -84,7 +84,9 @@ if ! git diff --quiet "$SCHEMA_FILE" 2>/dev/null; then
     fi
 
     # Check for recent autofix commits to prevent loops
-    RECENT_AUTOFIX=$(git log --oneline -5 --grep="auto-regenerate license schema" 2>/dev/null | head -1 || true)
+    # Scope to PR-only commits to avoid false positives from squash merges on the base branch
+    BASE_REF="${GITHUB_BASE_REF:-main}"
+    RECENT_AUTOFIX=$(git log --oneline -5 "origin/${BASE_REF}..HEAD" --grep="auto-regenerate license schema" 2>/dev/null | head -1 || true)
     if [[ -n "$RECENT_AUTOFIX" ]]; then
         log_error "Recent license schema autofix commit detected, cannot auto-fix again: $RECENT_AUTOFIX"
         log_error "Please manually regenerate schema with: npm run generate:license-schema"

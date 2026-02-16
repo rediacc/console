@@ -1163,7 +1163,16 @@
       "progress": "Downloading... {{percent}}%",
       "success": "Updated from v{{from}} to v{{to}}",
       "failed": "Update failed: {{error}}",
-      "unknownError": "Unknown error"
+      "unknownError": "Unknown error",
+      "autoApplied": "Updated to v{{version}} (was v{{from}}). Changes take effect on next run.",
+      "staged": "Update v{{version}} staged (will apply on next launch)",
+      "applyFailed": "Failed to apply staged update: {{error}}",
+      "stagedFallback": "Update v{{version}} downloaded and staged. It will be applied on next launch.",
+      "rollback": "Rollback to the previous version",
+      "rollbackSuccess": "Rolled back successfully. Restart rdc to use the previous version.",
+      "rollbackNoBackup": "No previous version found. Rollback is only available after an update.",
+      "rollbackFailed": "Rollback failed: {{error}}",
+      "statusDescription": "Show auto-update status and diagnostics"
     },
     "term": {
       "description": "SSH terminal access to machines and repositories",
