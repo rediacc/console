@@ -26,7 +26,7 @@
     "check:actions": "tsx scripts/check-actions.ts",
     "check:deps": "tsx scripts/check-deps.ts",
     "check:format": "biome format packages/ private/license-server/",
-    "check:i18n": "tsx scripts/check-translation-hashes.ts && tsx scripts/check-translation-completeness.ts && tsx scripts/check-docs-inline-translations.ts && tsx scripts/check-www-only-translations.ts && tsx scripts/check-docs-untranslated-text.ts && npm run validate:cli-docs -w @rediacc/www",
+    "check:i18n": "tsx scripts/check-translation-hashes.ts && tsx scripts/check-translation-completeness.ts && tsx scripts/check-docs-inline-translations.ts && tsx scripts/check-www-only-translations.ts && tsx scripts/check-docs-untranslated-text.ts && npm run validate:cli-docs -w @rediacc/www && npm run validate:content -w @rediacc/www",
     "check:i18n:completeness": "tsx scripts/check-translation-completeness.ts",
     "check:i18n:docs": "tsx scripts/check-docs-inline-translations.ts",
     "check:i18n:hashes": "tsx scripts/check-translation-hashes.ts",
