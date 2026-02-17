@@ -241,9 +241,7 @@
       },
       "sections": {
         "changes": {
-          "content": [
-            "Podemos actualizar esta AUP periódicamente."
-          ],
+          "content": ["Podemos actualizar esta AUP periódicamente."],
           "id": "changes",
           "title": "8. Cambios en esta política"
         },
@@ -255,12 +253,8 @@
           "title": "5. Estándares de contenido"
         },
         "enforcement": {
-          "content": [
-            "Las violaciones pueden resultar en:"
-          ],
-          "content2": [
-            "Haremos esfuerzos razonables para notificarle antes de actuar."
-          ],
+          "content": ["Las violaciones pueden resultar en:"],
+          "content2": ["Haremos esfuerzos razonables para notificarle antes de actuar."],
           "id": "enforcement",
           "items": [
             "Advertencia escrita",
@@ -279,9 +273,7 @@
           "title": "1. Introducción"
         },
         "prohibitedActivities": {
-          "content": [
-            "No puede utilizar la plataforma Rediacc para:"
-          ],
+          "content": ["No puede utilizar la plataforma Rediacc para:"],
           "id": "prohibited-activities",
           "items": [
             "Minería de criptomonedas o actividades computacionales intensivas similares",
@@ -304,9 +296,7 @@
           "title": "7. Reportar violaciones"
         },
         "resourceUsage": {
-          "content": [
-            "Para garantizar un acceso justo para todos los usuarios:"
-          ],
+          "content": ["Para garantizar un acceso justo para todos los usuarios:"],
           "id": "resource-usage",
           "items": [
             "Utilice los recursos según los límites de su suscripción",
@@ -317,9 +307,7 @@
           "title": "3. Uso de recursos"
         },
         "securityRequirements": {
-          "content": [
-            "Usted es responsable de la seguridad de su cuenta:"
-          ],
+          "content": ["Usted es responsable de la seguridad de su cuenta:"],
           "id": "security-requirements",
           "items": [
             "Use contraseñas fuertes y únicas",
@@ -456,16 +444,12 @@
           "title": "5. Nuestro enfoque analítico"
         },
         "changes": {
-          "content": [
-            "Si introducimos cookies adicionales, actualizaremos esta política."
-          ],
+          "content": ["Si introducimos cookies adicionales, actualizaremos esta política."],
           "id": "changes",
           "title": "7. Cambios en esta política"
         },
         "cookiesWeUse": {
-          "content": [
-            "Utilizamos solo una cookie:"
-          ],
+          "content": ["Utilizamos solo una cookie:"],
           "id": "cookies-we-use",
           "subsections": {
             "languageCookie": {
@@ -485,9 +469,7 @@
           "title": "1. Introducción"
         },
         "managingCookies": {
-          "content": [
-            "Puede gestionar las cookies a través de la configuración de su navegador:"
-          ],
+          "content": ["Puede gestionar las cookies a través de la configuración de su navegador:"],
           "id": "managing-cookies",
           "items": [
             "<strong>Chrome:</strong> Configuración → Privacidad y seguridad → Cookies",
@@ -664,9 +646,7 @@
                 "Implementación estándar ($9999) o paquetes escalonados (Pequeño $7499 · Mediano $14999 · Grande $29999 · Empresa personalizada)",
                 "Compromiso de respuesta de emergencia ($29,999 a pedido)"
               ],
-              "included": [
-                "Documentación de autoservicio, tutoriales en vídeo y foro comunitario"
-              ],
+              "included": ["Documentación de autoservicio, tutoriales en vídeo y foro comunitario"],
               "planId": "comunidad"
             },
             {
@@ -995,10 +975,7 @@
       },
       "trust": {
         "heading": "Seguridad y confiabilidad de nivel empresarial",
-        "items": [
-          "Cifrado a nivel bancario",
-          "Compromiso de tiempo de actividad del 99,9%"
-        ]
+        "items": ["Cifrado a nivel bancario", "Compromiso de tiempo de actividad del 99,9%"]
       },
       "ui": {
         "anchor": "Ancla estratégica",
@@ -1360,9 +1337,7 @@
                 "Implementación estándar ($9999) o paquetes escalonados (Pequeño $7499 · Mediano $14999 · Grande $29999 · Empresa personalizada)",
                 "Compromiso de respuesta de emergencia ($29,999 a pedido)"
               ],
-              "included": [
-                "Documentación de autoservicio, tutoriales en vídeo y foro comunitario"
-              ],
+              "included": ["Documentación de autoservicio, tutoriales en vídeo y foro comunitario"],
               "planId": "comunidad"
             },
             {
@@ -1643,10 +1618,7 @@
       },
       "trust": {
         "heading": "Seguridad y confiabilidad de nivel empresarial",
-        "items": [
-          "Cifrado a nivel bancario",
-          "Compromiso de tiempo de actividad del 99,9%"
-        ]
+        "items": ["Cifrado a nivel bancario", "Compromiso de tiempo de actividad del 99,9%"]
       },
       "ui": {
         "anchor": "Ancla estratégica",
@@ -1719,9 +1691,7 @@
           "title": "10. Cambios en esta política"
         },
         "childrenPrivacy": {
-          "content": [
-            "Nuestros servicios no están dirigidos a menores de 16 años."
-          ],
+          "content": ["Nuestros servicios no están dirigidos a menores de 16 años."],
           "id": "children-privacy",
           "title": "9. Privacidad de los niños"
         },
@@ -1742,9 +1712,7 @@
           "title": "7. Seguridad de datos"
         },
         "dataSharing": {
-          "content": [
-            "No vendemos ni alquilamos sus datos personales a terceros."
-          ],
+          "content": ["No vendemos ni alquilamos sus datos personales a terceros."],
           "id": "data-sharing",
           "items": [
             "<strong>Proveedores de servicios</strong> que nos ayudan a operar la plataforma",
@@ -1755,9 +1723,7 @@
           "title": "4. Intercambio de datos y terceros"
         },
         "howWeUseInformation": {
-          "content": [
-            "Utilizamos la información recopilada para:"
-          ],
+          "content": ["Utilizamos la información recopilada para:"],
           "id": "how-we-use-information",
           "items": [
             "Responder a sus consultas",
@@ -1826,9 +1792,7 @@
           "title": "1. Introducción"
         },
         "yourRights": {
-          "content": [
-            "Según su jurisdicción, puede tener los siguientes derechos:"
-          ],
+          "content": ["Según su jurisdicción, puede tener los siguientes derechos:"],
           "content2": [
             "Contacte con nosotros en <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> para ejercer sus derechos."
           ],
@@ -1899,9 +1863,7 @@
       },
       "sections": {
         "changes": {
-          "content": [
-            "Podemos actualizar esta Política de Reembolso periódicamente."
-          ],
+          "content": ["Podemos actualizar esta Política de Reembolso periódicamente."],
           "id": "changes",
           "title": "7. Cambios en esta política"
         },
@@ -1909,9 +1871,7 @@
           "content": [
             "Envíe un correo a <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> con:"
           ],
-          "content2": [
-            "Responderemos dentro de 5 días hábiles."
-          ],
+          "content2": ["Responderemos dentro de 5 días hábiles."],
           "id": "how-to-request",
           "items": [
             "Su dirección de correo de la cuenta",
@@ -1922,9 +1882,7 @@
           "title": "4. Cómo solicitar un reembolso"
         },
         "nonRefundable": {
-          "content": [
-            "Lo siguiente no es elegible para reembolso:"
-          ],
+          "content": ["Lo siguiente no es elegible para reembolso:"],
           "id": "non-refundable",
           "items": [
             "Suscripciones canceladas después de la ventana de 14 días",
@@ -1943,9 +1901,7 @@
           "title": "1. Descripción general"
         },
         "platformSubscriptions": {
-          "content": [
-            "Rediacc ofrece múltiples niveles de suscripción:"
-          ],
+          "content": ["Rediacc ofrece múltiples niveles de suscripción:"],
           "id": "platform-subscriptions",
           "subsections": {
             "annualSubscriptions": {
@@ -1955,9 +1911,7 @@
               "title": "2.3 Suscripciones anuales"
             },
             "freeTier": {
-              "content": [
-                "El nivel Community es gratuito para siempre."
-              ],
+              "content": ["El nivel Community es gratuito para siempre."],
               "title": "2.1 Nivel gratuito"
             },
             "paidTiers": {
@@ -1975,9 +1929,7 @@
           "title": "2. Suscripciones de la plataforma"
         },
         "professionalServices": {
-          "content": [
-            "Los servicios profesionales se facturan por hora ($400–$1,200/hr):"
-          ],
+          "content": ["Los servicios profesionales se facturan por hora ($400–$1,200/hr):"],
           "id": "professional-services",
           "items": [
             "<strong>Antes de iniciar el trabajo:</strong> Reembolso completo",
@@ -2709,9 +2661,7 @@
           "id": "bridge",
           "subsections": {
             "bridgeDataCollected": {
-              "content": [
-                "El Bridge recopila las siguientes categorías de datos:"
-              ],
+              "content": ["El Bridge recopila las siguientes categorías de datos:"],
               "items": [
                 "<strong>Operaciones de cola:</strong> ID de tarea, nivel de prioridad, tipo de operación, duración de ejecución, estado de éxito o fallo",
                 "<strong>Operaciones SSH:</strong> host de destino, nombre de usuario, número de puerto, código de salida, duración de ejecución (no se recopila contenido de comandos ni salida)",
@@ -2761,9 +2711,7 @@
           "id": "cli",
           "subsections": {
             "cliDataCollected": {
-              "content": [
-                "La CLI recopila las siguientes categorías de datos:"
-              ],
+              "content": ["La CLI recopila las siguientes categorías de datos:"],
               "items": [
                 "<strong>Uso de comandos:</strong> nombre del comando, versión de la CLI, código de salida, estado de éxito o fallo",
                 "<strong>Argumentos anonimizados:</strong> opciones de comando con valores sensibles redactados — contraseñas, tokens, secretos, claves API y credenciales se reemplazan con <code>[REDACTED]</code>",
@@ -2834,9 +2782,7 @@
           "id": "middleware",
           "subsections": {
             "middlewareDataCollected": {
-              "content": [
-                "El Middleware recopila las siguientes categorías de datos:"
-              ],
+              "content": ["El Middleware recopila las siguientes categorías de datos:"],
               "items": [
                 "<strong>Información del sistema:</strong> nombre del host, versión del sistema operativo, versión del entorno de ejecución .NET",
                 "<strong>Llamadas API:</strong> método HTTP, ruta del endpoint, código de estado de respuesta, duración de la solicitud",
@@ -2858,9 +2804,7 @@
           "title": "6. Telemetría del Middleware"
         },
         "principles": {
-          "content": [
-            "Toda la recopilación de telemetría en Rediacc sigue estos principios:"
-          ],
+          "content": ["Toda la recopilación de telemetría en Rediacc sigue estos principios:"],
           "id": "principles",
           "items": [
             "<strong>Privacidad por diseño:</strong> Los identificadores personales se anonimizan antes de la transmisión. Las direcciones de correo electrónico se reducen solo al dominio, los ID de usuario se cifran con hash (SHA-256) y se truncan, las contraseñas y secretos nunca se recopilan.",
@@ -2878,9 +2822,7 @@
           "id": "web-app",
           "subsections": {
             "webDataCollected": {
-              "content": [
-                "La aplicación web recopila las siguientes categorías de datos:"
-              ],
+              "content": ["La aplicación web recopila las siguientes categorías de datos:"],
               "items": [
                 "<strong>Información del navegador:</strong> nombre y versión del navegador, idioma preferido, plataforma (por ejemplo, Windows, macOS, Linux), resolución de pantalla, profundidad de color, cadena de agente de usuario, memoria del dispositivo (si está disponible), tipo de conexión de red",
                 "<strong>Contexto del usuario:</strong> ID de sesión (generado aleatoriamente por sesión), solo dominio de correo electrónico (la parte local se redacta, por ejemplo, <code>***@example.com</code>), nombre de la organización, nombre del equipo",
@@ -2894,9 +2836,7 @@
               "title": "4.1 Datos recopilados"
             },
             "webNotCollected": {
-              "content": [
-                "La aplicación web no recopila:"
-              ],
+              "content": ["La aplicación web no recopila:"],
               "items": [
                 "Direcciones de correo electrónico completas (la parte local siempre se redacta)",
                 "Contraseñas, tokens o credenciales de autenticación",
@@ -2978,9 +2918,7 @@
           "title": "3. Cuentas y registro"
         },
         "changes": {
-          "content": [
-            "Podemos actualizar estas condiciones periódicamente."
-          ],
+          "content": ["Podemos actualizar estas condiciones periódicamente."],
           "id": "changes",
           "title": "14. Cambios en estas condiciones"
         },
@@ -2992,9 +2930,7 @@
           "title": "8. Sus datos"
         },
         "governingLaw": {
-          "content": [
-            "Estas condiciones se rigen por las leyes de la República de Estonia."
-          ],
+          "content": ["Estas condiciones se rigen por las leyes de la República de Estonia."],
           "id": "governing-law",
           "title": "13. Ley aplicable"
         },
@@ -3094,11 +3030,7 @@
         "title": "Multinube siempre"
       },
       {
-        "benefits": [
-          "Verificación automática",
-          "Retención extendida",
-          "Recuperarse en minutos"
-        ],
+        "benefits": ["Verificación automática", "Retención extendida", "Recuperarse en minutos"],
         "description": "Recuperación verificada garantizada. Copias de seguridad probadas. Historia completa.",
         "title": "Copias de seguridad verificadas"
       },
