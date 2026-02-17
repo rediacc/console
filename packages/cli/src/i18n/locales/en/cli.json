@@ -1541,7 +1541,8 @@
     "outputFormat": "Output format (json)",
     "protocolToken": "Authentication token",
     "protocolAction": "Action ({{actions}})",
-    "protocolParams": "Additional parameters"
+    "protocolParams": "Additional parameters",
+    "experimental": "Enable experimental cloud commands"
   },
   "prompts": {
     "apiUrl": "API URL:",

@@ -45,7 +45,7 @@ export function addModeGuard(command: Command, supportedModes: ModeSet): void {
  * Add a preAction hook that blocks the command when experimental mode is not enabled.
  */
 function addExperimentalGuard(command: Command): void {
-  command.hook('preAction', async () => {
+  command.hook('preAction', () => {
     if (!isExperimentalEnabled()) {
       outputService.error(
         `"${command.name()}" is an experimental command. Enable with --experimental flag or REDIACC_EXPERIMENTAL=1 environment variable.`
@@ -140,8 +140,6 @@ function applyHelpConfig(cmd: Command): void {
 function applySubcommandGuards(cmd: Command, subcommands: Record<string, SubcommandDef>): void {
   for (const sub of cmd.commands) {
     const subDef = subcommands[sub.name()];
-    if (!subDef) continue;
-
     addModeGuard(sub, subDef.modes);
 
     if (subDef.experimental) {
@@ -154,8 +152,37 @@ function applySubcommandGuards(cmd: Command, subcommands: Record<string, Subcomm
 function applyExperimentalHiding(cmd: Command, subcommands: Record<string, SubcommandDef>): void {
   for (const sub of cmd.commands) {
     const subDef = subcommands[sub.name()];
-    if (subDef?.experimental) {
+    if (subDef.experimental) {
       (sub as Command & { _hidden: boolean })._hidden = true;
+    }
+  }
+}
+
+/** Apply registry definition to a single command. */
+function applyCommandDef(
+  cmd: Command,
+  def: ReturnType<typeof getCommandDef> & object,
+  experimental: boolean
+): void {
+  // Domain grouping via Commander.js helpGroup()
+  cmd.helpGroup(COMMAND_DOMAINS[def.domain]);
+
+  // Hide and guard experimental commands
+  if (def.experimental) {
+    addExperimentalGuard(cmd);
+    if (!experimental) {
+      (cmd as Command & { _hidden: boolean })._hidden = true;
+    }
+  }
+
+  // Top-level mode guard
+  addModeGuard(cmd, def.modes);
+
+  // Subcommand-level mode and experimental guards
+  if (def.subcommands) {
+    applySubcommandGuards(cmd, def.subcommands);
+    if (!experimental) {
+      applyExperimentalHiding(cmd, def.subcommands);
     }
   }
 }
@@ -172,27 +199,7 @@ export function applyRegistry(cli: Command): void {
     const def = getCommandDef(cmd.name());
     if (!def) continue;
 
-    // Domain grouping via Commander.js helpGroup()
-    cmd.helpGroup(COMMAND_DOMAINS[def.domain]);
-
-    // Hide and guard experimental commands
-    if (def.experimental) {
-      addExperimentalGuard(cmd);
-      if (!experimental) {
-        (cmd as Command & { _hidden: boolean })._hidden = true;
-      }
-    }
-
-    // Top-level mode guard
-    addModeGuard(cmd, def.modes);
-
-    // Subcommand-level mode and experimental guards
-    if (def.subcommands) {
-      applySubcommandGuards(cmd, def.subcommands);
-      if (!experimental) {
-        applyExperimentalHiding(cmd, def.subcommands);
-      }
-    }
+    applyCommandDef(cmd, def, experimental);
   }
 
   // Apply custom help formatting to the entire command tree

@@ -230,9 +230,9 @@ function buildRemoteCommand(
 
   if (connectionDetails?.environment) {
     for (const [key, value] of Object.entries(connectionDetails.environment)) {
-      const strVal = String(value ?? '');
+      const strVal = String(value);
       // Shell-escape the value by wrapping in single quotes and escaping embedded single quotes
-      const escaped = strVal.replace(/'/g, "'\\''");
+      const escaped = strVal.replaceAll("'", "'\\''");
       parts.push(`export ${key}='${escaped}'`);
     }
   }

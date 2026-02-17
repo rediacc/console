@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 
-export const GET: APIRoute = async () => {
+export const GET: APIRoute = () => {
   const content = `# Rediacc
 
 > Self-hosted infrastructure platform with encrypted repositories, container isolation, and automated disaster recovery.

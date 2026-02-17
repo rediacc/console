@@ -69,7 +69,7 @@ cli
   .option('-o, --output <format>', t('options.output'), 'table')
   .option('--context <name>', t('options.context'))
   .option('-l, --lang <code>', t('options.lang', { languages: SUPPORTED_LANGUAGES.join('|') }))
-  .option('--experimental', 'Enable experimental cloud commands')
+  .option('--experimental', t('options.experimental'))
   .hook('preAction', async (thisCommand, actionCommand) => {
     const opts = thisCommand.opts();
     // Enable experimental mode if --experimental flag is passed

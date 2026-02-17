@@ -1590,6 +1590,7 @@
     "email": "Dirección de correo electrónico",
     "endpoint": "URL de punto final de API",
     "excludePatterns": "Patrones a excluir de sincronización",
+    "experimental": "Habilitar comandos experimentales de la nube",
     "expires": "Expiración en horas (1-720)",
     "external": "Forzar lanzamiento en ventana de terminal externa",
     "extraMachine": "Máquina adicional para operaciones multi-máquina (nombre:ip:usuario)",

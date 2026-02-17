@@ -143,7 +143,7 @@ export function registerHealthCommand(machine: Command, program: Command): void 
           t('commands.machine.health.fetching'),
           () =>
             provider.machines.getWithVaultStatus({
-              teamName: (opts.team as string) ?? '',
+              teamName: opts.team as string,
               machineName: name,
             }),
           t('commands.machine.health.fetched')

@@ -107,7 +107,7 @@ export function registerVaultStatusCommand(machine: Command, program: Command): 
           t('commands.machine.vaultStatus.fetching'),
           () =>
             provider.machines.getWithVaultStatus({
-              teamName: (opts.team as string) ?? '',
+              teamName: opts.team as string,
               machineName: name,
             }),
           t('commands.machine.vaultStatus.fetched')

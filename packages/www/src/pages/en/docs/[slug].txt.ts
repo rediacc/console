@@ -1,8 +1,8 @@
-import type { APIRoute, GetStaticPaths } from 'astro';
 import { getCollection } from 'astro:content';
+import type { APIRoute, GetStaticPaths } from 'astro';
 
 // Docs excluded from LLM text endpoints (cloud-specific or auto-generated references)
-const EXCLUDED_SLUGS = ['en/cli-application', 'en/web-application'];
+const EXCLUDED_SLUGS = ['en/cli-application', 'en/web-application'] as const;
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const docs = await getCollection(
@@ -19,7 +19,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
   });
 };
 
-export const GET: APIRoute = async ({ props }) => {
+export const GET: APIRoute = ({ props }) => {
   const { doc } = props as { doc: { data: { title: string }; body: string } };
 
   const content = doc.body;

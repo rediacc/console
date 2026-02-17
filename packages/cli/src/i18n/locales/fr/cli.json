@@ -1590,6 +1590,7 @@
     "email": "Adresse email",
     "endpoint": "URL du point de terminaison de l'API",
     "excludePatterns": "Motifs à exclure de la synchronisation",
+    "experimental": "Activer les commandes cloud expérimentales",
     "expires": "Expiration en heures (1-720)",
     "external": "Forcer le lancement dans une fenêtre de terminal externe",
     "extraMachine": "Machine supplémentaire pour les opérations multi-machines (nom:ip:utilisateur)",

@@ -1590,6 +1590,7 @@
     "email": "E-posta adresi",
     "endpoint": "API uç noktası URL'si",
     "excludePatterns": "Senkronizasyondan hariç tutulacak desenler",
+    "experimental": "Deneysel bulut komutlarını etkinleştir",
     "expires": "Saat cinsinden sona erme süresi (1-720)",
     "external": "Dış terminal penceresinde başlatmaya zorla",
     "extraMachine": "Çoklu makine işlemleri için ek makine (ad:ip:kullanıcı)",

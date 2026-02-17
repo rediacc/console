@@ -31,7 +31,7 @@ export function registerRepositoriesCommand(machine: Command, program: Command):
           t('commands.machine.repos.fetching'),
           () =>
             provider.machines.getWithVaultStatus({
-              teamName: (opts.team as string) ?? '',
+              teamName: opts.team as string,
               machineName: name,
             }),
           t('commands.machine.repos.fetched')

@@ -1590,6 +1590,7 @@
     "email": "电子邮件地址",
     "endpoint": "API 端点 URL",
     "excludePatterns": "从同步中排除的模式",
+    "experimental": "启用实验性云命令",
     "expires": "过期时间（小时数，1-720）",
     "external": "强制在外部终端窗口中启动",
     "extraMachine": "用于多机操作的额外机器 (名称:IP:用户)",

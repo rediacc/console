@@ -64,7 +64,7 @@ export function registerContainersCommand(machine: Command, program: Command): v
           t('commands.machine.containers.fetching'),
           () =>
             provider.machines.getWithVaultStatus({
-              teamName: (opts.team as string) ?? '',
+              teamName: opts.team as string,
               machineName: name,
             }),
           t('commands.machine.containers.fetched')

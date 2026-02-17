@@ -1590,6 +1590,7 @@
     "email": "メールアドレス",
     "endpoint": "API エンドポイント URL",
     "excludePatterns": "同期から除外するパターン",
+    "experimental": "実験的なクラウドコマンドを有効にする",
     "expires": "有効期限 (時間単位: 1-720)",
     "external": "外部ターミナルウィンドウで起動を強制する",
     "extraMachine": "マルチマシン操作用の追加マシン (名前:IP:ユーザー)",
