@@ -30,6 +30,8 @@ const MIN_STRING_LENGTH = 4; // Only check strings longer than this (skip "OK", 
 
 // Strings that are intentionally the same across languages (brand names, technical terms)
 const ALLOWED_IDENTICAL = new Set([
+  // Category names (kept in English across all locales for sidebar grouping)
+  'Reference',
   // Brand names
   'Rediacc',
   'Rediaccfile',
