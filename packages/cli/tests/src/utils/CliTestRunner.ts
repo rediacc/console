@@ -154,6 +154,8 @@ export class CliTestRunner {
           this.config.credentials?.password ??
           process.env.CLI_MASTER_PASSWORD ??
           '',
+        // Enable experimental commands (cloud-only commands are experimental)
+        REDIACC_EXPERIMENTAL: '1',
         // Force no color for easier parsing
         NO_COLOR: '1',
         FORCE_COLOR: '0',
