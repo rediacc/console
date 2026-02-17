@@ -57,7 +57,7 @@ test.describe('Auth Commands @cli @core', () => {
   test.describe('login/logout flow', () => {
     test('should logout successfully', async () => {
       // Use table format for action commands that only produce success messages
-      const result = await runner.run(['logout'], { outputFormat: 'table', skipJsonParse: true });
+      const result = await runner.run(['auth', 'logout'], { outputFormat: 'table', skipJsonParse: true });
 
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain('Logged out');

@@ -36,7 +36,6 @@
       "login": {
         "authenticating": "جاري المصادقة...",
         "description": "المصادقة باستخدام Rediacc",
-        "shortcut": "المصادقة باستخدام Rediacc (اختصار لـ: auth login)",
         "success": "تم تسجيل الدخول بنجاح! تم الحفظ إلى السياق \"{{context}}\"",
         "tfaPrompt": "أدخل رمز المصادقة الثنائية:",
         "tfaRequired": "المصادقة الثنائية مطلوبة",
@@ -46,7 +45,6 @@
       "logout": {
         "description": "مسح بيانات المصادقة المحفوظة",
         "loggingOut": "جاري تسجيل الخروج...",
-        "shortcut": "مسح بيانات المصادقة المحفوظة (اختصار لـ: auth logout)",
         "success": "تم تسجيل الخروج بنجاح"
       },
       "register": {

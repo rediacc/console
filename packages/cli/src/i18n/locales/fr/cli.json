@@ -36,7 +36,6 @@
       "login": {
         "authenticating": "Authentification en cours...",
         "description": "S'authentifier avec Rediacc",
-        "shortcut": "S'authentifier avec Rediacc (raccourci pour : auth login)",
         "success": "Connexion réussie ! Enregistré dans le contexte \"{{context}}\"",
         "tfaPrompt": "Entrez le code 2FA :",
         "tfaRequired": "L'authentification à deux facteurs est requise",
@@ -46,7 +45,6 @@
       "logout": {
         "description": "Effacer les identifiants stockés",
         "loggingOut": "Déconnexion en cours...",
-        "shortcut": "Effacer les identifiants stockés (raccourci pour : auth logout)",
         "success": "Déconnexion réussie"
       },
       "register": {

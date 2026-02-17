@@ -36,7 +36,6 @@
       "login": {
         "authenticating": "認証中です...",
         "description": "Rediacc で認証する",
-        "shortcut": "Rediacc で認証する (短縮形: auth login)",
         "success": "ログインに成功しました！コンテキスト \"{{context}}\" に保存されました",
         "tfaPrompt": "2FA コードを入力してください:",
         "tfaRequired": "二段階認証が必要です",
@@ -46,7 +45,6 @@
       "logout": {
         "description": "保存された認証情報を削除する",
         "loggingOut": "ログアウト中です...",
-        "shortcut": "保存された認証情報を削除する (短縮形: auth logout)",
         "success": "ログアウトに成功しました"
       },
       "register": {

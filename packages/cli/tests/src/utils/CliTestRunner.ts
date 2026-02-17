@@ -192,11 +192,11 @@ export class CliTestRunner {
   async login(email?: string, password?: string): Promise<CliResult> {
     const e = email ?? this.config.credentials?.email ?? '';
     const p = password ?? this.config.credentials?.password ?? '';
-    return this.run(['login', '--endpoint', this.config.apiUrl, '-e', e, '-p', p]);
+    return this.run(['auth', 'login', '--endpoint', this.config.apiUrl, '-e', e, '-p', p]);
   }
 
   async logout(): Promise<CliResult> {
-    return this.run(['logout']);
+    return this.run(['auth', 'logout']);
   }
 
   async register(org: string, email: string, password: string, plan?: string): Promise<CliResult> {

@@ -8,7 +8,7 @@ on:
   merge_group:
     types: [checks_requested]
   schedule:
-    - cron: '0 3 * * *'  # Nightly at 3:00 UTC
+    - cron: '0 1 * * *'  # Nightly at 1:00 UTC (2:00 CET)
   workflow_dispatch:
     inputs:
       browsers:
@@ -205,7 +205,7 @@ jobs:
       - name: Trigger Gemini review
         run: .ci/scripts/quality/trigger-gemini-review.sh
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_REPOSITORY: ${{ github.repository }}
       - name: Wait for Gemini review

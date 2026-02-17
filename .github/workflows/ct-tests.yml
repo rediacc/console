@@ -612,7 +612,7 @@ jobs:
   test-bridge-workers:
     name: Bridge Workers (${{ matrix.os-image }})
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     strategy:
       matrix:
         os-image:

@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1191
+    "keyCount": 1189
   },
   "hashes": {
     "cli.description": "8c564b05",
@@ -25,7 +25,6 @@
     "commands.auth.description": "60f33ddb",
     "commands.auth.login.authenticating": "1fa01934",
     "commands.auth.login.description": "1ce30f50",
-    "commands.auth.login.shortcut": "1c36c24c",
     "commands.auth.login.success": "d150e847",
     "commands.auth.login.tfaPrompt": "6c2c6ef1",
     "commands.auth.login.tfaRequired": "8b8a1df9",
@@ -33,7 +32,6 @@
     "commands.auth.login.verifyingTfa": "32c6add1",
     "commands.auth.logout.description": "6e4eaaf3",
     "commands.auth.logout.loggingOut": "d35e790c",
-    "commands.auth.logout.shortcut": "9084915b",
     "commands.auth.logout.success": "d82cb4f4",
     "commands.auth.register.description": "c03bca59",
     "commands.auth.register.nextStep": "d4652b29",
