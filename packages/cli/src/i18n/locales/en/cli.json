@@ -8,6 +8,7 @@
       "login": {
         "authenticating": "Authenticating...",
         "description": "Authenticate with Rediacc",
+        "shortcut": "Authenticate with Rediacc (shortcut for: auth login)",
         "success": "Login successful! Saved to context \"{{context}}\"",
         "tfaPrompt": "Enter 2FA code:",
         "tfaRequired": "Two-factor authentication required",
@@ -17,6 +18,7 @@
       "logout": {
         "description": "Clear stored credentials",
         "loggingOut": "Logging out...",
+        "shortcut": "Clear stored credentials (shortcut for: auth logout)",
         "success": "Logged out successfully"
       },
       "status": {

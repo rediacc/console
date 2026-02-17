@@ -36,6 +36,7 @@
       "login": {
         "authenticating": "Autenticando...",
         "description": "Autenticarse con Rediacc",
+        "shortcut": "Autenticarse con Rediacc (atajo para: auth login)",
         "success": "¡Inicio de sesión exitoso! Guardado en contexto \"{{context}}\"",
         "tfaPrompt": "Ingrese código 2FA:",
         "tfaRequired": "Autenticación de dos factores requerida",
@@ -45,6 +46,7 @@
       "logout": {
         "description": "Borrar credenciales almacenadas",
         "loggingOut": "Cerrando sesión...",
+        "shortcut": "Borrar credenciales almacenadas (atajo para: auth logout)",
         "success": "Sesión cerrada exitosamente"
       },
       "register": {

@@ -36,6 +36,7 @@
       "login": {
         "authenticating": "Authentifizierung läuft...",
         "description": "Mit Rediacc authentifizieren",
+        "shortcut": "Mit Rediacc authentifizieren (Kurzform: auth login)",
         "success": "Anmeldung erfolgreich! Gespeichert im Kontext \"{{context}}\"",
         "tfaPrompt": "2FA-Code eingeben:",
         "tfaRequired": "Zwei-Faktor-Authentifizierung erforderlich",
@@ -45,6 +46,7 @@
       "logout": {
         "description": "Gespeicherte Anmeldedaten löschen",
         "loggingOut": "Meldung läuft...",
+        "shortcut": "Gespeicherte Anmeldedaten löschen (Kurzform: auth logout)",
         "success": "Erfolgreich abgemeldet"
       },
       "register": {

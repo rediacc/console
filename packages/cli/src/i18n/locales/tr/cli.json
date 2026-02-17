@@ -36,6 +36,7 @@
       "login": {
         "authenticating": "Kimlik doğrulanıyor...",
         "description": "Rediacc ile kimlik doğrulaması yapın",
+        "shortcut": "Rediacc ile kimlik doğrulaması yapın (kısayol: auth login)",
         "success": "Giriş başarılı! \"{{context}}\" bağlamına kaydedildi",
         "tfaPrompt": "2FA kodunu girin:",
         "tfaRequired": "İki faktörlü kimlik doğrulama gerekli",
@@ -45,6 +46,7 @@
       "logout": {
         "description": "Depolanan kimlik bilgilerini temizleyin",
         "loggingOut": "Çıkış yapılıyor...",
+        "shortcut": "Depolanan kimlik bilgilerini temizleyin (kısayol: auth logout)",
         "success": "Başarıyla çıkış yapıldı"
       },
       "register": {

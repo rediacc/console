@@ -36,6 +36,7 @@
       "login": {
         "authenticating": "正在身份验证...",
         "description": "使用 Rediacc 进行身份验证",
+        "shortcut": "使用 Rediacc 进行身份验证（快捷方式：auth login）",
         "success": "登录成功！已保存到上下文 \"{{context}}\"",
         "tfaPrompt": "输入双因素认证代码：",
         "tfaRequired": "需要双因素认证",
@@ -45,6 +46,7 @@
       "logout": {
         "description": "清除存储的凭证",
         "loggingOut": "正在登出...",
+        "shortcut": "清除存储的凭证（快捷方式：auth logout）",
         "success": "登出成功"
       },
       "register": {
