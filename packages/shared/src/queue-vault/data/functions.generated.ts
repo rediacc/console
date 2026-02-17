@@ -622,7 +622,7 @@ export const BRIDGE_FUNCTIONS = [
   'setup',
 ] as const;
 
-export const BRIDGE_FUNCTIONS_VERSION = 'v0.4.91-25-g2d07e81d';
+export const BRIDGE_FUNCTIONS_VERSION = 'dev';
 
 export type BridgeFunctionName = (typeof BRIDGE_FUNCTIONS)[number];
 
