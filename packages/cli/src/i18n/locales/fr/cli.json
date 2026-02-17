@@ -1383,7 +1383,7 @@
       }
     },
     "frontmatter": {
-      "category": "Concepts Fondamentaux",
+      "category": "Reference",
       "description": "Guide complet pour utiliser l'interface en ligne de commande Rediacc pour la gestion de la plateforme",
       "title": "Application CLI"
     },

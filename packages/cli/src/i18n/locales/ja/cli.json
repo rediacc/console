@@ -1383,7 +1383,7 @@
       }
     },
     "frontmatter": {
-      "category": "基本コンセプト",
+      "category": "Reference",
       "description": "プラットフォーム管理のためのRediaccコマンドラインインターフェースの完全ガイド",
       "title": "CLIアプリケーション"
     },

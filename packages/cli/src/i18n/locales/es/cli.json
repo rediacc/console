@@ -1383,7 +1383,7 @@
       }
     },
     "frontmatter": {
-      "category": "Conceptos Básicos",
+      "category": "Reference",
       "description": "Guía completa para usar la interfaz de línea de comandos de Rediacc para la gestión de la plataforma",
       "title": "Aplicación CLI"
     },

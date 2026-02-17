@@ -1383,7 +1383,7 @@
       }
     },
     "frontmatter": {
-      "category": "Temel Kavramlar",
+      "category": "Reference",
       "description": "Platform yönetimi için Rediacc komut satırı arayüzünü kullanma rehberi",
       "title": "CLI Uygulaması"
     },

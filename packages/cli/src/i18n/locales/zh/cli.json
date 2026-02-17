@@ -1383,7 +1383,7 @@
       }
     },
     "frontmatter": {
-      "category": "核心概念",
+      "category": "Reference",
       "description": "使用 Rediacc 命令行界面进行平台管理的完整指南",
       "title": "CLI 应用程序"
     },

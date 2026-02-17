@@ -1383,7 +1383,7 @@
       }
     },
     "frontmatter": {
-      "category": "Kernkonzepte",
+      "category": "Reference",
       "description": "Vollständige Anleitung zur Verwendung der Rediacc-Befehlszeilenschnittstelle für die Plattformverwaltung",
       "title": "CLI-Anwendung"
     },
