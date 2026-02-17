@@ -12,11 +12,7 @@ export const GET: APIRoute = async () => {
     'docs',
     (d) => d.data.language === 'en' && !EXCLUDED_SLUGS.includes(d.slug)
   );
-  docs.sort(
-    (a, b) =>
-      (a.data.order ?? ORDER_FALLBACK) -
-      (b.data.order ?? ORDER_FALLBACK)
-  );
+  docs.sort((a, b) => (a.data.order ?? ORDER_FALLBACK) - (b.data.order ?? ORDER_FALLBACK));
 
   let content = '# Rediacc - Full Documentation\n\n';
 
