@@ -1,7 +1,7 @@
 ---
 title: Веб-приложение
 description: Понимание архитектуры и развертывания веб-приложений с помощью Rediacc
-category: Основные концепции
+category: Reference
 order: 1
 language: ru
 ---

@@ -16,7 +16,7 @@ Bu sayfaları sırasıyla takip edin:
 
 1. **[Gereksinimler](/tr/docs/requirements)** -- İş istasyonunuz ve uzak sunucularınız için desteklenen işletim sistemleri ve ön koşullar.
 
-2. **[Kurulum](/tr/docs/installation)** -- `rdc` CLI'ı Linux, macOS veya Windows (WSL2) üzerine kurun.
+2. **[Kurulum](/tr/docs/installation)** -- `rdc` CLI'ı Linux, macOS veya Windows üzerine kurun.
 
 3. **[Adım Adım Rehber](/tr/docs/guide)** -- Bağlam oluşturun, makine ekleyin, şifrelenmiş depolar oluşturun ve servisleri dağıtın.
 

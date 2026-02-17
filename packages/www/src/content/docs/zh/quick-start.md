@@ -16,7 +16,7 @@ language: zh
 
 1. **[系统要求](/zh/docs/requirements)** -- 工作站和远程服务器支持的操作系统及前提条件。
 
-2. **[安装](/zh/docs/installation)** -- 在 Linux、macOS 或 Windows（WSL2）上安装 `rdc` CLI。
+2. **[安装](/zh/docs/installation)** -- 在 Linux、macOS 或 Windows 上安装 `rdc` CLI。
 
 3. **[分步指南](/zh/docs/guide)** -- 创建上下文、添加机器、创建加密仓库并部署服务。
 

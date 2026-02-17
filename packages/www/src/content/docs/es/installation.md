@@ -26,19 +26,15 @@ export PATH="$HOME/.local/bin:$PATH"
 
 Agregue esta linea a su perfil de shell (`~/.bashrc`, `~/.zshrc`, etc.) para hacerla permanente.
 
-## Windows (WSL2)
+## Windows
 
-Rediacc se ejecuta dentro de WSL2 en Windows. Si no tiene WSL2 configurado:
+Ejecute el script de instalacion en PowerShell:
 
 ```powershell
-wsl --install
+irm https://www.rediacc.com/install.ps1 | iex
 ```
 
-Luego, dentro de su distribucion Linux WSL2, ejecute el mismo script de instalacion:
-
-```bash
-curl -fsSL https://get.rediacc.com | sh
-```
+Esto descarga el binario `rdc.exe` en `%LOCALAPPDATA%\rediacc\bin\`. Asegurese de que este directorio este en su PATH. El instalador le pedira que lo agregue si aun no esta presente.
 
 ## Verificar la Instalacion
 

@@ -16,7 +16,7 @@ Suivez ces pages dans l'ordre :
 
 1. **[Prérequis](/fr/docs/requirements)** — Systèmes d'exploitation pris en charge et prérequis pour votre poste de travail et vos serveurs distants.
 
-2. **[Installation](/fr/docs/installation)** — Installez le CLI `rdc` sur Linux, macOS ou Windows (WSL2).
+2. **[Installation](/fr/docs/installation)** — Installez le CLI `rdc` sur Linux, macOS ou Windows.
 
 3. **[Guide étape par étape](/fr/docs/guide)** — Créez un contexte, ajoutez des machines, créez des dépôts chiffrés et déployez des services.
 

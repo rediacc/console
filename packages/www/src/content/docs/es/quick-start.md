@@ -16,7 +16,7 @@ Siga estas paginas en orden:
 
 1. **[Requisitos](/es/docs/requirements)** -- Sistemas operativos compatibles y requisitos previos para su estacion de trabajo y servidores remotos.
 
-2. **[Instalacion](/es/docs/installation)** -- Instale la CLI `rdc` en Linux, macOS o Windows (WSL2).
+2. **[Instalacion](/es/docs/installation)** -- Instale la CLI `rdc` en Linux, macOS o Windows.
 
 3. **[Guia Paso a Paso](/es/docs/guide)** -- Cree un contexto, agregue maquinas, cree repositorios cifrados y despliegue servicios.
 

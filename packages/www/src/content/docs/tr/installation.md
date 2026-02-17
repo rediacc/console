@@ -26,19 +26,15 @@ export PATH="$HOME/.local/bin:$PATH"
 
 Kalıcı hale getirmek için bu satırı kabuk profilinize (`~/.bashrc`, `~/.zshrc`, vb.) ekleyin.
 
-## Windows (WSL2)
+## Windows
 
-Rediacc, Windows üzerinde WSL2 içinde çalışır. WSL2 kurulu değilse:
+PowerShell'de kurulum betiğini çalıştırın:
 
 ```powershell
-wsl --install
+irm https://www.rediacc.com/install.ps1 | iex
 ```
 
-Ardından WSL2 Linux dağıtımınızın içinde aynı kurulum betiğini çalıştırın:
-
-```bash
-curl -fsSL https://get.rediacc.com | sh
-```
+Bu, `rdc.exe` dosyasını `%LOCALAPPDATA%\rediacc\bin\` dizinine indirir. Bu dizinin PATH'inizde olduğundan emin olun. Yükleyici, henüz eklenmemişse eklemenizi isteyecektir.
 
 ## Kurulumu Doğrulama
 

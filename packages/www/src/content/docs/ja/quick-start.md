@@ -16,7 +16,7 @@ Rediaccへようこそ。このセクションでは、自分のサーバーに�
 
 1. **[システム要件](/ja/docs/requirements)** — ワークステーションとリモートサーバーに必要なオペレーティングシステムと前提条件。
 
-2. **[インストール](/ja/docs/installation)** — Linux、macOS、またはWindows（WSL2）に`rdc` CLIをインストール。
+2. **[インストール](/ja/docs/installation)** — Linux、macOS、またはWindowsに`rdc` CLIをインストール。
 
 3. **[ステップバイステップガイド](/ja/docs/guide)** — コンテキストの作成、マシンの追加、暗号化リポジトリの作成、サービスのデプロイ。
 

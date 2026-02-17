@@ -18,7 +18,7 @@ La CLI `rdc` se ejecuta en su estacion de trabajo y orquesta servidores remotos 
 |------------|---------------|-------|
 | macOS | 12 (Monterey)+ | Intel y Apple Silicon compatibles |
 | Linux (x86_64) | Cualquier distribucion moderna | glibc 2.31+ (Ubuntu 20.04+, Debian 11+, Fedora 34+) |
-| Windows | 10+ con WSL2 | Ejecute `rdc` dentro de una distribucion Linux WSL2 |
+| Windows | 10+ | Soporte nativo mediante instalador PowerShell |
 
 **Requisitos adicionales:**
 - Un par de claves SSH (por ejemplo, `~/.ssh/id_ed25519` o `~/.ssh/id_rsa`)

@@ -1,7 +1,7 @@
 ---
 title: "CLI-Anwendung"
 description: "Vollständige Anleitung zur Verwendung der Rediacc-Befehlszeilenschnittstelle für die Plattformverwaltung"
-category: "Kernkonzepte"
+category: "Reference"
 order: 2
 language: de
 generated: true

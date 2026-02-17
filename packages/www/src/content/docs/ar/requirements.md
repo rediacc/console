@@ -18,7 +18,7 @@ language: ar
 |--------|---------------------|---------|
 | macOS | 12 (Monterey)+ | يدعم معالجات Intel و Apple Silicon |
 | Linux (x86_64) | أي توزيعة حديثة | glibc 2.31+ (Ubuntu 20.04+, Debian 11+, Fedora 34+) |
-| Windows | 10+ مع WSL2 | شغّل `rdc` داخل توزيعة Linux على WSL2 |
+| Windows | 10+ | دعم أصلي عبر مُثبِّت PowerShell |
 
 **متطلبات إضافية:**
 - زوج مفاتيح SSH (مثل `~/.ssh/id_ed25519` أو `~/.ssh/id_rsa`)

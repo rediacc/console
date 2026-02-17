@@ -26,19 +26,15 @@ export PATH="$HOME/.local/bin:$PATH"
 
 将此行添加到您的 shell 配置文件（`~/.bashrc`、`~/.zshrc` 等）以使其永久生效。
 
-## Windows (WSL2)
+## Windows
 
-Rediacc 在 Windows 上运行于 WSL2 中。如果您尚未设置 WSL2：
+在 PowerShell 中运行安装脚本：
 
 ```powershell
-wsl --install
+irm https://www.rediacc.com/install.ps1 | iex
 ```
 
-然后在您的 WSL2 Linux 发行版中运行相同的安装脚本：
-
-```bash
-curl -fsSL https://get.rediacc.com | sh
-```
+这将把 `rdc.exe` 二进制文件下载到 `%LOCALAPPDATA%\rediacc\bin\`。请确保该目录已添加到您的 PATH 中。安装程序会在未添加时提示您添加。
 
 ## 验证安装
 

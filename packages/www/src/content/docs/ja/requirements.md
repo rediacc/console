@@ -18,7 +18,7 @@ Rediaccでデプロイする前に、ワークステーションとリモート�
 |----------|----------------|-------|
 | macOS | 12 (Monterey)+ | IntelおよびApple Siliconに対応 |
 | Linux (x86_64) | 任意のモダンなディストリビューション | glibc 2.31+ (Ubuntu 20.04+, Debian 11+, Fedora 34+) |
-| Windows | 10+ (WSL2使用) | WSL2のLinuxディストリビューション内で`rdc`を実行 |
+| Windows | 10+ | PowerShellインストーラーによるネイティブサポート |
 
 **追加要件：**
 - SSHキーペア（例：`~/.ssh/id_ed25519` または `~/.ssh/id_rsa`）

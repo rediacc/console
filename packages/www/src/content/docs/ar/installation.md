@@ -26,19 +26,15 @@ export PATH="$HOME/.local/bin:$PATH"
 
 أضف هذا السطر إلى ملف تعريف الصدفة الخاص بك (`~/.bashrc` أو `~/.zshrc` وغيرها) لجعله دائماً.
 
-## Windows (WSL2)
+## Windows
 
-يعمل Rediacc داخل WSL2 على Windows. إذا لم يكن WSL2 مُعداً لديك:
+شغّل سكريبت التثبيت في PowerShell:
 
 ```powershell
-wsl --install
+irm https://www.rediacc.com/install.ps1 | iex
 ```
 
-ثم داخل توزيعة Linux على WSL2، شغّل نفس سكريبت التثبيت:
-
-```bash
-curl -fsSL https://get.rediacc.com | sh
-```
+يُنزل هذا الملف التنفيذي `rdc.exe` إلى `%LOCALAPPDATA%\rediacc\bin\`. تأكد من أن هذا المجلد موجود في PATH. سيطلب منك المُثبِّت إضافته إذا لم يكن موجوداً بالفعل.
 
 ## التحقق من التثبيت
 

@@ -16,7 +16,7 @@ language: ar
 
 1. **[المتطلبات](/ar/docs/requirements)** — أنظمة التشغيل المدعومة والمتطلبات المسبقة لمحطة عملك والخوادم البعيدة.
 
-2. **[التثبيت](/ar/docs/installation)** — تثبيت سطر أوامر `rdc` على Linux أو macOS أو Windows (WSL2).
+2. **[التثبيت](/ar/docs/installation)** — تثبيت سطر أوامر `rdc` على Linux أو macOS أو Windows.
 
 3. **[دليل خطوة بخطوة](/ar/docs/guide)** — إنشاء سياق، وإضافة أجهزة، وإنشاء مستودعات مشفرة، ونشر الخدمات.
 

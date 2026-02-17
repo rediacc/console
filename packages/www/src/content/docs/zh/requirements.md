@@ -18,7 +18,7 @@ language: zh
 |------|----------|------|
 | macOS | 12 (Monterey)+ | 支持 Intel 和 Apple Silicon |
 | Linux (x86_64) | 任何现代发行版 | glibc 2.31+（Ubuntu 20.04+、Debian 11+、Fedora 34+） |
-| Windows | 10+ 搭配 WSL2 | 在 WSL2 Linux 发行版中运行 `rdc` |
+| Windows | 10+ | 通过 PowerShell 安装程序提供原生支持 |
 
 **额外要求：**
 - 一对 SSH 密钥（例如 `~/.ssh/id_ed25519` 或 `~/.ssh/id_rsa`）

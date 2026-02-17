@@ -18,7 +18,7 @@ The `rdc` CLI runs on your workstation and orchestrates remote servers over SSH.
 |----------|----------------|-------|
 | macOS | 12 (Monterey)+ | Intel and Apple Silicon supported |
 | Linux (x86_64) | Any modern distribution | glibc 2.31+ (Ubuntu 20.04+, Debian 11+, Fedora 34+) |
-| Windows | 10+ with WSL2 | Run `rdc` inside a WSL2 Linux distribution |
+| Windows | 10+ | Native support via PowerShell installer |
 
 **Additional requirements:**
 - An SSH key pair (e.g., `~/.ssh/id_ed25519` or `~/.ssh/id_rsa`)

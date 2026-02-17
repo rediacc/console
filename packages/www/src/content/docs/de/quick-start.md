@@ -16,7 +16,7 @@ Folgen Sie diesen Seiten der Reihe nach:
 
 1. **[Voraussetzungen](/de/docs/requirements)** -- Unterstützte Betriebssysteme und Voraussetzungen für Ihre Workstation und entfernte Server.
 
-2. **[Installation](/de/docs/installation)** -- Installieren Sie die `rdc`-CLI unter Linux, macOS oder Windows (WSL2).
+2. **[Installation](/de/docs/installation)** -- Installieren Sie die `rdc`-CLI unter Linux, macOS oder Windows.
 
 3. **[Schritt-für-Schritt-Anleitung](/de/docs/guide)** -- Erstellen Sie einen Kontext, fügen Sie Maschinen hinzu, erstellen Sie verschlüsselte Repositories und stellen Sie Dienste bereit.
 

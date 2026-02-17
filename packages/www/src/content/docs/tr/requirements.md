@@ -18,7 +18,7 @@ Rediacc ile dağıtım yapmadan önce, iş istasyonunuzun ve uzak sunucularını
 |----------|---------------|--------|
 | macOS | 12 (Monterey)+ | Intel ve Apple Silicon desteklenir |
 | Linux (x86_64) | Herhangi bir modern dağıtım | glibc 2.31+ (Ubuntu 20.04+, Debian 11+, Fedora 34+) |
-| Windows | 10+ WSL2 ile | `rdc` komutunu bir WSL2 Linux dağıtımı içinde çalıştırın |
+| Windows | 10+ | PowerShell yükleyici ile yerel destek |
 
 **Ek gereksinimler:**
 - Bir SSH anahtar çifti (örn., `~/.ssh/id_ed25519` veya `~/.ssh/id_rsa`)

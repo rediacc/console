@@ -1,7 +1,7 @@
 ---
 title: "تطبيق سطر الأوامر"
 description: "دليل شامل لاستخدام واجهة سطر أوامر Rediacc لإدارة المنصة"
-category: "المفاهيم الأساسية"
+category: "Reference"
 order: 2
 language: ar
 generated: true
