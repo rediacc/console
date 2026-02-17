@@ -108,7 +108,6 @@ function parseFrontmatter(filePath) {
   }
 }
 
-
 /**
  * Validate all content
  */
