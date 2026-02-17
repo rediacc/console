@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import tailwind from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'electron-vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
@@ -61,7 +62,7 @@ export default defineConfig({
   },
   renderer: {
     root: resolve(__dirname, 'src/renderer'),
-    plugins: [react(), tsconfigPaths({ root: resolve(__dirname, '../..') })],
+    plugins: [tailwind(), react(), tsconfigPaths({ root: resolve(__dirname, '../..') })],
     resolve: {
       alias: {
         '@': resolve(__dirname, '../web/src'),
