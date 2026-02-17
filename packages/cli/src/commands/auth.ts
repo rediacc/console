@@ -1,4 +1,3 @@
-import { Command } from 'commander';
 import {
   parseForkAuthenticationRequest,
   parseGetRequestAuthenticationStatus,
@@ -7,15 +6,16 @@ import {
 } from '@rediacc/shared/api';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { isValidEmail } from '@rediacc/shared/validation';
+import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { apiClient, typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
+import type { OutputFormat } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { askConfirm, askPassword, askText } from '../utils/prompt.js';
 import { withSpinner } from '../utils/spinner.js';
-import type { OutputFormat } from '../types/index.js';
 
 export function registerAuthCommands(program: Command): void {
   const auth = program.command('auth').description(t('commands.auth.description'));
