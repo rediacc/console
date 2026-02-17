@@ -85,7 +85,8 @@ async function getRsyncConnectionDetails(
   const privateKey = (teamVault.SSH_PRIVATE_KEY ?? teamVault.sshPrivateKey) as string | undefined;
   const knownHosts = (machineVault.known_hosts ?? '') as string;
   const datastore = (machineVault.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH) as string;
-  const universalUser = (machineVault.universalUser ?? DEFAULTS.REPOSITORY.UNIVERSAL_USER) as string;
+  const universalUser = (machineVault.universalUser ??
+    DEFAULTS.REPOSITORY.UNIVERSAL_USER) as string;
   const sshUser = (machineVault.user ?? universalUser) as string;
 
   if (!host) {

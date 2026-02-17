@@ -333,14 +333,22 @@ async function connectTerminal(options: TermConnectOptions): Promise<void> {
     // goes to stdout and no interactive terminal is needed.
     // When no command, use external only if explicitly requested or if there's no TTY.
     const hasCommand = !!options.command || !!options.container;
-    const useExternal = hasCommand ? (options.external === true) : (options.external ?? !isTTY);
+    const useExternal = hasCommand ? options.external === true : (options.external ?? !isTTY);
 
     if (useExternal) {
       try {
-        await launchExternalTerminal(sshConnection, destination, remoteCommand, title, connectionDetails);
+        await launchExternalTerminal(
+          sshConnection,
+          destination,
+          remoteCommand,
+          title,
+          connectionDetails
+        );
       } catch (error) {
         // Fall back to inline SSH if external terminal is not available
-        debugLog(`External terminal failed: ${error instanceof Error ? error.message : String(error)}, falling back to inline SSH`);
+        debugLog(
+          `External terminal failed: ${error instanceof Error ? error.message : String(error)}, falling back to inline SSH`
+        );
         await runInlineSSH(sshConnection, destination, remoteCommand, title, connectionDetails);
       }
     } else {

@@ -137,10 +137,7 @@ function applyHelpConfig(cmd: Command): void {
 }
 
 /** Apply subcommand-level mode guards for override entries. */
-function applySubcommandGuards(
-  cmd: Command,
-  subcommands: Record<string, SubcommandDef>
-): void {
+function applySubcommandGuards(cmd: Command, subcommands: Record<string, SubcommandDef>): void {
   for (const sub of cmd.commands) {
     const subDef = subcommands[sub.name()];
     if (!subDef) continue;
@@ -154,10 +151,7 @@ function applySubcommandGuards(
 }
 
 /** Hide experimental subcommands from help output. */
-function applyExperimentalHiding(
-  cmd: Command,
-  subcommands: Record<string, SubcommandDef>
-): void {
+function applyExperimentalHiding(cmd: Command, subcommands: Record<string, SubcommandDef>): void {
   for (const sub of cmd.commands) {
     const subDef = subcommands[sub.name()];
     if (subDef?.experimental) {

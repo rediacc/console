@@ -304,7 +304,10 @@ class AuthService {
   async requireAuth(): Promise<void> {
     const isAuth = await this.isAuthenticated();
     if (!isAuth) {
-      throw new AuthError('Not authenticated. Please run: rdc auth login', EXIT_CODES.AUTH_REQUIRED);
+      throw new AuthError(
+        'Not authenticated. Please run: rdc auth login',
+        EXIT_CODES.AUTH_REQUIRED
+      );
     }
   }
 
