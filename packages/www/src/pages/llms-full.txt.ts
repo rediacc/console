@@ -1,9 +1,11 @@
 import { getCollection } from 'astro:content';
-import { SORT_DEFAULTS } from '@rediacc/shared/config';
 import type { APIRoute } from 'astro';
 
 // Docs excluded from LLM context (cloud-specific or auto-generated references)
 const EXCLUDED_SLUGS = ['en/cli-application', 'en/web-application'] as const;
+
+// Fallback sort order for docs without an explicit order (pushes them to end)
+const ORDER_FALLBACK = 99;
 
 export const GET: APIRoute = async () => {
   const docs = await getCollection(
@@ -12,8 +14,8 @@ export const GET: APIRoute = async () => {
   );
   docs.sort(
     (a, b) =>
-      (a.data.order ?? SORT_DEFAULTS.ORDER_FALLBACK) -
-      (b.data.order ?? SORT_DEFAULTS.ORDER_FALLBACK)
+      (a.data.order ?? ORDER_FALLBACK) -
+      (b.data.order ?? ORDER_FALLBACK)
   );
 
   let content = '# Rediacc - Full Documentation\n\n';

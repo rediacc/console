@@ -17,7 +17,6 @@
     "validate:content:strict": "node scripts/validate-content.js --strict"
   },
   "dependencies": {
-    "@rediacc/shared": "*",
     "@astrojs/react": "^4.4.2",
     "@astrojs/rss": "^4.0.15",
     "@astrojs/sitemap": "^3.7.0",
