@@ -70,6 +70,9 @@ vi.mock('../../services/queue.js', () => ({
   queueService: { buildQueueVault: vi.fn() },
 }));
 
+// Enable experimental mode so cloud-only commands are visible in help
+process.env.REDIACC_EXPERIMENTAL = '1';
+
 // Import cli after all mocks are set up
 const { cli } = await import('../../cli.js');
 
