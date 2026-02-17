@@ -2,7 +2,7 @@
 title: "Outils"
 description: "Synchronisation de fichiers, accès terminal, intégration VS Code, mises à jour et diagnostics."
 category: "Guides"
-order: 4
+order: 8
 language: fr
 ---
 

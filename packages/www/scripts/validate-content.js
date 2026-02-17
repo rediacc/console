@@ -7,8 +7,7 @@
  * Rules:
  * - content-parity: All English posts/docs must exist in all languages
  * - language-mismatch: Frontmatter `language` must match directory
- * - localized-filename: Filenames must be English slugs across all languages
- * - orphan-file: File exists in non-English but not in English
+ * - orphan-translation: File exists in non-English but not in English (deleted or renamed)
  * - missing-required-field: Required frontmatter fields must be present
  */
 
@@ -109,26 +108,6 @@ function parseFrontmatter(filePath) {
   }
 }
 
-/**
- * Check if a filename is localized (not using English slug)
- */
-function isLocalizedFilename(filename, englishFiles) {
-  const slug = filename.replace('.md', '');
-  const englishSlugs = englishFiles.map((f) => f.filename.replace('.md', ''));
-  return !englishSlugs.includes(slug);
-}
-
-/**
- * Find the likely English equivalent for a localized filename
- * Currently unused but kept for future use
- */
-function _findEnglishEquivalent(_localizedFilename, _frontmatter, _englishFiles) {
-  // Try to match by title similarity or content
-  if (!_frontmatter || !_frontmatter.title) return null;
-
-  // For now, we can't automatically detect - user needs to rename manually
-  return null;
-}
 
 /**
  * Validate all content
@@ -168,24 +147,13 @@ function validateContent(_strict = false) {
 
         // Check for orphan files (exists in translation but not in English)
         if (!englishSlugs.has(file.relativePath)) {
-          // Could be a localized filename or a true orphan
-          if (isLocalizedFilename(file.filename, englishFiles)) {
-            errors.push({
-              rule: 'localized-filename',
-              severity: 'error',
-              file: relativeFile,
-              message: `Localized filename "${file.filename}" should use English slug`,
-              suggestion: `Rename to match English equivalent and update frontmatter`,
-            });
-          } else {
-            warnings.push({
-              rule: 'orphan-file',
-              severity: 'warning',
-              file: relativeFile,
-              message: `File exists in ${lang} but not in English source`,
-              suggestion: `Either create English version or remove this file`,
-            });
-          }
+          errors.push({
+            rule: 'orphan-translation',
+            severity: 'error',
+            file: relativeFile,
+            message: `No English equivalent for "${file.relativePath}" (deleted or renamed from English)`,
+            suggestion: `Delete this file or create ${collection}/en/${file.relativePath}`,
+          });
         }
 
         // Check frontmatter language field
@@ -405,8 +373,7 @@ Options:
 Rules:
   content-parity         All English content must exist in all languages
   language-mismatch      Frontmatter language must match directory
-  localized-filename     Filenames must use English slugs across all languages
-  orphan-file            File exists in translation but not in English
+  orphan-translation     File exists in translation but not in English (deleted or renamed)
   missing-required-field Required frontmatter fields must be present
   invalid-enum-value     Enum fields must use valid values (e.g., category)
   invalid-array-field    Array fields must be non-empty (e.g., tags)

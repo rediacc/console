@@ -2,7 +2,7 @@
 title: "Инструменты"
 description: "Синхронизация файлов, доступ через терминал, интеграция с VS Code, обновления и диагностика."
 category: "Guides"
-order: 4
+order: 8
 language: ru
 ---
 

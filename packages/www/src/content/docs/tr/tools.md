@@ -2,7 +2,7 @@
 title: "Araçlar"
 description: "Dosya senkronizasyonu, terminal erisimi, VS Code entegrasyonu, guncellemeler ve tanilamalar."
 category: "Guides"
-order: 4
+order: 8
 language: tr
 ---
 

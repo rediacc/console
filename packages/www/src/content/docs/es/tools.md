@@ -2,7 +2,7 @@
 title: "Herramientas"
 description: "Sincronizacion de archivos, acceso por terminal, integracion con VS Code, actualizaciones y diagnosticos."
 category: "Guides"
-order: 4
+order: 8
 language: es
 ---
 

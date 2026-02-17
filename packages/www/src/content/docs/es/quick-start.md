@@ -1,36 +1,84 @@
 ---
-title: "Inicio Rapido"
-description: "Comience con Rediacc -- despliegue infraestructura cifrada y aislada en sus propios servidores."
+title: "Inicio rápido"
+description: "Ejecute un servicio en contenedores en su servidor en 5 minutos."
 category: "Guides"
 order: -1
 language: es
 ---
 
-# Inicio Rapido
+# Inicio rápido
 
-Bienvenido a Rediacc. Esta seccion le guia a traves de todo lo que necesita para desplegar infraestructura cifrada y aislada en sus propios servidores.
+Despliegue un entorno de contenedores cifrado y aislado en su propio servidor en 5 minutos. Esta guía utiliza el **modo local** — sin cuentas en la nube ni dependencias de SaaS.
 
-## Primeros Pasos
+## Requisitos previos
 
-Siga estas paginas en orden:
+- Una estación de trabajo con Linux o macOS
+- Un servidor remoto (Ubuntu 24.04+, Debian 12+ o Fedora 43+) con acceso SSH y privilegios sudo
+- Un par de claves SSH (por ejemplo, `~/.ssh/id_ed25519`)
 
-1. **[Requisitos](/es/docs/requirements)** -- Sistemas operativos compatibles y requisitos previos para su estacion de trabajo y servidores remotos.
+## 1. Instalar la CLI
 
-2. **[Instalacion](/es/docs/installation)** -- Instale la CLI `rdc` en Linux, macOS o Windows.
+```bash
+curl -fsSL https://get.rediacc.com | sh
+```
 
-3. **[Guia Paso a Paso](/es/docs/guide)** -- Cree un contexto, agregue maquinas, cree repositorios cifrados y despliegue servicios.
+## 2. Crear un contexto
 
-4. **[Post-Instalacion](/es/docs/post-installation)** -- Configure el inicio automatico, comprenda la configuracion del contexto y resuelva problemas comunes.
+```bash
+rdc context create-local my-infra --ssh-key ~/.ssh/id_ed25519
+```
 
-5. **[Herramientas](/es/docs/tools)** -- Sincronizacion de archivos, terminal SSH, integracion con VS Code, actualizaciones de la CLI y diagnosticos.
+## 3. Agregar su servidor
 
-## Que es Rediacc?
+```bash
+rdc context add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
+```
 
-Rediacc despliega servicios en contenedores en servidores remotos que usted controla. Todo se cifra en reposo usando LUKS, cada repositorio obtiene su propio daemon Docker aislado, y toda la orquestacion ocurre a traves de SSH desde su estacion de trabajo.
+## 4. Aprovisionar el servidor
+
+```bash
+rdc context setup-machine server-1
+```
+
+Esto instala Docker, cryptsetup y el binario renet en su servidor.
+
+## 5. Crear un repositorio cifrado
+
+```bash
+rdc repo create my-app -m server-1 --size 5G
+```
+
+## 6. Desplegar servicios
+
+Monte el repositorio, cree su `docker-compose.yml` y `Rediaccfile` dentro de él, luego inicie:
+
+```bash
+rdc repo up my-app -m server-1 --mount
+```
+
+## 7. Verificar
+
+```bash
+rdc machine containers server-1
+```
+
+Debería ver sus contenedores en ejecución.
+
+## ¿Qué es Rediacc?
+
+Rediacc despliega servicios en contenedores en servidores remotos que usted controla. Todo se cifra en reposo usando LUKS, cada repositorio obtiene su propio daemon Docker aislado, y toda la orquestación ocurre a través de SSH desde su estación de trabajo.
 
 Sin cuentas en la nube. Sin dependencias de SaaS. Sus datos permanecen en sus servidores.
 
-## Proximos Pasos
+## Próximos pasos
 
-- **[Referencia de la CLI](/es/docs/cli-application)** -- Referencia completa de comandos para la CLI `rdc`.
-- **[Aplicacion Web](/es/docs/web-application)** -- Gestione la infraestructura a traves de la consola web.
+- **[Arquitectura](/es/docs/architecture)** — Comprenda cómo funciona Rediacc: modos, modelo de seguridad, aislamiento Docker
+- **[Configuración del servidor](/es/docs/setup)** — Guía detallada de configuración: contextos, máquinas, configuración de infraestructura
+- **[Repositorios](/es/docs/repositories)** — Crear, gestionar, redimensionar, bifurcar y validar repositorios
+- **[Servicios](/es/docs/services)** — Rediaccfiles, redes de servicios, despliegue, inicio automático
+- **[Copia de seguridad y restauración](/es/docs/backup-restore)** — Respaldar en almacenamiento externo y programar copias de seguridad automáticas
+- **[Monitoreo](/es/docs/monitoring)** — Salud del servidor, contenedores, servicios, diagnósticos
+- **[Herramientas](/es/docs/tools)** — Sincronización de archivos, terminal SSH, integración con VS Code
+- **[Guía de migración](/es/docs/migration)** — Incorporar proyectos existentes a repositorios Rediacc
+- **[Solución de problemas](/es/docs/troubleshooting)** — Soluciones para problemas comunes
+- **[Referencia de la CLI](/es/docs/cli-application)** — Referencia completa de comandos

@@ -2,7 +2,7 @@
 title: "Werkzeuge"
 description: "Dateisynchronisation, Terminalzugriff, VS Code-Integration, Updates und Diagnose."
 category: "Guides"
-order: 4
+order: 8
 language: de
 ---
 

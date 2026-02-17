@@ -2,7 +2,7 @@
 title: "الأدوات"
 description: "مزامنة الملفات، والوصول عبر الطرفية، وتكامل VS Code، والتحديثات، والتشخيصات."
 category: "Guides"
-order: 4
+order: 8
 language: ar
 ---
 
