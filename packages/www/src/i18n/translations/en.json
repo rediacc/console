@@ -125,9 +125,9 @@
     }
   },
   "hero": {
-    "title": "One Database.",
-    "titleHighlight": " Infinite Copies.",
-    "subtitle": "Zero-copy clones that share storage. Dev, test, backup, and recovery — all from one source.",
+    "title": "Clone Production.",
+    "titleHighlight": " Break Nothing.",
+    "subtitle": "Your entire production stack, cloned instantly. Databases included.",
     "cta": {
       "contactUs": "Create Account",
       "learnMore": "Learn More",
@@ -185,17 +185,29 @@
       {
         "title": "Multi-Cloud Always",
         "description": "Single-cloud is dangerous. Deploy anywhere. Fail over fast.",
-        "benefits": ["Survive AWS outages", "Zero vendor lock-in", "Tested failover ready"]
+        "benefits": [
+          "Survive AWS outages",
+          "Zero vendor lock-in",
+          "Tested failover ready"
+        ]
       },
       {
         "title": "Verified Backups",
         "description": "Verified recovery guaranteed. Tested backups. Complete history.",
-        "benefits": ["Automatic verification", "Extended retention", "Recover in minutes"]
+        "benefits": [
+          "Automatic verification",
+          "Extended retention",
+          "Recover in minutes"
+        ]
       },
       {
         "title": "Encryption Control",
         "description": "Everything encrypted. Everything audited. Complete control.",
-        "benefits": ["Encryption you control", "Full audit trail", "Migration-safe"]
+        "benefits": [
+          "Encryption you control",
+          "Full audit trail",
+          "Migration-safe"
+        ]
       },
       {
         "title": "Development Environments",
@@ -313,7 +325,7 @@
   "pages": {
     "home": {
       "meta": {
-        "title": "Rediacc - Infrastructure Automation Platform",
+        "title": "Rediacc — Clone Production. Break Nothing.",
         "description": "Transform development with Rediacc's infrastructure automation. Get instant environments, disaster recovery & AI-safe operations.",
         "keywords": "infrastructure automation, development environments, disaster recovery, DevOps automation, CI/CD pipeline, cloud infrastructure, development operations, Model Context Protocol, AI-safe infrastructure"
       },
@@ -731,7 +743,9 @@
           "tiers": [
             {
               "planId": "community",
-              "included": ["Self-service documentation, video tutorials, and community forum"],
+              "included": [
+                "Self-service documentation, video tutorials, and community forum"
+              ],
               "available": [
                 "Standard Implementation ($9,999) or tiered packages (Small $7,499 · Medium $14,999 · Large $29,999 · Enterprise custom)",
                 "Emergency Response engagement ($29,999 on-demand)"
@@ -839,7 +853,10 @@
       },
       "trust": {
         "heading": "Enterprise-Grade Security & Reliability",
-        "items": ["AES-256 encryption standard", "99.99% uptime SLA"]
+        "items": [
+          "AES-256 encryption standard",
+          "99.99% uptime SLA"
+        ]
       },
       "ui": {
         "popular": "Most popular",
@@ -1820,7 +1837,9 @@
         "howWeUseInformation": {
           "id": "how-we-use-information",
           "title": "3. How We Use Your Information",
-          "content": ["We use the information we collect for the following purposes:"],
+          "content": [
+            "We use the information we collect for the following purposes:"
+          ],
           "items": [
             "To respond to your inquiries submitted through the contact form",
             "To provide, operate, and maintain the Rediacc platform",
@@ -2068,7 +2087,9 @@
         "cookiesWeUse": {
           "id": "cookies-we-use",
           "title": "3. Cookies We Use",
-          "content": ["We use a minimal number of cookies. In fact, we use only one:"],
+          "content": [
+            "We use a minimal number of cookies. In fact, we use only one:"
+          ],
           "subsections": {
             "languageCookie": {
               "title": "3.1 Language Preference Cookie",
@@ -2167,7 +2188,9 @@
         "prohibitedActivities": {
           "id": "prohibited-activities",
           "title": "2. Prohibited Activities",
-          "content": ["You may not use the Rediacc platform to:"],
+          "content": [
+            "You may not use the Rediacc platform to:"
+          ],
           "items": [
             "Engage in cryptocurrency mining, blockchain validation, or similar computationally intensive activities unrelated to your legitimate use of the platform",
             "Send unsolicited bulk communications (spam), phishing emails, or malicious content",
@@ -2196,7 +2219,9 @@
         "securityRequirements": {
           "id": "security-requirements",
           "title": "4. Security Requirements",
-          "content": ["You are responsible for the security of your account and environments:"],
+          "content": [
+            "You are responsible for the security of your account and environments:"
+          ],
           "items": [
             "Use strong, unique passwords and enable multi-factor authentication when available",
             "Do not share account credentials between individuals; use team features for multi-user access",
@@ -2331,7 +2356,9 @@
             "The reason for your refund request",
             "Any relevant order or invoice numbers"
           ],
-          "content2": ["We aim to respond to all refund requests within 5 business days."]
+          "content2": [
+            "We aim to respond to all refund requests within 5 business days."
+          ]
         },
         "refundProcessing": {
           "id": "refund-processing",
@@ -2344,7 +2371,9 @@
         "nonRefundable": {
           "id": "non-refundable",
           "title": "6. Non-Refundable Items",
-          "content": ["The following are not eligible for refunds:"],
+          "content": [
+            "The following are not eligible for refunds:"
+          ],
           "items": [
             "Subscriptions cancelled after the 14-day new subscriber window",
             "Usage-based charges (e.g., overage fees) for resources already consumed",
@@ -2394,7 +2423,9 @@
         "principles": {
           "id": "principles",
           "title": "2. Our Telemetry Principles",
-          "content": ["All telemetry collection at Rediacc follows these principles:"],
+          "content": [
+            "All telemetry collection at Rediacc follows these principles:"
+          ],
           "items": [
             "<strong>Privacy by design:</strong> Personal identifiers are anonymized before transmission. Email addresses are reduced to domain only, user IDs are hashed (SHA-256) and truncated, passwords and secrets are never collected.",
             "<strong>Minimal collection:</strong> We collect only what is necessary to improve product quality and diagnose issues. We do not collect file contents, database contents, query results, or business data.",
@@ -2422,7 +2453,9 @@
           "subsections": {
             "webDataCollected": {
               "title": "4.1 Data Collected",
-              "content": ["The Web Application collects the following categories of data:"],
+              "content": [
+                "The Web Application collects the following categories of data:"
+              ],
               "items": [
                 "<strong>Browser information:</strong> browser name and version, preferred language, platform (e.g., Windows, macOS, Linux), screen resolution, color depth, user agent string, device memory (if available), network connection type",
                 "<strong>User context:</strong> session ID (randomly generated per session), email domain only (local part is redacted, e.g., <code>***@example.com</code>), organization name, team name",
@@ -2436,7 +2469,9 @@
             },
             "webNotCollected": {
               "title": "4.2 Data NOT Collected",
-              "content": ["The Web Application does not collect:"],
+              "content": [
+                "The Web Application does not collect:"
+              ],
               "items": [
                 "Full email addresses (local part is always redacted)",
                 "Passwords, tokens, or authentication credentials",
@@ -2464,7 +2499,9 @@
           "subsections": {
             "cliDataCollected": {
               "title": "5.1 Data Collected",
-              "content": ["The CLI collects the following categories of data:"],
+              "content": [
+                "The CLI collects the following categories of data:"
+              ],
               "items": [
                 "<strong>Command usage:</strong> command name, CLI version, exit code, success or failure status",
                 "<strong>Anonymized arguments:</strong> command options with sensitive values redacted — passwords, tokens, secrets, API keys, and credentials are replaced with <code>[REDACTED]</code>",
@@ -2476,7 +2513,9 @@
             },
             "cliOptOut": {
               "title": "5.2 How to Opt Out",
-              "content": ["You can disable CLI telemetry using any of these methods:"],
+              "content": [
+                "You can disable CLI telemetry using any of these methods:"
+              ],
               "items": [
                 "Set the environment variable <code>REDIACC_TELEMETRY=off</code> (also accepts <code>false</code> or <code>0</code>)",
                 "Set <code>telemetryEnabled: false</code> in your CLI configuration file",
@@ -2494,7 +2533,9 @@
           "subsections": {
             "middlewareDataCollected": {
               "title": "6.1 Data Collected",
-              "content": ["The Middleware collects the following categories of data:"],
+              "content": [
+                "The Middleware collects the following categories of data:"
+              ],
               "items": [
                 "<strong>System information:</strong> hostname, operating system version, .NET runtime version",
                 "<strong>API calls:</strong> HTTP method, endpoint path, response status code, request duration",
@@ -2522,7 +2563,9 @@
           "subsections": {
             "bridgeDataCollected": {
               "title": "7.1 Data Collected",
-              "content": ["The Bridge collects the following categories of data:"],
+              "content": [
+                "The Bridge collects the following categories of data:"
+              ],
               "items": [
                 "<strong>Queue operations:</strong> task ID, priority level, operation type, execution duration, success or failure status",
                 "<strong>SSH operations:</strong> target host, username, port number, exit code, execution duration (no command content or output is collected)",
@@ -2533,7 +2576,9 @@
             },
             "bridgeOptOut": {
               "title": "7.2 How to Opt Out",
-              "content": ["You can disable Bridge telemetry using either method:"],
+              "content": [
+                "You can disable Bridge telemetry using either method:"
+              ],
               "items": [
                 "Set the environment variable <code>REDIACC_TELEMETRY_DISABLED=1</code>",
                 "Set the environment variable <code>DO_NOT_TRACK=1</code> (respects the <a href=\"https://consult.dntrack.dev/\" target=\"_blank\" rel=\"noopener noreferrer\">Do Not Track</a> standard)"
@@ -2878,7 +2923,9 @@
           "tiers": [
             {
               "planId": "community",
-              "included": ["Self-service documentation, video tutorials, and community forum"],
+              "included": [
+                "Self-service documentation, video tutorials, and community forum"
+              ],
               "available": [
                 "Standard Implementation ($9,999) or tiered packages (Small $7,499 · Medium $14,999 · Large $29,999 · Enterprise custom)",
                 "Emergency Response engagement ($29,999 on-demand)"
@@ -2990,7 +3037,10 @@
       },
       "trust": {
         "heading": "Enterprise-Grade Security & Reliability",
-        "items": ["AES-256 encryption standard", "99.99% uptime SLA"]
+        "items": [
+          "AES-256 encryption standard",
+          "99.99% uptime SLA"
+        ]
       },
       "ui": {
         "popular": "Most popular",

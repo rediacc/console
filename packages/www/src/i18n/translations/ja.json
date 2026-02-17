@@ -1,17 +1,20 @@
 {
+  "bridge": {
+    "text": "だから私たちはRediaccを作りました"
+  },
   "common": {
     "aria": {
+      "clickToEnlarge": "クリックして画像を拡大",
       "closeImageModal": "画像モーダルを閉じる",
+      "imageViewer": "画像ビューア",
       "mainNavigation": "メインナビゲーション",
       "nextImage": "次の画像",
+      "opensInNewTab": "新しいタブで開きます",
       "previousImage": "前の画像",
       "resetZoom": "ズームをリセットする",
       "statusMessage": "ステータスメッセージ",
       "zoomIn": "ズームイン",
-      "zoomOut": "ズームアウト",
-      "clickToEnlarge": "クリックして画像を拡大",
-      "opensInNewTab": "新しいタブで開きます",
-      "imageViewer": "画像ビューア"
+      "zoomOut": "ズームアウト"
     },
     "buttons": {
       "close": "閉じる",
@@ -21,7 +24,13 @@
       "requestEarlyAccess": "適用する",
       "sendMessage": "適用する"
     },
+    "contentNotAvailable": "このコンテンツは{{language}}では利用できません。英語版を表示しています。",
+    "copied": "コピーしました！",
+    "copyLink": "このセクションへのリンクをコピー",
+    "exploreSolutions": "他のソリューションを探す",
     "logoAlt": "Rediacc - インフラストラクチャ自動化プラットフォーム",
+    "platformPreview": "プラットフォームプレビュー",
+    "realStory": "実際の事例",
     "search": {
       "closeModal": "検索を閉じる",
       "keyboardShortcut": "⌘Kで検索",
@@ -38,64 +47,22 @@
         "title": "試す："
       }
     },
+    "section": "section",
     "siteName": "Rediacc",
     "skipNavigation": {
       "skipToFooter": "フッターにスキップ",
       "skipToMainContent": "メインコンテンツにスキップ",
       "skipToNavigation": "ナビゲーションにスキップ"
     },
-    "exploreSolutions": "他のソリューションを探す",
-    "platformPreview": "プラットフォームプレビュー",
     "solutions": {
+      "dataSecurity": "データセキュリティ",
       "developmentEnvironments": "開発環境",
       "disasterRecovery": "災害復旧",
-      "threatResponse": "脅威対応",
-      "dataSecurity": "データセキュリティ",
+      "preemptiveDefense": "先制防御",
       "systemPortability": "システムの移植性",
-      "preemptiveDefense": "先制防御"
-    }
-  },
-  "testimonials": {
-    "title": "チームの声",
-    "subtitle": "さまざまな役割がRediaccをどう体験しているか",
-    "items": [
-      {
-        "role": "開発者",
-        "quote": "サンドボックスが何週間も遅れていたので本番環境でコーディングしていました。今は60秒で新しいクローンを取得できます。"
-      },
-      {
-        "role": "CTO",
-        "quote": "データベースを1つから12に拡張しましたが、新しいハードウェアは購入していません。Rediaccのクローンはストレージを共有し、変更分だけ支払います。"
-      },
-      {
-        "role": "DevOpsエンジニア",
-        "quote": "実データでCIを実行できませんでした。今はすべてのパイプラインが自動的に独自の本番クローンを取得します。"
-      },
-      {
-        "role": "システムエンジニア",
-        "quote": "アップグレードでシステムがクラッシュしていました。今はすべての変更を正確なコピーで先にテストします。サプライズなし。"
-      },
-      {
-        "role": "データベース管理者",
-        "quote": "古いコピーでクエリを最適化しても無意味でした。今はライブ同期されたクローンで作業します — 同じデータ、リスクゼロ。"
-      },
-      {
-        "role": "ITマネージャー",
-        "quote": "バックアップに2週間かかりストレージがいっぱいでした。今は追加ディスクなしで毎時バックアップしています。"
-      },
-      {
-        "role": "セキュリティエンジニア",
-        "quote": "実データで暗号化をテストできませんでした。今はすべてのクローンがデフォルトで暗号化されています。監査合格。"
-      },
-      {
-        "role": "災害復旧マネージャー",
-        "quote": "復旧計画では4時間と書いてありました。現実は4日でした。今は1分以内にクローンにフェイルオーバーできます。"
-      },
-      {
-        "role": "AIエージェントオペレーター",
-        "quote": "AIエージェントが誤ってデータベースを削除しました。今はクローンしか触れません — 本番環境は安全です。"
-      }
-    ]
+      "threatResponse": "脅威対応"
+    },
+    "theProblem": "問題点"
   },
   "earlyAccess": {
     "benefits": [
@@ -106,10 +73,6 @@
     ],
     "form": {
       "fields": {
-        "organization": {
-          "autoComplete": "組織",
-          "label": "会社 *"
-        },
         "email": {
           "autoComplete": "電子メール",
           "label": "電子メール *"
@@ -121,6 +84,10 @@
         "name": {
           "autoComplete": "名前",
           "label": "名前 *"
+        },
+        "organization": {
+          "autoComplete": "組織",
+          "label": "会社 *"
         },
         "role": {
           "autoComplete": "組織のタイトル",
@@ -150,35 +117,35 @@
   },
   "footer": {
     "columns": {
-      "organization": "会社",
       "legal": "法律上の",
+      "organization": "会社",
       "product": "製品",
       "support": "サポート"
+    },
+    "copyright": "{{year}} Rediacc。 無断転載を禁じます。",
+    "legalLinks": {
+      "acceptableUsePolicy": "利用規定",
+      "cookiePolicy": "Cookieポリシー",
+      "privacyPolicy": "プライバシーポリシー",
+      "refundPolicy": "返金ポリシー",
+      "telemetryPolicy": "テレメトリポリシー",
+      "termsOfService": "利用規約"
+    },
+    "links": {
+      "contactSupport": "サポートに連絡する",
+      "returnToHome": "ホームに戻る"
     },
     "organizationLinks": {
       "aboutUs": "私たちについて",
       "contact": "お問い合わせ",
       "team": "チーム"
     },
-    "copyright": "{{year}} Rediacc。 無断転載を禁じます。",
-    "legalLinks": {
-      "termsOfService": "利用規約",
-      "privacyPolicy": "プライバシーポリシー",
-      "cookiePolicy": "Cookieポリシー",
-      "acceptableUsePolicy": "利用規定",
-      "refundPolicy": "返金ポリシー",
-      "telemetryPolicy": "テレメトリポリシー"
-    },
-    "links": {
-      "contactSupport": "サポートに連絡する",
-      "returnToHome": "ホームに戻る"
-    },
     "productLinks": {
+      "disasterRecovery": "災害復旧",
       "overview": "概要",
       "pricing": "価格設定",
       "professionalServices": "プロフェッショナルサービス",
-      "solutions": "ソリューション",
-      "disasterRecovery": "災害復旧"
+      "solutions": "ソリューション"
     },
     "supportLinks": {
       "contactSupport": "サポートに連絡する",
@@ -188,7 +155,7 @@
   },
   "hero": {
     "cta": {
-      "benefits": "10 CPU コア • 無制限のチーム • $0",
+      "benefits": "無制限のチーム • $0",
       "bookDemo": "デモを予約する",
       "contactUs": "アカウント作成",
       "freeBadge": "永久無料 • クレジットカード不要",
@@ -196,25 +163,25 @@
       "seeDetails": "詳細を見る"
     },
     "install": {
+      "alt": {
+        "apt": "apt",
+        "brew": "brew",
+        "docker": "docker",
+        "more": "その他 →"
+      },
       "ariaLabel": "インストールコマンド",
-      "tabsLabel": "オペレーティングシステムを選択",
+      "copied": "コピーしました！",
+      "copy": "クリップボードにコピー",
       "tabs": {
         "linux": "Linux",
         "macos": "macOS",
         "windows": "Windows"
       },
-      "copy": "クリップボードにコピー",
-      "copied": "コピーしました！",
-      "alt": {
-        "brew": "brew",
-        "apt": "apt",
-        "docker": "docker",
-        "more": "その他 →"
-      }
+      "tabsLabel": "オペレーティングシステムを選択"
     },
-    "subtitle": "ストレージを共有するゼロコピークローン。開発、テスト、バックアップ、リカバリ — すべて一つのソースから。",
-    "title": "一つのデータベース。",
-    "titleHighlight": " 無限のコピー。"
+    "subtitle": "本番環境スタック全体を即座にクローン。データベースも含めて。",
+    "title": "本番環境をクローン。",
+    "titleHighlight": " 何も壊さない。"
   },
   "layout": {
     "meta": {
@@ -232,27 +199,142 @@
   "navigation": {
     "blog": "ブログ",
     "contact": "お問い合わせ",
+    "disasterRecovery": "災害復旧",
     "docs": "ドキュメント",
-    "downloads": "Downloads",
+    "downloads": "ダウンロード",
+    "footerNavigation": "サイトナビゲーション",
     "home": "ホーム",
     "install": "インストール",
-    "pricing": "料金",
+    "languageSelectionMenu": "言語選択メニュー",
     "login": "ログイン",
+    "pricing": "料金",
     "search": "検索",
     "selectLanguage": "言語を選択してください",
     "solutions": {
-      "title": "ソリューション",
       "dataSecurity": "データセキュリティ",
       "developmentEnvironments": "開発環境",
       "disasterRecovery": "災害復旧",
+      "preemptiveDefense": "先制防御",
       "systemPortability": "システムの移植性",
       "threatResponse": "脅威への対応",
-      "preemptiveDefense": "先制防御"
+      "title": "ソリューション"
     },
-    "toggleMenu": "メニューの切り替え",
-    "disasterRecovery": "災害復旧"
+    "toggleMenu": "メニューの切り替え"
   },
   "pages": {
+    "acceptableUsePolicy": {
+      "contact": {
+        "description": "この利用規定についてご質問がある場合は、<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までお問い合わせください。",
+        "title": "ご質問はありますか？"
+      },
+      "hero": {
+        "effectiveDate": "発効日：2025年2月1日",
+        "title": "利用規定"
+      },
+      "meta": {
+        "description": "Rediaccの利用規定は、プラットフォーム上の禁止事項を定義します。",
+        "keywords": "利用規定, AUP, 禁止事項, Rediacc",
+        "title": "利用規定 — Rediacc"
+      },
+      "related": {
+        "title": "関連ポリシー"
+      },
+      "sections": {
+        "changes": {
+          "content": [
+            "このAUPは随時更新される場合があります。"
+          ],
+          "id": "changes",
+          "title": "8. ポリシーの変更"
+        },
+        "contentStandards": {
+          "content": [
+            "コンテンツは適用法令に準拠する必要があります。コンテンツについてはお客様が責任を負います。"
+          ],
+          "id": "content-standards",
+          "title": "5. コンテンツ基準"
+        },
+        "enforcement": {
+          "content": [
+            "違反は以下の措置につながる場合があります："
+          ],
+          "content2": [
+            "措置前に通知するよう合理的な努力をします。"
+          ],
+          "id": "enforcement",
+          "items": [
+            "書面による警告",
+            "一時的な停止",
+            "機能の制限",
+            "アカウントの永久停止",
+            "法執行機関への報告"
+          ],
+          "title": "6. 執行"
+        },
+        "introduction": {
+          "content": [
+            "この利用規定（「AUP」）はRediaccプラットフォームの利用を規定し、<a href=\"terms-of-service\">利用規約</a>の一部を構成します。"
+          ],
+          "id": "introduction",
+          "title": "1. はじめに"
+        },
+        "prohibitedActivities": {
+          "content": [
+            "Rediaccプラットフォームを以下の目的で使用することはできません："
+          ],
+          "id": "prohibited-activities",
+          "items": [
+            "暗号通貨マイニングまたは同様の計算集約的な活動",
+            "スパム、フィッシング、悪意のあるコンテンツの送信",
+            "マルウェアのホスティングまたは配布",
+            "DoS/DDoS攻撃を含むネットワーク攻撃",
+            "他者のアカウントやシステムへの不正アクセス",
+            "セキュリティ機能の回避",
+            "違法コンテンツの保存",
+            "無許可でのプラットフォームアクセスの転売",
+            "競合製品の構築のための使用"
+          ],
+          "title": "2. 禁止事項"
+        },
+        "reporting": {
+          "content": [
+            "違反を<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>に報告してください。"
+          ],
+          "id": "reporting",
+          "title": "7. 違反の報告"
+        },
+        "resourceUsage": {
+          "content": [
+            "すべてのユーザーへの公平なアクセスを確保するために："
+          ],
+          "id": "resource-usage",
+          "items": [
+            "サブスクリプション制限に従ってリソースを使用",
+            "自動化プロセスは過度な負荷を生成してはなりません",
+            "ストレージ使用は正当なプラットフォーム利用を反映すること",
+            "リソース問題には速やかに対処すること"
+          ],
+          "title": "3. リソース使用"
+        },
+        "securityRequirements": {
+          "content": [
+            "アカウントのセキュリティはお客様の責任です："
+          ],
+          "id": "security-requirements",
+          "items": [
+            "強力でユニークなパスワードを使用",
+            "アカウント資格情報を共有しない",
+            "脆弱性を<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>に報告",
+            "書面による許可なくセキュリティテストを行わない",
+            "ソフトウェアを最新に保つ"
+          ],
+          "title": "4. セキュリティ要件"
+        }
+      },
+      "toc": {
+        "title": "目次"
+      }
+    },
     "blog": {
       "allArticles": "すべての記事",
       "backToBlog": "ブログに戻る",
@@ -277,6 +359,7 @@
         "home": "ホーム"
       },
       "form": {
+        "ariaLabel": "お問い合わせフォーム",
         "fields": {
           "email": {
             "label": "電子メール *"
@@ -300,9 +383,8 @@
             }
           }
         },
-        "submit": "始めましょう",
-        "ariaLabel": "お問い合わせフォーム",
-        "legend": "連絡先情報"
+        "legend": "連絡先情報",
+        "submit": "始めましょう"
       },
       "hero": {
         "subtitle": "フォームにご記入いただければ、48 時間以内にご連絡いたします。",
@@ -338,16 +420,641 @@
         "title": "提出方法"
       }
     },
+    "cookiePolicy": {
+      "contact": {
+        "description": "Cookieの使用についてご質問がある場合は、<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までお問い合わせください。",
+        "title": "ご質問はありますか？"
+      },
+      "hero": {
+        "effectiveDate": "発効日：2026年2月1日",
+        "title": "Cookieポリシー"
+      },
+      "meta": {
+        "description": "RediaccのCookieポリシー。1つの機能的CookieとCookieレスのPlausible Analytics。",
+        "keywords": "Cookieポリシー, Cookie, Plausible Analytics, GDPR, Rediacc",
+        "title": "Cookieポリシー — Rediacc"
+      },
+      "related": {
+        "title": "関連ポリシー"
+      },
+      "sections": {
+        "analytics": {
+          "content": [
+            "当社は<a href=\"https://plausible.io\" target=\"_blank\" rel=\"noopener noreferrer\">Plausible Analytics</a>を使用しています。"
+          ],
+          "content2": [
+            "ウェブサイト分析に加え、当社のソフトウェア製品はOpenTelemetryベースの計測を通じて匿名化された使用テレメトリを収集します。これはウェブサイト分析とは別のもので、Cookieを使用せず、詳細は<a href=\"telemetry-policy\">テレメトリポリシー</a>に記載されています。"
+          ],
+          "id": "analytics",
+          "items": [
+            "Cookieを一切<strong>使用しません</strong>",
+            "個人データを<strong>収集しません</strong>",
+            "サイト間でユーザーを<strong>追跡しません</strong>",
+            "EUでホスティングされ、GDPR準拠",
+            "集計された匿名メトリクスのみ提供"
+          ],
+          "title": "5. 当社の分析アプローチ"
+        },
+        "changes": {
+          "content": [
+            "追加のCookieを導入する場合、このポリシーを更新します。"
+          ],
+          "id": "changes",
+          "title": "7. ポリシーの変更"
+        },
+        "cookiesWeUse": {
+          "content": [
+            "当社が使用するCookieは1つだけです："
+          ],
+          "id": "cookies-we-use",
+          "subsections": {
+            "languageCookie": {
+              "content": [
+                "<strong>名前：</strong><code>rediacc_lang</code><br><strong>種類：</strong>ファーストパーティ、必須<br><strong>期間：</strong>1年<br><strong>目的：</strong>お好みの言語を保存します。"
+              ],
+              "title": "3.1 言語設定Cookie"
+            }
+          },
+          "title": "3. 使用するCookie"
+        },
+        "introduction": {
+          "content": [
+            "このCookieポリシーは、Rediaccが当社ウェブサイト<a href=\"https://www.rediacc.com\">www.rediacc.com</a>でCookieをどのように使用するかを説明します。"
+          ],
+          "id": "introduction",
+          "title": "1. はじめに"
+        },
+        "managingCookies": {
+          "content": [
+            "ブラウザの設定でCookieを管理できます："
+          ],
+          "id": "managing-cookies",
+          "items": [
+            "<strong>Chrome：</strong>設定 → プライバシーとセキュリティ → Cookie",
+            "<strong>Firefox：</strong>設定 → プライバシーとセキュリティ → Cookie",
+            "<strong>Safari：</strong>環境設定 → プライバシー → Webサイトデータを管理",
+            "<strong>Edge：</strong>設定 → Cookieとサイトのアクセス許可"
+          ],
+          "title": "6. Cookieの管理"
+        },
+        "whatAreCookies": {
+          "content": [
+            "Cookieとは、ウェブサイトを訪問した際にデバイスに保存される小さなテキストファイルです。"
+          ],
+          "id": "what-are-cookies",
+          "title": "2. Cookieとは"
+        },
+        "whatWeDontUse": {
+          "content": [
+            "以下の技術は当社ウェブサイトでは使用して<strong>いません</strong>："
+          ],
+          "content2": [
+            "注：このCookieポリシーはRediaccマーケティングウェブサイトに適用されます。当社のソフトウェア製品（Webアプリケーション、CLI、ミドルウェア、Bridge）は、Cookieを使用しない個別の使用テレメトリを収集します。製品テレメトリの詳細については、<a href=\"telemetry-policy\">テレメトリポリシー</a>をご覧ください。"
+          ],
+          "id": "what-we-dont-use",
+          "items": [
+            "<strong>トラッキングCookie</strong> — Google Analytics、Facebook Pixelなどのトラッキングは不使用",
+            "<strong>サードパーティCookie</strong> — 外部サービスによるCookieは設定されません",
+            "<strong>広告Cookie</strong> — 広告は配信していません",
+            "<strong>フィンガープリンティング</strong> — ブラウザフィンガープリンティングは不使用"
+          ],
+          "title": "4. 使用しないもの"
+        }
+      },
+      "toc": {
+        "title": "目次"
+      }
+    },
+    "disasterRecovery": {
+      "enterpriseCta": {
+        "button": "営業担当者へのお問い合わせ",
+        "description": "組織に合わせてインフラストラクチャを保護します",
+        "heading": "カスタムのエンタープライズ ソリューションが必要ですか?"
+      },
+      "faq": {
+        "heading": "よくある質問",
+        "items": [
+          {
+            "answer": "はい、プランはいつでも変更できます。 アップグレードはすぐに有効になり、ダウングレードは次の請求サイクルの開始時に適用されます。",
+            "question": "プランをアップグレードまたはダウングレードできますか?"
+          },
+          {
+            "answer": "すべての主要なクレジット カード (Visa、MasterCard、American Express) を受け入れ、年間 Enterprise プランについては請求書ベースの請求をサポートしています。",
+            "question": "どのような支払い方法を利用できますか?"
+          },
+          {
+            "answer": "私たちのコミュニティプランは永久に無料です。 ビジネス プランについては、トライアル オプションについて弊社の営業チームにお問い合わせください。",
+            "question": "無料トライアルはありますか?"
+          },
+          {
+            "answer": "コミュニティ プランには、コミュニティ サポートとセルフサービス ドキュメントが含まれています。 Professional には電子メールとチャットのサポートが含まれます。 Business には電話サポートと専任のカスタマー サクセス マネージャーが追加されます。 Enterprise には、エグゼクティブ エスカレーションを伴う 24 時間年中無休のホワイトグローブ サポートが含まれています。",
+            "question": "サポートには何が含まれますか?"
+          },
+          {
+            "answer": "リカバリ時間は層によって異なります。Community は最新のスナップショットを数分で復元し、Professional はポイントインタイムリカバリ (24 時間) を提供し、Business は 4 時間の SLA を提供し、Enterprise は 15 ～ 60 分のカスタム RTO を提供します。",
+            "question": "災害からどれくらい早く復旧できますか?"
+          },
+          {
+            "answer": "はい。 従来のバックアップ システムとは異なり、復元プロセスをテストすることでバックアップが自動的に検証されるため、緊急時に必要になる前にバックアップが機能することがわかります。",
+            "question": "私のバックアップは実際にテストされ、検証されていますか?"
+          },
+          {
+            "answer": "データは、選択した保存場所に暗号化されたままになります。 お客様は完全な制御を維持し、当社のサービスとは独立して暗号化されたバックアップにアクセスできます。",
+            "question": "サービスがダウンした場合、データはどうなりますか?"
+          }
+        ]
+      },
+      "finalCta": {
+        "buttons": {
+          "startFree": "無料で始める",
+          "talkToSales": "営業担当者に相談する"
+        },
+        "description": "インフラストラクチャの保護を初日から始めましょう",
+        "heading": "始める準備はできましたか?"
+      },
+      "hero": {
+        "subtitle": "現在のインフラストラクチャを保護し、成長に合わせて拡張できる災害復旧層を選択してください。",
+        "title": "シンプルで透明性のある価格設定"
+      },
+      "meta": {
+        "description": "ビジネスに最適なプランをお選びください。 無料のコミュニティ アクセスからエンタープライズ グレードの保護まで。 隠れた手数料はありません。",
+        "keywords": "災害復旧料金, バックアップ料金, 事業継続計画, インフラ保護, ランサムウェア復旧",
+        "title": "価格 | シンプルで透過的なインフラ保護"
+      },
+      "plans": {
+        "business": {
+          "description": "ミッションクリティカルな保護 + エキスパートセットアップ",
+          "features": [
+            "Professional + のすべて",
+            "9,999 ドルの導入サポートが含まれます (ローンチ オファー)",
+            "地理的冗長ストレージ (3 リージョン) - 1 つの障害が発生しても停止しません",
+            "継続的なデータ保護 - データ損失ゼロ",
+            "4 時間のリカバリ SLA (保証)",
+            "無制限のリポジトリ、それぞれ 500 GB",
+            "7 つのアクティブなジョブ / 3 つの予約済みジョブ",
+            "90 日間の監査ログの保持",
+            "役割ベースのアクセス制御と包括的な監査ログ",
+            "コンプライアンス対応の監査レポート",
+            "専任のカスタマーサクセスマネージャー",
+            "電話サポート + コラボレーション スペース"
+          ],
+          "name": "仕事"
+        },
+        "community": {
+          "description": "初日から本番環境に対応した災害復旧 — 永久無料",
+          "features": [
+            "無制限のユーザーとチーム - 自由にコラボレーション",
+            "最新のスナップショットの復元 - 数分で障害から回復します",
+            "10 個のリポジトリ、それぞれ 10 GB",
+            "2 時間のジョブ タイムアウト、2 つのアクティブなジョブ/1 つの予約済みジョブ",
+            "7 日間の監査ログの保持",
+            "手動バックアップのスケジュール設定",
+            "コミュニティ Slack へのアクセス",
+            "セルフサービスのサポートとドキュメント",
+            "「Rediacc による」帰属"
+          ],
+          "name": "コミュニティ"
+        },
+        "enterprise": {
+          "description": "複雑なエンタープライズ インフラストラクチャに対するホワイト グローブの災害復旧",
+          "features": [
+            "ビジネスのすべて +",
+            "カスタム SLA (15 ～ 60 分の RTO) - お客様の要件と当社の取り組み",
+            "専用のインフラストラクチャ テナント - 最大のセキュリティとパフォーマンス",
+            "24 時間年中無休の徹底したサポート",
+            "無制限のリポジトリ、それぞれ 1TB 以上",
+            "96 時間以上のジョブ ウィンドウ (10 個以上のアクティブなジョブ/5 個以上の予約済みジョブ)",
+            "1 年以上の監査ログの保持",
+            "四半期ごとの災害復旧演習 - 準備状況をテストする",
+            "エグゼクティブエスカレーションホットライン",
+            "カスタム統合とワークフロー",
+            "監査文書サポートとセキュリティレビュー"
+          ],
+          "name": "企業",
+          "priceNote": "*開始時間"
+        },
+        "professional": {
+          "description": "企業の複雑さを必要としない、プロフェッショナル レベルの災害復旧",
+          "features": [
+            "コミュニティのすべて +",
+            "自動バックアップ スケジュール - 設定すればあとは忘れます",
+            "ポイントインタイムリカバリ(24時間)",
+            "500 リポジトリ、それぞれ 100 GB",
+            "24 時間のジョブ タイムアウト、5 つのアクティブなジョブ/2 つの予約済みジョブ",
+            "30 日間の監査ログの保持",
+            "メール+チャットサポート",
+            "Slack と PagerDuty の通知",
+            "「Powered by Rediacc」の帰属なし",
+            "統合 API アクセス"
+          ],
+          "name": "プロ"
+        }
+      },
+      "professionalServices": {
+        "access": {
+          "description": "ハイブリッド カバレッジでは、含まれているオンボーディングとオプションのアドオンを組み合わせているため、すべてのチームが適切なタイミングで適切なサポートを受けることができます。",
+          "heading": "階層別のプロフェッショナル サービスへのアクセス",
+          "labels": {
+            "available": "利用可能なアドオン",
+            "included": "付属"
+          },
+          "tiers": [
+            {
+              "available": [
+                "標準実装 ($9,999) または階層型パッケージ (小規模 $7,499、中規模 $14,999、大規模 $29,999、エンタープライズ カスタム)",
+                "緊急対応業務 (オンデマンドで 29,999 ドル)"
+              ],
+              "included": [
+                "セルフサービスのドキュメント、ビデオチュートリアル、コミュニティフォーラム"
+              ],
+              "planId": "コミュニティ"
+            },
+            {
+              "available": [
+                "優先実装 ($19,999)",
+                "緊急対応業務 (オンデマンドで 29,999 ドル)",
+                "カスタム統合プロジェクト (範囲指定)"
+              ],
+              "included": [
+                "電子メールサポート",
+                "標準オンボーディング セッション (セットアップ コールと構成のウォークスルー)"
+              ],
+              "planId": "プロ"
+            },
+            {
+              "available": [
+                "優先実装アップグレード ($19,999)",
+                "緊急対応業務 (オンデマンドで 29,999 ドル)",
+                "カスタム開発とセキュリティ アーキテクチャのコンサルティング"
+              ],
+              "included": [
+                "優先メール/チャット/電話サポート",
+                "構成とランブックの引き継ぎによる専用のオンボーディング",
+                "標準実装パッケージが含まれています (9,999 ドル相当)",
+                "四半期ごとの成功レビュー"
+              ],
+              "planId": "仕事"
+            },
+            {
+              "available": [
+                "カスタム開発と高度な統合",
+                "セキュリティおよび監査アーキテクチャのコンサルティング",
+                "緊急対応補助金 (月額 5,000 ～ 7,500 ドル)"
+              ],
+              "included": [
+                "24 時間年中無休の徹底したサポートと専用の CSM",
+                "優先実装が含まれます (19,999 ドル相当)",
+                "四半期ごとの災害復旧テスト",
+                "年次事業継続計画ワークショップ",
+                "エグゼクティブエスカレーションホットライン"
+              ],
+              "planId": "企業"
+            }
+          ]
+        },
+        "advancedDetails": {
+          "description": "サービス パッケージ、実装層、価格設定要素、およびリテイナー オプション",
+          "heading": "実装と価格の詳細"
+        },
+        "benefits": {
+          "description": "当社のプロフェッショナル サービスは、重要なインフラストラクチャの課題に直面しても、決して孤独ではないことを保証します。",
+          "heading": "なぜプロフェッショナルサービスなのか?",
+          "items": [
+            "あなたのプロジェクトに割り当てられた専門家からなる専任チーム",
+            "SLAによる応答時間の保証",
+            "必要に応じてサービス層を切り替える",
+            "緊急層向けの 24 時間年中無休の緊急ホットライン"
+          ],
+          "statistics": [
+            "ランサムウェア攻撃の平均コストは 462 万ドル (IBM Security、2023 年)",
+            "企業の平均ダウンタイムコストは 1 分あたり 5,600 ドルです"
+          ]
+        },
+        "cta": {
+          "button": "相談のスケジュールを立てる",
+          "description": "当社の専門家がお客様の成功をお手伝いいたします",
+          "heading": "専門家のサポートが必要ですか?"
+        },
+        "header": {
+          "badge": "専門家のサポートを受けて成功を早めましょう",
+          "eligibility": "プロフェッショナル サービスは、ハイブリッド アクセスを介してあらゆるプランに対応します。 以下のマトリックスを使用して、何が含まれ、何が追加できるかを確認してください。",
+          "subtitle": "最も必要なときに専門家のサポートを受けることができます",
+          "title": "プロフェッショナルサービスパッケージ"
+        },
+        "packages": {
+          "emergency": {
+            "benefits": [
+              "即時対応 (2 時間以内)",
+              "フォレンジック、封じ込め、および回復計画",
+              "強化ロードマップを含む安定化レポート"
+            ],
+            "description": "オンデマンドのインシデント対応チームは、重要なシステムを封じ込めて復旧する準備ができています。",
+            "name": "緊急",
+            "price": "29,999ドル",
+            "tiers": [],
+            "turnaround": "同日"
+          },
+          "priority": {
+            "benefits": [
+              "専任のエンゲージメントマネージャー",
+              "夕方/週末の空き状況",
+              "生産切り替え支援"
+            ],
+            "description": "拡張された可用性とガイド付きカットオーバー サポートにより、配信が迅速化されます。",
+            "name": "優先度",
+            "price": "19,999ドル",
+            "tiers": [],
+            "turnaround": "24～48時間"
+          },
+          "standard": {
+            "benefits": [
+              "プロジェクトの発見と成功計画",
+              "環境のプロビジョニングと構成",
+              "検証チェックリストと知識の伝達"
+            ],
+            "description": "アーキテクチャ、展開、検証、有効化をカバーする構造化された実装。",
+            "name": "標準",
+            "price": "7,499ドルから",
+            "tierHeading": "ワークロードベースの実装価格設定",
+            "tierNote": "ワークロードは、バックアップおよび災害復旧保護を必要とする個別のビジネス プロセス、アプリケーション、またはサービスを表します。 実装には、アーキテクチャの設計、展開、検証、チームの有効化が含まれます。",
+            "tiers": [
+              "スターター (1 ～ 4 ワークロード): $7,499",
+              "成長 (5 ～ 10 ワークロード): 14,999 ドル",
+              "規模 (11 ～ 25 ワークロード): 29,999 ドル",
+              "エンタープライズ (25 以上のワークロード): カスタム見積もり"
+            ],
+            "turnaround": "3～5営業日"
+          }
+        },
+        "pricingFactors": {
+          "factors": [
+            {
+              "description": "関連するシステム、統合、および依存関係の数",
+              "title": "スコープの複雑さ"
+            },
+            {
+              "description": "既製のソリューションとカスタム開発要件",
+              "title": "カスタマイズレベル"
+            },
+            {
+              "description": "1 人の専門家と完全な専任の専門家チーム",
+              "title": "チームの規模"
+            }
+          ],
+          "heading": "プロフェッショナル サービスの価格設定を理解する",
+          "intro": "最終的なプロジェクトのコストは次のように決定されます。",
+          "note": "例: セキュリティ アーキテクチャのレビューを伴う中規模の実装 (マシン 120 台) の場合、通常、統合と保持範囲に応じて 14,999 ～ 24,999 ドルの範囲になります。"
+        },
+        "retainers": {
+          "description": "予測可能な月額料金で、経営陣の関係者に当社のスペシャリストへの確実なアクセスを提供します。",
+          "heading": "常時稼働の準備を整えるためのリテーナー オプション",
+          "items": [
+            {
+              "bullets": [
+                "2 時間の応答時間を保証",
+                "作戦室調整による優先エスカレーション パス",
+                "四半期ごとの準備状況レビューとハンドブックの更新"
+              ],
+              "price": "月額 5,000 ～ 7,500 ドル",
+              "title": "緊急対応用リテイナー"
+            }
+          ]
+        },
+        "serviceTypes": {
+          "badgeLabels": {
+            "emergency": "緊急",
+            "priority": "優先度",
+            "standard": "標準"
+          },
+          "heading": "利用可能なサービス",
+          "intro": "任意のサービスをクリックすると、各パッケージ層の所要時間が表示されます",
+          "services": [
+            {
+              "emergency": "即時評価 + 重要なシステムを同日にオンライン + 完全な移行を開始",
+              "id": "データ移行",
+              "name": "データ移行",
+              "priority": "迅速な移行パイプラインのセットアップ + コア データは 48 時間以内に転送",
+              "standard": "完全な検証を行ってエンドツーエンドの移行を完了する"
+            },
+            {
+              "emergency": "即時封じ込め + 重要なシステムは同日に復旧 + 完全復旧が開始",
+              "id": "ランサムウェアの回復",
+              "name": "ランサムウェアの回復",
+              "priority": "迅速な脅威評価 + コア業務は 48 時間以内に復旧",
+              "standard": "フォレンジックと強化による完全な回復"
+            },
+            {
+              "emergency": "重大な脆弱性スキャン + 高リスクパッチの同日展開 + 完全な監査の開始",
+              "id": "セキュリティ評価",
+              "name": "セキュリティ評価",
+              "priority": "包括的な脆弱性評価と 48 時間以内の修復計画",
+              "standard": "実装ロードマップを含む完全なセキュリティ監査"
+            },
+            {
+              "emergency": "重要なリソースは同日にプロビジョニング + 自動スケーリングの設定 + フルプランの開始",
+              "id": "インフラストラクチャのスケーリング",
+              "name": "インフラストラクチャのスケーリング",
+              "priority": "急速な容量増加 + 48 時間以内の監視セットアップ",
+              "standard": "最適化によるインフラストラクチャの完全な再設計"
+            },
+            {
+              "emergency": "重要な手順の説明会を同日開催 + インシデント対応の準備 + 完全なプログラムを開始",
+              "id": "チームトレーニング",
+              "name": "チームトレーニング",
+              "priority": "集中的な実践ワークショップ + 主要なワークフローを 2 日間でカバー",
+              "standard": "包括的な複数日間のトレーニング プログラム"
+            },
+            {
+              "emergency": "重大なボトルネックを特定 + 即時ホットフィックスを同日展開 + 完全な最適化を開始",
+              "id": "パフォーマンスの最適化",
+              "name": "パフォーマンスの最適化",
+              "priority": "迅速なプロファイリング + 影響の大きい最適化を 48 時間以内に導入",
+              "standard": "包括的なパフォーマンスチューニングによる詳細な分析"
+            },
+            {
+              "emergency": "重要な接続が同日に確立 + 基本的なデータ フローが動作 + 完全な開発が開始",
+              "id": "カスタム統合",
+              "name": "カスタム統合",
+              "priority": "コア統合機能 + 必須機能は 48 時間以内に有効になります",
+              "standard": "テストとドキュメントの完全な統合"
+            }
+          ]
+        }
+      },
+      "psTeaser": {
+        "heading": "始めるにあたって専門家の助けが必要ですか?",
+        "packages": {
+          "emergency": {
+            "name": "緊急",
+            "price": "29,999ドル"
+          },
+          "priority": {
+            "name": "優先度",
+            "price": "19,999ドル"
+          },
+          "standard": {
+            "name": "標準",
+            "price": "7,499ドルから"
+          }
+        },
+        "subtitle": "専門的な実装およびサポート サービスをすべての層で利用可能",
+        "viewDetails": "プロフェッショナル サービスを詳しく見る"
+      },
+      "strategy": {
+        "copy": "現在の運用段階に適したプランを選択し、明日はプラットフォームを切り替えることなく拡張できます。",
+        "distribution": [
+          "プロフェッショナル → ビジネス: チームの成長に合わせて、地理冗長ストレージ、継続的データ保護、4時間RTO保証、専任カスタマーサクセスマネージャーを追加します。",
+          "ビジネス → エンタープライズ: リスクが最も高い場合に、15〜60分のカスタムRTO、専用インフラストラクチャテナンシー、ホワイトグローブパートナーシップを解除します。"
+        ],
+        "heading": "あらゆるステージに合わせて構築"
+      },
+      "technicalSummary": {
+        "description": "プラットフォーム チームにスループット、保持、回復の期待値を正確に把握してもらいます。",
+        "heading": "技術的な限界が一目でわかる",
+        "metrics": [
+          {
+            "key": "CPUコア",
+            "label": "CPUコア"
+          },
+          {
+            "key": "リポジトリ",
+            "label": "リポジトリ"
+          },
+          {
+            "key": "リポジトリサイズ",
+            "label": "リポジトリのサイズ制限"
+          },
+          {
+            "key": "ジョブタイムアウト",
+            "label": "ジョブの最大期間"
+          },
+          {
+            "key": "アクティブなジョブ",
+            "label": "同時ジョブ"
+          },
+          {
+            "key": "予約済みジョブ",
+            "label": "ジョブキューの深さ"
+          },
+          {
+            "key": "RPO",
+            "label": "目標復旧時点 (RPO)"
+          },
+          {
+            "key": "rto",
+            "label": "目標復旧時間 (RTO)"
+          },
+          {
+            "key": "監査ウィンドウ",
+            "label": "監査ログの保存"
+          }
+        ],
+        "recoveryNote": "RPO (目標復旧時点): 時間内に測定した、損失しても許容できるデータ量。 たとえば、15 分の RPO は、最近の変更が最大 15 分間失われる可能性があることを意味します。 \n\nRTO (目標復旧時間): 災害後にどれだけ早くオンラインに戻る必要があるか。 たとえば、4 時間の RTO は、システムが 4 時間以内に復元されることを意味します。",
+        "values": {
+          "business": {
+            "activeJobs": "20",
+            "auditLogs": "90日",
+            "jobTimeout": "72時間",
+            "repositories": "無制限",
+            "repoSize": "500GB",
+            "reservedJobs": "3 予約済み",
+            "rpo": "～5分（連続）",
+            "rto": "4時間（保証あり）"
+          },
+          "community": {
+            "activeJobs": "1",
+            "auditLogs": "7日間",
+            "jobTimeout": "2時間",
+            "repositories": "無制限",
+            "repoSize": "10GB",
+            "reservedJobs": "1 予約済み",
+            "rpo": "ベストエフォート",
+            "rto": "ベストエフォート"
+          },
+          "enterprise": {
+            "activeJobs": "60",
+            "auditLogs": "1年以上",
+            "jobTimeout": "96時間以上",
+            "repositories": "無制限",
+            "repoSize": "1TB以上",
+            "reservedJobs": "5+ 予約済み",
+            "rpo": "カスタム (ほぼゼロ)",
+            "rto": "15～60分（カスタム）"
+          },
+          "professional": {
+            "activeJobs": "5",
+            "auditLogs": "30日",
+            "jobTimeout": "24時間",
+            "repositories": "無制限",
+            "repoSize": "100GB",
+            "reservedJobs": "2 予約済み",
+            "rpo": "～15分",
+            "rto": "ポイントインタイム復元"
+          }
+        }
+      },
+      "trust": {
+        "heading": "エンタープライズグレードのセキュリティと信頼性",
+        "items": [
+          "銀行レベルの暗号化",
+          "99.9% の稼働率を約束"
+        ]
+      },
+      "ui": {
+        "anchor": "戦略的アンカー",
+        "bestValue": "ベストバリュー",
+        "contactSales": "営業担当者へのお問い合わせ",
+        "cta": {
+          "business": {
+            "guarantee": "14日間の返金保証",
+            "launchBadge": "限定発売オファー",
+            "primary": "実装コールのスケジュールを設定する",
+            "secondary": "営業担当者へのお問い合わせ",
+            "valueNote": "9,999 ドルのセットアップ クレジットが含まれています"
+          },
+          "community": {
+            "note": "クレジットカードは必要ありません",
+            "primary": "無料で始める",
+            "secondary": "もっと詳しく知る"
+          },
+          "enterprise": {
+            "guarantee": "14日間の返金保証",
+            "primary": "エグゼクティブデモをスケジュールする",
+            "secondary": "営業担当者へのお問い合わせ",
+            "subtext": "カスタムSLA・専用サポート"
+          },
+          "professional": {
+            "guarantee": "14日間の返金保証",
+            "primary": "始めましょう",
+            "secondary": "営業担当者へのお問い合わせ"
+          }
+        },
+        "foreverFree": "永遠に無料",
+        "getStarted": "始めましょう",
+        "guarantees": {
+          "cancelAnytime": "いつでもキャンセル可能",
+          "moneyBack": "14日間の返金保証",
+          "noContracts": "長期契約はありません"
+        },
+        "keyBenefits": "主な利点",
+        "learnMore": "もっと詳しく知る",
+        "limitedOffer": "限定発売オファー",
+        "monthOrYear": "月額または年間 {{price}}",
+        "popular": "最も人気のある",
+        "startingAt": "*開始時間",
+        "whatsIncluded": "含まれるもの:"
+      }
+    },
     "docs": {
       "allDocumentation": "すべてのドキュメント",
       "backToDocs": "ドキュメントに戻る",
-      "fallbackNotice": {
-        "title": "翻訳は利用できません",
-        "message": "このページは選択した言語ではまだ利用できません。英語版を表示しています。",
-        "helpTranslate": "このページの翻訳を手伝ってください"
-      },
       "cliReference": "CLI リファレンス",
       "cliReferenceDesc": "すべてのコマンドライン インターフェイスのコマンドとオプションの完全なリファレンス。",
+      "fallbackNotice": {
+        "helpTranslate": "このページの翻訳を手伝ってください",
+        "message": "このページは選択した言語ではまだ利用できません。英語版を表示しています。",
+        "title": "翻訳は利用できません"
+      },
       "gettingStarted": "はじめる",
       "gettingStartedDesc": "Rediacc を初めてご利用ですか? 基本から始めて、基本的な概念を学びます。",
       "meta": {
@@ -357,73 +1064,73 @@
       },
       "queueSystem": "キューシステム",
       "queueSystemDesc": "複数のマシン間でタスクがどのように管理および実行されるかを理解します。",
+      "searchPlaceholder": "ドキュメントを検索...",
       "subtitle": "Rediacc の使用方法を学び、分散タスクの実行をマスターする",
       "tableOfContents": "このページでは",
       "title": "ドキュメント",
       "welcome": "Rediacc ドキュメントへようこそ",
-      "welcomeDescription": "Rediacc は、強力な分散タスク実行システムです。 始めたばかりの場合でも、高度な機能をマスターしたい場合でも、必要なものはすべてここで見つかります。",
-      "searchPlaceholder": "Search docs..."
+      "welcomeDescription": "Rediacc は、強力な分散タスク実行システムです。 始めたばかりの場合でも、高度な機能をマスターしたい場合でも、必要なものはすべてここで見つかります。"
     },
     "downloads": {
-      "meta": {
-        "title": "Downloads | Rediacc",
-        "description": "Download Rediacc Desktop and CLI for Windows, macOS, and Linux.",
-        "keywords": "Rediacc download, desktop application, CLI, Windows app, macOS app, Linux app"
-      },
-      "hero": {
-        "title": "Downloads",
-        "subtitle": "Rediacc Desktop & CLI",
-        "released": "Released"
-      },
-      "sections": {
-        "desktop": "Desktop Application",
-        "cli": "Command Line Interface (CLI)"
-      },
-      "platforms": {
-        "windows": "Windows",
-        "macos": "macOS",
-        "linux": "Linux"
+      "actions": {
+        "download": "ダウンロード"
       },
       "architectures": {
-        "x64": "x64 (64-bit)",
-        "x64_intel": "Intel (x64)",
         "arm64": "ARM64",
         "arm64_apple": "Apple Silicon (ARM64)",
-        "armv7l": "ARMv7"
+        "armv7l": "ARMv7",
+        "x64": "x64（64ビット）",
+        "x64_intel": "Intel (x64)"
       },
-      "types": {
-        "appimage": "AppImage (portable)",
-        "deb": "Debian/Ubuntu (.deb)"
-      },
-      "actions": {
-        "download": "Download"
+      "autoUpdate": {
+        "description": "Rediacc Desktopアプリケーションには自動更新機能が組み込まれています。初回インストール後、アプリケーションは自動的に更新を確認し、新しいバージョンが利用可能になるとお知らせします。手動でダウンロードすることなく、ワンクリックで更新をインストールできます。",
+        "title": "自動更新について"
       },
       "cli": {
-        "description": "Lightweight command-line tool for automation and scripting.",
-        "binary": "Binary"
+        "binary": "バイナリ",
+        "description": "自動化とスクリプト向けの軽量コマンドラインツール。"
       },
-      "noReleases": "No releases available at this time. Please check back later.",
-      "autoUpdate": {
-        "title": "Auto-Update Information",
-        "description": "The Rediacc Desktop application includes built-in auto-update functionality. After the initial installation, the application will automatically check for updates and notify you when new versions are available. Updates can be installed with one click without requiring manual downloads."
+      "hero": {
+        "released": "リリース日",
+        "subtitle": "Rediacc デスクトップ & CLI",
+        "title": "ダウンロード"
       },
       "installation": {
-        "title": "Installation Instructions",
-        "windows": "Windows: Run the .exe installer and follow the setup wizard. The application will be installed to your Program Files directory.",
-        "macos": "macOS: Open the .dmg file and drag Rediacc Desktop to your Applications folder. You may need to allow the app in System Preferences > Security & Privacy.",
-        "linux_appimage": "Linux AppImage: Make the file executable with 'chmod +x filename.AppImage' and run it directly. No installation required.",
-        "linux_deb": "Linux DEB: Install with 'sudo dpkg -i filename.deb' or double-click the file in your file manager.",
-        "cli": "CLI: Download the binary for your platform, make it executable (chmod +x on Linux/macOS), and place it in your PATH."
+        "cli": "CLI：お使いのプラットフォーム用のバイナリをダウンロードし、実行可能にして（Linux/macOSではchmod +x）、PATHに配置してください。",
+        "linux_appimage": "Linux AppImage：\"chmod +x ファイル名.AppImage\" でファイルを実行可能にし、直接実行してください。インストール不要です。",
+        "linux_deb": "Linux DEB：\"sudo dpkg -i ファイル名.deb\" でインストールするか、ファイルマネージャーでファイルをダブルクリックしてください。",
+        "macos": "macOS：.dmgファイルを開き、Rediacc DesktopをApplicationsフォルダにドラッグしてください。システム環境設定 > セキュリティとプライバシーでアプリを許可する必要がある場合があります。",
+        "title": "インストール手順",
+        "windows": "Windows：.exeインストーラーを実行し、セットアップウィザードに従ってください。アプリケーションはProgram Filesディレクトリにインストールされます。"
+      },
+      "meta": {
+        "description": "Windows、macOS、Linux向けのRediacc DesktopとCLIをダウンロードできます。",
+        "keywords": "Rediaccダウンロード, デスクトップアプリ, CLI, Windowsアプリ, macOSアプリ, Linuxアプリ",
+        "title": "ダウンロード | Rediacc"
+      },
+      "noReleases": "現在利用可能なリリースはありません。後ほどもう一度ご確認ください。",
+      "platforms": {
+        "linux": "Linux",
+        "macos": "macOS",
+        "windows": "Windows"
       },
       "requirements": {
-        "title": "System Requirements",
-        "windows": "Windows 10 or later (64-bit)",
-        "macos": "macOS 11 (Big Sur) or later",
-        "linux": "Modern Linux distribution with glibc 2.28+",
-        "diskTitle": "Disk Space",
-        "disk": "500 MB free disk space",
-        "ramTitle": "Memory",
-        "ram": "2 GB RAM minimum, 4 GB recommended"
+        "disk": "500 MBの空きディスク容量",
+        "diskTitle": "ディスク容量",
+        "linux": "glibc 2.28以上の最新Linuxディストリビューション",
+        "macos": "macOS 11（Big Sur）以降",
+        "ram": "最低2 GB RAM、推奨4 GB",
+        "ramTitle": "メモリ",
+        "title": "システム要件",
+        "windows": "Windows 10以降（64ビット）"
+      },
+      "sections": {
+        "cli": "コマンドラインインターフェース（CLI）",
+        "desktop": "デスクトップアプリケーション"
+      },
+      "types": {
+        "appimage": "AppImage（ポータブル）",
+        "deb": "Debian/Ubuntu (.deb)"
       }
     },
     "home": {
@@ -433,60 +1140,60 @@
       "meta": {
         "description": "Rediacc のインフラストラクチャ自動化で開発を変革します。 インスタント環境、災害復旧、AI に安全な運用を実現します。",
         "keywords": "インフラストラクチャ自動化、開発環境、災害復旧、DevOps 自動化、CI/CD パイプライン、クラウド インフラストラクチャ、開発運用、モデル コンテキスト プロトコル、AI セーフ インフラストラクチャ",
-        "title": "Rediacc - インフラストラクチャ自動化プラットフォーム"
+        "title": "Rediacc — 本番環境をクローン。何も壊さない。"
       }
     },
     "install": {
-      "meta": {
-        "title": "インストール | Rediacc CLI",
-        "description": "APT、DNF、npm、または直接ダウンロードを使用して、Linux、macOS、またはWindowsにRediacc CLIをインストールします。",
-        "keywords": "rediaccインストール, apt install, dnf install, npm install, CLIインストール"
+      "architectures": {
+        "method": "方法",
+        "platform": "プラットフォーム",
+        "title": "対応アーキテクチャ"
       },
+      "copied": "コピーしました！",
+      "copy": "コピー",
       "hero": {
-        "title": "Rediacc CLIをインストール",
-        "subtitle": "お好みのインストール方法を選択してください",
+        "downloadsLink": "ダウンロードページへ",
         "downloadsNote": "デスクトップアプリやバイナリをお探しですか？",
-        "downloadsLink": "ダウンロードページへ"
+        "subtitle": "お好みのインストール方法を選択してください",
+        "title": "Rediacc CLIをインストール"
+      },
+      "meta": {
+        "description": "APT、DNF、npm、または直接ダウンロードを使用して、Linux、macOS、またはWindowsにRediacc CLIをインストールします。",
+        "keywords": "rediaccインストール, apt install, dnf install, npm install, CLIインストール",
+        "title": "インストール | Rediacc CLI"
       },
       "methods": {
-        "quick": {
-          "title": "クイックインストール",
-          "description": "推奨 - バージョン管理付き自動インストール"
-        },
         "apt": {
-          "title": "APT (Debian / Ubuntu)",
-          "description": "Debian、Ubuntu、およびその派生向け"
-        },
-        "dnf": {
-          "title": "DNF (Fedora / RHEL)",
-          "description": "Fedora、RHEL、CentOS、Rocky Linux向け"
-        },
-        "homebrew": {
-          "title": "Homebrew (macOS / Linux)",
-          "description": "HomebrewをインストールしたmacOSおよびLinuxユーザー向け"
+          "description": "Debian、Ubuntu、およびその派生向け",
+          "title": "APT (Debian / Ubuntu)"
         },
         "binary": {
-          "title": "直接ダウンロード",
-          "description": "スタンドアロンバイナリ、パッケージマネージャー不要"
+          "description": "スタンドアロンバイナリ、パッケージマネージャー不要",
+          "title": "直接ダウンロード"
+        },
+        "dnf": {
+          "description": "Fedora、RHEL、CentOS、Rocky Linux向け",
+          "title": "DNF (Fedora / RHEL)"
         },
         "docker": {
-          "title": "Docker",
-          "description": "コンテナ環境向け"
+          "description": "コンテナ環境向け",
+          "title": "Docker"
+        },
+        "homebrew": {
+          "description": "HomebrewをインストールしたmacOSおよびLinuxユーザー向け",
+          "title": "Homebrew (macOS / Linux)"
+        },
+        "quick": {
+          "description": "推奨 - バージョン管理付き自動インストール",
+          "title": "クイックインストール"
         }
       },
-      "verify": {
-        "title": "インストールを確認"
-      },
-      "architectures": {
-        "title": "対応アーキテクチャ",
-        "method": "方法",
-        "platform": "プラットフォーム"
-      },
-      "copy": "コピー",
-      "copied": "コピーしました！",
       "platformFilter": {
         "all": "すべての方法",
         "label": "プラットフォームで絞り込み"
+      },
+      "verify": {
+        "title": "インストールを確認"
       }
     },
     "notFound": {
@@ -874,51 +1581,72 @@
         "description": "すべてのプランの主要なインフラ制限の比較。",
         "heading": "プラン比較",
         "metrics": [
-          { "key": "activeJobs", "label": "同時ジョブ数" },
-          { "key": "jobsPerMonth", "label": "月間ジョブ数" },
-          { "key": "repoSize", "label": "リポジトリサイズ上限" },
-          { "key": "repositories", "label": "リポジトリ" },
-          { "key": "machines", "label": "マシン" },
-          { "key": "usersTeams", "label": "ユーザー＆チーム" }
+          {
+            "key": "activeJobs",
+            "label": "同時ジョブ数"
+          },
+          {
+            "key": "jobsPerMonth",
+            "label": "月間ジョブ数"
+          },
+          {
+            "key": "repoSize",
+            "label": "リポジトリサイズ上限"
+          },
+          {
+            "key": "repositories",
+            "label": "リポジトリ"
+          },
+          {
+            "key": "machines",
+            "label": "マシン"
+          },
+          {
+            "key": "usersTeams",
+            "label": "ユーザー＆チーム"
+          }
         ],
         "values": {
-          "community": {
-            "activeJobs": "1",
-            "jobsPerMonth": "500",
-            "repoSize": "10 GB",
-            "repositories": "無制限",
-            "machines": "無制限",
-            "usersTeams": "無制限"
-          },
-          "professional": {
-            "activeJobs": "5",
-            "jobsPerMonth": "5,000",
-            "repoSize": "100 GB",
-            "repositories": "無制限",
-            "machines": "無制限",
-            "usersTeams": "無制限"
-          },
           "business": {
             "activeJobs": "20",
             "jobsPerMonth": "20,000",
-            "repoSize": "500 GB",
-            "repositories": "無制限",
             "machines": "無制限",
+            "repositories": "無制限",
+            "repoSize": "500 GB",
+            "usersTeams": "無制限"
+          },
+          "community": {
+            "activeJobs": "1",
+            "jobsPerMonth": "500",
+            "machines": "無制限",
+            "repositories": "無制限",
+            "repoSize": "10 GB",
             "usersTeams": "無制限"
           },
           "enterprise": {
             "activeJobs": "60",
             "jobsPerMonth": "100,000",
-            "repoSize": "1 TB+",
-            "repositories": "無制限",
             "machines": "無制限",
+            "repositories": "無制限",
+            "repoSize": "1 TB+",
+            "usersTeams": "無制限"
+          },
+          "professional": {
+            "activeJobs": "5",
+            "jobsPerMonth": "5,000",
+            "machines": "無制限",
+            "repositories": "無制限",
+            "repoSize": "100 GB",
             "usersTeams": "無制限"
           }
         }
       },
       "trust": {
         "heading": "エンタープライズグレードのセキュリティと信頼性",
-        "items": ["銀行レベルの暗号化", "99.9% の稼働率を約束"]
+        "items": [
+          "銀行レベルの暗号化",
+          "99.9% の稼働率を約束"
+        ]
       },
       "ui": {
         "anchor": "戦略的アンカー",
@@ -965,6 +1693,162 @@
         "whatsIncluded": "含まれるもの:"
       }
     },
+    "privacyPolicy": {
+      "contact": {
+        "description": "このプライバシーポリシーについてご質問がある場合は、<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までお問い合わせください。",
+        "title": "ご質問はありますか？"
+      },
+      "hero": {
+        "effectiveDate": "発効日：2026年2月1日",
+        "title": "プライバシーポリシー"
+      },
+      "meta": {
+        "description": "Rediaccが個人データをどのように収集、使用、保護するかをご確認ください。",
+        "keywords": "プライバシーポリシー, データ保護, GDPR, Plausible Analytics, Rediacc",
+        "title": "プライバシーポリシー — Rediacc"
+      },
+      "related": {
+        "title": "関連ポリシー"
+      },
+      "sections": {
+        "changes": {
+          "content": [
+            "当社はこのプライバシーポリシーを随時更新する場合があります。変更はこのページに掲載されます。"
+          ],
+          "id": "changes",
+          "title": "10. ポリシーの変更"
+        },
+        "childrenPrivacy": {
+          "content": [
+            "当社のサービスは16歳未満の方を対象としていません。"
+          ],
+          "id": "children-privacy",
+          "title": "9. 児童のプライバシー"
+        },
+        "dataRetention": {
+          "content": [
+            "お問い合わせフォームデータは必要な期間保持されます。アカウントデータはアカウント有効期間中および削除後30日間保持されます。",
+            "Plausible分析データは集計されており個人データを含まないため、データ保持ポリシーは適用されません。",
+            "製品テレメトリデータは、デバッグ目的で最大90日間生のトレースとして保持されます。集計されたテレメトリメトリクスは最大12か月間保持された後、削除されます。詳細については、<a href=\"telemetry-policy\">テレメトリポリシー</a>をご覧ください。"
+          ],
+          "id": "data-retention",
+          "title": "5. データ保持"
+        },
+        "dataSecurity": {
+          "content": [
+            "当社は転送時および保存時の暗号化を含む業界標準のセキュリティ対策を実施しています。"
+          ],
+          "id": "data-security",
+          "title": "7. データセキュリティ"
+        },
+        "dataSharing": {
+          "content": [
+            "当社はお客様の個人データを第三者に販売・貸与しません。"
+          ],
+          "id": "data-sharing",
+          "items": [
+            "プラットフォーム運営を支援する<strong>サービスプロバイダー</strong>",
+            "Cookieレスの匿名ウェブ分析のための<strong>Plausible Analytics</strong>",
+            "<strong>テレメトリ処理</strong> — 匿名化された製品使用データは、集計および分析のためにEU内の当社テレメトリエンドポイントに送信されます。テレメトリデータは第三者と共有されません（<a href=\"telemetry-policy\">テレメトリポリシー</a>を参照）",
+            "法律で要求される場合の<strong>法執行機関</strong>"
+          ],
+          "title": "4. データ共有と第三者"
+        },
+        "howWeUseInformation": {
+          "content": [
+            "収集した情報は以下の目的で使用します："
+          ],
+          "id": "how-we-use-information",
+          "items": [
+            "お問い合わせへの対応",
+            "Rediaccプラットフォームの提供・運営・維持",
+            "取引の処理と請求情報の送信",
+            "サービス関連の連絡",
+            "ウェブサイト利用パターンの把握",
+            "匿名化された使用テレメトリを通じたエラー診断、製品パフォーマンスの向上、および製品開発の指針（<a href=\"telemetry-policy\">テレメトリポリシー</a>を参照）",
+            "法的義務の遵守"
+          ],
+          "title": "3. 情報の利用方法"
+        },
+        "informationWeCollect": {
+          "content": [
+            "当社はサービス提供に必要な最小限の情報を収集します。"
+          ],
+          "id": "information-we-collect",
+          "subsections": {
+            "accountData": {
+              "content": [
+                "Rediaccアカウント作成時に、お名前、メールアドレス、組織名、請求情報を収集します。"
+              ],
+              "title": "2.2 アカウントデータ"
+            },
+            "analyticsData": {
+              "content": [
+                "当社は、プライバシーに配慮したCookieレスの分析ツール<a href=\"https://plausible.io\" target=\"_blank\" rel=\"noopener noreferrer\">Plausible Analytics</a>を使用しています。"
+              ],
+              "title": "2.3 分析データ"
+            },
+            "contactFormData": {
+              "content": [
+                "お問い合わせフォームを送信される際、お名前、メールアドレス、件名、メッセージ内容を収集します。"
+              ],
+              "title": "2.1 お問い合わせフォームデータ"
+            },
+            "cookies": {
+              "content": [
+                "言語設定を記憶するために、1つの機能的なCookie（<code>rediacc_lang</code>）を使用しています。詳細は<a href=\"cookie-policy\">Cookieポリシー</a>をご覧ください。"
+              ],
+              "title": "2.4 Cookie"
+            },
+            "productTelemetry": {
+              "content": [
+                "当社のソフトウェア製品（Webアプリケーション、CLI、ミドルウェア、およびBridge）は、製品品質、パフォーマンス、信頼性の向上を目的として匿名の使用テレメトリを収集します。テレメトリデータには、アプリケーションバージョン、オペレーティングシステム、ブラウザタイプ、パフォーマンスメトリクス、機能使用パターン、エラーレポートなどの技術情報が含まれます。個人識別子は収集前に匿名化されます。メールアドレスはドメインのみに短縮され、ユーザーIDはハッシュ化および切り詰められ、パスワードやシークレットは一切収集されません。",
+                "テレメトリはWebアプリケーションおよびCLIではデフォルトで有効であり、すべての製品で無効にすることができます。各製品が収集するデータの詳細およびオプトアウト方法については、<a href=\"telemetry-policy\">テレメトリポリシー</a>をご覧ください。"
+              ],
+              "title": "2.5 製品テレメトリデータ"
+            }
+          },
+          "title": "2. 収集する情報"
+        },
+        "internationalTransfers": {
+          "content": [
+            "お客様の情報は他国に転送・処理される場合があります。適切な保護措置を確保しています。"
+          ],
+          "id": "international-transfers",
+          "title": "8. 国際データ転送"
+        },
+        "introduction": {
+          "content": [
+            "Rediacc（「当社」）は、ウェブサイト<a href=\"https://www.rediacc.com\">www.rediacc.com</a>およびRediaccインフラ自動化プラットフォームを運営しています。このプライバシーポリシーは、当社がお客様の情報をどのように収集、使用、開示、保護するかを説明します。",
+            "当社はお客様のプライバシーの保護に取り組んでいます。このプライバシーポリシーに同意されない場合は、当社のウェブサイトおよびサービスのご利用をお控えください。"
+          ],
+          "id": "introduction",
+          "title": "1. はじめに"
+        },
+        "yourRights": {
+          "content": [
+            "管轄地域に応じて、以下の権利を有する場合があります："
+          ],
+          "content2": [
+            "権利行使については<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までご連絡ください。"
+          ],
+          "id": "your-rights",
+          "items": [
+            "<strong>アクセス：</strong>個人データのコピーを請求する権利",
+            "<strong>訂正：</strong>不正確なデータの訂正を請求する権利",
+            "<strong>削除：</strong>データの削除を請求する権利",
+            "<strong>ポータビリティ：</strong>機械可読形式のコピーを請求する権利",
+            "<strong>異議：</strong>データ処理に異議を申し立てる権利",
+            "<strong>制限：</strong>処理の制限を請求する権利",
+            "<strong>テレメトリのオプトアウト：</strong><a href=\"telemetry-policy\">テレメトリポリシー</a>に記載されているメカニズムを使用して、いつでも製品テレメトリを無効にできます"
+          ],
+          "title": "6. お客様の権利"
+        }
+      },
+      "toc": {
+        "title": "目次"
+      }
+    },
     "professionalServices": {
       "cta": {
         "button": "相談のスケジュールを立てる",
@@ -994,6 +1878,125 @@
           "重大なインシデントに対して緊急対応チームが 2 時間以内に対応可能",
           "ガイド付きインフラストラクチャ移行の成功率は 100%"
         ]
+      }
+    },
+    "refundPolicy": {
+      "contact": {
+        "description": "返金についてご質問がある場合は、<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までお問い合わせください。",
+        "title": "ご質問はありますか？"
+      },
+      "hero": {
+        "effectiveDate": "発効日：2025年2月1日",
+        "title": "返金ポリシー"
+      },
+      "meta": {
+        "description": "プラットフォームサブスクリプションおよびプロフェッショナルサービスに関するRediaccの返金ポリシー。",
+        "keywords": "返金ポリシー, キャンセル, サブスクリプション返金, Rediacc",
+        "title": "返金ポリシー — Rediacc"
+      },
+      "related": {
+        "title": "関連ポリシー"
+      },
+      "sections": {
+        "changes": {
+          "content": [
+            "この返金ポリシーは随時更新される場合があります。"
+          ],
+          "id": "changes",
+          "title": "7. ポリシーの変更"
+        },
+        "howToRequest": {
+          "content": [
+            "<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>に以下の情報をお送りください："
+          ],
+          "content2": [
+            "5営業日以内にご返答いたします。"
+          ],
+          "id": "how-to-request",
+          "items": [
+            "アカウントのメールアドレス",
+            "対象のサブスクリプションまたはサービス",
+            "返金申請の理由",
+            "関連する注文番号または請求書番号"
+          ],
+          "title": "4. 返金の申請方法"
+        },
+        "nonRefundable": {
+          "content": [
+            "以下は返金の対象外です："
+          ],
+          "id": "non-refundable",
+          "items": [
+            "14日間の期間後にキャンセルされたサブスクリプション",
+            "すでに消費されたリソースの使用量ベースの料金",
+            "すでに提供されたプロフェッショナルサービスの時間",
+            "アカウント再開手数料",
+            "<a href=\"terms-of-service\">利用規約</a>違反による料金"
+          ],
+          "title": "6. 返金不可の項目"
+        },
+        "overview": {
+          "content": [
+            "この返金ポリシーは、Rediaccサブスクリプションおよびプロフェッショナルサービスの返金条件を説明します。"
+          ],
+          "id": "overview",
+          "title": "1. 概要"
+        },
+        "platformSubscriptions": {
+          "content": [
+            "Rediaccは複数のサブスクリプションティアを提供しています："
+          ],
+          "id": "platform-subscriptions",
+          "subsections": {
+            "annualSubscriptions": {
+              "content": [
+                "年間サブスクリプションはいつでもキャンセルできます。14日間の期間を除き、部分返金はありません。"
+              ],
+              "title": "2.3 年間サブスクリプション"
+            },
+            "freeTier": {
+              "content": [
+                "Communityティアは永久無料です。"
+              ],
+              "title": "2.1 無料ティア"
+            },
+            "paidTiers": {
+              "content": [
+                "有料サブスクリプションは原則として返金不可です。例外："
+              ],
+              "items": [
+                "<strong>最初の14日間：</strong>新規加入者への全額返金",
+                "<strong>サービス障害：</strong>長時間の障害（48時間以上）に対する按分クレジット",
+                "<strong>請求エラー：</strong>誤った請求に対する全額返金"
+              ],
+              "title": "2.2 有料ティア"
+            }
+          },
+          "title": "2. プラットフォームサブスクリプション"
+        },
+        "professionalServices": {
+          "content": [
+            "プロフェッショナルサービスは時間単位で請求されます（$400–$1,200/時間）："
+          ],
+          "id": "professional-services",
+          "items": [
+            "<strong>作業開始前：</strong>全額返金",
+            "<strong>契約期間中：</strong>作業時間分のみ請求",
+            "<strong>品質に関する異議：</strong>納品後7日以内にご連絡ください",
+            "<strong>最低契約期間：</strong>一部のパッケージには最低期間があります"
+          ],
+          "title": "3. プロフェッショナルサービス"
+        },
+        "refundProcessing": {
+          "content": [
+            "承認された返金は10営業日以内に元の支払方法に処理されます。"
+          ],
+          "id": "refund-processing",
+          "title": "5. 返金処理"
+        }
+      },
+      "toc": {
+        "title": "目次"
       }
     },
     "solutions": {
@@ -1315,6 +2318,102 @@
           "title": "災害復旧の実際の様子をご覧ください"
         }
       },
+      "preemptiveDefense": {
+        "cta": {
+          "button": "先制防御を開始",
+          "subtitle": "クローン。テスト。強化。繰り返し。年に一度ではなく、毎日。",
+          "title": "攻撃される前に防御する準備はできていますか？"
+        },
+        "hero": {
+          "subtitle": "本番環境をクローン。AIセキュリティツールを解き放つ。攻撃者より先にすべての弱点を見つける。",
+          "title": "彼らは数秒で攻撃する。あなたはまだ年に一度しかテストしていない。"
+        },
+        "meta": {
+          "description": "AI攻撃者は数分で脆弱性を悪用します。本番での年次テストをやめましょう。Rediaccでインフラストラクチャをクローンし、AIによる継続的なセキュリティテストを安全に実行しましょう。",
+          "keywords": "先制防御、AIペネトレーションテスト、継続的セキュリティテスト、クローンベースペンテスト、本番クローンセキュリティ、AIサイバーセキュリティ",
+          "title": "先制防御 | クローンベースの継続的セキュリティテスト"
+        },
+        "problems": {
+          "aiAttackSpeed": {
+            "problem": {
+              "additionalPoints": [
+                "AIエージェントは最小限の人間の指示で80〜90%自律的に組織を突破する",
+                "セキュリティ研究者は初期アクセスから横方向移動まで51秒のブレイクアウト時間を記録した",
+                "新しい脆弱性の悪用までの時間が32日から5日に崩壊した",
+                "97パーセントの組織がAIによるペネトレーションテストを検討している",
+                "AIは毎秒数千の偵察リクエストを行い、人間の速度を圧倒する"
+              ],
+              "description": "AIを活用した攻撃者は数分でシステムを突破します。自律エージェントは80〜90%自律的に動作し、毎秒数千のリクエストを行います。新しい脆弱性の悪用までの時間は32日からわずか5日に崩壊しました。",
+              "story": "2025年11月、大手AI企業は、国家支援のハッカーがAIアシスタントを武器として約30の組織を攻撃し、4つの侵入に成功したことを明らかにしました。AIは80〜90%自律的に動作し、人間の監視はわずか約20分でした。 <a href='https://www.anthropic.com/news/disrupting-AI-espionage' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> <a href='https://www.axios.com/2025/11/13/anthropic-china-claude-code-cyberattack' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> 別途、オープンソースのAI攻撃フレームワークが、広く使用されているネットワークアプライアンスの重大なゼロデイ脆弱性を公開から10分以内に武器化しました。 <a href='https://blog.checkpoint.com/executive-insights/hexstrike-ai-when-llms-meet-zero-day-exploitation/' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> <a href='https://thehackernews.com/2025/09/threat-actors-weaponize-hexstrike-ai-to.html' target='_blank' rel='noopener noreferrer' class='citation'>[4]</a>"
+            },
+            "solution": {
+              "benefits": [
+                "ゼロコピークローニングが本番に忠実なテストターゲットを数秒で作成",
+                "分離されたクローン上でAI攻撃ツールを安全にフルスピードで実行",
+                "エフェメラル環境は各セキュリティテストサイクル後に自動クリーンアップ",
+                "古いコピーではなく、実際の本番データと構成に対してテスト",
+                "マルチクラウドポータビリティにより異なるインフラストラクチャターゲットでテスト可能"
+              ],
+              "description": "ゼロコピーで数秒で本番をクローン。分離されたクローン上でAI攻撃ツールをフルスピードで実行。エフェメラル環境は各テストサイクル後に自動的に破棄されます。",
+              "title": "クローンベースのテストでマシンスピードに対抗"
+            },
+            "subtitle": "敵を知り己を知れば百戦危うからず <small class='subtitle-attribution'>— 孫子、兵法</small>",
+            "title": "AI攻撃はマシンスピードで動く"
+          },
+          "periodicCompliance": {
+            "problem": {
+              "additionalPoints": [
+                "32パーセントの企業がペネトレーションテストを年に1回しか実施していない",
+                "大手小売業者はPCI認証の2か月後に1億1,000万件のレコードが盗まれた",
+                "決済処理業者はPCI認証の2週間後に1億枚のカードが漏洩した",
+                "侵害されたPCI認証企業の100パーセントが侵害時点でコンプライアンスに違反していた",
+                "コンプライアンスはある時点を認証するが、攻撃者は他のすべての日を悪用する"
+              ],
+              "description": "組織はコンプライアンスのために年に1〜2回ペネトレーションテストを行います。合格し、認証を取得し、その数週間後に侵害されます。認証は1日のセキュリティを証明するだけです。攻撃者は他の364日を悪用します。",
+              "story": "米国の大手小売業者は2013年9月にPCI DSS認証を取得し、わずか2か月後に侵害されました—1億1,000万件の顧客レコードが盗まれ、2億4,800万ドルのコストが発生しました。 <a href='https://www.digitaltransactions.net/target-passed-a-pci-inspection-before-breach-will-spend-100-million-on-chip-card-effort/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> <a href='https://krebsonsecurity.com/2014/02/target-hackers-broke-in-via-hvac-company/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> 大手決済処理業者はPCI認証取得のわずか2週間前に1億枚の決済カードが漏洩し、2億ドルのコストが発生しました。 <a href='https://www.secureworks.com/blog/general-pci-compliance-data-security-case-study-heartland' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> 独立したフォレンジック研究により、侵害を受けたPCI認証企業の100%が実際の侵害時点でコンプライアンスに違反していたことが判明しました。 <a href='https://www.verizon.com/business/resources/reports/payment-security-report/' target='_blank' rel='noopener noreferrer' class='citation'>[4]</a>"
+            },
+            "solution": {
+              "benefits": [
+                "オンデマンドクローニングにより毎日または毎時のセキュリティテストサイクルが可能",
+                "エフェメラル環境はテスト後に自動的に破棄され、永続的な攻撃面を排除",
+                "ゼロコピー技術により変更が書き込まれるまで各クローンは無料",
+                "リポジトリごとの暗号化によりサイクル全体を通じてテストデータを保護",
+                "CI/CD統合により各デプロイメントで自動的にセキュリティクローンアンドテストをトリガー"
+              ],
+              "description": "スケジュールに従って本番をクローン—毎日、毎時、またはデプロイごと。クローン上でAIペネトレーションテストを実行。破棄。繰り返し。ゼロコピーにより、変更が書き込まれるまで各クローンは無料です。",
+              "title": "エフェメラルクローンでの継続的テスト"
+            },
+            "subtitle": "まことに、アッラーは人々が自分自身の中にあるものを変えるまで、その状態を変えられない <small class='subtitle-attribution'>— アル・ラアド 13:11</small>",
+            "title": "年次テストはコンプライアンスの幻想"
+          },
+          "productionTesting": {
+            "problem": {
+              "additionalPoints": [
+                "大手セキュリティベンダーのアップデートが1日で850万台のデバイスをクラッシュさせた",
+                "CISOの30パーセントが自社のセキュリティテストによる障害を恐れていると報告",
+                "脆弱性スキャナーがコアネットワークスイッチと仮想化ホストをクラッシュさせる",
+                "セキュリティツールが防ぐはずのダウンタイムを引き起こす",
+                "組織は本番がリスクに耐えられないためテスト範囲を制限する"
+              ],
+              "description": "セキュリティスキャナーとペネトレーションテストは本番システムをクラッシュさせます。脆弱性スキャナーはネットワーク機器をクラッシュさせ、サービスを停止させ、連鎖的な障害を引き起こします。2024年最悪のIT災害は、セキュリティベンダー自身のアップデートによって引き起こされました。",
+              "story": "2024年7月19日、大手サイバーセキュリティベンダーが欠陥のあるセンサーアップデートを世界中の本番システムに配信しました。850万台のデバイスが同時にクラッシュし、100億ドル以上の世界的な損害を引き起こしました。 <a href='https://en.wikipedia.org/wiki/2024_CrowdStrike-related_IT_outages' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> <a href='https://www.cisa.gov/news-events/alerts/2024/07/19/widespread-it-outage-due-crowdstrike-update' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> 大手航空会社1社だけで5億ドルの損失と7,000便の欠航が発生しました。 <a href='https://www.darkreading.com/cyberattacks-data-breaches/delta-launches-500m-lawsuit-crowdstrike' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> 2025年の調査では、セキュリティリーダーの30%が自社のセキュリティテストによる障害を恐れていることが判明しました。 <a href='https://pentera.io/blog/2025-state-of-pentesting-insights/' target='_blank' rel='noopener noreferrer' class='citation'>[4]</a>"
+            },
+            "solution": {
+              "benefits": [
+                "本番忠実クローンが本番に触れずに実際のインフラストラクチャを複製",
+                "アトミックレプリケーションによりテスト時にクローンが本番状態と正確に一致",
+                "ポイントインタイムスナップショットで破壊的テスト後に即座にリセットと再テストが可能",
+                "ゼロ知識暗号化がセキュリティテスト中のクローンデータを保護",
+                "本番リスクゼロで最も攻撃的なスキャナーとエクスプロイトを実行"
+              ],
+              "description": "ゼロコピー技術でアトミックな本番忠実クローンを作成。最大の攻撃性でクローンを攻撃—クラッシュすれば、良いこと、弱点を発見しました。ポイントインタイムスナップショットでクローンを即座にリセットして再テスト。",
+              "title": "クローンでテスト、本番を保護"
+            },
+            "subtitle": "まず、害を与えないこと <small class='subtitle-attribution'>— ヒポクラテスの伝統（primum non nocere）</small>",
+            "title": "セキュリティテストが本番をクラッシュさせる"
+          }
+        }
+      },
       "systemPortability": {
         "cta": {
           "button": "移行パスを探索する",
@@ -1506,102 +2605,6 @@
             "title": "ランサムウェアのターゲットのバックアップ"
           }
         }
-      },
-      "preemptiveDefense": {
-        "meta": {
-          "title": "先制防御 | クローンベースの継続的セキュリティテスト",
-          "description": "AI攻撃者は数分で脆弱性を悪用します。本番での年次テストをやめましょう。Rediaccでインフラストラクチャをクローンし、AIによる継続的なセキュリティテストを安全に実行しましょう。",
-          "keywords": "先制防御、AIペネトレーションテスト、継続的セキュリティテスト、クローンベースペンテスト、本番クローンセキュリティ、AIサイバーセキュリティ"
-        },
-        "hero": {
-          "title": "彼らは数秒で攻撃する。あなたはまだ年に一度しかテストしていない。",
-          "subtitle": "本番環境をクローン。AIセキュリティツールを解き放つ。攻撃者より先にすべての弱点を見つける。"
-        },
-        "problems": {
-          "aiAttackSpeed": {
-            "title": "AI攻撃はマシンスピードで動く",
-            "subtitle": "敵を知り己を知れば百戦危うからず <small class='subtitle-attribution'>— 孫子、兵法</small>",
-            "problem": {
-              "description": "AIを活用した攻撃者は数分でシステムを突破します。自律エージェントは80〜90%自律的に動作し、毎秒数千のリクエストを行います。新しい脆弱性の悪用までの時間は32日からわずか5日に崩壊しました。",
-              "story": "2025年11月、大手AI企業は、国家支援のハッカーがAIアシスタントを武器として約30の組織を攻撃し、4つの侵入に成功したことを明らかにしました。AIは80〜90%自律的に動作し、人間の監視はわずか約20分でした。 <a href='https://www.anthropic.com/news/disrupting-AI-espionage' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> <a href='https://www.axios.com/2025/11/13/anthropic-china-claude-code-cyberattack' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> 別途、オープンソースのAI攻撃フレームワークが、広く使用されているネットワークアプライアンスの重大なゼロデイ脆弱性を公開から10分以内に武器化しました。 <a href='https://blog.checkpoint.com/executive-insights/hexstrike-ai-when-llms-meet-zero-day-exploitation/' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> <a href='https://thehackernews.com/2025/09/threat-actors-weaponize-hexstrike-ai-to.html' target='_blank' rel='noopener noreferrer' class='citation'>[4]</a>",
-              "additionalPoints": [
-                "AIエージェントは最小限の人間の指示で80〜90%自律的に組織を突破する",
-                "セキュリティ研究者は初期アクセスから横方向移動まで51秒のブレイクアウト時間を記録した",
-                "新しい脆弱性の悪用までの時間が32日から5日に崩壊した",
-                "97パーセントの組織がAIによるペネトレーションテストを検討している",
-                "AIは毎秒数千の偵察リクエストを行い、人間の速度を圧倒する"
-              ]
-            },
-            "solution": {
-              "title": "クローンベースのテストでマシンスピードに対抗",
-              "description": "ゼロコピーで数秒で本番をクローン。分離されたクローン上でAI攻撃ツールをフルスピードで実行。エフェメラル環境は各テストサイクル後に自動的に破棄されます。",
-              "benefits": [
-                "ゼロコピークローニングが本番に忠実なテストターゲットを数秒で作成",
-                "分離されたクローン上でAI攻撃ツールを安全にフルスピードで実行",
-                "エフェメラル環境は各セキュリティテストサイクル後に自動クリーンアップ",
-                "古いコピーではなく、実際の本番データと構成に対してテスト",
-                "マルチクラウドポータビリティにより異なるインフラストラクチャターゲットでテスト可能"
-              ]
-            }
-          },
-          "productionTesting": {
-            "title": "セキュリティテストが本番をクラッシュさせる",
-            "subtitle": "まず、害を与えないこと <small class='subtitle-attribution'>— ヒポクラテスの伝統（primum non nocere）</small>",
-            "problem": {
-              "description": "セキュリティスキャナーとペネトレーションテストは本番システムをクラッシュさせます。脆弱性スキャナーはネットワーク機器をクラッシュさせ、サービスを停止させ、連鎖的な障害を引き起こします。2024年最悪のIT災害は、セキュリティベンダー自身のアップデートによって引き起こされました。",
-              "story": "2024年7月19日、大手サイバーセキュリティベンダーが欠陥のあるセンサーアップデートを世界中の本番システムに配信しました。850万台のデバイスが同時にクラッシュし、100億ドル以上の世界的な損害を引き起こしました。 <a href='https://en.wikipedia.org/wiki/2024_CrowdStrike-related_IT_outages' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> <a href='https://www.cisa.gov/news-events/alerts/2024/07/19/widespread-it-outage-due-crowdstrike-update' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> 大手航空会社1社だけで5億ドルの損失と7,000便の欠航が発生しました。 <a href='https://www.darkreading.com/cyberattacks-data-breaches/delta-launches-500m-lawsuit-crowdstrike' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> 2025年の調査では、セキュリティリーダーの30%が自社のセキュリティテストによる障害を恐れていることが判明しました。 <a href='https://pentera.io/blog/2025-state-of-pentesting-insights/' target='_blank' rel='noopener noreferrer' class='citation'>[4]</a>",
-              "additionalPoints": [
-                "大手セキュリティベンダーのアップデートが1日で850万台のデバイスをクラッシュさせた",
-                "CISOの30パーセントが自社のセキュリティテストによる障害を恐れていると報告",
-                "脆弱性スキャナーがコアネットワークスイッチと仮想化ホストをクラッシュさせる",
-                "セキュリティツールが防ぐはずのダウンタイムを引き起こす",
-                "組織は本番がリスクに耐えられないためテスト範囲を制限する"
-              ]
-            },
-            "solution": {
-              "title": "クローンでテスト、本番を保護",
-              "description": "ゼロコピー技術でアトミックな本番忠実クローンを作成。最大の攻撃性でクローンを攻撃—クラッシュすれば、良いこと、弱点を発見しました。ポイントインタイムスナップショットでクローンを即座にリセットして再テスト。",
-              "benefits": [
-                "本番忠実クローンが本番に触れずに実際のインフラストラクチャを複製",
-                "アトミックレプリケーションによりテスト時にクローンが本番状態と正確に一致",
-                "ポイントインタイムスナップショットで破壊的テスト後に即座にリセットと再テストが可能",
-                "ゼロ知識暗号化がセキュリティテスト中のクローンデータを保護",
-                "本番リスクゼロで最も攻撃的なスキャナーとエクスプロイトを実行"
-              ]
-            }
-          },
-          "periodicCompliance": {
-            "title": "年次テストはコンプライアンスの幻想",
-            "subtitle": "まことに、アッラーは人々が自分自身の中にあるものを変えるまで、その状態を変えられない <small class='subtitle-attribution'>— アル・ラアド 13:11</small>",
-            "problem": {
-              "description": "組織はコンプライアンスのために年に1〜2回ペネトレーションテストを行います。合格し、認証を取得し、その数週間後に侵害されます。認証は1日のセキュリティを証明するだけです。攻撃者は他の364日を悪用します。",
-              "story": "米国の大手小売業者は2013年9月にPCI DSS認証を取得し、わずか2か月後に侵害されました—1億1,000万件の顧客レコードが盗まれ、2億4,800万ドルのコストが発生しました。 <a href='https://www.digitaltransactions.net/target-passed-a-pci-inspection-before-breach-will-spend-100-million-on-chip-card-effort/' target='_blank' rel='noopener noreferrer' class='citation'>[1]</a> <a href='https://krebsonsecurity.com/2014/02/target-hackers-broke-in-via-hvac-company/' target='_blank' rel='noopener noreferrer' class='citation'>[2]</a> 大手決済処理業者はPCI認証取得のわずか2週間前に1億枚の決済カードが漏洩し、2億ドルのコストが発生しました。 <a href='https://www.secureworks.com/blog/general-pci-compliance-data-security-case-study-heartland' target='_blank' rel='noopener noreferrer' class='citation'>[3]</a> 独立したフォレンジック研究により、侵害を受けたPCI認証企業の100%が実際の侵害時点でコンプライアンスに違反していたことが判明しました。 <a href='https://www.verizon.com/business/resources/reports/payment-security-report/' target='_blank' rel='noopener noreferrer' class='citation'>[4]</a>",
-              "additionalPoints": [
-                "32パーセントの企業がペネトレーションテストを年に1回しか実施していない",
-                "大手小売業者はPCI認証の2か月後に1億1,000万件のレコードが盗まれた",
-                "決済処理業者はPCI認証の2週間後に1億枚のカードが漏洩した",
-                "侵害されたPCI認証企業の100パーセントが侵害時点でコンプライアンスに違反していた",
-                "コンプライアンスはある時点を認証するが、攻撃者は他のすべての日を悪用する"
-              ]
-            },
-            "solution": {
-              "title": "エフェメラルクローンでの継続的テスト",
-              "description": "スケジュールに従って本番をクローン—毎日、毎時、またはデプロイごと。クローン上でAIペネトレーションテストを実行。破棄。繰り返し。ゼロコピーにより、変更が書き込まれるまで各クローンは無料です。",
-              "benefits": [
-                "オンデマンドクローニングにより毎日または毎時のセキュリティテストサイクルが可能",
-                "エフェメラル環境はテスト後に自動的に破棄され、永続的な攻撃面を排除",
-                "ゼロコピー技術により変更が書き込まれるまで各クローンは無料",
-                "リポジトリごとの暗号化によりサイクル全体を通じてテストデータを保護",
-                "CI/CD統合により各デプロイメントで自動的にセキュリティクローンアンドテストをトリガー"
-              ]
-            }
-          }
-        },
-        "cta": {
-          "title": "攻撃される前に防御する準備はできていますか？",
-          "subtitle": "クローン。テスト。強化。繰り返し。年に一度ではなく、毎日。",
-          "button": "先制防御を開始"
-        }
       }
     },
     "team": {
@@ -1652,652 +2655,232 @@
         "title": "私たちのチームのご紹介"
       },
       "values": {
-        "title": "私たちの価値観",
         "items": {
-          "simplicity": {
-            "title": "Simplicity First",
-            "description": "Complex problems don't require complex solutions. We obsess over making powerful features simple to use."
-          },
-          "security": {
-            "title": "Security by Design",
-            "description": "Security isn't an afterthought—it's built into every line of code, every feature, every decision we make."
-          },
-          "success": {
-            "title": "Customer Success",
-            "description": "Your success is our success. We're not happy unless you're achieving extraordinary results with our platform."
+          "global": {
+            "description": "インフラはグローバルであり、私たちの視点もそうです。各地のニーズと規制を尊重し、世界中のユーザーのために構築しています。",
+            "title": "グローバル思考"
           },
           "innovation": {
-            "title": "Continuous Innovation",
-            "description": "The tech world never stops evolving, and neither do we. We're always pushing boundaries and exploring new possibilities."
+            "description": "テクノロジーの世界は進化し続けており、私たちも同様です。常に限界を押し広げ、新しい可能性を探求しています。",
+            "title": "継続的イノベーション"
           },
-          "global": {
-            "title": "Global Thinking",
-            "description": "Infrastructure is global, and so is our perspective. We build for users everywhere, respecting local needs and regulations."
+          "security": {
+            "description": "セキュリティは後付けではなく、あらゆるコード、機能、意思決定に組み込まれています。",
+            "title": "セキュリティ・バイ・デザイン"
+          },
+          "simplicity": {
+            "description": "複雑な問題に複雑な解決策は不要です。強力な機能をシンプルに使えることに私たちはこだわっています。",
+            "title": "シンプルさを第一に"
+          },
+          "success": {
+            "description": "お客様の成功が私たちの成功です。お客様がプラットフォームで卓越した成果を上げられない限り、私たちは満足しません。",
+            "title": "顧客の成功"
           },
           "transparency": {
-            "title": "Transparency",
-            "description": "Open communication, honest pricing, and clear documentation. No hidden fees, no surprises, no fine print."
-          }
-        }
-      }
-    },
-    "privacyPolicy": {
-      "meta": {
-        "title": "プライバシーポリシー — Rediacc",
-        "description": "Rediaccが個人データをどのように収集、使用、保護するかをご確認ください。",
-        "keywords": "プライバシーポリシー, データ保護, GDPR, Plausible Analytics, Rediacc"
-      },
-      "hero": {
-        "title": "プライバシーポリシー",
-        "effectiveDate": "発効日：2026年2月1日"
-      },
-      "toc": {
-        "title": "目次"
-      },
-      "sections": {
-        "introduction": {
-          "id": "introduction",
-          "title": "1. はじめに",
-          "content": [
-            "Rediacc（「当社」）は、ウェブサイト<a href=\"https://www.rediacc.com\">www.rediacc.com</a>およびRediaccインフラ自動化プラットフォームを運営しています。このプライバシーポリシーは、当社がお客様の情報をどのように収集、使用、開示、保護するかを説明します。",
-            "当社はお客様のプライバシーの保護に取り組んでいます。このプライバシーポリシーに同意されない場合は、当社のウェブサイトおよびサービスのご利用をお控えください。"
-          ]
-        },
-        "informationWeCollect": {
-          "id": "information-we-collect",
-          "title": "2. 収集する情報",
-          "content": ["当社はサービス提供に必要な最小限の情報を収集します。"],
-          "subsections": {
-            "contactFormData": {
-              "title": "2.1 お問い合わせフォームデータ",
-              "content": [
-                "お問い合わせフォームを送信される際、お名前、メールアドレス、件名、メッセージ内容を収集します。"
-              ]
-            },
-            "accountData": {
-              "title": "2.2 アカウントデータ",
-              "content": [
-                "Rediaccアカウント作成時に、お名前、メールアドレス、組織名、請求情報を収集します。"
-              ]
-            },
-            "analyticsData": {
-              "title": "2.3 分析データ",
-              "content": [
-                "当社は、プライバシーに配慮したCookieレスの分析ツール<a href=\"https://plausible.io\" target=\"_blank\" rel=\"noopener noreferrer\">Plausible Analytics</a>を使用しています。"
-              ]
-            },
-            "productTelemetry": {
-              "title": "2.5 製品テレメトリデータ",
-              "content": [
-                "当社のソフトウェア製品（Webアプリケーション、CLI、ミドルウェア、およびBridge）は、製品品質、パフォーマンス、信頼性の向上を目的として匿名の使用テレメトリを収集します。テレメトリデータには、アプリケーションバージョン、オペレーティングシステム、ブラウザタイプ、パフォーマンスメトリクス、機能使用パターン、エラーレポートなどの技術情報が含まれます。個人識別子は収集前に匿名化されます。メールアドレスはドメインのみに短縮され、ユーザーIDはハッシュ化および切り詰められ、パスワードやシークレットは一切収集されません。",
-                "テレメトリはWebアプリケーションおよびCLIではデフォルトで有効であり、すべての製品で無効にすることができます。各製品が収集するデータの詳細およびオプトアウト方法については、<a href=\"telemetry-policy\">テレメトリポリシー</a>をご覧ください。"
-              ]
-            },
-            "cookies": {
-              "title": "2.4 Cookie",
-              "content": [
-                "言語設定を記憶するために、1つの機能的なCookie（<code>rediacc_lang</code>）を使用しています。詳細は<a href=\"cookie-policy\">Cookieポリシー</a>をご覧ください。"
-              ]
-            }
+            "description": "オープンなコミュニケーション、正直な価格設定、明確なドキュメント。隠れた費用も、不意打ちも、小さな注意書きもありません。",
+            "title": "透明性"
           }
         },
-        "howWeUseInformation": {
-          "id": "how-we-use-information",
-          "title": "3. 情報の利用方法",
-          "content": ["収集した情報は以下の目的で使用します："],
-          "items": [
-            "お問い合わせへの対応",
-            "Rediaccプラットフォームの提供・運営・維持",
-            "取引の処理と請求情報の送信",
-            "サービス関連の連絡",
-            "ウェブサイト利用パターンの把握",
-            "匿名化された使用テレメトリを通じたエラー診断、製品パフォーマンスの向上、および製品開発の指針（<a href=\"telemetry-policy\">テレメトリポリシー</a>を参照）",
-            "法的義務の遵守"
-          ]
-        },
-        "dataSharing": {
-          "id": "data-sharing",
-          "title": "4. データ共有と第三者",
-          "content": ["当社はお客様の個人データを第三者に販売・貸与しません。"],
-          "items": [
-            "プラットフォーム運営を支援する<strong>サービスプロバイダー</strong>",
-            "Cookieレスの匿名ウェブ分析のための<strong>Plausible Analytics</strong>",
-            "<strong>テレメトリ処理</strong> — 匿名化された製品使用データは、集計および分析のためにEU内の当社テレメトリエンドポイントに送信されます。テレメトリデータは第三者と共有されません（<a href=\"telemetry-policy\">テレメトリポリシー</a>を参照）",
-            "法律で要求される場合の<strong>法執行機関</strong>"
-          ]
-        },
-        "dataRetention": {
-          "id": "data-retention",
-          "title": "5. データ保持",
-          "content": [
-            "お問い合わせフォームデータは必要な期間保持されます。アカウントデータはアカウント有効期間中および削除後30日間保持されます。",
-            "Plausible分析データは集計されており個人データを含まないため、データ保持ポリシーは適用されません。",
-            "製品テレメトリデータは、デバッグ目的で最大90日間生のトレースとして保持されます。集計されたテレメトリメトリクスは最大12か月間保持された後、削除されます。詳細については、<a href=\"telemetry-policy\">テレメトリポリシー</a>をご覧ください。"
-          ]
-        },
-        "yourRights": {
-          "id": "your-rights",
-          "title": "6. お客様の権利",
-          "content": ["管轄地域に応じて、以下の権利を有する場合があります："],
-          "items": [
-            "<strong>アクセス：</strong>個人データのコピーを請求する権利",
-            "<strong>訂正：</strong>不正確なデータの訂正を請求する権利",
-            "<strong>削除：</strong>データの削除を請求する権利",
-            "<strong>ポータビリティ：</strong>機械可読形式のコピーを請求する権利",
-            "<strong>異議：</strong>データ処理に異議を申し立てる権利",
-            "<strong>制限：</strong>処理の制限を請求する権利",
-            "<strong>テレメトリのオプトアウト：</strong><a href=\"telemetry-policy\">テレメトリポリシー</a>に記載されているメカニズムを使用して、いつでも製品テレメトリを無効にできます"
-          ],
-          "content2": [
-            "権利行使については<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までご連絡ください。"
-          ]
-        },
-        "dataSecurity": {
-          "id": "data-security",
-          "title": "7. データセキュリティ",
-          "content": [
-            "当社は転送時および保存時の暗号化を含む業界標準のセキュリティ対策を実施しています。"
-          ]
-        },
-        "internationalTransfers": {
-          "id": "international-transfers",
-          "title": "8. 国際データ転送",
-          "content": [
-            "お客様の情報は他国に転送・処理される場合があります。適切な保護措置を確保しています。"
-          ]
-        },
-        "childrenPrivacy": {
-          "id": "children-privacy",
-          "title": "9. 児童のプライバシー",
-          "content": ["当社のサービスは16歳未満の方を対象としていません。"]
-        },
-        "changes": {
-          "id": "changes",
-          "title": "10. ポリシーの変更",
-          "content": [
-            "当社はこのプライバシーポリシーを随時更新する場合があります。変更はこのページに掲載されます。"
-          ]
-        }
-      },
-      "contact": {
-        "title": "ご質問はありますか？",
-        "description": "このプライバシーポリシーについてご質問がある場合は、<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までお問い合わせください。"
-      },
-      "related": {
-        "title": "関連ポリシー"
-      }
-    },
-    "termsOfService": {
-      "meta": {
-        "title": "利用規約 — Rediacc",
-        "description": "Rediaccウェブサイトおよびインフラ自動化プラットフォームの利用に関する規約。",
-        "keywords": "利用規約, 利用条件, ユーザー契約, Rediacc"
-      },
-      "hero": {
-        "title": "利用規約",
-        "effectiveDate": "発効日：2026年2月1日"
-      },
-      "toc": {
-        "title": "目次"
-      },
-      "sections": {
-        "acceptance": {
-          "id": "acceptance",
-          "title": "1. 規約への同意",
-          "content": [
-            "Rediaccウェブサイト（<a href=\"https://www.rediacc.com\">www.rediacc.com</a>）またはRediaccプラットフォームにアクセスまたは使用することにより、本利用規約に同意したものとみなされます。"
-          ]
-        },
-        "serviceDescription": {
-          "id": "service-description",
-          "title": "2. サービスの説明",
-          "content": [
-            "RediaccはAI駆動のオペレーション向けインフラ自動化プラットフォームを提供しています。"
-          ]
-        },
-        "accounts": {
-          "id": "accounts",
-          "title": "3. アカウントと登録",
-          "content": [
-            "登録時に正確な情報を提供し、アカウントでのすべての活動に責任を持つ必要があります。"
-          ]
-        },
-        "subscriptions": {
-          "id": "subscriptions",
-          "title": "4. サブスクリプションと支払い",
-          "content": [
-            "有料サブスクリプションは月額または年額で前払いで請求されます。返金については<a href=\"refund-policy\">返金ポリシー</a>をご覧ください。"
-          ]
-        },
-        "acceptableUse": {
-          "id": "acceptable-use",
-          "title": "5. 利用規定",
-          "content": [
-            "<a href=\"acceptable-use-policy\">利用規定</a>に従ってサービスを使用することに同意するものとします。"
-          ]
-        },
-        "telemetry": {
-          "id": "telemetry",
-          "title": "6. テレメトリとデータ収集",
-          "content": [
-            "当社のソフトウェア製品は、製品品質とパフォーマンスの向上を目的として匿名化された使用テレメトリを収集します。サービスを使用することにより、<a href=\"telemetry-policy\">テレメトリポリシー</a>に記載されているとおりテレメトリ収集が行われることを了承するものとします。",
-            "テレメトリはプライバシーを保護するよう設計されています。個人識別子は送信前に匿名化され、いつでもテレメトリをオプトアウトできます。<a href=\"telemetry-policy\">テレメトリポリシー</a>には、各製品が収集する具体的なデータおよび収集を無効にするメカニズムが記載されています。"
-          ]
-        },
-        "intellectualProperty": {
-          "id": "intellectual-property",
-          "title": "7. 知的財産",
-          "content": ["サービスはRediaccの所有物であり、知的財産法により保護されています。"]
-        },
-        "dataOwnership": {
-          "id": "data-ownership",
-          "title": "8. お客様のデータ",
-          "content": [
-            "お客様のデータはお客様のものです。詳細は<a href=\"privacy-policy\">プライバシーポリシー</a>をご覧ください。"
-          ]
-        },
-        "serviceAvailability": {
-          "id": "service-availability",
-          "title": "9. サービスの可用性",
-          "content": [
-            "高可用性の維持に努めていますが、中断のないアクセスを保証するものではありません。"
-          ]
-        },
-        "limitationOfLiability": {
-          "id": "limitation-of-liability",
-          "title": "10. 責任の制限",
-          "content": [
-            "法律で認められる最大限の範囲で、Rediaccは間接的な損害について責任を負いません。"
-          ]
-        },
-        "indemnification": {
-          "id": "indemnification",
-          "title": "11. 補償",
-          "content": [
-            "サービスの使用に起因するすべての請求からRediaccを補償することに同意するものとします。"
-          ]
-        },
-        "termination": {
-          "id": "termination",
-          "title": "12. 解約",
-          "content": [
-            "いつでもアカウントを解約できます。本規約に違反した場合、アクセスを停止する場合があります。"
-          ]
-        },
-        "governingLaw": {
-          "id": "governing-law",
-          "title": "13. 準拠法",
-          "content": ["本規約はエストニア共和国の法律に準拠します。"]
-        },
-        "changes": {
-          "id": "changes",
-          "title": "14. 規約の変更",
-          "content": ["本規約は随時更新される場合があります。"]
-        }
-      },
-      "contact": {
-        "title": "ご質問はありますか？",
-        "description": "本利用規約についてご質問がある場合は、<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までお問い合わせください。"
-      },
-      "related": {
-        "title": "関連ポリシー"
-      }
-    },
-    "cookiePolicy": {
-      "meta": {
-        "title": "Cookieポリシー — Rediacc",
-        "description": "RediaccのCookieポリシー。1つの機能的CookieとCookieレスのPlausible Analytics。",
-        "keywords": "Cookieポリシー, Cookie, Plausible Analytics, GDPR, Rediacc"
-      },
-      "hero": {
-        "title": "Cookieポリシー",
-        "effectiveDate": "発効日：2026年2月1日"
-      },
-      "toc": {
-        "title": "目次"
-      },
-      "sections": {
-        "introduction": {
-          "id": "introduction",
-          "title": "1. はじめに",
-          "content": [
-            "このCookieポリシーは、Rediaccが当社ウェブサイト<a href=\"https://www.rediacc.com\">www.rediacc.com</a>でCookieをどのように使用するかを説明します。"
-          ]
-        },
-        "whatAreCookies": {
-          "id": "what-are-cookies",
-          "title": "2. Cookieとは",
-          "content": [
-            "Cookieとは、ウェブサイトを訪問した際にデバイスに保存される小さなテキストファイルです。"
-          ]
-        },
-        "cookiesWeUse": {
-          "id": "cookies-we-use",
-          "title": "3. 使用するCookie",
-          "content": ["当社が使用するCookieは1つだけです："],
-          "subsections": {
-            "languageCookie": {
-              "title": "3.1 言語設定Cookie",
-              "content": [
-                "<strong>名前：</strong><code>rediacc_lang</code><br><strong>種類：</strong>ファーストパーティ、必須<br><strong>期間：</strong>1年<br><strong>目的：</strong>お好みの言語を保存します。"
-              ]
-            }
-          }
-        },
-        "whatWeDontUse": {
-          "id": "what-we-dont-use",
-          "title": "4. 使用しないもの",
-          "content": ["以下の技術は当社ウェブサイトでは使用して<strong>いません</strong>："],
-          "items": [
-            "<strong>トラッキングCookie</strong> — Google Analytics、Facebook Pixelなどのトラッキングは不使用",
-            "<strong>サードパーティCookie</strong> — 外部サービスによるCookieは設定されません",
-            "<strong>広告Cookie</strong> — 広告は配信していません",
-            "<strong>フィンガープリンティング</strong> — ブラウザフィンガープリンティングは不使用"
-          ],
-          "content2": [
-            "注：このCookieポリシーはRediaccマーケティングウェブサイトに適用されます。当社のソフトウェア製品（Webアプリケーション、CLI、ミドルウェア、Bridge）は、Cookieを使用しない個別の使用テレメトリを収集します。製品テレメトリの詳細については、<a href=\"telemetry-policy\">テレメトリポリシー</a>をご覧ください。"
-          ]
-        },
-        "analytics": {
-          "id": "analytics",
-          "title": "5. 当社の分析アプローチ",
-          "content": [
-            "当社は<a href=\"https://plausible.io\" target=\"_blank\" rel=\"noopener noreferrer\">Plausible Analytics</a>を使用しています。"
-          ],
-          "items": [
-            "Cookieを一切<strong>使用しません</strong>",
-            "個人データを<strong>収集しません</strong>",
-            "サイト間でユーザーを<strong>追跡しません</strong>",
-            "EUでホスティングされ、GDPR準拠",
-            "集計された匿名メトリクスのみ提供"
-          ],
-          "content2": [
-            "ウェブサイト分析に加え、当社のソフトウェア製品はOpenTelemetryベースの計測を通じて匿名化された使用テレメトリを収集します。これはウェブサイト分析とは別のもので、Cookieを使用せず、詳細は<a href=\"telemetry-policy\">テレメトリポリシー</a>に記載されています。"
-          ]
-        },
-        "managingCookies": {
-          "id": "managing-cookies",
-          "title": "6. Cookieの管理",
-          "content": ["ブラウザの設定でCookieを管理できます："],
-          "items": [
-            "<strong>Chrome：</strong>設定 → プライバシーとセキュリティ → Cookie",
-            "<strong>Firefox：</strong>設定 → プライバシーとセキュリティ → Cookie",
-            "<strong>Safari：</strong>環境設定 → プライバシー → Webサイトデータを管理",
-            "<strong>Edge：</strong>設定 → Cookieとサイトのアクセス許可"
-          ]
-        },
-        "changes": {
-          "id": "changes",
-          "title": "7. ポリシーの変更",
-          "content": ["追加のCookieを導入する場合、このポリシーを更新します。"]
-        }
-      },
-      "contact": {
-        "title": "ご質問はありますか？",
-        "description": "Cookieの使用についてご質問がある場合は、<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までお問い合わせください。"
-      },
-      "related": {
-        "title": "関連ポリシー"
-      }
-    },
-    "acceptableUsePolicy": {
-      "meta": {
-        "title": "利用規定 — Rediacc",
-        "description": "Rediaccの利用規定は、プラットフォーム上の禁止事項を定義します。",
-        "keywords": "利用規定, AUP, 禁止事項, Rediacc"
-      },
-      "hero": {
-        "title": "利用規定",
-        "effectiveDate": "発効日：2025年2月1日"
-      },
-      "toc": {
-        "title": "目次"
-      },
-      "sections": {
-        "introduction": {
-          "id": "introduction",
-          "title": "1. はじめに",
-          "content": [
-            "この利用規定（「AUP」）はRediaccプラットフォームの利用を規定し、<a href=\"terms-of-service\">利用規約</a>の一部を構成します。"
-          ]
-        },
-        "prohibitedActivities": {
-          "id": "prohibited-activities",
-          "title": "2. 禁止事項",
-          "content": ["Rediaccプラットフォームを以下の目的で使用することはできません："],
-          "items": [
-            "暗号通貨マイニングまたは同様の計算集約的な活動",
-            "スパム、フィッシング、悪意のあるコンテンツの送信",
-            "マルウェアのホスティングまたは配布",
-            "DoS/DDoS攻撃を含むネットワーク攻撃",
-            "他者のアカウントやシステムへの不正アクセス",
-            "セキュリティ機能の回避",
-            "違法コンテンツの保存",
-            "無許可でのプラットフォームアクセスの転売",
-            "競合製品の構築のための使用"
-          ]
-        },
-        "resourceUsage": {
-          "id": "resource-usage",
-          "title": "3. リソース使用",
-          "content": ["すべてのユーザーへの公平なアクセスを確保するために："],
-          "items": [
-            "サブスクリプション制限に従ってリソースを使用",
-            "自動化プロセスは過度な負荷を生成してはなりません",
-            "ストレージ使用は正当なプラットフォーム利用を反映すること",
-            "リソース問題には速やかに対処すること"
-          ]
-        },
-        "securityRequirements": {
-          "id": "security-requirements",
-          "title": "4. セキュリティ要件",
-          "content": ["アカウントのセキュリティはお客様の責任です："],
-          "items": [
-            "強力でユニークなパスワードを使用",
-            "アカウント資格情報を共有しない",
-            "脆弱性を<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>に報告",
-            "書面による許可なくセキュリティテストを行わない",
-            "ソフトウェアを最新に保つ"
-          ]
-        },
-        "contentStandards": {
-          "id": "content-standards",
-          "title": "5. コンテンツ基準",
-          "content": [
-            "コンテンツは適用法令に準拠する必要があります。コンテンツについてはお客様が責任を負います。"
-          ]
-        },
-        "enforcement": {
-          "id": "enforcement",
-          "title": "6. 執行",
-          "content": ["違反は以下の措置につながる場合があります："],
-          "items": [
-            "書面による警告",
-            "一時的な停止",
-            "機能の制限",
-            "アカウントの永久停止",
-            "法執行機関への報告"
-          ],
-          "content2": ["措置前に通知するよう合理的な努力をします。"]
-        },
-        "reporting": {
-          "id": "reporting",
-          "title": "7. 違反の報告",
-          "content": [
-            "違反を<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>に報告してください。"
-          ]
-        },
-        "changes": {
-          "id": "changes",
-          "title": "8. ポリシーの変更",
-          "content": ["このAUPは随時更新される場合があります。"]
-        }
-      },
-      "contact": {
-        "title": "ご質問はありますか？",
-        "description": "この利用規定についてご質問がある場合は、<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までお問い合わせください。"
-      },
-      "related": {
-        "title": "関連ポリシー"
-      }
-    },
-    "refundPolicy": {
-      "meta": {
-        "title": "返金ポリシー — Rediacc",
-        "description": "プラットフォームサブスクリプションおよびプロフェッショナルサービスに関するRediaccの返金ポリシー。",
-        "keywords": "返金ポリシー, キャンセル, サブスクリプション返金, Rediacc"
-      },
-      "hero": {
-        "title": "返金ポリシー",
-        "effectiveDate": "発効日：2025年2月1日"
-      },
-      "toc": {
-        "title": "目次"
-      },
-      "sections": {
-        "overview": {
-          "id": "overview",
-          "title": "1. 概要",
-          "content": [
-            "この返金ポリシーは、Rediaccサブスクリプションおよびプロフェッショナルサービスの返金条件を説明します。"
-          ]
-        },
-        "platformSubscriptions": {
-          "id": "platform-subscriptions",
-          "title": "2. プラットフォームサブスクリプション",
-          "content": ["Rediaccは複数のサブスクリプションティアを提供しています："],
-          "subsections": {
-            "freeTier": {
-              "title": "2.1 無料ティア",
-              "content": ["Communityティアは永久無料です。"]
-            },
-            "paidTiers": {
-              "title": "2.2 有料ティア",
-              "content": ["有料サブスクリプションは原則として返金不可です。例外："],
-              "items": [
-                "<strong>最初の14日間：</strong>新規加入者への全額返金",
-                "<strong>サービス障害：</strong>長時間の障害（48時間以上）に対する按分クレジット",
-                "<strong>請求エラー：</strong>誤った請求に対する全額返金"
-              ]
-            },
-            "annualSubscriptions": {
-              "title": "2.3 年間サブスクリプション",
-              "content": [
-                "年間サブスクリプションはいつでもキャンセルできます。14日間の期間を除き、部分返金はありません。"
-              ]
-            }
-          }
-        },
-        "professionalServices": {
-          "id": "professional-services",
-          "title": "3. プロフェッショナルサービス",
-          "content": ["プロフェッショナルサービスは時間単位で請求されます（$400–$1,200/時間）："],
-          "items": [
-            "<strong>作業開始前：</strong>全額返金",
-            "<strong>契約期間中：</strong>作業時間分のみ請求",
-            "<strong>品質に関する異議：</strong>納品後7日以内にご連絡ください",
-            "<strong>最低契約期間：</strong>一部のパッケージには最低期間があります"
-          ]
-        },
-        "howToRequest": {
-          "id": "how-to-request",
-          "title": "4. 返金の申請方法",
-          "content": [
-            "<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>に以下の情報をお送りください："
-          ],
-          "items": [
-            "アカウントのメールアドレス",
-            "対象のサブスクリプションまたはサービス",
-            "返金申請の理由",
-            "関連する注文番号または請求書番号"
-          ],
-          "content2": ["5営業日以内にご返答いたします。"]
-        },
-        "refundProcessing": {
-          "id": "refund-processing",
-          "title": "5. 返金処理",
-          "content": ["承認された返金は10営業日以内に元の支払方法に処理されます。"]
-        },
-        "nonRefundable": {
-          "id": "non-refundable",
-          "title": "6. 返金不可の項目",
-          "content": ["以下は返金の対象外です："],
-          "items": [
-            "14日間の期間後にキャンセルされたサブスクリプション",
-            "すでに消費されたリソースの使用量ベースの料金",
-            "すでに提供されたプロフェッショナルサービスの時間",
-            "アカウント再開手数料",
-            "<a href=\"terms-of-service\">利用規約</a>違反による料金"
-          ]
-        },
-        "changes": {
-          "id": "changes",
-          "title": "7. ポリシーの変更",
-          "content": ["この返金ポリシーは随時更新される場合があります。"]
-        }
-      },
-      "contact": {
-        "title": "ご質問はありますか？",
-        "description": "返金についてご質問がある場合は、<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までお問い合わせください。"
-      },
-      "related": {
-        "title": "関連ポリシー"
+        "title": "私たちの価値観"
       }
     },
     "telemetryPolicy": {
-      "meta": {
-        "title": "テレメトリポリシー — Rediacc",
-        "description": "Rediacc製品が収集するテレメトリデータ、その理由、処理方法、およびオプトアウト方法の詳細。Webアプリ、CLI、ミドルウェア、Bridgeを対象とします。",
-        "keywords": "テレメトリポリシー, データ収集, OpenTelemetry, オプトアウト, プライバシー, GDPR, Rediacc"
+      "contact": {
+        "description": "テレメトリの取り扱いに関するご質問やオプトアウトに関するサポートが必要な場合は、<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までお問い合わせください。",
+        "title": "ご質問はありますか？"
       },
       "hero": {
-        "title": "テレメトリポリシー",
-        "effectiveDate": "発効日：2026年2月1日"
+        "effectiveDate": "発効日：2026年2月1日",
+        "title": "テレメトリポリシー"
       },
-      "toc": {
-        "title": "目次"
+      "meta": {
+        "description": "Rediacc製品が収集するテレメトリデータ、その理由、処理方法、およびオプトアウト方法の詳細。Webアプリ、CLI、ミドルウェア、Bridgeを対象とします。",
+        "keywords": "テレメトリポリシー, データ収集, OpenTelemetry, オプトアウト, プライバシー, GDPR, Rediacc",
+        "title": "テレメトリポリシー — Rediacc"
+      },
+      "related": {
+        "title": "関連ポリシー"
       },
       "sections": {
+        "bridge": {
+          "content": [
+            "Rediacc Bridge（Renet）はgzip圧縮OTLPエクスポート付きのOpenTelemetryを使用しています。テレメトリは<code>www.rediacc.com/otlp/v1/traces</code>にバッチで送信されます（最大10スパン、5秒ごとにフラッシュ）。"
+          ],
+          "id": "bridge",
+          "subsections": {
+            "bridgeDataCollected": {
+              "content": [
+                "Bridgeは以下のカテゴリのデータを収集します："
+              ],
+              "items": [
+                "<strong>キュー操作：</strong>タスクID、優先度レベル、操作タイプ、実行所要時間、成功または失敗ステータス",
+                "<strong>SSH操作：</strong>ターゲットホスト、ユーザー名、ポート番号、終了コード、実行所要時間（コマンド内容や出力は収集されません）",
+                "<strong>API呼び出し：</strong>プロシージャ名、リクエスト所要時間",
+                "<strong>Vault操作：</strong>操作タイプと所要時間（シークレット値、キー、またはVault内容は収集されません）",
+                "<strong>Bridgeライフサイクル：</strong>起動、シャットダウン、および再接続イベント"
+              ],
+              "title": "7.1 収集データ"
+            },
+            "bridgeOptOut": {
+              "content": [
+                "以下のいずれかの方法でBridgeテレメトリを無効にできます："
+              ],
+              "items": [
+                "環境変数<code>REDIACC_TELEMETRY_DISABLED=1</code>を設定",
+                "環境変数<code>DO_NOT_TRACK=1</code>を設定（<a href=\"https://consult.dntrack.dev/\" target=\"_blank\" rel=\"noopener noreferrer\">Do Not Track</a>標準に準拠）"
+              ],
+              "title": "7.2 オプトアウト方法"
+            }
+          },
+          "title": "7. Bridge（Renet）テレメトリ"
+        },
+        "ccpa": {
+          "content": [
+            "カリフォルニア州居住者の方には、カリフォルニア消費者プライバシー法（CCPA）およびカリフォルニアプライバシー権法（CPRA）に基づき、以下の追加開示が適用されます："
+          ],
+          "id": "ccpa",
+          "items": [
+            "<strong>収集される情報のカテゴリ：</strong>インターネットまたは電子ネットワーク活動情報（ブラウザタイプ、インタラクションデータ、エラーログ）、デバイス識別子（匿名化済み）、地理位置情報（国レベルのみ、保存されないIPアドレスから派生）",
+            "<strong>目的：</strong>サービス品質の向上・維持、デバッグ、パフォーマンス監視、およびセキュリティ",
+            "<strong>販売/共有：</strong>CCPA/CPRAで定義されるテレメトリデータの販売または共有は行いません",
+            "<strong>オプトアウトの権利：</strong>上記セクション4〜7に記載の製品固有のオプトアウトメカニズムを使用してください。Webアプリケーションではグローバルプライバシーコントロール（GPC）シグナルにも対応しています。"
+          ],
+          "title": "11. カリフォルニア州居住者（CCPA/CPRA）"
+        },
+        "changes": {
+          "content": [
+            "新製品の追加、収集データの変更、または処理方法の変更に伴い、このテレメトリポリシーを更新する場合があります。変更はこのページに更新された発効日とともに掲載されます。重要な変更については、製品リリースノートおよびウェブサイトを通じてユーザーに通知します。"
+          ],
+          "id": "changes",
+          "title": "12. ポリシーの変更"
+        },
+        "cli": {
+          "content": [
+            "Rediacc CLIはOpenTelemetry Node SDKを使用しています。テレメトリは<code>https://www.rediacc.com/otlp</code>に送信されます。"
+          ],
+          "id": "cli",
+          "subsections": {
+            "cliDataCollected": {
+              "content": [
+                "CLIは以下のカテゴリのデータを収集します："
+              ],
+              "items": [
+                "<strong>コマンド使用状況：</strong>コマンド名、CLIバージョン、終了コード、成功または失敗ステータス",
+                "<strong>匿名化された引数：</strong>機密値が除去されたコマンドオプション — パスワード、トークン、シークレット、APIキー、および資格情報は<code>[REDACTED]</code>に置換されます",
+                "<strong>環境：</strong>オペレーティングシステムタイプ、Node.jsランタイムバージョン、デプロイメント環境",
+                "<strong>エラー情報：</strong>コマンド失敗時のエラータイプ、エラーメッセージ、および限定的なスタックトレース",
+                "<strong>APIインタラクション：</strong>HTTPメソッド、URLパス、レスポンスステータスコード、リクエスト所要時間",
+                "<strong>セッション：</strong>ランダム生成されたセッションID、コマンド実行所要時間"
+              ],
+              "title": "5.1 収集データ"
+            },
+            "cliOptOut": {
+              "content": [
+                "以下のいずれかの方法でCLIテレメトリを無効にできます："
+              ],
+              "items": [
+                "環境変数<code>REDIACC_TELEMETRY=off</code>を設定（<code>false</code>または<code>0</code>も使用可能）",
+                "CLI設定ファイルで<code>telemetryEnabled: false</code>を設定",
+                "CI環境では<strong>自動的に無効化</strong>されます（<code>CI</code>環境変数により検出）"
+              ],
+              "title": "5.2 オプトアウト方法"
+            }
+          },
+          "title": "5. CLIテレメトリ"
+        },
+        "dataProcessing": {
+          "content": [
+            "すべてのテレメトリデータは暗号化された接続（TLS 1.2+）を介して当社のテレメトリエンドポイントに送信されます。データは以下のとおり処理・保存されます："
+          ],
+          "id": "data-processing",
+          "items": [
+            "<strong>暗号化：</strong>すべてのデータはTLSを使用して転送中に暗号化されます。Bridgeはさらにgzip圧縮を使用します。",
+            "<strong>保持：</strong>生のテレメトリトレースは、デバッグおよびインシデント調査のために最大90日間保存されます。集計されたメトリクスは最大12か月間保持された後、削除されます。",
+            "<strong>アクセス：</strong>テレメトリデータは、必要に応じてRediaccのエンジニアリングおよびオペレーションスタッフのみがアクセスできます。",
+            "<strong>第三者との共有なし：</strong>テレメトリデータは第三者と共有、販売、またはアクセスされることはありません。",
+            "<strong>インフラストラクチャ：</strong>すべてのテレメトリデータは欧州連合内のインフラストラクチャで処理・保存されます。"
+          ],
+          "title": "8. データ処理と保存"
+        },
+        "internationalTransfers": {
+          "content": [
+            "テレメトリデータは欧州連合内のサーバーで排他的に処理・保存されます。テレメトリデータをEU/EEA外に転送する必要が生じた場合（例：災害復旧）、欧州委員会が承認した標準契約条項（SCC）を含む適切な保護措置が講じられます。"
+          ],
+          "id": "international-transfers",
+          "title": "9. 国際データ転送"
+        },
         "introduction": {
-          "id": "introduction",
-          "title": "1. はじめに",
           "content": [
             "Rediaccソフトウェア製品は、製品品質の向上、問題の診断、ツールの使用状況の把握を目的として、匿名化された使用テレメトリを収集します。このテレメトリポリシーでは、収集されるデータ、その理由、処理方法、およびオプトアウト方法について正確に説明します。",
             "このポリシーは4つの製品を対象としています：<strong>Rediacc Webアプリケーション</strong>、<strong>Rediacc CLI</strong>、<strong>Rediaccミドルウェア</strong>、および<strong>Rediacc Bridge（Renet）</strong>。ウェブサイト分析（Plausible）については、<a href=\"privacy-policy\">プライバシーポリシー</a>および<a href=\"cookie-policy\">Cookieポリシー</a>で別途説明しています。"
-          ]
+          ],
+          "id": "introduction",
+          "title": "1. はじめに"
+        },
+        "legalBasis": {
+          "content": [
+            "EU一般データ保護規則（GDPR）およびePrivacy指令の下で、テレメトリ収集の法的根拠は製品のコンテキストに依存します：",
+            "<strong>Webアプリケーション</strong>（ブラウザベース）の場合：テレメトリは、サービス品質の維持および向上を目的として、<strong>正当な利益</strong>（GDPR第6条(1)(f)）に基づいて収集されます。いつでもオプトアウトできます。",
+            "<strong>CLI、ミドルウェア、およびBridge</strong>（お客様のインフラにインストール）の場合：テレメトリは、明確なオプトアウトメカニズムが提供された<strong>正当な利益</strong>に基づいて収集されます。データが送信される前にテレメトリを無効にすることができます。",
+            "明示的な同意が必要な法域のユーザー（例：韓国のPIPA）については、データが送信される前に製品設定を通じてテレメトリに明示的にオプトインする必要があります。"
+          ],
+          "id": "legal-basis",
+          "title": "3. 収集の法的根拠"
+        },
+        "middleware": {
+          "content": [
+            "Rediaccミドルウェアは運用テレメトリを収集します。テレメトリは<code>https://www.rediacc.com/otlp/v1/traces</code>に送信されます。"
+          ],
+          "id": "middleware",
+          "subsections": {
+            "middlewareDataCollected": {
+              "content": [
+                "ミドルウェアは以下のカテゴリのデータを収集します："
+              ],
+              "items": [
+                "<strong>システム情報：</strong>ホスト名、オペレーティングシステムバージョン、.NETランタイムバージョン",
+                "<strong>API呼び出し：</strong>HTTPメソッド、エンドポイントパス、レスポンスステータスコード、リクエスト所要時間",
+                "<strong>データベース操作：</strong>ストアドプロシージャ名、実行所要時間、返却行数（クエリ内容、パラメータ、または結果データは含まれません）",
+                "<strong>認証イベント：</strong>ハッシュ化されたユーザー識別子のみ — ユーザーIDはSHA-256とソルトでハッシュ化され、最初の12文字に切り詰められます。元のユーザーIDは送信されません。",
+                "<strong>ヘルスチェック：</strong>サービスコンポーネントの可用性ステータスと応答時間",
+                "<strong>アプリケーションライフサイクル：</strong>起動、シャットダウン、および設定変更イベント",
+                "<strong>エラー情報：</strong>エラータイプ、エラーメッセージ、および運用コンテキスト"
+              ],
+              "title": "6.1 収集データ"
+            },
+            "middlewareOptOut": {
+              "content": [
+                "ミドルウェア設定（appsettings.jsonまたは環境固有の設定）で<code>Telemetry:Enabled</code>を<code>false</code>に設定してください。"
+              ],
+              "title": "6.2 オプトアウト方法"
+            }
+          },
+          "title": "6. ミドルウェア テレメトリ"
         },
         "principles": {
+          "content": [
+            "Rediaccにおけるすべてのテレメトリ収集は以下の原則に従います："
+          ],
           "id": "principles",
-          "title": "2. テレメトリの原則",
-          "content": ["Rediaccにおけるすべてのテレメトリ収集は以下の原則に従います："],
           "items": [
             "<strong>プライバシー・バイ・デザイン：</strong>個人識別子は送信前に匿名化されます。メールアドレスはドメインのみに短縮され、ユーザーIDはハッシュ化（SHA-256）および切り詰められ、パスワードやシークレットは一切収集されません。",
             "<strong>最小限の収集：</strong>製品品質の向上と問題の診断に必要なデータのみを収集します。ファイル内容、データベース内容、クエリ結果、またはビジネスデータは収集しません。",
             "<strong>透明性：</strong>このポリシーには、各製品が収集するデータのすべてのカテゴリが記載されています。隠されたデータフローはありません。",
             "<strong>ユーザーコントロール：</strong>すべての製品にテレメトリを完全に無効にするメカニズムが用意されています。オプトアウトは即座にかつ完全に尊重されます。",
             "<strong>集計：</strong>テレメトリデータは集計して分析されます。テレメトリから個々のユーザープロファイルを構築することはありません。"
-          ]
-        },
-        "legalBasis": {
-          "id": "legal-basis",
-          "title": "3. 収集の法的根拠",
-          "content": [
-            "EU一般データ保護規則（GDPR）およびePrivacy指令の下で、テレメトリ収集の法的根拠は製品のコンテキストに依存します：",
-            "<strong>Webアプリケーション</strong>（ブラウザベース）の場合：テレメトリは、サービス品質の維持および向上を目的として、<strong>正当な利益</strong>（GDPR第6条(1)(f)）に基づいて収集されます。いつでもオプトアウトできます。",
-            "<strong>CLI、ミドルウェア、およびBridge</strong>（お客様のインフラにインストール）の場合：テレメトリは、明確なオプトアウトメカニズムが提供された<strong>正当な利益</strong>に基づいて収集されます。データが送信される前にテレメトリを無効にすることができます。",
-            "明示的な同意が必要な法域のユーザー（例：韓国のPIPA）については、データが送信される前に製品設定を通じてテレメトリに明示的にオプトインする必要があります。"
-          ]
+          ],
+          "title": "2. テレメトリの原則"
         },
         "webApp": {
-          "id": "web-app",
-          "title": "4. Webアプリケーション テレメトリ",
           "content": [
             "Rediacc WebアプリケーションはOpenTelemetryベースの分散トレーシングを使用しています。テレメトリは<code>https://www.rediacc.com/otlp</code>に送信されます。本番環境では、<strong>セッションの10%のみ</strong>がサンプリングされます。"
           ],
+          "id": "web-app",
           "subsections": {
             "webDataCollected": {
-              "title": "4.1 収集データ",
-              "content": ["Webアプリケーションは以下のカテゴリのデータを収集します："],
+              "content": [
+                "Webアプリケーションは以下のカテゴリのデータを収集します："
+              ],
               "items": [
                 "<strong>ブラウザ情報：</strong>ブラウザ名とバージョン、優先言語、プラットフォーム（例：Windows、macOS、Linux）、画面解像度、色深度、ユーザーエージェント文字列、デバイスメモリ（利用可能な場合）、ネットワーク接続タイプ",
                 "<strong>ユーザーコンテキスト：</strong>セッションID（セッションごとにランダム生成）、メールドメインのみ（ローカル部分は除去、例：<code>***@example.com</code>）、組織名、チーム名",
@@ -2307,11 +2890,13 @@
                 "<strong>エラー：</strong>エラータイプ、エラーメッセージ、スタックトレース（1,000文字に切り詰め）、エラーソース",
                 "<strong>パフォーマンスメトリクス：</strong>Core Web Vitals（LCP、FID、CLS、TTFB、INP）、リソースタイミング、メモリ使用量（30秒ごとにサンプリング）、ロングタスク検出",
                 "<strong>コンポーネントライフサイクル：</strong>コンポーネントのマウント/アンマウントタイミング、レンダリング所要時間"
-              ]
+              ],
+              "title": "4.1 収集データ"
             },
             "webNotCollected": {
-              "title": "4.2 収集しないデータ",
-              "content": ["Webアプリケーションは以下を収集しません："],
+              "content": [
+                "Webアプリケーションは以下を収集しません："
+              ],
               "items": [
                 "完全なメールアドレス（ローカル部分は常に除去）",
                 "パスワード、トークン、または認証資格情報",
@@ -2319,684 +2904,160 @@
                 "フォームフィールドの値（フォームが送信されたという事実のみが記録されます）",
                 "クリップボードの内容またはキーストローク",
                 "IPアドレス（当社のテレメトリエンドポイントでは記録されません）"
-              ]
+              ],
+              "title": "4.2 収集しないデータ"
             },
             "webOptOut": {
-              "title": "4.3 オプトアウト方法",
               "content": [
                 "アカウント設定で<code>userConsent</code>設定フラグを<code>false</code>に設定してください。オプトアウト後、テレメトリは即座に停止します。",
                 "<strong>デスクトップアプリケーション：</strong>デスクトップ（Electron）アプリケーションではテレメトリはデフォルトで完全に無効化されています。データの収集や送信は行われません。"
-              ]
+              ],
+              "title": "4.3 オプトアウト方法"
             }
-          }
-        },
-        "cli": {
-          "id": "cli",
-          "title": "5. CLIテレメトリ",
-          "content": [
-            "Rediacc CLIはOpenTelemetry Node SDKを使用しています。テレメトリは<code>https://www.rediacc.com/otlp</code>に送信されます。"
-          ],
-          "subsections": {
-            "cliDataCollected": {
-              "title": "5.1 収集データ",
-              "content": ["CLIは以下のカテゴリのデータを収集します："],
-              "items": [
-                "<strong>コマンド使用状況：</strong>コマンド名、CLIバージョン、終了コード、成功または失敗ステータス",
-                "<strong>匿名化された引数：</strong>機密値が除去されたコマンドオプション — パスワード、トークン、シークレット、APIキー、および資格情報は<code>[REDACTED]</code>に置換されます",
-                "<strong>環境：</strong>オペレーティングシステムタイプ、Node.jsランタイムバージョン、デプロイメント環境",
-                "<strong>エラー情報：</strong>コマンド失敗時のエラータイプ、エラーメッセージ、および限定的なスタックトレース",
-                "<strong>APIインタラクション：</strong>HTTPメソッド、URLパス、レスポンスステータスコード、リクエスト所要時間",
-                "<strong>セッション：</strong>ランダム生成されたセッションID、コマンド実行所要時間"
-              ]
-            },
-            "cliOptOut": {
-              "title": "5.2 オプトアウト方法",
-              "content": ["以下のいずれかの方法でCLIテレメトリを無効にできます："],
-              "items": [
-                "環境変数<code>REDIACC_TELEMETRY=off</code>を設定（<code>false</code>または<code>0</code>も使用可能）",
-                "CLI設定ファイルで<code>telemetryEnabled: false</code>を設定",
-                "CI環境では<strong>自動的に無効化</strong>されます（<code>CI</code>環境変数により検出）"
-              ]
-            }
-          }
-        },
-        "middleware": {
-          "id": "middleware",
-          "title": "6. ミドルウェア テレメトリ",
-          "content": [
-            "Rediaccミドルウェアは運用テレメトリを収集します。テレメトリは<code>https://www.rediacc.com/otlp/v1/traces</code>に送信されます。"
-          ],
-          "subsections": {
-            "middlewareDataCollected": {
-              "title": "6.1 収集データ",
-              "content": ["ミドルウェアは以下のカテゴリのデータを収集します："],
-              "items": [
-                "<strong>システム情報：</strong>ホスト名、オペレーティングシステムバージョン、.NETランタイムバージョン",
-                "<strong>API呼び出し：</strong>HTTPメソッド、エンドポイントパス、レスポンスステータスコード、リクエスト所要時間",
-                "<strong>データベース操作：</strong>ストアドプロシージャ名、実行所要時間、返却行数（クエリ内容、パラメータ、または結果データは含まれません）",
-                "<strong>認証イベント：</strong>ハッシュ化されたユーザー識別子のみ — ユーザーIDはSHA-256とソルトでハッシュ化され、最初の12文字に切り詰められます。元のユーザーIDは送信されません。",
-                "<strong>ヘルスチェック：</strong>サービスコンポーネントの可用性ステータスと応答時間",
-                "<strong>アプリケーションライフサイクル：</strong>起動、シャットダウン、および設定変更イベント",
-                "<strong>エラー情報：</strong>エラータイプ、エラーメッセージ、および運用コンテキスト"
-              ]
-            },
-            "middlewareOptOut": {
-              "title": "6.2 オプトアウト方法",
-              "content": [
-                "ミドルウェア設定（appsettings.jsonまたは環境固有の設定）で<code>Telemetry:Enabled</code>を<code>false</code>に設定してください。"
-              ]
-            }
-          }
-        },
-        "bridge": {
-          "id": "bridge",
-          "title": "7. Bridge（Renet）テレメトリ",
-          "content": [
-            "Rediacc Bridge（Renet）はgzip圧縮OTLPエクスポート付きのOpenTelemetryを使用しています。テレメトリは<code>www.rediacc.com/otlp/v1/traces</code>にバッチで送信されます（最大10スパン、5秒ごとにフラッシュ）。"
-          ],
-          "subsections": {
-            "bridgeDataCollected": {
-              "title": "7.1 収集データ",
-              "content": ["Bridgeは以下のカテゴリのデータを収集します："],
-              "items": [
-                "<strong>キュー操作：</strong>タスクID、優先度レベル、操作タイプ、実行所要時間、成功または失敗ステータス",
-                "<strong>SSH操作：</strong>ターゲットホスト、ユーザー名、ポート番号、終了コード、実行所要時間（コマンド内容や出力は収集されません）",
-                "<strong>API呼び出し：</strong>プロシージャ名、リクエスト所要時間",
-                "<strong>Vault操作：</strong>操作タイプと所要時間（シークレット値、キー、またはVault内容は収集されません）",
-                "<strong>Bridgeライフサイクル：</strong>起動、シャットダウン、および再接続イベント"
-              ]
-            },
-            "bridgeOptOut": {
-              "title": "7.2 オプトアウト方法",
-              "content": ["以下のいずれかの方法でBridgeテレメトリを無効にできます："],
-              "items": [
-                "環境変数<code>REDIACC_TELEMETRY_DISABLED=1</code>を設定",
-                "環境変数<code>DO_NOT_TRACK=1</code>を設定（<a href=\"https://consult.dntrack.dev/\" target=\"_blank\" rel=\"noopener noreferrer\">Do Not Track</a>標準に準拠）"
-              ]
-            }
-          }
-        },
-        "dataProcessing": {
-          "id": "data-processing",
-          "title": "8. データ処理と保存",
-          "content": [
-            "すべてのテレメトリデータは暗号化された接続（TLS 1.2+）を介して当社のテレメトリエンドポイントに送信されます。データは以下のとおり処理・保存されます："
-          ],
-          "items": [
-            "<strong>暗号化：</strong>すべてのデータはTLSを使用して転送中に暗号化されます。Bridgeはさらにgzip圧縮を使用します。",
-            "<strong>保持：</strong>生のテレメトリトレースは、デバッグおよびインシデント調査のために最大90日間保存されます。集計されたメトリクスは最大12か月間保持された後、削除されます。",
-            "<strong>アクセス：</strong>テレメトリデータは、必要に応じてRediaccのエンジニアリングおよびオペレーションスタッフのみがアクセスできます。",
-            "<strong>第三者との共有なし：</strong>テレメトリデータは第三者と共有、販売、またはアクセスされることはありません。",
-            "<strong>インフラストラクチャ：</strong>すべてのテレメトリデータは欧州連合内のインフラストラクチャで処理・保存されます。"
-          ]
-        },
-        "internationalTransfers": {
-          "id": "international-transfers",
-          "title": "9. 国際データ転送",
-          "content": [
-            "テレメトリデータは欧州連合内のサーバーで排他的に処理・保存されます。テレメトリデータをEU/EEA外に転送する必要が生じた場合（例：災害復旧）、欧州委員会が承認した標準契約条項（SCC）を含む適切な保護措置が講じられます。"
-          ]
+          },
+          "title": "4. Webアプリケーション テレメトリ"
         },
         "yourRights": {
-          "id": "your-rights",
-          "title": "10. お客様の権利",
           "content": [
             "当社のテレメトリデータは匿名化および集計されているため、一般的にGDPRの下で個人データには該当しません。ただし、テレメトリデータがお客様個人に紐付けられる限りにおいて、お客様には以下の権利があります："
           ],
+          "content2": [
+            "これらの権利を行使するには、<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までご連絡ください。30日以内にご返答いたします。"
+          ],
+          "id": "your-rights",
           "items": [
             "<strong>アクセス：</strong>お客様に関連する可能性のあるテレメトリデータについて情報を請求する権利",
             "<strong>削除：</strong>お客様に紐付けられるテレメトリデータの削除を請求する権利",
             "<strong>オプトアウト：</strong>上記の製品固有のメカニズムを使用して、いつでもテレメトリを無効にする権利",
             "<strong>苦情申立て：</strong>エストニアデータ保護監督局（<a href=\"https://www.aki.ee\" target=\"_blank\" rel=\"noopener noreferrer\">Andmekaitse Inspektsioon</a>）またはお客様の地域の監督当局に苦情を申し立てる権利"
           ],
-          "content2": [
-            "これらの権利を行使するには、<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までご連絡ください。30日以内にご返答いたします。"
-          ]
-        },
-        "ccpa": {
-          "id": "ccpa",
-          "title": "11. カリフォルニア州居住者（CCPA/CPRA）",
-          "content": [
-            "カリフォルニア州居住者の方には、カリフォルニア消費者プライバシー法（CCPA）およびカリフォルニアプライバシー権法（CPRA）に基づき、以下の追加開示が適用されます："
-          ],
-          "items": [
-            "<strong>収集される情報のカテゴリ：</strong>インターネットまたは電子ネットワーク活動情報（ブラウザタイプ、インタラクションデータ、エラーログ）、デバイス識別子（匿名化済み）、地理位置情報（国レベルのみ、保存されないIPアドレスから派生）",
-            "<strong>目的：</strong>サービス品質の向上・維持、デバッグ、パフォーマンス監視、およびセキュリティ",
-            "<strong>販売/共有：</strong>CCPA/CPRAで定義されるテレメトリデータの販売または共有は行いません",
-            "<strong>オプトアウトの権利：</strong>上記セクション4〜7に記載の製品固有のオプトアウトメカニズムを使用してください。Webアプリケーションではグローバルプライバシーコントロール（GPC）シグナルにも対応しています。"
-          ]
-        },
-        "changes": {
-          "id": "changes",
-          "title": "12. ポリシーの変更",
-          "content": [
-            "新製品の追加、収集データの変更、または処理方法の変更に伴い、このテレメトリポリシーを更新する場合があります。変更はこのページに更新された発効日とともに掲載されます。重要な変更については、製品リリースノートおよびウェブサイトを通じてユーザーに通知します。"
-          ]
+          "title": "10. お客様の権利"
         }
       },
+      "toc": {
+        "title": "目次"
+      }
+    },
+    "termsOfService": {
       "contact": {
-        "title": "ご質問はありますか？",
-        "description": "テレメトリの取り扱いに関するご質問やオプトアウトに関するサポートが必要な場合は、<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までお問い合わせください。"
+        "description": "本利用規約についてご質問がある場合は、<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までお問い合わせください。",
+        "title": "ご質問はありますか？"
+      },
+      "hero": {
+        "effectiveDate": "発効日：2026年2月1日",
+        "title": "利用規約"
+      },
+      "meta": {
+        "description": "Rediaccウェブサイトおよびインフラ自動化プラットフォームの利用に関する規約。",
+        "keywords": "利用規約, 利用条件, ユーザー契約, Rediacc",
+        "title": "利用規約 — Rediacc"
       },
       "related": {
         "title": "関連ポリシー"
-      }
-    },
-    "disasterRecovery": {
-      "enterpriseCta": {
-        "button": "営業担当者へのお問い合わせ",
-        "description": "組織に合わせてインフラストラクチャを保護します",
-        "heading": "カスタムのエンタープライズ ソリューションが必要ですか?"
       },
-      "faq": {
-        "heading": "よくある質問",
-        "items": [
-          {
-            "answer": "はい、プランはいつでも変更できます。 アップグレードはすぐに有効になり、ダウングレードは次の請求サイクルの開始時に適用されます。",
-            "question": "プランをアップグレードまたはダウングレードできますか?"
-          },
-          {
-            "answer": "すべての主要なクレジット カード (Visa、MasterCard、American Express) を受け入れ、年間 Enterprise プランについては請求書ベースの請求をサポートしています。",
-            "question": "どのような支払い方法を利用できますか?"
-          },
-          {
-            "answer": "私たちのコミュニティプランは永久に無料です。 ビジネス プランについては、トライアル オプションについて弊社の営業チームにお問い合わせください。",
-            "question": "無料トライアルはありますか?"
-          },
-          {
-            "answer": "コミュニティ プランには、コミュニティ サポートとセルフサービス ドキュメントが含まれています。 Professional には電子メールとチャットのサポートが含まれます。 Business には電話サポートと専任のカスタマー サクセス マネージャーが追加されます。 Enterprise には、エグゼクティブ エスカレーションを伴う 24 時間年中無休のホワイトグローブ サポートが含まれています。",
-            "question": "サポートには何が含まれますか?"
-          },
-          {
-            "answer": "リカバリ時間は層によって異なります。Community は最新のスナップショットを数分で復元し、Professional はポイントインタイムリカバリ (24 時間) を提供し、Business は 4 時間の SLA を提供し、Enterprise は 15 ～ 60 分のカスタム RTO を提供します。",
-            "question": "災害からどれくらい早く復旧できますか?"
-          },
-          {
-            "answer": "はい。 従来のバックアップ システムとは異なり、復元プロセスをテストすることでバックアップが自動的に検証されるため、緊急時に必要になる前にバックアップが機能することがわかります。",
-            "question": "私のバックアップは実際にテストされ、検証されていますか?"
-          },
-          {
-            "answer": "データは、選択した保存場所に暗号化されたままになります。 お客様は完全な制御を維持し、当社のサービスとは独立して暗号化されたバックアップにアクセスできます。",
-            "question": "サービスがダウンした場合、データはどうなりますか?"
-          }
-        ]
-      },
-      "finalCta": {
-        "buttons": {
-          "startFree": "無料で始める",
-          "talkToSales": "営業担当者に相談する"
-        },
-        "description": "インフラストラクチャの保護を初日から始めましょう",
-        "heading": "始める準備はできましたか?"
-      },
-      "hero": {
-        "subtitle": "現在のインフラストラクチャを保護し、成長に合わせて拡張できる災害復旧層を選択してください。",
-        "title": "シンプルで透明性のある価格設定"
-      },
-      "meta": {
-        "description": "ビジネスに最適なプランをお選びください。 無料のコミュニティ アクセスからエンタープライズ グレードの保護まで。 隠れた手数料はありません。",
-        "keywords": "disaster recovery pricing, backup pricing, business continuity plans, infrastructure protection, ransomware recovery",
-        "title": "価格 | シンプルで透過的なインフラ保護"
-      },
-      "plans": {
-        "business": {
-          "description": "ミッションクリティカルな保護 + エキスパートセットアップ",
-          "features": [
-            "Professional + のすべて",
-            "9,999 ドルの導入サポートが含まれます (ローンチ オファー)",
-            "地理的冗長ストレージ (3 リージョン) - 1 つの障害が発生しても停止しません",
-            "継続的なデータ保護 - データ損失ゼロ",
-            "4 時間のリカバリ SLA (保証)",
-            "無制限のリポジトリ、それぞれ 500 GB",
-            "7 つのアクティブなジョブ / 3 つの予約済みジョブ",
-            "90 日間の監査ログの保持",
-            "役割ベースのアクセス制御と包括的な監査ログ",
-            "コンプライアンス対応の監査レポート",
-            "専任のカスタマーサクセスマネージャー",
-            "電話サポート + コラボレーション スペース"
+      "sections": {
+        "acceptableUse": {
+          "content": [
+            "<a href=\"acceptable-use-policy\">利用規定</a>に従ってサービスを使用することに同意するものとします。"
           ],
-          "name": "仕事"
+          "id": "acceptable-use",
+          "title": "5. 利用規定"
         },
-        "community": {
-          "description": "初日から本番環境に対応した災害復旧 — 永久無料",
-          "features": [
-            "無制限のユーザーとチーム - 自由にコラボレーション",
-            "最新のスナップショットの復元 - 数分で障害から回復します",
-            "10 個のリポジトリ、それぞれ 10 GB",
-            "2 時間のジョブ タイムアウト、2 つのアクティブなジョブ/1 つの予約済みジョブ",
-            "7 日間の監査ログの保持",
-            "手動バックアップのスケジュール設定",
-            "コミュニティ Slack へのアクセス",
-            "セルフサービスのサポートとドキュメント",
-            "「Rediacc による」帰属"
+        "acceptance": {
+          "content": [
+            "Rediaccウェブサイト（<a href=\"https://www.rediacc.com\">www.rediacc.com</a>）またはRediaccプラットフォームにアクセスまたは使用することにより、本利用規約に同意したものとみなされます。"
           ],
-          "name": "コミュニティ"
+          "id": "acceptance",
+          "title": "1. 規約への同意"
         },
-        "enterprise": {
-          "description": "複雑なエンタープライズ インフラストラクチャに対するホワイト グローブの災害復旧",
-          "features": [
-            "ビジネスのすべて +",
-            "カスタム SLA (15 ～ 60 分の RTO) - お客様の要件と当社の取り組み",
-            "専用のインフラストラクチャ テナント - 最大のセキュリティとパフォーマンス",
-            "24 時間年中無休の徹底したサポート",
-            "無制限のリポジトリ、それぞれ 1TB 以上",
-            "96 時間以上のジョブ ウィンドウ (10 個以上のアクティブなジョブ/5 個以上の予約済みジョブ)",
-            "1 年以上の監査ログの保持",
-            "四半期ごとの災害復旧演習 - 準備状況をテストする",
-            "エグゼクティブエスカレーションホットライン",
-            "カスタム統合とワークフロー",
-            "監査文書サポートとセキュリティレビュー"
+        "accounts": {
+          "content": [
+            "登録時に正確な情報を提供し、アカウントでのすべての活動に責任を持つ必要があります。"
           ],
-          "name": "企業",
-          "priceNote": "*開始時間"
+          "id": "accounts",
+          "title": "3. アカウントと登録"
         },
-        "professional": {
-          "description": "企業の複雑さを必要としない、プロフェッショナル レベルの災害復旧",
-          "features": [
-            "コミュニティのすべて +",
-            "自動バックアップ スケジュール - 設定すればあとは忘れます",
-            "ポイントインタイムリカバリ(24時間)",
-            "500 リポジトリ、それぞれ 100 GB",
-            "24 時間のジョブ タイムアウト、5 つのアクティブなジョブ/2 つの予約済みジョブ",
-            "30 日間の監査ログの保持",
-            "メール+チャットサポート",
-            "Slack と PagerDuty の通知",
-            "「Powered by Rediacc」の帰属なし",
-            "統合 API アクセス"
+        "changes": {
+          "content": [
+            "本規約は随時更新される場合があります。"
           ],
-          "name": "プロ"
+          "id": "changes",
+          "title": "14. 規約の変更"
+        },
+        "dataOwnership": {
+          "content": [
+            "お客様のデータはお客様のものです。詳細は<a href=\"privacy-policy\">プライバシーポリシー</a>をご覧ください。"
+          ],
+          "id": "data-ownership",
+          "title": "8. お客様のデータ"
+        },
+        "governingLaw": {
+          "content": [
+            "本規約はエストニア共和国の法律に準拠します。"
+          ],
+          "id": "governing-law",
+          "title": "13. 準拠法"
+        },
+        "indemnification": {
+          "content": [
+            "サービスの使用に起因するすべての請求からRediaccを補償することに同意するものとします。"
+          ],
+          "id": "indemnification",
+          "title": "11. 補償"
+        },
+        "intellectualProperty": {
+          "content": [
+            "サービスはRediaccの所有物であり、知的財産法により保護されています。"
+          ],
+          "id": "intellectual-property",
+          "title": "7. 知的財産"
+        },
+        "limitationOfLiability": {
+          "content": [
+            "法律で認められる最大限の範囲で、Rediaccは間接的な損害について責任を負いません。"
+          ],
+          "id": "limitation-of-liability",
+          "title": "10. 責任の制限"
+        },
+        "serviceAvailability": {
+          "content": [
+            "高可用性の維持に努めていますが、中断のないアクセスを保証するものではありません。"
+          ],
+          "id": "service-availability",
+          "title": "9. サービスの可用性"
+        },
+        "serviceDescription": {
+          "content": [
+            "RediaccはAI駆動のオペレーション向けインフラ自動化プラットフォームを提供しています。"
+          ],
+          "id": "service-description",
+          "title": "2. サービスの説明"
+        },
+        "subscriptions": {
+          "content": [
+            "有料サブスクリプションは月額または年額で前払いで請求されます。返金については<a href=\"refund-policy\">返金ポリシー</a>をご覧ください。"
+          ],
+          "id": "subscriptions",
+          "title": "4. サブスクリプションと支払い"
+        },
+        "telemetry": {
+          "content": [
+            "当社のソフトウェア製品は、製品品質とパフォーマンスの向上を目的として匿名化された使用テレメトリを収集します。サービスを使用することにより、<a href=\"telemetry-policy\">テレメトリポリシー</a>に記載されているとおりテレメトリ収集が行われることを了承するものとします。",
+            "テレメトリはプライバシーを保護するよう設計されています。個人識別子は送信前に匿名化され、いつでもテレメトリをオプトアウトできます。<a href=\"telemetry-policy\">テレメトリポリシー</a>には、各製品が収集する具体的なデータおよび収集を無効にするメカニズムが記載されています。"
+          ],
+          "id": "telemetry",
+          "title": "6. テレメトリとデータ収集"
+        },
+        "termination": {
+          "content": [
+            "いつでもアカウントを解約できます。本規約に違反した場合、アクセスを停止する場合があります。"
+          ],
+          "id": "termination",
+          "title": "12. 解約"
         }
       },
-      "professionalServices": {
-        "access": {
-          "description": "ハイブリッド カバレッジでは、含まれているオンボーディングとオプションのアドオンを組み合わせているため、すべてのチームが適切なタイミングで適切なサポートを受けることができます。",
-          "heading": "階層別のプロフェッショナル サービスへのアクセス",
-          "labels": {
-            "available": "利用可能なアドオン",
-            "included": "付属"
-          },
-          "tiers": [
-            {
-              "available": [
-                "標準実装 ($9,999) または階層型パッケージ (小規模 $7,499、中規模 $14,999、大規模 $29,999、エンタープライズ カスタム)",
-                "緊急対応業務 (オンデマンドで 29,999 ドル)"
-              ],
-              "included": [
-                "セルフサービスのドキュメント、ビデオチュートリアル、コミュニティフォーラム"
-              ],
-              "planId": "コミュニティ"
-            },
-            {
-              "available": [
-                "優先実装 ($19,999)",
-                "緊急対応業務 (オンデマンドで 29,999 ドル)",
-                "カスタム統合プロジェクト (範囲指定)"
-              ],
-              "included": [
-                "電子メールサポート",
-                "標準オンボーディング セッション (セットアップ コールと構成のウォークスルー)"
-              ],
-              "planId": "プロ"
-            },
-            {
-              "available": [
-                "優先実装アップグレード ($19,999)",
-                "緊急対応業務 (オンデマンドで 29,999 ドル)",
-                "カスタム開発とセキュリティ アーキテクチャのコンサルティング"
-              ],
-              "included": [
-                "優先メール/チャット/電話サポート",
-                "構成とランブックの引き継ぎによる専用のオンボーディング",
-                "標準実装パッケージが含まれています (9,999 ドル相当)",
-                "四半期ごとの成功レビュー"
-              ],
-              "planId": "仕事"
-            },
-            {
-              "available": [
-                "カスタム開発と高度な統合",
-                "セキュリティおよび監査アーキテクチャのコンサルティング",
-                "緊急対応補助金 (月額 5,000 ～ 7,500 ドル)"
-              ],
-              "included": [
-                "24 時間年中無休の徹底したサポートと専用の CSM",
-                "優先実装が含まれます (19,999 ドル相当)",
-                "四半期ごとの災害復旧テスト",
-                "年次事業継続計画ワークショップ",
-                "エグゼクティブエスカレーションホットライン"
-              ],
-              "planId": "企業"
-            }
-          ]
-        },
-        "advancedDetails": {
-          "description": "サービス パッケージ、実装層、価格設定要素、およびリテイナー オプション",
-          "heading": "実装と価格の詳細"
-        },
-        "benefits": {
-          "description": "当社のプロフェッショナル サービスは、重要なインフラストラクチャの課題に直面しても、決して孤独ではないことを保証します。",
-          "heading": "なぜプロフェッショナルサービスなのか?",
-          "items": [
-            "あなたのプロジェクトに割り当てられた専門家からなる専任チーム",
-            "SLAによる応答時間の保証",
-            "必要に応じてサービス層を切り替える",
-            "緊急層向けの 24 時間年中無休の緊急ホットライン"
-          ],
-          "statistics": [
-            "ランサムウェア攻撃の平均コストは 462 万ドル (IBM Security、2023 年)",
-            "企業の平均ダウンタイムコストは 1 分あたり 5,600 ドルです"
-          ]
-        },
-        "cta": {
-          "button": "相談のスケジュールを立てる",
-          "description": "当社の専門家がお客様の成功をお手伝いいたします",
-          "heading": "専門家のサポートが必要ですか?"
-        },
-        "header": {
-          "badge": "専門家のサポートを受けて成功を早めましょう",
-          "eligibility": "プロフェッショナル サービスは、ハイブリッド アクセスを介してあらゆるプランに対応します。 以下のマトリックスを使用して、何が含まれ、何が追加できるかを確認してください。",
-          "subtitle": "最も必要なときに専門家のサポートを受けることができます",
-          "title": "プロフェッショナルサービスパッケージ"
-        },
-        "packages": {
-          "emergency": {
-            "benefits": [
-              "即時対応 (2 時間以内)",
-              "フォレンジック、封じ込め、および回復計画",
-              "強化ロードマップを含む安定化レポート"
-            ],
-            "description": "オンデマンドのインシデント対応チームは、重要なシステムを封じ込めて復旧する準備ができています。",
-            "name": "緊急",
-            "price": "29,999ドル",
-            "tiers": [],
-            "turnaround": "同日"
-          },
-          "priority": {
-            "benefits": [
-              "専任のエンゲージメントマネージャー",
-              "夕方/週末の空き状況",
-              "生産切り替え支援"
-            ],
-            "description": "拡張された可用性とガイド付きカットオーバー サポートにより、配信が迅速化されます。",
-            "name": "優先度",
-            "price": "19,999ドル",
-            "tiers": [],
-            "turnaround": "24～48時間"
-          },
-          "standard": {
-            "benefits": [
-              "プロジェクトの発見と成功計画",
-              "環境のプロビジョニングと構成",
-              "検証チェックリストと知識の伝達"
-            ],
-            "description": "アーキテクチャ、展開、検証、有効化をカバーする構造化された実装。",
-            "name": "標準",
-            "price": "7,499ドルから",
-            "tierHeading": "ワークロードベースの実装価格設定",
-            "tierNote": "ワークロードは、バックアップおよび災害復旧保護を必要とする個別のビジネス プロセス、アプリケーション、またはサービスを表します。 実装には、アーキテクチャの設計、展開、検証、チームの有効化が含まれます。",
-            "tiers": [
-              "スターター (1 ～ 4 ワークロード): $7,499",
-              "成長 (5 ～ 10 ワークロード): 14,999 ドル",
-              "規模 (11 ～ 25 ワークロード): 29,999 ドル",
-              "エンタープライズ (25 以上のワークロード): カスタム見積もり"
-            ],
-            "turnaround": "3～5営業日"
-          }
-        },
-        "pricingFactors": {
-          "factors": [
-            {
-              "description": "関連するシステム、統合、および依存関係の数",
-              "title": "スコープの複雑さ"
-            },
-            {
-              "description": "既製のソリューションとカスタム開発要件",
-              "title": "カスタマイズレベル"
-            },
-            {
-              "description": "1 人の専門家と完全な専任の専門家チーム",
-              "title": "チームの規模"
-            }
-          ],
-          "heading": "プロフェッショナル サービスの価格設定を理解する",
-          "intro": "最終的なプロジェクトのコストは次のように決定されます。",
-          "note": "例: セキュリティ アーキテクチャのレビューを伴う中規模の実装 (マシン 120 台) の場合、通常、統合と保持範囲に応じて 14,999 ～ 24,999 ドルの範囲になります。"
-        },
-        "retainers": {
-          "description": "予測可能な月額料金で、経営陣の関係者に当社のスペシャリストへの確実なアクセスを提供します。",
-          "heading": "常時稼働の準備を整えるためのリテーナー オプション",
-          "items": [
-            {
-              "bullets": [
-                "2 時間の応答時間を保証",
-                "作戦室調整による優先エスカレーション パス",
-                "四半期ごとの準備状況レビューとハンドブックの更新"
-              ],
-              "price": "月額 5,000 ～ 7,500 ドル",
-              "title": "緊急対応用リテイナー"
-            }
-          ]
-        },
-        "serviceTypes": {
-          "badgeLabels": {
-            "emergency": "緊急",
-            "priority": "優先度",
-            "standard": "標準"
-          },
-          "heading": "利用可能なサービス",
-          "intro": "任意のサービスをクリックすると、各パッケージ層の所要時間が表示されます",
-          "services": [
-            {
-              "emergency": "即時評価 + 重要なシステムを同日にオンライン + 完全な移行を開始",
-              "id": "データ移行",
-              "name": "データ移行",
-              "priority": "迅速な移行パイプラインのセットアップ + コア データは 48 時間以内に転送",
-              "standard": "完全な検証を行ってエンドツーエンドの移行を完了する"
-            },
-            {
-              "emergency": "即時封じ込め + 重要なシステムは同日に復旧 + 完全復旧が開始",
-              "id": "ランサムウェアの回復",
-              "name": "ランサムウェアの回復",
-              "priority": "迅速な脅威評価 + コア業務は 48 時間以内に復旧",
-              "standard": "フォレンジックと強化による完全な回復"
-            },
-            {
-              "emergency": "重大な脆弱性スキャン + 高リスクパッチの同日展開 + 完全な監査の開始",
-              "id": "セキュリティ評価",
-              "name": "セキュリティ評価",
-              "priority": "包括的な脆弱性評価と 48 時間以内の修復計画",
-              "standard": "実装ロードマップを含む完全なセキュリティ監査"
-            },
-            {
-              "emergency": "重要なリソースは同日にプロビジョニング + 自動スケーリングの設定 + フルプランの開始",
-              "id": "インフラストラクチャのスケーリング",
-              "name": "インフラストラクチャのスケーリング",
-              "priority": "急速な容量増加 + 48 時間以内の監視セットアップ",
-              "standard": "最適化によるインフラストラクチャの完全な再設計"
-            },
-            {
-              "emergency": "重要な手順の説明会を同日開催 + インシデント対応の準備 + 完全なプログラムを開始",
-              "id": "チームトレーニング",
-              "name": "チームトレーニング",
-              "priority": "集中的な実践ワークショップ + 主要なワークフローを 2 日間でカバー",
-              "standard": "包括的な複数日間のトレーニング プログラム"
-            },
-            {
-              "emergency": "重大なボトルネックを特定 + 即時ホットフィックスを同日展開 + 完全な最適化を開始",
-              "id": "パフォーマンスの最適化",
-              "name": "パフォーマンスの最適化",
-              "priority": "迅速なプロファイリング + 影響の大きい最適化を 48 時間以内に導入",
-              "standard": "包括的なパフォーマンスチューニングによる詳細な分析"
-            },
-            {
-              "emergency": "重要な接続が同日に確立 + 基本的なデータ フローが動作 + 完全な開発が開始",
-              "id": "カスタム統合",
-              "name": "カスタム統合",
-              "priority": "コア統合機能 + 必須機能は 48 時間以内に有効になります",
-              "standard": "テストとドキュメントの完全な統合"
-            }
-          ]
-        }
-      },
-      "psTeaser": {
-        "heading": "始めるにあたって専門家の助けが必要ですか?",
-        "packages": {
-          "emergency": {
-            "name": "緊急",
-            "price": "29,999ドル"
-          },
-          "priority": {
-            "name": "優先度",
-            "price": "19,999ドル"
-          },
-          "standard": {
-            "name": "標準",
-            "price": "7,499ドルから"
-          }
-        },
-        "subtitle": "専門的な実装およびサポート サービスをすべての層で利用可能",
-        "viewDetails": "プロフェッショナル サービスを詳しく見る"
-      },
-      "strategy": {
-        "copy": "現在の運用段階に適したプランを選択し、明日はプラットフォームを切り替えることなく拡張できます。",
-        "distribution": [
-          "プロフェッショナル → ビジネス: チームの成長に合わせて、地理冗長ストレージ、継続的データ保護、4時間RTO保証、専任カスタマーサクセスマネージャーを追加します。",
-          "ビジネス → エンタープライズ: リスクが最も高い場合に、15〜60分のカスタムRTO、専用インフラストラクチャテナンシー、ホワイトグローブパートナーシップを解除します。"
-        ],
-        "heading": "あらゆるステージに合わせて構築"
-      },
-      "technicalSummary": {
-        "description": "プラットフォーム チームにスループット、保持、回復の期待値を正確に把握してもらいます。",
-        "heading": "技術的な限界が一目でわかる",
-        "metrics": [
-          {
-            "key": "CPUコア",
-            "label": "CPUコア"
-          },
-          {
-            "key": "リポジトリ",
-            "label": "リポジトリ"
-          },
-          {
-            "key": "リポジトリサイズ",
-            "label": "リポジトリのサイズ制限"
-          },
-          {
-            "key": "ジョブタイムアウト",
-            "label": "ジョブの最大期間"
-          },
-          {
-            "key": "アクティブなジョブ",
-            "label": "同時ジョブ"
-          },
-          {
-            "key": "予約済みジョブ",
-            "label": "ジョブキューの深さ"
-          },
-          {
-            "key": "RPO",
-            "label": "目標復旧時点 (RPO)"
-          },
-          {
-            "key": "rto",
-            "label": "目標復旧時間 (RTO)"
-          },
-          {
-            "key": "監査ウィンドウ",
-            "label": "監査ログの保存"
-          }
-        ],
-        "recoveryNote": "RPO (目標復旧時点): 時間内に測定した、損失しても許容できるデータ量。 たとえば、15 分の RPO は、最近の変更が最大 15 分間失われる可能性があることを意味します。 \n\nRTO (目標復旧時間): 災害後にどれだけ早くオンラインに戻る必要があるか。 たとえば、4 時間の RTO は、システムが 4 時間以内に復元されることを意味します。",
-        "values": {
-          "business": {
-            "activeJobs": "20",
-            "auditLogs": "90日",
-            "jobTimeout": "72時間",
-            "repoSize": "500GB",
-            "repositories": "無制限",
-            "reservedJobs": "3 予約済み",
-            "rpo": "～5分（連続）",
-            "rto": "4時間（保証あり）"
-          },
-          "community": {
-            "activeJobs": "1",
-            "auditLogs": "7日間",
-            "jobTimeout": "2時間",
-            "repoSize": "10GB",
-            "repositories": "無制限",
-            "reservedJobs": "1 予約済み",
-            "rpo": "ベストエフォート",
-            "rto": "ベストエフォート"
-          },
-          "enterprise": {
-            "activeJobs": "60",
-            "auditLogs": "1年以上",
-            "jobTimeout": "96時間以上",
-            "repoSize": "1TB以上",
-            "repositories": "無制限",
-            "reservedJobs": "5+ 予約済み",
-            "rpo": "カスタム (ほぼゼロ)",
-            "rto": "15～60分（カスタム）"
-          },
-          "professional": {
-            "activeJobs": "5",
-            "auditLogs": "30日",
-            "jobTimeout": "24時間",
-            "repoSize": "100GB",
-            "repositories": "無制限",
-            "reservedJobs": "2 予約済み",
-            "rpo": "～15分",
-            "rto": "ポイントインタイム復元"
-          }
-        }
-      },
-      "trust": {
-        "heading": "エンタープライズグレードのセキュリティと信頼性",
-        "items": ["銀行レベルの暗号化", "99.9% の稼働率を約束"]
-      },
-      "ui": {
-        "anchor": "戦略的アンカー",
-        "bestValue": "ベストバリュー",
-        "contactSales": "営業担当者へのお問い合わせ",
-        "cta": {
-          "business": {
-            "guarantee": "14日間の返金保証",
-            "launchBadge": "限定発売オファー",
-            "primary": "実装コールのスケジュールを設定する",
-            "secondary": "営業担当者へのお問い合わせ",
-            "valueNote": "9,999 ドルのセットアップ クレジットが含まれています"
-          },
-          "community": {
-            "note": "クレジットカードは必要ありません",
-            "primary": "無料で始める",
-            "secondary": "もっと詳しく知る"
-          },
-          "enterprise": {
-            "guarantee": "14日間の返金保証",
-            "primary": "エグゼクティブデモをスケジュールする",
-            "secondary": "営業担当者へのお問い合わせ",
-            "subtext": "カスタムSLA・専用サポート"
-          },
-          "professional": {
-            "guarantee": "14日間の返金保証",
-            "primary": "始めましょう",
-            "secondary": "営業担当者へのお問い合わせ"
-          }
-        },
-        "foreverFree": "永遠に無料",
-        "getStarted": "始めましょう",
-        "guarantees": {
-          "cancelAnytime": "いつでもキャンセル可能",
-          "moneyBack": "14日間の返金保証",
-          "noContracts": "長期契約はありません"
-        },
-        "keyBenefits": "主な利点",
-        "learnMore": "もっと詳しく知る",
-        "limitedOffer": "限定発売オファー",
-        "monthOrYear": "月額または年間 {{price}}",
-        "popular": "最も人気のある",
-        "startingAt": "*開始時間",
-        "whatsIncluded": "含まれるもの:"
+      "toc": {
+        "title": "目次"
       }
     }
   },
@@ -3011,9 +3072,6 @@
     },
     "subtitle": "実稼働環境にはテラバイト規模のデータがあるが、サンドボックス環境では毎月しか同期しない場合、チームは危険な回避策につながる不可能な選択に直面します。",
     "title": "スピードミスマッチの危機"
-  },
-  "bridge": {
-    "text": "だから私たちはRediaccを作りました"
   },
   "solutions": {
     "items": [
@@ -3036,17 +3094,29 @@
         "title": "常にマルチクラウド"
       },
       {
-        "benefits": ["自動検証", "長期保存", "数分で回復します"],
+        "benefits": [
+          "自動検証",
+          "長期保存",
+          "数分で回復します"
+        ],
         "description": "検証済みの回復が保証されています。 テスト済みのバックアップ。 完全な履歴。",
         "title": "検証済みのバックアップ"
       },
       {
-        "benefits": ["あなたが制御する暗号化", "完全な監査証跡", "移行しても安全"],
+        "benefits": [
+          "あなたが制御する暗号化",
+          "完全な監査証跡",
+          "移行しても安全"
+        ],
         "description": "すべてが暗号化されています。 すべてが監査されました。 完全なコントロール。",
         "title": "暗号化制御"
       },
       {
-        "benefits": ["60秒の環境プロビジョニング", "本番環境と同一のクローン", "自動 Git 統合"],
+        "benefits": [
+          "60秒の環境プロビジョニング",
+          "本番環境と同一のクローン",
+          "自動 Git 統合"
+        ],
         "description": "インスタント本番クローン。 DevOps チケットはゼロです。 60秒環境。",
         "title": "開発環境"
       },
@@ -3062,5 +3132,47 @@
     ],
     "subtitle": "インフラストラクチャに障害が発生した場合や脅威が発生した場合に迅速に対応するための 6 つの統合ソリューション。",
     "title": "ビジネス継続性を確保する方法"
+  },
+  "testimonials": {
+    "items": [
+      {
+        "role": "開発者",
+        "quote": "サンドボックスが何週間も遅れていたので本番環境でコーディングしていました。今は60秒で新しいクローンを取得できます。"
+      },
+      {
+        "role": "CTO",
+        "quote": "データベースを1つから12に拡張しましたが、新しいハードウェアは購入していません。Rediaccのクローンはストレージを共有し、変更分だけ支払います。"
+      },
+      {
+        "role": "DevOpsエンジニア",
+        "quote": "実データでCIを実行できませんでした。今はすべてのパイプラインが自動的に独自の本番クローンを取得します。"
+      },
+      {
+        "role": "システムエンジニア",
+        "quote": "アップグレードでシステムがクラッシュしていました。今はすべての変更を正確なコピーで先にテストします。サプライズなし。"
+      },
+      {
+        "role": "データベース管理者",
+        "quote": "古いコピーでクエリを最適化しても無意味でした。今はライブ同期されたクローンで作業します — 同じデータ、リスクゼロ。"
+      },
+      {
+        "role": "ITマネージャー",
+        "quote": "バックアップに2週間かかりストレージがいっぱいでした。今は追加ディスクなしで毎時バックアップしています。"
+      },
+      {
+        "role": "セキュリティエンジニア",
+        "quote": "実データで暗号化をテストできませんでした。今はすべてのクローンがデフォルトで暗号化されています。監査合格。"
+      },
+      {
+        "role": "災害復旧マネージャー",
+        "quote": "復旧計画では4時間と書いてありました。現実は4日でした。今は1分以内にクローンにフェイルオーバーできます。"
+      },
+      {
+        "role": "AIエージェントオペレーター",
+        "quote": "AIエージェントが誤ってデータベースを削除しました。今はクローンしか触れません — 本番環境は安全です。"
+      }
+    ],
+    "subtitle": "さまざまな役割がRediaccをどう体験しているか",
+    "title": "チームの声"
   }
 }

@@ -153,6 +153,29 @@ const ALLOWED_IDENTICAL = new Set([
   'plugins',
   'image',
   'clone',
+  // Package manager / installer names (kept in English globally)
+  'APT',
+  'DNF',
+  'Homebrew',
+  'AppImage',
+  'Downloads',
+  'Contact',
+  'Solutions',
+  'Legal',
+  'General',
+  'Professional',
+  'Repositories',
+  'docker',
+  'section',
+  // International words identical across many languages
+  'Standard',
+  'Binary',
+  'Documentation',
+  'Platform',
+  'Cookies',
+  'Priority',
+  'Premium',
+  'Enterprise',
 ]);
 
 // Patterns for strings that should not be translated (placeholders, format strings)
@@ -182,6 +205,30 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
   /^\n?Error:\s*\{\{error\}\}$/, // Error templates
   /^minutes$/, // Time unit labels
   /^Cancelling\.\.\.$/i, // Progress indicator
+  /^@\w+$/, // Social media handles (@rediacc)
+  /^\{\{current\}\}\s*\/\s*\{\{total\}\}$/, // Pagination templates
+  /\.id$/, // Keys ending in .id (HTML anchors, must stay English)
+  /\.key$/, // Keys ending in .key (metric/data keys)
+  /^(Intel|Apple Silicon|ARM)\b/, // Architecture labels
+  /^ARM\w*$/, // ARM variants
+  /\(x64\)|\(ARM64\)|\(\.deb\)|\(\.rpm\)/, // Architecture/file type suffixes
+  /^(APT|DNF|Homebrew)\s*\(/, // Package manager labels with OS in parens
+  /^Debian\/Ubuntu/, // Distro-specific labels
+  /^Rediacc\s+(Desktop|CLI)/, // Product sub-names
+  /^\$[\d,]+$/, // Price values like $19,999
+  /^[\d,]+$/, // Numeric values like 5,000
+  /^\d+\s*(GB|TB|MB|KB)\+?$/, // Storage sizes like 10 GB, 1 TB+
+  /\.\w+\.(price|jobsPerMonth|repoSize)$/, // Pricing technical values (key pattern)
+  /\.label$/, // Form labels (often identical: "Name *", "Email *")
+  /\| Rediacc$/, // Page titles with brand suffix (e.g., "Downloads | Rediacc")
+  /^\d+\.\d+\s/, // Numbered sections like "2.4 Cookies"
+  /\(portable\)$/, // Technical descriptions like "AppImage (portable)"
+  /\(64-bit\)$/, // Architecture labels like "x64 (64-bit)"
+  /\.subsections\.\w+\.title$/, // Legal subsection titles (often kept in English)
+  /\.badgeLabels\./, // Badge labels (often identical: "Standard", "Priority")
+  /^\d+\.\s+\w+$/, // Numbered section titles like "1. Introduction", "1. Overview"
+  /^~?\d+\s+minutes?$/, // Time durations like "~15 minutes", "30 minutes"
+  /\.(rpo|rto)$/, // Recovery point/time objective values (technical metrics)
 ];
 
 type TranslationValue = string | TranslationObject;
@@ -226,62 +273,89 @@ function shouldSkipValue(value: TranslationValue, key = ''): boolean {
   return false;
 }
 
-function checkLocaleDir(name: string, localeDir: string): CheckResult {
+function checkLocaleDir(name: string, localeDir: string, flatFiles = false): CheckResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  const enDir = path.join(localeDir, 'en');
-  if (!fs.existsSync(enDir)) {
-    errors.push(`[${name}] English locale directory not found: ${enDir}`);
-    return { errors, warnings };
-  }
-
   // Load English translations
   const enKeys: Record<string, TranslationValue> = {};
-  const enFiles = fs.readdirSync(enDir).filter((f) => f.endsWith('.json'));
+  let languages: string[];
 
-  for (const file of enFiles) {
-    const content = JSON.parse(
-      fs.readFileSync(path.join(enDir, file), 'utf-8')
-    ) as TranslationObject;
+  if (flatFiles) {
+    // Flat layout: {dir}/en.json, {dir}/fr.json, etc.
+    const enFile = path.join(localeDir, 'en.json');
+    if (!fs.existsSync(enFile)) {
+      errors.push(`[${name}] English file not found: ${enFile}`);
+      return { errors, warnings };
+    }
+    const content = JSON.parse(fs.readFileSync(enFile, 'utf-8')) as TranslationObject;
     const flat = flatten(content);
     for (const [key, value] of Object.entries(flat)) {
       enKeys[key] = value;
     }
+    languages = fs
+      .readdirSync(localeDir)
+      .filter((f) => f !== 'en.json' && !f.startsWith('.') && f.endsWith('.json'))
+      .map((f) => f.replace('.json', ''));
+  } else {
+    // Directory layout: {dir}/en/*.json
+    const enDir = path.join(localeDir, 'en');
+    if (!fs.existsSync(enDir)) {
+      errors.push(`[${name}] English locale directory not found: ${enDir}`);
+      return { errors, warnings };
+    }
+    const enFiles = fs.readdirSync(enDir).filter((f) => f.endsWith('.json'));
+    for (const file of enFiles) {
+      const content = JSON.parse(
+        fs.readFileSync(path.join(enDir, file), 'utf-8')
+      ) as TranslationObject;
+      const flat = flatten(content);
+      for (const [key, value] of Object.entries(flat)) {
+        enKeys[key] = value;
+      }
+    }
+    languages = fs
+      .readdirSync(localeDir)
+      .filter(
+        (d) => d !== 'en' && !d.startsWith('.') && fs.statSync(path.join(localeDir, d)).isDirectory()
+      );
   }
 
   const totalEnKeys = Object.keys(enKeys).length;
-
-  // Get all language directories
-  const languages = fs
-    .readdirSync(localeDir)
-    .filter(
-      (d) => d !== 'en' && !d.startsWith('.') && fs.statSync(path.join(localeDir, d)).isDirectory()
-    );
-
   const stats: Record<string, LanguageStats> = {};
 
   for (const lang of languages) {
-    const langDir = path.join(localeDir, lang);
     const langKeys: Record<string, TranslationValue> = {};
     let untranslated = 0;
     let missing = 0;
 
     // Load language translations
-    for (const file of enFiles) {
-      const langFile = path.join(langDir, file);
+    if (flatFiles) {
+      const langFile = path.join(localeDir, `${lang}.json`);
       if (!fs.existsSync(langFile)) {
-        // Count all keys from this file as missing
-        const enContent = JSON.parse(
-          fs.readFileSync(path.join(enDir, file), 'utf-8')
-        ) as TranslationObject;
-        missing += Object.keys(flatten(enContent)).length;
-        continue;
+        missing = totalEnKeys;
+      } else {
+        const content = JSON.parse(fs.readFileSync(langFile, 'utf-8')) as TranslationObject;
+        const flat = flatten(content);
+        Object.assign(langKeys, flat);
       }
-
-      const content = JSON.parse(fs.readFileSync(langFile, 'utf-8')) as TranslationObject;
-      const flat = flatten(content);
-      Object.assign(langKeys, flat);
+    } else {
+      const enDir = path.join(localeDir, 'en');
+      const enFiles = fs.readdirSync(enDir).filter((f) => f.endsWith('.json'));
+      const langDir = path.join(localeDir, lang);
+      for (const file of enFiles) {
+        const langFile = path.join(langDir, file);
+        if (!fs.existsSync(langFile)) {
+          const enContent = JSON.parse(
+            fs.readFileSync(path.join(enDir, file), 'utf-8')
+          ) as TranslationObject;
+          missing += Object.keys(flatten(enContent)).length;
+          continue;
+        }
+        const content = JSON.parse(fs.readFileSync(langFile, 'utf-8')) as TranslationObject;
+        const flat = flatten(content);
+        Object.assign(langKeys, flat);
+      }
     }
 
     // Check for untranslated strings
@@ -369,6 +443,30 @@ function main(): void {
   if (fs.existsSync(cliLocales)) {
     console.log('Checking CLI translations...');
     const { errors, warnings, stats } = checkLocaleDir('cli', cliLocales);
+    allErrors.push(...errors);
+    allWarnings.push(...warnings);
+
+    if (stats) {
+      for (const [lang, data] of Object.entries(stats)) {
+        const status =
+          data.missing > 0 || Number.parseFloat(data.untranslatedPercent) > MAX_UNTRANSLATED_PERCENT
+            ? '\u001B[31m\u2717\u001B[0m'
+            : data.untranslated > 0
+              ? '\u001B[33m!\u001B[0m'
+              : '\u001B[32m\u2713\u001B[0m';
+        console.log(
+          `  ${status} ${lang}: ${data.untranslated} untranslated (${data.untranslatedPercent}%)`
+        );
+      }
+    }
+    console.log('');
+  }
+
+  // Check WWW locales (flat files: {lang}.json)
+  const wwwLocales = path.join(__dirname, '../packages/www/src/i18n/translations');
+  if (fs.existsSync(wwwLocales)) {
+    console.log('Checking WWW translations...');
+    const { errors, warnings, stats } = checkLocaleDir('www', wwwLocales, true);
     allErrors.push(...errors);
     allWarnings.push(...warnings);
 

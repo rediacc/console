@@ -1,5 +1,5 @@
 {
-  "name": "Rediacc - Infrastructure Automation Platform",
+  "name": "Rediacc — Clone Production. Break Nothing.",
   "short_name": "Rediacc",
   "description": "Infrastructure Automation Platform designed for accelerated development operations",
   "icons": [
@@ -9,32 +9,27 @@
       "type": "image/svg+xml"
     },
     {
-      "src": "/favicon.svg",
+      "src": "/favicon-16x16.png",
       "sizes": "16x16",
-      "type": "image/svg+xml"
+      "type": "image/png"
     },
     {
-      "src": "/favicon.svg",
+      "src": "/favicon-32x32.png",
       "sizes": "32x32",
-      "type": "image/svg+xml"
+      "type": "image/png"
     },
     {
-      "src": "/favicon.svg",
-      "sizes": "180x180",
-      "type": "image/svg+xml"
-    },
-    {
-      "src": "/favicon.svg",
+      "src": "/android-chrome-192x192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml"
+      "type": "image/png"
     },
     {
-      "src": "/favicon.svg",
+      "src": "/android-chrome-512x512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml"
+      "type": "image/png"
     }
   ],
-  "theme_color": "#556b2f",
+  "theme_color": "#06B6D4",
   "background_color": "#ffffff",
   "display": "standalone",
   "start_url": "/",

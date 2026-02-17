@@ -16,6 +16,8 @@ const SOURCE_LANG = 'en';
 interface LocaleConfig {
   name: string;
   dir: string;
+  /** Flat layout: translations are {dir}/{lang}.json instead of {dir}/{lang}/*.json */
+  flatFiles?: boolean;
 }
 
 const LOCALE_CONFIGS: LocaleConfig[] = [
@@ -26,6 +28,11 @@ const LOCALE_CONFIGS: LocaleConfig[] = [
   {
     name: 'cli',
     dir: path.join(__dirname, '../packages/cli/src/i18n/locales'),
+  },
+  {
+    name: 'www',
+    dir: path.join(__dirname, '../packages/www/src/i18n/translations'),
+    flatFiles: true,
   },
 ];
 
@@ -137,7 +144,59 @@ function countKeys(obj: TranslationObject): number {
 }
 
 function syncLocaleDir(config: LocaleConfig): { added: number; removed: number } {
-  const { name, dir } = config;
+  const { name, dir, flatFiles } = config;
+
+  // Flat layout: {dir}/en.json, {dir}/fr.json, etc.
+  if (flatFiles) {
+    const enFile = path.join(dir, `${SOURCE_LANG}.json`);
+    if (!fs.existsSync(enFile)) {
+      console.log(`\nSkipping ${name}: English file not found at ${enFile}`);
+      return { added: 0, removed: 0 };
+    }
+
+    const languages = fs
+      .readdirSync(dir)
+      .filter((f) => f !== `${SOURCE_LANG}.json` && !f.startsWith('.') && f.endsWith('.json'))
+      .map((f) => f.replace('.json', ''));
+
+    console.log(`\n[${name}] Directory: ${dir}`);
+    console.log(`[${name}] Target languages: ${languages.join(', ')}`);
+
+    const englishContent = JSON.parse(fs.readFileSync(enFile, 'utf-8')) as TranslationObject;
+    const englishKeyCount = countKeys(englishContent);
+    console.log(`\n${SOURCE_LANG}.json (${englishKeyCount} keys in English)`);
+
+    let totalAdded = 0;
+    let totalRemoved = 0;
+
+    for (const lang of languages) {
+      const langFile = path.join(dir, `${lang}.json`);
+      let langContent: TranslationObject = {};
+      if (fs.existsSync(langFile)) {
+        langContent = JSON.parse(fs.readFileSync(langFile, 'utf-8')) as TranslationObject;
+      }
+
+      const beforeCount = countKeys(langContent);
+      const cleaned = removeExtraKeys(langContent, englishContent);
+      const afterCleanCount = countKeys(cleaned);
+      const removed = beforeCount - afterCleanCount;
+      const merged = mergeTranslations(cleaned, englishContent);
+      const afterMergeCount = countKeys(merged);
+      const added = afterMergeCount - afterCleanCount;
+      const sorted = sortKeys(merged) as TranslationObject;
+      fs.writeFileSync(langFile, JSON.stringify(sorted, null, 2) + '\n');
+
+      if (added > 0 || removed > 0) {
+        console.log(`   ${lang}: +${added} added, -${removed} removed`);
+        totalAdded += added;
+        totalRemoved += removed;
+      }
+    }
+
+    return { added: totalAdded, removed: totalRemoved };
+  }
+
+  // Directory layout: {dir}/en/*.json, {dir}/fr/*.json, etc.
   const englishDir = path.join(dir, SOURCE_LANG);
 
   if (!fs.existsSync(englishDir)) {

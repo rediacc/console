@@ -1,0 +1,225 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2560 1440" width="2560" height="1440">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#080E1C"/>
+      <stop offset="45%" stop-color="#0F1A2E"/>
+      <stop offset="55%" stop-color="#0F1A2E"/>
+      <stop offset="100%" stop-color="#080E1C"/>
+    </linearGradient>
+    <linearGradient id="bgV" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.2"/>
+      <stop offset="50%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.25"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0 L0 0 0 40" fill="none" stroke="#1E3A5F" stroke-width="0.5" stroke-opacity="0.22"/>
+    </pattern>
+    <radialGradient id="boltGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#06B6D4" stop-opacity="0.4"/>
+      <stop offset="40%" stop-color="#06B6D4" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#06B6D4" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="boltGlowWarm" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.09"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Safe zone: center 1546x423, so x: 507-2053, y: 508-931 -->
+    <!-- Bolt centered at ~1120, 720 (center of canvas) -->
+    <!-- Left cubes in safe zone: x ~600-900 -->
+    <!-- Right cubes in safe zone: x ~1200-1500 -->
+    <!-- Tagline: x ~1650 -->
+
+    <!-- Left wires: cubes ~x=620 to bolt ~x=980 -->
+    <linearGradient id="wireL1" x1="620" y1="0" x2="980" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#67E8F9" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#67E8F9" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="wireL2" x1="680" y1="0" x2="980" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#67E8F9" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#67E8F9" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="wireL3" x1="640" y1="0" x2="980" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#67E8F9" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#67E8F9" stop-opacity="0.45"/>
+    </linearGradient>
+    <linearGradient id="wireL4" x1="720" y1="0" x2="980" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#67E8F9" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#67E8F9" stop-opacity="0.4"/>
+    </linearGradient>
+
+    <!-- Right wires: bolt ~x=1140 to cubes ~x=1500 -->
+    <linearGradient id="wireR1" x1="1140" y1="0" x2="1500" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#67E8F9" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#67E8F9" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="wireR2" x1="1140" y1="0" x2="1540" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#67E8F9" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#67E8F9" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="wireR3" x1="1140" y1="0" x2="1520" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#67E8F9" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#67E8F9" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Outer decorative wires beyond safe zone -->
+    <linearGradient id="wireDecL" x1="100" y1="0" x2="620" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#67E8F9" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#67E8F9" stop-opacity="0.2"/>
+    </linearGradient>
+    <linearGradient id="wireDecR" x1="1500" y1="0" x2="2460" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#67E8F9" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#67E8F9" stop-opacity="0"/>
+    </linearGradient>
+
+    <filter id="cubeGlow">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="cubeGlowDim">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="cubeGlowOuter">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="boltShine">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="2560" height="1440" fill="url(#bg)"/>
+  <rect width="2560" height="1440" fill="url(#bgV)"/>
+  <rect width="2560" height="1440" fill="url(#grid)"/>
+
+  <!-- Safe zone indicator (invisible, for reference): x:507-2053, y:508-931 -->
+  <!-- Total safe zone content height: ~423px, centered vertically at y=720 -->
+
+  <!-- ======================================================= -->
+  <!-- OUTER DECORATIVE CUBES (outside safe zone — left side)  -->
+  <!-- ======================================================= -->
+  <g filter="url(#cubeGlowOuter)" opacity="0.5">
+    <rect x="120" y="350" width="18" height="18" rx="3" fill="#0E7490" opacity="0.35"/>
+    <rect x="200" y="500" width="16" height="16" rx="3" fill="#0E7490" opacity="0.3"/>
+    <rect x="160" y="650" width="18" height="18" rx="3" fill="#0E7490" opacity="0.3"/>
+    <rect x="300" y="420" width="15" height="15" rx="3" fill="#0E7490" opacity="0.3"/>
+    <rect x="350" y="700" width="16" height="16" rx="3" fill="#0E7490" opacity="0.28"/>
+    <rect x="240" y="800" width="15" height="15" rx="3" fill="#0E7490" opacity="0.25"/>
+    <rect x="400" y="900" width="14" height="14" rx="3" fill="#0E7490" opacity="0.25"/>
+  </g>
+  <!-- Outer decorative wires left -->
+  <line x1="138" y1="359" x2="620" y2="600" stroke="url(#wireDecL)" stroke-width="1.5"/>
+  <line x1="218" y1="508" x2="620" y2="640" stroke="url(#wireDecL)" stroke-width="1.5"/>
+  <line x1="178" y1="659" x2="620" y2="680" stroke="url(#wireDecL)" stroke-width="1.5"/>
+  <line x1="318" y1="428" x2="620" y2="620" stroke="url(#wireDecL)" stroke-width="1.5"/>
+
+  <!-- ======================================================= -->
+  <!-- OUTER DECORATIVE CUBES (outside safe zone — right side) -->
+  <!-- ======================================================= -->
+  <g filter="url(#cubeGlowOuter)" opacity="0.5">
+    <rect x="2160" y="350" width="18" height="18" rx="3" fill="#22D3EE" opacity="0.3"/>
+    <rect x="2280" y="500" width="16" height="16" rx="3" fill="#22D3EE" opacity="0.28"/>
+    <rect x="2220" y="660" width="18" height="18" rx="3" fill="#22D3EE" opacity="0.28"/>
+    <rect x="2100" y="430" width="15" height="15" rx="3" fill="#22D3EE" opacity="0.28"/>
+    <rect x="2380" y="700" width="16" height="16" rx="3" fill="#22D3EE" opacity="0.25"/>
+    <rect x="2320" y="820" width="15" height="15" rx="3" fill="#22D3EE" opacity="0.22"/>
+    <rect x="2150" y="850" width="14" height="14" rx="3" fill="#22D3EE" opacity="0.22"/>
+  </g>
+  <!-- Outer decorative wires right -->
+  <line x1="1500" y1="600" x2="2178" y2="360" stroke="url(#wireDecR)" stroke-width="1.5"/>
+  <line x1="1500" y1="640" x2="2298" y2="510" stroke="url(#wireDecR)" stroke-width="1.5"/>
+  <line x1="1500" y1="670" x2="2238" y2="668" stroke="url(#wireDecR)" stroke-width="1.5"/>
+  <line x1="1500" y1="625" x2="2118" y2="438" stroke="url(#wireDecR)" stroke-width="1.5"/>
+
+  <!-- ======================================================= -->
+  <!-- SAFE ZONE LEFT CUBES (x:600-900, y:508-931)             -->
+  <!-- ======================================================= -->
+  <g filter="url(#cubeGlowDim)">
+    <rect x="620"  y="545" width="26" height="26" rx="4" fill="#0E7490" opacity="0.55"/>
+    <rect x="700"  y="690" width="24" height="24" rx="4" fill="#0E7490" opacity="0.5"/>
+    <rect x="640"  y="820" width="25" height="25" rx="4" fill="#0E7490" opacity="0.45"/>
+    <rect x="810"  y="850" width="22" height="22" rx="3.5" fill="#0E7490" opacity="0.5"/>
+    <rect x="850"  y="590" width="24" height="24" rx="4" fill="#0E7490" opacity="0.45"/>
+    <rect x="750"  y="910" width="20" height="20" rx="3.5" fill="#0E7490" opacity="0.4"/>
+    <rect x="780"  y="530" width="20" height="20" rx="3.5" fill="#0E7490" opacity="0.45"/>
+  </g>
+
+  <!-- Wires from left cubes to bolt region (~x=980) -->
+  <line x1="646"  y1="558" x2="980" y2="660" stroke="url(#wireL1)" stroke-width="2.5"/>
+  <line x1="724"  y1="702" x2="980" y2="712" stroke="url(#wireL2)" stroke-width="2.5"/>
+  <line x1="665"  y1="833" x2="980" y2="760" stroke="url(#wireL3)" stroke-width="2.5"/>
+  <line x1="832"  y1="861" x2="980" y2="780" stroke="url(#wireL4)" stroke-width="2.5"/>
+  <line x1="874"  y1="602" x2="980" y2="670" stroke="url(#wireL1)" stroke-width="2.5"/>
+  <line x1="770"  y1="920" x2="980" y2="800" stroke="url(#wireL3)" stroke-width="2"/>
+  <line x1="800"  y1="540" x2="980" y2="655" stroke="url(#wireL4)" stroke-width="2"/>
+
+  <!-- CENTER: Glow + Lightning Bolt (centered at ~1120, 720) -->
+  <ellipse cx="1120" cy="720" rx="340" ry="360" fill="url(#boltGlow)"/>
+  <ellipse cx="1120" cy="720" rx="130" ry="150" fill="url(#boltGlowWarm)"/>
+
+  <!-- Lightning bolt scaled large for 1440px canvas -->
+  <g filter="url(#boltShine)">
+    <polygon points="1164,440 1048,700 1100,700 1085,1000 1200,740 1148,740" fill="#06B6D4"/>
+  </g>
+  <polygon points="1164,440 1048,700 1100,700 1085,1000 1200,740 1148,740" fill="#67E8F9" opacity="0.25"/>
+  <polygon points="1164,440 1048,700 1100,700 1085,1000 1200,740 1148,740" fill="none" stroke="#A5F3FC" stroke-width="1" stroke-opacity="0.3"/>
+
+  <!-- Wires from bolt to right cubes (~x=1140 to ~x=1500) -->
+  <line x1="1202" y1="655" x2="1450" y2="570" stroke="url(#wireR1)" stroke-width="2.5"/>
+  <line x1="1202" y1="700" x2="1475" y2="700" stroke="url(#wireR2)" stroke-width="2.5"/>
+  <line x1="1202" y1="740" x2="1470" y2="770" stroke="url(#wireR1)" stroke-width="2.5"/>
+  <line x1="1202" y1="770" x2="1455" y2="860" stroke="url(#wireR3)" stroke-width="2.5"/>
+  <line x1="1202" y1="800" x2="1440" y2="920" stroke="url(#wireR3)" stroke-width="2"/>
+  <line x1="1202" y1="620" x2="1430" y2="545" stroke="url(#wireR1)" stroke-width="2"/>
+
+  <!-- SAFE ZONE RIGHT CUBES (x:1200-1600, y:508-931) -->
+  <g filter="url(#cubeGlow)">
+    <rect x="1456" y="550" width="26" height="26" rx="4" fill="#22D3EE" opacity="0.55"/>
+    <rect x="1488" y="683" width="24" height="24" rx="4" fill="#22D3EE" opacity="0.55"/>
+    <rect x="1475" y="820" width="26" height="26" rx="4" fill="#22D3EE" opacity="0.5"/>
+    <rect x="1444" y="880" width="22" height="22" rx="3.5" fill="#22D3EE" opacity="0.45"/>
+    <rect x="1560" y="530" width="22" height="22" rx="3.5" fill="#22D3EE" opacity="0.45"/>
+    <rect x="1575" y="760" width="22" height="22" rx="3.5" fill="#22D3EE" opacity="0.4"/>
+    <rect x="1550" y="880" width="20" height="20" rx="3.5" fill="#22D3EE" opacity="0.38"/>
+  </g>
+
+  <!-- Secondary wires (branching copies) -->
+  <line x1="1482" y1="563" x2="1560" y2="530" stroke="#22D3EE" stroke-width="1.5" stroke-opacity="0.2"/>
+  <line x1="1512" y1="695" x2="1575" y2="765" stroke="#22D3EE" stroke-width="1.5" stroke-opacity="0.15"/>
+  <line x1="1501" y1="833" x2="1575" y2="765" stroke="#22D3EE" stroke-width="1.5" stroke-opacity="0.15"/>
+  <line x1="1466" y1="892" x2="1550" y2="885" stroke="#22D3EE" stroke-width="1.5" stroke-opacity="0.15"/>
+  <line x1="1582" y1="541" x2="1575" y2="765" stroke="#22D3EE" stroke-width="1" stroke-opacity="0.1"/>
+
+  <!-- Center horizontal data-flow backbone -->
+  <line x1="700" y1="713" x2="1450" y2="713" stroke="#38BDF8" stroke-width="1.2" stroke-opacity="0.1"/>
+
+  <!-- TAGLINE — centered horizontally in safe zone, below bolt center or beside -->
+  <!-- Tagline positioned at x~1680 (right safe zone), vertically centered ~y=700 -->
+  <text x="1700" y="665" font-family="'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="68" font-weight="600" fill="#FFFFFF" letter-spacing="1.2" opacity="0.95">Clone Production.</text>
+  <text x="1700" y="752" font-family="'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="68" font-weight="600" fill="#67E8F9" letter-spacing="1.2" opacity="0.9">Break Nothing.</text>
+  <line x1="1700" y1="775" x2="2380" y2="775" stroke="#06B6D4" stroke-width="2" stroke-opacity="0.2"/>
+
+  <!-- Top and bottom edge lines -->
+  <line x1="0" y1="1.5"    x2="2560" y2="1.5"    stroke="#06B6D4" stroke-width="2" stroke-opacity="0.15"/>
+  <line x1="0" y1="1438.5" x2="2560" y2="1438.5" stroke="#06B6D4" stroke-width="2" stroke-opacity="0.1"/>
+
+  <!-- Left outer edge fade -->
+  <rect width="507" height="1440" fill="url(#bg)" opacity="0.15"/>
+  <!-- Right outer edge fade -->
+  <rect x="2053" width="507" height="1440" fill="url(#bg)" opacity="0.15"/>
+</svg>
