@@ -32,3 +32,4 @@
 # ajv ReDoS with $data option (GHSA-2g4f-4pwh-qvx6)
 # In @develar/schema-utils via electron-builder dependency chain, can't upgrade
 1113205
+1113214
