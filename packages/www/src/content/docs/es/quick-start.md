@@ -1,7 +1,7 @@
 ---
 title: "Inicio Rapido"
 description: "Comience con Rediacc -- despliegue infraestructura cifrada y aislada en sus propios servidores."
-category: "Getting Started"
+category: "Guides"
 order: -1
 language: es
 ---

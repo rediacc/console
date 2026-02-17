@@ -1,7 +1,7 @@
 ---
 title: "البدء السريع"
 description: "ابدأ مع Rediacc — انشر بنية تحتية مشفرة ومعزولة على خوادمك الخاصة."
-category: "Getting Started"
+category: "Guides"
 order: -1
 language: ar
 ---

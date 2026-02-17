@@ -1,7 +1,7 @@
 ---
 title: "Быстрый старт"
 description: "Начните работу с Rediacc — разверните зашифрованную изолированную инфраструктуру на собственных серверах."
-category: "Getting Started"
+category: "Guides"
 order: -1
 language: ru
 ---

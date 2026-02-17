@@ -30,7 +30,7 @@
         "activated": "Cuenta activada",
         "activating": "Activando cuenta...",
         "description": "Activar cuenta con código de verificación",
-        "success": "¡Cuenta activada! Ahora puede iniciar sesión con: rdc login"
+        "success": "¡Cuenta activada! Ahora puede iniciar sesión con: rdc auth login"
       },
       "description": "Comandos de autenticación",
       "login": {
@@ -57,7 +57,7 @@
       "status": {
         "authenticated": "Autenticado como: {{email}}",
         "description": "Verificar estado de autenticación actual",
-        "notAuthenticated": "No autenticado. Ejecute: rdc login"
+        "notAuthenticated": "No autenticado. Ejecute: rdc auth login"
       },
       "tfa": {
         "description": "Gestión de autenticación de dos factores",
@@ -1489,7 +1489,7 @@
     "activationFailed": "Falló la activación",
     "affectedChildClones": ". Clones secundarios afectados: {{clones}}. Primero elimine o promueva clones secundarios.",
     "authFailed": "Falló la autenticación",
-    "authRequired": "Se requiere autenticación. Ejecute: rdc login",
+    "authRequired": "Se requiere autenticación. Ejecute: rdc auth login",
     "bridgeRequired": "Nombre de puente requerido. Use --bridge o establezca contexto.",
     "cannotDeleteGrandRepo": "No se puede eliminar repositorio maestro: {{reason}}",
     "cannotPromote": "No se puede promover: {{reason}}",
@@ -1514,7 +1514,7 @@
     "machineRequiredLocal": "Nombre de máquina requerido. Use --machine o establezca por defecto con: rdc context set machine <name>",
     "networkError": "Error de red: {{message}}",
     "noActiveContext": "Sin contexto activo. Primero cree o seleccione un contexto.",
-    "notAuthenticated": "No autenticado. Ejecute: rdc login",
+    "notAuthenticated": "No autenticado. Ejecute: rdc auth login",
     "passwordsMismatch": "Las contraseñas no coinciden",
     "permissionDenied": "Permiso denegado",
     "poolNotFound": "Pool Ceph \"{{name}}\" no encontrado",

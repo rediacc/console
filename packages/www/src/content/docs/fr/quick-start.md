@@ -1,7 +1,7 @@
 ---
 title: "Démarrage rapide"
 description: "Commencez avec Rediacc — déployez une infrastructure chiffrée et isolée sur vos propres serveurs."
-category: "Getting Started"
+category: "Guides"
 order: -1
 language: fr
 ---

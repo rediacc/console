@@ -30,7 +30,7 @@
         "activated": "账户已激活",
         "activating": "正在激活账户...",
         "description": "使用验证码激活账户",
-        "success": "账户已激活！现在可以使用以下命令登录：rdc login"
+        "success": "账户已激活！现在可以使用以下命令登录：rdc auth login"
       },
       "description": "身份验证命令",
       "login": {
@@ -57,7 +57,7 @@
       "status": {
         "authenticated": "以以下身份认证：{{email}}",
         "description": "检查当前身份验证状态",
-        "notAuthenticated": "未认证。运行：rdc login"
+        "notAuthenticated": "未认证。运行：rdc auth login"
       },
       "tfa": {
         "description": "双因素认证管理",
@@ -1489,7 +1489,7 @@
     "activationFailed": "激活失败",
     "affectedChildClones": "。受影响的子克隆：{{clones}}。请先删除或提升子克隆。",
     "authFailed": "身份验证失败",
-    "authRequired": "需要身份验证。运行：rdc login",
+    "authRequired": "需要身份验证。运行：rdc auth login",
     "bridgeRequired": "需要网桥名称。使用 --bridge 或设置上下文。",
     "cannotDeleteGrandRepo": "无法删除主仓库：{{reason}}",
     "cannotPromote": "无法提升：{{reason}}",
@@ -1514,7 +1514,7 @@
     "machineRequiredLocal": "需要机器名称。使用 --machine 或使用以下命令设置默认值：rdc context set machine <name>",
     "networkError": "网络错误：{{message}}",
     "noActiveContext": "没有活跃的上下文。请先创建或选择上下文。",
-    "notAuthenticated": "未认证。运行：rdc login",
+    "notAuthenticated": "未认证。运行：rdc auth login",
     "passwordsMismatch": "密码不匹配",
     "permissionDenied": "权限被拒绝",
     "poolNotFound": "Ceph 池 \"{{name}}\" 未找到",

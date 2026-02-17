@@ -1,7 +1,7 @@
 ---
 title: "Adım Adım Rehber"
 description: "Rediacc'i yerel modda kullanarak kendi sunuculariniza sifrelenmis, izole altyapi dagitin."
-category: "Getting Started"
+category: "Guides"
 order: 2
 language: tr
 ---

@@ -1,7 +1,7 @@
 ---
 title: "Требования"
 description: "Системные требования и поддерживаемые платформы для запуска Rediacc."
-category: "Getting Started"
+category: "Guides"
 order: 0
 language: ru
 ---

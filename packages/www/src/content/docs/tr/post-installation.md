@@ -1,7 +1,7 @@
 ---
 title: "Kurulum Sonrası"
 description: "Rediacc icin otomatik baslatma yapilandirmasi, baglam yapisi ve sorun giderme."
-category: "Getting Started"
+category: "Guides"
 order: 3
 language: tr
 ---

@@ -1,7 +1,7 @@
 ---
 title: "Requisitos"
 description: "Requisitos del sistema y plataformas compatibles para ejecutar Rediacc."
-category: "Getting Started"
+category: "Guides"
 order: 0
 language: es
 ---

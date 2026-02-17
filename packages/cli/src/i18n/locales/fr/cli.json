@@ -30,7 +30,7 @@
         "activated": "Compte activé",
         "activating": "Activation du compte en cours...",
         "description": "Activer le compte avec le code de vérification",
-        "success": "Compte activé ! Vous pouvez maintenant vous connecter avec : rdc login"
+        "success": "Compte activé ! Vous pouvez maintenant vous connecter avec : rdc auth login"
       },
       "description": "Commandes d'authentification",
       "login": {
@@ -57,7 +57,7 @@
       "status": {
         "authenticated": "Authentifié en tant que : {{email}}",
         "description": "Vérifier l'état actuel de l'authentification",
-        "notAuthenticated": "Non authentifié. Exécutez : rdc login"
+        "notAuthenticated": "Non authentifié. Exécutez : rdc auth login"
       },
       "tfa": {
         "description": "Gestion de l'authentification à deux facteurs",
@@ -1489,7 +1489,7 @@
     "activationFailed": "L'activation a échoué",
     "affectedChildClones": ". Clones enfants affectés : {{clones}}. Supprimez ou promouvez d'abord les clones enfants.",
     "authFailed": "L'authentification a échoué",
-    "authRequired": "L'authentification est requise. Exécutez : rdc login",
+    "authRequired": "L'authentification est requise. Exécutez : rdc auth login",
     "bridgeRequired": "Le nom du pont est requis. Utilisez --bridge ou définissez un contexte.",
     "cannotDeleteGrandRepo": "Impossible de supprimer le grand dépôt : {{reason}}",
     "cannotPromote": "Impossible de promouvoir : {{reason}}",
@@ -1514,7 +1514,7 @@
     "machineRequiredLocal": "Le nom de la machine est requis. Utilisez --machine ou définissez une valeur par défaut avec : rdc context set machine <name>",
     "networkError": "Erreur réseau : {{message}}",
     "noActiveContext": "Aucun contexte actif. Créez ou sélectionnez d'abord un contexte.",
-    "notAuthenticated": "Non authentifié. Exécutez : rdc login",
+    "notAuthenticated": "Non authentifié. Exécutez : rdc auth login",
     "passwordsMismatch": "Les mots de passe ne correspondent pas",
     "permissionDenied": "Permission refusée",
     "poolNotFound": "Pool Ceph \"{{name}}\" non trouvé",

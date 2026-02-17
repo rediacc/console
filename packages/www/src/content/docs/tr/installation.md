@@ -1,7 +1,7 @@
 ---
 title: "Kurulum"
 description: "Rediacc CLI'i Linux, macOS veya Windows uzerine kurun."
-category: "Getting Started"
+category: "Guides"
 order: 1
 language: tr
 ---

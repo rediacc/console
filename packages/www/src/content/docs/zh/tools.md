@@ -1,7 +1,7 @@
 ---
 title: "工具"
 description: "文件同步、终端访问、VS Code 集成、更新和诊断。"
-category: "Getting Started"
+category: "Guides"
 order: 4
 language: zh
 ---

@@ -1,7 +1,7 @@
 ---
 title: "ツール"
 description: "ファイル同期、ターミナルアクセス、VS Code統合、アップデート、診断。"
-category: "Getting Started"
+category: "Guides"
 order: 4
 language: ja
 ---

@@ -1,7 +1,7 @@
 ---
 title: "После установки"
 description: "Настройка автозапуска, структура контекста и устранение неполадок в Rediacc."
-category: "Getting Started"
+category: "Guides"
 order: 3
 language: ru
 ---

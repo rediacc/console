@@ -1,6 +1,11 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { createTempSSHKeyFile, removeTempSSHKeyFile } from '@rediacc/shared-desktop/ssh';
+import {
+  createTempKnownHostsFile,
+  createTempSSHKeyFile,
+  removeTempKnownHostsFile,
+  removeTempSSHKeyFile,
+} from '@rediacc/shared-desktop/ssh';
 import {
   executeRsync,
   formatChangesSummary,
@@ -80,7 +85,8 @@ async function getRsyncConnectionDetails(
   const privateKey = (teamVault.SSH_PRIVATE_KEY ?? teamVault.sshPrivateKey) as string | undefined;
   const knownHosts = (machineVault.known_hosts ?? '') as string;
   const datastore = (machineVault.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH) as string;
-  const universalUser = machineVault.universalUser as string | undefined;
+  const universalUser = (machineVault.universalUser ?? DEFAULTS.REPOSITORY.UNIVERSAL_USER) as string;
+  const sshUser = (machineVault.user ?? universalUser) as string;
 
   if (!host) {
     throw new Error(t('errors.sync.noIpAddress', { machine: machineName }));
@@ -95,14 +101,13 @@ async function getRsyncConnectionDetails(
   }
 
   const repoVault = repositoryVault ?? {};
-  const repositoryPath = (repoVault.path ?? `/home/${repositoryName}`) as string;
-
-  // Build remote path: datastore/repository_path
-  const remotePath = `${datastore}${repositoryPath}`;
+  // workingDirectory is the actual mount path on disk; path is the Docker-visible path
+  const remotePath = (repoVault.workingDirectory ??
+    `${datastore}/mounts/${repoVault.repositoryGuid ?? repositoryName}`) as string;
 
   return {
     host,
-    user: repositoryName, // Use repository name as SSH user
+    user: sshUser,
     port,
     privateKey,
     remotePath,
@@ -290,7 +295,8 @@ async function executeSyncWithProgress(
 async function syncUpload(options: SyncUploadOptions): Promise<void> {
   const opts = await contextService.applyDefaults(options);
 
-  if (!opts.team) {
+  const provider = await getStateProvider();
+  if (provider.mode === 'cloud' && !opts.team) {
     throw new Error(t('errors.teamRequired'));
   }
   if (!opts.machine) {
@@ -319,9 +325,10 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
     : connectionDetails.remotePath;
 
   const keyFilePath = await createTempSSHKeyFile(connectionDetails.privateKey);
+  const knownHostsPath = await createTempKnownHostsFile(connectionDetails.known_hosts);
 
   try {
-    const sshOptions = `-o StrictHostKeyChecking=yes -o UserKnownHostsFile=/dev/null -p ${connectionDetails.port} -i "${keyFilePath}"`;
+    const sshOptions = `-o StrictHostKeyChecking=yes -o UserKnownHostsFile="${knownHostsPath}" -p ${connectionDetails.port} -i "${keyFilePath}"`;
 
     const rsyncOptions: RsyncExecutorOptions = {
       sshOptions,
@@ -344,6 +351,7 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
     await executeSyncWithProgress(rsyncOptions, 'upload');
   } finally {
     await removeTempSSHKeyFile(keyFilePath);
+    await removeTempKnownHostsFile(knownHostsPath);
   }
 }
 
@@ -353,7 +361,8 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
 async function syncDownload(options: SyncDownloadOptions): Promise<void> {
   const opts = await contextService.applyDefaults(options);
 
-  if (!opts.team) {
+  const provider = await getStateProvider();
+  if (provider.mode === 'cloud' && !opts.team) {
     throw new Error(t('errors.teamRequired'));
   }
   if (!opts.machine) {
@@ -374,9 +383,10 @@ async function syncDownload(options: SyncDownloadOptions): Promise<void> {
     : `${connectionDetails.remotePath}/`;
 
   const keyFilePath = await createTempSSHKeyFile(connectionDetails.privateKey);
+  const knownHostsPath = await createTempKnownHostsFile(connectionDetails.known_hosts);
 
   try {
-    const sshOptions = `-o StrictHostKeyChecking=yes -o UserKnownHostsFile=/dev/null -p ${connectionDetails.port} -i "${keyFilePath}"`;
+    const sshOptions = `-o StrictHostKeyChecking=yes -o UserKnownHostsFile="${knownHostsPath}" -p ${connectionDetails.port} -i "${keyFilePath}"`;
 
     const rsyncOptions: RsyncExecutorOptions = {
       sshOptions,
@@ -399,6 +409,7 @@ async function syncDownload(options: SyncDownloadOptions): Promise<void> {
     await executeSyncWithProgress(rsyncOptions, 'download');
   } finally {
     await removeTempSSHKeyFile(keyFilePath);
+    await removeTempKnownHostsFile(knownHostsPath);
   }
 }
 

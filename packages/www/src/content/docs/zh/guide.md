@@ -1,7 +1,7 @@
 ---
 title: "分步指南"
 description: "使用 Rediacc 本地模式在您自己的服务器上部署加密隔离基础设施。"
-category: "Getting Started"
+category: "Guides"
 order: 2
 language: zh
 ---

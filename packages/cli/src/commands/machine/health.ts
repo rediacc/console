@@ -135,7 +135,7 @@ export function registerHealthCommand(machine: Command, program: Command): void 
         }
         const opts = await contextService.applyDefaults(options);
 
-        if (!opts.team) {
+        if (provider.mode === 'cloud' && !opts.team) {
           throw new ValidationError(t('errors.teamRequired'));
         }
 
@@ -143,7 +143,7 @@ export function registerHealthCommand(machine: Command, program: Command): void 
           t('commands.machine.health.fetching'),
           () =>
             provider.machines.getWithVaultStatus({
-              teamName: opts.team as string,
+              teamName: (opts.team as string) ?? '',
               machineName: name,
             }),
           t('commands.machine.health.fetched')

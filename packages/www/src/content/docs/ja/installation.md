@@ -1,7 +1,7 @@
 ---
 title: "インストール"
 description: "Linux、macOS、またはWindowsにRediacc CLIをインストールする。"
-category: "Getting Started"
+category: "Guides"
 order: 1
 language: ja
 ---

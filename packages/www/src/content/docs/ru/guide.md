@@ -1,7 +1,7 @@
 ---
 title: "Пошаговое руководство"
 description: "Разверните зашифрованную изолированную инфраструктуру на собственных серверах с использованием Rediacc в локальном режиме."
-category: "Getting Started"
+category: "Guides"
 order: 2
 language: ru
 ---

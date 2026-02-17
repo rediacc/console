@@ -221,7 +221,7 @@ async function checkConfiguration(): Promise<CheckSection> {
           name: t('commands.doctor.checks.activeContext'),
           value: t('commands.doctor.notConfigured'),
           status: 'warn',
-          hint: 'Create a context with: rdc context create <name> or rdc login',
+          hint: 'Create a context with: rdc context create <name> or rdc auth login',
         }
   );
 
@@ -295,7 +295,7 @@ async function checkAuthentication(): Promise<CheckSection> {
       name: t('commands.doctor.checks.authStatus'),
       value: t('commands.doctor.notAuthenticated'),
       status: 'warn',
-      hint: 'Authenticate with: rdc login',
+      hint: 'Authenticate with: rdc auth login',
     });
   }
 

@@ -56,7 +56,7 @@ export function registerContainersCommand(machine: Command, program: Command): v
         }
         const opts = await contextService.applyDefaults(options);
 
-        if (!opts.team) {
+        if (provider.mode === 'cloud' && !opts.team) {
           throw new ValidationError(t('errors.teamRequired'));
         }
 
@@ -64,7 +64,7 @@ export function registerContainersCommand(machine: Command, program: Command): v
           t('commands.machine.containers.fetching'),
           () =>
             provider.machines.getWithVaultStatus({
-              teamName: opts.team as string,
+              teamName: (opts.team as string) ?? '',
               machineName: name,
             }),
           t('commands.machine.containers.fetched')

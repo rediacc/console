@@ -30,7 +30,7 @@
         "activated": "تم تفعيل الحساب",
         "activating": "جاري تفعيل الحساب...",
         "description": "تفعيل الحساب برمز التحقق",
-        "success": "تم تفعيل الحساب! يمكنك الآن تسجيل الدخول باستخدام: rdc login"
+        "success": "تم تفعيل الحساب! يمكنك الآن تسجيل الدخول باستخدام: rdc auth login"
       },
       "description": "أوامر المصادقة",
       "login": {
@@ -57,7 +57,7 @@
       "status": {
         "authenticated": "تم المصادقة باسم: {{email}}",
         "description": "التحقق من حالة المصادقة الحالية",
-        "notAuthenticated": "لم تتم المصادقة. قم بتشغيل: rdc login"
+        "notAuthenticated": "لم تتم المصادقة. قم بتشغيل: rdc auth login"
       },
       "tfa": {
         "description": "إدارة المصادقة الثنائية",
@@ -1489,7 +1489,7 @@
     "activationFailed": "فشل التفعيل",
     "affectedChildClones": ". النسخ المتأثرة: {{clones}}. احذف أو ارقِ النسخ الفرعية أولاً.",
     "authFailed": "فشلت المصادقة",
-    "authRequired": "المصادقة مطلوبة. قم بتشغيل: rdc login",
+    "authRequired": "المصادقة مطلوبة. قم بتشغيل: rdc auth login",
     "bridgeRequired": "اسم الجسر مطلوب. استخدم --bridge أو اضبط السياق.",
     "cannotDeleteGrandRepo": "لا يمكن حذف المستودع الرئيسي: {{reason}}",
     "cannotPromote": "لا يمكن الترقية: {{reason}}",
@@ -1514,7 +1514,7 @@
     "machineRequiredLocal": "اسم الآلة مطلوب. استخدم --machine أو اضبط الافتراضي باستخدام: rdc context set machine <name>",
     "networkError": "خطأ الشبكة: {{message}}",
     "noActiveContext": "لا يوجد سياق نشط. قم بإنشاء أو تحديد سياق أولاً.",
-    "notAuthenticated": "لم تتم المصادقة. قم بتشغيل: rdc login",
+    "notAuthenticated": "لم تتم المصادقة. قم بتشغيل: rdc auth login",
     "passwordsMismatch": "كلمات المرور غير متطابقة",
     "permissionDenied": "تم رفض الإذن",
     "poolNotFound": "تجمع Ceph \"{{name}}\" غير موجود",

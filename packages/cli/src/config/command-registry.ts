@@ -3,6 +3,9 @@
  *
  * Mode tags and runtime guards are auto-generated from this registry.
  * To change which modes a command supports, update its entry here.
+ *
+ * Commands marked `experimental: true` are hidden by default.
+ * Enable with --experimental flag or REDIACC_EXPERIMENTAL=1 env var.
  */
 import type { ContextMode } from '../types/index.js';
 
@@ -23,12 +26,14 @@ export type CommandDomain = keyof typeof COMMAND_DOMAINS;
 
 export interface SubcommandDef {
   modes: ModeSet;
+  experimental?: boolean;
 }
 
 export interface CommandDef {
   name: string;
   modes: ModeSet;
   domain: CommandDomain;
+  experimental?: boolean;
   subcommands?: Record<string, SubcommandDef>;
 }
 
@@ -39,8 +44,8 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
     modes: ALL_MODES,
     domain: 'INFRASTRUCTURE',
     subcommands: {
-      'assign-bridge': { modes: ['cloud'] },
-      'test-connection': { modes: ['cloud'] },
+      'assign-bridge': { modes: ['cloud'], experimental: true },
+      'test-connection': { modes: ['cloud'], experimental: true },
     },
   },
   {
@@ -52,11 +57,11 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
       pull: { modes: SELF_HOSTED_MODES },
     },
   },
-  { name: 'region', modes: ['cloud'], domain: 'INFRASTRUCTURE' },
-  { name: 'bridge', modes: ['cloud'], domain: 'INFRASTRUCTURE' },
+  { name: 'region', modes: ['cloud'], domain: 'INFRASTRUCTURE', experimental: true },
+  { name: 'bridge', modes: ['cloud'], domain: 'INFRASTRUCTURE', experimental: true },
 
   // ── Repositories ────────────────────────────────────────────────────
-  { name: 'repository', modes: ['cloud'], domain: 'REPOSITORIES' },
+  { name: 'repository', modes: ['cloud'], domain: 'REPOSITORIES', experimental: true },
   { name: 'repo', modes: SELF_HOSTED_MODES, domain: 'REPOSITORIES' },
   { name: 'snapshot', modes: SELF_HOSTED_MODES, domain: 'REPOSITORIES' },
   {
@@ -71,20 +76,27 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
 
   // ── Execution ───────────────────────────────────────────────────────
   { name: 'run', modes: ALL_MODES, domain: 'EXECUTION' },
-  { name: 'queue', modes: ['cloud'], domain: 'EXECUTION' },
+  { name: 'queue', modes: ['cloud'], domain: 'EXECUTION', experimental: true },
   { name: 'sync', modes: ALL_MODES, domain: 'EXECUTION' },
   { name: 'term', modes: ALL_MODES, domain: 'EXECUTION' },
   // ── Organization ────────────────────────────────────────────────────
-  { name: 'auth', modes: ['cloud'], domain: 'ORGANIZATION' },
-  { name: 'team', modes: ['cloud'], domain: 'ORGANIZATION' },
-  { name: 'organization', modes: ['cloud'], domain: 'ORGANIZATION' },
-  { name: 'user', modes: ['cloud'], domain: 'ORGANIZATION' },
-  { name: 'permission', modes: ['cloud'], domain: 'ORGANIZATION' },
-  { name: 'audit', modes: ['cloud'], domain: 'ORGANIZATION' },
-  { name: 'ceph', modes: ['cloud'], domain: 'ORGANIZATION' },
+  { name: 'auth', modes: ['cloud'], domain: 'ORGANIZATION', experimental: true },
+  { name: 'team', modes: ['cloud'], domain: 'ORGANIZATION', experimental: true },
+  { name: 'organization', modes: ['cloud'], domain: 'ORGANIZATION', experimental: true },
+  { name: 'user', modes: ['cloud'], domain: 'ORGANIZATION', experimental: true },
+  { name: 'permission', modes: ['cloud'], domain: 'ORGANIZATION', experimental: true },
+  { name: 'audit', modes: ['cloud'], domain: 'ORGANIZATION', experimental: true },
+  { name: 'ceph', modes: ['cloud'], domain: 'ORGANIZATION', experimental: true },
 
   // ── Tools ───────────────────────────────────────────────────────────
-  { name: 'context', modes: ALL_MODES, domain: 'TOOLS' },
+  {
+    name: 'context',
+    modes: ALL_MODES,
+    domain: 'TOOLS',
+    subcommands: {
+      create: { modes: ['cloud'], experimental: true },
+    },
+  },
   { name: 'doctor', modes: ALL_MODES, domain: 'TOOLS' },
   { name: 'update', modes: ALL_MODES, domain: 'TOOLS' },
   { name: 'protocol', modes: ALL_MODES, domain: 'TOOLS' },
@@ -101,4 +113,11 @@ export function getCommandDef(commandName: string): CommandDef | undefined {
  */
 export function formatModeTag(modes: ModeSet): string {
   return `[${modes.join('|')}]`;
+}
+
+/**
+ * Check if experimental mode is enabled via --experimental flag or REDIACC_EXPERIMENTAL=1 env var.
+ */
+export function isExperimentalEnabled(): boolean {
+  return process.env.REDIACC_EXPERIMENTAL === '1';
 }

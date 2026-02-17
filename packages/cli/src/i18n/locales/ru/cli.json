@@ -30,7 +30,7 @@
         "activated": "Учетная запись активирована",
         "activating": "Активация учетной записи...",
         "description": "Активировать учетную запись с кодом проверки",
-        "success": "Учетная запись активирована! Теперь вы можете войти с помощью: rdc login"
+        "success": "Учетная запись активирована! Теперь вы можете войти с помощью: rdc auth login"
       },
       "description": "Команды аутентификации",
       "login": {
@@ -57,7 +57,7 @@
       "status": {
         "authenticated": "Аутентифицирован как: {{email}}",
         "description": "Проверить статус текущей аутентификации",
-        "notAuthenticated": "Не аутентифицирован. Выполните: rdc login"
+        "notAuthenticated": "Не аутентифицирован. Выполните: rdc auth login"
       },
       "tfa": {
         "description": "Управление двухфакторной аутентификацией",
@@ -1489,7 +1489,7 @@
     "activationFailed": "Активация не удалась",
     "affectedChildClones": ". Затронутые дочерние клоны: {{clones}}. Сначала удалите или повысьте уровень дочерних клонов.",
     "authFailed": "Аутентификация не удалась",
-    "authRequired": "Требуется аутентификация. Выполните: rdc login",
+    "authRequired": "Требуется аутентификация. Выполните: rdc auth login",
     "bridgeRequired": "Требуется имя моста. Используйте --bridge или установите контекст.",
     "cannotDeleteGrandRepo": "Невозможно удалить главный репозиторий: {{reason}}",
     "cannotPromote": "Невозможно повысить уровень: {{reason}}",
@@ -1514,7 +1514,7 @@
     "machineRequiredLocal": "Требуется имя машины. Используйте --machine или установите значение по умолчанию с помощью: rdc context set machine <name>",
     "networkError": "Ошибка сети: {{message}}",
     "noActiveContext": "Нет активного контекста. Сначала создайте или выберите контекст.",
-    "notAuthenticated": "Не аутентифицирован. Выполните: rdc login",
+    "notAuthenticated": "Не аутентифицирован. Выполните: rdc auth login",
     "passwordsMismatch": "Пароли не совпадают",
     "permissionDenied": "Доступ запрещен",
     "poolNotFound": "Пул Ceph \"{{name}}\" не найден",

@@ -1,7 +1,7 @@
 ---
 title: "Voraussetzungen"
 description: "Systemvoraussetzungen und unterstützte Plattformen für den Betrieb von Rediacc."
-category: "Getting Started"
+category: "Guides"
 order: 0
 language: de
 ---

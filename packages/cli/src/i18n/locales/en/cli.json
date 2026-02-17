@@ -22,7 +22,7 @@
       "status": {
         "description": "Check current authentication status",
         "authenticated": "Authenticated as: {{email}}",
-        "notAuthenticated": "Not authenticated. Run: rdc login"
+        "notAuthenticated": "Not authenticated. Run: rdc auth login"
       },
       "register": {
         "description": "Register a new organization and user account",
@@ -35,7 +35,7 @@
         "activated": "Account activated",
         "activating": "Activating account...",
         "description": "Activate account with verification code",
-        "success": "Account activated! You can now login with: rdc login"
+        "success": "Account activated! You can now login with: rdc auth login"
       },
       "tfa": {
         "description": "Two-factor authentication management",
@@ -1179,7 +1179,7 @@
     "shortcuts": {
       "run": {
         "completedLocal": "[local] Completed in {{duration}}ms",
-        "description": "Run a function on a machine",
+        "description": "WARNING: Low-level command for debugging and experimentation only. Not for production use. Use higher-level commands (repo up, repo down, etc.) instead. Runs a raw bridge function on a machine.",
         "executingLocal": "[local] Executing '{{function}}' on {{machine}}...",
         "failedLocal": "[local] Failed: {{error}}",
         "watching": "Watching for completion..."
@@ -1357,7 +1357,7 @@
     "activationFailed": "Activation failed",
     "tfaVerificationFailed": "TFA verification failed",
     "authFailed": "Authentication failed",
-    "authRequired": "Authentication required. Run: rdc login",
+    "authRequired": "Authentication required. Run: rdc auth login",
     "bridgeRequired": "Bridge name required. Use --bridge or set context.",
     "contextNotFound": "Context \"{{name}}\" not found",
     "invalidCredentials": "Invalid credentials",
@@ -1396,7 +1396,7 @@
     },
     "networkError": "Network error: {{message}}",
     "noActiveContext": "No active context. Create or select a context first.",
-    "notAuthenticated": "Not authenticated. Run: rdc login",
+    "notAuthenticated": "Not authenticated. Run: rdc auth login",
     "unknownCommand": "Unknown command \"{{command}}\". Available commands: {{available}}.",
     "unknownSubcommand": "Unknown subcommand \"{{command}}\". Available {{parent}} subcommands: {{available}}.",
     "permissionDenied": "Permission denied",

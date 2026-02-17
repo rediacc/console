@@ -1,7 +1,7 @@
 ---
 title: "システム要件"
 description: "Rediaccを実行するためのシステム要件とサポートされているプラットフォーム。"
-category: "Getting Started"
+category: "Guides"
 order: 0
 language: ja
 ---

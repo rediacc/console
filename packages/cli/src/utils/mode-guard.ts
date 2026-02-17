@@ -1,6 +1,7 @@
 /**
  * Mode-aware command guard system.
  * Blocks commands from running in unsupported modes and auto-tags help descriptions.
+ * Hides experimental (cloud) commands unless --experimental or REDIACC_EXPERIMENTAL=1.
  */
 import { DEFAULTS } from '@rediacc/shared/config';
 import {
@@ -8,7 +9,9 @@ import {
   COMMAND_DOMAINS,
   formatModeTag,
   getCommandDef,
+  isExperimentalEnabled,
   type ModeSet,
+  type SubcommandDef,
 } from '../config/command-registry.js';
 import { contextService } from '../services/context.js';
 import { outputService } from '../services/output.js';
@@ -32,6 +35,20 @@ export function addModeGuard(command: Command, supportedModes: ModeSet): void {
       const tag = formatModeTag(supportedModes);
       outputService.error(
         `"${command.name()}" is only available in ${supportedModes.join(' or ')} mode ${tag}. Current mode: ${mode}`
+      );
+      process.exit(1);
+    }
+  });
+}
+
+/**
+ * Add a preAction hook that blocks the command when experimental mode is not enabled.
+ */
+function addExperimentalGuard(command: Command): void {
+  command.hook('preAction', async () => {
+    if (!isExperimentalEnabled()) {
+      outputService.error(
+        `"${command.name()}" is an experimental command. Enable with --experimental flag or REDIACC_EXPERIMENTAL=1 environment variable.`
       );
       process.exit(1);
     }
@@ -122,21 +139,41 @@ function applyHelpConfig(cmd: Command): void {
 /** Apply subcommand-level mode guards for override entries. */
 function applySubcommandGuards(
   cmd: Command,
-  subcommands: Record<string, { modes: ModeSet }>
+  subcommands: Record<string, SubcommandDef>
 ): void {
   for (const sub of cmd.commands) {
-    if (sub.name() in subcommands) {
-      addModeGuard(sub, subcommands[sub.name()].modes);
+    const subDef = subcommands[sub.name()];
+    if (!subDef) continue;
+
+    addModeGuard(sub, subDef.modes);
+
+    if (subDef.experimental) {
+      addExperimentalGuard(sub);
+    }
+  }
+}
+
+/** Hide experimental subcommands from help output. */
+function applyExperimentalHiding(
+  cmd: Command,
+  subcommands: Record<string, SubcommandDef>
+): void {
+  for (const sub of cmd.commands) {
+    const subDef = subcommands[sub.name()];
+    if (subDef?.experimental) {
+      (sub as Command & { _hidden: boolean })._hidden = true;
     }
   }
 }
 
 /**
  * Apply the command registry to the CLI instance.
- * Sets help group headings, mode guards, and a custom help formatter
- * that renders mode tags as a separate column.
+ * Sets help group headings, mode guards, experimental guards, and a custom
+ * help formatter that renders mode tags as a separate column.
  */
 export function applyRegistry(cli: Command): void {
+  const experimental = isExperimentalEnabled();
+
   for (const cmd of cli.commands) {
     const def = getCommandDef(cmd.name());
     if (!def) continue;
@@ -144,12 +181,23 @@ export function applyRegistry(cli: Command): void {
     // Domain grouping via Commander.js helpGroup()
     cmd.helpGroup(COMMAND_DOMAINS[def.domain]);
 
+    // Hide and guard experimental commands
+    if (def.experimental) {
+      addExperimentalGuard(cmd);
+      if (!experimental) {
+        (cmd as Command & { _hidden: boolean })._hidden = true;
+      }
+    }
+
     // Top-level mode guard
     addModeGuard(cmd, def.modes);
 
-    // Subcommand-level mode guards for overrides
+    // Subcommand-level mode and experimental guards
     if (def.subcommands) {
       applySubcommandGuards(cmd, def.subcommands);
+      if (!experimental) {
+        applyExperimentalHiding(cmd, def.subcommands);
+      }
     }
   }
 

@@ -1,7 +1,7 @@
 ---
 title: "الأدوات"
 description: "مزامنة الملفات، والوصول عبر الطرفية، وتكامل VS Code، والتحديثات، والتشخيصات."
-category: "Getting Started"
+category: "Guides"
 order: 4
 language: ar
 ---

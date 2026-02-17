@@ -1,7 +1,7 @@
 ---
 title: "Nach der Installation"
 description: "Autostart-Konfiguration, Kontextstruktur und Fehlerbehebung für Rediacc."
-category: "Getting Started"
+category: "Guides"
 order: 3
 language: de
 ---

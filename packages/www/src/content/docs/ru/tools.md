@@ -1,7 +1,7 @@
 ---
 title: "Инструменты"
 description: "Синхронизация файлов, доступ через терминал, интеграция с VS Code, обновления и диагностика."
-category: "Getting Started"
+category: "Guides"
 order: 4
 language: ru
 ---

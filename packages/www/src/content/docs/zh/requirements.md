@@ -1,7 +1,7 @@
 ---
 title: "系统要求"
 description: "运行 Rediacc 的系统要求和支持的平台。"
-category: "Getting Started"
+category: "Guides"
 order: 0
 language: zh
 ---

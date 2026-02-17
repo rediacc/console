@@ -1,7 +1,7 @@
 ---
 title: "Hızlı Başlangıç"
 description: "Rediacc ile baslayin -- kendi sunuculariniza sifrelenmis, izole altyapi dagitin."
-category: "Getting Started"
+category: "Guides"
 order: -1
 language: tr
 ---

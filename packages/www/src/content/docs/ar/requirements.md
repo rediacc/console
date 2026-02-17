@@ -1,7 +1,7 @@
 ---
 title: "المتطلبات"
 description: "متطلبات النظام والمنصات المدعومة لتشغيل Rediacc."
-category: "Getting Started"
+category: "Guides"
 order: 0
 language: ar
 ---

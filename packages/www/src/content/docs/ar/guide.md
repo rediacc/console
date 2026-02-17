@@ -1,7 +1,7 @@
 ---
 title: "دليل خطوة بخطوة"
 description: "انشر بنية تحتية مشفرة ومعزولة على خوادمك الخاصة باستخدام Rediacc في الوضع المحلي."
-category: "Getting Started"
+category: "Guides"
 order: 2
 language: ar
 ---

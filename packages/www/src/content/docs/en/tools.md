@@ -1,14 +1,14 @@
 ---
 title: "Tools"
-description: "File sync, terminal access, VS Code integration, updates, and diagnostics."
-category: "Getting Started"
-order: 4
+description: "File sync, terminal access, VS Code integration, and CLI updates."
+category: "Guides"
+order: 8
 language: en
 ---
 
 # Tools
 
-Rediacc includes several productivity tools for working with remote repositories. These tools build on top of the SSH connection established by your context configuration.
+Rediacc includes productivity tools for working with remote repositories: file sync, SSH terminal, VS Code integration, and CLI updates.
 
 ## File Synchronization (sync)
 
@@ -17,13 +17,19 @@ Transfer files between your workstation and a remote repository using rsync over
 ### Upload Files
 
 ```bash
-rdc sync upload my-app -m server-1 --local ./src --remote /app/src
+rdc sync upload -m server-1 -r my-app --local ./src --remote /app/src
 ```
 
 ### Download Files
 
 ```bash
-rdc sync download my-app -m server-1 --remote /app/data --local ./data
+rdc sync download -m server-1 -r my-app --remote /app/data --local ./data
+```
+
+### Check Sync Status
+
+```bash
+rdc sync status -m server-1 -r my-app
 ```
 
 ### Options
@@ -31,34 +37,80 @@ rdc sync download my-app -m server-1 --remote /app/data --local ./data
 | Option | Description |
 |--------|-------------|
 | `-m, --machine <name>` | Target machine |
+| `-r, --repository <name>` | Target repository |
 | `--local <path>` | Local directory path |
 | `--remote <path>` | Remote path (relative to repository mount) |
 | `--dry-run` | Preview changes without transferring |
-| `--delete` | Delete files at the destination that don't exist at the source |
-
-The `--dry-run` flag is useful for previewing what will be transferred before committing to the sync.
+| `--mirror` | Mirror source to destination (delete extra files) |
+| `--verify` | Verify checksums after transfer |
+| `--confirm` | Interactive confirmation with detail view |
+| `--exclude <patterns...>` | Exclude file patterns |
 
 ## SSH Terminal (term)
 
-Open an interactive SSH session to a machine or directly into a repository's mount path.
+Open an interactive SSH session to a machine or into a repository's environment.
 
-### Connect to a Machine
+### Shorthand Syntax
 
-```bash
-rdc term connect server-1
-```
-
-### Connect to a Repository
+The fastest way to connect:
 
 ```bash
-rdc term connect my-app -m server-1
+rdc term server-1                    # Connect to a machine
+rdc term server-1 my-app             # Connect to a repository
 ```
 
-When connecting to a repository, the terminal session starts in the repository's mount directory with the repository's Docker socket configured.
+### Run a Command
+
+Execute a command without opening an interactive session:
+
+```bash
+rdc term server-1 -c "uptime"
+rdc term server-1 my-app -c "docker ps"
+```
+
+When connecting to a repository, `DOCKER_HOST` is automatically set to the repository's isolated Docker socket, so `docker ps` shows only that repository's containers.
+
+### Connect Subcommand
+
+The `connect` subcommand provides the same functionality with explicit flags:
+
+```bash
+rdc term connect -m server-1
+rdc term connect -m server-1 -r my-app
+```
+
+### Container Actions
+
+Interact directly with a running container:
+
+```bash
+# Open a shell inside a container
+rdc term server-1 my-app --container <container-id>
+
+# View container logs
+rdc term server-1 my-app --container <container-id> --container-action logs
+
+# Follow logs in real-time
+rdc term server-1 my-app --container <container-id> --container-action logs --follow
+
+# View container stats
+rdc term server-1 my-app --container <container-id> --container-action stats
+
+# Execute a command in a container
+rdc term server-1 my-app --container <container-id> --container-action exec -c "ls -la"
+```
+
+| Option | Description |
+|--------|-------------|
+| `--container <id>` | Target Docker container ID |
+| `--container-action <action>` | Action: `terminal` (default), `logs`, `stats`, `exec` |
+| `--log-lines <n>` | Number of log lines to show (default: 50) |
+| `--follow` | Follow logs continuously |
+| `--external` | Use external terminal instead of inline SSH |
 
 ## VS Code Integration (vscode)
 
-Open a remote SSH session in VS Code, pre-configured with the correct SSH settings and the Remote SSH extension.
+Open a remote SSH session in VS Code, pre-configured with the correct SSH settings.
 
 ### Connect to a Repository
 
@@ -78,8 +130,6 @@ This command:
 rdc vscode list
 ```
 
-Shows all SSH connections that have been configured for VS Code.
-
 ### Clean Up Connections
 
 ```bash
@@ -88,11 +138,19 @@ rdc vscode clean
 
 Removes VS Code SSH configurations that are no longer needed.
 
+### Check Configuration
+
+```bash
+rdc vscode check
+```
+
+Verifies VS Code installation, Remote SSH extension, and active connections.
+
 > **Prerequisite:** Install the [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh) extension in VS Code.
 
 ## CLI Updates (update)
 
-Keep the `rdc` CLI up to date with the latest features and bug fixes.
+Keep the `rdc` CLI up to date.
 
 ### Check for Updates
 
@@ -116,29 +174,10 @@ rdc update rollback
 
 Reverts to the previously installed version. Only available after an update has been applied.
 
-### Auto-Update Status
+### Update Status
 
 ```bash
 rdc update status
 ```
 
 Shows current version, update channel, and auto-update configuration.
-
-## System Diagnostics (doctor)
-
-Run a comprehensive diagnostic check of your Rediacc environment.
-
-```bash
-rdc doctor
-```
-
-The doctor command checks:
-
-| Category | Checks |
-|----------|--------|
-| **Environment** | Node.js version, CLI version, SEA mode |
-| **Renet** | Binary presence, version, embedded CRIU and rsync |
-| **Configuration** | Active context, mode, machines, SSH key |
-| **Authentication** | Login status |
-
-Each check reports **OK**, **Warning**, or **Error** with a brief explanation. Use this as a first step when troubleshooting any issue.

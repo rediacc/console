@@ -1,7 +1,7 @@
 ---
 title: "Prérequis"
 description: "Configuration requise et plateformes prises en charge pour exécuter Rediacc."
-category: "Getting Started"
+category: "Guides"
 order: 0
 language: fr
 ---

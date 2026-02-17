@@ -1,7 +1,7 @@
 ---
 title: "Gereksinimler"
 description: "Rediacc'i calistirmak icin sistem gereksinimleri ve desteklenen platformlar."
-category: "Getting Started"
+category: "Guides"
 order: 0
 language: tr
 ---

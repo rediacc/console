@@ -30,7 +30,7 @@
         "activated": "アカウントが有効化されました",
         "activating": "アカウント有効化中です...",
         "description": "認証コードを使用してアカウントを有効化する",
-        "success": "アカウントが有効化されました！次のコマンドでログインできます: rdc login"
+        "success": "アカウントが有効化されました！次のコマンドでログインできます: rdc auth login"
       },
       "description": "認証コマンド",
       "login": {
@@ -57,7 +57,7 @@
       "status": {
         "authenticated": "認証済み: {{email}}",
         "description": "現在の認証ステータスを確認する",
-        "notAuthenticated": "認証されていません。実行してください: rdc login"
+        "notAuthenticated": "認証されていません。実行してください: rdc auth login"
       },
       "tfa": {
         "description": "二段階認証管理",
@@ -1489,7 +1489,7 @@
     "activationFailed": "認証に失敗しました",
     "affectedChildClones": "。影響を受ける子クローン: {{clones}}。子クローンを最初に削除するか昇格させてください。",
     "authFailed": "認証に失敗しました",
-    "authRequired": "認証が必要です。実行してください: rdc login",
+    "authRequired": "認証が必要です。実行してください: rdc auth login",
     "bridgeRequired": "ブリッジ名が必要です。--bridge を使用するか、コンテキストを設定してください。",
     "cannotDeleteGrandRepo": "グランドリポジトリを削除できません: {{reason}}",
     "cannotPromote": "昇格できません: {{reason}}",
@@ -1514,7 +1514,7 @@
     "machineRequiredLocal": "マシン名が必要です。--machine を使用するか、次のコマンドでデフォルトを設定してください: rdc context set machine <name>",
     "networkError": "ネットワークエラー: {{message}}",
     "noActiveContext": "アクティブなコンテキストがありません。最初にコンテキストを作成または選択してください。",
-    "notAuthenticated": "認証されていません。実行してください: rdc login",
+    "notAuthenticated": "認証されていません。実行してください: rdc auth login",
     "passwordsMismatch": "パスワードが一致しません",
     "permissionDenied": "権限がありません",
     "poolNotFound": "Ceph プール \"{{name}}\" が見つかりません",

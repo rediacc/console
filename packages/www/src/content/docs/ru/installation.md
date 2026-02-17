@@ -1,7 +1,7 @@
 ---
 title: "Установка"
 description: "Установка CLI Rediacc на Linux, macOS или Windows."
-category: "Getting Started"
+category: "Guides"
 order: 1
 language: ru
 ---

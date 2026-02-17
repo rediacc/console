@@ -1,7 +1,7 @@
 ---
 title: "Installation"
 description: "Installieren Sie die Rediacc-CLI unter Linux, macOS oder Windows."
-category: "Getting Started"
+category: "Guides"
 order: 1
 language: de
 ---

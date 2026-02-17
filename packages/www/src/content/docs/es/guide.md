@@ -1,7 +1,7 @@
 ---
 title: "Guia Paso a Paso"
 description: "Despliegue infraestructura cifrada y aislada en sus propios servidores usando Rediacc en modo local."
-category: "Getting Started"
+category: "Guides"
 order: 2
 language: es
 ---

@@ -30,7 +30,7 @@
         "activated": "Hesap etkinleştirildi",
         "activating": "Hesap etkinleştiriliyor...",
         "description": "Doğrulama koduyla hesabı etkinleştirin",
-        "success": "Hesap etkinleştirildi! Şimdi şunla giriş yapabilirsiniz: rdc login"
+        "success": "Hesap etkinleştirildi! Şimdi şunla giriş yapabilirsiniz: rdc auth login"
       },
       "description": "Kimlik doğrulama komutları",
       "login": {
@@ -57,7 +57,7 @@
       "status": {
         "authenticated": "Kimlik doğrulaması yapılmış: {{email}}",
         "description": "Güncel kimlik doğrulama durumunu kontrol edin",
-        "notAuthenticated": "Kimlik doğrulaması yapılmamış. Çalıştırın: rdc login"
+        "notAuthenticated": "Kimlik doğrulaması yapılmamış. Çalıştırın: rdc auth login"
       },
       "tfa": {
         "description": "İki faktörlü kimlik doğrulama yönetimi",
@@ -1489,7 +1489,7 @@
     "activationFailed": "Etkinleştirme başarısız",
     "affectedChildClones": ". Etkilenen alt klonlar: {{clones}}. Önce alt klonları silin veya yükseltin.",
     "authFailed": "Kimlik doğrulama başarısız",
-    "authRequired": "Kimlik doğrulama gerekli. Çalıştırın: rdc login",
+    "authRequired": "Kimlik doğrulama gerekli. Çalıştırın: rdc auth login",
     "bridgeRequired": "Köprü adı gerekli. --bridge kullanın veya bağlamı ayarlayın.",
     "cannotDeleteGrandRepo": "Ana depo silinemiyor: {{reason}}",
     "cannotPromote": "Yükseltilemez: {{reason}}",
@@ -1514,7 +1514,7 @@
     "machineRequiredLocal": "Makine adı gerekli. --machine kullanın veya varsayılanı ayarlayın: rdc context set machine <name>",
     "networkError": "Ağ hatası: {{message}}",
     "noActiveContext": "Etkin bağlam yok. Önce bir bağlam oluşturun veya seçin.",
-    "notAuthenticated": "Kimlik doğrulaması yapılmamış. Çalıştırın: rdc login",
+    "notAuthenticated": "Kimlik doğrulaması yapılmamış. Çalıştırın: rdc auth login",
     "passwordsMismatch": "Parolalar eşleşmiyor",
     "permissionDenied": "İzin reddedildi",
     "poolNotFound": "Ceph havuzu \"{{name}}\" bulunamadı",

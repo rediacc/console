@@ -1,0 +1,104 @@
+<svg viewBox="0 0 800 450" width="800" height="450" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="serverGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2d2d2d"/>
+      <stop offset="100%" stop-color="#1a1a1a"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <rect width="800" height="450" fill="#f5f5f5"/>
+
+  <circle cx="22" cy="430" r="44" fill="rgba(85,107,47,0.12)"/>
+  <circle cx="778" cy="430" r="44" fill="rgba(85,107,47,0.12)"/>
+
+  <rect x="30" y="25" width="230" height="340" rx="12" fill="#ffffff" stroke="#e0e0e0" filter="url(#shadow)"/>
+  <rect x="285" y="25" width="230" height="340" rx="12" fill="#ffffff" stroke="#e0e0e0" filter="url(#shadow)"/>
+  <rect x="540" y="25" width="230" height="340" rx="12" fill="#ffffff" stroke="#e0e0e0" filter="url(#shadow)"/>
+
+  <!-- Left column: Local Mode -->
+  <g font-family="Arial, sans-serif">
+    <rect x="103" y="56" width="84" height="50" rx="5" fill="url(#serverGradient)" stroke="#3d3d3d"/>
+    <rect x="111" y="64" width="68" height="32" rx="3" fill="#f5f5f5"/>
+    <rect x="95" y="108" width="100" height="8" rx="3" fill="#3d3d3d"/>
+    <text x="145" y="136" text-anchor="middle" font-size="20" fill="#1a1a1a" font-weight="700">Local Mode</text>
+
+    <line x1="145" y1="150" x2="145" y2="172" stroke="#556b2f" stroke-width="3"/>
+    <polygon points="145,179 138,169 152,169" fill="#556b2f"/>
+
+    <path d="M88 186 H183 L198 199 V244 H88 Z" fill="#ffffff" stroke="#3d3d3d" stroke-width="2"/>
+    <path d="M183 186 V199 H198" fill="none" stroke="#3d3d3d" stroke-width="2"/>
+    <text x="143" y="224" text-anchor="middle" font-size="10.5" fill="#1a1a1a">~/.rediacc/config.json</text>
+
+    <text x="145" y="267" text-anchor="middle" font-size="14" fill="#1a1a1a">Single workstation</text>
+    <text x="145" y="287" text-anchor="middle" font-size="14" fill="#1a1a1a">Direct SSH</text>
+    <text x="145" y="307" text-anchor="middle" font-size="14" fill="#1a1a1a">No external services</text>
+
+    <rect x="57" y="320" width="176" height="30" rx="15" fill="rgba(85,107,47,0.15)" stroke="#556b2f"/>
+    <text x="145" y="340" text-anchor="middle" font-size="13" fill="#556b2f" font-weight="700">rdc context create-local</text>
+  </g>
+
+  <!-- Center column: Cloud Mode -->
+  <g font-family="Arial, sans-serif">
+    <rect x="358" y="56" width="84" height="50" rx="5" fill="url(#serverGradient)" stroke="#3d3d3d"/>
+    <rect x="366" y="64" width="68" height="32" rx="3" fill="#f5f5f5"/>
+    <rect x="350" y="108" width="100" height="8" rx="3" fill="#3d3d3d"/>
+    <text x="400" y="136" text-anchor="middle" font-size="20" fill="#1a1a1a" font-weight="700">Cloud Mode</text>
+
+    <line x1="400" y1="150" x2="400" y2="172" stroke="#556b2f" stroke-width="3"/>
+    <polygon points="400,179 393,169 407,169" fill="#556b2f"/>
+
+    <path d="M359 228
+             C347 228 337 219 337 207
+             C337 196 344 188 355 186
+             C359 176 369 169 381 169
+             C395 169 406 178 409 191
+             C420 192 429 201 429 213
+             C429 222 422 228 412 228 Z"
+          fill="#e0e0e0" stroke="#3d3d3d" stroke-width="2"/>
+    <text x="383" y="208" text-anchor="middle" font-size="13" fill="#1a1a1a">Rediacc API</text>
+
+    <text x="400" y="267" text-anchor="middle" font-size="14" fill="#1a1a1a">Multi-user teams</text>
+    <text x="400" y="287" text-anchor="middle" font-size="14" fill="#1a1a1a">Web console</text>
+    <text x="400" y="307" text-anchor="middle" font-size="14" fill="#1a1a1a">Role-based access</text>
+
+    <rect x="327" y="320" width="146" height="30" rx="15" fill="rgba(85,107,47,0.15)" stroke="#556b2f"/>
+    <text x="400" y="340" text-anchor="middle" font-size="13" fill="#556b2f" font-weight="700">rdc context create</text>
+  </g>
+
+  <!-- Right column: S3 Mode -->
+  <g font-family="Arial, sans-serif">
+    <rect x="613" y="56" width="84" height="50" rx="5" fill="url(#serverGradient)" stroke="#3d3d3d"/>
+    <rect x="621" y="64" width="68" height="32" rx="3" fill="#f5f5f5"/>
+    <rect x="605" y="108" width="100" height="8" rx="3" fill="#3d3d3d"/>
+    <text x="655" y="136" text-anchor="middle" font-size="20" fill="#1a1a1a" font-weight="700">S3 Mode</text>
+
+    <line x1="655" y1="150" x2="655" y2="172" stroke="#556b2f" stroke-width="3"/>
+    <polygon points="655,179 648,169 662,169" fill="#556b2f"/>
+
+    <ellipse cx="655" cy="193" rx="41" ry="12" fill="#e0e0e0" stroke="#3d3d3d" stroke-width="2"/>
+    <rect x="614" y="193" width="82" height="46" fill="#e0e0e0" stroke="#3d3d3d" stroke-width="2"/>
+    <ellipse cx="655" cy="239" rx="41" ry="12" fill="#d2d2d2" stroke="#3d3d3d" stroke-width="2"/>
+    <text x="655" y="211" text-anchor="middle" font-size="13" fill="#1a1a1a">S3/R2 Bucket</text>
+    <rect x="627" y="217" width="56" height="16" rx="4" fill="#ffffff" stroke="#3d3d3d"/>
+    <text x="655" y="229" text-anchor="middle" font-size="11" fill="#1a1a1a">state.json</text>
+
+    <text x="655" y="267" text-anchor="middle" font-size="14" fill="#1a1a1a">Portable</text>
+    <text x="655" y="287" text-anchor="middle" font-size="14" fill="#1a1a1a">AES-256-GCM encrypted</text>
+    <text x="655" y="307" text-anchor="middle" font-size="14" fill="#1a1a1a">Any workstation</text>
+
+    <rect x="579" y="320" width="152" height="30" rx="15" fill="rgba(85,107,47,0.15)" stroke="#556b2f"/>
+    <text x="655" y="340" text-anchor="middle" font-size="13" fill="#556b2f" font-weight="700">rdc context create-s3</text>
+  </g>
+
+  <rect x="130" y="390" width="540" height="38" rx="19" fill="#556b2f" filter="url(#shadow)"/>
+  <text x="400" y="414" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#ffffff" font-weight="700">
+    Same CLI Commands — Only State Storage Differs
+  </text>
+
+  <text x="400" y="445" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#999999">
+    Rediacc Operating Modes
+  </text>
+</svg>

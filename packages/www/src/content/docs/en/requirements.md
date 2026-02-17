@@ -1,7 +1,7 @@
 ---
 title: "Requirements"
 description: "System requirements and supported platforms for running Rediacc."
-category: "Getting Started"
+category: "Guides"
 order: 0
 language: en
 ---

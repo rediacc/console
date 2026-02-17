@@ -1,7 +1,7 @@
 ---
 title: "安装"
 description: "在 Linux、macOS 或 Windows 上安装 Rediacc CLI。"
-category: "Getting Started"
+category: "Guides"
 order: 1
 language: zh
 ---

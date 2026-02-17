@@ -1,7 +1,7 @@
 ---
 title: "クイックスタート"
 description: "Rediaccを始めよう — 自分のサーバーに暗号化された隔離インフラストラクチャをデプロイ。"
-category: "Getting Started"
+category: "Guides"
 order: -1
 language: ja
 ---

@@ -190,6 +190,8 @@ export interface CliConfig {
   contexts: { [name: string]: NamedContext | undefined };
   /** Global network ID counter. Monotonically increasing across all contexts. */
   nextNetworkId?: number;
+  /** Override the default universal user ("rediacc") for command execution */
+  universalUser?: string;
 }
 
 /**

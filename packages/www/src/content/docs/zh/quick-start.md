@@ -1,7 +1,7 @@
 ---
 title: "快速入门"
 description: "开始使用 Rediacc -- 在您自己的服务器上部署加密隔离基础设施。"
-category: "Getting Started"
+category: "Guides"
 order: -1
 language: zh
 ---

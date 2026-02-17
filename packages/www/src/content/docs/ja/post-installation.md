@@ -1,7 +1,7 @@
 ---
 title: "インストール後の設定"
 description: "Rediaccの自動開始設定、コンテキスト構造、トラブルシューティング。"
-category: "Getting Started"
+category: "Guides"
 order: 3
 language: ja
 ---

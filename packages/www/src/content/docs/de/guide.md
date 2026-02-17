@@ -1,7 +1,7 @@
 ---
 title: "Schritt-für-Schritt-Anleitung"
 description: "Stellen Sie verschlüsselte, isolierte Infrastruktur auf Ihren eigenen Servern mit Rediacc im lokalen Modus bereit."
-category: "Getting Started"
+category: "Guides"
 order: 2
 language: de
 ---

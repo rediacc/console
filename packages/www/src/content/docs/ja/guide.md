@@ -1,7 +1,7 @@
 ---
 title: "ステップバイステップガイド"
 description: "Rediaccをローカルモードで使用して、自分のサーバーに暗号化された隔離インフラストラクチャをデプロイする。"
-category: "Getting Started"
+category: "Guides"
 order: 2
 language: ja
 ---

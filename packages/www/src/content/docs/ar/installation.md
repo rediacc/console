@@ -1,7 +1,7 @@
 ---
 title: "التثبيت"
 description: "تثبيت سطر أوامر Rediacc على Linux أو macOS أو Windows."
-category: "Getting Started"
+category: "Guides"
 order: 1
 language: ar
 ---

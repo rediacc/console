@@ -1,7 +1,7 @@
 ---
 title: "Post-installation"
 description: "Configuration du démarrage automatique, structure du contexte et dépannage pour Rediacc."
-category: "Getting Started"
+category: "Guides"
 order: 3
 language: fr
 ---

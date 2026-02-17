@@ -1,7 +1,7 @@
 ---
 title: "Post-Instalacion"
 description: "Configuracion de inicio automatico, estructura del contexto y resolucion de problemas para Rediacc."
-category: "Getting Started"
+category: "Guides"
 order: 3
 language: es
 ---

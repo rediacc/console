@@ -69,8 +69,13 @@ cli
   .option('-o, --output <format>', t('options.output'), 'table')
   .option('--context <name>', t('options.context'))
   .option('-l, --lang <code>', t('options.lang', { languages: SUPPORTED_LANGUAGES.join('|') }))
+  .option('--experimental', 'Enable experimental cloud commands')
   .hook('preAction', async (thisCommand, actionCommand) => {
     const opts = thisCommand.opts();
+    // Enable experimental mode if --experimental flag is passed
+    if (opts.experimental) {
+      process.env.REDIACC_EXPERIMENTAL = '1';
+    }
     // Set output format before any command runs
     setOutputFormat(opts.output as OutputFormat);
     // Set runtime context override if --context flag is provided

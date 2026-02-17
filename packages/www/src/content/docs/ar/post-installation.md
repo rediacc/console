@@ -1,7 +1,7 @@
 ---
 title: "ما بعد التثبيت"
 description: "إعداد التشغيل التلقائي، وهيكل السياق، واستكشاف الأخطاء وإصلاحها في Rediacc."
-category: "Getting Started"
+category: "Guides"
 order: 3
 language: ar
 ---

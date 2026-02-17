@@ -1,7 +1,7 @@
 ---
 title: "安装后配置"
 description: "Rediacc 的开机自启配置、上下文结构和故障排除。"
-category: "Getting Started"
+category: "Guides"
 order: 3
 language: zh
 ---

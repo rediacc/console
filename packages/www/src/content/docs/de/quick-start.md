@@ -1,7 +1,7 @@
 ---
 title: "Schnellstart"
 description: "Erste Schritte mit Rediacc -- stellen Sie verschlüsselte, isolierte Infrastruktur auf Ihren eigenen Servern bereit."
-category: "Getting Started"
+category: "Guides"
 order: -1
 language: de
 ---

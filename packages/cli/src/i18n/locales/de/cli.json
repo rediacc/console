@@ -30,7 +30,7 @@
         "activated": "Konto aktiviert",
         "activating": "Konto wird aktiviert...",
         "description": "Konto mit Verifizierungscode aktivieren",
-        "success": "Konto aktiviert! Sie können sich jetzt anmelden mit: rdc login"
+        "success": "Konto aktiviert! Sie können sich jetzt anmelden mit: rdc auth login"
       },
       "description": "Authentifizierungsbefehle",
       "login": {
@@ -57,7 +57,7 @@
       "status": {
         "authenticated": "Authentifiziert als: {{email}}",
         "description": "Aktuellen Authentifizierungsstatus prüfen",
-        "notAuthenticated": "Nicht authentifiziert. Ausführen: rdc login"
+        "notAuthenticated": "Nicht authentifiziert. Ausführen: rdc auth login"
       },
       "tfa": {
         "description": "Zwei-Faktor-Authentifizierung-Verwaltung",
@@ -1489,7 +1489,7 @@
     "activationFailed": "Aktivierung fehlgeschlagen",
     "affectedChildClones": ". Betroffene untergeordnete Klone: {{clones}}. Löschen oder befördern Sie untergeordnete Klone zuerst.",
     "authFailed": "Authentifizierung fehlgeschlagen",
-    "authRequired": "Authentifizierung erforderlich. Ausführen: rdc login",
+    "authRequired": "Authentifizierung erforderlich. Ausführen: rdc auth login",
     "bridgeRequired": "Bridge-Name erforderlich. Verwenden Sie --bridge oder stellen Sie den Kontext ein.",
     "cannotDeleteGrandRepo": "Kann Grand-Repository nicht löschen: {{reason}}",
     "cannotPromote": "Kann nicht befördern: {{reason}}",
@@ -1514,7 +1514,7 @@
     "machineRequiredLocal": "Machine-Name erforderlich. Verwenden Sie --machine oder legen Sie den Standard fest mit: rdc context set machine <name>",
     "networkError": "Netzwerkfehler: {{message}}",
     "noActiveContext": "Kein aktiver Kontext. Erstellen Sie zunächst einen Kontext oder wählen Sie einen aus.",
-    "notAuthenticated": "Nicht authentifiziert. Ausführen: rdc login",
+    "notAuthenticated": "Nicht authentifiziert. Ausführen: rdc auth login",
     "passwordsMismatch": "Passwörter stimmen nicht überein",
     "permissionDenied": "Berechtigung verweigert",
     "poolNotFound": "Ceph-Pool \"{{name}}\" nicht gefunden",

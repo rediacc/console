@@ -1,7 +1,7 @@
 ---
 title: "Guide étape par étape"
 description: "Déployez une infrastructure chiffrée et isolée sur vos propres serveurs en utilisant Rediacc en mode local."
-category: "Getting Started"
+category: "Guides"
 order: 2
 language: fr
 ---
