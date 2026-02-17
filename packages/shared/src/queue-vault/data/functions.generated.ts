@@ -482,6 +482,8 @@ export interface RepositoryMountParams {
 export interface RepositoryOwnershipParams {
   /** New owner user ID */
   ownerUid?: string;
+  /** Skip Docker volume detection (true/false) */
+  force?: string;
 }
 
 /** Resize a repository */
@@ -622,7 +624,7 @@ export const BRIDGE_FUNCTIONS = [
   'setup',
 ] as const;
 
-export const BRIDGE_FUNCTIONS_VERSION = 'dev';
+export const BRIDGE_FUNCTIONS_VERSION = 'v0.4.91-58-g1d00a071';
 
 export type BridgeFunctionName = (typeof BRIDGE_FUNCTIONS)[number];
 
@@ -2049,6 +2051,10 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
       ownerUid: {
         type: 'string',
         help: 'New owner user ID',
+      },
+      force: {
+        type: 'string',
+        help: 'Skip Docker volume detection (true/false)',
       },
     },
   },

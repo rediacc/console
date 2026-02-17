@@ -355,6 +355,7 @@ export const RepositoryMountParamsSchema = z.object({
 /** Change repository ownership */
 export const RepositoryOwnershipParamsSchema = z.object({
   ownerUid: z.string().optional().describe('New owner user ID'),
+  force: z.string().optional().describe('Skip Docker volume detection (true/false)'),
 });
 
 /** Resize a repository */
