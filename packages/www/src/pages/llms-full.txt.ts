@@ -1,7 +1,6 @@
+import { SORT_DEFAULTS } from '@rediacc/shared/config';
 import { getCollection } from 'astro:content';
 import type { APIRoute } from 'astro';
-
-import { SORT_DEFAULTS } from '@rediacc/shared/config';
 
 // Docs excluded from LLM context (cloud-specific or auto-generated references)
 const EXCLUDED_SLUGS = ['en/cli-application', 'en/web-application'] as const;
