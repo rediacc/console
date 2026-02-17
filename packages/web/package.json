@@ -30,7 +30,7 @@
     "@opentelemetry/instrumentation-fetch": "^0.211.0",
     "@opentelemetry/instrumentation-user-interaction": "^0.56.0",
     "@opentelemetry/instrumentation-xml-http-request": "^0.211.0",
-    "@opentelemetry/resources": "^2.1.0",
+    "@opentelemetry/resources": "^2.5.1",
     "@opentelemetry/sdk-node": "^0.211.0",
     "@opentelemetry/sdk-trace-web": "^2.5.0",
     "@opentelemetry/semantic-conventions": "^1.38.0",
