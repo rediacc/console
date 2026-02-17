@@ -1,5 +1,5 @@
-import { SORT_DEFAULTS } from '@rediacc/shared/config';
 import { getCollection } from 'astro:content';
+import { SORT_DEFAULTS } from '@rediacc/shared/config';
 import type { APIRoute } from 'astro';
 
 // Docs excluded from LLM context (cloud-specific or auto-generated references)
