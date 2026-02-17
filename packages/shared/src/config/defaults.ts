@@ -331,6 +331,14 @@ export const CLI_TEST_DEFAULTS = {
 } as const;
 
 /**
+ * Sorting defaults
+ */
+export const SORT_DEFAULTS = {
+  /** Fallback value for nullish sort order fields (pushes unordered items to end) */
+  ORDER_FALLBACK: 99,
+} as const;
+
+/**
  * Aggregated defaults object for convenient access
  */
 export const DEFAULTS = {
@@ -511,14 +519,6 @@ export const WINDOW_DEFAULTS = {
 
   /** Default popout window height */
   POPOUT_HEIGHT: 600,
-} as const;
-
-/**
- * Sorting defaults
- */
-export const SORT_DEFAULTS = {
-  /** Fallback value for nullish sort order fields (pushes unordered items to end) */
-  ORDER_FALLBACK: 99,
 } as const;
 
 /**
