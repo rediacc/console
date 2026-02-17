@@ -3,5 +3,14 @@
     "python.terminal.activateEnvironment": true,
     "playwright.configs": [
         "packages/e2e/playwright.config.ts"
+    ],
+    "css.customData": [
+        "./css-custom-data.json"
+    ],
+    "scss.customData": [
+        "./css-custom-data.json"
+    ],
+    "less.customData": [
+        "./css-custom-data.json"
     ]
 }

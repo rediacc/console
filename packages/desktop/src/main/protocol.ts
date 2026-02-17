@@ -119,11 +119,17 @@ function handleProtocolUrl(url: string, mainWindow: BrowserWindow | null): void 
  */
 function focusMainWindow(getMainWindow: GetMainWindow): void {
   const mainWindow = getMainWindow();
-  if (mainWindow) {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return;
+  }
+
+  try {
     if (mainWindow.isMinimized()) {
       mainWindow.restore();
     }
     mainWindow.focus();
+  } catch (error) {
+    console.warn('Skipping focus on destroyed main window:', error);
   }
 }
 

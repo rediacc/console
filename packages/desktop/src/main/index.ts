@@ -16,6 +16,7 @@ if (process.argv.includes('--warmup')) {
 
 let mainWindow: BrowserWindow | null = null;
 const windowManager = new WindowManager();
+const disableProtocolHandler = process.env['REDIACC_DISABLE_PROTOCOL_HANDLER'] === '1';
 
 function createWindow(): void {
   const windowState = windowManager.loadState();
@@ -42,6 +43,10 @@ function createWindow(): void {
 
   // Track window state changes
   windowManager.track(mainWindow);
+
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+  });
 
   // Show window when ready
   mainWindow.on('ready-to-show', () => {
@@ -109,7 +114,9 @@ void app.whenReady().then(() => {
 
   // Set up protocol handler (rediacc:// URLs)
   // Must be done before registering IPC handlers
-  setupProtocolHandler(() => mainWindow);
+  if (!disableProtocolHandler) {
+    setupProtocolHandler(() => mainWindow);
+  }
 
   // Register IPC handlers before creating window
   registerIpcHandlers();
