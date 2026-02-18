@@ -23,6 +23,8 @@ interface LocaleConfig {
   name: string;
   dir: string;
   multipleNamespaces: boolean;
+  /** Flat layout: translations are {dir}/{lang}.json instead of {dir}/{lang}/*.json */
+  flatFiles?: boolean;
 }
 
 interface HashManifest {
@@ -54,6 +56,13 @@ const LOCALE_CONFIGS: LocaleConfig[] = [
     // CLI has single file per language (cli.json)
     multipleNamespaces: false,
   },
+  {
+    name: 'www',
+    dir: path.join(__dirname, '../packages/www/src/i18n/translations'),
+    // WWW has flat files: {lang}.json directly in dir (no subdirectories)
+    multipleNamespaces: false,
+    flatFiles: true,
+  },
 ];
 
 const HASH_FILENAME = '.translation-hashes.json';
@@ -77,7 +86,19 @@ function sortObjectKeys(obj: Record<string, string>): Record<string, string> {
  * Process a locale directory and generate hash manifest
  */
 function processLocaleDir(config: LocaleConfig): Record<string, string> | null {
-  const { name, dir, multipleNamespaces } = config;
+  const { name, dir, multipleNamespaces, flatFiles } = config;
+
+  // Flat layout: {dir}/en.json instead of {dir}/en/*.json
+  if (flatFiles) {
+    const enFile = path.join(dir, `${SOURCE_LANG}.json`);
+    if (!fs.existsSync(enFile)) {
+      console.log(`   Skipping ${name}: English file not found at ${enFile}`);
+      return null;
+    }
+    const content = JSON.parse(fs.readFileSync(enFile, 'utf-8')) as Record<string, unknown>;
+    return flattenAndHash(content, '');
+  }
+
   const englishDir = path.join(dir, SOURCE_LANG);
 
   if (!fs.existsSync(englishDir)) {

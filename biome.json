@@ -68,6 +68,7 @@
       "!**/*.min.js",
       "!**/*.min.css",
       "!**/*.generated.ts",
+      "!**/search-index.json",
       "!**/*.astro",
       "private/license-server/src/**/*.ts",
       "private/license-server/tests/**/*.ts",

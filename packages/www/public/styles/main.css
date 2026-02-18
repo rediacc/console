@@ -1887,7 +1887,7 @@ a[target='_blank']::after {
 
 .footer-columns {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: 1fr;
   gap: var(--space-12);
   margin-bottom: var(--space-16);
 }
@@ -1896,6 +1896,25 @@ a[target='_blank']::after {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+}
+
+.footer-logo-column {
+  align-self: start;
+}
+
+.footer-logo-link {
+  display: inline-block;
+  transition: opacity var(--transition-duration-base) ease;
+}
+
+.footer-logo-link:hover {
+  opacity: var(--opacity-70);
+}
+
+.footer-logo-icon {
+  width: 48px;
+  height: 48px;
+  display: block;
 }
 
 .footer-nav {

@@ -30,13 +30,12 @@
         "activated": "Konto aktiviert",
         "activating": "Konto wird aktiviert...",
         "description": "Konto mit Verifizierungscode aktivieren",
-        "success": "Konto aktiviert! Sie können sich jetzt anmelden mit: rdc login"
+        "success": "Konto aktiviert! Sie können sich jetzt anmelden mit: rdc auth login"
       },
       "description": "Authentifizierungsbefehle",
       "login": {
         "authenticating": "Authentifizierung läuft...",
         "description": "Mit Rediacc authentifizieren",
-        "shortcut": "Mit Rediacc authentifizieren (Kurzform: auth login)",
         "success": "Anmeldung erfolgreich! Gespeichert im Kontext \"{{context}}\"",
         "tfaPrompt": "2FA-Code eingeben:",
         "tfaRequired": "Zwei-Faktor-Authentifizierung erforderlich",
@@ -46,7 +45,6 @@
       "logout": {
         "description": "Gespeicherte Anmeldedaten löschen",
         "loggingOut": "Meldung läuft...",
-        "shortcut": "Gespeicherte Anmeldedaten löschen (Kurzform: auth logout)",
         "success": "Erfolgreich abgemeldet"
       },
       "register": {
@@ -59,7 +57,7 @@
       "status": {
         "authenticated": "Authentifiziert als: {{email}}",
         "description": "Aktuellen Authentifizierungsstatus prüfen",
-        "notAuthenticated": "Nicht authentifiziert. Ausführen: rdc login"
+        "notAuthenticated": "Nicht authentifiziert. Ausführen: rdc auth login"
       },
       "tfa": {
         "description": "Zwei-Faktor-Authentifizierung-Verwaltung",
@@ -349,7 +347,9 @@
       },
       "createLocal": {
         "description": "Erstellen Sie einen neuen lokalen Kontext für Middleware-losen Betrieb",
+        "encryptionEnabled": "Verschlüsselung im Ruhezustand aktiviert. Ressourcen werden in config.json verschlüsselt.",
         "nextStep": "Fügen Sie Machines hinzu mit: rdc context add-machine <name> --ip <ip> --user <user>",
+        "optionMasterPassword": "Ressourcen mit einem Master-Passwort verschlüsseln",
         "success": "Lokaler Kontext \"{{name}}\" erstellt"
       },
       "createS3": {
@@ -872,6 +872,39 @@
       }
     },
     "repo": {
+      "autostart": {
+        "description": "Automatischen Repository-Start beim Hochfahren verwalten",
+        "disable": {
+          "completed": "Autostart deaktiviert",
+          "description": "Autostart für ein Repository deaktivieren",
+          "failed": "Deaktivierung des Autostarts fehlgeschlagen",
+          "starting": "Autostart für \"{{repository}}\" auf \"{{machine}}\" wird deaktiviert..."
+        },
+        "disableAll": {
+          "completed": "Autostart für alle Repositories deaktiviert",
+          "description": "Autostart für alle Repositories deaktivieren",
+          "failed": "Deaktivierung des Autostarts für alle Repositories fehlgeschlagen",
+          "starting": "Autostart für alle Repositories auf \"{{machine}}\" wird deaktiviert..."
+        },
+        "enable": {
+          "completed": "Autostart aktiviert",
+          "description": "Autostart für ein Repository aktivieren",
+          "failed": "Aktivierung des Autostarts fehlgeschlagen",
+          "starting": "Autostart für \"{{repository}}\" auf \"{{machine}}\" wird aktiviert..."
+        },
+        "enableAll": {
+          "completed": "Autostart für alle Repositories aktiviert",
+          "description": "Autostart für alle Repositories aktivieren",
+          "failed": "Aktivierung des Autostarts für alle Repositories fehlgeschlagen",
+          "starting": "Autostart für alle Repositories auf \"{{machine}}\" wird aktiviert..."
+        },
+        "list": {
+          "completed": "Autostart-Liste abgerufen",
+          "description": "Repositories mit aktiviertem Autostart auflisten",
+          "failed": "Abrufen der Autostart-Liste fehlgeschlagen",
+          "starting": "Autostart-Repositories auf \"{{machine}}\" werden aufgelistet..."
+        }
+      },
       "create": {
         "alreadyExists": "Repository \"{{name}}\" existiert bereits im Kontext",
         "completed": "Repository erstellt",
@@ -975,6 +1008,17 @@
         "prepOnlyOption": "Nur den Vorbereitungsschritt ausführen",
         "starting": "Dienste für \"{{repository}}\" auf \"{{machine}}\" werden gestartet..."
       },
+      "upAll": {
+        "completed": "Alle Repositories gestartet",
+        "concurrencyOption": "Maximale gleichzeitige Repositories (Standard: 3)",
+        "description": "Alle Repository-Dienste auf einer Maschine starten",
+        "dryRunOption": "Zeigen, was ausgeführt würde, ohne es tatsächlich auszuführen",
+        "failed": "Sammelstart fehlgeschlagen",
+        "includeForksOption": "Auch geforkte Repositories einbinden/starten",
+        "mountOnlyOption": "Nur einbinden, keine Dienste starten",
+        "parallelOption": "Repositories parallel starten",
+        "starting": "Alle Repositories auf \"{{machine}}\" werden gestartet..."
+      },
       "validate": {
         "completed": "Überprüfung abgeschlossen",
         "description": "Repository-Integrität überprüfen",
@@ -1035,10 +1079,10 @@
     },
     "shortcuts": {
       "cancel": {
-        "description": "Eine Task abbrechen (Kurzform: queue cancel)"
+        "description": "Eine Aufgabe abbrechen (Kurzbefehl für: queue cancel)"
       },
       "retry": {
-        "description": "Eine fehlgeschlagene Task wiederholen (Kurzform: queue retry)"
+        "description": "Eine fehlgeschlagene Aufgabe wiederholen (Kurzbefehl für: queue retry)"
       },
       "run": {
         "completedLocal": "[lokal] In {{duration}}ms abgeschlossen",
@@ -1048,7 +1092,7 @@
         "watching": "Auf Fertigstellung wird gewartet..."
       },
       "trace": {
-        "description": "Eine Task nachverfolgen (Kurzform: queue trace)"
+        "description": "Eine Aufgabe verfolgen (Kurzbefehl für: queue trace)"
       }
     },
     "snapshot": {
@@ -1339,7 +1383,7 @@
       }
     },
     "frontmatter": {
-      "category": "Kernkonzepte",
+      "category": "Reference",
       "description": "Vollständige Anleitung zur Verwendung der Rediacc-Befehlszeilenschnittstelle für die Plattformverwaltung",
       "title": "CLI-Anwendung"
     },
@@ -1445,7 +1489,7 @@
     "activationFailed": "Aktivierung fehlgeschlagen",
     "affectedChildClones": ". Betroffene untergeordnete Klone: {{clones}}. Löschen oder befördern Sie untergeordnete Klone zuerst.",
     "authFailed": "Authentifizierung fehlgeschlagen",
-    "authRequired": "Authentifizierung erforderlich. Ausführen: rdc login",
+    "authRequired": "Authentifizierung erforderlich. Ausführen: rdc auth login",
     "bridgeRequired": "Bridge-Name erforderlich. Verwenden Sie --bridge oder stellen Sie den Kontext ein.",
     "cannotDeleteGrandRepo": "Kann Grand-Repository nicht löschen: {{reason}}",
     "cannotPromote": "Kann nicht befördern: {{reason}}",
@@ -1470,7 +1514,7 @@
     "machineRequiredLocal": "Machine-Name erforderlich. Verwenden Sie --machine oder legen Sie den Standard fest mit: rdc context set machine <name>",
     "networkError": "Netzwerkfehler: {{message}}",
     "noActiveContext": "Kein aktiver Kontext. Erstellen Sie zunächst einen Kontext oder wählen Sie einen aus.",
-    "notAuthenticated": "Nicht authentifiziert. Ausführen: rdc login",
+    "notAuthenticated": "Nicht authentifiziert. Ausführen: rdc auth login",
     "passwordsMismatch": "Passwörter stimmen nicht überein",
     "permissionDenied": "Berechtigung verweigert",
     "poolNotFound": "Ceph-Pool \"{{name}}\" nicht gefunden",
@@ -1546,6 +1590,7 @@
     "email": "E-Mail-Adresse",
     "endpoint": "API-Endpunkt-URL",
     "excludePatterns": "Von der Synchronisierung auszuschließende Muster",
+    "experimental": "Experimentelle Cloud-Befehle aktivieren",
     "expires": "Ablauf in Stunden (1-720)",
     "external": "Erzwinge Start in externem Terminal-Fenster",
     "extraMachine": "Zusätzliche Maschine für Multi-Maschinen-Operationen (Name:IP:Benutzer)",
@@ -1604,6 +1649,7 @@
     "searchRepos": "Repositories nach Name filtern",
     "sessionName": "Sitzungsname",
     "skipEnvSetup": "Remote-Umgebungs-Setup überspringen",
+    "skipRouterRestart": "Neustart des Route-Servers nach Binary-Update überspringen",
     "snapshot": "RBD-Snapshot-Name",
     "sortByField": "Sortieren nach Feld",
     "sortDesc": "In absteigender Reihenfolge sortieren",

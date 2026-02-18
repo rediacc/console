@@ -33,6 +33,8 @@ export interface RenetSpawnOptions {
   json?: boolean;
   /** Timeout in milliseconds (default: 10 minutes) */
   timeout?: number;
+  /** Skip restarting the rediacc-router service after binary update */
+  skipRouterRestart?: boolean;
 }
 
 /**
@@ -76,7 +78,7 @@ export async function provisionRenetToRemote(
   config: { renetPath: string },
   machine: MachineConfig,
   sshPrivateKey: string,
-  options: Pick<RenetSpawnOptions, 'debug'>
+  options: Pick<RenetSpawnOptions, 'debug' | 'skipRouterRestart'> & { restartServices?: boolean }
 ): Promise<void> {
   let localBinaryPath: string | undefined;
   if (!isSEA()) {
@@ -85,6 +87,10 @@ export async function provisionRenetToRemote(
       : execSync(`which ${config.renetPath}`, { encoding: 'utf-8' }).trim();
   }
 
+  // --skip-router-restart flag or RDC_SKIP_ROUTER_RESTART env var
+  const skipRestart = options.skipRouterRestart ?? !!process.env.RDC_SKIP_ROUTER_RESTART;
+  const restartServices = skipRestart ? false : options.restartServices;
+
   const result = await renetProvisioner.provision(
     {
       host: machine.ip,
@@ -92,15 +98,20 @@ export async function provisionRenetToRemote(
       username: machine.user,
       privateKey: sshPrivateKey,
     },
-    { localBinaryPath }
+    { localBinaryPath, restartServices }
   );
 
   if (!result.success) {
     throw new Error(result.error ?? PROCESS_DEFAULTS.RENET_PROVISION_ERROR);
   }
 
-  if (result.action === 'uploaded' && options.debug) {
-    outputService.info(`[local] Provisioned renet (${result.arch}) to ${machine.ip}`);
+  if (result.action === 'uploaded') {
+    if (options.debug) {
+      outputService.info(`[local] Provisioned renet (${result.arch}) to ${machine.ip}`);
+    }
+    if (result.servicesRestarted) {
+      outputService.info(`Restarted rediacc-router on ${machine.ip}`);
+    }
   }
 }
 
@@ -255,14 +266,12 @@ function buildStorageSystems(
   return result;
 }
 
-function buildRepositories(
+/** Build a single repository entry from config and params. */
+function buildSingleRepoEntry(
+  repoName: string,
   params: Record<string, unknown>,
   repositoryConfigs?: Record<string, { guid: string; name: string; networkId?: number }>
-): { repoName: string; repositories: Record<string, unknown> } {
-  const repoName = (params.repository ?? '') as string;
-  const repositories: Record<string, unknown> = {};
-  if (!repoName) return { repoName, repositories };
-
+): Record<string, unknown> {
   const repoConfig = repositoryConfigs?.[repoName];
   const repoEntry: Record<string, unknown> = {
     guid: repoConfig?.guid ?? repoName,
@@ -272,8 +281,45 @@ function buildRepositories(
   if (networkId !== undefined && networkId !== '' && networkId !== 0) {
     repoEntry.network_id = typeof networkId === 'number' ? networkId : Number(networkId);
   }
-  repositories[repoName] = repoEntry;
-  return { repoName, repositories };
+  return repoEntry;
+}
+
+/** Build repository entries for all repos in config (multi-repo mode). */
+function buildAllRepoEntries(
+  repositoryConfigs: Record<string, { guid: string; name: string; networkId?: number }>
+): Record<string, unknown> {
+  const repositories: Record<string, unknown> = {};
+  for (const [name, config] of Object.entries(repositoryConfigs)) {
+    const repoEntry: Record<string, unknown> = {
+      guid: config.guid,
+      name,
+    };
+    if (config.networkId !== undefined && config.networkId !== 0) {
+      repoEntry.network_id = config.networkId;
+    }
+    repositories[name] = repoEntry;
+  }
+  return repositories;
+}
+
+function buildRepositories(
+  params: Record<string, unknown>,
+  repositoryConfigs?: Record<string, { guid: string; name: string; networkId?: number }>
+): { repoName: string; repositories: Record<string, unknown> } {
+  const repoName = (params.repository ?? '') as string;
+
+  if (repoName) {
+    return {
+      repoName,
+      repositories: { [repoName]: buildSingleRepoEntry(repoName, params, repositoryConfigs) },
+    };
+  }
+
+  if (repositoryConfigs) {
+    return { repoName, repositories: buildAllRepoEntries(repositoryConfigs) };
+  }
+
+  return { repoName, repositories: {} };
 }
 
 /**

@@ -86,7 +86,7 @@
 /* Desktop (1024px and up) */
 @media (min-width: 64rem) {
   .footer-columns {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: auto repeat(5, 1fr);
   }
 }
 

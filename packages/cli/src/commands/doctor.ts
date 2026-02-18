@@ -6,7 +6,7 @@ import { DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../i18n/index.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
-import { isSEA as isSEAEmbedded, getEmbeddedMetadata } from '../services/embedded-assets.js';
+import { getEmbeddedMetadata, isSEA as isSEAEmbedded } from '../services/embedded-assets.js';
 import { outputService } from '../services/output.js';
 import { isSEA } from '../utils/platform.js';
 import { VERSION } from '../version.js';
@@ -221,31 +221,41 @@ async function checkConfiguration(): Promise<CheckSection> {
           name: t('commands.doctor.checks.activeContext'),
           value: t('commands.doctor.notConfigured'),
           status: 'warn',
-          hint: 'Create a context with: rdc context create <name> or rdc login',
+          hint: 'Create a context with: rdc context create <name> or rdc auth login',
         }
   );
 
   const mode = context?.mode ?? DEFAULTS.CONTEXT.MODE;
   checks.push({ name: t('commands.doctor.checks.contextMode'), value: mode, status: 'ok' });
 
-  if (mode === 'local') {
-    addLocalModeChecks(checks, context);
+  if (mode !== 'cloud') {
+    await addSelfHostedModeChecks(checks, context);
   }
 
   return { title: t('commands.doctor.sections.configuration'), checks };
 }
 
-function addLocalModeChecks(
+async function addSelfHostedModeChecks(
   checks: CheckResult[],
   context: Awaited<ReturnType<typeof contextService.getCurrent>>
-): void {
-  const machineCount = context?.machines ? Object.keys(context.machines).length : 0;
-  checks.push({
-    name: t('commands.doctor.checks.machines'),
-    value: `${machineCount} configured`,
-    status: machineCount > 0 ? 'ok' : 'warn',
-    hint: machineCount === 0 ? 'Add machines with: rdc context add-machine' : undefined,
-  });
+): Promise<void> {
+  try {
+    const state = await contextService.getResourceState();
+    const machineCount = Object.keys(state.getMachines()).length;
+    checks.push({
+      name: t('commands.doctor.checks.machines'),
+      value: `${machineCount} configured`,
+      status: machineCount > 0 ? 'ok' : 'warn',
+      hint: machineCount === 0 ? 'Add machines with: rdc context add-machine' : undefined,
+    });
+  } catch {
+    checks.push({
+      name: t('commands.doctor.checks.machines'),
+      value: '[unable to load]',
+      status: 'warn',
+      hint: 'Could not load resource state (encrypted or S3 unreachable)',
+    });
+  }
 
   const sshKeyPath = context?.ssh?.privateKeyPath;
   if (sshKeyPath && existsSync(sshKeyPath)) {
@@ -285,7 +295,7 @@ async function checkAuthentication(): Promise<CheckSection> {
       name: t('commands.doctor.checks.authStatus'),
       value: t('commands.doctor.notAuthenticated'),
       status: 'warn',
-      hint: 'Authenticate with: rdc login',
+      hint: 'Authenticate with: rdc auth login',
     });
   }
 

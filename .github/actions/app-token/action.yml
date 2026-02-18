@@ -74,3 +74,13 @@ runs:
         permission-pull-requests: ${{ steps.perms.outputs.perm-pull-requests }}
         permission-actions: ${{ steps.perms.outputs.perm-actions }}
         permission-packages: ${{ steps.perms.outputs.perm-packages }}
+
+    # Configure global git credentials so submodule fetches can authenticate.
+    # actions/checkout uses includeIf.gitdir (local scope) which doesn't apply
+    # to submodule gitdirs, causing "could not read Username" errors.
+    - name: Configure global git credentials
+      shell: bash
+      env:
+        TOKEN: ${{ steps.token.outputs.token }}
+      run: |
+        git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"

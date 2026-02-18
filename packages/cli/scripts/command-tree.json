@@ -6,7 +6,7 @@
   "subcommands": [
     {
       "name": "auth",
-      "descriptionKey": null,
+      "descriptionKey": "commands.auth.description",
       "options": [],
       "arguments": [],
       "subcommands": [
@@ -797,7 +797,7 @@
         },
         {
           "name": "test-connection",
-          "descriptionKey": null,
+          "descriptionKey": "commands.machine.testConnection.description",
           "options": [
             {
               "flags": "--ip <address>",
@@ -882,7 +882,7 @@
     },
     {
       "name": "repository",
-      "descriptionKey": null,
+      "descriptionKey": "commands.repository.description",
       "options": [],
       "arguments": [],
       "subcommands": [
@@ -1292,6 +1292,56 @@
           "subcommands": []
         },
         {
+          "name": "up-all",
+          "descriptionKey": "commands.repo.upAll.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--include-forks",
+              "descriptionKey": "commands.repo.upAll.includeForksOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--mount-only",
+              "descriptionKey": "commands.repo.upAll.mountOnlyOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "commands.repo.upAll.dryRunOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--parallel",
+              "descriptionKey": "commands.repo.upAll.parallelOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--concurrency <n>",
+              "descriptionKey": "commands.repo.upAll.concurrencyOption",
+              "mandatory": false,
+              "defaultValue": "3"
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
           "name": "down",
           "descriptionKey": "commands.repo.down.description",
           "options": [
@@ -1502,6 +1552,128 @@
             }
           ],
           "subcommands": []
+        },
+        {
+          "name": "autostart",
+          "descriptionKey": "commands.repo.autostart.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "enable",
+              "descriptionKey": "commands.repo.autostart.enable.description",
+              "options": [
+                {
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "commands.repo.machineOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "disable",
+              "descriptionKey": "commands.repo.autostart.disable.description",
+              "options": [
+                {
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "commands.repo.machineOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "enable-all",
+              "descriptionKey": "commands.repo.autostart.enableAll.description",
+              "options": [
+                {
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "commands.repo.machineOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "disable-all",
+              "descriptionKey": "commands.repo.autostart.disableAll.description",
+              "options": [
+                {
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "commands.repo.machineOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "list",
+              "descriptionKey": "commands.repo.autostart.list.description",
+              "options": [
+                {
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "commands.repo.machineOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            }
+          ]
         },
         {
           "name": "ownership",
@@ -2336,7 +2508,7 @@
     },
     {
       "name": "ceph",
-      "descriptionKey": null,
+      "descriptionKey": "commands.ceph.description",
       "options": [],
       "arguments": [],
       "subcommands": [
@@ -3073,7 +3245,7 @@
     },
     {
       "name": "organization",
-      "descriptionKey": null,
+      "descriptionKey": "commands.organization.description",
       "options": [],
       "arguments": [],
       "subcommands": [
@@ -3186,7 +3358,7 @@
     },
     {
       "name": "user",
-      "descriptionKey": null,
+      "descriptionKey": "commands.user.description",
       "options": [],
       "arguments": [],
       "subcommands": [
@@ -3535,6 +3707,12 @@
             {
               "flags": "--renet-path <path>",
               "descriptionKey": "options.renetPath",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--master-password <password>",
+              "descriptionKey": "commands.context.createLocal.optionMasterPassword",
               "mandatory": false,
               "defaultValue": null
             }
@@ -4028,7 +4206,7 @@
     },
     {
       "name": "permission",
-      "descriptionKey": null,
+      "descriptionKey": "commands.permission.description",
       "options": [],
       "arguments": [],
       "subcommands": [
@@ -4140,7 +4318,7 @@
     },
     {
       "name": "audit",
-      "descriptionKey": null,
+      "descriptionKey": "commands.audit.description",
       "options": [],
       "arguments": [],
       "subcommands": [
@@ -4797,6 +4975,18 @@
         {
           "flags": "--check-only",
           "descriptionKey": "commands.update.checkOnly",
+          "mandatory": false,
+          "defaultValue": null
+        },
+        {
+          "flags": "--rollback",
+          "descriptionKey": "commands.update.rollback",
+          "mandatory": false,
+          "defaultValue": null
+        },
+        {
+          "flags": "--status",
+          "descriptionKey": "commands.update.statusDescription",
           "mandatory": false,
           "defaultValue": null
         }

@@ -134,6 +134,7 @@ export async function createEditionContext(plan: SubscriptionPlan): Promise<Edit
 
   // Login
   const loginResult = await runner.run([
+    'auth',
     'login',
     '-e',
     account.email,
@@ -158,7 +159,7 @@ export async function createEditionContext(plan: SubscriptionPlan): Promise<Edit
     runner,
     cleanup: async () => {
       // Logout from this context
-      await runner.run(['logout']).catch(() => {});
+      await runner.run(['auth', 'logout']).catch(() => {});
       // Delete the context (no --force flag for context delete)
       await baseRunner
         .run(['context', 'delete', account.contextName], { context: '' })

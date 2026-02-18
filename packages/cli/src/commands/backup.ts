@@ -23,6 +23,7 @@ interface BackupRunOptions {
   machine?: string;
   debug?: boolean;
   watch?: boolean;
+  skipRouterRestart?: boolean;
 }
 
 /** Resolve extra machines needed for multi-machine operations (e.g., backup push --to-machine). */
@@ -70,6 +71,7 @@ async function executeFunction(
         params: coerced,
         extraMachines,
         debug: options.debug,
+        skipRouterRestart: options.skipRouterRestart,
       });
       if (result.success) {
         outputService.success(
@@ -187,6 +189,7 @@ export function registerBackupCommands(program: Command): void {
     .option('-m, --machine <name>', t('options.machine'))
     .option('-w, --watch', t('options.watch'))
     .option('--debug', t('options.debug'))
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (repo, options) => {
       try {
         const repoConfig = await contextService.getLocalRepository(repo);
@@ -222,6 +225,7 @@ export function registerBackupCommands(program: Command): void {
     .option('-m, --machine <name>', t('options.machine'))
     .option('-w, --watch', t('options.watch'))
     .option('--debug', t('options.debug'))
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (repo, options) => {
       try {
         const params: Record<string, unknown> = { repository: repo };
@@ -254,6 +258,7 @@ export function registerBackupCommands(program: Command): void {
     .option('-m, --machine <name>', t('options.machine'))
     .option('-w, --watch', t('options.watch'))
     .option('--debug', t('options.debug'))
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (options) => {
       try {
         const params: Record<string, unknown> = {};

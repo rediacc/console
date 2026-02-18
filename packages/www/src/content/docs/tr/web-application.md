@@ -1,7 +1,7 @@
 ---
 title: Web Uygulaması
 description: Rediacc ile web uygulaması mimarisi ve dağıtımını anlama
-category: Core Concepts
+category: Reference
 order: 1
 language: tr
 ---

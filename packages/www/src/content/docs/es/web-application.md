@@ -1,7 +1,7 @@
 ---
 title: Aplicación Web
 description: Comprensión de la arquitectura y el despliegue de aplicaciones web con Rediacc
-category: Core Concepts
+category: Reference
 order: 1
 language: es
 ---

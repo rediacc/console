@@ -1,7 +1,7 @@
 ---
 title: تطبيق الويب
 description: فهم معمارية تطبيق الويب ونشره باستخدام Rediacc
-category: المفاهيم الأساسية
+category: Reference
 order: 1
 language: ar
 ---

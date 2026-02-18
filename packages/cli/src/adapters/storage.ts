@@ -87,6 +87,7 @@ export class ConfigStorage {
       const content = await fs.readFile(this.configPath, 'utf-8');
       const data = JSON.parse(content);
       return {
+        ...data,
         contexts: data.contexts ?? {},
       };
     } catch (error) {

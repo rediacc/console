@@ -26,7 +26,7 @@
     "check:actions": "tsx scripts/check-actions.ts",
     "check:deps": "tsx scripts/check-deps.ts",
     "check:format": "biome format packages/ private/license-server/",
-    "check:i18n": "tsx scripts/check-translation-hashes.ts && tsx scripts/check-translation-completeness.ts && tsx scripts/check-docs-inline-translations.ts && tsx scripts/check-www-only-translations.ts && tsx scripts/check-docs-untranslated-text.ts && npm run validate:cli-docs -w @rediacc/www",
+    "check:i18n": "tsx scripts/check-translation-hashes.ts && tsx scripts/check-translation-completeness.ts && tsx scripts/check-docs-inline-translations.ts && tsx scripts/check-www-only-translations.ts && tsx scripts/check-docs-untranslated-text.ts && npm run validate:cli-docs -w @rediacc/www && npm run validate:content -w @rediacc/www",
     "check:i18n:completeness": "tsx scripts/check-translation-completeness.ts",
     "check:i18n:docs": "tsx scripts/check-docs-inline-translations.ts",
     "check:i18n:hashes": "tsx scripts/check-translation-hashes.ts",
@@ -76,7 +76,7 @@
     "proper-lockfile": "^4.1.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.1",
+    "@biomejs/biome": "^2.4.2",
     "@eslint/js": "^9.39.2",
     "@eslint/json": "^1.0.1",
     "@types/proper-lockfile": "^4.1.4",
@@ -86,7 +86,7 @@
     "eslint": "^9.39.2",
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-playwright": "^2.5.1",
+    "eslint-plugin-playwright": "^2.6.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-regexp": "^3.0.0",

@@ -36,6 +36,7 @@ import {
   getSSHConnectionDetails,
 } from './vscode-utils.js';
 import { t } from '../i18n/index.js';
+import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
 import { contextService } from '../services/context.js';
 import { handleError } from '../utils/errors.js';
@@ -196,14 +197,15 @@ async function setupRemoteEnvironment(connectionDetails: ConnectionDetails): Pro
 async function connectVSCode(options: VSCodeConnectOptions): Promise<void> {
   const opts = await contextService.applyDefaults(options);
 
-  if (!opts.team) {
+  const provider = await getStateProvider();
+  if (provider.mode === 'cloud' && !opts.team) {
     throw new Error(t('errors.teamRequired'));
   }
   if (!opts.machine) {
     throw new Error(t('errors.machineRequired'));
   }
 
-  const teamName = opts.team;
+  const teamName = opts.team ?? '';
   const machineName = opts.machine;
   const repositoryName = opts.repository;
 
@@ -379,7 +381,10 @@ export function registerVSCodeCommands(program: Command): void {
     .option('--insiders', t('options.insiders'))
     .action(async (options: VSCodeConnectOptions) => {
       try {
-        await authService.requireAuth();
+        const provider = await getStateProvider();
+        if (provider.mode === 'cloud') {
+          await authService.requireAuth();
+        }
         await connectVSCode(options);
       } catch (error) {
         handleError(error);
@@ -444,7 +449,10 @@ export function registerVSCodeCommands(program: Command): void {
         try {
           // If positional arguments provided, use connect flow
           if (machine) {
-            await authService.requireAuth();
+            const provider = await getStateProvider();
+            if (provider.mode === 'cloud') {
+              await authService.requireAuth();
+            }
             await connectVSCode({
               ...options,
               machine,

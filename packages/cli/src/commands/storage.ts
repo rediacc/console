@@ -113,10 +113,16 @@ export function registerStorageCommands(program: Command): void {
     .requiredOption('-r, --repository <name>', t('commands.storage.pull.repositoryOption'))
     .requiredOption('-m, --machine <name>', t('commands.storage.pull.machineOption'))
     .option('--debug', t('options.debug'))
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
       async (
         storageName: string,
-        options: { repository: string; machine: string; debug?: boolean }
+        options: {
+          repository: string;
+          machine: string;
+          debug?: boolean;
+          skipRouterRestart?: boolean;
+        }
       ) => {
         try {
           // Validate storage exists in context
@@ -152,6 +158,7 @@ export function registerStorageCommands(program: Command): void {
               repository: options.repository,
             },
             debug: options.debug,
+            skipRouterRestart: options.skipRouterRestart,
           });
 
           if (result.success) {

@@ -79,8 +79,10 @@ export interface ResourceCommandConfig {
 }
 
 function createParentCheck(parentOption: 'team' | 'region' | 'none') {
-  return (opts: ParentContextOptions): boolean => {
+  return async (opts: ParentContextOptions): Promise<boolean> => {
     if (parentOption === 'none') return true;
+    const provider = await getStateProvider();
+    if (provider.mode !== 'cloud') return true; // team/region not needed in local/s3
     if (parentOption === 'team' && !opts.team) {
       outputService.error(t('errors.teamRequired'));
       return false;
@@ -98,7 +100,7 @@ interface CommandContext {
   parentOption: ParentOptionType;
   parentFlag: string;
   parentDesc: string;
-  checkParent: (opts: ParentContextOptions) => boolean;
+  checkParent: (opts: ParentContextOptions) => Promise<boolean>;
   nameField: string;
   resourceName: string;
   resourceNamePlural: string;
@@ -120,7 +122,7 @@ function setupListCommand(
     try {
       await requireAuthForMode();
       const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
-      if (!ctx.checkParent(opts)) process.exit(1);
+      if (!(await ctx.checkParent(opts))) process.exit(1);
       const params = buildListParams(ctx.hasParent, ctx.parentOption, opts);
       const response = await withSpinner(
         `Fetching ${ctx.resourceNamePlural}...`,
@@ -157,7 +159,7 @@ function setupCreateCommand(
       await requireAuthForMode();
       const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
 
-      if (!ctx.checkParent(opts)) process.exit(1);
+      if (!(await ctx.checkParent(opts))) process.exit(1);
 
       const createCheck = checkRequiredCreateOptions(createOptions, opts);
       if (!createCheck.valid) {
@@ -198,7 +200,7 @@ function setupRenameCommand(
     try {
       await requireAuthForMode();
       const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
-      if (!ctx.checkParent(opts)) process.exit(1);
+      if (!(await ctx.checkParent(opts))) process.exit(1);
 
       const currentField = `current${capitalizeFirst(ctx.nameField)}`;
       const newField = `new${capitalizeFirst(ctx.nameField)}`;
@@ -231,7 +233,7 @@ function setupDeleteCommand(
     try {
       await requireAuthForMode();
       const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
-      if (!ctx.checkParent(opts)) process.exit(1);
+      if (!(await ctx.checkParent(opts))) process.exit(1);
       if (!options.force) {
         const { askConfirm } = await import('./prompt.js');
         const confirm = await askConfirm(
@@ -271,7 +273,7 @@ function setupVaultGetCommand(
     try {
       await requireAuthForMode();
       const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
-      if (!ctx.checkParent(opts)) process.exit(1);
+      if (!(await ctx.checkParent(opts))) process.exit(1);
       const params: Record<string, unknown> = { [ctx.nameField]: resourceItemName };
       addParentToPayload(params, ctx.hasParent, ctx.parentOption, opts);
 
@@ -316,7 +318,7 @@ function setupVaultUpdateCommand(
       await requireAuthForMode();
       const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
 
-      if (!ctx.checkParent(opts)) {
+      if (!(await ctx.checkParent(opts))) {
         process.exit(1);
       }
 
@@ -443,7 +445,7 @@ export function addStatusCommand(
         await requireAuthForMode();
         const opts = await contextService.applyDefaults(options);
 
-        if (!checkParent(opts)) {
+        if (!(await checkParent(opts))) {
           process.exit(1);
         }
 
@@ -498,7 +500,7 @@ export function addAssignCommand(
         await requireAuthForMode();
         const opts = await contextService.applyDefaults(options);
 
-        if (!checkParent(opts)) {
+        if (!(await checkParent(opts))) {
           process.exit(1);
         }
 

@@ -1,7 +1,7 @@
 ---
 title: Webアプリケーション
 description: Rediaccを使用したWebアプリケーションのアーキテクチャと展開について理解する
-category: コアコンセプト
+category: Reference
 order: 1
 language: ja
 ---

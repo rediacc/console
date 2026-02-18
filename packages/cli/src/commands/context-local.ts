@@ -72,6 +72,7 @@ export function registerLocalCommands(context: Command, program: Command): void 
     .description(t('commands.context.createLocal.description'))
     .requiredOption('--ssh-key <path>', t('options.sshKey'))
     .option('--renet-path <path>', t('options.renetPath'))
+    .option('--master-password <password>', t('commands.context.createLocal.optionMasterPassword'))
     .action(async (name, options) => {
       try {
         const sshKeyPath = options.sshKey.startsWith('~')
@@ -84,10 +85,23 @@ export function registerLocalCommands(context: Command, program: Command): void 
           throw new ValidationError(t('errors.sshKeyNotFound', { path: sshKeyPath }));
         }
 
+        const masterPassword: string | undefined = options.masterPassword;
+        let encryptedMasterPassword: string | undefined;
+        if (masterPassword) {
+          encryptedMasterPassword = await nodeCryptoProvider.encrypt(
+            masterPassword,
+            masterPassword
+          );
+        }
+
         await contextService.createLocal(name, options.sshKey, {
           renetPath: options.renetPath,
+          masterPassword: encryptedMasterPassword,
         });
         outputService.success(t('commands.context.createLocal.success', { name }));
+        if (masterPassword) {
+          outputService.info(t('commands.context.createLocal.encryptionEnabled'));
+        }
         outputService.info(t('commands.context.createLocal.nextStep'));
       } catch (error) {
         handleError(error);

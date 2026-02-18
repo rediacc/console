@@ -1,7 +1,7 @@
 ---
 title: "CLI-приложение"
 description: "Полное руководство по использованию интерфейса командной строки Rediacc для управления платформой"
-category: "Основные концепции"
+category: "Reference"
 order: 2
 language: ru
 generated: true
@@ -303,6 +303,7 @@ rdc context create-local <name> [options]
 |------|-------------|----------|---------|
 | `--ssh-key <path>` | {{t:cli.options.sshKey}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--renet-path <path>` | {{t:cli.options.renetPath}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--master-password <password>` | {{t:cli.commands.context.createLocal.optionMasterPassword}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ### 2.13 add-machine
@@ -1285,7 +1286,26 @@ rdc repo up <name> [options]
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 11.4 down
+### 11.4 up-all
+
+{{t:cli.commands.repo.upAll.description}}
+
+```bash
+rdc repo up-all [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--include-forks` | {{t:cli.commands.repo.upAll.includeForksOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--mount-only` | {{t:cli.commands.repo.upAll.mountOnlyOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--dry-run` | {{t:cli.commands.repo.upAll.dryRunOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--parallel` | {{t:cli.commands.repo.upAll.parallelOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--concurrency <n>` | {{t:cli.commands.repo.upAll.concurrencyOption}} | {{t:cli.docs.optionLabels.no}} | `3` |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+### 11.5 down
 
 {{t:cli.commands.repo.down.description}}
 
@@ -1301,7 +1321,7 @@ rdc repo down <name> [options]
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 11.5 status
+### 11.6 status
 
 {{t:cli.commands.repo.status.description}}
 
@@ -1315,7 +1335,7 @@ rdc repo status <name> [options]
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 11.6 list
+### 11.7 list
 
 {{t:cli.commands.repo.list.description}}
 
@@ -1329,7 +1349,7 @@ rdc repo list [options]
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 11.7 create
+### 11.8 create
 
 {{t:cli.commands.repo.create.description}}
 
@@ -1344,7 +1364,7 @@ rdc repo create <name> [options]
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 11.8 delete
+### 11.9 delete
 
 {{t:cli.commands.repo.delete.description}}
 
@@ -1358,7 +1378,7 @@ rdc repo delete <name> [options]
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 11.9 fork
+### 11.10 fork
 
 {{t:cli.commands.repo.fork.description}}
 
@@ -1373,7 +1393,7 @@ rdc repo fork <parent> [options]
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 11.10 resize
+### 11.11 resize
 
 {{t:cli.commands.repo.resize.description}}
 
@@ -1388,7 +1408,7 @@ rdc repo resize <name> [options]
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 11.11 expand
+### 11.12 expand
 
 {{t:cli.commands.repo.expand.description}}
 
@@ -1403,7 +1423,7 @@ rdc repo expand <name> [options]
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 11.12 validate
+### 11.13 validate
 
 {{t:cli.commands.repo.validate.description}}
 
@@ -1417,7 +1437,81 @@ rdc repo validate <name> [options]
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 11.13 ownership
+### 11.14 autostart
+
+{{t:cli.commands.repo.autostart.description}}
+
+#### enable
+
+{{t:cli.commands.repo.autostart.enable.description}}
+
+```bash
+rdc repo autostart enable <name> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+#### disable
+
+{{t:cli.commands.repo.autostart.disable.description}}
+
+```bash
+rdc repo autostart disable <name> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+#### enable-all
+
+{{t:cli.commands.repo.autostart.enableAll.description}}
+
+```bash
+rdc repo autostart enable-all [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+#### disable-all
+
+{{t:cli.commands.repo.autostart.disableAll.description}}
+
+```bash
+rdc repo autostart disable-all [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+#### list
+
+{{t:cli.commands.repo.autostart.list.description}}
+
+```bash
+rdc repo autostart list [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+### 11.15 ownership
 
 {{t:cli.commands.repo.ownership.description}}
 
@@ -1432,7 +1526,7 @@ rdc repo ownership <name> [options]
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 11.14 template
+### 11.16 template
 
 {{t:cli.commands.repo.template.description}}
 
@@ -2442,6 +2536,8 @@ rdc update [options]
 |------|-------------|----------|---------|
 | `--force` | {{t:cli.commands.update.force}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--check-only` | {{t:cli.commands.update.checkOnly}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--rollback` | {{t:cli.commands.update.rollback}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--status` | {{t:cli.commands.update.statusDescription}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ---

@@ -8,7 +8,7 @@ on:
   merge_group:
     types: [checks_requested]
   schedule:
-    - cron: '0 3 * * *'  # Nightly at 3:00 UTC
+    - cron: '0 1 * * *'  # Nightly at 1:00 UTC (2:00 CET)
   workflow_dispatch:
     inputs:
       browsers:
@@ -77,7 +77,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,middleware,renet,license-server,sql
+          repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
 
       # PR Validation (PR events only)
       - name: Validate PR
@@ -205,7 +205,7 @@ jobs:
       - name: Trigger Gemini review
         run: .ci/scripts/quality/trigger-gemini-review.sh
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_REPOSITORY: ${{ github.repository }}
       - name: Wait for Gemini review
@@ -367,7 +367,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,middleware,renet,license-server,sql
+          repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
 
       - name: Checkout with Submodules
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6

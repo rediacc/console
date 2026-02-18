@@ -125,9 +125,9 @@
     }
   },
   "hero": {
-    "title": "One Database.",
-    "titleHighlight": " Infinite Copies.",
-    "subtitle": "Zero-copy clones that share storage. Dev, test, backup, and recovery — all from one source.",
+    "title": "Clone Production.",
+    "titleHighlight": " Break Nothing.",
+    "subtitle": "Your entire production stack, cloned instantly. Databases included.",
     "cta": {
       "contactUs": "Create Account",
       "learnMore": "Learn More",
@@ -313,7 +313,7 @@
   "pages": {
     "home": {
       "meta": {
-        "title": "Rediacc - Infrastructure Automation Platform",
+        "title": "Rediacc — Clone Production. Break Nothing.",
         "description": "Transform development with Rediacc's infrastructure automation. Get instant environments, disaster recovery & AI-safe operations.",
         "keywords": "infrastructure automation, development environments, disaster recovery, DevOps automation, CI/CD pipeline, cloud infrastructure, development operations, Model Context Protocol, AI-safe infrastructure"
       },

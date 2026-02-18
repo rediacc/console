@@ -30,13 +30,12 @@
         "activated": "تم تفعيل الحساب",
         "activating": "جاري تفعيل الحساب...",
         "description": "تفعيل الحساب برمز التحقق",
-        "success": "تم تفعيل الحساب! يمكنك الآن تسجيل الدخول باستخدام: rdc login"
+        "success": "تم تفعيل الحساب! يمكنك الآن تسجيل الدخول باستخدام: rdc auth login"
       },
       "description": "أوامر المصادقة",
       "login": {
         "authenticating": "جاري المصادقة...",
         "description": "المصادقة باستخدام Rediacc",
-        "shortcut": "المصادقة باستخدام Rediacc (اختصار لـ: auth login)",
         "success": "تم تسجيل الدخول بنجاح! تم الحفظ إلى السياق \"{{context}}\"",
         "tfaPrompt": "أدخل رمز المصادقة الثنائية:",
         "tfaRequired": "المصادقة الثنائية مطلوبة",
@@ -46,7 +45,6 @@
       "logout": {
         "description": "مسح بيانات المصادقة المحفوظة",
         "loggingOut": "جاري تسجيل الخروج...",
-        "shortcut": "مسح بيانات المصادقة المحفوظة (اختصار لـ: auth logout)",
         "success": "تم تسجيل الخروج بنجاح"
       },
       "register": {
@@ -59,7 +57,7 @@
       "status": {
         "authenticated": "تم المصادقة باسم: {{email}}",
         "description": "التحقق من حالة المصادقة الحالية",
-        "notAuthenticated": "لم تتم المصادقة. قم بتشغيل: rdc login"
+        "notAuthenticated": "لم تتم المصادقة. قم بتشغيل: rdc auth login"
       },
       "tfa": {
         "description": "إدارة المصادقة الثنائية",
@@ -349,7 +347,9 @@
       },
       "createLocal": {
         "description": "إنشاء سياق محلي جديد للعمل بدون middleware",
+        "encryptionEnabled": "تم تمكين التشفير في حالة السكون. سيتم تشفير الموارد في config.json.",
         "nextStep": "أضف الآلات باستخدام: rdc context add-machine <name> --ip <ip> --user <user>",
+        "optionMasterPassword": "تشفير الموارد بكلمة مرور رئيسية",
         "success": "تم إنشاء السياق المحلي \"{{name}}\""
       },
       "createS3": {
@@ -872,6 +872,39 @@
       }
     },
     "repo": {
+      "autostart": {
+        "description": "إدارة التشغيل التلقائي للمستودعات عند الإقلاع",
+        "disable": {
+          "completed": "تم تعطيل التشغيل التلقائي",
+          "description": "تعطيل التشغيل التلقائي لمستودع",
+          "failed": "فشل تعطيل التشغيل التلقائي",
+          "starting": "جارٍ تعطيل التشغيل التلقائي لـ \"{{repository}}\" على \"{{machine}}\"..."
+        },
+        "disableAll": {
+          "completed": "تم تعطيل التشغيل التلقائي لجميع المستودعات",
+          "description": "تعطيل التشغيل التلقائي لجميع المستودعات",
+          "failed": "فشل تعطيل التشغيل التلقائي لجميع المستودعات",
+          "starting": "جارٍ تعطيل التشغيل التلقائي لجميع المستودعات على \"{{machine}}\"..."
+        },
+        "enable": {
+          "completed": "تم تمكين التشغيل التلقائي",
+          "description": "تمكين التشغيل التلقائي لمستودع",
+          "failed": "فشل تمكين التشغيل التلقائي",
+          "starting": "جارٍ تمكين التشغيل التلقائي لـ \"{{repository}}\" على \"{{machine}}\"..."
+        },
+        "enableAll": {
+          "completed": "تم تمكين التشغيل التلقائي لجميع المستودعات",
+          "description": "تمكين التشغيل التلقائي لجميع المستودعات",
+          "failed": "فشل تمكين التشغيل التلقائي لجميع المستودعات",
+          "starting": "جارٍ تمكين التشغيل التلقائي لجميع المستودعات على \"{{machine}}\"..."
+        },
+        "list": {
+          "completed": "تم استرداد قائمة التشغيل التلقائي",
+          "description": "عرض المستودعات ذات التشغيل التلقائي المفعّل",
+          "failed": "فشل سرد مستودعات التشغيل التلقائي",
+          "starting": "جارٍ سرد مستودعات التشغيل التلقائي على \"{{machine}}\"..."
+        }
+      },
       "create": {
         "alreadyExists": "المستودع \"{{name}}\" موجود بالفعل في السياق",
         "completed": "تم إنشاء المستودع",
@@ -974,6 +1007,17 @@
         "mountOption": "تثبيت المستودع أولاً",
         "prepOnlyOption": "تشغيل خطوة التحضير فقط",
         "starting": "جارٍ بدء الخدمات لـ \"{{repository}}\" على \"{{machine}}\"..."
+      },
+      "upAll": {
+        "completed": "تم بدء جميع المستودعات",
+        "concurrencyOption": "الحد الأقصى للمستودعات المتزامنة (افتراضي: 3)",
+        "description": "بدء جميع خدمات المستودعات على الجهاز",
+        "dryRunOption": "عرض ما سيتم تنفيذه بدون تنفيذ فعلي",
+        "failed": "فشلت عملية بدء الكل",
+        "includeForksOption": "تشغيل/بدء المستودعات المتشعبة أيضًا",
+        "mountOnlyOption": "التحميل فقط، بدون بدء الخدمات",
+        "parallelOption": "بدء المستودعات بشكل متزامن",
+        "starting": "جارٍ بدء جميع المستودعات على \"{{machine}}\"..."
       },
       "validate": {
         "completed": "اكتمل التحقق",
@@ -1339,7 +1383,7 @@
       }
     },
     "frontmatter": {
-      "category": "المفاهيم الأساسية",
+      "category": "Reference",
       "description": "دليل شامل لاستخدام واجهة سطر أوامر Rediacc لإدارة المنصة",
       "title": "تطبيق سطر الأوامر"
     },
@@ -1445,7 +1489,7 @@
     "activationFailed": "فشل التفعيل",
     "affectedChildClones": ". النسخ المتأثرة: {{clones}}. احذف أو ارقِ النسخ الفرعية أولاً.",
     "authFailed": "فشلت المصادقة",
-    "authRequired": "المصادقة مطلوبة. قم بتشغيل: rdc login",
+    "authRequired": "المصادقة مطلوبة. قم بتشغيل: rdc auth login",
     "bridgeRequired": "اسم الجسر مطلوب. استخدم --bridge أو اضبط السياق.",
     "cannotDeleteGrandRepo": "لا يمكن حذف المستودع الرئيسي: {{reason}}",
     "cannotPromote": "لا يمكن الترقية: {{reason}}",
@@ -1470,7 +1514,7 @@
     "machineRequiredLocal": "اسم الآلة مطلوب. استخدم --machine أو اضبط الافتراضي باستخدام: rdc context set machine <name>",
     "networkError": "خطأ الشبكة: {{message}}",
     "noActiveContext": "لا يوجد سياق نشط. قم بإنشاء أو تحديد سياق أولاً.",
-    "notAuthenticated": "لم تتم المصادقة. قم بتشغيل: rdc login",
+    "notAuthenticated": "لم تتم المصادقة. قم بتشغيل: rdc auth login",
     "passwordsMismatch": "كلمات المرور غير متطابقة",
     "permissionDenied": "تم رفض الإذن",
     "poolNotFound": "تجمع Ceph \"{{name}}\" غير موجود",
@@ -1546,6 +1590,7 @@
     "email": "عنوان البريد الإلكتروني",
     "endpoint": "عنوان URL لنقطة نهاية API",
     "excludePatterns": "الأنماط التي يتم استبعادها من المزامنة",
+    "experimental": "تمكين أوامر السحابة التجريبية",
     "expires": "انتهاء الصلاحية بالساعات (1-720)",
     "external": "فرض تشغيل في نافذة طرفية خارجية",
     "extraMachine": "جهاز إضافي لعمليات الأجهزة المتعددة (الاسم:عنوان_IP:المستخدم)",
@@ -1604,6 +1649,7 @@
     "searchRepos": "تصفية المستودعات حسب الاسم",
     "sessionName": "اسم الجلسة",
     "skipEnvSetup": "تخطي إعداد البيئة البعيدة",
+    "skipRouterRestart": "تخطي إعادة تشغيل خادم التوجيه بعد تحديث الملف التنفيذي",
     "snapshot": "اسم لقطة RBD",
     "sortByField": "الترتيب حسب الحقل",
     "sortDesc": "الفرز بترتيب تنازلي",

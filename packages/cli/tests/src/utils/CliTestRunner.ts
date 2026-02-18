@@ -154,6 +154,8 @@ export class CliTestRunner {
           this.config.credentials?.password ??
           process.env.CLI_MASTER_PASSWORD ??
           '',
+        // Enable experimental commands (cloud-only commands are experimental)
+        REDIACC_EXPERIMENTAL: '1',
         // Force no color for easier parsing
         NO_COLOR: '1',
         FORCE_COLOR: '0',
@@ -192,11 +194,11 @@ export class CliTestRunner {
   async login(email?: string, password?: string): Promise<CliResult> {
     const e = email ?? this.config.credentials?.email ?? '';
     const p = password ?? this.config.credentials?.password ?? '';
-    return this.run(['login', '--endpoint', this.config.apiUrl, '-e', e, '-p', p]);
+    return this.run(['auth', 'login', '--endpoint', this.config.apiUrl, '-e', e, '-p', p]);
   }
 
   async logout(): Promise<CliResult> {
-    return this.run(['logout']);
+    return this.run(['auth', 'logout']);
   }
 
   async register(org: string, email: string, password: string, plan?: string): Promise<CliResult> {

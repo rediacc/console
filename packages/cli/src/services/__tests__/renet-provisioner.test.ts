@@ -108,3 +108,44 @@ describe('downgrade detection', () => {
     expect(wouldDowngrade('0.4.91', '0.4.90')).toBe(false);
   });
 });
+
+// ============================================
+// Service Restart Decision Tests
+// ============================================
+
+/**
+ * Mirrors the restart decision logic in RenetProvisionerService.provision().
+ * After a binary upload, services should be restarted unless explicitly opted out.
+ */
+function shouldRestartServices(
+  action: 'uploaded' | 'verified' | 'failed' | 'version_rejected',
+  restartServices?: boolean
+): boolean {
+  return action === 'uploaded' && restartServices !== false;
+}
+
+describe('service restart decision', () => {
+  it('should restart after upload by default', () => {
+    expect(shouldRestartServices('uploaded')).toBe(true);
+  });
+
+  it('should restart after upload when explicitly true', () => {
+    expect(shouldRestartServices('uploaded', true)).toBe(true);
+  });
+
+  it('should not restart after upload when explicitly false', () => {
+    expect(shouldRestartServices('uploaded', false)).toBe(false);
+  });
+
+  it('should not restart when binary was verified (no change)', () => {
+    expect(shouldRestartServices('verified')).toBe(false);
+  });
+
+  it('should not restart on failure', () => {
+    expect(shouldRestartServices('failed')).toBe(false);
+  });
+
+  it('should not restart on version rejected', () => {
+    expect(shouldRestartServices('version_rejected')).toBe(false);
+  });
+});
