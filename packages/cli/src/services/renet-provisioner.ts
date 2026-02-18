@@ -108,17 +108,8 @@ class RenetProvisionerService {
       }
 
       // Version guard: prevent accidental downgrade unless explicitly allowed
-      if (!process.env.RDC_ALLOW_DOWNGRADE) {
-        const remoteVersion = await this.getRemoteVersion(sftp);
-        if (remoteVersion && compareVersions(VERSION, remoteVersion) < 0) {
-          return {
-            success: false,
-            action: 'version_rejected',
-            arch,
-            error: `Remote has renet v${remoteVersion} but this CLI bundles v${VERSION}. Run \`rdc update\` to upgrade your CLI, or set RDC_ALLOW_DOWNGRADE=1 to force.`,
-          };
-        }
-      }
+      const rejection = await this.checkVersionGuard(sftp, arch);
+      if (rejection) return rejection;
 
       // Stage and install: SFTP upload to /tmp, then atomic mv to /usr/bin/renet.
       // Uses mv (not cp) so the replacement works even when the binary is running
@@ -150,6 +141,28 @@ class RenetProvisionerService {
     } finally {
       sftp.close();
     }
+  }
+
+  /**
+   * Check version guard: prevent accidental downgrade unless RDC_ALLOW_DOWNGRADE is set.
+   */
+  private async checkVersionGuard(
+    sftp: SFTPClient,
+    arch: LinuxArch
+  ): Promise<ProvisionResult | null> {
+    if (process.env.RDC_ALLOW_DOWNGRADE) return null;
+
+    const remoteVersion = await this.getRemoteVersion(sftp);
+    if (remoteVersion && compareVersions(VERSION, remoteVersion) < 0) {
+      return {
+        success: false,
+        action: 'version_rejected',
+        arch,
+        error: `Remote has renet v${remoteVersion} but this CLI bundles v${VERSION}. Run \`rdc update\` to upgrade your CLI, or set RDC_ALLOW_DOWNGRADE=1 to force.`,
+      };
+    }
+
+    return null;
   }
 
   /**

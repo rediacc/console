@@ -88,7 +88,7 @@ export async function provisionRenetToRemote(
   }
 
   // --skip-router-restart flag or RDC_SKIP_ROUTER_RESTART env var
-  const skipRestart = options.skipRouterRestart || !!process.env.RDC_SKIP_ROUTER_RESTART;
+  const skipRestart = options.skipRouterRestart ?? !!process.env.RDC_SKIP_ROUTER_RESTART;
   const restartServices = skipRestart ? false : options.restartServices;
 
   const result = await renetProvisioner.provision(
