@@ -33,6 +33,8 @@ export interface RenetSpawnOptions {
   json?: boolean;
   /** Timeout in milliseconds (default: 10 minutes) */
   timeout?: number;
+  /** Skip restarting the rediacc-router service after binary update */
+  skipRouterRestart?: boolean;
 }
 
 /**
@@ -76,7 +78,7 @@ export async function provisionRenetToRemote(
   config: { renetPath: string },
   machine: MachineConfig,
   sshPrivateKey: string,
-  options: Pick<RenetSpawnOptions, 'debug'>
+  options: Pick<RenetSpawnOptions, 'debug' | 'skipRouterRestart'> & { restartServices?: boolean }
 ): Promise<void> {
   let localBinaryPath: string | undefined;
   if (!isSEA()) {
@@ -85,6 +87,10 @@ export async function provisionRenetToRemote(
       : execSync(`which ${config.renetPath}`, { encoding: 'utf-8' }).trim();
   }
 
+  // --skip-router-restart flag or RDC_SKIP_ROUTER_RESTART env var
+  const skipRestart = options.skipRouterRestart || !!process.env.RDC_SKIP_ROUTER_RESTART;
+  const restartServices = skipRestart ? false : options.restartServices;
+
   const result = await renetProvisioner.provision(
     {
       host: machine.ip,
@@ -92,15 +98,20 @@ export async function provisionRenetToRemote(
       username: machine.user,
       privateKey: sshPrivateKey,
     },
-    { localBinaryPath }
+    { localBinaryPath, restartServices }
   );
 
   if (!result.success) {
     throw new Error(result.error ?? PROCESS_DEFAULTS.RENET_PROVISION_ERROR);
   }
 
-  if (result.action === 'uploaded' && options.debug) {
-    outputService.info(`[local] Provisioned renet (${result.arch}) to ${machine.ip}`);
+  if (result.action === 'uploaded') {
+    if (options.debug) {
+      outputService.info(`[local] Provisioned renet (${result.arch}) to ${machine.ip}`);
+    }
+    if (result.servicesRestarted) {
+      outputService.info(`Restarted rediacc-router on ${machine.ip}`);
+    }
   }
 }
 

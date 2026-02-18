@@ -24,6 +24,9 @@ const STAGING_PATH = '/tmp/.rdc-staging-renet';
 /** Cache TTL in milliseconds (1 hour) */
 const CACHE_TTL_MS = 60 * 60 * 1000;
 
+/** Systemd service name for the route server */
+const ROUTER_SERVICE = 'rediacc-router';
+
 /** Result of a provisioning operation */
 export interface ProvisionResult {
   /** Whether provisioning succeeded */
@@ -34,6 +37,8 @@ export interface ProvisionResult {
   arch?: LinuxArch;
   /** Error message if failed */
   error?: string;
+  /** Whether running services were restarted after binary update */
+  servicesRestarted?: boolean;
 }
 
 /** Cache entry for a provisioned host */
@@ -71,6 +76,8 @@ class RenetProvisionerService {
     config: SFTPClientConfig,
     options?: {
       localBinaryPath?: string;
+      /** Restart running services (e.g., rediacc-router) after binary update. Default: true. */
+      restartServices?: boolean;
     }
   ): Promise<ProvisionResult> {
     const sftp = new SFTPClient(config);
@@ -122,8 +129,17 @@ class RenetProvisionerService {
         `sudo chmod 755 ${STAGING_PATH} && sudo mv -f ${STAGING_PATH} ${REMOTE_INSTALL_PATH}`
       );
 
+      // Restart the route server so it picks up the new binary.
+      // Safe: the router is only a config provider (not in the data path).
+      // Traefik keeps serving with last-known config during the ~1-2s restart.
+      // Best-effort: don't fail provisioning if restart fails.
+      let servicesRestarted = false;
+      if (options?.restartServices !== false) {
+        servicesRestarted = await this.restartRunningServices(sftp);
+      }
+
       this.cache.set(cacheKey, { hash: localHash, provisionedAt: Date.now() });
-      return { success: true, action: 'uploaded', arch };
+      return { success: true, action: 'uploaded', arch, servicesRestarted };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       return {
@@ -215,6 +231,23 @@ class RenetProvisionerService {
     } catch {
       // Binary missing, corrupted, or can't execute — allow overwrite
       return null;
+    }
+  }
+
+  /**
+   * Restart services that use the renet binary, if they are currently running.
+   * Returns true if any service was restarted.
+   */
+  private async restartRunningServices(sftp: SFTPClient): Promise<boolean> {
+    try {
+      // Only restart if the service is active — is-active returns non-zero otherwise,
+      // so the && short-circuits and || true ensures the command always succeeds.
+      const output = await sftp.exec(
+        `sudo systemctl is-active --quiet ${ROUTER_SERVICE} && sudo systemctl restart ${ROUTER_SERVICE} && echo RESTARTED || true`
+      );
+      return output.trim().includes('RESTARTED');
+    } catch {
+      return false;
     }
   }
 

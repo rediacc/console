@@ -43,6 +43,8 @@ interface LocalExecuteOptions {
   debug?: boolean;
   /** Output as JSON */
   json?: boolean;
+  /** Skip restarting the rediacc-router service after binary update */
+  skipRouterRestart?: boolean;
 }
 
 /** Result of local execution */

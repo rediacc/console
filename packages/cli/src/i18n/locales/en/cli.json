@@ -1542,7 +1542,8 @@
     "protocolToken": "Authentication token",
     "protocolAction": "Action ({{actions}})",
     "protocolParams": "Additional parameters",
-    "experimental": "Enable experimental cloud commands"
+    "experimental": "Enable experimental cloud commands",
+    "skipRouterRestart": "Skip restarting the route server after binary update"
   },
   "prompts": {
     "apiUrl": "API URL:",

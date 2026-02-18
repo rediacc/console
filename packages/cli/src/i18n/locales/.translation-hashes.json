@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1190
+    "keyCount": 1191
   },
   "hashes": {
     "cli.description": "8c564b05",
@@ -1136,6 +1136,7 @@
     "options.searchRepos": "7fac9e62",
     "options.sessionName": "fbe1d2ca",
     "options.skipEnvSetup": "0ce00563",
+    "options.skipRouterRestart": "ca7aea08",
     "options.snapshot": "4b7cf24b",
     "options.sortByField": "4baa277a",
     "options.sortDesc": "cfc55536",

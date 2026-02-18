@@ -1649,6 +1649,7 @@
     "searchRepos": "按名称过滤仓库",
     "sessionName": "会话名称",
     "skipEnvSetup": "跳过远程环境设置",
+    "skipRouterRestart": "二进制更新后跳过重启路由服务器",
     "snapshot": "RBD 快照名称",
     "sortByField": "按字段排序",
     "sortDesc": "按降序排序",

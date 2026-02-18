@@ -63,3 +63,17 @@ To rollback to the previous version after an update:
 ```bash
 rdc update rollback
 ```
+
+### Remote Binary Updates
+
+When you run commands against a remote machine, the CLI automatically provisions the matching `renet` binary. If the binary is updated, the route server (`rediacc-router`) is restarted automatically so it picks up the new version.
+
+The restart is transparent and causes **no downtime**:
+
+- The route server restarts in ~1–2 seconds.
+- During that window, Traefik continues serving traffic using its last known routing configuration. No routes are dropped.
+- Traefik picks up the new configuration on its next poll cycle (within 5 seconds).
+- **Existing client connections (HTTP, TCP, UDP) are not affected.** The route server is a configuration provider — it is not in the data path. Traefik handles all traffic directly.
+- Your application containers are not touched — only the system-level route server process is restarted.
+
+To skip the automatic restart, pass `--skip-router-restart` to any command, or set the `RDC_SKIP_ROUTER_RESTART=1` environment variable.

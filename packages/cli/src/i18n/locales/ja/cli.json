@@ -1649,6 +1649,7 @@
     "searchRepos": "リポジトリ名でフィルター",
     "sessionName": "セッション名",
     "skipEnvSetup": "リモート環境セットアップをスキップする",
+    "skipRouterRestart": "バイナリ更新後のルートサーバーの再起動をスキップする",
     "snapshot": "RBD スナップショット名",
     "sortByField": "フィールドで並び替え",
     "sortDesc": "降順でソート",

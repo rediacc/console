@@ -20,7 +20,7 @@ async function executeRepoFunction(
   repoName: string,
   machineName: string,
   params: Record<string, unknown>,
-  options: { debug?: boolean },
+  options: { debug?: boolean; skipRouterRestart?: boolean },
   messages: { starting: string; completed: string; failed: string }
 ): Promise<void> {
   // Validate repository exists in context
@@ -42,6 +42,7 @@ async function executeRepoFunction(
     machineName,
     params: { repository: repoName, ...params },
     debug: options.debug,
+    skipRouterRestart: options.skipRouterRestart,
   });
 
   if (result.success) {
@@ -62,7 +63,8 @@ export function registerRepoCommands(program: Command): void {
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .requiredOption('--size <size>', t('commands.repo.create.sizeOption'))
     .option('--debug', t('options.debug'))
-    .action(async (name: string, options: { machine: string; size: string; debug?: boolean }) => {
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .action(async (name: string, options: { machine: string; size: string; debug?: boolean; skipRouterRestart?: boolean }) => {
       try {
         // Validate doesn't already exist
         const existing = await contextService.getLocalRepository(name);
@@ -104,6 +106,7 @@ export function registerRepoCommands(program: Command): void {
           machineName: options.machine,
           params: { repository: name, size: options.size },
           debug: options.debug,
+          skipRouterRestart: options.skipRouterRestart,
         });
 
         if (result.success) {
@@ -132,7 +135,8 @@ export function registerRepoCommands(program: Command): void {
     .description(t('commands.repo.delete.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
-    .action(async (name: string, options: { machine: string; debug?: boolean }) => {
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .action(async (name: string, options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }) => {
       try {
         // Validate exists
         const repoConfig = await contextService.getLocalRepository(name);
@@ -151,6 +155,7 @@ export function registerRepoCommands(program: Command): void {
           machineName: options.machine,
           params: { repository: name },
           debug: options.debug,
+          skipRouterRestart: options.skipRouterRestart,
         });
 
         if (result.success) {
@@ -173,8 +178,9 @@ export function registerRepoCommands(program: Command): void {
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--checkpoint', t('commands.repo.mount.checkpointOption'))
     .option('--debug', t('options.debug'))
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
-      async (name: string, options: { machine: string; checkpoint?: boolean; debug?: boolean }) => {
+      async (name: string, options: { machine: string; checkpoint?: boolean; debug?: boolean; skipRouterRestart?: boolean }) => {
         try {
           const params: Record<string, unknown> = {};
           if (options.checkpoint) params.checkpoint = true;
@@ -200,8 +206,9 @@ export function registerRepoCommands(program: Command): void {
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--checkpoint', t('commands.repo.unmount.checkpointOption'))
     .option('--debug', t('options.debug'))
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
-      async (name: string, options: { machine: string; checkpoint?: boolean; debug?: boolean }) => {
+      async (name: string, options: { machine: string; checkpoint?: boolean; debug?: boolean; skipRouterRestart?: boolean }) => {
         try {
           const params: Record<string, unknown> = {};
           if (options.checkpoint) params.checkpoint = true;
@@ -229,6 +236,7 @@ export function registerRepoCommands(program: Command): void {
     .option('--prep-only', t('commands.repo.up.prepOnlyOption'))
     .option('--grand <name>', t('commands.repo.up.grandOption'))
     .option('--debug', t('options.debug'))
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
       async (
         name: string,
@@ -238,6 +246,7 @@ export function registerRepoCommands(program: Command): void {
           prepOnly?: boolean;
           grand?: string;
           debug?: boolean;
+          skipRouterRestart?: boolean;
         }
       ) => {
         try {
@@ -276,6 +285,7 @@ export function registerRepoCommands(program: Command): void {
     .option('--parallel', t('commands.repo.upAll.parallelOption'))
     .option('--concurrency <n>', t('commands.repo.upAll.concurrencyOption'), '3')
     .option('--debug', t('options.debug'))
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
       async (options: {
         machine: string;
@@ -285,6 +295,7 @@ export function registerRepoCommands(program: Command): void {
         parallel?: boolean;
         concurrency?: string;
         debug?: boolean;
+        skipRouterRestart?: boolean;
       }) => {
         try {
           const params: Record<string, unknown> = {};
@@ -303,6 +314,7 @@ export function registerRepoCommands(program: Command): void {
             machineName: options.machine,
             params,
             debug: options.debug,
+            skipRouterRestart: options.skipRouterRestart,
           });
 
           if (result.success) {
@@ -325,6 +337,7 @@ export function registerRepoCommands(program: Command): void {
     .option('--unmount', t('commands.repo.down.unmountOption'))
     .option('--grand <name>', t('commands.repo.down.grandOption'))
     .option('--debug', t('options.debug'))
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
       async (
         name: string,
@@ -333,6 +346,7 @@ export function registerRepoCommands(program: Command): void {
           unmount?: boolean;
           grand?: string;
           debug?: boolean;
+          skipRouterRestart?: boolean;
         }
       ) => {
         try {
@@ -365,7 +379,8 @@ export function registerRepoCommands(program: Command): void {
     .description(t('commands.repo.status.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
-    .action(async (name: string, options: { machine: string; debug?: boolean }) => {
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .action(async (name: string, options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }) => {
       try {
         await executeRepoFunction('repository_status', name, options.machine, {}, options, {
           starting: t('commands.repo.status.starting', {
@@ -386,7 +401,8 @@ export function registerRepoCommands(program: Command): void {
     .description(t('commands.repo.list.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
-    .action(async (options: { machine: string; debug?: boolean }) => {
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .action(async (options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }) => {
       try {
         outputService.info(t('commands.repo.list.starting', { machine: options.machine }));
 
@@ -395,6 +411,7 @@ export function registerRepoCommands(program: Command): void {
           machineName: options.machine,
           params: {},
           debug: options.debug,
+          skipRouterRestart: options.skipRouterRestart,
         });
 
         if (result.success) {

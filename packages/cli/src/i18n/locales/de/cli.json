@@ -1649,6 +1649,7 @@
     "searchRepos": "Repositories nach Name filtern",
     "sessionName": "Sitzungsname",
     "skipEnvSetup": "Remote-Umgebungs-Setup überspringen",
+    "skipRouterRestart": "Neustart des Route-Servers nach Binary-Update überspringen",
     "snapshot": "RBD-Snapshot-Name",
     "sortByField": "Sortieren nach Feld",
     "sortDesc": "In absteigender Reihenfolge sortieren",

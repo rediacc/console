@@ -33,6 +33,8 @@ Internet → Traefik (ports 80/443/TCP/UDP)
 
 When you add the right labels to a container and start it with `renet compose`, it automatically becomes routable — no manual proxy configuration needed.
 
+> The route server binary is kept in sync with your CLI version. When the CLI updates the renet binary on a machine, the route server is automatically restarted (~1–2 seconds). This causes no downtime — Traefik continues serving traffic with its last known configuration during the restart and picks up the new config on the next poll. Existing client connections are not affected. Your application containers are not touched.
+
 ## Docker Labels
 
 Routing is controlled by Docker container labels. There are two tiers:
@@ -315,6 +317,7 @@ Shows TCP and UDP port mappings for dynamically allocated ports.
 | Certificate not issued | DNS not pointing to server, or invalid Cloudflare token | Verify DNS resolution; check Cloudflare API token permissions |
 | 502 Bad Gateway | Application not listening on the declared port | Verify the app binds to its `{SERVICE}_IP` and the port matches `loadbalancer.server.port` |
 | TCP port not reachable | Port not registered in infrastructure | Run `rdc context set-infra --tcp-ports ...` and `push-infra` |
+| Route server running old version | Binary was updated but service not restarted | Happens automatically on provisioning; manual: `sudo systemctl restart rediacc-router` |
 
 ## Complete Example
 

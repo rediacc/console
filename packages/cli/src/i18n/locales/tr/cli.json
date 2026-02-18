@@ -1649,6 +1649,7 @@
     "searchRepos": "Depoları ada göre filtreleyin",
     "sessionName": "Oturum adı",
     "skipEnvSetup": "Uzak ortam kurulumunu atla",
+    "skipRouterRestart": "İkili güncelleme sonrası yönlendirme sunucusunu yeniden başlatmayı atla",
     "snapshot": "RBD anlık görüntü adı",
     "sortByField": "Alana göre sırala",
     "sortDesc": "Azalan sırada sıralayın",

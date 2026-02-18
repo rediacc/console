@@ -1649,6 +1649,7 @@
     "searchRepos": "Filtrer les dépôts par nom",
     "sessionName": "Nom de la session",
     "skipEnvSetup": "Ignorer la configuration de l'environnement distant",
+    "skipRouterRestart": "Ne pas redémarrer le serveur de routes après la mise à jour du binaire",
     "snapshot": "Nom du snapshot RBD",
     "sortByField": "Trier par champ",
     "sortDesc": "Trier par ordre décroissant",

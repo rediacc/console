@@ -12,7 +12,7 @@ import type { Command } from 'commander';
  */
 async function executeMachineFunction(
   functionName: string,
-  options: { machine: string; debug?: boolean },
+  options: { machine: string; debug?: boolean; skipRouterRestart?: boolean },
   messages: { starting: string; completed: string; failed: string }
 ): Promise<void> {
   outputService.info(messages.starting);
@@ -22,6 +22,7 @@ async function executeMachineFunction(
     machineName: options.machine,
     params: {},
     debug: options.debug,
+    skipRouterRestart: options.skipRouterRestart,
   });
 
   if (result.success) {
@@ -41,7 +42,7 @@ async function executeRepoFunction(
   repoName: string,
   machineName: string,
   params: Record<string, unknown>,
-  options: { debug?: boolean },
+  options: { debug?: boolean; skipRouterRestart?: boolean },
   messages: { starting: string; completed: string; failed: string }
 ): Promise<void> {
   // Validate repository exists in context
@@ -63,6 +64,7 @@ async function executeRepoFunction(
     machineName,
     params: { repository: repoName, ...params },
     debug: options.debug,
+    skipRouterRestart: options.skipRouterRestart,
   });
 
   if (result.success) {
@@ -85,7 +87,8 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .requiredOption('--tag <name>', t('commands.repo.fork.tagOption'))
     .option('--debug', t('options.debug'))
-    .action(async (parent: string, options: { machine: string; tag: string; debug?: boolean }) => {
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .action(async (parent: string, options: { machine: string; tag: string; debug?: boolean; skipRouterRestart?: boolean }) => {
       const forkName = options.tag;
       try {
         // Validate parent exists
@@ -132,6 +135,7 @@ export function registerExtendedRepoCommands(repo: Command): void {
           machineName: options.machine,
           params: { repository: parent, tag: repositoryGuid },
           debug: options.debug,
+          skipRouterRestart: options.skipRouterRestart,
         });
 
         if (result.success) {
@@ -159,7 +163,8 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .requiredOption('--size <size>', t('commands.repo.resize.sizeOption'))
     .option('--debug', t('options.debug'))
-    .action(async (name: string, options: { machine: string; size: string; debug?: boolean }) => {
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .action(async (name: string, options: { machine: string; size: string; debug?: boolean; skipRouterRestart?: boolean }) => {
       try {
         await executeRepoFunction(
           'repository_resize',
@@ -189,7 +194,8 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .requiredOption('--size <size>', t('commands.repo.expand.sizeOption'))
     .option('--debug', t('options.debug'))
-    .action(async (name: string, options: { machine: string; size: string; debug?: boolean }) => {
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .action(async (name: string, options: { machine: string; size: string; debug?: boolean; skipRouterRestart?: boolean }) => {
       try {
         await executeRepoFunction(
           'repository_expand',
@@ -218,7 +224,8 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .description(t('commands.repo.validate.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
-    .action(async (name: string, options: { machine: string; debug?: boolean }) => {
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .action(async (name: string, options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }) => {
       try {
         await executeRepoFunction('repository_validate', name, options.machine, {}, options, {
           starting: t('commands.repo.validate.starting', {
@@ -242,7 +249,8 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .description(t('commands.repo.autostart.enable.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
-    .action(async (name: string, options: { machine: string; debug?: boolean }) => {
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .action(async (name: string, options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }) => {
       try {
         await executeRepoFunction(
           'repository_autostart_enable',
@@ -270,7 +278,8 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .description(t('commands.repo.autostart.disable.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
-    .action(async (name: string, options: { machine: string; debug?: boolean }) => {
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .action(async (name: string, options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }) => {
       try {
         await executeRepoFunction(
           'repository_autostart_disable',
@@ -298,7 +307,8 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .description(t('commands.repo.autostart.enableAll.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
-    .action(async (options: { machine: string; debug?: boolean }) => {
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .action(async (options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }) => {
       try {
         await executeMachineFunction('repository_autostart_enable_all', options, {
           starting: t('commands.repo.autostart.enableAll.starting', { machine: options.machine }),
@@ -316,7 +326,8 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .description(t('commands.repo.autostart.disableAll.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
-    .action(async (options: { machine: string; debug?: boolean }) => {
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .action(async (options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }) => {
       try {
         await executeMachineFunction('repository_autostart_disable_all', options, {
           starting: t('commands.repo.autostart.disableAll.starting', { machine: options.machine }),
@@ -334,7 +345,8 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .description(t('commands.repo.autostart.list.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
-    .action(async (options: { machine: string; debug?: boolean }) => {
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .action(async (options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }) => {
       try {
         await executeMachineFunction('repository_autostart_list', options, {
           starting: t('commands.repo.autostart.list.starting', { machine: options.machine }),
@@ -353,7 +365,8 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--uid <uid>', t('commands.repo.ownership.uidOption'))
     .option('--debug', t('options.debug'))
-    .action(async (name: string, options: { machine: string; uid?: string; debug?: boolean }) => {
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .action(async (name: string, options: { machine: string; uid?: string; debug?: boolean; skipRouterRestart?: boolean }) => {
       try {
         const params: Record<string, unknown> = {};
         if (options.uid) params.owner_uid = options.uid;
@@ -379,10 +392,11 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .requiredOption('--file <path>', t('commands.repo.template.fileOption'))
     .option('--grand <name>', t('commands.repo.template.grandOption'))
     .option('--debug', t('options.debug'))
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
       async (
         name: string,
-        options: { machine: string; file: string; grand?: string; debug?: boolean }
+        options: { machine: string; file: string; grand?: string; debug?: boolean; skipRouterRestart?: boolean }
       ) => {
         try {
           // Read and base64-encode template file

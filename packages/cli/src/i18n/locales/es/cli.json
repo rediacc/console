@@ -1649,6 +1649,7 @@
     "searchRepos": "Filtrar repositorios por nombre",
     "sessionName": "Nombre de sesión",
     "skipEnvSetup": "Omitir configuración de entorno remoto",
+    "skipRouterRestart": "Omitir reinicio del servidor de rutas tras actualización del binario",
     "snapshot": "Nombre de snapshot RBD",
     "sortByField": "Ordenar por campo",
     "sortDesc": "Ordenar en orden descendente",

@@ -20,6 +20,7 @@ interface RunLocalOptions {
   param?: string[];
   extraMachine?: string[];
   debug?: boolean;
+  skipRouterRestart?: boolean;
 }
 
 /** Resolve machine name and parse+validate function params (shared by local and S3 modes). */
@@ -84,6 +85,7 @@ async function runLocalMode(functionName: string, options: RunLocalOptions): Pro
     params,
     extraMachines,
     debug: options.debug,
+    skipRouterRestart: options.skipRouterRestart,
   });
   handleExecutionResult(result);
 }
@@ -150,6 +152,7 @@ export function registerShortcuts(program: Command): void {
     )
     .option('-w, --watch', t('options.watch'))
     .option('--debug', t('options.debug'))
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (functionName, options) => {
       try {
         const provider = await getStateProvider();
