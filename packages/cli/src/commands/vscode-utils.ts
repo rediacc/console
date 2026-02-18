@@ -46,6 +46,7 @@ function extractVaultBaseInfo(
   knownHosts: string;
   datastore: string;
   universalUser: string;
+  sshUser: string;
 } {
   const host = (machineVault.ip ?? machineVault.host) as string | undefined;
   const port = (machineVault.port ?? DEFAULTS.SSH.PORT) as number;
@@ -65,8 +66,9 @@ function extractVaultBaseInfo(
   const datastore = (machineVault.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH) as string;
   const universalUser = (machineVault.universalUser ??
     DEFAULTS.REPOSITORY.UNIVERSAL_USER) as string;
+  const sshUser = (machineVault.user ?? universalUser) as string;
 
-  return { host, port, privateKey, knownHosts, datastore, universalUser };
+  return { host, port, privateKey, knownHosts, datastore, universalUser, sshUser };
 }
 
 /**
@@ -81,7 +83,6 @@ function buildVSCodeRepoEnvironment(
   datastore: string,
   universalUser: string
 ): {
-  user: string;
   environment: Record<string, string>;
   workingDirectory: string;
   repositoryPath: string;
@@ -121,7 +122,7 @@ function buildVSCodeRepoEnvironment(
       : {}),
   };
 
-  return { user: repositoryName, environment, workingDirectory, repositoryPath, networkId };
+  return { environment, workingDirectory, repositoryPath, networkId };
 }
 
 /**
@@ -133,14 +134,12 @@ function buildVSCodeMachineEnvironment(
   datastore: string,
   universalUser: string
 ): {
-  user: string;
   environment: Record<string, string>;
   workingDirectory: string;
   repositoryPath: undefined;
   networkId: undefined;
 } {
   return {
-    user: universalUser,
     environment: {
       REDIACC_TEAM: teamName,
       REDIACC_MACHINE: machineName,
@@ -262,7 +261,7 @@ export async function getSSHConnectionDetails(
 
   return {
     host: baseInfo.host,
-    user: envData.user,
+    user: baseInfo.sshUser,
     port: baseInfo.port,
     privateKey: baseInfo.privateKey,
     known_hosts: baseInfo.knownHosts,

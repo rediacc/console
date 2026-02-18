@@ -371,38 +371,4 @@ export function registerAuthCommands(program: Command): void {
         handleError(error);
       }
     });
-
-  // Top-level shortcuts
-  program
-    .command('login')
-    .description(t('commands.auth.login.shortcut'))
-    .option('-e, --email <email>', t('options.email'))
-    .option('-p, --password <password>', t('options.password'))
-    .option('-m, --master-password <password>', t('options.masterPassword'))
-    .option('-n, --name <name>', t('options.sessionName'))
-    .option('--endpoint <url>', t('options.endpoint'))
-    .option('--save-as <context>', t('options.saveAs'))
-    .action(async (options) => {
-      // Forward to auth login
-      await auth.commands
-        .find((c) => c.name() === 'login')
-        ?.parseAsync([
-          'node',
-          'rediacc',
-          ...(options.email ? ['-e', options.email] : []),
-          ...(options.password ? ['-p', options.password] : []),
-          ...(options.masterPassword ? ['-m', options.masterPassword] : []),
-          ...(options.name ? ['-n', options.name] : []),
-          ...(options.endpoint ? ['--endpoint', options.endpoint] : []),
-          ...(options.saveAs ? ['--save-as', options.saveAs] : []),
-        ]);
-    });
-
-  program
-    .command('logout')
-    .description(t('commands.auth.logout.shortcut'))
-    .action(async () => {
-      // Forward to auth logout
-      await auth.commands.find((c) => c.name() === 'logout')?.parseAsync(['node', 'rediacc']);
-    });
 }

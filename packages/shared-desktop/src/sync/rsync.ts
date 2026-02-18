@@ -216,9 +216,12 @@ export function buildRsyncArgs(
 
   args.push('-e', sshCommand);
 
-  // Add sudo rsync path for remote operations if universal user is specified
+  // Run remote rsync as root via sudo for full permission handling.
+  // Root can read/write all files (container UIDs, lost+found, etc.)
+  // and preserve exact ownership during transfer.
   if (universalUser) {
-    args.push('--rsync-path', `sudo -u ${universalUser} rsync`);
+    args.push('--rsync-path', 'sudo rsync');
+    args.push('--numeric-ids');
   }
 
   // Mirror mode: delete files not in source
@@ -351,15 +354,7 @@ export async function executeRsync(options: RsyncExecutorOptions): Promise<SyncR
     });
 
     rsync.on('close', (code) => {
-      // Exit code 23 = partial transfer due to error
-      // Treat as success if caused by permission issues on lost+found or similar system dirs
-      const isPartialTransferOK =
-        code === 23 &&
-        errors.some((e) => {
-          const lower = e.toLowerCase();
-          return lower.includes('permission denied') || lower.includes('lost+found');
-        });
-      const success = code === 0 || isPartialTransferOK;
+      const success = code === 0;
 
       // Add descriptive messages for common rsync exit codes
       if (!success && code !== null) {
@@ -459,7 +454,8 @@ export async function getRsyncPreview(options: RsyncExecutorOptions): Promise<Rs
     });
 
     rsync.on('close', (code) => {
-      if (code === 0) {
+      // Exit code 24 = partial transfer due to vanished source files, acceptable for preview
+      if (code === 0 || code === 24) {
         resolve(parseRsyncChanges(output));
       } else {
         reject(new Error(`rsync dry-run failed: ${errorOutput}`));

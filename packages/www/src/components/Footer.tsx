@@ -16,6 +16,19 @@ const Footer: React.FC = () => {
     <footer id="footer" className="footer" role="contentinfo">
       <div className="footer-container">
         <div className="footer-columns">
+          {/* Logo Column */}
+          <div className="footer-column footer-logo-column">
+            <a href={`/${currentLang}/`} className="footer-logo-link" aria-label="Rediacc home">
+              <img
+                src="/assets/icon-rediacc.svg"
+                alt="Rediacc"
+                className="footer-logo-icon"
+                width="48"
+                height="48"
+              />
+            </a>
+          </div>
+
           {/* Navigation Column */}
           <nav className="footer-column footer-nav" aria-label={t('navigation.footerNavigation')}>
             <ul className="footer-list">

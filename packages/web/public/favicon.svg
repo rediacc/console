@@ -1,6 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="32" height="32" rx="4" fill="#556b2f"/>
-  <path d="M16 8C11.58 8 8 11.58 8 16s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z" fill="white"/>
-  <circle cx="16" cy="16" r="3" fill="white"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <!-- Rediacc favicon: bolt-only for small sizes -->
+  <polygon points="9,1 4,8 7,8 6,15 12,8 9,8" fill="#06B6D4"/>
+  <style>
+    @media (prefers-color-scheme: dark) {
+      polygon { fill: #22D3EE; }
+    }
+  </style>
 </svg>

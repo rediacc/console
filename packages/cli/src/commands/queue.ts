@@ -332,7 +332,7 @@ export async function traceAction(
   }
 }
 
-export async function cancelAction(taskId: string): Promise<void> {
+async function cancelAction(taskId: string): Promise<void> {
   const provider = await getStateProvider();
   if (provider.mode === 'cloud') await authService.requireAuth();
   await withSpinner(
@@ -342,7 +342,7 @@ export async function cancelAction(taskId: string): Promise<void> {
   );
 }
 
-export async function retryAction(taskId: string): Promise<void> {
+async function retryAction(taskId: string): Promise<void> {
   const provider = await getStateProvider();
   if (provider.mode === 'cloud') await authService.requireAuth();
   await withSpinner(

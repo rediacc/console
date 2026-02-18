@@ -32,7 +32,16 @@ const docsByCategory = docs.reduce((acc, doc) => {
   return acc;
 }, {} as Record<string, typeof docs>);
 
-const categories = Object.keys(docsByCategory).sort();
+const categoryOrder: Record<string, number> = {
+  'Guides': 0,
+  'Reference': 1,
+};
+const categories = Object.keys(docsByCategory).sort((a, b) => {
+  const pa = categoryOrder[a] ?? 99;
+  const pb = categoryOrder[b] ?? 99;
+  if (pa !== pb) return pa - pb;
+  return a.localeCompare(b);
+});
 
 // Get current doc slug for active state
 const currentSlug = getBaseSlug(currentUrl);
@@ -49,7 +58,8 @@ const categoryStates = categories.map(category => {
     return docSlug === currentSlug;
   });
   const isSmall = itemCount <= 3;
-  const initialExpanded = hasActiveDoc || isSmall;
+  const alwaysExpanded = category === 'Guides';
+  const initialExpanded = hasActiveDoc || isSmall || alwaysExpanded;
 
   return {
     category,

@@ -212,7 +212,7 @@ export class AccountManager {
     console.warn(`[AccountManager] Cleaning up context: ${contextName}`);
 
     // Logout (ignore errors - may already be logged out)
-    await runner.run(['logout'], { context: contextName }).catch(() => {});
+    await runner.run(['auth', 'logout'], { context: contextName }).catch(() => {});
 
     // Delete context (no --force flag needed for context delete)
     await runner.run(['context', 'delete', contextName]).catch(() => {});

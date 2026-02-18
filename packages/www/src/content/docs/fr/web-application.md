@@ -1,7 +1,7 @@
 ---
 title: Application Web
 description: Comprendre l'architecture et le déploiement de l'application web avec Rediacc
-category: Concepts Fondamentaux
+category: Reference
 order: 1
 language: fr
 ---

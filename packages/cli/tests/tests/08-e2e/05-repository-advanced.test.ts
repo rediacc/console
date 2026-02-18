@@ -14,7 +14,10 @@ import { SSHValidator } from '../../src/utils/SSHValidator';
  *
  * Tests: repository_unmount, repository_mount, repository_down, repository_up,
  *        repository_resize, repository_expand, repository_validate,
- *        repository_ownership, repository_fork
+ *        repository_ownership, repository_fork, repository_autostart_enable,
+ *        repository_autostart_list, repository_autostart_disable,
+ *        repository_autostart_enable_all, repository_autostart_disable_all,
+ *        repository_up_all
  *
  * Creates a fresh repo, exercises mount/unmount/up/down lifecycle,
  * then resize, validate, ownership, and fork operations.
@@ -214,5 +217,73 @@ test.describe
 
       // SSH validation: test file exists in the fork
       expect(await ssh1.fileExists(`${repo2MountPath}/fork-test.txt`)).toBe(true);
+    });
+
+    test('repository_autostart_enable - should enable autostart for repository', async () => {
+      test.skip(!config.enabled, 'E2E not configured');
+      test.setTimeout(E2E.TEST_TIMEOUT);
+
+      const result = await runLocalFunction('repository_autostart_enable', E2E.MACHINE_VM1, {
+        contextName: ctxName,
+        params: { repository: E2E.TEST_REPO },
+        timeout: E2E.TEST_TIMEOUT,
+      });
+      assertSuccess(result);
+    });
+
+    test('repository_autostart_list - should list autostart repositories', async () => {
+      test.skip(!config.enabled, 'E2E not configured');
+      test.setTimeout(E2E.TEST_TIMEOUT);
+
+      const result = await runLocalFunction('repository_autostart_list', E2E.MACHINE_VM1, {
+        contextName: ctxName,
+        timeout: E2E.TEST_TIMEOUT,
+      });
+      assertSuccess(result);
+    });
+
+    test('repository_autostart_disable - should disable autostart for repository', async () => {
+      test.skip(!config.enabled, 'E2E not configured');
+      test.setTimeout(E2E.TEST_TIMEOUT);
+
+      const result = await runLocalFunction('repository_autostart_disable', E2E.MACHINE_VM1, {
+        contextName: ctxName,
+        params: { repository: E2E.TEST_REPO },
+        timeout: E2E.TEST_TIMEOUT,
+      });
+      assertSuccess(result);
+    });
+
+    test('repository_autostart_enable_all - should enable autostart for all repositories', async () => {
+      test.skip(!config.enabled, 'E2E not configured');
+      test.setTimeout(E2E.TEST_TIMEOUT);
+
+      const result = await runLocalFunction('repository_autostart_enable_all', E2E.MACHINE_VM1, {
+        contextName: ctxName,
+        timeout: E2E.TEST_TIMEOUT,
+      });
+      assertSuccess(result);
+    });
+
+    test('repository_autostart_disable_all - should disable autostart for all repositories', async () => {
+      test.skip(!config.enabled, 'E2E not configured');
+      test.setTimeout(E2E.TEST_TIMEOUT);
+
+      const result = await runLocalFunction('repository_autostart_disable_all', E2E.MACHINE_VM1, {
+        contextName: ctxName,
+        timeout: E2E.TEST_TIMEOUT,
+      });
+      assertSuccess(result);
+    });
+
+    test('repository_up_all - should start all repository services', async () => {
+      test.skip(!config.enabled, 'E2E not configured');
+      test.setTimeout(E2E.TEST_TIMEOUT);
+
+      const result = await runLocalFunction('repository_up_all', E2E.MACHINE_VM1, {
+        contextName: ctxName,
+        timeout: E2E.TEST_TIMEOUT,
+      });
+      assertSuccess(result);
     });
   });

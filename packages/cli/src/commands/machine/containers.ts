@@ -56,7 +56,7 @@ export function registerContainersCommand(machine: Command, program: Command): v
         }
         const opts = await contextService.applyDefaults(options);
 
-        if (!opts.team) {
+        if (provider.mode === 'cloud' && !opts.team) {
           throw new ValidationError(t('errors.teamRequired'));
         }
 

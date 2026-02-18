@@ -632,7 +632,7 @@ PROVISION COMMANDS:
 
 DEVELOPMENT COMMANDS:
   dev                 Start development server (auto-starts backend if needed)
-  cli [args...]       Run CLI in dev mode (auto-builds renet with embeddings)
+  rdc [args...]       Run CLI in dev mode (auto-builds renet with embeddings)
   sandbox             Start in sandbox mode (no backend required)
   worktree <cmd>      Manage git worktrees (create, switch, prune, list)
   setup               Interactive setup wizard
@@ -686,7 +686,7 @@ MAINTENANCE:
 QUICK START:
   ./run.sh setup          # One-time setup
   ./run.sh dev            # Start web development
-  ./run.sh cli auth login # Run CLI command in dev mode
+  ./run.sh rdc auth login # Run CLI command in dev mode
 
 REQUIREMENTS:
   Node.js v${NODE_VERSION_REQUIRED}.x (https://nodejs.org/)
@@ -753,7 +753,7 @@ main() {
 
         # Development
         dev) dev ;;
-        cli)
+        rdc)
             shift
             cli "$@"
             ;;

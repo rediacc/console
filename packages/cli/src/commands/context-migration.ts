@@ -57,17 +57,19 @@ export function registerMigrationCommands(context: Command): void {
         await s3Client.verifyAccess();
         outputService.success(t('commands.context.toS3.verified'));
 
-        // Initialize state.json with current local data
+        // Read local data via ResourceState (handles encrypted contexts)
+        const { LocalResourceState } = await import('../services/resource-state.js');
+        const localState = await LocalResourceState.load(ctx, masterPassword ?? null);
+        const machines = localState.getMachines();
+        const storages = localState.getStorages();
+        const repositories = localState.getRepositories();
+
+        // Initialize state.json with local data
         const { S3StateService } = await import('../services/s3-state.js');
         const stateService = await S3StateService.load(s3Client, masterPassword ?? null);
 
-        const machines = ctx.machines ?? {};
         await stateService.setMachines(machines);
-
-        const storages = ctx.storages ?? {};
         await stateService.setStorages(storages);
-
-        const repositories = ctx.repositories ?? {};
         await stateService.setRepositories(repositories);
 
         // Upload SSH keys

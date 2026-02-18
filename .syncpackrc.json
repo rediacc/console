@@ -37,7 +37,7 @@
       "label": "Pin OpenTelemetry resources to compatible version",
       "packages": ["**"],
       "dependencies": ["@opentelemetry/resources"],
-      "pinVersion": "^2.1.0"
+      "pinVersion": "^2.5.1"
     },
     {
       "label": "Pin i18next to web version",

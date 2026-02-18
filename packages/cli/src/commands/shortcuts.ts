@@ -2,11 +2,9 @@ import { Command } from 'commander';
 import { DEFAULTS } from '@rediacc/shared/config';
 import {
   type CreateActionOptions,
-  cancelAction,
   coerceCliParams,
   createAction,
   parseParamOptions,
-  retryAction,
   traceAction,
   validateFunctionParams,
 } from './queue.js';
@@ -22,6 +20,7 @@ interface RunLocalOptions {
   param?: string[];
   extraMachine?: string[];
   debug?: boolean;
+  skipRouterRestart?: boolean;
 }
 
 /** Resolve machine name and parse+validate function params (shared by local and S3 modes). */
@@ -86,48 +85,8 @@ async function runLocalMode(functionName: string, options: RunLocalOptions): Pro
     params,
     extraMachines,
     debug: options.debug,
+    skipRouterRestart: options.skipRouterRestart,
   });
-  handleExecutionResult(result);
-}
-
-/**
- * Run function in S3 mode (local renet execution + S3 state tracking).
- * Creates a queue item in S3 for tracking, executes via renet, then cleans up.
- */
-async function runS3Mode(functionName: string, options: RunLocalOptions): Promise<void> {
-  const provider = await getStateProvider();
-  const { machineName, params } = await resolveRunParams(functionName, options);
-
-  const taskId = (
-    await provider.queue.create({
-      functionName,
-      machineName,
-      teamName: 's3',
-      vaultContent: '',
-      priority: 3,
-      params,
-    })
-  ).taskId;
-
-  outputService.info(
-    t('commands.shortcuts.run.executingLocal', { function: functionName, machine: machineName })
-  );
-  if (taskId) outputService.info(`Task ID: ${taskId}`);
-
-  const result = await localExecutorService.execute({
-    functionName,
-    machineName,
-    params,
-    debug: options.debug,
-  });
-
-  if (taskId) {
-    try {
-      await provider.queue.delete(taskId);
-    } catch {
-      /* best-effort cleanup */
-    }
-  }
   handleExecutionResult(result);
 }
 
@@ -193,60 +152,19 @@ export function registerShortcuts(program: Command): void {
     )
     .option('-w, --watch', t('options.watch'))
     .option('--debug', t('options.debug'))
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (functionName, options) => {
       try {
         const provider = await getStateProvider();
 
         switch (provider.mode) {
-          case 'local':
-            await runLocalMode(functionName, options);
-            break;
-          case 's3':
-            await runS3Mode(functionName, options);
-            break;
           case 'cloud':
-          default:
             await runCloudMode(functionName, options, program);
             break;
+          default:
+            await runLocalMode(functionName, options);
+            break;
         }
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  // trace - shortcut for queue trace
-  program
-    .command('trace <taskId>')
-    .description(t('commands.shortcuts.trace.description'))
-    .option('-w, --watch', t('options.watchUpdates'))
-    .option('--interval <ms>', t('options.pollInterval'), '2000')
-    .action(async (taskId, options) => {
-      try {
-        await traceAction(taskId, options, program);
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  // cancel - shortcut for queue cancel
-  program
-    .command('cancel <taskId>')
-    .description(t('commands.shortcuts.cancel.description'))
-    .action(async (taskId) => {
-      try {
-        await cancelAction(taskId);
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  // retry - shortcut for queue retry
-  program
-    .command('retry <taskId>')
-    .description(t('commands.shortcuts.retry.description'))
-    .action(async (taskId) => {
-      try {
-        await retryAction(taskId);
       } catch (error) {
         handleError(error);
       }

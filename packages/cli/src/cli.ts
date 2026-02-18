@@ -27,8 +27,8 @@ import { changeLanguage, initI18n, SUPPORTED_LANGUAGES, t } from './i18n/index.j
 import { contextService } from './services/context.js';
 import { outputService } from './services/output.js';
 import { telemetryService } from './services/telemetry.js';
-import { addCloudOnlyGuard, markCloudOnly } from './utils/cloud-guard.js';
 import { setOutputFormat } from './utils/errors.js';
+import { applyRegistry } from './utils/mode-guard.js';
 import { VERSION } from './version.js';
 import type { OutputFormat } from './types/index.js';
 
@@ -69,8 +69,13 @@ cli
   .option('-o, --output <format>', t('options.output'), 'table')
   .option('--context <name>', t('options.context'))
   .option('-l, --lang <code>', t('options.lang', { languages: SUPPORTED_LANGUAGES.join('|') }))
+  .option('--experimental', t('options.experimental'))
   .hook('preAction', async (thisCommand, actionCommand) => {
     const opts = thisCommand.opts();
+    // Enable experimental mode if --experimental flag is passed
+    if (opts.experimental) {
+      process.env.REDIACC_EXPERIMENTAL = '1';
+    }
     // Set output format before any command runs
     setOutputFormat(opts.output as OutputFormat);
     // Set runtime context override if --context flag is provided
@@ -123,20 +128,6 @@ cli
     commandContext.delete(commandName);
   });
 
-// Cloud-only command names — these are not available in s3/local mode
-const CLOUD_ONLY_COMMANDS = new Set([
-  'auth',
-  'bridge',
-  'team',
-  'region',
-  'organization',
-  'user',
-  'permission',
-  'audit',
-  'ceph',
-  'repository',
-]);
-
 // Register all command groups
 registerAuthCommands(cli);
 registerTeamCommands(cli);
@@ -163,13 +154,8 @@ registerSnapshotCommands(cli);
 registerBackupCommands(cli);
 registerShortcuts(cli);
 
-// Apply cloud-only guards and help annotations to the appropriate top-level commands
-for (const cmd of cli.commands) {
-  if (CLOUD_ONLY_COMMANDS.has(cmd.name())) {
-    addCloudOnlyGuard(cmd);
-    markCloudOnly(cmd);
-  }
-}
+// Apply mode guards, help tags, and domain grouping from the command registry
+applyRegistry(cli);
 
 // Provide a clear error for unsupported subcommands
 cli.on('command:*', (operands) => {

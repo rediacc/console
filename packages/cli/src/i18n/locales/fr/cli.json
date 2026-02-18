@@ -30,13 +30,12 @@
         "activated": "Compte activé",
         "activating": "Activation du compte en cours...",
         "description": "Activer le compte avec le code de vérification",
-        "success": "Compte activé ! Vous pouvez maintenant vous connecter avec : rdc login"
+        "success": "Compte activé ! Vous pouvez maintenant vous connecter avec : rdc auth login"
       },
       "description": "Commandes d'authentification",
       "login": {
         "authenticating": "Authentification en cours...",
         "description": "S'authentifier avec Rediacc",
-        "shortcut": "S'authentifier avec Rediacc (raccourci pour : auth login)",
         "success": "Connexion réussie ! Enregistré dans le contexte \"{{context}}\"",
         "tfaPrompt": "Entrez le code 2FA :",
         "tfaRequired": "L'authentification à deux facteurs est requise",
@@ -46,7 +45,6 @@
       "logout": {
         "description": "Effacer les identifiants stockés",
         "loggingOut": "Déconnexion en cours...",
-        "shortcut": "Effacer les identifiants stockés (raccourci pour : auth logout)",
         "success": "Déconnexion réussie"
       },
       "register": {
@@ -59,7 +57,7 @@
       "status": {
         "authenticated": "Authentifié en tant que : {{email}}",
         "description": "Vérifier l'état actuel de l'authentification",
-        "notAuthenticated": "Non authentifié. Exécutez : rdc login"
+        "notAuthenticated": "Non authentifié. Exécutez : rdc auth login"
       },
       "tfa": {
         "description": "Gestion de l'authentification à deux facteurs",
@@ -349,7 +347,9 @@
       },
       "createLocal": {
         "description": "Créer un nouveau contexte local pour une opération sans middleware",
+        "encryptionEnabled": "Chiffrement au repos activé. Les ressources seront chiffrées dans config.json.",
         "nextStep": "Ajoutez des machines avec : rdc context add-machine <name> --ip <ip> --user <user>",
+        "optionMasterPassword": "Chiffrer les ressources avec un mot de passe principal",
         "success": "Contexte local \"{{name}}\" créé"
       },
       "createS3": {
@@ -872,6 +872,39 @@
       }
     },
     "repo": {
+      "autostart": {
+        "description": "Gérer le démarrage automatique des dépôts au démarrage",
+        "disable": {
+          "completed": "Démarrage automatique désactivé",
+          "description": "Désactiver le démarrage automatique pour un dépôt",
+          "failed": "Échec de la désactivation du démarrage automatique",
+          "starting": "Désactivation du démarrage automatique pour \"{{repository}}\" sur \"{{machine}}\"..."
+        },
+        "disableAll": {
+          "completed": "Démarrage automatique désactivé pour tous les dépôts",
+          "description": "Désactiver le démarrage automatique pour tous les dépôts",
+          "failed": "Échec de la désactivation du démarrage automatique pour tous les dépôts",
+          "starting": "Désactivation du démarrage automatique pour tous les dépôts sur \"{{machine}}\"..."
+        },
+        "enable": {
+          "completed": "Démarrage automatique activé",
+          "description": "Activer le démarrage automatique pour un dépôt",
+          "failed": "Échec de l'activation du démarrage automatique",
+          "starting": "Activation du démarrage automatique pour \"{{repository}}\" sur \"{{machine}}\"..."
+        },
+        "enableAll": {
+          "completed": "Démarrage automatique activé pour tous les dépôts",
+          "description": "Activer le démarrage automatique pour tous les dépôts",
+          "failed": "Échec de l'activation du démarrage automatique pour tous les dépôts",
+          "starting": "Activation du démarrage automatique pour tous les dépôts sur \"{{machine}}\"..."
+        },
+        "list": {
+          "completed": "Liste de démarrage automatique récupérée",
+          "description": "Lister les dépôts avec le démarrage automatique activé",
+          "failed": "Échec de la récupération de la liste de démarrage automatique",
+          "starting": "Listage des dépôts avec démarrage automatique sur \"{{machine}}\"..."
+        }
+      },
       "create": {
         "alreadyExists": "Le dépôt \"{{name}}\" existe déjà dans le contexte",
         "completed": "Dépôt créé",
@@ -974,6 +1007,17 @@
         "mountOption": "Monter le dépôt d'abord",
         "prepOnlyOption": "Exécuter uniquement l'étape de préparation",
         "starting": "Démarrage des services pour \"{{repository}}\" sur \"{{machine}}\"..."
+      },
+      "upAll": {
+        "completed": "Tous les dépôts démarrés",
+        "concurrencyOption": "Nombre maximum de dépôts simultanés (par défaut : 3)",
+        "description": "Démarrer tous les services de dépôts sur une machine",
+        "dryRunOption": "Afficher ce qui serait fait sans exécuter",
+        "failed": "Échec de l'opération de démarrage global",
+        "includeForksOption": "Également monter/démarrer les dépôts forkés",
+        "mountOnlyOption": "Monter uniquement, sans démarrer les services",
+        "parallelOption": "Démarrer les dépôts simultanément",
+        "starting": "Démarrage de tous les dépôts sur \"{{machine}}\"..."
       },
       "validate": {
         "completed": "Validation terminée",
@@ -1163,7 +1207,7 @@
       "testingConnectivity": "Test de la connectivité à {{host}}:{{port}}..."
     },
     "update": {
-      "applyFailed": "Échec de l'application de la mise à jour préparée\u00a0: {{error}}",
+      "applyFailed": "Échec de l'application de la mise à jour préparée : {{error}}",
       "autoApplied": "Mis à jour vers v{{version}} (était v{{from}}). Les modifications prendront effet au prochain lancement.",
       "available": "Mise à jour disponible : v{{version}} (actuel : v{{current}})",
       "checking": "Recherche de mises à jour...",
@@ -1176,7 +1220,7 @@
       "progress": "Téléchargement... {{percent}}%",
       "releaseNotes": "Notes de version : {{url}}",
       "rollback": "Revenir à la version précédente",
-      "rollbackFailed": "Échec de la restauration\u00a0: {{error}}",
+      "rollbackFailed": "Échec de la restauration : {{error}}",
       "rollbackNoBackup": "Aucune version précédente trouvée. La restauration n'est disponible qu'après une mise à jour.",
       "rollbackSuccess": "Restauration réussie. Redémarrez rdc pour utiliser la version précédente.",
       "staged": "Mise à jour v{{version}} préparée (sera appliquée au prochain lancement)",
@@ -1339,7 +1383,7 @@
       }
     },
     "frontmatter": {
-      "category": "Concepts Fondamentaux",
+      "category": "Reference",
       "description": "Guide complet pour utiliser l'interface en ligne de commande Rediacc pour la gestion de la plateforme",
       "title": "Application CLI"
     },
@@ -1445,7 +1489,7 @@
     "activationFailed": "L'activation a échoué",
     "affectedChildClones": ". Clones enfants affectés : {{clones}}. Supprimez ou promouvez d'abord les clones enfants.",
     "authFailed": "L'authentification a échoué",
-    "authRequired": "L'authentification est requise. Exécutez : rdc login",
+    "authRequired": "L'authentification est requise. Exécutez : rdc auth login",
     "bridgeRequired": "Le nom du pont est requis. Utilisez --bridge ou définissez un contexte.",
     "cannotDeleteGrandRepo": "Impossible de supprimer le grand dépôt : {{reason}}",
     "cannotPromote": "Impossible de promouvoir : {{reason}}",
@@ -1470,7 +1514,7 @@
     "machineRequiredLocal": "Le nom de la machine est requis. Utilisez --machine ou définissez une valeur par défaut avec : rdc context set machine <name>",
     "networkError": "Erreur réseau : {{message}}",
     "noActiveContext": "Aucun contexte actif. Créez ou sélectionnez d'abord un contexte.",
-    "notAuthenticated": "Non authentifié. Exécutez : rdc login",
+    "notAuthenticated": "Non authentifié. Exécutez : rdc auth login",
     "passwordsMismatch": "Les mots de passe ne correspondent pas",
     "permissionDenied": "Permission refusée",
     "poolNotFound": "Pool Ceph \"{{name}}\" non trouvé",
@@ -1546,6 +1590,7 @@
     "email": "Adresse email",
     "endpoint": "URL du point de terminaison de l'API",
     "excludePatterns": "Motifs à exclure de la synchronisation",
+    "experimental": "Activer les commandes cloud expérimentales",
     "expires": "Expiration en heures (1-720)",
     "external": "Forcer le lancement dans une fenêtre de terminal externe",
     "extraMachine": "Machine supplémentaire pour les opérations multi-machines (nom:ip:utilisateur)",
@@ -1604,6 +1649,7 @@
     "searchRepos": "Filtrer les dépôts par nom",
     "sessionName": "Nom de la session",
     "skipEnvSetup": "Ignorer la configuration de l'environnement distant",
+    "skipRouterRestart": "Ne pas redémarrer le serveur de routes après la mise à jour du binaire",
     "snapshot": "Nom du snapshot RBD",
     "sortByField": "Trier par champ",
     "sortDesc": "Trier par ordre décroissant",

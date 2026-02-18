@@ -1,7 +1,7 @@
 ---
 title: 网页应用
 description: 了解 Rediacc 网页应用的架构和部署
-category: Core Concepts
+category: Reference
 order: 1
 language: zh
 ---

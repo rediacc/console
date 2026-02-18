@@ -19,3 +19,7 @@ Allow: /assets/
 Allow: /styles/
 Allow: /scripts/
 Allow: /favicon.svg
+
+# LLM documentation
+Allow: /llms.txt
+Allow: /llms-full.txt

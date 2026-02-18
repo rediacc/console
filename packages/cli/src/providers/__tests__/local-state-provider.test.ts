@@ -6,27 +6,32 @@ vi.mock('../../services/context.js', () => ({
     listLocalMachines: vi.fn().mockResolvedValue([]),
     addLocalMachine: vi.fn().mockResolvedValue(undefined),
     removeLocalMachine: vi.fn().mockResolvedValue(undefined),
+    getLocalConfig: vi.fn().mockResolvedValue({
+      machines: {},
+      ssh: { privateKeyPath: '' },
+      renetPath: '/usr/bin/renet',
+    }),
   },
+}));
+
+// Mock machine-status used by getWithVaultStatus
+vi.mock('../../services/machine-status.js', () => ({
+  fetchMachineStatus: vi.fn().mockResolvedValue({ containers: [], services: [] }),
 }));
 
 const { LocalStateProvider } = await import('../local-state-provider.js');
 
 describe('LocalStateProvider', () => {
   describe('machines.getWithVaultStatus', () => {
-    it('should reject with UnsupportedOperationError', async () => {
+    it('should return machine status data', async () => {
       const provider = new LocalStateProvider();
 
-      await expect(
-        provider.machines.getWithVaultStatus({ teamName: 'team', machineName: 'machine' })
-      ).rejects.toThrow('"machine vault status" is not supported in local mode');
-    });
-
-    it('should reject with error named UnsupportedOperationError', async () => {
-      const provider = new LocalStateProvider();
-
-      await expect(
-        provider.machines.getWithVaultStatus({ teamName: 'team', machineName: 'machine' })
-      ).rejects.toMatchObject({ name: 'UnsupportedOperationError' });
+      const result = await provider.machines.getWithVaultStatus({
+        teamName: 'team',
+        machineName: 'machine',
+      });
+      expect(result).toMatchObject({ machineName: 'machine' });
+      expect(result?.vaultStatus).toBeDefined();
     });
   });
 

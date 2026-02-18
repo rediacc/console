@@ -25,7 +25,7 @@ interface HashManifest {
   hashes: Record<string, string>;
 }
 
-function checkLocaleDir(name: string, localeDir: string, useNamespacePrefix = true): string[] {
+function checkLocaleDir(name: string, localeDir: string, useNamespacePrefix = true, flatFiles = false): string[] {
   const hashFile = path.join(localeDir, '.translation-hashes.json');
   const errors: string[] = [];
 
@@ -37,25 +37,38 @@ function checkLocaleDir(name: string, localeDir: string, useNamespacePrefix = tr
   const manifest = JSON.parse(fs.readFileSync(hashFile, 'utf-8')) as HashManifest;
   const storedHashes = manifest.hashes || {};
 
-  // Get all English JSON files in the locale directory
-  const enDir = path.join(localeDir, 'en');
-  if (!fs.existsSync(enDir)) {
-    errors.push(`English locale directory not found: ${enDir}`);
-    return errors;
-  }
-
   const currentHashes: Record<string, string> = {};
-  const jsonFiles = fs.readdirSync(enDir).filter((f) => f.endsWith('.json'));
 
-  for (const file of jsonFiles) {
-    // Web: use namespace prefix (common.welcome, auth.login)
-    // CLI: no namespace prefix (flat keys)
-    const namespace = useNamespacePrefix ? file.replace('.json', '') : '';
-    const content = JSON.parse(
-      fs.readFileSync(path.join(enDir, file), 'utf-8')
-    ) as Record<string, unknown>;
-    const fileHashes = flattenAndHash(content, namespace);
+  // Flat layout: {dir}/en.json instead of {dir}/en/*.json
+  if (flatFiles) {
+    const enFile = path.join(localeDir, 'en.json');
+    if (!fs.existsSync(enFile)) {
+      errors.push(`English file not found: ${enFile}`);
+      return errors;
+    }
+    const content = JSON.parse(fs.readFileSync(enFile, 'utf-8')) as Record<string, unknown>;
+    const fileHashes = flattenAndHash(content, '');
     Object.assign(currentHashes, fileHashes);
+  } else {
+    // Directory layout: {dir}/en/*.json
+    const enDir = path.join(localeDir, 'en');
+    if (!fs.existsSync(enDir)) {
+      errors.push(`English locale directory not found: ${enDir}`);
+      return errors;
+    }
+
+    const jsonFiles = fs.readdirSync(enDir).filter((f) => f.endsWith('.json'));
+
+    for (const file of jsonFiles) {
+      // Web: use namespace prefix (common.welcome, auth.login)
+      // CLI: no namespace prefix (flat keys)
+      const namespace = useNamespacePrefix ? file.replace('.json', '') : '';
+      const content = JSON.parse(
+        fs.readFileSync(path.join(enDir, file), 'utf-8')
+    ) as Record<string, unknown>;
+      const fileHashes = flattenAndHash(content, namespace);
+      Object.assign(currentHashes, fileHashes);
+    }
   }
 
   // Compare hashes
@@ -102,6 +115,12 @@ function main(): void {
   const cliLocales = path.join(__dirname, '../packages/cli/src/i18n/locales');
   if (fs.existsSync(cliLocales)) {
     errors.push(...checkLocaleDir('cli', cliLocales, false));
+  }
+
+  // Check WWW locales (flat files: {lang}.json, no namespace prefix)
+  const wwwLocales = path.join(__dirname, '../packages/www/src/i18n/translations');
+  if (fs.existsSync(wwwLocales)) {
+    errors.push(...checkLocaleDir('www', wwwLocales, false, true));
   }
 
   if (errors.length > 0) {

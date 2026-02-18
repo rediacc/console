@@ -99,7 +99,7 @@ export function registerVaultStatusCommand(machine: Command, program: Command): 
         }
         const opts = await contextService.applyDefaults(options);
 
-        if (!opts.team) {
+        if (provider.mode === 'cloud' && !opts.team) {
           throw new ValidationError(t('errors.teamRequired'));
         }
 

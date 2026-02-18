@@ -1,7 +1,7 @@
 ---
 title: Webanwendung
 description: Verständnis der Webanwendungsarchitektur und Bereitstellung mit Rediacc
-category: Core Concepts
+category: Reference
 order: 1
 language: de
 ---

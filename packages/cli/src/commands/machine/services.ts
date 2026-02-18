@@ -63,7 +63,7 @@ export function registerServicesCommand(machine: Command, program: Command): voi
         }
         const opts = await contextService.applyDefaults(options);
 
-        if (!opts.team) {
+        if (provider.mode === 'cloud' && !opts.team) {
           throw new ValidationError(t('errors.teamRequired'));
         }
 

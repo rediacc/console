@@ -45,30 +45,25 @@
 .sidebar-base {
   position: sticky;
   top: calc(var(--nav-height) + var(--sidebar-top-offset));
-  height: fit-content;
-  max-height: calc(100vh - var(--nav-height) - (var(--sidebar-top-offset) * 2));
-  overflow-y: auto;
-  overscroll-behavior: contain;
-
-  /* Scrollbar styling for consistency */
-  scrollbar-width: thin;
-  scrollbar-color: var(--sidebar-border) transparent;
+  height: calc(100vh - var(--nav-height) - (var(--sidebar-top-offset) * 2));
+  display: flex;
+  flex-direction: column;
 }
 
-.sidebar-base::-webkit-scrollbar {
+.sidebar-nav::-webkit-scrollbar {
   width: 6px;
 }
 
-.sidebar-base::-webkit-scrollbar-track {
+.sidebar-nav::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.sidebar-base::-webkit-scrollbar-thumb {
+.sidebar-nav::-webkit-scrollbar-thumb {
   background-color: var(--sidebar-border);
   border-radius: var(--radius-sm);
 }
 
-.sidebar-base::-webkit-scrollbar-thumb:hover {
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
   background-color: var(--color-text-secondary);
 }
 
@@ -78,10 +73,17 @@
    ============================================================================ */
 
 .sidebar-nav {
+  flex: 1;
   padding: var(--sidebar-padding);
   background-color: var(--sidebar-bg);
   border-radius: var(--border-radius);
   border: var(--border-width-thin) solid var(--sidebar-border);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  /* Scrollbar styling for consistency */
+  scrollbar-width: thin;
+  scrollbar-color: var(--sidebar-border) transparent;
 }
 
 .sidebar-nav-with-accent {

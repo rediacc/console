@@ -70,11 +70,17 @@ vi.mock('../../services/queue.js', () => ({
   queueService: { buildQueueVault: vi.fn() },
 }));
 
+// Enable experimental mode so cloud-only commands are visible in help
+process.env.REDIACC_EXPERIMENTAL = '1';
+
 // Import cli after all mocks are set up
 const { cli } = await import('../../cli.js');
 
-describe('Cloud-only command guards', () => {
-  const expectedCloudOnlyCommands = [
+// Get formatted help output for testing tag column rendering
+const rootHelp = cli.helpInformation();
+
+describe('Command mode guards and tags', () => {
+  const cloudOnlyCommands = [
     'auth',
     'bridge',
     'team',
@@ -85,60 +91,114 @@ describe('Cloud-only command guards', () => {
     'audit',
     'ceph',
     'repository',
+    'queue',
   ];
 
-  describe('CLOUD_ONLY_COMMANDS set', () => {
-    for (const cmdName of expectedCloudOnlyCommands) {
-      it(`should include "${cmdName}" as a registered command`, () => {
-        const cmd = cli.commands.find((c) => c.name() === cmdName);
-        expect(cmd).toBeDefined();
+  const localS3Commands = ['repo', 'snapshot'];
+
+  const allModeCommands = [
+    'machine',
+    'storage',
+    'context',
+    'doctor',
+    'sync',
+    'run',
+    'term',
+    'update',
+  ];
+
+  describe('[cloud] tag column in help', () => {
+    for (const cmdName of cloudOnlyCommands) {
+      it(`"${cmdName}" should show [cloud] tag in help output`, () => {
+        // Match the line containing this command and verify [cloud] appears
+        const pattern = new RegExp(`^\\s+${cmdName}\\b.*\\[cloud\\]`, 'm');
+        expect(rootHelp).toMatch(pattern);
       });
     }
   });
 
-  describe('[cloud only] help annotations', () => {
-    for (const cmdName of expectedCloudOnlyCommands) {
-      it(`"${cmdName}" description should contain [cloud only]`, () => {
-        const cmd = cli.commands.find((c) => c.name() === cmdName);
-        expect(cmd).toBeDefined();
-        expect(cmd!.description()).toContain('[cloud only]');
+  describe('[local|s3] tag column in help', () => {
+    for (const cmdName of localS3Commands) {
+      it(`"${cmdName}" should show [local|s3] tag in help output`, () => {
+        const pattern = new RegExp(`^\\s+${cmdName}\\b.*\\[local\\|s3\\]`, 'm');
+        expect(rootHelp).toMatch(pattern);
       });
     }
+  });
 
-    it('non-cloud commands should NOT have [cloud only] in description', () => {
-      const nonCloudCommands = ['context', 'doctor', 'sync', 'update'];
-      for (const cmdName of nonCloudCommands) {
+  describe('[cloud|local|s3] tag column in help', () => {
+    for (const cmdName of allModeCommands) {
+      it(`"${cmdName}" should show [cloud|local|s3] tag in help output`, () => {
+        const pattern = new RegExp(`^\\s+${cmdName}\\b.*\\[cloud\\|local\\|s3\\]`, 'm');
+        expect(rootHelp).toMatch(pattern);
+      });
+    }
+  });
+
+  describe('descriptions are unmodified', () => {
+    it('cloud-only commands have clean descriptions (no tags in description)', () => {
+      for (const cmdName of cloudOnlyCommands) {
         const cmd = cli.commands.find((c) => c.name() === cmdName);
         if (cmd) {
-          expect(cmd.description()).not.toContain('[cloud only]');
+          expect(cmd.description()).not.toMatch(/\[cloud\]|\[local/);
         }
       }
     });
   });
 
-  describe('Machine subcommand guards', () => {
-    it('"assign-bridge" subcommand should have [cloud only] annotation', () => {
-      const machineCmd = cli.commands.find((c) => c.name() === 'machine');
-      expect(machineCmd).toBeDefined();
-
-      const assignBridgeCmd = machineCmd!.commands.find((c) => c.name() === 'assign-bridge');
-      expect(assignBridgeCmd).toBeDefined();
-      expect(assignBridgeCmd!.description()).toContain('[cloud only]');
+  describe('Machine subcommand tags', () => {
+    it('"assign-bridge" should show [cloud] in machine help', () => {
+      const machineCmd = cli.commands.find((c) => c.name() === 'machine')!;
+      const machineHelp = machineCmd.helpInformation();
+      expect(machineHelp).toMatch(/assign-bridge.*\[cloud\]/);
     });
 
-    it('"test-connection" subcommand should have [cloud only] annotation', () => {
-      const machineCmd = cli.commands.find((c) => c.name() === 'machine');
-      expect(machineCmd).toBeDefined();
-
-      const testConnectionCmd = machineCmd!.commands.find((c) => c.name() === 'test-connection');
-      expect(testConnectionCmd).toBeDefined();
-      expect(testConnectionCmd!.description()).toContain('[cloud only]');
+    it('"test-connection" should show [cloud] in machine help', () => {
+      const machineCmd = cli.commands.find((c) => c.name() === 'machine')!;
+      const machineHelp = machineCmd.helpInformation();
+      expect(machineHelp).toMatch(/test-connection.*\[cloud\]/);
     });
 
-    it('"machine" itself should NOT have [cloud only] (it works in all modes)', () => {
+    it('"list" should inherit [cloud|local|s3] from parent in machine help', () => {
+      const machineCmd = cli.commands.find((c) => c.name() === 'machine')!;
+      const machineHelp = machineCmd.helpInformation();
+      expect(machineHelp).toMatch(/list.*\[cloud\|local\|s3\]/);
+    });
+  });
+
+  describe('Storage subcommand tags', () => {
+    it('"browse" should show [local|s3] in storage help', () => {
+      const storageCmd = cli.commands.find((c) => c.name() === 'storage')!;
+      const storageHelp = storageCmd.helpInformation();
+      expect(storageHelp).toMatch(/browse.*\[local\|s3\]/);
+    });
+  });
+
+  describe('Domain grouping', () => {
+    it('cloud-only commands have domain help group set', () => {
+      const authCmd = cli.commands.find((c) => c.name() === 'auth');
+      expect(authCmd).toBeDefined();
+      expect(authCmd!.helpGroup()).toBe('Organization');
+    });
+
+    it('infrastructure commands have correct group', () => {
       const machineCmd = cli.commands.find((c) => c.name() === 'machine');
       expect(machineCmd).toBeDefined();
-      expect(machineCmd!.description()).not.toContain('[cloud only]');
+      expect(machineCmd!.helpGroup()).toBe('Infrastructure');
+    });
+
+    it('tool commands have correct group', () => {
+      const contextCmd = cli.commands.find((c) => c.name() === 'context');
+      expect(contextCmd).toBeDefined();
+      expect(contextCmd!.helpGroup()).toBe('Tools');
+    });
+
+    it('help output contains domain headings', () => {
+      expect(rootHelp).toContain('Organization');
+      expect(rootHelp).toContain('Infrastructure');
+      expect(rootHelp).toContain('Repositories');
+      expect(rootHelp).toContain('Execution');
+      expect(rootHelp).toContain('Tools');
     });
   });
 });

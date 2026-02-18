@@ -3,7 +3,10 @@
  * Queue/Storage/Repository operations are not supported in local mode.
  */
 
+import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
+import { configStorage } from '../adapters/storage.js';
 import { contextService } from '../services/context.js';
+import { readSSHKey } from '../services/renet-execution.js';
 import type {
   IStateProvider,
   MachineProvider,
@@ -64,11 +67,16 @@ class LocalMachineProvider implements MachineProvider {
     return Promise.reject(new UnsupportedOperationError('machine vault update'));
   }
 
-  getWithVaultStatus(_params: {
+  async getWithVaultStatus(params: {
     teamName: string;
     machineName: string;
   }): Promise<MachineWithVaultStatusData | null> {
-    return Promise.reject(new UnsupportedOperationError('machine vault status'));
+    const { fetchMachineStatus } = await import('../services/machine-status.js');
+    const listResult = await fetchMachineStatus(params.machineName);
+    return {
+      machineName: params.machineName,
+      vaultStatus: JSON.stringify(listResult),
+    };
   }
 }
 
@@ -182,16 +190,58 @@ class LocalVaultProvider implements VaultProvider {
     return Promise.resolve(null);
   }
 
-  getConnectionVaults(
+  async getConnectionVaults(
     _teamName: string,
-    _machineName: string,
-    _repositoryName?: string
+    machineName: string,
+    repositoryName?: string
   ): Promise<{
     machineVault: VaultData;
     teamVault: VaultData;
     repositoryVault?: VaultData;
   }> {
-    return Promise.resolve({ machineVault: {}, teamVault: {} });
+    const localConfig = await contextService.getLocalConfig();
+    const machine = localConfig.machines[machineName];
+    if (!machine) {
+      const available = Object.keys(localConfig.machines).join(', ');
+      throw new Error(`Machine "${machineName}" not found. Available: ${available}`);
+    }
+
+    const sshPrivateKey =
+      localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
+
+    const rootConfig = await configStorage.load();
+    const machineVault: VaultData = {
+      ip: machine.ip,
+      host: machine.ip,
+      port: machine.port ?? DEFAULTS.SSH.PORT,
+      user: machine.user,
+      known_hosts: machine.knownHosts ?? '',
+      datastore: machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH,
+      universalUser: rootConfig.universalUser ?? DEFAULTS.REPOSITORY.UNIVERSAL_USER,
+    };
+
+    const teamVault: VaultData = {
+      SSH_PRIVATE_KEY: sshPrivateKey,
+    };
+
+    let repositoryVault: VaultData | undefined;
+    if (repositoryName) {
+      const repoConfig = await contextService.getLocalRepository(repositoryName);
+      if (repoConfig) {
+        const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
+        // Set repo-specific Docker socket on machineVault so build functions pick it up
+        machineVault.dockerHost = `unix:///var/run/rediacc/docker-${repoConfig.networkId}.sock`;
+        machineVault.dockerSocket = `/var/run/rediacc/docker-${repoConfig.networkId}.sock`;
+        repositoryVault = {
+          repositoryGuid: repoConfig.repositoryGuid,
+          networkId: repoConfig.networkId,
+          path: `/home/${repositoryName}`,
+          workingDirectory: `${datastore}/mounts/${repoConfig.repositoryGuid}`,
+        };
+      }
+    }
+
+    return { machineVault, teamVault, repositoryVault };
   }
 }
 

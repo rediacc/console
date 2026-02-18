@@ -67,8 +67,10 @@ export async function pushInfraConfig(
   if (options.debug) {
     outputService.info(`Provisioning renet to ${machine.ip}...`);
   }
+  // restartServices: false — proxy install (below) already starts/restarts the router
   await provisionRenetToRemote({ renetPath: localConfig.renetPath }, machine, sshPrivateKey, {
     debug: options.debug,
+    restartServices: false,
   });
 
   // Build infra payload

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <!-- Connection paths (curves for organic data flow) -->
+  <path d="M13 16 Q17 16 20 18" stroke="#67E8F9" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+  <path d="M13 32 Q17 32 20 30" stroke="#67E8F9" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+  <path d="M35 16 Q31 16 28 18" stroke="#67E8F9" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+  <path d="M35 32 Q31 32 28 30" stroke="#67E8F9" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+
+  <!-- Left nodes (source — darker) -->
+  <rect x="6" y="12" width="7" height="7" rx="1.5" fill="#0E7490"/>
+  <rect x="6" y="29" width="7" height="7" rx="1.5" fill="#0E7490"/>
+
+  <!-- Right nodes (copies — lighter) -->
+  <rect x="35" y="12" width="7" height="7" rx="1.5" fill="#22D3EE"/>
+  <rect x="35" y="29" width="7" height="7" rx="1.5" fill="#22D3EE"/>
+
+  <!-- Central bolt with gradient overlay -->
+  <defs>
+    <linearGradient id="boltGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#67E8F9" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#0E7490" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <polygon points="27,5 15,23 21.5,23 20,43 33,25 26.5,25" fill="#06B6D4"/>
+  <polygon points="27,5 15,23 21.5,23 20,43 33,25 26.5,25" fill="url(#boltGrad)"/>
+</svg>
