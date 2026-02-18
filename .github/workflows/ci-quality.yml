@@ -462,6 +462,7 @@ jobs:
           repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
+          fetch-depth: 0  # Full history needed for merge-base --is-ancestor
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - name: Check submodule divergence from origin/main
