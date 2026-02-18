@@ -58,7 +58,8 @@ const categoryStates = categories.map(category => {
     return docSlug === currentSlug;
   });
   const isSmall = itemCount <= 3;
-  const initialExpanded = hasActiveDoc || isSmall;
+  const alwaysExpanded = category === 'Guides';
+  const initialExpanded = hasActiveDoc || isSmall || alwaysExpanded;
 
   return {
     category,
