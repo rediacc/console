@@ -437,6 +437,39 @@ jobs:
           COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
           GITHUB_REPOSITORY: ${{ github.repository }}
 
+  # ==============================================================================
+  # SUBMODULE DIVERGENCE CHECK (push to main only)
+  # ==============================================================================
+  # PURPOSE: Catches submodule divergence from origin/main BEFORE CD runs.
+  #          Uses the same dry-run check as cd-v2.yml so CI fails early instead
+  #          of letting CD discover the issue after all builds complete.
+  #
+  # WHEN THIS RUNS: Only on push to main (post-merge). Skipped for PRs since
+  #                 quality-submodule-branches handles PR-time validation.
+  # ==============================================================================
+  quality-submodule-divergence:
+    name: Submodule Divergence
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: ci
+          repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Check submodule divergence from origin/main
+        run: .ci/scripts/release/merge-submodule-branches.sh --dry-run
+        env:
+          GITHUB_PAT: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
   # Bot PRs skip submodule validation but still need the commit status set to
   # success so branch protection rules don't block auto-merge.
   quality-submodule-branches-bot:

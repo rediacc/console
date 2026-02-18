@@ -51,6 +51,7 @@ STATUS_CONTEXT="quality/submodule-merge-readiness"
 declare -A SUBMODULE_REPOS=(
     ["middleware"]="rediacc/middleware"
     ["renet"]="rediacc/renet"
+    ["homebrew-tap"]="rediacc/homebrew-tap"
     ["license-server"]="rediacc/license-server"
     ["elite"]="rediacc/elite"
     ["sql"]="rediacc/sql"
