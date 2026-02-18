@@ -117,7 +117,12 @@ export function registerStorageCommands(program: Command): void {
     .action(
       async (
         storageName: string,
-        options: { repository: string; machine: string; debug?: boolean; skipRouterRestart?: boolean }
+        options: {
+          repository: string;
+          machine: string;
+          debug?: boolean;
+          skipRouterRestart?: boolean;
+        }
       ) => {
         try {
           // Validate storage exists in context

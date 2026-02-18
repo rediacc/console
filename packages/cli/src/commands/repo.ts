@@ -64,70 +64,75 @@ export function registerRepoCommands(program: Command): void {
     .requiredOption('--size <size>', t('commands.repo.create.sizeOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (name: string, options: { machine: string; size: string; debug?: boolean; skipRouterRestart?: boolean }) => {
-      try {
-        // Validate doesn't already exist
-        const existing = await contextService.getLocalRepository(name);
-        if (existing) {
-          throw new Error(t('commands.repo.create.alreadyExists', { name }));
-        }
+    .action(
+      async (
+        name: string,
+        options: { machine: string; size: string; debug?: boolean; skipRouterRestart?: boolean }
+      ) => {
+        try {
+          // Validate doesn't already exist
+          const existing = await contextService.getLocalRepository(name);
+          if (existing) {
+            throw new Error(t('commands.repo.create.alreadyExists', { name }));
+          }
 
-        // Generate UUID, credential, and allocate networkId
-        const repositoryGuid = randomUUID();
-        const credential = generateCredential();
-        const networkId = await contextService.allocateNetworkId();
+          // Generate UUID, credential, and allocate networkId
+          const repositoryGuid = randomUUID();
+          const credential = generateCredential();
+          const networkId = await contextService.allocateNetworkId();
 
-        // Register in config.json first (so the executor can find it)
-        await contextService.addLocalRepository(name, {
-          repositoryGuid,
-          tag: 'latest',
-          credential,
-          networkId,
-        });
-
-        outputService.info(
-          t('commands.repo.create.registered', {
-            repository: name,
-            guid: repositoryGuid.slice(0, 8),
+          // Register in config.json first (so the executor can find it)
+          await contextService.addLocalRepository(name, {
+            repositoryGuid,
+            tag: 'latest',
+            credential,
             networkId,
-          })
-        );
-        outputService.info(
-          t('commands.repo.create.starting', {
-            repository: name,
-            size: options.size,
-            machine: options.machine,
-          })
-        );
+          });
 
-        // Execute on remote
-        const result = await localExecutorService.execute({
-          functionName: 'repository_create',
-          machineName: options.machine,
-          params: { repository: name, size: options.size },
-          debug: options.debug,
-          skipRouterRestart: options.skipRouterRestart,
-        });
+          outputService.info(
+            t('commands.repo.create.registered', {
+              repository: name,
+              guid: repositoryGuid.slice(0, 8),
+              networkId,
+            })
+          );
+          outputService.info(
+            t('commands.repo.create.starting', {
+              repository: name,
+              size: options.size,
+              machine: options.machine,
+            })
+          );
 
-        if (result.success) {
-          outputService.success(t('commands.repo.create.completed'));
-        } else {
-          // Rollback: remove from config.json
-          await contextService.removeLocalRepository(name);
-          outputService.warn(t('commands.repo.create.rollback', { repository: name }));
-          outputService.error(result.error ?? t('commands.repo.create.failed'));
-          process.exitCode = result.exitCode;
+          // Execute on remote
+          const result = await localExecutorService.execute({
+            functionName: 'repository_create',
+            machineName: options.machine,
+            params: { repository: name, size: options.size },
+            debug: options.debug,
+            skipRouterRestart: options.skipRouterRestart,
+          });
+
+          if (result.success) {
+            outputService.success(t('commands.repo.create.completed'));
+          } else {
+            // Rollback: remove from config.json
+            await contextService.removeLocalRepository(name);
+            outputService.warn(t('commands.repo.create.rollback', { repository: name }));
+            outputService.error(result.error ?? t('commands.repo.create.failed'));
+            process.exitCode = result.exitCode;
+          }
+        } catch (error) {
+          // Rollback on unexpected error
+          const exists = await contextService.getLocalRepository(name);
+          if (exists) {
+            await contextService.removeLocalRepository(name);
+            outputService.warn(t('commands.repo.create.rollback', { repository: name }));
+          }
+          handleError(error);
         }
-      } catch (error) {
-        // Rollback on unexpected error
-        const exists = await contextService.getLocalRepository(name);
-        if (exists) {
-          await contextService.removeLocalRepository(name);
-          outputService.warn(t('commands.repo.create.rollback', { repository: name }));
-        }
-        handleError(error);
       }
-    });
+    );
 
   // repo delete <name>
   repo
@@ -136,40 +141,45 @@ export function registerRepoCommands(program: Command): void {
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (name: string, options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }) => {
-      try {
-        // Validate exists
-        const repoConfig = await contextService.getLocalRepository(name);
-        if (!repoConfig) {
-          throw new Error(`Repository "${name}" not found in context`);
+    .action(
+      async (
+        name: string,
+        options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }
+      ) => {
+        try {
+          // Validate exists
+          const repoConfig = await contextService.getLocalRepository(name);
+          if (!repoConfig) {
+            throw new Error(`Repository "${name}" not found in context`);
+          }
+
+          await contextService.ensureRepositoryNetworkId(name);
+
+          outputService.info(
+            t('commands.repo.delete.starting', { repository: name, machine: options.machine })
+          );
+
+          const result = await localExecutorService.execute({
+            functionName: 'repository_delete',
+            machineName: options.machine,
+            params: { repository: name },
+            debug: options.debug,
+            skipRouterRestart: options.skipRouterRestart,
+          });
+
+          if (result.success) {
+            await contextService.removeLocalRepository(name);
+            outputService.info(t('commands.repo.delete.removed', { repository: name }));
+            outputService.success(t('commands.repo.delete.completed'));
+          } else {
+            outputService.error(result.error ?? t('commands.repo.delete.failed'));
+            process.exitCode = result.exitCode;
+          }
+        } catch (error) {
+          handleError(error);
         }
-
-        await contextService.ensureRepositoryNetworkId(name);
-
-        outputService.info(
-          t('commands.repo.delete.starting', { repository: name, machine: options.machine })
-        );
-
-        const result = await localExecutorService.execute({
-          functionName: 'repository_delete',
-          machineName: options.machine,
-          params: { repository: name },
-          debug: options.debug,
-          skipRouterRestart: options.skipRouterRestart,
-        });
-
-        if (result.success) {
-          await contextService.removeLocalRepository(name);
-          outputService.info(t('commands.repo.delete.removed', { repository: name }));
-          outputService.success(t('commands.repo.delete.completed'));
-        } else {
-          outputService.error(result.error ?? t('commands.repo.delete.failed'));
-          process.exitCode = result.exitCode;
-        }
-      } catch (error) {
-        handleError(error);
       }
-    });
+    );
 
   // repo mount <name>
   repo
@@ -180,7 +190,15 @@ export function registerRepoCommands(program: Command): void {
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
-      async (name: string, options: { machine: string; checkpoint?: boolean; debug?: boolean; skipRouterRestart?: boolean }) => {
+      async (
+        name: string,
+        options: {
+          machine: string;
+          checkpoint?: boolean;
+          debug?: boolean;
+          skipRouterRestart?: boolean;
+        }
+      ) => {
         try {
           const params: Record<string, unknown> = {};
           if (options.checkpoint) params.checkpoint = true;
@@ -208,7 +226,15 @@ export function registerRepoCommands(program: Command): void {
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
-      async (name: string, options: { machine: string; checkpoint?: boolean; debug?: boolean; skipRouterRestart?: boolean }) => {
+      async (
+        name: string,
+        options: {
+          machine: string;
+          checkpoint?: boolean;
+          debug?: boolean;
+          skipRouterRestart?: boolean;
+        }
+      ) => {
         try {
           const params: Record<string, unknown> = {};
           if (options.checkpoint) params.checkpoint = true;
@@ -380,20 +406,25 @@ export function registerRepoCommands(program: Command): void {
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (name: string, options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }) => {
-      try {
-        await executeRepoFunction('repository_status', name, options.machine, {}, options, {
-          starting: t('commands.repo.status.starting', {
-            repository: name,
-            machine: options.machine,
-          }),
-          completed: t('commands.repo.status.completed'),
-          failed: t('commands.repo.status.failed'),
-        });
-      } catch (error) {
-        handleError(error);
+    .action(
+      async (
+        name: string,
+        options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }
+      ) => {
+        try {
+          await executeRepoFunction('repository_status', name, options.machine, {}, options, {
+            starting: t('commands.repo.status.starting', {
+              repository: name,
+              machine: options.machine,
+            }),
+            completed: t('commands.repo.status.completed'),
+            failed: t('commands.repo.status.failed'),
+          });
+        } catch (error) {
+          handleError(error);
+        }
       }
-    });
+    );
 
   // repo list (no positional arg — lists all repos on the machine)
   repo

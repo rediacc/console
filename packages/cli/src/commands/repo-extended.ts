@@ -88,73 +88,78 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .requiredOption('--tag <name>', t('commands.repo.fork.tagOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (parent: string, options: { machine: string; tag: string; debug?: boolean; skipRouterRestart?: boolean }) => {
-      const forkName = options.tag;
-      try {
-        // Validate parent exists
-        const parentConfig = await contextService.getLocalRepository(parent);
-        if (!parentConfig) {
-          throw new Error(`Repository "${parent}" not found in context`);
-        }
+    .action(
+      async (
+        parent: string,
+        options: { machine: string; tag: string; debug?: boolean; skipRouterRestart?: boolean }
+      ) => {
+        const forkName = options.tag;
+        try {
+          // Validate parent exists
+          const parentConfig = await contextService.getLocalRepository(parent);
+          if (!parentConfig) {
+            throw new Error(`Repository "${parent}" not found in context`);
+          }
 
-        // Validate fork doesn't already exist
-        const existing = await contextService.getLocalRepository(forkName);
-        if (existing) {
-          throw new Error(t('commands.repo.fork.alreadyExists', { name: forkName }));
-        }
+          // Validate fork doesn't already exist
+          const existing = await contextService.getLocalRepository(forkName);
+          if (existing) {
+            throw new Error(t('commands.repo.fork.alreadyExists', { name: forkName }));
+          }
 
-        // Generate new GUID and allocate networkId; reuse parent's credential (same LUKS password)
-        const repositoryGuid = randomUUID();
-        const networkId = await contextService.allocateNetworkId();
+          // Generate new GUID and allocate networkId; reuse parent's credential (same LUKS password)
+          const repositoryGuid = randomUUID();
+          const networkId = await contextService.allocateNetworkId();
 
-        await contextService.addLocalRepository(forkName, {
-          repositoryGuid,
-          tag: 'latest',
-          credential: parentConfig.credential,
-          networkId,
-        });
-
-        outputService.info(
-          t('commands.repo.fork.registered', {
-            repository: forkName,
-            guid: repositoryGuid.slice(0, 8),
+          await contextService.addLocalRepository(forkName, {
+            repositoryGuid,
+            tag: 'latest',
+            credential: parentConfig.credential,
             networkId,
-          })
-        );
-        outputService.info(
-          t('commands.repo.fork.starting', {
-            parent,
-            repository: forkName,
-            machine: options.machine,
-          })
-        );
+          });
 
-        // Execute fork on remote (repository param = parent, tag = fork's GUID)
-        const result = await localExecutorService.execute({
-          functionName: 'repository_fork',
-          machineName: options.machine,
-          params: { repository: parent, tag: repositoryGuid },
-          debug: options.debug,
-          skipRouterRestart: options.skipRouterRestart,
-        });
+          outputService.info(
+            t('commands.repo.fork.registered', {
+              repository: forkName,
+              guid: repositoryGuid.slice(0, 8),
+              networkId,
+            })
+          );
+          outputService.info(
+            t('commands.repo.fork.starting', {
+              parent,
+              repository: forkName,
+              machine: options.machine,
+            })
+          );
 
-        if (result.success) {
-          outputService.success(t('commands.repo.fork.completed'));
-        } else {
-          await contextService.removeLocalRepository(forkName);
-          outputService.warn(t('commands.repo.fork.rollback', { repository: forkName }));
-          outputService.error(result.error ?? t('commands.repo.fork.failed'));
-          process.exitCode = result.exitCode;
+          // Execute fork on remote (repository param = parent, tag = fork's GUID)
+          const result = await localExecutorService.execute({
+            functionName: 'repository_fork',
+            machineName: options.machine,
+            params: { repository: parent, tag: repositoryGuid },
+            debug: options.debug,
+            skipRouterRestart: options.skipRouterRestart,
+          });
+
+          if (result.success) {
+            outputService.success(t('commands.repo.fork.completed'));
+          } else {
+            await contextService.removeLocalRepository(forkName);
+            outputService.warn(t('commands.repo.fork.rollback', { repository: forkName }));
+            outputService.error(result.error ?? t('commands.repo.fork.failed'));
+            process.exitCode = result.exitCode;
+          }
+        } catch (error) {
+          const exists = await contextService.getLocalRepository(forkName);
+          if (exists) {
+            await contextService.removeLocalRepository(forkName);
+            outputService.warn(t('commands.repo.fork.rollback', { repository: forkName }));
+          }
+          handleError(error);
         }
-      } catch (error) {
-        const exists = await contextService.getLocalRepository(forkName);
-        if (exists) {
-          await contextService.removeLocalRepository(forkName);
-          outputService.warn(t('commands.repo.fork.rollback', { repository: forkName }));
-        }
-        handleError(error);
       }
-    });
+    );
 
   // repo resize <name>
   repo
@@ -164,28 +169,33 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .requiredOption('--size <size>', t('commands.repo.resize.sizeOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (name: string, options: { machine: string; size: string; debug?: boolean; skipRouterRestart?: boolean }) => {
-      try {
-        await executeRepoFunction(
-          'repository_resize',
-          name,
-          options.machine,
-          { size: options.size },
-          options,
-          {
-            starting: t('commands.repo.resize.starting', {
-              repository: name,
-              size: options.size,
-              machine: options.machine,
-            }),
-            completed: t('commands.repo.resize.completed'),
-            failed: t('commands.repo.resize.failed'),
-          }
-        );
-      } catch (error) {
-        handleError(error);
+    .action(
+      async (
+        name: string,
+        options: { machine: string; size: string; debug?: boolean; skipRouterRestart?: boolean }
+      ) => {
+        try {
+          await executeRepoFunction(
+            'repository_resize',
+            name,
+            options.machine,
+            { size: options.size },
+            options,
+            {
+              starting: t('commands.repo.resize.starting', {
+                repository: name,
+                size: options.size,
+                machine: options.machine,
+              }),
+              completed: t('commands.repo.resize.completed'),
+              failed: t('commands.repo.resize.failed'),
+            }
+          );
+        } catch (error) {
+          handleError(error);
+        }
       }
-    });
+    );
 
   // repo expand <name>
   repo
@@ -195,28 +205,33 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .requiredOption('--size <size>', t('commands.repo.expand.sizeOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (name: string, options: { machine: string; size: string; debug?: boolean; skipRouterRestart?: boolean }) => {
-      try {
-        await executeRepoFunction(
-          'repository_expand',
-          name,
-          options.machine,
-          { size: options.size },
-          options,
-          {
-            starting: t('commands.repo.expand.starting', {
-              repository: name,
-              size: options.size,
-              machine: options.machine,
-            }),
-            completed: t('commands.repo.expand.completed'),
-            failed: t('commands.repo.expand.failed'),
-          }
-        );
-      } catch (error) {
-        handleError(error);
+    .action(
+      async (
+        name: string,
+        options: { machine: string; size: string; debug?: boolean; skipRouterRestart?: boolean }
+      ) => {
+        try {
+          await executeRepoFunction(
+            'repository_expand',
+            name,
+            options.machine,
+            { size: options.size },
+            options,
+            {
+              starting: t('commands.repo.expand.starting', {
+                repository: name,
+                size: options.size,
+                machine: options.machine,
+              }),
+              completed: t('commands.repo.expand.completed'),
+              failed: t('commands.repo.expand.failed'),
+            }
+          );
+        } catch (error) {
+          handleError(error);
+        }
       }
-    });
+    );
 
   // repo validate <name>
   repo
@@ -225,20 +240,25 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (name: string, options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }) => {
-      try {
-        await executeRepoFunction('repository_validate', name, options.machine, {}, options, {
-          starting: t('commands.repo.validate.starting', {
-            repository: name,
-            machine: options.machine,
-          }),
-          completed: t('commands.repo.validate.completed'),
-          failed: t('commands.repo.validate.failed'),
-        });
-      } catch (error) {
-        handleError(error);
+    .action(
+      async (
+        name: string,
+        options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }
+      ) => {
+        try {
+          await executeRepoFunction('repository_validate', name, options.machine, {}, options, {
+            starting: t('commands.repo.validate.starting', {
+              repository: name,
+              machine: options.machine,
+            }),
+            completed: t('commands.repo.validate.completed'),
+            failed: t('commands.repo.validate.failed'),
+          });
+        } catch (error) {
+          handleError(error);
+        }
       }
-    });
+    );
 
   // repo autostart (parent command with subcommands)
   const autostart = repo.command('autostart').description(t('commands.repo.autostart.description'));
@@ -250,27 +270,32 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (name: string, options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }) => {
-      try {
-        await executeRepoFunction(
-          'repository_autostart_enable',
-          name,
-          options.machine,
-          {},
-          options,
-          {
-            starting: t('commands.repo.autostart.enable.starting', {
-              repository: name,
-              machine: options.machine,
-            }),
-            completed: t('commands.repo.autostart.enable.completed'),
-            failed: t('commands.repo.autostart.enable.failed'),
-          }
-        );
-      } catch (error) {
-        handleError(error);
+    .action(
+      async (
+        name: string,
+        options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }
+      ) => {
+        try {
+          await executeRepoFunction(
+            'repository_autostart_enable',
+            name,
+            options.machine,
+            {},
+            options,
+            {
+              starting: t('commands.repo.autostart.enable.starting', {
+                repository: name,
+                machine: options.machine,
+              }),
+              completed: t('commands.repo.autostart.enable.completed'),
+              failed: t('commands.repo.autostart.enable.failed'),
+            }
+          );
+        } catch (error) {
+          handleError(error);
+        }
       }
-    });
+    );
 
   // repo autostart disable <name>
   autostart
@@ -279,27 +304,32 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (name: string, options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }) => {
-      try {
-        await executeRepoFunction(
-          'repository_autostart_disable',
-          name,
-          options.machine,
-          {},
-          options,
-          {
-            starting: t('commands.repo.autostart.disable.starting', {
-              repository: name,
-              machine: options.machine,
-            }),
-            completed: t('commands.repo.autostart.disable.completed'),
-            failed: t('commands.repo.autostart.disable.failed'),
-          }
-        );
-      } catch (error) {
-        handleError(error);
+    .action(
+      async (
+        name: string,
+        options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }
+      ) => {
+        try {
+          await executeRepoFunction(
+            'repository_autostart_disable',
+            name,
+            options.machine,
+            {},
+            options,
+            {
+              starting: t('commands.repo.autostart.disable.starting', {
+                repository: name,
+                machine: options.machine,
+              }),
+              completed: t('commands.repo.autostart.disable.completed'),
+              failed: t('commands.repo.autostart.disable.failed'),
+            }
+          );
+        } catch (error) {
+          handleError(error);
+        }
       }
-    });
+    );
 
   // repo autostart enable-all
   autostart
@@ -366,23 +396,35 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .option('--uid <uid>', t('commands.repo.ownership.uidOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (name: string, options: { machine: string; uid?: string; debug?: boolean; skipRouterRestart?: boolean }) => {
-      try {
-        const params: Record<string, unknown> = {};
-        if (options.uid) params.owner_uid = options.uid;
+    .action(
+      async (
+        name: string,
+        options: { machine: string; uid?: string; debug?: boolean; skipRouterRestart?: boolean }
+      ) => {
+        try {
+          const params: Record<string, unknown> = {};
+          if (options.uid) params.owner_uid = options.uid;
 
-        await executeRepoFunction('repository_ownership', name, options.machine, params, options, {
-          starting: t('commands.repo.ownership.starting', {
-            repository: name,
-            machine: options.machine,
-          }),
-          completed: t('commands.repo.ownership.completed'),
-          failed: t('commands.repo.ownership.failed'),
-        });
-      } catch (error) {
-        handleError(error);
+          await executeRepoFunction(
+            'repository_ownership',
+            name,
+            options.machine,
+            params,
+            options,
+            {
+              starting: t('commands.repo.ownership.starting', {
+                repository: name,
+                machine: options.machine,
+              }),
+              completed: t('commands.repo.ownership.completed'),
+              failed: t('commands.repo.ownership.failed'),
+            }
+          );
+        } catch (error) {
+          handleError(error);
+        }
       }
-    });
+    );
 
   // repo template <name>
   repo
@@ -396,7 +438,13 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .action(
       async (
         name: string,
-        options: { machine: string; file: string; grand?: string; debug?: boolean; skipRouterRestart?: boolean }
+        options: {
+          machine: string;
+          file: string;
+          grand?: string;
+          debug?: boolean;
+          skipRouterRestart?: boolean;
+        }
       ) => {
         try {
           // Read and base64-encode template file
