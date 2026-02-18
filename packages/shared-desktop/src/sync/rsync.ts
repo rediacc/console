@@ -454,8 +454,8 @@ export async function getRsyncPreview(options: RsyncExecutorOptions): Promise<Rs
     });
 
     rsync.on('close', (code) => {
-      // Exit code 23 = partial transfer due to vanished files, acceptable for preview
-      if (code === 0 || code === 23) {
+      // Exit code 24 = partial transfer due to vanished source files, acceptable for preview
+      if (code === 0 || code === 24) {
         resolve(parseRsyncChanges(output));
       } else {
         reject(new Error(`rsync dry-run failed: ${errorOutput}`));
