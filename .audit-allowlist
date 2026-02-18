@@ -33,3 +33,11 @@
 # In @develar/schema-utils via electron-builder dependency chain, can't upgrade
 1113205
 1113214
+
+# fast-xml-parser DoS through entity expansion in DOCTYPE
+# In @aws-sdk/xml-builder dependency chain, can't upgrade
+1113240
+
+# tar hardlink target escape through symlink chain
+# Same electron-builder dependency chain, tar@8+ has breaking ESM changes
+1113249
