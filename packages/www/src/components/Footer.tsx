@@ -5,11 +5,7 @@ import LanguageMenu from './LanguageMenu';
 import { useLanguage } from '../hooks/useLanguage';
 import { SUPPORTED_LANGUAGES } from '../i18n/language-utils';
 import { useTranslation } from '../i18n/react';
-import {
-  COMPANY_LEGAL_NAME,
-  COMPANY_REGISTRY_CODE,
-  COMPANY_VAT_NUMBER
-} from '../config/constants';
+import { COMPANY_LEGAL_NAME, COMPANY_REGISTRY_CODE, COMPANY_VAT_NUMBER } from '../config/constants';
 import '../styles/language-switcher.css';
 
 const Footer: React.FC = () => {

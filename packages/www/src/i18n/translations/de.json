@@ -246,9 +246,7 @@
       },
       "sections": {
         "changes": {
-          "content": [
-            "Wir können diese AUP von Zeit zu Zeit aktualisieren."
-          ],
+          "content": ["Wir können diese AUP von Zeit zu Zeit aktualisieren."],
           "id": "changes",
           "title": "8. Änderungen dieser Richtlinie"
         },
@@ -260,12 +258,8 @@
           "title": "5. Inhaltsstandards"
         },
         "enforcement": {
-          "content": [
-            "Verstöße können zu folgenden Maßnahmen führen:"
-          ],
-          "content2": [
-            "Wir bemühen uns, Sie vor Maßnahmen zu benachrichtigen."
-          ],
+          "content": ["Verstöße können zu folgenden Maßnahmen führen:"],
+          "content2": ["Wir bemühen uns, Sie vor Maßnahmen zu benachrichtigen."],
           "id": "enforcement",
           "items": [
             "Schriftliche Verwarnung",
@@ -284,9 +278,7 @@
           "title": "1. Einleitung"
         },
         "prohibitedActivities": {
-          "content": [
-            "Sie dürfen die Rediacc-Plattform nicht verwenden für:"
-          ],
+          "content": ["Sie dürfen die Rediacc-Plattform nicht verwenden für:"],
           "id": "prohibited-activities",
           "items": [
             "Kryptowährungs-Mining oder ähnliche rechenintensive Aktivitäten",
@@ -309,9 +301,7 @@
           "title": "7. Verstöße melden"
         },
         "resourceUsage": {
-          "content": [
-            "Um einen fairen Zugang für alle Nutzer sicherzustellen:"
-          ],
+          "content": ["Um einen fairen Zugang für alle Nutzer sicherzustellen:"],
           "id": "resource-usage",
           "items": [
             "Ressourcen gemäß Ihrem Abonnement nutzen",
@@ -322,9 +312,7 @@
           "title": "3. Ressourcennutzung"
         },
         "securityRequirements": {
-          "content": [
-            "Sie sind für die Sicherheit Ihres Kontos verantwortlich:"
-          ],
+          "content": ["Sie sind für die Sicherheit Ihres Kontos verantwortlich:"],
           "id": "security-requirements",
           "items": [
             "Verwenden Sie starke, einzigartige Passwörter",
@@ -461,16 +449,12 @@
           "title": "5. Unser Analyseansatz"
         },
         "changes": {
-          "content": [
-            "Bei Einführung zusätzlicher Cookies aktualisieren wir diese Richtlinie."
-          ],
+          "content": ["Bei Einführung zusätzlicher Cookies aktualisieren wir diese Richtlinie."],
           "id": "changes",
           "title": "7. Änderungen dieser Richtlinie"
         },
         "cookiesWeUse": {
-          "content": [
-            "Wir verwenden nur einen einzigen Cookie:"
-          ],
+          "content": ["Wir verwenden nur einen einzigen Cookie:"],
           "id": "cookies-we-use",
           "subsections": {
             "languageCookie": {
@@ -490,9 +474,7 @@
           "title": "1. Einleitung"
         },
         "managingCookies": {
-          "content": [
-            "Sie können Cookies über Ihre Browsereinstellungen verwalten:"
-          ],
+          "content": ["Sie können Cookies über Ihre Browsereinstellungen verwalten:"],
           "id": "managing-cookies",
           "items": [
             "<strong>Chrome:</strong> Einstellungen → Datenschutz und Sicherheit → Cookies",
@@ -669,9 +651,7 @@
                 "Standardimplementierung (9.999 $) oder gestaffelte Pakete (klein: 7.499 $, mittel: 14.999 $, groß: 29.999 $, benutzerdefiniert für Unternehmen)",
                 "Notfalleinsatz (29.999 $ auf Anfrage)"
               ],
-              "included": [
-                "Self-Service-Dokumentation, Video-Tutorials und Community-Forum"
-              ],
+              "included": ["Self-Service-Dokumentation, Video-Tutorials und Community-Forum"],
               "planId": "Gemeinschaft"
             },
             {
@@ -996,10 +976,7 @@
       },
       "trust": {
         "heading": "Sicherheit und Zuverlässigkeit auf Unternehmensniveau",
-        "items": [
-          "Verschlüsselung auf Bankebene",
-          "99,9 % Verfügbarkeitsgarantie"
-        ]
+        "items": ["Verschlüsselung auf Bankebene", "99,9 % Verfügbarkeitsgarantie"]
       },
       "ui": {
         "anchor": "Strategischer Anker",
@@ -1361,9 +1338,7 @@
                 "Standardimplementierung (9.999 $) oder gestaffelte Pakete (klein: 7.499 $, mittel: 14.999 $, groß: 29.999 $, benutzerdefiniert für Unternehmen)",
                 "Notfalleinsatz (29.999 $ auf Anfrage)"
               ],
-              "included": [
-                "Self-Service-Dokumentation, Video-Tutorials und Community-Forum"
-              ],
+              "included": ["Self-Service-Dokumentation, Video-Tutorials und Community-Forum"],
               "planId": "Gemeinschaft"
             },
             {
@@ -1644,10 +1619,7 @@
       },
       "trust": {
         "heading": "Sicherheit und Zuverlässigkeit auf Unternehmensniveau",
-        "items": [
-          "Verschlüsselung auf Bankebene",
-          "99,9 % Verfügbarkeitsgarantie"
-        ]
+        "items": ["Verschlüsselung auf Bankebene", "99,9 % Verfügbarkeitsgarantie"]
       },
       "ui": {
         "anchor": "Strategischer Anker",
@@ -1720,9 +1692,7 @@
           "title": "10. Änderungen dieser Richtlinie"
         },
         "childrenPrivacy": {
-          "content": [
-            "Unsere Dienste richten sich nicht an Personen unter 16 Jahren."
-          ],
+          "content": ["Unsere Dienste richten sich nicht an Personen unter 16 Jahren."],
           "id": "children-privacy",
           "title": "9. Datenschutz für Kinder"
         },
@@ -1756,9 +1726,7 @@
           "title": "4. Datenweitergabe und Dritte"
         },
         "howWeUseInformation": {
-          "content": [
-            "Wir verwenden die erhobenen Daten für folgende Zwecke:"
-          ],
+          "content": ["Wir verwenden die erhobenen Daten für folgende Zwecke:"],
           "id": "how-we-use-information",
           "items": [
             "Beantwortung Ihrer Anfragen über das Kontaktformular",
@@ -1827,9 +1795,7 @@
           "title": "1. Einleitung"
         },
         "yourRights": {
-          "content": [
-            "Je nach Rechtsordnung haben Sie möglicherweise folgende Rechte:"
-          ],
+          "content": ["Je nach Rechtsordnung haben Sie möglicherweise folgende Rechte:"],
           "content2": [
             "Kontaktieren Sie uns unter <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>, um Ihre Rechte auszuüben."
           ],
@@ -1900,9 +1866,7 @@
       },
       "sections": {
         "changes": {
-          "content": [
-            "Wir können diese Erstattungsrichtlinie von Zeit zu Zeit aktualisieren."
-          ],
+          "content": ["Wir können diese Erstattungsrichtlinie von Zeit zu Zeit aktualisieren."],
           "id": "changes",
           "title": "7. Änderungen dieser Richtlinie"
         },
@@ -1910,9 +1874,7 @@
           "content": [
             "E-Mail an <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> mit:"
           ],
-          "content2": [
-            "Wir antworten innerhalb von 5 Werktagen."
-          ],
+          "content2": ["Wir antworten innerhalb von 5 Werktagen."],
           "id": "how-to-request",
           "items": [
             "Ihre Konto-E-Mail-Adresse",
@@ -1923,9 +1885,7 @@
           "title": "4. Erstattung beantragen"
         },
         "nonRefundable": {
-          "content": [
-            "Folgendes ist nicht erstattungsfähig:"
-          ],
+          "content": ["Folgendes ist nicht erstattungsfähig:"],
           "id": "non-refundable",
           "items": [
             "Abonnements nach dem 14-Tage-Fenster",
@@ -1944,9 +1904,7 @@
           "title": "1. Überblick"
         },
         "platformSubscriptions": {
-          "content": [
-            "Rediacc bietet verschiedene Abonnementstufen:"
-          ],
+          "content": ["Rediacc bietet verschiedene Abonnementstufen:"],
           "id": "platform-subscriptions",
           "subsections": {
             "annualSubscriptions": {
@@ -1956,9 +1914,7 @@
               "title": "2.3 Jahresabonnements"
             },
             "freeTier": {
-              "content": [
-                "Die Community-Stufe ist dauerhaft kostenlos."
-              ],
+              "content": ["Die Community-Stufe ist dauerhaft kostenlos."],
               "title": "2.1 Kostenlose Stufe"
             },
             "paidTiers": {
@@ -2710,9 +2666,7 @@
           "id": "bridge",
           "subsections": {
             "bridgeDataCollected": {
-              "content": [
-                "Die Bridge erfasst die folgenden Datenkategorien:"
-              ],
+              "content": ["Die Bridge erfasst die folgenden Datenkategorien:"],
               "items": [
                 "<strong>Warteschlangenoperationen:</strong> Aufgaben-ID, Prioritätsstufe, Operationstyp, Ausführungsdauer, Erfolgs- oder Fehlerstatus",
                 "<strong>SSH-Operationen:</strong> Zielhost, Benutzername, Portnummer, Exit-Code, Ausführungsdauer (keine Befehlsinhalte oder Ausgaben werden erfasst)",
@@ -2762,9 +2716,7 @@
           "id": "cli",
           "subsections": {
             "cliDataCollected": {
-              "content": [
-                "Die CLI erfasst die folgenden Datenkategorien:"
-              ],
+              "content": ["Die CLI erfasst die folgenden Datenkategorien:"],
               "items": [
                 "<strong>Befehlsnutzung:</strong> Befehlsname, CLI-Version, Exit-Code, Erfolgs- oder Fehlerstatus",
                 "<strong>Anonymisierte Argumente:</strong> Befehlsoptionen mit geschwärzten sensiblen Werten — Passwörter, Token, Geheimnisse, API-Schlüssel und Anmeldedaten werden durch <code>[REDACTED]</code> ersetzt",
@@ -2835,9 +2787,7 @@
           "id": "middleware",
           "subsections": {
             "middlewareDataCollected": {
-              "content": [
-                "Die Middleware erfasst die folgenden Datenkategorien:"
-              ],
+              "content": ["Die Middleware erfasst die folgenden Datenkategorien:"],
               "items": [
                 "<strong>Systeminformationen:</strong> Hostname, Betriebssystemversion, .NET-Laufzeitversion",
                 "<strong>API-Aufrufe:</strong> HTTP-Methode, Endpunktpfad, Antwortstatuscode, Anfragedauer",
@@ -2859,9 +2809,7 @@
           "title": "6. Middleware-Telemetrie"
         },
         "principles": {
-          "content": [
-            "Die gesamte Telemetrieerfassung bei Rediacc folgt diesen Grundsätzen:"
-          ],
+          "content": ["Die gesamte Telemetrieerfassung bei Rediacc folgt diesen Grundsätzen:"],
           "id": "principles",
           "items": [
             "<strong>Datenschutz durch Design:</strong> Persönliche Identifikatoren werden vor der Übertragung anonymisiert. E-Mail-Adressen werden auf die Domain reduziert, Benutzer-IDs werden gehasht (SHA-256) und gekürzt, Passwörter und Geheimnisse werden niemals erfasst.",
@@ -2879,9 +2827,7 @@
           "id": "web-app",
           "subsections": {
             "webDataCollected": {
-              "content": [
-                "Die Webanwendung erfasst die folgenden Datenkategorien:"
-              ],
+              "content": ["Die Webanwendung erfasst die folgenden Datenkategorien:"],
               "items": [
                 "<strong>Browserinformationen:</strong> Browsername und -version, bevorzugte Sprache, Plattform (z. B. Windows, macOS, Linux), Bildschirmauflösung, Farbtiefe, User-Agent-String, Gerätespeicher (falls verfügbar), Netzwerkverbindungstyp",
                 "<strong>Benutzerkontext:</strong> Sitzungs-ID (zufällig pro Sitzung generiert), nur E-Mail-Domain (der lokale Teil wird geschwärzt, z. B. <code>***@example.com</code>), Organisationsname, Teamname",
@@ -2895,9 +2841,7 @@
               "title": "4.1 Erfasste Daten"
             },
             "webNotCollected": {
-              "content": [
-                "Die Webanwendung erfasst nicht:"
-              ],
+              "content": ["Die Webanwendung erfasst nicht:"],
               "items": [
                 "Vollständige E-Mail-Adressen (der lokale Teil wird immer geschwärzt)",
                 "Passwörter, Token oder Authentifizierungsdaten",
@@ -2979,9 +2923,7 @@
           "title": "3. Konten und Registrierung"
         },
         "changes": {
-          "content": [
-            "Wir können diese Bedingungen von Zeit zu Zeit aktualisieren."
-          ],
+          "content": ["Wir können diese Bedingungen von Zeit zu Zeit aktualisieren."],
           "id": "changes",
           "title": "14. Änderungen dieser Bedingungen"
         },
@@ -2993,9 +2935,7 @@
           "title": "8. Ihre Daten"
         },
         "governingLaw": {
-          "content": [
-            "Diese Bedingungen unterliegen dem Recht der Republik Estland."
-          ],
+          "content": ["Diese Bedingungen unterliegen dem Recht der Republik Estland."],
           "id": "governing-law",
           "title": "13. Anwendbares Recht"
         },
