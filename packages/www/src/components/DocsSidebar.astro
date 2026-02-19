@@ -8,9 +8,10 @@ import '../styles/sidebar-shared.css';
 interface Props {
   currentLang: Language;
   currentUrl: string;
+  visibleCategory?: string;
 }
 
-const { currentLang, currentUrl } = Astro.props;
+const { currentLang, currentUrl, visibleCategory } = Astro.props as Props;
 
 // Fetch all docs for navigation
 const allDocs = await getCollection('docs');
@@ -42,6 +43,9 @@ const categories = Object.keys(docsByCategory).sort((a, b) => {
   if (pa !== pb) return pa - pb;
   return a.localeCompare(b);
 });
+const visibleCategories = visibleCategory
+  ? categories.filter((category) => category === visibleCategory)
+  : categories;
 
 // Get current doc slug for active state
 const currentSlug = getBaseSlug(currentUrl);
@@ -50,7 +54,7 @@ const currentSlug = getBaseSlug(currentUrl);
 const { t } = createTranslator(currentLang);
 
 // Pre-calculate category states to avoid JSX parsing issues
-const categoryStates = categories.map(category => {
+const categoryStates = visibleCategories.map(category => {
   const itemCount = docsByCategory[category].length;
   const categoryId = `category-${category.toLowerCase().replace(/\s+/g, '-')}`;
   const hasActiveDoc = docsByCategory[category].some(doc => {
@@ -140,9 +144,7 @@ const categoryStates = categories.map(category => {
 
   /* Search Input Container */
   .sidebar-search-container {
-    margin: 0 0 var(--space-4) 0;
-    padding-bottom: var(--space-4);
-    border-bottom: 1px solid var(--sidebar-border);
+    display: none;
   }
 
   .sidebar-search-input {
@@ -179,6 +181,13 @@ const categoryStates = categories.map(category => {
 
   /* Responsive Design */
   @media (max-width: 48rem) {
+    .sidebar-search-container {
+      display: block;
+      margin: 0 0 var(--space-4) 0;
+      padding-bottom: var(--space-4);
+      border-bottom: 1px solid var(--sidebar-border);
+    }
+
     .docs-sidebar {
       position: static;
       max-height: none;

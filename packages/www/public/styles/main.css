@@ -587,10 +587,11 @@ a[target='_blank']::after {
   display: flex;
   align-items: center;
   cursor: pointer;
-  min-width: var(--touch-target-min);
-  min-height: var(--touch-target-min);
-  padding: var(--space-2);
-  justify-content: center;
+  min-height: 2.25rem;
+  padding: 0;
+  justify-content: flex-start;
+  justify-self: start;
+  width: auto;
 }
 
 .nav-right {
@@ -658,6 +659,33 @@ a[target='_blank']::after {
 .nav-brand .logo {
   height: 2rem;
   width: auto;
+}
+
+.nav-icon-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.logo-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: block;
+}
+
+.nav-wordmark {
+  display: inline-flex;
+  align-items: center;
+  height: 2.25rem;
+  font-size: 1.9rem;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #000;
+  text-transform: lowercase;
+  transform: translateY(0);
 }
 
 @media (max-width: 48rem) {

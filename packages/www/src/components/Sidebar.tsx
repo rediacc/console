@@ -62,11 +62,30 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     });
   }, []);
 
+  const normalizePath = (value: string) => {
+    const [pathOnly] = value.split('#');
+    if (!pathOnly) return '/';
+    return pathOnly.length > 1 && pathOnly.endsWith('/') ? pathOnly.slice(0, -1) : pathOnly;
+  };
+
   const isActive = (href: string) => {
     if (!currentPath) return false;
-    const normalizedHref = href.endsWith('/') ? href : `${href}/`;
-    const normalizedPath = currentPath.endsWith('/') ? currentPath : `${currentPath}/`;
-    return normalizedPath === normalizedHref;
+
+    const normalizedHref = normalizePath(href);
+    const normalizedPath = normalizePath(currentPath);
+
+    // Home should only be active on the exact home route.
+    if (normalizedHref === `/${currentLang}`) {
+      return normalizedPath === normalizedHref;
+    }
+
+    // Hash-based links should match exact base path only.
+    if (href.includes('#')) {
+      return normalizedPath === normalizedHref;
+    }
+
+    // Mark parent sections active on nested routes, e.g. /en/docs/* keeps Docs active.
+    return normalizedPath === normalizedHref || normalizedPath.startsWith(`${normalizedHref}/`);
   };
 
   const activeSolutionHref = solutionItems.find((item) => isActive(item.href))?.href;

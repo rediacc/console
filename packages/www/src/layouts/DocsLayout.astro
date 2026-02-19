@@ -1,6 +1,7 @@
 ---
 import BaseLayout from './BaseLayout.astro';
 import DocsSidebar from '../components/DocsSidebar.astro';
+import DocsTopTabs from '../components/DocsTopTabs.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
 import type { Language } from '../i18n/types';
 import { createTranslator } from '../i18n/utils';
@@ -16,31 +17,47 @@ interface Props {
   };
   url: string;
   currentLang: Language;
-  availableLanguages?: Array<{ lang: Language; url: string }>;
   showFallbackNotice?: boolean;
+  variant?: 'article' | 'index';
+  tocItems?: Array<{ id: string; title: string; level: number }>;
+  tocTrackingSelector?: string;
+  showTOC?: boolean;
 }
 
-const { frontmatter, url, currentLang, availableLanguages = [], showFallbackNotice } = Astro.props;
+const {
+  frontmatter,
+  url,
+  currentLang,
+  showFallbackNotice,
+  variant = 'article',
+  tocItems,
+  tocTrackingSelector = '.article-content h2, .article-content h3, .article-content h4',
+  showTOC = true
+} = Astro.props as Props;
 
 // Generate breadcrumbs
 const { t } = createTranslator(currentLang);
-const breadcrumbItems = [
-  {
-    name: t('navigation.home'),
-    url: `/${currentLang}/`
-  },
-  {
-    name: t('navigation.docs'),
-    url: `/${currentLang}/docs/`
-  },
-  {
-    name: frontmatter.title,
-    url: url
-  }
-];
+const breadcrumbItems = variant === 'article'
+  ? [
+      {
+        name: t('navigation.home'),
+        url: `/${currentLang}/`
+      },
+      {
+        name: t('navigation.docs'),
+        url: `/${currentLang}/docs/`
+      },
+      {
+        name: frontmatter.title,
+        url: url
+      }
+    ]
+  : [];
 
 // Generate table of contents from rendered HTML using shared utility
-const toc = generateTOCFromHtml(await Astro.slots.render('default'));
+const tocFromContent = generateTOCFromHtml(await Astro.slots.render('default'));
+const toc = tocItems ?? tocFromContent;
+const shouldTrackTOC = !tocItems && toc.length > 0;
 ---
 
 <BaseLayout
@@ -48,51 +65,71 @@ const toc = generateTOCFromHtml(await Astro.slots.render('default'));
   description={frontmatter.description}
   lang={currentLang}
 >
-  <div class="docs-layout">
-    <DocsSidebar currentLang={currentLang} currentUrl={url} />
+  <div class="docs-shell">
+    <div class="docs-shell-top">
+      <div class="docs-header-row">
+        <DocsTopTabs
+          currentLang={currentLang}
+          currentCategory={frontmatter.category}
+          variant={variant}
+        />
+      </div>
+    </div>
 
-    <main class="docs-content">
-      <article class="docs-article">
-        <Breadcrumb items={breadcrumbItems} />
+    <div class="docs-layout">
+      <DocsSidebar
+        currentLang={currentLang}
+        currentUrl={url}
+        visibleCategory={variant === 'article' ? frontmatter.category : undefined}
+      />
 
-        {showFallbackNotice && (
-          <div class="fallback-notice" role="alert">
-            <div class="fallback-notice-icon">ℹ️</div>
-            <div class="fallback-notice-content">
-              <strong class="fallback-notice-title">{t('pages.docs.fallbackNotice.title')}</strong>
-              <p class="fallback-notice-message">{t('pages.docs.fallbackNotice.message')}</p>
+      <main class="docs-content">
+        <article class={`docs-article ${variant === 'index' ? 'docs-article-index' : ''}`}>
+          {variant === 'article' && <Breadcrumb items={breadcrumbItems} />}
+
+          {variant === 'article' && showFallbackNotice && (
+            <div class="fallback-notice" role="alert">
+              <div class="fallback-notice-icon">ℹ️</div>
+              <div class="fallback-notice-content">
+                <strong class="fallback-notice-title">{t('pages.docs.fallbackNotice.title')}</strong>
+                <p class="fallback-notice-message">{t('pages.docs.fallbackNotice.message')}</p>
+              </div>
             </div>
-          </div>
-        )}
-
-        <header class="article-header">
-          <h1 class="article-title">{frontmatter.title}</h1>
-
-          {frontmatter.description && (
-            <p class="article-description">{frontmatter.description}</p>
           )}
-        </header>
 
-        <div class="article-content">
-          <slot />
-        </div>
-      </article>
-    </main>
+          {variant === 'article' && (
+            <header class="article-header">
+              <div class="article-header-main">
+                <h1 class="article-title">{frontmatter.title}</h1>
+              </div>
 
-    {toc.length > 0 && (
-      <aside class="sidebar-base sidebar-toc toc-sidebar">
-        <nav class="sidebar-nav sidebar-nav-with-accent toc-nav" role="navigation" aria-label="Table of contents">
-          <h3 class="sidebar-title toc-title">{t('pages.docs.tableOfContents')}</h3>
-          <ul class="sidebar-list toc-list">
-            {toc.map(heading => (
-              <li class={`sidebar-item toc-item toc-level-${heading.level}`}>
-                <a href={`#${heading.id}`} class="sidebar-link toc-link">{heading.title}</a>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </aside>
-    )}
+              {frontmatter.description && (
+                <p class="article-description">{frontmatter.description}</p>
+              )}
+            </header>
+          )}
+
+          <div class="article-content">
+            <slot />
+          </div>
+        </article>
+      </main>
+
+      {showTOC && toc.length > 0 && (
+        <aside class="sidebar-base sidebar-toc toc-sidebar">
+          <nav class="sidebar-nav sidebar-nav-with-accent toc-nav" role="navigation" aria-label="Table of contents">
+            <h3 class="sidebar-title toc-title">{t('pages.docs.tableOfContents')}</h3>
+            <ul class="sidebar-list toc-list">
+              {toc.map(heading => (
+                <li class={`sidebar-item toc-item toc-level-${heading.level}`}>
+                  <a href={`#${heading.id}`} class="sidebar-link toc-link">{heading.title}</a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </aside>
+      )}
+    </div>
   </div>
 
   <script is:inline>
@@ -103,10 +140,13 @@ const toc = generateTOCFromHtml(await Astro.slots.render('default'));
       window.rediaccTOCInitialized = true;
 
       function initTOCActiveState() {
+        const shouldTrack = ${shouldTrackTOC ? 'true' : 'false'};
+        if (!shouldTrack) return;
+
         const container = document.querySelector('.toc-sidebar');
         if (!container) return; // No TOC sidebar on this page
 
-        const headings = document.querySelectorAll('.article-content h2, .article-content h3, .article-content h4');
+        const headings = document.querySelectorAll(`${tocTrackingSelector}`);
         if (headings.length === 0) return; // No headings to track
 
         const observer = new IntersectionObserver((entries) => {
@@ -155,24 +195,56 @@ const toc = generateTOCFromHtml(await Astro.slots.render('default'));
   </script>
 
   <style>
+    .docs-shell {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: calc(var(--nav-height) + var(--space-4)) var(--space-4) var(--space-8) var(--space-4);
+      font-family: 'Inter', var(--font-family);
+    }
+
+    .docs-shell-top {
+      display: block;
+      margin-bottom: var(--space-4);
+    }
+
+    .docs-header-row {
+      display: block;
+      align-items: center;
+      border-bottom: 1px solid var(--color-border);
+      min-height: 3rem;
+    }
+
     .docs-layout {
       display: grid;
       grid-template-columns: 250px 1fr 250px;
       gap: var(--space-8);
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: calc(var(--nav-height) + var(--space-8)) var(--space-4) var(--space-8) var(--space-4);
+      padding: 0;
     }
 
 
     /* Main Content */
     .docs-content {
       min-width: 0;
+      font-size: var(--font-size-base);
+    }
+
+    /* Flatten sidebars to match integrated docs rails style */
+    .docs-shell :global(.docs-sidebar .sidebar-nav),
+    .docs-shell :global(.toc-sidebar .sidebar-nav) {
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      padding: var(--space-2) 0;
+      box-shadow: none;
     }
 
     .docs-article {
       max-width: var(--container-md);
       overflow-wrap: break-word;
+    }
+
+    .docs-article-index {
+      max-width: none;
     }
 
     /* Fallback Notice */
@@ -216,6 +288,13 @@ const toc = generateTOCFromHtml(await Astro.slots.render('default'));
       margin-bottom: var(--space-8);
     }
 
+    .article-header-main {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-4);
+    }
+
     .article-title {
       font-size: clamp(1.75rem, 3vw, 2.5rem);
       line-height: var(--leading-tight);
@@ -224,13 +303,14 @@ const toc = generateTOCFromHtml(await Astro.slots.render('default'));
     }
 
     .article-description {
-      font-size: var(--font-size-lg);
+      font-size: 1.05rem;
       color: var(--color-text-secondary);
       margin: var(--space-4) 0;
     }
 
     .article-content {
       line-height: var(--leading-loose);
+      font-size: var(--font-size-base);
     }
 
     /* Right Sidebar - TOC (uses shared styles from sidebar-shared.css) */
@@ -334,15 +414,27 @@ const toc = generateTOCFromHtml(await Astro.slots.render('default'));
     }
 
     @media (max-width: 48rem) {
+      .docs-shell {
+        padding: calc(var(--nav-height) + var(--space-3)) var(--space-2) var(--space-4) var(--space-2);
+      }
+
+      .docs-header-row {
+        align-items: stretch;
+      }
+
       /* 768px */
       .docs-layout {
         grid-template-columns: 1fr;
-        padding: var(--space-4) var(--space-2);
       }
 
       .article-title {
         font-size: var(--font-size-2xl);
       }
+
+      .article-header-main {
+        flex-direction: column;
+      }
+
     }
   </style>
 

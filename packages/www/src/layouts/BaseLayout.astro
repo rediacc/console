@@ -275,12 +275,44 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 0.625rem;
         height: var(--nav-height);
+      }
+
+      .nav-icon-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        flex: 0 0 auto;
+      }
+
+      .logo-icon {
+        width: 2.25rem;
+        height: 2.25rem;
+        display: block;
+      }
+
+      .nav-brand {
+        margin-right: auto;
       }
 
       .nav-brand .logo {
         height: 1.5rem;
         width: auto;
+        display: block;
+      }
+
+      .nav-brand .nav-wordmark {
+        display: inline-block;
+        font-size: 2rem !important;
+        line-height: 1;
+        font-weight: 700 !important;
+        letter-spacing: 0.01em;
+        color: #000;
+        text-transform: lowercase;
+        font-family: var(--font-family);
       }
 
       /* Main Content */
