@@ -88,6 +88,24 @@ function git(args, cwd) {
     .filter(Boolean);
 }
 
+function tryFetchBaseRef(repoRoot, baseRef) {
+  if (!baseRef) {
+    return;
+  }
+
+  try {
+    execSync(
+      `git fetch --no-tags --depth=50 origin +refs/heads/${baseRef}:refs/remotes/origin/${baseRef}`,
+      {
+        cwd: repoRoot,
+        stdio: ['ignore', 'ignore', 'ignore'],
+      }
+    );
+  } catch {
+    // Best effort only. Local/dev environments may not have network access.
+  }
+}
+
 export function detectChangedFiles(repoRoot, baseRefArg) {
   const fromEnv = getEnvChangedFiles();
   if (fromEnv) {
@@ -95,6 +113,7 @@ export function detectChangedFiles(repoRoot, baseRefArg) {
   }
 
   const baseRef = baseRefArg || process.env.GITHUB_BASE_REF || 'main';
+  tryFetchBaseRef(repoRoot, baseRef);
   const candidates = [`origin/${baseRef}`, baseRef];
 
   for (const candidate of candidates) {
@@ -120,10 +139,9 @@ export function detectChangedFiles(repoRoot, baseRefArg) {
   }
 
   try {
-    const lastCommit = git(['show', '--pretty=', '--name-only', 'HEAD'], repoRoot);
     const staged = git(['diff', '--name-only', '--cached'], repoRoot);
     const unstaged = git(['diff', '--name-only'], repoRoot);
-    return Array.from(new Set([...lastCommit, ...staged, ...unstaged]));
+    return Array.from(new Set([...staged, ...unstaged]));
   } catch {
     return [];
   }
