@@ -13,7 +13,9 @@ export const getStaticPaths: GetStaticPaths = async () => {
   const docs = await getCollection('docs', (d) => !isExcludedBaseSlug(getBaseSlug(d.slug)));
 
   return docs
-    .filter((doc) => SUPPORTED_LANGUAGES.includes((doc.data.language || DEFAULT_LANGUAGE) as Language))
+    .filter((doc) =>
+      SUPPORTED_LANGUAGES.includes((doc.data.language || DEFAULT_LANGUAGE) as Language)
+    )
     .map((doc) => ({
       params: {
         lang: (doc.data.language || DEFAULT_LANGUAGE) as Language,
