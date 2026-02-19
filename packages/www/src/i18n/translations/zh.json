@@ -65,7 +65,12 @@
     "theProblem": "问题所在"
   },
   "earlyAccess": {
-    "benefits": ["直接与我们的团队合作", "塑造产品", "优先支持", "抢先体验新功能"],
+    "benefits": [
+      "直接与我们的团队合作",
+      "塑造产品",
+      "优先支持",
+      "抢先体验新功能"
+    ],
     "form": {
       "fields": {
         "email": {
@@ -124,7 +129,8 @@
       "privacyPolicy": "隐私政策",
       "refundPolicy": "退款政策",
       "telemetryPolicy": "遥测策略",
-      "termsOfService": "服务条款"
+      "termsOfService": "服务条款",
+      "legalInformation": "法律信息"
     },
     "links": {
       "contactSupport": "联系支持人员",
@@ -146,7 +152,11 @@
       "contactSupport": "联系支持人员",
       "helpCenter": "帮助中心"
     },
-    "tagline": "用于人工智能驱动运营的基础设施自动化平台"
+    "tagline": "用于人工智能驱动运营的基础设施自动化平台",
+    "legalDisclosure": {
+      "summary": "{{companyName}} | 注册代码 {{registryCode}} | 增值税号 {{vatNumber}} |",
+      "fullLegalInformation": "完整法律信息"
+    }
   },
   "hero": {
     "cta": {
@@ -236,20 +246,34 @@
       },
       "sections": {
         "changes": {
-          "content": ["我们可能会不时更新本AUP。"],
+          "content": [
+            "我们可能会不时更新本AUP。"
+          ],
           "id": "changes",
           "title": "8. 本政策的变更"
         },
         "contentStandards": {
-          "content": ["内容必须符合适用法律。您对您的内容负责。"],
+          "content": [
+            "内容必须符合适用法律。您对您的内容负责。"
+          ],
           "id": "content-standards",
           "title": "5. 内容标准"
         },
         "enforcement": {
-          "content": ["违规可能导致："],
-          "content2": ["我们将在采取行动之前做出合理努力通知您。"],
+          "content": [
+            "违规可能导致："
+          ],
+          "content2": [
+            "我们将在采取行动之前做出合理努力通知您。"
+          ],
           "id": "enforcement",
-          "items": ["书面警告", "临时暂停", "功能限制", "永久终止账户", "向有关部门报告"],
+          "items": [
+            "书面警告",
+            "临时暂停",
+            "功能限制",
+            "永久终止账户",
+            "向有关部门报告"
+          ],
           "title": "6. 执行"
         },
         "introduction": {
@@ -260,7 +284,9 @@
           "title": "1. 简介"
         },
         "prohibitedActivities": {
-          "content": ["您不得将Rediacc平台用于："],
+          "content": [
+            "您不得将Rediacc平台用于："
+          ],
           "id": "prohibited-activities",
           "items": [
             "加密货币挖矿或类似的计算密集型活动",
@@ -283,7 +309,9 @@
           "title": "7. 报告违规"
         },
         "resourceUsage": {
-          "content": ["为确保所有用户的公平访问："],
+          "content": [
+            "为确保所有用户的公平访问："
+          ],
           "id": "resource-usage",
           "items": [
             "按照订阅限额使用资源",
@@ -294,7 +322,9 @@
           "title": "3. 资源使用"
         },
         "securityRequirements": {
-          "content": ["您对账户安全负责："],
+          "content": [
+            "您对账户安全负责："
+          ],
           "id": "security-requirements",
           "items": [
             "使用强密码且不重复",
@@ -431,12 +461,16 @@
           "title": "5. 我们的分析方法"
         },
         "changes": {
-          "content": ["如果我们引入额外的Cookie，将更新本政策。"],
+          "content": [
+            "如果我们引入额外的Cookie，将更新本政策。"
+          ],
           "id": "changes",
           "title": "7. 本政策的变更"
         },
         "cookiesWeUse": {
-          "content": ["我们只使用一个Cookie："],
+          "content": [
+            "我们只使用一个Cookie："
+          ],
           "id": "cookies-we-use",
           "subsections": {
             "languageCookie": {
@@ -456,7 +490,9 @@
           "title": "1. 简介"
         },
         "managingCookies": {
-          "content": ["您可以通过浏览器设置管理Cookie："],
+          "content": [
+            "您可以通过浏览器设置管理Cookie："
+          ],
           "id": "managing-cookies",
           "items": [
             "<strong>Chrome：</strong>设置 → 隐私和安全 → Cookie",
@@ -467,12 +503,16 @@
           "title": "6. 管理Cookie"
         },
         "whatAreCookies": {
-          "content": ["Cookie是您访问网站时存储在设备上的小型文本文件。"],
+          "content": [
+            "Cookie是您访问网站时存储在设备上的小型文本文件。"
+          ],
           "id": "what-are-cookies",
           "title": "2. 什么是Cookie？"
         },
         "whatWeDontUse": {
-          "content": ["以下技术在我们的网站上<strong>未</strong>使用："],
+          "content": [
+            "以下技术在我们的网站上<strong>未</strong>使用："
+          ],
           "content2": [
             "注意：本Cookie政策适用于Rediacc营销网站。我们的软件产品（Web 应用程序、CLI、中间件、Bridge）收集不使用Cookie的单独使用遥测数据。有关产品遥测的详情，请参阅我们的<a href=\"telemetry-policy\">遥测策略</a>。"
           ],
@@ -624,7 +664,9 @@
                 "标准实施（9,999 美元）或分层套餐（小型 7,499 美元·中型 14,999 美元·大型 29,999 美元·企业定制）",
                 "紧急响应参与（按需 29,999 美元）"
               ],
-              "included": ["自助文档、视频教程和社区论坛"],
+              "included": [
+                "自助文档、视频教程和社区论坛"
+              ],
               "planId": "社区"
             },
             {
@@ -633,7 +675,10 @@
                 "紧急响应参与（按需 29,999 美元）",
                 "定制集成项目（范围）"
               ],
-              "included": ["电子邮件支持", "标准入门会话（设置调用和配置演练）"],
+              "included": [
+                "电子邮件支持",
+                "标准入门会话（设置调用和配置演练）"
+              ],
               "planId": "亲"
             },
             {
@@ -710,7 +755,11 @@
             "turnaround": "同一天"
           },
           "priority": {
-            "benefits": ["专门的参与经理", "晚上/周末有空位", "生产切换协助"],
+            "benefits": [
+              "专门的参与经理",
+              "晚上/周末有空位",
+              "生产切换协助"
+            ],
             "description": "通过扩展可用性和指导切换支持加速交付。",
             "name": "优先事项",
             "price": "$19,999 美元",
@@ -718,7 +767,11 @@
             "turnaround": "24-48小时"
           },
           "standard": {
-            "benefits": ["项目发现和成功计划", "环境准备和配置", "验证清单和知识转移"],
+            "benefits": [
+              "项目发现和成功计划",
+              "环境准备和配置",
+              "验证清单和知识转移"
+            ],
             "description": "涵盖架构、部署、验证和启用的结构化实施。",
             "name": "标准",
             "price": "7,499 美元起",
@@ -942,7 +995,10 @@
       },
       "trust": {
         "heading": "企业级安全性和可靠性",
-        "items": ["银行级加密", "99.9% 正常运行时间承诺"]
+        "items": [
+          "银行级加密",
+          "99.9% 正常运行时间承诺"
+        ]
       },
       "ui": {
         "anchor": "战略锚",
@@ -1304,7 +1360,9 @@
                 "标准实施（9,999 美元）或分层套餐（小型 7,499 美元·中型 14,999 美元·大型 29,999 美元·企业定制）",
                 "紧急响应参与（按需 29,999 美元）"
               ],
-              "included": ["自助文档、视频教程和社区论坛"],
+              "included": [
+                "自助文档、视频教程和社区论坛"
+              ],
               "planId": "社区"
             },
             {
@@ -1313,7 +1371,10 @@
                 "紧急响应参与（按需 29,999 美元）",
                 "定制集成项目（范围）"
               ],
-              "included": ["电子邮件支持", "标准入门会话（设置调用和配置演练）"],
+              "included": [
+                "电子邮件支持",
+                "标准入门会话（设置调用和配置演练）"
+              ],
               "planId": "亲"
             },
             {
@@ -1390,7 +1451,11 @@
             "turnaround": "同一天"
           },
           "priority": {
-            "benefits": ["专门的参与经理", "晚上/周末有空位", "生产切换协助"],
+            "benefits": [
+              "专门的参与经理",
+              "晚上/周末有空位",
+              "生产切换协助"
+            ],
             "description": "通过扩展可用性和指导切换支持加速交付。",
             "name": "优先事项",
             "price": "$19,999 美元",
@@ -1398,7 +1463,11 @@
             "turnaround": "24-48小时"
           },
           "standard": {
-            "benefits": ["项目发现和成功计划", "环境准备和配置", "验证清单和知识转移"],
+            "benefits": [
+              "项目发现和成功计划",
+              "环境准备和配置",
+              "验证清单和知识转移"
+            ],
             "description": "涵盖架构、部署、验证和启用的结构化实施。",
             "name": "标准",
             "price": "7,499 美元起",
@@ -1574,7 +1643,10 @@
       },
       "trust": {
         "heading": "企业级安全性和可靠性",
-        "items": ["银行级加密", "99.9% 正常运行时间承诺"]
+        "items": [
+          "银行级加密",
+          "99.9% 正常运行时间承诺"
+        ]
       },
       "ui": {
         "anchor": "战略锚",
@@ -1640,12 +1712,16 @@
       },
       "sections": {
         "changes": {
-          "content": ["我们可能会不时更新本隐私政策。变更将在此页面上发布。"],
+          "content": [
+            "我们可能会不时更新本隐私政策。变更将在此页面上发布。"
+          ],
           "id": "changes",
           "title": "10. 本政策的变更"
         },
         "childrenPrivacy": {
-          "content": ["我们的服务不面向16岁以下的个人。"],
+          "content": [
+            "我们的服务不面向16岁以下的个人。"
+          ],
           "id": "children-privacy",
           "title": "9. 儿童隐私"
         },
@@ -1659,12 +1735,16 @@
           "title": "5. 数据保留"
         },
         "dataSecurity": {
-          "content": ["我们实施行业标准的安全措施，包括传输和存储加密。"],
+          "content": [
+            "我们实施行业标准的安全措施，包括传输和存储加密。"
+          ],
           "id": "data-security",
           "title": "7. 数据安全"
         },
         "dataSharing": {
-          "content": ["我们不会向第三方出售或出租您的个人数据。"],
+          "content": [
+            "我们不会向第三方出售或出租您的个人数据。"
+          ],
           "id": "data-sharing",
           "items": [
             "协助我们运营平台的<strong>服务提供商</strong>",
@@ -1675,7 +1755,9 @@
           "title": "4. 数据共享与第三方"
         },
         "howWeUseInformation": {
-          "content": ["我们将收集的信息用于以下目的："],
+          "content": [
+            "我们将收集的信息用于以下目的："
+          ],
           "id": "how-we-use-information",
           "items": [
             "回复您的咨询",
@@ -1689,11 +1771,15 @@
           "title": "3. 我们如何使用您的信息"
         },
         "informationWeCollect": {
-          "content": ["我们仅收集提供服务所需的最少信息。"],
+          "content": [
+            "我们仅收集提供服务所需的最少信息。"
+          ],
           "id": "information-we-collect",
           "subsections": {
             "accountData": {
-              "content": ["创建Rediacc账户时，我们会收集您的姓名、电子邮件、组织名称和账单信息。"],
+              "content": [
+                "创建Rediacc账户时，我们会收集您的姓名、电子邮件、组织名称和账单信息。"
+              ],
               "title": "2.2 账户数据"
             },
             "analyticsData": {
@@ -1703,7 +1789,9 @@
               "title": "2.3 分析数据"
             },
             "contactFormData": {
-              "content": ["当您提交联系表单时，我们会收集您的姓名、电子邮件地址、主题和消息内容。"],
+              "content": [
+                "当您提交联系表单时，我们会收集您的姓名、电子邮件地址、主题和消息内容。"
+              ],
               "title": "2.1 联系表单数据"
             },
             "cookies": {
@@ -1723,7 +1811,9 @@
           "title": "2. 我们收集的信息"
         },
         "internationalTransfers": {
-          "content": ["您的信息可能会被传输到其他国家并在那里进行处理。我们确保适当的保障措施。"],
+          "content": [
+            "您的信息可能会被传输到其他国家并在那里进行处理。我们确保适当的保障措施。"
+          ],
           "id": "international-transfers",
           "title": "8. 国际数据传输"
         },
@@ -1736,7 +1826,9 @@
           "title": "1. 简介"
         },
         "yourRights": {
-          "content": ["根据您所在的司法管辖区，您可能拥有以下权利："],
+          "content": [
+            "根据您所在的司法管辖区，您可能拥有以下权利："
+          ],
           "content2": [
             "请通过<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>联系我们以行使您的权利。"
           ],
@@ -1807,7 +1899,9 @@
       },
       "sections": {
         "changes": {
-          "content": ["我们可能会不时更新本退款政策。"],
+          "content": [
+            "我们可能会不时更新本退款政策。"
+          ],
           "id": "changes",
           "title": "7. 本政策的变更"
         },
@@ -1815,7 +1909,9 @@
           "content": [
             "发送电子邮件至<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>，包含："
           ],
-          "content2": ["我们将在5个工作日内回复。"],
+          "content2": [
+            "我们将在5个工作日内回复。"
+          ],
           "id": "how-to-request",
           "items": [
             "您的账户电子邮件地址",
@@ -1826,7 +1922,9 @@
           "title": "4. 如何申请退款"
         },
         "nonRefundable": {
-          "content": ["以下项目不符合退款条件："],
+          "content": [
+            "以下项目不符合退款条件："
+          ],
           "id": "non-refundable",
           "items": [
             "14天期限后取消的订阅",
@@ -1838,24 +1936,34 @@
           "title": "6. 不可退款项目"
         },
         "overview": {
-          "content": ["本退款政策描述了Rediacc订阅和专业服务的退款条件。"],
+          "content": [
+            "本退款政策描述了Rediacc订阅和专业服务的退款条件。"
+          ],
           "id": "overview",
           "title": "1. 概述"
         },
         "platformSubscriptions": {
-          "content": ["Rediacc提供多个订阅层级："],
+          "content": [
+            "Rediacc提供多个订阅层级："
+          ],
           "id": "platform-subscriptions",
           "subsections": {
             "annualSubscriptions": {
-              "content": ["年度订阅可随时取消。除14天期限内外不提供部分退款。"],
+              "content": [
+                "年度订阅可随时取消。除14天期限内外不提供部分退款。"
+              ],
               "title": "2.3 年度订阅"
             },
             "freeTier": {
-              "content": ["Community层级永久免费。"],
+              "content": [
+                "Community层级永久免费。"
+              ],
               "title": "2.1 免费层级"
             },
             "paidTiers": {
-              "content": ["付费订阅通常不可退款。例外情况："],
+              "content": [
+                "付费订阅通常不可退款。例外情况："
+              ],
               "items": [
                 "<strong>前14天：</strong>新订阅者全额退款",
                 "<strong>服务中断：</strong>长时间中断（超过48小时）的按比例退款",
@@ -1867,7 +1975,9 @@
           "title": "2. 平台订阅"
         },
         "professionalServices": {
-          "content": ["专业服务按小时收费（$400–$1,200/小时）："],
+          "content": [
+            "专业服务按小时收费（$400–$1,200/小时）："
+          ],
           "id": "professional-services",
           "items": [
             "<strong>工作开始前：</strong>全额退款",
@@ -1878,7 +1988,9 @@
           "title": "3. 专业服务"
         },
         "refundProcessing": {
-          "content": ["批准的退款将在10个工作日内处理至原始付款方式。"],
+          "content": [
+            "批准的退款将在10个工作日内处理至原始付款方式。"
+          ],
           "id": "refund-processing",
           "title": "5. 退款处理"
         }
@@ -2597,7 +2709,9 @@
           "id": "bridge",
           "subsections": {
             "bridgeDataCollected": {
-              "content": ["Bridge收集以下类别的数据："],
+              "content": [
+                "Bridge收集以下类别的数据："
+              ],
               "items": [
                 "<strong>队列操作：</strong>任务ID、优先级、操作类型、执行持续时间、成功或失败状态",
                 "<strong>SSH操作：</strong>目标主机、用户名、端口号、退出码、执行持续时间（不收集命令内容或输出）",
@@ -2608,7 +2722,9 @@
               "title": "7.1 收集的数据"
             },
             "bridgeOptOut": {
-              "content": ["您可以使用以下任一方法禁用Bridge遥测："],
+              "content": [
+                "您可以使用以下任一方法禁用Bridge遥测："
+              ],
               "items": [
                 "设置环境变量<code>REDIACC_TELEMETRY_DISABLED=1</code>",
                 "设置环境变量<code>DO_NOT_TRACK=1</code>（遵循<a href=\"https://consult.dntrack.dev/\" target=\"_blank\" rel=\"noopener noreferrer\">Do Not Track</a>标准）"
@@ -2645,7 +2761,9 @@
           "id": "cli",
           "subsections": {
             "cliDataCollected": {
-              "content": ["CLI 收集以下类别的数据："],
+              "content": [
+                "CLI 收集以下类别的数据："
+              ],
               "items": [
                 "<strong>命令使用：</strong>命令名称、CLI版本、退出码、成功或失败状态",
                 "<strong>匿名化参数：</strong>命令选项中敏感值已编辑——密码、令牌、机密信息、API密钥和凭据被替换为<code>[REDACTED]</code>",
@@ -2657,7 +2775,9 @@
               "title": "5.1 收集的数据"
             },
             "cliOptOut": {
-              "content": ["您可以使用以下任一方法禁用CLI遥测："],
+              "content": [
+                "您可以使用以下任一方法禁用CLI遥测："
+              ],
               "items": [
                 "设置环境变量<code>REDIACC_TELEMETRY=off</code>（也接受<code>false</code>或<code>0</code>）",
                 "在CLI配置文件中设置<code>telemetryEnabled: false</code>",
@@ -2714,7 +2834,9 @@
           "id": "middleware",
           "subsections": {
             "middlewareDataCollected": {
-              "content": ["中间件收集以下类别的数据："],
+              "content": [
+                "中间件收集以下类别的数据："
+              ],
               "items": [
                 "<strong>系统信息：</strong>主机名、操作系统版本、.NET运行时版本",
                 "<strong>API调用：</strong>HTTP方法、端点路径、响应状态码、请求持续时间",
@@ -2736,7 +2858,9 @@
           "title": "6. 中间件遥测"
         },
         "principles": {
-          "content": ["Rediacc的所有遥测收集均遵循以下原则："],
+          "content": [
+            "Rediacc的所有遥测收集均遵循以下原则："
+          ],
           "id": "principles",
           "items": [
             "<strong>隐私优先设计：</strong>个人标识符在传输前进行匿名处理。电子邮件地址仅保留域名部分，用户ID经过哈希（SHA-256）和截断处理，密码和机密信息绝不收集。",
@@ -2754,7 +2878,9 @@
           "id": "web-app",
           "subsections": {
             "webDataCollected": {
-              "content": ["Web 应用程序收集以下类别的数据："],
+              "content": [
+                "Web 应用程序收集以下类别的数据："
+              ],
               "items": [
                 "<strong>浏览器信息：</strong>浏览器名称和版本、首选语言、平台（例如Windows、macOS、Linux）、屏幕分辨率、色彩深度、用户代理字符串、设备内存（如可用）、网络连接类型",
                 "<strong>用户上下文：</strong>会话ID（每次会话随机生成）、仅电子邮件域名（本地部分已编辑，例如<code>***@example.com</code>）、组织名称、团队名称",
@@ -2768,7 +2894,9 @@
               "title": "4.1 收集的数据"
             },
             "webNotCollected": {
-              "content": ["Web 应用程序不收集："],
+              "content": [
+                "Web 应用程序不收集："
+              ],
               "items": [
                 "完整的电子邮件地址（本地部分始终被编辑）",
                 "密码、令牌或身份验证凭据",
@@ -2843,47 +2971,65 @@
           "title": "1. 接受条款"
         },
         "accounts": {
-          "content": ["注册时您必须提供准确的信息，并对账户下的所有活动负责。"],
+          "content": [
+            "注册时您必须提供准确的信息，并对账户下的所有活动负责。"
+          ],
           "id": "accounts",
           "title": "3. 账户与注册"
         },
         "changes": {
-          "content": ["我们可能会不时更新这些条款。"],
+          "content": [
+            "我们可能会不时更新这些条款。"
+          ],
           "id": "changes",
           "title": "14. 条款变更"
         },
         "dataOwnership": {
-          "content": ["您的数据属于您。详情请参阅我们的<a href=\"privacy-policy\">隐私政策</a>。"],
+          "content": [
+            "您的数据属于您。详情请参阅我们的<a href=\"privacy-policy\">隐私政策</a>。"
+          ],
           "id": "data-ownership",
           "title": "8. 您的数据"
         },
         "governingLaw": {
-          "content": ["本条款受爱沙尼亚共和国法律管辖。"],
+          "content": [
+            "本条款受爱沙尼亚共和国法律管辖。"
+          ],
           "id": "governing-law",
           "title": "13. 适用法律"
         },
         "indemnification": {
-          "content": ["您同意就因使用服务而产生的所有索赔对Rediacc进行赔偿。"],
+          "content": [
+            "您同意就因使用服务而产生的所有索赔对Rediacc进行赔偿。"
+          ],
           "id": "indemnification",
           "title": "11. 赔偿"
         },
         "intellectualProperty": {
-          "content": ["服务归Rediacc所有，受知识产权法保护。"],
+          "content": [
+            "服务归Rediacc所有，受知识产权法保护。"
+          ],
           "id": "intellectual-property",
           "title": "7. 知识产权"
         },
         "limitationOfLiability": {
-          "content": ["在法律允许的最大范围内，Rediacc不对间接损害承担责任。"],
+          "content": [
+            "在法律允许的最大范围内，Rediacc不对间接损害承担责任。"
+          ],
           "id": "limitation-of-liability",
           "title": "10. 责任限制"
         },
         "serviceAvailability": {
-          "content": ["我们努力维持高可用性，但不保证无中断访问。"],
+          "content": [
+            "我们努力维持高可用性，但不保证无中断访问。"
+          ],
           "id": "service-availability",
           "title": "9. 服务可用性"
         },
         "serviceDescription": {
-          "content": ["Rediacc提供面向AI驱动运营的基础设施自动化平台。"],
+          "content": [
+            "Rediacc提供面向AI驱动运营的基础设施自动化平台。"
+          ],
           "id": "service-description",
           "title": "2. 服务描述"
         },
@@ -2903,13 +3049,46 @@
           "title": "6. 遥测与数据收集"
         },
         "termination": {
-          "content": ["您可以随时终止账户。如果您违反这些条款，我们可能会暂停您的访问。"],
+          "content": [
+            "您可以随时终止账户。如果您违反这些条款，我们可能会暂停您的访问。"
+          ],
           "id": "termination",
           "title": "12. 终止"
         }
       },
       "toc": {
         "title": "目录"
+      }
+    },
+    "legalInformation": {
+      "meta": {
+        "title": "法律信息 - {{companyName}}",
+        "description": "用于透明披露和商务联系的官方公司信息。",
+        "keywords": "法律信息, 公司信息, 注册, 增值税, 联系方式"
+      },
+      "hero": {
+        "title": "法律信息",
+        "subtitle": "用于透明披露和商务联系的官方公司信息"
+      },
+      "sections": {
+        "companyDetails": {
+          "title": "公司信息",
+          "lead": "本页面包含用于法律透明与商务往来的官方公司及联系方式信息。",
+          "labels": {
+            "legalName": "法律形式与名称",
+            "registryCode": "注册代码",
+            "register": "注册机构",
+            "registeredOffice": "注册地址",
+            "vatNumber": "增值税号",
+            "email": "电子邮箱",
+            "website": "网站"
+          },
+          "values": {
+            "legalName": "{{companyName}}（有限责任公司）"
+          },
+          "registerEntryPrefix": "公共注册条目：",
+          "registerEntryLink": "查看公司资料"
+        }
       }
     }
   },
@@ -2937,22 +3116,38 @@
         "title": "勒索软件生存"
       },
       {
-        "benefits": ["应对 AWS 中断", "零供应商锁定", "已测试故障转移就绪"],
+        "benefits": [
+          "应对 AWS 中断",
+          "零供应商锁定",
+          "已测试故障转移就绪"
+        ],
         "description": "单一云是危险的。 部署在任何地方。 快速故障转移。",
         "title": "多云始终"
       },
       {
-        "benefits": ["自动验证", "延长保留时间", "几分钟内恢复"],
+        "benefits": [
+          "自动验证",
+          "延长保留时间",
+          "几分钟内恢复"
+        ],
         "description": "已验证恢复保证。 已测试备份。 完整的历史。",
         "title": "已验证的备份"
       },
       {
-        "benefits": ["您控制的加密", "完整的审计追踪", "迁移安全"],
+        "benefits": [
+          "您控制的加密",
+          "完整的审计追踪",
+          "迁移安全"
+        ],
         "description": "一切都加密了。 一切都经过审核。 完全控制。",
         "title": "加密控制"
       },
       {
-        "benefits": ["60秒环境配置", "生产相同的克隆", "自动 Git 集成"],
+        "benefits": [
+          "60秒环境配置",
+          "生产相同的克隆",
+          "自动 Git 集成"
+        ],
         "description": "即时生产克隆。 零 DevOps 门票。 60 秒环境。",
         "title": "开发环境"
       },

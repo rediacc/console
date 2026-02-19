@@ -2056,6 +2056,17 @@ a[target='_blank']::after {
   gap: var(--space-4);
 }
 
+.footer-legal-disclosure {
+  margin-top: var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-relaxed);
+}
+
+.footer-legal-disclosure p {
+  margin: 0;
+}
+
 /* ===== UTILITY CLASSES ===== */
 .clickable-image {
   cursor: pointer;
