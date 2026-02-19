@@ -41,3 +41,11 @@
 # tar hardlink target escape through symlink chain
 # Same electron-builder dependency chain, tar@8+ has breaking ESM changes
 1113249
+
+# minimatch ReDoS via repeated wildcards (GHSA-3ppc-4f35-3m26)
+# Transitive across eslint/electron-builder chains; upstreams still pin legacy majors
+1113296
+
+# tar arbitrary overwrite/symlink poisoning (GHSA-8qq5-rm4j-mr97)
+# Same electron-builder/node-gyp dependency chains as other tar advisories
+1113300
