@@ -19,7 +19,11 @@ const EXCLUDED_EN_PATHS = {
 };
 
 function normalizeText(input) {
-  return String(input ?? '').replace(/\r\n/g, '\n').trimEnd() + '\n';
+  return (
+    String(input ?? '')
+      .replace(/\r\n/g, '\n')
+      .trimEnd() + '\n'
+  );
 }
 
 function countBodyLines(body) {
@@ -190,7 +194,8 @@ export function validateTranslationFreshness({
         file: enRel,
         message:
           'translationPending=true requires translationPendingReason to explain why updates are deferred',
-        suggestion: 'Add translationPendingReason with a concrete justification and expected follow-up',
+        suggestion:
+          'Add translationPendingReason with a concrete justification and expected follow-up',
       });
       continue;
     }
@@ -296,7 +301,9 @@ function printResults(result, strictAll) {
     grouped.get(err.rule).push(err);
   }
 
-  console.log(`\n\x1b[31m✗ Translation freshness failed (${errors.length} error${errors.length === 1 ? '' : 's'})\x1b[0m`);
+  console.log(
+    `\n\x1b[31m✗ Translation freshness failed (${errors.length} error${errors.length === 1 ? '' : 's'})\x1b[0m`
+  );
   for (const [rule, issues] of grouped.entries()) {
     console.log(`\n[${rule}] (${issues.length})`);
     for (const issue of issues) {
