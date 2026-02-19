@@ -1,8 +1,7 @@
 import { getCollection } from 'astro:content';
-import type { APIRoute, GetStaticPaths } from 'astro';
-import type { Language } from '../../../i18n/types';
-import { DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES } from '../../../i18n/language-utils';
+import { SUPPORTED_LANGUAGES } from '../../../i18n/language-utils';
 import { getBaseSlug } from '../../../utils/slug';
+import type { APIRoute, GetStaticPaths } from 'astro';
 
 // Docs excluded from LLM text endpoints (cloud-specific or auto-generated references)
 const EXCLUDED_BASE_SLUGS = ['cli-application', 'web-application'] as const;
@@ -13,12 +12,10 @@ export const getStaticPaths: GetStaticPaths = async () => {
   const docs = await getCollection('docs', (d) => !isExcludedBaseSlug(getBaseSlug(d.slug)));
 
   return docs
-    .filter((doc) =>
-      SUPPORTED_LANGUAGES.includes((doc.data.language || DEFAULT_LANGUAGE) as Language)
-    )
+    .filter((doc) => SUPPORTED_LANGUAGES.includes(doc.data.language))
     .map((doc) => ({
       params: {
-        lang: (doc.data.language || DEFAULT_LANGUAGE) as Language,
+        lang: doc.data.language,
         slug: getBaseSlug(doc.slug),
       },
       props: { doc },

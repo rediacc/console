@@ -43,12 +43,14 @@ const BrandMark: React.FC<BrandMarkProps> = ({
         <img
           src={imageSrc}
           alt={logoAlt}
-          style={{ width: logoSize, height: logoSize }}
+          width={logoSize}
+          height={logoSize}
           className="object-contain"
         />
         {showText ? (
           <Typography.Text
             className="brand-mark-text"
+            // eslint-disable-next-line no-restricted-syntax -- dynamic typography size is component-driven
             style={{ fontSize: textSize, lineHeight: 1, marginTop: -1 }}
           >
             {text}
