@@ -1,13 +1,15 @@
 ---
-title: "Hızlı Başlangıç"
-description: "5 dakikada sunucunuzda konteynerize bir servis çalıştırın."
-category: "Guides"
+title: Hızlı Başlangıç
+description: 5 dakikada sunucunuzda konteynerize bir servis çalıştırın.
+category: Guides
 order: -1
 language: tr
+sourceHash: 71850d61f7e44292
 ---
 
 # Hızlı Başlangıç
 
+Hangi araci kullanacaginizdan emin degilseniz [rdc vs renet](/tr/docs/rdc-vs-renet) sayfasina bakin.
 Kendi sunucunuzda şifrelenmiş, izole bir konteyner ortamını 5 dakikada dağıtın. Bu rehber **yerel modu** kullanır — bulut hesabı veya SaaS bağımlılığı gerekmez.
 
 ## Ön Koşullar

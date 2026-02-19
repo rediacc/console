@@ -1,11 +1,11 @@
 ---
-title: "Services"
-description: "Deploy and manage containerized services using Rediaccfiles, service networking, and autostart."
-category: "Guides"
+title: Services
+description: >-
+  Deploy and manage containerized services using Rediaccfiles, service
+  networking, and autostart.
+category: Guides
 order: 5
 language: en
-translationPending: true
-translationPendingReason: "English content changed in this PR; locale sync tracked in follow-up translation update"
 ---
 
 # Services

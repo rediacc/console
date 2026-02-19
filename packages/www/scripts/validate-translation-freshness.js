@@ -22,6 +22,12 @@ function normalizeText(input) {
   return String(input ?? '').replace(/\r\n/g, '\n').trimEnd() + '\n';
 }
 
+function countBodyLines(body) {
+  const normalized = normalizeText(body).replace(/\n$/, '');
+  if (!normalized) return 0;
+  return normalized.split('\n').length;
+}
+
 function isExcludedEnglishPath(relPath) {
   for (const collection of COLLECTIONS) {
     const prefixes = EXCLUDED_EN_PATHS[collection] ?? [];
@@ -91,20 +97,29 @@ export function detectChangedFiles(repoRoot, baseRefArg) {
     try {
       git(['rev-parse', '--verify', candidate], repoRoot);
       const mergeBase = git(['merge-base', 'HEAD', candidate], repoRoot)[0];
-      return git(['diff', '--name-only', `${mergeBase}...HEAD`], repoRoot);
+      const committed = git(['diff', '--name-only', `${mergeBase}...HEAD`], repoRoot);
+      const staged = git(['diff', '--name-only', '--cached'], repoRoot);
+      const unstaged = git(['diff', '--name-only'], repoRoot);
+      return Array.from(new Set([...committed, ...staged, ...unstaged]));
     } catch {
       // try next strategy
     }
   }
 
   try {
-    return git(['diff', '--name-only', 'HEAD^...HEAD'], repoRoot);
+    const committed = git(['diff', '--name-only', 'HEAD^...HEAD'], repoRoot);
+    const staged = git(['diff', '--name-only', '--cached'], repoRoot);
+    const unstaged = git(['diff', '--name-only'], repoRoot);
+    return Array.from(new Set([...committed, ...staged, ...unstaged]));
   } catch {
     // fallback below
   }
 
   try {
-    return git(['show', '--pretty=', '--name-only', 'HEAD'], repoRoot);
+    const lastCommit = git(['show', '--pretty=', '--name-only', 'HEAD'], repoRoot);
+    const staged = git(['diff', '--name-only', '--cached'], repoRoot);
+    const unstaged = git(['diff', '--name-only'], repoRoot);
+    return Array.from(new Set([...lastCommit, ...staged, ...unstaged]));
   } catch {
     return [];
   }
@@ -190,6 +205,7 @@ export function validateTranslationFreshness({
     }
 
     const expectedHash = computeSourceHash(enParsed.data, enParsed.content);
+    const enLineCount = countBodyLines(enParsed.content);
 
     for (const lang of languages) {
       const langRel = enRel.replace('/en/', `/${lang}/`);
@@ -216,6 +232,16 @@ export function validateTranslationFreshness({
       }
 
       const langParsed = parseMarkdown(langAbs);
+      const localeLineCount = countBodyLines(langParsed.content);
+      if (localeLineCount !== enLineCount) {
+        errors.push({
+          rule: 'translation-line-count-mismatch',
+          file: langRel,
+          message: `Line count mismatch for ${enRel} (en=${enLineCount}, ${lang}=${localeLineCount})`,
+          suggestion: 'Align translated markdown structure/line count with the English source',
+        });
+      }
+
       const actualHash = String(langParsed.data.sourceHash ?? '').trim();
       if (!actualHash) {
         errors.push({

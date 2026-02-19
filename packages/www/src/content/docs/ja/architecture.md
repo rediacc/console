@@ -1,12 +1,15 @@
 ---
-title: "アーキテクチャ"
-description: "Rediaccの仕組み：2ツールアーキテクチャ、動作モード、セキュリティモデル、設定構造。"
-category: "Guides"
+title: アーキテクチャ
+description: Rediaccの仕組み：2ツールアーキテクチャ、動作モード、セキュリティモデル、設定構造。
+category: Guides
 order: 2
 language: ja
+sourceHash: 8f910f7827c8e958
 ---
 
 # アーキテクチャ
+
+どのツールを使うべきか迷う場合は、[rdc vs renet](/ja/docs/rdc-vs-renet) を参照してください。
 
 このページでは、Rediaccの内部の仕組みについて説明します：2ツールアーキテクチャ、動作モード、セキュリティモデル、設定構造。
 

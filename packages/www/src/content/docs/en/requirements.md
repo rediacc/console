@@ -1,11 +1,9 @@
 ---
-title: "Requirements"
-description: "System requirements and supported platforms for running Rediacc."
-category: "Guides"
+title: Requirements
+description: System requirements and supported platforms for running Rediacc.
+category: Guides
 order: 0
 language: en
-translationPending: true
-translationPendingReason: "English content changed in this PR; locale sync tracked in follow-up translation update"
 ---
 
 # Requirements

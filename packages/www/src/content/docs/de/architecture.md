@@ -1,12 +1,17 @@
 ---
-title: "Architektur"
-description: "Wie Rediacc funktioniert: Zwei-Tool-Architektur, Betriebsmodi, Sicherheitsmodell und Konfigurationsstruktur."
-category: "Guides"
+title: Architektur
+description: >-
+  Wie Rediacc funktioniert: Zwei-Tool-Architektur, Betriebsmodi,
+  Sicherheitsmodell und Konfigurationsstruktur.
+category: Guides
 order: 2
 language: de
+sourceHash: 8f910f7827c8e958
 ---
 
 # Architektur
+
+Wenn Sie unsicher sind, welches Tool Sie verwenden sollen, lesen Sie [rdc vs renet](/de/docs/rdc-vs-renet).
 
 Diese Seite erklärt, wie Rediacc unter der Haube funktioniert: die Zwei-Tool-Architektur, Betriebsmodi, das Sicherheitsmodell und die Konfigurationsstruktur.
 

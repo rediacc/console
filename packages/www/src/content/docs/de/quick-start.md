@@ -1,13 +1,15 @@
 ---
-title: "Schnellstart"
-description: "Starten Sie einen containerisierten Dienst auf Ihrem Server in 5 Minuten."
-category: "Guides"
+title: Schnellstart
+description: Starten Sie einen containerisierten Dienst auf Ihrem Server in 5 Minuten.
+category: Guides
 order: -1
 language: de
+sourceHash: 71850d61f7e44292
 ---
 
 # Schnellstart
 
+Wenn Sie unsicher sind, welches Tool Sie verwenden sollen, lesen Sie [rdc vs renet](/de/docs/rdc-vs-renet).
 Stellen Sie eine verschlusselte, isolierte Container-Umgebung auf Ihrem eigenen Server in 5 Minuten bereit. Diese Anleitung verwendet den **lokalen Modus** — keine Cloud-Konten oder SaaS-Abhangigkeiten.
 
 ## Voraussetzungen

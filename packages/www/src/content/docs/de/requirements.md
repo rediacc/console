@@ -1,12 +1,17 @@
 ---
-title: "Voraussetzungen"
-description: "Systemvoraussetzungen und unterstützte Plattformen für den Betrieb von Rediacc."
-category: "Guides"
+title: Voraussetzungen
+description: >-
+  Systemvoraussetzungen und unterstützte Plattformen für den Betrieb von
+  Rediacc.
+category: Guides
 order: 0
 language: de
+sourceHash: ea4a06f2deefab73
 ---
 
 # Voraussetzungen
+
+Wenn Sie unsicher sind, welches Tool Sie verwenden sollen, lesen Sie [rdc vs renet](/de/docs/rdc-vs-renet).
 
 Bevor Sie mit Rediacc bereitstellen, stellen Sie sicher, dass Ihre Workstation und Ihre entfernten Server die folgenden Voraussetzungen erfüllen.
 

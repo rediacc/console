@@ -1,12 +1,15 @@
 ---
-title: "架构"
-description: "Rediacc 的工作原理：双工具架构、运行模式、安全模型和配置结构。"
-category: "Guides"
+title: 架构
+description: Rediacc 的工作原理：双工具架构、运行模式、安全模型和配置结构。
+category: Guides
 order: 2
 language: zh
+sourceHash: 8f910f7827c8e958
 ---
 
 # 架构
+
+如果你不确定该使用哪个工具，请参考 [rdc vs renet](/zh/docs/rdc-vs-renet)。
 
 本页面介绍 Rediacc 的内部工作原理：双工具架构、运行模式、安全模型和配置结构。
 

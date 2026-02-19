@@ -1,12 +1,17 @@
 ---
-title: "Mimari"
-description: "Rediacc nasil calisir: iki aracli mimari, calisma modlari, guvenlik modeli ve yapilandirma yapisi."
-category: "Guides"
+title: Mimari
+description: >-
+  Rediacc nasil calisir: iki aracli mimari, calisma modlari, guvenlik modeli ve
+  yapilandirma yapisi.
+category: Guides
 order: 2
 language: tr
+sourceHash: 8f910f7827c8e958
 ---
 
 # Mimari
+
+Hangi araci kullanacaginizdan emin degilseniz [rdc vs renet](/tr/docs/rdc-vs-renet) sayfasina bakin.
 
 Bu sayfa, Rediacc'ın altyapısını açıklar: iki araçlı mimari, çalışma modları, güvenlik modeli ve yapılandırma yapısı.
 

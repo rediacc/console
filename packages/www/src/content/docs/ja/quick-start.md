@@ -1,13 +1,15 @@
 ---
-title: "クイックスタート"
-description: "5分でサーバー上にコンテナ化されたサービスを実行。"
-category: "Guides"
+title: クイックスタート
+description: 5分でサーバー上にコンテナ化されたサービスを実行。
+category: Guides
 order: -1
 language: ja
+sourceHash: 71850d61f7e44292
 ---
 
 # クイックスタート
 
+どのツールを使うべきか迷う場合は、[rdc vs renet](/ja/docs/rdc-vs-renet) を参照してください。
 5分で自分のサーバーに暗号化された隔離コンテナ環境をデプロイしましょう。このガイドでは**ローカルモード**を使用します — クラウドアカウントやSaaS依存は不要です。
 
 ## 前提条件
