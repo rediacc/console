@@ -54,6 +54,8 @@ The `{SERVICE}_IP` variables are auto-generated from `.rediacc.json`. The naming
 > **Warning: Do not use `sudo docker` in Rediaccfiles.** The `sudo` command resets environment variables, which means `DOCKER_HOST` is lost and Docker commands will target the system daemon instead of the repository's isolated daemon. This breaks container isolation and can cause port conflicts. Rediacc will block execution if it detects `sudo docker` without `-E`.
 >
 > Use `renet compose` in your Rediaccfiles — it automatically handles `DOCKER_HOST`, injects networking labels for route discovery, and configures service networking. See [Networking](/en/docs/networking) for details on how services are exposed via the reverse proxy. If calling Docker directly, use `docker` without `sudo` — Rediaccfile functions already run with sufficient privileges. If you must use sudo, use `sudo -E docker` to preserve environment variables.
+>
+> `renet` is the remote low-level tool. For normal user workflows from your workstation, prefer `rdc` commands such as `rdc repo up` and `rdc repo down`. See [rdc vs renet](/en/docs/rdc-vs-renet).
 
 ### Example
 

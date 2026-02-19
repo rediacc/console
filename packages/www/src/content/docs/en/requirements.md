@@ -28,6 +28,8 @@ The `rdc` CLI runs on your workstation and orchestrates remote servers over SSH.
 
 The `renet` binary runs on remote servers with root privileges. It manages encrypted disk images, isolated Docker daemons, and service orchestration.
 
+If you are unsure which binary to use, see [rdc vs renet](/en/docs/rdc-vs-renet). In short: use `rdc` for normal operations, and use direct `renet` only for advanced remote-side tasks.
+
 ### Supported Operating Systems
 
 | OS | Version | Architecture |

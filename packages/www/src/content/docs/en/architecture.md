@@ -21,6 +21,8 @@ Rediacc uses two binaries that work together over SSH:
 
 Every command you type locally translates to an SSH call that executes renet on the remote machine. You never need to SSH into servers manually.
 
+For an operator-focused rule of thumb, see [rdc vs renet](/en/docs/rdc-vs-renet).
+
 ## Operating Modes
 
 Rediacc supports three modes, each determining where state is stored and how commands are executed.
