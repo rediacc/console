@@ -4,6 +4,8 @@ description: "How Rediacc works: two-tool architecture, operating modes, securit
 category: "Guides"
 order: 2
 language: en
+translationPending: true
+translationPendingReason: "English content changed in this PR; locale sync tracked in follow-up translation update"
 ---
 
 # Architecture

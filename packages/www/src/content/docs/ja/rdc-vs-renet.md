@@ -4,6 +4,7 @@ description: "rdc を使う場面と renet を使う場面。"
 category: "Guides"
 order: 1
 language: ja
+sourceHash: "a002ea55958664f1"
 ---
 
 # rdc vs renet

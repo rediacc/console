@@ -4,6 +4,7 @@ description: "متى تستخدم rdc ومتى تستخدم renet."
 category: "Guides"
 order: 1
 language: ar
+sourceHash: "a002ea55958664f1"
 ---
 
 # rdc vs renet

@@ -4,6 +4,7 @@ description: "Quand utiliser rdc et quand utiliser renet."
 category: "Guides"
 order: 1
 language: fr
+sourceHash: "a002ea55958664f1"
 ---
 
 # rdc vs renet

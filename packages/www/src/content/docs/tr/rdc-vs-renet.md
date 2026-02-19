@@ -4,6 +4,7 @@ description: "rdc ne zaman, renet ne zaman kullanilir."
 category: "Guides"
 order: 1
 language: tr
+sourceHash: "a002ea55958664f1"
 ---
 
 # rdc vs renet

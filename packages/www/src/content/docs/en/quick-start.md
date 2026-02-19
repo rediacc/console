@@ -4,6 +4,8 @@ description: "Get a containerized service running on your server in 5 minutes."
 category: "Guides"
 order: -1
 language: en
+translationPending: true
+translationPendingReason: "English content changed in this PR; locale sync tracked in follow-up translation update"
 ---
 
 # Quick Start

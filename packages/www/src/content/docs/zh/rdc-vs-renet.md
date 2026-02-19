@@ -4,6 +4,7 @@ description: "什么时候使用 rdc，什么时候使用 renet。"
 category: "Guides"
 order: 1
 language: zh
+sourceHash: "a002ea55958664f1"
 ---
 
 # rdc vs renet
