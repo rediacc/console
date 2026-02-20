@@ -92,7 +92,7 @@ else
                 -d "recurring[interval]=month" \
                 -d "lookup_key=$monthly_lookup" \
                 -d "transfer_lookup_key=true" \
-                -d "metadata[planCode]=$plan_code" > /dev/null
+                -d "metadata[planCode]=$plan_code" >/dev/null
 
             # Create annual price
             stripe_api POST "/v1/prices" \
@@ -102,7 +102,7 @@ else
                 -d "recurring[interval]=year" \
                 -d "lookup_key=$annual_lookup" \
                 -d "transfer_lookup_key=true" \
-                -d "metadata[planCode]=$plan_code" > /dev/null
+                -d "metadata[planCode]=$plan_code" >/dev/null
 
             log_info "Seeded $name: product=$product_id"
         }
@@ -128,7 +128,7 @@ existing_id=$(echo "$existing_endpoints" | jq -r --arg url "$WEBHOOK_URL" \
 
 if [[ -n "$existing_id" ]]; then
     log_step "Deleting existing webhook endpoint: $existing_id"
-    stripe_api DELETE "/v1/webhook_endpoints/$existing_id" > /dev/null
+    stripe_api DELETE "/v1/webhook_endpoints/$existing_id" >/dev/null
 fi
 
 # Create new webhook endpoint
@@ -155,6 +155,6 @@ log_info "Webhook endpoint created: $webhook_id"
 
 # Output for GitHub Actions
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
-    echo "stripe_webhook_endpoint_id=$webhook_id" >> "$GITHUB_OUTPUT"
-    echo "stripe_webhook_secret=$webhook_secret" >> "$GITHUB_OUTPUT"
+    echo "stripe_webhook_endpoint_id=$webhook_id" >>"$GITHUB_OUTPUT"
+    echo "stripe_webhook_secret=$webhook_secret" >>"$GITHUB_OUTPUT"
 fi

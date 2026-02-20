@@ -64,7 +64,7 @@ endpoint_id=$(echo "$endpoints" | jq -r --arg url "$WEBHOOK_URL" \
     '.data[] | select(.url == $url) | .id' | head -1)
 
 if [[ -n "$endpoint_id" ]]; then
-    stripe_api DELETE "/v1/webhook_endpoints/$endpoint_id" > /dev/null
+    stripe_api DELETE "/v1/webhook_endpoints/$endpoint_id" >/dev/null
     log_info "Deleted webhook endpoint: $endpoint_id"
 else
     log_info "No webhook endpoint found for PR #${PR_NUMBER}"

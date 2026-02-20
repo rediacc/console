@@ -80,16 +80,16 @@ while IFS= read -r endpoint; do
     log_step "PR #${pr_number} is ${pr_state}, cleaning up..."
 
     # Delete webhook endpoint
-    stripe_api DELETE "/v1/webhook_endpoints/$endpoint_id" > /dev/null
+    stripe_api DELETE "/v1/webhook_endpoints/$endpoint_id" >/dev/null
     log_info "Deleted webhook endpoint: $endpoint_id (PR #${pr_number})"
 
     # Delete Cloudflare Workers (account-server + www proxy)
     worker_name="account-pr-${pr_number}"
-    cf_api DELETE "/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$worker_name" > /dev/null 2>&1 || true
+    cf_api DELETE "/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$worker_name" >/dev/null 2>&1 || true
     log_info "Deleted worker: $worker_name"
 
     www_worker_name="www-pr-${pr_number}"
-    cf_api DELETE "/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$www_worker_name" > /dev/null 2>&1 || true
+    cf_api DELETE "/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$www_worker_name" >/dev/null 2>&1 || true
     log_info "Deleted worker: $www_worker_name"
 
     cleaned=$((cleaned + 1))

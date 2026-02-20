@@ -81,5 +81,5 @@ log_info "All secrets configured for $WORKER_NAME"
 
 # Output for GitHub Actions
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
-    echo "account_server_url=https://${WORKER_NAME}.rediacc.workers.dev" >> "$GITHUB_OUTPUT"
+    echo "account_server_url=https://${WORKER_NAME}.rediacc.workers.dev" >>"$GITHUB_OUTPUT"
 fi
