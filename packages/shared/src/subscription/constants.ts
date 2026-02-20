@@ -314,5 +314,5 @@ export function getDisplayPrice(planCode: PlanCode, period: BillingPeriod): numb
  * Get all paid plan codes.
  */
 export function getPaidPlans(): PlanCode[] {
-  return PLAN_ORDER.filter((code) => PLAN_METADATA[code].paid) as PlanCode[];
+  return PLAN_ORDER.filter((code) => PLAN_METADATA[code].paid);
 }
