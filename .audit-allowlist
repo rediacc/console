@@ -33,6 +33,7 @@
 # In @develar/schema-utils via electron-builder dependency chain, can't upgrade
 1113205
 1113214
+1113398
 
 # fast-xml-parser DoS through entity expansion in DOCTYPE
 # In @aws-sdk/xml-builder dependency chain, can't upgrade
