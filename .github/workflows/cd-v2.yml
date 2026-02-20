@@ -64,7 +64,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
-          repositories: console,middleware,renet,account,homebrew-tap,elite,sql
+          repositories: console,middleware,renet,account,homebrew-tap,elite,sql,growth
 
       # Re-checkout with submodules using app token (needed for submodule branch check)
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
@@ -214,7 +214,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
-          repositories: console,middleware,renet,account,homebrew-tap,elite,sql
+          repositories: console,middleware,renet,account,homebrew-tap,elite,sql,growth
 
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:

@@ -60,6 +60,7 @@ declare -A SUBMODULE_REPOS=(
     ["private/account"]="rediacc/account"
     ["private/elite"]="rediacc/elite"
     ["private/sql"]="rediacc/sql"
+    ["private/growth"]="rediacc/growth"
 )
 
 ERRORS=0

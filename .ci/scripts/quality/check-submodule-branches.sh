@@ -90,6 +90,7 @@ declare -A SUBMODULE_REPOS=(
     ["private/account"]="rediacc/account"
     ["private/elite"]="rediacc/elite"
     ["private/sql"]="rediacc/sql"
+    ["private/growth"]="rediacc/growth"
 )
 
 # Patterns for low-effort replies that don't count as real responses
@@ -383,7 +384,7 @@ main() {
     fi
 
     # Check each submodule
-    for sm_path in private/middleware private/renet private/homebrew-tap private/account private/elite private/sql; do
+    for sm_path in private/middleware private/renet private/homebrew-tap private/account private/elite private/sql private/growth; do
         if [[ ! -d "$sm_path/.git" ]] && [[ ! -f "$sm_path/.git" ]]; then
             log_warn "Submodule $sm_path not initialized - skipping"
             ((warnings++))
