@@ -57,7 +57,7 @@ declare -A SUBMODULE_REPOS=(
     ["private/middleware"]="rediacc/middleware"
     ["private/renet"]="rediacc/renet"
     ["private/homebrew-tap"]="rediacc/homebrew-tap"
-    ["private/license-server"]="rediacc/license-server"
+    ["private/account"]="rediacc/account"
     ["private/elite"]="rediacc/elite"
     ["private/sql"]="rediacc/sql"
 )

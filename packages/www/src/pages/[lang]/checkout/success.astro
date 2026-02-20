@@ -1,0 +1,92 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { createTranslator } from '../../../i18n/utils';
+import { getLanguagePaths } from '../../../i18n/language-utils';
+import type { Language } from '../../../i18n/types';
+
+export const getStaticPaths = getLanguagePaths;
+
+const { lang } = Astro.params as { lang: Language };
+const { t } = createTranslator(lang);
+---
+
+<BaseLayout
+  lang={lang}
+  title="Subscription Confirmed"
+  description="Your subscription has been confirmed"
+  ogType="website"
+>
+  <section class="checkout-success">
+    <div class="success-container">
+      <div class="success-icon">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+          <path d="M8 12l2.5 2.5L16 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h1>Subscription Confirmed</h1>
+      <p>Your subscription is now active. You'll receive an email with your license key and setup instructions shortly.</p>
+      <div class="success-actions">
+        <a href={`/${lang}/install`} class="btn btn-primary">Get Started with Installation</a>
+        <a href={`/${lang}`} class="btn btn-secondary">Back to Home</a>
+      </div>
+    </div>
+  </section>
+
+  <style>
+    .checkout-success {
+      min-height: 60vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4rem 2rem;
+    }
+
+    .success-container {
+      max-width: 480px;
+      text-align: center;
+    }
+
+    .success-icon {
+      color: var(--color-success, #22c55e);
+      margin-bottom: 1.5rem;
+    }
+
+    .success-container h1 {
+      font-size: 1.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .success-container p {
+      color: var(--color-text-secondary, #6b7280);
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+
+    .success-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      text-decoration: none;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .btn-primary {
+      background: var(--color-primary, #3b82f6);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--color-text-secondary, #6b7280);
+      border: 1px solid var(--color-border, #e5e7eb);
+    }
+  </style>
+</BaseLayout>

@@ -134,7 +134,7 @@
         "title": "リソース使用状況"
       },
       "subscriptionPlan": {
-        "allActiveLicenses": "すべてのアクティブなライセンス",
+        "allActiveSubscriptions": "すべてのアクティブなサブスクリプション",
         "currentSubscription": "現在のサブスクリプション",
         "day": "日",
         "days": "日",

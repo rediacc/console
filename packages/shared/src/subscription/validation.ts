@@ -1,33 +1,33 @@
 /**
- * License Validation
+ * Subscription Validation
  *
- * Functions for validating license data structure and status.
+ * Functions for validating subscription data structure and status.
  */
 
-import { LICENSE_CONFIG, PLAN_ORDER } from './constants';
+import { SUBSCRIPTION_CONFIG, PLAN_ORDER } from './constants';
 import type {
-  LicenseData,
-  LicenseStatus,
-  LicenseValidationResult,
-  OrganizationLicense,
+  SubscriptionData,
+  SubscriptionStatus,
+  SubscriptionValidationResult,
+  OrganizationSubscription,
   PlanCode,
   ResourceLimits,
-  SignedLicenseBlob,
+  SignedSubscriptionBlob,
 } from './types';
 
 /**
- * Validate that a license data object has all required fields.
+ * Validate that a subscription data object has all required fields.
  */
-export function validateLicenseData(data: unknown): data is LicenseData {
+export function validateSubscriptionData(data: unknown): data is SubscriptionData {
   if (!data || typeof data !== 'object') {
     return false;
   }
 
-  const license = data as Partial<LicenseData>;
+  const subscription = data as Partial<SubscriptionData>;
 
   // Check required string fields
-  const requiredStrings: (keyof LicenseData)[] = [
-    'licenseId',
+  const requiredStrings: (keyof SubscriptionData)[] = [
+    'subscriptionId',
     'customerId',
     'planCode',
     'status',
@@ -38,33 +38,33 @@ export function validateLicenseData(data: unknown): data is LicenseData {
   ];
 
   for (const field of requiredStrings) {
-    if (typeof license[field] !== 'string') {
+    if (typeof subscription[field] !== 'string') {
       return false;
     }
   }
 
   // Check required number fields
   if (
-    typeof license.version !== 'number' ||
-    typeof license.organizationId !== 'number' ||
-    typeof license.maxActivations !== 'number' ||
-    typeof license.activationCount !== 'number'
+    typeof subscription.version !== 'number' ||
+    typeof subscription.organizationId !== 'number' ||
+    typeof subscription.maxActivations !== 'number' ||
+    typeof subscription.activationCount !== 'number'
   ) {
     return false;
   }
 
   // Check plan code is valid
-  if (!PLAN_ORDER.includes(license.planCode as PlanCode)) {
+  if (!PLAN_ORDER.includes(subscription.planCode as PlanCode)) {
     return false;
   }
 
   // Check resources object
-  if (!license.resources || typeof license.resources !== 'object') {
+  if (!subscription.resources || typeof subscription.resources !== 'object') {
     return false;
   }
 
   // Check features object
-  if (!license.features || typeof license.features !== 'object') {
+  if (!subscription.features || typeof subscription.features !== 'object') {
     return false;
   }
 
@@ -72,14 +72,14 @@ export function validateLicenseData(data: unknown): data is LicenseData {
 }
 
 /**
- * Validate a signed license blob structure.
+ * Validate a signed subscription blob structure.
  */
-export function validateSignedBlob(blob: unknown): blob is SignedLicenseBlob {
+export function validateSignedBlob(blob: unknown): blob is SignedSubscriptionBlob {
   if (!blob || typeof blob !== 'object') {
     return false;
   }
 
-  const signed = blob as Partial<SignedLicenseBlob>;
+  const signed = blob as Partial<SignedSubscriptionBlob>;
 
   return (
     typeof signed.payload === 'string' &&
@@ -92,25 +92,27 @@ export function validateSignedBlob(blob: unknown): blob is SignedLicenseBlob {
 }
 
 /**
- * Validate an organization license structure.
+ * Validate an organization subscription structure.
  */
-export function validateOrganizationLicense(license: unknown): license is OrganizationLicense {
-  if (!license || typeof license !== 'object') {
+export function validateOrganizationSubscription(
+  subscription: unknown
+): subscription is OrganizationSubscription {
+  if (!subscription || typeof subscription !== 'object') {
     return false;
   }
 
-  const orgLicense = license as Partial<OrganizationLicense>;
+  const orgSubscription = subscription as Partial<OrganizationSubscription>;
 
-  if (!validateSignedBlob(orgLicense.signedBlob)) {
+  if (!validateSignedBlob(orgSubscription.signedBlob)) {
     return false;
   }
 
-  if (!orgLicense.cachedData || typeof orgLicense.cachedData !== 'object') {
+  if (!orgSubscription.cachedData || typeof orgSubscription.cachedData !== 'object') {
     return false;
   }
 
   // Cast to Record for runtime validation of unknown input
-  const cached = orgLicense.cachedData as Record<string, unknown>;
+  const cached = orgSubscription.cachedData as Record<string, unknown>;
   return (
     typeof cached.planCode === 'string' &&
     typeof cached.status === 'string' &&
@@ -124,22 +126,22 @@ export function validateOrganizationLicense(license: unknown): license is Organi
 }
 
 /**
- * Check if a license is currently active.
+ * Check if a subscription is currently active.
  */
-export function isLicenseActive(status: LicenseStatus): boolean {
+export function isSubscriptionActive(status: SubscriptionStatus): boolean {
   return status === 'ACTIVE' || status === 'GRACE';
 }
 
 /**
- * Check if a license has expired based on dates.
+ * Check if a subscription has expired based on dates.
  */
-export function isLicenseExpired(expiresAt: string | Date): boolean {
+export function isSubscriptionExpired(expiresAt: string | Date): boolean {
   const expiry = typeof expiresAt === 'string' ? new Date(expiresAt) : expiresAt;
   return expiry < new Date();
 }
 
 /**
- * Check if a license is in grace period.
+ * Check if a subscription is in grace period.
  */
 export function isInGracePeriod(
   lastCheckIn: string | Date,
@@ -153,7 +155,7 @@ export function isInGracePeriod(
   // 1. Current time is past the check-in interval
   // 2. Current time is before grace period ends
   const checkInAge = now.getTime() - checkIn.getTime();
-  const checkInIntervalMs = LICENSE_CONFIG.checkInIntervalHours * 60 * 60 * 1000;
+  const checkInIntervalMs = SUBSCRIPTION_CONFIG.checkInIntervalHours * 60 * 60 * 1000;
 
   return checkInAge > checkInIntervalMs && now < grace;
 }
@@ -172,7 +174,7 @@ export function isGracePeriodExpired(gracePeriodEnds: string | Date): boolean {
 export function calculateGracePeriodEnd(lastCheckIn: string | Date): Date {
   const checkIn = typeof lastCheckIn === 'string' ? new Date(lastCheckIn) : lastCheckIn;
   const grace = new Date(checkIn);
-  grace.setDate(grace.getDate() + LICENSE_CONFIG.gracePeriodDays);
+  grace.setDate(grace.getDate() + SUBSCRIPTION_CONFIG.gracePeriodDays);
   return grace;
 }
 
@@ -182,31 +184,31 @@ export function calculateGracePeriodEnd(lastCheckIn: string | Date): Date {
  */
 export function getEffectivePlanCode(planCode: PlanCode, gracePeriodEnds: string | Date): PlanCode {
   if (isGracePeriodExpired(gracePeriodEnds)) {
-    return LICENSE_CONFIG.degradedPlan;
+    return SUBSCRIPTION_CONFIG.degradedPlan;
   }
   return planCode;
 }
 
 /**
- * Validate license data and return detailed result.
+ * Validate subscription data and return detailed result.
  */
-export function validateLicense(
-  data: LicenseData,
+export function validateSubscription(
+  data: SubscriptionData,
   now: Date = new Date()
-): LicenseValidationResult {
+): SubscriptionValidationResult {
   // Check status
   if (data.status === 'SUSPENDED') {
-    return { valid: false, error: 'License is suspended' };
+    return { valid: false, error: 'Subscription is suspended' };
   }
 
   if (data.status === 'INACTIVE') {
-    return { valid: false, error: 'License is not activated' };
+    return { valid: false, error: 'Subscription is not activated' };
   }
 
   // Check expiration
   const expiresAt = new Date(data.expiresAt);
   if (now > expiresAt) {
-    return { valid: false, error: 'License has expired' };
+    return { valid: false, error: 'Subscription has expired' };
   }
 
   // Check grace period
@@ -218,7 +220,7 @@ export function validateLicense(
       valid: true,
       data: {
         ...data,
-        planCode: LICENSE_CONFIG.degradedPlan,
+        planCode: SUBSCRIPTION_CONFIG.degradedPlan,
         status: 'GRACE',
       },
       inGracePeriod: true,
@@ -234,13 +236,13 @@ export function validateLicense(
 }
 
 /**
- * Decode base64 payload to LicenseData.
+ * Decode base64 payload to SubscriptionData.
  */
-export function decodeLicensePayload(payload: string): LicenseData | null {
+export function decodeSubscriptionPayload(payload: string): SubscriptionData | null {
   try {
     const json = atob(payload);
     const data = JSON.parse(json);
-    if (validateLicenseData(data)) {
+    if (validateSubscriptionData(data)) {
       return data;
     }
     return null;
@@ -250,9 +252,9 @@ export function decodeLicensePayload(payload: string): LicenseData | null {
 }
 
 /**
- * Encode LicenseData to base64 payload.
+ * Encode SubscriptionData to base64 payload.
  */
-export function encodeLicensePayload(data: LicenseData): string {
+export function encodeSubscriptionPayload(data: SubscriptionData): string {
   return btoa(JSON.stringify(data));
 }
 

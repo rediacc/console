@@ -1,6 +1,5 @@
 import React from 'react';
 import InstallWidget from './InstallWidget';
-import { getConsoleUrl } from '../config/constants';
 import { useTranslation } from '../i18n/react';
 import type { Language } from '../i18n/types';
 
@@ -9,11 +8,8 @@ interface HeroProps {
   origin?: string;
 }
 
-const Hero: React.FC<HeroProps> = ({ lang = 'en', origin }) => {
+const Hero: React.FC<HeroProps> = ({ lang = 'en' }) => {
   const { t } = useTranslation(lang);
-
-  // Get console URL (use origin from server-side if provided)
-  const consoleUrl = getConsoleUrl(origin);
 
   return (
     <section className="hero hero-dark" id="hero">
@@ -27,10 +23,8 @@ const Hero: React.FC<HeroProps> = ({ lang = 'en', origin }) => {
           <InstallWidget lang={lang} />
           <div className="hero-cta">
             <a
-              href={consoleUrl}
+              href={`/${lang}/install`}
               className="btn btn-primary"
-              target="_blank"
-              rel="noopener noreferrer"
             >
               {t('hero.cta.contactUs')}
             </a>

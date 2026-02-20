@@ -7,8 +7,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import apiClient from '@/api/client';
 import { useOrganizationInfo } from '@/api/hooks-organization';
-import logoBlack from '@/assets/logo_black.png';
-import logoWhite from '@/assets/logo_white.png';
 import PreviewWarning from '@/components/common/PreviewWarning';
 import SandboxWarning from '@/components/common/SandboxWarning';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
@@ -38,7 +36,6 @@ const MainLayout: React.FC = () => {
   const organization = useSelector(selectOrganization);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
   const themeMode = useSelector((state: RootState) => state.ui.themeMode);
-  const logo = themeMode === 'dark' ? logoWhite : logoBlack;
   const { t } = useTranslation('common');
   const message = useMessage();
   const { data: organizationData } = useOrganizationInfo();
@@ -169,7 +166,7 @@ const MainLayout: React.FC = () => {
         onCollapse={handleCollapse}
         collapsedButtonRender={false}
         // Branding
-        logo={collapsed ? false : logo}
+        logo={collapsed ? false : `${import.meta.env.BASE_URL}favicon.svg`}
         title={false}
         onMenuHeaderClick={() => {
           trackUserAction('navigation', '/dashboard', {
@@ -227,8 +224,7 @@ const MainLayout: React.FC = () => {
         // Header
         headerTitleRender={() => (
           <BrandMark
-            logoSrc={logo}
-            iconSrc={`${import.meta.env.BASE_URL}favicon.svg`}
+            logoSrc={`${import.meta.env.BASE_URL}favicon.svg`}
             logoAlt={t('common:alt.logo')}
             showText
             logoSize={36}

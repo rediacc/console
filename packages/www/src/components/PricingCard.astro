@@ -34,12 +34,16 @@ const priceDisplay = plan.id === 'enterprise'
   ? `${plan.price}*`
   : plan.price;
 
+// Plans that use Stripe Checkout instead of consultation links
+const checkoutPlans = new Set(['professional', 'business']);
+
 // Tier-specific CTAs
 const getPrimaryCta = (planId: string) => {
   const ctaKey = `pages.pricing.ui.cta.${planId}.primary`;
   return {
     label: t(ctaKey),
     href: EXTERNAL_LINKS.SCHEDULE_CONSULTATION,
+    useCheckout: checkoutPlans.has(planId),
   };
 };
 
@@ -127,15 +131,25 @@ const savings = showSavings && monthlyPrice > 0 ? calculateSavings(monthlyPrice)
   </div>
 
   <div class="card-actions">
-    <a
-      href={primaryCta.href}
-      target="_blank"
-      rel="noopener noreferrer"
-      class="btn btn-primary btn-large"
-      aria-label={`${primaryCta.label} (${t('common.aria.opensInNewTab')})`}
-    >
-      {primaryCta.label}
-    </a>
+    {primaryCta.useCheckout ? (
+      <button
+        type="button"
+        class="btn btn-primary btn-large"
+        data-checkout={plan.id}
+      >
+        {primaryCta.label}
+      </button>
+    ) : (
+      <a
+        href={primaryCta.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn btn-primary btn-large"
+        aria-label={`${primaryCta.label} (${t('common.aria.opensInNewTab')})`}
+      >
+        {primaryCta.label}
+      </a>
+    )}
     <a
       href={secondaryCta.href}
       class="btn btn-secondary btn-large"

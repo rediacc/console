@@ -234,7 +234,7 @@ export const RESOURCE_DEFAULTS = {
 } as const;
 
 /**
- * Edition and license defaults
+ * Edition and subscription defaults
  */
 export const EDITION_DEFAULTS = {
   /** Default edition type */

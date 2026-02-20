@@ -43,6 +43,18 @@ export const EXTERNAL_LINKS = {
 } as const;
 
 /**
+ * Stripe integration configuration
+ * Populated via Vite env vars at build time:
+ * - PR previews: sandbox keys + per-PR www worker
+ * - Production: live keys + www.rediacc.com
+ * ACCOUNT_SERVER_URL is same-origin: www worker proxies /account/api/* to account-server
+ */
+export const STRIPE_CONFIG = {
+  PUBLISHABLE_KEY: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '',
+  ACCOUNT_SERVER_URL: '/account',
+} as const;
+
+/**
  * Get the console URL
  * Always returns '/console' to ensure consistent behavior across all environments
  * and to avoid language prefix interference (e.g., /en/console)

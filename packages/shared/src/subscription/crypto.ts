@@ -1,12 +1,16 @@
 /**
- * License Crypto
+ * Subscription Crypto
  *
- * Ed25519 signature verification for license blobs.
+ * Ed25519 signature verification for subscription blobs.
  * Uses Web Crypto API for browser compatibility.
  */
 
-import { decodeLicensePayload, validateLicense } from './validation';
-import type { LicenseData, LicenseValidationResult, SignedLicenseBlob } from './types';
+import { decodeSubscriptionPayload, validateSubscription } from './validation';
+import type {
+  SubscriptionData,
+  SubscriptionValidationResult,
+  SignedSubscriptionBlob,
+} from './types';
 
 /**
  * Known public keys for signature verification.
@@ -55,11 +59,11 @@ export function clearPublicKeys(): void {
 }
 
 /**
- * Verify a signed license blob.
- * @param blob - The signed license blob
+ * Verify a signed subscription blob.
+ * @param blob - The signed subscription blob
  * @returns True if signature is valid
  */
-export async function verifySignature(blob: SignedLicenseBlob): Promise<boolean> {
+export async function verifySignature(blob: SignedSubscriptionBlob): Promise<boolean> {
   const publicKey = knownPublicKeys.get(blob.publicKeyId);
   if (!publicKey) {
     console.warn(`Unknown public key ID: ${blob.publicKeyId}`);
@@ -78,13 +82,13 @@ export async function verifySignature(blob: SignedLicenseBlob): Promise<boolean>
 }
 
 /**
- * Verify and decode a signed license blob.
- * @param blob - The signed license blob
- * @returns Validation result with decoded license data if valid
+ * Verify and decode a signed subscription blob.
+ * @param blob - The signed subscription blob
+ * @returns Validation result with decoded subscription data if valid
  */
-export async function verifyAndDecodeLicense(
-  blob: SignedLicenseBlob
-): Promise<LicenseValidationResult> {
+export async function verifyAndDecodeSubscription(
+  blob: SignedSubscriptionBlob
+): Promise<SubscriptionValidationResult> {
   // Verify signature first
   const signatureValid = await verifySignature(blob);
   if (!signatureValid) {
@@ -92,29 +96,29 @@ export async function verifyAndDecodeLicense(
   }
 
   // Decode payload
-  const data = decodeLicensePayload(blob.payload);
+  const data = decodeSubscriptionPayload(blob.payload);
   if (!data) {
-    return { valid: false, error: 'Invalid license payload' };
+    return { valid: false, error: 'Invalid subscription payload' };
   }
 
-  // Validate license data
-  return validateLicense(data);
+  // Validate subscription data
+  return validateSubscription(data);
 }
 
 /**
- * Sign a license payload (for license server use).
+ * Sign a subscription payload (for account server use).
  * This requires having the private key available.
  *
- * @param payload - Base64 encoded license data
+ * @param payload - Base64 encoded subscription data
  * @param privateKey - CryptoKey for signing
  * @param publicKeyId - ID to include in the blob
- * @returns Signed license blob
+ * @returns Signed subscription blob
  */
-export async function signLicensePayload(
+export async function signSubscriptionPayload(
   payload: string,
   privateKey: CryptoKey,
   publicKeyId: string
-): Promise<SignedLicenseBlob> {
+): Promise<SignedSubscriptionBlob> {
   const payloadBytes = new TextEncoder().encode(payload);
 
   const signatureBuffer = await crypto.subtle.sign({ name: 'Ed25519' }, privateKey, payloadBytes);
@@ -130,7 +134,7 @@ export async function signLicensePayload(
 }
 
 /**
- * Import a private key for signing (license server only).
+ * Import a private key for signing (account server only).
  * @param privateKeyBase64 - Base64-encoded PKCS8 private key
  * @returns CryptoKey for signing
  */
@@ -170,14 +174,14 @@ export async function generateKeyPair(): Promise<{
 }
 
 /**
- * Create a complete signed license from license data.
- * This is a convenience function for the license server.
+ * Create a complete signed subscription from subscription data.
+ * This is a convenience function for the account server.
  */
-export async function createSignedLicense(
-  data: LicenseData,
+export async function createSignedSubscription(
+  data: SubscriptionData,
   privateKey: CryptoKey,
   publicKeyId: string
-): Promise<SignedLicenseBlob> {
+): Promise<SignedSubscriptionBlob> {
   const payload = btoa(JSON.stringify(data));
-  return signLicensePayload(payload, privateKey, publicKeyId);
+  return signSubscriptionPayload(payload, privateKey, publicKeyId);
 }

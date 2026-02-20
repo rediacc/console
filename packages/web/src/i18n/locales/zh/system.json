@@ -197,7 +197,7 @@
     }
   },
   "dashboard": {
-    "activeLicenses": "活跃许可证",
+    "activeSubscriptions": "活跃订阅",
     "completed": "已完成",
     "daysRemaining": "剩余天数",
     "failed": "失败",

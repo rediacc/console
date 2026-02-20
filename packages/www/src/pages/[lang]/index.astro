@@ -22,6 +22,15 @@ const priceFormatter = new Intl.NumberFormat(lang === 'en' ? 'en-US' : lang, {
 });
 const formatPrice = (amount: number) => priceFormatter.format(amount);
 
+const calculateSavings = (monthlyPrice: number) => {
+  const yearlyPrice = monthlyPrice * 10;
+  const fullPrice = monthlyPrice * 12;
+  const savings = fullPrice - yearlyPrice;
+  const roundedSavings = Math.ceil(savings / 100) * 100;
+  const percentage = Math.round(((fullPrice - yearlyPrice) / fullPrice) * 100);
+  return `Save $${roundedSavings.toLocaleString()} (${percentage}% off)`;
+};
+
 const technicalMetrics = ta('pages.pricing.technicalSummary.metrics');
 const technicalValues = to('pages.pricing.technicalSummary.values');
 
@@ -62,19 +71,31 @@ const plans = [
         <h2>{t('pages.pricing.hero.title')}</h2>
         <p>{t('pages.pricing.hero.subtitle')}</p>
       </div>
+      <div class="billing-toggle" role="radiogroup" aria-label="Billing period">
+        <button class="billing-toggle-btn active" role="radio" aria-checked="true" data-period="monthly">
+          {t('pages.pricing.ui.billingToggle.monthly')}
+        </button>
+        <button class="billing-toggle-btn" role="radio" aria-checked="false" data-period="annual">
+          {t('pages.pricing.ui.billingToggle.annual')}
+        </button>
+      </div>
       <div class="cf-pricing-grid">
         {plans.map(plan => (
-          <div class:list={['cf-pricing-card', { 'cf-featured': plan.featured }]}>
+          <div class:list={['cf-pricing-card', { 'cf-featured': plan.featured }]} data-monthly={plan.monthly} data-yearly={plan.yearly}>
             <h3 class="cf-plan-name">{t(`pages.pricing.plans.${plan.id}.name`)}</h3>
             <div class="cf-price-block">
               {plan.monthly === 0 ? (
-                <span class="cf-price">{formatPrice(0)}</span>
+                <>
+                  <span class="cf-price" data-price>{formatPrice(0)}</span>
+                  <div class="cf-price-subtitle">{t('pages.pricing.ui.foreverFree')}</div>
+                </>
               ) : (
                 <>
                   <div class="cf-price-line">
-                    <span class="cf-price">{formatPrice(plan.monthly)}</span>
-                    <span class="cf-price-period">/mo</span>
+                    <span class="cf-price" data-price>{formatPrice(plan.monthly)}</span>
+                    <span class="cf-price-period" data-period-label>/mo</span>
                   </div>
+                  <div class="cf-savings-badge savings-badge" data-savings>{calculateSavings(plan.monthly)}</div>
                 </>
               )}
             </div>
@@ -88,14 +109,31 @@ const plans = [
                 </li>
               ))}
             </ul>
-            <a
-              href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION}
-              target="_blank"
-              rel="noopener noreferrer"
-              class:list={['cf-cta-btn', { 'cf-cta-featured': plan.featured }]}
-            >
-              {plan.monthly === 0 ? t('pages.pricing.ui.cta.community.primary') : t('pages.pricing.ui.cta.professional.primary')}
-            </a>
+            {plan.monthly === 0 ? (
+              <a
+                href={`/${lang}/install`}
+                class:list={['cf-cta-btn', { 'cf-cta-featured': plan.featured }]}
+              >
+                {t('pages.pricing.ui.cta.community.primary')}
+              </a>
+            ) : plan.id === 'enterprise' ? (
+              <a
+                href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="cf-cta-btn"
+              >
+                {t('pages.pricing.ui.cta.professional.primary')}
+              </a>
+            ) : (
+              <button
+                type="button"
+                class="cf-cta-btn"
+                data-checkout={plan.id}
+              >
+                {t('pages.pricing.ui.cta.professional.primary')}
+              </button>
+            )}
           </div>
         ))}
       </div>
@@ -131,4 +169,94 @@ const plans = [
       </div>
     </div>
   </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const toggle = document.querySelector('.billing-toggle');
+      if (!toggle) return;
+
+      const buttons = toggle.querySelectorAll('.billing-toggle-btn');
+      const cards = document.querySelectorAll('.cf-pricing-card');
+
+      const lang = document.documentElement.lang;
+      const formatter = new Intl.NumberFormat(lang === 'en' ? 'en-US' : lang, {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0,
+      });
+
+      function updatePricing(period: string) {
+        cards.forEach((card) => {
+          const monthly = parseInt((card as HTMLElement).dataset.monthly!, 10);
+          const yearly = parseInt((card as HTMLElement).dataset.yearly!, 10);
+          if (monthly === 0) return;
+
+          const priceEl = card.querySelector('[data-price]');
+          const periodEl = card.querySelector('[data-period-label]');
+          const savingsEl = card.querySelector('[data-savings]') as HTMLElement | null;
+
+          if (period === 'annual') {
+            if (priceEl) priceEl.textContent = formatter.format(yearly);
+            if (periodEl) periodEl.textContent = '/yr';
+            if (savingsEl) savingsEl.classList.add('visible');
+          } else {
+            if (priceEl) priceEl.textContent = formatter.format(monthly);
+            if (periodEl) periodEl.textContent = '/mo';
+            if (savingsEl) savingsEl.classList.remove('visible');
+          }
+        });
+      }
+
+      buttons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          buttons.forEach((b) => {
+            b.classList.remove('active');
+            b.setAttribute('aria-checked', 'false');
+          });
+          btn.classList.add('active');
+          btn.setAttribute('aria-checked', 'true');
+          updatePricing((btn as HTMLElement).dataset.period!);
+        });
+      });
+
+      // Stripe Checkout handlers
+      const checkoutButtons = document.querySelectorAll<HTMLButtonElement>('[data-checkout]');
+
+      // Same-origin: www worker proxies /account/api/* to account-server via Service Binding
+      const accountServerUrl = `${window.location.origin}/account`;
+
+      checkoutButtons.forEach((btn) => {
+        const originalText = btn.textContent;
+        btn.addEventListener('click', async () => {
+          const planId = btn.dataset.checkout!;
+          const activeToggle = document.querySelector('.billing-toggle-btn.active') as HTMLElement | null;
+          const billingPeriod = activeToggle?.dataset.period === 'annual' ? 'annual' : 'monthly';
+
+          btn.disabled = true;
+          btn.textContent = '...';
+
+          try {
+            const response = await fetch(`${accountServerUrl}/api/v1/checkout`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                planCode: planId.toUpperCase(),
+                billingPeriod,
+                successUrl: `${window.location.origin}/${document.documentElement.lang}/checkout/success`,
+                cancelUrl: window.location.href,
+              }),
+            });
+
+            if (!response.ok) throw new Error('Checkout failed');
+
+            const { url } = await response.json();
+            if (url) window.location.href = url;
+          } catch {
+            btn.disabled = false;
+            btn.textContent = originalText;
+          }
+        });
+      });
+    });
+  </script>
 </BaseLayout>

@@ -1,6 +1,6 @@
 {
   "dashboard": {
-    "activeLicenses": "Active Licenses",
+    "activeSubscriptions": "Active Subscriptions",
     "daysRemaining": "Days Remaining",
     "noSubscription": "No active subscription",
     "maxActiveJobs": "Max Active Jobs",

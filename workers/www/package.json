@@ -1,0 +1,8 @@
+{
+  "name": "rediacc-www-worker",
+  "private": true,
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250214.0",
+    "wrangler": "^3.109.2"
+  }
+}

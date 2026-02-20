@@ -1,8 +1,8 @@
 /**
- * License Constants
+ * Subscription Constants
  *
  * Single source of truth for plan resources and features.
- * All components (license-server, middleware, renet, CLI) should use these values.
+ * All components (account-server, middleware, renet, CLI) should use these values.
  */
 
 import type { FeatureFlags, PlanCode, ResourceLimits } from './types';
@@ -109,16 +109,16 @@ export const PLAN_FEATURES: Record<PlanCode, FeatureFlags> = {
 } as const;
 
 /**
- * License configuration constants.
+ * Subscription configuration constants.
  */
-export const LICENSE_CONFIG = {
-  /** How often clients should check in with license server (hours) */
+export const SUBSCRIPTION_CONFIG = {
+  /** How often clients should check in with account server (hours) */
   checkInIntervalHours: 24,
   /** Days of grace period before degradation */
   gracePeriodDays: 3,
   /** Plan to degrade to when grace period expires */
   degradedPlan: 'COMMUNITY' as PlanCode,
-  /** Current license schema version */
+  /** Current subscription schema version */
   schemaVersion: 1,
 } as const;
 

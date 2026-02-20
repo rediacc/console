@@ -1,20 +1,20 @@
 /**
- * @rediacc/shared/license
+ * @rediacc/shared/subscription
  *
- * Centralized license schema for the Rediacc platform.
- * Used by license-server, middleware, renet, and CLI.
+ * Centralized subscription schema for the Rediacc platform.
+ * Used by account-server, middleware, renet, and CLI.
  */
 
 // Types
 export type {
   FeatureFlags,
-  LicenseData,
-  LicenseStatus,
-  LicenseValidationResult,
-  OrganizationLicense,
+  SubscriptionData,
+  SubscriptionStatus,
+  SubscriptionValidationResult,
+  OrganizationSubscription,
   PlanCode,
   ResourceLimits,
-  SignedLicenseBlob,
+  SignedSubscriptionBlob,
 } from './types';
 
 // Constants
@@ -26,7 +26,7 @@ export {
   getPlanResources,
   hasFeature,
   isValidPlanCode,
-  LICENSE_CONFIG,
+  SUBSCRIPTION_CONFIG,
   PLAN_FEATURES,
   PLAN_ORDER,
   PLAN_RESOURCES,
@@ -36,16 +36,16 @@ export {
 // Validation
 export {
   calculateGracePeriodEnd,
-  decodeLicensePayload,
-  encodeLicensePayload,
+  decodeSubscriptionPayload,
+  encodeSubscriptionPayload,
   getEffectivePlanCode,
   isGracePeriodExpired,
   isInGracePeriod,
-  isLicenseActive,
-  isLicenseExpired,
-  validateLicense,
-  validateLicenseData,
-  validateOrganizationLicense,
+  isSubscriptionActive,
+  isSubscriptionExpired,
+  validateSubscription,
+  validateSubscriptionData,
+  validateOrganizationSubscription,
   validateResourceLimits,
   validateSignedBlob,
 } from './validation';
@@ -53,13 +53,13 @@ export {
 // Crypto (Ed25519 signature verification)
 export {
   clearPublicKeys,
-  createSignedLicense,
+  createSignedSubscription,
   generateKeyPair,
   getPublicKeyIds,
   hasPublicKey,
   importPrivateKey,
   importPublicKey,
-  signLicensePayload,
-  verifyAndDecodeLicense,
+  signSubscriptionPayload,
+  verifyAndDecodeSubscription,
   verifySignature,
 } from './crypto';

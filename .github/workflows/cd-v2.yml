@@ -22,12 +22,10 @@ on:
         type: boolean
         default: false
 
-# Required for GitHub Pages deployment and Docker publishing
+# Required for release publishing, Docker, and Cloudflare Pages deployment
 permissions:
   actions: write
   contents: write
-  pages: write
-  id-token: write
   packages: write  # For GHCR push
 
 # Queue new releases instead of cancelling in-progress ones
@@ -66,7 +64,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
-          repositories: console,middleware,renet,license-server,homebrew-tap,elite,sql
+          repositories: console,middleware,renet,account,homebrew-tap,elite,sql
 
       # Re-checkout with submodules using app token (needed for submodule branch check)
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
@@ -205,8 +203,8 @@ jobs:
       needs.init.outputs.skip_release != 'true' &&
       !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
     environment:
-      name: github-pages
-      url: ${{ steps.pages-deploy.outputs.page_url }}
+      name: production
+      url: https://www.rediacc.com
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -216,7 +214,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
-          repositories: console,middleware,renet,license-server,homebrew-tap,elite,sql
+          repositories: console,middleware,renet,account,homebrew-tap,elite,sql
 
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
@@ -250,8 +248,8 @@ jobs:
           .ci/scripts/docker/retag-image.sh --image cli --from "$STAGING_TAG" --to "$VERSION" --push-latest --skip-if-exists
 
       # -----------------------------------------------------------------------
-      # Step 1b: Deploy License Server to Cloudflare
-      # Build shared packages first (license-server imports from @rediacc/shared)
+      # Step 1b: Deploy Account Server to Cloudflare
+      # Build shared packages first (account imports from @rediacc/shared)
       # -----------------------------------------------------------------------
       - name: Install dependencies
         run: npm ci
@@ -259,10 +257,18 @@ jobs:
       - name: Build shared packages
         run: npm run build:packages
 
-      - name: Deploy License Server
+      - name: Deploy Account Server
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: .ci/scripts/private/run-license-server.sh deploy
+        run: .ci/scripts/private/run-account.sh deploy
+
+      - name: Set Account Server Stripe secrets
+        working-directory: private/account
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          echo "${{ secrets.STRIPE_SECRET_KEY }}" | npx wrangler secret put STRIPE_SECRET_KEY --name account-server
+          echo "${{ secrets.STRIPE_WEBHOOK_SECRET }}" | npx wrangler secret put STRIPE_WEBHOOK_SECRET --name account-server
 
       # -----------------------------------------------------------------------
       # Step 1c: Merge submodule PRs to main
@@ -388,16 +394,14 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
       # -----------------------------------------------------------------------
-      # Step 6: Deploy GitHub Pages
+      # Step 6: Deploy to Cloudflare Pages
       # -----------------------------------------------------------------------
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b  # v4
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65  # v3
         with:
-          path: dist/pages/
-
-      - name: Deploy to GitHub Pages
-        id: pages-deploy
-        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e  # v4
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist/pages/ --project-name=rediacc --branch=main
 
       # -----------------------------------------------------------------------
       # Step 7: Cleanup staging tags
@@ -432,7 +436,7 @@ jobs:
           echo "**Version:** v${{ needs.init.outputs.next_version }}" >> $GITHUB_STEP_SUMMARY
           echo "**Release SHA:** ${{ steps.commit.outputs.release_sha }}" >> $GITHUB_STEP_SUMMARY
           echo "**CI Run:** ${{ needs.init.outputs.ci_run_id }} (sha: ${{ needs.init.outputs.ci_sha }})" >> $GITHUB_STEP_SUMMARY
-          echo "**Pages URL:** ${{ steps.pages-deploy.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Pages URL:** https://www.rediacc.com" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Docker images:**" >> $GITHUB_STEP_SUMMARY
           echo "- ghcr.io/rediacc/elite/api:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY

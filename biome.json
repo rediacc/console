@@ -70,15 +70,15 @@
       "!**/*.generated.ts",
       "!**/search-index.json",
       "!**/*.astro",
-      "private/license-server/src/**/*.ts",
-      "private/license-server/tests/**/*.ts",
-      "private/license-server/scripts/**/*.ts"
+      "private/account/src/**/*.ts",
+      "private/account/tests/**/*.ts",
+      "private/account/scripts/**/*.ts"
     ],
     "ignoreUnknown": true
   },
   "overrides": [
     {
-      "includes": ["private/license-server/**/*.ts"],
+      "includes": ["private/account/**/*.ts"],
       "linter": {
         "enabled": true,
         "rules": {

@@ -263,10 +263,6 @@ jobs:
       # -----------------------------------------------------------------------
       # Upload preview pages artifact (dry-run mode for PR preview deploys)
       # -----------------------------------------------------------------------
-      - name: Remove GitHub Pages files for preview deployment
-        if: ${{ inputs.upload_pages && inputs.dry_run }}
-        run: rm -f dist/pages/CNAME dist/pages/.nojekyll
-
       - name: Upload preview pages artifact
         if: ${{ inputs.upload_pages && inputs.dry_run }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6

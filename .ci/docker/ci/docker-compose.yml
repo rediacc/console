@@ -70,16 +70,16 @@ services:
       - SYSTEM_DEFAULT_TEAM_NAME=${SYSTEM_DEFAULT_TEAM_NAME:-Private Team}
       # CI/TEST mode (bypasses email and captcha validation)
       - CI_MODE=${CI_MODE:-true}
-      # License server configuration
-      - LICENSE_SERVER_URL=${LICENSE_SERVER_URL:-http://license-server:3000}
-      - LICENSE_SERVER_API_KEY=${LICENSE_SERVER_API_KEY}
+      # Account server configuration
+      - ACCOUNT_SERVER_URL=${ACCOUNT_SERVER_URL:-http://account-server:3000}
+      - ACCOUNT_SERVER_API_KEY=${ACCOUNT_SERVER_API_KEY}
       - ED25519_PUBLIC_KEY=${ED25519_PUBLIC_KEY}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       sql:
         condition: service_healthy
-      license-server:
+      account-server:
         condition: service_healthy
     networks:
       internet:
@@ -119,26 +119,26 @@ services:
       retries: 10
       start_period: 40s
 
-  license-server:
+  account-server:
     build:
       context: ../../..
-      dockerfile: private/license-server/Dockerfile
-    container_name: rediacc-license-server
-    hostname: rediacc-license-server
+      dockerfile: private/account/Dockerfile
+    container_name: rediacc-account-server
+    hostname: rediacc-account-server
     environment:
       - PORT=3000
-      - S3_ENDPOINT=http://license-rustfs:9000
-      - S3_BUCKET=licenses
+      - S3_ENDPOINT=http://account-rustfs:9000
+      - S3_BUCKET=subscriptions
       - S3_ACCESS_KEY_ID=${RUSTFS_ACCESS_KEY:-rustfsadmin}
       - S3_SECRET_ACCESS_KEY=${RUSTFS_SECRET_KEY:-rustfsadmin}
       - ED25519_PRIVATE_KEY=${ED25519_PRIVATE_KEY}
       - ED25519_PUBLIC_KEY=${ED25519_PUBLIC_KEY}
-      - API_KEY=${LICENSE_SERVER_API_KEY}
+      - API_KEY=${ACCOUNT_SERVER_API_KEY}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
     depends_on:
-      license-rustfs:
+      account-rustfs:
         condition: service_healthy
-      license-rustfs-init:
+      account-rustfs-init:
         condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>{if(!r.ok)process.exit(1)})"]
@@ -149,13 +149,13 @@ services:
     networks:
       intranet:
         aliases:
-          - license-server
+          - account-server
     restart: unless-stopped
 
-  license-rustfs:
+  account-rustfs:
     image: rustfs/rustfs:latest
-    container_name: rediacc-license-rustfs
-    hostname: rediacc-license-rustfs
+    container_name: rediacc-account-rustfs
+    hostname: rediacc-account-rustfs
     environment:
       - RUSTFS_VOLUMES=/data/rustfs{0...3}
       - RUSTFS_ADDRESS=0.0.0.0:9000
@@ -167,7 +167,7 @@ services:
       - rustfs_data_2:/data/rustfs2
       - rustfs_data_3:/data/rustfs3
     depends_on:
-      license-rustfs-volume-init:
+      account-rustfs-volume-init:
         condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "sh", "-c", "curl -f http://127.0.0.1:9000/health"]
@@ -178,13 +178,13 @@ services:
     networks:
       intranet:
         aliases:
-          - license-rustfs
+          - account-rustfs
     restart: unless-stopped
 
   # Fix volume permissions (RustFS runs as UID 10001)
-  license-rustfs-volume-init:
+  account-rustfs-volume-init:
     image: alpine
-    container_name: rediacc-license-rustfs-volume-init
+    container_name: rediacc-account-rustfs-volume-init
     volumes:
       - rustfs_data_0:/data0
       - rustfs_data_1:/data1
@@ -193,16 +193,16 @@ services:
     command: sh -c "chown -R 10001:10001 /data0 /data1 /data2 /data3"
     restart: "no"
 
-  license-rustfs-init:
+  account-rustfs-init:
     image: amazon/aws-cli:latest
-    container_name: rediacc-license-rustfs-init
+    container_name: rediacc-account-rustfs-init
     depends_on:
-      license-rustfs:
+      account-rustfs:
         condition: service_healthy
     environment:
       - AWS_ACCESS_KEY_ID=${RUSTFS_ACCESS_KEY:-rustfsadmin}
       - AWS_SECRET_ACCESS_KEY=${RUSTFS_SECRET_KEY:-rustfsadmin}
-    entrypoint: /bin/sh -c "aws --endpoint-url http://license-rustfs:9000 s3 mb s3://licenses 2>/dev/null || true"
+    entrypoint: /bin/sh -c "aws --endpoint-url http://account-rustfs:9000 s3 mb s3://subscriptions 2>/dev/null || true"
     networks:
       - intranet
 

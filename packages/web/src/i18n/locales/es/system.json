@@ -197,7 +197,7 @@
     }
   },
   "dashboard": {
-    "activeLicenses": "Licencias activas",
+    "activeSubscriptions": "Suscripciones activas",
     "completed": "Completada",
     "daysRemaining": "Días restantes",
     "failed": "Fallida",

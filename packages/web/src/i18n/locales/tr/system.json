@@ -197,7 +197,7 @@
     }
   },
   "dashboard": {
-    "activeLicenses": "Aktif Lisanslar",
+    "activeSubscriptions": "Aktif Abonelikler",
     "completed": "Tamamlandı",
     "daysRemaining": "Kalan Günler",
     "failed": "Başarısız",

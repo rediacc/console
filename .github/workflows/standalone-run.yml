@@ -138,7 +138,7 @@ jobs:
         with:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
 
       - name: Checkout with Submodules
         uses: actions/checkout@v4
@@ -365,8 +365,8 @@ jobs:
           echo "Final Container Status:"
           docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(NAME|rediacc)" || true
           echo ""
-          echo "Recent License Server Logs (last 50 lines):"
-          docker logs rediacc-license-server --tail=50 2>&1 || true
+          echo "Recent Account Server Logs (last 50 lines):"
+          docker logs rediacc-account --tail=50 2>&1 || true
           echo ""
           echo "Recent API Logs (last 30 lines):"
           docker logs rediacc-api --tail=30 2>&1 || true
