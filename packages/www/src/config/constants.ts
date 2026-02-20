@@ -50,7 +50,7 @@ export const EXTERNAL_LINKS = {
  * ACCOUNT_SERVER_URL is same-origin: www worker proxies /account/api/* to account-server
  */
 export const STRIPE_CONFIG = {
-  PUBLISHABLE_KEY: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '',
+  PUBLISHABLE_KEY: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? '',
   ACCOUNT_SERVER_URL: '/account',
 } as const;
 

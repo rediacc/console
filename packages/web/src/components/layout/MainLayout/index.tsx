@@ -35,7 +35,7 @@ const MainLayout: React.FC = () => {
   const queryClient = useQueryClient();
   const organization = useSelector(selectOrganization);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
-  const themeMode = useSelector((state: RootState) => state.ui.themeMode);
+
   const { t } = useTranslation('common');
   const message = useMessage();
   const { data: organizationData } = useOrganizationInfo();
