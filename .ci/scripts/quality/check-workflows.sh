@@ -85,6 +85,41 @@ check_pattern \
     "secrets: inherit" \
     "Pass required secrets explicitly: secrets: { APP_PRIVATE_KEY: \${{ secrets.APP_PRIVATE_KEY }} }"
 
+# Security: Ban secrets in run blocks (shell injection risk)
+# Secrets must be passed via env: blocks, never interpolated directly in run: shell code.
+# Safe: env: { KEY: ${{ secrets.X }} } then run: echo "$KEY"
+# Unsafe: run: echo "${{ secrets.X }}" | command
+for file in "${GITHUB_YAMLS[@]}"; do
+    matches=$(grep -n '\${{.*secrets\.' "$file" 2>/dev/null || true)
+    if [[ -n "$matches" ]]; then
+        while IFS= read -r match; do
+            [[ -z "$match" ]] && continue
+            local_line="${match%%:*}"
+            local_content="${match#*:}"
+            # Skip comments
+            if echo "$local_content" | grep -qE "^\s*#"; then
+                continue
+            fi
+            # Skip lines with security approval comment
+            if echo "$local_content" | grep -qF "# security: approved"; then
+                continue
+            fi
+            # Safe: YAML key-value assignment (key: value) where key is NOT 'run'
+            # This covers env:, with:, secrets:, private-key:, password:, etc.
+            if echo "$local_content" | grep -qE '^\s+[a-zA-Z][a-zA-Z0-9_-]*:' && \
+               ! echo "$local_content" | grep -qE '^\s+run:'; then
+                continue
+            fi
+            # Unsafe: secret interpolation in shell code (run: block or continuation line)
+            log_error "$file:$local_line: secret used directly in shell code"
+            echo "  Line: $local_content"
+            echo "  Fix:  Move secret to env: block and reference as \$VAR_NAME in run:"
+            echo ""
+            ((ERRORS++))
+        done <<<"$matches"
+    fi
+done
+
 # Security: Ban unpinned third-party actions (tag-only references like @v3)
 # All uses: references must use SHA pinning (e.g. @abc123...def  # v3)
 # Local actions (./) are exempt since they're part of the repo
