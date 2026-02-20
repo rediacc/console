@@ -137,6 +137,31 @@ export interface OrganizationSubscription {
 }
 
 /**
+ * Billing period for Stripe subscriptions.
+ */
+export type BillingPeriod = 'monthly' | 'annual';
+
+/**
+ * Pricing configuration for a subscription plan.
+ * Amounts are in cents (USD).
+ */
+export interface PlanPricing {
+  monthlyPriceCents: number;
+  annualPriceCents: number;
+  currency: 'usd';
+}
+
+/**
+ * Display metadata for a subscription plan.
+ */
+export interface PlanMetadata {
+  displayName: string;
+  description: string;
+  paid: boolean;
+  featured: boolean;
+}
+
+/**
  * Subscription validation result.
  */
 export interface SubscriptionValidationResult {

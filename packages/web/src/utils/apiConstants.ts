@@ -48,11 +48,6 @@ export const CONFIG_URLS = {
     return `${getJsonApiBaseUrl()}/configs/endpoints.json`;
   },
 
-  /** Pricing configuration */
-  get PRICING(): string {
-    return `${getJsonApiBaseUrl()}/configs/pricing.json`;
-  },
-
   /** Services configuration */
   get SERVICES(): string {
     return `${getJsonApiBaseUrl()}/configs/services.json`;

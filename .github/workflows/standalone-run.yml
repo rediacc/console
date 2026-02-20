@@ -49,6 +49,9 @@ on:
         description: 'JSON array of VM OS variants for matrix runs (overrides vm-os)'
         type: string
         default: ''
+    secrets:
+      APP_PRIVATE_KEY:
+        required: false
   workflow_dispatch:
     inputs:
       run-name:

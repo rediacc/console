@@ -8,6 +8,7 @@ import { createTranslator } from '../../i18n/utils';
 import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
 import { EXTERNAL_LINKS } from '../../config/constants';
+import { PLAN_ORDER, PLAN_PRICING, PLAN_METADATA } from '@rediacc/shared/subscription';
 import '../../styles/pricing-page.css';
 
 export const getStaticPaths = getLanguagePaths;
@@ -34,12 +35,12 @@ const calculateSavings = (monthlyPrice: number) => {
 const technicalMetrics = ta('pages.pricing.technicalSummary.metrics');
 const technicalValues = to('pages.pricing.technicalSummary.values');
 
-const plans = [
-  { id: 'community', monthly: 0, yearly: 0, featured: true },
-  { id: 'professional', monthly: 349, yearly: 3490 },
-  { id: 'business', monthly: 699, yearly: 6990 },
-  { id: 'enterprise', monthly: 2100, yearly: 21000 },
-];
+const plans = PLAN_ORDER.map((code) => ({
+  id: code.toLowerCase(),
+  monthly: PLAN_PRICING[code].monthlyPriceCents / 100,
+  yearly: PLAN_PRICING[code].annualPriceCents / 100,
+  featured: PLAN_METADATA[code].featured,
+}));
 ---
 
 <BaseLayout

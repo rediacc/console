@@ -1,7 +1,7 @@
 name: Cleanup PR Preview
 
 on:
-  pull_request_target:
+  pull_request_target: # security: approved — protected by fork guard in job condition
     types: [closed]
 
 jobs:
@@ -13,7 +13,22 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
-          sparse-checkout: .ci/scripts
+          sparse-checkout: |
+            .ci/scripts
+            private/account
+            packages/shared
+            package.json
+            package-lock.json
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared packages
+        run: npm run build:packages
 
       - name: Cleanup preview deployments
         run: .ci/scripts/housekeeping/cleanup-cf-preview.sh --branch "pr-${{ github.event.pull_request.number }}"
@@ -28,7 +43,8 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Cleanup Stripe sandbox
-        run: .ci/scripts/stripe/cleanup-sandbox.sh --pr-number ${{ github.event.pull_request.number }}
+        run: npx tsx scripts/cleanup-sandbox.ts --pr-number ${{ github.event.pull_request.number }}
+        working-directory: private/account
         env:
           STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

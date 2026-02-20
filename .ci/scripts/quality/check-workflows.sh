@@ -43,6 +43,10 @@ check_pattern() {
                 if echo "$local_content" | grep -qE "^\s*#"; then
                     continue
                 fi
+                # Skip lines with security approval comment
+                if echo "$local_content" | grep -qF "# security: approved"; then
+                    continue
+                fi
                 log_error "$file:$local_line: ${label} is banned"
                 echo "  Line: $local_content"
                 echo "  Fix:  $fix_hint"
@@ -68,6 +72,18 @@ check_pattern \
     "fail-fast" \
     "fail-fast" \
     "Remove fail-fast — the watchdog handles failure cancellation. GitHub defaults to false when omitted"
+
+# Security: Ban pull_request_target (exposes secrets to fork PRs)
+check_pattern \
+    "pull_request_target" \
+    "pull_request_target trigger" \
+    "Use 'pull_request' instead. pull_request_target exposes secrets to forks. If required, add fork guard and '# security: approved' comment"
+
+# Security: Ban secrets: inherit (explicit passing is safer)
+check_pattern \
+    "secrets:[[:space:]]*inherit" \
+    "secrets: inherit" \
+    "Pass required secrets explicitly: secrets: { APP_PRIVATE_KEY: \${{ secrets.APP_PRIVATE_KEY }} }"
 
 if [[ $ERRORS -gt 0 ]]; then
     echo ""

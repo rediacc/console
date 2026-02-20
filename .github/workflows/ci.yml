@@ -20,13 +20,11 @@ on:
           - 'chromium-only'
           - 'all-browsers'
 
-# Required for CI watchdog to cancel/retry workflow on job failures,
-# autofix commits, and Docker publishing
+# Minimal default permissions — jobs that need more declare their own
 permissions:
-  actions: write
-  contents: write
+  contents: read
   statuses: write   # For quality/submodule-merge-readiness commit status
-  packages: write  # For GHCR push
+  packages: read    # Most jobs pull from GHCR
 
 # E2E Browser Configuration
 # Default: chromium only. Use workflow_dispatch with "all-browsers" to test all.
@@ -49,6 +47,7 @@ jobs:
     runs-on: ubuntu-latest  # Needs Docker for registry cache check
     if: github.event_name != 'push' || (github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]'))
     outputs:
+      is_fork: ${{ steps.fork-check.outputs.is_fork }}
       is_bot: ${{ steps.init.outputs.is_bot }}
       next_version: ${{ steps.init.outputs.next_version }}
       bump_type: ${{ steps.init.outputs.bump_type }}
@@ -68,6 +67,16 @@ jobs:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           persist-credentials: false
+
+      - name: Detect fork PR
+        id: fork-check
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" && \
+                "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]]; then
+            echo "is_fork=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_fork=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: ./.github/actions/app-token
         id: app-token
@@ -134,6 +143,9 @@ jobs:
     name: CI Watchdog
     needs: [initialize]
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
     timeout-minutes: 180  # 3 hours max
     # Use !cancelled() so force-cancel from newer runs can stop this job
     if: ${{ !cancelled() && needs.initialize.result == 'success' }}
@@ -172,7 +184,8 @@ jobs:
     with:
       is_bot: ${{ needs.initialize.outputs.is_bot }}
       next_version: ${{ needs.initialize.outputs.next_version }}
-    secrets: inherit
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   # ============================================================================
   # REVIEW GATE: Trigger Gemini review, wait for it, check threads & comments
@@ -186,7 +199,7 @@ jobs:
     name: Review Gate
     needs: [initialize, quality]
     runs-on: ubuntu-slim
-    if: needs.initialize.outputs.is_bot != 'true' && github.event_name == 'pull_request'
+    if: needs.initialize.outputs.is_bot != 'true' && github.event_name == 'pull_request' && needs.initialize.outputs.is_fork != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
@@ -236,6 +249,7 @@ jobs:
     runs-on: ubuntu-slim
     if: >-
       always() &&
+      needs.initialize.outputs.is_fork != 'true' &&
       github.event_name == 'pull_request' &&
       needs.initialize.result == 'success' &&
       needs.quality.result == 'success' &&
@@ -270,16 +284,18 @@ jobs:
 
       - name: Setup Stripe sandbox
         id: sandbox
-        run: .ci/scripts/stripe/setup-sandbox.sh --pr-number ${{ github.event.pull_request.number }}
+        run: npx tsx scripts/setup-sandbox.ts --pr-number ${{ github.event.pull_request.number }}
+        working-directory: private/account
         env:
           STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
 
       - name: Deploy account server preview
         id: deploy
         run: >-
-          .ci/scripts/stripe/deploy-account-server-preview.sh
+          bash scripts/deploy-preview.sh
           --pr-number ${{ github.event.pull_request.number }}
           --webhook-secret "${{ steps.sandbox.outputs.stripe_webhook_secret }}"
+        working-directory: private/account
         env:
           STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -304,17 +320,24 @@ jobs:
   build-renet:
     name: Build (Renet)
     needs: [initialize, quality, review-gate]
+    permissions:
+      contents: read
+      packages: write   # GHCR push
     if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     uses: ./.github/workflows/ci-build-renet.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
       skip_build: ${{ needs.initialize.outputs.bridge_exists == 'true' }}
       bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}
-    secrets: inherit
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   build-docker:
     name: Build (Docker)
     needs: [initialize, quality, review-gate, build-renet]
+    permissions:
+      contents: read
+      packages: write   # GHCR push
     if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     uses: ./.github/workflows/ci-build-docker.yml
     with:
@@ -329,25 +352,34 @@ jobs:
       web_exists: ${{ needs.initialize.outputs.web_exists }}
       cli_tag: ${{ needs.initialize.outputs.cli_tag }}
       cli_exists: ${{ needs.initialize.outputs.cli_exists }}
-    secrets: inherit
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   build-desktop:
     name: Build (Desktop)
     needs: [initialize, quality, review-gate]
+    permissions:
+      contents: read
+      packages: write   # GHCR push
     if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     uses: ./.github/workflows/ci-build-desktop.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
-    secrets: inherit
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   build-cli:
     name: Build (CLI)
     needs: [initialize, quality, review-gate, build-renet]
+    permissions:
+      contents: read
+      packages: write   # GHCR push
     if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     uses: ./.github/workflows/ci-build-cli.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
-    secrets: inherit
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   # ============================================================================
   # COLUMN 3B: DEPLOY DRY-RUN
@@ -357,7 +389,10 @@ jobs:
   deploy-dryrun:
     name: Deploy Dry-Run
     needs: [initialize, build-docker, build-desktop, build-cli, stripe-sandbox]
-    if: always() && needs.initialize.outputs.is_bot != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success' && needs.build-desktop.result == 'success' && needs.build-cli.result == 'success' && (needs.stripe-sandbox.result == 'success' || needs.stripe-sandbox.result == 'skipped')
+    permissions:
+      contents: read
+      packages: write   # GHCR pull for validation
+    if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.outputs.is_bot != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success' && needs.build-desktop.result == 'success' && needs.build-cli.result == 'success' && (needs.stripe-sandbox.result == 'success' || needs.stripe-sandbox.result == 'skipped')
     uses: ./.github/workflows/cd-dryrun.yml
     with:
       dry_run: ${{ github.event_name != 'push' }}
@@ -369,7 +404,10 @@ jobs:
       plugins_tag: ${{ needs.initialize.outputs.plugins_tag }}
       web_tag: ${{ needs.initialize.outputs.web_tag }}
       cli_tag: ${{ needs.initialize.outputs.cli_tag }}
-    secrets: inherit
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+      GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+      GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
   # ============================================================================
   # COLUMN 4: TESTS + INFRA
@@ -379,7 +417,7 @@ jobs:
   tests:
     name: Tests + Infra
     needs: [initialize, build-docker]
-    if: always() && needs.initialize.result == 'success' && needs.build-docker.result == 'success'
+    if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success'
     uses: ./.github/workflows/ct-tests.yml
     with:
       api_tag: ${{ needs.initialize.outputs.api_tag }}
@@ -387,7 +425,10 @@ jobs:
       web_tag: ${{ needs.initialize.outputs.web_tag }}
       e2e_browsers: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.browsers == 'all-browsers' && 'chromium firefox webkit msedge' || 'chromium' }}
       provision_vms: true
-    secrets: inherit
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   # ============================================================================
   # COLUMN 4B: STANDALONE RUN TEST
@@ -397,7 +438,7 @@ jobs:
   standalone-run-test:
     name: Standalone Run
     needs: [initialize, build-docker]
-    if: always() && needs.initialize.result == 'success' && needs.build-docker.result == 'success'
+    if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success'
     uses: ./.github/workflows/standalone-run.yml
     with:
       run-name: 'CI Validation'
@@ -408,7 +449,8 @@ jobs:
       bridge-tag: ${{ needs.initialize.outputs.bridge_tag }}
       ci-mode: true
       vm-os-list: '["none", "ubuntu-24.04", "debian-12"]'
-    secrets: inherit
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   # ============================================================================
   # COLUMN 4C: ELITE RUN TEST
@@ -419,7 +461,7 @@ jobs:
   elite-run-test:
     name: Elite Run
     needs: [initialize, build-docker]
-    if: always() && needs.initialize.result == 'success' && needs.build-docker.result == 'success'
+    if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -505,6 +547,7 @@ jobs:
     runs-on: ubuntu-slim
     if: >-
       always() &&
+      needs.initialize.outputs.is_fork != 'true' &&
       github.event_name == 'pull_request' &&
       needs.initialize.result == 'success' &&
       needs.deploy-dryrun.result == 'success' &&
@@ -569,10 +612,34 @@ jobs:
             DEPLOY_PREVIEW_OK="true"
           fi
 
-          # stripe-sandbox can be skipped for non-PR events
+          # stripe-sandbox can be skipped for non-PR events or fork PRs
           STRIPE_SANDBOX_OK="false"
           if [[ "${{ needs.stripe-sandbox.result }}" == "success" ]] || [[ "${{ needs.stripe-sandbox.result }}" == "skipped" ]]; then
             STRIPE_SANDBOX_OK="true"
+          fi
+
+          # tests can be skipped for fork PRs
+          TESTS_OK="false"
+          if [[ "${{ needs.tests.result }}" == "success" ]] || [[ "${{ needs.tests.result }}" == "skipped" ]]; then
+            TESTS_OK="true"
+          fi
+
+          # standalone-run-test can be skipped for fork PRs
+          STANDALONE_RUN_OK="false"
+          if [[ "${{ needs.standalone-run-test.result }}" == "success" ]] || [[ "${{ needs.standalone-run-test.result }}" == "skipped" ]]; then
+            STANDALONE_RUN_OK="true"
+          fi
+
+          # elite-run-test can be skipped for fork PRs
+          ELITE_RUN_OK="false"
+          if [[ "${{ needs.elite-run-test.result }}" == "success" ]] || [[ "${{ needs.elite-run-test.result }}" == "skipped" ]]; then
+            ELITE_RUN_OK="true"
+          fi
+
+          # deploy-dryrun can be skipped for fork PRs
+          DEPLOY_DRYRUN_OK="false"
+          if [[ "${{ needs.deploy-dryrun.result }}" == "success" ]] || [[ "${{ needs.deploy-dryrun.result }}" == "skipped" ]]; then
+            DEPLOY_DRYRUN_OK="true"
           fi
 
           if [[ "${{ needs.initialize.result }}" != "success" ]] || \
@@ -582,10 +649,10 @@ jobs:
              [[ "${{ needs.build-docker.result }}" != "success" ]] || \
              [[ "${{ needs.build-desktop.result }}" != "success" ]] || \
              [[ "${{ needs.build-cli.result }}" != "success" ]] || \
-             [[ "${{ needs.deploy-dryrun.result }}" != "success" ]] || \
-             [[ "${{ needs.tests.result }}" != "success" ]] || \
-             [[ "${{ needs.standalone-run-test.result }}" != "success" ]] || \
-             [[ "${{ needs.elite-run-test.result }}" != "success" ]] || \
+             [[ "$DEPLOY_DRYRUN_OK" != "true" ]] || \
+             [[ "$TESTS_OK" != "true" ]] || \
+             [[ "$STANDALONE_RUN_OK" != "true" ]] || \
+             [[ "$ELITE_RUN_OK" != "true" ]] || \
              [[ "$DEPLOY_PREVIEW_OK" != "true" ]]; then
             echo "One or more jobs failed:"
             echo "  initialize: ${{ needs.initialize.result }}"

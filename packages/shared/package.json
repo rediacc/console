@@ -38,6 +38,14 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./subscription": {
+      "types": "./dist/subscription/index.d.ts",
+      "default": "./dist/subscription/index.js"
+    },
+    "./subscription/*": {
+      "types": "./dist/subscription/*.d.ts",
+      "default": "./dist/subscription/*.js"
+    },
     "./queue": {
       "types": "./dist/queue/index.d.ts",
       "default": "./dist/queue/index.js"

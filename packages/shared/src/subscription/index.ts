@@ -7,7 +7,10 @@
 
 // Types
 export type {
+  BillingPeriod,
   FeatureFlags,
+  PlanMetadata,
+  PlanPricing,
   SubscriptionData,
   SubscriptionStatus,
   SubscriptionValidationResult,
@@ -21,16 +24,23 @@ export type {
 export {
   comparePlans,
   exceedsLimit,
-  getResourceLimit,
+  getDisplayPrice,
+  getPaidPlans,
   getPlanFeatures,
+  getPlanMetadata,
+  getPlanPricing,
   getPlanResources,
+  getResourceLimit,
+  getStripeLookupKey,
   hasFeature,
   isValidPlanCode,
-  SUBSCRIPTION_CONFIG,
   PLAN_FEATURES,
+  PLAN_METADATA,
   PLAN_ORDER,
+  PLAN_PRICING,
   PLAN_RESOURCES,
   PROGRESSIVE_LIMIT_KEYS,
+  SUBSCRIPTION_CONFIG,
 } from './constants';
 
 // Validation

@@ -270,6 +270,12 @@ jobs:
           echo "${{ secrets.STRIPE_SECRET_KEY }}" | npx wrangler secret put STRIPE_SECRET_KEY --name account-server
           echo "${{ secrets.STRIPE_WEBHOOK_SECRET }}" | npx wrangler secret put STRIPE_WEBHOOK_SECRET --name account-server
 
+      - name: Sync Stripe products/prices
+        run: npx tsx scripts/stripe-sync.ts
+        working-directory: private/account
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+
       # -----------------------------------------------------------------------
       # Step 1c: Merge submodule PRs to main
       # Must run BEFORE bump-submodules.sh which resets submodules to origin/main
@@ -459,7 +465,8 @@ jobs:
     uses: ./.github/workflows/ct-install-methods.yml
     with:
       version: ${{ needs.init.outputs.next_version }}
-    secrets: inherit
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   # ============================================================================
   # CLEANUP ON FAILURE - Remove staging artifacts if publish fails
