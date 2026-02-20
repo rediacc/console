@@ -40,7 +40,7 @@ if [[ -f "$BLOCKLIST_FILE" ]]; then
         line="${line//[[:space:]]/}"
         [[ -z "$line" ]] && continue
         BLOCKED_MODULES["$line"]=1
-    done < "$BLOCKLIST_FILE"
+    done <"$BLOCKLIST_FILE"
 fi
 
 # Determine major version of a semver string (handles v1.2.3, v1+incompatible, etc.)
@@ -76,7 +76,7 @@ check_go_dir() {
         else
             echo "$path $current $latest minor"
         fi
-    done <<< "$outdated"
+    done <<<"$outdated"
 
     cd "$REPO_ROOT"
 }
@@ -93,7 +93,7 @@ if [[ ${#GO_DIRS[@]} -eq 0 ]]; then
 fi
 
 # Collect results
-declare -a ALL_MINOR=()   # "submodule: path current -> latest"
+declare -a ALL_MINOR=() # "submodule: path current -> latest"
 declare -a ALL_MAJOR=()
 declare -a ALL_BLOCKED=()
 declare -a DIRS_WITH_MINOR=()
@@ -177,7 +177,7 @@ fi
 GIT_NAME="${PR_AUTHOR:-github-actions[bot]}"
 GIT_EMAIL="${PR_AUTHOR:+${PR_AUTHOR}@users.noreply.github.com}"
 GIT_EMAIL="${GIT_EMAIL:-github-actions[bot]@users.noreply.github.com}"
-git -C "$REPO_ROOT" config user.name  "$GIT_NAME"
+git -C "$REPO_ROOT" config user.name "$GIT_NAME"
 git -C "$REPO_ROOT" config user.email "$GIT_EMAIL"
 
 PUSHED_NAMES=()
@@ -193,7 +193,7 @@ for dir in "${DIRS_WITH_MINOR[@]}"; do
     (
         set -e
         cd "$dir"
-        git config user.name  "$GIT_NAME"
+        git config user.name "$GIT_NAME"
         git config user.email "$GIT_EMAIL"
 
         # Collect non-major, non-blocked direct deps with updates
@@ -244,7 +244,10 @@ done
 
 # Commit console submodule pointer
 if [[ ${#PUSHED_NAMES[@]} -gt 0 ]]; then
-    MODULES_LIST=$(IFS=", "; echo "${PUSHED_NAMES[*]}")
+    MODULES_LIST=$(
+        IFS=", "
+        echo "${PUSHED_NAMES[*]}"
+    )
     git -C "$REPO_ROOT" commit -m "chore(deps): auto-upgrade go dependencies
 
 Automatically upgraded by CI go deps check in: $MODULES_LIST"
