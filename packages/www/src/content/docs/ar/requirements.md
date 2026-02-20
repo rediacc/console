@@ -1,12 +1,15 @@
 ---
-title: "المتطلبات"
-description: "متطلبات النظام والمنصات المدعومة لتشغيل Rediacc."
-category: "Guides"
+title: المتطلبات
+description: متطلبات النظام والمنصات المدعومة لتشغيل Rediacc.
+category: Guides
 order: 0
 language: ar
+sourceHash: ea4a06f2deefab73
 ---
 
 # المتطلبات
+
+إذا لم تكن متاكدا من الاداة المناسبة، راجع [rdc vs renet](/ar/docs/rdc-vs-renet).
 
 قبل النشر باستخدام Rediacc، تأكد من أن محطة عملك والخوادم البعيدة تستوفي المتطلبات التالية.
 

@@ -1,7 +1,7 @@
 ---
-title: "Requirements"
-description: "System requirements and supported platforms for running Rediacc."
-category: "Guides"
+title: Requirements
+description: System requirements and supported platforms for running Rediacc.
+category: Guides
 order: 0
 language: en
 ---
@@ -27,6 +27,8 @@ The `rdc` CLI runs on your workstation and orchestrates remote servers over SSH.
 ## Remote Server (Data Plane)
 
 The `renet` binary runs on remote servers with root privileges. It manages encrypted disk images, isolated Docker daemons, and service orchestration.
+
+If you are unsure which binary to use, see [rdc vs renet](/en/docs/rdc-vs-renet). In short: use `rdc` for normal operations, and use direct `renet` only for advanced remote-side tasks.
 
 ### Supported Operating Systems
 

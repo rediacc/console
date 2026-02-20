@@ -1,4 +1,5 @@
 /* Install Page Styles */
+@import './platform-tabs.css';
 
 /* Hero Section */
 .install-hero {
@@ -62,9 +63,6 @@
   flex-direction: column;
   gap: var(--space-8);
 }
-
-/* Platform Filter Tabs (shared) */
-@import './platform-tabs.css';
 
 /* Method Card */
 .method-card {

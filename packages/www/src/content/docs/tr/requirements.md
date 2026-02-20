@@ -1,12 +1,15 @@
 ---
-title: "Gereksinimler"
-description: "Rediacc'i calistirmak icin sistem gereksinimleri ve desteklenen platformlar."
-category: "Guides"
+title: Gereksinimler
+description: Rediacc'i calistirmak icin sistem gereksinimleri ve desteklenen platformlar.
+category: Guides
 order: 0
 language: tr
+sourceHash: ea4a06f2deefab73
 ---
 
 # Gereksinimler
+
+Hangi araci kullanacaginizdan emin degilseniz [rdc vs renet](/tr/docs/rdc-vs-renet) sayfasina bakin.
 
 Rediacc ile dağıtım yapmadan önce, iş istasyonunuzun ve uzak sunucularınızın aşağıdaki gereksinimleri karşıladığından emin olun.
 

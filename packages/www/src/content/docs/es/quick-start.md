@@ -1,13 +1,15 @@
 ---
-title: "Inicio rápido"
-description: "Ejecute un servicio en contenedores en su servidor en 5 minutos."
-category: "Guides"
+title: Inicio rápido
+description: Ejecute un servicio en contenedores en su servidor en 5 minutos.
+category: Guides
 order: -1
 language: es
+sourceHash: 71850d61f7e44292
 ---
 
 # Inicio rápido
 
+Si no tienes claro que herramienta usar, consulta [rdc vs renet](/es/docs/rdc-vs-renet).
 Despliegue un entorno de contenedores cifrado y aislado en su propio servidor en 5 minutos. Esta guía utiliza el **modo local** — sin cuentas en la nube ni dependencias de SaaS.
 
 ## Requisitos previos

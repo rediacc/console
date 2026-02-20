@@ -50,20 +50,20 @@
   flex-direction: column;
 }
 
-.sidebar-nav::-webkit-scrollbar {
+.sidebar-base .sidebar-nav::-webkit-scrollbar {
   width: 6px;
 }
 
-.sidebar-nav::-webkit-scrollbar-track {
+.sidebar-base .sidebar-nav::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.sidebar-nav::-webkit-scrollbar-thumb {
+.sidebar-base .sidebar-nav::-webkit-scrollbar-thumb {
   background-color: var(--sidebar-border);
   border-radius: var(--radius-sm);
 }
 
-.sidebar-nav::-webkit-scrollbar-thumb:hover {
+.sidebar-base .sidebar-nav::-webkit-scrollbar-thumb:hover {
   background-color: var(--color-text-secondary);
 }
 
@@ -72,12 +72,16 @@
    Common styles for the nav element inside sidebars
    ============================================================================ */
 
-.sidebar-nav {
+.sidebar-base .sidebar-nav {
+  display: block;
+  gap: 0;
+  row-gap: 0;
+  column-gap: 0;
   flex: 1;
-  padding: var(--sidebar-padding);
-  background-color: var(--sidebar-bg);
-  border-radius: var(--border-radius);
-  border: var(--border-width-thin) solid var(--sidebar-border);
+  padding: 0;
+  background-color: transparent;
+  border-radius: 0;
+  border: none;
   overflow-y: auto;
   overscroll-behavior: contain;
 
@@ -86,9 +90,8 @@
   scrollbar-color: var(--sidebar-border) transparent;
 }
 
-.sidebar-nav-with-accent {
+.sidebar-base .sidebar-nav-with-accent {
   border: none;
-  border-inline-start: var(--border-width-accent) solid var(--sidebar-accent);
 }
 
 /* ============================================================================
@@ -96,8 +99,8 @@
    Used for "Documentation" heading in left sidebar and "Table of Contents" in right
    ============================================================================ */
 
-.sidebar-title {
-  font-size: var(--font-size-sm);
+.sidebar-base .sidebar-title {
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   color: var(--color-text-secondary);
@@ -110,13 +113,13 @@
    Base styles for all sidebar lists
    ============================================================================ */
 
-.sidebar-list {
+.sidebar-base .sidebar-list {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-.sidebar-item {
+.sidebar-base .sidebar-item {
   margin: var(--item-margin);
 }
 
@@ -125,7 +128,7 @@
    Applied to both navigation links and TOC links
    ============================================================================ */
 
-.sidebar-link {
+.sidebar-base .sidebar-link {
   display: flex;
   align-items: center;
   padding: var(--link-padding);
@@ -139,25 +142,25 @@
     color var(--transition-speed);
 }
 
-.sidebar-link:hover {
+.sidebar-base .sidebar-link:hover {
   color: var(--link-hover-color);
   background-color: var(--link-hover-bg);
   text-decoration: underline;
 }
 
-.sidebar-link.active {
+.sidebar-base .sidebar-link.active {
   background-color: var(--link-active-bg);
   color: var(--link-active-color);
   font-weight: var(--font-weight-medium);
   text-decoration: none;
 }
 
-.sidebar-link.active:hover {
+.sidebar-base .sidebar-link.active:hover {
   background-color: var(--color-text);
   text-decoration: none;
 }
 
-.sidebar-link:focus-visible {
+.sidebar-base .sidebar-link:focus-visible {
   outline: 2px solid var(--sidebar-accent);
   outline-offset: 2px;
 }
@@ -167,7 +170,7 @@
    Used in left navigation sidebar for collapsible sections
    ============================================================================ */
 
-.category-header {
+.sidebar-base .category-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -185,17 +188,17 @@
   transition: color var(--transition-speed);
 }
 
-.category-header:hover {
+.sidebar-base .category-header:hover {
   color: var(--text-hover);
 }
 
-.category-header:focus-visible {
+.sidebar-base .category-header:focus-visible {
   outline: 2px solid var(--sidebar-accent);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
 
-.category-chevron {
+.sidebar-base .category-chevron {
   display: inline-flex;
   align-items: center;
   font-size: var(--font-size-xs);
@@ -204,7 +207,7 @@
   transition: transform var(--transition-speed);
 }
 
-.category-header[aria-expanded='false'] .category-chevron {
+.sidebar-base .category-header[aria-expanded='false'] .category-chevron {
   transform: rotate(-90deg);
 }
 
@@ -213,7 +216,7 @@
    Controls display of nested lists when categories are collapsed
    ============================================================================ */
 
-.collapsible-list {
+.sidebar-base .collapsible-list {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -222,7 +225,7 @@
 }
 
 /* When parent category item is collapsed, hide the list */
-.category-item[aria-expanded='false'] .collapsible-list {
+.sidebar-base .category-item[aria-expanded='false'] .collapsible-list {
   max-height: 0;
   overflow: hidden;
 }
@@ -232,26 +235,26 @@
    Applied to TOC sidebars with special indentation for heading levels
    ============================================================================ */
 
-.toc-item {
+.sidebar-base .toc-item {
   margin: var(--item-margin);
 }
 
-.toc-level-2 {
+.sidebar-base .toc-level-2 {
   margin-inline-start: 0;
 }
 
-.toc-level-3 {
+.sidebar-base .toc-level-3 {
   margin-inline-start: var(--space-4);
   font-size: var(--font-size-sm);
 }
 
-.toc-level-4 {
+.sidebar-base .toc-level-4 {
   margin-inline-start: var(--space-6);
   font-size: var(--font-size-xs);
 }
 
-.toc-level-5,
-.toc-level-6 {
+.sidebar-base .toc-level-5,
+.sidebar-base .toc-level-6 {
   margin-inline-start: var(--space-8);
   font-size: var(--font-size-xs);
 }
@@ -262,9 +265,9 @@
 
 /* Ensure keyboard focus is visible */
 @media (prefers-reduced-motion: reduce) {
-  .sidebar-link,
-  .category-header,
-  .collapsible-list {
+  .sidebar-base .sidebar-link,
+  .sidebar-base .category-header,
+  .sidebar-base .collapsible-list {
     transition: none;
   }
 }
@@ -282,7 +285,7 @@
 /* Tablet responsive - hide right sidebar */
 @media (max-width: 75rem) {
   /* 1200px - respects user font size */
-  .sidebar-toc {
+  .sidebar-base.sidebar-toc {
     display: none;
   }
 }

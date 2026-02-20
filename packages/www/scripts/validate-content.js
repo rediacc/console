@@ -108,6 +108,10 @@ function parseFrontmatter(filePath) {
   }
 }
 
+function isValidSourceHash(value) {
+  return typeof value === 'string' && /^[a-f0-9]{16}$/i.test(value.trim());
+}
+
 /**
  * Validate all content
  */
@@ -157,6 +161,27 @@ function validateContent(_strict = false) {
 
         // Check frontmatter language field
         if (frontmatter) {
+          if (frontmatter.translationPending === true && !frontmatter.translationPendingReason) {
+            errors.push({
+              rule: 'translation-pending-reason',
+              severity: 'error',
+              file: relativeFile,
+              message:
+                'translationPending=true requires translationPendingReason with a concrete explanation',
+              suggestion: 'Add translationPendingReason to frontmatter',
+            });
+          }
+
+          if (frontmatter.sourceHash && !isValidSourceHash(frontmatter.sourceHash)) {
+            errors.push({
+              rule: 'invalid-source-hash',
+              severity: 'error',
+              file: relativeFile,
+              message: `Invalid sourceHash "${frontmatter.sourceHash}" (expected 16 hex chars)`,
+              suggestion: 'Set sourceHash to a 16-character hexadecimal hash',
+            });
+          }
+
           if (frontmatter.language && frontmatter.language !== lang) {
             errors.push({
               rule: 'language-mismatch',
@@ -221,6 +246,17 @@ function validateContent(_strict = false) {
       const relativeFile = `${collection}/${SOURCE_LANGUAGE}/${file.relativePath}`;
 
       if (frontmatter) {
+        if (frontmatter.translationPending === true && !frontmatter.translationPendingReason) {
+          errors.push({
+            rule: 'translation-pending-reason',
+            severity: 'error',
+            file: relativeFile,
+            message:
+              'translationPending=true requires translationPendingReason with a concrete explanation',
+            suggestion: 'Add translationPendingReason to frontmatter',
+          });
+        }
+
         const requiredFields = REQUIRED_FIELDS[collection] || [];
         for (const field of requiredFields) {
           if (!frontmatter[field]) {

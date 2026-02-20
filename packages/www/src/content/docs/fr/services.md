@@ -1,12 +1,17 @@
 ---
-title: "Services"
-description: "Déployez et gérez des services conteneurisés avec les Rediaccfiles, le réseau de services et le démarrage automatique."
-category: "Guides"
+title: Services
+description: >-
+  Déployez et gérez des services conteneurisés avec les Rediaccfiles, le réseau
+  de services et le démarrage automatique.
+category: Guides
 order: 5
 language: fr
+sourceHash: 8add6342eea14e41
 ---
 
 # Services
+
+Si vous hésitez sur l'outil a utiliser, consultez [rdc vs renet](/fr/docs/rdc-vs-renet).
 
 Cette page couvre le déploiement et la gestion des services conteneurisés : Rediaccfiles, réseau de services, démarrage/arrêt, opérations en masse et démarrage automatique.
 

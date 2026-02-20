@@ -3,11 +3,7 @@ import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { Alert, Flex } from 'antd';
 import { useTranslation } from 'react-i18next';
 
-interface PreviewWarningProps {
-  sidebarOffset?: number;
-}
-
-const PreviewWarning: React.FC<PreviewWarningProps> = ({ sidebarOffset = 0 }) => {
+const PreviewWarning: React.FC = () => {
   const { t } = useTranslation('common');
 
   useEffect(() => {
@@ -17,20 +13,13 @@ const PreviewWarning: React.FC<PreviewWarningProps> = ({ sidebarOffset = 0 }) =>
     };
   }, []);
 
-  useEffect(() => {
-    document.documentElement.style.setProperty('--preview-banner-left', `${sidebarOffset}px`);
-    return () => {
-      document.documentElement.style.removeProperty('--preview-banner-left');
-    };
-  }, [sidebarOffset]);
-
   return (
     <Alert
       banner
       type="warning"
       showIcon={false}
       closable={false}
-      className="preview-warning-banner flex items-center justify-center"
+      className="preview-warning-banner fixed top-0 right-0 left-0 z-[1001] flex min-h-10 items-center justify-center lg:left-[200px]"
       message={
         <Flex align="center" wrap className="text-center font-medium">
           <ExclamationCircleOutlined />

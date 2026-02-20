@@ -1,12 +1,15 @@
 ---
-title: "系统要求"
-description: "运行 Rediacc 的系统要求和支持的平台。"
-category: "Guides"
+title: 系统要求
+description: 运行 Rediacc 的系统要求和支持的平台。
+category: Guides
 order: 0
 language: zh
+sourceHash: ea4a06f2deefab73
 ---
 
 # 系统要求
+
+如果你不确定该使用哪个工具，请参考 [rdc vs renet](/zh/docs/rdc-vs-renet)。
 
 在使用 Rediacc 进行部署之前，请确保您的工作站和远程服务器满足以下要求。
 

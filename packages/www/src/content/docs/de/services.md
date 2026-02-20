@@ -1,12 +1,17 @@
 ---
-title: "Dienste"
-description: "Containerisierte Dienste mit Rediaccfiles, Dienst-Netzwerk und Autostart bereitstellen und verwalten."
-category: "Guides"
+title: Dienste
+description: >-
+  Containerisierte Dienste mit Rediaccfiles, Dienst-Netzwerk und Autostart
+  bereitstellen und verwalten.
+category: Guides
 order: 5
 language: de
+sourceHash: 8add6342eea14e41
 ---
 
 # Dienste
+
+Wenn Sie unsicher sind, welches Tool Sie verwenden sollen, lesen Sie [rdc vs renet](/de/docs/rdc-vs-renet).
 
 Diese Seite behandelt die Bereitstellung und Verwaltung containerisierter Dienste: Rediaccfiles, Dienst-Netzwerk, Starten/Stoppen, Massenoperationen und Autostart.
 

@@ -1,12 +1,15 @@
 ---
-title: "Prérequis"
-description: "Configuration requise et plateformes prises en charge pour exécuter Rediacc."
-category: "Guides"
+title: Prérequis
+description: Configuration requise et plateformes prises en charge pour exécuter Rediacc.
+category: Guides
 order: 0
 language: fr
+sourceHash: ea4a06f2deefab73
 ---
 
 # Prérequis
+
+Si vous hésitez sur l'outil a utiliser, consultez [rdc vs renet](/fr/docs/rdc-vs-renet).
 
 Avant de déployer avec Rediacc, assurez-vous que votre poste de travail et vos serveurs distants répondent aux exigences suivantes.
 

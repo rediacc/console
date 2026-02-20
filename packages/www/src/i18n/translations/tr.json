@@ -129,7 +129,8 @@
       "privacyPolicy": "Gizlilik Politikası",
       "refundPolicy": "İade Politikası",
       "telemetryPolicy": "Telemetri Politikası",
-      "termsOfService": "Hizmet Koşulları"
+      "termsOfService": "Hizmet Koşulları",
+      "legalInformation": "Yasal Bilgiler"
     },
     "links": {
       "contactSupport": "Destek Ekibiyle İletişime Geçin",
@@ -151,7 +152,11 @@
       "contactSupport": "Destek Ekibiyle İletişime Geçin",
       "helpCenter": "Yardım Merkezi"
     },
-    "tagline": "Yapay Zeka Odaklı Operasyonlar için Altyapı Otomasyon Platformu"
+    "tagline": "Yapay Zeka Odaklı Operasyonlar için Altyapı Otomasyon Platformu",
+    "legalDisclosure": {
+      "summary": "{{companyName}} | Sicil kodu {{registryCode}} | KDV {{vatNumber}} |",
+      "fullLegalInformation": "Tüm yasal bilgiler"
+    }
   },
   "hero": {
     "cta": {
@@ -2986,6 +2991,37 @@
       },
       "toc": {
         "title": "İçindekiler"
+      }
+    },
+    "legalInformation": {
+      "meta": {
+        "title": "Yasal Bilgiler - {{companyName}}",
+        "description": "Şeffaflık ve ticari iletişim için resmi şirket bilgileri.",
+        "keywords": "yasal bilgiler, şirket bilgileri, sicil, KDV, iletişim"
+      },
+      "hero": {
+        "title": "Yasal Bilgiler",
+        "subtitle": "Şeffaflık ve ticari iletişim için resmi şirket bilgileri"
+      },
+      "sections": {
+        "companyDetails": {
+          "title": "Şirket Bilgileri",
+          "lead": "Bu sayfa, yasal şeffaflık ve ticari yazışmalar için yayımlanan resmi şirket ve iletişim bilgilerini içerir.",
+          "labels": {
+            "legalName": "Tüzel tür ve unvan",
+            "registryCode": "Sicil kodu",
+            "register": "Sicil",
+            "registeredOffice": "Kayıtlı adres",
+            "vatNumber": "KDV numarası",
+            "email": "E-posta",
+            "website": "Web sitesi"
+          },
+          "values": {
+            "legalName": "{{companyName}} (limited şirket)"
+          },
+          "registerEntryPrefix": "Kamu sicil kaydı:",
+          "registerEntryLink": "şirket profilini görüntüle"
+        }
       }
     }
   },

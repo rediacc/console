@@ -1,12 +1,15 @@
 ---
-title: "サービス"
-description: "Rediaccfile、サービスネットワーキング、自動開始を使用してコンテナ化されたサービスをデプロイ・管理。"
-category: "Guides"
+title: サービス
+description: Rediaccfile、サービスネットワーキング、自動開始を使用してコンテナ化されたサービスをデプロイ・管理。
+category: Guides
 order: 5
 language: ja
+sourceHash: 8add6342eea14e41
 ---
 
 # サービス
+
+どのツールを使うべきか迷う場合は、[rdc vs renet](/ja/docs/rdc-vs-renet) を参照してください。
 
 このページでは、コンテナ化されたサービスのデプロイと管理方法について説明します：Rediaccfile、サービスネットワーキング、開始/停止、一括操作、自動開始。
 

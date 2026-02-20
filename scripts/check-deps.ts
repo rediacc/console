@@ -246,11 +246,11 @@ function getPrivateOutdatedPackages(): PrivateOutdatedResult[] {
   const results: PrivateOutdatedResult[] = [];
 
   for (const dir of getPrivatePackageDirs()) {
-    // Skip if node_modules doesn't exist (deps not installed)
-    if (!fs.existsSync(path.join(dir, 'node_modules'))) continue;
-
     try {
-      execSync('npm outdated --json', {
+      // Use --package-lock-only so the check works in CI where node_modules
+      // is not installed for private submodule packages. npm reads installed
+      // versions from package-lock.json and queries the registry for latest.
+      execSync('npm outdated --json --package-lock-only', {
         cwd: dir,
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],

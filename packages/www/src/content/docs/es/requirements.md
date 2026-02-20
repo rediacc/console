@@ -1,12 +1,15 @@
 ---
-title: "Requisitos"
-description: "Requisitos del sistema y plataformas compatibles para ejecutar Rediacc."
-category: "Guides"
+title: Requisitos
+description: Requisitos del sistema y plataformas compatibles para ejecutar Rediacc.
+category: Guides
 order: 0
 language: es
+sourceHash: ea4a06f2deefab73
 ---
 
 # Requisitos
+
+Si no tienes claro que herramienta usar, consulta [rdc vs renet](/es/docs/rdc-vs-renet).
 
 Antes de desplegar con Rediacc, asegurese de que su estacion de trabajo y los servidores remotos cumplan con los siguientes requisitos.
 

@@ -6,6 +6,7 @@ import { Outlet } from 'react-router-dom';
 import logoBlack from '@/assets/logo_black.png';
 import logoWhite from '@/assets/logo_white.png';
 import LanguageSelector from '@/components/common/LanguageSelector';
+import BrandMark from '@/components/layout/BrandMark';
 import { RootState } from '@/store/store';
 import { getThemeConfig } from '@/theme';
 
@@ -33,8 +34,16 @@ const AuthLayout: React.FC = () => {
             className="flex-1 px-6 py-6 md:px-0 md:py-0"
             data-testid="auth-layout-content"
           >
-            {/* Logo centered above form */}
-            <img src={logo} alt={t('alt.logo')} className="mb-8 h-10" />
+            {/* Shared brand mark keeps logo/text alignment consistent across layouts */}
+            <BrandMark
+              logoSrc={logo}
+              iconSrc={`${import.meta.env.BASE_URL}favicon.svg`}
+              logoAlt={t('alt.logo')}
+              showText
+              logoSize={36}
+              textSize={32}
+              className="mb-8"
+            />
             <Outlet />
           </Flex>
         </Flex>

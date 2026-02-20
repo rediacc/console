@@ -1,0 +1,150 @@
+---
+import { getCollection } from 'astro:content';
+import type { Language } from '../i18n/types';
+import { getBaseSlug } from '../utils/slug';
+
+interface Props {
+  currentLang: Language;
+  currentCategory?: string;
+  variant?: 'article' | 'index';
+}
+
+const {
+  currentLang,
+  currentCategory,
+  variant = 'article',
+} = Astro.props as Props;
+
+const allDocs = await getCollection('docs');
+const docs = allDocs
+  .filter((doc) => doc.data.language === currentLang)
+  .sort((a, b) => {
+    const categorySort = (a.data.category || 'other').localeCompare(
+      b.data.category || 'other'
+    );
+    if (categorySort !== 0) return categorySort;
+    return (a.data.order ?? 999) - (b.data.order ?? 999);
+  });
+
+const docsByCategory = docs.reduce((acc, doc) => {
+  const category = doc.data.category || 'Other';
+  if (!acc[category]) acc[category] = [];
+  acc[category].push(doc);
+  return acc;
+}, {} as Record<string, typeof docs>);
+
+const categoryOrder: Record<string, number> = {
+  Guides: 0,
+  Reference: 1,
+  'Use Cases': 2,
+};
+
+const categories = Object.keys(docsByCategory).sort((a, b) => {
+  const pa = categoryOrder[a] ?? 99;
+  const pb = categoryOrder[b] ?? 99;
+  if (pa !== pb) return pa - pb;
+  return a.localeCompare(b);
+});
+---
+
+<nav class="docs-top-tabs" aria-label="Docs sections">
+  <ul class="docs-top-tabs-list">
+    {categories.map((category) => {
+      const firstDoc = docsByCategory[category][0];
+      const href = variant === 'index'
+        ? `#${category.toLowerCase().replace(/\s+/g, '-')}`
+        : `/${currentLang}/docs/${getBaseSlug(firstDoc.slug)}`;
+      const isActive = variant === 'article' && currentCategory === category;
+
+      return (
+        <li class="docs-top-tabs-item">
+          <a
+            href={href}
+            class={`docs-top-tab-link ${isActive ? 'active' : ''}`}
+            data-docs-tab={category.toLowerCase().replace(/\s+/g, '-')}
+          >
+            {category}
+          </a>
+        </li>
+      );
+    })}
+  </ul>
+</nav>
+
+<script is:inline>
+  (function () {
+    function initIndexTabActiveState() {
+      const tabs = document.querySelectorAll('.docs-top-tab-link[data-docs-tab]');
+      if (tabs.length === 0) return;
+
+      const setActiveFromHash = () => {
+        const hash = window.location.hash.replace('#', '');
+        if (!hash) return;
+
+        tabs.forEach((tab) => {
+          const match = tab.getAttribute('data-docs-tab') === hash;
+          tab.classList.toggle('active', match);
+        });
+      };
+
+      setActiveFromHash();
+      window.addEventListener('hashchange', setActiveFromHash);
+    }
+
+    document.addEventListener('astro:page-load', initIndexTabActiveState);
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initIndexTabActiveState);
+    } else {
+      initIndexTabActiveState();
+    }
+  })();
+</script>
+
+<style>
+  .docs-top-tabs {
+    border-bottom: none;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    flex: 1;
+  }
+
+  .docs-top-tabs-list {
+    list-style: none;
+    display: flex;
+    gap: var(--space-6);
+    margin: 0;
+    padding: 0;
+    min-width: max-content;
+  }
+
+  .docs-top-tabs-item {
+    margin: 0;
+  }
+
+  .docs-top-tab-link {
+    display: inline-flex;
+    align-items: center;
+    height: 3rem;
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    border-bottom: 2px solid transparent;
+    transition: color var(--transition-duration-base), border-color var(--transition-duration-base);
+  }
+
+  .docs-top-tab-link:hover {
+    color: var(--color-text);
+  }
+
+  .docs-top-tab-link.active {
+    color: var(--color-text);
+    border-bottom-color: var(--color-text);
+  }
+
+  .docs-top-tab-link:focus-visible {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+</style>

@@ -12,6 +12,7 @@ import logoWhite from '@/assets/logo_white.png';
 import PreviewWarning from '@/components/common/PreviewWarning';
 import SandboxWarning from '@/components/common/SandboxWarning';
 import { useTelemetry } from '@/components/common/TelemetryProvider';
+import BrandMark from '@/components/layout/BrandMark';
 import { featureFlags } from '@/config/featureFlags';
 import { useMessage } from '@/hooks';
 import { masterPasswordService } from '@/services/auth';
@@ -156,7 +157,7 @@ const MainLayout: React.FC = () => {
   return (
     <>
       <SandboxWarning />
-      <PreviewWarning sidebarOffset={SIDEBAR_EXPANDED_WIDTH} />
+      <PreviewWarning />
       <ProLayout
         layout="side"
         fixSiderbar
@@ -225,36 +226,35 @@ const MainLayout: React.FC = () => {
         }}
         // Header
         headerTitleRender={() => (
-          <Flex align="center">
-            <Button
-              type="text"
-              icon={<MenuOutlined />}
-              onClick={() => handleCollapse(!collapsed)}
-              data-testid="sidebar-toggle-button"
-              aria-label={
-                collapsed ? t('navigation.expandSidebar') : t('navigation.collapseSidebar')
-              }
-              aria-pressed={collapsed}
-            />
-            <Flex
-              align="center"
-              className="inline-flex cursor-pointer"
-              onClick={() => {
-                trackUserAction('navigation', '/dashboard', {
-                  trigger: 'logo_click',
-                  from_page: location.pathname,
-                });
-                void navigate('/dashboard');
-              }}
-              data-testid="main-logo-home"
-            >
-              <img
-                src={logo}
-                alt={t('common:alt.logo')}
-                className={isMobile ? 'h-6 w-auto object-contain' : 'h-8 w-auto object-contain'}
+          <BrandMark
+            logoSrc={logo}
+            iconSrc={`${import.meta.env.BASE_URL}favicon.svg`}
+            logoAlt={t('common:alt.logo')}
+            showText
+            logoSize={36}
+            textSize={isMobile ? 26 : 28}
+            className="main-layout-brand"
+            dataTestId="main-logo-home"
+            leading={
+              <Button
+                type="text"
+                icon={<MenuOutlined />}
+                onClick={() => handleCollapse(!collapsed)}
+                data-testid="sidebar-toggle-button"
+                aria-label={
+                  collapsed ? t('navigation.expandSidebar') : t('navigation.collapseSidebar')
+                }
+                aria-pressed={collapsed}
               />
-            </Flex>
-          </Flex>
+            }
+            onClick={() => {
+              trackUserAction('navigation', '/dashboard', {
+                trigger: 'logo_click',
+                from_page: location.pathname,
+              });
+              void navigate('/dashboard');
+            }}
+          />
         )}
         actionsRender={() => (
           <HeaderActions

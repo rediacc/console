@@ -1,13 +1,15 @@
 ---
-title: "快速开始"
-description: "5分钟内在您的服务器上运行容器化服务。"
-category: "Guides"
+title: 快速开始
+description: 5分钟内在您的服务器上运行容器化服务。
+category: Guides
 order: -1
 language: zh
+sourceHash: 71850d61f7e44292
 ---
 
 # 快速开始
 
+如果你不确定该使用哪个工具，请参考 [rdc vs renet](/zh/docs/rdc-vs-renet)。
 5分钟内在您自己的服务器上部署加密、隔离的容器环境。本指南使用**本地模式** — 无需云账户或SaaS依赖。
 
 ## 前提条件

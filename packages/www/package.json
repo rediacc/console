@@ -13,6 +13,7 @@
     "preview": "astro preview",
     "scale:svg": "node scripts/scale-svg-viewbox.cjs",
     "validate:cli-docs": "node scripts/validate-cli-docs.js",
+    "validate:translation-freshness": "node scripts/validate-translation-freshness.js",
     "validate:content": "node scripts/validate-content.js",
     "validate:content:strict": "node scripts/validate-content.js --strict"
   },

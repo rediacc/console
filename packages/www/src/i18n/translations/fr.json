@@ -129,7 +129,8 @@
       "privacyPolicy": "Politique de confidentialité",
       "refundPolicy": "Politique de remboursement",
       "telemetryPolicy": "Politique de télémétrie",
-      "termsOfService": "Conditions d'utilisation"
+      "termsOfService": "Conditions d'utilisation",
+      "legalInformation": "Informations légales"
     },
     "links": {
       "contactSupport": "Contacter l'assistance",
@@ -151,7 +152,11 @@
       "contactSupport": "Contacter l'assistance",
       "helpCenter": "Centre d'aide"
     },
-    "tagline": "Plateforme d'automatisation de l'infrastructure pour les opérations basées sur l'IA"
+    "tagline": "Plateforme d'automatisation de l'infrastructure pour les opérations basées sur l'IA",
+    "legalDisclosure": {
+      "summary": "{{companyName}} | Numéro d'immatriculation {{registryCode}} | TVA {{vatNumber}} |",
+      "fullLegalInformation": "Informations légales complètes"
+    }
   },
   "hero": {
     "cta": {
@@ -2998,6 +3003,37 @@
       },
       "toc": {
         "title": "Table des matières"
+      }
+    },
+    "legalInformation": {
+      "meta": {
+        "title": "Informations légales - {{companyName}}",
+        "description": "Informations officielles de l'entreprise pour la transparence et les contacts professionnels.",
+        "keywords": "informations légales, informations société, registre, TVA, contact"
+      },
+      "hero": {
+        "title": "Informations légales",
+        "subtitle": "Informations officielles de l'entreprise pour la transparence et les contacts professionnels"
+      },
+      "sections": {
+        "companyDetails": {
+          "title": "Informations sur la société",
+          "lead": "Cette page contient les informations officielles de la société et de contact publiées pour la transparence juridique et la correspondance professionnelle.",
+          "labels": {
+            "legalName": "Forme juridique et nom",
+            "registryCode": "Numéro d'immatriculation",
+            "register": "Registre",
+            "registeredOffice": "Siège social",
+            "vatNumber": "Numéro de TVA",
+            "email": "E-mail",
+            "website": "Site web"
+          },
+          "values": {
+            "legalName": "{{companyName}} (société à responsabilité limitée)"
+          },
+          "registerEntryPrefix": "Inscription au registre public :",
+          "registerEntryLink": "voir le profil de l'entreprise"
+        }
       }
     }
   },

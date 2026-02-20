@@ -1,0 +1,142 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { createTranslator } from '../../i18n/utils';
+import { getLanguagePaths } from '../../i18n/language-utils';
+import type { Language } from '../../i18n/types';
+import {
+  COMPANY_LEGAL_NAME,
+  COMPANY_REGISTERED_ADDRESS,
+  COMPANY_REGISTER_NAME,
+  COMPANY_REGISTRY_CODE,
+  COMPANY_VAT_NUMBER,
+  CONTACT_EMAIL,
+  SITE_URL
+} from '../../config/constants';
+import '../../styles/legal-page.css';
+
+export const getStaticPaths = getLanguagePaths;
+
+const { lang } = Astro.params as { lang: Language };
+const { t } = createTranslator(lang);
+---
+
+<BaseLayout
+  lang={lang}
+  title={t('pages.legalInformation.meta.title', { companyName: COMPANY_LEGAL_NAME })}
+  description={t('pages.legalInformation.meta.description')}
+  keywords={t('pages.legalInformation.meta.keywords')}
+  ogType="website"
+>
+  <article class="legal-page">
+    <section class="legal-hero">
+      <div class="legal-hero-content">
+        <h1>{t('pages.legalInformation.hero.title')}</h1>
+        <p class="effective-date">{t('pages.legalInformation.hero.subtitle')}</p>
+      </div>
+    </section>
+
+    <div class="legal-content">
+      <div class="legal-layout legal-layout-single" style="grid-template-columns: 1fr;">
+        <div class="legal-body legal-body-single">
+          <section id="company-details">
+            <h2>{t('pages.legalInformation.sections.companyDetails.title')}</h2>
+            <p class="legal-lead">
+              {t('pages.legalInformation.sections.companyDetails.lead')}
+            </p>
+
+            <div class="legal-card">
+              <dl class="legal-details">
+                <dt>{t('pages.legalInformation.sections.companyDetails.labels.legalName')}</dt>
+                <dd>{t('pages.legalInformation.sections.companyDetails.values.legalName', { companyName: COMPANY_LEGAL_NAME })}</dd>
+
+                <dt>{t('pages.legalInformation.sections.companyDetails.labels.registryCode')}</dt>
+                <dd>{COMPANY_REGISTRY_CODE}</dd>
+
+                <dt>{t('pages.legalInformation.sections.companyDetails.labels.register')}</dt>
+                <dd>{COMPANY_REGISTER_NAME}</dd>
+
+                <dt>{t('pages.legalInformation.sections.companyDetails.labels.registeredOffice')}</dt>
+                <dd>{COMPANY_REGISTERED_ADDRESS}</dd>
+
+                <dt>{t('pages.legalInformation.sections.companyDetails.labels.vatNumber')}</dt>
+                <dd>{COMPANY_VAT_NUMBER}</dd>
+
+                <dt>{t('pages.legalInformation.sections.companyDetails.labels.email')}</dt>
+                <dd><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></dd>
+
+                <dt>{t('pages.legalInformation.sections.companyDetails.labels.website')}</dt>
+                <dd><a href={SITE_URL}>{SITE_URL}</a></dd>
+              </dl>
+            </div>
+
+            <p class="legal-note">
+              {t('pages.legalInformation.sections.companyDetails.registerEntryPrefix')}
+              <a
+                href="https://ariregister.rik.ee/est/company/17363830/Rediacc-O%C3%9C"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {t('pages.legalInformation.sections.companyDetails.registerEntryLink')}
+              </a>
+            </p>
+          </section>
+        </div>
+      </div>
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .legal-body-single {
+    width: 100%;
+    max-width: 56rem;
+    margin: 0 auto;
+  }
+
+  .legal-lead {
+    margin-bottom: var(--space-6);
+    color: var(--color-text-secondary);
+  }
+
+  .legal-card {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-alt);
+    padding: var(--space-6);
+  }
+
+  .legal-details {
+    margin: 0;
+    display: grid;
+    grid-template-columns: minmax(11rem, 16rem) minmax(0, 1fr);
+    row-gap: var(--space-4);
+    column-gap: var(--space-4);
+  }
+
+  .legal-details dt {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .legal-details dd {
+    margin: 0;
+    word-break: break-word;
+  }
+
+  .legal-note {
+    margin-top: var(--space-5);
+    color: var(--color-text-secondary);
+  }
+
+  .legal-note a {
+    margin-inline-start: var(--space-2);
+  }
+
+  @media (max-width: 48rem) {
+    .legal-details {
+      grid-template-columns: 1fr;
+      row-gap: var(--space-2);
+    }
+  }
+</style>
