@@ -129,7 +129,8 @@
       "privacyPolicy": "Datenschutzrichtlinie",
       "refundPolicy": "Erstattungsrichtlinie",
       "telemetryPolicy": "Telemetrie-Richtlinie",
-      "termsOfService": "Nutzungsbedingungen"
+      "termsOfService": "Nutzungsbedingungen",
+      "legalInformation": "Rechtliche Informationen"
     },
     "links": {
       "contactSupport": "Kontaktieren Sie den Support",
@@ -151,7 +152,11 @@
       "contactSupport": "Kontaktieren Sie den Support",
       "helpCenter": "Hilfecenter"
     },
-    "tagline": "Infrastrukturautomatisierungsplattform für KI-gesteuerte Abläufe"
+    "tagline": "Infrastrukturautomatisierungsplattform für KI-gesteuerte Abläufe",
+    "legalDisclosure": {
+      "summary": "{{companyName}} | Registernummer {{registryCode}} | USt-IdNr. {{vatNumber}} |",
+      "fullLegalInformation": "Vollständige rechtliche Informationen"
+    }
   },
   "hero": {
     "cta": {
@@ -2994,6 +2999,37 @@
       },
       "toc": {
         "title": "Inhaltsverzeichnis"
+      }
+    },
+    "legalInformation": {
+      "meta": {
+        "title": "Rechtliche Informationen - {{companyName}}",
+        "description": "Offizielle Unternehmensangaben für Transparenz und geschäftliche Kontaktaufnahme.",
+        "keywords": "rechtliche informationen, unternehmensdaten, register, umsatzsteuer, kontakt"
+      },
+      "hero": {
+        "title": "Rechtliche Informationen",
+        "subtitle": "Offizielle Unternehmensangaben für Transparenz und geschäftliche Kontaktaufnahme"
+      },
+      "sections": {
+        "companyDetails": {
+          "title": "Unternehmensangaben",
+          "lead": "Diese Seite enthält offizielle Unternehmens- und Kontaktdaten zur rechtlichen Transparenz und geschäftlichen Korrespondenz.",
+          "labels": {
+            "legalName": "Rechtsform und Name",
+            "registryCode": "Registernummer",
+            "register": "Handelsregister",
+            "registeredOffice": "Sitz",
+            "vatNumber": "USt-IdNr.",
+            "email": "E-Mail",
+            "website": "Webseite"
+          },
+          "values": {
+            "legalName": "{{companyName}} (Gesellschaft mit beschränkter Haftung)"
+          },
+          "registerEntryPrefix": "Öffentlicher Registereintrag:",
+          "registerEntryLink": "Unternehmensprofil anzeigen"
+        }
       }
     }
   },

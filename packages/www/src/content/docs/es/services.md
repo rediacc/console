@@ -1,12 +1,17 @@
 ---
-title: "Servicios"
-description: "Despliegue y gestione servicios en contenedores usando Rediaccfiles, red de servicios e inicio automatico."
-category: "Guides"
+title: Servicios
+description: >-
+  Despliegue y gestione servicios en contenedores usando Rediaccfiles, red de
+  servicios e inicio automatico.
+category: Guides
 order: 5
 language: es
+sourceHash: 8add6342eea14e41
 ---
 
 # Servicios
+
+Si no tienes claro que herramienta usar, consulta [rdc vs renet](/es/docs/rdc-vs-renet).
 
 Esta pagina cubre como desplegar y gestionar servicios en contenedores: Rediaccfiles, red de servicios, inicio/detencion, operaciones masivas e inicio automatico.
 

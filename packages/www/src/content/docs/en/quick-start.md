@@ -1,7 +1,7 @@
 ---
-title: "Quick Start"
-description: "Get a containerized service running on your server in 5 minutes."
-category: "Guides"
+title: Quick Start
+description: Get a containerized service running on your server in 5 minutes.
+category: Guides
 order: -1
 language: en
 ---
@@ -73,6 +73,7 @@ No cloud accounts. No SaaS dependencies. Your data stays on your servers.
 ## Next Steps
 
 - **[Architecture](/en/docs/architecture)** — Understand how Rediacc works: modes, security model, Docker isolation
+- **[rdc vs renet](/en/docs/rdc-vs-renet)** — Understand which CLI to use for daily operations vs low-level remote work
 - **[Machine Setup](/en/docs/setup)** — Detailed setup guide: contexts, machines, infrastructure configuration
 - **[Repositories](/en/docs/repositories)** — Create, manage, resize, fork, and validate repositories
 - **[Services](/en/docs/services)** — Rediaccfiles, service networking, deployment, autostart

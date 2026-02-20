@@ -1,12 +1,17 @@
 ---
-title: "Servisler"
-description: "Rediaccfile, servis agi, baslatma/durdurma ve otomatik baslatma ile konteynerlestirilmis servisleri dagitin ve yonetin."
-category: "Guides"
+title: Servisler
+description: >-
+  Rediaccfile, servis agi, baslatma/durdurma ve otomatik baslatma ile
+  konteynerlestirilmis servisleri dagitin ve yonetin.
+category: Guides
 order: 5
 language: tr
+sourceHash: 8add6342eea14e41
 ---
 
 # Servisler
+
+Hangi araci kullanacaginizdan emin degilseniz [rdc vs renet](/tr/docs/rdc-vs-renet) sayfasina bakin.
 
 Bu sayfa, konteynerleştirilmiş servislerin nasıl dağıtılacağını ve yönetileceğini kapsar: Rediaccfile'lar, servis ağı, başlatma/durdurma, toplu işlemler ve otomatik başlatma.
 

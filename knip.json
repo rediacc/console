@@ -43,7 +43,6 @@
         "src/utils/secureContext.ts",
         "src/utils/vaultProtocol.ts",
         "src/api/api-hooks.generated.ts",
-        "src/api/hooks-extended.ts",
         "src/api/hooks-tfa.ts",
         "src/api/hooks.config.ts",
         "src/api/mutation-transforms.ts",
@@ -93,12 +92,11 @@
       "ignore": [
         "scripts/check-translation-hashes.js",
         "scripts/generate-favicons.js",
-        "scripts/generate-translation-hashes.js",
-        "src/components/Problem.tsx"
+        "scripts/generate-translation-hashes.js"
       ]
     }
   },
-  "ignore": ["**/dist/**", "**/node_modules/**", "**/out/**", "**/*.d.ts", "private/**"],
+  "ignore": ["private/**"],
   "ignoreDependencies": [
     "@aws-sdk/client-s3",
     "@types/*",

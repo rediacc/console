@@ -1,13 +1,15 @@
 ---
-title: "Démarrage rapide"
-description: "Lancez un service conteneurisé sur votre serveur en 5 minutes."
-category: "Guides"
+title: Démarrage rapide
+description: Lancez un service conteneurisé sur votre serveur en 5 minutes.
+category: Guides
 order: -1
 language: fr
+sourceHash: 71850d61f7e44292
 ---
 
 # Démarrage rapide
 
+Si vous hésitez sur l'outil a utiliser, consultez [rdc vs renet](/fr/docs/rdc-vs-renet).
 Déployez un environnement de conteneurs chiffré et isolé sur votre propre serveur en 5 minutes. Ce guide utilise le **mode local** — aucun compte cloud ni dépendance SaaS.
 
 ## Prérequis

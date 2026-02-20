@@ -129,7 +129,8 @@
       "privacyPolicy": "Política de privacidad",
       "refundPolicy": "Política de reembolso",
       "telemetryPolicy": "Política de telemetría",
-      "termsOfService": "Condiciones del servicio"
+      "termsOfService": "Condiciones del servicio",
+      "legalInformation": "Información legal"
     },
     "links": {
       "contactSupport": "Contactar con soporte",
@@ -151,7 +152,11 @@
       "contactSupport": "Contactar con soporte",
       "helpCenter": "Centro de ayuda"
     },
-    "tagline": "Plataforma de automatización de infraestructura para operaciones impulsadas por IA"
+    "tagline": "Plataforma de automatización de infraestructura para operaciones impulsadas por IA",
+    "legalDisclosure": {
+      "summary": "{{companyName}} | Código registral {{registryCode}} | IVA {{vatNumber}} |",
+      "fullLegalInformation": "Información legal completa"
+    }
   },
   "hero": {
     "cta": {
@@ -2994,6 +2999,37 @@
       },
       "toc": {
         "title": "Tabla de contenidos"
+      }
+    },
+    "legalInformation": {
+      "meta": {
+        "title": "Información legal - {{companyName}}",
+        "description": "Datos oficiales de la empresa para transparencia y contacto comercial.",
+        "keywords": "información legal, datos de la empresa, registro, IVA, contacto"
+      },
+      "hero": {
+        "title": "Información legal",
+        "subtitle": "Datos oficiales de la empresa para transparencia y contacto comercial"
+      },
+      "sections": {
+        "companyDetails": {
+          "title": "Datos de la empresa",
+          "lead": "Esta página contiene datos oficiales de la empresa y de contacto publicados para transparencia legal y correspondencia comercial.",
+          "labels": {
+            "legalName": "Forma jurídica y nombre",
+            "registryCode": "Código registral",
+            "register": "Registro",
+            "registeredOffice": "Domicilio social",
+            "vatNumber": "Número de IVA",
+            "email": "Correo electrónico",
+            "website": "Sitio web"
+          },
+          "values": {
+            "legalName": "{{companyName}} (sociedad limitada)"
+          },
+          "registerEntryPrefix": "Entrada en el registro público:",
+          "registerEntryLink": "ver perfil de la empresa"
+        }
       }
     }
   },

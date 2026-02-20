@@ -1,12 +1,15 @@
 ---
-title: "システム要件"
-description: "Rediaccを実行するためのシステム要件とサポートされているプラットフォーム。"
-category: "Guides"
+title: システム要件
+description: Rediaccを実行するためのシステム要件とサポートされているプラットフォーム。
+category: Guides
 order: 0
 language: ja
+sourceHash: ea4a06f2deefab73
 ---
 
 # システム要件
+
+どのツールを使うべきか迷う場合は、[rdc vs renet](/ja/docs/rdc-vs-renet) を参照してください。
 
 Rediaccでデプロイする前に、ワークステーションとリモートサーバーが以下の要件を満たしていることを確認してください。
 

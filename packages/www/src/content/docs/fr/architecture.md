@@ -1,12 +1,17 @@
 ---
-title: "Architecture"
-description: "Comment Rediacc fonctionne : architecture à deux outils, modes de fonctionnement, modèle de sécurité et structure de configuration."
-category: "Guides"
+title: Architecture
+description: >-
+  Comment Rediacc fonctionne : architecture à deux outils, modes de
+  fonctionnement, modèle de sécurité et structure de configuration.
+category: Guides
 order: 2
 language: fr
+sourceHash: 8f910f7827c8e958
 ---
 
 # Architecture
+
+Si vous hésitez sur l'outil a utiliser, consultez [rdc vs renet](/fr/docs/rdc-vs-renet).
 
 Cette page explique le fonctionnement interne de Rediacc : l'architecture à deux outils, les modes de fonctionnement, le modèle de sécurité et la structure de configuration.
 

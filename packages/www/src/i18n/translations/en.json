@@ -121,7 +121,12 @@
       "cookiePolicy": "Cookie Policy",
       "acceptableUsePolicy": "Acceptable Use Policy",
       "refundPolicy": "Refund Policy",
-      "telemetryPolicy": "Telemetry Policy"
+      "telemetryPolicy": "Telemetry Policy",
+      "legalInformation": "Legal Information"
+    },
+    "legalDisclosure": {
+      "summary": "{{companyName}} | Registry code {{registryCode}} | VAT {{vatNumber}} |",
+      "fullLegalInformation": "Full legal information"
     }
   },
   "hero": {
@@ -3115,6 +3120,37 @@
             "rto": "15-60 minutes (custom)",
             "auditLogs": "1+ year"
           }
+        }
+      }
+    },
+    "legalInformation": {
+      "meta": {
+        "title": "Legal Information - {{companyName}}",
+        "description": "Official company details for transparency and business contact.",
+        "keywords": "legal information, company details, registry, VAT, contact"
+      },
+      "hero": {
+        "title": "Legal Information",
+        "subtitle": "Official company details for transparency and business contact"
+      },
+      "sections": {
+        "companyDetails": {
+          "title": "Company Details",
+          "lead": "This page contains official company and contact details published for legal transparency and business correspondence.",
+          "labels": {
+            "legalName": "Legal form and name",
+            "registryCode": "Registry code",
+            "register": "Register",
+            "registeredOffice": "Registered office",
+            "vatNumber": "VAT number",
+            "email": "Email",
+            "website": "Website"
+          },
+          "values": {
+            "legalName": "{{companyName}} (private limited company)"
+          },
+          "registerEntryPrefix": "Public register entry:",
+          "registerEntryLink": "view company profile"
         }
       }
     }

@@ -1,12 +1,15 @@
 ---
-title: "服务"
-description: "使用 Rediaccfile、服务网络和开机自启来部署和管理容器化服务。"
-category: "Guides"
+title: 服务
+description: 使用 Rediaccfile、服务网络和开机自启来部署和管理容器化服务。
+category: Guides
 order: 5
 language: zh
+sourceHash: 8add6342eea14e41
 ---
 
 # 服务
+
+如果你不确定该使用哪个工具，请参考 [rdc vs renet](/zh/docs/rdc-vs-renet)。
 
 本页面介绍如何部署和管理容器化服务：Rediaccfile、服务网络、启动/停止、批量操作和开机自启。
 

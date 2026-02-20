@@ -1,7 +1,9 @@
 ---
-title: "Architecture"
-description: "How Rediacc works: two-tool architecture, operating modes, security model, and configuration structure."
-category: "Guides"
+title: Architecture
+description: >-
+  How Rediacc works: two-tool architecture, operating modes, security model, and
+  configuration structure.
+category: Guides
 order: 2
 language: en
 ---
@@ -20,6 +22,8 @@ Rediacc uses two binaries that work together over SSH:
 - **renet** runs on the remote server with root privileges. It manages LUKS-encrypted disk images, isolated Docker daemons, service orchestration, and reverse proxy configuration.
 
 Every command you type locally translates to an SSH call that executes renet on the remote machine. You never need to SSH into servers manually.
+
+For an operator-focused rule of thumb, see [rdc vs renet](/en/docs/rdc-vs-renet).
 
 ## Operating Modes
 

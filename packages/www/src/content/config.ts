@@ -14,6 +14,9 @@ const blogCollection = defineCollection({
     featured: z.boolean().default(false),
     image: z.string().optional(),
     language: z.enum(LANGUAGES).default('en'),
+    sourceHash: z.string().optional(),
+    translationPending: z.boolean().optional(),
+    translationPendingReason: z.string().optional(),
   }),
 });
 
@@ -26,6 +29,9 @@ const docsCollection = defineCollection({
     order: z.number().optional(),
     toc: z.boolean().default(true),
     language: z.enum(LANGUAGES).default('en'),
+    sourceHash: z.string().optional(),
+    translationPending: z.boolean().optional(),
+    translationPendingReason: z.string().optional(),
   }),
 });
 

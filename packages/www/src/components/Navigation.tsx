@@ -98,16 +98,21 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
           >
             <span className="hamburger-icon" />
           </button>
-          <a href={`/${currentLang}/`} className="nav-brand">
+          <a href={`/${currentLang}/`} className="nav-icon-link" aria-label={t('common.logoAlt')}>
             <img
-              src="/assets/images/logo_black.png"
-              alt={t('common.logoAlt')}
-              className="logo"
+              src="/assets/images/icon-rediacc.svg"
+              alt=""
+              className="logo-icon"
               loading="eager"
               decoding="async"
-              width="120"
-              height="40"
+              width="36"
+              height="36"
             />
+          </a>
+          <a href={`/${currentLang}/`} className="nav-brand">
+            <span className="nav-wordmark" aria-label={t('common.logoAlt')}>
+              rediacc
+            </span>
           </a>
           <div className="nav-right">
             <button

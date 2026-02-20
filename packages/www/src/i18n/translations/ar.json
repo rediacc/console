@@ -129,7 +129,8 @@
       "privacyPolicy": "سياسة الخصوصية",
       "refundPolicy": "سياسة الاسترداد",
       "telemetryPolicy": "سياسة القياس عن بُعد",
-      "termsOfService": "شروط الخدمة"
+      "termsOfService": "شروط الخدمة",
+      "legalInformation": "المعلومات القانونية"
     },
     "links": {
       "contactSupport": "اتصل بالدعم",
@@ -151,7 +152,11 @@
       "contactSupport": "اتصل بالدعم",
       "helpCenter": "مركز المساعدة"
     },
-    "tagline": "منصة أتمتة البنية التحتية للعمليات المعتمدة على الذكاء الاصطناعي"
+    "tagline": "منصة أتمتة البنية التحتية للعمليات المعتمدة على الذكاء الاصطناعي",
+    "legalDisclosure": {
+      "summary": "{{companyName}} | رقم السجل {{registryCode}} | ضريبة القيمة المضافة {{vatNumber}} |",
+      "fullLegalInformation": "المعلومات القانونية الكاملة"
+    }
   },
   "hero": {
     "cta": {
@@ -2970,6 +2975,37 @@
       },
       "toc": {
         "title": "جدول المحتويات"
+      }
+    },
+    "legalInformation": {
+      "meta": {
+        "title": "المعلومات القانونية - {{companyName}}",
+        "description": "تفاصيل الشركة الرسمية للشفافية والتواصل التجاري.",
+        "keywords": "المعلومات القانونية, تفاصيل الشركة, السجل, ضريبة القيمة المضافة, التواصل"
+      },
+      "hero": {
+        "title": "المعلومات القانونية",
+        "subtitle": "تفاصيل الشركة الرسمية للشفافية والتواصل التجاري"
+      },
+      "sections": {
+        "companyDetails": {
+          "title": "تفاصيل الشركة",
+          "lead": "تتضمن هذه الصفحة تفاصيل الشركة الرسمية وبيانات الاتصال المنشورة للشفافية القانونية والمراسلات التجارية.",
+          "labels": {
+            "legalName": "الاسم والشكل القانوني",
+            "registryCode": "رقم السجل",
+            "register": "السجل",
+            "registeredOffice": "المقر المسجل",
+            "vatNumber": "رقم ضريبة القيمة المضافة",
+            "email": "البريد الإلكتروني",
+            "website": "الموقع الإلكتروني"
+          },
+          "values": {
+            "legalName": "{{companyName}} (شركة ذات مسؤولية محدودة)"
+          },
+          "registerEntryPrefix": "إدراج السجل العام:",
+          "registerEntryLink": "عرض ملف الشركة"
+        }
       }
     }
   },

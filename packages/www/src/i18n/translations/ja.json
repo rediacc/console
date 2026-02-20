@@ -129,7 +129,8 @@
       "privacyPolicy": "プライバシーポリシー",
       "refundPolicy": "返金ポリシー",
       "telemetryPolicy": "テレメトリポリシー",
-      "termsOfService": "利用規約"
+      "termsOfService": "利用規約",
+      "legalInformation": "法的情報"
     },
     "links": {
       "contactSupport": "サポートに連絡する",
@@ -151,7 +152,11 @@
       "contactSupport": "サポートに連絡する",
       "helpCenter": "ヘルプセンター"
     },
-    "tagline": "AI主導の運用のためのインフラストラクチャ自動化プラットフォーム"
+    "tagline": "AI主導の運用のためのインフラストラクチャ自動化プラットフォーム",
+    "legalDisclosure": {
+      "summary": "{{companyName}} | 登録コード {{registryCode}} | VAT {{vatNumber}} |",
+      "fullLegalInformation": "法的情報の詳細"
+    }
   },
   "hero": {
     "cta": {
@@ -2984,6 +2989,37 @@
       },
       "toc": {
         "title": "目次"
+      }
+    },
+    "legalInformation": {
+      "meta": {
+        "title": "法的情報 - {{companyName}}",
+        "description": "透明性と法人連絡のための公式な会社情報です。",
+        "keywords": "法的情報, 会社情報, 登録, VAT, 連絡先"
+      },
+      "hero": {
+        "title": "法的情報",
+        "subtitle": "透明性と法人連絡のための公式な会社情報"
+      },
+      "sections": {
+        "companyDetails": {
+          "title": "会社情報",
+          "lead": "このページには、法的透明性および業務連絡のために公開される公式な会社情報と連絡先情報が含まれます。",
+          "labels": {
+            "legalName": "法人形態・名称",
+            "registryCode": "登録コード",
+            "register": "登録簿",
+            "registeredOffice": "本店所在地",
+            "vatNumber": "VAT番号",
+            "email": "メール",
+            "website": "ウェブサイト"
+          },
+          "values": {
+            "legalName": "{{companyName}}（有限責任会社）"
+          },
+          "registerEntryPrefix": "公的登録情報:",
+          "registerEntryLink": "会社プロフィールを表示"
+        }
       }
     }
   },

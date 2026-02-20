@@ -2,6 +2,7 @@ declare const __APP_VERSION__: string;
 
 import React from 'react';
 import LanguageMenu from './LanguageMenu';
+import { COMPANY_LEGAL_NAME, COMPANY_REGISTRY_CODE, COMPANY_VAT_NUMBER } from '../config/constants';
 import { useLanguage } from '../hooks/useLanguage';
 import { SUPPORTED_LANGUAGES } from '../i18n/language-utils';
 import { useTranslation } from '../i18n/react';
@@ -168,6 +169,11 @@ const Footer: React.FC = () => {
                   {t('footer.legalLinks.telemetryPolicy')}
                 </a>
               </li>
+              <li>
+                <a href={`/${currentLang}/legal-information`} className="footer-link">
+                  {t('footer.legalLinks.legalInformation')}
+                </a>
+              </li>
             </ul>
           </nav>
         </div>
@@ -225,6 +231,18 @@ const Footer: React.FC = () => {
               ariaLabel={t('navigation.selectLanguage')}
             />
           </div>
+        </div>
+        <div className="footer-legal-disclosure">
+          <p>
+            {t('footer.legalDisclosure.summary', {
+              companyName: COMPANY_LEGAL_NAME,
+              registryCode: COMPANY_REGISTRY_CODE,
+              vatNumber: COMPANY_VAT_NUMBER,
+            })}{' '}
+            <a href={`/${currentLang}/legal-information`} className="footer-link">
+              {t('footer.legalDisclosure.fullLegalInformation')}
+            </a>
+          </p>
         </div>
       </div>
     </footer>
