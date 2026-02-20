@@ -5,7 +5,14 @@
  * All components (account-server, middleware, renet, CLI) should use these values.
  */
 
-import type { BillingPeriod, FeatureFlags, PlanCode, PlanMetadata, PlanPricing, ResourceLimits } from './types';
+import type {
+  BillingPeriod,
+  FeatureFlags,
+  PlanCode,
+  PlanMetadata,
+  PlanPricing,
+  ResourceLimits,
+} from './types';
 
 /**
  * Resource limits by plan.
