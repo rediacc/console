@@ -22,6 +22,10 @@ on:
       APP_PRIVATE_KEY:
         required: false
 
+permissions:
+  contents: read
+  packages: read    # GHCR pull for install tests
+
 jobs:
   # ===========================================================================
   # Linux x64: Binary, Docker, APT, DNF, Quick Install, Linuxbrew

@@ -4,6 +4,10 @@ on:
   pull_request_target: # security: approved — protected by fork guard in job condition
     types: [closed]
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   cleanup:
     name: Cleanup CF Pages Preview

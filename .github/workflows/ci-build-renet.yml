@@ -24,6 +24,10 @@ on:
       APP_PRIVATE_KEY:
         required: false
 
+permissions:
+  contents: read
+  packages: write   # GHCR push
+
 jobs:
   # Build native CRIU/rsync binaries (amd64) - cached
   build-native-amd64:

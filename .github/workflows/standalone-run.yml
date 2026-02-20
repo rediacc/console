@@ -116,6 +116,10 @@ on:
           - 'debian-12'
           # TODO: Add fedora-43 and opensuse-15.6 once cloud-init compatibility is resolved
 
+permissions:
+  contents: read
+  packages: read
+
 # Cancel in-progress runs when a new run is triggered
 # Each run (workflow_dispatch or workflow_call) gets its own concurrency group via run_id
 concurrency:

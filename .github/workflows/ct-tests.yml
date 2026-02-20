@@ -27,6 +27,10 @@ on:
       DOCKERHUB_TOKEN:
         required: false
 
+permissions:
+  contents: read
+  packages: read    # GHCR pull for test images
+
 env:
   E2E_BROWSERS: ${{ inputs.e2e_browsers }}
 

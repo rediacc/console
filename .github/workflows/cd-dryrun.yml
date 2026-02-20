@@ -54,6 +54,10 @@ on:
       GPG_PASSPHRASE:
         required: false
 
+permissions:
+  contents: read
+  packages: read    # GHCR pull for validation
+
 jobs:
   dry-run:
     name: Dry-Run Validation

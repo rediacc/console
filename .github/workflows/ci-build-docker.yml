@@ -40,6 +40,10 @@ on:
       APP_PRIVATE_KEY:
         required: false
 
+permissions:
+  contents: read
+  packages: write   # GHCR push
+
 jobs:
   build-cli:
     name: CLI

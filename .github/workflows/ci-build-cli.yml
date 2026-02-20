@@ -10,6 +10,9 @@ on:
       APP_PRIVATE_KEY:
         required: false
 
+permissions:
+  contents: read
+
 # Note: Renet binaries are built by ci-build-renet.yml and downloaded as artifact
 # This workflow depends on build-renet completing first (configured in ci.yml)
 
