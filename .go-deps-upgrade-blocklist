@@ -1,0 +1,12 @@
+# Go packages blocked from auto-upgrade (require manual migration)
+#
+# Format: module/path # reason
+# These packages will NOT be upgraded automatically.
+# Minor and patch updates that are not blocked will fail CI.
+# Major updates are always reported but never auto-upgraded regardless of this list.
+#
+# Example:
+# github.com/some/package # Reason for blocking
+
+# Docker SDK - v26+ has major API and package path changes (e.g., client.NewClientWithOpts signature)
+github.com/docker/docker # v26+ has breaking API changes requiring migration
