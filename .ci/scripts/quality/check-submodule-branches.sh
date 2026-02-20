@@ -241,7 +241,8 @@ pr_is_linked() {
     pr_number=$(echo "$pr_url" | grep -oE '[0-9]+$' || echo "")
 
     # Check if URL is in the text
-    if echo "$text" | grep -qF "$pr_url"; then
+    # Use here-string instead of pipe to avoid SIGPIPE with grep -q under pipefail
+    if grep -qF "$pr_url" <<< "$text"; then
         return 0
     fi
 
@@ -249,7 +250,7 @@ pr_is_linked() {
     local repo
     repo=$(echo "$pr_url" | grep -oE 'github\.com/[^/]+/[^/]+' | sed 's|github.com/||')
     if [[ -n "$repo" && -n "$pr_number" ]]; then
-        if echo "$text" | grep -qE "${repo}#${pr_number}|${repo}/pull/${pr_number}"; then
+        if grep -qE "${repo}#${pr_number}|${repo}/pull/${pr_number}" <<< "$text"; then
             return 0
         fi
     fi
