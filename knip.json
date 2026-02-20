@@ -122,5 +122,5 @@
     "glob",
     "react-i18next"
   ],
-  "ignoreBinaries": ["rimraf"]
+  "ignoreBinaries": ["rimraf", "wrangler"]
 }
