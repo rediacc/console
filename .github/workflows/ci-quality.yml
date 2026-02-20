@@ -363,7 +363,7 @@ jobs:
 
       - name: Run Go cross-language signature tests
         working-directory: private/renet
-        run: go test -v ./pkg/license/... -run TestCrossLanguage
+        run: go test -v ./pkg/subscription/... -run TestCrossLanguage
 
       - name: Stop RustFS
         if: always()
