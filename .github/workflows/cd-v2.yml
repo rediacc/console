@@ -26,7 +26,8 @@ on:
 permissions:
   actions: write
   contents: write
-  packages: write  # For GHCR push
+  packages: write       # For GHCR push
+  attestations: write   # Verify artifact provenance
 
 # Queue new releases instead of cancelling in-progress ones
 concurrency:
@@ -229,7 +230,7 @@ jobs:
       # Step 1: Promote Docker images (staging -> version + latest)
       # -----------------------------------------------------------------------
       - name: Login to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -266,9 +267,11 @@ jobs:
         working-directory: private/account
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
         run: |
-          echo "${{ secrets.STRIPE_SECRET_KEY }}" | npx wrangler secret put STRIPE_SECRET_KEY --name account-server
-          echo "${{ secrets.STRIPE_WEBHOOK_SECRET }}" | npx wrangler secret put STRIPE_WEBHOOK_SECRET --name account-server
+          echo "$STRIPE_SECRET_KEY" | npx wrangler secret put STRIPE_SECRET_KEY --name account-server
+          echo "$STRIPE_WEBHOOK_SECRET" | npx wrangler secret put STRIPE_WEBHOOK_SECRET --name account-server
 
       - name: Sync Stripe products/prices
         run: npx tsx scripts/stripe-sync.ts
@@ -296,6 +299,22 @@ jobs:
           path: dist/
           run-id: ${{ needs.init.outputs.ci_run_id }}
           github-token: ${{ github.token }}
+
+      - name: Verify staging release attestation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Verifying artifact provenance..."
+          FAILED=false
+          for f in $(find dist/desktop dist/cli dist/packages -type f 2>/dev/null); do
+            gh attestation verify "$f" --repo "${{ github.repository }}" 2>/dev/null || {
+              echo "::warning::No attestation for $f (expected for first run after attestation is enabled)"
+              FAILED=true
+            }
+          done
+          if [[ "$FAILED" == "true" ]]; then
+            echo "::warning::Some artifacts lack attestation — this is expected during the transition period"
+          fi
 
       - name: Version bump
         run: .ci/scripts/version/bump.sh --version ${{ needs.init.outputs.next_version }}
@@ -327,7 +346,7 @@ jobs:
       # Step 3: Create GitHub Release (upload packages + binaries)
       # -----------------------------------------------------------------------
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b  # v2
         with:
           tag_name: v${{ needs.init.outputs.next_version }}
           name: v${{ needs.init.outputs.next_version }}
@@ -372,6 +391,23 @@ jobs:
           path: dist/pages/
           run-id: ${{ needs.init.outputs.ci_run_id }}
           github-token: ${{ github.token }}
+
+      - name: Verify staging pages attestation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Verifying pages artifact provenance..."
+          SAMPLE=$(find dist/pages -type f -name "*.html" | head -5)
+          FAILED=false
+          for f in $SAMPLE; do
+            gh attestation verify "$f" --repo "${{ github.repository }}" 2>/dev/null || {
+              echo "::warning::No attestation for $f"
+              FAILED=true
+            }
+          done
+          if [[ "$FAILED" == "true" ]]; then
+            echo "::warning::Pages artifacts lack attestation — expected during transition period"
+          fi
 
       # Inject E2E videos from the same CI run that produced staging artifacts
       - name: Inject E2E videos
@@ -492,7 +528,7 @@ jobs:
           repositories: console
 
       - name: Login to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}

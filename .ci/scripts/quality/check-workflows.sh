@@ -85,6 +85,41 @@ check_pattern \
     "secrets: inherit" \
     "Pass required secrets explicitly: secrets: { APP_PRIVATE_KEY: \${{ secrets.APP_PRIVATE_KEY }} }"
 
+# Security: Ban unpinned third-party actions (tag-only references like @v3)
+# All uses: references must use SHA pinning (e.g. @abc123...def  # v3)
+# Local actions (./) are exempt since they're part of the repo
+for file in "${GITHUB_YAMLS[@]}"; do
+    # Match only YAML 'uses:' keys (indented, as a key, not part of another word)
+    matches=$(grep -nE '^\s+uses:\s' "$file" 2>/dev/null || true)
+    if [[ -n "$matches" ]]; then
+        while IFS= read -r match; do
+            [[ -z "$match" ]] && continue
+            local_line="${match%%:*}"
+            local_content="${match#*:}"
+            # Skip comments
+            if echo "$local_content" | grep -qE "^\s*#"; then
+                continue
+            fi
+            # Skip local actions (./path)
+            if echo "$local_content" | grep -qE 'uses:\s*\./'; then
+                continue
+            fi
+            # Skip lines with security approval comment
+            if echo "$local_content" | grep -qF "# security: approved"; then
+                continue
+            fi
+            # Check if the action reference uses a SHA (40-char hex)
+            if ! echo "$local_content" | grep -qE '@[a-f0-9]{40}'; then
+                log_error "$file:$local_line: unpinned action reference"
+                echo "  Line: $local_content"
+                echo "  Fix:  Pin action to SHA commit hash (e.g. uses: actions/checkout@abc123...def  # v4)"
+                echo ""
+                ((ERRORS++))
+            fi
+        done <<<"$matches"
+    fi
+done
+
 if [[ $ERRORS -gt 0 ]]; then
     echo ""
     log_error "Found $ERRORS banned pattern(s) in workflows"
