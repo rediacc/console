@@ -36,7 +36,7 @@ const SandboxWarning: React.FC = () => {
       type="warning"
       showIcon={false}
       closable={false}
-      className="sandbox-warning-banner fixed right-0 left-0 z-[1000] flex min-h-10 items-center justify-center [top:var(--banner-preview-height,_0px)]"
+      className="sandbox-warning-banner fixed right-0 left-0 z-[1000] flex min-h-10 items-center justify-center lg:left-[200px] [top:var(--banner-preview-height,_0px)]"
       message={
         <Flex align="center" wrap className="text-center font-medium">
           <ExclamationCircleOutlined />

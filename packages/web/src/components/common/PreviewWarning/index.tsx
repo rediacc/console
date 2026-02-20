@@ -19,7 +19,7 @@ const PreviewWarning: React.FC = () => {
       type="warning"
       showIcon={false}
       closable={false}
-      className="preview-warning-banner fixed top-0 right-0 left-0 z-[1001] flex min-h-10 items-center justify-center"
+      className="preview-warning-banner fixed top-0 right-0 left-0 z-[1001] flex min-h-10 items-center justify-center lg:left-[200px]"
       message={
         <Flex align="center" wrap className="text-center font-medium">
           <ExclamationCircleOutlined />
