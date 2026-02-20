@@ -22,10 +22,7 @@ const Hero: React.FC<HeroProps> = ({ lang = 'en' }) => {
           <p className="hero-subtitle">{t('hero.subtitle')}</p>
           <InstallWidget lang={lang} />
           <div className="hero-cta">
-            <a
-              href={`/${lang}/install`}
-              className="btn btn-primary"
-            >
+            <a href={`/${lang}/install`} className="btn btn-primary">
               {t('hero.cta.contactUs')}
             </a>
           </div>
