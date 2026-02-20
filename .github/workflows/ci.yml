@@ -288,6 +288,10 @@ jobs:
       - name: Build shared packages
         run: npm run build:packages
 
+      - name: Install account dependencies
+        run: npm install
+        working-directory: private/account
+
       - name: Setup Stripe sandbox
         id: sandbox
         run: npx tsx scripts/setup-sandbox.ts --pr-number ${{ github.event.pull_request.number }}
