@@ -161,8 +161,9 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
-  # Extract renet binaries from existing bridge image when build is skipped
-  # This ensures CLI always has access to renet binaries, even when using cached images
+  # Extract renet binaries from existing bridge image when build is skipped.
+  # Linux binaries come from the cached bridge image; Darwin binaries are
+  # cross-compiled on the fly (no embedded assets needed — CRIU/rsync are Linux-only).
   extract-renet:
     name: Renet (cached)
     runs-on: ubuntu-latest
@@ -171,6 +172,26 @@ jobs:
       artifact_name: renet-binaries-${{ github.sha }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
+
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
 
       - name: Login to GHCR
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
@@ -179,16 +200,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Extract renet binaries from existing bridge image
+      - name: Extract Linux binaries + cross-compile Darwin
         run: .ci/scripts/build/extract-renet-from-image.sh --tag "${{ inputs.bridge_tag }}" --output ./private/bin
 
-      # Bridge image only contains Linux binaries; Darwin binaries are only
-      # available from full builds.  The CLI handles missing Darwin gracefully.
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
         with:
           name: renet-binaries-${{ github.sha }}
           path: |
             private/bin/renet-linux-*
+            private/bin/renet-darwin-*
             private/bin/checksums.sha256
           retention-days: 1
           if-no-files-found: error
