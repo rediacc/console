@@ -72,6 +72,9 @@ jobs:
           jq -n --arg renet "$RENET_BINARY" \
             '{contexts:{default:{name:"default",mode:"local",apiUrl:"http://localhost",renetPath:$renet}}}' \
             > ~/.rediacc/config.json
+          # Copy to root's home for sudo commands (os.homedir() returns /root under sudo)
+          sudo mkdir -p /root/.rediacc
+          sudo cp ~/.rediacc/config.json /root/.rediacc/config.json
 
       - name: "Test: rdc ops check"
         run: node packages/cli/dist/cli-bundle.cjs ops check -o json
