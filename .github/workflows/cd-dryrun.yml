@@ -56,7 +56,7 @@ on:
 
 permissions:
   contents: read
-  packages: read    # GHCR pull for validation
+  packages: write   # GHCR pull + retag push when !dry_run
   id-token: write   # OIDC token for Sigstore signing
   attestations: write  # Store attestations on GitHub
 
