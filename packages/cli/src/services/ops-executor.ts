@@ -57,11 +57,11 @@ class OpsExecutorService {
       return extractRenetToLocal();
     }
 
-    // Try context-configured path
+    // Try context-configured renetPath directly (avoids requiring machines/SSH)
     try {
-      const localConfig = await contextService.getLocalConfig();
-      if (localConfig.renetPath && localConfig.renetPath !== DEFAULTS.CONTEXT.RENET_BINARY) {
-        return localConfig.renetPath;
+      const context = await contextService.getCurrent();
+      if (context?.renetPath && context.renetPath !== DEFAULTS.CONTEXT.RENET_BINARY) {
+        return context.renetPath;
       }
     } catch {
       // Context may not be set; fall through to PATH lookup
