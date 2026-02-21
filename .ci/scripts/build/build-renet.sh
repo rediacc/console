@@ -135,8 +135,8 @@ log_step "Verifying release builds..."
 for os in linux darwin; do
     for arch in amd64 arm64; do
         binary="$OUTPUT_DIR/renet-$os-$arch"
-        if file "$binary" | grep -q "stripped\|Mach-O"; then
-            log_info "renet-$os-$arch: release build"
+        if ! file "$binary" | grep -q "not stripped"; then
+            log_info "renet-$os-$arch: stripped (release build)"
         else
             log_warn "renet-$os-$arch: may contain debug symbols"
         fi

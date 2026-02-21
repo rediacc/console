@@ -143,27 +143,23 @@ file_sha256() {
 }
 
 # Build metadata JSON dynamically for included binaries only
-BINARIES_JSON="{}"
+# Collect binary metadata as tab-separated lines, then build JSON in a single jq call
+BINARY_LINES=""
 for binary_name in $REQUIRED_BINARIES; do
     local_file="$CLI_ASSETS_DIR/renet-$binary_name"
     size=$(file_size "$local_file")
     sha256=$(file_sha256 "$local_file")
     meta_key=$(binary_to_meta_key "$binary_name")
-
-    BINARIES_JSON=$(echo "$BINARIES_JSON" | jq \
-        --arg key "$meta_key" \
-        --argjson size "$size" \
-        --arg sha256 "$sha256" \
-        '.[$key] = { size: $size, sha256: $sha256 }')
-
+    BINARY_LINES="${BINARY_LINES}${meta_key}\t${size}\t${sha256}\n"
     log_info "  $binary_name: $size bytes, sha256=$sha256"
 done
 
-jq -n \
+printf '%b' "$BINARY_LINES" | jq -Rn \
     --arg version "$VERSION" \
     --arg generatedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    --argjson binaries "$BINARIES_JSON" \
-    '{ version: $version, generatedAt: $generatedAt, binaries: $binaries }' \
+    '[inputs | select(length > 0) | split("\t") | {key: .[0], value: {size: (.[1] | tonumber), sha256: .[2]}}] |
+     from_entries as $binaries |
+     { version: $version, generatedAt: $generatedAt, binaries: $binaries }' \
     >"$CLI_ASSETS_DIR/renet-metadata.json"
 
 log_info "Metadata written to $CLI_ASSETS_DIR/renet-metadata.json"
@@ -172,27 +168,27 @@ log_info "  Version: $VERSION"
 # Generate platform-specific sea-config.json
 log_step "Generating platform-specific sea-config..."
 
-ASSETS_JSON='{ "renet-metadata.json": "dist/assets/renet-metadata.json" }'
+# Build asset entries as newline-separated key=value pairs, then construct JSON in a single jq call
+ASSET_LINES="renet-metadata.json\tdist/assets/renet-metadata.json"
 for binary_name in $REQUIRED_BINARIES; do
-    ASSETS_JSON=$(echo "$ASSETS_JSON" | jq \
-        --arg key "renet-$binary_name" \
-        --arg path "dist/assets/renet-$binary_name" \
-        '.[$key] = $path')
+    ASSET_LINES="${ASSET_LINES}\nrenet-$binary_name\tdist/assets/renet-$binary_name"
 done
 
-jq -n \
+ASSET_COUNT=$(printf '%b' "$ASSET_LINES" | wc -l)
+
+printf '%b\n' "$ASSET_LINES" | jq -Rn \
     --arg main "dist/cli-bundle.cjs" \
     --arg output "dist/sea-prep.blob" \
-    --argjson assets "$ASSETS_JSON" \
-    '{
-      main: $main,
-      output: $output,
-      disableExperimentalSEAWarning: true,
-      useSnapshot: false,
-      useCodeCache: false,
-      assets: $assets
-    }' >"$CLI_DIR/sea-config.generated.json"
+    '[inputs | select(length > 0) | split("\t") | {key: .[0], value: .[1]}] | from_entries as $assets |
+     {
+       main: $main,
+       output: $output,
+       disableExperimentalSEAWarning: true,
+       useSnapshot: false,
+       useCodeCache: false,
+       assets: $assets
+     }' >"$CLI_DIR/sea-config.generated.json"
 
-log_info "Generated sea-config with $(echo "$ASSETS_JSON" | jq 'length') assets"
+log_info "Generated sea-config with $ASSET_COUNT assets"
 
 log_info "CLI assets prepared successfully"
