@@ -112,29 +112,33 @@ require_cmd go
 
 cd "$RENET_DIR"
 
-for arch in amd64 arm64; do
-    log_info "Building renet-linux-$arch..."
-    CGO_ENABLED=0 GOOS=linux GOARCH=$arch go build \
-        -ldflags="-s -w -X main.Version=$VERSION" \
-        -o "$OUTPUT_DIR/renet-linux-$arch" ./cmd/renet
+for os in linux darwin; do
+    for arch in amd64 arm64; do
+        log_info "Building renet-$os-$arch..."
+        CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build \
+            -ldflags="-s -w -X main.Version=$VERSION" \
+            -o "$OUTPUT_DIR/renet-$os-$arch" ./cmd/renet
+    done
 done
 
 # Generate checksums
 log_step "Generating checksums..."
 cd "$OUTPUT_DIR"
-sha256sum renet-linux-* >checksums.sha256
+sha256sum renet-* >checksums.sha256
 
 log_info "Renet binaries built successfully:"
-ls -la "$OUTPUT_DIR"/renet-linux-*
+ls -la "$OUTPUT_DIR"/renet-*
 cat "$OUTPUT_DIR/checksums.sha256"
 
 # Verify release build (no debug info)
 log_step "Verifying release builds..."
-for arch in amd64 arm64; do
-    binary="$OUTPUT_DIR/renet-linux-$arch"
-    if file "$binary" | grep -q "stripped"; then
-        log_info "renet-linux-$arch: stripped (release build)"
-    else
-        log_warn "renet-linux-$arch: may contain debug symbols"
-    fi
+for os in linux darwin; do
+    for arch in amd64 arm64; do
+        binary="$OUTPUT_DIR/renet-$os-$arch"
+        if file "$binary" | grep -q "stripped\|Mach-O"; then
+            log_info "renet-$os-$arch: release build"
+        else
+            log_warn "renet-$os-$arch: may contain debug symbols"
+        fi
+    done
 done

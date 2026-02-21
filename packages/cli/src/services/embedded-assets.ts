@@ -12,14 +12,26 @@ import { createRequire } from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-/** Supported Linux architectures for renet */
-export type LinuxArch = 'amd64' | 'arm64';
+/** Supported architectures for renet */
+export type RenetArch = 'amd64' | 'arm64';
+
+/** Supported platforms for renet */
+export type RenetPlatform = 'linux' | 'darwin';
+
+/** @deprecated Use RenetArch instead */
+export type LinuxArch = RenetArch;
+
+/** Binary metadata entry */
+interface BinaryMeta {
+  size: number;
+  sha256: string;
+}
 
 /** Metadata for embedded renet binaries */
 export interface RenetMetadata {
   version: string;
   generatedAt: string;
-  binaries: Record<LinuxArch, { size: number; sha256: string }>;
+  binaries: Record<string, BinaryMeta>;
 }
 
 /** SEA module interface for type safety */
@@ -59,20 +71,21 @@ export function isSEA(): boolean {
 }
 
 /**
- * Get an embedded renet binary for a specific Linux architecture
+ * Get an embedded renet binary for a specific platform and architecture
  *
+ * @param platform - Target platform (linux or darwin)
  * @param arch - Target architecture (amd64 or arm64)
  * @returns Binary data as Buffer
  * @throws Error if not running as SEA or asset not found
  */
-export function getEmbeddedRenetBinary(arch: LinuxArch): Buffer {
+export function getEmbeddedRenetBinary(platform: RenetPlatform, arch: RenetArch): Buffer {
   const sea = tryLoadSEA();
   if (!sea) {
     throw new Error('Not running as SEA - embedded assets not available');
   }
 
   // Note: getAsset throws if the asset is not found, no need for a falsy check
-  const asset = sea.getAsset(`renet-linux-${arch}`);
+  const asset = sea.getAsset(`renet-${platform}-${arch}`);
   return Buffer.from(asset);
 }
 
@@ -82,36 +95,23 @@ export function getEmbeddedRenetBinary(arch: LinuxArch): Buffer {
  * @param data - Parsed JSON data to validate
  * @returns true if data is valid RenetMetadata
  */
+function isValidBinaryEntry(binary: unknown): boolean {
+  if (typeof binary !== 'object' || binary === null) return false;
+  const obj = binary as Record<string, unknown>;
+  return typeof obj.size === 'number' && typeof obj.sha256 === 'string';
+}
+
 function isValidRenetMetadata(data: unknown): data is RenetMetadata {
-  if (typeof data !== 'object' || data === null) {
-    return false;
-  }
+  if (typeof data !== 'object' || data === null) return false;
 
   const obj = data as Record<string, unknown>;
-
-  if (typeof obj.version !== 'string' || typeof obj.generatedAt !== 'string') {
-    return false;
-  }
-
-  if (typeof obj.binaries !== 'object' || obj.binaries === null) {
-    return false;
-  }
+  if (typeof obj.version !== 'string' || typeof obj.generatedAt !== 'string') return false;
+  if (typeof obj.binaries !== 'object' || obj.binaries === null) return false;
 
   const binaries = obj.binaries as Record<string, unknown>;
-  const requiredArchs: LinuxArch[] = ['amd64', 'arm64'];
 
-  for (const arch of requiredArchs) {
-    const binary = binaries[arch];
-    if (typeof binary !== 'object' || binary === null) {
-      return false;
-    }
-    const binaryObj = binary as Record<string, unknown>;
-    if (typeof binaryObj.size !== 'number' || typeof binaryObj.sha256 !== 'string') {
-      return false;
-    }
-  }
-
-  return true;
+  // All binary entries (required + optional) must have correct shape
+  return Object.values(binaries).every(isValidBinaryEntry);
 }
 
 /**
@@ -167,8 +167,9 @@ export async function extractRenetToLocal(): Promise<string> {
     }
   }
 
-  const arch: LinuxArch = process.arch === 'arm64' ? 'arm64' : 'amd64';
-  const binary = getEmbeddedRenetBinary(arch);
+  const platform: RenetPlatform = process.platform === 'darwin' ? 'darwin' : 'linux';
+  const arch: RenetArch = process.arch === 'arm64' ? 'arm64' : 'amd64';
+  const binary = getEmbeddedRenetBinary(platform, arch);
 
   const dir = path.join(os.tmpdir(), '.rdc-local');
   await fs.mkdir(dir, { recursive: true });

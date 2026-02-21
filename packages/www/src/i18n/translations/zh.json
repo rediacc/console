@@ -118,14 +118,18 @@
       "support": "支持"
     },
     "copyright": "{{year}} Rediacc. 版权所有。",
+    "legalDisclosure": {
+      "fullLegalInformation": "完整法律信息",
+      "summary": "{{companyName}} | 注册代码 {{registryCode}} | 增值税号 {{vatNumber}} |"
+    },
     "legalLinks": {
       "acceptableUsePolicy": "可接受使用政策",
       "cookiePolicy": "Cookie政策",
+      "legalInformation": "法律信息",
       "privacyPolicy": "隐私政策",
       "refundPolicy": "退款政策",
       "telemetryPolicy": "遥测策略",
-      "termsOfService": "服务条款",
-      "legalInformation": "法律信息"
+      "termsOfService": "服务条款"
     },
     "links": {
       "contactSupport": "联系支持人员",
@@ -147,11 +151,7 @@
       "contactSupport": "联系支持人员",
       "helpCenter": "帮助中心"
     },
-    "tagline": "用于人工智能驱动运营的基础设施自动化平台",
-    "legalDisclosure": {
-      "summary": "{{companyName}} | 注册代码 {{registryCode}} | 增值税号 {{vatNumber}} |",
-      "fullLegalInformation": "完整法律信息"
-    }
+    "tagline": "用于人工智能驱动运营的基础设施自动化平台"
   },
   "hero": {
     "cta": {
@@ -1147,6 +1147,37 @@
       },
       "verify": {
         "title": "验证安装"
+      }
+    },
+    "legalInformation": {
+      "hero": {
+        "subtitle": "用于透明披露和商务联系的官方公司信息",
+        "title": "法律信息"
+      },
+      "meta": {
+        "description": "用于透明披露和商务联系的官方公司信息。",
+        "keywords": "法律信息, 公司信息, 注册, 增值税, 联系方式",
+        "title": "法律信息 - {{companyName}}"
+      },
+      "sections": {
+        "companyDetails": {
+          "labels": {
+            "email": "电子邮箱",
+            "legalName": "法律形式与名称",
+            "register": "注册机构",
+            "registeredOffice": "注册地址",
+            "registryCode": "注册代码",
+            "vatNumber": "增值税号",
+            "website": "网站"
+          },
+          "lead": "本页面包含用于法律透明与商务往来的官方公司及联系方式信息。",
+          "registerEntryLink": "查看公司资料",
+          "registerEntryPrefix": "公共注册条目：",
+          "title": "公司信息",
+          "values": {
+            "legalName": "{{companyName}}（有限责任公司）"
+          }
+        }
       }
     },
     "notFound": {
@@ -2923,37 +2954,6 @@
       },
       "toc": {
         "title": "目录"
-      }
-    },
-    "legalInformation": {
-      "meta": {
-        "title": "法律信息 - {{companyName}}",
-        "description": "用于透明披露和商务联系的官方公司信息。",
-        "keywords": "法律信息, 公司信息, 注册, 增值税, 联系方式"
-      },
-      "hero": {
-        "title": "法律信息",
-        "subtitle": "用于透明披露和商务联系的官方公司信息"
-      },
-      "sections": {
-        "companyDetails": {
-          "title": "公司信息",
-          "lead": "本页面包含用于法律透明与商务往来的官方公司及联系方式信息。",
-          "labels": {
-            "legalName": "法律形式与名称",
-            "registryCode": "注册代码",
-            "register": "注册机构",
-            "registeredOffice": "注册地址",
-            "vatNumber": "增值税号",
-            "email": "电子邮箱",
-            "website": "网站"
-          },
-          "values": {
-            "legalName": "{{companyName}}（有限责任公司）"
-          },
-          "registerEntryPrefix": "公共注册条目：",
-          "registerEntryLink": "查看公司资料"
-        }
       }
     }
   },

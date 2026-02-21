@@ -4,7 +4,7 @@ description: "متى تستخدم rdc ومتى تستخدم renet."
 category: "Guides"
 order: 1
 language: ar
-sourceHash: "a002ea55958664f1"
+sourceHash: "cb2c174b8cf1a078"
 ---
 
 # rdc vs renet
@@ -54,6 +54,20 @@ rdc machine status server-1
 - التحقق من تفاصيل داخلية غير متاحة عبر `rdc`
 
 معظم المستخدمين لا يحتاجون لتشغيل `renet` مباشرة في العمل اليومي.
+
+### تجريبي: `rdc ops` (اجهزة افتراضية محلية)
+
+`rdc ops` يغلف `renet ops` لادارة مجموعات الاجهزة الافتراضية المحلية على جهازك:
+
+```bash
+rdc ops setup    # تثبيت المتطلبات (KVM او QEMU)
+rdc ops up --basic  # انشاء مجموعة بسيطة
+rdc ops status   # التحقق من حالة الاجهزة الافتراضية
+rdc ops ssh 1    # SSH الى جهاز Bridge الافتراضي
+rdc ops down     # حذف المجموعة
+```
+
+تعمل هذه الاوامر على تشغيل `renet` محليا (وليس عبر SSH). راجع [الاجهزة الافتراضية التجريبية](/ar/docs/experimental-vms) للتوثيق الكامل.
 
 ## ملاحظة حول Rediaccfile
 

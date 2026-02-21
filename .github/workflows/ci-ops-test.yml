@@ -1,0 +1,204 @@
+name: CI - OPS Tests
+
+on:
+  workflow_call: {}
+
+jobs:
+  # ── Full VM provisioning test (KVM available) ──────────────────
+  ops-vm-provision:
+    name: OPS Provision (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            name: linux-amd64
+            arch: x86_64
+            full_test: true
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: ci
+          repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
+
+      - name: Checkout with Submodules
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          submodules: recursive
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+
+      - name: Build renet
+        run: .ci/scripts/infra/build-renet.sh
+
+      - name: Install KVM prerequisites
+        run: sudo $RENET_BINARY ops host setup
+
+      - name: Build CLI
+        run: npm run build -w @rediacc/cli
+
+      - name: "Test: rdc ops check"
+        run: node packages/cli/dist/index.js ops check -o json
+
+      - name: "Test: rdc ops up --basic"
+        run: |
+          sudo -E node packages/cli/dist/index.js ops up \
+            --basic --skip-orchestration -o json
+
+      - name: "Test: rdc ops status"
+        id: status
+        run: |
+          STATUS=$(sudo -E node packages/cli/dist/index.js ops status -o json)
+          echo "$STATUS"
+          BRIDGE_IP=$(echo "$STATUS" | jq -r '.vms[0].ip')
+          echo "bridge_ip=$BRIDGE_IP" >> "$GITHUB_OUTPUT"
+
+      - name: "Verify: ping connectivity"
+        run: ping -c 3 -W 5 "${{ steps.status.outputs.bridge_ip }}"
+
+      - name: "Verify: SSH connectivity"
+        run: |
+          for i in $(seq 1 15); do
+            if ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+              -o ConnectTimeout=5 \
+              "$(whoami)@${{ steps.status.outputs.bridge_ip }}" "echo 'SSH OK'"; then
+              echo "SSH connection successful on attempt $i"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 5s..."
+            sleep 5
+          done
+          echo "SSH connection failed after 15 attempts"
+          exit 1
+
+      - name: "Test: rdc ops down"
+        if: always()
+        run: sudo -E node packages/cli/dist/index.js ops down -o json || true
+
+      - name: "Verify: cleanup"
+        if: always()
+        run: |
+          STATUS=$(sudo -E node packages/cli/dist/index.js ops status -o json 2>/dev/null || echo '{"vms":[]}')
+          echo "$STATUS" | jq -e '.vms | length == 0' || echo "Warning: VMs still present after cleanup"
+
+  # ── Platform validation (no KVM/HVF, build + check only) ──────
+  # Downloads pre-built renet binaries from the build-renet job artifact.
+  # Tests CLI ops check, renet binary execution, and QEMU availability.
+  # Linux ARM runners lack KVM, so full provisioning is not tested there.
+  ops-platform-check:
+    name: OPS Check (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04-arm
+            name: linux-arm64
+            platform: linux
+            arch: arm64
+          - runner: macos-latest
+            name: macos-arm64
+            platform: darwin
+            arch: arm64
+          - runner: macos-15-intel
+            name: macos-intel
+            platform: darwin
+            arch: x86_64
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: ci
+          repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
+
+      - name: Checkout with Submodules
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          submodules: recursive
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: .ci/scripts/setup/install-deps.sh
+        shell: bash
+      - run: .ci/scripts/setup/build-packages.sh
+        shell: bash
+
+      - name: Download renet binaries
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          name: renet-binaries-${{ github.sha }}
+          path: private/bin/
+
+      - name: Set renet binary path
+        shell: bash
+        run: |
+          PLATFORM=${{ matrix.platform }}
+          ARCH=${{ matrix.arch == 'arm64' && 'arm64' || 'amd64' }}
+          RENET_BIN="$(pwd)/private/bin/renet-${PLATFORM}-${ARCH}"
+          chmod +x "$RENET_BIN"
+          echo "RENET_BINARY=$RENET_BIN" >> "$GITHUB_ENV"
+
+      - name: Install QEMU (macOS)
+        if: matrix.platform == 'darwin'
+        run: brew install qemu cdrtools
+
+      - name: Build CLI
+        shell: bash
+        run: npm run build -w @rediacc/cli
+
+      - name: "Test: rdc ops check"
+        shell: bash
+        run: node packages/cli/dist/index.js ops check -o json
+
+      - name: "Test: renet binary runs"
+        shell: bash
+        run: $RENET_BINARY --version
+
+      - name: "Test: renet ops host check"
+        shell: bash
+        run: $RENET_BINARY ops host check || true
+
+      - name: "Test: QEMU binary works (macOS)"
+        if: matrix.platform == 'darwin'
+        shell: bash
+        run: |
+          qemu-system-aarch64 --version || qemu-system-x86_64 --version
+          qemu-img --version

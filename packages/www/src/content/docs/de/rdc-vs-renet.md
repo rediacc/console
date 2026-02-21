@@ -4,7 +4,7 @@ description: "Wann Sie rdc verwenden und wann renet."
 category: "Guides"
 order: 1
 language: de
-sourceHash: "a002ea55958664f1"
+sourceHash: "cb2c174b8cf1a078"
 ---
 
 # rdc vs renet
@@ -54,6 +54,20 @@ Verwenden Sie `renet` direkt nur dann, wenn Sie bewusst Low-Level-Kontrolle auf 
 - Prufen von Interna, die in `rdc` nicht direkt verfugbar sind
 
 Die meisten Nutzer mussen `renet` im Alltag nicht direkt aufrufen.
+
+### Experimentell: `rdc ops` (lokale VMs)
+
+`rdc ops` umschliesst `renet ops` zur Verwaltung lokaler VM-Cluster auf Ihrer Workstation:
+
+```bash
+rdc ops setup    # Voraussetzungen installieren (KVM oder QEMU)
+rdc ops up --basic  # Minimalen Cluster bereitstellen
+rdc ops status   # VM-Status prufen
+rdc ops ssh 1    # SSH in die Bridge-VM
+rdc ops down     # Cluster zerstoren
+```
+
+Diese Befehle fuhren `renet` lokal aus (nicht uber SSH). Siehe [Experimentelle VMs](/de/docs/experimental-vms) fur die vollstandige Dokumentation.
 
 ## Hinweis zu Rediaccfile
 

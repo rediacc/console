@@ -123,14 +123,18 @@
       "support": "Unterstützung"
     },
     "copyright": "{{year}} Rediacc. Alle Rechte vorbehalten.",
+    "legalDisclosure": {
+      "fullLegalInformation": "Vollständige rechtliche Informationen",
+      "summary": "{{companyName}} | Registernummer {{registryCode}} | USt-IdNr. {{vatNumber}} |"
+    },
     "legalLinks": {
       "acceptableUsePolicy": "Richtlinie zur akzeptablen Nutzung",
       "cookiePolicy": "Cookie-Richtlinie",
+      "legalInformation": "Rechtliche Informationen",
       "privacyPolicy": "Datenschutzrichtlinie",
       "refundPolicy": "Erstattungsrichtlinie",
       "telemetryPolicy": "Telemetrie-Richtlinie",
-      "termsOfService": "Nutzungsbedingungen",
-      "legalInformation": "Rechtliche Informationen"
+      "termsOfService": "Nutzungsbedingungen"
     },
     "links": {
       "contactSupport": "Kontaktieren Sie den Support",
@@ -152,11 +156,7 @@
       "contactSupport": "Kontaktieren Sie den Support",
       "helpCenter": "Hilfecenter"
     },
-    "tagline": "Infrastrukturautomatisierungsplattform für KI-gesteuerte Abläufe",
-    "legalDisclosure": {
-      "summary": "{{companyName}} | Registernummer {{registryCode}} | USt-IdNr. {{vatNumber}} |",
-      "fullLegalInformation": "Vollständige rechtliche Informationen"
-    }
+    "tagline": "Infrastrukturautomatisierungsplattform für KI-gesteuerte Abläufe"
   },
   "hero": {
     "cta": {
@@ -1176,6 +1176,37 @@
       },
       "verify": {
         "title": "Installation überprüfen"
+      }
+    },
+    "legalInformation": {
+      "hero": {
+        "subtitle": "Offizielle Unternehmensangaben für Transparenz und geschäftliche Kontaktaufnahme",
+        "title": "Rechtliche Informationen"
+      },
+      "meta": {
+        "description": "Offizielle Unternehmensangaben für Transparenz und geschäftliche Kontaktaufnahme.",
+        "keywords": "rechtliche informationen, unternehmensdaten, register, umsatzsteuer, kontakt",
+        "title": "Rechtliche Informationen - {{companyName}}"
+      },
+      "sections": {
+        "companyDetails": {
+          "labels": {
+            "email": "E-Mail",
+            "legalName": "Rechtsform und Name",
+            "register": "Handelsregister",
+            "registeredOffice": "Sitz",
+            "registryCode": "Registernummer",
+            "vatNumber": "USt-IdNr.",
+            "website": "Webseite"
+          },
+          "lead": "Diese Seite enthält offizielle Unternehmens- und Kontaktdaten zur rechtlichen Transparenz und geschäftlichen Korrespondenz.",
+          "registerEntryLink": "Unternehmensprofil anzeigen",
+          "registerEntryPrefix": "Öffentlicher Registereintrag:",
+          "title": "Unternehmensangaben",
+          "values": {
+            "legalName": "{{companyName}} (Gesellschaft mit beschränkter Haftung)"
+          }
+        }
       }
     },
     "notFound": {
@@ -3007,37 +3038,6 @@
       },
       "toc": {
         "title": "Inhaltsverzeichnis"
-      }
-    },
-    "legalInformation": {
-      "meta": {
-        "title": "Rechtliche Informationen - {{companyName}}",
-        "description": "Offizielle Unternehmensangaben für Transparenz und geschäftliche Kontaktaufnahme.",
-        "keywords": "rechtliche informationen, unternehmensdaten, register, umsatzsteuer, kontakt"
-      },
-      "hero": {
-        "title": "Rechtliche Informationen",
-        "subtitle": "Offizielle Unternehmensangaben für Transparenz und geschäftliche Kontaktaufnahme"
-      },
-      "sections": {
-        "companyDetails": {
-          "title": "Unternehmensangaben",
-          "lead": "Diese Seite enthält offizielle Unternehmens- und Kontaktdaten zur rechtlichen Transparenz und geschäftlichen Korrespondenz.",
-          "labels": {
-            "legalName": "Rechtsform und Name",
-            "registryCode": "Registernummer",
-            "register": "Handelsregister",
-            "registeredOffice": "Sitz",
-            "vatNumber": "USt-IdNr.",
-            "email": "E-Mail",
-            "website": "Webseite"
-          },
-          "values": {
-            "legalName": "{{companyName}} (Gesellschaft mit beschränkter Haftung)"
-          },
-          "registerEntryPrefix": "Öffentlicher Registereintrag:",
-          "registerEntryLink": "Unternehmensprofil anzeigen"
-        }
       }
     }
   },

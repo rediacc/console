@@ -532,7 +532,8 @@
         "renetRsync": "Eingebettetes rsync",
         "renetVersion": "Version",
         "seaMode": "SEA-Modus",
-        "sshKey": "SSH-Schlüssel"
+        "sshKey": "SSH-Schlüssel",
+        "opsPrereqs": "OPS-Voraussetzungen"
       },
       "description": "CLI-Umgebung und Renet-Integration diagnostizieren",
       "devMode": "nein (Entwicklungsmodus)",
@@ -542,11 +543,14 @@
       "notConfigured": "nicht konfiguriert",
       "notInstalled": "nicht installiert",
       "seaActive": "ja (Single Executable Application)",
+      "opsNotSupported": "nicht unterstützt auf {{platform}}",
+      "opsSkipped": "renet nicht verfügbar (übersprungen)",
       "sections": {
         "authentication": "Authentifizierung",
         "configuration": "Konfiguration",
         "environment": "Umgebung",
-        "renet": "Renet"
+        "renet": "Renet",
+        "virtualization": "Virtualisierung"
       },
       "status": {
         "fail": "FEHLER",
@@ -675,6 +679,48 @@
         "systemSection": "\nSystem:",
         "systemUptime": "  Betriebszeit: {{uptime}}",
         "totalRepos": "  Gesamtzahl Repositories: {{count}}"
+      }
+    },
+    "ops": {
+      "check": {
+        "allPassed": "Alle Voraussetzungen erfüllt",
+        "description": "Virtualisierungsvoraussetzungen überprüfen",
+        "hasMissing": "{{count}} Voraussetzung(en) fehlen",
+        "localFallback": "(Lokale Prüfungen — renet nicht verfügbar)",
+        "title": "OPS-Voraussetzungsprüfung"
+      },
+      "description": "Experimentelle VM-Operationen (bereitstellen, verwalten, zerstören)",
+      "down": {
+        "completed": "VM-Cluster erfolgreich zerstört",
+        "description": "VM-Cluster zerstören",
+        "failed": "Zerstörung des VM-Clusters fehlgeschlagen",
+        "starting": "VM-Cluster wird zerstört..."
+      },
+      "setup": {
+        "brewFailed": "Homebrew-Installation fehlgeschlagen",
+        "completed": "Voraussetzungen erfolgreich installiert",
+        "description": "Virtualisierungsvoraussetzungen installieren",
+        "detecting": "Plattform wird erkannt...",
+        "failed": "Installation fehlgeschlagen",
+        "linux": "KVM-Voraussetzungen werden über renet installiert...",
+        "macos": "QEMU wird über Homebrew installiert...",
+        "unsupported": "Nicht unterstützte Plattform: {{platform}}"
+      },
+      "ssh": {
+        "connecting": "Verbindung zu VM {{id}} wird hergestellt...",
+        "description": "SSH-Verbindung zu einer VM",
+        "vmNotFound": "VM mit ID {{id}} nicht gefunden oder nicht aktiv"
+      },
+      "status": {
+        "description": "VM-Cluster-Status anzeigen",
+        "fetching": "VM-Cluster-Status wird abgerufen...",
+        "noVMs": "Keine VMs gefunden"
+      },
+      "up": {
+        "completed": "VM-Cluster erfolgreich bereitgestellt",
+        "description": "VM-Cluster lokal bereitstellen",
+        "failed": "Bereitstellung des VM-Clusters fehlgeschlagen",
+        "starting": "VM-Cluster-Bereitstellung wird gestartet..."
       }
     },
     "organization": {
@@ -1418,6 +1464,7 @@
       "context": "Kontextverwaltung",
       "doctor": "Systemdiagnose",
       "machine": "Maschinenverwaltung",
+      "ops": "Experimentelle VM-Operationen",
       "organization": "Organisationsverwaltung",
       "permission": "Berechtigungsverwaltung",
       "protocol": "Protokoll-Handler",
@@ -1616,6 +1663,14 @@
     "mirrorUpload": "Spiegelmodus - Remote-Dateien löschen, die nicht lokal vorhanden sind",
     "newPasswordNonInteractive": "Neues Passwort (nicht-interaktiver Modus)",
     "newWindow": "In neuem VS Code-Fenster öffnen",
+    "opsBackend": "Virtualisierungs-Backend (kvm|qemu, automatisch erkannt)",
+    "opsBasic": "Minimaler Cluster (Bridge + 1 Worker)",
+    "opsForce": "Neustart aller VMs erzwingen",
+    "opsLite": "VM-Bereitstellung überspringen (nur Status)",
+    "opsOS": "VM-Betriebssystem (z.B. ubuntu-24.04, debian-12)",
+    "opsParallel": "VMs parallel erstellen",
+    "opsSkipOrchestration": "Cluster-Orchestrierung überspringen",
+    "opsSSHUser": "SSH-Benutzername für VM-Verbindung",
     "organization": "Organisationsname",
     "output": "Ausgabeformat (table|json|yaml|csv)",
     "outputFormat": "Ausgabeformat (json)",

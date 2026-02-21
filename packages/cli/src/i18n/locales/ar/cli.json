@@ -532,7 +532,8 @@
         "renetRsync": "rsync مضمّن",
         "renetVersion": "الإصدار",
         "seaMode": "وضع SEA",
-        "sshKey": "مفتاح SSH"
+        "sshKey": "مفتاح SSH",
+        "opsPrereqs": "متطلبات OPS"
       },
       "description": "تشخيص بيئة CLI وتكامل renet",
       "devMode": "لا (وضع التطوير)",
@@ -542,11 +543,14 @@
       "notConfigured": "غير مهيّأ",
       "notInstalled": "غير مثبّت",
       "seaActive": "نعم (تطبيق ملف تنفيذي واحد)",
+      "opsNotSupported": "غير مدعوم على {{platform}}",
+      "opsSkipped": "renet غير متاح (تم التخطي)",
       "sections": {
         "authentication": "المصادقة",
         "configuration": "الإعدادات",
         "environment": "البيئة",
-        "renet": "رينت"
+        "renet": "رينت",
+        "virtualization": "المحاكاة الافتراضية"
       },
       "status": {
         "fail": "فشل",
@@ -675,6 +679,48 @@
         "systemSection": "\nالنظام:",
         "systemUptime": "  وقت التشغيل: {{uptime}}",
         "totalRepos": "  إجمالي المستودعات: {{count}}"
+      }
+    },
+    "ops": {
+      "check": {
+        "allPassed": "جميع المتطلبات الأساسية مستوفاة",
+        "description": "التحقق من متطلبات المحاكاة الافتراضية",
+        "hasMissing": "{{count}} متطلب(ات) أساسية مفقودة",
+        "localFallback": "(استخدام فحوصات محلية — renet غير متاح)",
+        "title": "فحص متطلبات OPS"
+      },
+      "description": "عمليات VM التجريبية (إنشاء، إدارة، حذف)",
+      "down": {
+        "completed": "تم تدمير مجموعة VM بنجاح",
+        "description": "تدمير مجموعة VM",
+        "failed": "فشل تدمير مجموعة VM",
+        "starting": "جارٍ تدمير مجموعة VM..."
+      },
+      "setup": {
+        "brewFailed": "فشل تثبيت Homebrew",
+        "completed": "تم تثبيت المتطلبات الأساسية بنجاح",
+        "description": "تثبيت متطلبات المحاكاة الافتراضية",
+        "detecting": "جارٍ اكتشاف المنصة...",
+        "failed": "فشل التثبيت",
+        "linux": "جارٍ تثبيت متطلبات KVM عبر renet...",
+        "macos": "جارٍ تثبيت QEMU عبر Homebrew...",
+        "unsupported": "منصة غير مدعومة: {{platform}}"
+      },
+      "ssh": {
+        "connecting": "جارٍ الاتصال بـ VM {{id}}...",
+        "description": "الاتصال بـ VM عبر SSH",
+        "vmNotFound": "لم يتم العثور على VM بالمعرف {{id}} أو أنه لا يعمل"
+      },
+      "status": {
+        "description": "عرض حالة مجموعة VM",
+        "fetching": "جارٍ جلب حالة مجموعة VM...",
+        "noVMs": "لم يتم العثور على أي VM"
+      },
+      "up": {
+        "completed": "تم إنشاء مجموعة VM بنجاح",
+        "description": "إنشاء مجموعة VM محلياً",
+        "failed": "فشل إنشاء مجموعة VM",
+        "starting": "جارٍ بدء إنشاء مجموعة VM..."
       }
     },
     "organization": {
@@ -1418,6 +1464,7 @@
       "context": "إدارة السياق",
       "doctor": "تشخيص النظام",
       "machine": "إدارة الأجهزة",
+      "ops": "عمليات VM التجريبية",
       "organization": "إدارة المنظمة",
       "permission": "إدارة الصلاحيات",
       "protocol": "معالج البروتوكول",
@@ -1616,6 +1663,14 @@
     "mirrorUpload": "وضع الانعكاس - حذف الملفات البعيدة غير الموجودة محلياً",
     "newPasswordNonInteractive": "كلمة المرور الجديدة (الوضع غير التفاعلي)",
     "newWindow": "الفتح في نافذة VS Code جديدة",
+    "opsBackend": "واجهة المحاكاة الافتراضية (kvm|qemu، يتم الكشف عنها تلقائياً)",
+    "opsBasic": "مجموعة بسيطة (جسر + عامل واحد)",
+    "opsForce": "فرض إعادة تشغيل جميع الآلات الافتراضية",
+    "opsLite": "تخطي توفير VM (الحالة فقط)",
+    "opsOS": "نظام تشغيل VM (مثلاً، ubuntu-24.04، debian-12)",
+    "opsParallel": "إنشاء الآلات الافتراضية بالتوازي",
+    "opsSkipOrchestration": "تخطي تنسيق المجموعة",
+    "opsSSHUser": "اسم مستخدم SSH للاتصال بالآلة الافتراضية",
     "organization": "اسم المؤسسة",
     "output": "صيغة المخرجات (table|json|yaml|csv)",
     "outputFormat": "صيغة المخرجات (json)",

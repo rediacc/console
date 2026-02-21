@@ -156,6 +156,7 @@ jobs:
           name: renet-binaries-${{ github.sha }}
           path: |
             private/bin/renet-linux-*
+            private/bin/renet-darwin-*
             private/bin/checksums.sha256
           retention-days: 1
           if-no-files-found: error
@@ -186,6 +187,7 @@ jobs:
           name: renet-binaries-${{ github.sha }}
           path: |
             private/bin/renet-linux-*
+            private/bin/renet-darwin-*
             private/bin/checksums.sha256
           retention-days: 1
           if-no-files-found: error

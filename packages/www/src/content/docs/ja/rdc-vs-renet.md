@@ -4,7 +4,7 @@ description: "rdc を使う場面と renet を使う場面。"
 category: "Guides"
 order: 1
 language: ja
-sourceHash: "a002ea55958664f1"
+sourceHash: "cb2c174b8cf1a078"
 ---
 
 # rdc vs renet
@@ -54,6 +54,20 @@ rdc machine status server-1
 - `rdc` では公開されていない内部状態の確認
 
 ほとんどのユーザーは通常運用で `renet` を直接呼び出す必要はありません。
+
+### 実験的機能: `rdc ops`（ローカルVM）
+
+`rdc ops` は `renet ops` をラップし、ワークステーション上でローカルVMクラスターを管理します:
+
+```bash
+rdc ops setup    # 前提条件をインストール（KVM または QEMU）
+rdc ops up --basic  # 最小クラスターを構築
+rdc ops status   # VMのステータスを確認
+rdc ops ssh 1    # ブリッジVMにSSH接続
+rdc ops down     # クラスターを破棄
+```
+
+これらのコマンドは `renet` をローカルで実行します（SSH経由ではありません）。詳細は [実験的VM](/ja/docs/experimental-vms) を参照してください。
 
 ## Rediaccfile について
 

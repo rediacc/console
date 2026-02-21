@@ -123,14 +123,18 @@
       "support": "Apoyo"
     },
     "copyright": "{{year}} Rediacc. Reservados todos los derechos.",
+    "legalDisclosure": {
+      "fullLegalInformation": "Información legal completa",
+      "summary": "{{companyName}} | Código registral {{registryCode}} | IVA {{vatNumber}} |"
+    },
     "legalLinks": {
       "acceptableUsePolicy": "Política de uso aceptable",
       "cookiePolicy": "Política de cookies",
+      "legalInformation": "Información legal",
       "privacyPolicy": "Política de privacidad",
       "refundPolicy": "Política de reembolso",
       "telemetryPolicy": "Política de telemetría",
-      "termsOfService": "Condiciones del servicio",
-      "legalInformation": "Información legal"
+      "termsOfService": "Condiciones del servicio"
     },
     "links": {
       "contactSupport": "Contactar con soporte",
@@ -152,11 +156,7 @@
       "contactSupport": "Contactar con soporte",
       "helpCenter": "Centro de ayuda"
     },
-    "tagline": "Plataforma de automatización de infraestructura para operaciones impulsadas por IA",
-    "legalDisclosure": {
-      "summary": "{{companyName}} | Código registral {{registryCode}} | IVA {{vatNumber}} |",
-      "fullLegalInformation": "Información legal completa"
-    }
+    "tagline": "Plataforma de automatización de infraestructura para operaciones impulsadas por IA"
   },
   "hero": {
     "cta": {
@@ -1180,6 +1180,37 @@
       },
       "verify": {
         "title": "Verificar instalación"
+      }
+    },
+    "legalInformation": {
+      "hero": {
+        "subtitle": "Datos oficiales de la empresa para transparencia y contacto comercial",
+        "title": "Información legal"
+      },
+      "meta": {
+        "description": "Datos oficiales de la empresa para transparencia y contacto comercial.",
+        "keywords": "información legal, datos de la empresa, registro, IVA, contacto",
+        "title": "Información legal - {{companyName}}"
+      },
+      "sections": {
+        "companyDetails": {
+          "labels": {
+            "email": "Correo electrónico",
+            "legalName": "Forma jurídica y nombre",
+            "register": "Registro",
+            "registeredOffice": "Domicilio social",
+            "registryCode": "Código registral",
+            "vatNumber": "Número de IVA",
+            "website": "Sitio web"
+          },
+          "lead": "Esta página contiene datos oficiales de la empresa y de contacto publicados para transparencia legal y correspondencia comercial.",
+          "registerEntryLink": "ver perfil de la empresa",
+          "registerEntryPrefix": "Entrada en el registro público:",
+          "title": "Datos de la empresa",
+          "values": {
+            "legalName": "{{companyName}} (sociedad limitada)"
+          }
+        }
       }
     },
     "notFound": {
@@ -3007,37 +3038,6 @@
       },
       "toc": {
         "title": "Tabla de contenidos"
-      }
-    },
-    "legalInformation": {
-      "meta": {
-        "title": "Información legal - {{companyName}}",
-        "description": "Datos oficiales de la empresa para transparencia y contacto comercial.",
-        "keywords": "información legal, datos de la empresa, registro, IVA, contacto"
-      },
-      "hero": {
-        "title": "Información legal",
-        "subtitle": "Datos oficiales de la empresa para transparencia y contacto comercial"
-      },
-      "sections": {
-        "companyDetails": {
-          "title": "Datos de la empresa",
-          "lead": "Esta página contiene datos oficiales de la empresa y de contacto publicados para transparencia legal y correspondencia comercial.",
-          "labels": {
-            "legalName": "Forma jurídica y nombre",
-            "registryCode": "Código registral",
-            "register": "Registro",
-            "registeredOffice": "Domicilio social",
-            "vatNumber": "Número de IVA",
-            "email": "Correo electrónico",
-            "website": "Sitio web"
-          },
-          "values": {
-            "legalName": "{{companyName}} (sociedad limitada)"
-          },
-          "registerEntryPrefix": "Entrada en el registro público:",
-          "registerEntryLink": "ver perfil de la empresa"
-        }
       }
     }
   },

@@ -123,14 +123,18 @@
       "support": "Destek"
     },
     "copyright": "{{year}} Rediacc. Her hakkı saklıdır.",
+    "legalDisclosure": {
+      "fullLegalInformation": "Tüm yasal bilgiler",
+      "summary": "{{companyName}} | Sicil kodu {{registryCode}} | KDV {{vatNumber}} |"
+    },
     "legalLinks": {
       "acceptableUsePolicy": "Kabul Edilebilir Kullanım Politikası",
       "cookiePolicy": "Çerez Politikası",
+      "legalInformation": "Yasal Bilgiler",
       "privacyPolicy": "Gizlilik Politikası",
       "refundPolicy": "İade Politikası",
       "telemetryPolicy": "Telemetri Politikası",
-      "termsOfService": "Hizmet Koşulları",
-      "legalInformation": "Yasal Bilgiler"
+      "termsOfService": "Hizmet Koşulları"
     },
     "links": {
       "contactSupport": "Destek Ekibiyle İletişime Geçin",
@@ -152,11 +156,7 @@
       "contactSupport": "Destek Ekibiyle İletişime Geçin",
       "helpCenter": "Yardım Merkezi"
     },
-    "tagline": "Yapay Zeka Odaklı Operasyonlar için Altyapı Otomasyon Platformu",
-    "legalDisclosure": {
-      "summary": "{{companyName}} | Sicil kodu {{registryCode}} | KDV {{vatNumber}} |",
-      "fullLegalInformation": "Tüm yasal bilgiler"
-    }
+    "tagline": "Yapay Zeka Odaklı Operasyonlar için Altyapı Otomasyon Platformu"
   },
   "hero": {
     "cta": {
@@ -1178,6 +1178,37 @@
       },
       "verify": {
         "title": "Kurulumu Doğrula"
+      }
+    },
+    "legalInformation": {
+      "hero": {
+        "subtitle": "Şeffaflık ve ticari iletişim için resmi şirket bilgileri",
+        "title": "Yasal Bilgiler"
+      },
+      "meta": {
+        "description": "Şeffaflık ve ticari iletişim için resmi şirket bilgileri.",
+        "keywords": "yasal bilgiler, şirket bilgileri, sicil, KDV, iletişim",
+        "title": "Yasal Bilgiler - {{companyName}}"
+      },
+      "sections": {
+        "companyDetails": {
+          "labels": {
+            "email": "E-posta",
+            "legalName": "Tüzel tür ve unvan",
+            "register": "Sicil",
+            "registeredOffice": "Kayıtlı adres",
+            "registryCode": "Sicil kodu",
+            "vatNumber": "KDV numarası",
+            "website": "Web sitesi"
+          },
+          "lead": "Bu sayfa, yasal şeffaflık ve ticari yazışmalar için yayımlanan resmi şirket ve iletişim bilgilerini içerir.",
+          "registerEntryLink": "şirket profilini görüntüle",
+          "registerEntryPrefix": "Kamu sicil kaydı:",
+          "title": "Şirket Bilgileri",
+          "values": {
+            "legalName": "{{companyName}} (limited şirket)"
+          }
+        }
       }
     },
     "notFound": {
@@ -2999,37 +3030,6 @@
       },
       "toc": {
         "title": "İçindekiler"
-      }
-    },
-    "legalInformation": {
-      "meta": {
-        "title": "Yasal Bilgiler - {{companyName}}",
-        "description": "Şeffaflık ve ticari iletişim için resmi şirket bilgileri.",
-        "keywords": "yasal bilgiler, şirket bilgileri, sicil, KDV, iletişim"
-      },
-      "hero": {
-        "title": "Yasal Bilgiler",
-        "subtitle": "Şeffaflık ve ticari iletişim için resmi şirket bilgileri"
-      },
-      "sections": {
-        "companyDetails": {
-          "title": "Şirket Bilgileri",
-          "lead": "Bu sayfa, yasal şeffaflık ve ticari yazışmalar için yayımlanan resmi şirket ve iletişim bilgilerini içerir.",
-          "labels": {
-            "legalName": "Tüzel tür ve unvan",
-            "registryCode": "Sicil kodu",
-            "register": "Sicil",
-            "registeredOffice": "Kayıtlı adres",
-            "vatNumber": "KDV numarası",
-            "email": "E-posta",
-            "website": "Web sitesi"
-          },
-          "values": {
-            "legalName": "{{companyName}} (limited şirket)"
-          },
-          "registerEntryPrefix": "Kamu sicil kaydı:",
-          "registerEntryLink": "şirket profilini görüntüle"
-        }
       }
     }
   },

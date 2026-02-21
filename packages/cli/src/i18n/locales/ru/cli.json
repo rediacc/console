@@ -532,7 +532,8 @@
         "renetRsync": "Встроенный rsync",
         "renetVersion": "Версия",
         "seaMode": "Режим SEA",
-        "sshKey": "SSH-ключ"
+        "sshKey": "SSH-ключ",
+        "opsPrereqs": "Требования OPS"
       },
       "description": "Диагностика среды CLI и интеграции renet",
       "devMode": "нет (режим разработки)",
@@ -542,11 +543,14 @@
       "notConfigured": "не настроен",
       "notInstalled": "не установлен",
       "seaActive": "да (Single Executable Application)",
+      "opsNotSupported": "не поддерживается на {{platform}}",
+      "opsSkipped": "renet недоступен (пропущено)",
       "sections": {
         "authentication": "Аутентификация",
         "configuration": "Конфигурация",
         "environment": "Среда",
-        "renet": "Renet"
+        "renet": "Renet",
+        "virtualization": "Виртуализация"
       },
       "status": {
         "fail": "ОШИБКА",
@@ -675,6 +679,48 @@
         "systemSection": "\nСистема:",
         "systemUptime": "  Время работы: {{uptime}}",
         "totalRepos": "  Всего репозиториев: {{count}}"
+      }
+    },
+    "ops": {
+      "check": {
+        "allPassed": "Все предварительные требования выполнены",
+        "description": "Проверить предварительные требования для виртуализации",
+        "hasMissing": "Отсутствует предварительных требований: {{count}}",
+        "localFallback": "(локальные проверки — renet недоступен)",
+        "title": "Проверка предварительных требований OPS"
+      },
+      "description": "Экспериментальные операции с VM (создание, управление, удаление)",
+      "down": {
+        "completed": "Кластер VM успешно уничтожен",
+        "description": "Уничтожить кластер VM",
+        "failed": "Не удалось уничтожить кластер VM",
+        "starting": "Уничтожение кластера VM..."
+      },
+      "setup": {
+        "brewFailed": "Установка Homebrew не удалась",
+        "completed": "Предварительные требования успешно установлены",
+        "description": "Установить предварительные требования для виртуализации",
+        "detecting": "Определение платформы...",
+        "failed": "Установка не удалась",
+        "linux": "Установка предварительных требований KVM через renet...",
+        "macos": "Установка QEMU через Homebrew...",
+        "unsupported": "Неподдерживаемая платформа: {{platform}}"
+      },
+      "ssh": {
+        "connecting": "Подключение к VM {{id}}...",
+        "description": "Подключиться к VM по SSH",
+        "vmNotFound": "VM с ID {{id}} не найдена или не запущена"
+      },
+      "status": {
+        "description": "Показать состояние кластера VM",
+        "fetching": "Получение состояния кластера VM...",
+        "noVMs": "VM не найдены"
+      },
+      "up": {
+        "completed": "Кластер VM успешно развёрнут",
+        "description": "Развернуть кластер VM локально",
+        "failed": "Не удалось развернуть кластер VM",
+        "starting": "Запуск развёртывания кластера VM..."
       }
     },
     "organization": {
@@ -1418,6 +1464,7 @@
       "context": "Управление контекстами",
       "doctor": "Диагностика системы",
       "machine": "Управление машинами",
+      "ops": "Экспериментальные операции с VM",
       "organization": "Управление организацией",
       "permission": "Управление правами",
       "protocol": "Обработчик протокола",
@@ -1616,6 +1663,14 @@
     "mirrorUpload": "Режим зеркала - удалить удаленные файлы, отсутствующие локально",
     "newPasswordNonInteractive": "Новый пароль (режим без интеракции)",
     "newWindow": "Открыть в новом окне VS Code",
+    "opsBackend": "Бэкенд виртуализации (kvm|qemu, автоопределение)",
+    "opsBasic": "Минимальный кластер (мост + 1 рабочий узел)",
+    "opsForce": "Принудительно перезапустить все VM",
+    "opsLite": "Пропустить подготовку VM (только статус)",
+    "opsOS": "Операционная система VM (напр., ubuntu-24.04, debian-12)",
+    "opsParallel": "Создавать VM параллельно",
+    "opsSkipOrchestration": "Пропустить оркестрацию кластера",
+    "opsSSHUser": "Имя пользователя SSH для подключения к VM",
     "organization": "Имя организации",
     "output": "Формат вывода (table|json|yaml|csv)",
     "outputFormat": "Формат вывода (json)",

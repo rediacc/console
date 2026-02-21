@@ -462,6 +462,22 @@ jobs:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   # ============================================================================
+  # COLUMN 4D: OPS VM TESTS
+  # Validates rdc ops provisioning commands across platforms
+  # Dependencies: build-renet (needs renet binary)
+  # ============================================================================
+  ops-tests:
+    name: OPS Tests
+    needs: [initialize, quality, review-gate, build-renet]
+    if: >-
+      always() &&
+      needs.initialize.result == 'success' &&
+      needs.quality.result == 'success' &&
+      (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    uses: ./.github/workflows/ci-ops-test.yml
+    secrets: inherit
+
+  # ============================================================================
   # COLUMN 4C: ELITE RUN TEST
   # Validates the elite on-premise docker-compose stack starts correctly
   # Tests the same setup customers use before changes affect them
@@ -673,7 +689,7 @@ jobs:
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-desktop, build-cli, deploy-dryrun, tests, standalone-run-test, elite-run-test, deploy-preview]
+    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-desktop, build-cli, deploy-dryrun, tests, standalone-run-test, elite-run-test, ops-tests, deploy-preview]
     if: always() && !cancelled()
     steps:
       - name: Check all jobs passed
@@ -682,6 +698,12 @@ jobs:
           REVIEW_GATE_OK="false"
           if [[ "${{ needs.review-gate.result }}" == "success" ]] || [[ "${{ needs.review-gate.result }}" == "skipped" ]]; then
             REVIEW_GATE_OK="true"
+          fi
+
+          # ops-tests can be skipped when ops files didn't change
+          OPS_TESTS_OK="false"
+          if [[ "${{ needs.ops-tests.result }}" == "success" ]] || [[ "${{ needs.ops-tests.result }}" == "skipped" ]]; then
+            OPS_TESTS_OK="true"
           fi
 
           # deploy-preview can be skipped for non-PR events
@@ -731,6 +753,7 @@ jobs:
              [[ "$TESTS_OK" != "true" ]] || \
              [[ "$STANDALONE_RUN_OK" != "true" ]] || \
              [[ "$ELITE_RUN_OK" != "true" ]] || \
+             [[ "$OPS_TESTS_OK" != "true" ]] || \
              [[ "$DEPLOY_PREVIEW_OK" != "true" ]]; then
             echo "One or more jobs failed:"
             echo "  initialize: ${{ needs.initialize.result }}"
@@ -744,6 +767,7 @@ jobs:
             echo "  tests: ${{ needs.tests.result }}"
             echo "  standalone-run-test: ${{ needs.standalone-run-test.result }}"
             echo "  elite-run-test: ${{ needs.elite-run-test.result }}"
+            echo "  ops-tests: ${{ needs.ops-tests.result }}"
             echo "  deploy-preview: ${{ needs.deploy-preview.result }}"
             exit 1
           fi

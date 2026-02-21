@@ -4,7 +4,7 @@ description: "Когда использовать rdc, а когда renet."
 category: "Guides"
 order: 1
 language: ru
-sourceHash: "a002ea55958664f1"
+sourceHash: "cb2c174b8cf1a078"
 ---
 
 # rdc vs renet
@@ -54,6 +54,20 @@ rdc machine status server-1
 - Проверка внутренних деталей, недоступных через `rdc`
 
 Большинству пользователей не нужно вызывать `renet` напрямую в рутинной работе.
+
+### Экспериментально: `rdc ops` (локальные ВМ)
+
+`rdc ops` оборачивает `renet ops` для управления локальными кластерами ВМ на вашей рабочей станции:
+
+```bash
+rdc ops setup    # Установить зависимости (KVM или QEMU)
+rdc ops up --basic  # Развернуть минимальный кластер
+rdc ops status   # Проверить статус ВМ
+rdc ops ssh 1    # SSH в bridge-ВМ
+rdc ops down     # Уничтожить кластер
+```
+
+Эти команды запускают `renet` локально (не через SSH). См. [Экспериментальные ВМ](/ru/docs/experimental-vms) для полной документации.
 
 ## Примечание про Rediaccfile
 

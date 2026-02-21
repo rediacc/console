@@ -123,14 +123,18 @@
       "support": "Soutien"
     },
     "copyright": "{{year}} Rediacc. Tous droits réservés.",
+    "legalDisclosure": {
+      "fullLegalInformation": "Informations légales complètes",
+      "summary": "{{companyName}} | Numéro d'immatriculation {{registryCode}} | TVA {{vatNumber}} |"
+    },
     "legalLinks": {
       "acceptableUsePolicy": "Politique d'utilisation acceptable",
       "cookiePolicy": "Politique de cookies",
+      "legalInformation": "Informations légales",
       "privacyPolicy": "Politique de confidentialité",
       "refundPolicy": "Politique de remboursement",
       "telemetryPolicy": "Politique de télémétrie",
-      "termsOfService": "Conditions d'utilisation",
-      "legalInformation": "Informations légales"
+      "termsOfService": "Conditions d'utilisation"
     },
     "links": {
       "contactSupport": "Contacter l'assistance",
@@ -152,11 +156,7 @@
       "contactSupport": "Contacter l'assistance",
       "helpCenter": "Centre d'aide"
     },
-    "tagline": "Plateforme d'automatisation de l'infrastructure pour les opérations basées sur l'IA",
-    "legalDisclosure": {
-      "summary": "{{companyName}} | Numéro d'immatriculation {{registryCode}} | TVA {{vatNumber}} |",
-      "fullLegalInformation": "Informations légales complètes"
-    }
+    "tagline": "Plateforme d'automatisation de l'infrastructure pour les opérations basées sur l'IA"
   },
   "hero": {
     "cta": {
@@ -1176,6 +1176,37 @@
       },
       "verify": {
         "title": "Vérifier l'installation"
+      }
+    },
+    "legalInformation": {
+      "hero": {
+        "subtitle": "Informations officielles de l'entreprise pour la transparence et les contacts professionnels",
+        "title": "Informations légales"
+      },
+      "meta": {
+        "description": "Informations officielles de l'entreprise pour la transparence et les contacts professionnels.",
+        "keywords": "informations légales, informations société, registre, TVA, contact",
+        "title": "Informations légales - {{companyName}}"
+      },
+      "sections": {
+        "companyDetails": {
+          "labels": {
+            "email": "E-mail",
+            "legalName": "Forme juridique et nom",
+            "register": "Registre",
+            "registeredOffice": "Siège social",
+            "registryCode": "Numéro d'immatriculation",
+            "vatNumber": "Numéro de TVA",
+            "website": "Site web"
+          },
+          "lead": "Cette page contient les informations officielles de la société et de contact publiées pour la transparence juridique et la correspondance professionnelle.",
+          "registerEntryLink": "voir le profil de l'entreprise",
+          "registerEntryPrefix": "Inscription au registre public :",
+          "title": "Informations sur la société",
+          "values": {
+            "legalName": "{{companyName}} (société à responsabilité limitée)"
+          }
+        }
       }
     },
     "notFound": {
@@ -3007,37 +3038,6 @@
       },
       "toc": {
         "title": "Table des matières"
-      }
-    },
-    "legalInformation": {
-      "meta": {
-        "title": "Informations légales - {{companyName}}",
-        "description": "Informations officielles de l'entreprise pour la transparence et les contacts professionnels.",
-        "keywords": "informations légales, informations société, registre, TVA, contact"
-      },
-      "hero": {
-        "title": "Informations légales",
-        "subtitle": "Informations officielles de l'entreprise pour la transparence et les contacts professionnels"
-      },
-      "sections": {
-        "companyDetails": {
-          "title": "Informations sur la société",
-          "lead": "Cette page contient les informations officielles de la société et de contact publiées pour la transparence juridique et la correspondance professionnelle.",
-          "labels": {
-            "legalName": "Forme juridique et nom",
-            "registryCode": "Numéro d'immatriculation",
-            "register": "Registre",
-            "registeredOffice": "Siège social",
-            "vatNumber": "Numéro de TVA",
-            "email": "E-mail",
-            "website": "Site web"
-          },
-          "values": {
-            "legalName": "{{companyName}} (société à responsabilité limitée)"
-          },
-          "registerEntryPrefix": "Inscription au registre public :",
-          "registerEntryLink": "voir le profil de l'entreprise"
-        }
       }
     }
   },

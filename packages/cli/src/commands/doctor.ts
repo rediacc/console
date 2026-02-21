@@ -272,6 +272,72 @@ async function addSelfHostedModeChecks(
   }
 }
 
+async function checkVirtualization(): Promise<CheckSection> {
+  const checks: CheckResult[] = [];
+
+  // Windows: skip with a note
+  if (process.platform === 'win32') {
+    checks.push({
+      name: t('commands.doctor.checks.opsPrereqs'),
+      value: t('commands.doctor.opsNotSupported', { platform: process.platform }),
+      status: 'warn',
+    });
+    return { title: t('commands.doctor.sections.virtualization'), checks };
+  }
+
+  // Try to find renet
+  let renetPath: string | null = null;
+  try {
+    const localConfig = await contextService.getLocalConfig();
+    renetPath = resolveRenetPath(localConfig.renetPath);
+  } catch {
+    renetPath = resolveRenetPath();
+  }
+
+  if (!renetPath) {
+    checks.push({
+      name: t('commands.doctor.checks.opsPrereqs'),
+      value: t('commands.doctor.opsSkipped'),
+      status: 'warn',
+      hint: 'Build renet or install it in PATH to enable checks',
+    });
+    return { title: t('commands.doctor.sections.virtualization'), checks };
+  }
+
+  // Run renet ops host check --json
+  const result = runCommand(renetPath, ['ops', 'host', 'check', '--json']);
+  if (!result.ok) {
+    checks.push({
+      name: t('commands.doctor.checks.opsPrereqs'),
+      value: 'check failed',
+      status: 'warn',
+      hint: result.output.split('\n')[0] || 'Run renet ops host check for details',
+    });
+    return { title: t('commands.doctor.sections.virtualization'), checks };
+  }
+
+  // Parse and map results — cap status at 'warn' (ops is optional)
+  try {
+    const response = JSON.parse(result.output);
+    for (const check of response.checks) {
+      checks.push({
+        name: check.name,
+        value: check.value,
+        status: check.status === 'fail' ? 'warn' : check.status,
+        hint: check.hint ?? undefined,
+      });
+    }
+  } catch {
+    checks.push({
+      name: t('commands.doctor.checks.opsPrereqs'),
+      value: 'invalid response',
+      status: 'warn',
+    });
+  }
+
+  return { title: t('commands.doctor.sections.virtualization'), checks };
+}
+
 async function checkAuthentication(): Promise<CheckSection> {
   const checks: CheckResult[] = [];
 
@@ -385,11 +451,15 @@ export function registerDoctorCommand(program: Command): void {
     .action(async (options: { output?: string }) => {
       const outputFormat = (options.output ?? program.opts().output) as OutputFormat | undefined;
 
+      const context = await contextService.getCurrent();
+      const mode = context?.mode ?? DEFAULTS.CONTEXT.MODE;
+
       const sections: CheckSection[] = [
         checkEnvironment(),
         await checkRenet(),
         await checkConfiguration(),
-        await checkAuthentication(),
+        ...(mode === 'cloud' ? [await checkAuthentication()] : []),
+        await checkVirtualization(),
       ];
 
       if (outputFormat === 'json') {

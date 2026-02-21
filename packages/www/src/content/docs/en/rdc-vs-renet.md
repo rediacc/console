@@ -54,6 +54,20 @@ Use direct `renet` only when you intentionally need low-level remote control, su
 
 Most users should not need to invoke `renet` directly during routine operations.
 
+### Experimental: `rdc ops` (local VMs)
+
+`rdc ops` wraps `renet ops` for managing local VM clusters on your workstation:
+
+```bash
+rdc ops setup    # Install prerequisites (KVM or QEMU)
+rdc ops up --basic  # Provision minimal cluster
+rdc ops status   # Check VM status
+rdc ops ssh 1    # SSH into bridge VM
+rdc ops down     # Destroy cluster
+```
+
+These commands run `renet` locally (not over SSH). See [Experimental VMs](/en/docs/experimental-vms) for full documentation.
+
 ## Rediaccfile Note
 
 You may see `renet compose -- ...` inside a `Rediaccfile`. That is expected: Rediaccfile functions execute on the remote side where `renet` is available.

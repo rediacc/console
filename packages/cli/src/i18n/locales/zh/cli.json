@@ -532,7 +532,8 @@
         "renetRsync": "内置rsync",
         "renetVersion": "版本",
         "seaMode": "SEA模式",
-        "sshKey": "SSH密钥"
+        "sshKey": "SSH密钥",
+        "opsPrereqs": "OPS 前提条件"
       },
       "description": "诊断CLI环境和renet集成",
       "devMode": "否（开发模式）",
@@ -542,11 +543,14 @@
       "notConfigured": "未配置",
       "notInstalled": "未安装",
       "seaActive": "是（单一可执行应用程序）",
+      "opsNotSupported": "不支持 {{platform}}",
+      "opsSkipped": "renet 不可用（已跳过）",
       "sections": {
         "authentication": "身份验证",
         "configuration": "配置",
         "environment": "环境",
-        "renet": "Renet"
+        "renet": "Renet",
+        "virtualization": "虚拟化"
       },
       "status": {
         "fail": "失败",
@@ -675,6 +679,48 @@
         "systemSection": "\n系统：",
         "systemUptime": "  运行时间：{{uptime}}",
         "totalRepos": "  总仓库数：{{count}}"
+      }
+    },
+    "ops": {
+      "check": {
+        "allPassed": "所有前置条件均已满足",
+        "description": "验证虚拟化前置条件",
+        "hasMissing": "缺少 {{count}} 个前置条件",
+        "localFallback": "（使用本地检查 — renet不可用）",
+        "title": "OPS 前置条件检查"
+      },
+      "description": "实验性 VM 操作（创建、管理、销毁）",
+      "down": {
+        "completed": "VM 集群已成功销毁",
+        "description": "销毁 VM 集群",
+        "failed": "VM 集群销毁失败",
+        "starting": "正在销毁 VM 集群..."
+      },
+      "setup": {
+        "brewFailed": "Homebrew 安装失败",
+        "completed": "前置条件安装成功",
+        "description": "安装虚拟化前置条件",
+        "detecting": "正在检测平台...",
+        "failed": "安装失败",
+        "linux": "正在通过 renet 安装 KVM 前置条件...",
+        "macos": "正在通过 Homebrew 安装 QEMU...",
+        "unsupported": "不支持的平台：{{platform}}"
+      },
+      "ssh": {
+        "connecting": "正在连接到 VM {{id}}...",
+        "description": "通过 SSH 连接到 VM",
+        "vmNotFound": "未找到 ID 为 {{id}} 的 VM 或该 VM 未运行"
+      },
+      "status": {
+        "description": "显示 VM 集群状态",
+        "fetching": "正在获取 VM 集群状态...",
+        "noVMs": "未找到任何 VM"
+      },
+      "up": {
+        "completed": "VM 集群创建成功",
+        "description": "在本地创建 VM 集群",
+        "failed": "VM 集群创建失败",
+        "starting": "正在开始创建 VM 集群..."
       }
     },
     "organization": {
@@ -1418,6 +1464,7 @@
       "context": "上下文管理",
       "doctor": "系统诊断",
       "machine": "机器管理",
+      "ops": "实验性 VM 操作",
       "organization": "组织管理",
       "permission": "权限管理",
       "protocol": "协议处理器",
@@ -1616,6 +1663,14 @@
     "mirrorUpload": "镜像模式 - 删除本地不存在的远程文件",
     "newPasswordNonInteractive": "新密码（非交互式模式）",
     "newWindow": "在新 VS Code 窗口中打开",
+    "opsBackend": "虚拟化后端 (kvm|qemu，自动检测)",
+    "opsBasic": "最小集群（网桥 + 1 个工作节点）",
+    "opsForce": "强制重启所有 VM",
+    "opsLite": "跳过 VM 配置（仅查看状态）",
+    "opsOS": "VM 操作系统（例如 ubuntu-24.04、debian-12）",
+    "opsParallel": "并行创建 VM",
+    "opsSkipOrchestration": "跳过集群编排",
+    "opsSSHUser": "VM 连接的 SSH 用户名",
     "organization": "组织名称",
     "output": "输出格式（table|json|yaml|csv）",
     "outputFormat": "输出格式（json）",

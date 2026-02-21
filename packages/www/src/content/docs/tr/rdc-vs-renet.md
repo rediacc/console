@@ -4,7 +4,7 @@ description: "rdc ne zaman, renet ne zaman kullanilir."
 category: "Guides"
 order: 1
 language: tr
-sourceHash: "a002ea55958664f1"
+sourceHash: "cb2c174b8cf1a078"
 ---
 
 # rdc vs renet
@@ -54,6 +54,20 @@ rdc machine status server-1
 - `rdc`nin aciga cikarmadigi internal kontroller
 
 Cogu kullanicinin rutin islerde `renet`i dogrudan calistirmasi gerekmez.
+
+### Deneysel: `rdc ops` (yerel VM'ler)
+
+`rdc ops`, workstation'iniz uzerinde yerel VM kumeleri yonetmek icin `renet ops`u sarmalar:
+
+```bash
+rdc ops setup    # On kosullari yukle (KVM veya QEMU)
+rdc ops up --basic  # Minimal kume olustur
+rdc ops status   # VM durumunu kontrol et
+rdc ops ssh 1    # Bridge VM'e SSH baglan
+rdc ops down     # Kumeyi yok et
+```
+
+Bu komutlar `renet`i yerel olarak calistirir (SSH uzerinden degil). Tam dokumantasyon icin [Deneysel VM'ler](/tr/docs/experimental-vms) sayfasina bakin.
 
 ## Rediaccfile Notu
 

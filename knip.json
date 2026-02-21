@@ -1,19 +1,26 @@
 {
   "$schema": "https://unpkg.com/knip@latest/schema.json",
-  "exclude": ["types", "duplicates"],
+  "exclude": ["types", "duplicates", "exports"],
   "workspaces": {
     ".": {
       "entry": ["scripts/*.ts"],
       "project": ["*.{js,ts}", "scripts/**/*.ts"]
     },
     "packages/shared": {
-      "project": ["src/**/*.ts"]
+      "project": ["src/**/*.ts"],
+      "ignore": [
+        "src/types/api-schema.zod.ts",
+        "src/queue-vault/data/functions.schema.ts"
+      ]
     },
     "packages/shared-desktop": {
-      "project": ["src/**/*.ts"]
+      "project": ["src/**/*.ts"],
+      "ignore": [
+        "src/msys2/index.ts"
+      ]
     },
     "packages/cli": {
-      "entry": ["src/types/index.ts", "tests/**/*.ts"],
+      "entry": ["src/index.ts", "bundle.mjs", "src/types/index.ts", "tests/**/*.ts"],
       "project": ["src/**/*.ts", "tests/**/*.ts"]
     },
     "packages/web": {
@@ -84,11 +91,18 @@
         "src/layouts/**/*.astro",
         "scripts/generate-search-index.js",
         "scripts/generate-json.js",
+        "scripts/generate-cli-docs.js",
+        "scripts/validate-cli-docs.js",
+        "scripts/validate-content.js",
+        "scripts/validate-translation-freshness.js",
+        "scripts/check-unused-css.js",
+        "scripts/check-unused-css-files.js",
+        "scripts/scale-svg-viewbox.cjs",
         "src/components/Navigation.tsx",
         "src/components/Footer.tsx",
         "src/components/Sidebar.tsx"
       ],
-      "project": ["src/**/*.{ts,tsx,astro}", "scripts/**/*.js"],
+      "project": ["src/**/*.{ts,tsx,astro}", "scripts/**/*.{js,cjs}"],
       "ignore": [
         "scripts/check-translation-hashes.js",
         "scripts/generate-favicons.js",

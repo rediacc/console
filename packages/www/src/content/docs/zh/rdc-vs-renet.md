@@ -4,7 +4,7 @@ description: "什么时候使用 rdc，什么时候使用 renet。"
 category: "Guides"
 order: 1
 language: zh
-sourceHash: "a002ea55958664f1"
+sourceHash: "cb2c174b8cf1a078"
 ---
 
 # rdc vs renet
@@ -54,6 +54,20 @@ rdc machine status server-1
 - 验证 `rdc` 未暴露的内部细节
 
 大多数用户在日常操作中不需要直接调用 `renet`。
+
+### 实验性功能: `rdc ops`（本地虚拟机）
+
+`rdc ops` 封装了 `renet ops`，用于在工作站上管理本地虚拟机集群：
+
+```bash
+rdc ops setup    # 安装前置依赖（KVM 或 QEMU）
+rdc ops up --basic  # 创建最小集群
+rdc ops status   # 检查虚拟机状态
+rdc ops ssh 1    # SSH 到桥接虚拟机
+rdc ops down     # 销毁集群
+```
+
+这些命令在本地运行 `renet`（不通过 SSH）。完整文档请参阅 [实验性虚拟机](/zh/docs/experimental-vms)。
 
 ## Rediaccfile 说明
 
