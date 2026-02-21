@@ -1,9 +1,9 @@
 // Machine services
 
 // Batch processing services
-export * from './batch';
-export * from './machine';
+export * from './batch/index.js';
+export * from './machine/index.js';
 // Queue services
-export * from './queue';
+export * from './queue/index.js';
 // Repository services (includes all sub-modules)
-export * from './repository';
+export * from './repository/index.js';
