@@ -125,6 +125,8 @@ services:
       dockerfile: private/account/Dockerfile
     container_name: rediacc-account-server
     hostname: rediacc-account-server
+    ports:
+      - "3000:3000"
     environment:
       - PORT=3000
       - S3_ENDPOINT=http://account-rustfs:9000

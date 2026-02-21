@@ -293,28 +293,25 @@ jobs:
         working-directory: private/account
 
       - name: Setup Stripe sandbox
-        id: sandbox
-        run: npx tsx scripts/setup-sandbox.ts --pr-number ${{ github.event.pull_request.number }}
+        run: npx tsx scripts/setup-sandbox.ts --pr-number ${{ github.event.pull_request.number }} --skip-webhook
         working-directory: private/account
         env:
           STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
 
-      - name: Deploy account server preview
+      - name: Start account server
         id: deploy
-        run: >-
-          bash scripts/deploy-preview.sh
-          --pr-number ${{ github.event.pull_request.number }}
-          --webhook-secret "${{ steps.sandbox.outputs.stripe_webhook_secret }}"
-        working-directory: private/account
+        run: bash .ci/scripts/infra/ci-start-account.sh
         env:
-          STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          S3_ENDPOINT: ${{ secrets.ACCOUNT_S3_ENDPOINT }}
-          S3_ACCESS_KEY_ID: ${{ secrets.ACCOUNT_S3_ACCESS_KEY_ID }}
-          S3_SECRET_ACCESS_KEY: ${{ secrets.ACCOUNT_S3_SECRET_ACCESS_KEY }}
           ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
           ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
           ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
+
+      - name: Verify account server health
+        run: curl -sf http://localhost:3000/health
+
+      - name: Cleanup
+        if: always()
+        run: bash .ci/scripts/infra/ci-stop.sh
 
     env:
       STRIPE_SANDBOX_PUBLISHABLE_KEY: ${{ secrets.STRIPE_SANDBOX_PUBLISHABLE_KEY }}
