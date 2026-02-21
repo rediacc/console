@@ -36,10 +36,10 @@ CONTAINERS=(
     rediacc-web
     rediacc-api
     rediacc-sql
-    rediacc-license-server
-    rediacc-license-rustfs
-    rediacc-license-rustfs-init
-    rediacc-license-rustfs-volume-init
+    rediacc-account-server
+    rediacc-account-rustfs
+    rediacc-account-rustfs-init
+    rediacc-account-rustfs-volume-init
 )
 
 for container in "${CONTAINERS[@]}"; do

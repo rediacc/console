@@ -197,7 +197,7 @@
     }
   },
   "dashboard": {
-    "activeLicenses": "الرخص النشطة",
+    "activeSubscriptions": "الاشتراكات النشطة",
     "completed": "مكتمل",
     "daysRemaining": "الأيام المتبقية",
     "failed": "فشل",

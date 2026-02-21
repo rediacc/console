@@ -7,7 +7,7 @@ import {
   getResourceLimit,
   hasFeature,
   isValidPlanCode,
-  LICENSE_CONFIG,
+  SUBSCRIPTION_CONFIG,
   PLAN_FEATURES,
   PLAN_ORDER,
   PLAN_RESOURCES,
@@ -15,7 +15,7 @@ import {
 } from '../constants.js';
 import type { FeatureFlags, PlanCode, ResourceLimits } from '../types.js';
 
-describe('License Schema Constants', () => {
+describe('Subscription Schema Constants', () => {
   describe('PLAN_RESOURCES', () => {
     it('should have all plan codes defined', () => {
       const planCodes: PlanCode[] = ['COMMUNITY', 'PROFESSIONAL', 'BUSINESS', 'ENTERPRISE'];
@@ -150,23 +150,23 @@ describe('License Schema Constants', () => {
     });
   });
 
-  describe('LICENSE_CONFIG', () => {
+  describe('SUBSCRIPTION_CONFIG', () => {
     it('should have valid check-in interval', () => {
-      expect(LICENSE_CONFIG.checkInIntervalHours).toBeGreaterThan(0);
-      expect(LICENSE_CONFIG.checkInIntervalHours).toBeLessThanOrEqual(168); // max 1 week
+      expect(SUBSCRIPTION_CONFIG.checkInIntervalHours).toBeGreaterThan(0);
+      expect(SUBSCRIPTION_CONFIG.checkInIntervalHours).toBeLessThanOrEqual(168); // max 1 week
     });
 
     it('should have valid grace period', () => {
-      expect(LICENSE_CONFIG.gracePeriodDays).toBeGreaterThan(0);
-      expect(LICENSE_CONFIG.gracePeriodDays).toBeLessThanOrEqual(30);
+      expect(SUBSCRIPTION_CONFIG.gracePeriodDays).toBeGreaterThan(0);
+      expect(SUBSCRIPTION_CONFIG.gracePeriodDays).toBeLessThanOrEqual(30);
     });
 
     it('should degrade to COMMUNITY', () => {
-      expect(LICENSE_CONFIG.degradedPlan).toBe('COMMUNITY');
+      expect(SUBSCRIPTION_CONFIG.degradedPlan).toBe('COMMUNITY');
     });
 
     it('should have schema version 1', () => {
-      expect(LICENSE_CONFIG.schemaVersion).toBe(1);
+      expect(SUBSCRIPTION_CONFIG.schemaVersion).toBe(1);
     });
   });
 
@@ -184,7 +184,7 @@ describe('License Schema Constants', () => {
   });
 });
 
-describe('License Schema Helper Functions', () => {
+describe('Subscription Schema Helper Functions', () => {
   describe('getPlanResources', () => {
     it('should return correct resources for valid plan', () => {
       const resources = getPlanResources('PROFESSIONAL');

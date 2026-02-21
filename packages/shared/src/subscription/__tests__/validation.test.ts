@@ -2,24 +2,30 @@ import { describe, expect, it } from 'vitest';
 import { PLAN_FEATURES, PLAN_RESOURCES } from '../constants.js';
 import {
   calculateGracePeriodEnd,
-  decodeLicensePayload,
-  encodeLicensePayload,
+  decodeSubscriptionPayload,
+  encodeSubscriptionPayload,
   getEffectivePlanCode,
   isGracePeriodExpired,
   isInGracePeriod,
-  isLicenseActive,
-  isLicenseExpired,
-  validateLicense,
-  validateLicenseData,
-  validateOrganizationLicense,
+  isSubscriptionActive,
+  isSubscriptionExpired,
+  validateSubscription,
+  validateSubscriptionData,
+  validateOrganizationSubscription,
   validateResourceLimits,
   validateSignedBlob,
 } from '../validation.js';
-import type { LicenseData, OrganizationLicense, SignedLicenseBlob } from '../types.js';
+import type {
+  SubscriptionData,
+  OrganizationSubscription,
+  SignedSubscriptionBlob,
+} from '../types.js';
 
-const createValidLicenseData = (overrides: Partial<LicenseData> = {}): LicenseData => ({
+const createValidSubscriptionData = (
+  overrides: Partial<SubscriptionData> = {}
+): SubscriptionData => ({
   version: 1,
-  licenseId: 'test-license-id',
+  subscriptionId: 'test-subscription-id',
   organizationId: 1,
   customerId: 'test-customer',
   planCode: 'PROFESSIONAL',
@@ -35,53 +41,53 @@ const createValidLicenseData = (overrides: Partial<LicenseData> = {}): LicenseDa
   ...overrides,
 });
 
-describe('License Validation', () => {
-  describe('validateLicenseData', () => {
-    it('should return true for valid license data', () => {
-      const data = createValidLicenseData();
-      expect(validateLicenseData(data)).toBe(true);
+describe('Subscription Validation', () => {
+  describe('validateSubscriptionData', () => {
+    it('should return true for valid subscription data', () => {
+      const data = createValidSubscriptionData();
+      expect(validateSubscriptionData(data)).toBe(true);
     });
 
     it('should return false for null', () => {
-      expect(validateLicenseData(null)).toBe(false);
+      expect(validateSubscriptionData(null)).toBe(false);
     });
 
     it('should return false for undefined', () => {
-      expect(validateLicenseData(undefined)).toBe(false);
+      expect(validateSubscriptionData(undefined)).toBe(false);
     });
 
     it('should return false for non-object', () => {
-      expect(validateLicenseData('string')).toBe(false);
-      expect(validateLicenseData(123)).toBe(false);
+      expect(validateSubscriptionData('string')).toBe(false);
+      expect(validateSubscriptionData(123)).toBe(false);
     });
 
     it('should return false for missing required fields', () => {
-      const data = createValidLicenseData();
-      delete (data as unknown as Record<string, unknown>).licenseId;
-      expect(validateLicenseData(data)).toBe(false);
+      const data = createValidSubscriptionData();
+      delete (data as unknown as Record<string, unknown>).subscriptionId;
+      expect(validateSubscriptionData(data)).toBe(false);
     });
 
     it('should return false for invalid plan code', () => {
-      const data = createValidLicenseData({ planCode: 'INVALID' as 'PROFESSIONAL' });
-      expect(validateLicenseData(data)).toBe(false);
+      const data = createValidSubscriptionData({ planCode: 'INVALID' as 'PROFESSIONAL' });
+      expect(validateSubscriptionData(data)).toBe(false);
     });
 
     it('should return false for missing resources', () => {
-      const data = createValidLicenseData();
+      const data = createValidSubscriptionData();
       delete (data as unknown as Record<string, unknown>).resources;
-      expect(validateLicenseData(data)).toBe(false);
+      expect(validateSubscriptionData(data)).toBe(false);
     });
 
     it('should return false for missing features', () => {
-      const data = createValidLicenseData();
+      const data = createValidSubscriptionData();
       delete (data as unknown as Record<string, unknown>).features;
-      expect(validateLicenseData(data)).toBe(false);
+      expect(validateSubscriptionData(data)).toBe(false);
     });
   });
 
   describe('validateSignedBlob', () => {
     it('should return true for valid signed blob', () => {
-      const blob: SignedLicenseBlob = {
+      const blob: SignedSubscriptionBlob = {
         payload: 'dGVzdA==',
         signature: 'c2lnbmF0dXJl',
         publicKeyId: 'key-2026-01',
@@ -105,9 +111,9 @@ describe('License Validation', () => {
     });
   });
 
-  describe('validateOrganizationLicense', () => {
-    it('should return true for valid organization license', () => {
-      const license: OrganizationLicense = {
+  describe('validateOrganizationSubscription', () => {
+    it('should return true for valid organization subscription', () => {
+      const subscription: OrganizationSubscription = {
         signedBlob: {
           payload: 'dGVzdA==',
           signature: 'c2lnbmF0dXJl',
@@ -122,11 +128,11 @@ describe('License Validation', () => {
           gracePeriodEnds: '2026-01-04T00:00:00Z',
         },
       };
-      expect(validateOrganizationLicense(license)).toBe(true);
+      expect(validateOrganizationSubscription(subscription)).toBe(true);
     });
 
     it('should return false for invalid signed blob', () => {
-      const license = {
+      const subscription = {
         signedBlob: {},
         cachedData: {
           planCode: 'PROFESSIONAL',
@@ -137,7 +143,7 @@ describe('License Validation', () => {
           gracePeriodEnds: '2026-01-04T00:00:00Z',
         },
       };
-      expect(validateOrganizationLicense(license)).toBe(false);
+      expect(validateOrganizationSubscription(subscription)).toBe(false);
     });
   });
 
@@ -158,37 +164,37 @@ describe('License Validation', () => {
   });
 });
 
-describe('License Status Functions', () => {
-  describe('isLicenseActive', () => {
+describe('Subscription Status Functions', () => {
+  describe('isSubscriptionActive', () => {
     it('should return true for ACTIVE status', () => {
-      expect(isLicenseActive('ACTIVE')).toBe(true);
+      expect(isSubscriptionActive('ACTIVE')).toBe(true);
     });
 
     it('should return true for GRACE status', () => {
-      expect(isLicenseActive('GRACE')).toBe(true);
+      expect(isSubscriptionActive('GRACE')).toBe(true);
     });
 
     it('should return false for other statuses', () => {
-      expect(isLicenseActive('INACTIVE')).toBe(false);
-      expect(isLicenseActive('EXPIRED')).toBe(false);
-      expect(isLicenseActive('SUSPENDED')).toBe(false);
+      expect(isSubscriptionActive('INACTIVE')).toBe(false);
+      expect(isSubscriptionActive('EXPIRED')).toBe(false);
+      expect(isSubscriptionActive('SUSPENDED')).toBe(false);
     });
   });
 
-  describe('isLicenseExpired', () => {
+  describe('isSubscriptionExpired', () => {
     it('should return true for past date', () => {
-      expect(isLicenseExpired('2020-01-01T00:00:00Z')).toBe(true);
-      expect(isLicenseExpired(new Date('2020-01-01'))).toBe(true);
+      expect(isSubscriptionExpired('2020-01-01T00:00:00Z')).toBe(true);
+      expect(isSubscriptionExpired(new Date('2020-01-01'))).toBe(true);
     });
 
     it('should return false for future date', () => {
-      expect(isLicenseExpired('2099-01-01T00:00:00Z')).toBe(false);
-      expect(isLicenseExpired(new Date('2099-01-01'))).toBe(false);
+      expect(isSubscriptionExpired('2099-01-01T00:00:00Z')).toBe(false);
+      expect(isSubscriptionExpired(new Date('2099-01-01'))).toBe(false);
     });
 
     it('should return false for expiry just barely in the future', () => {
       const future = new Date(Date.now() + 10_000).toISOString();
-      expect(isLicenseExpired(future)).toBe(false);
+      expect(isSubscriptionExpired(future)).toBe(false);
     });
   });
 
@@ -255,55 +261,55 @@ describe('License Status Functions', () => {
   });
 });
 
-describe('License Validation Function', () => {
-  describe('validateLicense', () => {
-    it('should return valid for active license', () => {
-      const data = createValidLicenseData();
-      const result = validateLicense(data);
+describe('Subscription Validation Function', () => {
+  describe('validateSubscription', () => {
+    it('should return valid for active subscription', () => {
+      const data = createValidSubscriptionData();
+      const result = validateSubscription(data);
       expect(result.valid).toBe(true);
       expect(result.data).toBeDefined();
     });
 
-    it('should return invalid for suspended license', () => {
-      const data = createValidLicenseData({ status: 'SUSPENDED' });
-      const result = validateLicense(data);
+    it('should return invalid for suspended subscription', () => {
+      const data = createValidSubscriptionData({ status: 'SUSPENDED' });
+      const result = validateSubscription(data);
       expect(result.valid).toBe(false);
       expect(result.error).toContain('suspended');
     });
 
-    it('should return invalid for inactive license', () => {
-      const data = createValidLicenseData({ status: 'INACTIVE' });
-      const result = validateLicense(data);
+    it('should return invalid for inactive subscription', () => {
+      const data = createValidSubscriptionData({ status: 'INACTIVE' });
+      const result = validateSubscription(data);
       expect(result.valid).toBe(false);
       expect(result.error).toContain('not activated');
     });
 
-    it('should return invalid for expired license', () => {
-      const data = createValidLicenseData({
+    it('should return invalid for expired subscription', () => {
+      const data = createValidSubscriptionData({
         expiresAt: '2020-01-01T00:00:00Z',
       });
-      const result = validateLicense(data);
+      const result = validateSubscription(data);
       expect(result.valid).toBe(false);
       expect(result.error).toContain('expired');
     });
 
     it('should indicate grace period when active', () => {
       const now = Date.now();
-      const data = createValidLicenseData({
+      const data = createValidSubscriptionData({
         lastCheckIn: new Date(now - 48 * 60 * 60 * 1000).toISOString(),
         gracePeriodEnds: new Date(now + 24 * 60 * 60 * 1000).toISOString(),
       });
-      const result = validateLicense(data);
+      const result = validateSubscription(data);
       expect(result.valid).toBe(true);
       expect(result.inGracePeriod).toBe(true);
     });
 
     it('should degrade to COMMUNITY when grace period expired', () => {
-      const data = createValidLicenseData({
+      const data = createValidSubscriptionData({
         planCode: 'ENTERPRISE',
         gracePeriodEnds: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
       });
-      const result = validateLicense(data);
+      const result = validateSubscription(data);
       expect(result.valid).toBe(true);
       expect(result.data?.planCode).toBe('COMMUNITY');
       expect(result.inGracePeriod).toBe(true);
@@ -312,75 +318,75 @@ describe('License Validation Function', () => {
     it('should return valid when now equals expiresAt exactly', () => {
       const expiresAt = '2027-06-15T12:00:00.000Z';
       const now = new Date(expiresAt);
-      const data = createValidLicenseData({ expiresAt });
-      const result = validateLicense(data, now);
+      const data = createValidSubscriptionData({ expiresAt });
+      const result = validateSubscription(data, now);
       expect(result.valid).toBe(true);
     });
 
     it('should return invalid when now is 1ms after expiresAt', () => {
       const expiresAt = '2027-06-15T12:00:00.000Z';
       const now = new Date(new Date(expiresAt).getTime() + 1);
-      const data = createValidLicenseData({ expiresAt });
-      const result = validateLicense(data, now);
+      const data = createValidSubscriptionData({ expiresAt });
+      const result = validateSubscription(data, now);
       expect(result.valid).toBe(false);
       expect(result.error).toContain('expired');
     });
 
     it('should detect grace period when check-in is just past 24h interval', () => {
       const now = Date.now();
-      const data = createValidLicenseData({
+      const data = createValidSubscriptionData({
         lastCheckIn: new Date(now - 24 * 60 * 60 * 1000 - 60 * 1000).toISOString(), // 24h + 1min ago
         gracePeriodEnds: new Date(now + 2 * 24 * 60 * 60 * 1000).toISOString(),
       });
-      const result = validateLicense(data);
+      const result = validateSubscription(data);
       expect(result.valid).toBe(true);
       expect(result.inGracePeriod).toBe(true);
     });
 
     it('should NOT detect grace period when check-in is just under 24h interval', () => {
       const now = Date.now();
-      const data = createValidLicenseData({
+      const data = createValidSubscriptionData({
         lastCheckIn: new Date(now - 23 * 60 * 60 * 1000 - 59 * 60 * 1000).toISOString(), // 23h59m ago
         gracePeriodEnds: new Date(now + 2 * 24 * 60 * 60 * 1000).toISOString(),
       });
-      const result = validateLicense(data);
+      const result = validateSubscription(data);
       expect(result.valid).toBe(true);
       expect(result.inGracePeriod).toBe(false);
     });
   });
 });
 
-describe('License Payload Encoding/Decoding', () => {
-  describe('encodeLicensePayload', () => {
-    it('should encode license data to base64', () => {
-      const data = createValidLicenseData();
-      const encoded = encodeLicensePayload(data);
+describe('Subscription Payload Encoding/Decoding', () => {
+  describe('encodeSubscriptionPayload', () => {
+    it('should encode subscription data to base64', () => {
+      const data = createValidSubscriptionData();
+      const encoded = encodeSubscriptionPayload(data);
       expect(typeof encoded).toBe('string');
       expect(encoded.length).toBeGreaterThan(0);
     });
   });
 
-  describe('decodeLicensePayload', () => {
+  describe('decodeSubscriptionPayload', () => {
     it('should decode valid base64 payload', () => {
-      const data = createValidLicenseData();
-      const encoded = encodeLicensePayload(data);
-      const decoded = decodeLicensePayload(encoded);
+      const data = createValidSubscriptionData();
+      const encoded = encodeSubscriptionPayload(data);
+      const decoded = decodeSubscriptionPayload(encoded);
       expect(decoded).not.toBeNull();
-      expect(decoded?.licenseId).toBe(data.licenseId);
+      expect(decoded?.subscriptionId).toBe(data.subscriptionId);
     });
 
     it('should return null for invalid base64', () => {
-      expect(decodeLicensePayload('not-valid-base64!!!')).toBeNull();
+      expect(decodeSubscriptionPayload('not-valid-base64!!!')).toBeNull();
     });
 
     it('should return null for valid base64 with invalid JSON', () => {
       const invalidJson = btoa('not json');
-      expect(decodeLicensePayload(invalidJson)).toBeNull();
+      expect(decodeSubscriptionPayload(invalidJson)).toBeNull();
     });
 
-    it('should return null for valid JSON but invalid license data', () => {
+    it('should return null for valid JSON but invalid subscription data', () => {
       const invalidData = btoa(JSON.stringify({ foo: 'bar' }));
-      expect(decodeLicensePayload(invalidData)).toBeNull();
+      expect(decodeSubscriptionPayload(invalidData)).toBeNull();
     });
   });
 });

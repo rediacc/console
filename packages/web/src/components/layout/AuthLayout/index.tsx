@@ -3,8 +3,6 @@ import { ConfigProvider, Flex } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { Outlet } from 'react-router-dom';
-import logoBlack from '@/assets/logo_black.png';
-import logoWhite from '@/assets/logo_white.png';
 import LanguageSelector from '@/components/common/LanguageSelector';
 import BrandMark from '@/components/layout/BrandMark';
 import { RootState } from '@/store/store';
@@ -14,7 +12,6 @@ const AuthLayout: React.FC = () => {
   const { t } = useTranslation('common');
   const themeMode = useSelector((state: RootState) => state.ui.themeMode);
   const isDark = themeMode === 'dark';
-  const logo = isDark ? logoWhite : logoBlack;
 
   return (
     <ConfigProvider theme={getThemeConfig(isDark)}>
@@ -36,8 +33,7 @@ const AuthLayout: React.FC = () => {
           >
             {/* Shared brand mark keeps logo/text alignment consistent across layouts */}
             <BrandMark
-              logoSrc={logo}
-              iconSrc={`${import.meta.env.BASE_URL}favicon.svg`}
+              logoSrc={`${import.meta.env.BASE_URL}favicon.svg`}
               logoAlt={t('alt.logo')}
               showText
               logoSize={36}

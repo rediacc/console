@@ -134,7 +134,7 @@
         "title": "Использование ресурсов"
       },
       "subscriptionPlan": {
-        "allActiveLicenses": "ВСЕ АКТИВНЫЕ ЛИЦЕНЗИИ",
+        "allActiveSubscriptions": "ВСЕ АКТИВНЫЕ ПОДПИСКИ",
         "currentSubscription": "ТЕКУЩАЯ ПОДПИСКА",
         "day": "день",
         "days": "дни",

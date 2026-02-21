@@ -1669,7 +1669,11 @@
         "monthOrYear": "par mois ou {{price}} par an",
         "popular": "Le plus populaire",
         "startingAt": "*À partir de",
-        "whatsIncluded": "Ce qui est inclus :"
+        "whatsIncluded": "Ce qui est inclus :",
+        "billingToggle": {
+          "monthly": "Mensuel",
+          "annual": "Annuel"
+        }
       }
     },
     "privacyPolicy": {

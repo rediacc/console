@@ -1019,6 +1019,10 @@
           "moneyBack": "14-дневная гарантия возврата денег",
           "noContracts": "Никаких долгосрочных контрактов."
         },
+        "billingToggle": {
+          "monthly": "Ежемесячно",
+          "annual": "Ежегодно"
+        },
         "keyBenefits": "Ключевые преимущества",
         "learnMore": "Узнать больше",
         "limitedOffer": "Ограниченное предложение по запуску",
@@ -1668,7 +1672,11 @@
         "monthOrYear": "в месяц или {{price}} в год",
         "popular": "Самый популярный",
         "startingAt": "*Начиная с",
-        "whatsIncluded": "Что включено:"
+        "whatsIncluded": "Что включено:",
+        "billingToggle": {
+          "monthly": "Ежемесячно",
+          "annual": "Ежегодно"
+        }
       }
     },
     "privacyPolicy": {

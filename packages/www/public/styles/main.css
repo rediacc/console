@@ -145,9 +145,6 @@
   --color-info-border: #bee5eb;
   --color-link-blue: #0066cc;
 
-  /* Visited Link Color */
-  --color-link-visited: #551a8b;
-
   /* Opacity Scale - For consistent transparency values */
   --opacity-03: 0.03;
   --opacity-05: 0.05;
@@ -417,10 +414,6 @@ a {
   transition: color var(--transition-duration-base) ease;
 }
 
-a:visited {
-  color: var(--color-link-visited);
-}
-
 a:hover {
   color: var(--color-brand-primary);
 }
@@ -429,14 +422,6 @@ a:focus-visible {
   outline: 2px solid var(--color-brand-primary);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
-}
-
-/* Navigation and card links don't show visited state */
-.nav-link:visited,
-.sidebar-link:visited,
-.solution-card-link:visited,
-.hero-cta-primary:visited {
-  color: inherit;
 }
 
 /* Body text links have underlines for accessibility */

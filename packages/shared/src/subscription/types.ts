@@ -1,8 +1,8 @@
 /**
- * License Types
+ * Subscription Types
  *
- * Centralized type definitions for the licensing system.
- * Used by license-server, middleware, renet, and CLI.
+ * Centralized type definitions for the subscription system.
+ * Used by account-server, middleware, renet, and CLI.
  */
 
 /**
@@ -11,9 +11,9 @@
 export type PlanCode = 'COMMUNITY' | 'PROFESSIONAL' | 'BUSINESS' | 'ENTERPRISE';
 
 /**
- * License status values.
+ * Subscription status values.
  */
-export type LicenseStatus = 'ACTIVE' | 'INACTIVE' | 'EXPIRED' | 'SUSPENDED' | 'GRACE';
+export type SubscriptionStatus = 'ACTIVE' | 'INACTIVE' | 'EXPIRED' | 'SUSPENDED' | 'GRACE';
 
 /**
  * Resource limits per subscription plan.
@@ -66,29 +66,29 @@ export interface FeatureFlags {
 }
 
 /**
- * License data payload.
- * This is the data that gets signed by the license server.
+ * Subscription data payload.
+ * This is the data that gets signed by the account server.
  */
-export interface LicenseData {
+export interface SubscriptionData {
   /** Schema version for migrations */
   version: 1;
-  /** UUID from license server */
-  licenseId: string;
+  /** UUID from account server */
+  subscriptionId: string;
   /** Middleware organization ID */
   organizationId: number;
   /** Customer identifier */
   customerId: string;
   /** Subscription plan code */
   planCode: PlanCode;
-  /** Current license status */
-  status: LicenseStatus;
+  /** Current subscription status */
+  status: SubscriptionStatus;
 
   // Dates (ISO8601 format)
-  /** When the license was issued */
+  /** When the subscription was issued */
   issuedAt: string;
-  /** When the license expires */
+  /** When the subscription expires */
   expiresAt: string;
-  /** Last successful check-in with license server */
+  /** Last successful check-in with account server */
   lastCheckIn: string;
   /** When grace period ends (3 days after lastCheckIn) */
   gracePeriodEnds: string;
@@ -107,11 +107,11 @@ export interface LicenseData {
 }
 
 /**
- * Signed license blob.
- * Contains the license payload and Ed25519 signature.
+ * Signed subscription blob.
+ * Contains the subscription payload and Ed25519 signature.
  */
-export interface SignedLicenseBlob {
-  /** Base64 encoded LicenseData JSON */
+export interface SignedSubscriptionBlob {
+  /** Base64 encoded SubscriptionData JSON */
   payload: string;
   /** Base64 encoded Ed25519 signature */
   signature: string;
@@ -120,15 +120,15 @@ export interface SignedLicenseBlob {
 }
 
 /**
- * License storage format in Organization.License column.
+ * Subscription storage format in Organization.License column.
  */
-export interface OrganizationLicense {
-  /** The signed license blob from license server */
-  signedBlob: SignedLicenseBlob;
+export interface OrganizationSubscription {
+  /** The signed subscription blob from account server */
+  signedBlob: SignedSubscriptionBlob;
   /** Cached decoded data for quick access (redundant but performant) */
   cachedData: {
     planCode: PlanCode;
-    status: LicenseStatus;
+    status: SubscriptionStatus;
     resources: ResourceLimits;
     features: FeatureFlags;
     expiresAt: string;
@@ -137,15 +137,40 @@ export interface OrganizationLicense {
 }
 
 /**
- * License validation result.
+ * Billing period for Stripe subscriptions.
  */
-export interface LicenseValidationResult {
-  /** Whether the license is valid */
+export type BillingPeriod = 'monthly' | 'annual';
+
+/**
+ * Pricing configuration for a subscription plan.
+ * Amounts are in cents (USD).
+ */
+export interface PlanPricing {
+  monthlyPriceCents: number;
+  annualPriceCents: number;
+  currency: 'usd';
+}
+
+/**
+ * Display metadata for a subscription plan.
+ */
+export interface PlanMetadata {
+  displayName: string;
+  description: string;
+  paid: boolean;
+  featured: boolean;
+}
+
+/**
+ * Subscription validation result.
+ */
+export interface SubscriptionValidationResult {
+  /** Whether the subscription is valid */
   valid: boolean;
-  /** Decoded license data if valid */
-  data?: LicenseData;
+  /** Decoded subscription data if valid */
+  data?: SubscriptionData;
   /** Error message if invalid */
   error?: string;
-  /** Whether the license is in grace period */
+  /** Whether the subscription is in grace period */
   inGracePeriod?: boolean;
 }

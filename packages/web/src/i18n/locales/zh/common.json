@@ -134,7 +134,7 @@
         "title": "资源使用"
       },
       "subscriptionPlan": {
-        "allActiveLicenses": "所有活跃许可证",
+        "allActiveSubscriptions": "所有活跃订阅",
         "currentSubscription": "当前订阅",
         "day": "天",
         "days": "天",

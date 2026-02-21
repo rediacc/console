@@ -11,6 +11,9 @@ on:
         required: true
         type: string
 
+permissions:
+  actions: write
+
 jobs:
   rerun:
     name: Rerun Failed Jobs

@@ -52,9 +52,10 @@ declare -A SUBMODULE_REPOS=(
     ["middleware"]="rediacc/middleware"
     ["renet"]="rediacc/renet"
     ["homebrew-tap"]="rediacc/homebrew-tap"
-    ["license-server"]="rediacc/license-server"
+    ["account"]="rediacc/account"
     ["elite"]="rediacc/elite"
     ["sql"]="rediacc/sql"
+    ["growth"]="rediacc/growth"
 )
 
 # Post commit status via GitHub API using STATUS_TOKEN (github.token).

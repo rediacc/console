@@ -4,27 +4,29 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { PLAN_FEATURES, PLAN_RESOURCES } from '../constants.js';
 import {
   clearPublicKeys,
-  createSignedLicense,
+  createSignedSubscription,
   generateKeyPair,
   getPublicKeyIds,
   hasPublicKey,
   importPrivateKey,
   importPublicKey,
-  signLicensePayload,
-  verifyAndDecodeLicense,
+  signSubscriptionPayload,
+  verifyAndDecodeSubscription,
   verifySignature,
 } from '../crypto.js';
-import { encodeLicensePayload } from '../validation.js';
-import type { LicenseData, SignedLicenseBlob } from '../types.js';
+import { encodeSubscriptionPayload } from '../validation.js';
+import type { SubscriptionData, SignedSubscriptionBlob } from '../types.js';
 
-// Fixed test keys for deterministic tests (from license-server test helpers)
+// Fixed test keys for deterministic tests (from account-server test helpers)
 const TEST_PUBLIC_KEY_SPKI = 'MCowBQYDK2VwAyEAqS7xKEfPYFtCWxOCRUvKG5N6peFHSAYBNMJqGRMHN5I=';
 const TEST_PRIVATE_KEY_PKCS8 = 'MC4CAQAwBQYDK2VwBCIEIBXIuPTQjPy6a4X2qbLBwF3VDj7yMqJ4kGzJu8vKMKqd';
 const TEST_KEY_ID = 'test-key-2026';
 
-const createValidLicenseData = (overrides: Partial<LicenseData> = {}): LicenseData => ({
+const createValidSubscriptionData = (
+  overrides: Partial<SubscriptionData> = {}
+): SubscriptionData => ({
   version: 1,
-  licenseId: 'test-license-id',
+  subscriptionId: 'test-subscription-id',
   organizationId: 1,
   customerId: 'test-customer',
   planCode: 'PROFESSIONAL',
@@ -40,7 +42,7 @@ const createValidLicenseData = (overrides: Partial<LicenseData> = {}): LicenseDa
   ...overrides,
 });
 
-describe('License Crypto', () => {
+describe('Subscription Crypto', () => {
   afterEach(() => {
     clearPublicKeys();
   });
@@ -164,11 +166,11 @@ describe('License Crypto', () => {
   });
 
   describe('Signing', () => {
-    describe('signLicensePayload', () => {
-      it('should produce a valid SignedLicenseBlob structure', async () => {
+    describe('signSubscriptionPayload', () => {
+      it('should produce a valid SignedSubscriptionBlob structure', async () => {
         const privateKey = await importPrivateKey(TEST_PRIVATE_KEY_PKCS8);
-        const payload = encodeLicensePayload(createValidLicenseData());
-        const blob = await signLicensePayload(payload, privateKey, TEST_KEY_ID);
+        const payload = encodeSubscriptionPayload(createValidSubscriptionData());
+        const blob = await signSubscriptionPayload(payload, privateKey, TEST_KEY_ID);
 
         expect(blob).toHaveProperty('payload');
         expect(blob).toHaveProperty('signature');
@@ -178,51 +180,55 @@ describe('License Crypto', () => {
 
       it('should preserve the original payload in the blob', async () => {
         const privateKey = await importPrivateKey(TEST_PRIVATE_KEY_PKCS8);
-        const payload = encodeLicensePayload(createValidLicenseData());
-        const blob = await signLicensePayload(payload, privateKey, TEST_KEY_ID);
+        const payload = encodeSubscriptionPayload(createValidSubscriptionData());
+        const blob = await signSubscriptionPayload(payload, privateKey, TEST_KEY_ID);
 
         expect(blob.payload).toBe(payload);
       });
 
       it('should produce different signatures for different payloads', async () => {
         const privateKey = await importPrivateKey(TEST_PRIVATE_KEY_PKCS8);
-        const payload1 = encodeLicensePayload(createValidLicenseData({ licenseId: 'license-1' }));
-        const payload2 = encodeLicensePayload(createValidLicenseData({ licenseId: 'license-2' }));
-        const blob1 = await signLicensePayload(payload1, privateKey, TEST_KEY_ID);
-        const blob2 = await signLicensePayload(payload2, privateKey, TEST_KEY_ID);
+        const payload1 = encodeSubscriptionPayload(
+          createValidSubscriptionData({ subscriptionId: 'sub-1' })
+        );
+        const payload2 = encodeSubscriptionPayload(
+          createValidSubscriptionData({ subscriptionId: 'sub-2' })
+        );
+        const blob1 = await signSubscriptionPayload(payload1, privateKey, TEST_KEY_ID);
+        const blob2 = await signSubscriptionPayload(payload2, privateKey, TEST_KEY_ID);
 
         expect(blob1.signature).not.toBe(blob2.signature);
       });
     });
 
-    describe('createSignedLicense', () => {
-      it('should create a signed license blob from LicenseData', async () => {
+    describe('createSignedSubscription', () => {
+      it('should create a signed subscription blob from SubscriptionData', async () => {
         const privateKey = await importPrivateKey(TEST_PRIVATE_KEY_PKCS8);
-        const data = createValidLicenseData();
-        const blob = await createSignedLicense(data, privateKey, TEST_KEY_ID);
+        const data = createValidSubscriptionData();
+        const blob = await createSignedSubscription(data, privateKey, TEST_KEY_ID);
 
         expect(blob.payload).toBeDefined();
         expect(blob.signature).toBeDefined();
         expect(blob.publicKeyId).toBe(TEST_KEY_ID);
       });
 
-      it('should encode license data as base64 JSON in payload', async () => {
+      it('should encode subscription data as base64 JSON in payload', async () => {
         const privateKey = await importPrivateKey(TEST_PRIVATE_KEY_PKCS8);
-        const data = createValidLicenseData();
-        const blob = await createSignedLicense(data, privateKey, TEST_KEY_ID);
+        const data = createValidSubscriptionData();
+        const blob = await createSignedSubscription(data, privateKey, TEST_KEY_ID);
 
         const decoded = JSON.parse(atob(blob.payload));
-        expect(decoded.licenseId).toBe(data.licenseId);
+        expect(decoded.subscriptionId).toBe(data.subscriptionId);
         expect(decoded.planCode).toBe(data.planCode);
       });
 
-      it('should create verifiable signed licenses', async () => {
+      it('should create verifiable signed subscriptions', async () => {
         const { publicKey, privateKey: privKeyBase64 } = await generateKeyPair();
         const privateKey = await importPrivateKey(privKeyBase64);
         await importPublicKey('round-trip-key', publicKey);
 
-        const data = createValidLicenseData();
-        const blob = await createSignedLicense(data, privateKey, 'round-trip-key');
+        const data = createValidSubscriptionData();
+        const blob = await createSignedSubscription(data, privateKey, 'round-trip-key');
 
         const isValid = await verifySignature(blob);
         expect(isValid).toBe(true);
@@ -237,8 +243,8 @@ describe('License Crypto', () => {
         const privateKey = await importPrivateKey(privKeyBase64);
         await importPublicKey('verify-key', publicKey);
 
-        const data = createValidLicenseData();
-        const blob = await createSignedLicense(data, privateKey, 'verify-key');
+        const data = createValidSubscriptionData();
+        const blob = await createSignedSubscription(data, privateKey, 'verify-key');
 
         expect(await verifySignature(blob)).toBe(true);
       });
@@ -248,12 +254,14 @@ describe('License Crypto', () => {
         const privateKey = await importPrivateKey(privKeyBase64);
         await importPublicKey('verify-key', publicKey);
 
-        const data = createValidLicenseData();
-        const blob = await createSignedLicense(data, privateKey, 'verify-key');
+        const data = createValidSubscriptionData();
+        const blob = await createSignedSubscription(data, privateKey, 'verify-key');
 
-        const tampered: SignedLicenseBlob = {
+        const tampered: SignedSubscriptionBlob = {
           ...blob,
-          payload: encodeLicensePayload(createValidLicenseData({ licenseId: 'tampered' })),
+          payload: encodeSubscriptionPayload(
+            createValidSubscriptionData({ subscriptionId: 'tampered' })
+          ),
         };
 
         expect(await verifySignature(tampered)).toBe(false);
@@ -264,10 +272,10 @@ describe('License Crypto', () => {
         const privateKey = await importPrivateKey(privKeyBase64);
         await importPublicKey('verify-key', publicKey);
 
-        const data = createValidLicenseData();
-        const blob = await createSignedLicense(data, privateKey, 'verify-key');
+        const data = createValidSubscriptionData();
+        const blob = await createSignedSubscription(data, privateKey, 'verify-key');
 
-        const tampered: SignedLicenseBlob = {
+        const tampered: SignedSubscriptionBlob = {
           ...blob,
           signature: `AAAA${blob.signature.slice(4)}`,
         };
@@ -280,15 +288,15 @@ describe('License Crypto', () => {
         const privateKey = await importPrivateKey(privKeyBase64);
         // Deliberately not importing the public key
 
-        const data = createValidLicenseData();
-        const blob = await createSignedLicense(data, privateKey, 'unknown-key');
+        const data = createValidSubscriptionData();
+        const blob = await createSignedSubscription(data, privateKey, 'unknown-key');
 
         expect(await verifySignature(blob)).toBe(false);
       });
 
       it('should return false when no keys are registered', async () => {
-        const blob: SignedLicenseBlob = {
-          payload: encodeLicensePayload(createValidLicenseData()),
+        const blob: SignedSubscriptionBlob = {
+          payload: encodeSubscriptionPayload(createValidSubscriptionData()),
           signature: 'dGVzdC1zaWduYXR1cmU=',
           publicKeyId: 'any-key',
         };
@@ -302,8 +310,8 @@ describe('License Crypto', () => {
 
         // Sign with key A
         const privateKeyA = await importPrivateKey(pairA.privateKey);
-        const data = createValidLicenseData();
-        const blob = await createSignedLicense(data, privateKeyA, 'key-b');
+        const data = createValidSubscriptionData();
+        const blob = await createSignedSubscription(data, privateKeyA, 'key-b');
 
         // Register key B's public key under the same ID
         await importPublicKey('key-b', pairB.publicKey);
@@ -312,19 +320,19 @@ describe('License Crypto', () => {
       });
     });
 
-    describe('verifyAndDecodeLicense', () => {
-      it('should verify, decode, and validate a valid license', async () => {
+    describe('verifyAndDecodeSubscription', () => {
+      it('should verify, decode, and validate a valid subscription', async () => {
         const { publicKey, privateKey: privKeyBase64 } = await generateKeyPair();
         const privateKey = await importPrivateKey(privKeyBase64);
         await importPublicKey('decode-key', publicKey);
 
-        const data = createValidLicenseData();
-        const blob = await createSignedLicense(data, privateKey, 'decode-key');
+        const data = createValidSubscriptionData();
+        const blob = await createSignedSubscription(data, privateKey, 'decode-key');
 
-        const result = await verifyAndDecodeLicense(blob);
+        const result = await verifyAndDecodeSubscription(blob);
         expect(result.valid).toBe(true);
         expect(result.data).toBeDefined();
-        expect(result.data?.licenseId).toBe('test-license-id');
+        expect(result.data?.subscriptionId).toBe('test-subscription-id');
         expect(result.data?.planCode).toBe('PROFESSIONAL');
       });
 
@@ -333,15 +341,15 @@ describe('License Crypto', () => {
         const privateKey = await importPrivateKey(privKeyBase64);
         await importPublicKey('verify-key', publicKey);
 
-        const data = createValidLicenseData();
-        const blob = await createSignedLicense(data, privateKey, 'verify-key');
+        const data = createValidSubscriptionData();
+        const blob = await createSignedSubscription(data, privateKey, 'verify-key');
 
-        const tampered: SignedLicenseBlob = {
+        const tampered: SignedSubscriptionBlob = {
           ...blob,
           signature: `AAAA${blob.signature.slice(4)}`,
         };
 
-        const result = await verifyAndDecodeLicense(tampered);
+        const result = await verifyAndDecodeSubscription(tampered);
         expect(result.valid).toBe(false);
         expect(result.error).toContain('Invalid signature');
       });
@@ -351,41 +359,41 @@ describe('License Crypto', () => {
         const privateKey = await importPrivateKey(privKeyBase64);
         await importPublicKey('payload-key', publicKey);
 
-        // Sign a payload that is valid base64 but not valid license JSON
+        // Sign a payload that is valid base64 but not valid subscription JSON
         const payload = btoa('not-json-data');
-        const blob = await signLicensePayload(payload, privateKey, 'payload-key');
+        const blob = await signSubscriptionPayload(payload, privateKey, 'payload-key');
 
-        const result = await verifyAndDecodeLicense(blob);
+        const result = await verifyAndDecodeSubscription(blob);
         expect(result.valid).toBe(false);
-        expect(result.error).toContain('Invalid license payload');
+        expect(result.error).toContain('Invalid subscription payload');
       });
 
-      it('should propagate validation result for expired license', async () => {
+      it('should propagate validation result for expired subscription', async () => {
         const { publicKey, privateKey: privKeyBase64 } = await generateKeyPair();
         const privateKey = await importPrivateKey(privKeyBase64);
         await importPublicKey('expired-key', publicKey);
 
-        const data = createValidLicenseData({
+        const data = createValidSubscriptionData({
           expiresAt: '2020-01-01T00:00:00Z',
         });
-        const blob = await createSignedLicense(data, privateKey, 'expired-key');
+        const blob = await createSignedSubscription(data, privateKey, 'expired-key');
 
-        const result = await verifyAndDecodeLicense(blob);
+        const result = await verifyAndDecodeSubscription(blob);
         expect(result.valid).toBe(false);
         expect(result.error).toContain('expired');
       });
     });
   });
 
-  // Cross-language fixture verification (requires license-server submodule)
+  // Cross-language fixture verification (requires account submodule)
   const FIXTURES_PATH = resolve(
     __dirname,
-    '../../../../../private/license-server/tests/integration/cross-language/fixtures.json'
+    '../../../../../private/account/tests/integration/cross-language/fixtures.json'
   );
   describe.skipIf(!existsSync(FIXTURES_PATH))('Cross-Language Fixture Verification', () => {
     interface Fixture {
       name: string;
-      signedBlob: SignedLicenseBlob;
+      signedBlob: SignedSubscriptionBlob;
       expectedValid: boolean;
     }
 

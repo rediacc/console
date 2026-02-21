@@ -1,7 +1,7 @@
 export * from './api';
 export * from './config';
 export * from './encryption';
-export * from './license';
+export * from './subscription';
 export * from './error-parser';
 export * from './formatters';
 export {

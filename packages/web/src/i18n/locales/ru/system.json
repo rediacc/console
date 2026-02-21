@@ -197,7 +197,7 @@
     }
   },
   "dashboard": {
-    "activeLicenses": "Активные лицензии",
+    "activeSubscriptions": "Активные подписки",
     "completed": "Завершено",
     "daysRemaining": "Дней осталось",
     "failed": "Ошибка",

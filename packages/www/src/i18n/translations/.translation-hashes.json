@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 985
+    "keyCount": 987
   },
   "hashes": {
     "bridge.text": "76620bbb",
@@ -106,7 +106,7 @@
     "footer.tagline": "ffff2dbf",
     "hero.cta.benefits": "1827725e",
     "hero.cta.bookDemo": "969ece2b",
-    "hero.cta.contactUs": "28a703db",
+    "hero.cta.contactUs": "54c36f07",
     "hero.cta.freeBadge": "6303f0e1",
     "hero.cta.learnMore": "ef55e9e4",
     "hero.cta.seeDetails": "e83971af",
@@ -343,7 +343,7 @@
     "pages.disasterRecovery.technicalSummary.values.enterprise.auditLogs": "a5140742",
     "pages.disasterRecovery.technicalSummary.values.enterprise.jobTimeout": "a1171a1d",
     "pages.disasterRecovery.technicalSummary.values.enterprise.repositories": "5e612b47",
-    "pages.disasterRecovery.technicalSummary.values.enterprise.repoSize": "ff179bbe",
+    "pages.disasterRecovery.technicalSummary.values.enterprise.repoSize": "b8b7e16e",
     "pages.disasterRecovery.technicalSummary.values.enterprise.reservedJobs": "2f76189d",
     "pages.disasterRecovery.technicalSummary.values.enterprise.rpo": "271ae783",
     "pages.disasterRecovery.technicalSummary.values.enterprise.rto": "ab6ad0c9",
@@ -585,7 +585,7 @@
     "pages.pricing.technicalSummary.values.enterprise.jobsPerMonth": "01333dfa",
     "pages.pricing.technicalSummary.values.enterprise.machines": "5e612b47",
     "pages.pricing.technicalSummary.values.enterprise.repositories": "5e612b47",
-    "pages.pricing.technicalSummary.values.enterprise.repoSize": "ff179bbe",
+    "pages.pricing.technicalSummary.values.enterprise.repoSize": "b8b7e16e",
     "pages.pricing.technicalSummary.values.enterprise.usersTeams": "5e612b47",
     "pages.pricing.technicalSummary.values.professional.activeJobs": "84b12bae",
     "pages.pricing.technicalSummary.values.professional.jobsPerMonth": "98f333a2",
@@ -596,6 +596,8 @@
     "pages.pricing.trust.heading": "ce0668a6",
     "pages.pricing.ui.anchor": "db107a22",
     "pages.pricing.ui.bestValue": "48f19c50",
+    "pages.pricing.ui.billingToggle.annual": "e2e5ec58",
+    "pages.pricing.ui.billingToggle.monthly": "2518ff04",
     "pages.pricing.ui.contactSales": "ce60bbae",
     "pages.pricing.ui.cta.business.guarantee": "7ba541c0",
     "pages.pricing.ui.cta.business.launchBadge": "e950c260",
@@ -603,7 +605,7 @@
     "pages.pricing.ui.cta.business.secondary": "ce60bbae",
     "pages.pricing.ui.cta.business.valueNote": "caf9c2b8",
     "pages.pricing.ui.cta.community.note": "c02b2690",
-    "pages.pricing.ui.cta.community.primary": "e67a77fa",
+    "pages.pricing.ui.cta.community.primary": "e1bbfbd5",
     "pages.pricing.ui.cta.community.secondary": "ef55e9e4",
     "pages.pricing.ui.cta.enterprise.guarantee": "7ba541c0",
     "pages.pricing.ui.cta.enterprise.primary": "969ece2b",
@@ -990,5 +992,13 @@
     "solutions.title": "e127c6a1",
     "testimonials.subtitle": "2bc41aa4",
     "testimonials.title": "7e47c0a9"
-  }
+  },
+  "ar": "7f6e2997",
+  "de": "bf64873d",
+  "es": "8afadce8",
+  "fr": "a87e74b7",
+  "ja": "3dfe8324",
+  "ru": "5c244b07",
+  "tr": "77c707b9",
+  "zh": "17516848"
 }

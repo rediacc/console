@@ -335,7 +335,7 @@
       "subscriptionPlan": {
         "title": "Subscription & Plan Details",
         "currentSubscription": "CURRENT SUBSCRIPTION",
-        "allActiveLicenses": "ALL ACTIVE LICENSES",
+        "allActiveSubscriptions": "ALL ACTIVE SUBSCRIPTIONS",
         "total": "Total",
         "remaining": "remaining",
         "day": "day",

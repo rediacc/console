@@ -22,13 +22,12 @@ on:
         type: boolean
         default: false
 
-# Required for GitHub Pages deployment and Docker publishing
+# Required for release publishing, Docker, and Cloudflare Pages deployment
 permissions:
   actions: write
   contents: write
-  pages: write
-  id-token: write
-  packages: write  # For GHCR push
+  packages: write       # For GHCR push
+  attestations: write   # Verify artifact provenance
 
 # Queue new releases instead of cancelling in-progress ones
 concurrency:
@@ -66,7 +65,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
-          repositories: console,middleware,renet,license-server,homebrew-tap,elite,sql
+          repositories: console,middleware,renet,account,homebrew-tap,elite,sql,growth
 
       # Re-checkout with submodules using app token (needed for submodule branch check)
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
@@ -205,8 +204,8 @@ jobs:
       needs.init.outputs.skip_release != 'true' &&
       !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
     environment:
-      name: github-pages
-      url: ${{ steps.pages-deploy.outputs.page_url }}
+      name: production
+      url: https://www.rediacc.com
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -216,7 +215,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
-          repositories: console,middleware,renet,license-server,homebrew-tap,elite,sql
+          repositories: console,middleware,renet,account,homebrew-tap,elite,sql,growth
 
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
@@ -231,7 +230,7 @@ jobs:
       # Step 1: Promote Docker images (staging -> version + latest)
       # -----------------------------------------------------------------------
       - name: Login to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -250,8 +249,8 @@ jobs:
           .ci/scripts/docker/retag-image.sh --image cli --from "$STAGING_TAG" --to "$VERSION" --push-latest --skip-if-exists
 
       # -----------------------------------------------------------------------
-      # Step 1b: Deploy License Server to Cloudflare
-      # Build shared packages first (license-server imports from @rediacc/shared)
+      # Step 1b: Deploy Account Server to Cloudflare
+      # Build shared packages first (account imports from @rediacc/shared)
       # -----------------------------------------------------------------------
       - name: Install dependencies
         run: npm ci
@@ -259,10 +258,26 @@ jobs:
       - name: Build shared packages
         run: npm run build:packages
 
-      - name: Deploy License Server
+      - name: Deploy Account Server
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: .ci/scripts/private/run-license-server.sh deploy
+        run: .ci/scripts/private/run-account.sh deploy
+
+      - name: Set Account Server Stripe secrets
+        working-directory: private/account
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+        run: |
+          echo "$STRIPE_SECRET_KEY" | npx wrangler secret put STRIPE_SECRET_KEY --name account-server
+          echo "$STRIPE_WEBHOOK_SECRET" | npx wrangler secret put STRIPE_WEBHOOK_SECRET --name account-server
+
+      - name: Sync Stripe products/prices
+        run: npx tsx scripts/stripe-sync.ts
+        working-directory: private/account
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
 
       # -----------------------------------------------------------------------
       # Step 1c: Merge submodule PRs to main
@@ -284,6 +299,22 @@ jobs:
           path: dist/
           run-id: ${{ needs.init.outputs.ci_run_id }}
           github-token: ${{ github.token }}
+
+      - name: Verify staging release attestation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Verifying artifact provenance..."
+          FAILED=false
+          for f in $(find dist/desktop dist/cli dist/packages -type f 2>/dev/null); do
+            gh attestation verify "$f" --repo "${{ github.repository }}" 2>/dev/null || {
+              echo "::warning::No attestation for $f (expected for first run after attestation is enabled)"
+              FAILED=true
+            }
+          done
+          if [[ "$FAILED" == "true" ]]; then
+            echo "::warning::Some artifacts lack attestation — this is expected during the transition period"
+          fi
 
       - name: Version bump
         run: .ci/scripts/version/bump.sh --version ${{ needs.init.outputs.next_version }}
@@ -315,7 +346,7 @@ jobs:
       # Step 3: Create GitHub Release (upload packages + binaries)
       # -----------------------------------------------------------------------
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b  # v2
         with:
           tag_name: v${{ needs.init.outputs.next_version }}
           name: v${{ needs.init.outputs.next_version }}
@@ -361,6 +392,23 @@ jobs:
           run-id: ${{ needs.init.outputs.ci_run_id }}
           github-token: ${{ github.token }}
 
+      - name: Verify staging pages attestation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Verifying pages artifact provenance..."
+          SAMPLE=$(find dist/pages -type f -name "*.html" | head -5)
+          FAILED=false
+          for f in $SAMPLE; do
+            gh attestation verify "$f" --repo "${{ github.repository }}" 2>/dev/null || {
+              echo "::warning::No attestation for $f"
+              FAILED=true
+            }
+          done
+          if [[ "$FAILED" == "true" ]]; then
+            echo "::warning::Pages artifacts lack attestation — expected during transition period"
+          fi
+
       # Inject E2E videos from the same CI run that produced staging artifacts
       - name: Inject E2E videos
         env:
@@ -388,16 +436,23 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
       # -----------------------------------------------------------------------
-      # Step 6: Deploy GitHub Pages
+      # Step 6: Deploy www Worker (static assets + account proxy)
+      # build-pages.sh already copies assets to workers/www/dist/
       # -----------------------------------------------------------------------
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b  # v4
-        with:
-          path: dist/pages/
+      - name: Copy pages to www worker assets
+        run: |
+          rm -rf workers/www/dist
+          cp -r dist/pages workers/www/dist
 
-      - name: Deploy to GitHub Pages
-        id: pages-deploy
-        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e  # v4
+      - name: Install www worker dependencies
+        run: npm install
+        working-directory: workers/www
+
+      - name: Deploy www Worker
+        run: .ci/scripts/deploy/deploy-www.sh
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
       # -----------------------------------------------------------------------
       # Step 7: Cleanup staging tags
@@ -432,7 +487,7 @@ jobs:
           echo "**Version:** v${{ needs.init.outputs.next_version }}" >> $GITHUB_STEP_SUMMARY
           echo "**Release SHA:** ${{ steps.commit.outputs.release_sha }}" >> $GITHUB_STEP_SUMMARY
           echo "**CI Run:** ${{ needs.init.outputs.ci_run_id }} (sha: ${{ needs.init.outputs.ci_sha }})" >> $GITHUB_STEP_SUMMARY
-          echo "**Pages URL:** ${{ steps.pages-deploy.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Pages URL:** https://www.rediacc.com" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Docker images:**" >> $GITHUB_STEP_SUMMARY
           echo "- ghcr.io/rediacc/elite/api:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
@@ -455,7 +510,8 @@ jobs:
     uses: ./.github/workflows/ct-install-methods.yml
     with:
       version: ${{ needs.init.outputs.next_version }}
-    secrets: inherit
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   # ============================================================================
   # CLEANUP ON FAILURE - Remove staging artifacts if publish fails
@@ -481,7 +537,7 @@ jobs:
           repositories: console
 
       - name: Login to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}

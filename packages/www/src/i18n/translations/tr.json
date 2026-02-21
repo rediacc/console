@@ -1016,6 +1016,10 @@
           "moneyBack": "14 Günlük Para İade Garantisi",
           "noContracts": "Uzun vadeli sözleşme yok"
         },
+        "billingToggle": {
+          "monthly": "Aylık",
+          "annual": "Yıllık"
+        },
         "keyBenefits": "Temel Faydalar",
         "learnMore": "Daha Fazla Bilgi",
         "limitedOffer": "Sınırlı Lansman Teklifi",
@@ -1665,7 +1669,11 @@
         "monthOrYear": "ayda veya yılda {{price}}",
         "popular": "En popüler",
         "startingAt": "*Başlangıç ​​tarihi:",
-        "whatsIncluded": "Neler dahil:"
+        "whatsIncluded": "Neler dahil:",
+        "billingToggle": {
+          "monthly": "Aylık",
+          "annual": "Yıllık"
+        }
       }
     },
     "privacyPolicy": {

@@ -197,7 +197,7 @@
     }
   },
   "dashboard": {
-    "activeLicenses": "アクティブなライセンス",
+    "activeSubscriptions": "アクティブなサブスクリプション",
     "completed": "完了",
     "daysRemaining": "残り日数",
     "failed": "失敗",

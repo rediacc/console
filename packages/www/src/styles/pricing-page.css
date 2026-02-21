@@ -1566,6 +1566,7 @@
   margin-bottom: var(--space-6);
   padding-bottom: var(--space-6);
   border-bottom: 1px solid var(--color-border);
+  min-height: 5.5rem;
 }
 
 .cf-price {
@@ -1661,6 +1662,67 @@
   .cf-pricing-section {
     padding: var(--space-16) var(--space-4);
   }
+}
+
+/* Billing period toggle (homepage pricing) */
+.billing-toggle {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-1);
+  margin-bottom: var(--space-8);
+  padding: var(--space-1);
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  width: fit-content;
+  margin-inline: auto;
+}
+
+.billing-toggle-btn {
+  padding: var(--space-2) var(--space-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition:
+    background var(--transition-duration-base),
+    color var(--transition-duration-base),
+    border-color var(--transition-duration-base);
+}
+
+.billing-toggle-btn:hover {
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+.billing-toggle-btn.active {
+  background: var(--color-bg);
+  color: var(--color-brand-primary);
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.billing-toggle-btn:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
+.cf-savings-badge {
+  margin-top: var(--space-2);
+  visibility: hidden;
+}
+
+.cf-savings-badge.visible {
+  visibility: visible;
+}
+
+.cf-price-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-1);
 }
 
 /* Reduced motion: remove hover transforms */
