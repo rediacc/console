@@ -69,9 +69,9 @@ jobs:
       - name: Configure local context
         run: |
           mkdir -p ~/.rediacc
-          cat > ~/.rediacc/config.json << 'CONF'
-          {"contexts":{"default":{"name":"default","mode":"local","apiUrl":"http://localhost"}}}
-          CONF
+          jq -n --arg renet "$RENET_BINARY" \
+            '{contexts:{default:{name:"default",mode:"local",apiUrl:"http://localhost",renetPath:$renet}}}' \
+            > ~/.rediacc/config.json
 
       - name: "Test: rdc ops check"
         run: node packages/cli/dist/cli-bundle.cjs ops check -o json
@@ -196,9 +196,9 @@ jobs:
         shell: bash
         run: |
           mkdir -p ~/.rediacc
-          cat > ~/.rediacc/config.json << 'CONF'
-          {"contexts":{"default":{"name":"default","mode":"local","apiUrl":"http://localhost"}}}
-          CONF
+          jq -n --arg renet "$RENET_BINARY" \
+            '{contexts:{default:{name:"default",mode:"local",apiUrl:"http://localhost",renetPath:$renet}}}' \
+            > ~/.rediacc/config.json
 
       - name: "Test: rdc ops check"
         shell: bash
