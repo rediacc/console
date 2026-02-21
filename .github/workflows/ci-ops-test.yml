@@ -66,6 +66,13 @@ jobs:
       - name: Build CLI
         run: npm run build -w @rediacc/cli && npm run build:bundle -w @rediacc/cli
 
+      - name: Configure local context
+        run: |
+          mkdir -p ~/.rediacc
+          cat > ~/.rediacc/config.json << 'CONF'
+          {"contexts":{"default":{"name":"default","mode":"local","apiUrl":"http://localhost"}}}
+          CONF
+
       - name: "Test: rdc ops check"
         run: node packages/cli/dist/cli-bundle.cjs ops check -o json
 
@@ -184,6 +191,14 @@ jobs:
       - name: Build CLI
         shell: bash
         run: npm run build -w @rediacc/cli && npm run build:bundle -w @rediacc/cli
+
+      - name: Configure local context
+        shell: bash
+        run: |
+          mkdir -p ~/.rediacc
+          cat > ~/.rediacc/config.json << 'CONF'
+          {"contexts":{"default":{"name":"default","mode":"local","apiUrl":"http://localhost"}}}
+          CONF
 
       - name: "Test: rdc ops check"
         shell: bash
