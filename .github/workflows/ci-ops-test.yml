@@ -98,8 +98,7 @@ jobs:
       - name: "Verify: SSH connectivity"
         run: |
           SSH_KEY="$RUNNER_TEMP/renet/staging/.ssh/id_rsa"
-          sudo chmod 600 "$SSH_KEY"
-          sudo chown "$(whoami)" "$SSH_KEY"
+          sudo chown -R "$(whoami)" "$RUNNER_TEMP/renet/staging/.ssh"
           for i in $(seq 1 15); do
             if ssh -i "$SSH_KEY" \
               -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
