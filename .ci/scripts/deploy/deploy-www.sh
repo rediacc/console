@@ -38,7 +38,7 @@ if [[ -n "${ARG_NAME:-}" ]]; then
     sed -e "s/^name = .*/name = \"$ARG_NAME\"/" \
         -e '/^routes = \[/,/^\]/d' \
         -e "s/^service = .*/service = \"$ACCOUNT_SERVICE\"/" \
-        wrangler.toml > wrangler.preview.toml
+        wrangler.toml >wrangler.preview.toml
 
     npx wrangler deploy --config wrangler.preview.toml
     rm -f wrangler.preview.toml
