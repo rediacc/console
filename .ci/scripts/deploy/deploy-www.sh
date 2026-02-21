@@ -7,7 +7,7 @@
 #
 # Usage:
 #   deploy-www.sh                                                   # production
-#   deploy-www.sh --name www-pr-379 --account-service account-pr-379  # preview
+#   deploy-www.sh --name pr-379 --account-service account-pr-379  # preview
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
