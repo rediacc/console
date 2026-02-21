@@ -107,11 +107,16 @@ mkdir -p "$CLI_ASSETS_DIR"
 REQUIRED_BINARIES=$(get_required_binaries "$SEA_PLATFORM" "$SEA_ARCH")
 
 # Copy only required renet binaries
+# Linux binaries are always required (used for remote provisioning).
+# Darwin binaries are optional — missing in cached builds where the bridge
+# image only contains Linux binaries.
 for binary_name in $REQUIRED_BINARIES; do
     BINARY="$RENET_BIN_DIR/renet-$binary_name"
     if [[ -f "$BINARY" ]]; then
         log_info "Copying renet-$binary_name..."
         cp "$BINARY" "$CLI_ASSETS_DIR/"
+    elif [[ "$binary_name" == darwin-* ]]; then
+        log_warn "Optional renet binary not available: renet-$binary_name (local ops will be unavailable)"
     else
         log_error "Missing renet binary: $BINARY"
         exit 1
@@ -147,6 +152,9 @@ file_sha256() {
 BINARY_LINES=""
 for binary_name in $REQUIRED_BINARIES; do
     local_file="$CLI_ASSETS_DIR/renet-$binary_name"
+    if [[ ! -f "$local_file" ]]; then
+        continue  # optional binary (e.g. darwin) not present
+    fi
     size=$(file_size "$local_file")
     sha256=$(file_sha256 "$local_file")
     meta_key=$(binary_to_meta_key "$binary_name")

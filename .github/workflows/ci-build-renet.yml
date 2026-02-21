@@ -182,12 +182,13 @@ jobs:
       - name: Extract renet binaries from existing bridge image
         run: .ci/scripts/build/extract-renet-from-image.sh --tag "${{ inputs.bridge_tag }}" --output ./private/bin
 
+      # Bridge image only contains Linux binaries; Darwin binaries are only
+      # available from full builds.  The CLI handles missing Darwin gracefully.
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
         with:
           name: renet-binaries-${{ github.sha }}
           path: |
             private/bin/renet-linux-*
-            private/bin/renet-darwin-*
             private/bin/checksums.sha256
           retention-days: 1
           if-no-files-found: error
