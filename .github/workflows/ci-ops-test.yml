@@ -97,8 +97,10 @@ jobs:
 
       - name: "Verify: SSH connectivity"
         run: |
+          SSH_KEY="$RUNNER_TEMP/renet/staging/.ssh/id_rsa"
           for i in $(seq 1 15); do
-            if ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            if ssh -i "$SSH_KEY" \
+              -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
               -o ConnectTimeout=5 \
               "$(whoami)@${{ steps.status.outputs.bridge_ip }}" "echo 'SSH OK'"; then
               echo "SSH connection successful on attempt $i"
