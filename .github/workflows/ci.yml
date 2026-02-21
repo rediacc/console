@@ -475,7 +475,8 @@ jobs:
       needs.quality.result == 'success' &&
       (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     uses: ./.github/workflows/ci-ops-test.yml
-    secrets: inherit
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   # ============================================================================
   # COLUMN 4C: ELITE RUN TEST

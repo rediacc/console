@@ -1,7 +1,10 @@
 name: CI - OPS Tests
 
 on:
-  workflow_call: {}
+  workflow_call:
+    secrets:
+      APP_PRIVATE_KEY:
+        required: true
 
 jobs:
   # ── Full VM provisioning test (KVM available) ──────────────────
