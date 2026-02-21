@@ -7,7 +7,7 @@ interface Env {
 }
 
 const accountApp = createApp((c) => {
-  const ctx = c as { env: Record<string, string> };
+  const ctx = c as { env: Record<string, unknown> };
   return envSchema.parse(ctx.env);
 });
 
