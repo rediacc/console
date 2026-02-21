@@ -436,14 +436,23 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
       # -----------------------------------------------------------------------
-      # Step 6: Deploy to Cloudflare Pages
+      # Step 6: Deploy www Worker (static assets + account proxy)
+      # build-pages.sh already copies assets to workers/www/dist/
       # -----------------------------------------------------------------------
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65  # v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist/pages/ --project-name=rediacc --branch=main
+      - name: Copy pages to www worker assets
+        run: |
+          rm -rf workers/www/dist
+          cp -r dist/pages workers/www/dist
+
+      - name: Install www worker dependencies
+        run: npm install
+        working-directory: workers/www
+
+      - name: Deploy www Worker
+        run: .ci/scripts/deploy/deploy-www.sh
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
       # -----------------------------------------------------------------------
       # Step 7: Cleanup staging tags

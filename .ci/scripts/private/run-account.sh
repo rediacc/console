@@ -37,7 +37,12 @@ case "$STAGE" in
         ;;
     deploy)
         log_step "Deploying account to Cloudflare..."
-        npx wrangler deploy
+        DEPLOY_ARGS=""
+        if [[ -n "${WORKER_NAME:-}" ]]; then
+            DEPLOY_ARGS="--name $WORKER_NAME"
+            log_info "Using worker name override: $WORKER_NAME"
+        fi
+        npx wrangler deploy $DEPLOY_ARGS
         ;;
     *)
         log_error "Unknown stage: $STAGE"
