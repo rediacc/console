@@ -60,12 +60,13 @@ if ! command -v gh &>/dev/null; then
     fallback_patch "gh CLI not available"
 fi
 
-# Read HEAD commit message
-commit_msg=$(git log -1 --format="%B" 2>/dev/null) || fallback_patch "failed to read commit message"
-verbose_log "Commit message: $(echo "$commit_msg" | head -1)"
+# Read HEAD commit title (first line only — squash merge bodies contain
+# sub-commit PR references that are not the PR being merged)
+commit_title=$(git log -1 --format="%s" 2>/dev/null) || fallback_patch "failed to read commit message"
+verbose_log "Commit message: $commit_title"
 
-# Extract PR numbers from patterns like (#123)
-pr_numbers=$(echo "$commit_msg" | grep -oE '\(#[0-9]+\)' | grep -oE '[0-9]+' || true)
+# Extract PR numbers from patterns like (#123) in the title line
+pr_numbers=$(echo "$commit_title" | grep -oE '\(#[0-9]+\)' | grep -oE '[0-9]+' || true)
 
 if [[ -z "$pr_numbers" ]]; then
     fallback_patch "no PR numbers found in commit message"
@@ -82,11 +83,11 @@ while IFS= read -r pr_num; do
 
     verbose_log "Querying labels for PR #$pr_num..."
 
-    output=$(gh pr view "$pr_num" \
+    # Use if-! pattern so set -e doesn't exit on gh failure
+    if ! output=$(gh pr view "$pr_num" \
         --repo "$GITHUB_REPOSITORY" \
         --json labels \
-        --jq '.labels[].name' 2>&1)
-    if [[ $? -ne 0 ]]; then
+        --jq '.labels[].name' 2>&1); then
         verbose_log "Failed to query PR #$pr_num, skipping. Error: $output"
         continue
     fi
