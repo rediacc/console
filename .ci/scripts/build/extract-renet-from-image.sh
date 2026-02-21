@@ -71,15 +71,16 @@ log_info "Extracting renet-linux-arm64..."
 docker cp "$CONTAINER_ID:/opt/renet/renet-linux-arm64" "$OUTPUT_DIR/"
 
 # Cross-compile Darwin binaries (no embedded assets needed — CRIU/rsync are Linux-only)
-RENET_DIR="$REPO_ROOT/private/renet"
 log_step "Cross-compiling renet Darwin binaries..."
+pushd "$REPO_ROOT/private/renet" >/dev/null
 for arch in amd64 arm64; do
     log_info "Building renet-darwin-$arch..."
     CGO_ENABLED=0 GOOS=darwin GOARCH=$arch go build \
         -ldflags="-s -w" \
         -o "$OUTPUT_DIR/renet-darwin-$arch" \
-        "$RENET_DIR/cmd/renet"
+        ./cmd/renet
 done
+popd >/dev/null
 
 # Generate checksums for all binaries (use absolute path)
 OUTPUT_DIR="$(cd "$OUTPUT_DIR" && pwd)"
