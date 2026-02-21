@@ -120,9 +120,7 @@
     "zod",
     "astro-seo",
     "glob",
-    "react-i18next",
-    "esbuild",
-    "@xmldom/xmldom"
+    "react-i18next"
   ],
   "ignoreBinaries": ["rimraf", "wrangler"]
 }
