@@ -1,13 +1,14 @@
 #!/bin/bash
 # Deploy the www Worker to Cloudflare
 #
-# Handles both production and preview deployments using the same wrangler.toml
-# as the single source of truth. For preview, generates a temporary config
-# overriding the worker name and service binding.
+# Handles both production and preview deployments.
+# - Production: uses wrangler.toml as-is (Service Binding to account-server)
+# - Preview: generates a combined worker config that embeds the account server
+#   directly (preview.ts entry), so only a single Worker (pr-N) is needed.
 #
 # Usage:
-#   deploy-www.sh                                                   # production
-#   deploy-www.sh --name pr-379 --account-service account-pr-379  # preview
+#   deploy-www.sh                  # production
+#   deploy-www.sh --name pr-379    # preview (combined worker)
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -31,14 +32,25 @@ if [[ ! -d "node_modules" ]]; then
 fi
 
 if [[ -n "${ARG_NAME:-}" ]]; then
-    # Preview deployment: generate config from production template
-    ACCOUNT_SERVICE="${ARG_ACCOUNT_SERVICE:-account-server}"
-    log_step "Deploying www preview worker: $ARG_NAME (account service: $ACCOUNT_SERVICE)"
+    # Preview deployment: combined worker with account server embedded.
+    # Uses preview.ts entry point which imports the account Hono app directly,
+    # eliminating the need for a separate account-pr-N worker.
+    log_step "Deploying combined preview worker: $ARG_NAME"
 
-    sed -e "s/^name = .*/name = \"$ARG_NAME\"/" \
-        -e '/^routes = \[/,/^\]/d' \
-        -e "s/^service = .*/service = \"$ACCOUNT_SERVICE\"/" \
-        wrangler.toml >wrangler.preview.toml
+    cat > wrangler.preview.toml << TOML
+name = "$ARG_NAME"
+main = "src/preview.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./dist"
+run_worker_first = ["/account", "/account/*"]
+
+[vars]
+S3_BUCKET = "subscriptions"
+S3_REGION = "auto"
+TOML
 
     npx wrangler deploy --config wrangler.preview.toml
     rm -f wrangler.preview.toml
