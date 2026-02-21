@@ -206,7 +206,7 @@ jobs:
 
       - name: "Test: renet binary runs"
         shell: bash
-        run: $RENET_BINARY --version
+        run: $RENET_BINARY version
 
       - name: "Test: renet ops host check"
         shell: bash
