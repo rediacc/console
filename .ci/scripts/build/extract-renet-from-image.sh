@@ -70,6 +70,9 @@ docker cp "$CONTAINER_ID:/opt/renet/renet-linux-amd64" "$OUTPUT_DIR/"
 log_info "Extracting renet-linux-arm64..."
 docker cp "$CONTAINER_ID:/opt/renet/renet-linux-arm64" "$OUTPUT_DIR/"
 
+# Resolve OUTPUT_DIR to absolute path before changing directories
+OUTPUT_DIR="$(cd "$OUTPUT_DIR" && pwd)"
+
 # Cross-compile Darwin binaries (no embedded assets needed — CRIU/rsync are Linux-only)
 log_step "Cross-compiling renet Darwin binaries..."
 pushd "$REPO_ROOT/private/renet" >/dev/null
@@ -81,9 +84,6 @@ for arch in amd64 arm64; do
         ./cmd/renet
 done
 popd >/dev/null
-
-# Generate checksums for all binaries (use absolute path)
-OUTPUT_DIR="$(cd "$OUTPUT_DIR" && pwd)"
 log_step "Generating checksums..."
 cd "$OUTPUT_DIR"
 sha256sum renet-* >checksums.sha256
