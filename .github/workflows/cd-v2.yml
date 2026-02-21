@@ -249,29 +249,14 @@ jobs:
           .ci/scripts/docker/retag-image.sh --image cli --from "$STAGING_TAG" --to "$VERSION" --push-latest --skip-if-exists
 
       # -----------------------------------------------------------------------
-      # Step 1b: Deploy Account Server to Cloudflare
-      # Build shared packages first (account imports from @rediacc/shared)
+      # Step 1b: Install dependencies and build shared packages
+      # (account code is embedded in the www worker via direct import)
       # -----------------------------------------------------------------------
       - name: Install dependencies
         run: npm ci
 
       - name: Build shared packages
         run: npm run build:packages
-
-      - name: Deploy Account Server
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: .ci/scripts/private/run-account.sh deploy
-
-      - name: Set Account Server Stripe secrets
-        working-directory: private/account
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
-        run: |
-          echo "$STRIPE_SECRET_KEY" | npx wrangler secret put STRIPE_SECRET_KEY --name account-server
-          echo "$STRIPE_WEBHOOK_SECRET" | npx wrangler secret put STRIPE_WEBHOOK_SECRET --name account-server
 
       - name: Sync Stripe products/prices
         run: npx tsx scripts/stripe-sync.ts
@@ -436,7 +421,7 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
       # -----------------------------------------------------------------------
-      # Step 6: Deploy www Worker (static assets + account proxy)
+      # Step 6: Deploy www Worker (static assets + embedded account server)
       # build-pages.sh already copies assets to workers/www/dist/
       # -----------------------------------------------------------------------
       - name: Copy pages to www worker assets
@@ -453,6 +438,28 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Set www Worker secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          SECRET_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
+          SECRET_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
+          SECRET_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
+          SECRET_STRIPE_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          SECRET_STRIPE_WEBHOOK: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          SECRET_S3_ENDPOINT: ${{ secrets.ACCOUNT_S3_ENDPOINT }}
+          SECRET_S3_ACCESS_KEY_ID: ${{ secrets.ACCOUNT_S3_ACCESS_KEY_ID }}
+          SECRET_S3_SECRET_ACCESS_KEY: ${{ secrets.ACCOUNT_S3_SECRET_ACCESS_KEY }}
+        run: |
+          echo "$SECRET_ED25519_PRIVATE_KEY" | npx wrangler secret put ED25519_PRIVATE_KEY --name rediacc-www
+          echo "$SECRET_ED25519_PUBLIC_KEY" | npx wrangler secret put ED25519_PUBLIC_KEY --name rediacc-www
+          echo "$SECRET_API_KEY" | npx wrangler secret put API_KEY --name rediacc-www
+          echo "$SECRET_STRIPE_KEY" | npx wrangler secret put STRIPE_SECRET_KEY --name rediacc-www
+          echo "$SECRET_STRIPE_WEBHOOK" | npx wrangler secret put STRIPE_WEBHOOK_SECRET --name rediacc-www
+          echo "$SECRET_S3_ENDPOINT" | npx wrangler secret put S3_ENDPOINT --name rediacc-www
+          echo "$SECRET_S3_ACCESS_KEY_ID" | npx wrangler secret put S3_ACCESS_KEY_ID --name rediacc-www
+          echo "$SECRET_S3_SECRET_ACCESS_KEY" | npx wrangler secret put S3_SECRET_ACCESS_KEY --name rediacc-www
 
       # -----------------------------------------------------------------------
       # Step 7: Cleanup staging tags

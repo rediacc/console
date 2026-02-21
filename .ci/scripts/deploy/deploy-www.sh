@@ -2,13 +2,13 @@
 # Deploy the www Worker to Cloudflare
 #
 # Handles both production and preview deployments.
-# - Production: uses wrangler.toml as-is (Service Binding to account-server)
-# - Preview: generates a combined worker config that embeds the account server
-#   directly (preview.ts entry), so only a single Worker (pr-N) is needed.
+# Both use the same index.ts entry point which embeds the account server directly.
+# - Production: uses wrangler.toml as-is
+# - Preview: generates wrangler.preview.toml with different name and preview S3 bucket
 #
 # Usage:
 #   deploy-www.sh                  # production
-#   deploy-www.sh --name pr-379    # preview (combined worker)
+#   deploy-www.sh --name pr-379    # preview
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -32,14 +32,11 @@ if [[ ! -d "node_modules" ]]; then
 fi
 
 if [[ -n "${ARG_NAME:-}" ]]; then
-    # Preview deployment: combined worker with account server embedded.
-    # Uses preview.ts entry point which imports the account Hono app directly,
-    # eliminating the need for a separate account-pr-N worker.
-    log_step "Deploying combined preview worker: $ARG_NAME"
+    log_step "Deploying preview worker: $ARG_NAME"
 
     cat >wrangler.preview.toml <<TOML
 name = "$ARG_NAME"
-main = "src/preview.ts"
+main = "src/index.ts"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 
