@@ -58,9 +58,9 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
                 <Row gutter={[16, 16]}>
                   <Col span={12}>
                     <Statistic
-                      title={t('system:dashboard.activeLicenses')}
+                      title={t('system:dashboard.activeSubscriptions')}
                       value={activeSubscription.totalActivePurchases ?? undefined}
-                      data-testid="dashboard-stat-active-licenses"
+                      data-testid="dashboard-stat-active-subscriptions"
                     />
                   </Col>
                   <Col span={12}>
@@ -89,7 +89,7 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
               <Flex vertical>
                 <Flex className="block">
                   <Typography.Text>
-                    {t('common:dashboard.widgets.subscriptionPlan.allActiveLicenses')}
+                    {t('common:dashboard.widgets.subscriptionPlan.allActiveSubscriptions')}
                   </Typography.Text>
                 </Flex>
                 <Typography.Title level={4}>
@@ -120,7 +120,7 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
                       <Flex
                         vertical
                         key={`${sub.planCode}-${index}`}
-                        data-testid={`dashboard-license-item-${index}`}
+                        data-testid={`dashboard-subscription-item-${index}`}
                       >
                         <Flex align="center" justify="space-between">
                           <Flex align="center" wrap className="inline-flex">

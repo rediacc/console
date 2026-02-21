@@ -110,7 +110,7 @@ backend_auto() {
 
     # In Codespaces, ci-start.sh skips 'docker compose build' and expects
     # pre-pulled images. Pull them now (web, api, sql from GHCR).
-    # license-server has no GHCR image — compose builds it from source.
+    # account-server has no GHCR image — compose builds it from source.
     if [[ -n "${CODESPACES:-}" || -n "${GITHUB_ACTIONS:-}" ]]; then
         backend_pull_images || {
             log_warn "Image pull failed, will try compose up anyway"

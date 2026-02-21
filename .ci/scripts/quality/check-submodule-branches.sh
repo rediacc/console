@@ -87,9 +87,10 @@ declare -A SUBMODULE_REPOS=(
     ["private/middleware"]="rediacc/middleware"
     ["private/renet"]="rediacc/renet"
     ["private/homebrew-tap"]="rediacc/homebrew-tap"
-    ["private/license-server"]="rediacc/license-server"
+    ["private/account"]="rediacc/account"
     ["private/elite"]="rediacc/elite"
     ["private/sql"]="rediacc/sql"
+    ["private/growth"]="rediacc/growth"
 )
 
 # Patterns for low-effort replies that don't count as real responses
@@ -240,7 +241,8 @@ pr_is_linked() {
     pr_number=$(echo "$pr_url" | grep -oE '[0-9]+$' || echo "")
 
     # Check if URL is in the text
-    if echo "$text" | grep -qF "$pr_url"; then
+    # Use here-string instead of pipe to avoid SIGPIPE with grep -q under pipefail
+    if grep -qF "$pr_url" <<<"$text"; then
         return 0
     fi
 
@@ -248,7 +250,7 @@ pr_is_linked() {
     local repo
     repo=$(echo "$pr_url" | grep -oE 'github\.com/[^/]+/[^/]+' | sed 's|github.com/||')
     if [[ -n "$repo" && -n "$pr_number" ]]; then
-        if echo "$text" | grep -qE "${repo}#${pr_number}|${repo}/pull/${pr_number}"; then
+        if grep -qE "${repo}#${pr_number}|${repo}/pull/${pr_number}" <<<"$text"; then
             return 0
         fi
     fi
@@ -383,7 +385,7 @@ main() {
     fi
 
     # Check each submodule
-    for sm_path in private/middleware private/renet private/homebrew-tap private/license-server private/elite private/sql; do
+    for sm_path in private/middleware private/renet private/homebrew-tap private/account private/elite private/sql private/growth; do
         if [[ ! -d "$sm_path/.git" ]] && [[ ! -f "$sm_path/.git" ]]; then
             log_warn "Submodule $sm_path not initialized - skipping"
             ((warnings++))

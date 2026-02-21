@@ -1,12 +1,16 @@
-name: Submodule Merge Notify
+name: Submodule Merge Readiness Poll
 
-# Event-driven replacement for the 5-minute cron poll.
-# Triggered by repository_dispatch from submodule repos when a PR merges to main.
-# Re-evaluates all open console PRs for submodule merge readiness and updates
-# the quality/submodule-merge-readiness commit status so the merge button
-# unblocks promptly.
+# Lightweight scheduled poll that re-evaluates the quality/submodule-merge-readiness
+# commit status on all open console PRs. Runs every 5 minutes, completes in <30s.
+#
+# Replaces the cross-repo notify-console.yml dispatch pattern which required
+# spreading APP_PRIVATE_KEY across submodule repos (security risk).
+#
+# Also supports manual trigger and repository_dispatch for backward compatibility.
 
 on:
+  schedule:
+    - cron: '*/5 * * * *'  # Every 5 minutes
   repository_dispatch:
     types: [submodule-pr-merged]
   workflow_dispatch:
@@ -16,7 +20,7 @@ permissions:
   statuses: write
 
 jobs:
-  re-evaluate:
+  poll:
     name: Re-evaluate Submodule Merge Readiness
     runs-on: ubuntu-slim
     steps:
@@ -32,13 +36,11 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,middleware,renet,license-server,elite,sql
+          repositories: console,middleware,renet,account,elite,sql,growth,homebrew-tap
 
-      - name: Re-evaluate submodule merge readiness
+      - name: Poll submodule merge readiness
         run: .ci/scripts/quality/poll-submodule-merge-status.sh
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           STATUS_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          DISPATCH_SUBMODULE: ${{ github.event.client_payload.submodule }}
-          DISPATCH_BRANCH: ${{ github.event.client_payload.branch }}

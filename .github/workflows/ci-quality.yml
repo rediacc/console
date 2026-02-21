@@ -13,6 +13,10 @@ on:
       APP_PRIVATE_KEY:
         required: false
 
+permissions:
+  contents: read
+  statuses: write   # Commit status updates
+
 jobs:
   quality-branch:
     name: Branch
@@ -73,7 +77,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           fetch-depth: 0
@@ -103,7 +107,7 @@ jobs:
         with:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           submodules: true
@@ -161,7 +165,7 @@ jobs:
         with:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           submodules: true
@@ -242,7 +246,7 @@ jobs:
         with:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           submodules: true
@@ -274,7 +278,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           submodules: true
@@ -314,16 +318,16 @@ jobs:
 
       - run: .ci/scripts/setup/install-deps.sh
 
-      - name: Check license schema consistency
-        run: .ci/scripts/quality/check-license-schema.sh
+      - name: Check subscription schema consistency
+        run: .ci/scripts/quality/check-subscription-schema.sh
         env:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           GITHUB_HEAD_REF: ${{ github.head_ref }}
           GITHUB_BASE_REF: ${{ github.base_ref }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
 
-  quality-license-server:
-    name: License Server
+  quality-account:
+    name: Account Server
     runs-on: ubuntu-latest  # Requires Docker for integration tests
     if: inputs.is_bot != 'true'
     steps:
@@ -333,7 +337,7 @@ jobs:
         with:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           submodules: true
@@ -347,27 +351,27 @@ jobs:
           cache: true
           cache-dependency-path: private/renet/go.sum
 
-      - name: Build shared package (required for license types)
+      - name: Build shared package (required for subscription types)
         run: |
           npm ci --workspace=@rediacc/shared
           npm run build --workspace=@rediacc/shared
 
       - name: Start RustFS for integration tests
-        working-directory: private/license-server
+        working-directory: private/account
         run: |
           npm ci
           npm run test:setup
 
-      - name: Run license-server integration tests
-        run: .ci/scripts/private/run-license-server.sh test
+      - name: Run account integration tests
+        run: .ci/scripts/private/run-account.sh test
 
       - name: Run Go cross-language signature tests
         working-directory: private/renet
-        run: go test -v ./pkg/license/... -run TestCrossLanguage
+        run: go test -v ./pkg/subscription/... -run TestCrossLanguage
 
       - name: Stop RustFS
         if: always()
-        working-directory: private/license-server
+        working-directory: private/account
         run: npm run test:teardown
 
   quality-sql:
@@ -381,7 +385,7 @@ jobs:
         with:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           submodules: true
@@ -428,7 +432,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci  # Needs pull-requests:read for gh pr list
-          repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           fetch-depth: 0
@@ -467,7 +471,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           fetch-depth: 0  # Full history needed for merge-base --is-ancestor

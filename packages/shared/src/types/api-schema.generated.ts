@@ -2607,7 +2607,7 @@ export interface GetQueueItemsNext_ResultSet0 {
 }
 export interface GetQueueItemsNext_ResultSet1 {
   /** @sqlType nvarchar */
-  organizationLicense: string | null;
+  organizationSubscription: string | null;
   /** @sqlType nvarchar */
   organizationCredential: string | null;
   /** @sqlType nvarchar */

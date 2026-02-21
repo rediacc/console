@@ -20,15 +20,11 @@ on:
           - 'chromium-only'
           - 'all-browsers'
 
-# Required for CI watchdog to cancel/retry workflow on job failures,
-# GitHub Pages deployment, autofix commits, and Docker publishing
+# Minimal default permissions — jobs that need more declare their own
 permissions:
-  actions: write
-  contents: write
+  contents: read
   statuses: write   # For quality/submodule-merge-readiness commit status
-  pages: write
-  id-token: write
-  packages: write  # For GHCR push
+  packages: read    # Most jobs pull from GHCR
 
 # E2E Browser Configuration
 # Default: chromium only. Use workflow_dispatch with "all-browsers" to test all.
@@ -51,6 +47,7 @@ jobs:
     runs-on: ubuntu-latest  # Needs Docker for registry cache check
     if: github.event_name != 'push' || (github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]'))
     outputs:
+      is_fork: ${{ steps.fork-check.outputs.is_fork }}
       is_bot: ${{ steps.init.outputs.is_bot }}
       next_version: ${{ steps.init.outputs.next_version }}
       bump_type: ${{ steps.init.outputs.bump_type }}
@@ -71,13 +68,23 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Detect fork PR
+        id: fork-check
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" && \
+                "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]]; then
+            echo "is_fork=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_fork=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
 
       # PR Validation (PR events only)
       - name: Validate PR
@@ -88,7 +95,7 @@ jobs:
 
       # Login to GHCR for registry cache check
       - name: Login to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -136,6 +143,9 @@ jobs:
     name: CI Watchdog
     needs: [initialize]
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
     timeout-minutes: 180  # 3 hours max
     # Use !cancelled() so force-cancel from newer runs can stop this job
     if: ${{ !cancelled() && needs.initialize.result == 'success' }}
@@ -174,7 +184,8 @@ jobs:
     with:
       is_bot: ${{ needs.initialize.outputs.is_bot }}
       next_version: ${{ needs.initialize.outputs.next_version }}
-    secrets: inherit
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   # ============================================================================
   # REVIEW GATE: Trigger Gemini review, wait for it, check threads & comments
@@ -188,7 +199,7 @@ jobs:
     name: Review Gate
     needs: [initialize, quality]
     runs-on: ubuntu-slim
-    if: needs.initialize.outputs.is_bot != 'true' && github.event_name == 'pull_request'
+    if: needs.initialize.outputs.is_bot != 'true' && github.event_name == 'pull_request' && needs.initialize.outputs.is_fork != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
@@ -228,6 +239,84 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
 
   # ============================================================================
+  # STRIPE SANDBOX: Deploy per-PR account server with sandbox Stripe keys
+  # Seeds products/prices, creates webhook endpoint, deploys Cloudflare Worker
+  # Only runs on pull_request events
+  # ============================================================================
+  stripe-sandbox:
+    name: Stripe Sandbox
+    needs: [initialize, quality, review-gate]
+    runs-on: ubuntu-latest  # Needs Docker for account server
+    if: >-
+      always() &&
+      needs.initialize.outputs.is_fork != 'true' &&
+      github.event_name == 'pull_request' &&
+      needs.initialize.result == 'success' &&
+      needs.quality.result == 'success' &&
+      needs.review-gate.result == 'success'
+    outputs:
+      account_server_url: ${{ steps.deploy.outputs.account_server_url }}
+      stripe_publishable_key: ${{ env.STRIPE_SANDBOX_PUBLISHABLE_KEY }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          sparse-checkout: .github/actions
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: ci
+          repositories: console,account
+
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Initialize account submodule
+        run: git submodule update --init --depth 1 private/account
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared packages
+        run: npm run build:packages
+
+      - name: Install account dependencies
+        run: npm install
+        working-directory: private/account
+
+      - name: Setup Stripe sandbox
+        run: npx tsx scripts/setup-sandbox.ts --pr-number ${{ github.event.pull_request.number }} --skip-webhook
+        working-directory: private/account
+        env:
+          STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
+
+      - name: Start account server
+        id: deploy
+        run: bash .ci/scripts/infra/ci-start-account.sh
+        env:
+          ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
+          ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
+          ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
+
+      - name: Verify account server health
+        run: curl -sf http://localhost:3000/health
+
+      - name: Cleanup
+        if: always()
+        run: bash .ci/scripts/infra/ci-stop.sh
+
+    env:
+      STRIPE_SANDBOX_PUBLISHABLE_KEY: ${{ secrets.STRIPE_SANDBOX_PUBLISHABLE_KEY }}
+
+  # ============================================================================
   # COLUMN 3: BUILD & DOCKER
   # Jobs: build-renet (unified), build-docker, build-desktop (parallel reusable workflows)
   # Dependencies: quality + review-gate -> build-renet -> build-docker, build-cli
@@ -238,17 +327,24 @@ jobs:
   build-renet:
     name: Build (Renet)
     needs: [initialize, quality, review-gate]
+    permissions:
+      contents: read
+      packages: write   # GHCR push
     if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     uses: ./.github/workflows/ci-build-renet.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
       skip_build: ${{ needs.initialize.outputs.bridge_exists == 'true' }}
       bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}
-    secrets: inherit
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   build-docker:
     name: Build (Docker)
     needs: [initialize, quality, review-gate, build-renet]
+    permissions:
+      contents: read
+      packages: write   # GHCR push
     if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     uses: ./.github/workflows/ci-build-docker.yml
     with:
@@ -263,25 +359,34 @@ jobs:
       web_exists: ${{ needs.initialize.outputs.web_exists }}
       cli_tag: ${{ needs.initialize.outputs.cli_tag }}
       cli_exists: ${{ needs.initialize.outputs.cli_exists }}
-    secrets: inherit
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   build-desktop:
     name: Build (Desktop)
     needs: [initialize, quality, review-gate]
+    permissions:
+      contents: read
+      packages: write   # GHCR push
     if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     uses: ./.github/workflows/ci-build-desktop.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
-    secrets: inherit
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   build-cli:
     name: Build (CLI)
     needs: [initialize, quality, review-gate, build-renet]
+    permissions:
+      contents: read
+      packages: write   # GHCR push
     if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     uses: ./.github/workflows/ci-build-cli.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
-    secrets: inherit
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   # ============================================================================
   # COLUMN 3B: DEPLOY DRY-RUN
@@ -290,8 +395,13 @@ jobs:
   # ============================================================================
   deploy-dryrun:
     name: Deploy Dry-Run
-    needs: [initialize, build-docker, build-desktop, build-cli]
-    if: always() && needs.initialize.outputs.is_bot != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success' && needs.build-desktop.result == 'success' && needs.build-cli.result == 'success'
+    needs: [initialize, build-docker, build-desktop, build-cli, stripe-sandbox]
+    permissions:
+      contents: read
+      packages: write      # GHCR pull for validation
+      id-token: write      # OIDC token for Sigstore signing
+      attestations: write  # Store attestations on GitHub
+    if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.outputs.is_bot != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success' && needs.build-desktop.result == 'success' && needs.build-cli.result == 'success' && (needs.stripe-sandbox.result == 'success' || needs.stripe-sandbox.result == 'skipped')
     uses: ./.github/workflows/cd-dryrun.yml
     with:
       dry_run: ${{ github.event_name != 'push' }}
@@ -303,7 +413,10 @@ jobs:
       plugins_tag: ${{ needs.initialize.outputs.plugins_tag }}
       web_tag: ${{ needs.initialize.outputs.web_tag }}
       cli_tag: ${{ needs.initialize.outputs.cli_tag }}
-    secrets: inherit
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+      GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+      GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
   # ============================================================================
   # COLUMN 4: TESTS + INFRA
@@ -313,7 +426,7 @@ jobs:
   tests:
     name: Tests + Infra
     needs: [initialize, build-docker]
-    if: always() && needs.initialize.result == 'success' && needs.build-docker.result == 'success'
+    if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success'
     uses: ./.github/workflows/ct-tests.yml
     with:
       api_tag: ${{ needs.initialize.outputs.api_tag }}
@@ -321,7 +434,10 @@ jobs:
       web_tag: ${{ needs.initialize.outputs.web_tag }}
       e2e_browsers: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.browsers == 'all-browsers' && 'chromium firefox webkit msedge' || 'chromium' }}
       provision_vms: true
-    secrets: inherit
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   # ============================================================================
   # COLUMN 4B: STANDALONE RUN TEST
@@ -331,7 +447,7 @@ jobs:
   standalone-run-test:
     name: Standalone Run
     needs: [initialize, build-docker]
-    if: always() && needs.initialize.result == 'success' && needs.build-docker.result == 'success'
+    if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success'
     uses: ./.github/workflows/standalone-run.yml
     with:
       run-name: 'CI Validation'
@@ -342,7 +458,8 @@ jobs:
       bridge-tag: ${{ needs.initialize.outputs.bridge_tag }}
       ci-mode: true
       vm-os-list: '["none", "ubuntu-24.04", "debian-12"]'
-    secrets: inherit
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   # ============================================================================
   # COLUMN 4C: ELITE RUN TEST
@@ -353,7 +470,7 @@ jobs:
   elite-run-test:
     name: Elite Run
     needs: [initialize, build-docker]
-    if: always() && needs.initialize.result == 'success' && needs.build-docker.result == 'success'
+    if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -367,7 +484,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
 
       - name: Checkout with Submodules
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
@@ -406,9 +523,9 @@ jobs:
         env:
           TAG: ${{ env.TAG }}
           CI_MODE: 'true'
-          LICENSE_SERVER_API_KEY: ${{ secrets.LICENSE_SERVER_API_KEY }}
-          ED25519_PUBLIC_KEY: ${{ secrets.LICENSE_ED25519_PUBLIC_KEY }}
-          LICENSE_SERVER_URL: "https://lic.rediacc.com"
+          ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
+          ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
+          ACCOUNT_SERVER_URL: "https://account.rediacc.com"
         run: .ci/scripts/infra/ci-start-elite.sh
 
       - name: Run Health Check
@@ -436,9 +553,10 @@ jobs:
   deploy-preview:
     name: Deploy Preview
     needs: [initialize, deploy-dryrun, tests, standalone-run-test]
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     if: >-
       always() &&
+      needs.initialize.outputs.is_fork != 'true' &&
       github.event_name == 'pull_request' &&
       needs.initialize.result == 'success' &&
       needs.deploy-dryrun.result == 'success' &&
@@ -446,38 +564,107 @@ jobs:
       needs.standalone-run-test.result == 'success'
     environment:
       name: pr-${{ github.event.pull_request.number }}
-      url: https://pr-${{ github.event.pull_request.number }}.rediacc.pages.dev
+      url: https://pr-${{ github.event.pull_request.number }}.rediacc.workers.dev
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
-          sparse-checkout: .ci/scripts/
+          sparse-checkout: .github/actions
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: ci
+          repositories: console,account
+
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          token: ${{ steps.app-token.outputs.token }}
           submodules: false
+
+      - name: Initialize account submodule
+        run: git submodule update --init --depth 1 private/account
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared packages
+        run: npm run build:packages
+
+      - name: Install account dependencies
+        run: npm install
+        working-directory: private/account
+
+      - name: Install www worker dependencies
+        run: npm install
+        working-directory: workers/www
 
       - name: Download preview pages artifact
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
         with:
           name: preview-pages-${{ github.sha }}
-          path: dist/pages/
+          path: workers/www/dist/
 
       # Inject e2e test videos into pages for documentation embedding
       - name: Inject E2E videos
         env:
           GH_TOKEN: ${{ github.token }}
-        run: .ci/scripts/docs/inject-e2e-videos.sh --run-id "${{ github.run_id }}" --artifact-name "e2e-videos-${{ github.sha }}" --output dist/pages/assets/videos/user-guide/ || true
+        run: .ci/scripts/docs/inject-e2e-videos.sh --run-id "${{ github.run_id }}" --artifact-name "e2e-videos-${{ github.sha }}" --output workers/www/dist/assets/videos/user-guide/ || true
 
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65  # v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist/pages/ --project-name=rediacc --branch=pr-${{ github.event.pull_request.number }}
+      # Create Stripe webhook pointing to pr-N
+      - name: Setup Stripe webhook
+        id: stripe-webhook
+        run: npx tsx scripts/setup-sandbox.ts --pr-number ${PR_NUMBER}
+        working-directory: private/account
+        env:
+          STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
+
+      # Deploy single combined pr-N Worker (static assets + embedded account server)
+      - name: Deploy preview worker
+        run: .ci/scripts/deploy/deploy-www.sh --name "pr-${PR_NUMBER}"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Set preview worker secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          SECRET_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
+          SECRET_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
+          SECRET_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
+          SECRET_STRIPE_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
+          SECRET_S3_ENDPOINT: ${{ secrets.ACCOUNT_S3_ENDPOINT }}
+          SECRET_S3_ACCESS_KEY_ID: ${{ secrets.ACCOUNT_S3_ACCESS_KEY_ID }}
+          SECRET_S3_SECRET_ACCESS_KEY: ${{ secrets.ACCOUNT_S3_SECRET_ACCESS_KEY }}
+          SECRET_STRIPE_WEBHOOK: ${{ steps.stripe-webhook.outputs.stripe_webhook_secret }}
+        run: |
+          WORKER="pr-${PR_NUMBER}"
+          echo "$SECRET_ED25519_PRIVATE_KEY" | npx wrangler secret put ED25519_PRIVATE_KEY --name "$WORKER"
+          echo "$SECRET_ED25519_PUBLIC_KEY" | npx wrangler secret put ED25519_PUBLIC_KEY --name "$WORKER"
+          echo "$SECRET_API_KEY" | npx wrangler secret put API_KEY --name "$WORKER"
+          echo "$SECRET_STRIPE_KEY" | npx wrangler secret put STRIPE_SECRET_KEY --name "$WORKER"
+          echo "$SECRET_S3_ENDPOINT" | npx wrangler secret put S3_ENDPOINT --name "$WORKER"
+          echo "$SECRET_S3_ACCESS_KEY_ID" | npx wrangler secret put S3_ACCESS_KEY_ID --name "$WORKER"
+          echo "$SECRET_S3_SECRET_ACCESS_KEY" | npx wrangler secret put S3_SECRET_ACCESS_KEY --name "$WORKER"
+          echo "$SECRET_STRIPE_WEBHOOK" | npx wrangler secret put STRIPE_WEBHOOK_SECRET --name "$WORKER"
 
       - name: Deployment summary
         run: |
           echo "## Preview Deployment" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**URL:** https://pr-${{ github.event.pull_request.number }}.rediacc.pages.dev" >> $GITHUB_STEP_SUMMARY
-          echo "**PR:** #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** https://pr-${PR_NUMBER}.rediacc.workers.dev" >> $GITHUB_STEP_SUMMARY
+          echo "**Console:** https://pr-${PR_NUMBER}.rediacc.workers.dev/console/" >> $GITHUB_STEP_SUMMARY
+          echo "**Account API:** https://pr-${PR_NUMBER}.rediacc.workers.dev/account/api/v1/health" >> $GITHUB_STEP_SUMMARY
+          echo "**PR:** #${PR_NUMBER}" >> $GITHUB_STEP_SUMMARY
 
   # ============================================================================
   # CI COMPLETE - Gate for merge queue
@@ -486,7 +673,7 @@ jobs:
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, review-gate, build-docker, build-desktop, build-cli, deploy-dryrun, tests, standalone-run-test, elite-run-test, deploy-preview]
+    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-desktop, build-cli, deploy-dryrun, tests, standalone-run-test, elite-run-test, deploy-preview]
     if: always() && !cancelled()
     steps:
       - name: Check all jobs passed
@@ -503,21 +690,53 @@ jobs:
             DEPLOY_PREVIEW_OK="true"
           fi
 
+          # stripe-sandbox can be skipped for non-PR events or fork PRs
+          STRIPE_SANDBOX_OK="false"
+          if [[ "${{ needs.stripe-sandbox.result }}" == "success" ]] || [[ "${{ needs.stripe-sandbox.result }}" == "skipped" ]]; then
+            STRIPE_SANDBOX_OK="true"
+          fi
+
+          # tests can be skipped for fork PRs
+          TESTS_OK="false"
+          if [[ "${{ needs.tests.result }}" == "success" ]] || [[ "${{ needs.tests.result }}" == "skipped" ]]; then
+            TESTS_OK="true"
+          fi
+
+          # standalone-run-test can be skipped for fork PRs
+          STANDALONE_RUN_OK="false"
+          if [[ "${{ needs.standalone-run-test.result }}" == "success" ]] || [[ "${{ needs.standalone-run-test.result }}" == "skipped" ]]; then
+            STANDALONE_RUN_OK="true"
+          fi
+
+          # elite-run-test can be skipped for fork PRs
+          ELITE_RUN_OK="false"
+          if [[ "${{ needs.elite-run-test.result }}" == "success" ]] || [[ "${{ needs.elite-run-test.result }}" == "skipped" ]]; then
+            ELITE_RUN_OK="true"
+          fi
+
+          # deploy-dryrun can be skipped for fork PRs
+          DEPLOY_DRYRUN_OK="false"
+          if [[ "${{ needs.deploy-dryrun.result }}" == "success" ]] || [[ "${{ needs.deploy-dryrun.result }}" == "skipped" ]]; then
+            DEPLOY_DRYRUN_OK="true"
+          fi
+
           if [[ "${{ needs.initialize.result }}" != "success" ]] || \
              [[ "${{ needs.quality.result }}" != "success" ]] || \
              [[ "$REVIEW_GATE_OK" != "true" ]] || \
+             [[ "$STRIPE_SANDBOX_OK" != "true" ]] || \
              [[ "${{ needs.build-docker.result }}" != "success" ]] || \
              [[ "${{ needs.build-desktop.result }}" != "success" ]] || \
              [[ "${{ needs.build-cli.result }}" != "success" ]] || \
-             [[ "${{ needs.deploy-dryrun.result }}" != "success" ]] || \
-             [[ "${{ needs.tests.result }}" != "success" ]] || \
-             [[ "${{ needs.standalone-run-test.result }}" != "success" ]] || \
-             [[ "${{ needs.elite-run-test.result }}" != "success" ]] || \
+             [[ "$DEPLOY_DRYRUN_OK" != "true" ]] || \
+             [[ "$TESTS_OK" != "true" ]] || \
+             [[ "$STANDALONE_RUN_OK" != "true" ]] || \
+             [[ "$ELITE_RUN_OK" != "true" ]] || \
              [[ "$DEPLOY_PREVIEW_OK" != "true" ]]; then
             echo "One or more jobs failed:"
             echo "  initialize: ${{ needs.initialize.result }}"
             echo "  quality: ${{ needs.quality.result }}"
             echo "  review-gate: ${{ needs.review-gate.result }}"
+            echo "  stripe-sandbox: ${{ needs.stripe-sandbox.result }}"
             echo "  build-docker: ${{ needs.build-docker.result }}"
             echo "  build-desktop: ${{ needs.build-desktop.result }}"
             echo "  build-cli: ${{ needs.build-cli.result }}"

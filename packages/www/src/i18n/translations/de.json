@@ -1014,6 +1014,10 @@
           "moneyBack": "14-tägige Geld-zurück-Garantie",
           "noContracts": "Keine langfristigen Verträge"
         },
+        "billingToggle": {
+          "monthly": "Monatlich",
+          "annual": "Jährlich"
+        },
         "keyBenefits": "Hauptvorteile",
         "learnMore": "Mehr erfahren",
         "limitedOffer": "Begrenztes Einführungsangebot",
@@ -1663,7 +1667,11 @@
         "monthOrYear": "pro Monat oder {{price}} pro Jahr",
         "popular": "Am beliebtesten",
         "startingAt": "*Beginnt um",
-        "whatsIncluded": "Was ist enthalten:"
+        "whatsIncluded": "Was ist enthalten:",
+        "billingToggle": {
+          "monthly": "Monatlich",
+          "annual": "Jährlich"
+        }
       }
     },
     "privacyPolicy": {

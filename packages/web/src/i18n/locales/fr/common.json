@@ -134,7 +134,7 @@
         "title": "Utilisation des Ressources"
       },
       "subscriptionPlan": {
-        "allActiveLicenses": "TOUTES LES LICENCES ACTIVES",
+        "allActiveSubscriptions": "TOUS LES ABONNEMENTS ACTIFS",
         "currentSubscription": "ABONNEMENT ACTUEL",
         "day": "jour",
         "days": "jours",

@@ -134,7 +134,7 @@
         "title": "Kaynak Kullanımı"
       },
       "subscriptionPlan": {
-        "allActiveLicenses": "TÜM AKTİF LİSANSLAR",
+        "allActiveSubscriptions": "TÜM AKTİF ABONELİKLER",
         "currentSubscription": "GÜNCEL ABONELİK",
         "day": "gün",
         "days": "gün",

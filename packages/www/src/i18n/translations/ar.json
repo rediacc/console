@@ -1014,6 +1014,10 @@
           "moneyBack": "ضمان استرداد الأموال لمدة 14 يومًا",
           "noContracts": "لا عقود طويلة الأجل"
         },
+        "billingToggle": {
+          "monthly": "شهري",
+          "annual": "سنوي"
+        },
         "keyBenefits": "الفوائد الرئيسية",
         "learnMore": "اعرف المزيد",
         "limitedOffer": "عرض إطلاق محدود",
@@ -1663,7 +1667,11 @@
         "monthOrYear": "شهريًا أو {{price}} سنويًا",
         "popular": "الأكثر شعبية",
         "startingAt": "* ابتداء من",
-        "whatsIncluded": "ما هو مدرج:"
+        "whatsIncluded": "ما هو مدرج:",
+        "billingToggle": {
+          "monthly": "شهري",
+          "annual": "سنوي"
+        }
       }
     },
     "privacyPolicy": {

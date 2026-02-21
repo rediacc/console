@@ -7,7 +7,7 @@
 #   .ci/scripts/infra/ci-start-elite.sh
 #
 # Required environment variables (from GitHub secrets):
-#   LICENSE_SERVER_API_KEY     - Production license server API key
+#   ACCOUNT_SERVER_API_KEY     - Production account server API key
 #   ED25519_PUBLIC_KEY         - Production Ed25519 public key
 #
 # Outputs (for GitHub Actions):
@@ -23,10 +23,10 @@ ELITE_DIR="$CONSOLE_ROOT/private/elite"
 echo "Starting Rediacc Elite CI services..."
 
 # =============================================================================
-# VALIDATE LICENSE SERVER CREDENTIALS (before ci-env.sh may overwrite them)
+# VALIDATE ACCOUNT SERVER CREDENTIALS (before ci-env.sh may overwrite them)
 # =============================================================================
-if [[ -z "${LICENSE_SERVER_API_KEY:-}" ]]; then
-    echo "ERROR: LICENSE_SERVER_API_KEY is not set"
+if [[ -z "${ACCOUNT_SERVER_API_KEY:-}" ]]; then
+    echo "ERROR: ACCOUNT_SERVER_API_KEY is not set"
     echo "This must be configured as a GitHub secret"
     exit 1
 fi
@@ -38,7 +38,7 @@ fi
 
 # Save production credentials — ci-env.sh would overwrite ED25519_PUBLIC_KEY
 # because it regenerates the key pair when ED25519_PRIVATE_KEY is unset
-_PROD_LICENSE_SERVER_API_KEY="$LICENSE_SERVER_API_KEY"
+_PROD_ACCOUNT_SERVER_API_KEY="$ACCOUNT_SERVER_API_KEY"
 _PROD_ED25519_PUBLIC_KEY="$ED25519_PUBLIC_KEY"
 
 # =============================================================================
@@ -52,11 +52,11 @@ source "$SCRIPT_DIR/ci-env.sh"
 # =============================================================================
 # OVERRIDE FOR ELITE + CI
 # =============================================================================
-# Restore production license credentials (overwritten by ci-env.sh key generation)
-export LICENSE_SERVER_API_KEY="$_PROD_LICENSE_SERVER_API_KEY"
+# Restore production account credentials (overwritten by ci-env.sh key generation)
+export ACCOUNT_SERVER_API_KEY="$_PROD_ACCOUNT_SERVER_API_KEY"
 export ED25519_PUBLIC_KEY="$_PROD_ED25519_PUBLIC_KEY"
-# Elite uses the production license server (not a local one)
-export LICENSE_SERVER_URL="${LICENSE_SERVER_URL:-https://lic.rediacc.com}"
+# Elite uses the production account server (not a local one)
+export ACCOUNT_SERVER_URL="${ACCOUNT_SERVER_URL:-https://account.rediacc.com}"
 
 # CI-specific overrides
 export CI_MODE="true"
@@ -96,8 +96,8 @@ echo "Writing .env to $ELITE_DIR..."
     echo "SYSTEM_DEFAULT_REGION_NAME=${SYSTEM_DEFAULT_REGION_NAME}"
     echo "SYSTEM_DEFAULT_TEAM_NAME=${SYSTEM_DEFAULT_TEAM_NAME}"
     echo "CI_MODE=${CI_MODE}"
-    echo "LICENSE_SERVER_URL=${LICENSE_SERVER_URL}"
-    echo "LICENSE_SERVER_API_KEY=${LICENSE_SERVER_API_KEY}"
+    echo "ACCOUNT_SERVER_URL=${ACCOUNT_SERVER_URL}"
+    echo "ACCOUNT_SERVER_API_KEY=${ACCOUNT_SERVER_API_KEY}"
     echo "ED25519_PUBLIC_KEY=${ED25519_PUBLIC_KEY}"
     echo "SQL_BASE_IMAGE=mcr.microsoft.com/mssql/server:2022-CU21-ubuntu-22.04"
     echo "HTTP_PORT=${HTTP_PORT}"
@@ -211,7 +211,7 @@ wait_for_web() {
     return 1
 }
 
-# Execute health checks in sequence (no license server — elite uses production)
+# Execute health checks in sequence (no account server — elite uses production)
 wait_for_sql || {
     echo "Elite startup failed: SQL Server"
     docker compose -f docker-compose.yml -f docker-compose.standalone.yml logs sql

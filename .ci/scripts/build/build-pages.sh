@@ -1,9 +1,9 @@
 #!/bin/bash
-# Assemble GitHub Pages deployment package
+# Assemble pages deployment package
 # Usage: build-pages.sh [--output DIR]
 #
 # Assembles www, web (console), and json builds into a single directory
-# suitable for GitHub Pages deployment.
+# suitable for Cloudflare Pages deployment.
 #
 # Options:
 #   --output DIR   Output directory (default: dist)
@@ -78,13 +78,13 @@ fi
 # Note: apt/ and rpm/ directories are added by build-pkg-repo.sh
 # directly into the output directory after this script runs
 
-# Add CNAME for custom domain
-log_step "Adding CNAME..."
-echo "www.rediacc.com" >"$OUTPUT_DIR/CNAME"
-
-# Add .nojekyll to prevent Jekyll processing
-log_step "Adding .nojekyll..."
-touch "$OUTPUT_DIR/.nojekyll"
+# Copy assembled pages to www worker static assets directory
+REPO_ROOT="$(get_repo_root)"
+WORKER_DIR="$REPO_ROOT/workers/www"
+log_step "Copying pages to www worker static assets..."
+rm -rf "$WORKER_DIR/dist"
+cp -r "$OUTPUT_DIR" "$WORKER_DIR/dist"
+log_info "Copied pages to $WORKER_DIR/dist/"
 
 # Display summary
 log_info "Pages package ready at $OUTPUT_DIR/"

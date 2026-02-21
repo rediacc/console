@@ -134,7 +134,7 @@
         "title": "Ressourcennutzung"
       },
       "subscriptionPlan": {
-        "allActiveLicenses": "ALLE AKTIVEN LIZENZEN",
+        "allActiveSubscriptions": "ALLE AKTIVEN ABONNEMENTS",
         "currentSubscription": "AKTUELLES ABONNEMENT",
         "day": "Tag",
         "days": "Tage",

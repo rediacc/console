@@ -1,10 +1,10 @@
 #!/bin/bash
-# Run license-server CI if available
+# Run account CI if available
 #
-# Usage: .ci/scripts/private/run-license-server.sh [stage]
+# Usage: .ci/scripts/private/run-account.sh [stage]
 #   Stages: quality, test, deploy (default: quality)
 #
-# This is a thin wrapper that checks if the license-server directory exists
+# This is a thin wrapper that checks if the account directory exists
 # and runs the appropriate npm scripts. Lint, format, and typecheck are
 # handled by root-level quality commands (check:lint, check:format,
 # check:types).
@@ -15,15 +15,15 @@ source "$SCRIPT_DIR/../lib/common.sh"
 
 STAGE="${1:-quality}"
 REPO_ROOT="$(get_repo_root)"
-LICENSE_SERVER_DIR="$REPO_ROOT/private/license-server"
+ACCOUNT_DIR="$REPO_ROOT/private/account"
 
-# Check if license-server directory is available
-if [[ ! -f "$LICENSE_SERVER_DIR/package.json" ]]; then
-    log_warn "License server not available, skipping"
+# Check if account directory is available
+if [[ ! -f "$ACCOUNT_DIR/package.json" ]]; then
+    log_warn "Account server not available, skipping"
     exit 0
 fi
 
-cd "$LICENSE_SERVER_DIR"
+cd "$ACCOUNT_DIR"
 
 # Install deps if not already installed (e.g. by install-deps.sh)
 if [[ ! -d "node_modules" ]]; then
@@ -32,12 +32,17 @@ fi
 
 case "$STAGE" in
     quality | test)
-        log_step "Running license-server tests..."
+        log_step "Running account tests..."
         npm run test
         ;;
     deploy)
-        log_step "Deploying license-server to Cloudflare..."
-        npx wrangler deploy
+        log_step "Deploying account to Cloudflare..."
+        DEPLOY_ARGS=""
+        if [[ -n "${WORKER_NAME:-}" ]]; then
+            DEPLOY_ARGS="--name $WORKER_NAME"
+            log_info "Using worker name override: $WORKER_NAME"
+        fi
+        npx wrangler deploy $DEPLOY_ARGS
         ;;
     *)
         log_error "Unknown stage: $STAGE"

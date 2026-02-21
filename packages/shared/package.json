@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "clean": "rimraf dist",
-    "generate:license-schema": "tsx scripts/generate-license-schema.ts",
+    "generate:subscription-schema": "tsx scripts/generate-subscription-schema.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -37,6 +37,14 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./subscription": {
+      "types": "./dist/subscription/index.d.ts",
+      "default": "./dist/subscription/index.js"
+    },
+    "./subscription/*": {
+      "types": "./dist/subscription/*.d.ts",
+      "default": "./dist/subscription/*.js"
     },
     "./queue": {
       "types": "./dist/queue/index.d.ts",

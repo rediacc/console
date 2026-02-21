@@ -985,6 +985,10 @@
           "moneyBack": "14 天退款保证",
           "noContracts": "无长期合同"
         },
+        "billingToggle": {
+          "monthly": "月付",
+          "annual": "年付"
+        },
         "keyBenefits": "主要优点",
         "learnMore": "了解更多",
         "limitedOffer": "限量发售",
@@ -1623,7 +1627,11 @@
         "monthOrYear": "每月或每年 {{price}}",
         "popular": "最受欢迎",
         "startingAt": "*开始于",
-        "whatsIncluded": "包含内容："
+        "whatsIncluded": "包含内容：",
+        "billingToggle": {
+          "monthly": "月付",
+          "annual": "年付"
+        }
       }
     },
     "privacyPolicy": {

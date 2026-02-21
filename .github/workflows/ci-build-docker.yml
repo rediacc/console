@@ -40,6 +40,10 @@ on:
       APP_PRIVATE_KEY:
         required: false
 
+permissions:
+  contents: read
+  packages: write   # GHCR push
+
 jobs:
   build-cli:
     name: CLI
@@ -121,6 +125,7 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
       - run: .ci/scripts/build/build-www.sh
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
         with:
@@ -158,13 +163,13 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
 
       # Build validation (dry-run)
       - name: Validate plugin images
         run: .ci/scripts/build/build-plugins.sh --dry-run
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -198,7 +203,7 @@ jobs:
         with:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           submodules: true
@@ -219,9 +224,9 @@ jobs:
           name: cli-npm-${{ github.sha }}
           path: cli-npm/
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -278,9 +283,9 @@ jobs:
           name: cli-bundle-${{ github.sha }}
           path: bundle/
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -349,7 +354,7 @@ jobs:
         with:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           submodules: true
@@ -453,7 +458,7 @@ jobs:
         with:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           submodules: true
@@ -536,7 +541,7 @@ jobs:
         with:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           submodules: true
@@ -552,9 +557,9 @@ jobs:
           name: middleware-publish-arm64-${{ github.sha }}
           path: publish/arm64/
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -614,7 +619,7 @@ jobs:
         with:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,license-server,sql,elite,homebrew-tap
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
           submodules: true
@@ -642,9 +647,9 @@ jobs:
       - name: List binaries
         run: ls -la binaries/
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -694,9 +699,9 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -709,7 +714,7 @@ jobs:
           echo "date_tag=${DATE_TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8  # v6
         with:
           context: .devcontainer/
           file: .devcontainer/Dockerfile
@@ -726,9 +731,9 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -741,7 +746,7 @@ jobs:
           echo "date_tag=${DATE_TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8  # v6
         with:
           context: .devcontainer/
           file: .devcontainer/Dockerfile
@@ -757,9 +762,9 @@ jobs:
     needs: [build-devcontainer-amd64, build-devcontainer-arm64]
     if: github.event_name == 'push'
     steps:
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}

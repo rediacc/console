@@ -134,7 +134,7 @@
         "title": "استخدام الموارد"
       },
       "subscriptionPlan": {
-        "allActiveLicenses": "جميع الرخص النشطة",
+        "allActiveSubscriptions": "جميع الاشتراكات النشطة",
         "currentSubscription": "الاشتراك الحالي",
         "day": "يوم",
         "days": "أيام",

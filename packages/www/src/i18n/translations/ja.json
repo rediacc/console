@@ -1018,6 +1018,10 @@
           "moneyBack": "14日間の返金保証",
           "noContracts": "長期契約はありません"
         },
+        "billingToggle": {
+          "monthly": "月額",
+          "annual": "年額"
+        },
         "keyBenefits": "主な利点",
         "learnMore": "もっと詳しく知る",
         "limitedOffer": "限定発売オファー",
@@ -1669,7 +1673,11 @@
         "monthOrYear": "月額または年間 {{price}}",
         "popular": "最も人気のある",
         "startingAt": "*開始時間",
-        "whatsIncluded": "含まれるもの:"
+        "whatsIncluded": "含まれるもの:",
+        "billingToggle": {
+          "monthly": "月額",
+          "annual": "年額"
+        }
       }
     },
     "privacyPolicy": {

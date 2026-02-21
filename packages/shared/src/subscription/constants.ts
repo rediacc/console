@@ -1,11 +1,18 @@
 /**
- * License Constants
+ * Subscription Constants
  *
  * Single source of truth for plan resources and features.
- * All components (license-server, middleware, renet, CLI) should use these values.
+ * All components (account-server, middleware, renet, CLI) should use these values.
  */
 
-import type { FeatureFlags, PlanCode, ResourceLimits } from './types';
+import type {
+  BillingPeriod,
+  FeatureFlags,
+  PlanCode,
+  PlanMetadata,
+  PlanPricing,
+  ResourceLimits,
+} from './types';
 
 /**
  * Resource limits by plan.
@@ -109,16 +116,16 @@ export const PLAN_FEATURES: Record<PlanCode, FeatureFlags> = {
 } as const;
 
 /**
- * License configuration constants.
+ * Subscription configuration constants.
  */
-export const LICENSE_CONFIG = {
-  /** How often clients should check in with license server (hours) */
+export const SUBSCRIPTION_CONFIG = {
+  /** How often clients should check in with account server (hours) */
   checkInIntervalHours: 24,
   /** Days of grace period before degradation */
   gracePeriodDays: 3,
   /** Plan to degrade to when grace period expires */
   degradedPlan: 'COMMUNITY' as PlanCode,
-  /** Current license schema version */
+  /** Current subscription schema version */
   schemaVersion: 1,
 } as const;
 
@@ -209,4 +216,110 @@ export function isValidPlanCode(code: string): code is PlanCode {
  */
 export function comparePlans(a: PlanCode, b: PlanCode): number {
   return PLAN_ORDER.indexOf(a) - PLAN_ORDER.indexOf(b);
+}
+
+// =============================================================================
+// PRICING
+// =============================================================================
+
+/**
+ * Pricing by plan. Amounts in cents (USD).
+ * Annual prices reflect a 10-month rate (2 months free).
+ */
+export const PLAN_PRICING: Record<PlanCode, PlanPricing> = {
+  COMMUNITY: {
+    monthlyPriceCents: 0,
+    annualPriceCents: 0,
+    currency: 'usd',
+  },
+  PROFESSIONAL: {
+    monthlyPriceCents: 34_900,
+    annualPriceCents: 349_000,
+    currency: 'usd',
+  },
+  BUSINESS: {
+    monthlyPriceCents: 69_900,
+    annualPriceCents: 699_000,
+    currency: 'usd',
+  },
+  ENTERPRISE: {
+    monthlyPriceCents: 210_000,
+    annualPriceCents: 2_100_000,
+    currency: 'usd',
+  },
+} as const;
+
+/**
+ * Display metadata by plan.
+ */
+export const PLAN_METADATA: Record<PlanCode, PlanMetadata> = {
+  COMMUNITY: {
+    displayName: 'Community',
+    description: 'Free for individuals and small projects',
+    paid: false,
+    featured: true,
+  },
+  PROFESSIONAL: {
+    displayName: 'Professional',
+    description: 'For growing teams that need more power and flexibility',
+    paid: true,
+    featured: false,
+  },
+  BUSINESS: {
+    displayName: 'Business',
+    description: 'For organizations that need advanced management and compliance',
+    paid: true,
+    featured: false,
+  },
+  ENTERPRISE: {
+    displayName: 'Enterprise',
+    description: 'For large organizations with custom infrastructure requirements',
+    paid: true,
+    featured: false,
+  },
+} as const;
+
+/**
+ * Get the Stripe lookup key for a plan and billing period.
+ * E.g. "professional_monthly", "business_annual"
+ */
+export function getStripeLookupKey(planCode: PlanCode, period: BillingPeriod): string {
+  return `${planCode.toLowerCase()}_${period}`;
+}
+
+/**
+ * Get pricing for a plan code.
+ * Returns COMMUNITY pricing if plan code is invalid.
+ */
+export function getPlanPricing(planCode: string): PlanPricing {
+  if (planCode in PLAN_PRICING) {
+    return PLAN_PRICING[planCode as PlanCode];
+  }
+  return PLAN_PRICING.COMMUNITY;
+}
+
+/**
+ * Get metadata for a plan code.
+ * Returns COMMUNITY metadata if plan code is invalid.
+ */
+export function getPlanMetadata(planCode: string): PlanMetadata {
+  if (planCode in PLAN_METADATA) {
+    return PLAN_METADATA[planCode as PlanCode];
+  }
+  return PLAN_METADATA.COMMUNITY;
+}
+
+/**
+ * Get the price in cents for a plan and billing period.
+ */
+export function getDisplayPrice(planCode: PlanCode, period: BillingPeriod): number {
+  const pricing = PLAN_PRICING[planCode];
+  return period === 'annual' ? pricing.annualPriceCents : pricing.monthlyPriceCents;
+}
+
+/**
+ * Get all paid plan codes.
+ */
+export function getPaidPlans(): PlanCode[] {
+  return PLAN_ORDER.filter((code) => PLAN_METADATA[code].paid);
 }

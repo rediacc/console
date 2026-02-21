@@ -1018,6 +1018,10 @@
           "moneyBack": "Garantía de devolución de dinero de 14 días",
           "noContracts": "Sin contratos a largo plazo"
         },
+        "billingToggle": {
+          "monthly": "Mensual",
+          "annual": "Anual"
+        },
         "keyBenefits": "Beneficios clave",
         "learnMore": "Más información",
         "limitedOffer": "Oferta de lanzamiento limitada",
@@ -1667,7 +1671,11 @@
         "monthOrYear": "por mes o {{price}} por año",
         "popular": "mas popular",
         "startingAt": "*A partir de",
-        "whatsIncluded": "Qué incluye:"
+        "whatsIncluded": "Qué incluye:",
+        "billingToggle": {
+          "monthly": "Mensual",
+          "annual": "Anual"
+        }
       }
     },
     "privacyPolicy": {

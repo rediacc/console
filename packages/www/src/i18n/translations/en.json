@@ -134,7 +134,7 @@
     "titleHighlight": " Break Nothing.",
     "subtitle": "Your entire production stack, cloned instantly. Databases included.",
     "cta": {
-      "contactUs": "Create Account",
+      "contactUs": "View All Install Options",
       "learnMore": "Learn More",
       "bookDemo": "Book Demo",
       "freeBadge": "FREE FOREVER • No credit card",
@@ -564,7 +564,7 @@
           "priceNote": "*Starting at",
           "features": [
             "Everything in Business +",
-            "Unlimited repositories, 1 TB+ each",
+            "Unlimited repositories, 2 TB+ each",
             "60 concurrent jobs, 100,000 jobs/month",
             "Custom SLA with guaranteed restore times",
             "Dedicated infrastructure tenant",
@@ -861,7 +861,7 @@
         "foreverFree": "Forever free",
         "cta": {
           "community": {
-            "primary": "Start Free",
+            "primary": "Try Rediacc",
             "secondary": "Learn More",
             "note": "No credit card required"
           },
@@ -888,6 +888,10 @@
           "moneyBack": "14-Day Money Payback Guarantee",
           "cancelAnytime": "Cancel anytime",
           "noContracts": "No long-term contracts"
+        },
+        "billingToggle": {
+          "monthly": "Monthly",
+          "annual": "Annual"
         }
       },
       "technicalSummary": {
@@ -947,7 +951,7 @@
           "enterprise": {
             "activeJobs": "60",
             "jobsPerMonth": "100,000",
-            "repoSize": "1 TB+",
+            "repoSize": "2 TB+",
             "repositories": "Unlimited",
             "machines": "Unlimited",
             "usersTeams": "Unlimited"
@@ -3112,7 +3116,7 @@
           },
           "enterprise": {
             "repositories": "Unlimited",
-            "repoSize": "1 TB+",
+            "repoSize": "2 TB+",
             "jobTimeout": "96+ hours",
             "activeJobs": "60",
             "reservedJobs": "5+ reserved",

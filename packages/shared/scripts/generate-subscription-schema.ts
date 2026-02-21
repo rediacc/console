@@ -1,13 +1,13 @@
 #!/usr/bin/env npx tsx
 /**
- * License Schema Generator
+ * Subscription Schema Generator
  *
- * Generates a JSON schema snapshot from TypeScript license types.
+ * Generates a JSON schema snapshot from TypeScript subscription types.
  * This snapshot is used by Go tests to validate schema consistency.
  *
  * Usage:
- *   npx tsx packages/shared/scripts/generate-license-schema.ts
- *   npm run generate:license-schema
+ *   npx tsx packages/shared/scripts/generate-subscription-schema.ts
+ *   npm run generate:subscription-schema
  */
 
 import * as fs from 'node:fs';
@@ -17,16 +17,16 @@ import { fileURLToPath } from 'node:url';
 // Get directory paths
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const licenseDir = path.join(__dirname, '../src/license');
-const outputPath = path.join(licenseDir, 'schema.generated.json');
+const subscriptionDir = path.join(__dirname, '../src/subscription');
+const outputPath = path.join(subscriptionDir, 'schema.generated.json');
 
-// Import license constants dynamically to get actual values
+// Import subscription constants dynamically to get actual values
 import {
-  LICENSE_CONFIG,
+  SUBSCRIPTION_CONFIG,
   PLAN_FEATURES,
   PLAN_ORDER,
   PLAN_RESOURCES,
-} from '../src/license/constants.js';
+} from '../src/subscription/constants.js';
 
 /**
  * Schema definition types
@@ -53,7 +53,7 @@ interface SchemaConstants {
   planFeatures: Record<string, Record<string, boolean>>;
 }
 
-interface LicenseSchema {
+interface SubscriptionSchema {
   version: number;
   generatedAt: string;
   types: Record<string, TypeDef>;
@@ -63,8 +63,8 @@ interface LicenseSchema {
 /**
  * Define the schema based on TypeScript types
  */
-function generateSchema(): LicenseSchema {
-  const schema: LicenseSchema = {
+function generateSchema(): SubscriptionSchema {
+  const schema: SubscriptionSchema = {
     version: 1,
     generatedAt: new Date().toISOString(),
     types: {
@@ -72,7 +72,7 @@ function generateSchema(): LicenseSchema {
         kind: 'enum',
         values: [...PLAN_ORDER],
       },
-      LicenseStatus: {
+      SubscriptionStatus: {
         kind: 'enum',
         values: ['ACTIVE', 'INACTIVE', 'EXPIRED', 'SUSPENDED', 'GRACE'],
       },
@@ -104,15 +104,15 @@ function generateSchema(): LicenseSchema {
           dedicatedAccount: { type: 'boolean', jsonKey: 'dedicatedAccount' },
         },
       },
-      LicenseData: {
+      SubscriptionData: {
         kind: 'struct',
         fields: {
           version: { type: 'number', jsonKey: 'version' },
-          licenseId: { type: 'string', jsonKey: 'licenseId' },
+          subscriptionId: { type: 'string', jsonKey: 'subscriptionId' },
           organizationId: { type: 'number', jsonKey: 'organizationId' },
           customerId: { type: 'string', jsonKey: 'customerId' },
           planCode: { type: 'string', jsonKey: 'planCode', nestedType: 'PlanCode' },
-          status: { type: 'string', jsonKey: 'status', nestedType: 'LicenseStatus' },
+          status: { type: 'string', jsonKey: 'status', nestedType: 'SubscriptionStatus' },
           issuedAt: { type: 'string', jsonKey: 'issuedAt' },
           expiresAt: { type: 'string', jsonKey: 'expiresAt' },
           lastCheckIn: { type: 'string', jsonKey: 'lastCheckIn' },
@@ -123,7 +123,7 @@ function generateSchema(): LicenseSchema {
           activationCount: { type: 'number', jsonKey: 'activationCount' },
         },
       },
-      SignedLicenseBlob: {
+      SignedSubscriptionBlob: {
         kind: 'struct',
         fields: {
           payload: { type: 'string', jsonKey: 'payload' },
@@ -131,40 +131,40 @@ function generateSchema(): LicenseSchema {
           publicKeyId: { type: 'string', jsonKey: 'publicKeyId' },
         },
       },
-      CachedLicenseData: {
+      CachedSubscriptionData: {
         kind: 'struct',
         fields: {
           planCode: { type: 'string', jsonKey: 'planCode', nestedType: 'PlanCode' },
-          status: { type: 'string', jsonKey: 'status', nestedType: 'LicenseStatus' },
+          status: { type: 'string', jsonKey: 'status', nestedType: 'SubscriptionStatus' },
           resources: { type: 'object', jsonKey: 'resources', nestedType: 'ResourceLimits' },
           features: { type: 'object', jsonKey: 'features', nestedType: 'FeatureFlags' },
           expiresAt: { type: 'string', jsonKey: 'expiresAt' },
           gracePeriodEnds: { type: 'string', jsonKey: 'gracePeriodEnds' },
         },
       },
-      OrganizationLicense: {
+      OrganizationSubscription: {
         kind: 'struct',
         fields: {
           signedBlob: {
             type: 'object',
             jsonKey: 'signedBlob',
-            nestedType: 'SignedLicenseBlob',
+            nestedType: 'SignedSubscriptionBlob',
             optional: true,
           },
           cachedData: {
             type: 'object',
             jsonKey: 'cachedData',
-            nestedType: 'CachedLicenseData',
+            nestedType: 'CachedSubscriptionData',
             optional: true,
           },
         },
       },
     },
     constants: {
-      gracePeriodDays: LICENSE_CONFIG.gracePeriodDays,
-      degradedPlan: LICENSE_CONFIG.degradedPlan,
-      schemaVersion: LICENSE_CONFIG.schemaVersion,
-      checkInIntervalHours: LICENSE_CONFIG.checkInIntervalHours,
+      gracePeriodDays: SUBSCRIPTION_CONFIG.gracePeriodDays,
+      degradedPlan: SUBSCRIPTION_CONFIG.degradedPlan,
+      schemaVersion: SUBSCRIPTION_CONFIG.schemaVersion,
+      checkInIntervalHours: SUBSCRIPTION_CONFIG.checkInIntervalHours,
       planResources: PLAN_RESOURCES as unknown as Record<string, Record<string, number>>,
       planFeatures: PLAN_FEATURES as unknown as Record<string, Record<string, boolean>>,
     },
@@ -186,7 +186,7 @@ function main(): void {
   const json = JSON.stringify(outputSchema, null, 2);
   fs.writeFileSync(outputPath, json + '\n');
 
-  console.log(`✓ Generated license schema: ${outputPath}`);
+  console.log(`✓ Generated subscription schema: ${outputPath}`);
   console.log(`  Types: ${Object.keys(schema.types).join(', ')}`);
   console.log(
     `  Constants: gracePeriodDays=${schema.constants.gracePeriodDays}, degradedPlan=${schema.constants.degradedPlan}`

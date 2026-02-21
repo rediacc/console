@@ -5,7 +5,7 @@
       "kind": "enum",
       "values": ["COMMUNITY", "PROFESSIONAL", "BUSINESS", "ENTERPRISE"]
     },
-    "LicenseStatus": {
+    "SubscriptionStatus": {
       "kind": "enum",
       "values": ["ACTIVE", "INACTIVE", "EXPIRED", "SUSPENDED", "GRACE"]
     },
@@ -91,16 +91,16 @@
         }
       }
     },
-    "LicenseData": {
+    "SubscriptionData": {
       "kind": "struct",
       "fields": {
         "version": {
           "type": "number",
           "jsonKey": "version"
         },
-        "licenseId": {
+        "subscriptionId": {
           "type": "string",
-          "jsonKey": "licenseId"
+          "jsonKey": "subscriptionId"
         },
         "organizationId": {
           "type": "number",
@@ -118,7 +118,7 @@
         "status": {
           "type": "string",
           "jsonKey": "status",
-          "nestedType": "LicenseStatus"
+          "nestedType": "SubscriptionStatus"
         },
         "issuedAt": {
           "type": "string",
@@ -156,7 +156,7 @@
         }
       }
     },
-    "SignedLicenseBlob": {
+    "SignedSubscriptionBlob": {
       "kind": "struct",
       "fields": {
         "payload": {
@@ -173,7 +173,7 @@
         }
       }
     },
-    "CachedLicenseData": {
+    "CachedSubscriptionData": {
       "kind": "struct",
       "fields": {
         "planCode": {
@@ -184,7 +184,7 @@
         "status": {
           "type": "string",
           "jsonKey": "status",
-          "nestedType": "LicenseStatus"
+          "nestedType": "SubscriptionStatus"
         },
         "resources": {
           "type": "object",
@@ -206,19 +206,19 @@
         }
       }
     },
-    "OrganizationLicense": {
+    "OrganizationSubscription": {
       "kind": "struct",
       "fields": {
         "signedBlob": {
           "type": "object",
           "jsonKey": "signedBlob",
-          "nestedType": "SignedLicenseBlob",
+          "nestedType": "SignedSubscriptionBlob",
           "optional": true
         },
         "cachedData": {
           "type": "object",
           "jsonKey": "cachedData",
-          "nestedType": "CachedLicenseData",
+          "nestedType": "CachedSubscriptionData",
           "optional": true
         }
       }
