@@ -859,7 +859,7 @@ export const GetQueueItemsNext_ResultSet0Schema = z.object({
   nextRequestToken: z.string().nullish(),
 });
 export const GetQueueItemsNext_ResultSet1Schema = z.object({
-  organizationLicense: z.string().nullish(),
+  organizationSubscription: z.string().nullish(),
   organizationCredential: z.string().nullish(),
   bridgeCredential: z.string().nullish(),
 });
