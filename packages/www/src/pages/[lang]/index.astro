@@ -23,12 +23,11 @@ const priceFormatter = new Intl.NumberFormat(lang === 'en' ? 'en-US' : lang, {
 });
 const formatPrice = (amount: number) => priceFormatter.format(amount);
 
-const calculateSavings = (monthlyPrice: number) => {
-  const yearlyPrice = monthlyPrice * 10;
+const calculateSavings = (monthlyPrice: number, yearlyPrice: number) => {
   const fullPrice = monthlyPrice * 12;
   const savings = fullPrice - yearlyPrice;
   const roundedSavings = Math.ceil(savings / 100) * 100;
-  const percentage = Math.round(((fullPrice - yearlyPrice) / fullPrice) * 100);
+  const percentage = Math.round((savings / fullPrice) * 100);
   return `Save $${roundedSavings.toLocaleString()} (${percentage}% off)`;
 };
 
@@ -96,7 +95,7 @@ const plans = PLAN_ORDER.map((code) => ({
                     <span class="cf-price" data-price>{formatPrice(plan.monthly)}</span>
                     <span class="cf-price-period" data-period-label>/mo</span>
                   </div>
-                  <div class="cf-savings-badge savings-badge" data-savings>{calculateSavings(plan.monthly)}</div>
+                  <div class="cf-savings-badge savings-badge" data-savings>{calculateSavings(plan.monthly, plan.yearly)}</div>
                 </>
               )}
             </div>
@@ -124,7 +123,7 @@ const plans = PLAN_ORDER.map((code) => ({
                 rel="noopener noreferrer"
                 class="cf-cta-btn"
               >
-                {t('pages.pricing.ui.cta.professional.primary')}
+                {t('pages.pricing.ui.cta.enterprise.primary')}
               </a>
             ) : (
               <button
@@ -132,7 +131,7 @@ const plans = PLAN_ORDER.map((code) => ({
                 class="cf-cta-btn"
                 data-checkout={plan.id}
               >
-                {t('pages.pricing.ui.cta.professional.primary')}
+                {t(`pages.pricing.ui.cta.${plan.id}.primary`)}
               </button>
             )}
           </div>
@@ -188,8 +187,8 @@ const plans = PLAN_ORDER.map((code) => ({
 
       function updatePricing(period: string) {
         cards.forEach((card) => {
-          const monthly = parseInt((card as HTMLElement).dataset.monthly!, 10);
-          const yearly = parseInt((card as HTMLElement).dataset.yearly!, 10);
+          const monthly = Number((card as HTMLElement).dataset.monthly);
+          const yearly = Number((card as HTMLElement).dataset.yearly);
           if (monthly === 0) return;
 
           const priceEl = card.querySelector('[data-price]');
@@ -226,6 +225,15 @@ const plans = PLAN_ORDER.map((code) => ({
       // Same-origin: www worker proxies /account/api/* to account-server via Service Binding
       const accountServerUrl = `${window.location.origin}/account`;
 
+      // Message overlay close handler
+      const messageClose = document.getElementById('message-close');
+      const messageOverlay = document.getElementById('message-overlay');
+      if (messageClose && messageOverlay) {
+        messageClose.addEventListener('click', () => {
+          messageOverlay.setAttribute('aria-hidden', 'true');
+        });
+      }
+
       checkoutButtons.forEach((btn) => {
         const originalText = btn.textContent;
         btn.addEventListener('click', async () => {
@@ -255,6 +263,14 @@ const plans = PLAN_ORDER.map((code) => ({
           } catch {
             btn.disabled = false;
             btn.textContent = originalText;
+            const overlay = document.getElementById('message-overlay');
+            const titleEl = document.querySelector('#message-title strong');
+            const textEl = document.getElementById('message-text');
+            if (overlay && titleEl && textEl) {
+              titleEl.textContent = 'Checkout Error';
+              textEl.textContent = 'Something went wrong. Please try again or contact support.';
+              overlay.setAttribute('aria-hidden', 'false');
+            }
           }
         });
       });

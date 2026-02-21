@@ -189,3 +189,51 @@ const savings = showSavings && monthlyPrice > 0 ? calculateSavings(monthlyPrice)
     </ul>
   </div>
 </div>
+
+<script>
+  // Self-contained checkout handler for data-checkout buttons.
+  // Astro deduplicates this script — it runs once regardless of how many PricingCards are rendered.
+  document.addEventListener('DOMContentLoaded', () => {
+    const buttons = document.querySelectorAll<HTMLButtonElement>('[data-checkout]');
+    if (!buttons.length) return;
+
+    const accountServerUrl = `${window.location.origin}/account`;
+
+    buttons.forEach((btn) => {
+      // Skip if already handled (e.g., index.astro has its own handler)
+      if (btn.dataset.checkoutBound) return;
+      btn.dataset.checkoutBound = 'true';
+
+      const originalText = btn.textContent;
+      btn.addEventListener('click', async () => {
+        const planId = btn.dataset.checkout!;
+        const activeToggle = document.querySelector('.billing-toggle-btn.active') as HTMLElement | null;
+        const billingPeriod = activeToggle?.dataset.period === 'annual' ? 'annual' : 'monthly';
+
+        btn.disabled = true;
+        btn.textContent = '...';
+
+        try {
+          const response = await fetch(`${accountServerUrl}/api/v1/checkout`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              planCode: planId.toUpperCase(),
+              billingPeriod,
+              successUrl: `${window.location.origin}/${document.documentElement.lang}/checkout/success`,
+              cancelUrl: window.location.href,
+            }),
+          });
+
+          if (!response.ok) throw new Error('Checkout failed');
+
+          const { url } = await response.json();
+          if (url) window.location.href = url;
+        } catch {
+          btn.disabled = false;
+          btn.textContent = originalText;
+        }
+      });
+    });
+  });
+</script>

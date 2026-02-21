@@ -7,7 +7,9 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
-    // Proxy /account/api/* to account-server as-is (no path rewriting)
+    // Proxy /account/api/* to account-server without path rewriting.
+    // The account server's Hono routes are mounted at /account/api/v1 (not /api/v1),
+    // so the full path must be preserved through the service binding.
     if (url.pathname.startsWith('/account/api/') || url.pathname === '/account/api') {
       return env.ACCOUNT_SERVER.fetch(request);
     }
