@@ -64,20 +64,20 @@ jobs:
         run: sudo $RENET_BINARY ops host setup
 
       - name: Build CLI
-        run: npm run build -w @rediacc/cli
+        run: npm run build -w @rediacc/cli && npm run build:bundle -w @rediacc/cli
 
       - name: "Test: rdc ops check"
-        run: node packages/cli/dist/index.js ops check -o json
+        run: node packages/cli/dist/cli-bundle.cjs ops check -o json
 
       - name: "Test: rdc ops up --basic"
         run: |
-          sudo -E node packages/cli/dist/index.js ops up \
+          sudo -E node packages/cli/dist/cli-bundle.cjs ops up \
             --basic --skip-orchestration -o json
 
       - name: "Test: rdc ops status"
         id: status
         run: |
-          STATUS=$(sudo -E node packages/cli/dist/index.js ops status -o json)
+          STATUS=$(sudo -E node packages/cli/dist/cli-bundle.cjs ops status -o json)
           echo "$STATUS"
           BRIDGE_IP=$(echo "$STATUS" | jq -r '.vms[0].ip')
           echo "bridge_ip=$BRIDGE_IP" >> "$GITHUB_OUTPUT"
@@ -102,12 +102,12 @@ jobs:
 
       - name: "Test: rdc ops down"
         if: always()
-        run: sudo -E node packages/cli/dist/index.js ops down -o json || true
+        run: sudo -E node packages/cli/dist/cli-bundle.cjs ops down -o json || true
 
       - name: "Verify: cleanup"
         if: always()
         run: |
-          STATUS=$(sudo -E node packages/cli/dist/index.js ops status -o json 2>/dev/null || echo '{"vms":[]}')
+          STATUS=$(sudo -E node packages/cli/dist/cli-bundle.cjs ops status -o json 2>/dev/null || echo '{"vms":[]}')
           echo "$STATUS" | jq -e '.vms | length == 0' || echo "Warning: VMs still present after cleanup"
 
   # ── Platform validation (no KVM/HVF, build + check only) ──────
@@ -183,11 +183,11 @@ jobs:
 
       - name: Build CLI
         shell: bash
-        run: npm run build -w @rediacc/cli
+        run: npm run build -w @rediacc/cli && npm run build:bundle -w @rediacc/cli
 
       - name: "Test: rdc ops check"
         shell: bash
-        run: node packages/cli/dist/index.js ops check -o json
+        run: node packages/cli/dist/cli-bundle.cjs ops check -o json
 
       - name: "Test: renet binary runs"
         shell: bash
