@@ -28,13 +28,22 @@ SEA_PLATFORM=""
 SEA_ARCH=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --platform) SEA_PLATFORM="$2"; shift 2 ;;
-        --arch)     SEA_ARCH="$2";     shift 2 ;;
+        --platform)
+            SEA_PLATFORM="$2"
+            shift 2
+            ;;
+        --arch)
+            SEA_ARCH="$2"
+            shift 2
+            ;;
         -h | --help)
             echo "Usage: $0 --platform <linux|mac|win> --arch <x64|arm64>"
             exit 0
             ;;
-        *) log_error "Unknown option: $1"; exit 1 ;;
+        *)
+            log_error "Unknown option: $1"
+            exit 1
+            ;;
     esac
 done
 
@@ -52,9 +61,12 @@ RENET_BIN_DIR="$REPO_ROOT/private/bin"
 # CI: x64/arm64 -> Renet: amd64/arm64
 map_arch() {
     case "$1" in
-        x64)   echo "amd64" ;;
+        x64) echo "amd64" ;;
         arm64) echo "arm64" ;;
-        *)     log_error "Unknown arch: $1"; exit 1 ;;
+        *)
+            log_error "Unknown arch: $1"
+            exit 1
+            ;;
     esac
 }
 
