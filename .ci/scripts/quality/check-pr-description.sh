@@ -134,9 +134,9 @@ if [[ -n "$SHORT_SHA" ]]; then
         COMMENT_BODY="/gemini review
 
 <!-- triggered by CI for commit ${SHORT_SHA} (description stale) -->"
-        gh pr comment "$PR_NUMBER" --body "$COMMENT_BODY" 2>/dev/null \
-            && log_info "Triggered Gemini review for commit $SHORT_SHA" \
-            || log_warn "Failed to trigger Gemini review"
+        gh pr comment "$PR_NUMBER" --body "$COMMENT_BODY" 2>/dev/null &&
+            log_info "Triggered Gemini review for commit $SHORT_SHA" ||
+            log_warn "Failed to trigger Gemini review"
     else
         log_info "Gemini review already triggered for commit $SHORT_SHA"
     fi
