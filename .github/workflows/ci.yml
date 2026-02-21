@@ -246,7 +246,7 @@ jobs:
   stripe-sandbox:
     name: Stripe Sandbox
     needs: [initialize, quality, review-gate]
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest  # Needs Docker for account server
     if: >-
       always() &&
       needs.initialize.outputs.is_fork != 'true' &&
