@@ -315,4 +315,6 @@ jobs:
         if: ${{ !inputs.dry_run }}
         uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be  # v2
         with:
-          subject-path: dist/pages/**/*
+          subject-path: |
+            dist/pages/apt/dists/**/*
+            dist/pages/rpm/repodata/**/*
