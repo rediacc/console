@@ -118,7 +118,30 @@ if [[ "$AGE_SECONDS" -lt "$THRESHOLD_SECONDS" ]]; then
     exit 0
 fi
 
-# Description is stale
+# Description is stale — trigger Gemini review before failing.
+# review-gate (which normally triggers Gemini) won't run because it
+# depends on quality passing. Trigger here so review happens in parallel
+# with the developer updating the description.
+LATEST_SHA=$(gh pr view "$PR_NUMBER" --json headRefOid --jq '.headRefOid' 2>/dev/null || echo "")
+SHORT_SHA="${LATEST_SHA:0:7}"
+
+if [[ -n "$SHORT_SHA" ]]; then
+    TRIGGER_MARKER="triggered by CI for commit ${SHORT_SHA}"
+    ALL_COMMENTS=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+        --jq '.[].body' 2>/dev/null || echo "")
+
+    if ! echo "$ALL_COMMENTS" | grep -q "$TRIGGER_MARKER"; then
+        COMMENT_BODY="/gemini review
+
+<!-- triggered by CI for commit ${SHORT_SHA} (description stale) -->"
+        gh pr comment "$PR_NUMBER" --body "$COMMENT_BODY" 2>/dev/null \
+            && log_info "Triggered Gemini review for commit $SHORT_SHA" \
+            || log_warn "Failed to trigger Gemini review"
+    else
+        log_info "Gemini review already triggered for commit $SHORT_SHA"
+    fi
+fi
+
 echo ""
 echo "============================================================"
 echo "  PR Description May Be Stale"
