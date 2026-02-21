@@ -37,7 +37,7 @@ if [[ -n "${ARG_NAME:-}" ]]; then
     # eliminating the need for a separate account-pr-N worker.
     log_step "Deploying combined preview worker: $ARG_NAME"
 
-    cat > wrangler.preview.toml << TOML
+    cat >wrangler.preview.toml <<TOML
 name = "$ARG_NAME"
 main = "src/preview.ts"
 compatibility_date = "2025-01-01"
