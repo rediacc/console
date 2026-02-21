@@ -48,7 +48,7 @@ directory = "./dist"
 run_worker_first = ["/account", "/account/*"]
 
 [vars]
-S3_BUCKET = "subscriptions"
+S3_BUCKET = "subscriptions-preview"
 S3_REGION = "auto"
 TOML
 
