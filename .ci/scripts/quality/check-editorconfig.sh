@@ -7,7 +7,7 @@
 #   3. No CRLF line endings in tracked text files
 #
 # Respects .gitignore and only checks git-tracked files.
-# Skips binary files, vendored directories, and submodules.
+# Skips binary files. Includes submodule files.
 #
 # Usage: check-editorconfig.sh
 
@@ -18,27 +18,14 @@ source "$SCRIPT_DIR/../lib/common.sh"
 REPO_ROOT="$(get_repo_root)"
 cd "$REPO_ROOT"
 
-log_step "Checking editorconfig compliance across repository..."
+log_step "Checking editorconfig compliance across repository (including submodules)..."
 
 ERRORS=0
 MISSING_NEWLINE=()
 HAS_BOM=()
 HAS_CRLF=()
 
-# Get all tracked files, excluding submodules
-SUBMODULE_PATHS=()
-while IFS= read -r path; do
-    [[ -z "$path" ]] && continue
-    SUBMODULE_PATHS+=("$path")
-done < <(git config --file .gitmodules --get-regexp '^submodule\..*\.path$' 2>/dev/null | awk '{print $2}')
-
-# Build grep exclude pattern for submodules
-EXCLUDE_ARGS=()
-for sub in "${SUBMODULE_PATHS[@]}"; do
-    EXCLUDE_ARGS+=(":!${sub}")
-done
-
-# Get tracked text files (git ls-files with eol check)
+# Get tracked text files from repo and all submodules
 while IFS= read -r file; do
     [[ -z "$file" ]] && continue
     [[ ! -f "$file" ]] && continue
@@ -66,7 +53,7 @@ while IFS= read -r file; do
         HAS_CRLF+=("$file")
     fi
 
-done < <(git ls-files -- . "${EXCLUDE_ARGS[@]}")
+done < <(git ls-files --recurse-submodules)
 
 # Report results
 if [[ ${#MISSING_NEWLINE[@]} -gt 0 ]]; then
