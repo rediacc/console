@@ -39,12 +39,7 @@ export function registerOpsSetupCommand(ops: Command, _program: Command): void {
 
           // Delegate to renet ops host setup (no sudo on Windows — run elevated)
           const renetPath = await opsExecutorService.getRenetPath();
-          const exitCode = await spawnInteractive(renetPath, [
-            'ops',
-            'host',
-            'setup',
-            ...flags,
-          ]);
+          const exitCode = await spawnInteractive(renetPath, ['ops', 'host', 'setup', ...flags]);
 
           if (exitCode !== 0) {
             outputService.error(t('commands.ops.setup.failed'));
