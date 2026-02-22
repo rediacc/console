@@ -259,6 +259,10 @@ jobs:
             name: macos-arm64
             platform: darwin
             arch: arm64
+          - runner: windows-latest
+            name: windows-amd64
+            platform: windows
+            arch: amd64
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
@@ -285,8 +289,10 @@ jobs:
         run: |
           PLATFORM=${{ matrix.platform }}
           ARCH=${{ matrix.arch == 'arm64' && 'arm64' || 'amd64' }}
-          RENET_BIN="$(pwd)/private/bin/renet-${PLATFORM}-${ARCH}"
-          chmod +x "$RENET_BIN"
+          EXT=""
+          if [ "$PLATFORM" = "windows" ]; then EXT=".exe"; fi
+          RENET_BIN="$(pwd)/private/bin/renet-${PLATFORM}-${ARCH}${EXT}"
+          chmod +x "$RENET_BIN" 2>/dev/null || true
           echo "RENET_BINARY=$RENET_BIN" >> "$GITHUB_ENV"
 
       - name: Build CLI
@@ -323,3 +329,12 @@ jobs:
         run: |
           qemu-system-aarch64 --version || qemu-system-x86_64 --version
           qemu-img --version
+
+      - name: "Test: renet ops host check --json (Windows)"
+        if: matrix.platform == 'windows'
+        shell: bash
+        run: |
+          OUTPUT=$($RENET_BINARY ops host check --json)
+          echo "$OUTPUT"
+          echo "$OUTPUT" | jq -e '.platform == "windows"'
+          echo "$OUTPUT" | jq -e '.backend == "hyperv"'
