@@ -420,7 +420,7 @@ else
         if command -v docker &>/dev/null; then
             docker run --rm -v "$arch_work:/repo:ro" -v "$APK_DIR/$arch:/out" \
                 alpine:latest sh -c \
-                "apk index -o /out/APKINDEX.tar.gz /repo/*.apk"
+                "apk index --allow-untrusted -o /out/APKINDEX.tar.gz /repo/*.apk"
         else
             log_warn "Docker not available, cannot generate APKINDEX for $arch"
         fi
