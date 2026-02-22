@@ -1,0 +1,315 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import { LANGUAGES } from '../../../i18n/types';
+import type { Language } from '../../../i18n/types';
+import { renderCheatSheet } from '../../../utils/marp';
+import { generateTOCFromHtml } from '../../../utils/sidebar-behavior';
+// Vite ?raw import embeds file content as a string literal at build time,
+// avoiding readFileSync path resolution issues in Astro's SSG pipeline.
+import markdownSource from '../../../marp/rdc-cheat-sheet.marp.md?raw';
+// Import raw theme CSS for direct injection (bypasses Marp's theme scoping
+// which wraps rules under `div.marpit > section .marp-output ...`, the wrong
+// nesting order for our document layout).
+import themeCss from '../../../styles/marp-cheatsheet.css?raw';
+
+export function getStaticPaths() {
+  return LANGUAGES.map((lang) => ({
+    params: { lang },
+  }));
+}
+
+const { lang } = Astro.params as { lang: Language };
+
+// Render through Marp.  Only `html` is used; `css` is discarded because
+// Marp scopes theme rules to `div.marpit > section .marp-output` which is
+// the inverse of our document layout.  We inject themeCss directly instead.
+const { html: marpHtml } = renderCheatSheet(markdownSource);
+
+// Generate TOC from the rendered HTML (h2 headings become sidebar TOC entries)
+const tocItems = generateTOCFromHtml(marpHtml, { minLevel: 2, maxLevel: 2 });
+
+const frontmatter = {
+  title: 'RDC CLI Cheat Sheet',
+  description: 'Quick reference for all rdc commands — contexts, repos, machines, sync, containers, and more.',
+  category: 'Guides',
+};
+---
+
+<DocsLayout
+  frontmatter={frontmatter}
+  url={`/${lang}/docs/rdc-cheat-sheet`}
+  currentLang={lang}
+  tocItems={tocItems}
+  tocTrackingSelector=".marp-output section h2"
+>
+  {/*
+    Inject theme CSS directly from raw source.  Marp's theme processor wraps
+    all theme rules under `div.marpit > section .marp-output ...` (inverse of
+    our DOM), so marpCss cannot be used.  The raw theme CSS uses `.marp-output
+    section { ... }` selectors that match our layout correctly.
+  */}
+  <style set:html={themeCss} />
+
+  <div class="print-page-header" aria-hidden="true">RDC CLI Cheat Sheet</div>
+
+  <div class="marp-output">
+    <div class="marp-grid" set:html={marpHtml} />
+  </div>
+</DocsLayout>
+
+<style>
+  /* ------------------------------------------------------------------ */
+  /* Print-only page header — repeats on every printed page              */
+  /* ------------------------------------------------------------------ */
+  .print-page-header {
+    display: none;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Override DocsLayout constraints for full-width cheat sheet           */
+  /* ------------------------------------------------------------------ */
+
+  /*
+    .docs-article has max-width: var(--container-md) which clips the 3-col
+    grid.  Override it and the article-content wrapper to use full width.
+  */
+  :global(.docs-article) {
+    max-width: none !important;
+  }
+
+  :global(.article-content) .marp-output {
+    max-width: none;
+    width: 100%;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Grid layout — convert Marp sections into a cheatsheet card grid     */
+  /* ------------------------------------------------------------------ */
+
+  .marp-grid :global(div.marpit) {
+    display: contents;
+  }
+
+  .marp-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  /* First section: branding header — full-bleed, docked left to right */
+  .marp-grid :global(section:first-child) {
+    border-radius: 0;
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    width: calc(100% + 1rem);
+  }
+
+  /* Reset Marp's base slide CSS: fixed dimensions, absolute positioning,
+     and container-type:size (which forces height to 0). */
+  .marp-grid :global(section) {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    position: static !important;
+    container-type: normal !important;
+    box-sizing: border-box;
+  }
+
+  .marp-grid :global(section > *) {
+    position: static !important;
+  }
+
+  /* Prevent long code lines from overflowing card boundaries */
+  .marp-grid :global(pre) {
+    overflow: hidden !important;
+  }
+
+  .marp-grid :global(pre code) {
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+  }
+
+  /* Scroll margin for TOC anchor links */
+  .marp-grid :global(section h2) {
+    scroll-margin-top: calc(var(--nav-height, 60px) + 1rem);
+  }
+
+  /* Already 1 column — no responsive breakpoints needed */
+
+  /* ------------------------------------------------------------------ */
+  /* Print — A4 landscape, 3-column grid with row-aligned cards          */
+  /* ------------------------------------------------------------------ */
+  @page {
+    size: A4 landscape;
+    margin: 4mm;
+  }
+
+  @media print {
+    /* Repeated page header — position:fixed repeats on every printed page */
+    .print-page-header {
+      display: block;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 10px;
+      line-height: 10px;
+      font-family: var(--cs-font, 'Inter', sans-serif);
+      font-size: 7px;
+      font-weight: 600;
+      color: #0e7490;
+      text-align: center;
+      border-bottom: 0.5px solid #ccc;
+      background: #fff;
+      z-index: 9999;
+    }
+
+    /* Strip ALL layout chrome — full page for content */
+    :global(html, body) {
+      margin: 0 !important;
+      padding: 0 !important;
+      font-size: 6.5px !important;
+      line-height: 1.15 !important;
+      overflow: visible !important;
+    }
+
+    :global(.site-footer, .footer, [class*="footer"]) {
+      display: none !important;
+      height: 0 !important;
+    }
+
+    :global(header, nav, aside, footer,
+            .docs-shell-top, .docs-header-row,
+            .article-header, .fallback-notice,
+            .sidebar-base, .toc-sidebar) {
+      display: none !important;
+    }
+
+    :global(.docs-shell) {
+      max-width: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    :global(.docs-layout) {
+      display: block !important;
+    }
+
+    :global(.docs-article) {
+      max-width: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    :global(.docs-content) {
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    :global(.article-content) {
+      max-width: none !important;
+      width: 100% !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    :global(.article-content) .marp-output {
+      margin: 0;
+      padding-top: 12px;
+    }
+
+    /* 2-column CSS columns for print */
+    .marp-grid {
+      display: block !important;
+      columns: 2;
+      column-gap: 3px;
+      column-fill: balance;
+    }
+
+    /* Header spans full width above columns */
+    .marp-grid :global(section:first-child) {
+      column-span: all;
+      border-radius: 0;
+      margin: 0 0 2px 0;
+      padding: 2px 6px !important;
+      width: 100%;
+    }
+
+    .marp-grid :global(section) {
+      display: inline-block;
+      width: 100%;
+      padding: 2px 4px !important;
+      margin: 0 0 2px 0;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .marp-grid :global(section:last-child) {
+      margin-bottom: 0;
+    }
+
+    /* Compact all typography for print */
+    .marp-grid :global(h2) {
+      font-size: 7px !important;
+      margin-bottom: 1px !important;
+      padding-bottom: 1px !important;
+    }
+
+    .marp-grid :global(h3) {
+      font-size: 6.5px !important;
+      margin-top: 1px !important;
+      margin-bottom: 1px !important;
+    }
+
+    .marp-grid :global(p) {
+      margin-bottom: 1px !important;
+      font-size: 6.5px !important;
+    }
+
+    .marp-grid :global(ul, ol) {
+      margin: 0 0 1px 0 !important;
+      padding-left: 7px !important;
+    }
+
+    .marp-grid :global(li) {
+      margin-bottom: 0 !important;
+      font-size: 6.5px !important;
+    }
+
+    .marp-grid :global(pre) {
+      padding: 1px 3px !important;
+      margin: 1px 0 !important;
+    }
+
+    .marp-grid :global(pre code) {
+      font-size: 6px !important;
+      line-height: 1.15 !important;
+    }
+
+    .marp-grid :global(code) {
+      font-size: 6px !important;
+      padding: 0 1px !important;
+    }
+
+    .marp-grid :global(table) {
+      font-size: 6px !important;
+    }
+
+    .marp-grid :global(th, td) {
+      padding: 1px 2px !important;
+      font-size: 6px !important;
+    }
+
+    .marp-grid :global(blockquote) {
+      margin: 1px 0 !important;
+      padding: 1px 3px !important;
+    }
+
+    .marp-grid :global(blockquote p) {
+      font-size: 6px !important;
+    }
+  }
+</style>

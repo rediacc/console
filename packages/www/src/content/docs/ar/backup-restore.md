@@ -1,9 +1,12 @@
 ---
-title: "النسخ الاحتياطي والاستعادة"
-description: "نسخ المستودعات المشفرة احتياطياً إلى وحدات تخزين خارجية، والاستعادة من النسخ الاحتياطية، وجدولة النسخ الاحتياطي التلقائي."
-category: "Guides"
+title: النسخ الاحتياطي والاستعادة
+description: >-
+  نسخ المستودعات المشفرة احتياطياً إلى وحدات تخزين خارجية، والاستعادة من النسخ
+  الاحتياطية، وجدولة النسخ الاحتياطي التلقائي.
+category: Guides
 order: 7
 language: ar
+sourceHash: 3d127a0a186d7487
 ---
 
 # النسخ الاحتياطي والاستعادة
@@ -48,6 +51,7 @@ rdc backup push my-app -m server-1 --to my-storage
 | `--tag <tag>` | وسم النسخة الاحتياطية |
 | `-w, --watch` | مراقبة تقدم العملية |
 | `--debug` | تفعيل الإخراج التفصيلي |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## سحب / استعادة نسخة احتياطية
 
@@ -64,6 +68,7 @@ rdc backup pull my-app -m server-1 --from my-storage
 | `--force` | استبدال النسخة الاحتياطية المحلية الموجودة |
 | `-w, --watch` | مراقبة تقدم العملية |
 | `--debug` | تفعيل الإخراج التفصيلي |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## عرض النسخ الاحتياطية
 
@@ -96,6 +101,7 @@ rdc backup sync --from my-storage -m server-1
 | `--repo <name>` | مزامنة مستودعات محددة (قابل للتكرار) |
 | `--override` | استبدال النسخ الاحتياطية الموجودة |
 | `--debug` | تفعيل الإخراج التفصيلي |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## النسخ الاحتياطي المجدول
 

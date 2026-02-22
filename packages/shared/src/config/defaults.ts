@@ -126,6 +126,9 @@ export const PROTOCOL_DEFAULTS = {
 export const PLATFORM_DEFAULTS = {
   /** Default Windows system directory */
   WINDOWS_SYSTEM: 'C:\\Windows',
+
+  /** Default renet build platform (Node process.platform maps to this) */
+  DEFAULT_RENET: 'linux',
 } as const;
 
 /**

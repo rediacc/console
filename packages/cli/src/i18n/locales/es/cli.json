@@ -532,7 +532,8 @@
         "renetRsync": "rsync integrado",
         "renetVersion": "Versión",
         "seaMode": "Modo SEA",
-        "sshKey": "Clave SSH"
+        "sshKey": "Clave SSH",
+        "opsPrereqs": "Requisitos de OPS"
       },
       "description": "Diagnosticar el entorno CLI y la integración de renet",
       "devMode": "no (modo desarrollo)",
@@ -542,11 +543,14 @@
       "notConfigured": "no configurado",
       "notInstalled": "no instalado",
       "seaActive": "sí (Single Executable Application)",
+      "opsNotSupported": "no compatible con {{platform}}",
+      "opsSkipped": "renet no disponible (omitido)",
       "sections": {
         "authentication": "Autenticación",
         "configuration": "Configuración",
         "environment": "Entorno",
-        "renet": "Renet"
+        "renet": "Renet",
+        "virtualization": "Virtualización"
       },
       "status": {
         "fail": "ERROR",
@@ -675,6 +679,49 @@
         "systemSection": "\nSistema:",
         "systemUptime": "  Tiempo de actividad: {{uptime}}",
         "totalRepos": "  Repositorios Totales: {{count}}"
+      }
+    },
+    "ops": {
+      "check": {
+        "allPassed": "Todos los prerequisitos satisfechos",
+        "description": "Verificar prerequisitos de virtualización",
+        "hasMissing": "{{count}} prerequisito(s) faltante(s)",
+        "localFallback": "(usando comprobaciones locales — renet no disponible)",
+        "title": "Verificación de prerequisitos OPS"
+      },
+      "description": "Operaciones experimentales de VM (aprovisionar, gestionar, destruir)",
+      "down": {
+        "completed": "Clúster de VM destruido exitosamente",
+        "description": "Destruir clúster de VM",
+        "failed": "La destrucción del clúster de VM falló",
+        "starting": "Destruyendo clúster de VM..."
+      },
+      "setup": {
+        "brewFailed": "La instalación de Homebrew falló",
+        "completed": "Prerequisitos instalados exitosamente",
+        "description": "Instalar prerequisitos de virtualización",
+        "detecting": "Detectando plataforma...",
+        "failed": "La instalación falló",
+        "linux": "Instalando prerequisitos de KVM mediante renet...",
+        "macos": "Instalando QEMU mediante Homebrew...",
+        "unsupported": "Plataforma no soportada: {{platform}}",
+        "windows": "Configurando prerequisitos de Hyper-V..."
+      },
+      "ssh": {
+        "connecting": "Conectando a VM {{id}}...",
+        "description": "Conectar por SSH a una VM",
+        "vmNotFound": "VM con ID {{id}} no encontrada o no está en ejecución"
+      },
+      "status": {
+        "description": "Mostrar estado del clúster de VM",
+        "fetching": "Obteniendo estado del clúster de VM...",
+        "noVMs": "No se encontraron VMs"
+      },
+      "up": {
+        "completed": "Clúster de VM aprovisionado exitosamente",
+        "description": "Aprovisionar clúster de VM localmente",
+        "failed": "El aprovisionamiento del clúster de VM falló",
+        "starting": "Iniciando aprovisionamiento del clúster de VM..."
       }
     },
     "organization": {
@@ -1418,6 +1465,7 @@
       "context": "Gestión de Contexto",
       "doctor": "Diagnóstico del sistema",
       "machine": "Gestión de Máquinas",
+      "ops": "Operaciones experimentales de VM",
       "organization": "Gestión de Organización",
       "permission": "Gestión de Permisos",
       "protocol": "Manejador de Protocolo",
@@ -1616,6 +1664,14 @@
     "mirrorUpload": "Modo espejo - eliminar archivos remotos no presentes localmente",
     "newPasswordNonInteractive": "Nueva contraseña (modo no interactivo)",
     "newWindow": "Abrir en nueva ventana de VS Code",
+    "opsBackend": "Backend de virtualización (kvm|qemu, detección automática)",
+    "opsBasic": "Clúster mínimo (puente + 1 trabajador)",
+    "opsForce": "Forzar reinicio de todas las VM",
+    "opsLite": "Omitir aprovisionamiento de VM (solo estado)",
+    "opsOS": "Sistema operativo de VM (ej., ubuntu-24.04, debian-12)",
+    "opsParallel": "Crear VM en paralelo",
+    "opsSkipOrchestration": "Omitir orquestación del clúster",
+    "opsSSHUser": "Nombre de usuario SSH para conexión a VM",
     "organization": "Nombre de organización",
     "output": "Formato de salida (table|json|yaml|csv)",
     "outputFormat": "Formato de salida (json)",

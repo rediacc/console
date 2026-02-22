@@ -1,17 +1,17 @@
 ---
 title: Servisler
 description: >-
-  Rediaccfile, servis agi, baslatma/durdurma ve otomatik baslatma ile
-  konteynerlestirilmis servisleri dagitin ve yonetin.
+  Rediaccfile, servis ağı, başlatma/durdurma ve otomatik başlatma ile
+  konteynerleştirilmiş servisleri dağıtın ve yönetin.
 category: Guides
 order: 5
 language: tr
-sourceHash: 8add6342eea14e41
+sourceHash: c4048b13799a7767
 ---
 
 # Servisler
 
-Hangi araci kullanacaginizdan emin degilseniz [rdc vs renet](/tr/docs/rdc-vs-renet) sayfasina bakin.
+Hangi aracı kullanacağınızdan emin değilseniz [rdc vs renet](/tr/docs/rdc-vs-renet) sayfasına bakın.
 
 Bu sayfa, konteynerleştirilmiş servislerin nasıl dağıtılacağını ve yönetileceğini kapsar: Rediaccfile'lar, servis ağı, başlatma/durdurma, toplu işlemler ve otomatik başlatma.
 
@@ -136,6 +136,13 @@ Servis adlarını **slot** numaralarıyla eşler. Her slot, deponun alt ağı i�
 
 Bir servisin IP'si, deponun ağ kimliğinden ve servisin slotundan hesaplanır. Ağ kimliği, `127.x.y.z` loopback adresinin ikinci, üçüncü ve dördüncü oktetlerine dağıtılır. Her servis, ağ kimliğine `slot + 2` ofseti eklenerek bir adres alır (ofset 0 ve 1 ayrılmıştır).
 
+| Offset | Address | Purpose |
+|--------|---------|---------|
+| .0 | `127.0.11.0` | Network address (reserved) |
+| .1 | `127.0.11.1` | Gateway (reserved) |
+| .2 – .62 | `127.0.11.2` – `127.0.11.62` | Services (`slot + 2`) |
+| .63 | `127.0.11.63` | Broadcast (reserved) |
+
 **Örnek**: Ağ kimliği `2816` (`0x0B00`) için, temel adres `127.0.11.0`:
 
 | Servis | Slot | IP Adresi |
@@ -180,6 +187,7 @@ rdc repo up my-app -m server-1 --mount
 |---------|----------|
 | `--mount` | Henüz bağlanmamışsa önce depoyu bağla |
 | `--prep-only` | Yalnızca `prep()` fonksiyonlarını çalıştır, `up()` atla |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 Çalıştırma sırası:
 1. LUKS ile şifrelenmiş depoyu bağla (`--mount` belirtilmişse)
@@ -197,6 +205,7 @@ rdc repo down my-app -m server-1
 | Seçenek | Açıklama |
 |---------|----------|
 | `--unmount` | Durdurduktan sonra şifrelenmiş depoyu ayır |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 Çalıştırma sırası:
 1. Tüm Rediaccfile'larda `down()` çalıştır (Z-A ters sıra, en iyi çaba)
@@ -218,6 +227,7 @@ rdc repo up-all -m server-1
 | `--dry-run` | Ne yapılacağını göster |
 | `--parallel` | İşlemleri paralel çalıştır |
 | `--concurrency <n>` | Maksimum eşzamanlı işlem sayısı (varsayılan: 3) |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Önyükleme Sırasında Otomatik Başlatma
 

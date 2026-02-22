@@ -1,22 +1,21 @@
 ---
 title: Schnellstart
-description: Starten Sie einen containerisierten Dienst auf Ihrem Server in 5 Minuten.
+description: Führen Sie einen containerisierten Dienst auf Ihrem Server in fünf Minuten aus.
 category: Guides
 order: -1
 language: de
-sourceHash: 71850d61f7e44292
 ---
 
 # Schnellstart
 
 Wenn Sie unsicher sind, welches Tool Sie verwenden sollen, lesen Sie [rdc vs renet](/de/docs/rdc-vs-renet).
-Stellen Sie eine verschlusselte, isolierte Container-Umgebung auf Ihrem eigenen Server in 5 Minuten bereit. Diese Anleitung verwendet den **lokalen Modus** — keine Cloud-Konten oder SaaS-Abhangigkeiten.
+Stellen Sie eine verschlüsselte, isolierte Container-Umgebung auf Ihrem eigenen Server in 5 Minuten bereit. Diese Anleitung verwendet den **lokalen Modus** — keine Cloud-Konten oder SaaS-Abhängigkeiten.
 
 ## Voraussetzungen
 
 - Eine Linux- oder macOS-Workstation
 - Ein Remote-Server (Ubuntu 24.04+, Debian 12+ oder Fedora 43+) mit SSH-Zugang und sudo-Berechtigungen
-- Ein SSH-Schlusselpaar (z.B. `~/.ssh/id_ed25519`)
+- Ein SSH-Schlüsselpaar (z.B. `~/.ssh/id_ed25519`)
 
 ## 1. CLI installieren
 
@@ -30,7 +29,7 @@ curl -fsSL https://get.rediacc.com | sh
 rdc context create-local my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
-## 3. Server hinzufugen
+## 3. Server hinzufügen
 
 ```bash
 rdc context add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
@@ -44,7 +43,7 @@ rdc context setup-machine server-1
 
 Dies installiert Docker, cryptsetup und die renet-Binary auf Ihrem Server.
 
-## 5. Verschlusseltes Repository erstellen
+## 5. Verschlüsseltes Repository erstellen
 
 ```bash
 rdc repo create my-app -m server-1 --size 5G
@@ -68,11 +67,11 @@ Sie sollten Ihre laufenden Container sehen.
 
 ## Was ist Rediacc?
 
-Rediacc stellt containerisierte Dienste auf entfernten Servern bereit, die Sie kontrollieren. Alles wird im Ruhezustand mit LUKS verschlusselt, jedes Repository erhalt seinen eigenen isolierten Docker-Daemon, und die gesamte Orchestrierung erfolgt uber SSH von Ihrer Workstation aus.
+Rediacc stellt containerisierte Dienste auf entfernten Servern bereit, die Sie kontrollieren. Alles wird im Ruhezustand mit LUKS verschlüsselt, jedes Repository erhält seinen eigenen isolierten Docker-Daemon, und die gesamte Orchestrierung erfolgt über SSH von Ihrer Workstation aus.
 
-Keine Cloud-Konten. Keine SaaS-Abhangigkeiten. Ihre Daten bleiben auf Ihren Servern.
+Keine Cloud-Konten. Keine SaaS-Abhängigkeiten. Ihre Daten bleiben auf Ihren Servern.
 
-## Nachste Schritte
+## Nächste Schritte
 
 - **[Architektur](/de/docs/architecture)** — Verstehen Sie, wie Rediacc funktioniert: Modi, Sicherheitsmodell, Docker-Isolation
 - **[Server-Einrichtung](/de/docs/setup)** — Detaillierte Einrichtungsanleitung: Kontexte, Maschinen, Infrastrukturkonfiguration
@@ -81,6 +80,6 @@ Keine Cloud-Konten. Keine SaaS-Abhangigkeiten. Ihre Daten bleiben auf Ihren Serv
 - **[Backup & Wiederherstellung](/de/docs/backup-restore)** — Sicherung auf externen Speicher und automatisierte Backups planen
 - **[Monitoring](/de/docs/monitoring)** — Server-Gesundheit, Container, Dienste, Diagnose
 - **[Werkzeuge](/de/docs/tools)** — Dateisynchronisation, SSH-Terminal, VS Code-Integration
-- **[Migrationsleitfaden](/de/docs/migration)** — Bestehende Projekte in Rediacc-Repositories uberfuhren
-- **[Fehlerbehebung](/de/docs/troubleshooting)** — Losungen fur haufige Probleme
-- **[CLI-Referenz](/de/docs/cli-application)** — Vollstandige Befehlsreferenz
+- **[Migrationsleitfaden](/de/docs/migration)** — Bestehende Projekte in Rediacc-Repositories überführen
+- **[Fehlerbehebung](/de/docs/troubleshooting)** — Lösungen für häufige Probleme
+- **[CLI-Referenz](/de/docs/cli-application)** — Vollständige Befehlsreferenz

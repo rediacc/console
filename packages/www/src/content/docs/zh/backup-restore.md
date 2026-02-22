@@ -1,9 +1,10 @@
 ---
-title: "备份与恢复"
-description: "将加密仓库备份到外部存储、从备份恢复以及配置定时备份。"
-category: "Guides"
+title: 备份与恢复
+description: 将加密仓库备份到外部存储、从备份恢复以及配置定时备份。
+category: Guides
 order: 7
 language: zh
+sourceHash: 3d127a0a186d7487
 ---
 
 # 备份与恢复
@@ -48,6 +49,7 @@ rdc backup push my-app -m server-1 --to my-storage
 | `--tag <tag>` | 为备份添加标签 |
 | `-w, --watch` | 监视操作进度 |
 | `--debug` | 启用详细输出 |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## 拉取/恢复备份
 
@@ -64,6 +66,7 @@ rdc backup pull my-app -m server-1 --from my-storage
 | `--force` | 覆盖已有本地备份 |
 | `-w, --watch` | 监视操作进度 |
 | `--debug` | 启用详细输出 |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## 列出备份
 
@@ -96,6 +99,7 @@ rdc backup sync --from my-storage -m server-1
 | `--repo <name>` | 同步指定仓库（可重复使用） |
 | `--override` | 覆盖已有备份 |
 | `--debug` | 启用详细输出 |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## 定时备份
 

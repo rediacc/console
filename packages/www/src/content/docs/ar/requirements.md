@@ -4,7 +4,7 @@ description: متطلبات النظام والمنصات المدعومة لت�
 category: Guides
 order: 0
 language: ar
-sourceHash: ea4a06f2deefab73
+sourceHash: 35e75948e9858c6d
 ---
 
 # المتطلبات
@@ -39,6 +39,8 @@ sourceHash: ea4a06f2deefab73
 | Debian | 12+ | x86_64 |
 | Fedora | 43+ | x86_64 |
 | openSUSE Leap | 15.6+ | x86_64 |
+| Alpine | 3.19+ | x86_64 (يتطلب gcompat) |
+| Arch Linux | Rolling release | x86_64 |
 
 هذه هي التوزيعات المختبرة في CI. قد تعمل توزيعات Linux أخرى مع systemd ودعم Docker و cryptsetup لكنها غير مدعومة رسمياً.
 
@@ -58,3 +60,7 @@ sourceHash: ea4a06f2deefab73
 - ملف **renet** التنفيذي (يُرفع عبر SFTP)
 
 لا تحتاج إلى تثبيت هذه يدوياً.
+
+## Local Virtual Machines (Optional)
+
+If you want to test deployments locally using `rdc ops`, your workstation needs virtualization support: KVM on Linux or QEMU on macOS. See the [Experimental VMs](/ar/docs/experimental-vms) guide for setup steps and platform details.

@@ -334,6 +334,10 @@ worktree_create() {
     # Create tmux session
     create_tmux_session "$session_name" "$wt_path" "$teams_mode"
 
+    # Install deps for submodules that are outside npm workspaces but
+    # referenced by quality scripts (check:types, check:lint, check:format).
+    local private_install="for pj in \$(find private/ -maxdepth 2 -name package.json ! -path '*/node_modules/*' 2>/dev/null); do echo \"Installing deps in \$(dirname \$pj)...\" && (cd \$(dirname \$pj) && npm install) || true; done"
+
     # Run npm install + build shared packages, then set up panes
     if command -v tmux &>/dev/null && tmux_session_exists "$session_name"; then
         log_info "Running npm install + build:packages in tmux session..."
@@ -345,7 +349,7 @@ worktree_create() {
             #   |           cli terminal (pane 1)     |  25%
             #   +-------------------------------------+
             tmux send-keys -t "${session_name}:0" \
-                "npm install && npm run build:packages && tmux split-window -v -l 25% -c '${wt_path}' && clear && claude --dangerously-skip-permissions --teammate-mode tmux" C-m
+                "npm install && npm run build:packages && ${private_install} && tmux split-window -v -l 25% -c '${wt_path}' && clear && claude --dangerously-skip-permissions --teammate-mode tmux" C-m
         else
             # Standard mode: two claude panes + CLI
             #   +------------------+------------------+
@@ -354,10 +358,13 @@ worktree_create() {
             #   |           cli terminal (pane 1)     |  25%
             #   +-------------------------------------+
             tmux send-keys -t "${session_name}:0" \
-                "npm install && npm run build:packages && tmux split-window -v -l 25% -c '${wt_path}' && RIGHT_PANE=\$(tmux split-window -h -c '${wt_path}' -P -F '#{pane_id}') && tmux send-keys -t \"\$RIGHT_PANE\" 'claude --dangerously-skip-permissions' C-m && clear && claude --dangerously-skip-permissions" C-m
+                "npm install && npm run build:packages && ${private_install} && tmux split-window -v -l 25% -c '${wt_path}' && RIGHT_PANE=\$(tmux split-window -h -c '${wt_path}' -P -F '#{pane_id}') && tmux send-keys -t \"\$RIGHT_PANE\" 'claude --dangerously-skip-permissions' C-m && clear && claude --dangerously-skip-permissions" C-m
         fi
     else
-        log_info "Run 'npm install && npm run build:packages' in the worktree to set up dependencies"
+        log_info "Run the following in the worktree to set up dependencies:"
+        log_info "  npm install && npm run build:packages"
+        log_info "  # Install submodule deps (not in npm workspaces):"
+        log_info "  (cd private/account && npm install)"
     fi
 
     echo ""

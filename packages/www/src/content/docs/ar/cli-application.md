@@ -6,6 +6,7 @@ order: 2
 language: ar
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ar/cli.json
+sourceHash: "2062d175fd7d3240"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -1252,6 +1253,7 @@ rdc repo mount <name> [options]
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--checkpoint` | {{t:cli.commands.repo.mount.checkpointOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ### 11.2 unmount
@@ -1267,6 +1269,7 @@ rdc repo unmount <name> [options]
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--checkpoint` | {{t:cli.commands.repo.unmount.checkpointOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ### 11.3 up
@@ -1284,6 +1287,7 @@ rdc repo up <name> [options]
 | `--prep-only` | {{t:cli.commands.repo.up.prepOnlyOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--grand <name>` | {{t:cli.commands.repo.up.grandOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ### 11.4 up-all
@@ -1303,6 +1307,7 @@ rdc repo up-all [options]
 | `--parallel` | {{t:cli.commands.repo.upAll.parallelOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--concurrency <n>` | {{t:cli.commands.repo.upAll.concurrencyOption}} | {{t:cli.docs.optionLabels.no}} | `3` |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ### 11.5 down
@@ -1319,6 +1324,7 @@ rdc repo down <name> [options]
 | `--unmount` | {{t:cli.commands.repo.down.unmountOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--grand <name>` | {{t:cli.commands.repo.up.grandOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ### 11.6 status
@@ -1333,6 +1339,7 @@ rdc repo status <name> [options]
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ### 11.7 list
@@ -1347,6 +1354,7 @@ rdc repo list [options]
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ### 11.8 create
@@ -1362,6 +1370,7 @@ rdc repo create <name> [options]
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--size <size>` | {{t:cli.commands.repo.create.sizeOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ### 11.9 delete
@@ -1376,6 +1385,7 @@ rdc repo delete <name> [options]
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ### 11.10 fork
@@ -1391,6 +1401,7 @@ rdc repo fork <parent> [options]
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--tag <name>` | {{t:cli.commands.repo.fork.tagOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ### 11.11 resize
@@ -1406,6 +1417,7 @@ rdc repo resize <name> [options]
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--size <size>` | {{t:cli.commands.repo.resize.sizeOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ### 11.12 expand
@@ -1421,6 +1433,7 @@ rdc repo expand <name> [options]
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--size <size>` | {{t:cli.commands.repo.resize.sizeOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ### 11.13 validate
@@ -1435,6 +1448,7 @@ rdc repo validate <name> [options]
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ### 11.14 autostart
@@ -1453,6 +1467,7 @@ rdc repo autostart enable <name> [options]
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 #### disable
@@ -1467,6 +1482,7 @@ rdc repo autostart disable <name> [options]
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 #### enable-all
@@ -1481,6 +1497,7 @@ rdc repo autostart enable-all [options]
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 #### disable-all
@@ -1495,6 +1512,7 @@ rdc repo autostart disable-all [options]
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 #### list
@@ -1509,6 +1527,7 @@ rdc repo autostart list [options]
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ### 11.15 ownership
@@ -1524,6 +1543,7 @@ rdc repo ownership <name> [options]
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--uid <uid>` | {{t:cli.commands.repo.ownership.uidOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ### 11.16 template
@@ -1540,6 +1560,7 @@ rdc repo template <name> [options]
 | `--file <path>` | {{t:cli.commands.repo.template.fileOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--grand <name>` | {{t:cli.commands.repo.up.grandOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ---
@@ -1590,6 +1611,7 @@ rdc storage pull <storageName> [options]
 | `-r, --repository <name>` | {{t:cli.commands.storage.pull.repositoryOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ---
@@ -2390,6 +2412,7 @@ rdc backup push <repo> [options]
 | `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-w, --watch` | {{t:cli.options.watch}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ### 21.2 pull
@@ -2408,6 +2431,7 @@ rdc backup pull <repo> [options]
 | `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-w, --watch` | {{t:cli.options.watch}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ### 21.3 list
@@ -2425,6 +2449,7 @@ rdc backup list [options]
 | `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-w, --watch` | {{t:cli.options.watch}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ### 21.4 sync
@@ -2548,6 +2573,94 @@ rdc update [options]
 
 ```bash
 rdc doctor
+```
+
+---
+
+## 25. {{t:cli.docs.sectionTitles.ops}}
+
+{{t:cli.commands.ops.description}}
+
+### 25.1 up
+
+{{t:cli.commands.ops.up.description}}
+
+```bash
+rdc ops up [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--force` | {{t:cli.options.opsForce}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--parallel` | {{t:cli.options.opsParallel}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--basic` | {{t:cli.options.opsBasic}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--lite` | {{t:cli.options.opsLite}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-orchestration` | {{t:cli.options.opsSkipOrchestration}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--backend <backend>` | {{t:cli.options.opsBackend}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--os <name>` | {{t:cli.options.opsOS}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+### 25.2 down
+
+{{t:cli.commands.ops.down.description}}
+
+```bash
+rdc ops down [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--backend <backend>` | {{t:cli.options.opsBackend}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+### 25.3 status
+
+{{t:cli.commands.ops.status.description}}
+
+```bash
+rdc ops status [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--backend <backend>` | {{t:cli.options.opsBackend}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+### 25.4 ssh
+
+{{t:cli.commands.ops.ssh.description}}
+
+```bash
+rdc ops ssh <vmId> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--backend <backend>` | {{t:cli.options.opsBackend}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--user <user>` | {{t:cli.options.opsSSHUser}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+### 25.5 setup
+
+{{t:cli.commands.ops.setup.description}}
+
+```bash
+rdc ops setup [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+### 25.6 check
+
+{{t:cli.commands.ops.check.description}}
+
+```bash
+rdc ops check
 ```
 
 ---

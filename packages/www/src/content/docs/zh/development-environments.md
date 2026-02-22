@@ -4,6 +4,7 @@ description: 停止等待开发环境。 根据需要在 60 秒内克隆完整�
 category: Use Cases
 order: 10
 language: zh
+sourceHash: 6128ad0f1099ba85
 ---
 
 > **短暂的环境。 生产平价。 零 DevOps 门票。**
@@ -45,6 +46,8 @@ language: zh
 ## Rediacc 解决方案：60 秒内完成生产克隆
 
 Rediacc 通过自动基础设施克隆在 60 秒内提供完整的开发环境。
+
+![Development Environments](/img/dev-environments.svg)
 
 ### 1. **即时配置**
 

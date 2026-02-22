@@ -1,9 +1,13 @@
 ---
-title: Entwicklungsumgebungen, die in Sekundenschnelle hochfahren
-description: Warten Sie nicht mehr tagelang auf Entwicklungsumgebungen. Klonen Sie Ihre komplette Produktionsinfrastruktur in weniger als 60 Sekunden mit kurzlebigen Umgebungen bei Bedarf.
+title: 'Entwicklungsumgebungen, die in Sekundenschnelle verfügbar sind'
+description: >-
+  Warten Sie nicht mehr tagelang auf Entwicklungsumgebungen. Klonen Sie Ihre
+  komplette Produktionsinfrastruktur in weniger als 60 Sekunden mit
+  kurzlebigen Umgebungen für den sofortigen Bedarf.
 category: Use Cases
 order: 10
 language: de
+sourceHash: 6128ad0f1099ba85
 ---
 
 > **Vergängliche Umgebungen. Produktionsparität. Keine DevOps-Tickets.**
@@ -45,6 +49,8 @@ Ergebnis: **4 Stunden Ausfallzeit** während der Haupthandelszeiten, **200.000 U
 ## Rediacc-Lösung: Produktionsklone in 60 Sekunden
 
 Rediacc stellt vollständige Entwicklungsumgebungen in weniger als 60 Sekunden durch automatisiertes Klonen der Infrastruktur bereit.
+
+![Development Environments](/img/dev-environments.svg)
 
 ### 1. **Sofortige Bereitstellung**
 
@@ -210,9 +216,9 @@ Basierend auf Branchenforschung aus über 100 Quellen und über 65.000 Entwickle
 
 ## Verwandte Anwendungsfälle
 
-* [**Time-Travel Recovery**](/en/docs/time-travel-recovery) – Wiederherstellung der Infrastruktur zu einem bestimmten Zeitpunkt 
-* [**Risikofreie Upgrades**](/en/docs/risk-free-upgrades) – Testen Sie Betriebssystemmigrationen ohne Risiko 
-* [**Disaster Recovery**](/en/solutions/disaster-recovery) – Verifizierte Backups, die tatsächlich funktionieren
+* [**Time-Travel Recovery**](/de/docs/time-travel-recovery) – Wiederherstellung der Infrastruktur zu einem bestimmten Zeitpunkt
+* [**Risikofreie Upgrades**](/de/docs/risk-free-upgrades) – Testen Sie Betriebssystemmigrationen ohne Risiko
+* [**Disaster Recovery**](/de/solutions/disaster-recovery) – Verifizierte Backups, die tatsächlich funktionieren
 
 ---
 

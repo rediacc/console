@@ -4,7 +4,7 @@ description: Системные требования и поддерживаем
 category: Guides
 order: 0
 language: ru
-sourceHash: ea4a06f2deefab73
+sourceHash: 35e75948e9858c6d
 ---
 
 # Требования
@@ -39,6 +39,8 @@ CLI `rdc` работает на вашей рабочей станции и ор
 | Debian | 12+ | x86_64 |
 | Fedora | 43+ | x86_64 |
 | openSUSE Leap | 15.6+ | x86_64 |
+| Alpine | 3.19+ | x86_64 (требуется gcompat) |
+| Arch Linux | Rolling release | x86_64 |
 
 Это дистрибутивы, протестированные в CI. Другие дистрибутивы Linux с systemd, поддержкой Docker и cryptsetup могут работать, но официально не поддерживаются.
 
@@ -58,3 +60,7 @@ CLI `rdc` работает на вашей рабочей станции и ор
 - Бинарный файл **renet** (загружается через SFTP)
 
 Вам не нужно устанавливать это вручную.
+
+## Local Virtual Machines (Optional)
+
+If you want to test deployments locally using `rdc ops`, your workstation needs virtualization support: KVM on Linux or QEMU on macOS. See the [Experimental VMs](/ru/docs/experimental-vms) guide for setup steps and platform details.

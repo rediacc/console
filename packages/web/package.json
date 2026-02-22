@@ -63,7 +63,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.18",
     "@testing-library/jest-dom": "^6.9.1",
-    "@types/react": "^19.2.7",
+    "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@typescript-eslint/eslint-plugin": "^8.50.0",
     "@typescript-eslint/parser": "^8.50.0",

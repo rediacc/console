@@ -1,9 +1,12 @@
 ---
-title: "Backup & Wiederherstellung"
-description: "Verschlüsselte Repositories auf externem Speicher sichern, aus Backups wiederherstellen und automatische Backups planen."
-category: "Guides"
+title: Backup & Wiederherstellung
+description: >-
+  Verschlüsselte Repositories auf externem Speicher sichern, aus Backups
+  wiederherstellen und automatische Backups planen.
+category: Guides
 order: 7
 language: de
+sourceHash: 3d127a0a186d7487
 ---
 
 # Backup & Wiederherstellung
@@ -48,6 +51,7 @@ rdc backup push my-app -m server-1 --to my-storage
 | `--tag <tag>` | Das Backup markieren |
 | `-w, --watch` | Den Fortschritt der Operation beobachten |
 | `--debug` | Ausführliche Ausgabe aktivieren |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Backup abrufen / wiederherstellen
 
@@ -64,6 +68,7 @@ rdc backup pull my-app -m server-1 --from my-storage
 | `--force` | Vorhandenes lokales Backup überschreiben |
 | `-w, --watch` | Den Fortschritt der Operation beobachten |
 | `--debug` | Ausführliche Ausgabe aktivieren |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Backups auflisten
 
@@ -96,6 +101,7 @@ rdc backup sync --from my-storage -m server-1
 | `--repo <name>` | Bestimmte Repositories synchronisieren (wiederholbar) |
 | `--override` | Vorhandene Backups überschreiben |
 | `--debug` | Ausführliche Ausgabe aktivieren |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Geplante Backups
 

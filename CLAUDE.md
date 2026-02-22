@@ -110,16 +110,24 @@ In local/s3 mode, there's no cloud API. The CLI reads machine/repo config from `
 
 ## Build & Test
 
+**This monorepo uses npm, not pnpm.**
+
 ```bash
 # Install dependencies
-pnpm install
+npm install
+
+# Build shared package (required before www or cli)
+cd packages/shared && npm run build
 
 # Type check
 npx tsc --noEmit --project packages/cli/tsconfig.json
 
 # Run tests
-cd packages/cli && pnpm test
+cd packages/cli && npm test
 
 # Build website
-cd packages/www && pnpm build
+cd packages/www && npm run build
+
+# Dev server (website)
+cd packages/www && npm run dev
 ```

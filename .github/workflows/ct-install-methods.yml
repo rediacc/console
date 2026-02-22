@@ -4,7 +4,7 @@ name: Console CT - Install Methods
 # Called after successful release to validate published artifacts
 #
 # Consolidated by runner type to minimize job overhead:
-# - Linux x64: Binary, Docker, APT, DNF, Quick Install, Linuxbrew
+# - Linux x64: Binary, Docker, APT, DNF, APK, Pacman, Quick Install, Linuxbrew
 # - Linux arm64: Binary, Docker, Quick Install
 # - macOS ARM64: Binary, Homebrew
 # - macOS x64: Binary, Homebrew
@@ -28,7 +28,7 @@ permissions:
 
 jobs:
   # ===========================================================================
-  # Linux x64: Binary, Docker, APT, DNF, Quick Install, Linuxbrew
+  # Linux x64: Binary, Docker, APT, DNF, APK, Pacman, Quick Install, Linuxbrew
   # ===========================================================================
   test-linux-x64:
     name: Linux (x64)
@@ -68,6 +68,18 @@ jobs:
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method dnf \
+            --version ${{ inputs.version }}
+
+      - name: Test APK Installation
+        run: |
+          .ci/scripts/test/test-install-methods.sh \
+            --method apk \
+            --version ${{ inputs.version }}
+
+      - name: Test Pacman Installation
+        run: |
+          .ci/scripts/test/test-install-methods.sh \
+            --method pacman \
             --version ${{ inputs.version }}
 
       - name: Test Quick Install
@@ -241,7 +253,7 @@ jobs:
 
           echo "| Platform | Result |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Linux x64 (Binary, Docker, APT, DNF, Quick, Linuxbrew) | $linux_x64 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Linux x64 (Binary, Docker, APT, DNF, APK, Pacman, Quick, Linuxbrew) | $linux_x64 |" >> $GITHUB_STEP_SUMMARY
           echo "| Linux arm64 (Binary, Docker, Quick) | $linux_arm64 |" >> $GITHUB_STEP_SUMMARY
           echo "| macOS ARM64 (Binary, Homebrew) | $macos_arm64 |" >> $GITHUB_STEP_SUMMARY
           echo "| macOS x64 (Binary, Homebrew) | $macos_x64 |" >> $GITHUB_STEP_SUMMARY

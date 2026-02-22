@@ -1,62 +1,82 @@
 ---
-title: "rdc vs renet"
-description: "Quand utiliser rdc et quand utiliser renet."
-category: "Guides"
+title: rdc vs renet
+description: Différences entre rdc et renet, et à quel moment utiliser chacun de ces éléments.
+category: Concepts
 order: 1
 language: fr
-sourceHash: "a002ea55958664f1"
+sourceHash: 0396eec8815a0b4e
 ---
 
 # rdc vs renet
 
-Rediacc utilise deux binaires:
+Rediacc possède deux binaires. Voici quand utiliser chacun d'entre eux.
 
-- `rdc` est la CLI orientee utilisateur que vous lancez sur votre poste.
-- `renet` est le binaire distant, bas niveau, qui tourne sur les serveurs.
+| | rdc | renet |
+|---|-----|-------|
+| **S'exécute sur** | Votre poste de travail | Le serveur distant |
+| **Se connecte via** | SSH | S'exécute localement avec les droits root |
+| **Utilisé par** | Tout le monde | Débogage avancé uniquement |
+| **Installation** | Vous l'installez | `rdc` le provisionne automatiquement |
 
-Pour presque toutes les operations quotidiennes, utilisez `rdc`.
+> Pour le travail quotidien, utilisez `rdc`. Vous avez rarement besoin de `renet` directement.
 
-## Modele Mental
+## Comment ils fonctionnent ensemble
 
-Considerez `rdc` comme le plan de controle et `renet` comme le plan de donnees.
+`rdc` se connecte à votre serveur via SSH et exécute les commandes `renet` à votre place. Vous tapez une seule commande sur votre poste de travail, et `rdc` gère le reste :
 
-`rdc`:
-- Lit votre contexte local et vos associations de machines
-- Se connecte aux serveurs via SSH
-- Provisionne/met a jour `renet` si necessaire
-- Execute pour vous la bonne operation distante
+1. Lit votre configuration locale (`~/.rediacc/config.json`)
+2. Se connecte au serveur via SSH
+3. Met à jour le binaire `renet` si nécessaire
+4. Exécute l'opération `renet` correspondante sur le serveur
+5. Renvoie le résultat à votre terminal
 
-`renet`:
-- S'execute avec des privileges eleves sur le serveur
-- Gere datastore, volumes LUKS, montages et daemons Docker isoles
-- Effectue des operations bas niveau sur le systeme et les repositories
+## Utiliser `rdc` pour le travail courant
 
-## Que Utiliser en Pratique
-
-### Utiliser `rdc` (par defaut)
-
-Utilisez `rdc` pour les workflows normaux:
+Toutes les tâches courantes passent par `rdc` sur votre poste de travail :
 
 ```bash
+# Configurer un nouveau serveur
 rdc context setup-machine server-1
+
+# Créer et démarrer un dépôt
 rdc repo create my-app -m server-1 --size 10G
 rdc repo up my-app -m server-1 --mount
+
+# Arrêter un dépôt
 rdc repo down my-app -m server-1
-rdc machine status server-1
+
+# Vérifier la santé de la machine
+rdc machine health server-1
 ```
 
-### Utiliser `renet` (avance / cote distant)
+Consultez le [Démarrage rapide](/fr/docs/quick-start) pour un guide complet.
 
-Utilisez directement `renet` uniquement lorsque vous avez volontairement besoin d'un controle bas niveau, par exemple:
+## Utiliser `renet` pour le débogage côté serveur
 
-- Debogage d'urgence directement sur le serveur
-- Maintenance et reprise au niveau hote
-- Verification d'internals non exposes par les commandes `rdc`
+Vous n'avez besoin de `renet` directement que lorsque vous vous connectez en SSH à un serveur pour :
 
-La plupart des utilisateurs n'ont pas besoin d'appeler `renet` directement en usage courant.
+- Le débogage d'urgence lorsque `rdc` ne peut pas se connecter
+- La vérification d'éléments internes du système non disponibles via `rdc`
+- Les opérations de récupération de bas niveau
 
-## Note Rediaccfile
+Toutes les commandes `renet` nécessitent les privilèges root (`sudo`). Consultez la [Référence serveur](/fr/docs/server-reference) pour la liste complète des commandes `renet`.
 
-Vous pouvez voir `renet compose -- ...` dans un `Rediaccfile`. C'est normal: les fonctions Rediaccfile s'executent cote distant, la ou `renet` est disponible.
+## Expérimental : `rdc ops` (VM locales)
 
-Depuis votre poste, vous continuez generalement a demarrer/arreter les workloads avec `rdc repo up` et `rdc repo down`.
+`rdc ops` encapsule `renet ops` pour gérer des clusters de VM locaux sur votre poste de travail :
+
+```bash
+rdc ops setup       # Installer les prérequis (KVM ou QEMU)
+rdc ops up --basic  # Démarrer un cluster minimal
+rdc ops status      # Vérifier l'état des VM
+rdc ops ssh 1       # Se connecter en SSH à la VM bridge
+rdc ops down        # Détruire le cluster
+```
+
+Ces commandes exécutent `renet` localement (pas via SSH). Consultez [VM expérimentales](/fr/docs/experimental-vms) pour la documentation complète.
+
+## Note sur le Rediaccfile
+
+Vous pouvez voir `renet compose -- ...` à l'intérieur d'un `Rediaccfile`. C'est normal — les fonctions du Rediaccfile s'exécutent sur le serveur où `renet` est disponible.
+
+Depuis votre poste de travail, démarrez et arrêtez les charges de travail avec `rdc repo up` et `rdc repo down`.

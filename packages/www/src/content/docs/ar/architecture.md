@@ -1,10 +1,10 @@
 ---
 title: البنية التحتية
 description: 'كيف يعمل Rediacc: بنية الأداتين، أوضاع التشغيل، نموذج الأمان، وهيكل الإعدادات.'
-category: Guides
-order: 2
+category: Concepts
+order: 0
 language: ar
-sourceHash: 8f910f7827c8e958
+sourceHash: 58ba0da9645bb9dd
 ---
 
 # البنية التحتية
@@ -12,6 +12,14 @@ sourceHash: 8f910f7827c8e958
 إذا لم تكن متاكدا من الاداة المناسبة، راجع [rdc vs renet](/ar/docs/rdc-vs-renet).
 
 تشرح هذه الصفحة كيف يعمل Rediacc من الداخل: بنية الأداتين، أوضاع التشغيل، نموذج الأمان، وهيكل الإعدادات.
+
+## Full Stack Overview
+
+Traffic flows from the internet through a reverse proxy, into isolated Docker daemons, each backed by encrypted storage:
+
+![Full Stack Architecture](/img/arch-full-stack.svg)
+
+Each repository gets its own Docker daemon, loopback IP subnet (/26 = 64 IPs), and LUKS-encrypted BTRFS volume. The route server discovers running containers across all daemons and feeds routing configuration to Traefik.
 
 ## بنية الأداتين
 

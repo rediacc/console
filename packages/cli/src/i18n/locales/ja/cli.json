@@ -532,7 +532,8 @@
         "renetRsync": "組み込みrsync",
         "renetVersion": "バージョン",
         "seaMode": "SEAモード",
-        "sshKey": "SSHキー"
+        "sshKey": "SSHキー",
+        "opsPrereqs": "OPS前提条件"
       },
       "description": "CLI環境とrenet統合を診断",
       "devMode": "いいえ（開発モード）",
@@ -542,11 +543,14 @@
       "notConfigured": "未設定",
       "notInstalled": "未インストール",
       "seaActive": "はい（単一実行可能アプリケーション）",
+      "opsNotSupported": "{{platform}}ではサポートされていません",
+      "opsSkipped": "renetが利用できません（スキップ）",
       "sections": {
         "authentication": "認証",
         "configuration": "設定",
         "environment": "環境",
-        "renet": "Renet"
+        "renet": "Renet",
+        "virtualization": "仮想化"
       },
       "status": {
         "fail": "失敗",
@@ -675,6 +679,49 @@
         "systemSection": "\nシステム:",
         "systemUptime": "  稼働時間: {{uptime}}",
         "totalRepos": "  総リポジトリ数: {{count}}"
+      }
+    },
+    "ops": {
+      "check": {
+        "allPassed": "すべての前提条件を満たしています",
+        "description": "仮想化の前提条件を確認",
+        "hasMissing": "{{count}} 件の前提条件が不足しています",
+        "localFallback": "（ローカルチェック使用中 — renetが利用できません）",
+        "title": "OPS 前提条件チェック"
+      },
+      "description": "実験的な VM 操作（プロビジョニング、管理、破棄）",
+      "down": {
+        "completed": "VM クラスターの破棄が完了しました",
+        "description": "VM クラスターを破棄",
+        "failed": "VM クラスターの破棄に失敗しました",
+        "starting": "VM クラスターを破棄しています..."
+      },
+      "setup": {
+        "brewFailed": "Homebrew のインストールに失敗しました",
+        "completed": "前提条件のインストールが完了しました",
+        "description": "仮想化の前提条件をインストール",
+        "detecting": "プラットフォームを検出しています...",
+        "failed": "インストールに失敗しました",
+        "linux": "renet 経由で KVM の前提条件をインストールしています...",
+        "macos": "Homebrew 経由で QEMU をインストールしています...",
+        "unsupported": "サポートされていないプラットフォーム: {{platform}}",
+        "windows": "Hyper-V の前提条件をセットアップしています..."
+      },
+      "ssh": {
+        "connecting": "VM {{id}} に接続しています...",
+        "description": "VM に SSH 接続",
+        "vmNotFound": "ID {{id}} の VM が見つからないか、実行されていません"
+      },
+      "status": {
+        "description": "VM クラスターの状態を表示",
+        "fetching": "VM クラスターの状態を取得しています...",
+        "noVMs": "VM が見つかりません"
+      },
+      "up": {
+        "completed": "VM クラスターのプロビジョニングが完了しました",
+        "description": "VM クラスターをローカルにプロビジョニング",
+        "failed": "VM クラスターのプロビジョニングに失敗しました",
+        "starting": "VM クラスターのプロビジョニングを開始しています..."
       }
     },
     "organization": {
@@ -1418,6 +1465,7 @@
       "context": "コンテキスト管理",
       "doctor": "システム診断",
       "machine": "マシン管理",
+      "ops": "実験的 VM 操作",
       "organization": "組織管理",
       "permission": "権限管理",
       "protocol": "プロトコルハンドラー",
@@ -1616,6 +1664,14 @@
     "mirrorUpload": "ミラーモード - ローカルに存在しないリモートファイルを削除",
     "newPasswordNonInteractive": "新しいパスワード (非対話型モード)",
     "newWindow": "新しい VS Code ウィンドウで開く",
+    "opsBackend": "仮想化バックエンド (kvm|qemu、自動検出)",
+    "opsBasic": "最小構成クラスター (ブリッジ + ワーカー1台)",
+    "opsForce": "すべての VM を強制再起動",
+    "opsLite": "VM プロビジョニングをスキップ (ステータスのみ)",
+    "opsOS": "VM オペレーティングシステム (例: ubuntu-24.04, debian-12)",
+    "opsParallel": "VM を並列で作成",
+    "opsSkipOrchestration": "クラスターオーケストレーションをスキップ",
+    "opsSSHUser": "VM 接続用の SSH ユーザー名",
     "organization": "組織名",
     "output": "出力形式 (table|json|yaml|csv)",
     "outputFormat": "出力形式 (json)",

@@ -1,9 +1,10 @@
 ---
-title: "バックアップと復元"
-description: "暗号化されたリポジトリを外部ストレージにバックアップし、バックアップから復元し、自動バックアップをスケジュールします。"
-category: "Guides"
+title: バックアップと復元
+description: 暗号化されたリポジトリを外部ストレージにバックアップし、バックアップから復元し、自動バックアップをスケジュールします。
+category: Guides
 order: 7
 language: ja
+sourceHash: 3d127a0a186d7487
 ---
 
 # バックアップと復元
@@ -48,6 +49,7 @@ rdc backup push my-app -m server-1 --to my-storage
 | `--tag <tag>` | バックアップにタグを付ける |
 | `-w, --watch` | 操作の進捗を監視 |
 | `--debug` | 詳細出力を有効化 |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## バックアップの取得 / 復元
 
@@ -64,6 +66,7 @@ rdc backup pull my-app -m server-1 --from my-storage
 | `--force` | 既存のローカルバックアップを上書き |
 | `-w, --watch` | 操作の進捗を監視 |
 | `--debug` | 詳細出力を有効化 |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## バックアップの一覧表示
 
@@ -96,6 +99,7 @@ rdc backup sync --from my-storage -m server-1
 | `--repo <name>` | 特定のリポジトリを同期（繰り返し指定可能） |
 | `--override` | 既存のバックアップを上書き |
 | `--debug` | 詳細出力を有効化 |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## スケジュールバックアップ
 

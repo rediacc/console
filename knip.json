@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@latest/schema.json",
-  "exclude": ["types", "duplicates"],
+  "exclude": ["types", "duplicates", "exports", "files"],
   "workspaces": {
     ".": {
       "entry": ["scripts/*.ts"],
@@ -88,7 +88,7 @@
         "src/components/Footer.tsx",
         "src/components/Sidebar.tsx"
       ],
-      "project": ["src/**/*.{ts,tsx,astro}", "scripts/**/*.js"],
+      "project": ["src/**/*.{ts,tsx,astro}", "scripts/**/*.{js,cjs}"],
       "ignore": [
         "scripts/check-translation-hashes.js",
         "scripts/generate-favicons.js",

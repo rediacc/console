@@ -23,6 +23,7 @@ rdc repo create my-app -m server-1 --size 10G
 |--------|----------|-------------|
 | `-m, --machine <name>` | Yes | Target machine where the repository will be created |
 | `--size <size>` | Yes | Size of the encrypted disk image (e.g., `5G`, `10G`, `50G`) |
+| `--skip-router-restart` | No | Skip restarting the route server after the operation |
 
 The output will show three auto-generated values:
 
@@ -44,6 +45,7 @@ rdc repo unmount my-app -m server-1     # Unmount and re-encrypt
 | Option | Description |
 |--------|-------------|
 | `--checkpoint` | Create a checkpoint before mount/unmount |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Check Status
 
@@ -100,6 +102,7 @@ The command automatically detects Docker container data directories (writable bi
 |--------|-------------|
 | `--uid <uid>` | Set a custom UID instead of 7111 |
 | `--force` | Skip Docker volume detection and chown everything |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 To force ownership on all files, including container data:
 

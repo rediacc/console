@@ -4,6 +4,7 @@ description: 通过洲际数据镜像在停电期间维持银行运营。
 category: Use Cases
 order: 6
 language: zh
+sourceHash: 51a38f7f8567e63e
 ---
 
 > **当灯熄灭时，您的业务仍在继续。**
@@ -41,6 +42,8 @@ IT 服务中断导致：
 ## 雷迪亚克解决方案
 
 实施 Rediacc 跨大陆复制解决方案的一家西班牙大型银行集团在整个危机期间维持了运营：
+
+![Banking Continuity During Blackout](/img/blackout-continuity.svg)
 
 ### 1. **洲际数据镜像**
  * 核心银行数据库和交易系统**不断复制**到美国的数据中心

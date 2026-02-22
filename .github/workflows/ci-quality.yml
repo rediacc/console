@@ -235,6 +235,14 @@ jobs:
       - name: Check E2E test coverage for all renet functions
         run: .ci/scripts/quality/check-e2e-coverage.sh
 
+  quality-editorconfig:
+    name: EditorConfig
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - run: .ci/scripts/quality/check-editorconfig.sh
+
   quality-middleware:
     name: Middleware
     runs-on: ubuntu-latest
@@ -521,9 +529,16 @@ jobs:
     if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: ci
+          repositories: console
       - name: Check PR description freshness
         run: .ci/scripts/quality/check-pr-description.sh
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_REPOSITORY: ${{ github.repository }}

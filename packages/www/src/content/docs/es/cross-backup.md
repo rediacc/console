@@ -1,9 +1,12 @@
 ---
 title: Estrategia de copia de seguridad cruzada
-description: Proteja los datos contra desastres con copias de seguridad intercontinentales eficientes y una recuperación rápida.
+description: >-
+  Proteja los datos contra desastres con copias de seguridad intercontinentales
+  eficientes y una recuperación rápida.
 category: Use Cases
 order: 5
 language: es
+sourceHash: 592ecfdf6477dbba
 ---
 
 > **Cuando ocurre un desastre, ¿sobrevivirán sus datos? Con Rediacc, siempre lo hace.**
@@ -37,6 +40,8 @@ Después de una llamada de un cliente:
 * La reputación de la empresa **está gravemente dañada**
 
 ## Solución Rediacc
+
+![Cross Backup Strategy](/img/cross-backup.svg)
 
 ### 1. **Primera copia de seguridad** 
 * La primera vez que se transfieren 20 TB de datos a un servidor remoto, se necesitan 2 semanas.

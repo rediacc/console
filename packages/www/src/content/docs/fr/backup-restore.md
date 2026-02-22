@@ -1,9 +1,12 @@
 ---
-title: "Sauvegarde et restauration"
-description: "Sauvegardez des dépôts chiffrés vers un stockage externe, restaurez à partir de sauvegardes et planifiez des sauvegardes automatisées."
-category: "Guides"
+title: Sauvegarde et restauration
+description: >-
+  Sauvegardez des dépôts chiffrés vers un stockage externe, restaurez à partir
+  de sauvegardes et planifiez des sauvegardes automatisées.
+category: Guides
 order: 7
 language: fr
+sourceHash: 3d127a0a186d7487
 ---
 
 # Sauvegarde et restauration
@@ -48,6 +51,7 @@ rdc backup push my-app -m server-1 --to my-storage
 | `--tag <tag>` | Étiqueter la sauvegarde |
 | `-w, --watch` | Suivre la progression de l'opération |
 | `--debug` | Activer la sortie détaillée |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Récupérer / Restaurer une sauvegarde
 
@@ -64,6 +68,7 @@ rdc backup pull my-app -m server-1 --from my-storage
 | `--force` | Écraser la sauvegarde locale existante |
 | `-w, --watch` | Suivre la progression de l'opération |
 | `--debug` | Activer la sortie détaillée |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Lister les sauvegardes
 
@@ -96,6 +101,7 @@ rdc backup sync --from my-storage -m server-1
 | `--repo <name>` | Synchroniser des dépôts spécifiques (répétable) |
 | `--override` | Écraser les sauvegardes existantes |
 | `--debug` | Activer la sortie détaillée |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Sauvegardes planifiées
 

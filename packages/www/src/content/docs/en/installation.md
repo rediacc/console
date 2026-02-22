@@ -36,6 +36,31 @@ irm https://www.rediacc.com/install.ps1 | iex
 
 This downloads the `rdc.exe` binary to `%LOCALAPPDATA%\rediacc\bin\`. Make sure this directory is in your PATH. The installer will prompt you to add it if it is not already present.
 
+## Alpine Linux (APK)
+
+```bash
+# Add the repository
+echo "https://www.rediacc.com/apk/x86_64" | sudo tee -a /etc/apk/repositories
+
+# Install
+sudo apk update
+sudo apk add --allow-untrusted rediacc-cli
+```
+
+Note: The `gcompat` package (glibc compatibility layer) is installed automatically as a dependency.
+
+## Arch Linux (Pacman)
+
+```bash
+# Add the repository to /etc/pacman.conf
+echo "[rediacc]
+SigLevel = Optional TrustAll
+Server = https://www.rediacc.com/archlinux/\$arch" | sudo tee -a /etc/pacman.conf
+
+# Install
+sudo pacman -Sy rediacc-cli
+```
+
 ## Verify Installation
 
 ```bash

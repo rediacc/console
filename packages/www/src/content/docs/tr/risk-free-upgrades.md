@@ -1,9 +1,12 @@
 ---
 title: Risksiz Yükseltmeler
-description: Anında klonlama ve saatlik anlık görüntüleri kullanarak veritabanı yükseltmelerini risk olmadan test edin.
+description: >-
+  Anında klonlama ve saatlik anlık görüntüleri kullanarak veritabanı
+  yükseltmelerini risk olmadan test edin.
 category: Use Cases
 order: 4
 language: tr
+sourceHash: c905d2f42d1108c2
 ---
 
 > **Her Şeyi Test Edin. Risk Yok. Güvenle Yükseltin.**
@@ -38,6 +41,8 @@ Mehmet, büyük ölçekli veritabanlarını yöneten deneyimli bir sistem yönet
 ## Rediacc Çözümü
 
 Mehmet, Rediacc ile sorunu temelden çözüyor:
+
+![Risk-Free Upgrades](/img/risk-free-upgrades.svg)
 
 ### 1. **Anında Klonlama** 
 * **100 TB'lik veritabanının bir kopyası saniyeler içinde oluşturulur** 

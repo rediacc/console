@@ -36,6 +36,31 @@ irm https://www.rediacc.com/install.ps1 | iex
 
 这将把 `rdc.exe` 二进制文件下载到 `%LOCALAPPDATA%\rediacc\bin\`。请确保该目录已添加到您的 PATH 中。安装程序会在未添加时提示您添加。
 
+## Alpine Linux (APK)
+
+```bash
+# Add the repository
+echo "https://www.rediacc.com/apk/x86_64" | sudo tee -a /etc/apk/repositories
+
+# Install
+sudo apk update
+sudo apk add --allow-untrusted rediacc-cli
+```
+
+注意：`gcompat` 包（glibc 兼容层）会作为依赖项自动安装。
+
+## Arch Linux (Pacman)
+
+```bash
+# Add the repository to /etc/pacman.conf
+echo "[rediacc]
+SigLevel = Optional TrustAll
+Server = https://www.rediacc.com/archlinux/\$arch" | sudo tee -a /etc/pacman.conf
+
+# Install
+sudo pacman -Sy rediacc-cli
+```
+
 ## 验证安装
 
 ```bash

@@ -123,14 +123,18 @@
       "support": "Поддерживать"
     },
     "copyright": "{{year}} Rediacc. Все права защищены.",
+    "legalDisclosure": {
+      "fullLegalInformation": "Полная юридическая информация",
+      "summary": "{{companyName}} | Регистрационный код {{registryCode}} | НДС {{vatNumber}} |"
+    },
     "legalLinks": {
       "acceptableUsePolicy": "Политика допустимого использования",
       "cookiePolicy": "Политика использования файлов cookie",
+      "legalInformation": "Юридическая информация",
       "privacyPolicy": "Политика конфиденциальности",
       "refundPolicy": "Политика возврата средств",
       "telemetryPolicy": "Политика телеметрии",
-      "termsOfService": "Условия обслуживания",
-      "legalInformation": "Юридическая информация"
+      "termsOfService": "Условия обслуживания"
     },
     "links": {
       "contactSupport": "Обратиться в службу поддержки",
@@ -152,11 +156,7 @@
       "contactSupport": "Обратиться в службу поддержки",
       "helpCenter": "Справочный центр"
     },
-    "tagline": "Платформа автоматизации инфраструктуры для операций, управляемых искусственным интеллектом",
-    "legalDisclosure": {
-      "summary": "{{companyName}} | Регистрационный код {{registryCode}} | НДС {{vatNumber}} |",
-      "fullLegalInformation": "Полная юридическая информация"
-    }
+    "tagline": "Платформа автоматизации инфраструктуры для операций, управляемых искусственным интеллектом"
   },
   "hero": {
     "cta": {
@@ -1162,6 +1162,14 @@
           "description": "Для Fedora, RHEL, CentOS, Rocky Linux",
           "title": "DNF (Fedora / RHEL)"
         },
+        "apk": {
+          "title": "APK (Alpine Linux)",
+          "description": "Для Alpine Linux и производных"
+        },
+        "pacman": {
+          "title": "Pacman (Arch Linux)",
+          "description": "Для Arch Linux и производных"
+        },
         "docker": {
           "description": "Для контейнерных сред",
           "title": "Docker"
@@ -1181,6 +1189,37 @@
       },
       "verify": {
         "title": "Проверить установку"
+      }
+    },
+    "legalInformation": {
+      "hero": {
+        "subtitle": "Официальные сведения о компании для прозрачности и деловой связи",
+        "title": "Юридическая информация"
+      },
+      "meta": {
+        "description": "Официальные сведения о компании для прозрачности и деловой связи.",
+        "keywords": "юридическая информация, данные компании, реестр, НДС, контакты",
+        "title": "Юридическая информация - {{companyName}}"
+      },
+      "sections": {
+        "companyDetails": {
+          "labels": {
+            "email": "Электронная почта",
+            "legalName": "Правовая форма и название",
+            "register": "Реестр",
+            "registeredOffice": "Юридический адрес",
+            "registryCode": "Регистрационный код",
+            "vatNumber": "Номер НДС",
+            "website": "Веб-сайт"
+          },
+          "lead": "На этой странице опубликованы официальные сведения о компании и контакты для юридической прозрачности и деловой переписки.",
+          "registerEntryLink": "открыть профиль компании",
+          "registerEntryPrefix": "Запись в публичном реестре:",
+          "title": "Сведения о компании",
+          "values": {
+            "legalName": "{{companyName}} (общество с ограниченной ответственностью)"
+          }
+        }
       }
     },
     "notFound": {
@@ -3000,37 +3039,6 @@
       },
       "toc": {
         "title": "Содержание"
-      }
-    },
-    "legalInformation": {
-      "meta": {
-        "title": "Юридическая информация - {{companyName}}",
-        "description": "Официальные сведения о компании для прозрачности и деловой связи.",
-        "keywords": "юридическая информация, данные компании, реестр, НДС, контакты"
-      },
-      "hero": {
-        "title": "Юридическая информация",
-        "subtitle": "Официальные сведения о компании для прозрачности и деловой связи"
-      },
-      "sections": {
-        "companyDetails": {
-          "title": "Сведения о компании",
-          "lead": "На этой странице опубликованы официальные сведения о компании и контакты для юридической прозрачности и деловой переписки.",
-          "labels": {
-            "legalName": "Правовая форма и название",
-            "registryCode": "Регистрационный код",
-            "register": "Реестр",
-            "registeredOffice": "Юридический адрес",
-            "vatNumber": "Номер НДС",
-            "email": "Электронная почта",
-            "website": "Веб-сайт"
-          },
-          "values": {
-            "legalName": "{{companyName}} (общество с ограниченной ответственностью)"
-          },
-          "registerEntryPrefix": "Запись в публичном реестре:",
-          "registerEntryLink": "открыть профиль компании"
-        }
       }
     }
   },

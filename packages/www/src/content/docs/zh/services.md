@@ -4,7 +4,7 @@ description: 使用 Rediaccfile、服务网络和开机自启来部署和管理�
 category: Guides
 order: 5
 language: zh
-sourceHash: 8add6342eea14e41
+sourceHash: c4048b13799a7767
 ---
 
 # 服务
@@ -134,6 +134,13 @@ down() {
 
 服务的 IP 根据仓库的网络 ID 和服务的槽位计算。网络 ID 分布在 `127.x.y.z` 回环地址的第二、第三和第四个八位组中。每个服务会在网络 ID 的基础上加上 `slot + 2` 的偏移量（偏移量 0 和 1 保留给网络地址和网关）。
 
+| Offset | Address | Purpose |
+|--------|---------|---------|
+| .0 | `127.0.11.0` | Network address (reserved) |
+| .1 | `127.0.11.1` | Gateway (reserved) |
+| .2 – .62 | `127.0.11.2` – `127.0.11.62` | Services (`slot + 2`) |
+| .63 | `127.0.11.63` | Broadcast (reserved) |
+
 **示例**：网络 ID 为 `2816`（`0x0B00`）时，基础地址为 `127.0.11.0`：
 
 | 服务 | 槽位 | IP 地址 |
@@ -178,6 +185,7 @@ rdc repo up my-app -m server-1 --mount
 |------|------|
 | `--mount` | 如果尚未挂载，则先挂载仓库 |
 | `--prep-only` | 仅运行 `prep()` 函数，跳过 `up()` |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 执行顺序为：
 1. 挂载 LUKS 加密仓库（如果指定了 `--mount`）
@@ -195,6 +203,7 @@ rdc repo down my-app -m server-1
 | 选项 | 描述 |
 |------|------|
 | `--unmount` | 停止服务后卸载加密仓库 |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 执行顺序为：
 1. 按 Z-A 反向顺序在所有 Rediaccfile 中运行 `down()`（尽力而为）
@@ -216,6 +225,7 @@ rdc repo up-all -m server-1
 | `--dry-run` | 显示将要执行的操作 |
 | `--parallel` | 并行运行操作 |
 | `--concurrency <n>` | 最大并发操作数（默认：3） |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## 开机自启
 

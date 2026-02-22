@@ -4,7 +4,7 @@ description: 运行 Rediacc 的系统要求和支持的平台。
 category: Guides
 order: 0
 language: zh
-sourceHash: ea4a06f2deefab73
+sourceHash: 35e75948e9858c6d
 ---
 
 # 系统要求
@@ -39,6 +39,8 @@ sourceHash: ea4a06f2deefab73
 | Debian | 12+ | x86_64 |
 | Fedora | 43+ | x86_64 |
 | openSUSE Leap | 15.6+ | x86_64 |
+| Alpine | 3.19+ | x86_64（需要 gcompat） |
+| Arch Linux | 滚动发布 | x86_64 |
 
 以上是在 CI 中测试过的发行版。其他具有 systemd、Docker 支持和 cryptsetup 的 Linux 发行版可能可以工作，但未获得官方支持。
 
@@ -58,3 +60,7 @@ sourceHash: ea4a06f2deefab73
 - **renet** 二进制文件（通过 SFTP 上传）
 
 您无需手动安装这些组件。
+
+## Local Virtual Machines (Optional)
+
+If you want to test deployments locally using `rdc ops`, your workstation needs virtualization support: KVM on Linux or QEMU on macOS. See the [Experimental VMs](/zh/docs/experimental-vms) guide for setup steps and platform details.

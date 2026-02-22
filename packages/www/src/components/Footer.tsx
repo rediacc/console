@@ -44,7 +44,7 @@ const Footer: React.FC = () => {
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/docs`} className="footer-link">
+                <a href={`/${currentLang}/docs/quick-start`} className="footer-link">
                   {t('navigation.docs')}
                 </a>
               </li>

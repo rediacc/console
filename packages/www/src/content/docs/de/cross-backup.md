@@ -1,9 +1,12 @@
 ---
 title: Cross-Backup-Strategie
-description: Schützen Sie Daten mit effizienten kontinentalübergreifenden Backups und schneller Wiederherstellung vor Katastrophen.
+description: >-
+  Schützen Sie Daten mit effizienten kontinentalübergreifenden Backups und
+  schneller Wiederherstellung vor Katastrophen.
 category: Use Cases
 order: 5
 language: de
+sourceHash: 592ecfdf6477dbba
 ---
 
 > **Werden Ihre Daten im Katastrophenfall überleben? Mit Rediacc ist das immer der Fall.**
@@ -37,6 +40,8 @@ Nach einem Kundenanruf:
 * Der **Ruf des Unternehmens ist ernsthaft geschädigt**
 
 ## Rediacc-Lösung
+
+![Cross Backup Strategy](/img/cross-backup.svg)
 
 ### 1. **Erstes Backup** 
 * Die erste Übertragung von 20 TB Daten auf einen Remote-Server dauert 2 Wochen

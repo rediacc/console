@@ -1,14 +1,17 @@
 ---
-title: "网络"
-description: "通过反向代理、Docker 标签、TLS 证书、DNS 和 TCP/UDP 端口转发来暴露服务。"
-category: "Guides"
+title: 网络
+description: 通过反向代理、Docker 标签、TLS 证书、DNS 和 TCP/UDP 端口转发来暴露服务。
+category: Guides
 order: 6
 language: zh
+sourceHash: 47ee41d44be935a8
 ---
 
 # 网络
 
 本页面介绍运行在隔离 Docker 守护进程中的服务如何从互联网访问。涵盖反向代理系统、用于路由的 Docker 标签、TLS 证书、DNS 以及 TCP/UDP 端口转发。
+| Route server running old version | Binary was updated but service not restarted | Happens automatically on provisioning; manual: `sudo systemctl restart rediacc-router` |
+| STUN/TURN relay not reachable | Relay addresses cached at startup | Recreate the service after DNS or IP changes so it picks up the new network config |
 
 有关服务如何获取回环 IP 和 `.rediacc.json` 槽位系统的信息，请参阅[服务](/zh/docs/services#服务网络rediaccjson)。
 
@@ -33,6 +36,8 @@ Rediacc 使用双组件代理系统将外部流量路由到容器：
 
 当您为容器添加正确的标签并使用 `renet compose` 启动时，它会自动变为可路由 — 无需手动配置代理。
 
+> The route server binary is kept in sync with your CLI version. When the CLI updates the renet binary on a machine, the route server is automatically restarted (~1–2 seconds). This causes no downtime — Traefik continues serving traffic with its last known configuration during the restart and picks up the new config on the next poll. Existing client connections are not affected. Your application containers are not touched.
+
 ## Docker 标签
 
 路由通过 Docker 容器标签控制。分为两个层级：
@@ -46,6 +51,8 @@ Rediacc 使用双组件代理系统将外部流量路由到容器：
 | `rediacc.service_name` | 服务标识 | `myapp` |
 | `rediacc.service_ip` | 分配的回环 IP | `127.0.11.2` |
 | `rediacc.network_id` | 仓库的守护进程 ID | `2816` |
+| `rediacc.tcp_ports` | TCP ports the service listens on | `8080,8443` |
+| `rediacc.udp_ports` | UDP ports the service listens on | `53` |
 
 当容器仅有 `rediacc.*` 标签（没有 `traefik.enable=true`）时，路由服务器会生成**自动路由**：
 
@@ -168,6 +175,27 @@ rdc context push-infra server-1
 ```
 
 此操作创建名为 `tcp-{port}` 和 `udp-{port}` 的 Traefik 入口点。
+
+### Plain TCP Example (Database)
+
+To expose a database externally without TLS passthrough (Traefik forwards raw TCP):
+
+```yaml
+services:
+  postgres:
+    image: postgres:17
+    network_mode: host
+    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.mydb.entrypoints=tcp-5432"
+      - "traefik.tcp.routers.mydb.rule=HostSNI(`*`)"
+      - "traefik.tcp.services.mydb.loadbalancer.server.port=5432"
+```
+
+Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
+
+> **Security note:** Exposing a database to the internet is a risk. Use this only when remote clients need direct access. For most setups, keep the database internal and connect through your application.
 
 > 添加或移除端口后，务必重新运行 `rdc context push-infra` 以更新代理配置。
 

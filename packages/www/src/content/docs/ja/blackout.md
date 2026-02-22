@@ -4,6 +4,7 @@ description: 大陸間のデータミラーリングにより、停電中でも�
 category: Use Cases
 order: 6
 language: ja
+sourceHash: 51a38f7f8567e63e
 ---
 
 > **明かりが消えても、ビジネスは継続します。**
@@ -41,6 +42,8 @@ IT サービスの中断により、次のような事態が発生しました�
 ## Rediacc ソリューション
 
 Rediacc の大陸間レプリケーション ソリューションを導入したスペインの大手銀行グループは、危機の間も業務を維持しました。
+
+![Banking Continuity During Blackout](/img/blackout-continuity.svg)
 
 ### 1. **大陸間のデータミラーリング**
  * コアの銀行データベースとトランザクション システムは、米国のデータ センターに **継続的に複製**されました

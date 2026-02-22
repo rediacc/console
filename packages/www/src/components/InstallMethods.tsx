@@ -8,6 +8,8 @@ import {
   DOCKER_COMMANDS,
   APT_COMMANDS,
   DNF_COMMANDS,
+  APK_COMMANDS,
+  PACMAN_COMMANDS,
   HOMEBREW_COMMAND,
   detectPlatform,
 } from '../config/install';
@@ -29,6 +31,8 @@ type FilterTab = 'all' | Platform;
 const ANCHOR_PLATFORM_MAP: Record<string, Platform> = {
   apt: 'linux',
   dnf: 'linux',
+  apk: 'linux',
+  pacman: 'linux',
   homebrew: 'macos',
 };
 
@@ -105,6 +109,10 @@ function getMethodBlocks(
       return [{ id: 'apt', label: 'bash', code: APT_COMMANDS }];
     case 'dnf':
       return [{ id: 'dnf', label: 'bash', code: DNF_COMMANDS }];
+    case 'apk':
+      return [{ id: 'apk', label: 'sh', code: APK_COMMANDS }];
+    case 'pacman':
+      return [{ id: 'pacman', label: 'bash', code: PACMAN_COMMANDS }];
     case 'homebrew':
       return [{ id: 'homebrew', label: 'bash', code: HOMEBREW_COMMAND }];
     default:

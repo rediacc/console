@@ -177,6 +177,9 @@ readonly PKG_PRIORITY="optional"
 readonly PKG_MAX_VERSIONS=3
 readonly PKG_RELEASE_REPO="rediacc/console"
 
+# nfpm configuration (replaces dpkg-deb + rpmbuild for package creation)
+readonly NFPM_VERSION="2.45.0"
+
 # Homebrew tap configuration
 readonly HOMEBREW_TAP_REPO="rediacc/homebrew-tap"
 readonly HOMEBREW_FORMULA_PATH="Formula/rediacc-cli.rb"

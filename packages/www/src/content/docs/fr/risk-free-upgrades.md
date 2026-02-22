@@ -1,9 +1,12 @@
 ---
 title: Mises à niveau sans risque
-description: Testez les mises à niveau des bases de données sans risque grâce au clonage instantané et aux instantanés horaires.
+description: >-
+  Testez les mises à niveau des bases de données sans risque grâce au clonage
+  instantané et aux instantanés horaires.
 category: Use Cases
 order: 4
 language: fr
+sourceHash: c905d2f42d1108c2
 ---
 
 > **Testez tout. Ne risquez rien. Mettez à niveau en toute confiance.**
@@ -38,6 +41,8 @@ Mehmet est un administrateur système expérimenté qui gère des bases de donn�
 ## Solution de rediacc
 
 Mehmet résout fondamentalement le problème avec Rediacc :
+
+![Risk-Free Upgrades](/img/risk-free-upgrades.svg)
 
 ### 1. **Clonage instantané** 
 * Un **clone de la base de données de 100 To est créé en quelques secondes** 

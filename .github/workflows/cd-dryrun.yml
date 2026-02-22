@@ -106,16 +106,26 @@ jobs:
       # Step 2: Build Linux packages (DEB/RPM) - ONCE
       # -----------------------------------------------------------------------
       - name: Install packaging tools
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq dpkg-dev createrepo-c rpm gnupg
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq dpkg-dev createrepo-c gnupg
+          # Install nfpm (unified Linux package builder — replaces dpkg-deb + rpmbuild)
+          source .ci/config/constants.sh
+          curl -sfL "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_Linux_x86_64.tar.gz" \
+            | sudo tar xz -C /usr/local/bin nfpm
 
       - name: Build Linux packages
         run: |
           VERSION="${{ inputs.next_version }}"
           mkdir -p dist/packages
-          .ci/scripts/build/build-deb.sh --binary dist/cli/rdc-linux-x64 --version "$VERSION" --arch amd64 --output dist/packages
-          .ci/scripts/build/build-deb.sh --binary dist/cli/rdc-linux-arm64 --version "$VERSION" --arch arm64 --output dist/packages
-          .ci/scripts/build/build-rpm.sh --binary dist/cli/rdc-linux-x64 --version "$VERSION" --arch x86_64 --output dist/packages
-          .ci/scripts/build/build-rpm.sh --binary dist/cli/rdc-linux-arm64 --version "$VERSION" --arch aarch64 --output dist/packages
+          for format in deb rpm apk archlinux; do
+            for pair in "dist/cli/rdc-linux-x64:amd64" "dist/cli/rdc-linux-arm64:arm64"; do
+              binary="${pair%%:*}"; arch="${pair##*:}"
+              .ci/scripts/build/build-linux-pkg.sh \
+                --binary "$binary" --version "$VERSION" \
+                --arch "$arch" --format "$format" \
+                --output dist/packages
+            done
+          done
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
@@ -212,6 +222,10 @@ jobs:
           DESKTOP_COUNT=$(find dist/desktop -type f 2>/dev/null | wc -l)
           CLI_COUNT=$(find dist/cli -type f 2>/dev/null | wc -l)
           PKG_COUNT=$(find dist/packages -type f 2>/dev/null | wc -l)
+          DEB_COUNT=$(find dist/packages -name "*.deb" 2>/dev/null | wc -l)
+          RPM_COUNT=$(find dist/packages -name "*.rpm" 2>/dev/null | wc -l)
+          APK_COUNT=$(find dist/packages -name "*.apk" 2>/dev/null | wc -l)
+          ARCH_COUNT=$(find dist/packages -name "*.pkg.tar.zst" 2>/dev/null | wc -l)
           PAGES_SIZE=$(du -sh dist/pages/ 2>/dev/null | cut -f1 || echo "N/A")
           APT_FILES=$(find dist/pages/apt/dists -type f 2>/dev/null | wc -l)
           RPM_FILES=$(find dist/pages/rpm/repodata -type f 2>/dev/null | wc -l)
@@ -220,7 +234,7 @@ jobs:
           echo "|----------|------------|" >> $GITHUB_STEP_SUMMARY
           echo "| Desktop artifacts | $DESKTOP_COUNT files |" >> $GITHUB_STEP_SUMMARY
           echo "| CLI artifacts | $CLI_COUNT files |" >> $GITHUB_STEP_SUMMARY
-          echo "| Linux packages | $PKG_COUNT files |" >> $GITHUB_STEP_SUMMARY
+          echo "| Linux packages | $PKG_COUNT files (deb:$DEB_COUNT rpm:$RPM_COUNT apk:$APK_COUNT arch:$ARCH_COUNT) |" >> $GITHUB_STEP_SUMMARY
           echo "| Pages bundle | $PAGES_SIZE |" >> $GITHUB_STEP_SUMMARY
           echo "| APT metadata | $APT_FILES files |" >> $GITHUB_STEP_SUMMARY
           echo "| RPM metadata | $RPM_FILES files |" >> $GITHUB_STEP_SUMMARY
@@ -240,6 +254,22 @@ jobs:
           fi
           if [[ "$PKG_COUNT" -eq 0 ]]; then
             echo "::error::No Linux packages found"
+            FAILED=true
+          fi
+          if [[ "$DEB_COUNT" -lt 2 ]]; then
+            echo "::error::Expected at least 2 DEB packages, found $DEB_COUNT"
+            FAILED=true
+          fi
+          if [[ "$RPM_COUNT" -lt 2 ]]; then
+            echo "::error::Expected at least 2 RPM packages, found $RPM_COUNT"
+            FAILED=true
+          fi
+          if [[ "$APK_COUNT" -lt 2 ]]; then
+            echo "::error::Expected at least 2 APK packages, found $APK_COUNT"
+            FAILED=true
+          fi
+          if [[ "$ARCH_COUNT" -lt 2 ]]; then
+            echo "::error::Expected at least 2 Archlinux packages, found $ARCH_COUNT"
             FAILED=true
           fi
           if [[ "$APT_FILES" -eq 0 ]]; then
@@ -304,7 +334,7 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Attest staging release artifact
         if: ${{ !inputs.dry_run }}
-        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be  # v2
+        uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f  # v3
         with:
           subject-path: |
             dist/desktop/**/*
@@ -313,7 +343,7 @@ jobs:
 
       - name: Attest staging pages artifact
         if: ${{ !inputs.dry_run }}
-        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be  # v2
+        uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f  # v3
         with:
           subject-path: |
             dist/pages/apt/dists/**/*

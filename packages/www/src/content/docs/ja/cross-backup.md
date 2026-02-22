@@ -4,6 +4,7 @@ description: 大陸を越えた効率的なバックアップと迅速なリカ�
 category: Use Cases
 order: 5
 language: ja
+sourceHash: 592ecfdf6477dbba
 ---
 
 > **災害が発生したとき、データは生き残れるでしょうか? Rediacc を使用すると、常にそうなります。**
@@ -37,6 +38,8 @@ language: ja
  * 会社の**評判は著しく損なわれています**
 
 ## Rediacc ソリューション
+
+![Cross Backup Strategy](/img/cross-backup.svg)
 
 ### 1. **最初のバックアップ**
  * 20 TB のデータを初めてリモート サーバーに転送する場合、2 週間かかります

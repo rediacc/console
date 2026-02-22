@@ -1,12 +1,12 @@
 #!/bin/bash
-# Assemble multi-version APT + RPM package repositories with GPG signing
+# Assemble multi-version APT + RPM + APK + Archlinux package repositories with GPG signing
 # Usage:
 #   build-pkg-repo.sh --version VER --local-pkgs DIR --output DIR [--max-versions N] [--dry-run]
 #
 # Options:
 #   --version VER       Current version being built
-#   --local-pkgs DIR    Directory containing current version .deb and .rpm files
-#   --output DIR        Output directory (apt/ and rpm/ will be created here)
+#   --local-pkgs DIR    Directory containing current version .deb, .rpm, .apk, .pkg.tar.zst files
+#   --output DIR        Output directory (apt/, rpm/, apk/, archlinux/ will be created here)
 #   --max-versions N    Maximum number of versions to include (default: 3)
 #   --dry-run           Preview without building
 #
@@ -96,9 +96,7 @@ log_info "  Max versions: $MAX_VERSIONS"
 # =============================================================================
 log_step "Phase 1: GPG setup"
 
-GNUPGHOME_TMP="$(mktemp -d)"
-export GNUPGHOME="$GNUPGHOME_TMP"
-CLEANUP_DIRS=("$GNUPGHOME_TMP")
+CLEANUP_DIRS=()
 cleanup() { rm -rf "${CLEANUP_DIRS[@]}"; }
 trap cleanup EXIT
 
@@ -107,32 +105,41 @@ if [[ -n "${GPG_PASSPHRASE:-}" ]]; then
     GPG_OPTS+=(--passphrase "$GPG_PASSPHRASE")
 fi
 
-if [[ -z "${GPG_PRIVATE_KEY:-}" ]]; then
-    log_error "GPG_PRIVATE_KEY environment variable is required"
-    exit 1
-fi
+mkdir -p "$OUTPUT_DIR/apt" "$OUTPUT_DIR/rpm" "$OUTPUT_DIR/apk" "$OUTPUT_DIR/archlinux"
 
-echo "$GPG_PRIVATE_KEY" | gpg "${GPG_OPTS[@]}" --import 2>/dev/null
-log_info "GPG private key imported"
-
-# Get the key ID for signing
-GPG_KEY_ID=$(gpg --list-keys --with-colons 2>/dev/null | grep '^pub' | head -1 | cut -d: -f5)
-log_info "Using GPG key: $GPG_KEY_ID"
-
-# Export public key
-REPO_ROOT="$(get_repo_root)"
-PUBLIC_KEY_FILE="$REPO_ROOT/.ci/keys/gpg-public.asc"
-
-mkdir -p "$OUTPUT_DIR/apt" "$OUTPUT_DIR/rpm"
-
-if [[ -f "$PUBLIC_KEY_FILE" ]]; then
-    cp "$PUBLIC_KEY_FILE" "$OUTPUT_DIR/apt/gpg.key"
-    cp "$PUBLIC_KEY_FILE" "$OUTPUT_DIR/rpm/gpg.key"
-    log_info "Copied public key from $PUBLIC_KEY_FILE"
+if [[ "$DRY_RUN" == "true" ]]; then
+    log_info "[DRY-RUN] Skipping GPG setup"
+    GPG_KEY_ID=""
 else
-    gpg --armor --export "$GPG_KEY_ID" >"$OUTPUT_DIR/apt/gpg.key"
-    gpg --armor --export "$GPG_KEY_ID" >"$OUTPUT_DIR/rpm/gpg.key"
-    log_warn "No public key file found at $PUBLIC_KEY_FILE, exported from keyring"
+    if [[ -z "${GPG_PRIVATE_KEY:-}" ]]; then
+        log_error "GPG_PRIVATE_KEY environment variable is required"
+        exit 1
+    fi
+
+    GNUPGHOME_TMP="$(mktemp -d)"
+    export GNUPGHOME="$GNUPGHOME_TMP"
+    CLEANUP_DIRS+=("$GNUPGHOME_TMP")
+
+    echo "$GPG_PRIVATE_KEY" | gpg "${GPG_OPTS[@]}" --import 2>/dev/null
+    log_info "GPG private key imported"
+
+    # Get the key ID for signing
+    GPG_KEY_ID=$(gpg --list-keys --with-colons 2>/dev/null | grep '^pub' | head -1 | cut -d: -f5)
+    log_info "Using GPG key: $GPG_KEY_ID"
+
+    # Export public key
+    REPO_ROOT="$(get_repo_root)"
+    PUBLIC_KEY_FILE="$REPO_ROOT/.ci/keys/gpg-public.asc"
+
+    if [[ -f "$PUBLIC_KEY_FILE" ]]; then
+        cp "$PUBLIC_KEY_FILE" "$OUTPUT_DIR/apt/gpg.key"
+        cp "$PUBLIC_KEY_FILE" "$OUTPUT_DIR/rpm/gpg.key"
+        log_info "Copied public key from $PUBLIC_KEY_FILE"
+    else
+        gpg --armor --export "$GPG_KEY_ID" >"$OUTPUT_DIR/apt/gpg.key"
+        gpg --armor --export "$GPG_KEY_ID" >"$OUTPUT_DIR/rpm/gpg.key"
+        log_warn "No public key file found at $PUBLIC_KEY_FILE, exported from keyring"
+    fi
 fi
 
 # =============================================================================
@@ -193,6 +200,30 @@ for ver in "${VERSIONS[@]}"; do
             log_info "  Downloaded $rpm_asset"
         else
             log_warn "  Asset not found: $rpm_asset (skipping)"
+        fi
+    done
+
+    for arch in amd64 arm64; do
+        apk_asset="${PKG_NAME}-${ver}-r1-${arch}.apk"
+        if gh release download "v$ver" \
+            --repo "$PKG_RELEASE_REPO" \
+            --pattern "$apk_asset" \
+            --dir "$DOWNLOAD_DIR" 2>/dev/null; then
+            log_info "  Downloaded $apk_asset"
+        else
+            log_warn "  Asset not found: $apk_asset (skipping)"
+        fi
+    done
+
+    for arch in x86_64 aarch64; do
+        arch_asset="${PKG_NAME}-${ver}-1-${arch}.pkg.tar.zst"
+        if gh release download "v$ver" \
+            --repo "$PKG_RELEASE_REPO" \
+            --pattern "$arch_asset" \
+            --dir "$DOWNLOAD_DIR" 2>/dev/null; then
+            log_info "  Downloaded $arch_asset"
+        else
+            log_warn "  Asset not found: $arch_asset (skipping)"
         fi
     done
 done
@@ -341,9 +372,130 @@ gpgkey=https://www.rediacc.com/rpm/gpg.key
 EOF
 
 # =============================================================================
+# Phase 6: Build Alpine APK Repository
+# =============================================================================
+log_step "Phase 6: Building Alpine APK repository metadata"
+
+APK_DIR="$OUTPUT_DIR/apk"
+
+APK_WORK_DIR="$(mktemp -d)"
+CLEANUP_DIRS+=("$APK_WORK_DIR")
+
+# Organize packages by architecture (APK repos are per-arch)
+for arch in x86_64 aarch64; do
+    nfpm_arch="amd64"
+    [[ "$arch" == "aarch64" ]] && nfpm_arch="arm64"
+
+    arch_work="$APK_WORK_DIR/$arch"
+    mkdir -p "$arch_work"
+
+    # Copy APK packages for this architecture
+    for src_dir in "$LOCAL_PKGS" "$DOWNLOAD_DIR"; do
+        find "$src_dir" -name "*-${nfpm_arch}.apk" -exec cp {} "$arch_work/" \; 2>/dev/null || true
+    done
+done
+
+APK_COUNT_TOTAL=0
+for arch in x86_64 aarch64; do
+    count=$(find "$APK_WORK_DIR/$arch" -name "*.apk" 2>/dev/null | wc -l)
+    APK_COUNT_TOTAL=$((APK_COUNT_TOTAL + count))
+done
+log_info "APK: generating metadata for $APK_COUNT_TOTAL packages (packages served via GitHub Releases)"
+
+if [[ "$DRY_RUN" == "true" ]]; then
+    log_info "[DRY-RUN] Would generate APK repository metadata"
+else
+    for arch in x86_64 aarch64; do
+        arch_work="$APK_WORK_DIR/$arch"
+        arch_count=$(find "$arch_work" -name "*.apk" 2>/dev/null | wc -l)
+
+        if [[ "$arch_count" -eq 0 ]]; then
+            log_warn "No APK packages found for $arch, skipping"
+            continue
+        fi
+
+        mkdir -p "$APK_DIR/$arch"
+
+        log_info "Generating APKINDEX for $arch ($arch_count packages)..."
+        if command -v docker &>/dev/null; then
+            docker run --rm -v "$arch_work:/repo:ro" -v "$APK_DIR/$arch:/out" \
+                alpine:latest sh -c \
+                "apk index --allow-untrusted -o /out/APKINDEX.tar.gz /repo/*.apk"
+        else
+            log_warn "Docker not available, cannot generate APKINDEX for $arch"
+        fi
+    done
+
+    log_info "APK repository metadata built (unsigned — APK signing uses RSA keys, not GPG)"
+fi
+
+# =============================================================================
+# Phase 7: Build Arch Linux Repository
+# =============================================================================
+log_step "Phase 7: Building Arch Linux repository metadata"
+
+ARCHLINUX_DIR="$OUTPUT_DIR/archlinux"
+
+ARCHLINUX_WORK_DIR="$(mktemp -d)"
+CLEANUP_DIRS+=("$ARCHLINUX_WORK_DIR")
+
+for arch in x86_64 aarch64; do
+    arch_work="$ARCHLINUX_WORK_DIR/$arch"
+    mkdir -p "$arch_work"
+
+    # Copy Archlinux packages for this architecture
+    for src_dir in "$LOCAL_PKGS" "$DOWNLOAD_DIR"; do
+        find "$src_dir" -name "*-${arch}.pkg.tar.zst" -exec cp {} "$arch_work/" \; 2>/dev/null || true
+    done
+done
+
+ARCH_COUNT_TOTAL=0
+for arch in x86_64 aarch64; do
+    count=$(find "$ARCHLINUX_WORK_DIR/$arch" -name "*.pkg.tar.zst" 2>/dev/null | wc -l)
+    ARCH_COUNT_TOTAL=$((ARCH_COUNT_TOTAL + count))
+done
+log_info "Archlinux: generating metadata for $ARCH_COUNT_TOTAL packages (packages served via GitHub Releases)"
+
+if [[ "$DRY_RUN" == "true" ]]; then
+    log_info "[DRY-RUN] Would generate Archlinux repository metadata"
+else
+    for arch in x86_64 aarch64; do
+        arch_work="$ARCHLINUX_WORK_DIR/$arch"
+        arch_count=$(find "$arch_work" -name "*.pkg.tar.zst" 2>/dev/null | wc -l)
+
+        if [[ "$arch_count" -eq 0 ]]; then
+            log_warn "No Archlinux packages found for $arch, skipping"
+            continue
+        fi
+
+        mkdir -p "$ARCHLINUX_DIR/$arch"
+
+        log_info "Generating pacman database for $arch ($arch_count packages)..."
+        if command -v docker &>/dev/null; then
+            docker run --rm -v "$arch_work:/repo" -v "$ARCHLINUX_DIR/$arch:/out" \
+                archlinux:latest bash -c \
+                "cp /repo/*.pkg.tar.zst /out/ 2>/dev/null; repo-add /out/rediacc.db.tar.gz /out/*.pkg.tar.zst 2>/dev/null; rm -f /out/*.pkg.tar.zst"
+        else
+            log_warn "Docker not available, cannot generate pacman database for $arch"
+        fi
+    done
+
+    # Write pacman.conf snippet
+    cat >"$ARCHLINUX_DIR/rediacc.conf" <<EOF
+[rediacc]
+SigLevel = Optional TrustAll
+Server = https://www.rediacc.com/archlinux/\$arch
+EOF
+
+    log_info "Archlinux repository metadata built"
+fi
+
+# =============================================================================
 # Summary
 # =============================================================================
 log_step "Package repository build complete (metadata only)"
 log_info "  APT: $APT_DIR/ (metadata for $DEB_COUNT .deb packages)"
 log_info "  RPM: $RPM_DIR/ (metadata for $RPM_COUNT .rpm packages)"
-log_info "  Packages are served via nginx redirects to GitHub Releases"
+log_info "  APK: $APK_DIR/ (metadata for $APK_COUNT_TOTAL .apk packages)"
+log_info "  Archlinux: $ARCHLINUX_DIR/ (metadata for $ARCH_COUNT_TOTAL .pkg.tar.zst packages)"
+log_info "  Packages are served via redirect to GitHub Releases"

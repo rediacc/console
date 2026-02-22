@@ -31,7 +31,6 @@ Dockerfile text eol=lf
 Makefile text eol=lf
 LICENSE text eol=lf
 README text eol=lf
-go text eol=lf
 Rediaccfile text eol=lf
 *.config.js text eol=lf
 *.config.ts text eol=lf

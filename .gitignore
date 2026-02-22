@@ -54,6 +54,9 @@ Thumbs.db
 .provision-state
 .vm-info
 
+# Generated SEA config (platform-specific, created during CI build)
+sea-config.generated.json
+
 # Build artifacts
 .build_cache/
 playwright/conf.conf

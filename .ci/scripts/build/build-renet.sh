@@ -89,7 +89,7 @@ if [[ "$SKIP_EMBED" != "true" ]]; then
     EMBED_DIR="$RENET_DIR/pkg/embed/assets"
     mkdir -p "$EMBED_DIR"
 
-    for asset in criu-linux-amd64 criu-linux-arm64 rsync-linux-amd64 rsync-linux-arm64; do
+    for asset in criu-linux-amd64 criu-linux-arm64 rsync-linux-amd64 rsync-linux-arm64 rclone-linux-amd64 rclone-linux-arm64; do
         if [[ -f "$ASSETS_DIR/$asset" ]]; then
             log_info "Embedding $asset..."
             gzip -c "$ASSETS_DIR/$asset" >"$EMBED_DIR/$asset.gz"
@@ -101,6 +101,11 @@ if [[ "$SKIP_EMBED" != "true" ]]; then
 
     log_info "Embedded assets:"
     ls -la "$EMBED_DIR"
+
+    # Stage proxy and datastore docs for go:embed
+    log_info "Staging proxy/datastore for embedding..."
+    cp "$REPO_ROOT/private/renet/proxy/docker-compose.yml" "$RENET_DIR/pkg/embed/proxy/"
+    cp "$REPO_ROOT/private/renet/docs/datastore/README.md" "$RENET_DIR/pkg/embed/datastore/"
 else
     log_info "Skipping asset embedding (--skip-embed)"
 fi
@@ -112,29 +117,49 @@ require_cmd go
 
 cd "$RENET_DIR"
 
+for os in linux darwin; do
+    for arch in amd64 arm64; do
+        log_info "Building renet-$os-$arch..."
+        CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build \
+            -ldflags="-s -w -X main.Version=$VERSION" \
+            -o "$OUTPUT_DIR/renet-$os-$arch" ./cmd/renet
+    done
+done
+
+# Windows targets (Hyper-V backend)
 for arch in amd64 arm64; do
-    log_info "Building renet-linux-$arch..."
-    CGO_ENABLED=0 GOOS=linux GOARCH=$arch go build \
+    log_info "Building renet-windows-$arch..."
+    CGO_ENABLED=0 GOOS=windows GOARCH=$arch go build \
         -ldflags="-s -w -X main.Version=$VERSION" \
-        -o "$OUTPUT_DIR/renet-linux-$arch" ./cmd/renet
+        -o "$OUTPUT_DIR/renet-windows-$arch.exe" ./cmd/renet
 done
 
 # Generate checksums
 log_step "Generating checksums..."
 cd "$OUTPUT_DIR"
-sha256sum renet-linux-* >checksums.sha256
+sha256sum renet-* >checksums.sha256
 
 log_info "Renet binaries built successfully:"
-ls -la "$OUTPUT_DIR"/renet-linux-*
+ls -la "$OUTPUT_DIR"/renet-*
 cat "$OUTPUT_DIR/checksums.sha256"
 
 # Verify release build (no debug info)
 log_step "Verifying release builds..."
+for os in linux darwin; do
+    for arch in amd64 arm64; do
+        binary="$OUTPUT_DIR/renet-$os-$arch"
+        if ! file "$binary" | grep -q "not stripped"; then
+            log_info "renet-$os-$arch: stripped (release build)"
+        else
+            log_warn "renet-$os-$arch: may contain debug symbols"
+        fi
+    done
+done
+
+# Windows binaries are PE format, file(1) reports differently
 for arch in amd64 arm64; do
-    binary="$OUTPUT_DIR/renet-linux-$arch"
-    if file "$binary" | grep -q "stripped"; then
-        log_info "renet-linux-$arch: stripped (release build)"
-    else
-        log_warn "renet-linux-$arch: may contain debug symbols"
+    binary="$OUTPUT_DIR/renet-windows-$arch.exe"
+    if [[ -f "$binary" ]]; then
+        log_info "renet-windows-$arch.exe: $(file -b "$binary" | head -c 80)"
     fi
 done

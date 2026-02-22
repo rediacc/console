@@ -1,10 +1,10 @@
 ---
 title: アーキテクチャ
 description: Rediaccの仕組み：2ツールアーキテクチャ、動作モード、セキュリティモデル、設定構造。
-category: Guides
-order: 2
+category: Concepts
+order: 0
 language: ja
-sourceHash: 8f910f7827c8e958
+sourceHash: 58ba0da9645bb9dd
 ---
 
 # アーキテクチャ
@@ -12,6 +12,14 @@ sourceHash: 8f910f7827c8e958
 どのツールを使うべきか迷う場合は、[rdc vs renet](/ja/docs/rdc-vs-renet) を参照してください。
 
 このページでは、Rediaccの内部の仕組みについて説明します：2ツールアーキテクチャ、動作モード、セキュリティモデル、設定構造。
+
+## Full Stack Overview
+
+Traffic flows from the internet through a reverse proxy, into isolated Docker daemons, each backed by encrypted storage:
+
+![Full Stack Architecture](/img/arch-full-stack.svg)
+
+Each repository gets its own Docker daemon, loopback IP subnet (/26 = 64 IPs), and LUKS-encrypted BTRFS volume. The route server discovers running containers across all daemons and feeds routing configuration to Traefik.
 
 ## 2ツールアーキテクチャ
 

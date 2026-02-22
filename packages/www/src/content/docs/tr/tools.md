@@ -1,29 +1,38 @@
 ---
-title: "Araçlar"
-description: "Dosya senkronizasyonu, terminal erisimi, VS Code entegrasyonu, guncellemeler ve tanilamalar."
-category: "Guides"
+title: Araçlar
+description: >-
+  Dosya senkronizasyonu, terminal erişimi, VS Code entegrasyonu, güncellemeler
+  ve tanılamalar.
+category: Guides
 order: 8
 language: tr
+sourceHash: 80ca3cd3e1a55d4b
 ---
 
 # Araçlar
 
-Rediacc, uzak depolarla çalışmak için çeşitli üretkenlik araçları içerir. Bu araçlar, bağlam yapılandırmanız tarafından kurulan SSH bağlantısı üzerine inşa edilmiştir.
+Rediacc, uzak depolarla çalışmak için üretkenlik araçları içerir: dosya senkronizasyonu, SSH terminali, VS Code entegrasyonu ve CLI güncellemeleri.
 
 ## Dosya Senkronizasyonu (sync)
 
-rsync over SSH kullanarak iş istasyonunuz ile uzak depo arasında dosya aktarımı yapın.
+SSH üzerinden rsync kullanarak iş istasyonunuz ile uzak depo arasında dosya aktarımı yapın.
 
 ### Dosya Yükleme
 
 ```bash
-rdc sync upload my-app -m server-1 --local ./src --remote /app/src
+rdc sync upload -m server-1 -r my-app --local ./src --remote /app/src
 ```
 
 ### Dosya İndirme
 
 ```bash
-rdc sync download my-app -m server-1 --remote /app/data --local ./data
+rdc sync download -m server-1 -r my-app --remote /app/data --local ./data
+```
+
+### Senkronizasyon Durumunu Kontrol Etme
+
+```bash
+rdc sync status -m server-1 -r my-app
 ```
 
 ### Seçenekler
@@ -31,34 +40,81 @@ rdc sync download my-app -m server-1 --remote /app/data --local ./data
 | Seçenek | Açıklama |
 |---------|----------|
 | `-m, --machine <name>` | Hedef makine |
+| `-r, --repository <name>` | Hedef depo |
 | `--local <path>` | Yerel dizin yolu |
 | `--remote <path>` | Uzak yol (depo bağlama noktasına göre) |
 | `--dry-run` | Aktarım yapmadan değişiklikleri önizle |
-| `--delete` | Kaynakta bulunmayan dosyaları hedefte sil |
-
-`--dry-run` bayrağı, senkronizasyona başlamadan önce nelerin aktarılacağını önizlemek için kullanışlıdır.
+| `--mirror` | Kaynağı hedefe yansıt (fazla dosyaları sil) |
+| `--verify` | Aktarım sonrası sağlama toplamlarını doğrula |
+| `--confirm` | Ayrıntılı görünümle etkileşimli onay |
+| `--exclude <patterns...>` | Dosya desenlerini hariç tut |
+| `--skip-router-restart` | İşlem sonrası yönlendirme sunucusunu yeniden başlatmayı atla |
 
 ## SSH Terminali (term)
 
-Bir makineye veya doğrudan bir deponun bağlama yoluna etkileşimli SSH oturumu açın.
+Bir makineye veya depo ortamına etkileşimli SSH oturumu açın.
 
-### Makineye Bağlanma
+### Kısa Sözdizimi
 
-```bash
-rdc term connect server-1
-```
-
-### Depoya Bağlanma
+Bağlanmanın en hızlı yolu:
 
 ```bash
-rdc term connect my-app -m server-1
+rdc term server-1                    # Bir makineye bağlan
+rdc term server-1 my-app             # Bir depoya bağlan
 ```
 
-Bir depoya bağlanırken, terminal oturumu deponun bağlama dizininde ve deponun Docker soketi yapılandırılmış olarak başlar.
+### Komut Çalıştırma
+
+Etkileşimli oturum açmadan bir komut çalıştırın:
+
+```bash
+rdc term server-1 -c "uptime"
+rdc term server-1 my-app -c "docker ps"
+```
+
+Bir depoya bağlanırken, `DOCKER_HOST` otomatik olarak deponun izole Docker soketine ayarlanır, böylece `docker ps` yalnızca o deponun konteynerlerini gösterir.
+
+### Connect Alt Komutu
+
+`connect` alt komutu, açık bayraklarla aynı işlevselliği sağlar:
+
+```bash
+rdc term connect -m server-1
+rdc term connect -m server-1 -r my-app
+```
+
+### Konteyner İşlemleri
+
+Çalışan bir konteynerle doğrudan etkileşim kurun:
+
+```bash
+# Konteyner içinde kabuk aç
+rdc term server-1 my-app --container <container-id>
+
+# Konteyner günlüklerini görüntüle
+rdc term server-1 my-app --container <container-id> --container-action logs
+
+# Günlükleri gerçek zamanlı takip et
+rdc term server-1 my-app --container <container-id> --container-action logs --follow
+
+# Konteyner istatistiklerini görüntüle
+rdc term server-1 my-app --container <container-id> --container-action stats
+
+# Konteynerde komut çalıştır
+rdc term server-1 my-app --container <container-id> --container-action exec -c "ls -la"
+```
+
+| Seçenek | Açıklama |
+|---------|----------|
+| `--container <id>` | Hedef Docker konteyner kimliği |
+| `--container-action <action>` | İşlem: `terminal` (varsayılan), `logs`, `stats`, `exec` |
+| `--log-lines <n>` | Gösterilecek günlük satır sayısı (varsayılan: 50) |
+| `--follow` | Günlükleri sürekli takip et |
+| `--external` | Satır içi SSH yerine harici terminal kullan |
 
 ## VS Code Entegrasyonu (vscode)
 
-Doğru SSH ayarları ve Remote SSH uzantısı ile önceden yapılandırılmış olarak VS Code'da uzak SSH oturumu açın.
+Doğru SSH ayarlarıyla önceden yapılandırılmış bir uzak SSH oturumunu VS Code'da açın.
 
 ### Depoya Bağlanma
 
@@ -78,8 +134,6 @@ Bu komut:
 rdc vscode list
 ```
 
-VS Code için yapılandırılmış tüm SSH bağlantılarını gösterir.
-
 ### Bağlantıları Temizleme
 
 ```bash
@@ -88,11 +142,19 @@ rdc vscode clean
 
 Artık gerekli olmayan VS Code SSH yapılandırmalarını kaldırır.
 
-> **Ön koşul:** VS Code'da [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh) uzantısını kurun.
+### Yapılandırmayı Kontrol Etme
+
+```bash
+rdc vscode check
+```
+
+VS Code kurulumunu, Remote SSH eklentisini ve etkin bağlantıları doğrular.
+
+> **Ön koşul:** VS Code'da [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh) eklentisini kurun.
 
 ## CLI Güncellemeleri (update)
 
-`rdc` CLI'ı en son özellikler ve hata düzeltmeleriyle güncel tutun.
+`rdc` CLI'ını güncel tutun.
 
 ### Güncellemeleri Kontrol Etme
 
@@ -100,13 +162,13 @@ Artık gerekli olmayan VS Code SSH yapılandırmalarını kaldırır.
 rdc update --check-only
 ```
 
-### Güncelleme Uygulama
+### Güncellemeyi Uygulama
 
 ```bash
 rdc update
 ```
 
-Güncellemeler indirilir ve yerinde uygulanır. Yeni sürüm bir sonraki çalıştırmada etkinleşir.
+Güncellemeler indirilir ve yerinde uygulanır. CLI, platformunuz (Linux, macOS veya Windows) için doğru ikili dosyayı otomatik olarak seçer. Yeni sürüm bir sonraki çalıştırmada etkin olur.
 
 ### Geri Alma
 
@@ -114,31 +176,12 @@ Güncellemeler indirilir ve yerinde uygulanır. Yeni sürüm bir sonraki çalı�
 rdc update rollback
 ```
 
-Önceden kurulu olan sürüme geri döner. Yalnızca bir güncelleme uygulandıktan sonra kullanılabilir.
+Önceden yüklenmiş sürüme geri döner. Yalnızca bir güncelleme uygulandıktan sonra kullanılabilir.
 
-### Otomatik Güncelleme Durumu
+### Güncelleme Durumu
 
 ```bash
 rdc update status
 ```
 
 Mevcut sürümü, güncelleme kanalını ve otomatik güncelleme yapılandırmasını gösterir.
-
-## Sistem Tanılamaları (doctor)
-
-Rediacc ortamınızın kapsamlı bir tanılama kontrolünü çalıştırın.
-
-```bash
-rdc doctor
-```
-
-doctor komutu şunları kontrol eder:
-
-| Kategori | Kontroller |
-|----------|------------|
-| **Ortam** | Node.js sürümü, CLI sürümü, SEA modu |
-| **Renet** | İkili dosya varlığı, sürüm, gömülü CRIU ve rsync |
-| **Yapılandırma** | Aktif bağlam, mod, makineler, SSH anahtarı |
-| **Kimlik Doğrulama** | Oturum durumu |
-
-Her kontrol, kısa bir açıklamayla birlikte **Tamam**, **Uyarı** veya **Hata** durumu bildirir. Herhangi bir sorunu giderirken ilk adım olarak bunu kullanın.

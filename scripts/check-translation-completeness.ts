@@ -212,7 +212,7 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
   /^(Intel|Apple Silicon|ARM)\b/, // Architecture labels
   /^ARM\w*$/, // ARM variants
   /\(x64\)|\(ARM64\)|\(\.deb\)|\(\.rpm\)/, // Architecture/file type suffixes
-  /^(APT|DNF|Homebrew)\s*\(/, // Package manager labels with OS in parens
+  /^(APT|APK|DNF|Homebrew|Pacman)\s*\(/, // Package manager labels with OS in parens
   /^Debian\/Ubuntu/, // Distro-specific labels
   /^Rediacc\s+(Desktop|CLI)/, // Product sub-names
   /^\$[\d,]+$/, // Price values like $19,999

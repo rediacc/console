@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: ar
-sourceHash: 8add6342eea14e41
+sourceHash: c4048b13799a7767
 ---
 
 # الخدمات
@@ -136,6 +136,13 @@ down() {
 
 يُحسب عنوان IP للخدمة من معرّف شبكة المستودع وفتحة الخدمة. يتم توزيع معرّف الشبكة على الثُمانية الثانية والثالثة والرابعة من عنوان الاسترجاع `127.x.y.z`. تحصل كل خدمة على إزاحة `slot + 2` (الإزاحتان 0 و 1 محجوزتان).
 
+| Offset | Address | Purpose |
+|--------|---------|---------|
+| .0 | `127.0.11.0` | Network address (reserved) |
+| .1 | `127.0.11.1` | Gateway (reserved) |
+| .2 – .62 | `127.0.11.2` – `127.0.11.62` | Services (`slot + 2`) |
+| .63 | `127.0.11.63` | Broadcast (reserved) |
+
 **مثال** لمعرّف الشبكة `2816` (`0x0B00`)، العنوان الأساسي `127.0.11.0`:
 
 | الخدمة | الفتحة | عنوان IP |
@@ -180,6 +187,7 @@ rdc repo up my-app -m server-1 --mount
 |--------|-------|
 | `--mount` | تحميل المستودع أولاً إن لم يكن محمّلاً بالفعل |
 | `--prep-only` | تشغيل دوال `prep()` فقط، وتخطي `up()` |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 تسلسل التنفيذ هو:
 1. تحميل المستودع المشفر بـ LUKS (إذا تم تحديد `--mount`)
@@ -197,6 +205,7 @@ rdc repo down my-app -m server-1
 | الخيار | الوصف |
 |--------|-------|
 | `--unmount` | إلغاء تحميل المستودع المشفر بعد إيقاف الخدمات |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 تسلسل التنفيذ هو:
 1. تشغيل `down()` في جميع ملفات Rediaccfile (بترتيب Z-A عكسي، أفضل جهد)
@@ -218,6 +227,7 @@ rdc repo up-all -m server-1
 | `--dry-run` | عرض ما سيتم تنفيذه |
 | `--parallel` | تشغيل العمليات بالتوازي |
 | `--concurrency <n>` | الحد الأقصى للعمليات المتزامنة (الافتراضي: 3) |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## التشغيل التلقائي عند الإقلاع
 

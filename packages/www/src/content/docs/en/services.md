@@ -14,7 +14,7 @@ This page covers how to deploy and manage containerized services: Rediaccfiles, 
 
 ## The Rediaccfile
 
-The **Rediaccfile** is a Bash script that defines how your services are prepared, started, and stopped. It must be named `Rediaccfile` or `rediaccfile` (case-insensitive) and placed inside the repository's mounted filesystem.
+The **Rediaccfile** is a Bash script that defines how your services are prepared, started, and stopped. It is **sourced** (not executed as a separate process), so its functions share the same shell context and have access to all exported environment variables. It must be named `Rediaccfile` or `rediaccfile` (case-insensitive) and placed inside the repository's mounted filesystem.
 
 Rediaccfiles are discovered in two locations:
 1. The **root** of the repository mount path
@@ -51,7 +51,7 @@ When a Rediaccfile function executes, the following environment variables are av
 | `DOCKER_HOST` | Docker socket for this repository's isolated daemon | `unix:///var/run/rediacc/docker-2816.sock` |
 | `{SERVICE}_IP` | Loopback IP for each service defined in `.rediacc.json` | `POSTGRES_IP=127.0.11.2` |
 
-The `{SERVICE}_IP` variables are auto-generated from `.rediacc.json`. The naming convention converts the service name to uppercase with hyphens replaced by underscores, then appends `_IP`. For example, `listmonk-app` becomes `LISTMONK_APP_IP`.
+The `{SERVICE}_IP` variables are auto-generated from the slot mappings in `.rediacc.json` and exported before your Rediaccfile functions run. The naming convention converts the service name to uppercase with hyphens replaced by underscores, then appends `_IP`. For example, a service named `listmonk-app` with slot `0` becomes `LISTMONK_APP_IP=127.0.11.2`.
 
 > **Warning: Do not use `sudo docker` in Rediaccfiles.** The `sudo` command resets environment variables, which means `DOCKER_HOST` is lost and Docker commands will target the system daemon instead of the repository's isolated daemon. This breaks container isolation and can cause port conflicts. Rediacc will block execution if it detects `sudo docker` without `-E`.
 >
@@ -133,7 +133,14 @@ You do not need to create `.rediacc.json` manually. When you run `rdc repo up`, 
 
 ### IP Calculation
 
-The IP for a service is calculated from the repository's network ID and the service's slot. The network ID is split across the second, third, and fourth octets of a `127.x.y.z` loopback address. Each service gets an offset of `slot + 2` (offsets 0 and 1 are reserved).
+The IP for a service is calculated from the repository's network ID and the service's slot. The network ID is split across the second, third, and fourth octets of a `127.x.y.z` loopback address. Services start at offset 2:
+
+| Offset | Address | Purpose |
+|--------|---------|---------|
+| .0 | `127.0.11.0` | Network address (reserved) |
+| .1 | `127.0.11.1` | Gateway (reserved) |
+| .2 – .62 | `127.0.11.2` – `127.0.11.62` | Services (`slot + 2`) |
+| .63 | `127.0.11.63` | Broadcast (reserved) |
 
 **Example** for network ID `2816` (`0x0B00`), base address `127.0.11.0`:
 
@@ -179,6 +186,7 @@ rdc repo up my-app -m server-1 --mount
 |--------|-------------|
 | `--mount` | Mount the repository first if not already mounted |
 | `--prep-only` | Run only `prep()` functions, skip `up()` |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 The execution sequence is:
 1. Mount the LUKS-encrypted repository (if `--mount`)
@@ -196,6 +204,7 @@ rdc repo down my-app -m server-1
 | Option | Description |
 |--------|-------------|
 | `--unmount` | Unmount the encrypted repository after stopping |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 The execution sequence is:
 1. Run `down()` in all Rediaccfiles (Z-A reverse order, best-effort)
@@ -217,6 +226,7 @@ rdc repo up-all -m server-1
 | `--dry-run` | Show what would be done |
 | `--parallel` | Run operations in parallel |
 | `--concurrency <n>` | Max concurrent operations (default: 3) |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Autostart on Boot
 

@@ -1,7 +1,14 @@
 {
   "name": "rdc",
   "descriptionKey": null,
-  "options": [],
+  "options": [
+    {
+      "flags": "--experimental",
+      "descriptionKey": "options.experimental",
+      "mandatory": false,
+      "defaultValue": null
+    }
+  ],
   "arguments": [],
   "subcommands": [
     {
@@ -1141,6 +1148,12 @@
               "descriptionKey": "options.debug",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [
@@ -1166,6 +1179,12 @@
             {
               "flags": "--debug",
               "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
               "mandatory": false,
               "defaultValue": null
             }
@@ -1201,6 +1220,12 @@
               "descriptionKey": "options.debug",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [
@@ -1232,6 +1257,12 @@
             {
               "flags": "--debug",
               "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
               "mandatory": false,
               "defaultValue": null
             }
@@ -1277,6 +1308,12 @@
             {
               "flags": "--debug",
               "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
               "mandatory": false,
               "defaultValue": null
             }
@@ -1336,6 +1373,12 @@
               "descriptionKey": "options.debug",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [],
@@ -1368,6 +1411,12 @@
               "descriptionKey": "options.debug",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [
@@ -1393,6 +1442,12 @@
             {
               "flags": "--debug",
               "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
               "mandatory": false,
               "defaultValue": null
             }
@@ -1422,6 +1477,12 @@
               "descriptionKey": "options.debug",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [],
@@ -1446,6 +1507,12 @@
             {
               "flags": "--debug",
               "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
               "mandatory": false,
               "defaultValue": null
             }
@@ -1481,6 +1548,12 @@
               "descriptionKey": "options.debug",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [
@@ -1514,6 +1587,12 @@
               "descriptionKey": "options.debug",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [
@@ -1539,6 +1618,12 @@
             {
               "flags": "--debug",
               "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
               "mandatory": false,
               "defaultValue": null
             }
@@ -1574,6 +1659,12 @@
                   "descriptionKey": "options.debug",
                   "mandatory": false,
                   "defaultValue": null
+                },
+                {
+                  "flags": "--skip-router-restart",
+                  "descriptionKey": "options.skipRouterRestart",
+                  "mandatory": false,
+                  "defaultValue": null
                 }
               ],
               "arguments": [
@@ -1599,6 +1690,12 @@
                 {
                   "flags": "--debug",
                   "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--skip-router-restart",
+                  "descriptionKey": "options.skipRouterRestart",
                   "mandatory": false,
                   "defaultValue": null
                 }
@@ -1628,6 +1725,12 @@
                   "descriptionKey": "options.debug",
                   "mandatory": false,
                   "defaultValue": null
+                },
+                {
+                  "flags": "--skip-router-restart",
+                  "descriptionKey": "options.skipRouterRestart",
+                  "mandatory": false,
+                  "defaultValue": null
                 }
               ],
               "arguments": [],
@@ -1648,6 +1751,12 @@
                   "descriptionKey": "options.debug",
                   "mandatory": false,
                   "defaultValue": null
+                },
+                {
+                  "flags": "--skip-router-restart",
+                  "descriptionKey": "options.skipRouterRestart",
+                  "mandatory": false,
+                  "defaultValue": null
                 }
               ],
               "arguments": [],
@@ -1666,6 +1775,12 @@
                 {
                   "flags": "--debug",
                   "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--skip-router-restart",
+                  "descriptionKey": "options.skipRouterRestart",
                   "mandatory": false,
                   "defaultValue": null
                 }
@@ -1694,6 +1809,12 @@
             {
               "flags": "--debug",
               "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
               "mandatory": false,
               "defaultValue": null
             }
@@ -1733,6 +1854,12 @@
             {
               "flags": "--debug",
               "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
               "mandatory": false,
               "defaultValue": null
             }
@@ -1964,6 +2091,12 @@
             {
               "flags": "--debug",
               "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
               "mandatory": false,
               "defaultValue": null
             }
@@ -5158,6 +5291,12 @@
               "descriptionKey": "options.debug",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [
@@ -5209,6 +5348,12 @@
               "descriptionKey": "options.debug",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [
@@ -5252,6 +5397,12 @@
             {
               "flags": "--debug",
               "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
               "mandatory": false,
               "defaultValue": null
             }
@@ -5370,6 +5521,152 @@
               "subcommands": []
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "ops",
+      "descriptionKey": "commands.ops.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "up",
+          "descriptionKey": "commands.ops.up.description",
+          "options": [
+            {
+              "flags": "--force",
+              "descriptionKey": "options.opsForce",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--parallel",
+              "descriptionKey": "options.opsParallel",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--basic",
+              "descriptionKey": "options.opsBasic",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--lite",
+              "descriptionKey": "options.opsLite",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-orchestration",
+              "descriptionKey": "options.opsSkipOrchestration",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--backend <backend>",
+              "descriptionKey": "options.opsBackend",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--os <name>",
+              "descriptionKey": "options.opsOS",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "down",
+          "descriptionKey": "commands.ops.down.description",
+          "options": [
+            {
+              "flags": "--backend <backend>",
+              "descriptionKey": "options.opsBackend",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "status",
+          "descriptionKey": "commands.ops.status.description",
+          "options": [
+            {
+              "flags": "--backend <backend>",
+              "descriptionKey": "options.opsBackend",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "ssh",
+          "descriptionKey": "commands.ops.ssh.description",
+          "options": [
+            {
+              "flags": "--backend <backend>",
+              "descriptionKey": "options.opsBackend",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--user <user>",
+              "descriptionKey": "options.opsSSHUser",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "vmId",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "setup",
+          "descriptionKey": "commands.ops.setup.description",
+          "options": [
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "check",
+          "descriptionKey": "commands.ops.check.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
         }
       ]
     }

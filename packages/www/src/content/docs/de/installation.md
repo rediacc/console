@@ -1,6 +1,6 @@
 ---
 title: "Installation"
-description: "Installieren Sie die Rediacc-CLI unter Linux, macOS oder Windows."
+description: "Installieren Sie die Rediacc-CLI für Linux, macOS oder Windows."
 category: "Guides"
 order: 1
 language: de
@@ -35,6 +35,31 @@ irm https://www.rediacc.com/install.ps1 | iex
 ```
 
 Dies lädt die `rdc.exe`-Datei nach `%LOCALAPPDATA%\rediacc\bin\` herunter. Stellen Sie sicher, dass dieses Verzeichnis in Ihrem PATH enthalten ist. Das Installationsprogramm fordert Sie auf, es hinzuzufügen, falls es noch nicht vorhanden ist.
+
+## Alpine Linux (APK)
+
+```bash
+# Add the repository
+echo "https://www.rediacc.com/apk/x86_64" | sudo tee -a /etc/apk/repositories
+
+# Install
+sudo apk update
+sudo apk add --allow-untrusted rediacc-cli
+```
+
+Hinweis: Das `gcompat`-Paket (glibc-Kompatibilitätsschicht) wird automatisch als Abhängigkeit installiert.
+
+## Arch Linux (Pacman)
+
+```bash
+# Add the repository to /etc/pacman.conf
+echo "[rediacc]
+SigLevel = Optional TrustAll
+Server = https://www.rediacc.com/archlinux/\$arch" | sudo tee -a /etc/pacman.conf
+
+# Install
+sudo pacman -Sy rediacc-cli
+```
 
 ## Installation überprüfen
 

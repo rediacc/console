@@ -1,14 +1,17 @@
 ---
-title: "Werkzeuge"
-description: "Dateisynchronisation, Terminalzugriff, VS Code-Integration, Updates und Diagnose."
-category: "Guides"
+title: Werkzeuge
+description: >-
+  Dateisynchronisation, Terminalzugriff, VS Code-Integration, Updates und
+  Übersicht über Diagnosefunktionen.
+category: Guides
 order: 8
 language: de
+sourceHash: 80ca3cd3e1a55d4b
 ---
 
 # Werkzeuge
 
-Rediacc enthält mehrere Produktivitätswerkzeuge für die Arbeit mit entfernten Repositories. Diese Werkzeuge bauen auf der SSH-Verbindung auf, die durch Ihre Kontext-Konfiguration hergestellt wird.
+Rediacc enthält Produktivitätswerkzeuge für die Arbeit mit entfernten Repositories: Dateisynchronisation, SSH-Terminal, VS Code-Integration und CLI-Updates.
 
 ## Dateisynchronisation (sync)
 
@@ -17,13 +20,19 @@ Rediacc enthält mehrere Produktivitätswerkzeuge für die Arbeit mit entfernten
 ### Dateien hochladen
 
 ```bash
-rdc sync upload my-app -m server-1 --local ./src --remote /app/src
+rdc sync upload -m server-1 -r my-app --local ./src --remote /app/src
 ```
 
 ### Dateien herunterladen
 
 ```bash
-rdc sync download my-app -m server-1 --remote /app/data --local ./data
+rdc sync download -m server-1 -r my-app --remote /app/data --local ./data
+```
+
+### Synchronisierungsstatus prüfen
+
+```bash
+rdc sync status -m server-1 -r my-app
 ```
 
 ### Optionen
@@ -31,34 +40,81 @@ rdc sync download my-app -m server-1 --remote /app/data --local ./data
 | Option | Beschreibung |
 |--------|-------------|
 | `-m, --machine <name>` | Zielmaschine |
+| `-r, --repository <name>` | Ziel-Repository |
 | `--local <path>` | Lokaler Verzeichnispfad |
 | `--remote <path>` | Entfernter Pfad (relativ zum Repository-Einbindungspunkt) |
-| `--dry-run` | Änderungen vorschauen, ohne zu übertragen |
-| `--delete` | Dateien am Ziel löschen, die an der Quelle nicht vorhanden sind |
-
-Das `--dry-run`-Flag ist nützlich, um vor der Synchronisation eine Vorschau der zu übertragenden Dateien zu erhalten.
+| `--dry-run` | Änderungen anzeigen, ohne zu übertragen |
+| `--mirror` | Quelle auf Ziel spiegeln (zusätzliche Dateien löschen) |
+| `--verify` | Prüfsummen nach der Übertragung verifizieren |
+| `--confirm` | Interaktive Bestätigung mit Detailansicht |
+| `--exclude <patterns...>` | Dateimuster ausschließen |
+| `--skip-router-restart` | Neustart des Route-Servers nach der Operation überspringen |
 
 ## SSH-Terminal (term)
 
-Öffnen Sie eine interaktive SSH-Sitzung zu einer Maschine oder direkt in den Einbindungspfad eines Repositories.
+Öffnen Sie eine interaktive SSH-Sitzung zu einer Maschine oder in die Umgebung eines Repositories.
 
-### Mit einer Maschine verbinden
+### Kurzschreibweise
 
-```bash
-rdc term connect server-1
-```
-
-### Mit einem Repository verbinden
+Der schnellste Weg, sich zu verbinden:
 
 ```bash
-rdc term connect my-app -m server-1
+rdc term server-1                    # Mit einer Maschine verbinden
+rdc term server-1 my-app             # Mit einem Repository verbinden
 ```
 
-Bei der Verbindung zu einem Repository startet die Terminal-Sitzung im Einbindungsverzeichnis des Repositories mit dem konfigurierten Docker-Socket des Repositories.
+### Befehl ausführen
+
+Führen Sie einen Befehl aus, ohne eine interaktive Sitzung zu öffnen:
+
+```bash
+rdc term server-1 -c "uptime"
+rdc term server-1 my-app -c "docker ps"
+```
+
+Bei der Verbindung zu einem Repository wird `DOCKER_HOST` automatisch auf den isolierten Docker-Socket des Repositories gesetzt, sodass `docker ps` nur die Container dieses Repositories anzeigt.
+
+### Connect-Unterbefehl
+
+Der `connect`-Unterbefehl bietet die gleiche Funktionalität mit expliziten Flags:
+
+```bash
+rdc term connect -m server-1
+rdc term connect -m server-1 -r my-app
+```
+
+### Container-Aktionen
+
+Interagieren Sie direkt mit einem laufenden Container:
+
+```bash
+# Eine Shell im Container öffnen
+rdc term server-1 my-app --container <container-id>
+
+# Container-Logs anzeigen
+rdc term server-1 my-app --container <container-id> --container-action logs
+
+# Logs in Echtzeit verfolgen
+rdc term server-1 my-app --container <container-id> --container-action logs --follow
+
+# Container-Statistiken anzeigen
+rdc term server-1 my-app --container <container-id> --container-action stats
+
+# Einen Befehl im Container ausführen
+rdc term server-1 my-app --container <container-id> --container-action exec -c "ls -la"
+```
+
+| Option | Beschreibung |
+|--------|-------------|
+| `--container <id>` | Ziel-Docker-Container-ID |
+| `--container-action <action>` | Aktion: `terminal` (Standard), `logs`, `stats`, `exec` |
+| `--log-lines <n>` | Anzahl der anzuzeigenden Log-Zeilen (Standard: 50) |
+| `--follow` | Logs kontinuierlich verfolgen |
+| `--external` | Externes Terminal anstelle von Inline-SSH verwenden |
 
 ## VS Code-Integration (vscode)
 
-Öffnen Sie eine Remote-SSH-Sitzung in VS Code, vorkonfiguriert mit den richtigen SSH-Einstellungen und der Remote-SSH-Erweiterung.
+Öffnen Sie eine Remote-SSH-Sitzung in VS Code, vorkonfiguriert mit den korrekten SSH-Einstellungen.
 
 ### Mit einem Repository verbinden
 
@@ -78,21 +134,27 @@ Dieser Befehl:
 rdc vscode list
 ```
 
-Zeigt alle SSH-Verbindungen an, die für VS Code konfiguriert wurden.
-
 ### Verbindungen bereinigen
 
 ```bash
 rdc vscode clean
 ```
 
-Entfernt VS Code-SSH-Konfigurationen, die nicht mehr benötigt werden.
+Entfernt VS Code SSH-Konfigurationen, die nicht mehr benötigt werden.
+
+### Konfiguration überprüfen
+
+```bash
+rdc vscode check
+```
+
+Überprüft die VS Code-Installation, die Remote-SSH-Erweiterung und aktive Verbindungen.
 
 > **Voraussetzung:** Installieren Sie die [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh)-Erweiterung in VS Code.
 
 ## CLI-Updates (update)
 
-Halten Sie die `rdc`-CLI mit den neuesten Funktionen und Fehlerbehebungen auf dem aktuellen Stand.
+Halten Sie die `rdc`-CLI auf dem neuesten Stand.
 
 ### Nach Updates suchen
 
@@ -106,7 +168,7 @@ rdc update --check-only
 rdc update
 ```
 
-Updates werden heruntergeladen und direkt angewendet. Die neue Version wird beim nächsten Start wirksam.
+Updates werden heruntergeladen und direkt angewendet. Die CLI wählt automatisch die richtige Binary für Ihre Plattform (Linux, macOS oder Windows). Die neue Version wird beim nächsten Start wirksam.
 
 ### Zurücksetzen
 
@@ -114,31 +176,12 @@ Updates werden heruntergeladen und direkt angewendet. Die neue Version wird beim
 rdc update rollback
 ```
 
-Setzt auf die zuvor installierte Version zurück. Nur nach einem angewendeten Update verfügbar.
+Setzt auf die zuvor installierte Version zurück. Nur verfügbar, nachdem ein Update angewendet wurde.
 
-### Auto-Update-Status
+### Update-Status
 
 ```bash
 rdc update status
 ```
 
 Zeigt die aktuelle Version, den Update-Kanal und die Auto-Update-Konfiguration an.
-
-## Systemdiagnose (doctor)
-
-Führen Sie eine umfassende Diagnoseprüfung Ihrer Rediacc-Umgebung durch.
-
-```bash
-rdc doctor
-```
-
-Der Doctor-Befehl prüft:
-
-| Kategorie | Prüfungen |
-|-----------|-----------|
-| **Umgebung** | Node.js-Version, CLI-Version, SEA-Modus |
-| **Renet** | Vorhandensein der Binary, Version, eingebettetes CRIU und rsync |
-| **Konfiguration** | Aktiver Kontext, Modus, Maschinen, SSH-Schlüssel |
-| **Authentifizierung** | Anmeldestatus |
-
-Jede Prüfung meldet **OK**, **Warnung** oder **Fehler** mit einer kurzen Erklärung. Verwenden Sie dies als ersten Schritt bei der Behebung von Problemen.

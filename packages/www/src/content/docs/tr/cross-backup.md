@@ -1,9 +1,12 @@
 ---
 title: Çapraz Yedekleme Stratejisi
-description: Kıtalar arası verimli yedeklemeler ve hızlı kurtarmayla verileri felaketlere karşı koruyun.
+description: >-
+  Kıtalar arası verimli yedeklemeler ve hızlı kurtarmayla verileri felaketlere
+  karşı koruyun.
 category: Use Cases
 order: 5
 language: tr
+sourceHash: 592ecfdf6477dbba
 ---
 
 > **Felaket Geldiğinde Verileriniz Hayatta Kalacak mı? Rediacc ile Her Zaman İşe Yarar.**
@@ -37,6 +40,8 @@ Bir müşteri aramasından sonra:
 * Şirketin **itibarı ciddi şekilde zedelendi**
 
 ## Rediacc Çözümü
+
+![Cross Backup Strategy](/img/cross-backup.svg)
 
 ### 1. **İlk Yedekleme** 
 * İlk defa 20 TB verinin uzaktaki bir sunucuya aktarılması 2 hafta sürer

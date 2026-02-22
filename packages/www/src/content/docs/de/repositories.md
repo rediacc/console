@@ -1,9 +1,12 @@
 ---
-title: "Repositories"
-description: "LUKS-verschlüsselte Repositories auf entfernten Maschinen erstellen, verwalten und betreiben."
-category: "Guides"
+title: Repositories
+description: >-
+  LUKS-verschlüsselte Repositories auf entfernten Maschinen erstellen, verwalten
+  und betreiben.
+category: Guides
 order: 4
 language: de
+sourceHash: 04fe287348176b64
 ---
 
 # Repositories
@@ -23,6 +26,7 @@ rdc repo create my-app -m server-1 --size 10G
 |--------|-------------|--------------|
 | `-m, --machine <name>` | Ja | Zielmaschine, auf der das Repository erstellt wird. |
 | `--size <size>` | Ja | Größe des verschlüsselten Disk-Images (z. B. `5G`, `10G`, `50G`). |
+| `--skip-router-restart` | No | Skip restarting the route server after the operation |
 
 Die Ausgabe zeigt drei automatisch generierte Werte:
 
@@ -44,6 +48,7 @@ rdc repo unmount my-app -m server-1     # Aushängen und wieder verschlüsseln
 | Option | Beschreibung |
 |--------|-------------|
 | `--checkpoint` | Einen Checkpoint vor dem Einbinden/Aushängen erstellen |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Status prüfen
 
@@ -100,6 +105,7 @@ Der Befehl erkennt automatisch Docker-Container-Datenverzeichnisse (beschreibbar
 |--------|-------------|
 | `--uid <uid>` | Eine benutzerdefinierte UID anstelle von 7111 setzen |
 | `--force` | Docker-Volume-Erkennung überspringen und alles chownen |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 Um die Eigentümerschaft aller Dateien zu erzwingen, einschließlich Container-Daten:
 

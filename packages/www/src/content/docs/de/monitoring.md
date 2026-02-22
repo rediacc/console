@@ -1,9 +1,10 @@
 ---
-title: "Überwachung"
-description: "Maschinengesundheit, Container, Dienste, Repositories und Diagnose überwachen."
-category: "Guides"
+title: Überwachung
+description: 'Maschinengesundheit, Container, Dienste, Repositories und Diagnose überwachen.'
+category: Guides
 order: 9
 language: de
+sourceHash: 72f77c1ae5a0dbce
 ---
 
 # Überwachung
@@ -142,6 +143,7 @@ rdc doctor
 | **Renet** | Binary-Standort, Version, CRIU, rsync, SEA eingebettete Assets |
 | **Konfiguration** | Aktiver Kontext, Modus, Maschinen, SSH-Schlüssel |
 | **Authentifizierung** | Anmeldestatus, Benutzer-E-Mail |
+| **Virtualization** | Checks if your system can run local virtual machines (`rdc ops`) |
 
 Jede Prüfung meldet **OK**, **Warnung** oder **Fehler**. Verwenden Sie dies als ersten Schritt bei der Fehlerbehebung jeglicher Probleme.
 

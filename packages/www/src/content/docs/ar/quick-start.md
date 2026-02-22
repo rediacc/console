@@ -4,7 +4,6 @@ description: تشغيل خدمة حاويات على خادمك في 5 دقائ�
 category: Guides
 order: -1
 language: ar
-sourceHash: 71850d61f7e44292
 ---
 
 # البدء السريع

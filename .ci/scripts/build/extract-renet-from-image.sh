@@ -70,12 +70,68 @@ docker cp "$CONTAINER_ID:/opt/renet/renet-linux-amd64" "$OUTPUT_DIR/"
 log_info "Extracting renet-linux-arm64..."
 docker cp "$CONTAINER_ID:/opt/renet/renet-linux-arm64" "$OUTPUT_DIR/"
 
-# Generate checksums (use absolute path)
+# Resolve OUTPUT_DIR to absolute path before changing directories
 OUTPUT_DIR="$(cd "$OUTPUT_DIR" && pwd)"
+
+# Extract embedded assets (CRIU/rsync/rclone) from the bridge container.
+# These are Linux binaries deployed INTO VMs during provisioning — needed
+# regardless of host platform (Linux KVM or macOS QEMU).
+log_step "Extracting embedded assets from container..."
+EMBED_DIR="$REPO_ROOT/private/renet/pkg/embed/assets"
+mkdir -p "$EMBED_DIR"
+
+for tool in criu rsync rclone; do
+    for arch in amd64 arm64; do
+        asset="$tool-linux-$arch"
+        log_info "Extracting $asset..."
+        docker cp "$CONTAINER_ID:/opt/$tool/$asset" "$EMBED_DIR/" 2>/dev/null || {
+            log_error "Failed to extract $asset from container"
+            exit 1
+        }
+    done
+done
+
+log_info "Compressing assets..."
+for f in "$EMBED_DIR"/*-linux-*; do
+    [ -f "$f" ] && [ "${f##*.}" != "gz" ] && gzip -f "$f"
+done
+
+log_info "Embedded assets:"
+ls -la "$EMBED_DIR"/*.gz
+
+# Stage proxy and datastore docs for go:embed
+log_step "Staging proxy/datastore for embedding..."
+cp "$REPO_ROOT/private/renet/proxy/docker-compose.yml" "$REPO_ROOT/private/renet/pkg/embed/proxy/"
+cp "$REPO_ROOT/private/renet/docs/datastore/README.md" "$REPO_ROOT/private/renet/pkg/embed/datastore/"
+
+# Cross-compile Darwin binaries (with embedded assets for VM provisioning)
+log_step "Cross-compiling renet Darwin binaries..."
+pushd "$REPO_ROOT/private/renet" >/dev/null
+for arch in amd64 arm64; do
+    log_info "Building renet-darwin-$arch..."
+    CGO_ENABLED=0 GOOS=darwin GOARCH=$arch go build \
+        -ldflags="-s -w" \
+        -o "$OUTPUT_DIR/renet-darwin-$arch" \
+        ./cmd/renet
+done
+popd >/dev/null
+
+# Cross-compile Windows binaries (Hyper-V backend)
+log_step "Cross-compiling renet Windows binaries..."
+pushd "$REPO_ROOT/private/renet" >/dev/null
+for arch in amd64 arm64; do
+    log_info "Building renet-windows-$arch..."
+    CGO_ENABLED=0 GOOS=windows GOARCH=$arch go build \
+        -ldflags="-s -w" \
+        -o "$OUTPUT_DIR/renet-windows-$arch.exe" \
+        ./cmd/renet
+done
+popd >/dev/null
+
 log_step "Generating checksums..."
 cd "$OUTPUT_DIR"
-sha256sum renet-linux-* >checksums.sha256
+sha256sum renet-* >checksums.sha256
 
-log_info "Renet binaries extracted successfully:"
-ls -la renet-linux-*
+log_info "Renet binaries ready:"
+ls -la renet-*
 cat checksums.sha256

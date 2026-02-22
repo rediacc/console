@@ -142,6 +142,7 @@ rdc doctor
 | **Renet** | Binary location, version, CRIU, rsync, SEA embedded assets |
 | **Configuration** | Active context, mode, machines, SSH key |
 | **Authentication** | Login status, user email |
+| **Virtualization** | Checks if your system can run local virtual machines (`rdc ops`) |
 
 Each check reports **OK**, **Warning**, or **Error**. Use this as a first step when troubleshooting any issue.
 

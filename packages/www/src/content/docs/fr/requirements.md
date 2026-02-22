@@ -4,7 +4,7 @@ description: Configuration requise et plateformes prises en charge pour exécute
 category: Guides
 order: 0
 language: fr
-sourceHash: ea4a06f2deefab73
+sourceHash: 35e75948e9858c6d
 ---
 
 # Prérequis
@@ -39,6 +39,8 @@ Le binaire `renet` s'exécute sur les serveurs distants avec les privilèges roo
 | Debian | 12+ | x86_64 |
 | Fedora | 43+ | x86_64 |
 | openSUSE Leap | 15.6+ | x86_64 |
+| Alpine | 3.19+ | x86_64 (nécessite gcompat) |
+| Arch Linux | Rolling release | x86_64 |
 
 Ce sont les distributions testées en CI. D'autres distributions Linux avec systemd, le support Docker et cryptsetup peuvent fonctionner mais ne sont pas officiellement prises en charge.
 
@@ -58,3 +60,7 @@ La commande `rdc context setup-machine` installe les éléments suivants sur le 
 - Binaire **renet** (téléversé via SFTP)
 
 Vous n'avez pas besoin de les installer manuellement.
+
+## Local Virtual Machines (Optional)
+
+If you want to test deployments locally using `rdc ops`, your workstation needs virtualization support: KVM on Linux or QEMU on macOS. See the [Experimental VMs](/fr/docs/experimental-vms) guide for setup steps and platform details.

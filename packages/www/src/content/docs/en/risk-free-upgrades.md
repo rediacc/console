@@ -39,6 +39,8 @@ Mehmet is an experienced system administrator who manages large-scale databases.
 
 Mehmet solves the problem fundamentally with Rediacc:
 
+![Risk-Free Upgrades](/img/risk-free-upgrades.svg)
+
 ### 1. **Instant Cloning**
 * A **clone of the 100 TB database is created within seconds**
 * Upgrade tests are performed **without affecting the live system**

@@ -1,9 +1,12 @@
 ---
-title: "İzleme"
-description: "Makine sağlığını, konteynerleri, servisleri, depoları izleyin ve tanılama çalıştırın."
-category: "Guides"
+title: İzleme
+description: >-
+  Makine sağlığını, konteynerleri, servisleri, depoları izleyin ve tanılama
+  çalıştırın.
+category: Guides
 order: 9
 language: tr
+sourceHash: 72f77c1ae5a0dbce
 ---
 
 # İzleme
@@ -142,6 +145,7 @@ rdc doctor
 | **Renet** | İkili dosya konumu, sürüm, CRIU, rsync, SEA gömülü varlıklar |
 | **Yapılandırma** | Aktif bağlam, mod, makineler, SSH anahtarı |
 | **Kimlik Doğrulama** | Oturum açma durumu, kullanıcı e-postası |
+| **Virtualization** | Checks if your system can run local virtual machines (`rdc ops`) |
 
 Her kontrol **OK**, **Uyarı** veya **Hata** olarak raporlanır. Herhangi bir sorunu giderirken ilk adım olarak bunu kullanın.
 

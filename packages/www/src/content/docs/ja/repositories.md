@@ -1,9 +1,10 @@
 ---
-title: "リポジトリ"
-description: "リモートマシン上のLUKS暗号化リポジトリの作成、管理、操作。"
-category: "Guides"
+title: リポジトリ
+description: リモートマシン上のLUKS暗号化リポジトリの作成、管理、操作。
+category: Guides
 order: 4
 language: ja
+sourceHash: 04fe287348176b64
 ---
 
 # リポジトリ
@@ -23,6 +24,7 @@ rdc repo create my-app -m server-1 --size 10G
 |--------|----------|-------------|
 | `-m, --machine <name>` | はい | リポジトリが作成されるターゲットマシン |
 | `--size <size>` | はい | 暗号化ディスクイメージのサイズ（例：`5G`、`10G`、`50G`） |
+| `--skip-router-restart` | No | Skip restarting the route server after the operation |
 
 出力には3つの自動生成された値が表示されます：
 
@@ -44,6 +46,7 @@ rdc repo unmount my-app -m server-1     # アンマウントして再暗号化
 | オプション | 説明 |
 |--------|-------------|
 | `--checkpoint` | マウント/アンマウント前にチェックポイントを作成 |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## ステータスの確認
 
@@ -100,6 +103,7 @@ rdc repo ownership my-app -m server-1
 |--------|-------------|
 | `--uid <uid>` | 7111の代わりにカスタムUIDを設定 |
 | `--force` | Dockerボリューム検出をスキップしてすべてをchown |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 すべてのファイル（コンテナデータを含む）に所有権を強制するには：
 

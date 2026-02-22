@@ -98,9 +98,16 @@ async function main() {
 
   const errors = [];
 
-  // Import the generate function
+  // Import the generate function and sourceHash helper
   const { generate } = await import(GENERATOR_PATH);
+  const { computeSourceHash } = await import('./validate-translation-freshness.js');
+  const matter = (await import('gray-matter')).default;
   const cliJsonEn = JSON.parse(fs.readFileSync(getCliJsonPath('en'), 'utf-8'));
+
+  // Compute sourceHash from English content (generate without hash first)
+  const enRaw = generate('en', cliJsonEn);
+  const parsed = matter(enRaw);
+  const sourceHash = computeSourceHash(parsed.data, parsed.content);
 
   // ── Rule 1: cli-doc-freshness (all languages) ──
   console.log('Checking cli-doc-freshness...');
@@ -115,7 +122,7 @@ async function main() {
         suggestion: 'Run: npm run generate:cli-docs -w @rediacc/www',
       });
     } else {
-      const expected = generate(lang, cliJsonEn);
+      const expected = generate(lang, cliJsonEn, { sourceHash });
       const actual = fs.readFileSync(docPath, 'utf-8');
 
       if (expected !== actual) {

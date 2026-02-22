@@ -478,6 +478,13 @@ quality_all() {
     check_node_version
     log_step "Running all quality checks"
     npm run quality
+
+    # Shell formatting/linting (requires shfmt + shellcheck)
+    if command -v shfmt &>/dev/null; then
+        quality_shell
+    else
+        log_warn "shfmt not found — skipping shell checks (install: go install mvdan.cc/sh/v3/cmd/shfmt@latest)"
+    fi
 }
 
 quality_deps() {
