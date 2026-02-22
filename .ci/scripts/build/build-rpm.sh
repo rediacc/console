@@ -147,18 +147,7 @@ chmod 755 %{buildroot}/usr/local/bin/${PKG_BINARY_NAME}
 EOF
 
 # Build the RPM
-#
-# Workaround: The CLI binary is a Node.js Single Executable Application (SEA)
-# with ~158MB of app data injected into an ELF .note section via postject.
-# rpmbuild uses libmagic for file classification, which has a hardcoded 128MB
-# limit for ELF note sections (NOTE_MAXSIZE in readelf.c). To bypass this, we
-# create a minimal magic database that classifies files without deep ELF
-# parsing, and point libmagic to it via the MAGIC environment variable.
-MAGIC_SRC="$RPMBUILD_DIR/magic"
-printf '0\tstring\t\\x7fELF\tapplication/x-executable\n' > "$MAGIC_SRC"
-file -C -m "$MAGIC_SRC"
-
-MAGIC="$MAGIC_SRC" rpmbuild -bb \
+rpmbuild -bb \
     --define "_topdir $RPMBUILD_DIR" \
     --target "$ARCH" \
     "$RPMBUILD_DIR/SPECS/${PKG_NAME}.spec"
