@@ -1,0 +1,50 @@
+# nfpm package configuration template
+# Used by build-linux-pkg.sh to create deb, rpm, apk, and archlinux packages.
+# Values are injected via environment variables at build time.
+#
+# Docs: https://nfpm.goreleaser.com/docs/configuration/
+
+name: "${PKG_NAME}"
+arch: "${NFPM_ARCH}"
+platform: linux
+version: "${VERSION}"
+section: "${PKG_SECTION}"
+priority: "${PKG_PRIORITY}"
+maintainer: "${PKG_MAINTAINER}"
+description: "${PKG_DESCRIPTION}"
+homepage: "${PKG_HOMEPAGE}"
+license: "Proprietary"
+vendor: "Rediacc"
+
+contents:
+  - src: "${BINARY_PATH}"
+    dst: "/usr/local/bin/${PKG_BINARY_NAME}"
+    file_info:
+      mode: 0755
+
+# ---------------------------------------------------------------------------
+# Format-specific overrides
+# ---------------------------------------------------------------------------
+
+rpm:
+  group: "Applications/System"
+  compression: zstd
+  # Signing is configured via CLI flags (--rpm-key-file, $NFPM_RPM_PASSPHRASE)
+  # when GPG_PRIVATE_KEY is available in the environment.
+
+deb:
+  compression: zstd
+  # Signing is configured via CLI flags (--deb-key-file, $NFPM_DEB_PASSPHRASE)
+  # when GPG_PRIVATE_KEY is available in the environment.
+
+apk:
+  # The CLI is a Node.js SEA binary linked against glibc. Alpine uses musl,
+  # so gcompat (glibc compatibility layer) is required at runtime.
+  depends:
+    - gcompat
+  # APK signing uses RSA keys (not GPG). Configured via --apk-key-file
+  # when APK_RSA_PRIVATE_KEY is available in the environment.
+
+archlinux:
+  pkgbase: "${PKG_NAME}"
+  packager: "${PKG_MAINTAINER}"

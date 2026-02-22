@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 0
 language: de
-sourceHash: ea4a06f2deefab73
+sourceHash: 35e75948e9858c6d
 ---
 
 # Voraussetzungen
@@ -41,6 +41,8 @@ Die `renet`-Binary läuft auf entfernten Servern mit Root-Rechten. Sie verwaltet
 | Debian | 12+ | x86_64 |
 | Fedora | 43+ | x86_64 |
 | openSUSE Leap | 15.6+ | x86_64 |
+| Alpine | 3.19+ | x86_64 (erfordert gcompat) |
+| Arch Linux | Rolling Release | x86_64 |
 
 Dies sind die in CI getesteten Distributionen. Andere Linux-Distributionen mit systemd, Docker-Unterstützung und cryptsetup können funktionieren, werden aber nicht offiziell unterstützt.
 
@@ -60,3 +62,7 @@ Der Befehl `rdc context setup-machine` installiert Folgendes auf dem entfernten 
 - **renet**-Binary (per SFTP hochgeladen)
 
 Sie müssen diese nicht manuell installieren.
+
+## Local Virtual Machines (Optional)
+
+If you want to test deployments locally using `rdc ops`, your workstation needs virtualization support: KVM on Linux or QEMU on macOS. See the [Experimental VMs](/de/docs/experimental-vms) guide for setup steps and platform details.

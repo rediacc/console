@@ -389,6 +389,29 @@ jobs:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   # ============================================================================
+  # COLUMN 3A: LINUX PACKAGE TESTS
+  # Uses dummy binary — validates packaging scripts, Docker install tests
+  # Dependencies: quality (lightweight, runs in parallel with builds)
+  # ============================================================================
+  package-tests:
+    name: Tests + Infra / Linux Packages
+    needs: [initialize, quality]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: always() && needs.initialize.result == 'success' && needs.quality.result == 'success' && needs.initialize.outputs.is_fork != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+
+      - name: Install nfpm
+        run: |
+          source .ci/config/constants.sh
+          curl -sfL "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_linux_amd64.tar.gz" \
+            | sudo tar xz -C /usr/local/bin nfpm
+
+      - name: Run Linux package tests
+        run: .ci/scripts/test/test-linux-packages.sh
+
+  # ============================================================================
   # COLUMN 3B: DEPLOY DRY-RUN
   # Jobs: deploy-dryrun (reusable workflow)
   # Dependencies: build-docker, build-desktop, build-cli
@@ -690,7 +713,7 @@ jobs:
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-desktop, build-cli, deploy-dryrun, tests, standalone-run-test, elite-run-test, ops-tests, deploy-preview]
+    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-desktop, build-cli, package-tests, deploy-dryrun, tests, standalone-run-test, elite-run-test, ops-tests, deploy-preview]
     if: always() && !cancelled()
     steps:
       - name: Check all jobs passed
@@ -737,6 +760,12 @@ jobs:
             ELITE_RUN_OK="true"
           fi
 
+          # package-tests can be skipped for fork PRs
+          PACKAGE_TESTS_OK="false"
+          if [[ "${{ needs.package-tests.result }}" == "success" ]] || [[ "${{ needs.package-tests.result }}" == "skipped" ]]; then
+            PACKAGE_TESTS_OK="true"
+          fi
+
           # deploy-dryrun can be skipped for fork PRs
           DEPLOY_DRYRUN_OK="false"
           if [[ "${{ needs.deploy-dryrun.result }}" == "success" ]] || [[ "${{ needs.deploy-dryrun.result }}" == "skipped" ]]; then
@@ -750,6 +779,7 @@ jobs:
              [[ "${{ needs.build-docker.result }}" != "success" ]] || \
              [[ "${{ needs.build-desktop.result }}" != "success" ]] || \
              [[ "${{ needs.build-cli.result }}" != "success" ]] || \
+             [[ "$PACKAGE_TESTS_OK" != "true" ]] || \
              [[ "$DEPLOY_DRYRUN_OK" != "true" ]] || \
              [[ "$TESTS_OK" != "true" ]] || \
              [[ "$STANDALONE_RUN_OK" != "true" ]] || \
@@ -764,6 +794,7 @@ jobs:
             echo "  build-docker: ${{ needs.build-docker.result }}"
             echo "  build-desktop: ${{ needs.build-desktop.result }}"
             echo "  build-cli: ${{ needs.build-cli.result }}"
+            echo "  package-tests: ${{ needs.package-tests.result }}"
             echo "  deploy-dryrun: ${{ needs.deploy-dryrun.result }}"
             echo "  tests: ${{ needs.tests.result }}"
             echo "  standalone-run-test: ${{ needs.standalone-run-test.result }}"

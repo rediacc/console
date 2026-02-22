@@ -1157,6 +1157,14 @@
           "description": "لـ Fedora و RHEL و CentOS و Rocky Linux",
           "title": "DNF (Fedora / RHEL)"
         },
+        "apk": {
+          "title": "APK (ألباين لينكس)",
+          "description": "لألباين لينكس ومشتقاته"
+        },
+        "pacman": {
+          "title": "Pacman (آرتش لينكس)",
+          "description": "لآرتش لينكس ومشتقاته"
+        },
         "docker": {
           "description": "لبيئات الحاويات",
           "title": "Docker"

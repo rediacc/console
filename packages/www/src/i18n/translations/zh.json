@@ -1128,6 +1128,14 @@
           "description": "适用于Fedora、RHEL、CentOS、Rocky Linux",
           "title": "DNF (Fedora / RHEL)"
         },
+        "apk": {
+          "title": "APK (Alpine Linux)",
+          "description": "适用于 Alpine Linux 及衍生发行版"
+        },
+        "pacman": {
+          "title": "Pacman (Arch Linux)",
+          "description": "适用于 Arch Linux 及衍生发行版"
+        },
         "docker": {
           "description": "适用于容器环境",
           "title": "Docker"

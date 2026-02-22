@@ -1161,6 +1161,14 @@
           "description": "Fedora、RHEL、CentOS、Rocky Linux向け",
           "title": "DNF (Fedora / RHEL)"
         },
+        "apk": {
+          "title": "APK (Alpine Linux)",
+          "description": "Alpine Linuxおよび派生ディストリビューション向け"
+        },
+        "pacman": {
+          "title": "Pacman (Arch Linux)",
+          "description": "Arch Linuxおよび派生ディストリビューション向け"
+        },
         "docker": {
           "description": "コンテナ環境向け",
           "title": "Docker"

@@ -4,7 +4,7 @@ description: Rediaccを実行するためのシステム要件とサポートさ
 category: Guides
 order: 0
 language: ja
-sourceHash: ea4a06f2deefab73
+sourceHash: 35e75948e9858c6d
 ---
 
 # システム要件
@@ -39,6 +39,8 @@ Rediaccでデプロイする前に、ワークステーションとリモート�
 | Debian | 12+ | x86_64 |
 | Fedora | 43+ | x86_64 |
 | openSUSE Leap | 15.6+ | x86_64 |
+| Alpine | 3.19+ | x86_64（gcompat が必要） |
+| Arch Linux | ローリングリリース | x86_64 |
 
 これらはCIでテスト済みのディストリビューションです。systemd、Dockerサポート、cryptsetupを備えた他のLinuxディストリビューションでも動作する可能性がありますが、公式にはサポートされていません。
 
@@ -58,3 +60,7 @@ Rediaccでデプロイする前に、ワークステーションとリモート�
 - **renet** バイナリ（SFTP経由でアップロード）
 
 これらを手動でインストールする必要はありません。
+
+## Local Virtual Machines (Optional)
+
+If you want to test deployments locally using `rdc ops`, your workstation needs virtualization support: KVM on Linux or QEMU on macOS. See the [Experimental VMs](/ja/docs/experimental-vms) guide for setup steps and platform details.

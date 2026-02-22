@@ -3,7 +3,7 @@
 # Usage:
 #   test-linux-packages.sh [--dry-run]
 #
-# Requires: Docker, dpkg-dev, rpm, createrepo-c
+# Requires: Docker, nfpm, dpkg-dev
 # Runs on x86_64 runners only (builds amd64/x86_64 packages)
 
 set -euo pipefail
@@ -74,19 +74,71 @@ SCRIPT
 }
 
 phase1_build_deb() {
-    "$SCRIPT_DIR/../build/build-deb.sh" \
+    "$SCRIPT_DIR/../build/build-linux-pkg.sh" \
         --binary "$TEST_DIR/rdc-dummy" \
         --version "$TEST_VERSION" \
         --arch amd64 \
+        --format deb \
         --output "$TEST_DIR/packages"
 }
 
 phase1_build_rpm() {
-    "$SCRIPT_DIR/../build/build-rpm.sh" \
+    "$SCRIPT_DIR/../build/build-linux-pkg.sh" \
         --binary "$TEST_DIR/rdc-dummy" \
         --version "$TEST_VERSION" \
         --arch x86_64 \
+        --format rpm \
         --output "$TEST_DIR/packages"
+}
+
+phase1_build_apk() {
+    "$SCRIPT_DIR/../build/build-linux-pkg.sh" \
+        --binary "$TEST_DIR/rdc-dummy" \
+        --version "$TEST_VERSION" \
+        --arch amd64 \
+        --format apk \
+        --output "$TEST_DIR/packages"
+}
+
+phase1_build_archlinux() {
+    "$SCRIPT_DIR/../build/build-linux-pkg.sh" \
+        --binary "$TEST_DIR/rdc-dummy" \
+        --version "$TEST_VERSION" \
+        --arch x86_64 \
+        --format archlinux \
+        --output "$TEST_DIR/packages"
+}
+
+phase1_validate_apk_metadata() {
+    local apk_file="$TEST_DIR/packages/${PKG_NAME}-${TEST_VERSION}-r1-amd64.apk"
+    [[ -f "$apk_file" ]] || return 1
+
+    # APK files are gzipped tar archives — validate structure
+    gzip -t "$apk_file" 2>/dev/null || {
+        log_error "APK file is not valid gzip"
+        return 1
+    }
+    log_info "  APK validated: valid gzip archive"
+}
+
+phase1_validate_archlinux_metadata() {
+    local pkg_file="$TEST_DIR/packages/${PKG_NAME}-${TEST_VERSION}-1-x86_64.pkg.tar.zst"
+    [[ -f "$pkg_file" ]] || return 1
+
+    # Archlinux packages are zstd-compressed tar archives
+    if command -v zstd &>/dev/null; then
+        zstd -t "$pkg_file" 2>/dev/null || {
+            log_error "Archlinux package is not valid zstd"
+            return 1
+        }
+        log_info "  Archlinux validated: valid zstd archive"
+    else
+        # Fallback: just check it's non-empty
+        local size
+        size=$(wc -c <"$pkg_file")
+        [[ "$size" -gt 0 ]] || return 1
+        log_info "  Archlinux validated: non-empty file (zstd not available for deeper check)"
+    fi
 }
 
 phase1_validate_deb_metadata() {
@@ -154,6 +206,48 @@ test_rpm_install() {
 
     docker_run "$image" "
         rpm -i /packages/packages/${PKG_NAME}-${TEST_VERSION}-1.x86_64.rpm && \
+        test -x /usr/local/bin/${PKG_BINARY_NAME} && \
+        /usr/local/bin/${PKG_BINARY_NAME} --version 2>/dev/null | grep -q '${TEST_VERSION}' && \
+        echo 'Install verified on $label'
+    "
+}
+
+# =============================================================================
+# Phase 3b: APK Installation (Docker)
+# =============================================================================
+
+test_apk_install() {
+    local image="$1"
+    local label="$2"
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "[DRY-RUN] Would test apk install on $label"
+        return 0
+    fi
+
+    docker_run "$image" "
+        apk add --no-cache --allow-untrusted /packages/packages/${PKG_NAME}-${TEST_VERSION}-r1-amd64.apk && \
+        test -x /usr/local/bin/${PKG_BINARY_NAME} && \
+        /usr/local/bin/${PKG_BINARY_NAME} --version 2>/dev/null | grep -q '${TEST_VERSION}' && \
+        echo 'Install verified on $label'
+    "
+}
+
+# =============================================================================
+# Phase 3c: Archlinux Installation (Docker)
+# =============================================================================
+
+test_archlinux_install() {
+    local image="$1"
+    local label="$2"
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "[DRY-RUN] Would test pacman install on $label"
+        return 0
+    fi
+
+    docker_run "$image" "
+        pacman -U --noconfirm /packages/packages/${PKG_NAME}-${TEST_VERSION}-1-x86_64.pkg.tar.zst && \
         test -x /usr/local/bin/${PKG_BINARY_NAME} && \
         /usr/local/bin/${PKG_BINARY_NAME} --version 2>/dev/null | grep -q '${TEST_VERSION}' && \
         echo 'Install verified on $label'
@@ -367,14 +461,19 @@ log_info "  Working dir: $TEST_DIR"
 if [[ "$DRY_RUN" == "false" ]]; then
     require_cmd docker
 fi
+require_cmd nfpm
 require_cmd dpkg-deb
 
 # Phase 1: Build and validate packages
 run_test "Build dummy binary" phase1_build_dummy_binary
 run_test "Build .deb package (amd64)" phase1_build_deb
 run_test "Build .rpm package (x86_64)" phase1_build_rpm
+run_test "Build .apk package (amd64)" phase1_build_apk
+run_test "Build .pkg.tar.zst package (x86_64)" phase1_build_archlinux
 run_test "Validate .deb metadata" phase1_validate_deb_metadata
 run_test "Validate .rpm metadata" phase1_validate_rpm_metadata
+run_test "Validate .apk metadata" phase1_validate_apk_metadata
+run_test "Validate .pkg.tar.zst metadata" phase1_validate_archlinux_metadata
 
 # Phase 2: APT installation in Docker
 run_test "Install .deb on Ubuntu 22.04" test_deb_install "ubuntu:22.04" "Ubuntu 22.04"
@@ -384,6 +483,13 @@ run_test "Install .deb on Debian 12" test_deb_install "debian:12" "Debian 12"
 # Phase 3: RPM installation in Docker
 run_test "Install .rpm on Fedora 40" test_rpm_install "fedora:40" "Fedora 40"
 run_test "Install .rpm on Rocky Linux 9" test_rpm_install "rockylinux:9" "Rocky Linux 9"
+
+# Phase 3b: APK installation in Docker
+run_test "Install .apk on Alpine 3.19" test_apk_install "alpine:3.19" "Alpine 3.19"
+run_test "Install .apk on Alpine 3.20" test_apk_install "alpine:3.20" "Alpine 3.20"
+
+# Phase 3c: Archlinux installation in Docker
+run_test "Install .pkg.tar.zst on Arch Linux" test_archlinux_install "archlinux:latest" "Arch Linux"
 
 # Phase 4: Repository metadata validation
 run_test "Build repo metadata (dry-run)" phase4_build_repo_metadata

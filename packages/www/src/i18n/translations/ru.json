@@ -1162,6 +1162,14 @@
           "description": "Для Fedora, RHEL, CentOS, Rocky Linux",
           "title": "DNF (Fedora / RHEL)"
         },
+        "apk": {
+          "title": "APK (Alpine Linux)",
+          "description": "Для Alpine Linux и производных"
+        },
+        "pacman": {
+          "title": "Pacman (Arch Linux)",
+          "description": "Для Arch Linux и производных"
+        },
         "docker": {
           "description": "Для контейнерных сред",
           "title": "Docker"

@@ -5,7 +5,7 @@
 #
 # Options:
 #   --dry-run            Print commands without executing
-#   --method <method>    Test specific method: binary, docker, apt, dnf, homebrew, quick, all (default: all)
+#   --method <method>    Test specific method: binary, docker, apt, dnf, apk, pacman, homebrew, quick, all (default: all)
 #   --version <ver>      Version to test (default: latest)
 #   --platform <plat>    Platform: linux, mac, win (default: auto-detect)
 #   --arch <arch>        Architecture: x64, arm64 (default: auto-detect)
@@ -313,6 +313,77 @@ test_dnf_install() {
 }
 
 # =============================================================================
+# APK Tests (Docker-based)
+# =============================================================================
+
+test_apk_install() {
+    local distro="$1"
+    local label="$2"
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "[DRY-RUN] Would test APK install on $label"
+        return 0
+    fi
+
+    docker run --rm "$distro" sh -c "
+        set -e
+        # Add repository (unsigned for now — APK signing uses RSA, deferred)
+        echo '${SITE_URL}/apk/x86_64' >> /etc/apk/repositories
+        apk update --allow-untrusted 2>/dev/null || true
+
+        # Direct download and install (repo metadata may not be available yet)
+        apk add --no-cache curl
+        curl -fsSL '${SITE_URL}/apk/x86_64/${PKG_NAME}-${VERSION}-r1-amd64.apk' -o /tmp/${PKG_NAME}.apk || {
+            echo 'Direct download not available, trying repo install...'
+            apk add --no-cache --allow-untrusted ${PKG_NAME} 2>/dev/null || {
+                echo 'APK repo not yet configured — testing with GitHub Release download'
+                curl -fsSL 'https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}/${PKG_NAME}-${VERSION}-r1-amd64.apk' -o /tmp/${PKG_NAME}.apk
+                apk add --no-cache --allow-untrusted /tmp/${PKG_NAME}.apk
+            }
+        }
+        [ -f /tmp/${PKG_NAME}.apk ] && apk add --no-cache --allow-untrusted /tmp/${PKG_NAME}.apk 2>/dev/null || true
+
+        # Verify
+        ${PKG_BINARY_NAME} --version
+    "
+}
+
+# =============================================================================
+# Pacman Tests (Docker-based)
+# =============================================================================
+
+test_pacman_install() {
+    local distro="$1"
+    local label="$2"
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "[DRY-RUN] Would test Pacman install on $label"
+        return 0
+    fi
+
+    docker run --rm "$distro" bash -c "
+        set -e
+        # Add rediacc repository
+        echo '[rediacc]' >> /etc/pacman.conf
+        echo 'SigLevel = Optional TrustAll' >> /etc/pacman.conf
+        echo 'Server = ${SITE_URL}/archlinux/\\\$arch' >> /etc/pacman.conf
+
+        pacman -Sy --noconfirm 2>/dev/null || true
+
+        # Try repo install first, fall back to direct download
+        pacman -S --noconfirm ${PKG_NAME} 2>/dev/null || {
+            echo 'Pacman repo not yet configured — testing with GitHub Release download'
+            pacman -S --noconfirm curl 2>/dev/null || true
+            curl -fsSL 'https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}/${PKG_NAME}-${VERSION}-1-x86_64.pkg.tar.zst' -o /tmp/${PKG_NAME}.pkg.tar.zst
+            pacman -U --noconfirm /tmp/${PKG_NAME}.pkg.tar.zst
+        }
+
+        # Verify
+        ${PKG_BINARY_NAME} --version
+    "
+}
+
+# =============================================================================
 # Homebrew Tests
 # =============================================================================
 
@@ -393,7 +464,7 @@ echo ""
 # Validate requirements
 if [[ "$DRY_RUN" == "false" ]]; then
     case "$METHOD" in
-        docker | apt | dnf | quick | all)
+        docker | apt | dnf | apk | pacman | quick | all)
             require_cmd docker
             ;;
     esac
@@ -448,6 +519,30 @@ if [[ "$METHOD" == "dnf" || "$METHOD" == "all" ]]; then
         run_test "DNF Install (Rocky Linux 9)" test_dnf_install "rockylinux:9" "Rocky Linux 9"
     else
         skip_test "DNF Install" "DNF tests require Linux with Docker"
+    fi
+    echo ""
+fi
+
+# APK tests
+if [[ "$METHOD" == "apk" || "$METHOD" == "all" ]]; then
+    log_step "APK Tests"
+
+    if [[ "$PLATFORM" == "linux" ]]; then
+        run_test "APK Install (Alpine 3.20)" test_apk_install "alpine:3.20" "Alpine 3.20"
+    else
+        skip_test "APK Install" "APK tests require Linux with Docker"
+    fi
+    echo ""
+fi
+
+# Pacman tests
+if [[ "$METHOD" == "pacman" || "$METHOD" == "all" ]]; then
+    log_step "Pacman Tests"
+
+    if [[ "$PLATFORM" == "linux" ]]; then
+        run_test "Pacman Install (Arch Linux)" test_pacman_install "archlinux:latest" "Arch Linux"
+    else
+        skip_test "Pacman Install" "Pacman tests require Linux with Docker"
     fi
     echo ""
 fi
