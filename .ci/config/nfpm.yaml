@@ -30,20 +30,24 @@ contents:
 rpm:
   group: "Applications/System"
   compression: zstd
-  # Signing is configured via CLI flags (--rpm-key-file, $NFPM_RPM_PASSPHRASE)
-  # when GPG_PRIVATE_KEY is available in the environment.
+  signature:
+    # key_file is set via NFPM_RPM_KEY_FILE env var from build-linux-pkg.sh.
+    # Passphrase via $NFPM_RPM_PASSPHRASE. When key_file is empty, nfpm skips signing.
+    key_file: "${NFPM_RPM_KEY_FILE}"
 
 deb:
   compression: zstd
   signature:
     # key_file is set via NFPM_DEB_KEY_FILE env var from build-linux-pkg.sh.
-    # When the env var is empty, nfpm skips signing.
+    # Passphrase via $NFPM_DEB_PASSPHRASE. When key_file is empty, nfpm skips signing.
     key_file: "${NFPM_DEB_KEY_FILE}"
     type: origin
 
 apk:
-  # APK signing uses RSA keys (not GPG). Configured via --apk-key-file
-  # when APK_RSA_PRIVATE_KEY is available in the environment.
+  signature:
+    # key_file is set via NFPM_APK_KEY_FILE env var from build-linux-pkg.sh.
+    # Uses RSA keys (not GPG). Passphrase via $NFPM_APK_PASSPHRASE.
+    key_file: "${NFPM_APK_KEY_FILE}"
 
 archlinux:
   pkgbase: "${PKG_NAME}"

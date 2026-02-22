@@ -175,9 +175,9 @@ cleanup() { rm -rf "${CLEANUP_DIRS[@]}"; }
 trap cleanup EXIT
 
 # =============================================================================
-# GPG Signing Setup
+# Signing Setup (all via YAML config env vars, no CLI flags)
 # =============================================================================
-SIGN_FLAGS=()
+SIGNING_CONFIGURED=false
 
 if [[ "$FORMAT" == "rpm" || "$FORMAT" == "deb" ]] && [[ -n "${GPG_PRIVATE_KEY:-}" ]]; then
     log_info "Setting up GPG signing for $FORMAT..."
@@ -186,25 +186,29 @@ if [[ "$FORMAT" == "rpm" || "$FORMAT" == "deb" ]] && [[ -n "${GPG_PRIVATE_KEY:-}
     GPG_KEY_FILE="$BUILD_DIR/signing-key.gpg"
     echo "$GPG_PRIVATE_KEY" >"$GPG_KEY_FILE"
 
+    # nfpm reads key_file from YAML config which references these env vars
+    if [[ "$FORMAT" == "rpm" ]]; then
+        export NFPM_RPM_KEY_FILE="$GPG_KEY_FILE"
+    elif [[ "$FORMAT" == "deb" ]]; then
+        export NFPM_DEB_KEY_FILE="$GPG_KEY_FILE"
+    fi
+
     # Set passphrase via nfpm environment variable
     if [[ -n "${GPG_PASSPHRASE:-}" ]]; then
         export NFPM_RPM_PASSPHRASE="$GPG_PASSPHRASE"
         export NFPM_DEB_PASSPHRASE="$GPG_PASSPHRASE"
     fi
 
-    if [[ "$FORMAT" == "rpm" ]]; then
-        SIGN_FLAGS+=(--rpm-key-file "$GPG_KEY_FILE")
-    elif [[ "$FORMAT" == "deb" ]]; then
-        # DEB signing uses YAML config (deb.signature.key_file) with env var
-        export NFPM_DEB_KEY_FILE="$GPG_KEY_FILE"
-    fi
+    SIGNING_CONFIGURED=true
 elif [[ "$FORMAT" == "apk" ]] && [[ -n "${APK_RSA_PRIVATE_KEY:-}" ]]; then
     log_info "Setting up RSA signing for APK..."
 
     APK_KEY_FILE="$BUILD_DIR/apk-signing-key.rsa"
     echo "$APK_RSA_PRIVATE_KEY" >"$APK_KEY_FILE"
 
-    SIGN_FLAGS+=(--apk-key-file "$APK_KEY_FILE")
+    export NFPM_APK_KEY_FILE="$APK_KEY_FILE"
+
+    SIGNING_CONFIGURED=true
 fi
 
 # =============================================================================
@@ -217,8 +221,7 @@ mkdir -p "$OUTPUT_DIR"
 nfpm package \
     --config "$NFPM_CONFIG" \
     --packager "$FORMAT" \
-    --target "$BUILD_DIR/" \
-    "${SIGN_FLAGS[@]}"
+    --target "$BUILD_DIR/"
 
 # =============================================================================
 # Rename output to match expected filename
@@ -246,7 +249,7 @@ fi
 PACKAGE_SIZE=$(wc -c <"$OUTPUT_DIR/$PKG_FILE")
 log_info "Package built: $PKG_FILE ($((PACKAGE_SIZE / 1024))KB)"
 
-if [[ ${#SIGN_FLAGS[@]} -gt 0 ]] || [[ -n "${NFPM_DEB_KEY_FILE:-}" ]]; then
+if [[ "$SIGNING_CONFIGURED" == "true" ]]; then
     log_info "Package signed with ${FORMAT^^} key"
 else
     case "$FORMAT" in
