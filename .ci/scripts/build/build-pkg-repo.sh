@@ -96,9 +96,7 @@ log_info "  Max versions: $MAX_VERSIONS"
 # =============================================================================
 log_step "Phase 1: GPG setup"
 
-GNUPGHOME_TMP="$(mktemp -d)"
-export GNUPGHOME="$GNUPGHOME_TMP"
-CLEANUP_DIRS=("$GNUPGHOME_TMP")
+CLEANUP_DIRS=()
 cleanup() { rm -rf "${CLEANUP_DIRS[@]}"; }
 trap cleanup EXIT
 
@@ -107,32 +105,41 @@ if [[ -n "${GPG_PASSPHRASE:-}" ]]; then
     GPG_OPTS+=(--passphrase "$GPG_PASSPHRASE")
 fi
 
-if [[ -z "${GPG_PRIVATE_KEY:-}" ]]; then
-    log_error "GPG_PRIVATE_KEY environment variable is required"
-    exit 1
-fi
-
-echo "$GPG_PRIVATE_KEY" | gpg "${GPG_OPTS[@]}" --import 2>/dev/null
-log_info "GPG private key imported"
-
-# Get the key ID for signing
-GPG_KEY_ID=$(gpg --list-keys --with-colons 2>/dev/null | grep '^pub' | head -1 | cut -d: -f5)
-log_info "Using GPG key: $GPG_KEY_ID"
-
-# Export public key
-REPO_ROOT="$(get_repo_root)"
-PUBLIC_KEY_FILE="$REPO_ROOT/.ci/keys/gpg-public.asc"
-
 mkdir -p "$OUTPUT_DIR/apt" "$OUTPUT_DIR/rpm" "$OUTPUT_DIR/apk" "$OUTPUT_DIR/archlinux"
 
-if [[ -f "$PUBLIC_KEY_FILE" ]]; then
-    cp "$PUBLIC_KEY_FILE" "$OUTPUT_DIR/apt/gpg.key"
-    cp "$PUBLIC_KEY_FILE" "$OUTPUT_DIR/rpm/gpg.key"
-    log_info "Copied public key from $PUBLIC_KEY_FILE"
+if [[ "$DRY_RUN" == "true" ]]; then
+    log_info "[DRY-RUN] Skipping GPG setup"
+    GPG_KEY_ID=""
 else
-    gpg --armor --export "$GPG_KEY_ID" >"$OUTPUT_DIR/apt/gpg.key"
-    gpg --armor --export "$GPG_KEY_ID" >"$OUTPUT_DIR/rpm/gpg.key"
-    log_warn "No public key file found at $PUBLIC_KEY_FILE, exported from keyring"
+    if [[ -z "${GPG_PRIVATE_KEY:-}" ]]; then
+        log_error "GPG_PRIVATE_KEY environment variable is required"
+        exit 1
+    fi
+
+    GNUPGHOME_TMP="$(mktemp -d)"
+    export GNUPGHOME="$GNUPGHOME_TMP"
+    CLEANUP_DIRS+=("$GNUPGHOME_TMP")
+
+    echo "$GPG_PRIVATE_KEY" | gpg "${GPG_OPTS[@]}" --import 2>/dev/null
+    log_info "GPG private key imported"
+
+    # Get the key ID for signing
+    GPG_KEY_ID=$(gpg --list-keys --with-colons 2>/dev/null | grep '^pub' | head -1 | cut -d: -f5)
+    log_info "Using GPG key: $GPG_KEY_ID"
+
+    # Export public key
+    REPO_ROOT="$(get_repo_root)"
+    PUBLIC_KEY_FILE="$REPO_ROOT/.ci/keys/gpg-public.asc"
+
+    if [[ -f "$PUBLIC_KEY_FILE" ]]; then
+        cp "$PUBLIC_KEY_FILE" "$OUTPUT_DIR/apt/gpg.key"
+        cp "$PUBLIC_KEY_FILE" "$OUTPUT_DIR/rpm/gpg.key"
+        log_info "Copied public key from $PUBLIC_KEY_FILE"
+    else
+        gpg --armor --export "$GPG_KEY_ID" >"$OUTPUT_DIR/apt/gpg.key"
+        gpg --armor --export "$GPG_KEY_ID" >"$OUTPUT_DIR/rpm/gpg.key"
+        log_warn "No public key file found at $PUBLIC_KEY_FILE, exported from keyring"
+    fi
 fi
 
 # =============================================================================

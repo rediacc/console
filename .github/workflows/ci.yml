@@ -402,8 +402,9 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
-      - name: Install nfpm
+      - name: Install packaging tools
         run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq createrepo-c
           source .ci/config/constants.sh
           curl -sfL "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_Linux_x86_64.tar.gz" \
             | sudo tar xz -C /usr/local/bin nfpm

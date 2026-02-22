@@ -25,7 +25,7 @@ TEST_DIR="$(mktemp -d)"
 cleanup() { rm -rf "$TEST_DIR"; }
 trap cleanup EXIT
 
-TEST_VERSION="99.0.0-test"
+TEST_VERSION="99.0.0"
 DOCKER_NETWORK=""
 
 # =============================================================================
@@ -52,7 +52,7 @@ docker_run() {
     docker run --rm \
         -v "$TEST_DIR:/packages:ro" \
         "$image" \
-        bash -c "$*"
+        sh -c "$*"
 }
 
 # =============================================================================
@@ -66,7 +66,7 @@ phase1_build_dummy_binary() {
     local dummy_bin="$TEST_DIR/rdc-dummy"
     cat >"$dummy_bin" <<'SCRIPT'
 #!/bin/sh
-echo "rdc version 99.0.0-test"
+echo "rdc version 99.0.0"
 SCRIPT
     chmod +x "$dummy_bin"
 
