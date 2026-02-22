@@ -405,7 +405,7 @@ jobs:
       - name: Install nfpm
         run: |
           source .ci/config/constants.sh
-          curl -sfL "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_linux_amd64.tar.gz" \
+          curl -sfL "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_Linux_x86_64.tar.gz" \
             | sudo tar xz -C /usr/local/bin nfpm
 
       - name: Run Linux package tests
