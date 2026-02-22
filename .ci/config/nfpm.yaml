@@ -35,8 +35,11 @@ rpm:
 
 deb:
   compression: zstd
-  # Signing is configured via CLI flags (--deb-key-file, $NFPM_DEB_PASSPHRASE)
-  # when GPG_PRIVATE_KEY is available in the environment.
+  signature:
+    # key_file is set via NFPM_DEB_KEY_FILE env var from build-linux-pkg.sh.
+    # When the env var is empty, nfpm skips signing.
+    key_file: "${NFPM_DEB_KEY_FILE}"
+    type: origin
 
 apk:
   # APK signing uses RSA keys (not GPG). Configured via --apk-key-file

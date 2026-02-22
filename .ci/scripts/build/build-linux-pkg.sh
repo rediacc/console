@@ -195,7 +195,8 @@ if [[ "$FORMAT" == "rpm" || "$FORMAT" == "deb" ]] && [[ -n "${GPG_PRIVATE_KEY:-}
     if [[ "$FORMAT" == "rpm" ]]; then
         SIGN_FLAGS+=(--rpm-key-file "$GPG_KEY_FILE")
     elif [[ "$FORMAT" == "deb" ]]; then
-        SIGN_FLAGS+=(--deb-key-file "$GPG_KEY_FILE")
+        # DEB signing uses YAML config (deb.signature.key_file) with env var
+        export NFPM_DEB_KEY_FILE="$GPG_KEY_FILE"
     fi
 elif [[ "$FORMAT" == "apk" ]] && [[ -n "${APK_RSA_PRIVATE_KEY:-}" ]]; then
     log_info "Setting up RSA signing for APK..."
@@ -245,7 +246,7 @@ fi
 PACKAGE_SIZE=$(wc -c <"$OUTPUT_DIR/$PKG_FILE")
 log_info "Package built: $PKG_FILE ($((PACKAGE_SIZE / 1024))KB)"
 
-if [[ ${#SIGN_FLAGS[@]} -gt 0 ]]; then
+if [[ ${#SIGN_FLAGS[@]} -gt 0 ]] || [[ -n "${NFPM_DEB_KEY_FILE:-}" ]]; then
     log_info "Package signed with ${FORMAT^^} key"
 else
     case "$FORMAT" in
