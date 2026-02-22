@@ -235,6 +235,14 @@ jobs:
       - name: Check E2E test coverage for all renet functions
         run: .ci/scripts/quality/check-e2e-coverage.sh
 
+  quality-editorconfig:
+    name: EditorConfig
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - run: .ci/scripts/quality/check-editorconfig.sh
+
   quality-middleware:
     name: Middleware
     runs-on: ubuntu-latest
