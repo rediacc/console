@@ -1,64 +1,118 @@
 ---
-title: "الأدوات"
-description: "مزامنة الملفات، والوصول عبر الطرفية، وتكامل VS Code، والتحديثات، والتشخيصات."
-category: "Guides"
+title: الأدوات
+description: مزامنة الملفات، والوصول عبر الطرفية، وتكامل VS Code، والتحديثات، والتشخيصات.
+category: Guides
 order: 8
 language: ar
+sourceHash: 80ca3cd3e1a55d4b
 ---
 
 # الأدوات
 
-يتضمن Rediacc عدة أدوات إنتاجية للعمل مع المستودعات البعيدة. تعتمد هذه الأدوات على اتصال SSH المُنشأ من خلال إعدادات السياق الخاصة بك.
+يتضمن Rediacc أدوات إنتاجية للعمل مع المستودعات البعيدة: مزامنة الملفات، وطرفية SSH، وتكامل VS Code، وتحديثات واجهة سطر الأوامر.
 
 ## مزامنة الملفات (sync)
 
-انقل الملفات بين محطة عملك ومستودع بعيد باستخدام rsync عبر SSH.
+نقل الملفات بين جهاز العمل الخاص بك ومستودع بعيد باستخدام rsync عبر SSH.
 
 ### رفع الملفات
 
 ```bash
-rdc sync upload my-app -m server-1 --local ./src --remote /app/src
+rdc sync upload -m server-1 -r my-app --local ./src --remote /app/src
 ```
 
 ### تنزيل الملفات
 
 ```bash
-rdc sync download my-app -m server-1 --remote /app/data --local ./data
+rdc sync download -m server-1 -r my-app --remote /app/data --local ./data
+```
+
+### التحقق من حالة المزامنة
+
+```bash
+rdc sync status -m server-1 -r my-app
 ```
 
 ### الخيارات
 
-| الخيار | الوصف |
-|--------|-------|
+| Option | الوصف |
+|--------|-------------|
 | `-m, --machine <name>` | الجهاز المستهدف |
+| `-r, --repository <name>` | المستودع المستهدف |
 | `--local <path>` | مسار المجلد المحلي |
-| `--remote <path>` | المسار البعيد (نسبة إلى مسار تحميل المستودع) |
-| `--dry-run` | معاينة التغييرات بدون نقل فعلي |
-| `--delete` | حذف الملفات في الوجهة غير الموجودة في المصدر |
-
-خيار `--dry-run` مفيد لمعاينة ما سيتم نقله قبل تنفيذ المزامنة.
+| `--remote <path>` | المسار البعيد (نسبي إلى نقطة تحميل المستودع) |
+| `--dry-run` | معاينة التغييرات دون نقل الملفات |
+| `--mirror` | مطابقة المصدر مع الوجهة (حذف الملفات الزائدة) |
+| `--verify` | التحقق من المجاميع الاختبارية بعد النقل |
+| `--confirm` | تأكيد تفاعلي مع عرض التفاصيل |
+| `--exclude <patterns...>` | استثناء أنماط الملفات |
+| `--skip-router-restart` | تخطي إعادة تشغيل خادم التوجيه بعد العملية |
 
 ## طرفية SSH (term)
 
-افتح جلسة SSH تفاعلية إلى جهاز أو مباشرة إلى مسار تحميل المستودع.
+فتح جلسة SSH تفاعلية للاتصال بجهاز أو الدخول إلى بيئة مستودع.
 
-### الاتصال بجهاز
+### الصيغة المختصرة
 
-```bash
-rdc term connect server-1
-```
-
-### الاتصال بمستودع
+أسرع طريقة للاتصال:
 
 ```bash
-rdc term connect my-app -m server-1
+rdc term server-1                    # الاتصال بجهاز
+rdc term server-1 my-app             # الاتصال بمستودع
 ```
 
-عند الاتصال بمستودع، تبدأ جلسة الطرفية في مجلد تحميل المستودع مع تهيئة مقبس Docker الخاص بالمستودع.
+### تنفيذ أمر
+
+تنفيذ أمر دون فتح جلسة تفاعلية:
+
+```bash
+rdc term server-1 -c "uptime"
+rdc term server-1 my-app -c "docker ps"
+```
+
+عند الاتصال بمستودع، يتم تعيين `DOCKER_HOST` تلقائيًا إلى مقبس Docker المعزول الخاص بالمستودع، لذا فإن `docker ps` يعرض حاويات ذلك المستودع فقط.
+
+### الأمر الفرعي connect
+
+يوفر الأمر الفرعي `connect` نفس الوظيفة مع خيارات صريحة:
+
+```bash
+rdc term connect -m server-1
+rdc term connect -m server-1 -r my-app
+```
+
+### إجراءات الحاويات
+
+التفاعل مباشرة مع حاوية قيد التشغيل:
+
+```bash
+# Open a shell inside a container
+rdc term server-1 my-app --container <container-id>
+
+# View container logs
+rdc term server-1 my-app --container <container-id> --container-action logs
+
+# Follow logs in real-time
+rdc term server-1 my-app --container <container-id> --container-action logs --follow
+
+# View container stats
+rdc term server-1 my-app --container <container-id> --container-action stats
+
+# Execute a command in a container
+rdc term server-1 my-app --container <container-id> --container-action exec -c "ls -la"
+```
+
+| Option | الوصف |
+|--------|-------------|
+| `--container <id>` | معرّف حاوية Docker المستهدفة |
+| `--container-action <action>` | الإجراء: `terminal` (افتراضي)، `logs`، `stats`، `exec` |
+| `--log-lines <n>` | عدد أسطر السجل المعروضة (الافتراضي: 50) |
+| `--follow` | متابعة السجلات بشكل مستمر |
+| `--external` | استخدام طرفية خارجية بدلاً من SSH المضمّن |
 
 ## تكامل VS Code (vscode)
 
-افتح جلسة SSH بعيدة في VS Code، مُعدّة مسبقاً بإعدادات SSH الصحيحة وإضافة Remote SSH.
+فتح جلسة SSH عن بُعد في VS Code، مُعدّة مسبقًا بإعدادات SSH الصحيحة.
 
 ### الاتصال بمستودع
 
@@ -67,18 +121,16 @@ rdc vscode connect my-app -m server-1
 ```
 
 يقوم هذا الأمر بما يلي:
-1. اكتشاف تثبيت VS Code لديك
-2. تهيئة اتصال SSH في `~/.ssh/config`
+1. اكتشاف تثبيت VS Code الخاص بك
+2. تكوين اتصال SSH في `~/.ssh/config`
 3. حفظ مفتاح SSH للجلسة
 4. فتح VS Code مع اتصال Remote SSH إلى مسار المستودع
 
-### عرض الاتصالات المُهيأة
+### عرض الاتصالات المُعدّة
 
 ```bash
 rdc vscode list
 ```
-
-يعرض جميع اتصالات SSH التي تم تهيئتها لـ VS Code.
 
 ### تنظيف الاتصالات
 
@@ -86,15 +138,23 @@ rdc vscode list
 rdc vscode clean
 ```
 
-يزيل إعدادات SSH لـ VS Code التي لم تعد مطلوبة.
+إزالة تكوينات SSH الخاصة بـ VS Code التي لم تعد مطلوبة.
 
-> **شرط مسبق:** ثبّت إضافة [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh) في VS Code.
+### فحص التكوين
 
-## تحديثات سطر الأوامر (update)
+```bash
+rdc vscode check
+```
 
-حافظ على تحديث سطر أوامر `rdc` بأحدث الميزات وإصلاحات الأخطاء.
+التحقق من تثبيت VS Code، وإضافة Remote SSH، والاتصالات النشطة.
 
-### التحقق من وجود تحديثات
+> **متطلب مسبق:** قم بتثبيت إضافة [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh) في VS Code.
+
+## تحديثات واجهة سطر الأوامر (update)
+
+الحفاظ على تحديث واجهة سطر الأوامر `rdc`.
+
+### التحقق من التحديثات
 
 ```bash
 rdc update --check-only
@@ -106,7 +166,7 @@ rdc update --check-only
 rdc update
 ```
 
-يتم تنزيل التحديثات وتطبيقها في نفس المكان. يسري الإصدار الجديد عند التشغيل التالي.
+يتم تنزيل التحديثات وتطبيقها في مكانها. تختار واجهة سطر الأوامر تلقائيًا الملف الثنائي المناسب لمنصتك (Linux أو macOS أو Windows). يسري الإصدار الجديد عند التشغيل التالي.
 
 ### التراجع
 
@@ -114,31 +174,12 @@ rdc update
 rdc update rollback
 ```
 
-يعود إلى الإصدار المثبّت سابقاً. متاح فقط بعد تطبيق تحديث.
+العودة إلى الإصدار المثبت سابقًا. متاح فقط بعد تطبيق تحديث.
 
-### حالة التحديث التلقائي
+### حالة التحديث
 
 ```bash
 rdc update status
 ```
 
-يعرض الإصدار الحالي، وقناة التحديث، وإعدادات التحديث التلقائي.
-
-## تشخيصات النظام (doctor)
-
-شغّل فحصاً تشخيصياً شاملاً لبيئة Rediacc الخاصة بك.
-
-```bash
-rdc doctor
-```
-
-يتحقق أمر doctor من:
-
-| الفئة | الفحوصات |
-|-------|----------|
-| **البيئة** | إصدار Node.js، إصدار سطر الأوامر، وضع SEA |
-| **Renet** | وجود الملف التنفيذي، الإصدار، CRIU و rsync المضمّنان |
-| **الإعدادات** | السياق النشط، الوضع، الأجهزة، مفتاح SSH |
-| **المصادقة** | حالة تسجيل الدخول |
-
-كل فحص يُبلّغ عن **موافق** أو **تحذير** أو **خطأ** مع شرح موجز. استخدم هذا كخطوة أولى عند استكشاف أي مشكلة وإصلاحها.
+عرض الإصدار الحالي، وقناة التحديث، وتكوين التحديث التلقائي.

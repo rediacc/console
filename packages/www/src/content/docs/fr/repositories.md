@@ -1,9 +1,10 @@
 ---
-title: "Dépôts"
-description: "Créez, gérez et opérez des dépôts chiffrés LUKS sur des machines distantes."
-category: "Guides"
+title: Dépôts
+description: 'Créez, gérez et opérez des dépôts chiffrés LUKS sur des machines distantes.'
+category: Guides
 order: 4
 language: fr
+sourceHash: 04fe287348176b64
 ---
 
 # Dépôts
@@ -23,6 +24,7 @@ rdc repo create my-app -m server-1 --size 10G
 |--------|--------|-------------|
 | `-m, --machine <name>` | Oui | Machine cible où le dépôt sera créé |
 | `--size <size>` | Oui | Taille de l'image disque chiffrée (par ex., `5G`, `10G`, `50G`) |
+| `--skip-router-restart` | No | Skip restarting the route server after the operation |
 
 La sortie affichera trois valeurs générées automatiquement :
 
@@ -44,6 +46,7 @@ rdc repo unmount my-app -m server-1     # Démonter et re-chiffrer
 | Option | Description |
 |--------|-------------|
 | `--checkpoint` | Créer un point de contrôle avant le montage/démontage |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Vérifier le statut
 
@@ -100,6 +103,7 @@ La commande détecte automatiquement les répertoires de données des conteneurs
 |--------|-------------|
 | `--uid <uid>` | Définir un UID personnalisé au lieu de 7111 |
 | `--force` | Ignorer la détection des volumes Docker et changer la propriété de tout |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 Pour forcer la propriété sur tous les fichiers, y compris les données des conteneurs :
 

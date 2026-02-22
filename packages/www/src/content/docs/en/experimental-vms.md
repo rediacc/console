@@ -1,8 +1,8 @@
 ---
 title: "Experimental VMs"
 description: "Provision local VM clusters for development and testing with rdc ops."
-category: "Guides"
-order: 15
+category: "Concepts"
+order: 2
 language: en
 ---
 
@@ -24,10 +24,10 @@ Use cases:
 
 | Platform | Architecture | Backend | Status |
 |----------|-------------|---------|--------|
-| Linux | x86_64 | KVM (libvirt) | Full support |
-| Linux | ARM64 | KVM (libvirt) | Full support |
-| macOS | ARM (Apple Silicon) | QEMU + HVF | Full support |
-| macOS | Intel | QEMU + HVF | Full support |
+| Linux | x86_64 | KVM (libvirt) | Tested in CI |
+| macOS | Intel | QEMU + HVF | Tested in CI |
+| Linux | ARM64 | KVM (libvirt) | Supported (not CI-tested) |
+| macOS | ARM (Apple Silicon) | QEMU + HVF | Supported (not CI-tested) |
 | Windows | x86_64 / ARM64 | Hyper-V | Planned |
 
 **Linux (KVM)** uses libvirt for native hardware virtualization with bridged networking.

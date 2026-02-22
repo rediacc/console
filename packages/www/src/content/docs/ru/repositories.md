@@ -1,9 +1,12 @@
 ---
-title: "Репозитории"
-description: "Создание, управление и работа с LUKS-зашифрованными репозиториями на удаленных машинах."
-category: "Guides"
+title: Репозитории
+description: >-
+  Создание, управление и работа с LUKS-зашифрованными репозиториями на удаленных
+  машинах.
+category: Guides
 order: 4
 language: ru
+sourceHash: 04fe287348176b64
 ---
 
 # Репозитории
@@ -23,6 +26,7 @@ rdc repo create my-app -m server-1 --size 10G
 |-------|-------------|----------|
 | `-m, --machine <name>` | Да | Целевая машина, на которой будет создан репозиторий |
 | `--size <size>` | Да | Размер зашифрованного образа диска (например, `5G`, `10G`, `50G`) |
+| `--skip-router-restart` | No | Skip restarting the route server after the operation |
 
 В выводе будут показаны три автоматически сгенерированных значения:
 
@@ -44,6 +48,7 @@ rdc repo unmount my-app -m server-1     # Размонтировать и заш
 | Опция | Описание |
 |-------|----------|
 | `--checkpoint` | Создать контрольную точку перед монтированием/размонтированием |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Проверка статуса
 
@@ -100,6 +105,7 @@ rdc repo ownership my-app -m server-1
 |-------|----------|
 | `--uid <uid>` | Установить пользовательский UID вместо 7111 |
 | `--force` | Пропустить обнаружение Docker-томов и изменить владельца для всех файлов |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 Для принудительного изменения владельца всех файлов, включая данные контейнеров:
 

@@ -1,9 +1,10 @@
 ---
-title: "Experimental VMs"
-description: "Provision local VM clusters for development and testing with rdc ops."
-category: "Guides"
-order: 15
+title: "الأجهزة الافتراضية التجريبية"
+description: "إنشاء مجموعات أجهزة افتراضية محلية للتطوير والاختبار باستخدام rdc ops."
+category: "Concepts"
+order: 2
 language: ar
+sourceHash: "30b5f6267314cfb2"
 ---
 
 # Experimental VMs

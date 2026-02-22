@@ -1,9 +1,12 @@
 ---
-title: "Ağ"
-description: "Ters proxy, Docker etiketleri, TLS sertifikaları, DNS ve TCP/UDP port yönlendirme ile servisleri dışarıya açın."
-category: "Guides"
+title: Ağ
+description: >-
+  Ters proxy, Docker etiketleri, TLS sertifikaları, DNS ve TCP/UDP port
+  yönlendirme ile servisleri dışarıya açın.
+category: Guides
 order: 6
 language: tr
+sourceHash: 47ee41d44be935a8
 ---
 
 # Ağ
@@ -33,6 +36,8 @@ Akış şu şekildedir:
 
 Bir konteynere doğru etiketleri ekleyip `renet compose` ile başlattığınızda, otomatik olarak yönlendirilebilir hale gelir — manuel proxy yapılandırması gerekmez.
 
+> The route server binary is kept in sync with your CLI version. When the CLI updates the renet binary on a machine, the route server is automatically restarted (~1–2 seconds). This causes no downtime — Traefik continues serving traffic with its last known configuration during the restart and picks up the new config on the next poll. Existing client connections are not affected. Your application containers are not touched.
+
 ## Docker Etiketleri
 
 Yönlendirme, Docker konteyner etiketleri ile kontrol edilir. İki seviye vardır:
@@ -46,6 +51,8 @@ Bu etiketler, servisler başlatılırken `renet compose` tarafından **otomatik 
 | `rediacc.service_name` | Servis kimliği | `myapp` |
 | `rediacc.service_ip` | Atanmış geri döngü IP'si | `127.0.11.2` |
 | `rediacc.network_id` | Deponun daemon ID'si | `2816` |
+| `rediacc.tcp_ports` | TCP ports the service listens on | `8080,8443` |
+| `rediacc.udp_ports` | UDP ports the service listens on | `53` |
 
 Bir konteyner yalnızca `rediacc.*` etiketlerine sahipken (`traefik.enable=true` yokken), route server bir **otomatik yönlendirme** oluşturur:
 
@@ -168,6 +175,27 @@ rdc context push-infra server-1
 ```
 
 Bu, `tcp-{port}` ve `udp-{port}` adlı Traefik giriş noktaları oluşturur.
+
+### Plain TCP Example (Database)
+
+To expose a database externally without TLS passthrough (Traefik forwards raw TCP):
+
+```yaml
+services:
+  postgres:
+    image: postgres:17
+    network_mode: host
+    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.mydb.entrypoints=tcp-5432"
+      - "traefik.tcp.routers.mydb.rule=HostSNI(`*`)"
+      - "traefik.tcp.services.mydb.loadbalancer.server.port=5432"
+```
+
+Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
+
+> **Security note:** Exposing a database to the internet is a risk. Use this only when remote clients need direct access. For most setups, keep the database internal and connect through your application.
 
 > Port ekledikten veya kaldırdıktan sonra, proxy yapılandırmasını güncellemek için her zaman `rdc context push-infra` komutunu yeniden çalıştırın.
 
@@ -315,6 +343,8 @@ Dinamik olarak atanan portlar için TCP ve UDP port eşlemelerini gösterir.
 | Sertifika verilmedi | DNS sunucuya yönlenmiyor veya geçersiz Cloudflare token'ı | DNS çözümlemesini doğrulayın; Cloudflare API token izinlerini kontrol edin |
 | 502 Bad Gateway | Uygulama belirtilen portta dinlemiyor | Uygulamanın `{SERVICE}_IP`'sine bağlı olduğunu ve portun `loadbalancer.server.port` ile eşleştiğini doğrulayın |
 | TCP portu erişilemiyor | Port altyapıda kayıtlı değil | `rdc context set-infra --tcp-ports ...` ve `push-infra` çalıştırın |
+| Route server running old version | Binary was updated but service not restarted | Happens automatically on provisioning; manual: `sudo systemctl restart rediacc-router` |
+| STUN/TURN relay not reachable | Relay addresses cached at startup | Recreate the service after DNS or IP changes so it picks up the new network config |
 
 ## Tam Örnek
 

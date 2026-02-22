@@ -4,6 +4,7 @@ description: 使用即时克隆和每小时快照无风险地测试数据库升�
 category: Use Cases
 order: 4
 language: zh
+sourceHash: c905d2f42d1108c2
 ---
 
 > **测试一切。 没有任何风险。 充满信心地升级。**
@@ -38,6 +39,8 @@ Mehmet 是一位经验丰富的系统管理员，负责管理大型数据库。 
 ## 雷迪亚克解决方案
 
 Mehmet 用 Rediacc 从根本上解决了这个问题：
+
+![Risk-Free Upgrades](/img/risk-free-upgrades.svg)
 
 ### 1. **即时克隆**
  * **100 TB 数据库的克隆在几秒钟内创建**

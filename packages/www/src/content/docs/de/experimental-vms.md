@@ -1,9 +1,10 @@
 ---
-title: "Experimental VMs"
-description: "Provision local VM clusters for development and testing with rdc ops."
-category: "Guides"
-order: 15
+title: "Experimentelle VMs"
+description: "Lokale VM-Cluster für Entwicklung und Tests mit rdc ops bereitstellen."
+category: "Concepts"
+order: 2
 language: de
+sourceHash: "30b5f6267314cfb2"
 ---
 
 # Experimental VMs

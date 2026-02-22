@@ -1,9 +1,12 @@
 ---
-title: "الشبكات"
-description: "كشف الخدمات باستخدام الوكيل العكسي، وعلامات Docker، وشهادات TLS، وDNS، وتوجيه منافذ TCP/UDP."
-category: "Guides"
+title: الشبكات
+description: >-
+  كشف الخدمات باستخدام الوكيل العكسي، وعلامات Docker، وشهادات TLS، وDNS، وتوجيه
+  منافذ TCP/UDP.
+category: Guides
 order: 6
 language: ar
+sourceHash: 47ee41d44be935a8
 ---
 
 # الشبكات
@@ -33,6 +36,8 @@ Internet → Traefik (ports 80/443/TCP/UDP)
 
 عند إضافة العلامات الصحيحة إلى حاوية وتشغيلها باستخدام `renet compose`، تصبح قابلة للتوجيه تلقائياً -- دون الحاجة لتكوين وكيل يدوي.
 
+> The route server binary is kept in sync with your CLI version. When the CLI updates the renet binary on a machine, the route server is automatically restarted (~1–2 seconds). This causes no downtime — Traefik continues serving traffic with its last known configuration during the restart and picks up the new config on the next poll. Existing client connections are not affected. Your application containers are not touched.
+
 ## علامات Docker
 
 يُتحكم في التوجيه عبر علامات حاويات Docker. هناك مستويان:
@@ -46,6 +51,8 @@ Internet → Traefik (ports 80/443/TCP/UDP)
 | `rediacc.service_name` | هوية الخدمة | `myapp` |
 | `rediacc.service_ip` | عنوان IP الاسترجاعي المُعيَّن | `127.0.11.2` |
 | `rediacc.network_id` | معرّف Docker daemon الخاص بالمستودع | `2816` |
+| `rediacc.tcp_ports` | TCP ports the service listens on | `8080,8443` |
+| `rediacc.udp_ports` | UDP ports the service listens on | `53` |
 
 عندما تحتوي حاوية على علامات `rediacc.*` فقط (بدون `traefik.enable=true`)، يُنشئ خادم التوجيه **مساراً تلقائياً**:
 
@@ -168,6 +175,27 @@ rdc context push-infra server-1
 ```
 
 ينشئ هذا نقاط دخول Traefik باسم `tcp-{port}` و`udp-{port}`.
+
+### Plain TCP Example (Database)
+
+To expose a database externally without TLS passthrough (Traefik forwards raw TCP):
+
+```yaml
+services:
+  postgres:
+    image: postgres:17
+    network_mode: host
+    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.mydb.entrypoints=tcp-5432"
+      - "traefik.tcp.routers.mydb.rule=HostSNI(`*`)"
+      - "traefik.tcp.services.mydb.loadbalancer.server.port=5432"
+```
+
+Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
+
+> **Security note:** Exposing a database to the internet is a risk. Use this only when remote clients need direct access. For most setups, keep the database internal and connect through your application.
 
 > بعد إضافة أو إزالة المنافذ، قم دائماً بتشغيل `rdc context push-infra` لتحديث تكوين الوكيل.
 
@@ -315,6 +343,8 @@ curl -s http://127.0.0.1:7111/ports | python3 -m json.tool
 | الشهادة لم تُصدر | DNS لا يشير إلى الخادم، أو رمز Cloudflare غير صالح | تحقق من حل DNS؛ تحقق من أذونات رمز Cloudflare API |
 | 502 Bad Gateway | التطبيق لا يستمع على المنفذ المُعلن | تحقق من أن التطبيق مرتبط بـ `{SERVICE}_IP` وأن المنفذ يتطابق مع `loadbalancer.server.port` |
 | منفذ TCP غير قابل للوصول | المنفذ غير مسجل في البنية التحتية | شغّل `rdc context set-infra --tcp-ports ...` و`push-infra` |
+| Route server running old version | Binary was updated but service not restarted | Happens automatically on provisioning; manual: `sudo systemctl restart rediacc-router` |
+| STUN/TURN relay not reachable | Relay addresses cached at startup | Recreate the service after DNS or IP changes so it picks up the new network config |
 
 ## مثال كامل
 

@@ -1,17 +1,18 @@
 ---
-title: "Repositorios"
-description: "Cree, gestione y opere repositorios cifrados con LUKS en maquinas remotas."
-category: "Guides"
+title: Repositorios
+description: 'Cree, gestione y opere repositorios cifrados con LUKS en máquinas remotas.'
+category: Guides
 order: 4
 language: es
+sourceHash: 04fe287348176b64
 ---
 
 # Repositorios
 
 Un **repositorio** es una imagen de disco cifrada con LUKS en un servidor remoto. Cuando se monta, proporciona:
-- Un sistema de archivos aislado para los datos de su aplicacion
+- Un sistema de archivos aislado para los datos de su aplicación
 - Un daemon Docker dedicado (separado del Docker del host)
-- IPs de loopback unicas para cada servicio dentro de una subred /26
+- IPs de loopback únicas para cada servicio dentro de una subred /26
 
 ## Crear un Repositorio
 
@@ -19,16 +20,17 @@ Un **repositorio** es una imagen de disco cifrada con LUKS en un servidor remoto
 rdc repo create my-app -m server-1 --size 10G
 ```
 
-| Opcion | Requerido | Descripcion |
+| Opción | Requerido | Descripción |
 |--------|-----------|-------------|
-| `-m, --machine <name>` | Si | Maquina destino donde se creara el repositorio. |
-| `--size <size>` | Si | Tamano de la imagen de disco cifrada (por ejemplo, `5G`, `10G`, `50G`). |
+| `-m, --machine <name>` | Sí | Máquina destino donde se creará el repositorio. |
+| `--size <size>` | Sí | Tamaño de la imagen de disco cifrada (por ejemplo, `5G`, `10G`, `50G`). |
+| `--skip-router-restart` | No | Omitir el reinicio del servidor de rutas después de la operación |
 
-La salida mostrara tres valores generados automaticamente:
+La salida mostrará tres valores generados automáticamente:
 
 - **GUID del Repositorio** -- Un UUID que identifica la imagen de disco cifrada en el servidor.
-- **Credencial** -- Una frase de contrasena aleatoria utilizada para cifrar/descifrar el volumen LUKS.
-- **ID de Red** -- Un numero entero (comenzando en 2816, incrementando en 64) que determina la subred IP para los servicios de este repositorio.
+- **Credencial** -- Una frase de contraseña aleatoria utilizada para cifrar/descifrar el volumen LUKS.
+- **ID de Red** -- Un número entero (comenzando en 2816, incrementando en 64) que determina la subred IP para los servicios de este repositorio.
 
 > **Almacene la credencial de forma segura.** Es la clave de cifrado de su repositorio. Si se pierde, los datos no se pueden recuperar. La credencial se almacena en su `config.json` local pero no se almacena en el servidor.
 
@@ -41,9 +43,10 @@ rdc repo mount my-app -m server-1       # Descifrar y montar
 rdc repo unmount my-app -m server-1     # Desmontar y re-cifrar
 ```
 
-| Opcion | Descripcion |
+| Opción | Descripción |
 |--------|-------------|
 | `--checkpoint` | Crear un punto de control antes de montar/desmontar |
+| `--skip-router-restart` | Omitir el reinicio del servidor de rutas después de la operación |
 
 ## Verificar Estado
 
@@ -59,11 +62,11 @@ rdc repo list -m server-1
 
 ## Redimensionar
 
-Establezca el repositorio a un tamano exacto o expanda una cantidad dada:
+Establezca el repositorio a un tamaño exacto o expanda una cantidad dada:
 
 ```bash
-rdc repo resize my-app -m server-1 --size 20G    # Establecer tamano exacto
-rdc repo expand my-app -m server-1 --size 5G      # Agregar 5G al tamano actual
+rdc repo resize my-app -m server-1 --size 20G    # Establecer tamaño exacto
+rdc repo expand my-app -m server-1 --size 5G      # Agregar 5G al tamaño actual
 ```
 
 > El repositorio debe estar desmontado antes de redimensionar.
@@ -76,7 +79,7 @@ Cree una copia de un repositorio existente en su estado actual:
 rdc repo fork my-app -m server-1 --tag my-app-staging
 ```
 
-Esto crea una nueva copia cifrada con su propio GUID e ID de red. La bifurcacion comparte la misma credencial LUKS que el repositorio padre.
+Esto crea una nueva copia cifrada con su propio GUID e ID de red. La bifurcación comparte la misma credencial LUKS que el repositorio padre.
 
 ## Validar
 
@@ -88,18 +91,19 @@ rdc repo validate my-app -m server-1
 
 ## Propiedad
 
-Establezca la propiedad de archivos dentro de un repositorio al usuario universal (UID 7111). Esto es tipicamente necesario despues de subir archivos desde su estacion de trabajo, que llegan con su UID local.
+Establezca la propiedad de archivos dentro de un repositorio al usuario universal (UID 7111). Esto es típicamente necesario después de subir archivos desde su estación de trabajo, que llegan con su UID local.
 
 ```bash
 rdc repo ownership my-app -m server-1
 ```
 
-El comando detecta automaticamente los directorios de datos de contenedores Docker (montajes bind de escritura) y los excluye. Esto previene danos en contenedores que gestionan archivos con sus propios UIDs (por ejemplo, MariaDB=999, www-data=33).
+El comando detecta automáticamente los directorios de datos de contenedores Docker (montajes bind de escritura) y los excluye. Esto previene daños en contenedores que gestionan archivos con sus propios UIDs (por ejemplo, MariaDB=999, www-data=33).
 
-| Opcion | Descripcion |
+| Opción | Descripción |
 |--------|-------------|
 | `--uid <uid>` | Establecer un UID personalizado en lugar de 7111 |
-| `--force` | Omitir la deteccion de volumenes Docker y cambiar la propiedad de todo |
+| `--force` | Omitir la detección de volúmenes Docker y cambiar la propiedad de todo |
+| `--skip-router-restart` | Omitir el reinicio del servidor de rutas después de la operación |
 
 Para forzar la propiedad en todos los archivos, incluyendo datos de contenedores:
 
@@ -107,9 +111,9 @@ Para forzar la propiedad en todos los archivos, incluyendo datos de contenedores
 rdc repo ownership my-app -m server-1 --force
 ```
 
-> **Advertencia:** Usar `--force` en contenedores en ejecucion puede romperlos. Detenga los servicios primero con `rdc repo down` si es necesario.
+> **Advertencia:** Usar `--force` en contenedores en ejecución puede romperlos. Detenga los servicios primero con `rdc repo down` si es necesario.
 
-Consulte la [Guia de Migracion](/es/docs/migration) para un recorrido completo de cuando y como usar la propiedad durante la migracion de proyectos.
+Consulte la [Guía de Migración](/es/docs/migration) para un recorrido completo de cuándo y cómo usar la propiedad durante la migración de proyectos.
 
 ## Plantilla
 
@@ -121,10 +125,10 @@ rdc repo template my-app -m server-1 --file ./my-template.tar.gz
 
 ## Eliminar
 
-Destruya permanentemente un repositorio y todos los datos dentro de el:
+Destruya permanentemente un repositorio y todos los datos dentro de él:
 
 ```bash
 rdc repo delete my-app -m server-1
 ```
 
-> Esto destruye permanentemente la imagen de disco cifrada. Esta accion no se puede deshacer.
+> Esto destruye permanentemente la imagen de disco cifrada. Esta acción no se puede deshacer.

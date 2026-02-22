@@ -3,10 +3,10 @@ title: Архитектура
 description: >-
   Как работает Rediacc: архитектура из двух инструментов, режимы работы, модель
   безопасности и структура конфигурации.
-category: Guides
-order: 2
+category: Concepts
+order: 0
 language: ru
-sourceHash: 8f910f7827c8e958
+sourceHash: 58ba0da9645bb9dd
 ---
 
 # Архитектура
@@ -14,6 +14,14 @@ sourceHash: 8f910f7827c8e958
 Если вы не уверены, какой инструмент использовать, см. [rdc vs renet](/ru/docs/rdc-vs-renet).
 
 На этой странице описывается внутреннее устройство Rediacc: архитектура из двух инструментов, режимы работы, модель безопасности и структура конфигурации.
+
+## Full Stack Overview
+
+Traffic flows from the internet through a reverse proxy, into isolated Docker daemons, each backed by encrypted storage:
+
+![Full Stack Architecture](/img/arch-full-stack.svg)
+
+Each repository gets its own Docker daemon, loopback IP subnet (/26 = 64 IPs), and LUKS-encrypted BTRFS volume. The route server discovers running containers across all daemons and feeds routing configuration to Traefik.
 
 ## Архитектура из двух инструментов
 

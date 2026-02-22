@@ -1,9 +1,12 @@
 ---
 title: Actualizaciones sin riesgos
-description: Pruebe las actualizaciones de la base de datos sin riesgos mediante la clonación instantánea y las instantáneas cada hora.
+description: >-
+  Pruebe las actualizaciones de la base de datos sin riesgos mediante la
+  clonación instantánea y las instantáneas cada hora.
 category: Use Cases
 order: 4
 language: es
+sourceHash: c905d2f42d1108c2
 ---
 
 > **Pruébalo todo. No arriesgues nada. Actualice con confianza.**
@@ -38,6 +41,8 @@ Mehmet es un administrador de sistemas experimentado que gestiona bases de datos
 ## Solución Rediacc
 
 Mehmet resuelve el problema fundamentalmente con Rediacc:
+
+![Risk-Free Upgrades](/img/risk-free-upgrades.svg)
 
 ### 1. **Clonación instantánea** 
 * Se crea un **clon de la base de datos de 100 TB en cuestión de segundos** 

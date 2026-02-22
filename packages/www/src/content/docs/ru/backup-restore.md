@@ -1,9 +1,13 @@
 ---
-title: "Резервное копирование и восстановление"
-description: "Резервное копирование зашифрованных репозиториев во внешние хранилища, восстановление из резервных копий и настройка автоматического резервного копирования."
-category: "Guides"
+title: Резервное копирование и восстановление
+description: >-
+  Резервное копирование зашифрованных репозиториев во внешние хранилища,
+  восстановление из резервных копий и настройка автоматического резервного
+  копирования.
+category: Guides
 order: 7
 language: ru
+sourceHash: 3d127a0a186d7487
 ---
 
 # Резервное копирование и восстановление
@@ -48,6 +52,7 @@ rdc backup push my-app -m server-1 --to my-storage
 | `--tag <tag>` | Пометить резервную копию тегом |
 | `-w, --watch` | Отслеживать прогресс операции |
 | `--debug` | Включить подробный вывод |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Получение / Восстановление резервной копии
 
@@ -64,6 +69,7 @@ rdc backup pull my-app -m server-1 --from my-storage
 | `--force` | Перезаписать существующую локальную резервную копию |
 | `-w, --watch` | Отслеживать прогресс операции |
 | `--debug` | Включить подробный вывод |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Список резервных копий
 
@@ -96,6 +102,7 @@ rdc backup sync --from my-storage -m server-1
 | `--repo <name>` | Синхронизировать определенные репозитории (можно указывать несколько раз) |
 | `--override` | Перезаписать существующие резервные копии |
 | `--debug` | Включить подробный вывод |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Запланированное резервное копирование
 

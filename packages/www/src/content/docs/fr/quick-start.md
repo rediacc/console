@@ -4,7 +4,6 @@ description: Lancez un service conteneurisé sur votre serveur en 5 minutes.
 category: Guides
 order: -1
 language: fr
-sourceHash: 71850d61f7e44292
 ---
 
 # Démarrage rapide

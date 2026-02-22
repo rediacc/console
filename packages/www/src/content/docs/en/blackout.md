@@ -42,6 +42,8 @@ The IT service disruption led to:
 
 A major Spanish banking group that implemented Rediacc's cross-continental replication solution maintained operations throughout the crisis:
 
+![Banking Continuity During Blackout](/img/blackout-continuity.svg)
+
 ### 1. **Intercontinental Data Mirroring**
 * Core banking databases and transaction systems were **continuously replicated** to data centers in the United States
 * All customer data and transaction records were synchronized with **less than 3-second delay**

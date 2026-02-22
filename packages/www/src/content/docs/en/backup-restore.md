@@ -48,6 +48,7 @@ rdc backup push my-app -m server-1 --to my-storage
 | `--tag <tag>` | Tag the backup |
 | `-w, --watch` | Watch the operation progress |
 | `--debug` | Enable verbose output |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Pull / Restore a Backup
 
@@ -64,6 +65,7 @@ rdc backup pull my-app -m server-1 --from my-storage
 | `--force` | Override existing local backup |
 | `-w, --watch` | Watch the operation progress |
 | `--debug` | Enable verbose output |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## List Backups
 
@@ -96,6 +98,7 @@ rdc backup sync --from my-storage -m server-1
 | `--repo <name>` | Sync specific repositories (repeatable) |
 | `--override` | Override existing backups |
 | `--debug` | Enable verbose output |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Scheduled Backups
 

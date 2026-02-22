@@ -1,9 +1,13 @@
 ---
 title: Entornos de desarrollo que funcionan en segundos
-description: Deje de esperar días para los entornos de desarrollo. Clone su infraestructura de producción completa en menos de 60 segundos con entornos efímeros bajo demanda.
+description: >-
+  Deje de esperar días para los entornos de desarrollo. Clone su infraestructura
+  de producción completa en menos de 60 segundos con entornos efímeros bajo
+  demanda.
 category: Use Cases
 order: 10
 language: es
+sourceHash: 6128ad0f1099ba85
 ---
 
 > **Ambientes efímeros. Paridad de producción. Cero tickets de DevOps.**
@@ -45,6 +49,8 @@ Resultado: **4 horas de inactividad** durante las horas pico de negociación, **
 ## Solución Rediacc: Clones de producción en 60 segundos
 
 Rediacc aprovisiona entornos de desarrollo completos en menos de 60 segundos mediante la clonación automatizada de infraestructura.
+
+![Development Environments](/img/dev-environments.svg)
 
 ### 1. **Aprovisionamiento instantáneo**
 

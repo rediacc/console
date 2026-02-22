@@ -1,9 +1,12 @@
 ---
-title: "Supervision"
-description: "Supervisez la santé des machines, les conteneurs, les services, les dépôts et exécutez des diagnostics."
-category: "Guides"
+title: Supervision
+description: >-
+  Supervisez la santé des machines, les conteneurs, les services, les dépôts et
+  exécutez des diagnostics.
+category: Guides
 order: 9
 language: fr
+sourceHash: 72f77c1ae5a0dbce
 ---
 
 # Supervision
@@ -142,6 +145,7 @@ rdc doctor
 | **Renet** | Emplacement du binaire, version, CRIU, rsync, ressources SEA embarquées |
 | **Configuration** | Contexte actif, mode, machines, clé SSH |
 | **Authentification** | Statut de connexion, email utilisateur |
+| **Virtualization** | Checks if your system can run local virtual machines (`rdc ops`) |
 
 Chaque vérification indique **OK**, **Avertissement** ou **Erreur**. Utilisez cette commande comme première étape lors du dépannage de tout problème.
 

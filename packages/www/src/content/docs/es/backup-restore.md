@@ -1,18 +1,21 @@
 ---
-title: "Respaldo y Restauracion"
-description: "Respalde repositorios cifrados en almacenamiento externo, restaure desde respaldos y programe respaldos automatizados."
-category: "Guides"
+title: Respaldo y Restauración
+description: >-
+  Respalde repositorios cifrados en almacenamiento externo, restaure desde
+  respaldos y programe respaldos automatizados.
+category: Guides
 order: 7
 language: es
+sourceHash: 3d127a0a186d7487
 ---
 
-# Respaldo y Restauracion
+# Respaldo y Restauración
 
-Rediacc puede respaldar repositorios cifrados en proveedores de almacenamiento externo y restaurarlos en la misma o en diferentes maquinas. Los respaldos estan cifrados -- se requiere la credencial LUKS del repositorio para restaurar.
+Rediacc puede respaldar repositorios cifrados en proveedores de almacenamiento externo y restaurarlos en la misma o en diferentes máquinas. Los respaldos están cifrados -- se requiere la credencial LUKS del repositorio para restaurar.
 
 ## Configurar Almacenamiento
 
-Antes de enviar respaldos, registre un proveedor de almacenamiento. Rediacc soporta cualquier almacenamiento compatible con rclone: S3, B2, Google Drive y muchos mas.
+Antes de enviar respaldos, registre un proveedor de almacenamiento. Rediacc soporta cualquier almacenamiento compatible con rclone: S3, B2, Google Drive y muchos más.
 
 ### Importar desde rclone
 
@@ -22,7 +25,7 @@ Si ya tiene un remote de rclone configurado:
 rdc context import-storage my-storage
 ```
 
-Esto importa la configuracion de almacenamiento desde su configuracion de rclone al contexto actual.
+Esto importa la configuración de almacenamiento desde su configuración de rclone al contexto actual.
 
 ### Ver Almacenamientos
 
@@ -32,22 +35,23 @@ rdc context storages
 
 ## Enviar un Respaldo
 
-Envie un respaldo del repositorio al almacenamiento externo:
+Envíe un respaldo del repositorio al almacenamiento externo:
 
 ```bash
 rdc backup push my-app -m server-1 --to my-storage
 ```
 
-| Opcion | Descripcion |
+| Opción | Descripción |
 |--------|-------------|
-| `--to <storage>` | Ubicacion de almacenamiento destino |
-| `--to-machine <machine>` | Maquina destino para respaldo de maquina a maquina |
+| `--to <storage>` | Ubicación de almacenamiento destino |
+| `--to-machine <machine>` | Máquina destino para respaldo de máquina a máquina |
 | `--dest <filename>` | Nombre de archivo de destino personalizado |
 | `--checkpoint` | Crear un punto de control antes de enviar |
 | `--force` | Sobreescribir un respaldo existente |
 | `--tag <tag>` | Etiquetar el respaldo |
-| `-w, --watch` | Observar el progreso de la operacion |
+| `-w, --watch` | Observar el progreso de la operación |
 | `--debug` | Habilitar salida detallada |
+| `--skip-router-restart` | Omitir el reinicio del servidor de rutas después de la operación |
 
 ## Descargar / Restaurar un Respaldo
 
@@ -57,25 +61,26 @@ Descargue un respaldo del repositorio desde almacenamiento externo:
 rdc backup pull my-app -m server-1 --from my-storage
 ```
 
-| Opcion | Descripcion |
+| Opción | Descripción |
 |--------|-------------|
-| `--from <storage>` | Ubicacion de almacenamiento de origen |
-| `--from-machine <machine>` | Maquina de origen para restauracion de maquina a maquina |
+| `--from <storage>` | Ubicación de almacenamiento de origen |
+| `--from-machine <machine>` | Máquina de origen para restauración de máquina a máquina |
 | `--force` | Sobreescribir respaldo local existente |
-| `-w, --watch` | Observar el progreso de la operacion |
+| `-w, --watch` | Observar el progreso de la operación |
 | `--debug` | Habilitar salida detallada |
+| `--skip-router-restart` | Omitir el reinicio del servidor de rutas después de la operación |
 
 ## Listar Respaldos
 
-Ver los respaldos disponibles en una ubicacion de almacenamiento:
+Ver los respaldos disponibles en una ubicación de almacenamiento:
 
 ```bash
 rdc backup list --from my-storage -m server-1
 ```
 
-## Sincronizacion Masiva
+## Sincronización Masiva
 
-Envie o descargue todos los repositorios a la vez:
+Envíe o descargue todos los repositorios a la vez:
 
 ### Enviar Todos al Almacenamiento
 
@@ -89,17 +94,18 @@ rdc backup sync --to my-storage -m server-1
 rdc backup sync --from my-storage -m server-1
 ```
 
-| Opcion | Descripcion |
+| Opción | Descripción |
 |--------|-------------|
-| `--to <storage>` | Almacenamiento destino (direccion de envio) |
-| `--from <storage>` | Almacenamiento de origen (direccion de descarga) |
-| `--repo <name>` | Sincronizar repositorios especificos (repetible) |
+| `--to <storage>` | Almacenamiento destino (dirección de envío) |
+| `--from <storage>` | Almacenamiento de origen (dirección de descarga) |
+| `--repo <name>` | Sincronizar repositorios específicos (repetible) |
 | `--override` | Sobreescribir respaldos existentes |
 | `--debug` | Habilitar salida detallada |
+| `--skip-router-restart` | Omitir el reinicio del servidor de rutas después de la operación |
 
 ## Respaldos Programados
 
-Automatice los respaldos con un cronograma cron que se ejecuta como un temporizador systemd en la maquina remota.
+Automatice los respaldos con un cronograma cron que se ejecuta como un temporizador systemd en la máquina remota.
 
 ### Configurar Cronograma
 
@@ -107,16 +113,16 @@ Automatice los respaldos con un cronograma cron que se ejecuta como un temporiza
 rdc backup schedule set --destination my-storage --cron "0 2 * * *" --enable
 ```
 
-| Opcion | Descripcion |
+| Opción | Descripción |
 |--------|-------------|
 | `--destination <storage>` | Destino de respaldo predeterminado |
-| `--cron <expression>` | Expresion cron (por ejemplo, `"0 2 * * *"` para diario a las 2 AM) |
+| `--cron <expression>` | Expresión cron (por ejemplo, `"0 2 * * *"` para diario a las 2 AM) |
 | `--enable` | Habilitar el cronograma |
 | `--disable` | Deshabilitar el cronograma |
 
-### Enviar Cronograma a la Maquina
+### Enviar Cronograma a la Máquina
 
-Despliegue la configuracion del cronograma en una maquina como un temporizador systemd:
+Despliegue la configuración del cronograma en una máquina como un temporizador systemd:
 
 ```bash
 rdc backup schedule push server-1
@@ -130,15 +136,15 @@ rdc backup schedule show
 
 ## Explorar Almacenamiento
 
-Explore el contenido de una ubicacion de almacenamiento:
+Explore el contenido de una ubicación de almacenamiento:
 
 ```bash
 rdc storage browse my-storage -m server-1
 ```
 
-## Mejores Practicas
+## Mejores Prácticas
 
 - **Programe respaldos diarios** en al menos un proveedor de almacenamiento
-- **Pruebe las restauraciones** periodicamente para verificar la integridad de los respaldos
-- **Use multiples proveedores de almacenamiento** para datos criticos (por ejemplo, S3 + B2)
-- **Mantenga las credenciales seguras** -- los respaldos estan cifrados pero se requiere la credencial LUKS para restaurar
+- **Pruebe las restauraciones** periódicamente para verificar la integridad de los respaldos
+- **Use múltiples proveedores de almacenamiento** para datos críticos (por ejemplo, S3 + B2)
+- **Mantenga las credenciales seguras** -- los respaldos están cifrados pero se requiere la credencial LUKS para restaurar

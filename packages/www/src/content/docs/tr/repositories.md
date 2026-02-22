@@ -1,9 +1,10 @@
 ---
-title: "Depolar"
-description: "Uzak makinelerde LUKS ile sifrelenmis depolari olusturma, yonetme ve isletme."
-category: "Guides"
+title: Depolar
+description: 'Uzak makinelerde LUKS ile şifrelenmiş depoları oluşturma, yönetme ve işletme.'
+category: Guides
 order: 4
 language: tr
+sourceHash: 04fe287348176b64
 ---
 
 # Depolar
@@ -23,6 +24,7 @@ rdc repo create my-app -m server-1 --size 10G
 |---------|---------|----------|
 | `-m, --machine <name>` | Evet | Deponun oluşturulacağı hedef makine |
 | `--size <size>` | Evet | Şifrelenmiş disk imajının boyutu (ör. `5G`, `10G`, `50G`) |
+| `--skip-router-restart` | No | Skip restarting the route server after the operation |
 
 Çıktıda otomatik olarak oluşturulan üç değer gösterilir:
 
@@ -44,6 +46,7 @@ rdc repo unmount my-app -m server-1     # Ayır ve tekrar şifrele
 | Seçenek | Açıklama |
 |---------|----------|
 | `--checkpoint` | Bağlama/ayırma öncesinde bir kontrol noktası oluştur |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Durum Kontrolü
 
@@ -100,6 +103,7 @@ Komut, Docker konteyner veri dizinlerini (yazılabilir bind bağlamaları) otoma
 |---------|----------|
 | `--uid <uid>` | 7111 yerine özel bir UID ayarla |
 | `--force` | Docker birim algılamayı atla ve her şeyi sahiplendir |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 Tüm dosyalar üzerinde sahipliği zorlamak için (konteyner verileri dahil):
 

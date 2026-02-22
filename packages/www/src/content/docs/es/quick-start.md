@@ -4,7 +4,6 @@ description: Ejecute un servicio en contenedores en su servidor en 5 minutos.
 category: Guides
 order: -1
 language: es
-sourceHash: 71850d61f7e44292
 ---
 
 # Inicio rápido

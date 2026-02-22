@@ -38,6 +38,8 @@ After a customer call:
 
 ## Rediacc Solution
 
+![Cross Backup Strategy](/img/cross-backup.svg)
+
 ### 1. **First Backup**
 * The first time 20 TB of data is transferred to a remote server, it takes 2 weeks
 

@@ -1,9 +1,12 @@
 ---
 title: Recuperación del viaje en el tiempo
-description: Recupere datos borrados accidentalmente de hace semanas con viajes en el tiempo basados ​​en instantáneas.
+description: >-
+  Recupere datos borrados accidentalmente de hace semanas con viajes en el
+  tiempo basados ​​en instantáneas.
 category: Use Cases
 order: 2
 language: es
+sourceHash: b8dbfddbf5b46895
 ---
 
 > ** Cuando otras pierden datos para siempre, puedes viajar en el tiempo. **
@@ -41,6 +44,8 @@ Debido a la pérdida de datos:
 ## Solución Rediacc
 
 Mehmet ofrece una solución similar a una "máquina del tiempo" con Rediacc:
+
+![Time Travel Recovery](/img/time-travel-recovery.svg)
 
 ### 1. **Instantáneas** 
 * Rediacc toma automáticamente instantáneas del sistema cada hora 

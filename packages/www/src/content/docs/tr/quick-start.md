@@ -4,7 +4,6 @@ description: 5 dakikada sunucunuzda konteynerize bir servis çalıştırın.
 category: Guides
 order: -1
 language: tr
-sourceHash: 71850d61f7e44292
 ---
 
 # Hızlı Başlangıç

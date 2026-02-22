@@ -1,76 +1,132 @@
 ---
-title: "Herramientas"
-description: "Sincronizacion de archivos, acceso por terminal, integracion con VS Code, actualizaciones y diagnosticos."
-category: "Guides"
+title: Herramientas
+description: >-
+  Sincronización de archivos, acceso por terminal, integración con VS Code,
+  actualizaciones y diagnósticos.
+category: Guides
 order: 8
 language: es
+sourceHash: 80ca3cd3e1a55d4b
 ---
 
 # Herramientas
 
-Rediacc incluye varias herramientas de productividad para trabajar con repositorios remotos. Estas herramientas se basan en la conexion SSH establecida por la configuracion de su contexto.
+Rediacc incluye herramientas de productividad para trabajar con repositorios remotos: sincronización de archivos, terminal SSH, integración con VS Code y actualizaciones de la CLI.
 
-## Sincronizacion de Archivos (sync)
+## Sincronización de Archivos (sync)
 
-Transfiera archivos entre su estacion de trabajo y un repositorio remoto usando rsync sobre SSH.
+Transfiera archivos entre su estación de trabajo y un repositorio remoto usando rsync sobre SSH.
 
 ### Subir Archivos
 
 ```bash
-rdc sync upload my-app -m server-1 --local ./src --remote /app/src
+rdc sync upload -m server-1 -r my-app --local ./src --remote /app/src
 ```
 
 ### Descargar Archivos
 
 ```bash
-rdc sync download my-app -m server-1 --remote /app/data --local ./data
+rdc sync download -m server-1 -r my-app --remote /app/data --local ./data
+```
+
+### Verificar Estado de Sincronización
+
+```bash
+rdc sync status -m server-1 -r my-app
 ```
 
 ### Opciones
 
-| Opcion | Descripcion |
+| Opción | Descripción |
 |--------|-------------|
-| `-m, --machine <name>` | Maquina destino |
+| `-m, --machine <name>` | Máquina destino |
+| `-r, --repository <name>` | Repositorio destino |
 | `--local <path>` | Ruta del directorio local |
-| `--remote <path>` | Ruta remota (relativa al punto de montaje del repositorio) |
-| `--dry-run` | Vista previa de cambios sin transferir |
-| `--delete` | Eliminar archivos en el destino que no existen en el origen |
-
-La bandera `--dry-run` es util para obtener una vista previa de lo que se transferira antes de confirmar la sincronizacion.
+| `--remote <path>` | Ruta remota (relativa al montaje del repositorio) |
+| `--dry-run` | Previsualizar cambios sin transferir |
+| `--mirror` | Duplicar origen en destino (eliminar archivos extra) |
+| `--verify` | Verificar checksums después de la transferencia |
+| `--confirm` | Confirmación interactiva con vista detallada |
+| `--exclude <patterns...>` | Excluir patrones de archivos |
+| `--skip-router-restart` | Omitir el reinicio del servidor de rutas después de la operación |
 
 ## Terminal SSH (term)
 
-Abra una sesion SSH interactiva a una maquina o directamente en la ruta de montaje de un repositorio.
+Abra una sesión SSH interactiva a una máquina o al entorno de un repositorio.
 
-### Conectar a una Maquina
+### Sintaxis Abreviada
 
-```bash
-rdc term connect server-1
-```
-
-### Conectar a un Repositorio
+La forma más rápida de conectarse:
 
 ```bash
-rdc term connect my-app -m server-1
+rdc term server-1                    # Conectarse a una máquina
+rdc term server-1 my-app             # Conectarse a un repositorio
 ```
 
-Al conectarse a un repositorio, la sesion de terminal se inicia en el directorio de montaje del repositorio con el socket Docker del repositorio configurado.
+### Ejecutar un Comando
 
-## Integracion con VS Code (vscode)
+Ejecute un comando sin abrir una sesión interactiva:
 
-Abra una sesion SSH remota en VS Code, preconfigurada con los ajustes SSH correctos y la extension Remote SSH.
+```bash
+rdc term server-1 -c "uptime"
+rdc term server-1 my-app -c "docker ps"
+```
 
-### Conectar a un Repositorio
+Al conectarse a un repositorio, `DOCKER_HOST` se configura automáticamente al socket Docker aislado del repositorio, por lo que `docker ps` muestra solo los contenedores de ese repositorio.
+
+### Subcomando Connect
+
+El subcomando `connect` proporciona la misma funcionalidad con flags explícitos:
+
+```bash
+rdc term connect -m server-1
+rdc term connect -m server-1 -r my-app
+```
+
+### Acciones de Contenedor
+
+Interactúe directamente con un contenedor en ejecución:
+
+```bash
+# Abrir una shell dentro de un contenedor
+rdc term server-1 my-app --container <container-id>
+
+# Ver logs del contenedor
+rdc term server-1 my-app --container <container-id> --container-action logs
+
+# Seguir logs en tiempo real
+rdc term server-1 my-app --container <container-id> --container-action logs --follow
+
+# Ver estadísticas del contenedor
+rdc term server-1 my-app --container <container-id> --container-action stats
+
+# Ejecutar un comando en un contenedor
+rdc term server-1 my-app --container <container-id> --container-action exec -c "ls -la"
+```
+
+| Opción | Descripción |
+|--------|-------------|
+| `--container <id>` | ID del contenedor Docker destino |
+| `--container-action <action>` | Acción: `terminal` (predeterminado), `logs`, `stats`, `exec` |
+| `--log-lines <n>` | Número de líneas de log a mostrar (predeterminado: 50) |
+| `--follow` | Seguir logs continuamente |
+| `--external` | Usar terminal externo en lugar de SSH en línea |
+
+## Integración con VS Code (vscode)
+
+Abra una sesión SSH remota en VS Code, preconfigurada con los ajustes SSH correctos.
+
+### Conectarse a un Repositorio
 
 ```bash
 rdc vscode connect my-app -m server-1
 ```
 
 Este comando:
-1. Detecta su instalacion de VS Code
-2. Configura la conexion SSH en `~/.ssh/config`
-3. Persiste la clave SSH para la sesion
-4. Abre VS Code con una conexion Remote SSH a la ruta del repositorio
+1. Detecta su instalación de VS Code
+2. Configura la conexión SSH en `~/.ssh/config`
+3. Persiste la clave SSH para la sesión
+4. Abre VS Code con una conexión Remote SSH a la ruta del repositorio
 
 ### Listar Conexiones Configuradas
 
@@ -78,21 +134,27 @@ Este comando:
 rdc vscode list
 ```
 
-Muestra todas las conexiones SSH que se han configurado para VS Code.
-
 ### Limpiar Conexiones
 
 ```bash
 rdc vscode clean
 ```
 
-Elimina las configuraciones SSH de VS Code que ya no son necesarias.
+Elimina configuraciones SSH de VS Code que ya no son necesarias.
 
-> **Requisito previo:** Instale la extension [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh) en VS Code.
+### Verificar Configuración
+
+```bash
+rdc vscode check
+```
+
+Verifica la instalación de VS Code, la extensión Remote SSH y las conexiones activas.
+
+> **Prerrequisito:** Instale la extensión [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh) en VS Code.
 
 ## Actualizaciones de la CLI (update)
 
-Mantenga la CLI `rdc` actualizada con las ultimas funciones y correcciones de errores.
+Mantenga la CLI `rdc` actualizada.
 
 ### Buscar Actualizaciones
 
@@ -100,13 +162,13 @@ Mantenga la CLI `rdc` actualizada con las ultimas funciones y correcciones de er
 rdc update --check-only
 ```
 
-### Aplicar Actualizacion
+### Aplicar Actualización
 
 ```bash
 rdc update
 ```
 
-Las actualizaciones se descargan y aplican en el lugar. La nueva version toma efecto en la siguiente ejecucion.
+Las actualizaciones se descargan y aplican en el lugar. La CLI selecciona automáticamente el binario correcto para su plataforma (Linux, macOS o Windows). La nueva versión entra en efecto en la siguiente ejecución.
 
 ### Revertir
 
@@ -114,31 +176,12 @@ Las actualizaciones se descargan y aplican en el lugar. La nueva version toma ef
 rdc update rollback
 ```
 
-Revierte a la version instalada anteriormente. Solo disponible despues de que se haya aplicado una actualizacion.
+Revierte a la versión previamente instalada. Solo disponible después de que se haya aplicado una actualización.
 
-### Estado de Auto-Actualizacion
+### Estado de Actualización
 
 ```bash
 rdc update status
 ```
 
-Muestra la version actual, el canal de actualizacion y la configuracion de auto-actualizacion.
-
-## Diagnosticos del Sistema (doctor)
-
-Ejecute una verificacion de diagnostico completa de su entorno Rediacc.
-
-```bash
-rdc doctor
-```
-
-El comando doctor verifica:
-
-| Categoria | Verificaciones |
-|-----------|---------------|
-| **Entorno** | Version de Node.js, version de la CLI, modo SEA |
-| **Renet** | Presencia del binario, version, CRIU y rsync integrados |
-| **Configuracion** | Contexto activo, modo, maquinas, clave SSH |
-| **Autenticacion** | Estado de inicio de sesion |
-
-Cada verificacion reporta **OK**, **Advertencia** o **Error** con una breve explicacion. Use esto como primer paso al resolver cualquier problema.
+Muestra la versión actual, el canal de actualización y la configuración de actualización automática.

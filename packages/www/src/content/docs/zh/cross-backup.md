@@ -4,6 +4,7 @@ description: 通过高效的跨大陆备份和快速恢复来保护数据免受�
 category: Use Cases
 order: 5
 language: zh
+sourceHash: 592ecfdf6477dbba
 ---
 
 > **当灾难来袭时，您的数据还能幸存吗？ 有了 Rediacc，它总是如此。**
@@ -37,6 +38,8 @@ language: zh
  * 公司**声誉严重受损**
 
 ## 雷迪亚克解决方案
+
+![Cross Backup Strategy](/img/cross-backup.svg)
 
 ### 1. **第一次备份**
  * 首次将20TB数据传输到远程服务器，需要2周时间

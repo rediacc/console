@@ -1,14 +1,17 @@
 ---
-title: "ネットワーキング"
-description: "リバースプロキシ、Dockerラベル、TLS証明書、DNS、TCP/UDPポートフォワーディングによるサービスの公開。"
-category: "Guides"
+title: ネットワーキング
+description: リバースプロキシ、Dockerラベル、TLS証明書、DNS、TCP/UDPポートフォワーディングによるサービスの公開。
+category: Guides
 order: 6
 language: ja
+sourceHash: 47ee41d44be935a8
 ---
 
 # ネットワーキング
 
 このページでは、隔離されたDockerデーモン内で実行されているサービスをインターネットからアクセス可能にする方法を説明します。リバースプロキシシステム、ルーティング用Dockerラベル、TLS証明書、DNS、TCP/UDPポートフォワーディングについて説明します。
+| Route server running old version | Binary was updated but service not restarted | Happens automatically on provisioning; manual: `sudo systemctl restart rediacc-router` |
+| STUN/TURN relay not reachable | Relay addresses cached at startup | Recreate the service after DNS or IP changes so it picks up the new network config |
 
 サービスがループバックIPを取得する仕組みと`.rediacc.json`スロットシステムについては、[サービス](/ja/docs/services#サービスネットワーキングrediaccjson)を参照してください。
 
@@ -33,6 +36,8 @@ Rediaccは、外部トラフィックをコンテナにルーティングする�
 
 適切なラベルをコンテナに追加して`renet compose`で起動すると、自動的にルーティング可能になります。手動のプロキシ設定は不要です。
 
+> The route server binary is kept in sync with your CLI version. When the CLI updates the renet binary on a machine, the route server is automatically restarted (~1–2 seconds). This causes no downtime — Traefik continues serving traffic with its last known configuration during the restart and picks up the new config on the next poll. Existing client connections are not affected. Your application containers are not touched.
+
 ## Dockerラベル
 
 ルーティングはDockerコンテナラベルで制御されます。2つのティアがあります：
@@ -46,6 +51,8 @@ Rediaccは、外部トラフィックをコンテナにルーティングする�
 | `rediacc.service_name` | サービスID | `myapp` |
 | `rediacc.service_ip` | 割り当てられたループバックIP | `127.0.11.2` |
 | `rediacc.network_id` | リポジトリのデーモンID | `2816` |
+| `rediacc.tcp_ports` | TCP ports the service listens on | `8080,8443` |
+| `rediacc.udp_ports` | UDP ports the service listens on | `53` |
 
 コンテナが`rediacc.*`ラベルのみを持つ場合（`traefik.enable=true`なし）、ルートサーバーは**自動ルート**を生成します：
 
@@ -168,6 +175,27 @@ rdc context push-infra server-1
 ```
 
 これにより`tcp-{port}`と`udp-{port}`という名前のTraefikエントリポイントが作成されます。
+
+### Plain TCP Example (Database)
+
+To expose a database externally without TLS passthrough (Traefik forwards raw TCP):
+
+```yaml
+services:
+  postgres:
+    image: postgres:17
+    network_mode: host
+    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.mydb.entrypoints=tcp-5432"
+      - "traefik.tcp.routers.mydb.rule=HostSNI(`*`)"
+      - "traefik.tcp.services.mydb.loadbalancer.server.port=5432"
+```
+
+Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
+
+> **Security note:** Exposing a database to the internet is a risk. Use this only when remote clients need direct access. For most setups, keep the database internal and connect through your application.
 
 > ポートの追加または削除後は、プロキシ設定を更新するために常に`rdc context push-infra`を再実行してください。
 

@@ -1,9 +1,12 @@
 ---
 title: Zaman Yolculuğu Kurtarma
-description: Anlık görüntü tabanlı zaman yolculuğu ile haftalar öncesinden yanlışlıkla silinen verileri kurtarın.
+description: >-
+  Anlık görüntü tabanlı zaman yolculuğu ile haftalar öncesinden yanlışlıkla
+  silinen verileri kurtarın.
 category: Use Cases
 order: 2
 language: tr
+sourceHash: b8dbfddbf5b46895
 ---
 
 > **Başkaları Verilerini Sonsuza Kadar Kaybedince, Zamanda Geriye Yolculuk Yapabilirsiniz.**
@@ -41,6 +44,8 @@ Kayıp veriler nedeniyle:
 ## Rediacc Çözümü
 
 Mehmet, Rediacc ile "zaman makinesi" benzeri bir çözüm sunuyor:
+
+![Time Travel Recovery](/img/time-travel-recovery.svg)
 
 ### 1. **Anlık görüntüler** 
 * Rediacc her saat başı otomatik olarak sistemin anlık görüntüsünü alır 

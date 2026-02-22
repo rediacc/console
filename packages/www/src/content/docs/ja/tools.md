@@ -1,64 +1,118 @@
 ---
-title: "ツール"
-description: "ファイル同期、ターミナルアクセス、VS Code統合、アップデート、診断。"
-category: "Guides"
+title: ツール
+description: ファイル同期、ターミナルアクセス、VS Code統合、アップデート、診断。
+category: Guides
 order: 8
 language: ja
+sourceHash: 80ca3cd3e1a55d4b
 ---
 
 # ツール
 
-Rediaccには、リモートリポジトリで作業するための複数の生産性ツールが含まれています。これらのツールは、コンテキスト設定によって確立されたSSH接続の上に構築されています。
+Rediaccには、リモートリポジトリを操作するための生産性ツールが含まれています：ファイル同期、SSHターミナル、VS Code統合、CLIアップデート。
 
-## ファイル同期（sync）
+## ファイル同期 (sync)
 
-rsyncをSSH経由で使用して、ワークステーションとリモートリポジトリ間でファイルを転送します。
+rsync over SSHを使用して、ワークステーションとリモートリポジトリ間でファイルを転送します。
 
 ### ファイルのアップロード
 
 ```bash
-rdc sync upload my-app -m server-1 --local ./src --remote /app/src
+rdc sync upload -m server-1 -r my-app --local ./src --remote /app/src
 ```
 
 ### ファイルのダウンロード
 
 ```bash
-rdc sync download my-app -m server-1 --remote /app/data --local ./data
+rdc sync download -m server-1 -r my-app --remote /app/data --local ./data
+```
+
+### 同期ステータスの確認
+
+```bash
+rdc sync status -m server-1 -r my-app
 ```
 
 ### オプション
 
 | オプション | 説明 |
 |--------|-------------|
-| `-m, --machine <name>` | ターゲットマシン |
-| `--local <path>` | ローカルディレクトリパス |
-| `--remote <path>` | リモートパス（リポジトリのマウントポイントからの相対パス） |
+| `-m, --machine <name>` | 対象マシン |
+| `-r, --repository <name>` | 対象リポジトリ |
+| `--local <path>` | ローカルディレクトリのパス |
+| `--remote <path>` | リモートパス（リポジトリマウントからの相対パス） |
 | `--dry-run` | 転送せずに変更をプレビュー |
-| `--delete` | ソースに存在しない宛先のファイルを削除 |
+| `--mirror` | ソースをデスティネーションにミラーリング（余分なファイルを削除） |
+| `--verify` | 転送後にチェックサムを検証 |
+| `--confirm` | 詳細ビューによるインタラクティブな確認 |
+| `--exclude <patterns...>` | ファイルパターンを除外 |
+| `--skip-router-restart` | 操作後のルートサーバーの再起動をスキップ |
 
-`--dry-run`フラグは、同期を実行する前に転送される内容をプレビューするのに便利です。
+## SSHターミナル (term)
 
-## SSHターミナル（term）
+マシンまたはリポジトリ環境へのインタラクティブなSSHセッションを開きます。
 
-マシンまたはリポジトリのマウントパスに直接、対話型SSHセッションを開きます。
+### 省略構文
 
-### マシンへの接続
-
-```bash
-rdc term connect server-1
-```
-
-### リポジトリへの接続
+最も手軽な接続方法：
 
 ```bash
-rdc term connect my-app -m server-1
+rdc term server-1                    # マシンに接続
+rdc term server-1 my-app             # リポジトリに接続
 ```
 
-リポジトリに接続すると、ターミナルセッションはリポジトリのマウントディレクトリで開始され、リポジトリのDockerソケットが設定されます。
+### コマンドの実行
 
-## VS Code統合（vscode）
+インタラクティブセッションを開かずにコマンドを実行します：
 
-正しいSSH設定とRemote SSH拡張機能で事前設定された、VS CodeでのリモートSSHセッションを開きます。
+```bash
+rdc term server-1 -c "uptime"
+rdc term server-1 my-app -c "docker ps"
+```
+
+リポジトリに接続する際、`DOCKER_HOST`はリポジトリの分離されたDockerソケットに自動的に設定されるため、`docker ps`はそのリポジトリのコンテナのみを表示します。
+
+### connect サブコマンド
+
+`connect`サブコマンドは、明示的なフラグを使用して同じ機能を提供します：
+
+```bash
+rdc term connect -m server-1
+rdc term connect -m server-1 -r my-app
+```
+
+### コンテナ操作
+
+実行中のコンテナと直接やり取りします：
+
+```bash
+# コンテナ内でシェルを開く
+rdc term server-1 my-app --container <container-id>
+
+# コンテナログを表示
+rdc term server-1 my-app --container <container-id> --container-action logs
+
+# リアルタイムでログを追跡
+rdc term server-1 my-app --container <container-id> --container-action logs --follow
+
+# コンテナの統計情報を表示
+rdc term server-1 my-app --container <container-id> --container-action stats
+
+# コンテナ内でコマンドを実行
+rdc term server-1 my-app --container <container-id> --container-action exec -c "ls -la"
+```
+
+| オプション | 説明 |
+|--------|-------------|
+| `--container <id>` | 対象のDockerコンテナID |
+| `--container-action <action>` | アクション：`terminal`（デフォルト）、`logs`、`stats`、`exec` |
+| `--log-lines <n>` | 表示するログの行数（デフォルト：50） |
+| `--follow` | ログを継続的に追跡 |
+| `--external` | インラインSSHの代わりに外部ターミナルを使用 |
+
+## VS Code統合 (vscode)
+
+正しいSSH設定が事前構成された状態で、VS CodeでリモートSSHセッションを開きます。
 
 ### リポジトリへの接続
 
@@ -68,8 +122,8 @@ rdc vscode connect my-app -m server-1
 
 このコマンドは以下を実行します：
 1. VS Codeのインストールを検出
-2. `~/.ssh/config`にSSH接続を設定
-3. セッション用のSSH鍵を永続化
+2. `~/.ssh/config`でSSH接続を設定
+3. セッション用にSSHキーを保持
 4. リポジトリパスへのRemote SSH接続でVS Codeを起動
 
 ### 設定済み接続の一覧表示
@@ -77,8 +131,6 @@ rdc vscode connect my-app -m server-1
 ```bash
 rdc vscode list
 ```
-
-VS Code用に設定されたすべてのSSH接続を表示します。
 
 ### 接続のクリーンアップ
 
@@ -88,11 +140,19 @@ rdc vscode clean
 
 不要になったVS CodeのSSH設定を削除します。
 
+### 設定の確認
+
+```bash
+rdc vscode check
+```
+
+VS Codeのインストール状況、Remote SSH拡張機能、およびアクティブな接続を検証します。
+
 > **前提条件：** VS Codeに[Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh)拡張機能をインストールしてください。
 
-## CLIアップデート（update）
+## CLIアップデート (update)
 
-`rdc` CLIを最新の機能とバグ修正で最新の状態に保ちます。
+`rdc` CLIを最新の状態に保ちます。
 
 ### アップデートの確認
 
@@ -106,7 +166,7 @@ rdc update --check-only
 rdc update
 ```
 
-アップデートはダウンロードされ、その場で適用されます。新しいバージョンは次回実行時に有効になります。
+アップデートはダウンロードされ、その場で適用されます。CLIはお使いのプラットフォーム（Linux、macOS、またはWindows）に適したバイナリを自動的に選択します。新しいバージョンは次回の実行時に有効になります。
 
 ### ロールバック
 
@@ -114,31 +174,12 @@ rdc update
 rdc update rollback
 ```
 
-以前にインストールされたバージョンに戻します。アップデートが適用された後にのみ使用可能です。
+以前にインストールされたバージョンに戻します。アップデートが適用された後にのみ利用可能です。
 
-### 自動アップデートステータス
+### アップデートステータス
 
 ```bash
 rdc update status
 ```
 
-現在のバージョン、アップデートチャンネル、自動アップデート設定を表示します。
-
-## システム診断（doctor）
-
-Rediacc環境の包括的な診断チェックを実行します。
-
-```bash
-rdc doctor
-```
-
-doctorコマンドは以下を確認します：
-
-| カテゴリ | チェック項目 |
-|----------|--------|
-| **環境** | Node.jsバージョン、CLIバージョン、SEAモード |
-| **Renet** | バイナリの存在、バージョン、組み込みCRIUとrsync |
-| **設定** | アクティブなコンテキスト、モード、マシン、SSH鍵 |
-| **認証** | ログインステータス |
-
-各チェックは**OK**、**警告**、または**エラー**を簡単な説明とともに報告します。問題のトラブルシューティングの最初のステップとしてこのコマンドを使用してください。
+現在のバージョン、アップデートチャンネル、および自動アップデートの設定を表示します。

@@ -1,42 +1,43 @@
 ---
-title: "Experimental VMs"
-description: "Provision local VM clusters for development and testing with rdc ops."
-category: "Guides"
-order: 15
+title: "Экспериментальные VM"
+description: "Создание локальных кластеров VM для разработки и тестирования с помощью rdc ops."
+category: "Concepts"
+order: 2
 language: ru
+sourceHash: "30b5f6267314cfb2"
 ---
 
-# Experimental VMs
+# Экспериментальные VM
 
-Provision local VM clusters on your workstation for development and testing — no external cloud providers required.
+Создание локальных кластеров VM на вашей рабочей станции для разработки и тестирования — без внешних облачных провайдеров.
 
-## Overview
+## Обзор
 
 Команды `rdc ops` позволяют создавать и управлять экспериментальными кластерами VM локально. Это та же инфраструктура, которая используется в конвейере CI для интеграционных тестов, и теперь она доступна для практических экспериментов.
 
-Use cases:
-- Test Rediacc deployments without external VM providers (Linode, Vultr, etc.)
-- Develop and debug repository configurations locally
-- Learn the platform in a fully isolated environment
-- Run integration tests on your workstation
+Сценарии использования:
+- Тестирование развёртываний Rediacc без внешних провайдеров VM (Linode, Vultr и т.д.)
+- Разработка и отладка конфигураций репозиториев локально
+- Изучение платформы в полностью изолированной среде
+- Запуск интеграционных тестов на рабочей станции
 
-## Platform Support
+## Поддержка платформ
 
-| Platform | Architecture | Backend | Status |
-|----------|-------------|---------|--------|
-| Linux | x86_64 | KVM (libvirt) | Full support |
-| Linux | ARM64 | KVM (libvirt) | Full support |
-| macOS | ARM (Apple Silicon) | QEMU + HVF | Full support |
-| macOS | Intel | QEMU + HVF | Full support |
-| Windows | x86_64 / ARM64 | Hyper-V | Planned |
+| Платформа | Архитектура | Бэкенд | Статус |
+|-----------|-------------|---------|--------|
+| Linux | x86_64 | KVM (libvirt) | Полная поддержка |
+| Linux | ARM64 | KVM (libvirt) | Полная поддержка |
+| macOS | ARM (Apple Silicon) | QEMU + HVF | Полная поддержка |
+| macOS | Intel | QEMU + HVF | Полная поддержка |
+| Windows | x86_64 / ARM64 | Hyper-V | Планируется |
 
-**Linux (KVM)** uses libvirt for native hardware virtualization with bridged networking.
+**Linux (KVM)** использует libvirt для аппаратной виртуализации с мостовой сетью.
 
-**macOS (QEMU)** uses QEMU with Apple's Hypervisor Framework (HVF) for near-native performance, with user-mode networking and SSH port forwarding.
+**macOS (QEMU)** использует QEMU с Apple Hypervisor Framework (HVF) для производительности, близкой к нативной, с пользовательской сетью и проброской портов SSH.
 
-**Windows (Hyper-V)** support is planned. See [issue #380](https://github.com/rediacc/console/issues/380) for details. Requires Windows Pro/Enterprise.
+**Windows (Hyper-V)** — поддержка планируется. Подробности см. в [issue #380](https://github.com/rediacc/console/issues/380). Требуется Windows Pro/Enterprise.
 
-## Prerequisites & Setup
+## Предварительные требования и настройка
 
 ### Linux
 
@@ -59,15 +60,15 @@ rdc ops setup
 brew install qemu cdrtools
 ```
 
-### Verify Setup
+### Проверка настройки
 
 ```bash
 rdc ops check
 ```
 
-This runs platform-specific checks and reports pass/fail for each prerequisite.
+Выполняет проверки, специфичные для платформы, и сообщает результат (пройдено/не пройдено) для каждого требования.
 
-## Quick Start
+## Быстрый старт
 
 ```bash
 # 1. Check prerequisites
@@ -86,98 +87,98 @@ rdc ops ssh 1
 rdc ops down
 ```
 
-## Cluster Composition
+## Состав кластера
 
-By default, `rdc ops up` provisions:
+По умолчанию `rdc ops up` создаёт:
 
-| VM | ID | Role |
+| VM | ID | Роль |
 |----|-----|------|
-| Bridge | 1 | Primary node — runs the Rediacc bridge service |
-| Worker 1 | 11 | Worker node for repository deployments |
-| Worker 2 | 12 | Worker node for repository deployments |
+| Bridge | 1 | Основной узел — запускает службу моста Rediacc |
+| Worker 1 | 11 | Рабочий узел для развёртывания репозиториев |
+| Worker 2 | 12 | Рабочий узел для развёртывания репозиториев |
 
-Use the `--basic` flag to provision only the bridge and first worker (IDs 1 and 11).
+Используйте флаг `--basic` для создания только моста и первого рабочего узла (ID 1 и 11).
 
-Use `--skip-orchestration` to provision VMs without starting Rediacc services — useful for testing the VM layer in isolation.
+Используйте `--skip-orchestration` для создания VM без запуска служб Rediacc — полезно для тестирования уровня VM в изоляции.
 
-## Configuration
+## Конфигурация
 
-Environment variables control VM resources:
+Переменные окружения управляют ресурсами VM:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `VM_CPU` | 2 | CPU cores per VM |
-| `VM_RAM` | 4096 | RAM in MB per VM |
-| `VM_DSK` | 16 | Disk size in GB |
-| `VM_NET_BASE` | 192.168.111 | Network base (KVM only) |
-| `RENET_DATA_DIR` | ~/.renet | Data directory for VM disks and config |
+| Переменная | По умолчанию | Описание |
+|------------|--------------|----------|
+| `VM_CPU` | 2 | Количество ядер CPU на VM |
+| `VM_RAM` | 4096 | Объём RAM в МБ на VM |
+| `VM_DSK` | 16 | Размер диска в ГБ |
+| `VM_NET_BASE` | 192.168.111 | Базовый адрес сети (только KVM) |
+| `RENET_DATA_DIR` | ~/.renet | Каталог данных для дисков и конфигурации VM |
 
-## Command Reference
+## Справочник по командам
 
-| Command | Description |
-|---------|-------------|
-| `rdc ops setup` | Install platform prerequisites (KVM or QEMU) |
-| `rdc ops check` | Verify prerequisites are installed and working |
-| `rdc ops up [options]` | Provision VM cluster |
-| `rdc ops down` | Destroy all VMs and cleanup |
-| `rdc ops status` | Show status of all VMs |
-| `rdc ops ssh <vm-id>` | SSH into a specific VM |
+| Команда | Описание |
+|---------|----------|
+| `rdc ops setup` | Установка предварительных требований платформы (KVM или QEMU) |
+| `rdc ops check` | Проверка установки и работоспособности требований |
+| `rdc ops up [options]` | Создание кластера VM |
+| `rdc ops down` | Уничтожение всех VM и очистка |
+| `rdc ops status` | Отображение статуса всех VM |
+| `rdc ops ssh <vm-id>` | SSH-подключение к конкретной VM |
 
-### `rdc ops up` Options
+### Параметры `rdc ops up`
 
-| Option | Description |
-|--------|-------------|
-| `--basic` | Minimal cluster (bridge + 1 worker) |
-| `--lite` | Lightweight resources |
-| `--force` | Force recreate existing VMs |
-| `--parallel` | Provision VMs in parallel |
-| `--skip-orchestration` | VMs only, no Rediacc services |
-| `--backend <kvm\|qemu>` | Override auto-detected backend |
-| `--os <name>` | OS image (default: ubuntu-24.04) |
-| `--debug` | Verbose output |
+| Параметр | Описание |
+|----------|----------|
+| `--basic` | Минимальный кластер (мост + 1 рабочий узел) |
+| `--lite` | Облегчённые ресурсы |
+| `--force` | Принудительное пересоздание существующих VM |
+| `--parallel` | Параллельное создание VM |
+| `--skip-orchestration` | Только VM, без служб Rediacc |
+| `--backend <kvm\|qemu>` | Принудительный выбор бэкенда вместо автоопределения |
+| `--os <name>` | Образ ОС (по умолчанию: ubuntu-24.04) |
+| `--debug` | Подробный вывод |
 
-## Platform Differences
+## Различия между платформами
 
 ### Linux (KVM)
-- Uses libvirt for VM lifecycle management
-- Bridged networking — VMs get IPs on a virtual network (192.168.111.x)
-- Direct SSH to VM IPs
-- Requires `/dev/kvm` and libvirtd service
+- Использует libvirt для управления жизненным циклом VM
+- Мостовая сеть — VM получают IP-адреса в виртуальной сети (192.168.111.x)
+- Прямое SSH-подключение к IP-адресам VM
+- Требуется `/dev/kvm` и служба libvirtd
 
 ### macOS (QEMU + HVF)
-- Uses QEMU processes managed via PID files
-- User-mode networking with SSH port forwarding (localhost:222XX)
-- SSH via forwarded ports, not direct IPs
-- Cloud-init ISOs created via `mkisofs`
+- Использует процессы QEMU, управляемые через PID-файлы
+- Пользовательская сеть с проброской портов SSH (localhost:222XX)
+- SSH через проброшенные порты, а не напрямую по IP
+- ISO-образы cloud-init создаются через `mkisofs`
 
-## Troubleshooting
+## Устранение неполадок
 
-### Debug mode
+### Режим отладки
 
-Add `--debug` to any command for verbose output:
+Добавьте `--debug` к любой команде для подробного вывода:
 
 ```bash
 rdc ops up --basic --debug
 ```
 
-### Common issues
+### Распространённые проблемы
 
-**KVM not available (Linux)**
-- Check `/dev/kvm` exists: `ls -la /dev/kvm`
-- Enable virtualization in BIOS/UEFI
-- Load the kernel module: `sudo modprobe kvm_intel` or `sudo modprobe kvm_amd`
+**KVM недоступен (Linux)**
+- Проверьте наличие `/dev/kvm`: `ls -la /dev/kvm`
+- Включите виртуализацию в BIOS/UEFI
+- Загрузите модуль ядра: `sudo modprobe kvm_intel` или `sudo modprobe kvm_amd`
 
-**libvirtd not running (Linux)**
+**libvirtd не запущен (Linux)**
 ```bash
 sudo systemctl enable --now libvirtd
 ```
 
-**QEMU not found (macOS)**
+**QEMU не найден (macOS)**
 ```bash
 brew install qemu cdrtools
 ```
 
-**VMs won't start**
-- Check disk space in `~/.renet/disks/`
-- Run `rdc ops check` to verify all prerequisites
-- Try `rdc ops down` then `rdc ops up --force`
+**VM не запускаются**
+- Проверьте свободное место в `~/.renet/disks/`
+- Запустите `rdc ops check` для проверки всех требований
+- Попробуйте `rdc ops down`, затем `rdc ops up --force`

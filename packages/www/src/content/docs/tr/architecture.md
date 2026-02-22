@@ -1,19 +1,27 @@
 ---
 title: Mimari
 description: >-
-  Rediacc nasil calisir: iki aracli mimari, calisma modlari, guvenlik modeli ve
-  yapilandirma yapisi.
-category: Guides
-order: 2
+  Rediacc nasıl çalışır: iki araçlı mimari, çalışma modları, güvenlik modeli ve
+  yapılandırma yapısı.
+category: Concepts
+order: 0
 language: tr
-sourceHash: 8f910f7827c8e958
+sourceHash: 58ba0da9645bb9dd
 ---
 
 # Mimari
 
-Hangi araci kullanacaginizdan emin degilseniz [rdc vs renet](/tr/docs/rdc-vs-renet) sayfasina bakin.
+Hangi aracı kullanacağınızdan emin değilseniz [rdc vs renet](/tr/docs/rdc-vs-renet) sayfasına bakın.
 
 Bu sayfa, Rediacc'ın altyapısını açıklar: iki araçlı mimari, çalışma modları, güvenlik modeli ve yapılandırma yapısı.
+
+## Full Stack Overview
+
+Traffic flows from the internet through a reverse proxy, into isolated Docker daemons, each backed by encrypted storage:
+
+![Full Stack Architecture](/img/arch-full-stack.svg)
+
+Each repository gets its own Docker daemon, loopback IP subnet (/26 = 64 IPs), and LUKS-encrypted BTRFS volume. The route server discovers running containers across all daemons and feeds routing configuration to Traefik.
 
 ## İki Araçlı Mimari
 

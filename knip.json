@@ -13,7 +13,7 @@
       "project": ["src/**/*.ts"]
     },
     "packages/cli": {
-      "entry": ["src/types/index.ts", "tests/**/*.ts"],
+      "entry": ["src/types/index.ts", "tests/**/*.ts", "bundle.mjs"],
       "project": ["src/**/*.ts", "tests/**/*.ts"]
     },
     "packages/web": {
@@ -84,6 +84,7 @@
         "src/layouts/**/*.astro",
         "scripts/generate-search-index.js",
         "scripts/generate-json.js",
+        "scripts/scale-svg-viewbox.cjs",
         "src/components/Navigation.tsx",
         "src/components/Footer.tsx",
         "src/components/Sidebar.tsx"
@@ -99,6 +100,7 @@
   "ignore": ["private/**"],
   "ignoreDependencies": [
     "@aws-sdk/client-s3",
+    "@biomejs/biome",
     "@types/*",
     "@opentelemetry/instrumentation-*",
     "@opentelemetry/context-zone",
@@ -107,6 +109,7 @@
     "@opentelemetry/sdk-trace-web",
     "astro",
     "dayjs",
+    "eslint",
     "@electron-toolkit/preload",
     "node-pty",
     "ssh2",
@@ -120,7 +123,8 @@
     "zod",
     "astro-seo",
     "glob",
-    "react-i18next"
+    "react-i18next",
+    "syncpack"
   ],
-  "ignoreBinaries": ["rimraf", "wrangler"]
+  "ignoreBinaries": ["astro", "biome", "eslint", "knip", "rimraf", "syncpack", "wrangler"]
 }

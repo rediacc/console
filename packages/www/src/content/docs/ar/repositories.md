@@ -1,9 +1,10 @@
 ---
-title: "المستودعات"
-description: "إنشاء وإدارة وتشغيل المستودعات المشفرة بـ LUKS على الأجهزة البعيدة."
-category: "Guides"
+title: المستودعات
+description: إنشاء وإدارة وتشغيل المستودعات المشفرة بـ LUKS على الأجهزة البعيدة.
+category: Guides
 order: 4
 language: ar
+sourceHash: 04fe287348176b64
 ---
 
 # المستودعات
@@ -23,6 +24,7 @@ rdc repo create my-app -m server-1 --size 10G
 |--------|-------|-------|
 | `-m, --machine <name>` | نعم | الجهاز المستهدف حيث سيتم إنشاء المستودع. |
 | `--size <size>` | نعم | حجم صورة القرص المشفرة (مثل `5G`، `10G`، `50G`). |
+| `--skip-router-restart` | No | Skip restarting the route server after the operation |
 
 ستظهر في المخرجات ثلاث قيم مُنشأة تلقائياً:
 
@@ -44,6 +46,7 @@ rdc repo unmount my-app -m server-1     # إلغاء التحميل وإعادة
 | الخيار | الوصف |
 |--------|-------|
 | `--checkpoint` | إنشاء نقطة تفتيش قبل التحميل/إلغاء التحميل |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## التحقق من الحالة
 
@@ -100,6 +103,7 @@ rdc repo ownership my-app -m server-1
 |--------|-------|
 | `--uid <uid>` | تعيين معرّف مستخدم مخصص بدلاً من 7111 |
 | `--force` | تخطي اكتشاف أحجام Docker وتغيير ملكية كل شيء |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 لفرض الملكية على جميع الملفات، بما في ذلك بيانات الحاويات:
 

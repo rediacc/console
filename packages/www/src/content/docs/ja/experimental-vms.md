@@ -1,42 +1,43 @@
 ---
-title: "Experimental VMs"
-description: "Provision local VM clusters for development and testing with rdc ops."
-category: "Guides"
-order: 15
+title: "実験的VM"
+description: "rdc opsを使用して、開発およびテスト用のローカルVMクラスターをプロビジョニングします。"
+category: "Concepts"
+order: 2
 language: ja
+sourceHash: "30b5f6267314cfb2"
 ---
 
-# Experimental VMs
+# 実験的VM
 
-Provision local VM clusters on your workstation for development and testing — no external cloud providers required.
+ワークステーション上にローカルVMクラスターをプロビジョニングし、開発やテストに使用できます。外部クラウドプロバイダーは不要です。
 
-## Overview
+## 概要
 
 `rdc ops` コマンドを使用すると、実験用 VM クラスターをローカルで作成・管理できます。これは CI パイプラインで統合テストに使用されているものと同じインフラストラクチャであり、実践的な実験にご利用いただけるようになりました。
 
-Use cases:
-- Test Rediacc deployments without external VM providers (Linode, Vultr, etc.)
-- Develop and debug repository configurations locally
-- Learn the platform in a fully isolated environment
-- Run integration tests on your workstation
+ユースケース：
+- 外部VMプロバイダー（Linode、Vultrなど）なしでRediaccデプロイメントをテスト
+- リポジトリ設定をローカルで開発・デバッグ
+- 完全に分離された環境でプラットフォームを学習
+- ワークステーション上で統合テストを実行
 
-## Platform Support
+## プラットフォームサポート
 
-| Platform | Architecture | Backend | Status |
+| プラットフォーム | アーキテクチャ | バックエンド | ステータス |
 |----------|-------------|---------|--------|
-| Linux | x86_64 | KVM (libvirt) | Full support |
-| Linux | ARM64 | KVM (libvirt) | Full support |
-| macOS | ARM (Apple Silicon) | QEMU + HVF | Full support |
-| macOS | Intel | QEMU + HVF | Full support |
-| Windows | x86_64 / ARM64 | Hyper-V | Planned |
+| Linux | x86_64 | KVM (libvirt) | フルサポート |
+| Linux | ARM64 | KVM (libvirt) | フルサポート |
+| macOS | ARM (Apple Silicon) | QEMU + HVF | フルサポート |
+| macOS | Intel | QEMU + HVF | フルサポート |
+| Windows | x86_64 / ARM64 | Hyper-V | 計画中 |
 
-**Linux (KVM)** uses libvirt for native hardware virtualization with bridged networking.
+**Linux (KVM)** はlibvirtを使用し、ブリッジネットワーキングによるネイティブハードウェア仮想化を提供します。
 
-**macOS (QEMU)** uses QEMU with Apple's Hypervisor Framework (HVF) for near-native performance, with user-mode networking and SSH port forwarding.
+**macOS (QEMU)** はAppleのHypervisor Framework（HVF）を搭載したQEMUを使用し、ユーザーモードネットワーキングとSSHポートフォワーディングにより、ネイティブに近いパフォーマンスを実現します。
 
-**Windows (Hyper-V)** support is planned. See [issue #380](https://github.com/rediacc/console/issues/380) for details. Requires Windows Pro/Enterprise.
+**Windows (Hyper-V)** のサポートは計画中です。詳細は[issue #380](https://github.com/rediacc/console/issues/380)を参照してください。Windows Pro/Enterpriseが必要です。
 
-## Prerequisites & Setup
+## 前提条件とセットアップ
 
 ### Linux
 
@@ -59,15 +60,15 @@ rdc ops setup
 brew install qemu cdrtools
 ```
 
-### Verify Setup
+### セットアップの確認
 
 ```bash
 rdc ops check
 ```
 
-This runs platform-specific checks and reports pass/fail for each prerequisite.
+プラットフォーム固有のチェックを実行し、各前提条件の合否を報告します。
 
-## Quick Start
+## クイックスタート
 
 ```bash
 # 1. Check prerequisites
@@ -86,98 +87,98 @@ rdc ops ssh 1
 rdc ops down
 ```
 
-## Cluster Composition
+## クラスター構成
 
-By default, `rdc ops up` provisions:
+デフォルトでは、`rdc ops up`は以下をプロビジョニングします：
 
-| VM | ID | Role |
+| VM | ID | 役割 |
 |----|-----|------|
-| Bridge | 1 | Primary node — runs the Rediacc bridge service |
-| Worker 1 | 11 | Worker node for repository deployments |
-| Worker 2 | 12 | Worker node for repository deployments |
+| ブリッジ | 1 | プライマリノード — Rediaccブリッジサービスを実行 |
+| ワーカー1 | 11 | リポジトリデプロイメント用のワーカーノード |
+| ワーカー2 | 12 | リポジトリデプロイメント用のワーカーノード |
 
-Use the `--basic` flag to provision only the bridge and first worker (IDs 1 and 11).
+`--basic`フラグを使用すると、ブリッジと最初のワーカーのみをプロビジョニングします（ID 1と11）。
 
-Use `--skip-orchestration` to provision VMs without starting Rediacc services — useful for testing the VM layer in isolation.
+`--skip-orchestration`を使用すると、Rediaccサービスを起動せずにVMのみをプロビジョニングします。VM層を分離してテストする場合に便利です。
 
-## Configuration
+## 設定
 
-Environment variables control VM resources:
+環境変数でVMリソースを制御します：
 
-| Variable | Default | Description |
+| 変数 | デフォルト | 説明 |
 |----------|---------|-------------|
-| `VM_CPU` | 2 | CPU cores per VM |
-| `VM_RAM` | 4096 | RAM in MB per VM |
-| `VM_DSK` | 16 | Disk size in GB |
-| `VM_NET_BASE` | 192.168.111 | Network base (KVM only) |
-| `RENET_DATA_DIR` | ~/.renet | Data directory for VM disks and config |
+| `VM_CPU` | 2 | VM あたりのCPUコア数 |
+| `VM_RAM` | 4096 | VMあたりのRAM（MB） |
+| `VM_DSK` | 16 | ディスクサイズ（GB） |
+| `VM_NET_BASE` | 192.168.111 | ネットワークベース（KVMのみ） |
+| `RENET_DATA_DIR` | ~/.renet | VMディスクと設定のデータディレクトリ |
 
-## Command Reference
+## コマンドリファレンス
 
-| Command | Description |
+| コマンド | 説明 |
 |---------|-------------|
-| `rdc ops setup` | Install platform prerequisites (KVM or QEMU) |
-| `rdc ops check` | Verify prerequisites are installed and working |
-| `rdc ops up [options]` | Provision VM cluster |
-| `rdc ops down` | Destroy all VMs and cleanup |
-| `rdc ops status` | Show status of all VMs |
-| `rdc ops ssh <vm-id>` | SSH into a specific VM |
+| `rdc ops setup` | プラットフォームの前提条件をインストール（KVMまたはQEMU） |
+| `rdc ops check` | 前提条件がインストールされ動作していることを確認 |
+| `rdc ops up [options]` | VMクラスターをプロビジョニング |
+| `rdc ops down` | すべてのVMを破棄しクリーンアップ |
+| `rdc ops status` | すべてのVMのステータスを表示 |
+| `rdc ops ssh <vm-id>` | 特定のVMにSSH接続 |
 
-### `rdc ops up` Options
+### `rdc ops up` オプション
 
-| Option | Description |
+| オプション | 説明 |
 |--------|-------------|
-| `--basic` | Minimal cluster (bridge + 1 worker) |
-| `--lite` | Lightweight resources |
-| `--force` | Force recreate existing VMs |
-| `--parallel` | Provision VMs in parallel |
-| `--skip-orchestration` | VMs only, no Rediacc services |
-| `--backend <kvm\|qemu>` | Override auto-detected backend |
-| `--os <name>` | OS image (default: ubuntu-24.04) |
-| `--debug` | Verbose output |
+| `--basic` | 最小構成のクラスター（ブリッジ + ワーカー1台） |
+| `--lite` | 軽量リソース |
+| `--force` | 既存のVMを強制的に再作成 |
+| `--parallel` | VMを並列でプロビジョニング |
+| `--skip-orchestration` | VMのみ、Rediaccサービスなし |
+| `--backend <kvm\|qemu>` | 自動検出されたバックエンドを上書き |
+| `--os <name>` | OSイメージ（デフォルト：ubuntu-24.04） |
+| `--debug` | 詳細な出力 |
 
-## Platform Differences
+## プラットフォームの違い
 
 ### Linux (KVM)
-- Uses libvirt for VM lifecycle management
-- Bridged networking — VMs get IPs on a virtual network (192.168.111.x)
-- Direct SSH to VM IPs
-- Requires `/dev/kvm` and libvirtd service
+- libvirtを使用してVMのライフサイクルを管理
+- ブリッジネットワーキング — VMは仮想ネットワーク上のIPを取得（192.168.111.x）
+- VM IPへの直接SSH接続
+- `/dev/kvm`とlibvirtdサービスが必要
 
 ### macOS (QEMU + HVF)
-- Uses QEMU processes managed via PID files
-- User-mode networking with SSH port forwarding (localhost:222XX)
-- SSH via forwarded ports, not direct IPs
-- Cloud-init ISOs created via `mkisofs`
+- PIDファイルで管理されるQEMUプロセスを使用
+- SSHポートフォワーディングによるユーザーモードネットワーキング（localhost:222XX）
+- 直接IPではなくフォワードされたポート経由でSSH接続
+- `mkisofs`でCloud-init ISOを作成
 
-## Troubleshooting
+## トラブルシューティング
 
-### Debug mode
+### デバッグモード
 
-Add `--debug` to any command for verbose output:
+任意のコマンドに`--debug`を追加すると詳細な出力が得られます：
 
 ```bash
 rdc ops up --basic --debug
 ```
 
-### Common issues
+### よくある問題
 
-**KVM not available (Linux)**
-- Check `/dev/kvm` exists: `ls -la /dev/kvm`
-- Enable virtualization in BIOS/UEFI
-- Load the kernel module: `sudo modprobe kvm_intel` or `sudo modprobe kvm_amd`
+**KVMが利用できない（Linux）**
+- `/dev/kvm`が存在するか確認：`ls -la /dev/kvm`
+- BIOS/UEFIで仮想化を有効にする
+- カーネルモジュールをロード：`sudo modprobe kvm_intel`または`sudo modprobe kvm_amd`
 
-**libvirtd not running (Linux)**
+**libvirtdが動作していない（Linux）**
 ```bash
 sudo systemctl enable --now libvirtd
 ```
 
-**QEMU not found (macOS)**
+**QEMUが見つからない（macOS）**
 ```bash
 brew install qemu cdrtools
 ```
 
-**VMs won't start**
-- Check disk space in `~/.renet/disks/`
-- Run `rdc ops check` to verify all prerequisites
-- Try `rdc ops down` then `rdc ops up --force`
+**VMが起動しない**
+- `~/.renet/disks/`のディスク容量を確認
+- `rdc ops check`を実行してすべての前提条件を確認
+- `rdc ops down`を実行してから`rdc ops up --force`を試す

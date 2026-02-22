@@ -4,6 +4,7 @@ description: インスタント クローン作成と 1 時間ごとのスナッ
 category: Use Cases
 order: 4
 language: ja
+sourceHash: c905d2f42d1108c2
 ---
 
 > **すべてをテストします。 リスクは何もありません。 自信を持ってアップグレードしてください。**
@@ -38,6 +39,8 @@ Mehmet は、大規模なデータベースを管理する経験豊富なシス�
 ## Rediacc ソリューション
 
 Mehmet は Rediacc を使用して問題を根本的に解決しました。
+
+![Risk-Free Upgrades](/img/risk-free-upgrades.svg)
 
 ### 1. **インスタント クローン作成**
  * **100 TB データベースのクローンが数秒以内に作成されます**

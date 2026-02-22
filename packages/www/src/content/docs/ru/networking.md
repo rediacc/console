@@ -1,14 +1,19 @@
 ---
-title: "Сетевое взаимодействие"
-description: "Предоставление сервисов через обратный прокси, Docker-метки, TLS-сертификаты, DNS и проброс TCP/UDP-портов."
-category: "Guides"
+title: Сетевое взаимодействие
+description: >-
+  Предоставление сервисов через обратный прокси, Docker-метки, TLS-сертификаты,
+  DNS и проброс TCP/UDP-портов.
+category: Guides
 order: 6
 language: ru
+sourceHash: 47ee41d44be935a8
 ---
 
 # Сетевое взаимодействие
 
 На этой странице описывается, как сервисы, работающие внутри изолированных Docker-демонов, становятся доступными из интернета. Рассматривается система обратного прокси, Docker-метки для маршрутизации, TLS-сертификаты, DNS и проброс TCP/UDP-портов.
+| Route server running old version | Binary was updated but service not restarted | Happens automatically on provisioning; manual: `sudo systemctl restart rediacc-router` |
+| STUN/TURN relay not reachable | Relay addresses cached at startup | Recreate the service after DNS or IP changes so it picks up the new network config |
 
 Информацию о том, как сервисы получают loopback IP-адреса и как работает система слотов `.rediacc.json`, см. в разделе [Сервисы](/ru/docs/services#сетевое-взаимодействие-сервисов-rediaccjson).
 
@@ -33,6 +38,8 @@ Internet → Traefik (ports 80/443/TCP/UDP)
 
 Когда вы добавляете правильные метки к контейнеру и запускаете его с помощью `renet compose`, он автоматически становится маршрутизируемым — ручная настройка прокси не требуется.
 
+> The route server binary is kept in sync with your CLI version. When the CLI updates the renet binary on a machine, the route server is automatically restarted (~1–2 seconds). This causes no downtime — Traefik continues serving traffic with its last known configuration during the restart and picks up the new config on the next poll. Existing client connections are not affected. Your application containers are not touched.
+
 ## Docker-метки
 
 Маршрутизация управляется с помощью меток Docker-контейнеров. Существуют два уровня:
@@ -46,6 +53,8 @@ Internet → Traefik (ports 80/443/TCP/UDP)
 | `rediacc.service_name` | Идентификатор сервиса | `myapp` |
 | `rediacc.service_ip` | Назначенный loopback IP | `127.0.11.2` |
 | `rediacc.network_id` | Идентификатор демона репозитория | `2816` |
+| `rediacc.tcp_ports` | TCP ports the service listens on | `8080,8443` |
+| `rediacc.udp_ports` | UDP ports the service listens on | `53` |
 
 Когда контейнер имеет только метки `rediacc.*` (без `traefik.enable=true`), сервер маршрутов генерирует **автомаршрут**:
 
@@ -168,6 +177,27 @@ rdc context push-infra server-1
 ```
 
 Это создает точки входа Traefik с именами `tcp-{port}` и `udp-{port}`.
+
+### Plain TCP Example (Database)
+
+To expose a database externally without TLS passthrough (Traefik forwards raw TCP):
+
+```yaml
+services:
+  postgres:
+    image: postgres:17
+    network_mode: host
+    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.mydb.entrypoints=tcp-5432"
+      - "traefik.tcp.routers.mydb.rule=HostSNI(`*`)"
+      - "traefik.tcp.services.mydb.loadbalancer.server.port=5432"
+```
+
+Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
+
+> **Security note:** Exposing a database to the internet is a risk. Use this only when remote clients need direct access. For most setups, keep the database internal and connect through your application.
 
 > После добавления или удаления портов всегда повторно выполняйте `rdc context push-infra` для обновления конфигурации прокси.
 
