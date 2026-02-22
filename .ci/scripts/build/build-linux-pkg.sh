@@ -224,8 +224,8 @@ nfpm package \
 # =============================================================================
 # nfpm generates filenames using its own convention. Find the output and rename.
 BUILT_PKG=$(find "$BUILD_DIR" -maxdepth 1 -type f \
-    \( -name "*.deb" -o -name "*.rpm" -o -name "*.apk" -o -name "*.pkg.tar.zst" \) \
-    | head -1)
+    \( -name "*.deb" -o -name "*.rpm" -o -name "*.apk" -o -name "*.pkg.tar.zst" \) |
+    head -1)
 
 if [[ -z "$BUILT_PKG" ]]; then
     log_error "nfpm produced no output file"
