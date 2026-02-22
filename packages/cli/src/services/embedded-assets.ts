@@ -11,7 +11,6 @@ import * as fs from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
-
 import { PLATFORM_DEFAULTS } from '@rediacc/shared/config/defaults';
 
 /** Supported architectures for renet */
