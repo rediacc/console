@@ -109,7 +109,6 @@
     "@opentelemetry/sdk-trace-web",
     "astro",
     "dayjs",
-    "eslint",
     "@electron-toolkit/preload",
     "node-pty",
     "ssh2",
@@ -126,5 +125,5 @@
     "react-i18next",
     "syncpack"
   ],
-  "ignoreBinaries": ["astro", "biome", "eslint", "knip", "rimraf", "syncpack", "wrangler"]
+  "ignoreBinaries": ["astro", "biome", "knip", "rimraf", "syncpack", "wrangler"]
 }
