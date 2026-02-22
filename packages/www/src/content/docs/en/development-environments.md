@@ -46,6 +46,8 @@ Result: **4 hours of downtime** during peak trading hours, **$200K in lost trans
 
 Rediacc provisions complete development environments in under 60 seconds through automated infrastructure cloning.
 
+![Development Environments](/img/dev-environments.svg)
+
 ### 1. **Instant Provisioning**
 
 Developers trigger environment creation directly from Git branches without tickets or manual intervention:

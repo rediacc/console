@@ -4,6 +4,7 @@ description: 開発環境を何日も待つ必要はありません。 オンデ
 category: Use Cases
 order: 10
 language: ja
+sourceHash: 6128ad0f1099ba85
 ---
 
 > **一時的な環境。 生産同等。 DevOps チケットはゼロです。**
@@ -45,6 +46,8 @@ language: ja
 ## Rediacc ソリューション: 60 秒で本番クローンを作成
 
 Rediacc は、インフラストラクチャの自動複製により、60 秒以内に完全な開発環境をプロビジョニングします。
+
+![Development Environments](/img/dev-environments.svg)
 
 ### 1. **インスタント プロビジョニング**
 

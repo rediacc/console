@@ -1,9 +1,12 @@
 ---
 title: Stratégie de sauvegarde croisée
-description: Protégez les données contre les sinistres grâce à des sauvegardes transcontinentales efficaces et une restauration rapide.
+description: >-
+  Protégez les données contre les sinistres grâce à des sauvegardes
+  transcontinentales efficaces et une restauration rapide.
 category: Use Cases
 order: 5
 language: fr
+sourceHash: 592ecfdf6477dbba
 ---
 
 > **En cas de catastrophe, vos données survivront-elles ? Avec Rediacc, c'est toujours le cas.**
@@ -37,6 +40,8 @@ Après un appel client :
 * La **réputation de l'entreprise est sérieusement endommagée**
 
 ## Solution de rediacc
+
+![Cross Backup Strategy](/img/cross-backup.svg)
 
 ### 1. **Première sauvegarde** 
 * La première fois que 20 To de données sont transférés vers un serveur distant, cela prend 2 semaines

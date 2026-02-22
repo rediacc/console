@@ -7,6 +7,7 @@ import { registerCephCommands } from './commands/ceph/index.js';
 import { registerContextCommands } from './commands/context.js';
 import { registerDoctorCommand } from './commands/doctor.js';
 import { registerMachineCommands } from './commands/machine/index.js';
+import { registerOpsCommands } from './commands/ops/index.js';
 import { registerOrganizationCommands } from './commands/organization.js';
 import { registerPermissionCommands } from './commands/permission.js';
 import { registerProtocolCommands } from './commands/protocol.js';
@@ -152,6 +153,7 @@ registerVSCodeCommands(cli);
 registerUpdateCommand(cli);
 registerSnapshotCommands(cli);
 registerBackupCommands(cli);
+registerOpsCommands(cli);
 registerShortcuts(cli);
 
 // Apply mode guards, help tags, and domain grouping from the command registry

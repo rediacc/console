@@ -1,12 +1,12 @@
 ---
 title: Dienste
 description: >-
-  Containerisierte Dienste mit Rediaccfiles, Dienst-Netzwerk und Autostart
-  bereitstellen und verwalten.
+  Überblick über containerisierte Dienste mit Rediaccfiles, Dienst-Netzwerk und
+  Autostart bereitstellen und verwalten.
 category: Guides
 order: 5
 language: de
-sourceHash: 8add6342eea14e41
+sourceHash: c4048b13799a7767
 ---
 
 # Dienste
@@ -136,6 +136,13 @@ Sie müssen `.rediacc.json` nicht manuell erstellen. Wenn Sie `rdc repo up` ausf
 
 Die IP eines Dienstes wird aus der Netzwerk-ID des Repositories und dem Slot des Dienstes berechnet. Die Netzwerk-ID wird auf das zweite, dritte und vierte Oktett einer `127.x.y.z`-Loopback-Adresse aufgeteilt. Jeder Dienst erhält einen Offset von `slot + 2` (Offsets 0 und 1 sind reserviert).
 
+| Offset | Address | Purpose |
+|--------|---------|---------|
+| .0 | `127.0.11.0` | Network address (reserved) |
+| .1 | `127.0.11.1` | Gateway (reserved) |
+| .2 – .62 | `127.0.11.2` – `127.0.11.62` | Services (`slot + 2`) |
+| .63 | `127.0.11.63` | Broadcast (reserved) |
+
 **Beispiel** für Netzwerk-ID `2816` (`0x0B00`), Basisadresse `127.0.11.0`:
 
 | Dienst | Slot | IP-Adresse |
@@ -180,6 +187,7 @@ rdc repo up my-app -m server-1 --mount
 |--------|-------------|
 | `--mount` | Repository zuerst einbinden, falls noch nicht eingebunden |
 | `--prep-only` | Nur die `prep()`-Funktionen ausführen, `up()` überspringen |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 Die Ausführungssequenz ist:
 1. Das LUKS-verschlüsselte Repository einbinden (wenn `--mount`)
@@ -197,6 +205,7 @@ rdc repo down my-app -m server-1
 | Option | Beschreibung |
 |--------|-------------|
 | `--unmount` | Das verschlüsselte Repository nach dem Stoppen aushängen |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 Die Ausführungssequenz ist:
 1. `down()` in allen Rediaccfiles ausführen (Z-A umgekehrte Reihenfolge, Best-Effort)
@@ -218,6 +227,7 @@ rdc repo up-all -m server-1
 | `--dry-run` | Anzeigen, was ausgeführt würde |
 | `--parallel` | Operationen parallel ausführen |
 | `--concurrency <n>` | Maximale parallele Operationen (Standard: 3) |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Autostart beim Hochfahren
 

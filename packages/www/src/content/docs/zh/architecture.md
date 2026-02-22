@@ -1,10 +1,10 @@
 ---
 title: 架构
 description: Rediacc 的工作原理：双工具架构、运行模式、安全模型和配置结构。
-category: Guides
-order: 2
+category: Concepts
+order: 0
 language: zh
-sourceHash: 8f910f7827c8e958
+sourceHash: 58ba0da9645bb9dd
 ---
 
 # 架构
@@ -12,6 +12,14 @@ sourceHash: 8f910f7827c8e958
 如果你不确定该使用哪个工具，请参考 [rdc vs renet](/zh/docs/rdc-vs-renet)。
 
 本页面介绍 Rediacc 的内部工作原理：双工具架构、运行模式、安全模型和配置结构。
+
+## Full Stack Overview
+
+Traffic flows from the internet through a reverse proxy, into isolated Docker daemons, each backed by encrypted storage:
+
+![Full Stack Architecture](/img/arch-full-stack.svg)
+
+Each repository gets its own Docker daemon, loopback IP subnet (/26 = 64 IPs), and LUKS-encrypted BTRFS volume. The route server discovers running containers across all daemons and feeds routing configuration to Traefik.
 
 ## 双工具架构
 

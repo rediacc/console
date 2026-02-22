@@ -1,61 +1,81 @@
 ---
 title: "rdc vs renet"
 description: "When to use rdc and when to use renet."
-category: "Guides"
+category: "Concepts"
 order: 1
 language: en
 ---
 
 # rdc vs renet
 
-Rediacc uses two binaries:
+Rediacc has two binaries. Here is when to use each one.
 
-- `rdc` is the user-facing CLI you run on your workstation.
-- `renet` is the remote, low-level system binary that runs on servers.
+| | rdc | renet |
+|---|-----|-------|
+| **Runs on** | Your workstation | The remote server |
+| **Connects via** | SSH | Runs locally with root |
+| **Used by** | Everyone | Advanced debugging only |
+| **Install** | You install it | `rdc` provisions it automatically |
 
-For almost all day-to-day operations, use `rdc`.
+> For day-to-day work, use `rdc`. You rarely need `renet` directly.
 
-## Mental Model
+## How They Work Together
 
-Think of `rdc` as the control plane and `renet` as the data plane.
+`rdc` connects to your server over SSH and runs `renet` commands for you. You type a single command on your workstation, and `rdc` handles the rest:
 
-`rdc`:
-- Reads your local context and machine mappings
-- Connects to servers over SSH
-- Provisions/updates `renet` when needed
-- Executes the right remote operation for you
+1. Reads your local config (`~/.rediacc/config.json`)
+2. Connects to the server over SSH
+3. Updates the `renet` binary if needed
+4. Runs the matching `renet` operation on the server
+5. Returns the result to your terminal
 
-`renet`:
-- Runs with elevated privileges on the server
-- Manages datastore, LUKS volumes, mounts, and isolated Docker daemons
-- Performs low-level repository and system operations
+## Use `rdc` for Normal Work
 
-## What to Use in Practice
-
-### Use `rdc` (default)
-
-Use `rdc` for normal workflows:
+All common tasks go through `rdc` on your workstation:
 
 ```bash
+# Set up a new server
 rdc context setup-machine server-1
+
+# Create and start a repository
 rdc repo create my-app -m server-1 --size 10G
 rdc repo up my-app -m server-1 --mount
+
+# Stop a repository
 rdc repo down my-app -m server-1
-rdc machine status server-1
+
+# Check machine health
+rdc machine health server-1
 ```
 
-### Use `renet` (advanced / remote-side)
+See the [Quick Start](/en/docs/quick-start) for a full walkthrough.
 
-Use direct `renet` only when you intentionally need low-level remote control, such as:
+## Use `renet` for Server-Side Debugging
 
-- Emergency debugging directly on the server
-- Host-level maintenance and recovery
-- Verifying internals not exposed by a higher-level `rdc` command
+You only need `renet` directly when you SSH into a server for:
 
-Most users should not need to invoke `renet` directly during routine operations.
+- Emergency debugging when `rdc` cannot connect
+- Checking system internals not available through `rdc`
+- Low-level recovery operations
+
+All `renet` commands need root privileges (`sudo`). See [Server Reference](/en/docs/server-reference) for the full list of `renet` commands.
+
+## Experimental: `rdc ops` (Local VMs)
+
+`rdc ops` wraps `renet ops` for managing local VM clusters on your workstation:
+
+```bash
+rdc ops setup       # Install prerequisites (KVM or QEMU)
+rdc ops up --basic  # Start a minimal cluster
+rdc ops status      # Check VM status
+rdc ops ssh 1       # SSH into bridge VM
+rdc ops down        # Destroy cluster
+```
+
+These commands run `renet` locally (not over SSH). See [Experimental VMs](/en/docs/experimental-vms) for full documentation.
 
 ## Rediaccfile Note
 
-You may see `renet compose -- ...` inside a `Rediaccfile`. That is expected: Rediaccfile functions execute on the remote side where `renet` is available.
+You may see `renet compose -- ...` inside a `Rediaccfile`. That is normal — Rediaccfile functions run on the server where `renet` is available.
 
-From your workstation, you still typically start/stop workloads with `rdc repo up` and `rdc repo down`.
+From your workstation, start and stop workloads with `rdc repo up` and `rdc repo down`.

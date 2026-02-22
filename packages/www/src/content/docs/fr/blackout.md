@@ -1,9 +1,12 @@
 ---
 title: Continuité bancaire pendant la panne d'électricité
-description: Maintenez les opérations bancaires pendant les pannes de courant grâce à la mise en miroir des données intercontinentales.
+description: >-
+  Maintenez les opérations bancaires pendant les pannes de courant grâce à la
+  mise en miroir des données intercontinentales.
 category: Use Cases
 order: 6
 language: fr
+sourceHash: 51a38f7f8567e63e
 ---
 
 > **Lorsque les lumières s'éteignent, votre entreprise reste allumée.**
@@ -41,6 +44,8 @@ L’interruption du service informatique a entraîné :
 ## Solution de rediacc
 
 Un grand groupe bancaire espagnol qui a mis en œuvre la solution de réplication transcontinentale de Rediacc a maintenu ses opérations tout au long de la crise :
+
+![Banking Continuity During Blackout](/img/blackout-continuity.svg)
 
 ### 1. **Miroir de données intercontinentales** 
 * Les bases de données bancaires et les systèmes de transactions ont été **répliqués en permanence** dans des centres de données aux États-Unis. 

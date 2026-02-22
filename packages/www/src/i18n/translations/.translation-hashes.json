@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 987
+    "keyCount": 991
   },
   "hashes": {
     "bridge.text": "76620bbb",
@@ -460,6 +460,8 @@
     "pages.install.meta.description": "5a28acf6",
     "pages.install.meta.keywords": "702c6534",
     "pages.install.meta.title": "9dbf0728",
+    "pages.install.methods.apk.description": "31268819",
+    "pages.install.methods.apk.title": "e72537db",
     "pages.install.methods.apt.description": "693bb369",
     "pages.install.methods.apt.title": "75db2654",
     "pages.install.methods.binary.description": "2941b47c",
@@ -470,6 +472,8 @@
     "pages.install.methods.docker.title": "f5f9fa9b",
     "pages.install.methods.homebrew.description": "ca92f046",
     "pages.install.methods.homebrew.title": "8bd239ba",
+    "pages.install.methods.pacman.description": "052f6e96",
+    "pages.install.methods.pacman.title": "016733b2",
     "pages.install.methods.quick.description": "8c5481a1",
     "pages.install.methods.quick.title": "2c936fe8",
     "pages.install.platformFilter.all": "f0889250",
@@ -992,13 +996,5 @@
     "solutions.title": "e127c6a1",
     "testimonials.subtitle": "2bc41aa4",
     "testimonials.title": "7e47c0a9"
-  },
-  "ar": "7f6e2997",
-  "de": "bf64873d",
-  "es": "8afadce8",
-  "fr": "a87e74b7",
-  "ja": "3dfe8324",
-  "ru": "5c244b07",
-  "tr": "77c707b9",
-  "zh": "17516848"
+  }
 }

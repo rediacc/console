@@ -4,6 +4,7 @@ description: スナップショットベースのタイムトラベルを使用�
 category: Use Cases
 order: 2
 language: ja
+sourceHash: b8dbfddbf5b46895
 ---
 
 > **他の人がデータを永久に失っても、あなたは過去に戻ることができます。**
@@ -41,6 +42,8 @@ Mehmet は、大手オンライン ショッピング会社のデータベース
 ## Rediacc ソリューション
 
 Mehmet は、Rediacc を使用して「タイムマシン」のようなソリューションを提供します。
+
+![Time Travel Recovery](/img/time-travel-recovery.svg)
 
 ### 1. **スナップショット**
  * Rediacc は 1 時間ごとにシステムのスナップショットを自動的に取得します

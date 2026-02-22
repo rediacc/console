@@ -1,9 +1,12 @@
 ---
-title: "Yedekleme ve Geri Yükleme"
-description: "Şifrelenmiş depoları harici depolamaya yedekleyin, yedeklerden geri yükleyin ve otomatik yedeklemeler planlayın."
-category: "Guides"
+title: Yedekleme ve Geri Yükleme
+description: >-
+  Şifrelenmiş depoları harici depolamaya yedekleyin, yedeklerden geri yükleyin
+  ve otomatik yedeklemeler planlayın.
+category: Guides
 order: 7
 language: tr
+sourceHash: 3d127a0a186d7487
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -48,6 +51,7 @@ rdc backup push my-app -m server-1 --to my-storage
 | `--tag <tag>` | Yedeği etiketle |
 | `-w, --watch` | İşlem ilerlemesini izle |
 | `--debug` | Ayrıntılı çıktıyı etkinleştir |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Yedek Çekme / Geri Yükleme
 
@@ -64,6 +68,7 @@ rdc backup pull my-app -m server-1 --from my-storage
 | `--force` | Mevcut yerel yedeği geçersiz kıl |
 | `-w, --watch` | İşlem ilerlemesini izle |
 | `--debug` | Ayrıntılı çıktıyı etkinleştir |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Yedekleri Listeleme
 
@@ -96,6 +101,7 @@ rdc backup sync --from my-storage -m server-1
 | `--repo <name>` | Belirli depoları senkronize et (tekrarlanabilir) |
 | `--override` | Mevcut yedekleri geçersiz kıl |
 | `--debug` | Ayrıntılı çıktıyı etkinleştir |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Zamanlanmış Yedeklemeler
 

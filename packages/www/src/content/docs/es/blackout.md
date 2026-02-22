@@ -1,9 +1,12 @@
 ---
 title: Continuidad bancaria durante el apagón
-description: Mantenga las operaciones bancarias durante cortes de energía con duplicación de datos intercontinental.
+description: >-
+  Mantenga las operaciones bancarias durante cortes de energía con duplicación
+  de datos intercontinental.
 category: Use Cases
 order: 6
 language: es
+sourceHash: 51a38f7f8567e63e
 ---
 
 > **Cuando se apagan las luces, su negocio permanece encendido.**
@@ -41,6 +44,8 @@ La interrupción del servicio de TI provocó:
 ## Solución Rediacc
 
 Un importante grupo bancario español que implementó la solución de replicación transcontinental de Rediacc mantuvo operaciones durante toda la crisis:
+
+![Banking Continuity During Blackout](/img/blackout-continuity.svg)
 
 ### 1. **Duplicación de datos intercontinental** 
 * Las bases de datos bancarias centrales y los sistemas de transacciones se **replicaron continuamente** en centros de datos en los Estados Unidos. 

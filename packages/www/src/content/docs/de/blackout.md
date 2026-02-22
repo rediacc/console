@@ -1,9 +1,12 @@
 ---
 title: Bankkontinuität während eines Stromausfalls
-description: Halten Sie den Bankbetrieb auch bei Stromausfällen mit interkontinentaler Datenspiegelung aufrecht.
+description: >-
+  Halten Sie den Bankbetrieb auch bei Stromausfällen mit interkontinentaler
+  Datenspiegelung aufrecht.
 category: Use Cases
 order: 6
 language: de
+sourceHash: 51a38f7f8567e63e
 ---
 
 > **Wenn das Licht ausgeht, läuft Ihr Geschäft weiter.**
@@ -41,6 +44,8 @@ Die Störung des IT-Dienstes führte zu Folgendem:
 ## Rediacc-Lösung
 
 Eine große spanische Bankengruppe, die die kontinentalübergreifende Replikationslösung von Rediacc implementierte, hielt den Betrieb während der gesamten Krise aufrecht:
+
+![Banking Continuity During Blackout](/img/blackout-continuity.svg)
 
 ### 1. **Interkontinentale Datenspiegelung** 
 * Kernbankdatenbanken und Transaktionssysteme wurden **kontinuierlich** in Rechenzentren in den Vereinigten Staaten repliziert 

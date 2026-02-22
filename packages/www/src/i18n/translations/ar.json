@@ -123,14 +123,18 @@
       "support": "يدعم"
     },
     "copyright": "{{year}} Rediacc. جميع الحقوق محفوظة.",
+    "legalDisclosure": {
+      "fullLegalInformation": "المعلومات القانونية الكاملة",
+      "summary": "{{companyName}} | رقم السجل {{registryCode}} | ضريبة القيمة المضافة {{vatNumber}} |"
+    },
     "legalLinks": {
       "acceptableUsePolicy": "سياسة الاستخدام المقبول",
       "cookiePolicy": "سياسة ملفات تعريف الارتباط",
+      "legalInformation": "المعلومات القانونية",
       "privacyPolicy": "سياسة الخصوصية",
       "refundPolicy": "سياسة الاسترداد",
       "telemetryPolicy": "سياسة القياس عن بُعد",
-      "termsOfService": "شروط الخدمة",
-      "legalInformation": "المعلومات القانونية"
+      "termsOfService": "شروط الخدمة"
     },
     "links": {
       "contactSupport": "اتصل بالدعم",
@@ -152,11 +156,7 @@
       "contactSupport": "اتصل بالدعم",
       "helpCenter": "مركز المساعدة"
     },
-    "tagline": "منصة أتمتة البنية التحتية للعمليات المعتمدة على الذكاء الاصطناعي",
-    "legalDisclosure": {
-      "summary": "{{companyName}} | رقم السجل {{registryCode}} | ضريبة القيمة المضافة {{vatNumber}} |",
-      "fullLegalInformation": "المعلومات القانونية الكاملة"
-    }
+    "tagline": "منصة أتمتة البنية التحتية للعمليات المعتمدة على الذكاء الاصطناعي"
   },
   "hero": {
     "cta": {
@@ -1157,6 +1157,14 @@
           "description": "لـ Fedora و RHEL و CentOS و Rocky Linux",
           "title": "DNF (Fedora / RHEL)"
         },
+        "apk": {
+          "title": "APK (ألباين لينكس)",
+          "description": "لألباين لينكس ومشتقاته"
+        },
+        "pacman": {
+          "title": "Pacman (آرتش لينكس)",
+          "description": "لآرتش لينكس ومشتقاته"
+        },
         "docker": {
           "description": "لبيئات الحاويات",
           "title": "Docker"
@@ -1176,6 +1184,37 @@
       },
       "verify": {
         "title": "التحقق من التثبيت"
+      }
+    },
+    "legalInformation": {
+      "hero": {
+        "subtitle": "تفاصيل الشركة الرسمية للشفافية والتواصل التجاري",
+        "title": "المعلومات القانونية"
+      },
+      "meta": {
+        "description": "تفاصيل الشركة الرسمية للشفافية والتواصل التجاري.",
+        "keywords": "المعلومات القانونية, تفاصيل الشركة, السجل, ضريبة القيمة المضافة, التواصل",
+        "title": "المعلومات القانونية - {{companyName}}"
+      },
+      "sections": {
+        "companyDetails": {
+          "labels": {
+            "email": "البريد الإلكتروني",
+            "legalName": "الاسم والشكل القانوني",
+            "register": "السجل",
+            "registeredOffice": "المقر المسجل",
+            "registryCode": "رقم السجل",
+            "vatNumber": "رقم ضريبة القيمة المضافة",
+            "website": "الموقع الإلكتروني"
+          },
+          "lead": "تتضمن هذه الصفحة تفاصيل الشركة الرسمية وبيانات الاتصال المنشورة للشفافية القانونية والمراسلات التجارية.",
+          "registerEntryLink": "عرض ملف الشركة",
+          "registerEntryPrefix": "إدراج السجل العام:",
+          "title": "تفاصيل الشركة",
+          "values": {
+            "legalName": "{{companyName}} (شركة ذات مسؤولية محدودة)"
+          }
+        }
       }
     },
     "notFound": {
@@ -2983,37 +3022,6 @@
       },
       "toc": {
         "title": "جدول المحتويات"
-      }
-    },
-    "legalInformation": {
-      "meta": {
-        "title": "المعلومات القانونية - {{companyName}}",
-        "description": "تفاصيل الشركة الرسمية للشفافية والتواصل التجاري.",
-        "keywords": "المعلومات القانونية, تفاصيل الشركة, السجل, ضريبة القيمة المضافة, التواصل"
-      },
-      "hero": {
-        "title": "المعلومات القانونية",
-        "subtitle": "تفاصيل الشركة الرسمية للشفافية والتواصل التجاري"
-      },
-      "sections": {
-        "companyDetails": {
-          "title": "تفاصيل الشركة",
-          "lead": "تتضمن هذه الصفحة تفاصيل الشركة الرسمية وبيانات الاتصال المنشورة للشفافية القانونية والمراسلات التجارية.",
-          "labels": {
-            "legalName": "الاسم والشكل القانوني",
-            "registryCode": "رقم السجل",
-            "register": "السجل",
-            "registeredOffice": "المقر المسجل",
-            "vatNumber": "رقم ضريبة القيمة المضافة",
-            "email": "البريد الإلكتروني",
-            "website": "الموقع الإلكتروني"
-          },
-          "values": {
-            "legalName": "{{companyName}} (شركة ذات مسؤولية محدودة)"
-          },
-          "registerEntryPrefix": "إدراج السجل العام:",
-          "registerEntryLink": "عرض ملف الشركة"
-        }
       }
     }
   },

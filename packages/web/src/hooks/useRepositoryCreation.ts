@@ -1,4 +1,4 @@
-﻿import { useTranslation } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 import { useCreateRepository, useGetOrganizationTeams } from '@/api/api-hooks.generated';
 import { typedApi } from '@/api/client';
 import { useDropdownData } from '@/api/queries/useDropdownData';

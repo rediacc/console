@@ -1,6 +1,6 @@
 ---
 title: "Kurulum"
-description: "Rediacc CLI'i Linux, macOS veya Windows uzerine kurun."
+description: "Rediacc CLI'ı Linux, macOS veya Windows üzerine kurun."
 category: "Guides"
 order: 1
 language: tr
@@ -35,6 +35,31 @@ irm https://www.rediacc.com/install.ps1 | iex
 ```
 
 Bu, `rdc.exe` dosyasını `%LOCALAPPDATA%\rediacc\bin\` dizinine indirir. Bu dizinin PATH'inizde olduğundan emin olun. Yükleyici, henüz eklenmemişse eklemenizi isteyecektir.
+
+## Alpine Linux (APK)
+
+```bash
+# Add the repository
+echo "https://www.rediacc.com/apk/x86_64" | sudo tee -a /etc/apk/repositories
+
+# Install
+sudo apk update
+sudo apk add --allow-untrusted rediacc-cli
+```
+
+Not: `gcompat` paketi (glibc uyumluluk katmanı) bağımlılık olarak otomatik yüklenir.
+
+## Arch Linux (Pacman)
+
+```bash
+# Add the repository to /etc/pacman.conf
+echo "[rediacc]
+SigLevel = Optional TrustAll
+Server = https://www.rediacc.com/archlinux/\$arch" | sudo tee -a /etc/pacman.conf
+
+# Install
+sudo pacman -Sy rediacc-cli
+```
 
 ## Kurulumu Doğrulama
 

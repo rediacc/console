@@ -42,6 +42,8 @@ Due to lost data:
 
 Mehmet offers a "time machine"-like solution with Rediacc:
 
+![Time Travel Recovery](/img/time-travel-recovery.svg)
+
 ### 1. **Snapshots**
 * Rediacc automatically takes snapshots of the system every hour
 * These snapshots also cover the moments just before the data was deleted

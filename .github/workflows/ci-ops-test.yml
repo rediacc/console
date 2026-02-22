@@ -1,0 +1,340 @@
+name: CI - OPS Tests
+
+on:
+  workflow_call:
+    secrets:
+      APP_PRIVATE_KEY:
+        required: true
+
+jobs:
+  # ── Full VM provisioning test (KVM available) ──────────────────
+  ops-vm-provision:
+    name: OPS Provision (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            name: linux-amd64
+            arch: x86_64
+            full_test: true
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: ci
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
+
+      - name: Checkout with Submodules
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          submodules: recursive
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+
+      - name: Build renet
+        run: .ci/scripts/infra/build-renet.sh
+
+      - name: Build CLI
+        run: npm run build -w @rediacc/cli && npm run build:bundle -w @rediacc/cli
+
+      - name: Configure local context
+        run: |
+          mkdir -p ~/.rediacc
+          jq -n --arg renet "$RENET_BINARY" \
+            '{contexts:{default:{name:"default",mode:"local",apiUrl:"http://localhost",renetPath:$renet}}}' \
+            > ~/.rediacc/config.json
+          # Copy to root's home for sudo commands (os.homedir() returns /root under sudo)
+          sudo mkdir -p /root/.rediacc
+          sudo cp ~/.rediacc/config.json /root/.rediacc/config.json
+
+      - name: "Test: rdc ops setup"
+        run: node packages/cli/dist/cli-bundle.cjs ops setup
+
+      - name: "Test: rdc ops check"
+        run: node packages/cli/dist/cli-bundle.cjs ops check -o json
+
+      - name: "Test: rdc ops up --basic"
+        run: |
+          sudo -E node packages/cli/dist/cli-bundle.cjs ops up \
+            --basic --skip-orchestration -o json
+
+      - name: "Test: rdc ops status"
+        id: status
+        run: |
+          STATUS=$(sudo -E node packages/cli/dist/cli-bundle.cjs ops status -o json)
+          echo "$STATUS"
+          BRIDGE_IP=$(echo "$STATUS" | jq -r '.vms[0].ip')
+          echo "bridge_ip=$BRIDGE_IP" >> "$GITHUB_OUTPUT"
+
+      - name: "Verify: ping connectivity"
+        run: ping -c 3 -W 5 "${{ steps.status.outputs.bridge_ip }}"
+
+      - name: "Verify: SSH connectivity"
+        run: |
+          SSH_KEY="$RUNNER_TEMP/renet/staging/.ssh/id_rsa"
+          sudo chown -R "$(whoami)" "$RUNNER_TEMP/renet"
+          for i in $(seq 1 15); do
+            if ssh -i "$SSH_KEY" \
+              -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+              -o ConnectTimeout=5 \
+              "$(whoami)@${{ steps.status.outputs.bridge_ip }}" "echo 'SSH OK'"; then
+              echo "SSH connection successful on attempt $i"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 5s..."
+            sleep 5
+          done
+          echo "SSH connection failed after 15 attempts"
+          exit 1
+
+      - name: "Test: rdc ops down"
+        if: always()
+        run: sudo -E node packages/cli/dist/cli-bundle.cjs ops down -o json || true
+
+      - name: "Verify: cleanup"
+        if: always()
+        run: |
+          STATUS=$(sudo -E node packages/cli/dist/cli-bundle.cjs ops status -o json 2>/dev/null || echo '{"vms":[]}')
+          echo "$STATUS" | jq -e '.vms | length == 0' || echo "Warning: VMs still present after cleanup"
+
+  # ── Full VM provisioning test (QEMU + HVF on macOS Intel) ────
+  # macOS Intel runners support HVF (Hypervisor Framework), enabling
+  # hardware-accelerated QEMU provisioning. Downloads pre-built renet binary.
+  ops-qemu-provision:
+    name: OPS Provision (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        include:
+          - runner: macos-15-intel
+            name: macos-intel
+            platform: darwin
+            arch: x86_64
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: .ci/scripts/setup/install-deps.sh
+        shell: bash
+      - run: .ci/scripts/setup/build-packages.sh
+        shell: bash
+
+      - name: Download renet binaries
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          name: renet-binaries-${{ github.sha }}
+          path: private/bin/
+
+      - name: Set renet binary path
+        shell: bash
+        run: |
+          RENET_BIN="$(pwd)/private/bin/renet-darwin-amd64"
+          chmod +x "$RENET_BIN"
+          echo "RENET_BINARY=$RENET_BIN" >> "$GITHUB_ENV"
+
+      - name: Build CLI
+        shell: bash
+        run: npm run build -w @rediacc/cli && npm run build:bundle -w @rediacc/cli
+
+      - name: Configure local context
+        shell: bash
+        run: |
+          mkdir -p ~/.rediacc
+          jq -n --arg renet "$RENET_BINARY" \
+            '{contexts:{default:{name:"default",mode:"local",apiUrl:"http://localhost",renetPath:$renet}}}' \
+            > ~/.rediacc/config.json
+
+      - name: "Test: rdc ops setup"
+        shell: bash
+        run: node packages/cli/dist/cli-bundle.cjs ops setup
+
+      - name: Generate SSH keypair
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -q
+          echo "SSH keypair generated for QEMU cloud-init injection"
+
+      - name: "Test: rdc ops check"
+        shell: bash
+        run: node packages/cli/dist/cli-bundle.cjs ops check -o json
+
+      - name: "Test: rdc ops up --basic"
+        shell: bash
+        run: |
+          node packages/cli/dist/cli-bundle.cjs ops up \
+            --basic --skip-orchestration -o json
+
+      - name: "Test: rdc ops status"
+        id: status
+        shell: bash
+        run: |
+          STATUS=$(node packages/cli/dist/cli-bundle.cjs ops status -o json)
+          echo "$STATUS"
+          # QEMU returns localhost:<port> format
+          VM_ADDR=$(echo "$STATUS" | jq -r '.vms[0].ip')
+          echo "vm_addr=$VM_ADDR" >> "$GITHUB_OUTPUT"
+
+      - name: "Verify: SSH connectivity"
+        shell: bash
+        run: |
+          VM_ADDR="${{ steps.status.outputs.vm_addr }}"
+          SSH_PORT="${VM_ADDR#localhost:}"
+          SSH_KEY="$HOME/.ssh/id_ed25519"
+          for i in $(seq 1 15); do
+            if ssh -i "$SSH_KEY" -p "$SSH_PORT" \
+              -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+              -o ConnectTimeout=5 \
+              "$(whoami)@localhost" "echo 'SSH OK'"; then
+              echo "SSH connection successful on attempt $i"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 5s..."
+            sleep 5
+          done
+          echo "SSH connection failed after 15 attempts"
+          exit 1
+
+      - name: "Test: rdc ops down"
+        if: always()
+        shell: bash
+        run: node packages/cli/dist/cli-bundle.cjs ops down -o json || true
+
+      - name: "Verify: cleanup"
+        if: always()
+        shell: bash
+        run: |
+          STATUS=$(node packages/cli/dist/cli-bundle.cjs ops status -o json 2>/dev/null || echo '{"vms":[]}')
+          echo "$STATUS" | jq -e '.vms | length == 0' || echo "Warning: VMs still present after cleanup"
+
+  # ── Platform validation (no hardware acceleration, check only) ─
+  # Downloads pre-built renet binaries from the build-renet job artifact.
+  # Tests CLI ops check, renet binary execution, and QEMU availability.
+  # These platforms lack KVM/HVF, so full provisioning is not tested.
+  ops-platform-check:
+    name: OPS Check (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-24.04-arm
+            name: linux-arm64
+            platform: linux
+            arch: arm64
+          - runner: macos-latest
+            name: macos-arm64
+            platform: darwin
+            arch: arm64
+          - runner: windows-latest
+            name: windows-amd64
+            platform: windows
+            arch: amd64
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: .ci/scripts/setup/install-deps.sh
+        shell: bash
+      - run: .ci/scripts/setup/build-packages.sh
+        shell: bash
+
+      - name: Download renet binaries
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          name: renet-binaries-${{ github.sha }}
+          path: private/bin/
+
+      - name: Set renet binary path
+        shell: bash
+        run: |
+          PLATFORM=${{ matrix.platform }}
+          ARCH=${{ matrix.arch == 'arm64' && 'arm64' || 'amd64' }}
+          EXT=""
+          if [ "$PLATFORM" = "windows" ]; then EXT=".exe"; fi
+          RENET_BIN="$(pwd)/private/bin/renet-${PLATFORM}-${ARCH}${EXT}"
+          chmod +x "$RENET_BIN" 2>/dev/null || true
+          echo "RENET_BINARY=$RENET_BIN" >> "$GITHUB_ENV"
+
+      - name: Build CLI
+        shell: bash
+        run: npm run build -w @rediacc/cli && npm run build:bundle -w @rediacc/cli
+
+      - name: Configure local context
+        shell: bash
+        run: |
+          mkdir -p ~/.rediacc
+          jq -n --arg renet "$RENET_BINARY" \
+            '{contexts:{default:{name:"default",mode:"local",apiUrl:"http://localhost",renetPath:$renet}}}' \
+            > ~/.rediacc/config.json
+
+      - name: "Test: rdc ops setup"
+        shell: bash
+        run: node packages/cli/dist/cli-bundle.cjs ops setup
+
+      - name: "Test: rdc ops check"
+        shell: bash
+        run: node packages/cli/dist/cli-bundle.cjs ops check -o json
+
+      - name: "Test: renet binary runs"
+        shell: bash
+        run: $RENET_BINARY version
+
+      - name: "Test: renet ops host check"
+        shell: bash
+        run: $RENET_BINARY ops host check || true
+
+      - name: "Test: QEMU binary works (macOS)"
+        if: matrix.platform == 'darwin'
+        shell: bash
+        run: |
+          qemu-system-aarch64 --version || qemu-system-x86_64 --version
+          qemu-img --version
+
+      - name: "Test: renet ops host check --json (Windows)"
+        if: matrix.platform == 'windows'
+        shell: bash
+        run: |
+          OUTPUT=$($RENET_BINARY ops host check --json)
+          echo "$OUTPUT"
+          echo "$OUTPUT" | jq -e '.platform == "windows"'
+          echo "$OUTPUT" | jq -e '.backend == "hyperv"'

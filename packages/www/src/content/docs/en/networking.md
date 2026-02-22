@@ -48,6 +48,8 @@ These labels are **automatically injected** by `renet compose` when starting ser
 | `rediacc.service_name` | Service identity | `myapp` |
 | `rediacc.service_ip` | Assigned loopback IP | `127.0.11.2` |
 | `rediacc.network_id` | Repository's daemon ID | `2816` |
+| `rediacc.tcp_ports` | TCP ports the service listens on | `8080,8443` |
+| `rediacc.udp_ports` | UDP ports the service listens on | `53` |
 
 When a container has only `rediacc.*` labels (no `traefik.enable=true`), the route server generates an **auto-route**:
 
@@ -204,6 +206,27 @@ Key concepts:
 - **`tls.passthrough=true`** means Traefik forwards the raw TLS connection without decrypting — the application handles TLS itself
 - Entrypoint names follow the convention `tcp-{port}` or `udp-{port}`
 
+### Plain TCP Example (Database)
+
+To expose a database externally without TLS passthrough (Traefik forwards raw TCP):
+
+```yaml
+services:
+  postgres:
+    image: postgres:17
+    network_mode: host
+    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.mydb.entrypoints=tcp-5432"
+      - "traefik.tcp.routers.mydb.rule=HostSNI(`*`)"
+      - "traefik.tcp.services.mydb.loadbalancer.server.port=5432"
+```
+
+Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
+
+> **Security note:** Exposing a database to the internet is a risk. Use this only when remote clients need direct access. For most setups, keep the database internal and connect through your application.
+
 ### Pre-Configured Ports
 
 The following TCP/UDP ports have entrypoints by default (no need to add via `--tcp-ports`):
@@ -318,6 +341,7 @@ Shows TCP and UDP port mappings for dynamically allocated ports.
 | 502 Bad Gateway | Application not listening on the declared port | Verify the app binds to its `{SERVICE}_IP` and the port matches `loadbalancer.server.port` |
 | TCP port not reachable | Port not registered in infrastructure | Run `rdc context set-infra --tcp-ports ...` and `push-infra` |
 | Route server running old version | Binary was updated but service not restarted | Happens automatically on provisioning; manual: `sudo systemctl restart rediacc-router` |
+| STUN/TURN relay not reachable | Relay addresses cached at startup | Recreate the service after DNS or IP changes so it picks up the new network config |
 
 ## Complete Example
 

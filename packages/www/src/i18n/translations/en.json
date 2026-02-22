@@ -1090,6 +1090,14 @@
           "title": "DNF (Fedora / RHEL)",
           "description": "For Fedora, RHEL, CentOS, Rocky Linux"
         },
+        "apk": {
+          "title": "APK (Alpine Linux)",
+          "description": "For Alpine Linux and derivatives"
+        },
+        "pacman": {
+          "title": "Pacman (Arch Linux)",
+          "description": "For Arch Linux and derivatives"
+        },
         "homebrew": {
           "title": "Homebrew (macOS / Linux)",
           "description": "For macOS and Linux users with Homebrew"

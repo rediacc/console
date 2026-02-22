@@ -1,9 +1,12 @@
 ---
 title: Kesinti Sırasında Bankacılık Sürekliliği
-description: Kıtalararası veri yansıtma ile elektrik kesintileri sırasında bankacılık operasyonlarınızı sürdürün.
+description: >-
+  Kıtalararası veri yansıtma ile elektrik kesintileri sırasında bankacılık
+  operasyonlarınızı sürdürün.
 category: Use Cases
 order: 6
 language: tr
+sourceHash: 51a38f7f8567e63e
 ---
 
 > **Işıklar Söndüğünde İşletmeniz Açık Kalır.**
@@ -41,6 +44,8 @@ BT hizmetindeki kesinti şunlara yol açtı:
 ## Rediacc Çözümü
 
 Rediacc'ın kıtalar arası kopyalama çözümünü uygulayan büyük bir İspanyol bankacılık grubu, kriz boyunca faaliyetlerini sürdürdü:
+
+![Banking Continuity During Blackout](/img/blackout-continuity.svg)
 
 ### 1. **Kıtalararası Veri Yansıtma** 
 * Temel bankacılık veritabanları ve işlem sistemleri Amerika Birleşik Devletleri'ndeki veri merkezlerine **sürekli olarak kopyalandı** 

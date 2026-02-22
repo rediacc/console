@@ -59,6 +59,7 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
   },
   { name: 'region', modes: ['cloud'], domain: 'INFRASTRUCTURE', experimental: true },
   { name: 'bridge', modes: ['cloud'], domain: 'INFRASTRUCTURE', experimental: true },
+  { name: 'ops', modes: SELF_HOSTED_MODES, domain: 'INFRASTRUCTURE' },
 
   // ── Repositories ────────────────────────────────────────────────────
   { name: 'repository', modes: ['cloud'], domain: 'REPOSITORIES', experimental: true },

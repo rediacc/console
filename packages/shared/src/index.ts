@@ -1,9 +1,9 @@
-export * from './api';
-export * from './config';
-export * from './encryption';
-export * from './subscription';
-export * from './error-parser';
-export * from './formatters';
+export * from './api/index.js';
+export * from './config/index.js';
+export * from './encryption/index.js';
+export * from './subscription/index.js';
+export * from './error-parser/index.js';
+export * from './formatters/index.js';
 export {
   ACTIVE_STATUSES,
   filterActiveItems,
@@ -22,10 +22,10 @@ export {
   QUEUE_STATUS_CONFIG,
   STALE_TASK_CONSTANTS,
   TERMINAL_STATUSES,
-} from './queue';
-export * from './queue-vault';
-export * from './services';
-export * from './telemetry';
-export * from './types';
-export * from './utils';
-export * from './validation';
+} from './queue/index.js';
+export * from './queue-vault/index.js';
+export * from './services/index.js';
+export * from './telemetry/index.js';
+export * from './types/index.js';
+export * from './utils/index.js';
+export * from './validation/index.js';

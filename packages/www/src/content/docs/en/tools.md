@@ -45,6 +45,7 @@ rdc sync status -m server-1 -r my-app
 | `--verify` | Verify checksums after transfer |
 | `--confirm` | Interactive confirmation with detail view |
 | `--exclude <patterns...>` | Exclude file patterns |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## SSH Terminal (term)
 
@@ -164,7 +165,7 @@ rdc update --check-only
 rdc update
 ```
 
-Updates are downloaded and applied in-place. The new version takes effect on the next run.
+Updates are downloaded and applied in-place. The CLI automatically picks the right binary for your platform (Linux, macOS, or Windows). The new version takes effect on the next run.
 
 ### Rollback
 

@@ -1,9 +1,12 @@
 ---
 title: Saniyeler İçinde Hızlanan Geliştirme Ortamları
-description: Geliştirme ortamları için günlerce beklemeye son verin. Talep üzerine geçici ortamlarla tüm üretim altyapınızı 60 saniyeden kısa sürede klonlayın.
+description: >-
+  Geliştirme ortamları için günlerce beklemeye son verin. Talep üzerine geçici
+  ortamlarla tüm üretim altyapınızı 60 saniyeden kısa sürede klonlayın.
 category: Use Cases
 order: 10
 language: tr
+sourceHash: 6128ad0f1099ba85
 ---
 
 > **Geçici ortamlar. Üretim paritesi. Sıfır DevOps bileti.**
@@ -45,6 +48,8 @@ Sonuç: **en yoğun işlem saatlerinde 4 saatlik kesinti**, **200 bin dolarlık 
 ## Rediacc Çözümü: 60 Saniyede Üretim Klonları
 
 Rediacc, otomatik altyapı klonlaması yoluyla geliştirme ortamlarının 60 saniyeden kısa sürede tamamlanmasını sağlar.
+
+![Development Environments](/img/dev-environments.svg)
 
 ### 1. **Anında Temel Hazırlık**
 

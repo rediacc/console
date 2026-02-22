@@ -1,6 +1,6 @@
 ---
 title: "Makine Kurulumu"
-description: "Baglam olusturma, makine ekleme, sunuculari hazirlama ve altyapi yapilandirmasi."
+description: "Bağlam oluşturma, makine ekleme, sunucuları hazırlama ve altyapı yapılandırması."
 category: "Guides"
 order: 3
 language: tr

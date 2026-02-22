@@ -1,9 +1,12 @@
 ---
 title: Récupération du voyage dans le temps
-description: Récupérez les données supprimées accidentellement il y a des semaines grâce à un voyage dans le temps basé sur des instantanés.
+description: >-
+  Récupérez les données supprimées accidentellement il y a des semaines grâce à
+  un voyage dans le temps basé sur des instantanés.
 category: Use Cases
 order: 2
 language: fr
+sourceHash: b8dbfddbf5b46895
 ---
 
 > **Lorsque d'autres perdent des données pour toujours, vous pouvez voyager dans le temps.**
@@ -41,6 +44,8 @@ En raison de la perte de données :
 ## Solution de rediacc
 
 Mehmet propose une solution de type « machine à voyager dans le temps » avec Rediacc :
+
+![Time Travel Recovery](/img/time-travel-recovery.svg)
 
 ### 1. **Instantanés** 
 * Rediacc prend automatiquement des instantanés du système toutes les heures 

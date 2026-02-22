@@ -1,15 +1,15 @@
 ---
 title: Gereksinimler
-description: Rediacc'i calistirmak icin sistem gereksinimleri ve desteklenen platformlar.
+description: Rediacc'ı çalıştırmak için sistem gereksinimleri ve desteklenen platformlar.
 category: Guides
 order: 0
 language: tr
-sourceHash: ea4a06f2deefab73
+sourceHash: 35e75948e9858c6d
 ---
 
 # Gereksinimler
 
-Hangi araci kullanacaginizdan emin degilseniz [rdc vs renet](/tr/docs/rdc-vs-renet) sayfasina bakin.
+Hangi aracı kullanacağınızdan emin değilseniz [rdc vs renet](/tr/docs/rdc-vs-renet) sayfasına bakın.
 
 Rediacc ile dağıtım yapmadan önce, iş istasyonunuzun ve uzak sunucularınızın aşağıdaki gereksinimleri karşıladığından emin olun.
 
@@ -39,6 +39,8 @@ Rediacc ile dağıtım yapmadan önce, iş istasyonunuzun ve uzak sunucularını
 | Debian | 12+ | x86_64 |
 | Fedora | 43+ | x86_64 |
 | openSUSE Leap | 15.6+ | x86_64 |
+| Alpine | 3.19+ | x86_64 (gcompat gerektirir) |
+| Arch Linux | Rolling release | x86_64 |
 
 Bunlar CI'da test edilen dağıtımlardır. systemd, Docker desteği ve cryptsetup bulunan diğer Linux dağıtımları çalışabilir ancak resmi olarak desteklenmez.
 
@@ -58,3 +60,7 @@ Bunlar CI'da test edilen dağıtımlardır. systemd, Docker desteği ve cryptset
 - **renet** ikili dosyası (SFTP aracılığıyla yüklenir)
 
 Bunları manuel olarak kurmanıza gerek yoktur.
+
+## Local Virtual Machines (Optional)
+
+If you want to test deployments locally using `rdc ops`, your workstation needs virtualization support: KVM on Linux or QEMU on macOS. See the [Experimental VMs](/tr/docs/experimental-vms) guide for setup steps and platform details.

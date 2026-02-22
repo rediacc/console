@@ -1,9 +1,10 @@
 ---
-title: "仓库"
-description: "在远程机器上创建、管理和操作 LUKS 加密仓库。"
-category: "Guides"
+title: 仓库
+description: 在远程机器上创建、管理和操作 LUKS 加密仓库。
+category: Guides
 order: 4
 language: zh
+sourceHash: 04fe287348176b64
 ---
 
 # 仓库
@@ -23,6 +24,7 @@ rdc repo create my-app -m server-1 --size 10G
 |------|------|------|
 | `-m, --machine <name>` | 是 | 将要创建仓库的目标机器。 |
 | `--size <size>` | 是 | 加密磁盘映像的大小（例如 `5G`、`10G`、`50G`）。 |
+| `--skip-router-restart` | No | Skip restarting the route server after the operation |
 
 输出将显示三个自动生成的值：
 
@@ -44,6 +46,7 @@ rdc repo unmount my-app -m server-1     # 卸载并重新加密
 | 选项 | 描述 |
 |------|------|
 | `--checkpoint` | 挂载/卸载前创建检查点 |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## 检查状态
 
@@ -100,6 +103,7 @@ rdc repo ownership my-app -m server-1
 |------|------|
 | `--uid <uid>` | 设置自定义 UID，而非默认的 7111 |
 | `--force` | 跳过 Docker 卷检测，对所有文件执行 chown |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 强制对所有文件（包括容器数据）设置所有权：
 

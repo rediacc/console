@@ -353,7 +353,7 @@ jobs:
           mkdir -p dist/release-pkgs
 
           echo "Downloading packages from GitHub Release v$VERSION..."
-          gh release download "v$VERSION" --pattern "*.deb" --pattern "*.rpm" --dir dist/release-pkgs --clobber || true
+          gh release download "v$VERSION" --pattern "*.deb" --pattern "*.rpm" --pattern "*.apk" --pattern "*.pkg.tar.zst" --dir dist/release-pkgs --clobber || true
 
           # Filter to only CLI packages (exclude desktop packages)
           find dist/release-pkgs -name "rediacc-desktop-*" -delete 2>/dev/null || true
@@ -367,7 +367,7 @@ jobs:
       # Step 5: Build final APT/RPM repo metadata (matching Release)
       # -----------------------------------------------------------------------
       - name: Install repo build tools
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq dpkg-dev createrepo-c rpm gnupg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq dpkg-dev createrepo-c gnupg
 
       - name: Download staging pages artifact
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7

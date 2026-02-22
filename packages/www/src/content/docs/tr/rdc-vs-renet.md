@@ -1,62 +1,82 @@
 ---
-title: "rdc vs renet"
-description: "rdc ne zaman, renet ne zaman kullanilir."
-category: "Guides"
+title: rdc vs renet
+description: 'rdc ne zaman, renet ne zaman kullanılır.'
+category: Concepts
 order: 1
 language: tr
-sourceHash: "a002ea55958664f1"
+sourceHash: 0396eec8815a0b4e
 ---
 
 # rdc vs renet
 
-Rediacc iki farkli binary kullanir:
+Rediacc'ın iki ikili dosyası vardır. Her birinin ne zaman kullanılacağı aşağıda açıklanmıştır.
 
-- `rdc`, workstation uzerinde calistirdiginiz kullanici odakli CLI'dir.
-- `renet`, sunucuda calisan dusuk seviye uzak sistem binary'sidir.
+| | rdc | renet |
+|---|-----|-------|
+| **Çalıştığı yer** | İş istasyonunuz | Uzak sunucu |
+| **Bağlantı şekli** | SSH | Root yetkileriyle yerel olarak çalışır |
+| **Kullanan** | Herkes | Yalnızca ileri düzey hata ayıklama |
+| **Kurulum** | Siz kurarsınız | `rdc` otomatik olarak kurar |
 
-Gunluk islemlerin neredeyse tamami icin `rdc` kullanin.
+> Günlük işler için `rdc` kullanın. `renet`'e doğrudan ihtiyaç duymanız nadirdir.
 
-## Zihinsel Model
+## Birlikte Nasıl Çalışırlar
 
-`rdc`yi kontrol duzlemi, `renet`i veri duzlemi gibi dusunun.
+`rdc`, sunucunuza SSH üzerinden bağlanır ve sizin yerinize `renet` komutlarını çalıştırır. İş istasyonunuzda tek bir komut yazarsınız ve `rdc` gerisini halleder:
 
-`rdc`:
-- Yerel baglaminizi ve makine eslesmelerini okur
-- Sunuculara SSH ile baglanir
-- Gerektiginde `renet`i kurar/gunceller
-- Sizin icin dogru uzak islemi calistirir
+1. Yerel yapılandırmanızı okur (`~/.rediacc/config.json`)
+2. Sunucuya SSH üzerinden bağlanır
+3. Gerekirse `renet` ikili dosyasını günceller
+4. Sunucuda eşleşen `renet` işlemini çalıştırır
+5. Sonucu terminalinize döndürür
 
-`renet`:
-- Sunucuda yuksek yetkilerle calisir
-- Datastore, LUKS volume, mount ve izole Docker daemon'larini yonetir
-- Depo ve sistem seviyesinde dusuk seviye islemler yapar
+## Normal İşler İçin `rdc` Kullanın
 
-## Pratikte Hangisini Kullanmalisiniz
-
-### Varsayilan olarak `rdc`
-
-Normal akislarda `rdc` kullanin:
+Tüm yaygın görevler iş istasyonunuzdaki `rdc` üzerinden gerçekleştirilir:
 
 ```bash
+# Yeni bir sunucu kur
 rdc context setup-machine server-1
+
+# Depo oluştur ve başlat
 rdc repo create my-app -m server-1 --size 10G
 rdc repo up my-app -m server-1 --mount
+
+# Depoyu durdur
 rdc repo down my-app -m server-1
-rdc machine status server-1
+
+# Makine sağlığını kontrol et
+rdc machine health server-1
 ```
 
-### `renet` (ileri seviye / uzak taraf)
+Tam bir yol haritası için [Hızlı Başlangıç](/tr/docs/quick-start) sayfasına bakın.
 
-`renet`i dogrudan sadece bilincli olarak dusuk seviye uzak kontrol gerektiginde kullanin. Ornek:
+## Sunucu Tarafı Hata Ayıklama İçin `renet` Kullanın
 
-- Sunucuda dogrudan acil hata ayiklama
-- Host seviyesinde bakim ve kurtarma
-- `rdc`nin aciga cikarmadigi internal kontroller
+`renet`'e doğrudan yalnızca sunucuya SSH ile bağlandığınızda ihtiyaç duyarsınız:
 
-Cogu kullanicinin rutin islerde `renet`i dogrudan calistirmasi gerekmez.
+- `rdc` bağlanamadığında acil durum hata ayıklama
+- `rdc` üzerinden erişilemeyen sistem iç bilgilerini kontrol etme
+- Düşük seviye kurtarma işlemleri
+
+Tüm `renet` komutları root yetkisi (`sudo`) gerektirir. `renet` komutlarının tam listesi için [Sunucu Referansı](/tr/docs/server-reference) sayfasına bakın.
+
+## Deneysel: `rdc ops` (Yerel VM'ler)
+
+`rdc ops`, iş istasyonunuzdaki yerel VM kümelerini yönetmek için `renet ops`'u sarar:
+
+```bash
+rdc ops setup       # Ön koşulları kur (KVM veya QEMU)
+rdc ops up --basic  # Minimal küme başlat
+rdc ops status      # VM durumunu kontrol et
+rdc ops ssh 1       # Bridge VM'ye SSH ile bağlan
+rdc ops down        # Kümeyi yok et
+```
+
+Bu komutlar `renet`'i yerel olarak çalıştırır (SSH üzerinden değil). Tam belgeler için [Deneysel VM'ler](/tr/docs/experimental-vms) sayfasına bakın.
 
 ## Rediaccfile Notu
 
-`Rediaccfile` icinde `renet compose -- ...` gorebilirsiniz. Bu normaldir: Rediaccfile fonksiyonlari `renet`in bulundugu uzak tarafta calisir.
+Bir `Rediaccfile` içinde `renet compose -- ...` görebilirsiniz. Bu normaldir -- Rediaccfile fonksiyonları `renet`'in mevcut olduğu sunucuda çalışır.
 
-Workstation tarafinda is yuklerini baslatip/durdurmak icin genellikle yine `rdc repo up` ve `rdc repo down` kullanirsiniz.
+İş istasyonunuzdan iş yüklerini `rdc repo up` ve `rdc repo down` ile başlatın ve durdurun.

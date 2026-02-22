@@ -38,6 +38,8 @@ If you are unsure which binary to use, see [rdc vs renet](/en/docs/rdc-vs-renet)
 | Debian | 12+ | x86_64 |
 | Fedora | 43+ | x86_64 |
 | openSUSE Leap | 15.6+ | x86_64 |
+| Alpine | 3.19+ | x86_64 (requires gcompat) |
+| Arch Linux | Rolling release | x86_64 |
 
 These are the distributions tested in CI. Other Linux distributions with systemd, Docker support, and cryptsetup may work but are not officially supported.
 
@@ -57,3 +59,7 @@ The `rdc context setup-machine` command installs the following on the remote ser
 - **renet** binary (uploaded via SFTP)
 
 You do not need to install these manually.
+
+## Local Virtual Machines (Optional)
+
+If you want to test deployments locally using `rdc ops`, your workstation needs virtualization support: KVM on Linux or QEMU on macOS. See the [Experimental VMs](/en/docs/experimental-vms) guide for setup steps and platform details.

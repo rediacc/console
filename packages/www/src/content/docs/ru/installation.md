@@ -36,6 +36,31 @@ irm https://www.rediacc.com/install.ps1 | iex
 
 Это загружает исполняемый файл `rdc.exe` в `%LOCALAPPDATA%\rediacc\bin\`. Убедитесь, что этот каталог добавлен в PATH. Установщик предложит добавить его, если он ещё не присутствует.
 
+## Alpine Linux (APK)
+
+```bash
+# Add the repository
+echo "https://www.rediacc.com/apk/x86_64" | sudo tee -a /etc/apk/repositories
+
+# Install
+sudo apk update
+sudo apk add --allow-untrusted rediacc-cli
+```
+
+Примечание: Пакет `gcompat` (слой совместимости с glibc) устанавливается автоматически как зависимость.
+
+## Arch Linux (Pacman)
+
+```bash
+# Add the repository to /etc/pacman.conf
+echo "[rediacc]
+SigLevel = Optional TrustAll
+Server = https://www.rediacc.com/archlinux/\$arch" | sudo tee -a /etc/pacman.conf
+
+# Install
+sudo pacman -Sy rediacc-cli
+```
+
 ## Проверка установки
 
 ```bash

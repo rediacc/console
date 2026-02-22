@@ -7,6 +7,10 @@
   "assets": {
     "renet-linux-amd64": "dist/assets/renet-linux-amd64",
     "renet-linux-arm64": "dist/assets/renet-linux-arm64",
+    "renet-darwin-amd64": "dist/assets/renet-darwin-amd64",
+    "renet-darwin-arm64": "dist/assets/renet-darwin-arm64",
+    "renet-windows-amd64": "dist/assets/renet-windows-amd64",
+    "renet-windows-arm64": "dist/assets/renet-windows-arm64",
     "renet-metadata.json": "dist/assets/renet-metadata.json"
   }
 }

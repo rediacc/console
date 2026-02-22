@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: ru
-sourceHash: 8add6342eea14e41
+sourceHash: c4048b13799a7767
 ---
 
 # Сервисы
@@ -136,6 +136,13 @@ down() {
 
 IP-адрес сервиса вычисляется из идентификатора сети репозитория и слота сервиса. Идентификатор сети распределяется по второму, третьему и четвёртому октетам loopback-адреса `127.x.y.z`. Каждый сервис получает смещение `slot + 2` (смещения 0 и 1 зарезервированы).
 
+| Offset | Address | Purpose |
+|--------|---------|---------|
+| .0 | `127.0.11.0` | Network address (reserved) |
+| .1 | `127.0.11.1` | Gateway (reserved) |
+| .2 – .62 | `127.0.11.2` – `127.0.11.62` | Services (`slot + 2`) |
+| .63 | `127.0.11.63` | Broadcast (reserved) |
+
 **Пример** для идентификатора сети `2816` (`0x0B00`), базовый адрес `127.0.11.0`:
 
 | Сервис | Слот | IP-адрес |
@@ -180,6 +187,7 @@ rdc repo up my-app -m server-1 --mount
 |-------|----------|
 | `--mount` | Сначала смонтировать репозиторий, если он еще не смонтирован |
 | `--prep-only` | Выполнить только функции `prep()`, пропустить `up()` |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 Последовательность выполнения:
 1. Монтирование LUKS-зашифрованного репозитория (если указан `--mount`)
@@ -197,6 +205,7 @@ rdc repo down my-app -m server-1
 | Опция | Описание |
 |-------|----------|
 | `--unmount` | Размонтировать зашифрованный репозиторий после остановки сервисов |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 Последовательность выполнения:
 1. Выполнение `down()` во всех Rediaccfile (в обратном алфавитном порядке, максимальные усилия)
@@ -218,6 +227,7 @@ rdc repo up-all -m server-1
 | `--dry-run` | Показать, что будет выполнено |
 | `--parallel` | Выполнять операции параллельно |
 | `--concurrency <n>` | Максимальное количество параллельных операций (по умолчанию: 3) |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Автозапуск при загрузке
 

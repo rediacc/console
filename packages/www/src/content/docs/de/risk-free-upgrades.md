@@ -1,9 +1,12 @@
 ---
 title: Risikofreie Upgrades
-description: Testen Sie Datenbank-Upgrades ohne Risiko mithilfe von Instant Cloning und stündlichen Snapshots.
+description: >-
+  Testen Sie Datenbank-Upgrades ohne Risiko mithilfe von Instant Cloning und
+  stündlichen Snapshots.
 category: Use Cases
 order: 4
 language: de
+sourceHash: c905d2f42d1108c2
 ---
 
 > **Alles testen. Nichts riskieren. Upgraden Sie mit Zuversicht.**
@@ -38,6 +41,8 @@ Mehmet ist ein erfahrener Systemadministrator, der große Datenbanken verwaltet.
 ## Rediacc-Lösung
 
 Mehmet löst das Problem grundsätzlich mit Rediacc:
+
+![Risk-Free Upgrades](/img/risk-free-upgrades.svg)
 
 ### 1. **Sofortiges Klonen** 
 * Ein **Klon der 100-TB-Datenbank wird innerhalb von Sekunden erstellt** 

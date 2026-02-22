@@ -532,7 +532,8 @@
         "renetRsync": "Gömülü rsync",
         "renetVersion": "Sürüm",
         "seaMode": "SEA modu",
-        "sshKey": "SSH anahtarı"
+        "sshKey": "SSH anahtarı",
+        "opsPrereqs": "OPS gereksinimleri"
       },
       "description": "CLI ortamını ve renet entegrasyonunu tanıla",
       "devMode": "hayır (geliştirme modu)",
@@ -542,11 +543,14 @@
       "notConfigured": "yapılandırılmamış",
       "notInstalled": "yüklü değil",
       "seaActive": "evet (Tek Dosya Uygulaması)",
+      "opsNotSupported": "{{platform}} üzerinde desteklenmiyor",
+      "opsSkipped": "renet mevcut değil (atlandı)",
       "sections": {
         "authentication": "Kimlik Doğrulama",
         "configuration": "Yapılandırma",
         "environment": "Ortam",
-        "renet": "Renet"
+        "renet": "Renet",
+        "virtualization": "Sanallaştırma"
       },
       "status": {
         "fail": "HATA",
@@ -675,6 +679,49 @@
         "systemSection": "\nSistem:",
         "systemUptime": "  Çalışma süresi: {{uptime}}",
         "totalRepos": "  Toplam Depo: {{count}}"
+      }
+    },
+    "ops": {
+      "check": {
+        "allPassed": "Tüm ön koşullar karşılandı",
+        "description": "Sanallaştırma ön koşullarını doğrula",
+        "hasMissing": "{{count}} ön koşul eksik",
+        "localFallback": "(yerel kontroller kullanılıyor — renet mevcut değil)",
+        "title": "OPS Ön Koşul Kontrolü"
+      },
+      "description": "Deneysel VM işlemleri (oluşturma, yönetme, yok etme)",
+      "down": {
+        "completed": "VM kümesi başarıyla yok edildi",
+        "description": "VM kümesini yok et",
+        "failed": "VM kümesi yok etme işlemi başarısız oldu",
+        "starting": "VM kümesi yok ediliyor..."
+      },
+      "setup": {
+        "brewFailed": "Homebrew kurulumu başarısız oldu",
+        "completed": "Ön koşullar başarıyla kuruldu",
+        "description": "Sanallaştırma ön koşullarını kur",
+        "detecting": "Platform algılanıyor...",
+        "failed": "Kurulum başarısız oldu",
+        "linux": "KVM ön koşulları renet aracılığıyla kuruluyor...",
+        "macos": "QEMU, Homebrew aracılığıyla kuruluyor...",
+        "unsupported": "Desteklenmeyen platform: {{platform}}",
+        "windows": "Hyper-V ön koşulları ayarlanıyor..."
+      },
+      "ssh": {
+        "connecting": "VM {{id}} bağlantısı kuruluyor...",
+        "description": "Bir VM'ye SSH ile bağlan",
+        "vmNotFound": "{{id}} ID'li VM bulunamadı veya çalışmıyor"
+      },
+      "status": {
+        "description": "VM kümesi durumunu göster",
+        "fetching": "VM kümesi durumu alınıyor...",
+        "noVMs": "Hiçbir VM bulunamadı"
+      },
+      "up": {
+        "completed": "VM kümesi başarıyla oluşturuldu",
+        "description": "VM kümesini yerel olarak oluştur",
+        "failed": "VM kümesi oluşturma başarısız oldu",
+        "starting": "VM kümesi oluşturma başlatılıyor..."
       }
     },
     "organization": {
@@ -1418,6 +1465,7 @@
       "context": "Bağlam Yönetimi",
       "doctor": "Sistem Tanılama",
       "machine": "Makine Yönetimi",
+      "ops": "Deneysel VM Islemleri",
       "organization": "Organizasyon Yönetimi",
       "permission": "İzin Yönetimi",
       "protocol": "Protokol İşleyici",
@@ -1616,6 +1664,14 @@
     "mirrorUpload": "Ayna modu - yerel olarak bulunmayan uzak dosyaları silin",
     "newPasswordNonInteractive": "Yeni parola (etkileşimli olmayan mod)",
     "newWindow": "Yeni VS Code penceresinde aç",
+    "opsBackend": "Sanallaştırma arka ucu (kvm|qemu, otomatik algılanır)",
+    "opsBasic": "Minimal küme (köprü + 1 işçi)",
+    "opsForce": "Tüm VM'leri zorla yeniden başlat",
+    "opsLite": "VM hazırlamayı atla (yalnızca durum)",
+    "opsOS": "VM işletim sistemi (ör. ubuntu-24.04, debian-12)",
+    "opsParallel": "VM'leri paralel olarak oluştur",
+    "opsSkipOrchestration": "Küme orkestrasyonunu atla",
+    "opsSSHUser": "VM bağlantısı için SSH kullanıcı adı",
     "organization": "Kuruluş adı",
     "output": "Çıkış biçimi (table|json|yaml|csv)",
     "outputFormat": "Çıkış biçimi (json)",

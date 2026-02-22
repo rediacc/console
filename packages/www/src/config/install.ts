@@ -2,7 +2,15 @@ import { SITE_URL } from './constants';
 
 export type Platform = 'linux' | 'macos' | 'windows';
 
-export type InstallMethod = 'quick' | 'binary' | 'docker' | 'apt' | 'dnf' | 'homebrew';
+export type InstallMethod =
+  | 'quick'
+  | 'binary'
+  | 'docker'
+  | 'apt'
+  | 'dnf'
+  | 'apk'
+  | 'pacman'
+  | 'homebrew';
 
 export const PLATFORMS: {
   key: Platform;
@@ -65,6 +73,21 @@ sudo apt-get update && sudo apt-get install rediacc-cli`;
 export const DNF_COMMANDS = `sudo curl -fsSL ${SITE_URL}/rpm/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
 sudo dnf install rediacc-cli`;
 
+export const APK_COMMANDS = `# Add the repository
+echo "${SITE_URL}/apk/x86_64" | sudo tee -a /etc/apk/repositories
+
+# Install (unsigned repo — use --allow-untrusted)
+sudo apk update
+sudo apk add --allow-untrusted rediacc-cli`;
+
+export const PACMAN_COMMANDS = `# Add the repository to /etc/pacman.conf
+echo "[rediacc]
+SigLevel = Optional TrustAll
+Server = ${SITE_URL}/archlinux/\\$arch" | sudo tee -a /etc/pacman.conf
+
+# Install
+sudo pacman -Sy rediacc-cli`;
+
 export const HOMEBREW_COMMAND = 'brew install rediacc/tap/rediacc-cli';
 
 export interface MethodMeta {
@@ -80,6 +103,8 @@ export const METHOD_META: MethodMeta[] = [
   { id: 'docker', featured: false, platforms: ['linux', 'macos', 'windows'], anchor: 'docker' },
   { id: 'apt', featured: false, platforms: ['linux'], anchor: 'apt' },
   { id: 'dnf', featured: false, platforms: ['linux'], anchor: 'dnf' },
+  { id: 'apk', featured: false, platforms: ['linux'], anchor: 'apk' },
+  { id: 'pacman', featured: false, platforms: ['linux'], anchor: 'pacman' },
   { id: 'homebrew', featured: false, platforms: ['linux', 'macos'], anchor: 'homebrew' },
 ];
 

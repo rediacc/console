@@ -17,6 +17,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { computeSourceHash } from './validate-translation-freshness.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -58,6 +59,7 @@ const COMMAND_ORDER = [
   'shortcuts',
   'update',
   'doctor',
+  'ops',
 ];
 
 // Validate COMMAND_ORDER against actual command groups in cli.json
@@ -265,7 +267,7 @@ function yamlQuote(value) {
  * and the target language's cli.json for frontmatter values.
  * Body content is identical across all languages (uses {{t:}} keys).
  */
-export function generate(lang, cliJsonEn) {
+export function generate(lang, cliJsonEn, { sourceHash } = {}) {
   // Load the target language's cli.json for frontmatter
   const langCliJson = JSON.parse(fs.readFileSync(getCliJsonPath(lang), 'utf-8'));
   const docs = langCliJson.docs;
@@ -285,6 +287,9 @@ export function generate(lang, cliJsonEn) {
   lines.push(`language: ${lang}`);
   lines.push('generated: true');
   lines.push(`generatedFrom: packages/cli/src/i18n/locales/${lang}/cli.json`);
+  if (sourceHash) {
+    lines.push(`sourceHash: "${sourceHash}"`);
+  }
   lines.push('---');
   lines.push('');
 
@@ -549,11 +554,18 @@ const isMainModule =
 if (isMainModule) {
   const cliJsonEn = JSON.parse(fs.readFileSync(getCliJsonPath('en'), 'utf-8'));
 
+  // Generate English first (without sourceHash) to compute the hash
+  const enContent = generate('en', cliJsonEn);
+  const matter = await import('gray-matter');
+  const parsed = matter.default(enContent);
+  const hash = computeSourceHash(parsed.data, parsed.content);
+
+  // Now generate all languages with sourceHash included
   for (const lang of LANGUAGES) {
-    const content = generate(lang, cliJsonEn);
+    const content = generate(lang, cliJsonEn, { sourceHash: hash });
     fs.writeFileSync(getOutputPath(lang), content, 'utf-8');
     console.log(
-      `\x1b[32m✓\x1b[0m Generated ${lang}/cli-application.md (${content.split('\n').length} lines)`
+      `\x1b[32m✓\x1b[0m Generated ${lang}/cli-application.md (${content.split('\n').length} lines, sourceHash: ${hash})`
     );
   }
 }

@@ -11,7 +11,7 @@
 import * as fs from 'node:fs/promises';
 import { SFTPClient, type SFTPClientConfig } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { isSEA, getEmbeddedRenetBinary, computeSha256, type LinuxArch } from './embedded-assets.js';
+import { isSEA, getEmbeddedRenetBinary, computeSha256, type RenetArch } from './embedded-assets.js';
 import { compareVersions } from './updater.js';
 import { VERSION } from '../version.js';
 
@@ -34,7 +34,7 @@ export interface ProvisionResult {
   /** Action taken: uploaded new binary, verified existing, or failed */
   action: 'uploaded' | 'verified' | 'failed' | 'version_rejected';
   /** Detected architecture (undefined if detection failed) */
-  arch?: LinuxArch;
+  arch?: RenetArch;
   /** Error message if failed */
   error?: string;
   /** Whether running services were restarted after binary update */
@@ -148,7 +148,7 @@ class RenetProvisionerService {
    */
   private async checkVersionGuard(
     sftp: SFTPClient,
-    arch: LinuxArch
+    arch: RenetArch
   ): Promise<ProvisionResult | null> {
     if (process.env.RDC_ALLOW_DOWNGRADE) return null;
 
@@ -168,9 +168,9 @@ class RenetProvisionerService {
   /**
    * Get the binary data from either embedded assets or a local file.
    */
-  private async getBinary(arch: LinuxArch, localBinaryPath?: string): Promise<Buffer> {
+  private async getBinary(arch: RenetArch, localBinaryPath?: string): Promise<Buffer> {
     if (isSEA()) {
-      return getEmbeddedRenetBinary(arch);
+      return getEmbeddedRenetBinary('linux', arch);
     }
 
     if (localBinaryPath) {
@@ -184,7 +184,7 @@ class RenetProvisionerService {
    * Detect the remote machine's architecture.
    * Uses `uname -m` output which is reliable across all Linux distributions.
    */
-  private async detectArch(sftp: SFTPClient): Promise<LinuxArch> {
+  private async detectArch(sftp: SFTPClient): Promise<RenetArch> {
     try {
       // uname -m returns the machine hardware name, which is the most reliable
       // cross-distribution method for architecture detection:

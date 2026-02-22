@@ -4,6 +4,7 @@ description: 通过基于快照的时间旅行恢复几周前意外删除的数�
 category: Use Cases
 order: 2
 language: zh
+sourceHash: b8dbfddbf5b46895
 ---
 
 > **当其他人永远丢失数据时，您可以回到过去。**
@@ -41,6 +42,8 @@ Mehmet 是一位系统专家，负责一家大型在线购物公司的数据库�
 ## 雷迪亚克解决方案
 
 Mehmet 通过 Rediacc 提供了类似“时间机器”的解决方案：
+
+![Time Travel Recovery](/img/time-travel-recovery.svg)
 
 ### 1. **快照**
  * Rediacc 每小时自动拍摄系统快照

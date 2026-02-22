@@ -1,9 +1,12 @@
 ---
-title: "Netzwerk"
-description: "Dienste mit dem Reverse Proxy, Docker-Labels, TLS-Zertifikaten, DNS und TCP/UDP-Portweiterleitung bereitstellen."
-category: "Guides"
+title: Netzwerk
+description: >-
+  Dienste über den Reverse Proxy, Docker-Labels, TLS-Zertifikate, DNS und
+  TCP/UDP-Portweiterleitung für externe Erreichbarkeit bereitstellen.
+category: Guides
 order: 6
 language: de
+sourceHash: 47ee41d44be935a8
 ---
 
 # Netzwerk
@@ -33,6 +36,8 @@ Internet → Traefik (Ports 80/443/TCP/UDP)
 
 Wenn Sie die richtigen Labels zu einem Container hinzufügen und ihn mit `renet compose` starten, wird er automatisch routbar -- keine manuelle Proxy-Konfiguration nötig.
 
+> The route server binary is kept in sync with your CLI version. When the CLI updates the renet binary on a machine, the route server is automatically restarted (~1–2 seconds). This causes no downtime — Traefik continues serving traffic with its last known configuration during the restart and picks up the new config on the next poll. Existing client connections are not affected. Your application containers are not touched.
+
 ## Docker-Labels
 
 Das Routing wird über Docker-Container-Labels gesteuert. Es gibt zwei Stufen:
@@ -46,6 +51,8 @@ Diese Labels werden **automatisch** von `renet compose` beim Starten von Dienste
 | `rediacc.service_name` | Dienst-Identität | `myapp` |
 | `rediacc.service_ip` | Zugewiesene Loopback-IP | `127.0.11.2` |
 | `rediacc.network_id` | Docker-Daemon-ID des Repositories | `2816` |
+| `rediacc.tcp_ports` | TCP ports the service listens on | `8080,8443` |
+| `rediacc.udp_ports` | UDP ports the service listens on | `53` |
 
 Wenn ein Container nur `rediacc.*`-Labels hat (kein `traefik.enable=true`), generiert der Route Server eine **Auto-Route**:
 
@@ -168,6 +175,27 @@ rdc context push-infra server-1
 ```
 
 Dies erstellt Traefik-Einstiegspunkte namens `tcp-{port}` und `udp-{port}`.
+
+### Plain TCP Example (Database)
+
+To expose a database externally without TLS passthrough (Traefik forwards raw TCP):
+
+```yaml
+services:
+  postgres:
+    image: postgres:17
+    network_mode: host
+    command: -c listen_addresses=${POSTGRES_IP} -c port=5432
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.mydb.entrypoints=tcp-5432"
+      - "traefik.tcp.routers.mydb.rule=HostSNI(`*`)"
+      - "traefik.tcp.services.mydb.loadbalancer.server.port=5432"
+```
+
+Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
+
+> **Security note:** Exposing a database to the internet is a risk. Use this only when remote clients need direct access. For most setups, keep the database internal and connect through your application.
 
 > Nach dem Hinzufügen oder Entfernen von Ports führen Sie immer `rdc context push-infra` erneut aus, um die Proxy-Konfiguration zu aktualisieren.
 
@@ -315,6 +343,8 @@ Zeigt TCP- und UDP-Port-Zuordnungen für dynamisch zugewiesene Ports.
 | Zertifikat nicht ausgestellt | DNS zeigt nicht auf den Server oder ungültiges Cloudflare-Token | DNS-Auflösung überprüfen; Cloudflare-API-Token-Berechtigungen prüfen |
 | 502 Bad Gateway | Anwendung lauscht nicht auf dem deklarierten Port | Überprüfen, ob die App an ihre `{SERVICE}_IP` gebunden ist und der Port mit `loadbalancer.server.port` übereinstimmt |
 | TCP-Port nicht erreichbar | Port nicht in der Infrastruktur registriert | `rdc context set-infra --tcp-ports ...` und `push-infra` ausführen |
+| Route server running old version | Binary was updated but service not restarted | Happens automatically on provisioning; manual: `sudo systemctl restart rediacc-router` |
+| STUN/TURN relay not reachable | Relay addresses cached at startup | Recreate the service after DNS or IP changes so it picks up the new network config |
 
 ## Vollständiges Beispiel
 

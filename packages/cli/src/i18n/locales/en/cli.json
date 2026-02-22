@@ -265,7 +265,8 @@
         "environment": "Environment",
         "renet": "Renet",
         "configuration": "Configuration",
-        "authentication": "Authentication"
+        "authentication": "Authentication",
+        "virtualization": "Virtualization"
       },
       "checks": {
         "nodeVersion": "Node.js",
@@ -281,7 +282,8 @@
         "contextMode": "Context mode",
         "machines": "Machines",
         "sshKey": "SSH key",
-        "authStatus": "Status"
+        "authStatus": "Status",
+        "opsPrereqs": "OPS prerequisites"
       },
       "status": {
         "ok": "OK",
@@ -295,7 +297,9 @@
       "notConfigured": "not configured",
       "notAuthenticated": "not authenticated",
       "devMode": "no (dev mode)",
-      "seaActive": "yes (Single Executable Application)"
+      "seaActive": "yes (Single Executable Application)",
+      "opsNotSupported": "not supported on {{platform}}",
+      "opsSkipped": "renet not available (skipped)"
     },
     "context": {
       "description": "Manage CLI contexts",
@@ -666,6 +670,49 @@
         "disabling": "Disabling maintenance mode...",
         "enabled": "Maintenance mode enabled",
         "enabling": "Enabling maintenance mode..."
+      }
+    },
+    "ops": {
+      "description": "Experimental VM operations (provision, manage, destroy)",
+      "up": {
+        "description": "Provision VM cluster locally",
+        "starting": "Starting VM cluster provisioning...",
+        "completed": "VM cluster provisioned successfully",
+        "failed": "VM cluster provisioning failed"
+      },
+      "down": {
+        "description": "Destroy VM cluster",
+        "starting": "Destroying VM cluster...",
+        "completed": "VM cluster destroyed successfully",
+        "failed": "VM cluster destruction failed"
+      },
+      "status": {
+        "description": "Show VM cluster status",
+        "fetching": "Fetching VM cluster status...",
+        "noVMs": "No VMs found"
+      },
+      "ssh": {
+        "description": "SSH into a VM",
+        "connecting": "Connecting to VM {{id}}...",
+        "vmNotFound": "VM with ID {{id}} not found or not running"
+      },
+      "setup": {
+        "description": "Install virtualization prerequisites",
+        "detecting": "Detecting platform...",
+        "linux": "Installing KVM prerequisites via renet...",
+        "macos": "Installing QEMU via Homebrew...",
+        "windows": "Setting up Hyper-V prerequisites...",
+        "unsupported": "Unsupported platform: {{platform}}",
+        "completed": "Prerequisites installed successfully",
+        "failed": "Installation failed",
+        "brewFailed": "Homebrew installation failed"
+      },
+      "check": {
+        "description": "Verify virtualization prerequisites",
+        "title": "OPS Prerequisites Check",
+        "allPassed": "All prerequisites satisfied",
+        "hasMissing": "{{count}} prerequisite(s) missing",
+        "localFallback": "(using local checks — renet not available)"
       }
     },
     "protocol": {
@@ -1543,7 +1590,15 @@
     "protocolAction": "Action ({{actions}})",
     "protocolParams": "Additional parameters",
     "experimental": "Enable experimental cloud commands",
-    "skipRouterRestart": "Skip restarting the route server after binary update"
+    "skipRouterRestart": "Skip restarting the route server after binary update",
+    "opsBackend": "Virtualization backend (kvm|qemu, auto-detected)",
+    "opsForce": "Force restart all VMs",
+    "opsParallel": "Create VMs in parallel",
+    "opsBasic": "Minimal cluster (bridge + 1 worker)",
+    "opsLite": "Skip VM provisioning (status only)",
+    "opsSkipOrchestration": "Skip cluster orchestration",
+    "opsOS": "VM operating system (e.g., ubuntu-24.04, debian-12)",
+    "opsSSHUser": "SSH username for VM connection"
   },
   "prompts": {
     "apiUrl": "API URL:",
@@ -1657,7 +1712,8 @@
       "backup": "Backup Management",
       "shortcuts": "Quick Commands (Shortcuts)",
       "update": "CLI Updates",
-      "doctor": "System Diagnostics"
+      "doctor": "System Diagnostics",
+      "ops": "Experimental VM Operations"
     },
     "errors": {
       "heading": "Common Error Messages",

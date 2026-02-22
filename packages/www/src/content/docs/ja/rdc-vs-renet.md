@@ -1,62 +1,82 @@
 ---
-title: "rdc vs renet"
-description: "rdc を使う場面と renet を使う場面。"
-category: "Guides"
+title: rdc vs renet
+description: rdc を使う場面と renet を使う場面。
+category: Concepts
 order: 1
 language: ja
-sourceHash: "a002ea55958664f1"
+sourceHash: 0396eec8815a0b4e
 ---
 
 # rdc vs renet
 
-Rediacc には2つのバイナリがあります。
+Rediaccには2つのバイナリがあります。それぞれの使い分けを説明します。
 
-- `rdc` は、ワークステーションで実行するユーザー向けCLIです。
-- `renet` は、サーバー側で動作する低レベルのリモートバイナリです。
+| | rdc | renet |
+|---|-----|-------|
+| **実行環境** | ワークステーション | リモートサーバー |
+| **接続方法** | SSH | ローカルでroot権限で実行 |
+| **対象ユーザー** | すべてのユーザー | 高度なデバッグのみ |
+| **インストール** | ユーザーがインストール | `rdc`が自動的にプロビジョニング |
 
-日常的な運用のほとんどは `rdc` を使ってください。
+> 日常的な作業には`rdc`を使用してください。`renet`を直接使用する必要はほとんどありません。
 
-## メンタルモデル
+## 連携の仕組み
 
-`rdc` は control plane、`renet` は data plane と考えると分かりやすいです。
+`rdc`はSSH経由でサーバーに接続し、`renet`コマンドを代行実行します。ワークステーションで1つのコマンドを入力するだけで、`rdc`が残りの処理を行います：
 
-`rdc`:
-- ローカルコンテキストとマシンの対応情報を読む
-- SSHでサーバーに接続する
-- 必要に応じて `renet` を導入/更新する
-- 適切なリモート操作を代わりに実行する
+1. ローカル設定（`~/.rediacc/config.json`）を読み取る
+2. SSH経由でサーバーに接続する
+3. 必要に応じて`renet`バイナリを更新する
+4. サーバー上で対応する`renet`操作を実行する
+5. 結果をターミナルに返す
 
-`renet`:
-- サーバー上で高い権限で動作する
-- datastore、LUKSボリューム、マウント、分離Docker daemonを管理する
-- リポジトリとシステムに対する低レベル操作を実行する
+## 通常の作業には`rdc`を使用
 
-## 実運用で何を使うか
-
-### `rdc` を使う（デフォルト）
-
-通常のワークフローは `rdc` を使います:
+すべての一般的なタスクはワークステーション上の`rdc`を通じて実行します：
 
 ```bash
+# 新しいサーバーをセットアップ
 rdc context setup-machine server-1
+
+# リポジトリを作成して起動
 rdc repo create my-app -m server-1 --size 10G
 rdc repo up my-app -m server-1 --mount
+
+# リポジトリを停止
 rdc repo down my-app -m server-1
-rdc machine status server-1
+
+# マシンの健全性を確認
+rdc machine health server-1
 ```
 
-### `renet` を使う（上級 / サーバー側）
+完全なウォークスルーについては、[クイックスタート](/ja/docs/quick-start)を参照してください。
 
-`renet` を直接使うのは、意図して低レベル制御が必要な場合だけです。例えば:
+## サーバーサイドのデバッグには`renet`を使用
 
-- サーバー上での緊急デバッグ
-- ホストレベルの保守や復旧
-- `rdc` では公開されていない内部状態の確認
+`renet`を直接使用する必要があるのは、以下の目的でサーバーにSSH接続する場合のみです：
 
-ほとんどのユーザーは通常運用で `renet` を直接呼び出す必要はありません。
+- `rdc`が接続できない場合の緊急デバッグ
+- `rdc`を通じて利用できないシステム内部の確認
+- 低レベルの復旧操作
 
-## Rediaccfile について
+すべての`renet`コマンドにはroot権限（`sudo`）が必要です。`renet`コマンドの完全なリストについては、[サーバーリファレンス](/ja/docs/server-reference)を参照してください。
 
-`Rediaccfile` に `renet compose -- ...` が出てくることがあります。これは想定どおりです。Rediaccfile の関数は `renet` があるサーバー側で実行されます。
+## 実験的機能：`rdc ops`（ローカルVM）
 
-ワークステーションからは、通常どおり `rdc repo up` と `rdc repo down` でワークロードを起動/停止します。
+`rdc ops`は、ワークステーション上でローカルVMクラスターを管理するために`renet ops`をラップします：
+
+```bash
+rdc ops setup       # 前提条件をインストール（KVMまたはQEMU）
+rdc ops up --basic  # 最小構成のクラスターを起動
+rdc ops status      # VMステータスを確認
+rdc ops ssh 1       # ブリッジVMにSSH接続
+rdc ops down        # クラスターを破棄
+```
+
+これらのコマンドは`renet`をローカルで実行します（SSH経由ではありません）。完全なドキュメントについては、[実験的VM](/ja/docs/experimental-vms)を参照してください。
+
+## Rediaccfileに関する注意
+
+`Rediaccfile`内で`renet compose -- ...`が使われているのを目にすることがあるかもしれません。これは正常です。Rediaccfileの関数は`renet`が利用可能なサーバー上で実行されます。
+
+ワークステーションからは、`rdc repo up`と`rdc repo down`を使用してワークロードを起動・停止してください。

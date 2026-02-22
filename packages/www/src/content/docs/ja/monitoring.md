@@ -1,9 +1,10 @@
 ---
-title: "モニタリング"
-description: "マシンの健全性、コンテナ、サービス、リポジトリの監視と診断の実行。"
-category: "Guides"
+title: モニタリング
+description: マシンの健全性、コンテナ、サービス、リポジトリの監視と診断の実行。
+category: Guides
 order: 9
 language: ja
+sourceHash: 72f77c1ae5a0dbce
 ---
 
 # モニタリング
@@ -142,6 +143,7 @@ rdc doctor
 | **Renet** | バイナリの場所、バージョン、CRIU、rsync、SEA埋め込みアセット |
 | **設定** | アクティブなコンテキスト、モード、マシン、SSH鍵 |
 | **認証** | ログイン状態、ユーザーメールアドレス |
+| **Virtualization** | Checks if your system can run local virtual machines (`rdc ops`) |
 
 各チェックは **OK**、**警告**、または **エラー** を報告します。問題のトラブルシューティングの最初のステップとしてこれを使用してください。
 

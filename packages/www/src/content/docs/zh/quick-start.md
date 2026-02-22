@@ -4,7 +4,6 @@ description: 5分钟内在您的服务器上运行容器化服务。
 category: Guides
 order: -1
 language: zh
-sourceHash: 71850d61f7e44292
 ---
 
 # 快速开始

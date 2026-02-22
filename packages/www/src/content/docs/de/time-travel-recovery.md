@@ -1,9 +1,12 @@
 ---
 title: Zeitreise-Erholung
-description: Stellen Sie mit Snapshot-basierten Zeitreisen versehentlich gelöschte Daten von vor Wochen wieder her.
+description: >-
+  Stellen Sie mit Snapshot-basierten Zeitreisen versehentlich gelöschte Daten
+  von vor Wochen wieder her.
 category: Use Cases
 order: 2
 language: de
+sourceHash: b8dbfddbf5b46895
 ---
 
 > **Wenn andere Daten für immer verlieren, können Sie in die Vergangenheit reisen.**
@@ -41,6 +44,8 @@ Aufgrund verlorener Daten:
 ## Rediacc-Lösung
 
 Mehmet bietet mit Rediacc eine „Zeitmaschinen“-ähnliche Lösung:
+
+![Time Travel Recovery](/img/time-travel-recovery.svg)
 
 ### 1. **Schnappschüsse** 
 * Rediacc erstellt automatisch stündlich Snapshots des Systems 

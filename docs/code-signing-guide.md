@@ -47,7 +47,7 @@
 | Component | Status | Details |
 |-----------|--------|---------|
 | **GPG keypair** | Done | Public key at `.ci/keys/gpg-public.asc`; private key in GitHub Actions secret `GPG_PRIVATE_KEY` |
-| **RPM package signing** | Done | `.ci/scripts/build/build-rpm.sh` imports GPG key, signs with `rpm --addsign`, verifies with `rpm -K` |
+| **RPM package signing** | Done | `.ci/scripts/build/build-linux-pkg.sh` uses nfpm YAML config signing via `$NFPM_RPM_KEY_FILE` |
 | **APT repository signing** | Done | `.ci/scripts/build/build-pkg-repo.sh` generates signed `Release.gpg` + `InRelease` (clearsigned) |
 | **RPM repository signing** | Done | Same script signs `repomd.xml` with detached GPG signature, writes `.repo` file |
 | **Public key distribution** | Done | Exported to `apt/gpg.key` and `rpm/gpg.key` in Pages bundle |
@@ -83,8 +83,7 @@
 | `.github/workflows/ci-build-desktop.yml` | Desktop build (all platforms, signing disabled) |
 | `.github/workflows/ci-build-cli.yml` | CLI SEA build (all platforms) |
 | `.github/workflows/ct-install-methods.yml` | Tests APT, DNF, Homebrew, binary install |
-| `.ci/scripts/build/build-deb.sh` | DEB package builder (unsigned) |
-| `.ci/scripts/build/build-rpm.sh` | RPM package builder (**GPG signed**) |
+| `.ci/scripts/build/build-linux-pkg.sh` | Unified Linux package builder — deb, rpm, apk, archlinux (**nfpm-based, GPG signed**) |
 | `.ci/scripts/build/build-pkg-repo.sh` | APT/RPM repo builder (**GPG signed**) |
 | `.ci/scripts/build/build-cli-executables.sh` | CLI SEA builder (ad-hoc macOS signing only) |
 | `.ci/scripts/build/build-desktop.sh` | Desktop builder (no code signing) |
@@ -437,7 +436,7 @@ APPLE_TEAM_ID=<team-id>
 | Component | Implementation | File |
 |-----------|---------------|------|
 | GPG keypair | Public key at `.ci/keys/gpg-public.asc`; private in `GPG_PRIVATE_KEY` secret | `.ci/keys/gpg-public.asc` |
-| RPM package signing | `rpm --addsign` with GPG key, verified with `rpm -K` | `.ci/scripts/build/build-rpm.sh` |
+| RPM package signing | nfpm YAML config signing via `$NFPM_RPM_KEY_FILE` env var | `.ci/scripts/build/build-linux-pkg.sh` |
 | APT repo signing | `gpg --detach-sign` on Release file → `Release.gpg` + `InRelease` | `.ci/scripts/build/build-pkg-repo.sh` |
 | RPM repo signing | `gpg --detach-sign` on `repomd.xml` → `repomd.xml.asc` | `.ci/scripts/build/build-pkg-repo.sh` |
 | Public key hosting | Exported to `apt/gpg.key` and `rpm/gpg.key` in GitHub Pages bundle | `.ci/scripts/build/build-pkg-repo.sh` |
@@ -448,7 +447,7 @@ APPLE_TEAM_ID=<team-id>
 
 | Item | Current | Improvement |
 |------|---------|-------------|
-| DEB package-level signing | Not signed (repo-level is sufficient) | Add `dpkg-sig` in build-deb.sh if desired |
+| DEB package-level signing | Signed via nfpm YAML config (`$NFPM_DEB_KEY_FILE`) when GPG key available | Already implemented in `build-linux-pkg.sh` |
 | AppImage signing | Not signed | Add `appimagetool --sign` (low value — no centralized trust) |
 | SHA-1 readiness | Unknown | Verify GPG key uses SHA-256+ (Debian 13 blocks SHA-1 repos in 2026) |
 | Repo hosting | GitHub Pages | Could migrate to Cloudflare R2 for lower latency / no egress fees |
@@ -561,7 +560,7 @@ Note: SSL.com with eSigner would be ~$1,249+/yr for Windows alone — not recomm
 - [x] Export private key to GitHub Actions secrets — `GPG_PRIVATE_KEY` + `GPG_PASSPHRASE`
 - [x] APT repository signing — `build-pkg-repo.sh` signs `Release` → `Release.gpg` + `InRelease`
 - [x] RPM repository signing — `build-pkg-repo.sh` signs `repomd.xml`
-- [x] RPM package signing — `build-rpm.sh` signs with `rpm --addsign`
+- [x] RPM package signing — `build-linux-pkg.sh` signs via nfpm YAML config (`$NFPM_RPM_KEY_FILE`)
 - [x] Public key distribution — `apt/gpg.key` + `rpm/gpg.key` in Pages bundle
 - [x] Repo hosted on GitHub Pages — deployed in `cd-v2.yml`
 - [x] Installation method testing — `ct-install-methods.yml` tests APT + DNF installs

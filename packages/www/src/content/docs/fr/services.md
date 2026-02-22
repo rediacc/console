@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: fr
-sourceHash: 8add6342eea14e41
+sourceHash: c4048b13799a7767
 ---
 
 # Services
@@ -136,6 +136,13 @@ Vous n'avez pas besoin de créer `.rediacc.json` manuellement. Lorsque vous exé
 
 L'adresse IP d'un service est calculée à partir de l'ID réseau du dépôt et du slot du service. L'ID réseau est réparti sur les deuxième, troisième et quatrième octets d'une adresse de bouclage `127.x.y.z`. Chaque service reçoit un décalage de `slot + 2` (les décalages 0 et 1 sont réservés).
 
+| Offset | Address | Purpose |
+|--------|---------|---------|
+| .0 | `127.0.11.0` | Network address (reserved) |
+| .1 | `127.0.11.1` | Gateway (reserved) |
+| .2 – .62 | `127.0.11.2` – `127.0.11.62` | Services (`slot + 2`) |
+| .63 | `127.0.11.63` | Broadcast (reserved) |
+
 **Exemple** pour l'ID réseau `2816` (`0x0B00`), adresse de base `127.0.11.0` :
 
 | Service | Slot | Adresse IP |
@@ -180,6 +187,7 @@ rdc repo up my-app -m server-1 --mount
 |--------|-------------|
 | `--mount` | Monter le dépôt au préalable s'il n'est pas déjà monté |
 | `--prep-only` | Exécuter uniquement les fonctions `prep()`, ignorer `up()` |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 La séquence d'exécution est :
 1. Monter le dépôt chiffré LUKS (si `--mount`)
@@ -197,6 +205,7 @@ rdc repo down my-app -m server-1
 | Option | Description |
 |--------|-------------|
 | `--unmount` | Démonter le dépôt chiffré après l'arrêt des services |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 La séquence d'exécution est :
 1. Exécuter `down()` dans tous les Rediaccfiles (ordre inverse Z-A, au mieux)
@@ -218,6 +227,7 @@ rdc repo up-all -m server-1
 | `--dry-run` | Afficher ce qui serait fait |
 | `--parallel` | Exécuter les opérations en parallèle |
 | `--concurrency <n>` | Nombre maximum d'opérations simultanées (par défaut : 3) |
+| `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Démarrage automatique au boot
 

@@ -1,9 +1,10 @@
 ---
-title: "监控"
-description: "监控机器健康状况、容器、服务、仓库，并运行诊断。"
-category: "Guides"
+title: 监控
+description: 监控机器健康状况、容器、服务、仓库，并运行诊断。
+category: Guides
 order: 9
 language: zh
+sourceHash: 72f77c1ae5a0dbce
 ---
 
 # 监控
@@ -142,6 +143,7 @@ rdc doctor
 | **Renet** | 二进制文件位置、版本、CRIU、rsync、SEA 嵌入式资源 |
 | **配置** | 活跃上下文、模式、机器、SSH 密钥 |
 | **认证** | 登录状态、用户邮箱 |
+| **Virtualization** | Checks if your system can run local virtual machines (`rdc ops`) |
 
 每项检查报告 **OK**、**警告** 或 **错误**。在排查任何问题时，请将此作为第一步。
 
