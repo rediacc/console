@@ -13,7 +13,7 @@
       "project": ["src/**/*.ts"]
     },
     "packages/cli": {
-      "entry": ["src/types/index.ts", "tests/**/*.ts", "bundle.mjs"],
+      "entry": ["src/types/index.ts", "tests/**/*.ts"],
       "project": ["src/**/*.ts", "tests/**/*.ts"]
     },
     "packages/web": {
@@ -84,7 +84,6 @@
         "src/layouts/**/*.astro",
         "scripts/generate-search-index.js",
         "scripts/generate-json.js",
-        "scripts/scale-svg-viewbox.cjs",
         "src/components/Navigation.tsx",
         "src/components/Footer.tsx",
         "src/components/Sidebar.tsx"
@@ -100,7 +99,6 @@
   "ignore": ["private/**"],
   "ignoreDependencies": [
     "@aws-sdk/client-s3",
-    "@biomejs/biome",
     "@types/*",
     "@opentelemetry/instrumentation-*",
     "@opentelemetry/context-zone",
@@ -122,8 +120,7 @@
     "zod",
     "astro-seo",
     "glob",
-    "react-i18next",
-    "syncpack"
+    "react-i18next"
   ],
-  "ignoreBinaries": ["astro", "biome", "knip", "rimraf", "syncpack", "wrangler"]
+  "ignoreBinaries": ["rimraf", "wrangler"]
 }
