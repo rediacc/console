@@ -18,7 +18,7 @@ source "$SCRIPT_DIR/../lib/common.sh"
 RENET_SRC="$CONSOLE_ROOT/private/renet"
 RENET_EXT=""
 case "$(uname -s)" in
-    MINGW*|MSYS*|CYGWIN*) RENET_EXT=".exe" ;;
+    MINGW* | MSYS* | CYGWIN*) RENET_EXT=".exe" ;;
 esac
 RENET_BIN="$RENET_SRC/bin/renet${RENET_EXT}"
 
