@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1232
+    "keyCount": 1233
   },
   "hashes": {
     "cli.description": "8c564b05",
@@ -482,6 +482,7 @@
     "commands.ops.setup.linux": "b9ae7945",
     "commands.ops.setup.macos": "54fb02d3",
     "commands.ops.setup.unsupported": "0645fdea",
+    "commands.ops.setup.windows": "f884c1e8",
     "commands.ops.ssh.connecting": "a83c91da",
     "commands.ops.ssh.description": "99b99c07",
     "commands.ops.ssh.vmNotFound": "ed9e8df4",
