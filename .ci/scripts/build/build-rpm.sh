@@ -155,7 +155,7 @@ EOF
 # create a minimal magic database that classifies files without deep ELF
 # parsing, and point libmagic to it via the MAGIC environment variable.
 MAGIC_SRC="$RPMBUILD_DIR/magic"
-printf '0\tstring\t\\x7fELF\tapplication/x-executable\n' > "$MAGIC_SRC"
+printf '0\tstring\t\\x7fELF\tapplication/x-executable\n' >"$MAGIC_SRC"
 file -C -m "$MAGIC_SRC"
 
 MAGIC="$MAGIC_SRC" rpmbuild -bb \
