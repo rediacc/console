@@ -38,13 +38,22 @@ deb:
   # when GPG_PRIVATE_KEY is available in the environment.
 
 apk:
-  # The CLI is a Node.js SEA binary linked against glibc. Alpine uses musl,
-  # so gcompat (glibc compatibility layer) is required at runtime.
-  depends:
-    - gcompat
   # APK signing uses RSA keys (not GPG). Configured via --apk-key-file
   # when APK_RSA_PRIVATE_KEY is available in the environment.
 
 archlinux:
   pkgbase: "${PKG_NAME}"
   packager: "${PKG_MAINTAINER}"
+
+# ---------------------------------------------------------------------------
+# Per-format dependency overrides
+# ---------------------------------------------------------------------------
+# The 'depends' field is overridable — use 'overrides' to set format-specific
+# dependencies without affecting other formats.
+
+overrides:
+  apk:
+    # The CLI is a Node.js SEA binary linked against glibc. Alpine uses musl,
+    # so gcompat (glibc compatibility layer) is required at runtime.
+    depends:
+      - gcompat
