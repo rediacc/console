@@ -89,7 +89,7 @@ if [[ "$SKIP_EMBED" != "true" ]]; then
     EMBED_DIR="$RENET_DIR/pkg/embed/assets"
     mkdir -p "$EMBED_DIR"
 
-    for asset in criu-linux-amd64 criu-linux-arm64 rsync-linux-amd64 rsync-linux-arm64; do
+    for asset in criu-linux-amd64 criu-linux-arm64 rsync-linux-amd64 rsync-linux-arm64 rclone-linux-amd64 rclone-linux-arm64; do
         if [[ -f "$ASSETS_DIR/$asset" ]]; then
             log_info "Embedding $asset..."
             gzip -c "$ASSETS_DIR/$asset" >"$EMBED_DIR/$asset.gz"
@@ -101,6 +101,11 @@ if [[ "$SKIP_EMBED" != "true" ]]; then
 
     log_info "Embedded assets:"
     ls -la "$EMBED_DIR"
+
+    # Stage proxy and datastore docs for go:embed
+    log_info "Staging proxy/datastore for embedding..."
+    cp "$REPO_ROOT/private/renet/proxy/docker-compose.yml" "$RENET_DIR/pkg/embed/proxy/"
+    cp "$REPO_ROOT/private/renet/docs/datastore/README.md" "$RENET_DIR/pkg/embed/datastore/"
 else
     log_info "Skipping asset embedding (--skip-embed)"
 fi

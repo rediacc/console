@@ -163,7 +163,7 @@ jobs:
 
   # Extract renet binaries from existing bridge image when build is skipped.
   # Linux binaries come from the cached bridge image; Darwin binaries are
-  # cross-compiled on the fly (no embedded assets needed — CRIU/rsync are Linux-only).
+  # cross-compiled with embedded assets (CRIU/rsync/rclone) extracted from the image.
   extract-renet:
     name: Renet (cached)
     runs-on: ubuntu-latest
