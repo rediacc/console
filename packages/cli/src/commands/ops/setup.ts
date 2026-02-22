@@ -31,6 +31,28 @@ export function registerOpsSetupCommand(ops: Command, _program: Command): void {
           }
 
           outputService.success(t('commands.ops.setup.completed'));
+        } else if (process.platform === 'win32') {
+          outputService.info(t('commands.ops.setup.windows'));
+
+          const flags: string[] = [];
+          if (options.debug) flags.push('--debug');
+
+          // Delegate to renet ops host setup (no sudo on Windows — run elevated)
+          const renetPath = await opsExecutorService.getRenetPath();
+          const exitCode = await spawnInteractive(renetPath, [
+            'ops',
+            'host',
+            'setup',
+            ...flags,
+          ]);
+
+          if (exitCode !== 0) {
+            outputService.error(t('commands.ops.setup.failed'));
+            process.exitCode = exitCode;
+            return;
+          }
+
+          outputService.success(t('commands.ops.setup.completed'));
         } else if (process.platform === 'linux') {
           outputService.info(t('commands.ops.setup.linux'));
 

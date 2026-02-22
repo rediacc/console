@@ -126,6 +126,14 @@ for os in linux darwin; do
     done
 done
 
+# Windows targets (Hyper-V backend)
+for arch in amd64 arm64; do
+    log_info "Building renet-windows-$arch..."
+    CGO_ENABLED=0 GOOS=windows GOARCH=$arch go build \
+        -ldflags="-s -w -X main.Version=$VERSION" \
+        -o "$OUTPUT_DIR/renet-windows-$arch.exe" ./cmd/renet
+done
+
 # Generate checksums
 log_step "Generating checksums..."
 cd "$OUTPUT_DIR"
@@ -146,4 +154,12 @@ for os in linux darwin; do
             log_warn "renet-$os-$arch: may contain debug symbols"
         fi
     done
+done
+
+# Windows binaries are PE format, file(1) reports differently
+for arch in amd64 arm64; do
+    binary="$OUTPUT_DIR/renet-windows-$arch.exe"
+    if [[ -f "$binary" ]]; then
+        log_info "renet-windows-$arch.exe: $(file -b "$binary" | head -c 80)"
+    fi
 done

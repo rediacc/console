@@ -52,6 +52,8 @@ if [[ -z "$SEA_PLATFORM" ]] || [[ -z "$SEA_ARCH" ]]; then
     exit 1
 fi
 
+require_cmd jq
+
 REPO_ROOT="$(get_repo_root)"
 CLI_DIR="$REPO_ROOT/packages/cli"
 CLI_ASSETS_DIR="$CLI_DIR/dist/assets"
@@ -85,6 +87,10 @@ get_required_binaries() {
     if [[ "$platform" == "mac" ]]; then
         echo "darwin-${renet_arch}"
     fi
+
+    if [[ "$platform" == "win" ]]; then
+        echo "windows-${renet_arch}"
+    fi
 }
 
 # Map binary name to metadata key (preserves existing scheme)
@@ -108,10 +114,16 @@ REQUIRED_BINARIES=$(get_required_binaries "$SEA_PLATFORM" "$SEA_ARCH")
 
 # Copy only required renet binaries
 for binary_name in $REQUIRED_BINARIES; do
-    BINARY="$RENET_BIN_DIR/renet-$binary_name"
+    # Windows binaries have .exe extension on disk but SEA asset keys don't
+    if [[ "$binary_name" == windows-* ]]; then
+        BINARY="$RENET_BIN_DIR/renet-${binary_name}.exe"
+    else
+        BINARY="$RENET_BIN_DIR/renet-$binary_name"
+    fi
     if [[ -f "$BINARY" ]]; then
         log_info "Copying renet-$binary_name..."
-        cp "$BINARY" "$CLI_ASSETS_DIR/"
+        # Copy as renet-$binary_name (no .exe) for consistent SEA asset naming
+        cp "$BINARY" "$CLI_ASSETS_DIR/renet-$binary_name"
     else
         log_error "Missing renet binary: $BINARY"
         exit 1

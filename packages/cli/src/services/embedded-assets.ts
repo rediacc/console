@@ -16,7 +16,7 @@ import * as path from 'node:path';
 export type RenetArch = 'amd64' | 'arm64';
 
 /** Supported platforms for renet */
-export type RenetPlatform = 'linux' | 'darwin';
+export type RenetPlatform = 'linux' | 'darwin' | 'windows';
 
 /** @deprecated Use RenetArch instead */
 export type LinuxArch = RenetArch;
@@ -167,16 +167,23 @@ export async function extractRenetToLocal(): Promise<string> {
     }
   }
 
-  const platform: RenetPlatform = process.platform === 'darwin' ? 'darwin' : 'linux';
+  const platformMap: Record<string, RenetPlatform> = {
+    darwin: 'darwin',
+    win32: 'windows',
+  };
+  const platform: RenetPlatform = platformMap[process.platform] ?? 'linux';
   const arch: RenetArch = process.arch === 'arm64' ? 'arm64' : 'amd64';
   const binary = getEmbeddedRenetBinary(platform, arch);
 
   const dir = path.join(os.tmpdir(), '.rdc-local');
   await fs.mkdir(dir, { recursive: true });
 
-  const localPath = path.join(dir, 'renet');
+  const ext = platform === 'windows' ? '.exe' : '';
+  const localPath = path.join(dir, `renet${ext}`);
   await fs.writeFile(localPath, binary);
-  await fs.chmod(localPath, 0o755);
+  if (platform !== 'windows') {
+    await fs.chmod(localPath, 0o755);
+  }
 
   cachedLocalPath = localPath;
   return localPath;

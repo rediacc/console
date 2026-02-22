@@ -16,7 +16,11 @@ CONSOLE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 source "$SCRIPT_DIR/../lib/common.sh"
 
 RENET_SRC="$CONSOLE_ROOT/private/renet"
-RENET_BIN="$RENET_SRC/bin/renet"
+RENET_EXT=""
+case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*) RENET_EXT=".exe" ;;
+esac
+RENET_BIN="$RENET_SRC/bin/renet${RENET_EXT}"
 
 # Step 1: Verify submodule is present
 if [[ ! -d "$RENET_SRC" ]]; then
@@ -38,7 +42,7 @@ else
 
     # Step 4: Build
     log_step "Building renet from source..."
-    (cd "$RENET_SRC" && ./go dev)
+    (cd "$RENET_SRC" && ./build.sh dev)
 
     # Step 5: Verify binary produced
     if [[ ! -f "$RENET_BIN" ]]; then

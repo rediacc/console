@@ -701,6 +701,7 @@
         "detecting": "Detecting platform...",
         "linux": "Installing KVM prerequisites via renet...",
         "macos": "Installing QEMU via Homebrew...",
+        "windows": "Setting up Hyper-V prerequisites...",
         "unsupported": "Unsupported platform: {{platform}}",
         "completed": "Prerequisites installed successfully",
         "failed": "Installation failed",

@@ -65,7 +65,8 @@ function resolveRenetPath(contextRenetPath?: string): string | null {
 
   // Fall back to PATH lookup
   try {
-    return execSync('which renet', { encoding: 'utf-8' }).trim();
+    const whichCmd = process.platform === 'win32' ? 'where.exe renet' : 'which renet';
+    return execSync(whichCmd, { encoding: 'utf-8' }).trim().split('\n')[0];
   } catch {
     return null;
   }
@@ -274,16 +275,6 @@ async function addSelfHostedModeChecks(
 
 async function checkVirtualization(): Promise<CheckSection> {
   const checks: CheckResult[] = [];
-
-  // Windows: skip with a note
-  if (process.platform === 'win32') {
-    checks.push({
-      name: t('commands.doctor.checks.opsPrereqs'),
-      value: t('commands.doctor.opsNotSupported', { platform: process.platform }),
-      status: 'warn',
-    });
-    return { title: t('commands.doctor.sections.virtualization'), checks };
-  }
 
   // Try to find renet
   let renetPath: string | null = null;

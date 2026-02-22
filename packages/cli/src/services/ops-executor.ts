@@ -16,7 +16,7 @@ import { extractRenetToLocal, isSEA } from './embedded-assets.js';
 const OPS_COMMAND_TIMEOUT = 600_000;
 
 /** Supported VM backends */
-export type OpsBackend = 'kvm' | 'qemu';
+export type OpsBackend = 'kvm' | 'qemu' | 'hyperv';
 
 /** Result from a renet ops command execution */
 export interface OpsCommandResult {
@@ -31,20 +31,26 @@ class OpsExecutorService {
    * Only Linux and macOS are supported.
    */
   assertSupportedPlatform(): void {
-    if (process.platform !== 'linux' && process.platform !== 'darwin') {
+    if (
+      process.platform !== 'linux' &&
+      process.platform !== 'darwin' &&
+      process.platform !== 'win32'
+    ) {
       throw new Error(
-        `rdc ops is not supported on ${process.platform}. Supported platforms: Linux, macOS.`
+        `rdc ops is not supported on ${process.platform}. Supported platforms: Linux, macOS, Windows.`
       );
     }
   }
 
   /**
    * Detect the appropriate VM backend for the current platform.
-   * macOS uses QEMU with HVF acceleration, Linux uses KVM via libvirt.
+   * macOS uses QEMU with HVF, Windows uses Hyper-V, Linux uses KVM via libvirt.
    */
   detectBackend(): OpsBackend {
     this.assertSupportedPlatform();
-    return process.platform === 'darwin' ? 'qemu' : 'kvm';
+    if (process.platform === 'darwin') return 'qemu';
+    if (process.platform === 'win32') return 'hyperv';
+    return 'kvm';
   }
 
   /**
@@ -69,7 +75,8 @@ class OpsExecutorService {
 
     // Fall back to PATH lookup
     try {
-      return execSync('which renet', { encoding: 'utf-8' }).trim();
+      const whichCmd = process.platform === 'win32' ? 'where.exe renet' : 'which renet';
+      return execSync(whichCmd, { encoding: 'utf-8' }).trim().split('\n')[0];
     } catch {
       throw new Error(
         'renet binary not found. Set a renet path with "rdc context set-renet <path>" ' +

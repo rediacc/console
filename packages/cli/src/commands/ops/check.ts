@@ -44,7 +44,8 @@ function buildToolCheck(cmd: string, hint: string): CheckResult {
 
 function commandExists(cmd: string): boolean {
   try {
-    execSync(`which ${cmd}`, { stdio: 'ignore' });
+    const whichCmd = process.platform === 'win32' ? `where.exe ${cmd}` : `which ${cmd}`;
+    execSync(whichCmd, { stdio: 'ignore' });
     return true;
   } catch {
     return false;
@@ -123,6 +124,46 @@ function checkMacOSPrereqs(): CheckResult[] {
   ];
 }
 
+function checkWindowsPrereqs(): CheckResult[] {
+  // Hyper-V check
+  let hypervStatus: CheckResult;
+  try {
+    const result = spawnSync(
+      'powershell.exe',
+      [
+        '-NoProfile',
+        '-NonInteractive',
+        '-Command',
+        '(Get-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V-All -Online).State',
+      ],
+      { encoding: 'utf-8', timeout: 15_000 }
+    );
+    const state = (result.stdout || '').trim().toLowerCase();
+    hypervStatus = {
+      name: 'Hyper-V',
+      value: state === 'enabled' ? 'enabled' : state || 'unknown',
+      status: state === 'enabled' ? 'ok' : 'fail',
+      hint:
+        state === 'enabled'
+          ? undefined
+          : 'Enable Hyper-V: Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All',
+    };
+  } catch {
+    hypervStatus = {
+      name: 'Hyper-V',
+      value: 'unknown',
+      status: 'fail',
+      hint: 'Could not check Hyper-V status',
+    };
+  }
+
+  return [
+    hypervStatus,
+    buildToolCheck('qemu-img', 'Install QEMU: winget install SoftwareFreedomConservancy.QEMU'),
+    buildToolCheck('ssh', 'Install OpenSSH: Settings > Apps > Optional Features > OpenSSH Client'),
+  ];
+}
+
 // ============================================================================
 // Output Formatting
 // ============================================================================
@@ -178,10 +219,18 @@ function displayChecksTable(
 }
 
 function getLocalCheckData(): HostCheckResponse {
-  const platform = process.platform === 'darwin' ? 'macOS' : 'Linux';
-  const backend = process.platform === 'darwin' ? 'qemu' : 'kvm';
-  const checks = process.platform === 'darwin' ? checkMacOSPrereqs() : checkLinuxPrereqs();
-  return { platform, backend, arch: process.arch, checks };
+  if (process.platform === 'darwin') {
+    return { platform: 'macOS', backend: 'qemu', arch: process.arch, checks: checkMacOSPrereqs() };
+  }
+  if (process.platform === 'win32') {
+    return {
+      platform: 'Windows',
+      backend: 'hyperv',
+      arch: process.arch,
+      checks: checkWindowsPrereqs(),
+    };
+  }
+  return { platform: 'Linux', backend: 'kvm', arch: process.arch, checks: checkLinuxPrereqs() };
 }
 
 // ============================================================================
@@ -194,12 +243,6 @@ export function registerOpsCheckCommand(ops: Command, program: Command): void {
     .description(t('commands.ops.check.description'))
     .action(async () => {
       try {
-        if (process.platform !== 'linux' && process.platform !== 'darwin') {
-          outputService.error(t('commands.ops.setup.unsupported', { platform: process.platform }));
-          process.exitCode = 1;
-          return;
-        }
-
         const format = program.opts().output as OutputFormat;
 
         // Try renet first (authoritative source)
