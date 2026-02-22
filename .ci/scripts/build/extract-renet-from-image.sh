@@ -115,6 +115,19 @@ for arch in amd64 arm64; do
         ./cmd/renet
 done
 popd >/dev/null
+
+# Cross-compile Windows binaries (Hyper-V backend)
+log_step "Cross-compiling renet Windows binaries..."
+pushd "$REPO_ROOT/private/renet" >/dev/null
+for arch in amd64 arm64; do
+    log_info "Building renet-windows-$arch..."
+    CGO_ENABLED=0 GOOS=windows GOARCH=$arch go build \
+        -ldflags="-s -w" \
+        -o "$OUTPUT_DIR/renet-windows-$arch.exe" \
+        ./cmd/renet
+done
+popd >/dev/null
+
 log_step "Generating checksums..."
 cd "$OUTPUT_DIR"
 sha256sum renet-* >checksums.sha256

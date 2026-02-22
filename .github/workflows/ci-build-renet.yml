@@ -163,8 +163,8 @@ jobs:
           if-no-files-found: error
 
   # Extract renet binaries from existing bridge image when build is skipped.
-  # Linux binaries come from the cached bridge image; Darwin binaries are
-  # cross-compiled with embedded assets (CRIU/rsync/rclone) extracted from the image.
+  # Linux binaries come from the cached bridge image; Darwin and Windows binaries
+  # are cross-compiled with embedded assets (CRIU/rsync/rclone) extracted from the image.
   extract-renet:
     name: Renet (cached)
     runs-on: ubuntu-latest
@@ -201,7 +201,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Extract Linux binaries + cross-compile Darwin
+      - name: Extract Linux binaries + cross-compile Darwin/Windows
         run: .ci/scripts/build/extract-renet-from-image.sh --tag "${{ inputs.bridge_tag }}" --output ./private/bin
 
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
