@@ -704,7 +704,8 @@
         "failed": "安装失败",
         "linux": "正在通过 renet 安装 KVM 前置条件...",
         "macos": "正在通过 Homebrew 安装 QEMU...",
-        "unsupported": "不支持的平台：{{platform}}"
+        "unsupported": "不支持的平台：{{platform}}",
+        "windows": "正在设置 Hyper-V 前置条件..."
       },
       "ssh": {
         "connecting": "正在连接到 VM {{id}}...",

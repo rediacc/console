@@ -704,7 +704,8 @@
         "failed": "インストールに失敗しました",
         "linux": "renet 経由で KVM の前提条件をインストールしています...",
         "macos": "Homebrew 経由で QEMU をインストールしています...",
-        "unsupported": "サポートされていないプラットフォーム: {{platform}}"
+        "unsupported": "サポートされていないプラットフォーム: {{platform}}",
+        "windows": "Hyper-V の前提条件をセットアップしています..."
       },
       "ssh": {
         "connecting": "VM {{id}} に接続しています...",

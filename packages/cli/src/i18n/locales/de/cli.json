@@ -704,7 +704,8 @@
         "failed": "Installation fehlgeschlagen",
         "linux": "KVM-Voraussetzungen werden über renet installiert...",
         "macos": "QEMU wird über Homebrew installiert...",
-        "unsupported": "Nicht unterstützte Plattform: {{platform}}"
+        "unsupported": "Nicht unterstützte Plattform: {{platform}}",
+        "windows": "Hyper-V-Voraussetzungen werden eingerichtet..."
       },
       "ssh": {
         "connecting": "Verbindung zu VM {{id}} wird hergestellt...",

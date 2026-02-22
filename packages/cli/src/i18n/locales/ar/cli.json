@@ -704,7 +704,8 @@
         "failed": "فشل التثبيت",
         "linux": "جارٍ تثبيت متطلبات KVM عبر renet...",
         "macos": "جارٍ تثبيت QEMU عبر Homebrew...",
-        "unsupported": "منصة غير مدعومة: {{platform}}"
+        "unsupported": "منصة غير مدعومة: {{platform}}",
+        "windows": "جارٍ إعداد متطلبات Hyper-V..."
       },
       "ssh": {
         "connecting": "جارٍ الاتصال بـ VM {{id}}...",

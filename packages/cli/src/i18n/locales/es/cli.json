@@ -704,7 +704,8 @@
         "failed": "La instalación falló",
         "linux": "Instalando prerequisitos de KVM mediante renet...",
         "macos": "Instalando QEMU mediante Homebrew...",
-        "unsupported": "Plataforma no soportada: {{platform}}"
+        "unsupported": "Plataforma no soportada: {{platform}}",
+        "windows": "Configurando prerequisitos de Hyper-V..."
       },
       "ssh": {
         "connecting": "Conectando a VM {{id}}...",

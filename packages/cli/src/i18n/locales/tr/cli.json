@@ -704,7 +704,8 @@
         "failed": "Kurulum başarısız oldu",
         "linux": "KVM ön koşulları renet aracılığıyla kuruluyor...",
         "macos": "QEMU, Homebrew aracılığıyla kuruluyor...",
-        "unsupported": "Desteklenmeyen platform: {{platform}}"
+        "unsupported": "Desteklenmeyen platform: {{platform}}",
+        "windows": "Hyper-V ön koşulları ayarlanıyor..."
       },
       "ssh": {
         "connecting": "VM {{id}} bağlantısı kuruluyor...",
