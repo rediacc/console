@@ -123,10 +123,126 @@ jobs:
           STATUS=$(sudo -E node packages/cli/dist/cli-bundle.cjs ops status -o json 2>/dev/null || echo '{"vms":[]}')
           echo "$STATUS" | jq -e '.vms | length == 0' || echo "Warning: VMs still present after cleanup"
 
-  # ── Platform validation (no KVM/HVF, build + check only) ──────
+  # ── Full VM provisioning test (QEMU + HVF on macOS Intel) ────
+  # macOS Intel runners support HVF (Hypervisor Framework), enabling
+  # hardware-accelerated QEMU provisioning. Downloads pre-built renet binary.
+  ops-qemu-provision:
+    name: OPS Provision (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        include:
+          - runner: macos-15-intel
+            name: macos-intel
+            platform: darwin
+            arch: x86_64
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: .ci/scripts/setup/install-deps.sh
+        shell: bash
+      - run: .ci/scripts/setup/build-packages.sh
+        shell: bash
+
+      - name: Download renet binaries
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        with:
+          name: renet-binaries-${{ github.sha }}
+          path: private/bin/
+
+      - name: Set renet binary path
+        shell: bash
+        run: |
+          RENET_BIN="$(pwd)/private/bin/renet-darwin-amd64"
+          chmod +x "$RENET_BIN"
+          echo "RENET_BINARY=$RENET_BIN" >> "$GITHUB_ENV"
+
+      - name: Install QEMU and cdrtools
+        run: brew install qemu cdrtools
+
+      - name: Generate SSH keypair
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -q
+          echo "SSH keypair generated for QEMU cloud-init injection"
+
+      - name: Build CLI
+        shell: bash
+        run: npm run build -w @rediacc/cli && npm run build:bundle -w @rediacc/cli
+
+      - name: Configure local context
+        shell: bash
+        run: |
+          mkdir -p ~/.rediacc
+          jq -n --arg renet "$RENET_BINARY" \
+            '{contexts:{default:{name:"default",mode:"local",apiUrl:"http://localhost",renetPath:$renet}}}' \
+            > ~/.rediacc/config.json
+
+      - name: "Test: rdc ops check"
+        shell: bash
+        run: node packages/cli/dist/cli-bundle.cjs ops check -o json
+
+      - name: "Test: rdc ops up --basic"
+        shell: bash
+        run: |
+          node packages/cli/dist/cli-bundle.cjs ops up \
+            --basic --skip-orchestration -o json
+
+      - name: "Test: rdc ops status"
+        id: status
+        shell: bash
+        run: |
+          STATUS=$(node packages/cli/dist/cli-bundle.cjs ops status -o json)
+          echo "$STATUS"
+          # QEMU returns localhost:<port> format
+          VM_ADDR=$(echo "$STATUS" | jq -r '.vms[0].ip')
+          echo "vm_addr=$VM_ADDR" >> "$GITHUB_OUTPUT"
+
+      - name: "Verify: SSH connectivity"
+        shell: bash
+        run: |
+          VM_ADDR="${{ steps.status.outputs.vm_addr }}"
+          SSH_PORT="${VM_ADDR#localhost:}"
+          SSH_KEY="$HOME/.ssh/id_ed25519"
+          for i in $(seq 1 15); do
+            if ssh -i "$SSH_KEY" -p "$SSH_PORT" \
+              -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+              -o ConnectTimeout=5 \
+              "$(whoami)@localhost" "echo 'SSH OK'"; then
+              echo "SSH connection successful on attempt $i"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 5s..."
+            sleep 5
+          done
+          echo "SSH connection failed after 15 attempts"
+          exit 1
+
+      - name: "Test: rdc ops down"
+        if: always()
+        shell: bash
+        run: node packages/cli/dist/cli-bundle.cjs ops down -o json || true
+
+      - name: "Verify: cleanup"
+        if: always()
+        shell: bash
+        run: |
+          STATUS=$(node packages/cli/dist/cli-bundle.cjs ops status -o json 2>/dev/null || echo '{"vms":[]}')
+          echo "$STATUS" | jq -e '.vms | length == 0' || echo "Warning: VMs still present after cleanup"
+
+  # ── Platform validation (no hardware acceleration, check only) ─
   # Downloads pre-built renet binaries from the build-renet job artifact.
   # Tests CLI ops check, renet binary execution, and QEMU availability.
-  # Linux ARM runners lack KVM, so full provisioning is not tested there.
+  # These platforms lack KVM/HVF, so full provisioning is not tested.
   ops-platform-check:
     name: OPS Check (${{ matrix.name }})
     runs-on: ${{ matrix.runner }}
@@ -142,10 +258,6 @@ jobs:
             name: macos-arm64
             platform: darwin
             arch: arm64
-          - runner: macos-15-intel
-            name: macos-intel
-            platform: darwin
-            arch: x86_64
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
