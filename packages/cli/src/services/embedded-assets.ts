@@ -12,6 +12,8 @@ import { createRequire } from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
+import { PLATFORM_DEFAULTS } from '@rediacc/shared/config/defaults';
+
 /** Supported architectures for renet */
 export type RenetArch = 'amd64' | 'arm64';
 
@@ -171,7 +173,7 @@ export async function extractRenetToLocal(): Promise<string> {
     darwin: 'darwin',
     win32: 'windows',
   };
-  const platform: RenetPlatform = platformMap[process.platform] ?? 'linux';
+  const platform: RenetPlatform = platformMap[process.platform] ?? PLATFORM_DEFAULTS.DEFAULT_RENET;
   const arch: RenetArch = process.arch === 'arm64' ? 'arm64' : 'amd64';
   const binary = getEmbeddedRenetBinary(platform, arch);
 
