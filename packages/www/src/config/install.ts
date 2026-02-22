@@ -2,7 +2,15 @@ import { SITE_URL } from './constants';
 
 export type Platform = 'linux' | 'macos' | 'windows';
 
-export type InstallMethod = 'quick' | 'binary' | 'docker' | 'apt' | 'dnf' | 'apk' | 'pacman' | 'homebrew';
+export type InstallMethod =
+  | 'quick'
+  | 'binary'
+  | 'docker'
+  | 'apt'
+  | 'dnf'
+  | 'apk'
+  | 'pacman'
+  | 'homebrew';
 
 export const PLATFORMS: {
   key: Platform;
