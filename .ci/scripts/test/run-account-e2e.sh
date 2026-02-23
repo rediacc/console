@@ -76,6 +76,10 @@ if [[ ! -d "$ACCOUNT_DIR/node_modules" ]]; then
     cd "$ACCOUNT_DIR" && npm install
     cd "$REPO_ROOT"
 fi
+if [[ ! -d "$ACCOUNT_DIR/web/node_modules" ]]; then
+    cd "$ACCOUNT_DIR/web" && npm install
+    cd "$REPO_ROOT"
+fi
 if [[ ! -d "$E2E_DIR/node_modules" ]]; then
     cd "$E2E_DIR" && npm install
     cd "$REPO_ROOT"
@@ -84,7 +88,11 @@ fi
 # Phase 2: Start infrastructure (unless --skip-setup)
 if [[ "$SKIP_SETUP" != "true" ]]; then
     log_step "Starting RustFS (S3-compatible storage)..."
-    cd "$ACCOUNT_DIR" && npm run test:setup
+    cd "$ACCOUNT_DIR"
+    if ! timeout 120 npm run test:setup; then
+        log_error "RustFS failed to start within 120 seconds"
+        exit 1
+    fi
     cd "$REPO_ROOT"
 
     log_step "Starting backend API on port $ACCOUNT_API_PORT..."
@@ -103,8 +111,15 @@ if [[ "$SKIP_SETUP" != "true" ]]; then
     BACKEND_PID=$!
     cd "$REPO_ROOT"
 
+    # Brief pause then verify process didn't crash immediately
+    sleep 2
+    if ! kill -0 "$BACKEND_PID" 2>/dev/null; then
+        log_error "Backend API process exited immediately (PID $BACKEND_PID)"
+        exit 1
+    fi
+
     log_step "Waiting for backend API..."
-    if ! retry_with_backoff 15 2 curl -sf "http://localhost:${ACCOUNT_API_PORT}/account/api/v1/health" >/dev/null; then
+    if ! retry_with_backoff 6 2 curl -sf --max-time 5 "http://localhost:${ACCOUNT_API_PORT}/account/api/v1/health" >/dev/null; then
         log_error "Backend API failed to start on port $ACCOUNT_API_PORT"
         exit 1
     fi
