@@ -260,14 +260,13 @@ cleanup_packages() {
 
         log_step "  Processing package: $package_name"
 
-        # List versions with pagination (sorted newest first by API default)
-        # Fetch raw JSON first, then transform — avoids pipefail issues with --paginate + --jq
-        local raw_versions versions
-        raw_versions="$(gh api "orgs/$GITHUB_ORG/packages/container/$encoded_package/versions" \
-            --paginate 2>/dev/null || echo "[]")"
-
-        # Transform and sort: extract fields, flatten paginated arrays, sort newest first
-        versions="$(echo "$raw_versions" | jq -s '[flatten[] | {id: .id, tags: .metadata.container.tags, created: .created_at}] | sort_by(.created) | reverse' 2>/dev/null || echo "[]")"
+        # List versions (newest first, single page — avoids OOM on large repos).
+        # The API returns newest first by default. We fetch 100 per page which is
+        # enough to apply retention (keep N) and clean up a batch per run.
+        local versions
+        versions="$(gh api "orgs/$GITHUB_ORG/packages/container/$encoded_package/versions?per_page=100" \
+            --jq '[.[] | {id: .id, tags: .metadata.container.tags, created: .created_at}] | sort_by(.created) | reverse' \
+            2>/dev/null || echo "[]")"
 
         local total
         total="$(echo "$versions" | jq 'length')"
