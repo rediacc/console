@@ -13,8 +13,9 @@
       "project": ["src/**/*.ts"]
     },
     "packages/cli": {
-      "entry": ["src/types/index.ts", "tests/**/*.ts", "bundle.mjs"],
-      "project": ["src/**/*.ts", "tests/**/*.ts", "*.mjs"]
+      "entry": ["src/types/index.ts", "tests/**/*.ts"],
+      "project": ["src/**/*.ts", "tests/**/*.ts"],
+      "ignore": ["bundle.mjs"]
     },
     "packages/web": {
       "entry": [
@@ -84,7 +85,6 @@
         "src/layouts/**/*.astro",
         "scripts/generate-search-index.js",
         "scripts/generate-json.js",
-        "scripts/scale-svg-viewbox.cjs",
         "src/components/Navigation.tsx",
         "src/components/Footer.tsx",
         "src/components/Sidebar.tsx"
@@ -93,7 +93,8 @@
       "ignore": [
         "scripts/check-translation-hashes.js",
         "scripts/generate-favicons.js",
-        "scripts/generate-translation-hashes.js"
+        "scripts/generate-translation-hashes.js",
+        "scripts/scale-svg-viewbox.cjs"
       ]
     }
   },
@@ -121,9 +122,7 @@
     "zod",
     "astro-seo",
     "glob",
-    "react-i18next",
-    "esbuild",
-    "@xmldom/xmldom"
+    "react-i18next"
   ],
   "ignoreBinaries": ["rimraf", "wrangler"]
 }
