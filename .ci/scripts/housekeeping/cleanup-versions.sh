@@ -126,9 +126,15 @@ cleanup_releases() {
             if [[ "$DRY_RUN" == "true" ]]; then
                 log_warn "[DRY-RUN] Would delete release: $tag (created: $created_at)"
             else
-                if retry_with_backoff 3 2 gh release delete "$tag" --repo "$RELEASE_REPO" --yes --cleanup-tag; then
+                # Delete release first, then clean up the tag separately.
+                # Using --cleanup-tag can fail if the tag ref is already gone,
+                # which causes the entire command to fail even though the release
+                # was deleted, leading to "release not found" on retry.
+                if retry_with_backoff 3 2 gh release delete "$tag" --repo "$RELEASE_REPO" --yes; then
                     log_debug "Deleted release: $tag"
                     deleted=$((deleted + 1))
+                    # Best-effort tag cleanup (may already be gone)
+                    gh api -X DELETE "repos/$RELEASE_REPO/git/refs/tags/$tag" 2>/dev/null || true
                 else
                     log_warn "Failed to delete release: $tag"
                 fi
@@ -304,7 +310,7 @@ cleanup_packages() {
             fi
 
             index=$((index + 1))
-        done < <(echo "$versions" | jq -c '.[]')
+        done < <(echo "$versions" | jq -c '.[]' 2>/dev/null)
 
         if [[ "$DRY_RUN" == "true" ]]; then
             log_info "  Package $package_name: would delete $deleted of $total versions"
