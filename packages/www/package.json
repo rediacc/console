@@ -18,7 +18,6 @@
     "validate:content:strict": "node scripts/validate-content.js --strict"
   },
   "dependencies": {
-    "@rediacc/shared": "*",
     "@astrojs/react": "^4.4.2",
     "@astrojs/rss": "^4.0.15",
     "@astrojs/sitemap": "^3.7.0",
@@ -31,6 +30,7 @@
     "@opentelemetry/instrumentation-xml-http-request": "^0.211.0",
     "@opentelemetry/sdk-node": "^0.211.0",
     "@opentelemetry/sdk-trace-web": "^2.5.0",
+    "@rediacc/shared": "*",
     "@types/mdast": "^4.0.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.1.9",
