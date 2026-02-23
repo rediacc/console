@@ -47,8 +47,11 @@ jobs:
           node-version: '22'
       - name: Install dependencies
         run: npm ci
-      - name: Build shared packages
-        run: npm run build:packages
+      - name: Build shared package
+        run: npm run build -w @rediacc/shared
+      - name: Install account dependencies
+        run: npm install
+        working-directory: private/account
       - name: Cleanup orphaned Stripe sandbox resources
         run: npx tsx scripts/cleanup-orphans.ts
         working-directory: private/account
