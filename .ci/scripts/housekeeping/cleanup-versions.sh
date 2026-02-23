@@ -261,14 +261,13 @@ cleanup_packages() {
         log_step "  Processing package: $package_name"
 
         # List versions with pagination (sorted newest first by API default)
-        local versions
-        versions="$(gh api "orgs/$GITHUB_ORG/packages/container/$encoded_package/versions" \
-            --paginate \
-            --jq '[.[] | {id: .id, tags: .metadata.container.tags, created: .created_at}]' \
-            2>/dev/null || echo "[]")"
+        # Fetch raw JSON first, then transform — avoids pipefail issues with --paginate + --jq
+        local raw_versions versions
+        raw_versions="$(gh api "orgs/$GITHUB_ORG/packages/container/$encoded_package/versions" \
+            --paginate 2>/dev/null || echo "[]")"
 
-        # Flatten paginated results and sort by created date
-        versions="$(echo "$versions" | jq -s 'flatten | sort_by(.created) | reverse')"
+        # Transform and sort: extract fields, flatten paginated arrays, sort newest first
+        versions="$(echo "$raw_versions" | jq -s '[flatten[] | {id: .id, tags: .metadata.container.tags, created: .created_at}] | sort_by(.created) | reverse' 2>/dev/null || echo "[]")"
 
         local total
         total="$(echo "$versions" | jq 'length')"
@@ -278,7 +277,14 @@ cleanup_packages() {
         local index=0
         local consecutive_failures=0
 
+        # Materialize the version list to a temp variable to avoid broken pipe
+        # when the loop breaks early while jq is still writing
+        local version_lines
+        version_lines="$(echo "$versions" | jq -c '.[]' 2>/dev/null || true)"
+
         while IFS= read -r version; do
+            [[ -z "$version" ]] && continue
+
             local version_id created_at tags
             version_id="$(echo "$version" | jq -r '.id')"
             created_at="$(echo "$version" | jq -r '.created')"
@@ -310,7 +316,7 @@ cleanup_packages() {
             fi
 
             index=$((index + 1))
-        done < <(echo "$versions" | jq -c '.[]' 2>/dev/null)
+        done <<< "$version_lines"
 
         if [[ "$DRY_RUN" == "true" ]]; then
             log_info "  Package $package_name: would delete $deleted of $total versions"
