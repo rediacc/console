@@ -119,7 +119,7 @@ if [[ "$SKIP_SETUP" != "true" ]]; then
     fi
 
     log_step "Waiting for backend API..."
-    if ! retry_with_backoff 6 2 curl -sf --max-time 5 "http://localhost:${ACCOUNT_API_PORT}/account/api/v1/health" >/dev/null; then
+    if ! retry_with_backoff 6 2 curl -sf --max-time 5 "http://localhost:${ACCOUNT_API_PORT}/health" >/dev/null; then
         log_error "Backend API failed to start on port $ACCOUNT_API_PORT"
         exit 1
     fi
