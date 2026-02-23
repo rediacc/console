@@ -119,6 +119,9 @@ export ED25519_PRIVATE_KEY ED25519_PUBLIC_KEY
 export ACCOUNT_SERVER_API_KEY="${ACCOUNT_SERVER_API_KEY:-$(openssl rand -base64 48 | tr -d '/+=' | cut -c1-64)}"
 export ACCOUNT_SERVER_URL="${ACCOUNT_SERVER_URL:-http://account-server:3000}"
 
+# JWT secret for account-server session management
+export JWT_SECRET="${JWT_SECRET:-$(openssl rand -base64 48 | tr -d '/+=' | cut -c1-64)}"
+
 # Stripe webhook secret for account-server integration tests
 export STRIPE_WEBHOOK_SECRET="${STRIPE_WEBHOOK_SECRET:-whsec_test_$(openssl rand -hex 32)}"
 
@@ -131,6 +134,7 @@ if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
     echo "::add-mask::$ED25519_PRIVATE_KEY"
     echo "::add-mask::$ACCOUNT_SERVER_API_KEY"
     echo "::add-mask::$STRIPE_WEBHOOK_SECRET"
+    echo "::add-mask::$JWT_SECRET"
     echo "::add-mask::$RUSTFS_SECRET_KEY"
 fi
 
@@ -197,6 +201,7 @@ ED25519_PUBLIC_KEY=${ED25519_PUBLIC_KEY}
 RUSTFS_ACCESS_KEY=${RUSTFS_ACCESS_KEY}
 RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY}
 STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+JWT_SECRET=${JWT_SECRET}
 ENVBLOCK
 )
 
