@@ -202,7 +202,6 @@
     "daysRemaining": "Días restantes",
     "failed": "Fallida",
     "jobTimeout": "Tiempo de espera de tarea",
-    "maxActiveJobs": "Máx tareas activas",
     "maxRepoSize": "Tamaño máximo de repositorio",
     "maxReservedJobs": "Máx tareas reservadas",
     "noPlanData": "No hay datos de límite de plan disponibles",

@@ -202,7 +202,6 @@
     "daysRemaining": "Kalan Günler",
     "failed": "Başarısız",
     "jobTimeout": "İş Zaman Aşımı",
-    "maxActiveJobs": "En Fazla Aktif İşler",
     "maxRepoSize": "En Fazla Depo Boyutu",
     "maxReservedJobs": "En Fazla Ayrılmış İşler",
     "noPlanData": "Kullanılabilir plan limiti verisi yok",

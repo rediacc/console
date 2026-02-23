@@ -865,30 +865,6 @@
         "heading": "技术限制一览",
         "metrics": [
           {
-            "key": "中央处理器核心",
-            "label": "CPU核心"
-          },
-          {
-            "key": "存储库",
-            "label": "存储库"
-          },
-          {
-            "key": "仓库大小",
-            "label": "存储库大小限制"
-          },
-          {
-            "key": "作业超时",
-            "label": "最长工作持续时间"
-          },
-          {
-            "key": "活跃工作",
-            "label": "并发职位"
-          },
-          {
-            "key": "保留职位",
-            "label": "作业队列深度"
-          },
-          {
             "key": "rpo",
             "label": "恢复点目标 (RPO)"
           },
@@ -904,42 +880,22 @@
         "recoveryNote": "RPO（恢复点目标）：您可以承受丢失多少数据（按时间衡量）。 例如，15 分钟 RPO 意味着您可能会丢失最多 15 分钟的最近更改。 \n\nRTO（恢复时间目标）：灾难发生后您需要多快恢复在线。 例如，4小时RTO意味着您的系统将在4小时内恢复。",
         "values": {
           "business": {
-            "activeJobs": "20",
             "auditLogs": "90天",
-            "jobTimeout": "72小时",
-            "repositories": "无限制",
-            "repoSize": "500GB",
-            "reservedJobs": "3 保留",
             "rpo": "~5 分钟（连续）",
             "rto": "4小时（保证）"
           },
           "community": {
-            "activeJobs": "1",
             "auditLogs": "7天",
-            "jobTimeout": "2小时",
-            "repositories": "无限制",
-            "repoSize": "10GB",
-            "reservedJobs": "1 保留",
             "rpo": "尽最大努力",
             "rto": "尽最大努力"
           },
           "enterprise": {
-            "activeJobs": "60",
             "auditLogs": "1年以上",
-            "jobTimeout": "96小时以上",
-            "repositories": "无限制",
-            "repoSize": "1TB+",
-            "reservedJobs": "5+ 预留",
             "rpo": "自定义（接近于零）",
             "rto": "15-60 分钟（定制）"
           },
           "professional": {
-            "activeJobs": "5",
             "auditLogs": "30天",
-            "jobTimeout": "24小时",
-            "repositories": "无限制",
-            "repoSize": "100GB",
-            "reservedJobs": "2 保留",
             "rpo": "约 15 分钟",
             "rto": "时间点恢复"
           }
@@ -1279,7 +1235,7 @@
           "features": [
             "Professional所有功能+",
             "无限仓库，每个500 GB",
-            "20个并发作业，20,000个作业/月",
+            "20,000个作业/月",
             "包含$9,999实施支持（上市优惠）",
             "地理冗余存储（3个区域）",
             "持续数据保护",
@@ -1296,7 +1252,7 @@
           "features": [
             "无限用户和团队",
             "无限仓库，每个10 GB",
-            "1个并发作业，500个作业/月",
+            "500个作业/月",
             "无限机器",
             "快照恢复",
             "手动调度",
@@ -1310,7 +1266,7 @@
           "features": [
             "Business所有功能+",
             "无限仓库，每个1 TB+",
-            "60个并发作业，100,000个作业/月",
+            "100,000个作业/月",
             "带保证恢复时间的自定义SLA",
             "专用基础设施租户",
             "24/7/365白手套支持",
@@ -1327,7 +1283,7 @@
           "features": [
             "Community所有功能+",
             "无限仓库，每个100 GB",
-            "5个并发作业，5,000个作业/月",
+            "5,000个作业/月",
             "自动调度",
             "24小时时间点恢复",
             "邮件+聊天支持",
@@ -1561,10 +1517,6 @@
         "heading": "计划比较",
         "metrics": [
           {
-            "key": "activeJobs",
-            "label": "并发作业"
-          },
-          {
             "key": "jobsPerMonth",
             "label": "每月作业数"
           },
@@ -1587,7 +1539,6 @@
         ],
         "values": {
           "business": {
-            "activeJobs": "20",
             "jobsPerMonth": "20,000",
             "machines": "无限制",
             "repositories": "无限制",
@@ -1595,7 +1546,6 @@
             "usersTeams": "无限制"
           },
           "community": {
-            "activeJobs": "1",
             "jobsPerMonth": "500",
             "machines": "无限制",
             "repositories": "无限制",
@@ -1603,7 +1553,6 @@
             "usersTeams": "无限制"
           },
           "enterprise": {
-            "activeJobs": "60",
             "jobsPerMonth": "100,000",
             "machines": "无限制",
             "repositories": "无限制",
@@ -1611,7 +1560,6 @@
             "usersTeams": "无限制"
           },
           "professional": {
-            "activeJobs": "5",
             "jobsPerMonth": "5,000",
             "machines": "无限制",
             "repositories": "无限制",

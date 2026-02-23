@@ -898,30 +898,6 @@
         "heading": "Límites técnicos de un vistazo",
         "metrics": [
           {
-            "key": "CPUNúcleo",
-            "label": "Núcleos de CPU"
-          },
-          {
-            "key": "repositorios",
-            "label": "Repositorios"
-          },
-          {
-            "key": "tamaño del repositorio",
-            "label": "Límite de tamaño del repositorio"
-          },
-          {
-            "key": "tiempo de espera de trabajo",
-            "label": "Duración máxima del trabajo"
-          },
-          {
-            "key": "trabajos activos",
-            "label": "Trabajos simultáneos"
-          },
-          {
-            "key": "Trabajos reservados",
-            "label": "Profundidad de la cola de trabajos"
-          },
-          {
             "key": "rppo",
             "label": "Objetivo de punto de recuperación (RPO)"
           },
@@ -937,42 +913,22 @@
         "recoveryNote": "RPO (objetivo de punto de recuperación): cuántos datos puede permitirse perder, medidos en el tiempo. Por ejemplo, un RPO de 15 minutos significa que podría perder hasta 15 minutos de cambios recientes. \n\nRTO (objetivo de tiempo de recuperación): qué tan rápido necesita volver a estar en línea después de un desastre. Por ejemplo, un RTO de 4 horas significa que sus sistemas se restaurarán en 4 horas.",
         "values": {
           "business": {
-            "activeJobs": "20",
             "auditLogs": "90 dias",
-            "jobTimeout": "72 horas",
-            "repositories": "Ilimitado",
-            "repoSize": "500GB",
-            "reservedJobs": "3 reservados",
             "rpo": "~ 5 minutos (continua)",
             "rto": "4 horas (garantizado)"
           },
           "community": {
-            "activeJobs": "1",
             "auditLogs": "7 dias",
-            "jobTimeout": "2 horas",
-            "repositories": "Ilimitado",
-            "repoSize": "10 GB",
-            "reservedJobs": "1 reservado",
             "rpo": "Mejor esfuerzo",
             "rto": "Mejor esfuerzo"
           },
           "enterprise": {
-            "activeJobs": "60",
             "auditLogs": "1+ año",
-            "jobTimeout": "96+ horas",
-            "repositories": "Ilimitado",
-            "repoSize": "1 TB+",
-            "reservedJobs": "5+ reservada",
             "rpo": "Personalizado (casi cero)",
             "rto": "15-60 minutos (personalizado)"
           },
           "professional": {
-            "activeJobs": "5",
             "auditLogs": "30 dias",
-            "jobTimeout": "24 horas",
-            "repositories": "Ilimitado",
-            "repoSize": "100GB",
-            "reservedJobs": "2 reservados",
             "rpo": "~15 minutos",
             "rto": "Restauración a un momento dado"
           }
@@ -1312,7 +1268,7 @@
           "features": [
             "Todo en Professional +",
             "Repositorios ilimitados, 500 GB cada uno",
-            "20 trabajos simultáneos, 20.000 trabajos/mes",
+            "20.000 trabajos/mes",
             "Soporte de implementación de $9.999 incluido (Oferta de lanzamiento)",
             "Almacenamiento geo-redundante (3 regiones)",
             "Protección continua de datos",
@@ -1329,7 +1285,7 @@
           "features": [
             "Usuarios y equipos ilimitados",
             "Repositorios ilimitados, 10 GB cada uno",
-            "1 trabajo simultáneo, 500 trabajos/mes",
+            "500 trabajos/mes",
             "Máquinas ilimitadas",
             "Restauraciones de snapshots",
             "Programación manual",
@@ -1343,7 +1299,7 @@
           "features": [
             "Todo en Business +",
             "Repositorios ilimitados, 1 TB+ cada uno",
-            "60 trabajos simultáneos, 100.000 trabajos/mes",
+            "100.000 trabajos/mes",
             "SLA personalizado con tiempos de restauración garantizados",
             "Inquilino de infraestructura dedicado",
             "Soporte white-glove 24/7/365",
@@ -1360,7 +1316,7 @@
           "features": [
             "Todo en Community +",
             "Repositorios ilimitados, 100 GB cada uno",
-            "5 trabajos simultáneos, 5.000 trabajos/mes",
+            "5.000 trabajos/mes",
             "Programación automatizada",
             "Restauración point-in-time 24 horas",
             "Soporte por email y chat",
@@ -1605,10 +1561,6 @@
         "heading": "Comparación de planes",
         "metrics": [
           {
-            "key": "activeJobs",
-            "label": "Trabajos simultáneos"
-          },
-          {
             "key": "jobsPerMonth",
             "label": "Trabajos por mes"
           },
@@ -1631,7 +1583,6 @@
         ],
         "values": {
           "business": {
-            "activeJobs": "20",
             "jobsPerMonth": "20.000",
             "machines": "Ilimitado",
             "repositories": "Ilimitado",
@@ -1639,7 +1590,6 @@
             "usersTeams": "Ilimitado"
           },
           "community": {
-            "activeJobs": "1",
             "jobsPerMonth": "500",
             "machines": "Ilimitado",
             "repositories": "Ilimitado",
@@ -1647,7 +1597,6 @@
             "usersTeams": "Ilimitado"
           },
           "enterprise": {
-            "activeJobs": "60",
             "jobsPerMonth": "100.000",
             "machines": "Ilimitado",
             "repositories": "Ilimitado",
@@ -1655,7 +1604,6 @@
             "usersTeams": "Ilimitado"
           },
           "professional": {
-            "activeJobs": "5",
             "jobsPerMonth": "5.000",
             "machines": "Ilimitado",
             "repositories": "Ilimitado",

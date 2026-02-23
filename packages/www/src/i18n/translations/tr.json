@@ -896,30 +896,6 @@
         "heading": "Bir bakışta teknik sınırlar",
         "metrics": [
           {
-            "key": "CPUÇekirdek",
-            "label": "CPU Çekirdekleri"
-          },
-          {
-            "key": "depolar",
-            "label": "Depolar"
-          },
-          {
-            "key": "repoSize",
-            "label": "Kod deposu boyutu sınırı"
-          },
-          {
-            "key": "işzaman aşımı",
-            "label": "Maksimum iş süresi"
-          },
-          {
-            "key": "aktif İşler",
-            "label": "Eşzamanlı işler"
-          },
-          {
-            "key": "ayrılmışİşler",
-            "label": "İş kuyruğu derinliği"
-          },
-          {
             "key": "rpo",
             "label": "Kurtarma Noktası Hedefi (RPO)"
           },
@@ -935,42 +911,22 @@
         "recoveryNote": "RPO (Kurtarma Noktası Hedefi): Ne kadar veriyi kaybetmeyi göze alabileceğiniz, zaman içinde ölçülür. Örneğin, 15 dakikalık RPO, son değişikliklerin 15 dakikaya kadarını kaybedebileceğiniz anlamına gelir. \n\nRTO (Kurtarma Süresi Hedefi): Bir felaketten sonra ne kadar hızlı tekrar çevrimiçi olmanız gerekir. Örneğin 4 saatlik RTO, sistemlerinizin 4 saat içinde geri yükleneceği anlamına gelir.",
         "values": {
           "business": {
-            "activeJobs": "20",
             "auditLogs": "90 gün",
-            "jobTimeout": "72 saat",
-            "repositories": "Sınırsız",
-            "repoSize": "500 GB",
-            "reservedJobs": "3 ayrılmış",
             "rpo": "~5 dakika (sürekli)",
             "rto": "4 saat (garantili)"
           },
           "community": {
-            "activeJobs": "1",
             "auditLogs": "7 gün",
-            "jobTimeout": "2 saat",
-            "repositories": "Sınırsız",
-            "repoSize": "10GB",
-            "reservedJobs": "1 rezerve edildi",
             "rpo": "En iyi çaba",
             "rto": "En iyi çaba"
           },
           "enterprise": {
-            "activeJobs": "60",
             "auditLogs": "1+ yıl",
-            "jobTimeout": "96+ saat",
-            "repositories": "Sınırsız",
-            "repoSize": "1 TB+",
-            "reservedJobs": "5+ ayrılmış",
             "rpo": "Özel (sıfıra yakın)",
             "rto": "15-60 dakika (özel)"
           },
           "professional": {
-            "activeJobs": "5",
             "auditLogs": "30 gün",
-            "jobTimeout": "24 saat",
-            "repositories": "Sınırsız",
-            "repoSize": "100GB",
-            "reservedJobs": "2 rezerve edildi",
             "rpo": "~15 dakika",
             "rto": "Belirli bir noktaya geri yükleme"
           }
@@ -1310,7 +1266,7 @@
           "features": [
             "Professional'daki her şey +",
             "Sınırsız depo, her biri 500 GB",
-            "20 eşzamanlı iş, 20.000 iş/ay",
+            "20.000 iş/ay",
             "$9.999 uygulama desteği dahil (Lansman Teklifi)",
             "Coğrafi yedekli depolama (3 bölge)",
             "Sürekli veri koruması",
@@ -1327,7 +1283,7 @@
           "features": [
             "Sınırsız kullanıcı ve takım",
             "Sınırsız depo, her biri 10 GB",
-            "1 eşzamanlı iş, 500 iş/ay",
+            "500 iş/ay",
             "Sınırsız makine",
             "Anlık görüntü geri yüklemeleri",
             "Manuel zamanlama",
@@ -1341,7 +1297,7 @@
           "features": [
             "Business'taki her şey +",
             "Sınırsız depo, her biri 1 TB+",
-            "60 eşzamanlı iş, 100.000 iş/ay",
+            "100.000 iş/ay",
             "Garantili geri yükleme süreleriyle özel SLA",
             "Özel altyapı kiracısı",
             "7/24/365 white-glove destek",
@@ -1358,7 +1314,7 @@
           "features": [
             "Community'deki her şey +",
             "Sınırsız depo, her biri 100 GB",
-            "5 eşzamanlı iş, 5.000 iş/ay",
+            "5.000 iş/ay",
             "Otomatik zamanlama",
             "24 saatlik belirli bir noktaya geri yükleme",
             "E-posta + sohbet desteği",
@@ -1603,10 +1559,6 @@
         "heading": "Plan karşılaştırması",
         "metrics": [
           {
-            "key": "activeJobs",
-            "label": "Eşzamanlı işler"
-          },
-          {
             "key": "jobsPerMonth",
             "label": "Aylık iş sayısı"
           },
@@ -1629,7 +1581,6 @@
         ],
         "values": {
           "business": {
-            "activeJobs": "20",
             "jobsPerMonth": "20.000",
             "machines": "Sınırsız",
             "repositories": "Sınırsız",
@@ -1637,7 +1588,6 @@
             "usersTeams": "Sınırsız"
           },
           "community": {
-            "activeJobs": "1",
             "jobsPerMonth": "500",
             "machines": "Sınırsız",
             "repositories": "Sınırsız",
@@ -1645,7 +1595,6 @@
             "usersTeams": "Sınırsız"
           },
           "enterprise": {
-            "activeJobs": "60",
             "jobsPerMonth": "100.000",
             "machines": "Sınırsız",
             "repositories": "Sınırsız",
@@ -1653,7 +1602,6 @@
             "usersTeams": "Sınırsız"
           },
           "professional": {
-            "activeJobs": "5",
             "jobsPerMonth": "5.000",
             "machines": "Sınırsız",
             "repositories": "Sınırsız",

@@ -577,7 +577,6 @@ export const GetOrganizationDashboard_ResultSet7Schema = z.object({
   machineLimit: z.number().nullish(),
   repositoryLimit: z.number().nullish(),
   userLimit: z.number().nullish(),
-  maxActiveJobs: z.number().nullish(),
   maxReservedJobs: z.number().nullish(),
   jobTimeoutHours: z.number().nullish(),
   maxRepositorySize: z.number().nullish(),

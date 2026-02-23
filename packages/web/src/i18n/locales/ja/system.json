@@ -202,7 +202,6 @@
     "daysRemaining": "残り日数",
     "failed": "失敗",
     "jobTimeout": "ジョブタイムアウト",
-    "maxActiveJobs": "最大アクティブジョブ",
     "maxRepoSize": "最大リポジトリサイズ",
     "maxReservedJobs": "最大予約ジョブ",
     "noPlanData": "プランの上限データがありません",

@@ -202,7 +202,6 @@
     "daysRemaining": "الأيام المتبقية",
     "failed": "فشل",
     "jobTimeout": "انتهاء مهلة الوظيفة",
-    "maxActiveJobs": "أقصى عدد وظائف نشطة",
     "maxRepoSize": "أقصى حجم مستودع",
     "maxReservedJobs": "أقصى عدد وظائف مستثناة",
     "noPlanData": "لا توجد بيانات حد الخطة متاحة",

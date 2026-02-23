@@ -21,7 +21,6 @@ import type {
 export const PLAN_RESOURCES: Record<PlanCode, ResourceLimits> = {
   COMMUNITY: {
     bridges: 0,
-    maxActiveJobs: 1,
     maxReservedJobs: 1,
     jobTimeoutHours: 2,
     maxRepositorySizeGb: 10,
@@ -32,7 +31,6 @@ export const PLAN_RESOURCES: Record<PlanCode, ResourceLimits> = {
   },
   PROFESSIONAL: {
     bridges: 1,
-    maxActiveJobs: 5,
     maxReservedJobs: 2,
     jobTimeoutHours: 24,
     maxRepositorySizeGb: 100,
@@ -43,7 +41,6 @@ export const PLAN_RESOURCES: Record<PlanCode, ResourceLimits> = {
   },
   BUSINESS: {
     bridges: 2,
-    maxActiveJobs: 20,
     maxReservedJobs: 3,
     jobTimeoutHours: 72,
     maxRepositorySizeGb: 500,
@@ -54,7 +51,6 @@ export const PLAN_RESOURCES: Record<PlanCode, ResourceLimits> = {
   },
   ENTERPRISE: {
     bridges: 10,
-    maxActiveJobs: 60,
     maxReservedJobs: 5,
     jobTimeoutHours: 96,
     maxRepositorySizeGb: 1024,
@@ -144,7 +140,6 @@ export const PLAN_ORDER: readonly PlanCode[] = [
  * Used for validation tests.
  */
 export const PROGRESSIVE_LIMIT_KEYS: readonly (keyof ResourceLimits)[] = [
-  'maxActiveJobs',
   'maxReservedJobs',
   'jobTimeoutHours',
   'maxRepositorySizeGb',

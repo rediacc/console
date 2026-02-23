@@ -269,7 +269,6 @@ export function validateResourceLimits(limits: unknown): limits is ResourceLimit
   const l = limits as Partial<ResourceLimits>;
   const requiredKeys: (keyof ResourceLimits)[] = [
     'bridges',
-    'maxActiveJobs',
     'maxReservedJobs',
     'jobTimeoutHours',
     'maxRepositorySizeGb',

@@ -2053,8 +2053,6 @@ export interface GetOrganizationDashboard_ResultSet7 {
   /** @sqlType int */
   userLimit: number | null;
   /** @sqlType int */
-  maxActiveJobs: number | null;
-  /** @sqlType int */
   maxReservedJobs: number | null;
   /** @sqlType int */
   jobTimeoutHours: number | null;

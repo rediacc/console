@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'CONTENT=$(jq -r \".tool_input.content // .tool_input.new_string // empty\" 2>/dev/null); if echo \"$CONTENT\" | grep -qE \"eslint-disable|@ts-ignore|@ts-nocheck|@ts-expect-error\"; then echo \"❌ BLOCKED: Do not use eslint-disable, @ts-ignore, @ts-nocheck, or @ts-expect-error. Fix the issue properly.\"; exit 2; fi; exit 0'"
+            "command": "bash -c 'CONTENT=$(jq -r \".tool_input.content // .tool_input.new_string // empty\" 2>/dev/null); if echo \"$CONTENT\" | grep -qE \"eslint-disable|@ts-ignore|@ts-nocheck|@ts-expect-error|biome-ignore\"; then echo \"❌ BLOCKED: Do not use eslint-disable, @ts-ignore, @ts-nocheck, @ts-expect-error, or biome-ignore. Fix the issue properly.\"; exit 2; fi; exit 0'"
           }
         ]
       }
