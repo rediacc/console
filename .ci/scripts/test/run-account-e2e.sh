@@ -95,6 +95,20 @@ if [[ "$SKIP_SETUP" != "true" ]]; then
     fi
     cd "$REPO_ROOT"
 
+    log_step "Creating S3 bucket 'e2e-account'..."
+    cd "$ACCOUNT_DIR"
+    node --input-type=module -e "
+import { S3Client, CreateBucketCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
+const s3 = new S3Client({
+  endpoint: 'http://localhost:9100', region: 'us-east-1', forcePathStyle: true,
+  credentials: { accessKeyId: 'testadmin', secretAccessKey: 'testadmin' }
+});
+try { await s3.send(new HeadBucketCommand({ Bucket: 'e2e-account' })); }
+catch { await s3.send(new CreateBucketCommand({ Bucket: 'e2e-account' })); }
+console.log('Bucket e2e-account ready');
+"
+    cd "$REPO_ROOT"
+
     log_step "Starting backend API on port $ACCOUNT_API_PORT..."
     cd "$ACCOUNT_DIR"
     ED25519_PRIVATE_KEY="MC4CAQAwBQYDK2VwBCIEIBXIuPTQjPy6a4X2qbLBwF3VDj7yMqJ4kGzJu8vKMKqd" \
