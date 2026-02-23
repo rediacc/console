@@ -1,6 +1,6 @@
 {
   "name": "@rediacc/cli",
-  "version": "0.4.95",
+  "version": "0.4.97",
   "type": "module",
   "scripts": {
     "build": "tsc",
