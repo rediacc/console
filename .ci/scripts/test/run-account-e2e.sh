@@ -73,15 +73,15 @@ cd "$REPO_ROOT"
 # Phase 1: Install dependencies
 log_step "Installing account dependencies..."
 if [[ ! -d "$ACCOUNT_DIR/node_modules" ]]; then
-    cd "$ACCOUNT_DIR" && npm install
+    cd "$ACCOUNT_DIR" && npm ci
     cd "$REPO_ROOT"
 fi
 if [[ ! -d "$ACCOUNT_DIR/web/node_modules" ]]; then
-    cd "$ACCOUNT_DIR/web" && npm install
+    cd "$ACCOUNT_DIR/web" && npm ci
     cd "$REPO_ROOT"
 fi
 if [[ ! -d "$E2E_DIR/node_modules" ]]; then
-    cd "$E2E_DIR" && npm install
+    cd "$E2E_DIR" && npm ci
     cd "$REPO_ROOT"
 fi
 

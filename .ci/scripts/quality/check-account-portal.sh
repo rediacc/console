@@ -23,7 +23,7 @@ cd "$REPO_ROOT"
 log_step "Checking frontend dependencies..."
 if [[ ! -d "$WEB_DIR/node_modules" ]]; then
     log_step "Installing frontend dependencies..."
-    cd "$WEB_DIR" && npm install --ignore-scripts
+    cd "$WEB_DIR" && npm ci --ignore-scripts
     cd "$REPO_ROOT"
 fi
 
