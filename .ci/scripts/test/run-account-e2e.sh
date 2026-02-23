@@ -129,7 +129,7 @@ CMD=(npx playwright test)
 for project in "${PROJECT_ARR[@]}"; do
     CMD+=("--project=$project")
 done
-CMD+=("--workers=$WORKERS")
+CMD+=("--workers=$WORKERS" "--timeout=60000")
 if [[ -n "$GREP" ]]; then
     CMD+=("--grep" "$GREP")
 fi

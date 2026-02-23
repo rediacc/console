@@ -413,6 +413,7 @@ jobs:
   quality-account-e2e:
     name: Account E2E
     runs-on: ubuntu-latest  # Requires Docker for RustFS
+    timeout-minutes: 30
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
