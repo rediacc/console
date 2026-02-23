@@ -90,21 +90,21 @@ if [[ "$SKIP_SETUP" != "true" ]]; then
     log_step "Starting backend API on port $ACCOUNT_API_PORT..."
     cd "$ACCOUNT_DIR"
     ED25519_PRIVATE_KEY="MC4CAQAwBQYDK2VwBCIEIBXIuPTQjPy6a4X2qbLBwF3VDj7yMqJ4kGzJu8vKMKqd" \
-    ED25519_PUBLIC_KEY="MCowBQYDK2VwAyEAqS7xKEfPYFtCWxOCRUvKG5N6peFHSAYBNMJqGRMHN5I=" \
-    API_KEY="e2e-test-api-key-that-is-at-least-32-chars" \
-    JWT_SECRET="e2e-test-jwt-secret-that-is-at-least-32-chars" \
-    ADMIN_EMAIL="e2e-admin@example.com" \
-    S3_ENDPOINT="http://localhost:9100" \
-    S3_BUCKET="e2e-account" \
-    S3_ACCESS_KEY_ID="testadmin" \
-    S3_SECRET_ACCESS_KEY="testadmin" \
-    PORT="$ACCOUNT_API_PORT" \
-    npx tsx src/entry/node.ts &
+        ED25519_PUBLIC_KEY="MCowBQYDK2VwAyEAqS7xKEfPYFtCWxOCRUvKG5N6peFHSAYBNMJqGRMHN5I=" \
+        API_KEY="e2e-test-api-key-that-is-at-least-32-chars" \
+        JWT_SECRET="e2e-test-jwt-secret-that-is-at-least-32-chars" \
+        ADMIN_EMAIL="e2e-admin@example.com" \
+        S3_ENDPOINT="http://localhost:9100" \
+        S3_BUCKET="e2e-account" \
+        S3_ACCESS_KEY_ID="testadmin" \
+        S3_SECRET_ACCESS_KEY="testadmin" \
+        PORT="$ACCOUNT_API_PORT" \
+        npx tsx src/entry/node.ts &
     BACKEND_PID=$!
     cd "$REPO_ROOT"
 
     log_step "Waiting for backend API..."
-    if ! retry_with_backoff 15 2 curl -sf "http://localhost:${ACCOUNT_API_PORT}/account/api/v1/health" > /dev/null; then
+    if ! retry_with_backoff 15 2 curl -sf "http://localhost:${ACCOUNT_API_PORT}/account/api/v1/health" >/dev/null; then
         log_error "Backend API failed to start on port $ACCOUNT_API_PORT"
         exit 1
     fi
@@ -114,7 +114,7 @@ fi
 # Phase 3: Install Playwright browsers
 log_step "Installing Playwright browsers: $PROJECTS"
 cd "$E2E_DIR"
-IFS=' ' read -ra PROJECT_ARR <<< "$PROJECTS"
+IFS=' ' read -ra PROJECT_ARR <<<"$PROJECTS"
 for browser in "${PROJECT_ARR[@]}"; do
     npx playwright install "$browser"
     if is_ci; then
