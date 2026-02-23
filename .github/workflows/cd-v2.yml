@@ -258,6 +258,10 @@ jobs:
       - name: Build shared packages
         run: npm run build:packages
 
+      - name: Install account dependencies
+        run: npm install
+        working-directory: private/account
+
       - name: Sync Stripe products/prices
         run: npx tsx scripts/stripe-sync.ts
         working-directory: private/account
