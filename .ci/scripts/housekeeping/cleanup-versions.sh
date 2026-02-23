@@ -315,7 +315,7 @@ cleanup_packages() {
             fi
 
             index=$((index + 1))
-        done <<< "$version_lines"
+        done <<<"$version_lines"
 
         if [[ "$DRY_RUN" == "true" ]]; then
             log_info "  Package $package_name: would delete $deleted of $total versions"
