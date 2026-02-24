@@ -11,7 +11,7 @@
 #   --stage-only           Commit inside homebrew-tap, then stage the submodule
 #                          pointer in the parent repo (for inclusion in the version commit)
 #   --local-checksums DIR  Compute SHA256 from local binaries in DIR instead of
-#                          downloading .sha256 files from the GitHub Release
+#                          downloading .sha256 files from R2
 #   --dry-run              Show actions without making changes
 #
 # Notes:
@@ -101,26 +101,19 @@ sync_to_origin_main() {
 
 download_checksums() {
     local tmpdir="$1"
-    log_step "Downloading SHA256 checksums from release v$VERSION..."
+    log_step "Downloading SHA256 checksums from R2 for v$VERSION..."
 
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "[DRY-RUN] Would download checksums for v$VERSION"
         return 0
     fi
 
-    gh release download "v$VERSION" \
-        --repo "$PKG_RELEASE_REPO" \
-        --pattern "rdc-*.sha256" \
-        --dir "$tmpdir" \
-        --clobber
-
-    # Verify we got all required checksums
     local required_files=("rdc-mac-arm64.sha256" "rdc-mac-x64.sha256" "rdc-linux-arm64.sha256" "rdc-linux-x64.sha256")
     for file in "${required_files[@]}"; do
-        if [[ ! -f "$tmpdir/$file" ]]; then
-            log_error "Missing checksum file: $file"
+        curl -fsSL "${RELEASES_BASE_URL}/cli/v${VERSION}/${file}" -o "$tmpdir/$file" || {
+            log_error "Failed to download checksum: $file"
             exit 1
-        fi
+        }
     done
 
     log_info "Downloaded all checksum files"

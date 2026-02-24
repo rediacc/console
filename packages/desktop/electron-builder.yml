@@ -112,12 +112,8 @@ appImage:
 
 # Publish Configuration
 publish:
-  - provider: github
-    owner: rediacc
-    repo: console
-    releaseType: release
   - provider: generic
-    url: https://www.rediacc.com/updates/
+    url: https://releases.rediacc.com/desktop/
     channel: latest
 
 # Protocol Handler (rediacc://)

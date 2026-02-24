@@ -64,7 +64,7 @@ if [[ -z "$OUTPUT_PATH" ]]; then
 fi
 
 RELEASE_URL="https://github.com/$REPO/releases/tag/v$VERSION"
-DOWNLOAD_BASE="https://github.com/$REPO/releases/download/v$VERSION"
+DOWNLOAD_BASE="${RELEASES_BASE_URL:-https://releases.rediacc.com}/cli/v$VERSION"
 RELEASE_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 log_step "Generating CLI manifest v$VERSION"

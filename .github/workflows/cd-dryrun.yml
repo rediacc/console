@@ -297,6 +297,20 @@ jobs:
           echo "passed=true" >> $GITHUB_OUTPUT
 
       # -----------------------------------------------------------------------
+      # Step 8: Pre-release install method validation (binary only)
+      # Runs the built linux-x64 binary to verify it works before publish
+      # -----------------------------------------------------------------------
+      - name: Test install methods (pre-release)
+        if: ${{ steps.validate.outputs.passed == 'true' }}
+        run: |
+          .ci/scripts/test/test-install-methods.sh \
+            --method binary \
+            --version ${{ inputs.next_version }} \
+            --platform linux \
+            --arch x64 \
+            --local-artifacts dist/
+
+      # -----------------------------------------------------------------------
       # Upload preview pages artifact (dry-run mode for PR preview deploys)
       # -----------------------------------------------------------------------
       - name: Upload preview pages artifact

@@ -654,6 +654,10 @@ jobs:
           name: preview-pages-${{ github.sha }}
           path: workers/www/dist/
 
+      - name: Build account portal
+        run: npm install && npx vite build --outDir ../../../workers/www/dist/account
+        working-directory: private/account/web
+
       # Inject e2e test videos into pages for documentation embedding
       - name: Inject E2E videos
         env:

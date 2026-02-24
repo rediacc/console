@@ -11,11 +11,10 @@
 #   --dry-run           Preview without building
 #
 # Environment:
-#   GH_TOKEN            GitHub token for API access
 #   GPG_PRIVATE_KEY     GPG private key for signing (base64 or armored)
 #   GPG_PASSPHRASE      GPG key passphrase (optional)
 #
-# Prerequisites: dpkg-dev, createrepo-c, gnupg, gh
+# Prerequisites: dpkg-dev, createrepo-c, gnupg, curl, jq
 
 set -euo pipefail
 
@@ -143,33 +142,28 @@ else
 fi
 
 # =============================================================================
-# Phase 2: Discover Releases
+# Phase 2: Discover Releases (from R2 versions.json)
 # =============================================================================
 log_step "Phase 2: Discovering releases"
 
 VERSIONS=()
-if command -v gh &>/dev/null && [[ -n "${GH_TOKEN:-}" ]]; then
-    # Get non-draft, non-prerelease releases
-    RELEASE_TAGS=$(gh api "repos/${PKG_RELEASE_REPO}/releases" \
-        --jq '[.[] | select(.draft == false and .prerelease == false)] | .[:'$MAX_VERSIONS'] | .[].tag_name' \
-        2>/dev/null)
+VERSIONS_JSON=$(curl -fsSL "${RELEASES_BASE_URL}/packages/versions.json" 2>/dev/null || echo "[]")
 
-    while IFS= read -r tag; do
-        [[ -z "$tag" ]] && continue
-        # Strip leading 'v' from tag
-        ver="${tag#v}"
+if command -v jq &>/dev/null; then
+    while IFS= read -r ver; do
+        [[ -z "$ver" ]] && continue
         if [[ "$ver" != "$VERSION" ]]; then
             VERSIONS+=("$ver")
         fi
-    done <<<"$RELEASE_TAGS"
-
-    log_info "Found ${#VERSIONS[@]} historical versions: ${VERSIONS[*]:-none}"
+    done < <(echo "$VERSIONS_JSON" | jq -r ".[:$MAX_VERSIONS][]" 2>/dev/null)
 else
-    log_warn "GitHub CLI or GH_TOKEN not available, skipping historical versions"
+    log_warn "jq not available, skipping historical versions"
 fi
 
+log_info "Found ${#VERSIONS[@]} historical versions: ${VERSIONS[*]:-none}"
+
 # =============================================================================
-# Phase 3: Download Historical Packages
+# Phase 3: Download Historical Packages (from R2)
 # =============================================================================
 log_step "Phase 3: Downloading historical packages"
 
@@ -181,49 +175,45 @@ for ver in "${VERSIONS[@]}"; do
 
     for arch in amd64 arm64; do
         deb_asset="${PKG_NAME}_${ver}_${arch}.deb"
-        if gh release download "v$ver" \
-            --repo "$PKG_RELEASE_REPO" \
-            --pattern "$deb_asset" \
-            --dir "$DOWNLOAD_DIR" 2>/dev/null; then
+        if curl -fsSL "${RELEASES_BASE_URL}/packages/v${ver}/${deb_asset}" \
+            -o "$DOWNLOAD_DIR/${deb_asset}" 2>/dev/null; then
             log_info "  Downloaded $deb_asset"
         else
             log_warn "  Asset not found: $deb_asset (skipping)"
+            rm -f "$DOWNLOAD_DIR/${deb_asset}"
         fi
     done
 
     for arch in x86_64 aarch64; do
         rpm_asset="${PKG_NAME}-${ver}-1.${arch}.rpm"
-        if gh release download "v$ver" \
-            --repo "$PKG_RELEASE_REPO" \
-            --pattern "$rpm_asset" \
-            --dir "$DOWNLOAD_DIR" 2>/dev/null; then
+        if curl -fsSL "${RELEASES_BASE_URL}/packages/v${ver}/${rpm_asset}" \
+            -o "$DOWNLOAD_DIR/${rpm_asset}" 2>/dev/null; then
             log_info "  Downloaded $rpm_asset"
         else
             log_warn "  Asset not found: $rpm_asset (skipping)"
+            rm -f "$DOWNLOAD_DIR/${rpm_asset}"
         fi
     done
 
     for arch in amd64 arm64; do
         apk_asset="${PKG_NAME}-${ver}-r1-${arch}.apk"
-        if gh release download "v$ver" \
-            --repo "$PKG_RELEASE_REPO" \
-            --pattern "$apk_asset" \
-            --dir "$DOWNLOAD_DIR" 2>/dev/null; then
+        if curl -fsSL "${RELEASES_BASE_URL}/packages/v${ver}/${apk_asset}" \
+            -o "$DOWNLOAD_DIR/${apk_asset}" 2>/dev/null; then
             log_info "  Downloaded $apk_asset"
         else
             log_warn "  Asset not found: $apk_asset (skipping)"
+            rm -f "$DOWNLOAD_DIR/${apk_asset}"
         fi
     done
 
     for arch in x86_64 aarch64; do
         arch_asset="${PKG_NAME}-${ver}-1-${arch}.pkg.tar.zst"
-        if gh release download "v$ver" \
-            --repo "$PKG_RELEASE_REPO" \
-            --pattern "$arch_asset" \
-            --dir "$DOWNLOAD_DIR" 2>/dev/null; then
+        if curl -fsSL "${RELEASES_BASE_URL}/packages/v${ver}/${arch_asset}" \
+            -o "$DOWNLOAD_DIR/${arch_asset}" 2>/dev/null; then
             log_info "  Downloaded $arch_asset"
         else
             log_warn "  Asset not found: $arch_asset (skipping)"
+            rm -f "$DOWNLOAD_DIR/${arch_asset}"
         fi
     done
 done
@@ -250,7 +240,7 @@ find "$LOCAL_PKGS" -name "*.deb" -exec cp {} "$APT_POOL_DIR/" \;
 find "$DOWNLOAD_DIR" -name "*.deb" -exec cp {} "$APT_POOL_DIR/" \;
 
 DEB_COUNT=$(find "$APT_POOL_DIR" -name "*.deb" | wc -l)
-log_info "APT: generating metadata for $DEB_COUNT packages (packages served via GitHub Releases)"
+log_info "APT: generating metadata for $DEB_COUNT packages (packages served via R2)"
 
 if [[ "$DRY_RUN" == "true" ]]; then
     log_info "[DRY-RUN] Would generate APT repository metadata"
@@ -316,7 +306,7 @@ else
     gpg "${GPG_OPTS[@]}" --default-key "$GPG_KEY_ID" \
         --clearsign --output "$DISTS_DIR/InRelease" "$DISTS_DIR/Release"
 
-    log_info "APT repository metadata built (no pool/ in output — served via nginx redirect)"
+    log_info "APT repository metadata built (no pool/ in output — served via R2)"
 fi
 
 # =============================================================================
@@ -338,7 +328,7 @@ find "$LOCAL_PKGS" -name "*.rpm" -exec cp {} "$RPM_WORK_PKG_DIR/" \;
 find "$DOWNLOAD_DIR" -name "*.rpm" -exec cp {} "$RPM_WORK_PKG_DIR/" \;
 
 RPM_COUNT=$(find "$RPM_WORK_PKG_DIR" -name "*.rpm" | wc -l)
-log_info "RPM: generating metadata for $RPM_COUNT packages (packages served via GitHub Releases)"
+log_info "RPM: generating metadata for $RPM_COUNT packages (packages served via R2)"
 
 if [[ "$DRY_RUN" == "true" ]]; then
     log_info "[DRY-RUN] Would generate RPM repository metadata"
@@ -358,7 +348,7 @@ else
     gpg "${GPG_OPTS[@]}" --default-key "$GPG_KEY_ID" \
         --detach-sign --armor --output "$RPM_DIR/repodata/repomd.xml.asc" "$RPM_DIR/repodata/repomd.xml"
 
-    log_info "RPM repository metadata built (no packages/ in output — served via nginx redirect)"
+    log_info "RPM repository metadata built (no packages/ in output — served via R2)"
 fi
 
 # Write .repo file for DNF/YUM
@@ -400,7 +390,7 @@ for arch in x86_64 aarch64; do
     count=$(find "$APK_WORK_DIR/$arch" -name "*.apk" 2>/dev/null | wc -l)
     APK_COUNT_TOTAL=$((APK_COUNT_TOTAL + count))
 done
-log_info "APK: generating metadata for $APK_COUNT_TOTAL packages (packages served via GitHub Releases)"
+log_info "APK: generating metadata for $APK_COUNT_TOTAL packages (packages served via R2)"
 
 if [[ "$DRY_RUN" == "true" ]]; then
     log_info "[DRY-RUN] Would generate APK repository metadata"
@@ -454,7 +444,7 @@ for arch in x86_64 aarch64; do
     count=$(find "$ARCHLINUX_WORK_DIR/$arch" -name "*.pkg.tar.zst" 2>/dev/null | wc -l)
     ARCH_COUNT_TOTAL=$((ARCH_COUNT_TOTAL + count))
 done
-log_info "Archlinux: generating metadata for $ARCH_COUNT_TOTAL packages (packages served via GitHub Releases)"
+log_info "Archlinux: generating metadata for $ARCH_COUNT_TOTAL packages (packages served via R2)"
 
 if [[ "$DRY_RUN" == "true" ]]; then
     log_info "[DRY-RUN] Would generate Archlinux repository metadata"
@@ -498,4 +488,4 @@ log_info "  APT: $APT_DIR/ (metadata for $DEB_COUNT .deb packages)"
 log_info "  RPM: $RPM_DIR/ (metadata for $RPM_COUNT .rpm packages)"
 log_info "  APK: $APK_DIR/ (metadata for $APK_COUNT_TOTAL .apk packages)"
 log_info "  Archlinux: $ARCHLINUX_DIR/ (metadata for $ARCH_COUNT_TOTAL .pkg.tar.zst packages)"
-log_info "  Packages are served via redirect to GitHub Releases"
+log_info "  Packages are served from Cloudflare R2"

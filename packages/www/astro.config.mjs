@@ -27,7 +27,7 @@ const searchIndexIntegration = {
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://www.rediacc.com',
+  site: process.env.PUBLIC_SITE_URL || 'https://www.rediacc.com',
   integrations: [
     react(),
     sitemap({
@@ -70,7 +70,7 @@ export default defineConfig({
           item.changefreq = ChangeFreqEnum.WEEKLY;
         }
         // Root homepage
-        else if (url === 'https://www.rediacc.com/') {
+        else if (url === (process.env.PUBLIC_SITE_URL || 'https://www.rediacc.com') + '/') {
           item.priority = 1.0;
           item.changefreq = ChangeFreqEnum.WEEKLY;
         }

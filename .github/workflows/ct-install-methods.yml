@@ -18,6 +18,11 @@ on:
         description: 'Version to test (e.g., 0.4.58)'
         required: true
         type: string
+      local_artifacts:
+        description: 'Path to locally-built artifacts for pre-release testing'
+        required: false
+        type: string
+        default: ''
     secrets:
       APP_PRIVATE_KEY:
         required: false
@@ -34,6 +39,8 @@ jobs:
     name: Linux (x64)
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      LOCAL_ARTIFACTS_FLAG: ${{ inputs.local_artifacts && format('--local-artifacts {0}', inputs.local_artifacts) || '' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -50,43 +57,50 @@ jobs:
             --method binary \
             --version ${{ inputs.version }} \
             --platform linux \
-            --arch x64
+            --arch x64 \
+            $LOCAL_ARTIFACTS_FLAG
 
       - name: Test Docker
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method docker \
-            --version ${{ inputs.version }}
+            --version ${{ inputs.version }} \
+            $LOCAL_ARTIFACTS_FLAG
 
       - name: Test APT Installation
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method apt \
-            --version ${{ inputs.version }}
+            --version ${{ inputs.version }} \
+            $LOCAL_ARTIFACTS_FLAG
 
       - name: Test DNF Installation
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method dnf \
-            --version ${{ inputs.version }}
+            --version ${{ inputs.version }} \
+            $LOCAL_ARTIFACTS_FLAG
 
       - name: Test APK Installation
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method apk \
-            --version ${{ inputs.version }}
+            --version ${{ inputs.version }} \
+            $LOCAL_ARTIFACTS_FLAG
 
       - name: Test Pacman Installation
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method pacman \
-            --version ${{ inputs.version }}
+            --version ${{ inputs.version }} \
+            $LOCAL_ARTIFACTS_FLAG
 
       - name: Test Quick Install
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method quick \
-            --version ${{ inputs.version }}
+            --version ${{ inputs.version }} \
+            $LOCAL_ARTIFACTS_FLAG
 
       - name: Install Homebrew (Linuxbrew)
         run: |
@@ -98,7 +112,8 @@ jobs:
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
           .ci/scripts/test/test-install-methods.sh \
             --method homebrew \
-            --version ${{ inputs.version }}
+            --version ${{ inputs.version }} \
+            $LOCAL_ARTIFACTS_FLAG
 
   # ===========================================================================
   # Linux arm64: Binary, Docker, Quick Install
@@ -107,6 +122,8 @@ jobs:
     name: Linux (arm64)
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
+    env:
+      LOCAL_ARTIFACTS_FLAG: ${{ inputs.local_artifacts && format('--local-artifacts {0}', inputs.local_artifacts) || '' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -123,19 +140,22 @@ jobs:
             --method binary \
             --version ${{ inputs.version }} \
             --platform linux \
-            --arch arm64
+            --arch arm64 \
+            $LOCAL_ARTIFACTS_FLAG
 
       - name: Test Docker
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method docker \
-            --version ${{ inputs.version }}
+            --version ${{ inputs.version }} \
+            $LOCAL_ARTIFACTS_FLAG
 
       - name: Test Quick Install
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method quick \
-            --version ${{ inputs.version }}
+            --version ${{ inputs.version }} \
+            $LOCAL_ARTIFACTS_FLAG
 
   # ===========================================================================
   # macOS ARM64: Binary, Homebrew
@@ -144,6 +164,8 @@ jobs:
     name: macOS (ARM64)
     runs-on: macos-latest
     timeout-minutes: 30
+    env:
+      LOCAL_ARTIFACTS_FLAG: ${{ inputs.local_artifacts && format('--local-artifacts {0}', inputs.local_artifacts) || '' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -153,13 +175,15 @@ jobs:
             --method binary \
             --version ${{ inputs.version }} \
             --platform mac \
-            --arch arm64
+            --arch arm64 \
+            $LOCAL_ARTIFACTS_FLAG
 
       - name: Test Homebrew Installation
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method homebrew \
-            --version ${{ inputs.version }}
+            --version ${{ inputs.version }} \
+            $LOCAL_ARTIFACTS_FLAG
 
   # ===========================================================================
   # macOS x64: Binary, Homebrew
@@ -168,6 +192,8 @@ jobs:
     name: macOS (x64)
     runs-on: macos-15-intel
     timeout-minutes: 30
+    env:
+      LOCAL_ARTIFACTS_FLAG: ${{ inputs.local_artifacts && format('--local-artifacts {0}', inputs.local_artifacts) || '' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -177,13 +203,15 @@ jobs:
             --method binary \
             --version ${{ inputs.version }} \
             --platform mac \
-            --arch x64
+            --arch x64 \
+            $LOCAL_ARTIFACTS_FLAG
 
       - name: Test Homebrew Installation
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method homebrew \
-            --version ${{ inputs.version }}
+            --version ${{ inputs.version }} \
+            $LOCAL_ARTIFACTS_FLAG
 
   # ===========================================================================
   # Windows x64: Binary
@@ -192,6 +220,8 @@ jobs:
     name: Windows (x64)
     runs-on: windows-latest
     timeout-minutes: 15
+    env:
+      LOCAL_ARTIFACTS_FLAG: ${{ inputs.local_artifacts && format('--local-artifacts {0}', inputs.local_artifacts) || '' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -202,7 +232,8 @@ jobs:
             --method binary \
             --version ${{ inputs.version }} \
             --platform win \
-            --arch x64
+            --arch x64 \
+            $LOCAL_ARTIFACTS_FLAG
 
   # ===========================================================================
   # Windows arm64: Binary
@@ -211,6 +242,8 @@ jobs:
     name: Windows (arm64)
     runs-on: windows-11-arm
     timeout-minutes: 15
+    env:
+      LOCAL_ARTIFACTS_FLAG: ${{ inputs.local_artifacts && format('--local-artifacts {0}', inputs.local_artifacts) || '' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -221,7 +254,8 @@ jobs:
             --method binary \
             --version ${{ inputs.version }} \
             --platform win \
-            --arch arm64
+            --arch arm64 \
+            $LOCAL_ARTIFACTS_FLAG
 
   # ===========================================================================
   # Gate Job - All tests must pass
