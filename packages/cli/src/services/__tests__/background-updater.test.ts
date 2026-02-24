@@ -73,7 +73,9 @@ vi.mock('@rediacc/shared/update', () => mockSharedUpdate);
 const mockUpdateState = vi.hoisted(() => ({
   readUpdateState: vi.fn(),
   writeUpdateState: vi.fn().mockResolvedValue(undefined),
-  getStagedBinaryPath: vi.fn().mockReturnValue('/home/testuser/.cache/rediacc/staged-update/rdc-0.5.0'),
+  getStagedBinaryPath: vi
+    .fn()
+    .mockReturnValue('/home/testuser/.cache/rediacc/staged-update/rdc-0.5.0'),
   cleanupStaleStagedFiles: vi.fn().mockResolvedValue(undefined),
 }));
 

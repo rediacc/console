@@ -252,11 +252,9 @@ describe('utils/platform', () => {
 
       await acquireUpdateLock();
 
-      expect(mockFs.writeFile).toHaveBeenCalledWith(
-        expect.stringContaining('update.lock'),
-        '',
-        { mode: 0o600 }
-      );
+      expect(mockFs.writeFile).toHaveBeenCalledWith(expect.stringContaining('update.lock'), '', {
+        mode: 0o600,
+      });
     });
 
     it('does not recreate lock file if it already exists', async () => {

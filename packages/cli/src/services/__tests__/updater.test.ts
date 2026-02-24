@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { acquireUpdateLock, getPlatformKey, isSEA, isUpdateDisabled } from '../../utils/platform.js';
+import {
+  acquireUpdateLock,
+  getPlatformKey,
+  isSEA,
+  isUpdateDisabled,
+} from '../../utils/platform.js';
 // Note: startupUpdateCheck was removed — replaced by background-updater
 import { checkForUpdate, compareVersions, performUpdate } from '../updater.js';
 
@@ -15,7 +20,9 @@ vi.mock('../../utils/platform.js', () => ({
 }));
 
 vi.mock('../update-state.js', () => ({
-  getStagedBinaryPath: vi.fn().mockReturnValue('/home/testuser/.cache/rediacc/staged-update/rdc-0.5.0'),
+  getStagedBinaryPath: vi
+    .fn()
+    .mockReturnValue('/home/testuser/.cache/rediacc/staged-update/rdc-0.5.0'),
   readUpdateState: vi.fn().mockResolvedValue({
     schemaVersion: 1,
     lastCheckAt: null,

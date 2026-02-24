@@ -60,12 +60,8 @@ describe('paths/dirs', () => {
 
     it('uses Library paths', () => {
       const dirs = getRediaccDirs();
-      expect(dirs.config).toBe(
-        join('/home/testuser', 'Library', 'Application Support', 'rediacc')
-      );
-      expect(dirs.state).toBe(
-        join('/home/testuser', 'Library', 'Application Support', 'rediacc')
-      );
+      expect(dirs.config).toBe(join('/home/testuser', 'Library', 'Application Support', 'rediacc'));
+      expect(dirs.state).toBe(join('/home/testuser', 'Library', 'Application Support', 'rediacc'));
       expect(dirs.cache).toBe(join('/home/testuser', 'Library', 'Caches', 'rediacc'));
     });
   });

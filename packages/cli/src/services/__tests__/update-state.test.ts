@@ -186,7 +186,9 @@ describe('services/update-state', () => {
 
       await cleanupStaleStagedFiles(state);
 
-      expect(mockFs.unlink).toHaveBeenCalledWith('/home/testuser/.cache/rediacc/staged-update/rdc-0.4.0');
+      expect(mockFs.unlink).toHaveBeenCalledWith(
+        '/home/testuser/.cache/rediacc/staged-update/rdc-0.4.0'
+      );
       expect(mockFs.unlink).toHaveBeenCalledWith(
         '/home/testuser/.cache/rediacc/staged-update/rdc-0.3.0.tmp'
       );

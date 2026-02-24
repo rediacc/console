@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1252
+    "keyCount": 1257
   },
   "hashes": {
     "cli.description": "8c564b05",
@@ -246,6 +246,11 @@
     "commands.config.pushInfra.installingProxy": "385b599a",
     "commands.config.pushInfra.proxyInstallWarning": "d25f164b",
     "commands.config.pushInfra.success": "87d65737",
+    "commands.config.recover.confirm": "3dd4db76",
+    "commands.config.recover.description": "79973e42",
+    "commands.config.recover.failed": "fb53c239",
+    "commands.config.recover.noBackup": "5915f65e",
+    "commands.config.recover.success": "c3c58366",
     "commands.config.removeMachine.description": "f1eab27d",
     "commands.config.removeMachine.success": "af1a44ce",
     "commands.config.removeRepository.description": "c29b8f0e",
