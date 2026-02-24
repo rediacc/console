@@ -28,6 +28,7 @@
 # Cross-compile lightweight renet for linux/amd64 and linux/arm64
 # =============================================================================
 ARG GO_IMAGE=golang:1.24-alpine
+ARG NODE_IMAGE=node:22-alpine
 FROM ${GO_IMAGE} AS renet-builder
 
 ARG VITE_APP_VERSION=latest
@@ -50,7 +51,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build \
 # Stage 2: Account Server Builder (Node.js)
 # Build the account Hono API server bundle
 # =============================================================================
-ARG NODE_IMAGE=node:22-alpine
+ARG NODE_IMAGE
 FROM ${NODE_IMAGE} AS account-builder
 
 # Build shared package first (account depends on it)
