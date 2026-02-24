@@ -27,7 +27,7 @@ export function getEffectiveHomedir(): string {
         const output = execFileSync(
           'dscl',
           ['.', '-read', `/Users/${sudoUser}`, 'NFSHomeDirectory'],
-          { encoding: 'utf-8', timeout: 5000 },
+          { encoding: 'utf-8', timeout: 5000 }
         ).trim();
         const match = output.match(/NFSHomeDirectory:\s*(.+)/);
         if (match?.[1]) return match[1];

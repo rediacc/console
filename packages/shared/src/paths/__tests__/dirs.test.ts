@@ -124,7 +124,7 @@ describe('paths/dirs', () => {
       expect(mockExecFileSync).toHaveBeenCalledWith(
         'getent',
         ['passwd', 'muhammed'],
-        expect.objectContaining({ encoding: 'utf-8' }),
+        expect.objectContaining({ encoding: 'utf-8' })
       );
     });
 
@@ -138,7 +138,7 @@ describe('paths/dirs', () => {
       expect(mockExecFileSync).toHaveBeenCalledWith(
         'dscl',
         ['.', '-read', '/Users/muhammed', 'NFSHomeDirectory'],
-        expect.objectContaining({ encoding: 'utf-8' }),
+        expect.objectContaining({ encoding: 'utf-8' })
       );
     });
 
@@ -173,7 +173,7 @@ describe('paths/dirs', () => {
 
       const dirs = getRediaccDirs();
       expect(dirs.config).toBe(
-        join('/Users/muhammed', 'Library', 'Application Support', 'rediacc'),
+        join('/Users/muhammed', 'Library', 'Application Support', 'rediacc')
       );
     });
   });
