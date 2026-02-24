@@ -61,7 +61,6 @@ test.describe('Resource Limits by Edition @cli @edition', () => {
         const limits = RESOURCE_LIMITS[plan];
 
         expect(limits.bridges).toBeGreaterThanOrEqual(0);
-        expect(limits.maxActiveJobs).toBeGreaterThanOrEqual(0);
       });
     }
 

@@ -14,7 +14,8 @@
     },
     "packages/cli": {
       "entry": ["src/types/index.ts", "tests/**/*.ts"],
-      "project": ["src/**/*.ts", "tests/**/*.ts"]
+      "project": ["src/**/*.ts", "tests/**/*.ts"],
+      "ignore": ["bundle.mjs"]
     },
     "packages/web": {
       "entry": [
@@ -92,7 +93,8 @@
       "ignore": [
         "scripts/check-translation-hashes.js",
         "scripts/generate-favicons.js",
-        "scripts/generate-translation-hashes.js"
+        "scripts/generate-translation-hashes.js",
+        "scripts/scale-svg-viewbox.cjs"
       ]
     }
   },

@@ -202,7 +202,6 @@
     "daysRemaining": "剩余天数",
     "failed": "失败",
     "jobTimeout": "任务超时",
-    "maxActiveJobs": "最大活跃任务数",
     "maxRepoSize": "最大仓库大小",
     "maxReservedJobs": "最大保留任务数",
     "noPlanData": "没有可用的计划限制数据",

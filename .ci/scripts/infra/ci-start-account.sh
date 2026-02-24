@@ -74,6 +74,7 @@ echo "Writing .env to $CI_DOCKER_DIR..."
     echo "RUSTFS_ACCESS_KEY=${RUSTFS_ACCESS_KEY}"
     echo "RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY}"
     echo "STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}"
+    echo "JWT_SECRET=${JWT_SECRET}"
 } >"$CI_DOCKER_DIR/.env"
 
 # =============================================================================

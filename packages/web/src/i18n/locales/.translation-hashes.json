@@ -3303,7 +3303,6 @@
     "system.dashboard.daysRemaining": "06a66f35",
     "system.dashboard.failed": "9927a641",
     "system.dashboard.jobTimeout": "27fff77e",
-    "system.dashboard.maxActiveJobs": "786a09d6",
     "system.dashboard.maxRepoSize": "2b8cf691",
     "system.dashboard.maxReservedJobs": "8a0348f3",
     "system.dashboard.noPlanData": "e6b3d456",

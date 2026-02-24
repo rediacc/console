@@ -80,7 +80,6 @@ function generateSchema(): SubscriptionSchema {
         kind: 'struct',
         fields: {
           bridges: { type: 'number', jsonKey: 'bridges' },
-          maxActiveJobs: { type: 'number', jsonKey: 'maxActiveJobs' },
           maxReservedJobs: { type: 'number', jsonKey: 'maxReservedJobs' },
           jobTimeoutHours: { type: 'number', jsonKey: 'jobTimeoutHours' },
           maxRepositorySizeGb: { type: 'number', jsonKey: 'maxRepositorySizeGb' },

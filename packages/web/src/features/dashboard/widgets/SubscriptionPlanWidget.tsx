@@ -161,26 +161,20 @@ const SubscriptionPlanWidget: React.FC<SubscriptionPlanWidgetProps> = ({
 
       {planLimits ? (
         <Row gutter={[24, 24]}>
-          <Col xs={24} md={6}>
-            <Statistic
-              title={t('system:dashboard.maxActiveJobs')}
-              value={planLimits.maxActiveJobs ?? undefined}
-            />
-          </Col>
-          <Col xs={24} md={6}>
+          <Col xs={24} md={8}>
             <Statistic
               title={t('system:dashboard.maxReservedJobs')}
               value={planLimits.maxReservedJobs ?? undefined}
             />
           </Col>
-          <Col xs={24} md={6}>
+          <Col xs={24} md={8}>
             <Statistic
               title={t('system:dashboard.jobTimeout')}
               value={planLimits.jobTimeoutHours ?? undefined}
               suffix={t('common:dashboard.widgets.subscriptionPlan.hours')}
             />
           </Col>
-          <Col xs={24} md={6}>
+          <Col xs={24} md={8}>
             <Statistic
               title={t('system:dashboard.maxRepoSize')}
               value={planLimits.maxRepositorySize ?? undefined}

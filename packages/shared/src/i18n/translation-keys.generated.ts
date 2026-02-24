@@ -3433,7 +3433,6 @@ export type SystemKeys =
   | 'dashboard.daysRemaining'
   | 'dashboard.failed'
   | 'dashboard.jobTimeout'
-  | 'dashboard.maxActiveJobs'
   | 'dashboard.maxRepoSize'
   | 'dashboard.maxReservedJobs'
   | 'dashboard.noPlanData'

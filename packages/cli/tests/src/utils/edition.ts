@@ -195,7 +195,6 @@ export const EditionErrorPatterns = {
 export const RESOURCE_LIMITS = {
   COMMUNITY: {
     bridges: 0,
-    maxActiveJobs: 1,
     maxReservedJobs: 1,
     jobTimeoutHours: 2,
     maxRepositorySizeGb: 10,
@@ -205,7 +204,6 @@ export const RESOURCE_LIMITS = {
   },
   PROFESSIONAL: {
     bridges: 1,
-    maxActiveJobs: 5,
     maxReservedJobs: 2,
     jobTimeoutHours: 24,
     maxRepositorySizeGb: 100,
@@ -215,7 +213,6 @@ export const RESOURCE_LIMITS = {
   },
   BUSINESS: {
     bridges: 2,
-    maxActiveJobs: 20,
     maxReservedJobs: 3,
     jobTimeoutHours: 72,
     maxRepositorySizeGb: 500,
@@ -226,7 +223,6 @@ export const RESOURCE_LIMITS = {
   },
   ENTERPRISE: {
     bridges: 10,
-    maxActiveJobs: 60,
     maxReservedJobs: 5,
     jobTimeoutHours: 96,
     maxRepositorySizeGb: 1024,

@@ -898,26 +898,6 @@
         "heading": "Technische Grenzen auf einen Blick",
         "metrics": [
           {
-            "key": "Repositories",
-            "label": "Repositories"
-          },
-          {
-            "key": "repoSize",
-            "label": "Beschränkung der Repository-Größe"
-          },
-          {
-            "key": "jobTimeout",
-            "label": "Maximale Jobdauer"
-          },
-          {
-            "key": "aktiveJobs",
-            "label": "Gleichzeitige Jobs"
-          },
-          {
-            "key": "reservierteJobs",
-            "label": "Tiefe der Auftragswarteschlange"
-          },
-          {
             "key": "rpo",
             "label": "Wiederherstellungspunktziel (RPO)"
           },
@@ -933,42 +913,22 @@
         "recoveryNote": "RPO (Recovery Point Objective): Wie viele Daten Sie sich leisten können, zu verlieren – gemessen in der Zeit. Beispielsweise bedeutet ein RPO von 15 Minuten, dass Sie möglicherweise bis zu 15 Minuten der letzten Änderungen verlieren. \n\nRTO (Recovery Time Objective): Wie schnell Sie nach einer Katastrophe wieder online sein müssen. Beispielsweise bedeutet eine RTO von 4 Stunden, dass Ihre Systeme innerhalb von 4 Stunden wiederhergestellt werden.",
         "values": {
           "business": {
-            "activeJobs": "20",
             "auditLogs": "90 Tage",
-            "jobTimeout": "72 Stunden",
-            "repositories": "Unbegrenzt",
-            "repoSize": "500 GB",
-            "reservedJobs": "3 reserviert",
             "rpo": "~5 Minuten (kontinuierlich)",
             "rto": "4 Stunden (garantiert)"
           },
           "community": {
-            "activeJobs": "1",
             "auditLogs": "7 Tage",
-            "jobTimeout": "2 Stunden",
-            "repositories": "Unbegrenzt",
-            "repoSize": "10 GB",
-            "reservedJobs": "1 reserviert",
             "rpo": "Beste Anstrengung",
             "rto": "Beste Anstrengung"
           },
           "enterprise": {
-            "activeJobs": "60",
             "auditLogs": "1+ Jahr",
-            "jobTimeout": "96+ Stunden",
-            "repositories": "Unbegrenzt",
-            "repoSize": "1 TB+",
-            "reservedJobs": "5+ reserviert",
             "rpo": "Benutzerdefiniert (nahe Null)",
             "rto": "15–60 Minuten (benutzerdefiniert)"
           },
           "professional": {
-            "activeJobs": "5",
             "auditLogs": "30 Tage",
-            "jobTimeout": "24 Stunden",
-            "repositories": "Unbegrenzt",
-            "repoSize": "100 GB",
-            "reservedJobs": "2 reserviert",
             "rpo": "~15 Minuten",
             "rto": "Point-in-Time-Wiederherstellung"
           }
@@ -1308,7 +1268,7 @@
           "features": [
             "Alles in Professional +",
             "Unbegrenzte Repositories, je 500 GB",
-            "20 gleichzeitige Jobs, 20.000 Jobs/Monat",
+            "20.000 Jobs/Monat",
             "$9.999 Implementierungssupport inklusive (Einführungsangebot)",
             "Geo-redundanter Speicher (3 Regionen)",
             "Kontinuierlicher Datenschutz",
@@ -1325,7 +1285,7 @@
           "features": [
             "Unbegrenzte Benutzer & Teams",
             "Unbegrenzte Repositories, je 10 GB",
-            "1 gleichzeitiger Job, 500 Jobs/Monat",
+            "500 Jobs/Monat",
             "Unbegrenzte Maschinen",
             "Snapshot-Wiederherstellungen",
             "Manuelle Planung",
@@ -1339,7 +1299,7 @@
           "features": [
             "Alles in Business +",
             "Unbegrenzte Repositories, je 1 TB+",
-            "60 gleichzeitige Jobs, 100.000 Jobs/Monat",
+            "100.000 Jobs/Monat",
             "Benutzerdefinierte SLA mit garantierten Wiederherstellungszeiten",
             "Dedizierter Infrastruktur-Mandant",
             "24/7/365 White-Glove-Support",
@@ -1356,7 +1316,7 @@
           "features": [
             "Alles in Community +",
             "Unbegrenzte Repositories, je 100 GB",
-            "5 gleichzeitige Jobs, 5.000 Jobs/Monat",
+            "5.000 Jobs/Monat",
             "Automatisierte Planung",
             "24-Stunden Point-in-Time-Wiederherstellung",
             "E-Mail- + Chat-Support",
@@ -1601,10 +1561,6 @@
         "heading": "Planvergleich",
         "metrics": [
           {
-            "key": "activeJobs",
-            "label": "Gleichzeitige Jobs"
-          },
-          {
             "key": "jobsPerMonth",
             "label": "Jobs pro Monat"
           },
@@ -1627,7 +1583,6 @@
         ],
         "values": {
           "business": {
-            "activeJobs": "20",
             "jobsPerMonth": "20.000",
             "machines": "Unbegrenzt",
             "repositories": "Unbegrenzt",
@@ -1635,7 +1590,6 @@
             "usersTeams": "Unbegrenzt"
           },
           "community": {
-            "activeJobs": "1",
             "jobsPerMonth": "500",
             "machines": "Unbegrenzt",
             "repositories": "Unbegrenzt",
@@ -1643,7 +1597,6 @@
             "usersTeams": "Unbegrenzt"
           },
           "enterprise": {
-            "activeJobs": "60",
             "jobsPerMonth": "100.000",
             "machines": "Unbegrenzt",
             "repositories": "Unbegrenzt",
@@ -1651,7 +1604,6 @@
             "usersTeams": "Unbegrenzt"
           },
           "professional": {
-            "activeJobs": "5",
             "jobsPerMonth": "5.000",
             "machines": "Unbegrenzt",
             "repositories": "Unbegrenzt",

@@ -27,7 +27,6 @@ describe('Subscription Schema Constants', () => {
     it('should have all required resource limit keys for each plan', () => {
       const requiredKeys: (keyof ResourceLimits)[] = [
         'bridges',
-        'maxActiveJobs',
         'maxReservedJobs',
         'jobTimeoutHours',
         'maxRepositorySizeGb',
@@ -67,7 +66,6 @@ describe('Subscription Schema Constants', () => {
     });
 
     it('should have ENTERPRISE with highest limits', () => {
-      expect(PLAN_RESOURCES.ENTERPRISE.maxActiveJobs).toBe(60);
       expect(PLAN_RESOURCES.ENTERPRISE.maxRepositorySizeGb).toBe(1024);
       expect(PLAN_RESOURCES.ENTERPRISE.maxJobsPerMonth).toBe(100000);
     });
@@ -188,13 +186,11 @@ describe('Subscription Schema Helper Functions', () => {
   describe('getPlanResources', () => {
     it('should return correct resources for valid plan', () => {
       const resources = getPlanResources('PROFESSIONAL');
-      expect(resources.maxActiveJobs).toBe(5);
       expect(resources.bridges).toBe(1);
     });
 
     it('should return COMMUNITY resources for invalid plan', () => {
       const resources = getPlanResources('INVALID' as PlanCode);
-      expect(resources.maxActiveJobs).toBe(1);
       expect(resources.bridges).toBe(0);
     });
   });
@@ -226,12 +222,11 @@ describe('Subscription Schema Helper Functions', () => {
 
   describe('getResourceLimit', () => {
     it('should return correct limit', () => {
-      expect(getResourceLimit('ENTERPRISE', 'maxActiveJobs')).toBe(60);
       expect(getResourceLimit('COMMUNITY', 'bridges')).toBe(0);
     });
 
     it('should return 0 for invalid plan', () => {
-      expect(getResourceLimit('INVALID' as PlanCode, 'maxActiveJobs')).toBe(1);
+      expect(getResourceLimit('INVALID' as PlanCode, 'bridges')).toBe(0);
     });
   });
 

@@ -321,6 +321,7 @@ EOF'
         ac_cv_sizeof_int=4 \
         ac_cv_sizeof_long=8 \
         ac_cv_sizeof_long_long=8 \
+        ac_cv_sizeof_charp=8 \
         ac_cv_sizeof_off_t=8 \
         rsync_cv_HAVE_GETTIMEOFDAY_TZ=yes \
         ac_cv_have_C99_vsnprintf=yes \

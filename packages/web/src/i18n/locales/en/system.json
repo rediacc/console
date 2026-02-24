@@ -3,7 +3,6 @@
     "activeSubscriptions": "Active Subscriptions",
     "daysRemaining": "Days Remaining",
     "noSubscription": "No active subscription",
-    "maxActiveJobs": "Max Active Jobs",
     "maxReservedJobs": "Max Reserved Jobs",
     "jobTimeout": "Job Timeout",
     "maxRepoSize": "Max Repo Size",

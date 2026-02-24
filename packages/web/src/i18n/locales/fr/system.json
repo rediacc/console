@@ -202,7 +202,6 @@
     "daysRemaining": "Jours restants",
     "failed": "Échoué",
     "jobTimeout": "Délai d'expiration du travail",
-    "maxActiveJobs": "Nombre maximal de tâches actives",
     "maxRepoSize": "Taille maximale du dépôt",
     "maxReservedJobs": "Nombre maximal de tâches réservées",
     "noPlanData": "Aucune donnée de limite de plan disponible",

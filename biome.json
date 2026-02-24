@@ -72,13 +72,16 @@
       "!**/*.astro",
       "private/account/src/**/*.ts",
       "private/account/tests/**/*.ts",
-      "private/account/scripts/**/*.ts"
+      "private/account/scripts/**/*.ts",
+      "private/account/web/src/**/*.ts",
+      "private/account/web/src/**/*.tsx",
+      "private/account/web/src/**/*.css"
     ],
     "ignoreUnknown": true
   },
   "overrides": [
     {
-      "includes": ["private/account/**/*.ts"],
+      "includes": ["private/account/**/*.ts", "private/account/**/*.tsx"],
       "linter": {
         "enabled": true,
         "rules": {
@@ -91,6 +94,16 @@
             "organizeImports": {
               "level": "on"
             }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["private/account/web/src/hooks/**/*.ts"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useExhaustiveDependencies": "off"
           }
         }
       }

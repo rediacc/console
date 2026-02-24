@@ -45,7 +45,7 @@
     "@vitest/runner": "^4.0.18",
     "@vitest/ui": "^4.0.18",
     "@vitest/utils": "^4.0.18",
-    "inquirer": "^13.2.5",
+    "inquirer": "^13.3.0",
     "react-i18next": "^16.5.4",
     "unist-util-visit": "^5.1.0",
     "zod": "^4.3.6"
@@ -68,7 +68,6 @@
     "cli-table3": "^0.6.5",
     "commander": "^14.0.3",
     "dotenv": "^16.3.1",
-    "esbuild": "^0.27.3",
     "execa": "^9.6.1",
     "i18next": "^25.7.2",
     "ora": "^9.3.0",

@@ -518,7 +518,7 @@
           "features": [
             "Unlimited users & teams",
             "Unlimited repositories, 10 GB each",
-            "1 concurrent job, 500 jobs/month",
+            "500 jobs/month",
             "Unlimited machines",
             "Snapshot restores",
             "Manual scheduling",
@@ -532,7 +532,7 @@
           "features": [
             "Everything in Community +",
             "Unlimited repositories, 100 GB each",
-            "5 concurrent jobs, 5,000 jobs/month",
+            "5,000 jobs/month",
             "Automated scheduling",
             "24-hour point-in-time restore",
             "Email + chat support",
@@ -547,7 +547,7 @@
           "features": [
             "Everything in Professional +",
             "Unlimited repositories, 500 GB each",
-            "20 concurrent jobs, 20,000 jobs/month",
+            "20,000 jobs/month",
             "$9,999 implementation support included (Launch Offer)",
             "Geo-redundant storage (3 regions)",
             "Continuous data protection",
@@ -565,7 +565,7 @@
           "features": [
             "Everything in Business +",
             "Unlimited repositories, 2 TB+ each",
-            "60 concurrent jobs, 100,000 jobs/month",
+            "100,000 jobs/month",
             "Custom SLA with guaranteed restore times",
             "Dedicated infrastructure tenant",
             "24/7/365 white-glove support",
@@ -899,10 +899,6 @@
         "description": "A side-by-side view of key infrastructure limits across all plans.",
         "metrics": [
           {
-            "key": "activeJobs",
-            "label": "Concurrent jobs"
-          },
-          {
             "key": "jobsPerMonth",
             "label": "Jobs per month"
           },
@@ -925,7 +921,6 @@
         ],
         "values": {
           "community": {
-            "activeJobs": "1",
             "jobsPerMonth": "500",
             "repoSize": "10 GB",
             "repositories": "Unlimited",
@@ -933,7 +928,6 @@
             "usersTeams": "Unlimited"
           },
           "professional": {
-            "activeJobs": "5",
             "jobsPerMonth": "5,000",
             "repoSize": "100 GB",
             "repositories": "Unlimited",
@@ -941,7 +935,6 @@
             "usersTeams": "Unlimited"
           },
           "business": {
-            "activeJobs": "20",
             "jobsPerMonth": "20,000",
             "repoSize": "500 GB",
             "repositories": "Unlimited",
@@ -949,7 +942,6 @@
             "usersTeams": "Unlimited"
           },
           "enterprise": {
-            "activeJobs": "60",
             "jobsPerMonth": "100,000",
             "repoSize": "2 TB+",
             "repositories": "Unlimited",
@@ -3059,26 +3051,6 @@
         "recoveryNote": "RPO (Recovery Point Objective): How much data you can afford to lose—measured in time. For example, 15-minute RPO means you might lose up to 15 minutes of recent changes.\n\nRTO (Recovery Time Objective): How quickly you need to be back online after a disaster. For example, 4-hour RTO means your systems will be restored within 4 hours.",
         "metrics": [
           {
-            "key": "repositories",
-            "label": "Repositories"
-          },
-          {
-            "key": "repoSize",
-            "label": "Repository size limit"
-          },
-          {
-            "key": "jobTimeout",
-            "label": "Max job duration"
-          },
-          {
-            "key": "activeJobs",
-            "label": "Concurrent jobs"
-          },
-          {
-            "key": "reservedJobs",
-            "label": "Job queue depth"
-          },
-          {
             "key": "rpo",
             "label": "Recovery Point Objective (RPO)"
           },
@@ -3093,41 +3065,21 @@
         ],
         "values": {
           "community": {
-            "repositories": "Unlimited",
-            "repoSize": "10 GB",
-            "jobTimeout": "2 hours",
-            "activeJobs": "1",
-            "reservedJobs": "1 reserved",
             "rpo": "Best effort",
             "rto": "Best effort",
             "auditLogs": "7 days"
           },
           "professional": {
-            "repositories": "Unlimited",
-            "repoSize": "100 GB",
-            "jobTimeout": "24 hours",
-            "activeJobs": "5",
-            "reservedJobs": "2 reserved",
             "rpo": "~15 minutes",
             "rto": "Point-in-time restore",
             "auditLogs": "30 days"
           },
           "business": {
-            "repositories": "Unlimited",
-            "repoSize": "500 GB",
-            "jobTimeout": "72 hours",
-            "activeJobs": "20",
-            "reservedJobs": "3 reserved",
             "rpo": "~5 minutes (continuous)",
             "rto": "4 hours (guaranteed)",
             "auditLogs": "90 days"
           },
           "enterprise": {
-            "repositories": "Unlimited",
-            "repoSize": "2 TB+",
-            "jobTimeout": "96+ hours",
-            "activeJobs": "60",
-            "reservedJobs": "5+ reserved",
             "rpo": "Custom (near-zero)",
             "rto": "15-60 minutes (custom)",
             "auditLogs": "1+ year"

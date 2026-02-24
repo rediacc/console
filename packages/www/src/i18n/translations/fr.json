@@ -902,26 +902,6 @@
         "heading": "Limites techniques en un coup d'oeil",
         "metrics": [
           {
-            "key": "référentiels",
-            "label": "Dépôts"
-          },
-          {
-            "key": "taille du dépôt",
-            "label": "Limite de taille du référentiel"
-          },
-          {
-            "key": "travailTimeout",
-            "label": "Durée maximale du travail"
-          },
-          {
-            "key": "emplois actifs",
-            "label": "Emplois simultanés"
-          },
-          {
-            "key": "emplois réservés",
-            "label": "Profondeur de la file d'attente des tâches"
-          },
-          {
             "key": "rpo",
             "label": "Objectif de point de récupération (RPO)"
           },
@@ -937,42 +917,22 @@
         "recoveryNote": "RPO (Recovery Point Objective) : quantité de données que vous pouvez vous permettre de perdre, mesurée dans le temps. Par exemple, un RPO de 15 minutes signifie que vous risquez de perdre jusqu'à 15 minutes de modifications récentes. \n\nRTO (Recovery Time Objective) : la rapidité avec laquelle vous devez être de nouveau en ligne après un sinistre. Par exemple, un RTO de 4 heures signifie que vos systèmes seront restaurés dans les 4 heures.",
         "values": {
           "business": {
-            "activeJobs": "20",
             "auditLogs": "90 jours",
-            "jobTimeout": "72 heures",
-            "repositories": "Illimité",
-            "repoSize": "500 Go",
-            "reservedJobs": "3 réservés",
             "rpo": "~5 minutes (en continu)",
             "rto": "4 heures (garanti)"
           },
           "community": {
-            "activeJobs": "1",
             "auditLogs": "7 jours",
-            "jobTimeout": "2 heures",
-            "repositories": "Illimité",
-            "repoSize": "10 Go",
-            "reservedJobs": "1 réservé",
             "rpo": "Meilleur effort",
             "rto": "Meilleur effort"
           },
           "enterprise": {
-            "activeJobs": "60",
             "auditLogs": "1+ an",
-            "jobTimeout": "96+ heures",
-            "repositories": "Illimité",
-            "repoSize": "1 To+",
-            "reservedJobs": "5+ réservé",
             "rpo": "Personnalisé (proche de zéro)",
             "rto": "15-60 minutes (personnalisé)"
           },
           "professional": {
-            "activeJobs": "5",
             "auditLogs": "30 jours",
-            "jobTimeout": "24 heures",
-            "repositories": "Illimité",
-            "repoSize": "100 Go",
-            "reservedJobs": "2 réservés",
             "rpo": "~15 minutes",
             "rto": "Restauration ponctuelle"
           }
@@ -1308,7 +1268,7 @@
           "features": [
             "Tout dans Professional +",
             "Dépôts illimités, 500 Go chacun",
-            "20 emplois simultanés, 20 000 emplois/mois",
+            "20 000 emplois/mois",
             "Support d'implémentation de 9 999 $ inclus (Offre de lancement)",
             "Stockage géo-redondant (3 régions)",
             "Protection continue des données",
@@ -1325,7 +1285,7 @@
           "features": [
             "Utilisateurs & équipes illimités",
             "Dépôts illimités, 10 Go chacun",
-            "1 emploi simultané, 500 emplois/mois",
+            "500 emplois/mois",
             "Machines illimitées",
             "Restaurations de snapshots",
             "Planification manuelle",
@@ -1339,7 +1299,7 @@
           "features": [
             "Tout dans Business +",
             "Dépôts illimités, 1 To+ chacun",
-            "60 emplois simultanés, 100 000 emplois/mois",
+            "100 000 emplois/mois",
             "SLA personnalisé avec temps de restauration garantis",
             "Locataire d'infrastructure dédié",
             "Support white-glove 24/7/365",
@@ -1356,7 +1316,7 @@
           "features": [
             "Tout dans Community +",
             "Dépôts illimités, 100 Go chacun",
-            "5 emplois simultanés, 5 000 emplois/mois",
+            "5 000 emplois/mois",
             "Planification automatisée",
             "Restauration point-in-time 24 heures",
             "Support email + chat",
@@ -1603,10 +1563,6 @@
         "heading": "Comparaison des plans",
         "metrics": [
           {
-            "key": "activeJobs",
-            "label": "Emplois simultanés"
-          },
-          {
             "key": "jobsPerMonth",
             "label": "Emplois par mois"
           },
@@ -1629,7 +1585,6 @@
         ],
         "values": {
           "business": {
-            "activeJobs": "20",
             "jobsPerMonth": "20 000",
             "machines": "Illimité",
             "repositories": "Illimité",
@@ -1637,7 +1592,6 @@
             "usersTeams": "Illimité"
           },
           "community": {
-            "activeJobs": "1",
             "jobsPerMonth": "500",
             "machines": "Illimité",
             "repositories": "Illimité",
@@ -1645,7 +1599,6 @@
             "usersTeams": "Illimité"
           },
           "enterprise": {
-            "activeJobs": "60",
             "jobsPerMonth": "100 000",
             "machines": "Illimité",
             "repositories": "Illimité",
@@ -1653,7 +1606,6 @@
             "usersTeams": "Illimité"
           },
           "professional": {
-            "activeJobs": "5",
             "jobsPerMonth": "5 000",
             "machines": "Illimité",
             "repositories": "Illimité",
