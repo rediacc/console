@@ -1,6 +1,5 @@
 import { existsSync } from 'node:fs';
 import { homedir, platform as osPlatform, tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { getConfigDir } from '@rediacc/shared/paths';
 import type { Platform, PlatformInfo, WindowsSubsystem } from '../types/index.js';
 

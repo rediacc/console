@@ -1,10 +1,10 @@
 import { join } from 'node:path';
+import { getStateDir } from '@rediacc/shared/paths';
 import type { DesktopUpdateState } from '@rediacc/shared/update';
 import {
   readUpdateState as readState,
   writeUpdateState as writeState,
 } from '@rediacc/shared/update';
-import { getStateDir } from '@rediacc/shared/paths';
 
 const STATE_FILE = join(getStateDir(), 'update-state-desktop.json');
 

@@ -371,7 +371,7 @@ export function registerConfigCommands(program: Command): void {
   config
     .command('recover [name]')
     .description(t('commands.config.recover.description'))
-    .option('-y, --yes', 'Skip confirmation prompt')
+    .option('-y, --yes', t('options.yes'))
     .action(async (name, options) => {
       try {
         const { configFileStorage } = await import('../adapters/config-file-storage.js');
