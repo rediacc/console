@@ -71,7 +71,7 @@ jobs:
             '{id:"00000000-0000-0000-0000-000000000000",version:1,renetPath:$renet}' \
             > "$CONFIG_DIR/rediacc.json"
           # Copy to root's home for sudo commands (os.homedir() returns /root under sudo)
-          ROOT_CONFIG_DIR=$(sudo -H node -e "import('./packages/shared/dist/paths/index.js').then(m=>console.log(m.getConfigDir()))")
+          ROOT_CONFIG_DIR=$(sudo env HOME=/root node -e "import('./packages/shared/dist/paths/index.js').then(m=>console.log(m.getConfigDir()))")
           sudo mkdir -p "$ROOT_CONFIG_DIR"
           sudo cp "$CONFIG_DIR/rediacc.json" "$ROOT_CONFIG_DIR/rediacc.json"
 
