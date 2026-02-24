@@ -202,7 +202,6 @@
     "daysRemaining": "Verbleibende Tage",
     "failed": "Fehlgeschlagen",
     "jobTimeout": "Aufgaben-Timeout",
-    "maxActiveJobs": "Max. aktive Aufträge",
     "maxRepoSize": "Max. Repo-Größe",
     "maxReservedJobs": "Max. reservierte Aufträge",
     "noPlanData": "Keine Plan-Limitdaten verfügbar",

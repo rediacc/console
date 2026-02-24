@@ -23,8 +23,6 @@ export type SubscriptionStatus = 'ACTIVE' | 'INACTIVE' | 'EXPIRED' | 'SUSPENDED'
 export interface ResourceLimits {
   /** Number of customer-created bridges allowed. 0 = none, -1 = unlimited */
   bridges: number;
-  /** Maximum concurrent active jobs */
-  maxActiveJobs: number;
   /** Reserved job slots */
   maxReservedJobs: number;
   /** Maximum job timeout in hours */

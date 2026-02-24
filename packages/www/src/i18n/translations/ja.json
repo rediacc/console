@@ -898,30 +898,6 @@
         "heading": "技術的な限界が一目でわかる",
         "metrics": [
           {
-            "key": "CPUコア",
-            "label": "CPUコア"
-          },
-          {
-            "key": "リポジトリ",
-            "label": "リポジトリ"
-          },
-          {
-            "key": "リポジトリサイズ",
-            "label": "リポジトリのサイズ制限"
-          },
-          {
-            "key": "ジョブタイムアウト",
-            "label": "ジョブの最大期間"
-          },
-          {
-            "key": "アクティブなジョブ",
-            "label": "同時ジョブ"
-          },
-          {
-            "key": "予約済みジョブ",
-            "label": "ジョブキューの深さ"
-          },
-          {
             "key": "RPO",
             "label": "目標復旧時点 (RPO)"
           },
@@ -937,42 +913,22 @@
         "recoveryNote": "RPO (目標復旧時点): 時間内に測定した、損失しても許容できるデータ量。 たとえば、15 分の RPO は、最近の変更が最大 15 分間失われる可能性があることを意味します。 \n\nRTO (目標復旧時間): 災害後にどれだけ早くオンラインに戻る必要があるか。 たとえば、4 時間の RTO は、システムが 4 時間以内に復元されることを意味します。",
         "values": {
           "business": {
-            "activeJobs": "20",
             "auditLogs": "90日",
-            "jobTimeout": "72時間",
-            "repositories": "無制限",
-            "repoSize": "500GB",
-            "reservedJobs": "3 予約済み",
             "rpo": "～5分（連続）",
             "rto": "4時間（保証あり）"
           },
           "community": {
-            "activeJobs": "1",
             "auditLogs": "7日間",
-            "jobTimeout": "2時間",
-            "repositories": "無制限",
-            "repoSize": "10GB",
-            "reservedJobs": "1 予約済み",
             "rpo": "ベストエフォート",
             "rto": "ベストエフォート"
           },
           "enterprise": {
-            "activeJobs": "60",
             "auditLogs": "1年以上",
-            "jobTimeout": "96時間以上",
-            "repositories": "無制限",
-            "repoSize": "1TB以上",
-            "reservedJobs": "5+ 予約済み",
             "rpo": "カスタム (ほぼゼロ)",
             "rto": "15～60分（カスタム）"
           },
           "professional": {
-            "activeJobs": "5",
             "auditLogs": "30日",
-            "jobTimeout": "24時間",
-            "repositories": "無制限",
-            "repoSize": "100GB",
-            "reservedJobs": "2 予約済み",
             "rpo": "～15分",
             "rto": "ポイントインタイム復元"
           }
@@ -1312,7 +1268,7 @@
           "features": [
             "Professionalの全機能+",
             "無制限のリポジトリ、各500 GB",
-            "20同時ジョブ、20,000ジョブ/月",
+            "20,000ジョブ/月",
             "$9,999の導入サポート込み（ローンチオファー）",
             "地理冗長ストレージ（3リージョン）",
             "継続的データ保護",
@@ -1329,7 +1285,7 @@
           "features": [
             "無制限のユーザー＆チーム",
             "無制限のリポジトリ、各10 GB",
-            "1同時ジョブ、500ジョブ/月",
+            "500ジョブ/月",
             "無制限のマシン",
             "スナップショット復元",
             "手動スケジューリング",
@@ -1343,7 +1299,7 @@
           "features": [
             "Businessの全機能+",
             "無制限のリポジトリ、各1 TB+",
-            "60同時ジョブ、100,000ジョブ/月",
+            "100,000ジョブ/月",
             "保証された復元時間のカスタムSLA",
             "専用インフラテナント",
             "24/7/365ホワイトグローブサポート",
@@ -1360,7 +1316,7 @@
           "features": [
             "Communityの全機能+",
             "無制限のリポジトリ、各100 GB",
-            "5同時ジョブ、5,000ジョブ/月",
+            "5,000ジョブ/月",
             "自動スケジューリング",
             "24時間ポイントインタイム復元",
             "メール＆チャットサポート",
@@ -1607,10 +1563,6 @@
         "heading": "プラン比較",
         "metrics": [
           {
-            "key": "activeJobs",
-            "label": "同時ジョブ数"
-          },
-          {
             "key": "jobsPerMonth",
             "label": "月間ジョブ数"
           },
@@ -1633,7 +1585,6 @@
         ],
         "values": {
           "business": {
-            "activeJobs": "20",
             "jobsPerMonth": "20,000",
             "machines": "無制限",
             "repositories": "無制限",
@@ -1641,7 +1592,6 @@
             "usersTeams": "無制限"
           },
           "community": {
-            "activeJobs": "1",
             "jobsPerMonth": "500",
             "machines": "無制限",
             "repositories": "無制限",
@@ -1649,7 +1599,6 @@
             "usersTeams": "無制限"
           },
           "enterprise": {
-            "activeJobs": "60",
             "jobsPerMonth": "100,000",
             "machines": "無制限",
             "repositories": "無制限",
@@ -1657,7 +1606,6 @@
             "usersTeams": "無制限"
           },
           "professional": {
-            "activeJobs": "5",
             "jobsPerMonth": "5,000",
             "machines": "無制限",
             "repositories": "無制限",

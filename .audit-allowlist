@@ -34,6 +34,7 @@
 1113205
 1113214
 1113398
+1113428
 
 # fast-xml-parser DoS through entity expansion in DOCTYPE
 # In @aws-sdk/xml-builder dependency chain, can't upgrade
