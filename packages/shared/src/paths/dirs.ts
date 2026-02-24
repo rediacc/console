@@ -39,7 +39,7 @@ function resolveLinuxHome(user: string): string | undefined {
     encoding: 'utf-8',
     timeout: 5000,
   }).trim();
-  return entry.split(':')[5] || undefined;
+  return entry.split(':')[5] ?? undefined;
 }
 
 function resolveMacOSHome(user: string): string | undefined {
@@ -48,7 +48,7 @@ function resolveMacOSHome(user: string): string | undefined {
     timeout: 5000,
   }).trim();
   const result = /NFSHomeDirectory:\s*(.+)/.exec(output);
-  return result?.[1] || undefined;
+  return result?.[1] ?? undefined;
 }
 
 /**
