@@ -301,7 +301,7 @@ jobs:
       # Runs the built linux-x64 binary to verify it works before publish
       # -----------------------------------------------------------------------
       - name: Test install methods (pre-release)
-        if: ${{ steps.validate.outputs.passed == 'true' }}
+        if: ${{ !inputs.dry_run && steps.validate.outputs.passed == 'true' }}
         run: |
           .ci/scripts/test/test-install-methods.sh \
             --method binary \
