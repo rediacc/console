@@ -223,7 +223,7 @@ cleanup_old_versions() {
         [[ -z "$ver" ]] && continue
         log_info "  Deleting ${prefix}/v${ver}/"
         r2_rm "${prefix}/v${ver}/"
-    done <<< "$pruned_versions"
+    done <<<"$pruned_versions"
 }
 
 UPLOADED=0
