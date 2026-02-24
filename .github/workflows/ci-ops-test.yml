@@ -65,13 +65,15 @@ jobs:
 
       - name: Configure local config
         run: |
-          mkdir -p ~/.config/rediacc
+          CONFIG_DIR=$(node -e "import('./packages/shared/dist/paths/index.js').then(m=>console.log(m.getConfigDir()))")
+          mkdir -p "$CONFIG_DIR"
           jq -n --arg renet "$RENET_BINARY" \
             '{id:"00000000-0000-0000-0000-000000000000",version:1,renetPath:$renet}' \
-            > ~/.config/rediacc/rediacc.json
+            > "$CONFIG_DIR/rediacc.json"
           # Copy to root's home for sudo commands (os.homedir() returns /root under sudo)
-          sudo mkdir -p /root/.config/rediacc
-          sudo cp ~/.config/rediacc/rediacc.json /root/.config/rediacc/rediacc.json
+          ROOT_CONFIG_DIR=$(sudo HOME=/root node -e "import('./packages/shared/dist/paths/index.js').then(m=>console.log(m.getConfigDir()))")
+          sudo mkdir -p "$ROOT_CONFIG_DIR"
+          sudo cp "$CONFIG_DIR/rediacc.json" "$ROOT_CONFIG_DIR/rediacc.json"
 
       - name: "Test: rdc ops setup"
         run: node packages/cli/dist/cli-bundle.cjs ops setup
@@ -188,10 +190,11 @@ jobs:
       - name: Configure local config
         shell: bash
         run: |
-          mkdir -p ~/.config/rediacc
+          CONFIG_DIR=$(node -e "import('./packages/shared/dist/paths/index.js').then(m=>console.log(m.getConfigDir()))")
+          mkdir -p "$CONFIG_DIR"
           jq -n --arg renet "$RENET_BINARY" \
             '{id:"00000000-0000-0000-0000-000000000000",version:1,renetPath:$renet}' \
-            > ~/.config/rediacc/rediacc.json
+            > "$CONFIG_DIR/rediacc.json"
 
       - name: "Test: rdc ops setup"
         shell: bash
@@ -318,10 +321,11 @@ jobs:
       - name: Configure local config
         shell: bash
         run: |
-          mkdir -p ~/.config/rediacc
+          CONFIG_DIR=$(node -e "import('./packages/shared/dist/paths/index.js').then(m=>console.log(m.getConfigDir()))")
+          mkdir -p "$CONFIG_DIR"
           jq -n --arg renet "$RENET_BINARY" \
             '{id:"00000000-0000-0000-0000-000000000000",version:1,renetPath:$renet}' \
-            > ~/.config/rediacc/rediacc.json
+            > "$CONFIG_DIR/rediacc.json"
 
       - name: "Test: rdc ops setup"
         shell: bash
