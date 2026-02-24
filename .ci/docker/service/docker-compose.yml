@@ -32,6 +32,7 @@ services:
       - ED25519_PUBLIC_KEY=${ED25519_PUBLIC_KEY}
       - API_KEY=${ACCOUNT_SERVER_API_KEY}
       - JWT_SECRET=${JWT_SECRET}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@rediacc.io}
     networks:
       - service
     depends_on:

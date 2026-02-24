@@ -43,6 +43,9 @@ export JWT_SECRET="${JWT_SECRET:-$(openssl rand -base64 48 | tr -d '/+=' | cut -
 export RUSTFS_ACCESS_KEY="${RUSTFS_ACCESS_KEY:-rustfsadmin}"
 export RUSTFS_SECRET_KEY="${RUSTFS_SECRET_KEY:-rustfsadmin}"
 
+# Account admin (first user to register with this email gets admin role)
+export ADMIN_EMAIL="${ADMIN_EMAIL:-admin@rediacc.io}"
+
 # Service configuration
 export SERVICE_HTTP_PORT="${SERVICE_HTTP_PORT:-8080}"
 export SERVICE_RUSTFS_CONSOLE_PORT="${SERVICE_RUSTFS_CONSOLE_PORT:-9001}"
@@ -64,6 +67,7 @@ export SYSTEM_DOMAIN="${SYSTEM_DOMAIN:-localhost}"
     echo "SERVICE_RUSTFS_CONSOLE_PORT=${SERVICE_RUSTFS_CONSOLE_PORT}"
     echo "SERVICE_TAG=${SERVICE_TAG}"
     echo "SYSTEM_DOMAIN=${SYSTEM_DOMAIN}"
+    echo "ADMIN_EMAIL=${ADMIN_EMAIL}"
 } >"$SCRIPT_DIR/.env"
 
 log_info "Service environment configured"

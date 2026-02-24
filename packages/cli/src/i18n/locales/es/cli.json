@@ -341,6 +341,13 @@
         "description": "Borrar valores predeterminados (todos o uno específico)",
         "keyCleared": "\"{{key}}\" borrado"
       },
+      "recover": {
+        "description": "Restore config from backup (.bak) file",
+        "noBackup": "No backup found for config \"{{name}}\"",
+        "confirm": "Restore config \"{{name}}\" from backup?",
+        "success": "Config \"{{name}}\" restored from backup (version {{version}})",
+        "failed": "Failed to restore config \"{{name}}\" from backup"
+      },
       "delete": {
         "description": "Eliminar un archivo de configuración",
         "success": "Configuración \"{{name}}\" eliminada"

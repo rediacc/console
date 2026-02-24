@@ -634,10 +634,10 @@ BACKEND COMMANDS:
   backend auto               Auto-start backend (idempotent, for devcontainer)
 
 SERVICE COMMANDS:
-  service start [port]       Build and run rediacc/web image (default port: 8080)
-  service stop               Stop service containers
-  service status             Show service status
-  service logs [container]   Show logs (web, rustfs, all)
+  service start [port] [--no-build]  Build and run rediacc/web (default port: 8080)
+  service stop                    Stop service containers
+  service status                  Show service status
+  service logs [container]        Show logs (web, rustfs, all)
 
 PROVISION COMMANDS:
   provision start            Provision KVM VMs (bridge + workers)
@@ -751,7 +751,7 @@ main() {
             case "${1:-}" in
                 start)
                     shift
-                    service_start "${1:-8080}"
+                    service_start "$@"
                     ;;
                 stop) service_stop ;;
                 status) service_status ;;

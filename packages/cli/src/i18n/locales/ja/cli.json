@@ -341,6 +341,13 @@
         "description": "デフォルト値をクリアする（すべてまたは特定のキー）",
         "keyCleared": "\"{{key}}\" をクリアしました"
       },
+      "recover": {
+        "description": "Restore config from backup (.bak) file",
+        "noBackup": "No backup found for config \"{{name}}\"",
+        "confirm": "Restore config \"{{name}}\" from backup?",
+        "success": "Config \"{{name}}\" restored from backup (version {{version}})",
+        "failed": "Failed to restore config \"{{name}}\" from backup"
+      },
       "delete": {
         "description": "設定ファイルを削除する",
         "success": "設定 \"{{name}}\" が削除されました"

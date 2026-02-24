@@ -29,7 +29,17 @@ _service_compose() {
 service_start() {
     check_docker
 
-    local port="${1:-8080}"
+    local port="8080"
+    local skip_build=false
+
+    # Parse arguments
+    for arg in "$@"; do
+        case "$arg" in
+            --no-build) skip_build=true ;;
+            *) port="$arg" ;;
+        esac
+    done
+
     export SERVICE_HTTP_PORT="$port"
 
     log_step "Starting rediacc/web service (port: $port)"
@@ -37,9 +47,13 @@ service_start() {
     # Source environment (generates secrets, writes .env)
     source "$SERVICE_DOCKER_DIR/env.sh"
 
-    # Build the web image
-    log_step "Building rediacc/web:local image..."
-    _service_compose build web
+    # Build the web image (Docker layer cache makes unchanged builds fast)
+    if [[ "$skip_build" == "true" ]]; then
+        log_info "Skipping build (--no-build)"
+    else
+        log_step "Building rediacc/web:${SERVICE_TAG} image..."
+        _service_compose build web
+    fi
 
     # Start all services
     log_step "Starting services..."
@@ -58,9 +72,19 @@ service_start() {
 
     log_info ""
     log_info "Service is running!"
-    log_info "  Web:            http://localhost:$SERVICE_HTTP_PORT"
-    log_info "  Account portal: http://localhost:$SERVICE_HTTP_PORT/account/"
-    log_info "  RustFS Console: http://localhost:$SERVICE_RUSTFS_CONSOLE_PORT"
+    log_info ""
+    log_info "  URLs:"
+    log_info "    Web:            http://localhost:$SERVICE_HTTP_PORT"
+    log_info "    Console:        http://localhost:$SERVICE_HTTP_PORT/console/"
+    log_info "    Account portal: http://localhost:$SERVICE_HTTP_PORT/account/"
+    log_info "    RustFS Console: http://localhost:$SERVICE_RUSTFS_CONSOLE_PORT"
+    log_info ""
+    log_info "  Account portal (register to create admin):"
+    log_info "    Admin email: ${ADMIN_EMAIL}"
+    log_info ""
+    log_info "  Credentials:"
+    log_info "    RustFS:  ${RUSTFS_ACCESS_KEY} / ${RUSTFS_SECRET_KEY}"
+    log_info "    API Key: ${ACCOUNT_SERVER_API_KEY}"
     log_info ""
     log_info "Stop with: ./run.sh service stop"
 }

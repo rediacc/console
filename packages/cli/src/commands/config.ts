@@ -367,6 +367,62 @@ export function registerConfigCommands(program: Command): void {
       }
     });
 
+  // config recover
+  config
+    .command('recover [name]')
+    .description(t('commands.config.recover.description'))
+    .option('-y, --yes', 'Skip confirmation prompt')
+    .action(async (name, options) => {
+      try {
+        const { configFileStorage } = await import('../adapters/config-file-storage.js');
+        const configName = name ?? configService.getCurrentName();
+
+        const backupInfo = await configFileStorage.getBackupInfo(configName);
+        if (!backupInfo) {
+          outputService.info(t('commands.config.recover.noBackup', { name: configName }));
+          return;
+        }
+
+        const format = program.opts().output as OutputFormat;
+        outputService.print(
+          {
+            config: configName,
+            backupVersion: backupInfo.version,
+            backupId: backupInfo.id,
+            backupDate: backupInfo.modifiedAt.toISOString(),
+            backupPath: backupInfo.path,
+          },
+          format
+        );
+
+        if (!options.yes) {
+          const { askConfirm } = await import('../utils/prompt.js');
+          const confirmed = await askConfirm(
+            t('commands.config.recover.confirm', { name: configName })
+          );
+          if (!confirmed) {
+            outputService.info(t('prompts.cancelled'));
+            return;
+          }
+        }
+
+        const recovered = await configFileStorage.recover(configName);
+        if (!recovered) {
+          outputService.error(t('commands.config.recover.failed', { name: configName }));
+          return;
+        }
+
+        outputService.success(
+          t('commands.config.recover.success', {
+            name: configName,
+            version: String(recovered.version),
+          })
+        );
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
   // Register sub-command groups
   registerSetupCommands(config, program);
   registerLocalDataCommands(config, program);

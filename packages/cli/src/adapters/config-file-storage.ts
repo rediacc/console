@@ -29,6 +29,28 @@ export class ConfigFileStorage {
     return join(this.configDir, `${name}.json`);
   }
 
+  private getBackupPath(name: string): string {
+    return `${this.getPath(name)}.bak`;
+  }
+
+  /**
+   * Copy the current config file to a .bak backup.
+   * Skips silently if the source file does not exist (first-ever write).
+   */
+  private async createBackup(name: string): Promise<void> {
+    const configPath = this.getPath(name);
+    const backupPath = this.getBackupPath(name);
+    try {
+      await fs.copyFile(configPath, backupPath);
+      await fs.chmod(backupPath, 0o600);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return;
+      }
+      throw error;
+    }
+  }
+
   private async ensureDirectory(): Promise<void> {
     try {
       await fs.mkdir(this.configDir, { recursive: true, mode: 0o700 });
@@ -120,6 +142,7 @@ export class ConfigFileStorage {
    */
   private async saveUnlocked(config: RdcConfig, name: string): Promise<void> {
     await this.ensureDirectory();
+    await this.createBackup(name);
     const configPath = this.getPath(name);
 
     const toWrite: RdcConfig = {
@@ -221,7 +244,7 @@ export class ConfigFileStorage {
   }
 
   /**
-   * Delete a config file.
+   * Delete a config file and its backup.
    */
   async delete(name: string): Promise<void> {
     if (name === DEFAULT_CONFIG_NAME) {
@@ -236,7 +259,58 @@ export class ConfigFileStorage {
       }
       throw new Error(`Config "${name}" not found`);
     }
+    try {
+      await fs.unlink(this.getBackupPath(name));
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        throw error;
+      }
+    }
     this.cache.delete(name);
+  }
+
+  /**
+   * Recover a config from its .bak backup file.
+   * Returns the recovered config, or null if no backup exists.
+   */
+  async recover(name: string = DEFAULT_CONFIG_NAME): Promise<RdcConfig | null> {
+    const backupPath = this.getBackupPath(name);
+    try {
+      await fs.access(backupPath);
+    } catch {
+      return null;
+    }
+
+    return this.withLock(name, async () => {
+      const configPath = this.getPath(name);
+      await fs.copyFile(backupPath, configPath);
+      await fs.chmod(configPath, 0o600);
+      this.cache.delete(name);
+      return this.loadUnlocked(name);
+    });
+  }
+
+  /**
+   * Get metadata about a backup file.
+   * Returns null if no backup exists.
+   */
+  async getBackupInfo(
+    name: string = DEFAULT_CONFIG_NAME
+  ): Promise<{ path: string; version: number; id: string; modifiedAt: Date } | null> {
+    const backupPath = this.getBackupPath(name);
+    try {
+      const stat = await fs.stat(backupPath);
+      const content = await fs.readFile(backupPath, 'utf-8');
+      const config = JSON.parse(content) as RdcConfig;
+      return {
+        path: backupPath,
+        version: config.version,
+        id: config.id,
+        modifiedAt: stat.mtime,
+      };
+    } catch {
+      return null;
+    }
   }
 
   /**

@@ -341,6 +341,13 @@
         "description": "Effacer les valeurs par défaut (toutes ou une clé spécifique)",
         "keyCleared": "\"{{key}}\" effacé"
       },
+      "recover": {
+        "description": "Restore config from backup (.bak) file",
+        "noBackup": "No backup found for config \"{{name}}\"",
+        "confirm": "Restore config \"{{name}}\" from backup?",
+        "success": "Config \"{{name}}\" restored from backup (version {{version}})",
+        "failed": "Failed to restore config \"{{name}}\" from backup"
+      },
       "delete": {
         "description": "Supprimer un fichier de configuration",
         "success": "Configuration \"{{name}}\" supprimée"

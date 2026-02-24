@@ -767,4 +767,158 @@ describe('ConfigFileStorage', () => {
       expect(storage.getConfigDir()).toBe(testDir);
     });
   });
+
+  describe('backup on save', () => {
+    it('should create .bak file when saving over existing config', async () => {
+      await storage.init('test');
+      const original = await storage.load('test');
+
+      await storage.save({ ...original, machine: 'updated' }, 'test');
+
+      const bakExists = await fileExists(join(testDir, 'test.json.bak'));
+      expect(bakExists).toBe(true);
+    });
+
+    it('should not create .bak file on init (first-ever config creation)', async () => {
+      await storage.init('brand-new');
+
+      const bakExists = await fileExists(join(testDir, 'brand-new.json.bak'));
+      expect(bakExists).toBe(false);
+    });
+
+    it('backup should contain the previous version of the config', async () => {
+      const initial = createEmptyRdcConfig();
+      initial.machine = 'original-machine';
+      initial.version = 1;
+      await writeRawConfig('test', initial);
+
+      await storage.save({ ...initial, machine: 'new-machine' }, 'test');
+
+      const bakContent = await fs.readFile(join(testDir, 'test.json.bak'), 'utf-8');
+      const bakConfig = JSON.parse(bakContent) as RdcConfig;
+      expect(bakConfig.machine).toBe('original-machine');
+      expect(bakConfig.version).toBe(1);
+    });
+
+    it('backup should have 0o600 permissions', async () => {
+      await storage.init('test');
+      const config = await storage.load('test');
+      await storage.save({ ...config, machine: 'updated' }, 'test');
+
+      const stat = await fs.stat(join(testDir, 'test.json.bak'));
+      expect(stat.mode & 0o777).toBe(0o600);
+    });
+
+    it('should overwrite previous .bak on subsequent saves', async () => {
+      await storage.init('test');
+      const v1 = await storage.load('test');
+
+      await storage.save({ ...v1, machine: 'v2' }, 'test');
+      storage.clearCache();
+      const v2 = await readRawConfig('test');
+
+      await storage.save({ ...v2, machine: 'v3' }, 'test');
+
+      const bakContent = await fs.readFile(join(testDir, 'test.json.bak'), 'utf-8');
+      const bakConfig = JSON.parse(bakContent) as RdcConfig;
+      expect(bakConfig.machine).toBe('v2');
+    });
+
+    it('should create backup during update()', async () => {
+      await storage.init('test');
+
+      await storage.update('test', (cfg) => ({
+        ...cfg,
+        machine: 'updated-via-update',
+      }));
+
+      const bakExists = await fileExists(join(testDir, 'test.json.bak'));
+      expect(bakExists).toBe(true);
+    });
+  });
+
+  describe('recover', () => {
+    it('should return null when no backup exists', async () => {
+      await storage.init('test');
+      const result = await storage.recover('test');
+      expect(result).toBeNull();
+    });
+
+    it('should restore config from backup', async () => {
+      await storage.init('test');
+      const original = await storage.load('test');
+
+      await storage.save({ ...original, machine: 'v2' }, 'test');
+      storage.clearCache();
+
+      const recovered = await storage.recover('test');
+      expect(recovered).not.toBeNull();
+      expect(recovered!.machine).toBeUndefined();
+      expect(recovered!.version).toBe(1);
+    });
+
+    it('should clear cache after recovery', async () => {
+      await storage.init('test');
+      const original = await storage.load('test');
+
+      await storage.save({ ...original, machine: 'v2' }, 'test');
+      storage.clearCache();
+
+      await storage.recover('test');
+      const loaded = await storage.load('test');
+      expect(loaded.machine).toBeUndefined();
+    });
+
+    it('recovered config file should have 0o600 permissions', async () => {
+      await storage.init('test');
+      const original = await storage.load('test');
+      await storage.save({ ...original, machine: 'v2' }, 'test');
+      storage.clearCache();
+
+      await storage.recover('test');
+
+      const stat = await fs.stat(join(testDir, 'test.json'));
+      expect(stat.mode & 0o777).toBe(0o600);
+    });
+  });
+
+  describe('getBackupInfo', () => {
+    it('should return null when no backup exists', async () => {
+      await storage.init('test');
+      const info = await storage.getBackupInfo('test');
+      expect(info).toBeNull();
+    });
+
+    it('should return backup metadata', async () => {
+      await storage.init('test');
+      const original = await storage.load('test');
+      await storage.save({ ...original, machine: 'v2' }, 'test');
+
+      const info = await storage.getBackupInfo('test');
+      expect(info).not.toBeNull();
+      expect(info!.version).toBe(1);
+      expect(info!.id).toBe(original.id);
+      expect(info!.modifiedAt).toBeInstanceOf(Date);
+      expect(info!.path).toBe(join(testDir, 'test.json.bak'));
+    });
+  });
+
+  describe('delete with backup cleanup', () => {
+    it('should remove .bak file when deleting a config', async () => {
+      await storage.init('test');
+      const original = await storage.load('test');
+      await storage.save({ ...original, machine: 'v2' }, 'test');
+
+      expect(await fileExists(join(testDir, 'test.json.bak'))).toBe(true);
+
+      await storage.delete('test');
+
+      expect(await fileExists(join(testDir, 'test.json.bak'))).toBe(false);
+    });
+
+    it('should succeed deleting config even when no .bak exists', async () => {
+      await storage.init('test');
+      await expect(storage.delete('test')).resolves.toBeUndefined();
+    });
+  });
 });
