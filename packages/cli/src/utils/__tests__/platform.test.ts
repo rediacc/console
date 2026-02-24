@@ -242,7 +242,7 @@ describe('utils/platform', () => {
     it('creates lock directory recursively', async () => {
       await acquireUpdateLock();
 
-      expect(mockFs.mkdir).toHaveBeenCalledWith(expect.stringContaining('.rediacc'), {
+      expect(mockFs.mkdir).toHaveBeenCalledWith(expect.stringContaining('rediacc'), {
         recursive: true,
       });
     });

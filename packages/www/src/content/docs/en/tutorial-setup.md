@@ -30,7 +30,7 @@ The recording above walks through each step below. Use the playback bar to navig
 rdc config init tutorial-demo --ssh-key ~/.ssh/id_ed25519
 ```
 
-Creates a named config file at `~/.rediacc/tutorial-demo.json`. Each config stores machine definitions, SSH credentials, and infrastructure settings.
+Creates a named config file at `~/.config/rediacc/tutorial-demo.json`. Each config stores machine definitions, SSH credentials, and infrastructure settings.
 
 ### Step 2: View configs
 

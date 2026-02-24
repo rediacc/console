@@ -24,7 +24,7 @@ Rediacc possède deux binaires. Voici quand utiliser chacun d'entre eux.
 
 `rdc` se connecte à votre serveur via SSH et exécute les commandes `renet` à votre place. Vous tapez une seule commande sur votre poste de travail, et `rdc` gère le reste :
 
-1. Lit votre configuration locale (`~/.rediacc/rediacc.json`)
+1. Lit votre configuration locale (`~/.config/rediacc/rediacc.json`)
 2. Se connecte au serveur via SSH
 3. Met à jour le binaire `renet` si nécessaire
 4. Exécute l'opération `renet` correspondante sur le serveur

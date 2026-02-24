@@ -34,13 +34,13 @@ Rediacc 采用两个通过 SSH 协同工作的二进制文件：
 
 ## 配置与存储
 
-所有 CLI 状态存储在 `~/.rediacc/` 下的扁平 JSON 配置文件中。存储适配器让您可以将这些配置同步到外部后端，用于备份、共享或多设备访问。存储凭据单独保存在 `~/.rediacc/.credentials.json` 中。
+所有 CLI 状态存储在 `~/.config/rediacc/` 下的扁平 JSON 配置文件中。存储适配器让您可以将这些配置同步到外部后端，用于备份、共享或多设备访问。存储凭据单独保存在 `~/.config/rediacc/.credentials.json` 中。
 
 ![配置与存储](/img/arch-operating-modes.svg)
 
 ### 本地适配器（默认）
 
-自托管使用的默认选项。所有状态存储在工作站的配置文件中（例如 `~/.rediacc/rediacc.json`）。
+自托管使用的默认选项。所有状态存储在工作站的配置文件中（例如 `~/.config/rediacc/rediacc.json`）。
 
 - 直接通过 SSH 连接到机器
 - 无需外部服务
@@ -119,7 +119,7 @@ Rediaccfile 函数会自动设置 `DOCKER_HOST` 为正确的套接字。
 
 ## 配置结构
 
-每个配置是存储在 `~/.rediacc/` 中的扁平 JSON 文件。默认配置为 `rediacc.json`；命名配置使用名称作为文件名（例如 `production.json`）。以下是一个注释示例：
+每个配置是存储在 `~/.config/rediacc/` 中的扁平 JSON 文件。默认配置为 `rediacc.json`；命名配置使用名称作为文件名（例如 `production.json`）。以下是一个注释示例：
 
 ```json
 {

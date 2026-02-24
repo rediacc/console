@@ -24,7 +24,7 @@ rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 | `--ssh-key <path>` | Evet | SSH özel anahtarınızın yolu. Tilde (`~`) otomatik olarak genişletilir. |
 | `--renet-path <path>` | Hayır | Uzak makinelerdeki renet ikili dosyasının özel yolu. Varsayılan olarak standart kurulum konumunu kullanır. |
 
-Bu komut `my-infra` adında bir yapılandırma oluşturur ve `~/.rediacc/my-infra.json` dosyasında saklar. Varsayılan yapılandırma (ad verilmediğinde) `~/.rediacc/rediacc.json` olarak saklanır.
+Bu komut `my-infra` adında bir yapılandırma oluşturur ve `~/.config/rediacc/my-infra.json` dosyasında saklar. Varsayılan yapılandırma (ad verilmediğinde) `~/.config/rediacc/rediacc.json` olarak saklanır.
 
 > Birden fazla yapılandırmanız olabilir (ör. `production`, `staging`, `dev`). Herhangi bir komutta `--config` bayrağıyla bunlar arasında geçiş yapabilirsiniz.
 

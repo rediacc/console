@@ -24,7 +24,7 @@ rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 | `--ssh-key <path>` | نعم | مسار مفتاح SSH الخاص بك. يتم توسيع رمز التلدة (`~`) تلقائياً. |
 | `--renet-path <path>` | لا | مسار مخصص لملف renet التنفيذي على الأجهزة البعيدة. القيمة الافتراضية هي موقع التثبيت القياسي. |
 
-ينشئ هذا إعداداً باسم `my-infra` ويخزّنه في `~/.rediacc/my-infra.json`. الإعداد الافتراضي (عند عدم تحديد اسم) يُخزَّن باسم `~/.rediacc/rediacc.json`.
+ينشئ هذا إعداداً باسم `my-infra` ويخزّنه في `~/.config/rediacc/my-infra.json`. الإعداد الافتراضي (عند عدم تحديد اسم) يُخزَّن باسم `~/.config/rediacc/rediacc.json`.
 
 > يمكنك إنشاء إعدادات متعددة (مثل `production`، `staging`، `dev`). بدّل بينها باستخدام خيار `--config` مع أي أمر.
 

@@ -24,7 +24,7 @@ rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 | `--ssh-key <path>` | はい | SSH秘密鍵へのパス。チルダ（`~`）は自動的に展開されます。 |
 | `--renet-path <path>` | いいえ | リモートマシン上のrenetバイナリへのカスタムパス。デフォルトは標準インストール場所です。 |
 
-これにより`my-infra`という名前の設定が作成され、`~/.rediacc/my-infra.json`に保存されます。デフォルト設定（名前を指定しない場合）は`~/.rediacc/rediacc.json`として保存されます。
+これにより`my-infra`という名前の設定が作成され、`~/.config/rediacc/my-infra.json`に保存されます。デフォルト設定（名前を指定しない場合）は`~/.config/rediacc/rediacc.json`として保存されます。
 
 > 複数の設定を持つことができます（例：`production`、`staging`、`dev`）。任意のコマンドで`--config`フラグを使用して切り替えることができます。
 

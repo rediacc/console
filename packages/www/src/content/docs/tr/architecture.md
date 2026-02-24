@@ -36,13 +36,13 @@ Operatör odaklı bir genel kural için [rdc vs renet](/tr/docs/rdc-vs-renet) sa
 
 ## Config & Stores
 
-Tüm CLI durumu `~/.rediacc/` altındaki düz JSON yapılandırma dosyalarında saklanır. Store'lar bu yapılandırmaları yedekleme, paylaşım veya çoklu cihaz erişimi için harici arka uçlara senkronize etmenizi sağlar. Store kimlik bilgileri ayrıca `~/.rediacc/.credentials.json` dosyasında tutulur.
+Tüm CLI durumu `~/.config/rediacc/` altındaki düz JSON yapılandırma dosyalarında saklanır. Store'lar bu yapılandırmaları yedekleme, paylaşım veya çoklu cihaz erişimi için harici arka uçlara senkronize etmenizi sağlar. Store kimlik bilgileri ayrıca `~/.config/rediacc/.credentials.json` dosyasında tutulur.
 
 ![Config & Stores](/img/arch-operating-modes.svg)
 
 ### Yerel Adaptör (Varsayılan)
 
-Kendi sunucunuzda barındırma için varsayılandır. Tüm durum bilgisi iş istasyonunuzdaki bir yapılandırma dosyasında saklanır (ör. `~/.rediacc/rediacc.json`).
+Kendi sunucunuzda barındırma için varsayılandır. Tüm durum bilgisi iş istasyonunuzdaki bir yapılandırma dosyasında saklanır (ör. `~/.config/rediacc/rediacc.json`).
 
 - Makinelere doğrudan SSH bağlantısı
 - Harici servis gerekmez
@@ -121,7 +121,7 @@ Kimlik bilgisi yapılandırma dosyanızda saklanır ancak **asla** sunucuda sakl
 
 ## Yapılandırma Yapısı
 
-Her yapılandırma `~/.rediacc/` dizininde saklanan düz bir JSON dosyasıdır. Varsayılan yapılandırma `rediacc.json`'dır; adlandırılmış yapılandırmalar dosya adı olarak adı kullanır (ör. `production.json`). Açıklamalı bir örnek:
+Her yapılandırma `~/.config/rediacc/` dizininde saklanan düz bir JSON dosyasıdır. Varsayılan yapılandırma `rediacc.json`'dır; adlandırılmış yapılandırmalar dosya adı olarak adı kullanır (ör. `production.json`). Açıklamalı bir örnek:
 
 ```json
 {

@@ -3,7 +3,7 @@ import { configService } from '../services/config-resources.js';
 
 /**
  * CLI token adapter wrapping the configService.
- * Stores tokens in file-based config (~/.rediacc/).
+ * Stores tokens in file-based config (platform config dir).
  */
 export const tokenAdapter: TokenAdapter = {
   get: () => configService.getToken(),

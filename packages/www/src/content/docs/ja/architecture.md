@@ -34,13 +34,13 @@ RediaccはSSH経由で連携する2つのバイナリを使用します：
 
 ## Config & Stores
 
-すべてのCLI状態は `~/.rediacc/` 配下のフラットなJSON設定ファイルに保存されます。Storeを使用することで、バックアップ、共有、マルチデバイスアクセスのために外部バックエンドにこれらの設定を同期できます。Storeの認証情報は `~/.rediacc/.credentials.json` に別途保管されます。
+すべてのCLI状態は `~/.config/rediacc/` 配下のフラットなJSON設定ファイルに保存されます。Storeを使用することで、バックアップ、共有、マルチデバイスアクセスのために外部バックエンドにこれらの設定を同期できます。Storeの認証情報は `~/.config/rediacc/.credentials.json` に別途保管されます。
 
 ![Config & Stores](/img/arch-operating-modes.svg)
 
 ### ローカルアダプター（デフォルト）
 
-セルフホスト利用のデフォルトです。すべての状態はワークステーションの設定ファイル（例：`~/.rediacc/rediacc.json`）に保存されます。
+セルフホスト利用のデフォルトです。すべての状態はワークステーションの設定ファイル（例：`~/.config/rediacc/rediacc.json`）に保存されます。
 
 - マシンへの直接SSH接続
 - 外部サービス不要
@@ -119,7 +119,7 @@ Rediaccfile関数では、`DOCKER_HOST`が自動的に正しいソケットに�
 
 ## 設定構造
 
-各設定は `~/.rediacc/` に保存されるフラットなJSONファイルです。デフォルト設定は `rediacc.json`; 名前付き設定はファイル名として名前を使用します（例：`production.json`）。以下は注釈付きの例です：
+各設定は `~/.config/rediacc/` に保存されるフラットなJSONファイルです。デフォルト設定は `rediacc.json`; 名前付き設定はファイル名として名前を使用します（例：`production.json`）。以下は注釈付きの例です：
 
 ```json
 {

@@ -24,7 +24,7 @@ Rediacc'ın iki ikili dosyası vardır. Her birinin ne zaman kullanılacağı a�
 
 `rdc`, sunucunuza SSH üzerinden bağlanır ve sizin yerinize `renet` komutlarını çalıştırır. İş istasyonunuzda tek bir komut yazarsınız ve `rdc` gerisini halleder:
 
-1. Yerel yapılandırmanızı okur (`~/.rediacc/rediacc.json`)
+1. Yerel yapılandırmanızı okur (`~/.config/rediacc/rediacc.json`)
 2. Sunucuya SSH üzerinden bağlanır
 3. Gerekirse `renet` ikili dosyasını günceller
 4. Sunucuda eşleşen `renet` işlemini çalıştırır

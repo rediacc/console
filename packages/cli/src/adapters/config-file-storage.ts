@@ -1,19 +1,19 @@
 import { promises as fs } from 'node:fs';
-import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
 import lockfile from 'proper-lockfile';
+import { getConfigDir } from '@rediacc/shared/paths';
 import { type RdcConfig, createEmptyRdcConfig } from '../types/index.js';
 
-const CONFIG_DIR = join(homedir(), '.rediacc');
+const CONFIG_DIR = getConfigDir();
 const DEFAULT_CONFIG_NAME = 'rediacc';
 
-/** Files in ~/.rediacc/ that are not config files */
+/** Files in config dir that are not config files */
 const EXCLUDED_FILES = new Set(['.credentials.json', 'update-state.json']);
 
 /**
  * Storage adapter for per-file CLI configuration with file locking.
  *
- * Each config is a separate JSON file in ~/.rediacc/ (e.g., rediacc.json, production.json).
+ * Each config is a separate JSON file in the config dir (e.g., rediacc.json, production.json).
  * Uses proper-lockfile for cross-platform file locking with atomic temp+rename writes.
  */
 export class ConfigFileStorage {
@@ -206,7 +206,7 @@ export class ConfigFileStorage {
   }
 
   /**
-   * List available config names (files in ~/.rediacc/*.json, excluding system files).
+   * List available config names (*.json in config dir, excluding system files).
    */
   async list(): Promise<string[]> {
     await this.ensureDirectory();

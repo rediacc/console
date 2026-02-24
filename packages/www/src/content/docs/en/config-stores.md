@@ -8,11 +8,11 @@ language: en
 
 # Config & Stores
 
-Rediacc CLI uses flat JSON config files stored in `~/.rediacc/`. Each config file is an independent unit with its own UUID and version number. **Stores** let you sync these configs to external backends for backup, sharing, or multi-device access.
+Rediacc CLI uses flat JSON config files stored in `~/.config/rediacc/`. Each config file is an independent unit with its own UUID and version number. **Stores** let you sync these configs to external backends for backup, sharing, or multi-device access.
 
 ## Config Files
 
-The default config file is `~/.rediacc/rediacc.json`. You can create named configs for different environments:
+The default config file is `~/.config/rediacc/rediacc.json`. You can create named configs for different environments:
 
 ```bash
 # Default config (created automatically on first use)
@@ -55,7 +55,7 @@ A store is an external backend where config files can be synced. This enables:
 - **Multi-device** — Sync the same config across multiple workstations
 - **Team sharing** — Share configs via a shared Git repo or S3 bucket
 
-Store credentials are saved in `~/.rediacc/.credentials.json` (permissions `0600`).
+Store credentials are saved in `~/.config/rediacc/.credentials.json` (permissions `0600`).
 
 ### Store Types
 
@@ -300,5 +300,5 @@ rdc store add secure-backup --type git \
 When encryption is enabled:
 - Config JSON is encrypted before pushing to the store
 - Pulled configs are decrypted transparently
-- The encryption key is stored in `~/.rediacc/.credentials.json`
+- The encryption key is stored in `~/.config/rediacc/.credentials.json`
 - The remote store only ever sees encrypted data

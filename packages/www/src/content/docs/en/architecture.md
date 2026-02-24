@@ -35,13 +35,13 @@ For an operator-focused rule of thumb, see [rdc vs renet](/en/docs/rdc-vs-renet)
 
 ## Config & Stores
 
-All CLI state is stored in flat JSON config files under `~/.rediacc/`. Stores let you sync these configs to external backends for backup, sharing, or multi-device access. Store credentials are kept separately in `~/.rediacc/.credentials.json`.
+All CLI state is stored in flat JSON config files under `~/.config/rediacc/`. Stores let you sync these configs to external backends for backup, sharing, or multi-device access. Store credentials are kept separately in `~/.config/rediacc/.credentials.json`.
 
 ![Config & Stores](/img/arch-operating-modes.svg)
 
 ### Local Adapter (Default)
 
-The default for self-hosted usage. All state lives in a config file on your workstation (e.g., `~/.rediacc/rediacc.json`).
+The default for self-hosted usage. All state lives in a config file on your workstation (e.g., `~/.config/rediacc/rediacc.json`).
 
 - Direct SSH connections to machines
 - No external services required
@@ -120,7 +120,7 @@ The credential is stored in your config file but **never** on the server. Withou
 
 ## Configuration Structure
 
-Each config is a flat JSON file stored in `~/.rediacc/`. The default config is `rediacc.json`; named configs use the name as the filename (e.g., `production.json`). Here is an annotated example:
+Each config is a flat JSON file stored in `~/.config/rediacc/`. The default config is `rediacc.json`; named configs use the name as the filename (e.g., `production.json`). Here is an annotated example:
 
 ```json
 {

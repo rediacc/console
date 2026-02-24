@@ -23,7 +23,7 @@ Rediacc has two binaries. Here is when to use each one.
 
 `rdc` connects to your server over SSH and runs `renet` commands for you. You type a single command on your workstation, and `rdc` handles the rest:
 
-1. Reads your local config (`~/.rediacc/rediacc.json`)
+1. Reads your local config (`~/.config/rediacc/rediacc.json`)
 2. Connects to the server over SSH
 3. Updates the `renet` binary if needed
 4. Runs the matching `renet` operation on the server

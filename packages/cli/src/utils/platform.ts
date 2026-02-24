@@ -1,13 +1,12 @@
 import { promises as fs } from 'node:fs';
-import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import lockfile from 'proper-lockfile';
+import { getCacheDir, getStateDir } from '@rediacc/shared/paths';
 
-const REDIACC_DIR = join(homedir(), '.rediacc');
-export const STAGED_UPDATE_DIR = join(REDIACC_DIR, 'staged-update');
-export const UPDATE_STATE_FILE = join(REDIACC_DIR, 'update-state.json');
+export const STAGED_UPDATE_DIR = join(getCacheDir(), 'staged-update');
+export const UPDATE_STATE_FILE = join(getStateDir(), 'update-state.json');
 
-const UPDATE_LOCK_FILE = join(REDIACC_DIR, 'update.lock');
+const UPDATE_LOCK_FILE = join(getStateDir(), 'update.lock');
 
 export type PlatformKey =
   | 'linux-x64'

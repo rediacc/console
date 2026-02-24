@@ -22,9 +22,8 @@ vi.mock('node:fs', () => ({
 }));
 
 vi.mock('../../utils/platform.js', () => ({
-  REDIACC_DIR: '/home/testuser/.rediacc',
-  STAGED_UPDATE_DIR: '/home/testuser/.rediacc/staged-update',
-  UPDATE_STATE_FILE: '/home/testuser/.rediacc/update-state.json',
+  STAGED_UPDATE_DIR: '/home/testuser/.cache/rediacc/staged-update',
+  UPDATE_STATE_FILE: '/home/testuser/.local/state/rediacc/update-state.json',
 }));
 
 function makeState(overrides: Partial<CliUpdateState> = {}): CliUpdateState {
@@ -109,7 +108,7 @@ describe('services/update-state', () => {
       );
       expect(mockFs.rename).toHaveBeenCalledWith(
         expect.stringContaining('.tmp'),
-        '/home/testuser/.rediacc/update-state.json'
+        '/home/testuser/.local/state/rediacc/update-state.json'
       );
     });
   });
@@ -168,7 +167,7 @@ describe('services/update-state', () => {
   describe('getStagedBinaryPath()', () => {
     it('returns path without .exe on non-Windows', () => {
       const path = getStagedBinaryPath('0.5.0');
-      expect(path).toBe('/home/testuser/.rediacc/staged-update/rdc-0.5.0');
+      expect(path).toBe('/home/testuser/.cache/rediacc/staged-update/rdc-0.5.0');
     });
   });
 
@@ -177,7 +176,7 @@ describe('services/update-state', () => {
       const state = makeState({
         pendingUpdate: {
           version: '0.5.0',
-          stagedPath: '/home/testuser/.rediacc/staged-update/rdc-0.5.0',
+          stagedPath: '/home/testuser/.cache/rediacc/staged-update/rdc-0.5.0',
           sha256: 'abc',
           platformKey: 'linux-x64',
           downloadedAt: '2026-01-01T00:00:00.000Z',
@@ -187,13 +186,13 @@ describe('services/update-state', () => {
 
       await cleanupStaleStagedFiles(state);
 
-      expect(mockFs.unlink).toHaveBeenCalledWith('/home/testuser/.rediacc/staged-update/rdc-0.4.0');
+      expect(mockFs.unlink).toHaveBeenCalledWith('/home/testuser/.cache/rediacc/staged-update/rdc-0.4.0');
       expect(mockFs.unlink).toHaveBeenCalledWith(
-        '/home/testuser/.rediacc/staged-update/rdc-0.3.0.tmp'
+        '/home/testuser/.cache/rediacc/staged-update/rdc-0.3.0.tmp'
       );
       // Should NOT unlink the matching file
       expect(mockFs.unlink).not.toHaveBeenCalledWith(
-        '/home/testuser/.rediacc/staged-update/rdc-0.5.0'
+        '/home/testuser/.cache/rediacc/staged-update/rdc-0.5.0'
       );
     });
 

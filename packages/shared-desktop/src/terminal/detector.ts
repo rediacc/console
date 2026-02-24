@@ -1,13 +1,14 @@
 import { execSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { getConfigPath, getPlatform, isWSL } from '../utils/platform.js';
+import { dirname, join } from 'node:path';
+import { getCacheDir } from '@rediacc/shared/paths';
+import { getPlatform, isWSL } from '../utils/platform.js';
 import type { TerminalInfo, TerminalType } from '../types/index.js';
 
 /**
  * Cache file location
  */
-const CACHE_FILE = join(getConfigPath(), 'cache', 'terminal.json');
+const CACHE_FILE = join(getCacheDir(), 'terminal.json');
 
 /**
  * Cache duration in milliseconds (7 days)
@@ -51,7 +52,7 @@ function loadCache(): Record<string, CachedInfo> {
  */
 function saveCache(cache: Record<string, CachedInfo>): void {
   try {
-    const cacheDir = join(getConfigPath(), 'cache');
+    const cacheDir = dirname(CACHE_FILE);
     if (!existsSync(cacheDir)) {
       mkdirSync(cacheDir, { recursive: true, mode: 0o700 });
     }

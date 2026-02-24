@@ -11,11 +11,11 @@ vi.mock('../../utils/platform.js', () => ({
   getPlatformKey: vi.fn(),
   getOldBinaryPath: vi.fn().mockReturnValue('/usr/local/bin/rdc.old'),
   acquireUpdateLock: vi.fn(),
-  STAGED_UPDATE_DIR: '/home/testuser/.rediacc/staged-update',
+  STAGED_UPDATE_DIR: '/home/testuser/.cache/rediacc/staged-update',
 }));
 
 vi.mock('../update-state.js', () => ({
-  getStagedBinaryPath: vi.fn().mockReturnValue('/home/testuser/.rediacc/staged-update/rdc-0.5.0'),
+  getStagedBinaryPath: vi.fn().mockReturnValue('/home/testuser/.cache/rediacc/staged-update/rdc-0.5.0'),
   readUpdateState: vi.fn().mockResolvedValue({
     schemaVersion: 1,
     lastCheckAt: null,

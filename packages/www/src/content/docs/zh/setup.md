@@ -24,7 +24,7 @@ rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 | `--ssh-key <path>` | 是 | SSH 私钥路径。波浪号（`~`）会自动展开。 |
 | `--renet-path <path>` | 否 | 远程机器上 renet 二进制文件的自定义路径。默认为标准安装位置。 |
 
-此命令创建一个名为 `my-infra` 的配置并将其存储在 `~/.rediacc/my-infra.json` 中。默认配置（未指定名称时）存储为 `~/.rediacc/rediacc.json`。
+此命令创建一个名为 `my-infra` 的配置并将其存储在 `~/.config/rediacc/my-infra.json` 中。默认配置（未指定名称时）存储为 `~/.config/rediacc/rediacc.json`。
 
 > 您可以拥有多个配置（例如 `production`、`staging`、`dev`）。在任何命令上使用 `--config` 标志在它们之间切换。
 

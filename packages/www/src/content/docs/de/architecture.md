@@ -36,13 +36,13 @@ Für eine operatorfokussierte Faustregel, siehe [rdc vs renet](/de/docs/rdc-vs-r
 
 ## Konfiguration & Stores
 
-Der gesamte CLI-Zustand wird in flachen JSON-Konfigurationsdateien unter `~/.rediacc/` gespeichert. Stores ermöglichen die Synchronisierung dieser Konfigurationen mit externen Backends für Backup, Weitergabe oder Multi-Gerät-Zugriff. Store-Zugangsdaten werden separat in `~/.rediacc/.credentials.json` aufbewahrt.
+Der gesamte CLI-Zustand wird in flachen JSON-Konfigurationsdateien unter `~/.config/rediacc/` gespeichert. Stores ermöglichen die Synchronisierung dieser Konfigurationen mit externen Backends für Backup, Weitergabe oder Multi-Gerät-Zugriff. Store-Zugangsdaten werden separat in `~/.config/rediacc/.credentials.json` aufbewahrt.
 
 ![Konfiguration & Stores](/img/arch-operating-modes.svg)
 
 ### Lokaler Adapter (Standard)
 
-Der Standard für die Selbsthosting-Nutzung. Der gesamte Zustand liegt in einer Konfigurationsdatei auf Ihrer Workstation (z. B. `~/.rediacc/rediacc.json`).
+Der Standard für die Selbsthosting-Nutzung. Der gesamte Zustand liegt in einer Konfigurationsdatei auf Ihrer Workstation (z. B. `~/.config/rediacc/rediacc.json`).
 
 - Direkte SSH-Verbindungen zu Maschinen
 - Keine externen Dienste erforderlich
@@ -121,7 +121,7 @@ Das Credential wird in Ihrer Konfigurationsdatei gespeichert, jedoch **niemals**
 
 ## Konfigurationsstruktur
 
-Jede Konfiguration ist eine flache JSON-Datei, die unter `~/.rediacc/` gespeichert wird. Die Standardkonfiguration ist `rediacc.json`; benannte Konfigurationen verwenden den Namen als Dateiname (z. B. `production.json`). Hier ist ein kommentiertes Beispiel:
+Jede Konfiguration ist eine flache JSON-Datei, die unter `~/.config/rediacc/` gespeichert wird. Die Standardkonfiguration ist `rediacc.json`; benannte Konfigurationen verwenden den Namen als Dateiname (z. B. `production.json`). Hier ist ein kommentiertes Beispiel:
 
 ```json
 {

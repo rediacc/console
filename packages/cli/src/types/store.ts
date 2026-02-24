@@ -7,7 +7,7 @@ export type StoreType = 's3' | 'local-file' | 'bitwarden' | 'git' | 'vault';
 
 /**
  * A store entry representing a remote location where config files can be synced.
- * Stored in ~/.rediacc/.credentials.json.
+ * Stored in .credentials.json in the config dir.
  */
 export interface StoreEntry {
   /** Unique name for this store (e.g., "backup-s3", "team-shared") */

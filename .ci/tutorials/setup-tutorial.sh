@@ -12,7 +12,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/tutorial-helpers.sh"
 
 # Clean up any previous tutorial config so we start fresh
-rm -f ~/.rediacc/tutorial-demo.json 2>/dev/null || true
+rm -f ~/.config/rediacc/tutorial-demo.json 2>/dev/null || true
 
 clear_screen
 
@@ -65,7 +65,7 @@ run_cmd "rdc --config tutorial-demo config show-infra $TUTORIAL_MACHINE_NAME"
 pause 2
 
 # Clean up the tutorial config
-rm -f ~/.rediacc/tutorial-demo.json 2>/dev/null || true
+rm -f ~/.config/rediacc/tutorial-demo.json 2>/dev/null || true
 
 printf '\n\033[1;32m# Tutorial complete!\033[0m\n'
 sleep 2

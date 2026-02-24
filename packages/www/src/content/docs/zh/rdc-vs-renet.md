@@ -24,7 +24,7 @@ Rediacc 有两个二进制文件。以下是各自的使用场景。
 
 `rdc` 通过 SSH 连接到您的服务器，并代替您运行 `renet` 命令。您在工作站上输入一条命令，`rdc` 处理剩下的一切：
 
-1. 读取本地配置（`~/.rediacc/rediacc.json`）
+1. 读取本地配置（`~/.config/rediacc/rediacc.json`）
 2. 通过 SSH 连接到服务器
 3. 如有需要，更新 `renet` 二进制文件
 4. 在服务器上运行对应的 `renet` 操作

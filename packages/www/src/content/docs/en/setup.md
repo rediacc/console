@@ -23,7 +23,7 @@ rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 | `--ssh-key <path>` | Yes | Path to your SSH private key. Tilde (`~`) is expanded automatically. |
 | `--renet-path <path>` | No | Custom path to the renet binary on remote machines. Defaults to the standard install location. |
 
-This creates a config named `my-infra` and stores it in `~/.rediacc/my-infra.json`. The default config (when no name is given) is stored as `~/.rediacc/rediacc.json`.
+This creates a config named `my-infra` and stores it in `~/.config/rediacc/my-infra.json`. The default config (when no name is given) is stored as `~/.config/rediacc/rediacc.json`.
 
 > You can have multiple configs (e.g., `production`, `staging`, `dev`). Switch between them with the `--config` flag on any command.
 

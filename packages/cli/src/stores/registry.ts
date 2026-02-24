@@ -1,12 +1,12 @@
 import { promises as fs } from 'node:fs';
-import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { getConfigDir } from '@rediacc/shared/paths';
 import type { StoreEntry } from '../types/store.js';
 
-const DEFAULT_STORES_PATH = join(homedir(), '.rediacc', '.credentials.json');
+const DEFAULT_STORES_PATH = join(getConfigDir(), '.credentials.json');
 
 /**
- * Manages the store registry at ~/.rediacc/.credentials.json.
+ * Manages the store registry (.credentials.json in config dir).
  * Stores are external backends (S3, local-file, bitwarden, git)
  * where config files can be synced.
  */
