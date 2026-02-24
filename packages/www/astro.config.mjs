@@ -1,4 +1,4 @@
-/* global console */
+/* global console, process */
 // @ts-check
 import { defineConfig } from 'astro/config';
 import { execSync } from 'child_process';
