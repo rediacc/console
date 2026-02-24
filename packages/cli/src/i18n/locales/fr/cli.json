@@ -342,11 +342,11 @@
         "keyCleared": "\"{{key}}\" effacé"
       },
       "recover": {
-        "description": "Restore config from backup (.bak) file",
-        "noBackup": "No backup found for config \"{{name}}\"",
-        "confirm": "Restore config \"{{name}}\" from backup?",
-        "success": "Config \"{{name}}\" restored from backup (version {{version}})",
-        "failed": "Failed to restore config \"{{name}}\" from backup"
+        "description": "Restaurer la configuration depuis le fichier de sauvegarde (.bak)",
+        "noBackup": "Aucune sauvegarde trouvée pour la configuration \"{{name}}\"",
+        "confirm": "Restaurer la configuration \"{{name}}\" depuis la sauvegarde ?",
+        "success": "Configuration \"{{name}}\" restaurée depuis la sauvegarde (version {{version}})",
+        "failed": "Échec de la restauration de la configuration \"{{name}}\" depuis la sauvegarde"
       },
       "delete": {
         "description": "Supprimer un fichier de configuration",

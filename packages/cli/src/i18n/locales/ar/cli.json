@@ -342,11 +342,11 @@
         "keyCleared": "تم مسح \"{{key}}\""
       },
       "recover": {
-        "description": "Restore config from backup (.bak) file",
-        "noBackup": "No backup found for config \"{{name}}\"",
-        "confirm": "Restore config \"{{name}}\" from backup?",
-        "success": "Config \"{{name}}\" restored from backup (version {{version}})",
-        "failed": "Failed to restore config \"{{name}}\" from backup"
+        "description": "استعادة الإعدادات من ملف النسخة الاحتياطية (.bak)",
+        "noBackup": "لم يتم العثور على نسخة احتياطية للإعدادات \"{{name}}\"",
+        "confirm": "استعادة الإعدادات \"{{name}}\" من النسخة الاحتياطية؟",
+        "success": "تمت استعادة الإعدادات \"{{name}}\" من النسخة الاحتياطية (الإصدار {{version}})",
+        "failed": "فشلت استعادة الإعدادات \"{{name}}\" من النسخة الاحتياطية"
       },
       "delete": {
         "description": "حذف ملف إعدادات",

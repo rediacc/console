@@ -342,11 +342,11 @@
         "keyCleared": "\"{{key}}\" temizlendi"
       },
       "recover": {
-        "description": "Restore config from backup (.bak) file",
-        "noBackup": "No backup found for config \"{{name}}\"",
-        "confirm": "Restore config \"{{name}}\" from backup?",
-        "success": "Config \"{{name}}\" restored from backup (version {{version}})",
-        "failed": "Failed to restore config \"{{name}}\" from backup"
+        "description": "Yapılandırmayı yedek dosyasından (.bak) geri yükle",
+        "noBackup": "\"{{name}}\" yapılandırması için yedek bulunamadı",
+        "confirm": "\"{{name}}\" yapılandırması yedekten geri yüklensin mi?",
+        "success": "\"{{name}}\" yapılandırması yedekten geri yüklendi (sürüm {{version}})",
+        "failed": "\"{{name}}\" yapılandırması yedekten geri yüklenemedi"
       },
       "delete": {
         "description": "Bir yapılandırma dosyasını silin",

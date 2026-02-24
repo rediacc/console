@@ -342,11 +342,11 @@
         "keyCleared": "Значение \"{{key}}\" сброшено"
       },
       "recover": {
-        "description": "Restore config from backup (.bak) file",
-        "noBackup": "No backup found for config \"{{name}}\"",
-        "confirm": "Restore config \"{{name}}\" from backup?",
-        "success": "Config \"{{name}}\" restored from backup (version {{version}})",
-        "failed": "Failed to restore config \"{{name}}\" from backup"
+        "description": "Восстановить конфигурацию из файла резервной копии (.bak)",
+        "noBackup": "Резервная копия для конфигурации \"{{name}}\" не найдена",
+        "confirm": "Восстановить конфигурацию \"{{name}}\" из резервной копии?",
+        "success": "Конфигурация \"{{name}}\" восстановлена из резервной копии (версия {{version}})",
+        "failed": "Не удалось восстановить конфигурацию \"{{name}}\" из резервной копии"
       },
       "delete": {
         "description": "Удалить файл конфигурации",
