@@ -225,6 +225,12 @@ main() {
         (node /app/account/bundle.js || echo "Warning: account server exited with code $?") &
     fi
 
+    # Configure account server backend (default: embedded 127.0.0.1:3000)
+    if [ -n "$ACCOUNT_BACKEND" ]; then
+        sed -i "s|set \$account_backend \"127.0.0.1:3000\"|set \$account_backend \"${ACCOUNT_BACKEND}\"|" \
+            /etc/nginx/http.d/default.conf
+    fi
+
     # Log startup info
     log_startup
 
