@@ -1,10 +1,8 @@
 ---
 title: Herramientas
-description: >-
-  Sincronización de archivos, acceso por terminal, integración con VS Code,
-  actualizaciones y diagnósticos.
+description: "Sincronización de archivos, acceso por terminal, integración con VS Code y actualizaciones de la CLI."
 category: Guides
-order: 8
+order: 9
 language: es
 sourceHash: 80ca3cd3e1a55d4b
 ---

@@ -4,7 +4,7 @@ description: Requisitos mínimos del sistema y plataformas compatibles para ejec
 category: Guides
 order: 0
 language: es
-sourceHash: 35e75948e9858c6d
+sourceHash: 40a59ab9c9625911
 ---
 
 # Requisitos
@@ -53,7 +53,7 @@ Estas son las distribuciones probadas en CI. Otras distribuciones de Linux con s
 
 ### Instalado Automáticamente
 
-El comando `rdc context setup-machine` instala lo siguiente en el servidor remoto:
+El comando `rdc config setup-machine` instala lo siguiente en el servidor remoto:
 
 - **Docker** y **containerd** (entorno de ejecución de contenedores)
 - **cryptsetup** (cifrado de disco LUKS)

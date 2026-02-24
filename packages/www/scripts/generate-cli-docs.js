@@ -2,10 +2,9 @@
 /**
  * CLI Documentation Generator
  *
- * Generates cli-application.md for all supported languages from the CLI's
- * i18n source of truth (cli.json). Each language gets its own file with
- * translated frontmatter and {{t:cli.docs.*}} keys in the body that the
- * remark-resolve-translations plugin resolves at build time.
+ * Generates two docs per language from the CLI's i18n source of truth (cli.json):
+ *   - cli-application.md       — local / all-mode commands (main reference)
+ *   - cli-application-cloud.md — cloud-only / experimental commands
  *
  * Usage:
  *   node packages/www/scripts/generate-cli-docs.js
@@ -29,30 +28,22 @@ function getCliJsonPath(lang) {
   return path.resolve(__dirname, `../../cli/src/i18n/locales/${lang}/cli.json`);
 }
 
-function getOutputPath(lang) {
-  return path.resolve(__dirname, `../src/content/docs/${lang}/cli-application.md`);
+function getOutputPath(lang, docType = 'local') {
+  const filename = docType === 'cloud' ? 'cli-application-cloud.md' : 'cli-application.md';
+  return path.resolve(__dirname, `../src/content/docs/${lang}/${filename}`);
 }
 
-// Command groups in registration order (matches cli.ts)
-const COMMAND_ORDER = [
-  'auth',
-  'context',
-  'organization',
-  'user',
-  'team',
-  'permission',
-  'region',
-  'bridge',
+// ── Command ordering (split by adapter scope) ───────────────────────────
+// Local / all-mode commands (main reference)
+const LOCAL_COMMAND_ORDER = [
+  'config',
+  'store',
   'machine',
-  'repository',
   'repo',
   'storage',
-  'queue',
   'sync',
   'vscode',
   'term',
-  'ceph',
-  'audit',
   'protocol',
   'snapshot',
   'backup',
@@ -61,6 +52,24 @@ const COMMAND_ORDER = [
   'doctor',
   'ops',
 ];
+
+// Cloud-only / experimental commands
+const CLOUD_COMMAND_ORDER = [
+  'auth',
+  'organization',
+  'user',
+  'team',
+  'permission',
+  'region',
+  'bridge',
+  'repository',
+  'queue',
+  'ceph',
+  'audit',
+];
+
+// Combined for validation
+const COMMAND_ORDER = [...LOCAL_COMMAND_ORDER, ...CLOUD_COMMAND_ORDER];
 
 // Validate COMMAND_ORDER against actual command groups in cli.json
 function validateCommandOrder(commands) {
@@ -262,12 +271,21 @@ function yamlQuote(value) {
 }
 
 /**
- * Generate the markdown content for a given language.
+ * Generate the markdown content for a given language and doc type.
  * Uses the English cli.json for structural discovery (command tree)
  * and the target language's cli.json for frontmatter values.
  * Body content is identical across all languages (uses {{t:}} keys).
+ *
+ * @param {'local'|'cloud'} docType - Which command set to generate
  */
-export function generate(lang, cliJsonEn, { sourceHash } = {}) {
+export function generate(lang, cliJsonEn, { sourceHash, docType = 'local' } = {}) {
+  const isCloud = docType === 'cloud';
+  const commandOrder = isCloud ? CLOUD_COMMAND_ORDER : LOCAL_COMMAND_ORDER;
+  const fmKey = isCloud ? 'cloudFrontmatter' : 'frontmatter';
+  const pageTitleKey = isCloud ? 'cloudPageTitle' : 'pageTitle';
+  const overviewKey = isCloud ? 'cloudOverview' : 'overview';
+  const order = isCloud ? 3 : 2;
+
   // Load the target language's cli.json for frontmatter
   const langCliJson = JSON.parse(fs.readFileSync(getCliJsonPath(lang), 'utf-8'));
   const docs = langCliJson.docs;
@@ -278,12 +296,14 @@ export function generate(lang, cliJsonEn, { sourceHash } = {}) {
   const docsSupplements = cliJsonEn.docs.supplements;
   const lines = [];
 
+  const fm = docs[fmKey] || docs.frontmatter;
+
   // --- Frontmatter (translated per language) ---
   lines.push('---');
-  lines.push(`title: ${yamlQuote(docs.frontmatter.title)}`);
-  lines.push(`description: ${yamlQuote(docs.frontmatter.description)}`);
-  lines.push(`category: ${yamlQuote(docs.frontmatter.category)}`);
-  lines.push('order: 2');
+  lines.push(`title: ${yamlQuote(fm.title)}`);
+  lines.push(`description: ${yamlQuote(fm.description)}`);
+  lines.push(`category: ${yamlQuote(fm.category)}`);
+  lines.push(`order: ${order}`);
   lines.push(`language: ${lang}`);
   lines.push('generated: true');
   lines.push(`generatedFrom: packages/cli/src/i18n/locales/${lang}/cli.json`);
@@ -299,48 +319,49 @@ export function generate(lang, cliJsonEn, { sourceHash } = {}) {
   lines.push('');
 
   // --- Title ---
-  lines.push('# {{t:cli.docs.pageTitle}}');
+  lines.push(`# {{t:cli.docs.${pageTitleKey}}}`);
   lines.push('');
 
   // --- Overview ---
-  lines.push('## {{t:cli.docs.overview.heading}}');
+  lines.push(`## {{t:cli.docs.${overviewKey}.heading}}`);
   lines.push('');
-  lines.push('{{t:cli.docs.overview.text}}');
-  lines.push('');
-
-  // --- Installation ---
-  lines.push('### {{t:cli.docs.installation.heading}}');
-  lines.push('');
-  lines.push('{{t:cli.docs.installation.text}}');
-  lines.push('');
-  lines.push('```bash');
-  lines.push('# macOS / Linux');
-  lines.push('curl -fsSL https://get.rediacc.com | sh');
-  lines.push('');
-  lines.push('# Or use the packaged binary directly');
-  lines.push('./rdc --help');
-  lines.push('```');
+  lines.push(`{{t:cli.docs.${overviewKey}.text}}`);
   lines.push('');
 
-  // --- Global options table ---
-  lines.push('### {{t:cli.docs.globalOptions.heading}}');
-  lines.push('');
-  lines.push('{{t:cli.docs.globalOptions.intro}}');
-  lines.push('');
-  lines.push('| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} |');
-  lines.push('|------|-------------|');
-  lines.push('| `--output` | {{t:cli.options.output}} |');
-  lines.push('| `--context` | {{t:cli.options.context}} |');
-  lines.push('| `--lang` | {{t:cli.options.lang}} |');
-  lines.push('| `--force` | {{t:cli.options.force}} |');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
+  // --- Installation & Global Options (local page only) ---
+  if (!isCloud) {
+    lines.push('### {{t:cli.docs.installation.heading}}');
+    lines.push('');
+    lines.push('{{t:cli.docs.installation.text}}');
+    lines.push('');
+    lines.push('```bash');
+    lines.push('# macOS / Linux');
+    lines.push('curl -fsSL https://get.rediacc.com | sh');
+    lines.push('');
+    lines.push('# Or use the packaged binary directly');
+    lines.push('./rdc --help');
+    lines.push('```');
+    lines.push('');
+
+    lines.push('### {{t:cli.docs.globalOptions.heading}}');
+    lines.push('');
+    lines.push('{{t:cli.docs.globalOptions.intro}}');
+    lines.push('');
+    lines.push('| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} |');
+    lines.push('|------|-------------|');
+    lines.push('| `--output` | {{t:cli.options.output}} |');
+    lines.push('| `--config` | {{t:cli.options.config}} |');
+    lines.push('| `--lang` | {{t:cli.options.lang}} |');
+    lines.push('| `--force` | {{t:cli.options.force}} |');
+    lines.push('');
+    lines.push('---');
+    lines.push('');
+  }
 
   // --- Command sections ---
   let sectionNum = 0;
 
-  for (const group of COMMAND_ORDER) {
+  for (const group of commandOrder) {
     const groupData = commands[group];
     if (!groupData) continue;
 
@@ -502,48 +523,49 @@ export function generate(lang, cliJsonEn, { sourceHash } = {}) {
     lines.push('');
   }
 
-  // --- Common Error Messages ---
-  lines.push('## {{t:cli.docs.errors.heading}}');
-  lines.push('');
-  lines.push('{{t:cli.docs.errors.intro}}');
-  lines.push('');
-  lines.push('| {{t:cli.docs.tableHeaders.error}} | {{t:cli.docs.tableHeaders.meaning}} |');
-  lines.push('|-------|---------|');
+  // --- Common Error Messages & Output Formats (local page only) ---
+  if (!isCloud) {
+    lines.push('## {{t:cli.docs.errors.heading}}');
+    lines.push('');
+    lines.push('{{t:cli.docs.errors.intro}}');
+    lines.push('');
+    lines.push('| {{t:cli.docs.tableHeaders.error}} | {{t:cli.docs.tableHeaders.meaning}} |');
+    lines.push('|-------|---------|');
 
-  // Pick the most important/common flat error keys
-  const errorKeys = [
-    'authRequired',
-    'noActiveContext',
-    'permissionDenied',
-    'machineRequired',
-    'teamRequired',
-    'regionRequired',
-  ];
+    // Pick the most important/common flat error keys
+    const errorKeys = [
+      'authRequired',
+      'noActiveConfig',
+      'permissionDenied',
+      'machineRequired',
+      'teamRequired',
+      'regionRequired',
+    ];
 
-  for (const key of errorKeys) {
-    if (errors[key]) {
-      lines.push(`| {{t:cli.errors.${key}}} | {{t:cli.docs.errors.meanings.${key}}} |`);
+    for (const key of errorKeys) {
+      if (errors[key]) {
+        lines.push(`| {{t:cli.errors.${key}}} | {{t:cli.docs.errors.meanings.${key}}} |`);
+      }
     }
+
+    lines.push('');
+    lines.push('---');
+    lines.push('');
+
+    lines.push('## {{t:cli.docs.outputFormats.heading}}');
+    lines.push('');
+    lines.push('{{t:cli.docs.outputFormats.text}}');
+    lines.push('');
+    lines.push('```bash');
+    lines.push('rdc machine list --output json');
+    lines.push('rdc machine list --output yaml');
+    lines.push('rdc machine list --output csv');
+    lines.push('rdc machine list --output table   # default');
+    lines.push('```');
+    lines.push('');
+    lines.push('{{t:cli.docs.outputFormats.closing}}');
+    lines.push('');
   }
-
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-
-  // --- Output Formats ---
-  lines.push('## {{t:cli.docs.outputFormats.heading}}');
-  lines.push('');
-  lines.push('{{t:cli.docs.outputFormats.text}}');
-  lines.push('');
-  lines.push('```bash');
-  lines.push('rdc machine list --output json');
-  lines.push('rdc machine list --output yaml');
-  lines.push('rdc machine list --output csv');
-  lines.push('rdc machine list --output table   # default');
-  lines.push('```');
-  lines.push('');
-  lines.push('{{t:cli.docs.outputFormats.closing}}');
-  lines.push('');
 
   return lines.join('\n');
 }
@@ -553,19 +575,23 @@ const isMainModule =
   process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
 if (isMainModule) {
   const cliJsonEn = JSON.parse(fs.readFileSync(getCliJsonPath('en'), 'utf-8'));
-
-  // Generate English first (without sourceHash) to compute the hash
-  const enContent = generate('en', cliJsonEn);
   const matter = await import('gray-matter');
-  const parsed = matter.default(enContent);
-  const hash = computeSourceHash(parsed.data, parsed.content);
 
-  // Now generate all languages with sourceHash included
-  for (const lang of LANGUAGES) {
-    const content = generate(lang, cliJsonEn, { sourceHash: hash });
-    fs.writeFileSync(getOutputPath(lang), content, 'utf-8');
-    console.log(
-      `\x1b[32m✓\x1b[0m Generated ${lang}/cli-application.md (${content.split('\n').length} lines, sourceHash: ${hash})`
-    );
+  for (const docType of ['local', 'cloud']) {
+    // Generate English first (without sourceHash) to compute the hash
+    const enContent = generate('en', cliJsonEn, { docType });
+    const parsed = matter.default(enContent);
+    const hash = computeSourceHash(parsed.data, parsed.content);
+
+    const label = docType === 'cloud' ? 'cli-application-cloud.md' : 'cli-application.md';
+
+    // Now generate all languages with sourceHash included
+    for (const lang of LANGUAGES) {
+      const content = generate(lang, cliJsonEn, { sourceHash: hash, docType });
+      fs.writeFileSync(getOutputPath(lang, docType), content, 'utf-8');
+      console.log(
+        `\x1b[32m✓\x1b[0m Generated ${lang}/${label} (${content.split('\n').length} lines, sourceHash: ${hash})`
+      );
+    }
   }
 }

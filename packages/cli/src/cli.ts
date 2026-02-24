@@ -4,7 +4,7 @@ import { registerAuthCommands } from './commands/auth.js';
 import { registerBackupCommands } from './commands/backup.js';
 import { registerBridgeCommands } from './commands/bridge.js';
 import { registerCephCommands } from './commands/ceph/index.js';
-import { registerContextCommands } from './commands/context.js';
+import { registerConfigCommands } from './commands/config.js';
 import { registerDoctorCommand } from './commands/doctor.js';
 import { registerMachineCommands } from './commands/machine/index.js';
 import { registerOpsCommands } from './commands/ops/index.js';
@@ -18,6 +18,7 @@ import { registerRepositoryCommands } from './commands/repository.js';
 import { registerShortcuts } from './commands/shortcuts.js';
 import { registerSnapshotCommands } from './commands/snapshot.js';
 import { registerStorageCommands } from './commands/storage.js';
+import { registerStoreCommands } from './commands/store.js';
 import { registerSyncCommands } from './commands/sync.js';
 import { registerTeamCommands } from './commands/team.js';
 import { registerTermCommands } from './commands/term.js';
@@ -25,7 +26,7 @@ import { registerUpdateCommand } from './commands/update.js';
 import { registerUserCommands } from './commands/user.js';
 import { registerVSCodeCommands } from './commands/vscode.js';
 import { changeLanguage, initI18n, SUPPORTED_LANGUAGES, t } from './i18n/index.js';
-import { contextService } from './services/context.js';
+import { configService } from './services/config-resources.js';
 import { outputService } from './services/output.js';
 import { telemetryService } from './services/telemetry.js';
 import { setOutputFormat } from './utils/errors.js';
@@ -68,7 +69,7 @@ cli
   .description(t('cli.description'))
   .version(VERSION)
   .option('-o, --output <format>', t('options.output'), 'table')
-  .option('--context <name>', t('options.context'))
+  .option('--config <name>', t('options.config'))
   .option('-l, --lang <code>', t('options.lang', { languages: SUPPORTED_LANGUAGES.join('|') }))
   .option('--experimental', t('options.experimental'))
   .hook('preAction', async (thisCommand, actionCommand) => {
@@ -79,12 +80,12 @@ cli
     }
     // Set output format before any command runs
     setOutputFormat(opts.output as OutputFormat);
-    // Set runtime context override if --context flag is provided
-    if (opts.context) {
-      contextService.setRuntimeContext(opts.context);
+    // Set runtime config override if --config flag is provided
+    if (opts.config) {
+      configService.setRuntimeConfig(opts.config);
     }
     // Initialize or update i18n language
-    const language = opts.lang ?? (await contextService.getLanguage());
+    const language = opts.lang ?? (await configService.getLanguage());
     if (!i18nInitialized) {
       await initI18n(language);
       i18nInitialized = true;
@@ -103,8 +104,8 @@ cli
 
     // Set user context if available
     try {
-      const email = await contextService.getUserEmail();
-      const team = await contextService.getTeam();
+      const email = await configService.getUserEmail();
+      const team = await configService.getTeam();
       if (email || team) {
         telemetryService.setUserContext({ email: email ?? undefined, teamName: team ?? undefined });
       }
@@ -142,7 +143,8 @@ registerBridgeCommands(cli);
 registerCephCommands(cli);
 registerOrganizationCommands(cli);
 registerUserCommands(cli);
-registerContextCommands(cli);
+registerConfigCommands(cli);
+registerStoreCommands(cli);
 registerDoctorCommand(cli);
 registerPermissionCommands(cli);
 registerAuditCommands(cli);

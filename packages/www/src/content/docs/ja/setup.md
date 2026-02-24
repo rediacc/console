@@ -1,21 +1,22 @@
 ---
 title: "マシンセットアップ"
-description: "コンテキストの作成、マシンの追加、サーバーのプロビジョニング、インフラストラクチャの設定。"
+description: "設定の作成、マシンの追加、サーバーのプロビジョニング、インフラストラクチャの設定。"
 category: "Guides"
 order: 3
 language: ja
+sourceHash: bdc41b37f24ae8f8
 ---
 
 # マシンセットアップ
 
-このページでは、最初のマシンのセットアップ手順を説明します：コンテキストの作成、サーバーの登録、プロビジョニング、およびオプションでパブリックアクセス用のインフラストラクチャ設定。
+このページでは、最初のマシンのセットアップ手順を説明します：設定の作成、サーバーの登録、プロビジョニング、およびオプションでパブリックアクセス用のインフラストラクチャ設定。
 
-## ステップ1：ローカルコンテキストの作成
+## ステップ1：Configの作成
 
-**コンテキスト**は、SSH資格情報、マシン定義、リポジトリマッピングを保存する名前付きの設定です。プロジェクトワークスペースと考えてください。
+**Config**は、SSH資格情報、マシン定義、リポジトリマッピングを保存する名前付き設定ファイルです。プロジェクトワークスペースと考えてください。
 
 ```bash
-rdc context create-local my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 | オプション | 必須 | 説明 |
@@ -23,16 +24,16 @@ rdc context create-local my-infra --ssh-key ~/.ssh/id_ed25519
 | `--ssh-key <path>` | はい | SSH秘密鍵へのパス。チルダ（`~`）は自動的に展開されます。 |
 | `--renet-path <path>` | いいえ | リモートマシン上のrenetバイナリへのカスタムパス。デフォルトは標準インストール場所です。 |
 
-これにより`my-infra`という名前のローカルコンテキストが作成され、`~/.rediacc/config.json`に保存されます。
+これにより`my-infra`という名前の設定が作成され、`~/.rediacc/my-infra.json`に保存されます。デフォルト設定（名前を指定しない場合）は`~/.rediacc/rediacc.json`として保存されます。
 
-> 複数のコンテキストを持つことができます（例：`production`、`staging`、`dev`）。任意のコマンドで`--context`フラグを使用して切り替えることができます。
+> 複数の設定を持つことができます（例：`production`、`staging`、`dev`）。任意のコマンドで`--config`フラグを使用して切り替えることができます。
 
 ## ステップ2：マシンの追加
 
-リモートサーバーをコンテキスト内のマシンとして登録します：
+リモートサーバーを設定内のマシンとして登録します：
 
 ```bash
-rdc context add-machine server-1 --ip 203.0.113.50 --user deploy
+rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | オプション | 必須 | デフォルト | 説明 |
@@ -45,13 +46,13 @@ rdc context add-machine server-1 --ip 203.0.113.50 --user deploy
 マシンを追加すると、rdcは自動的に`ssh-keyscan`を実行してサーバーのホスト鍵を取得します。手動で実行することもできます：
 
 ```bash
-rdc context scan-keys server-1
+rdc config scan-keys server-1
 ```
 
 登録済みのすべてのマシンを表示するには：
 
 ```bash
-rdc context machines
+rdc config machines
 ```
 
 ## ステップ3：マシンのセットアップ
@@ -59,7 +60,7 @@ rdc context machines
 リモートサーバーに必要なすべての依存関係をプロビジョニングします：
 
 ```bash
-rdc context setup-machine server-1
+rdc config setup-machine server-1
 ```
 
 このコマンドは以下を実行します：
@@ -81,26 +82,28 @@ rdc context setup-machine server-1
 サーバーのSSHホスト鍵が変更された場合（例：再インストール後）、保存されている鍵を更新します：
 
 ```bash
-rdc context scan-keys server-1
+rdc config scan-keys server-1
 ```
 
 これにより、そのマシンの設定内の`knownHosts`フィールドが更新されます。
 
 ## SSH接続のテスト
 
-続行する前に、マシンに到達可能であることを確認します：
+マシンを追加した後、到達可能であることを確認します：
 
 ```bash
-rdc machine test-connection --ip 203.0.113.50 --user deploy
+rdc term server-1 -c "hostname"
 ```
 
-このコマンドはSSH接続をテストし、以下を報告します：
-- 接続ステータス
-- 使用された認証方法
-- SSH鍵の設定
-- 既知のホストエントリ
+このコマンドはマシンへのSSH接続を開き、コマンドを実行します。成功すれば、SSH設定が正しいことが確認できます。
 
-検証されたホスト鍵をマシン設定に保存するには`--save -m server-1`を使用します。
+より詳細な診断については、以下を実行してください：
+
+```bash
+rdc doctor
+```
+
+> **クラウドアダプターのみ**: `rdc machine test-connection` コマンドは詳細なSSH診断を提供しますが、クラウドアダプターが必要です。ローカルアダプターでは、`rdc term` または `ssh` を直接使用してください。
 
 ## インフラストラクチャ設定
 
@@ -109,7 +112,7 @@ rdc machine test-connection --ip 203.0.113.50 --user deploy
 ### インフラストラクチャの設定
 
 ```bash
-rdc context set-infra server-1 \
+rdc config set-infra server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
@@ -129,7 +132,7 @@ rdc context set-infra server-1 \
 ### インフラストラクチャの表示
 
 ```bash
-rdc context show-infra server-1
+rdc config show-infra server-1
 ```
 
 ### サーバーへのプッシュ
@@ -137,7 +140,7 @@ rdc context show-infra server-1
 Traefikリバースプロキシ設定を生成してサーバーにデプロイします：
 
 ```bash
-rdc context push-infra server-1
+rdc config push-infra server-1
 ```
 
 これにより、インフラストラクチャ設定に基づいてプロキシ設定がプッシュされます。TraefikはTLS終端、ルーティング、ポートフォワーディングを処理します。
@@ -147,8 +150,8 @@ rdc context push-infra server-1
 毎回のコマンドで指定する必要がないように、デフォルト値を設定します：
 
 ```bash
-rdc context set machine server-1    # デフォルトマシン
-rdc context set team my-team        # デフォルトチーム（クラウドモード、実験的）
+rdc config set machine server-1    # デフォルトマシン
+rdc config set team my-team        # デフォルトチーム（クラウドアダプター、実験的）
 ```
 
 デフォルトマシンを設定した後は、コマンドから`-m server-1`を省略できます：
@@ -157,28 +160,28 @@ rdc context set team my-team        # デフォルトチーム（クラウドモ
 rdc repo create my-app --size 10G   # デフォルトマシンを使用
 ```
 
-## 複数のコンテキスト
+## 複数の設定
 
-名前付きコンテキストで複数の環境を管理します：
+名前付き設定で複数の環境を管理します：
 
 ```bash
-# 別々のコンテキストを作成
-rdc context create-local production --ssh-key ~/.ssh/id_prod
-rdc context create-local staging --ssh-key ~/.ssh/id_staging
+# 別々の設定を作成
+rdc config init production --ssh-key ~/.ssh/id_prod
+rdc config init staging --ssh-key ~/.ssh/id_staging
 
-# 特定のコンテキストを使用
-rdc repo list -m server-1 --context production
-rdc repo list -m staging-1 --context staging
+# 特定の設定を使用
+rdc repo list -m server-1 --config production
+rdc repo list -m staging-1 --config staging
 ```
 
-すべてのコンテキストを表示：
+すべての設定を表示：
 
 ```bash
-rdc context list
+rdc config list
 ```
 
-現在のコンテキストの詳細を表示：
+現在の設定の詳細を表示：
 
 ```bash
-rdc context show
+rdc config show
 ```

@@ -4,12 +4,12 @@ description: 5 dakikada sunucunuzda konteynerize bir servis çalıştırın.
 category: Guides
 order: -1
 language: tr
+sourceHash: b368b94e7064efe1
 ---
 
 # Hızlı Başlangıç
 
-Hangi araci kullanacaginizdan emin degilseniz [rdc vs renet](/tr/docs/rdc-vs-renet) sayfasina bakin.
-Kendi sunucunuzda şifrelenmiş, izole bir konteyner ortamını 5 dakikada dağıtın. Bu rehber **yerel modu** kullanır — bulut hesabı veya SaaS bağımlılığı gerekmez.
+Kendi sunucunuzda şifrelenmiş, izole bir konteyner ortamını 5 dakikada dağıtın. Bulut hesabı veya SaaS bağımlılığı gerekmez.
 
 ## Ön Koşullar
 
@@ -23,22 +23,22 @@ Kendi sunucunuzda şifrelenmiş, izole bir konteyner ortamını 5 dakikada dağ�
 curl -fsSL https://get.rediacc.com | sh
 ```
 
-## 2. Bağlam Oluşturma
+## 2. Yapılandırma Oluşturma
 
 ```bash
-rdc context create-local my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 ## 3. Sunucu Ekleme
 
 ```bash
-rdc context add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
+rdc config add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
 ```
 
 ## 4. Sunucuyu Hazırlama
 
 ```bash
-rdc context setup-machine server-1
+rdc config setup-machine server-1
 ```
 
 Bu komut sunucunuza Docker, cryptsetup ve renet ikili dosyasını kurar.
@@ -73,8 +73,9 @@ Bulut hesabı gerekmez. SaaS bağımlılığı yoktur. Verileriniz kendi sunucul
 
 ## Sonraki Adımlar
 
-- **[Mimari](/tr/docs/architecture)** — Rediacc'ın nasıl çalıştığını anlayın: modlar, güvenlik modeli, Docker izolasyonu
-- **[Makine Kurulumu](/tr/docs/setup)** — Ayrıntılı kurulum rehberi: bağlamlar, makineler, altyapı yapılandırması
+- **[Mimari](/tr/docs/architecture)** — Rediacc'ın nasıl çalıştığını anlayın: adaptör algılama, güvenlik modeli, Docker izolasyonu
+- **[rdc vs renet](/tr/docs/rdc-vs-renet)** — Günlük işlemler ve düşük seviyeli uzak çalışma için hangi CLI'ı kullanacağınızı anlayın
+- **[Makine Kurulumu](/tr/docs/setup)** — Ayrıntılı kurulum rehberi: yapılandırmalar, makineler, altyapı yapılandırması
 - **[Depolar](/tr/docs/repositories)** — Depo oluşturma, yönetme, yeniden boyutlandırma, çatallama ve doğrulama
 - **[Servisler](/tr/docs/services)** — Rediaccfile, servis ağları, dağıtım, otomatik başlatma
 - **[Yedekleme ve Geri Yükleme](/tr/docs/backup-restore)** — Harici depolamaya yedekleme ve otomatik yedeklemeleri zamanlama

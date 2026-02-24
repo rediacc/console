@@ -1,7 +1,7 @@
 ---
 title: Architecture
 description: >-
-  How Rediacc works: two-tool architecture, operating modes, security model, and
+  How Rediacc works: two-tool architecture, adapter detection, security model, and
   configuration structure.
 category: Concepts
 order: 0
@@ -10,7 +10,7 @@ language: en
 
 # Architecture
 
-This page explains how Rediacc works under the hood: the two-tool architecture, operating modes, security model, and configuration structure.
+This page explains how Rediacc works under the hood: the two-tool architecture, adapter detection, security model, and configuration structure.
 
 ## Full Stack Overview
 
@@ -33,46 +33,46 @@ Every command you type locally translates to an SSH call that executes renet on 
 
 For an operator-focused rule of thumb, see [rdc vs renet](/en/docs/rdc-vs-renet). You can also use `rdc ops` to run a local VM cluster for testing — see [Experimental VMs](/en/docs/experimental-vms).
 
-## Operating Modes
+## Config & Stores
 
-Rediacc supports three modes, each determining where state is stored and how commands are executed.
+All CLI state is stored in flat JSON config files under `~/.rediacc/`. Stores let you sync these configs to external backends for backup, sharing, or multi-device access. Store credentials are kept separately in `~/.rediacc/.credentials.json`.
 
-![Operating Modes](/img/arch-operating-modes.svg)
+![Config & Stores](/img/arch-operating-modes.svg)
 
-### Local Mode
+### Local Adapter (Default)
 
-The default for self-hosted usage. All state lives in `~/.rediacc/config.json` on your workstation.
+The default for self-hosted usage. All state lives in a config file on your workstation (e.g., `~/.rediacc/rediacc.json`).
 
 - Direct SSH connections to machines
 - No external services required
 - Single-user, single-workstation
-- Context is created with `rdc context create-local`
+- Default config is created automatically on first CLI use. Named configs are created with `rdc config init <name>`
 
-### Cloud Mode (Experimental)
+### Cloud Adapter (Experimental)
 
-Uses the Rediacc API for state management and team collaboration.
+Activated automatically when a config contains `apiUrl` and `token` fields. Uses the Rediacc API for state management and team collaboration.
 
 - State stored in the cloud API
 - Multi-user teams with role-based access
 - Web console for visual management
-- Context is created with `rdc context create`
+- Set up with `rdc auth login`
 
-> **Note:** Cloud mode commands are experimental. Enable them with `rdc --experimental <command>` or by setting `REDIACC_EXPERIMENTAL=1`.
+> **Note:** Cloud adapter commands are experimental. Enable them with `rdc --experimental <command>` or by setting `REDIACC_EXPERIMENTAL=1`.
 
-### S3 Mode
+### S3 Resource State (Optional)
 
-Stores encrypted state in an S3-compatible bucket. Combines the self-hosted nature of local mode with portability across workstations.
+When a config includes S3 settings (endpoint, bucket, access key), resource state is stored in an S3-compatible bucket. This works alongside the local adapter, combining self-hosted operation with portability across workstations.
 
-- State stored in an S3/R2 bucket as `state.json`
+- Resource state stored in an S3/R2 bucket as `state.json`
 - AES-256-GCM encryption with a master password
 - Portable: any workstation with the bucket credentials can manage the infrastructure
-- Context is created with `rdc context create-s3`
+- Configured via `rdc config init <name> --s3-endpoint <url> --s3-bucket <bucket> --s3-access-key-id <key>`
 
-All three modes use the same CLI commands. The mode only affects where state is stored and how authentication works.
+All adapters use the same CLI commands. The adapter only affects where state is stored and how authentication works.
 
 ## The rediacc User
 
-When you run `rdc context setup-machine`, renet creates a system user called `rediacc` on the remote server:
+When you run `rdc config setup-machine`, renet creates a system user called `rediacc` on the remote server:
 
 - **UID**: 7111
 - **Shell**: `/sbin/nologin` (cannot log in via SSH)
@@ -116,44 +116,39 @@ Repositories are LUKS-encrypted disk images stored on the server's datastore (de
 2. Is stored as a file: `{datastore}/repos/{guid}.img`
 3. Is mounted via `cryptsetup` when accessed
 
-The credential is stored in your local `config.json` but **never** on the server. Without the credential, the repository data cannot be read. When autostart is enabled, a secondary LUKS keyfile is stored on the server to allow automatic mounting on boot.
+The credential is stored in your config file but **never** on the server. Without the credential, the repository data cannot be read. When autostart is enabled, a secondary LUKS keyfile is stored on the server to allow automatic mounting on boot.
 
 ## Configuration Structure
 
-All configuration is stored in `~/.rediacc/config.json`. Here is an annotated example:
+Each config is a flat JSON file stored in `~/.rediacc/`. The default config is `rediacc.json`; named configs use the name as the filename (e.g., `production.json`). Here is an annotated example:
 
 ```json
 {
-  "contexts": {
-    "production": {
-      "name": "production",
-      "mode": "local",
-      "apiUrl": "local://",
-      "ssh": {
-        "privateKeyPath": "/home/you/.ssh/id_ed25519"
-      },
-      "machines": {
-        "prod-1": {
-          "ip": "203.0.113.50",
-          "user": "deploy",
-          "port": 22,
-          "datastore": "/mnt/rediacc",
-          "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
-        }
-      },
-      "storages": {
-        "backblaze": {
-          "provider": "b2",
-          "vaultContent": { "...": "..." }
-        }
-      },
-      "repositories": {
-        "webapp": {
-          "repositoryGuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-          "credential": "base64-encoded-random-passphrase",
-          "networkId": 2816
-        }
-      }
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "version": 1,
+  "ssh": {
+    "privateKeyPath": "/home/you/.ssh/id_ed25519"
+  },
+  "machines": {
+    "prod-1": {
+      "ip": "203.0.113.50",
+      "user": "deploy",
+      "port": 22,
+      "datastore": "/mnt/rediacc",
+      "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
+    }
+  },
+  "storages": {
+    "backblaze": {
+      "provider": "b2",
+      "vaultContent": { "...": "..." }
+    }
+  },
+  "repositories": {
+    "webapp": {
+      "repositoryGuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "credential": "base64-encoded-random-passphrase",
+      "networkId": 2816
     }
   },
   "nextNetworkId": 2880,
@@ -165,8 +160,8 @@ All configuration is stored in `~/.rediacc/config.json`. Here is an annotated ex
 
 | Field | Description |
 |-------|-------------|
-| `mode` | `"local"`, `"s3"`, or omitted for cloud mode |
-| `apiUrl` | `"local://"` for local mode, API URL for cloud mode |
+| `id` | Unique identifier for this config file |
+| `version` | Config file schema version |
 | `ssh.privateKeyPath` | SSH private key used for all machine connections |
 | `machines.<name>.user` | SSH username for connecting to the machine |
 | `machines.<name>.knownHosts` | SSH host keys from `ssh-keyscan` |

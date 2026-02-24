@@ -6,7 +6,7 @@ import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
-import { contextService } from '../services/context.js';
+import { configService } from '../services/config-resources.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 
@@ -266,7 +266,7 @@ async function validateAndGetConnectionDetails(opts: {
   repository?: string;
 }) {
   const provider = await getStateProvider();
-  if (provider.mode === 'cloud' && !opts.team) {
+  if (provider.isCloud && !opts.team) {
     throw new Error(t('errors.teamRequired'));
   }
   if (!opts.machine) {
@@ -308,7 +308,7 @@ async function validateAndGetConnectionDetails(opts: {
  * Connects to a machine or repository via SSH
  */
 async function connectTerminal(options: TermConnectOptions): Promise<void> {
-  const opts = await contextService.applyDefaults(options);
+  const opts = await configService.applyDefaults(options);
   const { connectionDetails, teamName, machineName, repositoryName } =
     await validateAndGetConnectionDetails(opts);
 
@@ -469,7 +469,7 @@ export function registerTermCommands(program: Command): void {
     .action(async (options: TermConnectOptions) => {
       try {
         const provider = await getStateProvider();
-        if (provider.mode === 'cloud') {
+        if (provider.isCloud) {
           await authService.requireAuth();
         }
         await connectTerminal(options);
@@ -497,7 +497,7 @@ export function registerTermCommands(program: Command): void {
       ) => {
         try {
           const provider = await getStateProvider();
-          if (provider.mode === 'cloud') {
+          if (provider.isCloud) {
             await authService.requireAuth();
           }
           await connectTerminal({

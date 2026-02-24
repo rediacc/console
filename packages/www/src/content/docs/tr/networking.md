@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: tr
-sourceHash: 47ee41d44be935a8
+sourceHash: 4a0c6a695d72aa55
 ---
 
 # Ağ
@@ -92,13 +92,13 @@ Bunlar standart [Traefik v3 etiket sözdizimini](https://doc.traefik.io/traefik/
 1. Makinede yapılandırılmış altyapı ([Makine Kurulumu — Altyapı Yapılandırması](/tr/docs/setup#infrastructure-configuration)):
 
    ```bash
-   rdc context set-infra server-1 \
+   rdc config set-infra server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
-   rdc context push-infra server-1
+   rdc config push-infra server-1
    ```
 
 2. Alan adınızı sunucunun genel IP'sine yönlendiren DNS kayıtları (aşağıdaki [DNS Yapılandırması](#dns-yapılandırması) bölümüne bakın).
@@ -145,7 +145,7 @@ Etiketlerdeki `{name}` rastgele bir tanımlayıcıdır — sadece ilgili router/
 TLS sertifikaları, Cloudflare DNS-01 doğrulaması kullanılarak Let's Encrypt aracılığıyla otomatik olarak alınır. Bu, altyapı kurulumu sırasında bir kez yapılandırılır:
 
 ```bash
-rdc context set-infra server-1 \
+rdc config set-infra server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
@@ -167,11 +167,11 @@ HTTP dışı protokoller (posta sunucuları, DNS, dışarıya açılan veritaban
 Altyapı yapılandırması sırasında gerekli portları ekleyin:
 
 ```bash
-rdc context set-infra server-1 \
+rdc config set-infra server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc context push-infra server-1
+rdc config push-infra server-1
 ```
 
 Bu, `tcp-{port}` ve `udp-{port}` adlı Traefik giriş noktaları oluşturur.
@@ -197,7 +197,7 @@ Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
 
 > **Security note:** Exposing a database to the internet is a risk. Use this only when remote clients need direct access. For most setups, keep the database internal and connect through your application.
 
-> Port ekledikten veya kaldırdıktan sonra, proxy yapılandırmasını güncellemek için her zaman `rdc context push-infra` komutunu yeniden çalıştırın.
+> Port ekledikten veya kaldırdıktan sonra, proxy yapılandırmasını güncellemek için her zaman `rdc config push-infra` komutunu yeniden çalıştırın.
 
 ### Adım 2: TCP/UDP Etiketleri Ekleme
 
@@ -342,7 +342,7 @@ Dinamik olarak atanan portlar için TCP ve UDP port eşlemelerini gösterir.
 | Servis yönlendirmelerde yok | Konteyner çalışmıyor veya etiketler eksik | Deponun daemon'unda `docker ps` ile doğrulayın; etiketleri kontrol edin |
 | Sertifika verilmedi | DNS sunucuya yönlenmiyor veya geçersiz Cloudflare token'ı | DNS çözümlemesini doğrulayın; Cloudflare API token izinlerini kontrol edin |
 | 502 Bad Gateway | Uygulama belirtilen portta dinlemiyor | Uygulamanın `{SERVICE}_IP`'sine bağlı olduğunu ve portun `loadbalancer.server.port` ile eşleştiğini doğrulayın |
-| TCP portu erişilemiyor | Port altyapıda kayıtlı değil | `rdc context set-infra --tcp-ports ...` ve `push-infra` çalıştırın |
+| TCP portu erişilemiyor | Port altyapıda kayıtlı değil | `rdc config set-infra --tcp-ports ...` ve `push-infra` çalıştırın |
 | Route server running old version | Binary was updated but service not restarted | Happens automatically on provisioning; manual: `sudo systemctl restart rediacc-router` |
 | STUN/TURN relay not reachable | Relay addresses cached at startup | Recreate the service after DNS or IP changes so it picks up the new network config |
 

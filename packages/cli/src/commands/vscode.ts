@@ -38,7 +38,7 @@ import {
 import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
-import { contextService } from '../services/context.js';
+import { configService } from '../services/config-resources.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 
@@ -195,10 +195,10 @@ async function setupRemoteEnvironment(connectionDetails: ConnectionDetails): Pro
  * Connects to a machine or repository via VS Code Remote SSH
  */
 async function connectVSCode(options: VSCodeConnectOptions): Promise<void> {
-  const opts = await contextService.applyDefaults(options);
+  const opts = await configService.applyDefaults(options);
 
   const provider = await getStateProvider();
-  if (provider.mode === 'cloud' && !opts.team) {
+  if (provider.isCloud && !opts.team) {
     throw new Error(t('errors.teamRequired'));
   }
   if (!opts.machine) {
@@ -382,7 +382,7 @@ export function registerVSCodeCommands(program: Command): void {
     .action(async (options: VSCodeConnectOptions) => {
       try {
         const provider = await getStateProvider();
-        if (provider.mode === 'cloud') {
+        if (provider.isCloud) {
           await authService.requireAuth();
         }
         await connectVSCode(options);
@@ -450,7 +450,7 @@ export function registerVSCodeCommands(program: Command): void {
           // If positional arguments provided, use connect flow
           if (machine) {
             const provider = await getStateProvider();
-            if (provider.mode === 'cloud') {
+            if (provider.isCloud) {
               await authService.requireAuth();
             }
             await connectVSCode({

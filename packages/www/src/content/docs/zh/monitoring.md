@@ -4,7 +4,7 @@ description: 监控机器健康状况、容器、服务、仓库，并运行诊�
 category: Guides
 order: 9
 language: zh
-sourceHash: 72f77c1ae5a0dbce
+sourceHash: 5a0f43834cb143a2
 ---
 
 # 监控
@@ -20,12 +20,9 @@ rdc machine health server-1
 ```
 
 报告内容：
-- **System**：运行时间、内存使用率、磁盘使用率
-- **Datastore**：容量和使用情况
+- **System**：运行时间、磁盘使用率、数据存储使用率
 - **容器**：运行中、健康和不健康的容器数量
-- **服务**：状态和重启次数
-- **存储**：SMART 健康状态和温度
-- **仓库**：挂载状态和 Docker daemon 状态
+- **存储**：SMART 健康状态
 - **问题**：已识别的问题
 
 使用 `--output json` 获取机器可读的输出。
@@ -39,12 +36,13 @@ rdc machine containers server-1
 ```
 
 | 列名 | 描述 |
-|------|------|
+|--------|-------------|
 | Name | 容器名称 |
-| Status | 运行中、已停止等 |
+| Status | 运行时间或退出原因 |
+| State | 运行中、已退出等 |
 | Health | 健康、不健康、无 |
 | CPU | CPU 使用百分比 |
-| Memory | 内存使用量 |
+| Memory | 内存使用量 / 限制 |
 | Repository | 容器所属的仓库 |
 
 选项：
@@ -60,7 +58,7 @@ rdc machine services server-1
 ```
 
 | 列名 | 描述 |
-|------|------|
+|--------|-------------|
 | Name | 服务名称 |
 | State | 活跃、非活跃、失败 |
 | Sub-state | 运行中、已停止等 |
@@ -81,7 +79,7 @@ rdc machine repos server-1
 ```
 
 | 列名 | 描述 |
-|------|------|
+|--------|-------------|
 | Name | 仓库名称 |
 | Size | 磁盘镜像大小 |
 | Mount | 已挂载或未挂载 |
@@ -104,13 +102,15 @@ rdc machine vault-status server-1
 
 提供的信息：
 - 主机名和运行时间
-- 内存、磁盘和 Datastore 使用情况
+- 内存、磁盘和数据存储使用情况
 - 仓库总数、已挂载数量和运行中的 Docker 数量
 - 每个仓库的详细信息
 
 使用 `--output json` 获取机器可读的输出。
 
 ## 测试连接
+
+> **仅限云适配器。** 在本地模式下，使用 `rdc term server-1 -c "hostname"` 验证连接。
 
 验证与机器的 SSH 连接：
 
@@ -138,12 +138,11 @@ rdc doctor
 ```
 
 | 类别 | 检查项 |
-|------|--------|
+|----------|--------|
 | **环境** | Node.js 版本、CLI 版本、SEA 模式、Go 安装、Docker 可用性 |
 | **Renet** | 二进制文件位置、版本、CRIU、rsync、SEA 嵌入式资源 |
-| **配置** | 活跃上下文、模式、机器、SSH 密钥 |
-| **认证** | 登录状态、用户邮箱 |
-| **Virtualization** | Checks if your system can run local virtual machines (`rdc ops`) |
+| **配置** | 活跃配置、适配器、机器、SSH 密钥 |
+| **虚拟化** | 检查系统是否可以运行本地虚拟机（`rdc ops`） |
 
 每项检查报告 **OK**、**警告** 或 **错误**。在排查任何问题时，请将此作为第一步。
 

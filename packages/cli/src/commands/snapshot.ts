@@ -1,5 +1,5 @@
 import { t } from '../i18n/index.js';
-import { contextService } from '../services/context.js';
+import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
 import { handleError } from '../utils/errors.js';
 import type { Command } from 'commander';
@@ -16,7 +16,7 @@ export function registerSnapshotCommands(program: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (repo, options) => {
       try {
-        const machineName = options.machine ?? (await contextService.getMachine());
+        const machineName = options.machine ?? (await configService.getMachine());
         if (!machineName) {
           throw new Error(t('errors.machineRequiredLocal'));
         }
@@ -50,7 +50,7 @@ export function registerSnapshotCommands(program: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (repo, options) => {
       try {
-        const machineName = options.machine ?? (await contextService.getMachine());
+        const machineName = options.machine ?? (await configService.getMachine());
         if (!machineName) {
           throw new Error(t('errors.machineRequiredLocal'));
         }
@@ -91,7 +91,7 @@ export function registerSnapshotCommands(program: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (repo, snapshotName, options) => {
       try {
-        const machineName = options.machine ?? (await contextService.getMachine());
+        const machineName = options.machine ?? (await configService.getMachine());
         if (!machineName) {
           throw new Error(t('errors.machineRequiredLocal'));
         }

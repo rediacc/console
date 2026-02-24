@@ -4,7 +4,7 @@ description: 将加密仓库备份到外部存储、从备份恢复以及配置�
 category: Guides
 order: 7
 language: zh
-sourceHash: 3d127a0a186d7487
+sourceHash: cf186b18b0c50eba
 ---
 
 # 备份与恢复
@@ -20,15 +20,15 @@ Rediacc 可以将加密仓库备份到外部存储提供商，并在同一台或
 如果您已经配置了 rclone 远程存储：
 
 ```bash
-rdc context import-storage my-storage
+rdc config import-storage rclone.conf
 ```
 
-此命令将 rclone 配置中的存储配置导入到当前上下文中。
+此命令将 rclone 配置文件中的存储配置导入到当前配置中。支持的类型：S3、B2、Google Drive、OneDrive、Mega、Dropbox、Box、Azure Blob 和 Swift。
 
 ### 查看存储
 
 ```bash
-rdc context storages
+rdc config storages
 ```
 
 ## 推送备份

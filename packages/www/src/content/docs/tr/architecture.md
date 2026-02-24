@@ -1,19 +1,17 @@
 ---
 title: Mimari
 description: >-
-  Rediacc nasıl çalışır: iki araçlı mimari, çalışma modları, güvenlik modeli ve
+  Rediacc nasıl çalışır: iki araçlı mimari, adaptör algılama, güvenlik modeli ve
   yapılandırma yapısı.
 category: Concepts
 order: 0
 language: tr
-sourceHash: 58ba0da9645bb9dd
+sourceHash: 5a717ddac450cb81
 ---
 
 # Mimari
 
-Hangi aracı kullanacağınızdan emin değilseniz [rdc vs renet](/tr/docs/rdc-vs-renet) sayfasına bakın.
-
-Bu sayfa, Rediacc'ın altyapısını açıklar: iki araçlı mimari, çalışma modları, güvenlik modeli ve yapılandırma yapısı.
+Bu sayfa, Rediacc'ın altyapısını açıklar: iki araçlı mimari, adaptör algılama, güvenlik modeli ve yapılandırma yapısı.
 
 ## Full Stack Overview
 
@@ -34,46 +32,48 @@ Rediacc, SSH üzerinden birlikte çalışan iki ikili dosya kullanır:
 
 Yerel olarak yazdığınız her komut, uzak makinede renet'i çalıştıran bir SSH çağrısına dönüştürülür. Sunuculara manuel olarak SSH bağlantısı yapmanız gerekmez.
 
-## Çalışma Modları
+Operatör odaklı bir genel kural için [rdc vs renet](/tr/docs/rdc-vs-renet) sayfasına bakın. Ayrıca test için yerel VM kümesi çalıştırmak amacıyla `rdc ops` kullanabilirsiniz — bkz. [Deneysel VM'ler](/tr/docs/experimental-vms).
 
-Rediacc, durumun nerede saklandığını ve komutların nasıl çalıştırıldığını belirleyen üç modu destekler.
+## Config & Stores
 
-![Çalışma Modları](/img/arch-operating-modes.svg)
+Tüm CLI durumu `~/.rediacc/` altındaki düz JSON yapılandırma dosyalarında saklanır. Store'lar bu yapılandırmaları yedekleme, paylaşım veya çoklu cihaz erişimi için harici arka uçlara senkronize etmenizi sağlar. Store kimlik bilgileri ayrıca `~/.rediacc/.credentials.json` dosyasında tutulur.
 
-### Yerel Mod
+![Config & Stores](/img/arch-operating-modes.svg)
 
-Kendi sunucunuzda barındırma için varsayılan moddur. Tüm durum bilgisi iş istasyonunuzdaki `~/.rediacc/config.json` dosyasında saklanır.
+### Yerel Adaptör (Varsayılan)
+
+Kendi sunucunuzda barındırma için varsayılandır. Tüm durum bilgisi iş istasyonunuzdaki bir yapılandırma dosyasında saklanır (ör. `~/.rediacc/rediacc.json`).
 
 - Makinelere doğrudan SSH bağlantısı
 - Harici servis gerekmez
 - Tek kullanıcı, tek iş istasyonu
-- Bağlam `rdc context create-local` ile oluşturulur
+- Varsayılan yapılandırma ilk CLI kullanımında otomatik oluşturulur. Adlandırılmış yapılandırmalar `rdc config init <ad>` ile oluşturulur
 
-### Bulut Modu (Deneysel)
+### Bulut Adaptörü (Deneysel)
 
-Durum yönetimi ve ekip iş birliği için Rediacc API'sini kullanır.
+Bir yapılandırma `apiUrl` ve `token` alanları içerdiğinde otomatik olarak etkinleşir. Durum yönetimi ve ekip iş birliği için Rediacc API'sini kullanır.
 
 - Durum bilgisi bulut API'sinde saklanır
 - Rol tabanlı erişimle çok kullanıcılı ekipler
 - Görsel yönetim için web konsolu
-- Bağlam `rdc context create` ile oluşturulur
+- `rdc auth login` ile kurulur
 
-> **Not:** Bulut modu komutları deneyseldir. `rdc --experimental <komut>` ile veya `REDIACC_EXPERIMENTAL=1` ortam değişkenini ayarlayarak etkinleştirin.
+> **Not:** Bulut adaptörü komutları deneyseldir. `rdc --experimental <komut>` ile veya `REDIACC_EXPERIMENTAL=1` ayarlayarak etkinleştirin.
 
-### S3 Modu
+### S3 Kaynak Durumu (İsteğe Bağlı)
 
-Şifrelenmiş durum bilgisini S3 uyumlu bir kovada (bucket) saklar. Yerel modun kendi sunucusunda barındırma özelliğini iş istasyonları arasında taşınabilirlikle birleştirir.
+Bir yapılandırma S3 ayarları (uç nokta, kova, erişim anahtarı) içerdiğinde, kaynak durumu S3 uyumlu bir kovada saklanır. Bu, yerel adaptörle birlikte çalışarak iş istasyonları arasında taşınabilirlikle kendi sunucusunda barındırmayı birleştirir.
 
-- Durum bilgisi S3/R2 kovasında `state.json` olarak saklanır
-- Ana parola ile AES-256-GCM şifreleme
+- Kaynak durumu S3/R2 kovasında `state.json` olarak saklanır
+- AES-256-GCM şifreleme ile ana parola
 - Taşınabilir: kova kimlik bilgilerine sahip herhangi bir iş istasyonu altyapıyı yönetebilir
-- Bağlam `rdc context create-s3` ile oluşturulur
+- `rdc config init <ad> --s3-endpoint <url> --s3-bucket <kova> --s3-access-key-id <anahtar>` ile yapılandırılır
 
-Her üç mod da aynı CLI komutlarını kullanır. Mod yalnızca durumun nerede saklandığını ve kimlik doğrulamanın nasıl çalıştığını etkiler.
+Tüm adaptörler aynı CLI komutlarını kullanır. Adaptör yalnızca durumun nerede saklandığını ve kimlik doğrulamanın nasıl çalıştığını etkiler.
 
 ## rediacc Kullanıcısı
 
-`rdc context setup-machine` komutunu çalıştırdığınızda, renet uzak sunucuda `rediacc` adında bir sistem kullanıcısı oluşturur:
+`rdc config setup-machine` komutunu çalıştırdığınızda, renet uzak sunucuda `rediacc` adında bir sistem kullanıcısı oluşturur:
 
 - **UID**: 7111
 - **Kabuk**: `/sbin/nologin` (SSH ile giriş yapılamaz)
@@ -117,44 +117,39 @@ Depolar, sunucunun veri deposunda (varsayılan: `/mnt/rediacc`) saklanan LUKS il
 2. Bir dosya olarak saklanır: `{datastore}/repos/{guid}.img`
 3. Erişildiğinde `cryptsetup` ile bağlanır
 
-Kimlik bilgisi yerel `config.json` dosyanızda saklanır ancak **asla** sunucuda saklanmaz. Kimlik bilgisi olmadan depo verileri okunamaz. Otomatik başlatma etkinleştirildiğinde, açılışta otomatik bağlama için sunucuda ikincil bir LUKS anahtar dosyası saklanır.
+Kimlik bilgisi yapılandırma dosyanızda saklanır ancak **asla** sunucuda saklanmaz. Kimlik bilgisi olmadan depo verileri okunamaz. Otomatik başlatma etkinleştirildiğinde, açılışta otomatik bağlama için sunucuda ikincil bir LUKS anahtar dosyası saklanır.
 
 ## Yapılandırma Yapısı
 
-Tüm yapılandırma `~/.rediacc/config.json` dosyasında saklanır. Açıklamalı bir örnek:
+Her yapılandırma `~/.rediacc/` dizininde saklanan düz bir JSON dosyasıdır. Varsayılan yapılandırma `rediacc.json`'dır; adlandırılmış yapılandırmalar dosya adı olarak adı kullanır (ör. `production.json`). Açıklamalı bir örnek:
 
 ```json
 {
-  "contexts": {
-    "production": {
-      "name": "production",
-      "mode": "local",
-      "apiUrl": "local://",
-      "ssh": {
-        "privateKeyPath": "/home/you/.ssh/id_ed25519"
-      },
-      "machines": {
-        "prod-1": {
-          "ip": "203.0.113.50",
-          "user": "deploy",
-          "port": 22,
-          "datastore": "/mnt/rediacc",
-          "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
-        }
-      },
-      "storages": {
-        "backblaze": {
-          "provider": "b2",
-          "vaultContent": { "...": "..." }
-        }
-      },
-      "repositories": {
-        "webapp": {
-          "repositoryGuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-          "credential": "base64-encoded-random-passphrase",
-          "networkId": 2816
-        }
-      }
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "version": 1,
+  "ssh": {
+    "privateKeyPath": "/home/you/.ssh/id_ed25519"
+  },
+  "machines": {
+    "prod-1": {
+      "ip": "203.0.113.50",
+      "user": "deploy",
+      "port": 22,
+      "datastore": "/mnt/rediacc",
+      "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
+    }
+  },
+  "storages": {
+    "backblaze": {
+      "provider": "b2",
+      "vaultContent": { "...": "..." }
+    }
+  },
+  "repositories": {
+    "webapp": {
+      "repositoryGuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "credential": "base64-encoded-random-passphrase",
+      "networkId": 2816
     }
   },
   "nextNetworkId": 2880,
@@ -166,12 +161,12 @@ Tüm yapılandırma `~/.rediacc/config.json` dosyasında saklanır. Açıklamal�
 
 | Alan | Açıklama |
 |------|----------|
-| `mode` | Yerel mod için `"local"`, S3 modu için `"s3"`, bulut modu için belirtilmez |
-| `apiUrl` | Yerel mod için `"local://"`, bulut modu için API URL'si |
+| `id` | Bu yapılandırma dosyası için benzersiz tanımlayıcı |
+| `version` | Yapılandırma dosyası şema sürümü |
 | `ssh.privateKeyPath` | Tüm makine bağlantıları için kullanılan SSH özel anahtarının yolu |
 | `machines.<name>.user` | Makineye bağlanmak için SSH kullanıcı adı |
 | `machines.<name>.knownHosts` | `ssh-keyscan`'den alınan SSH host anahtarları |
-| `repositories.<name>.repositoryGuid` | Sunucudaki şifrelenmiş disk imajını tanımlayan UUID |
+| `repositories.<name>.repositoryGuid` | Şifrelenmiş disk imajını tanımlayan UUID |
 | `repositories.<name>.credential` | LUKS şifreleme parolası (**sunucuda saklanmaz**) |
 | `repositories.<name>.networkId` | IP alt ağını belirleyen ağ kimliği (2816 + n*64), otomatik atanır |
 | `nextNetworkId` | Ağ kimliklerini atamak için genel sayaç |

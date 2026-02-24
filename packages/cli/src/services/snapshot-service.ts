@@ -7,7 +7,7 @@
 
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
-import { contextService } from './context.js';
+import { configService } from './config-resources.js';
 import { outputService } from './output.js';
 import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
 
@@ -27,7 +27,7 @@ export async function runSnapshotCommand(
   flags: string[],
   options: SnapshotCommandOptions = {}
 ): Promise<{ success: boolean; output: string }> {
-  const localConfig = await contextService.getLocalConfig();
+  const localConfig = await configService.getLocalConfig();
   const machine = localConfig.machines[machineName];
   if (!machine) {
     const available = Object.keys(localConfig.machines).join(', ');

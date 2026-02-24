@@ -4,7 +4,7 @@ description: rdc を使う場面と renet を使う場面。
 category: Concepts
 order: 1
 language: ja
-sourceHash: 0396eec8815a0b4e
+sourceHash: e0ef5f051cefb407
 ---
 
 # rdc vs renet
@@ -24,7 +24,7 @@ Rediaccには2つのバイナリがあります。それぞれの使い分けを
 
 `rdc`はSSH経由でサーバーに接続し、`renet`コマンドを代行実行します。ワークステーションで1つのコマンドを入力するだけで、`rdc`が残りの処理を行います：
 
-1. ローカル設定（`~/.rediacc/config.json`）を読み取る
+1. ローカル設定（`~/.rediacc/rediacc.json`）を読み取る
 2. SSH経由でサーバーに接続する
 3. 必要に応じて`renet`バイナリを更新する
 4. サーバー上で対応する`renet`操作を実行する
@@ -36,7 +36,7 @@ Rediaccには2つのバイナリがあります。それぞれの使い分けを
 
 ```bash
 # 新しいサーバーをセットアップ
-rdc context setup-machine server-1
+rdc config setup-machine server-1
 
 # リポジトリを作成して起動
 rdc repo create my-app -m server-1 --size 10G
@@ -66,12 +66,15 @@ rdc machine health server-1
 `rdc ops`は、ワークステーション上でローカルVMクラスターを管理するために`renet ops`をラップします：
 
 ```bash
-rdc ops setup       # 前提条件をインストール（KVMまたはQEMU）
-rdc ops up --basic  # 最小構成のクラスターを起動
-rdc ops status      # VMステータスを確認
-rdc ops ssh 1       # ブリッジVMにSSH接続
-rdc ops down        # クラスターを破棄
+rdc ops setup              # 前提条件をインストール（KVMまたはQEMU）
+rdc ops up --basic         # 最小構成のクラスターを起動
+rdc ops status             # VMステータスを確認
+rdc ops ssh 1              # ブリッジVMにSSH接続
+rdc ops ssh 1 hostname     # ブリッジVM上でコマンドを実行
+rdc ops down               # クラスターを破棄
 ```
+
+> ローカルアダプターが必要です。クラウドアダプターでは利用できません。
 
 これらのコマンドは`renet`をローカルで実行します（SSH経由ではありません）。完全なドキュメントについては、[実験的VM](/ja/docs/experimental-vms)を参照してください。
 

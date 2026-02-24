@@ -1,10 +1,10 @@
 import type { ApiUrlProvider } from '@rediacc/shared/api';
-import { contextService } from '../services/context.js';
+import { configService } from '../services/config-resources.js';
 
 /**
- * CLI API URL provider wrapping the contextService.
+ * CLI API URL provider wrapping the configService.
  * Gets URL from stored context or environment variable.
  */
 export const urlAdapter: ApiUrlProvider = {
-  getApiUrl: () => contextService.getApiUrl(),
+  getApiUrl: () => configService.getApiUrl(),
 };

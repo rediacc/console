@@ -322,204 +322,143 @@
         }
       }
     },
-    "context": {
+    "config": {
       "addMachine": {
-        "description": "将机器添加到当前本地上下文",
+        "description": "向当前配置添加机器",
         "success": "机器 \"{{name}}\" 已添加（{{user}}@{{ip}}）"
       },
       "addRepository": {
-        "description": "将仓库 GUID 映射添加到当前本地上下文",
-        "networkIdAssigned": "网络 ID: {{networkId}}",
-        "optionCredential": "仓库凭证 (加密密码短语)",
-        "optionGuid": "仓库 GUID (存储备份文件名中的 UUID)",
-        "optionNetworkId": "Docker 隔离用网络 ID (2816, 2880, ...)。省略时自动分配",
+        "description": "向当前配置添加仓库 GUID 映射",
+        "networkIdAssigned": "网络 ID：{{networkId}}",
+        "optionCredential": "仓库凭证（加密密码短语）",
+        "optionGuid": "仓库 GUID（来自存储备份文件名的 UUID）",
+        "optionNetworkId": "Docker 隔离的网络 ID（2816、2880 等）。若省略则自动分配",
         "optionTag": "仓库标签",
-        "success": "仓库 \"{{name}}\" 已添加 ({{guid}}, 标签: {{tag}})"
+        "success": "仓库 \"{{name}}\" 已添加（{{guid}}，标签：{{tag}}）"
       },
       "clear": {
         "allCleared": "已清除所有默认值",
         "description": "清除默认值（全部或特定键）",
         "keyCleared": "已清除 \"{{key}}\""
       },
-      "create": {
-        "description": "创建新上下文",
-        "success": "上下文 \"{{name}}\" 已创建"
-      },
-      "createLocal": {
-        "description": "为无中间件操作创建新的本地上下文",
-        "encryptionEnabled": "已启用静态加密。资源将在 config.json 中加密。",
-        "nextStep": "使用以下命令添加机器：rdc context add-machine <name> --ip <ip> --user <user>",
-        "optionMasterPassword": "使用主密码加密资源",
-        "success": "本地上下文 \"{{name}}\" 已创建"
-      },
-      "createS3": {
-        "accessVerified": "S3 访问已验证",
-        "description": "创建新的 S3/R2 上下文，用于本地执行的远程状态管理",
-        "errorSecretAccessKeyRequired": "S3 秘密访问密钥为必填项",
-        "nextStep": "下一步：使用 \"rdc context add-machine\" 添加机器",
-        "optionAccessKeyId": "S3 访问密钥 ID",
-        "optionBucket": "S3 存储桶名称",
-        "optionEndpoint": "S3 端点 URL",
-        "optionMasterPassword": "加密主密码（可选，留空跳过）",
-        "optionPrefix": "存储桶中的密钥前缀/命名空间",
-        "optionRegion": "S3 区域",
-        "optionRenetPath": "renet 二进制文件路径",
-        "optionSecretAccessKey": "S3 秘密访问密钥（未提供时会提示输入）",
-        "optionSshKey": "SSH 私钥路径",
-        "promptMasterPassword": "加密主密码（留空跳过）：",
-        "promptSecretAccessKey": "S3 秘密访问密钥：",
-        "success": "S3 上下文 \"{{name}}\" 已创建",
-        "verifyingAccess": "正在验证 S3 访问..."
-      },
-      "current": {
-        "description": "显示当前上下文名称",
-        "noContext": "没有活跃的上下文"
-      },
       "delete": {
-        "confirm": "确定要删除上下文 \"{{name}}\" 吗？",
-        "description": "删除上下文",
-        "success": "上下文 \"{{name}}\" 已删除"
+        "description": "删除配置文件",
+        "success": "配置 \"{{name}}\" 已删除"
       },
-      "description": "管理命令行界面上下文",
+      "description": "管理 CLI 配置文件",
       "importStorage": {
         "description": "从 rclone 配置文件导入存储",
-        "imported": "已导入存储 \"{{name}}\" ({{type}})",
+        "imported": "已导入存储 \"{{name}}\"（{{type}}）",
         "noConfigs": "文件中未找到有效的存储配置",
         "notFound": "配置文件中未找到存储 \"{{name}}\"",
-        "optionName": "仅导入此命名部分",
+        "optionName": "仅导入此命名节",
         "summary": "已导入 {{count}} 个存储",
-        "unsupported": "跳过 \"{{name}}\": 不支持的提供商类型 \"{{type}}\""
+        "unsupported": "跳过 \"{{name}}\"：不支持的提供商类型 \"{{type}}\""
+      },
+      "init": {
+        "alreadyExists": "配置 \"{{name}}\" 已存在",
+        "description": "初始化新配置文件",
+        "optionMasterPassword": "使用主密码加密资源",
+        "optionS3AccessKeyId": "S3 访问密钥 ID",
+        "optionS3Bucket": "S3 存储桶名称",
+        "optionS3Endpoint": "S3 端点 URL",
+        "optionS3Prefix": "S3 存储桶中的键前缀",
+        "optionS3Region": "S3 区域",
+        "optionS3SecretAccessKey": "S3 访问密钥",
+        "promptS3SecretAccessKey": "S3 访问密钥：",
+        "s3Required": "S3 资源状态需要 --s3-endpoint、--s3-bucket 和 --s3-access-key-id",
+        "s3SecretRequired": "S3 访问密钥为必填项",
+        "s3Verified": "S3 访问已验证",
+        "success": "配置 \"{{name}}\" 已初始化",
+        "verifyingS3": "正在验证 S3 访问..."
       },
       "list": {
-        "description": "列出所有上下文",
-        "noContexts": "未配置任何上下文"
+        "description": "列出所有配置文件",
+        "noConfigs": "未找到配置文件。请使用以下命令创建：rdc config init"
       },
       "machines": {
-        "description": "列出当前本地上下文中的机器",
-        "noMachines": "未配置任何机器。使用以下命令添加：rdc context add-machine <name> --ip <ip> --user <user>"
+        "description": "列出当前配置中的机器",
+        "noMachines": "未配置任何机器。请使用以下命令添加：rdc config add-machine <name> --ip <ip> --user <user>"
       },
       "pushInfra": {
         "description": "将基础设施配置推送到远程机器",
         "installingProxy": "正在安装并启动代理...",
-        "proxyInstallWarning": "代理安装失败（代码 {{code}}）。请手动运行: sudo renet proxy install",
+        "proxyInstallWarning": "代理安装失败（代码 {{code}}）。请手动运行：sudo renet proxy install",
         "success": "基础设施配置已推送到 \"{{name}}\""
       },
       "removeMachine": {
-        "description": "从当前本地上下文中移除机器",
+        "description": "从当前配置中移除机器",
         "success": "机器 \"{{name}}\" 已移除"
       },
       "removeRepository": {
-        "description": "从当前本地上下文中移除仓库映射",
+        "description": "从当前配置中移除仓库映射",
         "success": "仓库 \"{{name}}\" 已移除"
       },
       "removeStorage": {
-        "description": "从当前本地上下文中移除存储",
+        "description": "从当前配置中移除存储",
         "success": "存储 \"{{name}}\" 已移除"
       },
-      "rename": {
-        "description": "重命名上下文",
-        "success": "上下文已从 \"{{oldName}}\" 重命名为 \"{{newName}}\""
-      },
       "repositories": {
-        "description": "列出当前本地上下文中的仓库 GUID 映射",
-        "noRepositories": "未配置仓库。使用以下命令添加: rdc context add-repository <name> --guid <guid>"
+        "description": "列出当前配置中的仓库 GUID 映射",
+        "noRepositories": "未配置任何仓库。请使用以下命令添加：rdc config add-repository <name> --guid <guid>"
       },
       "scanKeys": {
         "completed": "已扫描 {{count}}/{{total}} 台机器",
-        "description": "扫描当前上下文中机器的 SSH 主机密钥",
+        "description": "扫描当前配置中机器的 SSH 主机密钥",
         "keysScanned": "已扫描 \"{{name}}\" 的主机密钥",
         "noKeys": "无法扫描 \"{{name}}\" 的主机密钥"
       },
       "set": {
-        "description": "设置默认值（团队、区域、网桥、机器）",
+        "description": "设置默认值（team、region、bridge、machine）",
         "success": "已将 \"{{key}}\" 设置为 \"{{value}}\""
       },
       "setInfra": {
-        "description": "设置机器的基础设施配置",
-        "invalidIPv4": "无效的 IPv4 地址: {{ip}}",
-        "invalidIPv6": "无效的 IPv6 地址: {{ip}}",
-        "noOptions": "未指定选项。请使用 --public-ipv4、--base-domain 等。",
+        "description": "为机器设置基础设施配置",
+        "invalidIPv4": "无效的 IPv4 地址：{{ip}}",
+        "invalidIPv6": "无效的 IPv6 地址：{{ip}}",
+        "noOptions": "未指定任何选项。请使用 --public-ipv4、--base-domain 等。",
         "optionBaseDomain": "应用程序的基础域名",
-        "optionCertEmail": "TLS 证书通知邮箱",
+        "optionCertEmail": "TLS 证书通知的电子邮件",
         "optionCfDnsToken": "用于 ACME DNS-01 验证的 Cloudflare DNS API 令牌",
-        "optionPublicIPv4": "公网 IPv4 地址",
-        "optionPublicIPv6": "公网 IPv6 地址",
+        "optionPublicIPv4": "公共 IPv4 地址",
+        "optionPublicIPv6": "公共 IPv6 地址",
         "optionTcpPorts": "要转发的 TCP 端口（逗号分隔，例如 25,143,465）",
         "optionUdpPorts": "要转发的 UDP 端口（逗号分隔，例如 53）",
-        "success": "已更新 \"{{name}}\" 的基础设施配置"
-      },
-      "setLanguage": {
-        "description": "设置首选语言",
-        "success": "语言已设置为 \"{{code}}\"",
-        "unsupported": "不支持的语言。支持的语言：{{languages}}"
+        "success": "\"{{name}}\" 的基础设施配置已更新"
       },
       "setRenet": {
-        "description": "设置本地模式下的 renet 二进制文件路径",
+        "description": "为本地模式设置 renet 二进制文件路径",
         "success": "Renet 路径已设置为：{{path}}"
       },
       "setSsh": {
-        "description": "更新当前本地上下文的 SSH 配置",
+        "description": "更新当前配置的 SSH 配置",
         "success": "SSH 配置已更新"
       },
       "setupMachine": {
-        "completed": "机器 '{{machine}}' 设置成功完成",
+        "completed": "机器 '{{machine}}' 设置已成功完成",
         "datastoreOption": "远程机器上的数据存储路径",
         "datastoreSizeOption": "数据存储大小（例如 95%、100G）",
         "description": "在远程机器上运行设置（安装 btrfs、Docker 等）",
-        "failed": "机器 '{{machine}}' 设置失败: {{error}}",
+        "failed": "机器 '{{machine}}' 设置失败：{{error}}",
         "starting": "正在设置机器 '{{machine}}'..."
       },
       "show": {
-        "description": "显示当前上下文详情",
-        "noContext": "没有活跃的上下文"
+        "description": "显示当前配置详情",
+        "noConfig": "没有活跃的配置。请使用以下命令创建：rdc config init"
       },
       "showInfra": {
         "description": "显示机器的基础设施配置",
-        "noInfra": "\"{{name}}\" 未设置基础设施配置"
+        "noInfra": "未为 \"{{name}}\" 设置基础设施配置"
       },
       "storages": {
-        "description": "列出当前本地上下文中的存储",
-        "noStorages": "未配置存储。使用以下命令导入: rdc context import-storage <file>"
-      },
-      "toLocal": {
-        "description": "将当前 S3 上下文迁移到本地模式",
-        "errorNoS3Config": "上下文 \"{{name}}\" 没有 S3 配置",
-        "errorNotS3": "上下文 \"{{name}}\" 不是 S3 模式 (当前: {{mode}})",
-        "loading": "正在从 S3 加载状态...",
-        "nonDestructive": "state.json 保留在 S3 存储桶中 (非破坏性)",
-        "optionSshKeyPath": "SSH 私钥写入路径 (默认: 现有路径)",
-        "sshWritten": "SSH 密钥已写入 {{path}}",
-        "success": "已迁移到本地模式: {{machines}} 台机器、{{storages}} 个存储、{{repos}} 个仓库"
-      },
-      "toS3": {
-        "description": "将当前本地上下文迁移到 S3 模式",
-        "errorNotLocal": "上下文 \"{{name}}\" 不是本地模式 (当前: {{mode}})",
-        "errorSecretRequired": "秘密访问密钥为必填项",
-        "optionAccessKeyId": "S3 访问密钥 ID",
-        "optionBucket": "S3 存储桶名称",
-        "optionEndpoint": "S3 端点 URL",
-        "optionMasterPassword": "使用此主密码启用加密",
-        "optionPrefix": "存储桶中的键前缀",
-        "optionRegion": "S3 区域",
-        "optionSecretAccessKey": "S3 秘密访问密钥 (省略时会提示输入)",
-        "promptSecretAccessKey": "请输入 S3 秘密访问密钥:",
-        "success": "已迁移到 S3 模式: {{machines}} 台机器、{{storages}} 个存储、{{repos}} 个仓库",
-        "verified": "S3 访问已验证",
-        "verifying": "正在验证 S3 访问..."
-      },
-      "unset": {
-        "description": "移除上下文默认值",
-        "success": "已从当前上下文中移除 {{key}}"
-      },
-      "use": {
-        "description": "切换到不同的上下文",
-        "switched": "已切换到上下文 \"{{name}}\""
+        "description": "列出当前配置中的存储",
+        "noStorages": "未配置任何存储。请使用以下命令导入：rdc config import-storage <file>"
       }
     },
     "doctor": {
       "allPassed": "所有检查均通过",
       "checks": {
-        "activeContext": "活动上下文",
+        "activeConfig": "活跃配置",
         "authStatus": "状态",
         "cliVersion": "CLI版本",
         "contextMode": "上下文模式",
@@ -527,13 +466,13 @@
         "goInstalled": "Go",
         "machines": "机器",
         "nodeVersion": "Node.js",
+        "opsPrereqs": "OPS 前提条件",
         "renetBinary": "二进制文件",
         "renetCriu": "内置CRIU",
         "renetRsync": "内置rsync",
         "renetVersion": "版本",
         "seaMode": "SEA模式",
-        "sshKey": "SSH密钥",
-        "opsPrereqs": "OPS 前提条件"
+        "sshKey": "SSH密钥"
       },
       "description": "诊断CLI环境和renet集成",
       "devMode": "否（开发模式）",
@@ -542,9 +481,9 @@
       "notAuthenticated": "未认证",
       "notConfigured": "未配置",
       "notInstalled": "未安装",
-      "seaActive": "是（单一可执行应用程序）",
       "opsNotSupported": "不支持 {{platform}}",
       "opsSkipped": "renet 不可用（已跳过）",
+      "seaActive": "是（单一可执行应用程序）",
       "sections": {
         "authentication": "身份验证",
         "configuration": "配置",
@@ -669,7 +608,7 @@
         "fetching": "正在获取机器...",
         "header": "\n{{name}} 的保险箱状态：",
         "mounted": "  已挂载：{{count}}",
-        "repoDocker": "    Docker: {{status}}",
+        "repoDocker": "    Docker：{{status}}",
         "repoMounted": "    已挂载：{{mounted}}",
         "status": "  状态：{{status}}",
         "systemDatastore": "  数据存储：{{used}} / {{total}}（{{percent}}）",
@@ -1183,6 +1122,75 @@
         "starting": "正在将 \"{{repository}}\" 从 \"{{storage}}\" 拉取到 \"{{machine}}\"..."
       }
     },
+    "store": {
+      "add": {
+        "addedButUnverified": "同步存储 \"{{name}}\" 已添加，但连接无法验证",
+        "alreadyExists": "同步存储 \"{{name}}\" 已存在",
+        "description": "添加新的同步存储",
+        "gitUrlRequired": "Git 存储需要 --git-url",
+        "invalidType": "无效的存储类型：\"{{type}}\"。有效类型：{{valid}}",
+        "localPathRequired": "本地文件存储需要 --local-path",
+        "optionBwFolderId": "用于整理配置项的 Bitwarden 文件夹 ID（可选）",
+        "optionEncryptionKey": "此存储的加密密钥",
+        "optionGitBranch": "Git 分支名称",
+        "optionGitPath": "Git 仓库内的路径",
+        "optionGitUrl": "Git 仓库 URL",
+        "optionLocalPath": "本地目录路径",
+        "optionS3AccessKeyId": "S3 访问密钥 ID",
+        "optionS3Bucket": "S3 存储桶名称",
+        "optionS3Endpoint": "S3 端点 URL",
+        "optionS3Prefix": "S3 键前缀",
+        "optionS3Region": "S3 区域",
+        "optionS3SecretAccessKey": "S3 访问密钥",
+        "optionType": "存储类型（s3、local-file、bitwarden、git、vault）",
+        "optionVaultAddr": "Vault 服务器地址（例如 http://127.0.0.1:8200）",
+        "optionVaultMount": "Vault KV v2 挂载路径（默认：secret）",
+        "optionVaultNamespace": "Vault 命名空间（仅企业版）",
+        "optionVaultPrefix": "Vault KV 引擎内的路径前缀（默认：rdc/configs）",
+        "optionVaultToken": "Vault 身份验证令牌",
+        "promptS3SecretAccessKey": "S3 访问密钥：",
+        "promptVaultToken": "Vault 令牌（或设置 VAULT_TOKEN 环境变量）：",
+        "s3Required": "S3 存储需要 --s3-endpoint、--s3-bucket 和 --s3-access-key-id",
+        "s3SecretRequired": "S3 访问密钥为必填项",
+        "success": "同步存储 \"{{name}}\" 已添加（{{type}}）",
+        "vaultAddrRequired": "Vault 存储需要 --vault-addr",
+        "vaultTokenRequired": "Vault 令牌为必填项（传入 --vault-token 或设置 VAULT_TOKEN 环境变量）"
+      },
+      "description": "管理配置同步存储（S3、本地文件、Bitwarden、Git、Vault）",
+      "list": {
+        "description": "列出已配置的同步存储",
+        "noStores": "未配置任何同步存储。请使用以下命令添加：rdc store add <name> --type <type>"
+      },
+      "pull": {
+        "description": "从同步存储拉取配置",
+        "failed": "从同步存储 \"{{store}}\" 拉取失败：{{error}}",
+        "notFound": "同步存储 \"{{name}}\" 未找到",
+        "optionConfig": "要拉取到的配置名称",
+        "optionStore": "从特定存储拉取",
+        "success": "已从同步存储 \"{{store}}\" 拉取配置 \"{{config}}\""
+      },
+      "push": {
+        "description": "将当前配置推送到同步存储",
+        "failed": "推送到同步存储 \"{{store}}\" 失败：{{error}}",
+        "noStores": "未配置任何同步存储",
+        "optionAll": "推送到所有存储",
+        "optionStore": "推送到特定存储",
+        "success": "已将配置 \"{{config}}\" 推送到同步存储 \"{{store}}\""
+      },
+      "remove": {
+        "description": "移除同步存储",
+        "success": "同步存储 \"{{name}}\" 已移除"
+      },
+      "sync": {
+        "description": "与同步存储同步配置（先拉取后推送）",
+        "failed": "与同步存储 \"{{store}}\" 同步失败：{{error}}",
+        "noStores": "未配置任何同步存储",
+        "optionAll": "与所有存储同步",
+        "optionStore": "与特定存储同步",
+        "pulled": "已从同步存储 \"{{store}}\" 拉取更新版本",
+        "pushed": "已推送到同步存储 \"{{store}}\""
+      }
+    },
     "sync": {
       "cancelled": "同步已取消。",
       "description": "使用 rsync 与仓库进行文件同步",
@@ -1417,20 +1425,30 @@
       "tip": "提示",
       "warning": "警告"
     },
+    "cloudFrontmatter": {
+      "category": "参考",
+      "description": "Rediacc CLI 的云端专属命令 — 身份验证、团队、组织和多租户管理",
+      "title": "CLI 应用程序（云端 / 实验性）"
+    },
+    "cloudOverview": {
+      "heading": "概述",
+      "text": "这些命令需要**云端适配器**（实验性）— 当配置包含 `apiUrl` 和 `token` 字段时激活。有关主要 CLI 参考，请参阅 [CLI 应用程序](/zh/docs/cli-application)。"
+    },
+    "cloudPageTitle": "Rediacc CLI 参考（云端 / 实验性）",
     "errors": {
       "heading": "常见错误消息",
       "intro": "当出现问题时，CLI 会提供清晰的错误消息：",
       "meanings": {
         "authRequired": "您需要先登录",
         "machineRequired": "使用 `--machine` 指定机器或设置上下文默认值",
-        "noActiveContext": "未选择上下文 — 创建或切换到一个上下文",
+        "noActiveConfig": "没有活跃的配置 — 请使用 `rdc config init` 创建一个",
         "permissionDenied": "您的帐户缺少所需的权限",
         "regionRequired": "使用 `--region` 指定区域或设置上下文默认值",
         "teamRequired": "使用 `--team` 指定团队或设置上下文默认值"
       }
     },
     "frontmatter": {
-      "category": "Reference",
+      "category": "参考",
       "description": "使用 Rediacc 命令行界面进行平台管理的完整指南",
       "title": "CLI 应用程序"
     },
@@ -1462,7 +1480,7 @@
       "backup": "备份管理",
       "bridge": "桥接管理",
       "ceph": "Ceph 存储管理",
-      "context": "上下文管理",
+      "config": "配置管理",
       "doctor": "系统诊断",
       "machine": "机器管理",
       "ops": "实验性 VM 操作",
@@ -1476,6 +1494,7 @@
       "shortcuts": "快捷命令（快捷方式）",
       "snapshot": "快照管理",
       "storage": "存储管理",
+      "store": "同步存储管理",
       "sync": "文件同步",
       "team": "团队管理",
       "term": "SSH 终端访问",
@@ -1490,13 +1509,13 @@
         },
         "tip": "您的身份验证令牌存储在本地上下文中。使用 `--save-as` 将凭据存储在命名上下文下，以便用于多个环境。"
       },
-      "context": {
-        "afterDescription": "上下文存储连接详情（API URL、凭据、默认团队/区域/机器），以便您可以快速在环境之间切换。",
-        "createLocal": {
+      "config": {
+        "afterDescription": "配置文件存储连接详情（API URL、凭证、默认 team/region/machine），让您可以快速切换环境。",
+        "init": {
           "afterDescription": "在本地模式下，您可以直接添加机器："
         },
         "set": {
-          "tip": "设置默认值意味着您不需要在每个命令中传递 `--team`、`--region` 或 `--machine`。"
+          "tip": "设置默认值意味着您无需在每条命令中传入 `--team`、`--region` 或 `--machine`。"
         }
       },
       "machine": {
@@ -1559,9 +1578,9 @@
     "invalidPriorityMin": "无效的优先级-最小值。必须在 1 到 5 之间。",
     "machineNotFound": "机器 \"{{name}}\" 未找到",
     "machineRequired": "需要机器名称。使用 --machine 或设置上下文。",
-    "machineRequiredLocal": "需要机器名称。使用 --machine 或使用以下命令设置默认值：rdc context set machine <name>",
+    "machineRequiredLocal": "需要机器名称。使用 --machine 或使用以下命令设置默认值：rdc config set machine <name>",
     "networkError": "网络错误：{{message}}",
-    "noActiveContext": "没有活跃的上下文。请先创建或选择上下文。",
+    "noActiveConfig": "没有活跃的配置。请使用以下命令创建：rdc config init <name>",
     "notAuthenticated": "未认证。运行：rdc auth login",
     "passwordsMismatch": "密码不匹配",
     "permissionDenied": "权限被拒绝",
@@ -1626,12 +1645,12 @@
     "cleanupAll": "移除所有 rediacc SSH 配置",
     "cluster": "Ceph 集群名称",
     "command": "执行命令而不是交互式 shell",
+    "config": "为此命令使用特定配置",
     "confirmPasswordNonInteractive": "确认密码（非交互式模式）",
     "confirmSync": "预览更改并在同步前请求确认",
     "connectionName": "移除特定连接",
     "container": "连接到特定 Docker 容器",
     "containerAction": "容器操作：terminal、logs、stats、exec",
-    "context": "为此命令使用特定上下文",
     "datastore": "机器上的数据存储路径",
     "debug": "启用调试输出（本地模式）",
     "dryRun": "显示将传输的内容而不实际同步",

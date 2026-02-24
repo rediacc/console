@@ -660,6 +660,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: .ci/scripts/docs/inject-e2e-videos.sh --run-id "${{ github.run_id }}" --artifact-name "e2e-videos-${{ github.sha }}" --output workers/www/dist/assets/videos/user-guide/ || true
 
+      # Inject tutorial recordings into pages for interactive player
+      - name: Inject tutorials
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: .ci/scripts/docs/inject-tutorials.sh --run-id "${{ github.run_id }}" --artifact-name "tutorial-recordings-${{ github.sha }}" --output workers/www/dist/assets/tutorials/ || true
+
       # Create Stripe webhook pointing to pr-N
       - name: Setup Stripe webhook
         id: stripe-webhook

@@ -4,7 +4,7 @@ description: 'Когда использовать rdc, а когда renet.'
 category: Concepts
 order: 1
 language: ru
-sourceHash: 0396eec8815a0b4e
+sourceHash: e0ef5f051cefb407
 ---
 
 # rdc vs renet
@@ -24,7 +24,7 @@ sourceHash: 0396eec8815a0b4e
 
 `rdc` подключается к вашему серверу по SSH и выполняет команды `renet` за вас. Вы вводите одну команду на рабочей станции, а `rdc` делает всё остальное:
 
-1. Читает локальную конфигурацию (`~/.rediacc/config.json`)
+1. Читает локальную конфигурацию (`~/.rediacc/rediacc.json`)
 2. Подключается к серверу по SSH
 3. Обновляет бинарный файл `renet` при необходимости
 4. Выполняет соответствующую операцию `renet` на сервере
@@ -36,7 +36,7 @@ sourceHash: 0396eec8815a0b4e
 
 ```bash
 # Set up a new server
-rdc context setup-machine server-1
+rdc config setup-machine server-1
 
 # Create and start a repository
 rdc repo create my-app -m server-1 --size 10G
@@ -66,12 +66,15 @@ rdc machine health server-1
 `rdc ops` является обёрткой для `renet ops` и позволяет управлять локальными кластерами VM на вашей рабочей станции:
 
 ```bash
-rdc ops setup       # Install prerequisites (KVM or QEMU)
-rdc ops up --basic  # Start a minimal cluster
-rdc ops status      # Check VM status
-rdc ops ssh 1       # SSH into bridge VM
-rdc ops down        # Destroy cluster
+rdc ops setup              # Install prerequisites (KVM or QEMU)
+rdc ops up --basic         # Start a minimal cluster
+rdc ops status             # Check VM status
+rdc ops ssh 1              # SSH into bridge VM
+rdc ops ssh 1 hostname     # Run a command on bridge VM
+rdc ops down               # Destroy cluster
 ```
+
+> Требуется локальный адаптер. Недоступен с облачным адаптером.
 
 Эти команды запускают `renet` локально (не через SSH). Полную документацию см. в разделе [Экспериментальные VM](/ru/docs/experimental-vms).
 

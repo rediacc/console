@@ -9,16 +9,16 @@ import {
 
 describe('config/command-registry', () => {
   describe('formatModeTag', () => {
-    it('returns [cloud|local|s3] for all-modes', () => {
-      expect(formatModeTag(ALL_MODES)).toBe('[cloud|local|s3]');
+    it('returns empty string for all-modes', () => {
+      expect(formatModeTag(ALL_MODES)).toBe('');
     });
 
     it('returns [cloud] for cloud-only', () => {
       expect(formatModeTag(['cloud'])).toBe('[cloud]');
     });
 
-    it('returns [local|s3] for self-hosted modes', () => {
-      expect(formatModeTag(SELF_HOSTED_MODES)).toBe('[local|s3]');
+    it('returns [local] for self-hosted modes', () => {
+      expect(formatModeTag(SELF_HOSTED_MODES)).toBe('[local]');
     });
   });
 
@@ -49,7 +49,7 @@ describe('config/command-registry', () => {
       'queue',
     ];
 
-    const localS3Only = ['repo', 'snapshot'];
+    const localOnly = ['repo', 'snapshot'];
 
     const allModes = [
       'machine',
@@ -58,11 +58,12 @@ describe('config/command-registry', () => {
       'sync',
       'term',
       'backup',
-      'context',
+      'config',
       'doctor',
       'update',
       'protocol',
       'vscode',
+      'store',
     ];
 
     for (const name of cloudOnly) {
@@ -73,8 +74,8 @@ describe('config/command-registry', () => {
       });
     }
 
-    for (const name of localS3Only) {
-      it(`"${name}" is local|s3 only`, () => {
+    for (const name of localOnly) {
+      it(`"${name}" is local only`, () => {
         const def = getCommandDef(name);
         expect(def).toBeDefined();
         expect(def!.modes).toEqual(SELF_HOSTED_MODES);
@@ -101,17 +102,17 @@ describe('config/command-registry', () => {
       expect(def?.subcommands?.['test-connection']?.modes).toEqual(['cloud']);
     });
 
-    it('storage browse is local|s3', () => {
+    it('storage browse is local', () => {
       const def = getCommandDef('storage');
       expect(def?.subcommands?.browse.modes).toEqual(SELF_HOSTED_MODES);
     });
 
-    it('backup sync is local|s3', () => {
+    it('backup sync is local', () => {
       const def = getCommandDef('backup');
       expect(def?.subcommands?.sync.modes).toEqual(SELF_HOSTED_MODES);
     });
 
-    it('backup schedule is local|s3', () => {
+    it('backup schedule is local', () => {
       const def = getCommandDef('backup');
       expect(def?.subcommands?.schedule.modes).toEqual(SELF_HOSTED_MODES);
     });

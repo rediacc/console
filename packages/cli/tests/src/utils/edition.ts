@@ -71,7 +71,7 @@ export async function createEditionContext(plan: SubscriptionPlan): Promise<Edit
 
   // Create CLI context for isolated credentials
   const contextResult = await baseRunner.run(
-    ['context', 'create', account.contextName, '--api-url', apiUrl],
+    ['config', 'init', account.contextName, '--api-url', apiUrl],
     { context: '' }
   );
 
@@ -162,7 +162,7 @@ export async function createEditionContext(plan: SubscriptionPlan): Promise<Edit
       await runner.run(['auth', 'logout']).catch(() => {});
       // Delete the context (no --force flag for context delete)
       await baseRunner
-        .run(['context', 'delete', account.contextName], { context: '' })
+        .run(['config', 'delete', account.contextName], { context: '' })
         .catch(() => {});
     },
   };

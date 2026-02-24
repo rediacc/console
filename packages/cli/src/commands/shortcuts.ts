@@ -10,7 +10,7 @@ import {
 } from './queue.js';
 import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
-import { contextService } from '../services/context.js';
+import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { handleError, ValidationError } from '../utils/errors.js';
@@ -28,7 +28,7 @@ async function resolveRunParams(
   functionName: string,
   options: RunLocalOptions
 ): Promise<{ machineName: string; params: Record<string, unknown> }> {
-  const machineName = options.machine ?? (await contextService.getMachine());
+  const machineName = options.machine ?? (await configService.getMachine());
   if (!machineName) {
     throw new ValidationError(t('errors.machineRequiredLocal'));
   }
@@ -157,13 +157,10 @@ export function registerShortcuts(program: Command): void {
       try {
         const provider = await getStateProvider();
 
-        switch (provider.mode) {
-          case 'cloud':
-            await runCloudMode(functionName, options, program);
-            break;
-          default:
-            await runLocalMode(functionName, options);
-            break;
+        if (provider.isCloud) {
+          await runCloudMode(functionName, options, program);
+        } else {
+          await runLocalMode(functionName, options);
         }
       } catch (error) {
         handleError(error);

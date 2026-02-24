@@ -3,8 +3,6 @@
  * Three implementations: CloudStateProvider, S3StateProvider, LocalStateProvider.
  */
 
-import type { ContextMode } from '../types/index.js';
-
 /** Generic mutation result */
 export interface MutationResult {
   success: boolean;
@@ -100,7 +98,7 @@ export interface VaultProvider {
 // ============================================================================
 
 export interface IStateProvider {
-  readonly mode: ContextMode;
+  readonly isCloud: boolean;
   readonly machines: MachineProvider;
   readonly queue: QueueProvider;
   readonly storage: StorageProvider;

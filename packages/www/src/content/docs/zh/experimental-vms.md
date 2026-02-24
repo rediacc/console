@@ -1,15 +1,23 @@
 ---
 title: "实验性虚拟机"
-description: "使用 rdc ops 配置本地 VM 集群，用于开发和测试。"
+description: "使用 rdc ops 在工作站上配置本地 VM 集群，用于开发和测试。"
 category: "Concepts"
 order: 2
 language: zh
-sourceHash: "30b5f6267314cfb2"
+sourceHash: fa4069c48c650a79
 ---
 
 # 实验性虚拟机
 
 在您的工作站上配置本地 VM 集群，用于开发和测试 — 无需外部云服务商。
+
+## 前提条件
+
+`rdc ops` 需要**本地适配器**。云适配器不支持此功能。
+
+```bash
+rdc ops check
+```
 
 ## 概述
 
@@ -25,10 +33,10 @@ sourceHash: "30b5f6267314cfb2"
 
 | 平台 | 架构 | 后端 | 状态 |
 |----------|-------------|---------|--------|
-| Linux | x86_64 | KVM (libvirt) | 完全支持 |
-| Linux | ARM64 | KVM (libvirt) | 完全支持 |
-| macOS | ARM (Apple Silicon) | QEMU + HVF | 完全支持 |
-| macOS | Intel | QEMU + HVF | 完全支持 |
+| Linux | x86_64 | KVM (libvirt) | 在 CI 中已测试 |
+| macOS | Intel | QEMU + HVF | 在 CI 中已测试 |
+| Linux | ARM64 | KVM (libvirt) | 已支持（未经 CI 测试） |
+| macOS | ARM (Apple Silicon) | QEMU + HVF | 已支持（未经 CI 测试） |
 | Windows | x86_64 / ARM64 | Hyper-V | 计划中 |
 
 **Linux (KVM)** 使用 libvirt 进行原生硬件虚拟化，采用桥接网络。
@@ -83,6 +91,9 @@ rdc ops status
 # 4. SSH into the bridge VM
 rdc ops ssh 1
 
+# 4b. Or run a command directly
+rdc ops ssh 1 hostname
+
 # 5. Tear down
 rdc ops down
 ```
@@ -103,13 +114,20 @@ rdc ops down
 
 ## 配置
 
-环境变量控制 VM 资源：
+桥接 VM 使用比工作节点 VM 更小的默认值：
+
+| VM 角色 | CPU | 内存 | 磁盘 |
+|---------|------|-----|------|
+| Bridge | 1 | 1024 MB | 8 GB |
+| Worker | 2 | 4096 MB | 16 GB |
+
+环境变量可覆盖工作节点 VM 资源：
 
 | 变量 | 默认值 | 说明 |
 |----------|---------|-------------|
-| `VM_CPU` | 2 | 每个 VM 的 CPU 核心数 |
-| `VM_RAM` | 4096 | 每个 VM 的内存（MB） |
-| `VM_DSK` | 16 | 磁盘大小（GB） |
+| `VM_CPU` | 2 | 每个工作节点 VM 的 CPU 核心数 |
+| `VM_RAM` | 4096 | 每个工作节点 VM 的内存（MB） |
+| `VM_DSK` | 16 | 每个工作节点 VM 的磁盘大小（GB） |
 | `VM_NET_BASE` | 192.168.111 | 网络基址（仅 KVM） |
 | `RENET_DATA_DIR` | ~/.renet | VM 磁盘和配置的数据目录 |
 
@@ -122,14 +140,14 @@ rdc ops down
 | `rdc ops up [options]` | 配置 VM 集群 |
 | `rdc ops down` | 销毁所有虚拟机并清理 |
 | `rdc ops status` | 显示所有虚拟机的状态 |
-| `rdc ops ssh <vm-id>` | 通过 SSH 连接到指定虚拟机 |
+| `rdc ops ssh <vm-id> [command...]` | 通过 SSH 连接到指定虚拟机，或在其上运行命令 |
 
 ### `rdc ops up` 选项
 
 | 选项 | 说明 |
 |--------|-------------|
 | `--basic` | 最小集群（桥接节点 + 1 个工作节点） |
-| `--lite` | 轻量级资源 |
+| `--lite` | 跳过 VM 配置（仅 SSH 密钥） |
 | `--force` | 强制重新创建现有虚拟机 |
 | `--parallel` | 并行配置虚拟机 |
 | `--skip-orchestration` | 仅虚拟机，不启动 Rediacc 服务 |

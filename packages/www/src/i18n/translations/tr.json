@@ -972,10 +972,6 @@
           "moneyBack": "14 Günlük Para İade Garantisi",
           "noContracts": "Uzun vadeli sözleşme yok"
         },
-        "billingToggle": {
-          "monthly": "Aylık",
-          "annual": "Yıllık"
-        },
         "keyBenefits": "Temel Faydalar",
         "learnMore": "Daha Fazla Bilgi",
         "limitedOffer": "Sınırlı Lansman Teklifi",
@@ -1103,6 +1099,10 @@
         "title": "Yükle | Rediacc CLI"
       },
       "methods": {
+        "apk": {
+          "description": "Alpine Linux ve türevleri için",
+          "title": "APK (Alpine Linux)"
+        },
         "apt": {
           "description": "Debian, Ubuntu ve türevleri için",
           "title": "APT (Debian / Ubuntu)"
@@ -1115,14 +1115,6 @@
           "description": "Fedora, RHEL, CentOS, Rocky Linux için",
           "title": "DNF (Fedora / RHEL)"
         },
-        "apk": {
-          "title": "APK (Alpine Linux)",
-          "description": "Alpine Linux ve türevleri için"
-        },
-        "pacman": {
-          "title": "Pacman (Arch Linux)",
-          "description": "Arch Linux ve türevleri için"
-        },
         "docker": {
           "description": "Konteyner ortamları için",
           "title": "Docker"
@@ -1130,6 +1122,10 @@
         "homebrew": {
           "description": "Homebrew kullanan macOS ve Linux kullanıcıları için",
           "title": "Homebrew (macOS / Linux)"
+        },
+        "pacman": {
+          "description": "Arch Linux ve türevleri için",
+          "title": "Pacman (Arch Linux)"
         },
         "quick": {
           "description": "Önerilen - sürüm yönetimi ile otomatik kurulum",
@@ -1617,6 +1613,10 @@
       "ui": {
         "anchor": "Stratejik çapa",
         "bestValue": "En İyi Değer",
+        "billingToggle": {
+          "annual": "Yıllık",
+          "monthly": "Aylık"
+        },
         "contactSales": "Satış Ekibiyle İletişime Geçin",
         "cta": {
           "business": {
@@ -1656,11 +1656,7 @@
         "monthOrYear": "ayda veya yılda {{price}}",
         "popular": "En popüler",
         "startingAt": "*Başlangıç ​​tarihi:",
-        "whatsIncluded": "Neler dahil:",
-        "billingToggle": {
-          "monthly": "Aylık",
-          "annual": "Yıllık"
-        }
+        "whatsIncluded": "Neler dahil:"
       }
     },
     "privacyPolicy": {

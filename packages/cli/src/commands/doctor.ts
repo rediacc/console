@@ -5,9 +5,10 @@ import { Command } from 'commander';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../i18n/index.js';
 import { authService } from '../services/auth.js';
-import { contextService } from '../services/context.js';
+import { configService } from '../services/config-resources.js';
 import { getEmbeddedMetadata, isSEA as isSEAEmbedded } from '../services/embedded-assets.js';
 import { outputService } from '../services/output.js';
+import { hasCloudCredentials } from '../types/index.js';
 import { isSEA } from '../utils/platform.js';
 import { VERSION } from '../version.js';
 import type { OutputFormat } from '../types/index.js';
@@ -197,7 +198,7 @@ async function checkRenet(): Promise<CheckSection> {
 
   let renetPath: string | null = null;
   try {
-    const localConfig = await contextService.getLocalConfig();
+    const localConfig = await configService.getLocalConfig();
     renetPath = resolveRenetPath(localConfig.renetPath);
   } catch {
     renetPath = resolveRenetPath();
@@ -212,24 +213,28 @@ async function checkRenet(): Promise<CheckSection> {
 async function checkConfiguration(): Promise<CheckSection> {
   const checks: CheckResult[] = [];
 
-  const contextName = contextService.getCurrentName();
-  const context = await contextService.getCurrent();
+  const contextName = configService.getCurrentName();
+  const context = await configService.getCurrent();
 
   checks.push(
     context
-      ? { name: t('commands.doctor.checks.activeContext'), value: contextName, status: 'ok' }
+      ? { name: t('commands.doctor.checks.activeConfig'), value: contextName, status: 'ok' }
       : {
-          name: t('commands.doctor.checks.activeContext'),
+          name: t('commands.doctor.checks.activeConfig'),
           value: t('commands.doctor.notConfigured'),
           status: 'warn',
-          hint: 'Create a context with: rdc context create <name> or rdc auth login',
+          hint: 'Default config is created automatically. For named configs: rdc config init <name>',
         }
   );
 
-  const mode = context?.mode ?? DEFAULTS.CONTEXT.MODE;
-  checks.push({ name: t('commands.doctor.checks.contextMode'), value: mode, status: 'ok' });
+  const isCloud = hasCloudCredentials(context);
+  checks.push({
+    name: t('commands.doctor.checks.contextMode'),
+    value: isCloud ? 'cloud' : 'local',
+    status: 'ok',
+  });
 
-  if (mode !== 'cloud') {
+  if (!isCloud) {
     await addSelfHostedModeChecks(checks, context);
   }
 
@@ -238,16 +243,16 @@ async function checkConfiguration(): Promise<CheckSection> {
 
 async function addSelfHostedModeChecks(
   checks: CheckResult[],
-  context: Awaited<ReturnType<typeof contextService.getCurrent>>
+  context: Awaited<ReturnType<typeof configService.getCurrent>>
 ): Promise<void> {
   try {
-    const state = await contextService.getResourceState();
+    const state = await configService.getResourceState();
     const machineCount = Object.keys(state.getMachines()).length;
     checks.push({
       name: t('commands.doctor.checks.machines'),
       value: `${machineCount} configured`,
       status: machineCount > 0 ? 'ok' : 'warn',
-      hint: machineCount === 0 ? 'Add machines with: rdc context add-machine' : undefined,
+      hint: machineCount === 0 ? 'Add machines with: rdc config add-machine' : undefined,
     });
   } catch {
     checks.push({
@@ -268,7 +273,7 @@ async function addSelfHostedModeChecks(
       status: sshKeyPath ? 'fail' : 'warn',
       hint: sshKeyPath
         ? `SSH key not found at: ${sshKeyPath}`
-        : 'Configure SSH with: rdc context set-ssh',
+        : 'Set SSH key during config init: rdc config init <name> --ssh-key <path>',
     });
   }
 }
@@ -279,7 +284,7 @@ async function checkVirtualization(): Promise<CheckSection> {
   // Try to find renet
   let renetPath: string | null = null;
   try {
-    const localConfig = await contextService.getLocalConfig();
+    const localConfig = await configService.getLocalConfig();
     renetPath = resolveRenetPath(localConfig.renetPath);
   } catch {
     renetPath = resolveRenetPath();
@@ -442,14 +447,14 @@ export function registerDoctorCommand(program: Command): void {
     .action(async (options: { output?: string }) => {
       const outputFormat = (options.output ?? program.opts().output) as OutputFormat | undefined;
 
-      const context = await contextService.getCurrent();
-      const mode = context?.mode ?? DEFAULTS.CONTEXT.MODE;
+      const context = await configService.getCurrent();
+      const isCloud = hasCloudCredentials(context);
 
       const sections: CheckSection[] = [
         checkEnvironment(),
         await checkRenet(),
         await checkConfiguration(),
-        ...(mode === 'cloud' ? [await checkAuthentication()] : []),
+        ...(isCloud ? [await checkAuthentication()] : []),
         await checkVirtualization(),
       ];
 

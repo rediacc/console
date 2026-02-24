@@ -4,12 +4,12 @@ description: 5分でサーバー上にコンテナ化されたサービスを実
 category: Guides
 order: -1
 language: ja
+sourceHash: b368b94e7064efe1
 ---
 
 # クイックスタート
 
-どのツールを使うべきか迷う場合は、[rdc vs renet](/ja/docs/rdc-vs-renet) を参照してください。
-5分で自分のサーバーに暗号化された隔離コンテナ環境をデプロイしましょう。このガイドでは**ローカルモード**を使用します — クラウドアカウントやSaaS依存は不要です。
+5分で自分のサーバーに暗号化された隔離コンテナ環境をデプロイしましょう。クラウドアカウントやSaaS依存は不要です。
 
 ## 前提条件
 
@@ -23,22 +23,22 @@ language: ja
 curl -fsSL https://get.rediacc.com | sh
 ```
 
-## 2. コンテキストの作成
+## 2. Configの作成
 
 ```bash
-rdc context create-local my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 ## 3. サーバーの追加
 
 ```bash
-rdc context add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
+rdc config add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
 ```
 
 ## 4. サーバーのプロビジョニング
 
 ```bash
-rdc context setup-machine server-1
+rdc config setup-machine server-1
 ```
 
 このコマンドはサーバーにDocker、cryptsetup、renetバイナリをインストールします。
@@ -73,8 +73,9 @@ Rediaccは、お客様が管理するリモートサーバー上にコンテナ�
 
 ## 次のステップ
 
-- **[アーキテクチャ](/ja/docs/architecture)** — Rediaccの仕組みを理解する: モード、セキュリティモデル、Docker隔離
-- **[マシンセットアップ](/ja/docs/setup)** — 詳細なセットアップガイド: コンテキスト、マシン、インフラ構成
+- **[アーキテクチャ](/ja/docs/architecture)** — Rediaccの仕組みを理解する: アダプター検出、セキュリティモデル、Docker隔離
+- **[rdc vs renet](/ja/docs/rdc-vs-renet)** — 日常業務と低レベルのリモート作業でどちらのCLIを使うべきかを理解する
+- **[マシンセットアップ](/ja/docs/setup)** — 詳細なセットアップガイド: 設定、マシン、インフラ構成
 - **[リポジトリ](/ja/docs/repositories)** — リポジトリの作成、管理、リサイズ、フォーク、検証
 - **[サービス](/ja/docs/services)** — Rediaccfile、サービスネットワーク、デプロイ、自動起動
 - **[バックアップと復元](/ja/docs/backup-restore)** — 外部ストレージへのバックアップと自動バックアップのスケジュール設定

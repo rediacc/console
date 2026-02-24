@@ -34,8 +34,8 @@ rdc repo up <repo> -m <machine>
 rdc sync upload -m <machine> -r <repo> -l ./local-path
 
 # Set defaults so -m / -t flags are optional
-rdc context set machine <alias>
-rdc context set team <name>
+rdc config set machine <alias>
+rdc config set team <name>
 ```
 
 ---
@@ -45,29 +45,29 @@ rdc context set team <name>
 
 ```bash
 # Create a local context (no cloud API)
-rdc context create-local <name> --ssh-key ~/.ssh/id_ed25519
+rdc config create-local <name> --ssh-key ~/.ssh/id_ed25519
 
 # Create an S3/R2 context (remote state)
-rdc context create-s3 <name> --endpoint <url> \
+rdc config create-s3 <name> --endpoint <url> \
   --bucket <bucket> --access-key-id <id>
 
 # Add a machine to the active context
-rdc context add-machine <alias> --ip <ip> --user <user>
+rdc config add-machine <alias> --ip <ip> --user <user>
 
 # Scan SSH host keys for all context machines
-rdc context scan-keys
+rdc config scan-keys
 
 # Set defaults (avoids repeating -m / -t on every command)
-rdc context set machine <alias>
-rdc context set team <name>
+rdc config set machine <alias>
+rdc config set team <name>
 
 # Provision a bare server (installs btrfs, Docker, renet)
-rdc context setup-machine <alias>
+rdc config setup-machine <alias>
 
 # List contexts / machines / repo GUID mappings
-rdc context list
-rdc context machines
-rdc context repositories
+rdc config list
+rdc config machines
+rdc config repositories
 ```
 
 ---

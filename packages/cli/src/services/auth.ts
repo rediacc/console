@@ -5,7 +5,7 @@ import {
 } from '@rediacc/shared/api';
 import { isEncrypted } from '@rediacc/shared/encryption';
 import { apiClient, typedApi } from './api.js';
-import { contextService } from './context.js';
+import { configService } from './config-resources.js';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
 import { t } from '../i18n/index.js';
 import { EXIT_CODES } from '../types/index.js';
@@ -101,16 +101,16 @@ class AuthService {
   private cachedMasterPassword: string | null = null;
 
   /**
-   * Login to the API and save credentials to a context.
-   * If contextName is provided, creates/updates that context.
-   * Otherwise, uses the current context.
+   * Login to the API and save credentials to a config.
+   * If configName is provided, creates/updates that config.
+   * Otherwise, uses the current config.
    */
   async login(
     email: string,
     password: string,
     options: {
       sessionName?: string;
-      contextName?: string;
+      configName?: string;
       apiUrl?: string;
       masterPassword?: string;
     } = {}
@@ -140,7 +140,7 @@ class AuthService {
     }
 
     // Extract token from login response
-    // Note: Token rotation in apiClient.login() can't save the token because no context exists yet.
+    // Note: Token rotation in apiClient.login() can't save the token because no config exists yet.
     // We must extract it here and pass it to saveLoginCredentials.
     const token = extractNextToken(response);
 
@@ -151,8 +151,8 @@ class AuthService {
       };
     }
 
-    // Determine the context name to use
-    const contextName = options.contextName ?? contextService.getCurrentName();
+    // Determine the config name to use
+    const configName = options.configName ?? configService.getCurrentName();
     const apiUrl = options.apiUrl ?? (await apiClient.getApiUrl());
 
     // Prepare credentials to save
@@ -191,8 +191,8 @@ class AuthService {
       this.cachedMasterPassword = null;
     }
 
-    // Save credentials to context
-    await contextService.saveLoginCredentials(contextName, credentials);
+    // Save credentials to config
+    await configService.saveLoginCredentials(configName, credentials);
 
     return { success: true };
   }
@@ -220,20 +220,20 @@ class AuthService {
     }
 
     // Clear credentials from current context
-    await contextService.clearCredentials();
+    await configService.clearCredentials();
     this.cachedMasterPassword = null;
   }
 
   async isAuthenticated(): Promise<boolean> {
-    return contextService.hasToken();
+    return configService.hasToken();
   }
 
   async getStoredEmail(): Promise<string | null> {
-    return contextService.getUserEmail();
+    return configService.getUserEmail();
   }
 
   async getMasterPassword(inputPassword?: string): Promise<string | null> {
-    const encrypted = await contextService.getMasterPassword();
+    const encrypted = await configService.getMasterPassword();
     if (!encrypted) return null;
 
     if (!inputPassword) {
@@ -249,7 +249,7 @@ class AuthService {
 
   async setMasterPassword(password: string): Promise<void> {
     const encrypted = await nodeCryptoProvider.encrypt(password, password);
-    await contextService.setMasterPassword(encrypted);
+    await configService.setMasterPassword(encrypted);
     this.cachedMasterPassword = password;
   }
 
@@ -267,7 +267,7 @@ class AuthService {
     }
 
     // Try to get stored encrypted password
-    const encrypted = await contextService.getMasterPassword();
+    const encrypted = await configService.getMasterPassword();
 
     if (encrypted) {
       // In non-interactive mode (no TTY), skip prompting and throw error

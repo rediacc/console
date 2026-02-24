@@ -1,11 +1,10 @@
 /**
- * LocalStateProvider - wraps contextService local methods.
+ * LocalStateProvider - wraps configService local methods.
  * Queue/Storage/Repository operations are not supported in local mode.
  */
 
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
-import { configStorage } from '../adapters/storage.js';
-import { contextService } from '../services/context.js';
+import { configService } from '../services/config-resources.js';
 import { readSSHKey } from '../services/renet-execution.js';
 import type {
   IStateProvider,
@@ -30,7 +29,7 @@ class UnsupportedOperationError extends Error {
 
 class LocalMachineProvider implements MachineProvider {
   async list(_params: { teamName: string }): Promise<ResourceRecord[]> {
-    const machines = await contextService.listLocalMachines();
+    const machines = await configService.listMachines();
     return machines.map((m) => ({
       machineName: m.name,
       ip: m.config.ip,
@@ -41,7 +40,7 @@ class LocalMachineProvider implements MachineProvider {
   }
 
   async create(params: Record<string, unknown>): Promise<MutationResult> {
-    await contextService.addLocalMachine(params.machineName as string, {
+    await configService.addMachine(params.machineName as string, {
       ip: params.ip as string,
       user: params.user as string,
       port: params.port as number | undefined,
@@ -55,7 +54,7 @@ class LocalMachineProvider implements MachineProvider {
   }
 
   async delete(params: Record<string, unknown>): Promise<MutationResult> {
-    await contextService.removeLocalMachine(params.machineName as string);
+    await configService.removeMachine(params.machineName as string);
     return { success: true };
   }
 
@@ -108,7 +107,7 @@ class LocalQueueProvider implements QueueProvider {
 
 class LocalStorageProvider implements StorageProvider {
   async list(_params: { teamName: string }): Promise<ResourceRecord[]> {
-    const storages = await contextService.listLocalStorages();
+    const storages = await configService.listStorages();
     return storages.map((s) => ({
       storageName: s.name,
       provider: s.config.provider,
@@ -119,7 +118,7 @@ class LocalStorageProvider implements StorageProvider {
     const storageName = params.storageName as string;
     const vaultContent = params.vaultContent as string;
     const parsed = JSON.parse(vaultContent) as Record<string, unknown>;
-    await contextService.addLocalStorage(storageName, {
+    await configService.addStorage(storageName, {
       provider: typeof parsed.provider === 'string' ? parsed.provider : 'unknown',
       vaultContent: parsed,
     });
@@ -131,12 +130,12 @@ class LocalStorageProvider implements StorageProvider {
   }
 
   async delete(params: Record<string, unknown>): Promise<MutationResult> {
-    await contextService.removeLocalStorage(params.storageName as string);
+    await configService.removeStorage(params.storageName as string);
     return { success: true };
   }
 
   async getVault(params: Record<string, unknown>): Promise<VaultItem[]> {
-    const config = await contextService.getLocalStorage(params.storageName as string);
+    const config = await configService.getStorage(params.storageName as string);
     return [
       {
         vaultType: 'Storage',
@@ -199,7 +198,7 @@ class LocalVaultProvider implements VaultProvider {
     teamVault: VaultData;
     repositoryVault?: VaultData;
   }> {
-    const localConfig = await contextService.getLocalConfig();
+    const localConfig = await configService.getLocalConfig();
     const machine = localConfig.machines[machineName];
     if (!machine) {
       const available = Object.keys(localConfig.machines).join(', ');
@@ -209,7 +208,7 @@ class LocalVaultProvider implements VaultProvider {
     const sshPrivateKey =
       localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
-    const rootConfig = await configStorage.load();
+    const currentConfig = await configService.getCurrent();
     const machineVault: VaultData = {
       ip: machine.ip,
       host: machine.ip,
@@ -217,7 +216,7 @@ class LocalVaultProvider implements VaultProvider {
       user: machine.user,
       known_hosts: machine.knownHosts ?? '',
       datastore: machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH,
-      universalUser: rootConfig.universalUser ?? DEFAULTS.REPOSITORY.UNIVERSAL_USER,
+      universalUser: currentConfig?.universalUser ?? DEFAULTS.REPOSITORY.UNIVERSAL_USER,
     };
 
     const teamVault: VaultData = {
@@ -226,10 +225,9 @@ class LocalVaultProvider implements VaultProvider {
 
     let repositoryVault: VaultData | undefined;
     if (repositoryName) {
-      const repoConfig = await contextService.getLocalRepository(repositoryName);
+      const repoConfig = await configService.getRepository(repositoryName);
       if (repoConfig) {
         const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
-        // Set repo-specific Docker socket on machineVault so build functions pick it up
         machineVault.dockerHost = `unix:///var/run/rediacc/docker-${repoConfig.networkId}.sock`;
         machineVault.dockerSocket = `/var/run/rediacc/docker-${repoConfig.networkId}.sock`;
         repositoryVault = {
@@ -246,15 +244,14 @@ class LocalVaultProvider implements VaultProvider {
 }
 
 export class LocalStateProvider implements IStateProvider {
-  readonly mode: 'local' | 's3';
+  readonly isCloud = false as const;
   readonly machines: MachineProvider;
   readonly queue: QueueProvider;
   readonly storage: StorageProvider;
   readonly repositories: RepositoryProvider;
   readonly vaults: VaultProvider;
 
-  constructor(mode: 'local' | 's3' = 'local') {
-    this.mode = mode;
+  constructor() {
     this.machines = new LocalMachineProvider();
     this.queue = new LocalQueueProvider();
     this.storage = new LocalStorageProvider();

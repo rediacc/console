@@ -8,7 +8,7 @@
       "login": {
         "authenticating": "Authenticating...",
         "description": "Authenticate with Rediacc",
-        "success": "Login successful! Saved to context \"{{context}}\"",
+        "success": "Login successful! Saved to config \"{{context}}\"",
         "tfaPrompt": "Enter 2FA code:",
         "tfaRequired": "Two-factor authentication required",
         "tfaVerified": "2FA verified successfully",
@@ -278,8 +278,8 @@
         "renetVersion": "Version",
         "renetCriu": "Embedded CRIU",
         "renetRsync": "Embedded rsync",
-        "activeContext": "Active context",
-        "contextMode": "Context mode",
+        "activeConfig": "Active config",
+        "contextMode": "Adapter",
         "machines": "Machines",
         "sshKey": "SSH key",
         "authStatus": "Status",
@@ -301,83 +301,71 @@
       "opsNotSupported": "not supported on {{platform}}",
       "opsSkipped": "renet not available (skipped)"
     },
-    "context": {
-      "description": "Manage CLI contexts",
+    "config": {
+      "description": "Manage CLI configuration files",
+      "init": {
+        "description": "Initialize a new config file",
+        "optionMasterPassword": "Encrypt resources with a master password",
+        "optionS3Endpoint": "S3 endpoint URL",
+        "optionS3Bucket": "S3 bucket name",
+        "optionS3AccessKeyId": "S3 access key ID",
+        "optionS3SecretAccessKey": "S3 secret access key",
+        "optionS3Region": "S3 region",
+        "optionS3Prefix": "Key prefix in S3 bucket",
+        "alreadyExists": "Config \"{{name}}\" already exists",
+        "s3Required": "--s3-endpoint, --s3-bucket, and --s3-access-key-id are required for S3 resource state",
+        "promptS3SecretAccessKey": "S3 secret access key:",
+        "s3SecretRequired": "S3 secret access key is required",
+        "verifyingS3": "Verifying S3 access...",
+        "s3Verified": "S3 access verified",
+        "success": "Config \"{{name}}\" initialized"
+      },
       "list": {
-        "description": "List all contexts",
-        "noContexts": "No contexts configured"
+        "description": "List all config files",
+        "noConfigs": "No config files found. Create one with: rdc config init"
       },
       "show": {
-        "description": "Show current context details",
-        "noContext": "No active context"
-      },
-      "use": {
-        "description": "Switch to a different context",
-        "switched": "Switched to context \"{{name}}\""
-      },
-      "create": {
-        "description": "Create a new context",
-        "success": "Context \"{{name}}\" created"
+        "description": "Show current config details",
+        "noConfig": "No active config. Create one with: rdc config init"
       },
       "delete": {
-        "description": "Delete a context",
-        "success": "Context \"{{name}}\" deleted",
-        "confirm": "Are you sure you want to delete context \"{{name}}\"?"
-      },
-      "rename": {
-        "description": "Rename a context",
-        "success": "Context renamed from \"{{oldName}}\" to \"{{newName}}\""
-      },
-      "current": {
-        "description": "Show current context name",
-        "noContext": "No active context"
+        "description": "Delete a config file",
+        "success": "Config \"{{name}}\" deleted"
       },
       "set": {
         "description": "Set a default value (team, region, bridge, machine)",
         "success": "Set \"{{key}}\" to \"{{value}}\""
-      },
-      "unset": {
-        "description": "Remove a context default value",
-        "success": "Removed {{key}} from current context"
       },
       "clear": {
         "description": "Clear defaults (all or specific key)",
         "keyCleared": "Cleared \"{{key}}\"",
         "allCleared": "Cleared all defaults"
       },
-      "setLanguage": {
-        "description": "Set preferred language",
-        "success": "Language set to \"{{code}}\"",
-        "unsupported": "Unsupported language. Supported: {{languages}}"
-      },
-      "createLocal": {
-        "description": "Create a new local context for middleware-less operation",
-        "optionMasterPassword": "Encrypt resources with a master password",
-        "success": "Local context \"{{name}}\" created",
-        "encryptionEnabled": "Encryption at rest enabled. Resources will be encrypted in config.json.",
-        "nextStep": "Add machines with: rdc context add-machine <name> --ip <ip> --user <user>"
-      },
       "addMachine": {
-        "description": "Add a machine to the current local context",
+        "description": "Add a machine to the current config",
         "success": "Machine \"{{name}}\" added ({{user}}@{{ip}})"
       },
       "scanKeys": {
-        "description": "Scan SSH host keys for machines in the current context",
+        "description": "Scan SSH host keys for machines in the current config",
         "keysScanned": "Host keys scanned for \"{{name}}\"",
         "noKeys": "Could not scan host keys for \"{{name}}\"",
         "completed": "Scanned {{count}}/{{total}} machines"
       },
       "removeMachine": {
-        "description": "Remove a machine from the current local context",
+        "description": "Remove a machine from the current config",
         "success": "Machine \"{{name}}\" removed"
       },
       "machines": {
-        "description": "List machines in the current local context",
-        "noMachines": "No machines configured. Add one with: rdc context add-machine <name> --ip <ip> --user <user>"
+        "description": "List machines in the current config",
+        "noMachines": "No machines configured. Add one with: rdc config add-machine <name> --ip <ip> --user <user>"
       },
       "setSsh": {
-        "description": "Update SSH configuration for the current local context",
+        "description": "Update SSH configuration for the current config",
         "success": "SSH configuration updated"
+      },
+      "setRenet": {
+        "description": "Set the path to renet binary for local mode",
+        "success": "Renet path set to: {{path}}"
       },
       "setupMachine": {
         "description": "Run setup on a remote machine (installs btrfs, Docker, etc.)",
@@ -397,15 +385,15 @@
         "summary": "Imported {{count}} storage(s)"
       },
       "removeStorage": {
-        "description": "Remove a storage from the current local context",
+        "description": "Remove a storage from the current config",
         "success": "Storage \"{{name}}\" removed"
       },
       "storages": {
-        "description": "List storages in the current local context",
-        "noStorages": "No storages configured. Import with: rdc context import-storage <file>"
+        "description": "List storages in the current config",
+        "noStorages": "No storages configured. Import with: rdc config import-storage <file>"
       },
       "addRepository": {
-        "description": "Add a repository GUID mapping to the current local context",
+        "description": "Add a repository GUID mapping to the current config",
         "optionGuid": "Repository GUID (UUID from storage backup filenames)",
         "optionTag": "Repository tag",
         "optionCredential": "Repository credential (encryption passphrase)",
@@ -414,35 +402,12 @@
         "networkIdAssigned": "Network ID: {{networkId}}"
       },
       "removeRepository": {
-        "description": "Remove a repository mapping from the current local context",
+        "description": "Remove a repository mapping from the current config",
         "success": "Repository \"{{name}}\" removed"
       },
       "repositories": {
-        "description": "List repository GUID mappings in the current local context",
-        "noRepositories": "No repositories configured. Add one with: rdc context add-repository <name> --guid <guid>"
-      },
-      "createS3": {
-        "accessVerified": "S3 access verified",
-        "description": "Create a new S3/R2 context for remote state with local execution",
-        "errorSecretAccessKeyRequired": "S3 secret access key is required",
-        "nextStep": "Next: Add machines with \"rdc context add-machine\"",
-        "optionAccessKeyId": "S3 access key ID",
-        "optionBucket": "S3 bucket name",
-        "optionEndpoint": "S3 endpoint URL",
-        "optionMasterPassword": "Master password for encryption (optional, leave empty to skip)",
-        "optionPrefix": "Key prefix/namespace in bucket",
-        "optionRegion": "S3 region",
-        "optionRenetPath": "Path to renet binary",
-        "optionSecretAccessKey": "S3 secret access key (prompts if not given)",
-        "optionSshKey": "Path to SSH private key",
-        "promptMasterPassword": "Master password for encryption (leave empty to skip):",
-        "promptSecretAccessKey": "S3 secret access key:",
-        "success": "S3 context \"{{name}}\" created",
-        "verifyingAccess": "Verifying S3 access..."
-      },
-      "setRenet": {
-        "description": "Set the path to renet binary for local mode",
-        "success": "Renet path set to: {{path}}"
+        "description": "List repository GUID mappings in the current config",
+        "noRepositories": "No repositories configured. Add one with: rdc config add-repository <name> --guid <guid>"
       },
       "setInfra": {
         "description": "Set infrastructure configuration for a machine",
@@ -467,32 +432,75 @@
         "success": "Infrastructure config pushed to \"{{name}}\"",
         "proxyInstallWarning": "Proxy install failed (code {{code}}). Run manually: sudo renet proxy install",
         "installingProxy": "Installing and starting proxy..."
+      }
+    },
+    "store": {
+      "description": "Manage config sync stores (S3, local file, Bitwarden, Git, Vault)",
+      "add": {
+        "description": "Add a new sync store",
+        "optionType": "Store type (s3, local-file, bitwarden, git, vault)",
+        "optionEncryptionKey": "Encryption key for this store",
+        "optionS3Endpoint": "S3 endpoint URL",
+        "optionS3Bucket": "S3 bucket name",
+        "optionS3Region": "S3 region",
+        "optionS3AccessKeyId": "S3 access key ID",
+        "optionS3SecretAccessKey": "S3 secret access key",
+        "optionS3Prefix": "S3 key prefix",
+        "optionLocalPath": "Local directory path",
+        "optionBwFolderId": "Bitwarden folder ID to organize config items (optional)",
+        "optionGitUrl": "Git repository URL",
+        "optionGitBranch": "Git branch name",
+        "optionGitPath": "Path within Git repository",
+        "invalidType": "Invalid store type: \"{{type}}\". Valid types: {{valid}}",
+        "s3Required": "--s3-endpoint, --s3-bucket, and --s3-access-key-id are required for S3 stores",
+        "promptS3SecretAccessKey": "S3 secret access key:",
+        "s3SecretRequired": "S3 secret access key is required",
+        "localPathRequired": "--local-path is required for local-file stores",
+        "gitUrlRequired": "--git-url is required for Git stores",
+        "optionVaultAddr": "Vault server address (e.g., http://127.0.0.1:8200)",
+        "optionVaultToken": "Vault authentication token",
+        "optionVaultMount": "Vault KV v2 mount path (default: secret)",
+        "optionVaultPrefix": "Path prefix within Vault KV engine (default: rdc/configs)",
+        "optionVaultNamespace": "Vault namespace (enterprise only)",
+        "vaultAddrRequired": "--vault-addr is required for Vault stores",
+        "promptVaultToken": "Vault token (or set VAULT_TOKEN env):",
+        "vaultTokenRequired": "Vault token is required (pass --vault-token or set VAULT_TOKEN env)",
+        "alreadyExists": "Store \"{{name}}\" already exists",
+        "success": "Store \"{{name}}\" added ({{type}})",
+        "addedButUnverified": "Store \"{{name}}\" added but connection could not be verified"
       },
-      "toS3": {
-        "description": "Migrate the current local context to S3 mode",
-        "optionEndpoint": "S3 endpoint URL",
-        "optionBucket": "S3 bucket name",
-        "optionAccessKeyId": "S3 access key ID",
-        "optionSecretAccessKey": "S3 secret access key (prompted if omitted)",
-        "optionRegion": "S3 region",
-        "optionPrefix": "Key prefix in bucket",
-        "optionMasterPassword": "Enable encryption with this master password",
-        "promptSecretAccessKey": "Enter S3 secret access key:",
-        "errorNotLocal": "Context \"{{name}}\" is not in local mode (current: {{mode}})",
-        "errorSecretRequired": "Secret access key is required",
-        "verifying": "Verifying S3 access...",
-        "verified": "S3 access verified",
-        "success": "Migrated to S3 mode: {{machines}} machines, {{storages}} storages, {{repos}} repositories"
+      "list": {
+        "description": "List configured stores",
+        "noStores": "No stores configured. Add one with: rdc store add <name> --type <type>"
       },
-      "toLocal": {
-        "description": "Migrate the current S3 context to local mode",
-        "optionSshKeyPath": "Where to write SSH private key (default: existing path)",
-        "errorNotS3": "Context \"{{name}}\" is not in S3 mode (current: {{mode}})",
-        "errorNoS3Config": "Context \"{{name}}\" has no S3 configuration",
-        "loading": "Loading state from S3...",
-        "sshWritten": "SSH key written to {{path}}",
-        "success": "Migrated to local mode: {{machines}} machines, {{storages}} storages, {{repos}} repositories",
-        "nonDestructive": "State.json remains in S3 bucket (non-destructive)"
+      "remove": {
+        "description": "Remove a sync store",
+        "success": "Store \"{{name}}\" removed"
+      },
+      "push": {
+        "description": "Push current config to stores",
+        "optionStore": "Push to a specific store",
+        "optionAll": "Push to all stores",
+        "noStores": "No stores configured",
+        "success": "Pushed config \"{{config}}\" to store \"{{store}}\"",
+        "failed": "Failed to push to store \"{{store}}\": {{error}}"
+      },
+      "pull": {
+        "description": "Pull config from a store",
+        "optionStore": "Pull from a specific store",
+        "optionConfig": "Config name to pull into",
+        "notFound": "Store \"{{name}}\" not found",
+        "success": "Pulled config \"{{config}}\" from store \"{{store}}\"",
+        "failed": "Failed to pull from store \"{{store}}\": {{error}}"
+      },
+      "sync": {
+        "description": "Sync config with stores (pull then push)",
+        "optionStore": "Sync with a specific store",
+        "optionAll": "Sync with all stores",
+        "noStores": "No stores configured",
+        "pulled": "Pulled newer version from store \"{{store}}\"",
+        "pushed": "Pushed to store \"{{store}}\"",
+        "failed": "Sync failed for store \"{{store}}\": {{error}}"
       }
     },
     "machine": {
@@ -971,7 +979,7 @@
         "completed": "Repository created",
         "failed": "Repository creation failed",
         "rollback": "Rolled back config for \"{{repository}}\"",
-        "alreadyExists": "Repository \"{{name}}\" already exists in context"
+        "alreadyExists": "Repository \"{{name}}\" already exists in config"
       },
       "delete": {
         "description": "Delete a repository",
@@ -988,7 +996,7 @@
         "completed": "Fork created",
         "failed": "Fork creation failed",
         "rollback": "Rolled back config for \"{{repository}}\"",
-        "alreadyExists": "Repository \"{{name}}\" already exists in context"
+        "alreadyExists": "Repository \"{{name}}\" already exists in config"
       },
       "resize": {
         "description": "Resize a repository offline (supports grow and shrink)",
@@ -1405,8 +1413,8 @@
     "tfaVerificationFailed": "TFA verification failed",
     "authFailed": "Authentication failed",
     "authRequired": "Authentication required. Run: rdc auth login",
-    "bridgeRequired": "Bridge name required. Use --bridge or set context.",
-    "contextNotFound": "Context \"{{name}}\" not found",
+    "bridgeRequired": "Bridge name required. Use --bridge or set default with: rdc config set bridge <name>",
+    "contextNotFound": "Config \"{{name}}\" not found",
     "invalidCredentials": "Invalid credentials",
     "invalidEmail": "Please enter a valid email",
     "invalidMasterPassword": "Invalid master password for vault encryption",
@@ -1417,8 +1425,8 @@
     "invalidJsonVault": "Invalid JSON vault data.",
     "invalidKey": "Invalid key. Valid keys: {{keys}}",
     "machineNotFound": "Machine \"{{name}}\" not found",
-    "machineRequired": "Machine name required. Use --machine or set context.",
-    "machineRequiredLocal": "Machine name required. Use --machine or set default with: rdc context set machine <name>",
+    "machineRequired": "Machine name required. Use --machine or set default with: rdc config set machine <name>",
+    "machineRequiredLocal": "Machine name required. Use --machine or set default with: rdc config set machine <name>",
     "invalidHost": "Invalid IP address or hostname: \"{{host}}\". Must be a valid IPv4, IPv6, or hostname.",
     "invalidPort": "Invalid port number: \"{{port}}\". Must be between 1 and 65535.",
     "failedCreateQueueItem": "Failed to create queue item",
@@ -1442,12 +1450,12 @@
       "parseFailed": "Failed to parse URL: {{error}}"
     },
     "networkError": "Network error: {{message}}",
-    "noActiveContext": "No active context. Create or select a context first.",
+    "noActiveConfig": "No active config. Create one with: rdc config init <name>",
     "notAuthenticated": "Not authenticated. Run: rdc auth login",
     "unknownCommand": "Unknown command \"{{command}}\". Available commands: {{available}}.",
     "unknownSubcommand": "Unknown subcommand \"{{command}}\". Available {{parent}} subcommands: {{available}}.",
     "permissionDenied": "Permission denied",
-    "regionRequired": "Region name required. Use --region or set context.",
+    "regionRequired": "Region name required. Use --region or set default with: rdc config set region <name>",
     "registrationFailed": "Registration failed",
     "resourceNotFound": "{{resource}} not found",
     "repositoryRequired": "Repository name is required. Use --repository <name>.",
@@ -1458,7 +1466,7 @@
       "noHostKey": "Machine '{{machine}}' does not have a host key configured in the vault",
       "localPathNotFound": "Local path does not exist: {{path}}"
     },
-    "teamRequired": "Team name required. Use --team or set context.",
+    "teamRequired": "Team name required. Use --team or set default with: rdc config set team <name>",
     "term": {
       "connectivityFailed": "Cannot reach {{host}}:{{port}}. {{error}}\n\nTroubleshooting:\n  - Check if the machine is powered on and connected to the network\n  - Verify the IP address is correct in the machine vault\n  - Ensure port {{port}} is not blocked by a firewall\n  - Try pinging the machine: ping {{host}}",
       "launchFailed": "Failed to launch terminal: {{error}}",
@@ -1494,7 +1502,7 @@
     "command": "Execute a command instead of interactive shell",
     "container": "Connect to a specific Docker container",
     "containerAction": "Container action: terminal, logs, stats, exec",
-    "context": "Use specific context for this command",
+    "config": "Use specific config for this command",
     "datastore": "Datastore path on machine",
     "email": "Email address",
     "external": "Force launching in external terminal window",
@@ -1521,7 +1529,7 @@
     "renetPath": "Path to renet binary (default: renet in PATH)",
     "repository": "Repository name (connects to repository environment)",
     "repositoryShorthand": "Repository name (shorthand for --repository)",
-    "saveAs": "Save credentials to a named context",
+    "saveAs": "Save credentials to a named config",
     "sessionName": "Session name",
     "sshKey": "Path to SSH private key (e.g., ~/.ssh/id_rsa)",
     "sshPort": "SSH port",
@@ -1529,7 +1537,7 @@
     "sshPublicKey": "Path to SSH public key",
     "sshUser": "SSH username",
     "subscriptionPlan": "Subscription plan (COMMUNITY, PROFESSIONAL, BUSINESS, ENTERPRISE)",
-    "switch": "Switch to this context after creation",
+    "switch": "Switch to this config after creation",
     "team": "Team name",
     "tfaCode": "Current TFA code for verification",
     "tokenName": "Token name",
@@ -1661,7 +1669,17 @@
     "pageTitle": "Rediacc CLI Reference",
     "overview": {
       "heading": "Overview",
-      "text": "The **Rediacc CLI** (`rdc`) is a command-line interface for managing all aspects of the Rediacc platform — authentication, infrastructure, repositories, queues, storage, and more."
+      "text": "The **Rediacc CLI** (`rdc`) is a command-line interface for managing self-hosted infrastructure — machines, repositories, storage, backups, and more."
+    },
+    "cloudFrontmatter": {
+      "title": "CLI Application (Cloud / Experimental)",
+      "description": "Cloud-only commands for the Rediacc CLI — authentication, teams, organizations, and multi-tenant management",
+      "category": "Reference"
+    },
+    "cloudPageTitle": "Rediacc CLI Reference (Cloud / Experimental)",
+    "cloudOverview": {
+      "heading": "Overview",
+      "text": "These commands require the **cloud adapter** (experimental) — activated when a config contains `apiUrl` and `token` fields. For the main CLI reference, see [CLI Application](/en/docs/cli-application)."
     },
     "installation": {
       "heading": "Installation",
@@ -1690,7 +1708,8 @@
     },
     "sectionTitles": {
       "auth": "Authentication",
-      "context": "Context Management",
+      "config": "Config Management",
+      "store": "Store Management",
       "organization": "Organization Management",
       "user": "User Management",
       "team": "Team Management",
@@ -1720,11 +1739,11 @@
       "intro": "When something goes wrong, the CLI provides clear error messages:",
       "meanings": {
         "authRequired": "You need to log in first",
-        "noActiveContext": "No context is selected — create or switch to one",
+        "noActiveConfig": "No config is active — create one with `rdc config init`",
         "permissionDenied": "Your account lacks the required permissions",
-        "machineRequired": "Specify a machine with `--machine` or set a context default",
-        "teamRequired": "Specify a team with `--team` or set a context default",
-        "regionRequired": "Specify a region with `--region` or set a context default"
+        "machineRequired": "Specify a machine with `--machine` or set a config default",
+        "teamRequired": "Specify a team with `--team` or set a config default",
+        "regionRequired": "Specify a region with `--region` or set a config default"
       }
     },
     "outputFormats": {
@@ -1734,17 +1753,17 @@
     },
     "supplements": {
       "auth": {
-        "tip": "Your authentication token is stored locally in your context. Use `--save-as` to store credentials under a named context for multiple environments.",
+        "tip": "Your authentication token is stored locally in your config. Use `--save-as` to store credentials under a named config for multiple environments.",
         "register": {
           "afterDescription": "After registration, check your email for the activation code."
         }
       },
-      "context": {
-        "afterDescription": "Contexts store connection details (API URL, credentials, default team/region/machine) so you can switch between environments quickly.",
+      "config": {
+        "afterDescription": "Config files store connection details (API URL, credentials, default team/region/machine) so you can switch between environments quickly.",
         "set": {
           "tip": "Setting defaults means you don't need to pass `--team`, `--region`, or `--machine` with every command."
         },
-        "createLocal": {
+        "init": {
           "afterDescription": "In local mode you can add machines directly:"
         }
       },

@@ -322,204 +322,143 @@
         }
       }
     },
-    "context": {
+    "config": {
       "addMachine": {
-        "description": "Добавить машину в текущий локальный контекст",
+        "description": "Добавить машину в текущую конфигурацию",
         "success": "Машина \"{{name}}\" добавлена ({{user}}@{{ip}})"
       },
       "addRepository": {
-        "description": "Добавить привязку GUID репозитория к текущему локальному контексту",
+        "description": "Добавить сопоставление GUID репозитория в текущую конфигурацию",
         "networkIdAssigned": "Идентификатор сети: {{networkId}}",
         "optionCredential": "Учётные данные репозитория (парольная фраза шифрования)",
-        "optionGuid": "GUID репозитория (UUID из имён файлов резервных копий)",
-        "optionNetworkId": "Идентификатор сети для изоляции Docker (2816, 2880, ...). Назначается автоматически, если не указан",
+        "optionGuid": "GUID репозитория (UUID из имён файлов резервных копий хранилища)",
+        "optionNetworkId": "Network ID для изоляции Docker (2816, 2880, ...). Назначается автоматически, если не указан",
         "optionTag": "Тег репозитория",
         "success": "Репозиторий \"{{name}}\" добавлен ({{guid}}, тег: {{tag}})"
       },
       "clear": {
-        "allCleared": "Очищены все значения по умолчанию",
-        "description": "Очистить значения по умолчанию (все или определенный ключ)",
-        "keyCleared": "Очищено \"{{key}}\""
-      },
-      "create": {
-        "description": "Создать новый контекст",
-        "success": "Контекст \"{{name}}\" создан"
-      },
-      "createLocal": {
-        "description": "Создать новый локальный контекст для работы без middleware",
-        "encryptionEnabled": "Шифрование данных в покое включено. Ресурсы будут зашифрованы в config.json.",
-        "nextStep": "Добавьте машины с помощью: rdc context add-machine <name> --ip <ip> --user <user>",
-        "optionMasterPassword": "Зашифровать ресурсы с помощью мастер-пароля",
-        "success": "Локальный контекст \"{{name}}\" создан"
-      },
-      "createS3": {
-        "accessVerified": "Доступ к S3 подтверждён",
-        "description": "Создать новый контекст S3/R2 для удалённого состояния с локальным выполнением",
-        "errorSecretAccessKeyRequired": "Секретный ключ доступа S3 обязателен",
-        "nextStep": "Далее: Добавьте машины с помощью \"rdc context add-machine\"",
-        "optionAccessKeyId": "Идентификатор ключа доступа S3",
-        "optionBucket": "Имя корзины S3",
-        "optionEndpoint": "URL конечной точки S3",
-        "optionMasterPassword": "Мастер-пароль для шифрования (необязательно, оставьте пустым для пропуска)",
-        "optionPrefix": "Префикс ключа/пространство имён в корзине",
-        "optionRegion": "Регион S3",
-        "optionRenetPath": "Путь к исполняемому файлу renet",
-        "optionSecretAccessKey": "Секретный ключ доступа S3 (запрашивается, если не указан)",
-        "optionSshKey": "Путь к закрытому ключу SSH",
-        "promptMasterPassword": "Мастер-пароль для шифрования (оставьте пустым для пропуска):",
-        "promptSecretAccessKey": "Секретный ключ доступа S3:",
-        "success": "Контекст S3 \"{{name}}\" создан",
-        "verifyingAccess": "Проверка доступа к S3..."
-      },
-      "current": {
-        "description": "Показать имя текущего контекста",
-        "noContext": "Нет активного контекста"
+        "allCleared": "Все значения по умолчанию сброшены",
+        "description": "Сбросить значения по умолчанию (все или конкретный ключ)",
+        "keyCleared": "Значение \"{{key}}\" сброшено"
       },
       "delete": {
-        "confirm": "Вы уверены, что хотите удалить контекст \"{{name}}\"?",
-        "description": "Удалить контекст",
-        "success": "Контекст \"{{name}}\" удален"
+        "description": "Удалить файл конфигурации",
+        "success": "Конфигурация \"{{name}}\" удалена"
       },
-      "description": "Управление контекстами CLI",
+      "description": "Управление файлами конфигурации CLI",
       "importStorage": {
         "description": "Импортировать хранилища из файла конфигурации rclone",
-        "imported": "Импортировано хранилище \"{{name}}\" ({{type}})",
-        "noConfigs": "Допустимые конфигурации хранилищ в файле не найдены",
+        "imported": "Хранилище \"{{name}}\" импортировано ({{type}})",
+        "noConfigs": "В файле не найдено допустимых конфигураций хранилища",
         "notFound": "Хранилище \"{{name}}\" не найдено в файле конфигурации",
-        "optionName": "Импортировать только указанный раздел",
-        "summary": "Импортировано хранилищ: {{count}}",
+        "optionName": "Импортировать только этот именованный раздел",
+        "summary": "Импортировано {{count}} хранилища(й)",
         "unsupported": "Пропуск \"{{name}}\": неподдерживаемый тип провайдера \"{{type}}\""
       },
+      "init": {
+        "alreadyExists": "Конфигурация \"{{name}}\" уже существует",
+        "description": "Инициализировать новый файл конфигурации",
+        "optionMasterPassword": "Зашифровать ресурсы с помощью мастер-пароля",
+        "optionS3AccessKeyId": "Идентификатор ключа доступа S3",
+        "optionS3Bucket": "Имя корзины S3",
+        "optionS3Endpoint": "URL конечной точки S3",
+        "optionS3Prefix": "Префикс ключа в корзине S3",
+        "optionS3Region": "Регион S3",
+        "optionS3SecretAccessKey": "Секретный ключ доступа S3",
+        "promptS3SecretAccessKey": "Секретный ключ доступа S3:",
+        "s3Required": "Для S3-хранилища состояния требуются --s3-endpoint, --s3-bucket и --s3-access-key-id",
+        "s3SecretRequired": "Необходим секретный ключ доступа S3",
+        "s3Verified": "Доступ к S3 подтверждён",
+        "success": "Конфигурация \"{{name}}\" инициализирована",
+        "verifyingS3": "Проверка доступа к S3..."
+      },
       "list": {
-        "description": "Список всех контекстов",
-        "noContexts": "Контексты не настроены"
+        "description": "Список всех файлов конфигурации",
+        "noConfigs": "Файлы конфигурации не найдены. Создайте с помощью: rdc config init"
       },
       "machines": {
-        "description": "Список машин в текущем локальном контексте",
-        "noMachines": "Машины не настроены. Добавьте одну с помощью: rdc context add-machine <name> --ip <ip> --user <user>"
+        "description": "Список машин в текущей конфигурации",
+        "noMachines": "Машины не настроены. Добавьте с помощью: rdc config add-machine <name> --ip <ip> --user <user>"
       },
       "pushInfra": {
         "description": "Отправить конфигурацию инфраструктуры на удалённую машину",
         "installingProxy": "Установка и запуск прокси...",
-        "proxyInstallWarning": "Ошибка установки прокси (код {{code}}). Запустите вручную: sudo renet proxy install",
+        "proxyInstallWarning": "Установка прокси не удалась (код {{code}}). Выполните вручную: sudo renet proxy install",
         "success": "Конфигурация инфраструктуры отправлена на \"{{name}}\""
       },
       "removeMachine": {
-        "description": "Удалить машину из текущего локального контекста",
+        "description": "Удалить машину из текущей конфигурации",
         "success": "Машина \"{{name}}\" удалена"
       },
       "removeRepository": {
-        "description": "Удалить привязку репозитория из текущего локального контекста",
+        "description": "Удалить сопоставление репозитория из текущей конфигурации",
         "success": "Репозиторий \"{{name}}\" удалён"
       },
       "removeStorage": {
-        "description": "Удалить хранилище из текущего локального контекста",
+        "description": "Удалить хранилище из текущей конфигурации",
         "success": "Хранилище \"{{name}}\" удалено"
       },
-      "rename": {
-        "description": "Переименовать контекст",
-        "success": "Контекст переименован с \"{{oldName}}\" на \"{{newName}}\""
-      },
       "repositories": {
-        "description": "Список привязок GUID репозиториев в текущем локальном контексте",
-        "noRepositories": "Репозитории не настроены. Добавьте с помощью: rdc context add-repository <name> --guid <guid>"
+        "description": "Список сопоставлений GUID репозиториев в текущей конфигурации",
+        "noRepositories": "Репозитории не настроены. Добавьте с помощью: rdc config add-repository <name> --guid <guid>"
       },
       "scanKeys": {
         "completed": "Просканировано {{count}}/{{total}} машин",
-        "description": "Сканировать SSH-ключи хостов для машин в текущем контексте",
+        "description": "Сканировать SSH-ключи хоста для машин в текущей конфигурации",
         "keysScanned": "Ключи хоста просканированы для \"{{name}}\"",
         "noKeys": "Не удалось просканировать ключи хоста для \"{{name}}\""
       },
       "set": {
-        "description": "Установить значение по умолчанию (team, region, bridge, machine)",
-        "success": "Установлено \"{{key}}\" в \"{{value}}\""
+        "description": "Задать значение по умолчанию (команда, регион, мост, машина)",
+        "success": "Значение \"{{key}}\" установлено в \"{{value}}\""
       },
       "setInfra": {
-        "description": "Настроить конфигурацию инфраструктуры для машины",
-        "invalidIPv4": "Недопустимый IPv4-адрес: {{ip}}",
-        "invalidIPv6": "Недопустимый IPv6-адрес: {{ip}}",
+        "description": "Задать конфигурацию инфраструктуры для машины",
+        "invalidIPv4": "Неверный адрес IPv4: {{ip}}",
+        "invalidIPv6": "Неверный адрес IPv6: {{ip}}",
         "noOptions": "Параметры не указаны. Используйте --public-ipv4, --base-domain и т.д.",
         "optionBaseDomain": "Базовый домен для приложений",
-        "optionCertEmail": "Электронная почта для уведомлений о TLS-сертификатах",
-        "optionCfDnsToken": "Токен Cloudflare DNS API для проверки ACME DNS-01",
-        "optionPublicIPv4": "Публичный IPv4-адрес",
-        "optionPublicIPv6": "Публичный IPv6-адрес",
-        "optionTcpPorts": "TCP-порты для переадресации (через запятую, напр. 25,143,465)",
-        "optionUdpPorts": "UDP-порты для переадресации (через запятую, напр. 53)",
-        "success": "Конфигурация инфраструктуры обновлена для \"{{name}}\""
-      },
-      "setLanguage": {
-        "description": "Установить предпочитаемый язык",
-        "success": "Язык установлен на \"{{code}}\"",
-        "unsupported": "Неподдерживаемый язык. Поддерживаемые: {{languages}}"
+        "optionCertEmail": "Email для уведомлений о TLS-сертификате",
+        "optionCfDnsToken": "Токен Cloudflare DNS API для ACME DNS-01 проверки",
+        "optionPublicIPv4": "Публичный адрес IPv4",
+        "optionPublicIPv6": "Публичный адрес IPv6",
+        "optionTcpPorts": "Порты TCP для проброса (через запятую, напр. 25,143,465)",
+        "optionUdpPorts": "Порты UDP для проброса (через запятую, напр. 53)",
+        "success": "Конфигурация инфраструктуры для \"{{name}}\" обновлена"
       },
       "setRenet": {
-        "description": "Установить путь к двоичному файлу renet для локального режима",
-        "success": "Путь Renet установлен на: {{path}}"
+        "description": "Задать путь к бинарному файлу renet для локального режима",
+        "success": "Путь к renet установлен: {{path}}"
       },
       "setSsh": {
-        "description": "Обновить конфигурацию SSH для текущего локального контекста",
+        "description": "Обновить конфигурацию SSH для текущей конфигурации",
         "success": "Конфигурация SSH обновлена"
       },
       "setupMachine": {
         "completed": "Настройка машины '{{machine}}' успешно завершена",
         "datastoreOption": "Путь к хранилищу данных на удалённой машине",
-        "datastoreSizeOption": "Размер хранилища данных (напр., 95%, 100G)",
-        "description": "Запустить настройку на удалённой машине (устанавливает btrfs, Docker и т.д.)",
-        "failed": "Ошибка настройки машины '{{machine}}': {{error}}",
+        "datastoreSizeOption": "Размер хранилища данных (напр. 95%, 100G)",
+        "description": "Выполнить настройку на удалённой машине (устанавливает btrfs, Docker и т.д.)",
+        "failed": "Настройка машины '{{machine}}' не удалась: {{error}}",
         "starting": "Настройка машины '{{machine}}'..."
       },
       "show": {
-        "description": "Показать детали текущего контекста",
-        "noContext": "Нет активного контекста"
+        "description": "Показать детали текущей конфигурации",
+        "noConfig": "Нет активной конфигурации. Создайте с помощью: rdc config init"
       },
       "showInfra": {
-        "description": "Показать конфигурацию инфраструктуры машины",
-        "noInfra": "Конфигурация инфраструктуры не задана для \"{{name}}\""
+        "description": "Показать конфигурацию инфраструктуры для машины",
+        "noInfra": "Конфигурация инфраструктуры для \"{{name}}\" не задана"
       },
       "storages": {
-        "description": "Список хранилищ в текущем локальном контексте",
-        "noStorages": "Хранилища не настроены. Импортируйте с помощью: rdc context import-storage <file>"
-      },
-      "toLocal": {
-        "description": "Перенести текущий контекст S3 в локальный режим",
-        "errorNoS3Config": "У контекста \"{{name}}\" нет конфигурации S3",
-        "errorNotS3": "Контекст \"{{name}}\" не в режиме S3 (текущий: {{mode}})",
-        "loading": "Загрузка состояния из S3...",
-        "nonDestructive": "Файл State.json остаётся в корзине S3 (без удаления)",
-        "optionSshKeyPath": "Куда записать закрытый SSH-ключ (по умолчанию: текущий путь)",
-        "sshWritten": "SSH-ключ записан в {{path}}",
-        "success": "Перенесено в локальный режим: {{machines}} машин, {{storages}} хранилищ, {{repos}} репозиториев"
-      },
-      "toS3": {
-        "description": "Перенести текущий локальный контекст в режим S3",
-        "errorNotLocal": "Контекст \"{{name}}\" не в локальном режиме (текущий: {{mode}})",
-        "errorSecretRequired": "Секретный ключ доступа обязателен",
-        "optionAccessKeyId": "Идентификатор ключа доступа S3",
-        "optionBucket": "Имя корзины S3",
-        "optionEndpoint": "URL конечной точки S3",
-        "optionMasterPassword": "Включить шифрование с этим мастер-паролем",
-        "optionPrefix": "Префикс ключа в корзине",
-        "optionRegion": "Регион S3",
-        "optionSecretAccessKey": "Секретный ключ доступа S3 (запрашивается, если не указан)",
-        "promptSecretAccessKey": "Введите секретный ключ доступа S3:",
-        "success": "Перенесено в режим S3: {{machines}} машин, {{storages}} хранилищ, {{repos}} репозиториев",
-        "verified": "Доступ к S3 подтверждён",
-        "verifying": "Проверка доступа к S3..."
-      },
-      "unset": {
-        "description": "Удалить значение контекста по умолчанию",
-        "success": "Удалено {{key}} из текущего контекста"
-      },
-      "use": {
-        "description": "Переключиться на другой контекст",
-        "switched": "Переключено на контекст \"{{name}}\""
+        "description": "Список хранилищ в текущей конфигурации",
+        "noStorages": "Хранилища не настроены. Импортируйте с помощью: rdc config import-storage <file>"
       }
     },
     "doctor": {
       "allPassed": "Все проверки пройдены",
       "checks": {
-        "activeContext": "Активный контекст",
+        "activeConfig": "Активная конфигурация",
         "authStatus": "Статус",
         "cliVersion": "Версия CLI",
         "contextMode": "Режим контекста",
@@ -527,13 +466,13 @@
         "goInstalled": "Go",
         "machines": "Машины",
         "nodeVersion": "Node.js",
+        "opsPrereqs": "Требования OPS",
         "renetBinary": "Бинарный файл",
         "renetCriu": "Встроенный CRIU",
         "renetRsync": "Встроенный rsync",
         "renetVersion": "Версия",
         "seaMode": "Режим SEA",
-        "sshKey": "SSH-ключ",
-        "opsPrereqs": "Требования OPS"
+        "sshKey": "SSH-ключ"
       },
       "description": "Диагностика среды CLI и интеграции renet",
       "devMode": "нет (режим разработки)",
@@ -542,9 +481,9 @@
       "notAuthenticated": "не аутентифицирован",
       "notConfigured": "не настроен",
       "notInstalled": "не установлен",
-      "seaActive": "да (Single Executable Application)",
       "opsNotSupported": "не поддерживается на {{platform}}",
       "opsSkipped": "renet недоступен (пропущено)",
+      "seaActive": "да (Single Executable Application)",
       "sections": {
         "authentication": "Аутентификация",
         "configuration": "Конфигурация",
@@ -1183,6 +1122,75 @@
         "starting": "Загрузка \"{{repository}}\" из \"{{storage}}\" на \"{{machine}}\"..."
       }
     },
+    "store": {
+      "add": {
+        "addedButUnverified": "Хранилище \"{{name}}\" добавлено, но соединение не удалось проверить",
+        "alreadyExists": "Хранилище \"{{name}}\" уже существует",
+        "description": "Добавить новое хранилище синхронизации",
+        "gitUrlRequired": "Для Git-хранилищ требуется --git-url",
+        "invalidType": "Неверный тип хранилища: \"{{type}}\". Допустимые типы: {{valid}}",
+        "localPathRequired": "Для хранилищ типа local-file требуется --local-path",
+        "optionBwFolderId": "ID папки Bitwarden для организации элементов конфигурации (необязательно)",
+        "optionEncryptionKey": "Ключ шифрования для этого хранилища",
+        "optionGitBranch": "Имя ветки Git",
+        "optionGitPath": "Путь в репозитории Git",
+        "optionGitUrl": "URL репозитория Git",
+        "optionLocalPath": "Путь к локальной директории",
+        "optionS3AccessKeyId": "Идентификатор ключа доступа S3",
+        "optionS3Bucket": "Имя корзины S3",
+        "optionS3Endpoint": "URL конечной точки S3",
+        "optionS3Prefix": "Префикс ключа S3",
+        "optionS3Region": "Регион S3",
+        "optionS3SecretAccessKey": "Секретный ключ доступа S3",
+        "optionType": "Тип хранилища (s3, local-file, bitwarden, git, vault)",
+        "optionVaultAddr": "Адрес сервера Vault (напр. http://127.0.0.1:8200)",
+        "optionVaultMount": "Путь монтирования Vault KV v2 (по умолчанию: secret)",
+        "optionVaultNamespace": "Пространство имён Vault (только для enterprise)",
+        "optionVaultPrefix": "Префикс пути в движке Vault KV (по умолчанию: rdc/configs)",
+        "optionVaultToken": "Токен аутентификации Vault",
+        "promptS3SecretAccessKey": "Секретный ключ доступа S3:",
+        "promptVaultToken": "Токен Vault (или задайте переменную VAULT_TOKEN):",
+        "s3Required": "Для S3-хранилищ требуются --s3-endpoint, --s3-bucket и --s3-access-key-id",
+        "s3SecretRequired": "Необходим секретный ключ доступа S3",
+        "success": "Хранилище \"{{name}}\" добавлено ({{type}})",
+        "vaultAddrRequired": "Для Vault-хранилищ требуется --vault-addr",
+        "vaultTokenRequired": "Необходим токен Vault (передайте --vault-token или задайте переменную VAULT_TOKEN)"
+      },
+      "description": "Управление хранилищами синхронизации конфигурации (S3, локальный файл, Bitwarden, Git, Vault)",
+      "list": {
+        "description": "Список настроенных хранилищ",
+        "noStores": "Хранилища не настроены. Добавьте с помощью: rdc store add <name> --type <type>"
+      },
+      "pull": {
+        "description": "Получить конфигурацию из хранилища",
+        "failed": "Ошибка получения из хранилища \"{{store}}\": {{error}}",
+        "notFound": "Хранилище \"{{name}}\" не найдено",
+        "optionConfig": "Имя конфигурации для записи",
+        "optionStore": "Получить из конкретного хранилища",
+        "success": "Конфигурация \"{{config}}\" получена из хранилища \"{{store}}\""
+      },
+      "push": {
+        "description": "Отправить текущую конфигурацию в хранилища",
+        "failed": "Ошибка отправки в хранилище \"{{store}}\": {{error}}",
+        "noStores": "Хранилища не настроены",
+        "optionAll": "Отправить во все хранилища",
+        "optionStore": "Отправить в конкретное хранилище",
+        "success": "Конфигурация \"{{config}}\" отправлена в хранилище \"{{store}}\""
+      },
+      "remove": {
+        "description": "Удалить хранилище синхронизации",
+        "success": "Хранилище \"{{name}}\" удалено"
+      },
+      "sync": {
+        "description": "Синхронизировать конфигурацию с хранилищами (получить, затем отправить)",
+        "failed": "Ошибка синхронизации с хранилищем \"{{store}}\": {{error}}",
+        "noStores": "Хранилища не настроены",
+        "optionAll": "Синхронизировать со всеми хранилищами",
+        "optionStore": "Синхронизировать с конкретным хранилищем",
+        "pulled": "Получена более новая версия из хранилища \"{{store}}\"",
+        "pushed": "Отправлено в хранилище \"{{store}}\""
+      }
+    },
     "sync": {
       "cancelled": "Синхронизация отменена.",
       "description": "Синхронизация файлов с репозиториями с помощью rsync",
@@ -1417,13 +1425,23 @@
       "tip": "Совет",
       "warning": "Предупреждение"
     },
+    "cloudFrontmatter": {
+      "category": "Reference",
+      "description": "Облачные команды для Rediacc CLI — аутентификация, команды, организации и мультитенантное управление",
+      "title": "Приложение CLI (Облако / Экспериментальный)"
+    },
+    "cloudOverview": {
+      "heading": "Обзор",
+      "text": "Эти команды требуют **облачный адаптер** (экспериментальный) — активируется, когда конфигурация содержит поля `apiUrl` и `token`. Основной справочник CLI см. в [Приложение CLI](/ru/docs/cli-application)."
+    },
+    "cloudPageTitle": "Справочник Rediacc CLI (Облако / Экспериментальный)",
     "errors": {
       "heading": "Распространённые сообщения об ошибках",
       "intro": "Когда что-то идёт не так, CLI предоставляет понятные сообщения об ошибках:",
       "meanings": {
         "authRequired": "Сначала необходимо войти в систему",
         "machineRequired": "Укажите машину с помощью `--machine` или задайте значение по умолчанию в контексте",
-        "noActiveContext": "Контекст не выбран — создайте или переключитесь на один из них",
+        "noActiveConfig": "Активная конфигурация отсутствует — создайте с помощью `rdc config init`",
         "permissionDenied": "У вашей учётной записи нет необходимых прав",
         "regionRequired": "Укажите регион с помощью `--region` или задайте значение по умолчанию в контексте",
         "teamRequired": "Укажите команду с помощью `--team` или задайте значение по умолчанию в контексте"
@@ -1462,7 +1480,7 @@
       "backup": "Управление резервным копированием",
       "bridge": "Управление мостами",
       "ceph": "Управление хранилищем Ceph",
-      "context": "Управление контекстами",
+      "config": "Управление конфигурацией",
       "doctor": "Диагностика системы",
       "machine": "Управление машинами",
       "ops": "Экспериментальные операции с VM",
@@ -1476,6 +1494,7 @@
       "shortcuts": "Быстрые команды (ярлыки)",
       "snapshot": "Управление снимками",
       "storage": "Управление хранилищем",
+      "store": "Управление хранилищами синхронизации",
       "sync": "Синхронизация файлов",
       "team": "Управление командами",
       "term": "Доступ к SSH-терминалу",
@@ -1490,13 +1509,13 @@
         },
         "tip": "Ваш токен аутентификации хранится локально в вашем контексте. Используйте `--save-as` для сохранения учётных данных под именованным контекстом для нескольких сред."
       },
-      "context": {
-        "afterDescription": "Контексты хранят данные подключения (URL API, учётные данные, команда/регион/машина по умолчанию), чтобы вы могли быстро переключаться между средами.",
-        "createLocal": {
-          "afterDescription": "В локальном режиме вы можете добавлять машины напрямую:"
+      "config": {
+        "afterDescription": "Файлы конфигурации хранят данные подключения (URL API, учётные данные, команда/регион/машина по умолчанию), что позволяет быстро переключаться между средами.",
+        "init": {
+          "afterDescription": "В локальном режиме можно добавлять машины напрямую:"
         },
         "set": {
-          "tip": "Установка значений по умолчанию означает, что вам не нужно передавать `--team`, `--region` или `--machine` с каждой командой."
+          "tip": "Задав значения по умолчанию, вам не потребуется передавать `--team`, `--region` или `--machine` с каждой командой."
         }
       },
       "machine": {
@@ -1559,9 +1578,9 @@
     "invalidPriorityMin": "Неверное значение priority-min. Должно быть от 1 до 5.",
     "machineNotFound": "Машина \"{{name}}\" не найдена",
     "machineRequired": "Требуется имя машины. Используйте --machine или установите контекст.",
-    "machineRequiredLocal": "Требуется имя машины. Используйте --machine или установите значение по умолчанию с помощью: rdc context set machine <name>",
+    "machineRequiredLocal": "Требуется имя машины. Используйте --machine или установите значение по умолчанию с помощью: rdc config set machine <name>",
     "networkError": "Ошибка сети: {{message}}",
-    "noActiveContext": "Нет активного контекста. Сначала создайте или выберите контекст.",
+    "noActiveConfig": "Нет активной конфигурации. Создайте с помощью: rdc config init <name>",
     "notAuthenticated": "Не аутентифицирован. Выполните: rdc auth login",
     "passwordsMismatch": "Пароли не совпадают",
     "permissionDenied": "Доступ запрещен",
@@ -1626,12 +1645,12 @@
     "cleanupAll": "Удалить все конфигурации rediacc SSH",
     "cluster": "Имя кластера Ceph",
     "command": "Выполнить команду вместо интерактивной оболочки",
+    "config": "Использовать конкретную конфигурацию для этой команды",
     "confirmPasswordNonInteractive": "Подтвердите пароль (режим без интеракции)",
     "confirmSync": "Предпросмотр изменений и запрос подтверждения перед синхронизацией",
     "connectionName": "Удалить определенное соединение",
     "container": "Подключиться к определенному контейнеру Docker",
     "containerAction": "Действие контейнера: terminal, logs, stats, exec",
-    "context": "Использовать определенный контекст для этой команды",
     "datastore": "Путь хранилища данных на машине",
     "debug": "Включить отладочный вывод (локальный режим)",
     "dryRun": "Показать, что будет передано, без фактической синхронизации",

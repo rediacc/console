@@ -13,16 +13,16 @@ Common issues and their solutions. When in doubt, start with `rdc doctor` to run
 ## SSH Connection Fails
 
 - Verify you can connect manually: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Run `rdc context scan-keys server-1` to refresh host keys
+- Run `rdc config scan-keys server-1` to refresh host keys
 - Check that the SSH port matches: `--port 22`
-- Test connectivity: `rdc machine test-connection --ip 203.0.113.50 --user deploy`
+- Test with a simple command: `rdc term server-1 -c "hostname"`
 
 ## Host Key Mismatch
 
 If a server was reinstalled or its SSH keys changed, you'll see "host key verification failed":
 
 ```bash
-rdc context scan-keys server-1
+rdc config scan-keys server-1
 ```
 
 This fetches fresh host keys and updates your config.
@@ -31,7 +31,7 @@ This fetches fresh host keys and updates your config.
 
 - Ensure the SSH user has sudo access without a password, or configure `NOPASSWD` for the required commands
 - Check available disk space on the server
-- Run with `--debug` for verbose output: `rdc context setup-machine server-1 --debug`
+- Run with `--debug` for verbose output: `rdc config setup-machine server-1 --debug`
 
 ## Repository Create Fails
 
@@ -74,7 +74,7 @@ rdc term server-1 my-app -c "docker ps"
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
 ```
 
-Replace `2816` with your repository's network ID (found in `config.json` or `rdc repo status`).
+Replace `2816` with your repository's network ID (found in `rediacc.json` or `rdc repo status`).
 
 ## Containers Created on Wrong Docker Daemon
 
@@ -103,4 +103,4 @@ If `rdc term` fails to open a terminal window:
 rdc doctor
 ```
 
-This checks your environment, renet installation, context configuration, and authentication status. Each check reports OK, Warning, or Error with a brief explanation.
+This checks your environment, renet installation, config configuration, and authentication status. Each check reports OK, Warning, or Error with a brief explanation.

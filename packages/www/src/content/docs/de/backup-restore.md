@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: de
-sourceHash: 3d127a0a186d7487
+sourceHash: cf186b18b0c50eba
 ---
 
 # Backup & Wiederherstellung
@@ -22,15 +22,15 @@ Bevor Sie Backups übertragen, registrieren Sie einen Speicheranbieter. Rediacc 
 Wenn Sie bereits ein rclone-Remote konfiguriert haben:
 
 ```bash
-rdc context import-storage my-storage
+rdc config import-storage rclone.conf
 ```
 
-Dies importiert die Speicherkonfiguration aus Ihrer rclone-Konfiguration in den aktuellen Kontext.
+Dies importiert Speicherkonfigurationen aus einer rclone-Konfigurationsdatei in die aktuelle Konfiguration. Unterstützte Typen: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob und Swift.
 
 ### Speicher anzeigen
 
 ```bash
-rdc context storages
+rdc config storages
 ```
 
 ## Ein Backup erstellen

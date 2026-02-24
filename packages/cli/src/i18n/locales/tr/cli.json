@@ -322,17 +322,17 @@
         }
       }
     },
-    "context": {
+    "config": {
       "addMachine": {
-        "description": "Güncel yerel bağlama bir makine ekleyin",
+        "description": "Geçerli yapılandırmaya bir makine ekleyin",
         "success": "\"{{name}}\" makinesi eklendi ({{user}}@{{ip}})"
       },
       "addRepository": {
-        "description": "Güncel yerel bağlama bir depo GUID eşlemesi ekle",
-        "networkIdAssigned": "Ağ kimliği: {{networkId}}",
+        "description": "Geçerli yapılandırmaya bir depo GUID eşlemesi ekleyin",
+        "networkIdAssigned": "Ağ Kimliği: {{networkId}}",
         "optionCredential": "Depo kimlik bilgisi (şifreleme parolası)",
-        "optionGuid": "Depo GUID değeri (yedek dosya adlarındaki UUID)",
-        "optionNetworkId": "Docker izolasyonu için ağ kimliği (2816, 2880, ...). Belirtilmezse otomatik atanır",
+        "optionGuid": "Depo GUID'si (depolama yedek dosya adlarından UUID)",
+        "optionNetworkId": "Docker yalıtımı için ağ kimliği (2816, 2880, ...). Belirtilmezse otomatik atanır",
         "optionTag": "Depo etiketi",
         "success": "\"{{name}}\" deposu eklendi ({{guid}}, etiket: {{tag}})"
       },
@@ -341,185 +341,124 @@
         "description": "Varsayılanları temizleyin (tümü veya belirli bir anahtar)",
         "keyCleared": "\"{{key}}\" temizlendi"
       },
-      "create": {
-        "description": "Yeni bir bağlam oluşturun",
-        "success": "\"{{name}}\" bağlamı oluşturuldu"
-      },
-      "createLocal": {
-        "description": "Middleware olmadan çalışmak için yeni bir yerel bağlam oluşturun",
-        "encryptionEnabled": "Bekleyen veri şifreleme etkinleştirildi. Kaynaklar config.json içinde şifrelenecek.",
-        "nextStep": "Makineler ekleyin: rdc context add-machine <name> --ip <ip> --user <user>",
-        "optionMasterPassword": "Kaynakları bir ana parola ile şifrele",
-        "success": "\"{{name}}\" yerel bağlamı oluşturuldu"
-      },
-      "createS3": {
-        "accessVerified": "S3 erişimi doğrulandı",
-        "description": "Yerel yürütme ile uzak durum için yeni bir S3/R2 bağlamı oluşturun",
-        "errorSecretAccessKeyRequired": "S3 gizli erişim anahtarı gereklidir",
-        "nextStep": "Sonraki adım: \"rdc context add-machine\" ile makineler ekleyin",
-        "optionAccessKeyId": "S3 erişim anahtarı kimliği",
-        "optionBucket": "S3 bucket adı",
-        "optionEndpoint": "S3 uç nokta URL'si",
-        "optionMasterPassword": "Şifreleme için ana parola (isteğe bağlı, atlamak için boş bırakın)",
-        "optionPrefix": "Bucket içindeki anahtar öneki/ad alanı",
-        "optionRegion": "S3 bölgesi",
-        "optionRenetPath": "renet ikili dosya yolu",
-        "optionSecretAccessKey": "S3 gizli erişim anahtarı (verilmezse sorulur)",
-        "optionSshKey": "SSH özel anahtar yolu",
-        "promptMasterPassword": "Şifreleme için ana parola (atlamak için boş bırakın):",
-        "promptSecretAccessKey": "S3 gizli erişim anahtarı:",
-        "success": "S3 bağlamı \"{{name}}\" oluşturuldu",
-        "verifyingAccess": "S3 erişimi doğrulanıyor..."
-      },
-      "current": {
-        "description": "Güncel bağlam adını gösterin",
-        "noContext": "Etkin bağlam yok"
-      },
       "delete": {
-        "confirm": "\"{{name}}\" bağlamını silmek istediğinizden emin misiniz?",
-        "description": "Bir bağlamı silin",
-        "success": "\"{{name}}\" bağlamı silindi"
+        "description": "Bir yapılandırma dosyasını silin",
+        "success": "\"{{name}}\" yapılandırması silindi"
       },
-      "description": "CLI bağlamlarını yönetin",
+      "description": "CLI yapılandırma dosyalarını yönetin",
       "importStorage": {
-        "description": "Bir rclone yapılandırma dosyasından depolama alanlarını içe aktar",
-        "imported": "\"{{name}}\" depolama alanı içe aktarıldı ({{type}})",
+        "description": "Bir rclone yapılandırma dosyasından depoları içe aktarın",
+        "imported": "\"{{name}}\" deposu içe aktarıldı ({{type}})",
         "noConfigs": "Dosyada geçerli depolama yapılandırması bulunamadı",
-        "notFound": "\"{{name}}\" depolama alanı yapılandırma dosyasında bulunamadı",
+        "notFound": "\"{{name}}\" deposu yapılandırma dosyasında bulunamadı",
         "optionName": "Yalnızca bu adlı bölümü içe aktar",
-        "summary": "{{count}} depolama alanı içe aktarıldı",
+        "summary": "{{count}} depolama içe aktarıldı",
         "unsupported": "\"{{name}}\" atlanıyor: desteklenmeyen sağlayıcı türü \"{{type}}\""
       },
+      "init": {
+        "alreadyExists": "\"{{name}}\" yapılandırması zaten mevcut",
+        "description": "Yeni bir yapılandırma dosyası başlatın",
+        "optionMasterPassword": "Kaynakları bir ana şifreyle şifreleyin",
+        "optionS3AccessKeyId": "S3 erişim anahtarı kimliği",
+        "optionS3Bucket": "S3 paket adı",
+        "optionS3Endpoint": "S3 uç nokta URL'si",
+        "optionS3Prefix": "S3 paketindeki anahtar ön eki",
+        "optionS3Region": "S3 bölgesi",
+        "optionS3SecretAccessKey": "S3 gizli erişim anahtarı",
+        "promptS3SecretAccessKey": "S3 gizli erişim anahtarı:",
+        "s3Required": "S3 kaynak durumu için --s3-endpoint, --s3-bucket ve --s3-access-key-id gereklidir",
+        "s3SecretRequired": "S3 gizli erişim anahtarı gereklidir",
+        "s3Verified": "S3 erişimi doğrulandı",
+        "success": "\"{{name}}\" yapılandırması başlatıldı",
+        "verifyingS3": "S3 erişimi doğrulanıyor..."
+      },
       "list": {
-        "description": "Tüm bağlamları listeleyin",
-        "noContexts": "Hiç bağlam yapılandırılmadı"
+        "description": "Tüm yapılandırma dosyalarını listeleyin",
+        "noConfigs": "Yapılandırma dosyası bulunamadı. Oluşturun: rdc config init"
       },
       "machines": {
-        "description": "Güncel yerel bağlamdaki makineleri listeleyin",
-        "noMachines": "Hiç makine yapılandırılmadı. Eklemek için: rdc context add-machine <name> --ip <ip> --user <user>"
+        "description": "Geçerli yapılandırmadaki makineleri listeleyin",
+        "noMachines": "Yapılandırılmış makine yok. Eklemek için: rdc config add-machine <name> --ip <ip> --user <user>"
       },
       "pushInfra": {
-        "description": "Altyapı yapılandırmasını uzak makineye gönder",
+        "description": "Altyapı yapılandırmasını uzak makineye gönderin",
         "installingProxy": "Proxy kuruluyor ve başlatılıyor...",
-        "proxyInstallWarning": "Proxy kurulumu başarısız (kod {{code}}). Manuel çalıştırın: sudo renet proxy install",
+        "proxyInstallWarning": "Proxy kurulumu başarısız (kod {{code}}). Elle çalıştırın: sudo renet proxy install",
         "success": "Altyapı yapılandırması \"{{name}}\" makinesine gönderildi"
       },
       "removeMachine": {
-        "description": "Güncel yerel bağlamdan bir makineyi kaldırın",
+        "description": "Geçerli yapılandırmadan bir makine kaldırın",
         "success": "\"{{name}}\" makinesi kaldırıldı"
       },
       "removeRepository": {
-        "description": "Güncel yerel bağlamdan bir depo eşlemesini kaldır",
+        "description": "Geçerli yapılandırmadan bir depo eşlemesini kaldırın",
         "success": "\"{{name}}\" deposu kaldırıldı"
       },
       "removeStorage": {
-        "description": "Güncel yerel bağlamdan bir depolama alanını kaldır",
-        "success": "\"{{name}}\" depolama alanı kaldırıldı"
-      },
-      "rename": {
-        "description": "Bir bağlamı yeniden adlandırın",
-        "success": "Bağlam \"{{oldName}}\" adından \"{{newName}}\" adına yeniden adlandırıldı"
+        "description": "Geçerli yapılandırmadan bir depolamayı kaldırın",
+        "success": "\"{{name}}\" deposu kaldırıldı"
       },
       "repositories": {
-        "description": "Güncel yerel bağlamdaki depo GUID eşlemelerini listele",
-        "noRepositories": "Yapılandırılmış depo yok. Eklemek için: rdc context add-repository <name> --guid <guid>"
+        "description": "Geçerli yapılandırmadaki depo GUID eşlemelerini listeleyin",
+        "noRepositories": "Yapılandırılmış depo yok. Eklemek için: rdc config add-repository <name> --guid <guid>"
       },
       "scanKeys": {
         "completed": "{{count}}/{{total}} makine tarandı",
-        "description": "Güncel bağlamdaki makineler için SSH sunucu anahtarlarını tara",
-        "keysScanned": "\"{{name}}\" için sunucu anahtarları tarandı",
-        "noKeys": "\"{{name}}\" için sunucu anahtarları taranamadı"
+        "description": "Geçerli yapılandırmadaki makineler için SSH ana bilgisayar anahtarlarını tarayın",
+        "keysScanned": "\"{{name}}\" için ana bilgisayar anahtarları tarandı",
+        "noKeys": "\"{{name}}\" için ana bilgisayar anahtarları taranamadı"
       },
       "set": {
-        "description": "Varsayılan bir değer ayarlayın (takım, bölge, köprü, makine)",
+        "description": "Varsayılan bir değer belirleyin (takım, bölge, köprü, makine)",
         "success": "\"{{key}}\" değeri \"{{value}}\" olarak ayarlandı"
       },
       "setInfra": {
-        "description": "Bir makine için altyapı yapılandırmasını ayarla",
+        "description": "Bir makine için altyapı yapılandırmasını belirleyin",
         "invalidIPv4": "Geçersiz IPv4 adresi: {{ip}}",
         "invalidIPv6": "Geçersiz IPv6 adresi: {{ip}}",
-        "noOptions": "Seçenek belirtilmedi. --public-ipv4, --base-domain vb. kullanın.",
-        "optionBaseDomain": "Uygulamalar için temel alan adı",
+        "noOptions": "Hiçbir seçenek belirtilmedi. --public-ipv4, --base-domain vb. kullanın.",
+        "optionBaseDomain": "Uygulamalar için temel etki alanı",
         "optionCertEmail": "TLS sertifika bildirimleri için e-posta",
-        "optionCfDnsToken": "ACME DNS-01 doğrulaması için Cloudflare DNS API anahtarı",
+        "optionCfDnsToken": "ACME DNS-01 doğrulaması için Cloudflare DNS API token'ı",
         "optionPublicIPv4": "Genel IPv4 adresi",
         "optionPublicIPv6": "Genel IPv6 adresi",
-        "optionTcpPorts": "Yönlendirilecek TCP portları (virgülle ayrılmış, ör. 25,143,465)",
-        "optionUdpPorts": "Yönlendirilecek UDP portları (virgülle ayrılmış, ör. 53)",
+        "optionTcpPorts": "İletilecek TCP bağlantı noktaları (virgülle ayrılmış, ör. 25,143,465)",
+        "optionUdpPorts": "İletilecek UDP bağlantı noktaları (virgülle ayrılmış, ör. 53)",
         "success": "\"{{name}}\" için altyapı yapılandırması güncellendi"
       },
-      "setLanguage": {
-        "description": "Tercih edilen dili ayarlayın",
-        "success": "Dil \"{{code}}\" olarak ayarlandı",
-        "unsupported": "Desteklenmeyen dil. Desteklenenler: {{languages}}"
-      },
       "setRenet": {
-        "description": "Yerel mod için renet ikili dosyasının yolunu ayarlayın",
-        "success": "Renet yolu şuna ayarlandı: {{path}}"
+        "description": "Yerel mod için renet ikili dosyasının yolunu belirleyin",
+        "success": "Renet yolu ayarlandı: {{path}}"
       },
       "setSsh": {
-        "description": "Güncel yerel bağlam için SSH yapılandırmasını güncelleyin",
+        "description": "Geçerli yapılandırma için SSH yapılandırmasını güncelleyin",
         "success": "SSH yapılandırması güncellendi"
       },
       "setupMachine": {
-        "completed": "'{{machine}}' makinesi kurulumu başarıyla tamamlandı",
+        "completed": "\"{{machine}}\" makinesi kurulumu başarıyla tamamlandı",
         "datastoreOption": "Uzak makinedeki veri deposu yolu",
         "datastoreSizeOption": "Veri deposu boyutu (ör. 95%, 100G)",
-        "description": "Uzak makinede kurulum çalıştır (btrfs, Docker vb. yükler)",
-        "failed": "'{{machine}}' makinesi kurulumu başarısız: {{error}}",
-        "starting": "'{{machine}}' makinesi kuruluyor..."
+        "description": "Uzak makine üzerinde kurulum çalıştırın (btrfs, Docker vb. kurar)",
+        "failed": "\"{{machine}}\" makinesi kurulumu başarısız: {{error}}",
+        "starting": "\"{{machine}}\" makinesi kuruluyor..."
       },
       "show": {
-        "description": "Güncel bağlam ayrıntılarını gösterin",
-        "noContext": "Etkin bağlam yok"
+        "description": "Geçerli yapılandırma ayrıntılarını gösterin",
+        "noConfig": "Etkin yapılandırma yok. Oluşturun: rdc config init"
       },
       "showInfra": {
-        "description": "Bir makinenin altyapı yapılandırmasını göster",
+        "description": "Bir makine için altyapı yapılandırmasını gösterin",
         "noInfra": "\"{{name}}\" için altyapı yapılandırması ayarlanmamış"
       },
       "storages": {
-        "description": "Güncel yerel bağlamdaki depolama alanlarını listele",
-        "noStorages": "Yapılandırılmış depolama alanı yok. İçe aktarmak için: rdc context import-storage <file>"
-      },
-      "toLocal": {
-        "description": "Güncel S3 bağlamını yerel moda geçir",
-        "errorNoS3Config": "\"{{name}}\" bağlamının S3 yapılandırması yok",
-        "errorNotS3": "\"{{name}}\" bağlamı S3 modunda değil (mevcut: {{mode}})",
-        "loading": "S3'ten durum yükleniyor...",
-        "nonDestructive": "state.json S3 bucket'ında kalmaya devam ediyor (yıkıcı değil)",
-        "optionSshKeyPath": "SSH özel anahtarının yazılacağı yer (varsayılan: mevcut yol)",
-        "sshWritten": "SSH anahtarı {{path}} konumuna yazıldı",
-        "success": "Yerel moda geçiş tamamlandı: {{machines}} makine, {{storages}} depolama, {{repos}} depo"
-      },
-      "toS3": {
-        "description": "Güncel yerel bağlamı S3 moduna geçir",
-        "errorNotLocal": "\"{{name}}\" bağlamı yerel modda değil (mevcut: {{mode}})",
-        "errorSecretRequired": "Gizli erişim anahtarı gereklidir",
-        "optionAccessKeyId": "S3 erişim anahtarı kimliği",
-        "optionBucket": "S3 bucket adı",
-        "optionEndpoint": "S3 uç nokta URL'si",
-        "optionMasterPassword": "Bu ana parola ile şifrelemeyi etkinleştir",
-        "optionPrefix": "Bucket içinde anahtar öneki",
-        "optionRegion": "S3 bölgesi",
-        "optionSecretAccessKey": "S3 gizli erişim anahtarı (belirtilmezse sorulur)",
-        "promptSecretAccessKey": "S3 gizli erişim anahtarını girin:",
-        "success": "S3 moduna geçiş tamamlandı: {{machines}} makine, {{storages}} depolama, {{repos}} depo",
-        "verified": "S3 erişimi doğrulandı",
-        "verifying": "S3 erişimi doğrulanıyor..."
-      },
-      "unset": {
-        "description": "Bir bağlam varsayılan değerini kaldırın",
-        "success": "{{key}} güncel bağlamdan kaldırıldı"
-      },
-      "use": {
-        "description": "Farklı bir bağlama geçin",
-        "switched": "\"{{name}}\" bağlamına geçildi"
+        "description": "Geçerli yapılandırmadaki depolamaları listeleyin",
+        "noStorages": "Yapılandırılmış depolama yok. İçe aktarmak için: rdc config import-storage <file>"
       }
     },
     "doctor": {
       "allPassed": "Tüm kontroller başarılı",
       "checks": {
-        "activeContext": "Aktif bağlam",
+        "activeConfig": "Etkin yapılandırma",
         "authStatus": "Durum",
         "cliVersion": "CLI sürümü",
         "contextMode": "Bağlam modu",
@@ -527,13 +466,13 @@
         "goInstalled": "Go",
         "machines": "Makineler",
         "nodeVersion": "Node.js",
+        "opsPrereqs": "OPS gereksinimleri",
         "renetBinary": "İkili dosya",
         "renetCriu": "Gömülü CRIU",
         "renetRsync": "Gömülü rsync",
         "renetVersion": "Sürüm",
         "seaMode": "SEA modu",
-        "sshKey": "SSH anahtarı",
-        "opsPrereqs": "OPS gereksinimleri"
+        "sshKey": "SSH anahtarı"
       },
       "description": "CLI ortamını ve renet entegrasyonunu tanıla",
       "devMode": "hayır (geliştirme modu)",
@@ -542,9 +481,9 @@
       "notAuthenticated": "kimliği doğrulanmamış",
       "notConfigured": "yapılandırılmamış",
       "notInstalled": "yüklü değil",
-      "seaActive": "evet (Tek Dosya Uygulaması)",
       "opsNotSupported": "{{platform}} üzerinde desteklenmiyor",
       "opsSkipped": "renet mevcut değil (atlandı)",
+      "seaActive": "evet (Tek Dosya Uygulaması)",
       "sections": {
         "authentication": "Kimlik Doğrulama",
         "configuration": "Yapılandırma",
@@ -1183,6 +1122,75 @@
         "starting": "\"{{repository}}\" \"{{storage}}\" kaynağından \"{{machine}}\" hedefine indiriliyor..."
       }
     },
+    "store": {
+      "add": {
+        "addedButUnverified": "\"{{name}}\" deposu eklendi ancak bağlantı doğrulanamadı",
+        "alreadyExists": "\"{{name}}\" deposu zaten mevcut",
+        "description": "Yeni bir eşitleme deposu ekleyin",
+        "gitUrlRequired": "Git depoları için --git-url gereklidir",
+        "invalidType": "Geçersiz depo türü: \"{{type}}\". Geçerli türler: {{valid}}",
+        "localPathRequired": "Yerel dosya depoları için --local-path gereklidir",
+        "optionBwFolderId": "Yapılandırma öğelerini düzenlemek için Bitwarden klasör kimliği (isteğe bağlı)",
+        "optionEncryptionKey": "Bu depo için şifreleme anahtarı",
+        "optionGitBranch": "Git dal adı",
+        "optionGitPath": "Git deposu içindeki yol",
+        "optionGitUrl": "Git deposu URL'si",
+        "optionLocalPath": "Yerel dizin yolu",
+        "optionS3AccessKeyId": "S3 erişim anahtarı kimliği",
+        "optionS3Bucket": "S3 paket adı",
+        "optionS3Endpoint": "S3 uç nokta URL'si",
+        "optionS3Prefix": "S3 anahtar ön eki",
+        "optionS3Region": "S3 bölgesi",
+        "optionS3SecretAccessKey": "S3 gizli erişim anahtarı",
+        "optionType": "Depo türü (s3, local-file, bitwarden, git, vault)",
+        "optionVaultAddr": "Vault sunucu adresi (ör. http://127.0.0.1:8200)",
+        "optionVaultMount": "Vault KV v2 bağlama yolu (varsayılan: secret)",
+        "optionVaultNamespace": "Vault ad alanı (yalnızca kurumsal)",
+        "optionVaultPrefix": "Vault KV motoru içindeki yol ön eki (varsayılan: rdc/configs)",
+        "optionVaultToken": "Vault kimlik doğrulama token'ı",
+        "promptS3SecretAccessKey": "S3 gizli erişim anahtarı:",
+        "promptVaultToken": "Vault token'ı (veya VAULT_TOKEN ortam değişkenini ayarlayın):",
+        "s3Required": "S3 depoları için --s3-endpoint, --s3-bucket ve --s3-access-key-id gereklidir",
+        "s3SecretRequired": "S3 gizli erişim anahtarı gereklidir",
+        "success": "\"{{name}}\" deposu eklendi ({{type}})",
+        "vaultAddrRequired": "Vault depoları için --vault-addr gereklidir",
+        "vaultTokenRequired": "Vault token'ı gereklidir (--vault-token ile iletin veya VAULT_TOKEN ortam değişkenini ayarlayın)"
+      },
+      "description": "Yapılandırma eşitleme depolarını yönetin (S3, yerel dosya, Bitwarden, Git, Vault)",
+      "list": {
+        "description": "Yapılandırılmış depoları listeleyin",
+        "noStores": "Yapılandırılmış depo yok. Eklemek için: rdc store add <name> --type <type>"
+      },
+      "pull": {
+        "description": "Bir depodan yapılandırma çekin",
+        "failed": "\"{{store}}\" deposundan çekme başarısız: {{error}}",
+        "notFound": "\"{{name}}\" deposu bulunamadı",
+        "optionConfig": "Çekilecek yapılandırma adı",
+        "optionStore": "Belirli bir depodan çekin",
+        "success": "\"{{config}}\" yapılandırması \"{{store}}\" deposundan çekildi"
+      },
+      "push": {
+        "description": "Geçerli yapılandırmayı depolara gönderin",
+        "failed": "\"{{store}}\" deposuna gönderme başarısız: {{error}}",
+        "noStores": "Yapılandırılmış depo yok",
+        "optionAll": "Tüm depolara gönderin",
+        "optionStore": "Belirli bir depoya gönderin",
+        "success": "\"{{config}}\" yapılandırması \"{{store}}\" deposuna gönderildi"
+      },
+      "remove": {
+        "description": "Bir eşitleme deposunu kaldırın",
+        "success": "\"{{name}}\" deposu kaldırıldı"
+      },
+      "sync": {
+        "description": "Yapılandırmayı depolarla eşitleyin (çek sonra gönder)",
+        "failed": "\"{{store}}\" deposu için eşitleme başarısız: {{error}}",
+        "noStores": "Yapılandırılmış depo yok",
+        "optionAll": "Tüm depolarla eşitleyin",
+        "optionStore": "Belirli bir depoyla eşitleyin",
+        "pulled": "\"{{store}}\" deposundan daha yeni sürüm çekildi",
+        "pushed": "\"{{store}}\" deposuna gönderildi"
+      }
+    },
     "sync": {
       "cancelled": "Senkronizasyon iptal edildi.",
       "description": "rsync kullanarak depolarla dosya senkronizasyonu",
@@ -1417,13 +1425,23 @@
       "tip": "İpucu",
       "warning": "Uyarı"
     },
+    "cloudFrontmatter": {
+      "category": "Reference",
+      "description": "Rediacc CLI için bulut özel komutları — kimlik doğrulama, ekipler, organizasyonlar ve çok kiracılı yönetim",
+      "title": "CLI Uygulaması (Bulut / Deneysel)"
+    },
+    "cloudOverview": {
+      "heading": "Genel Bakış",
+      "text": "Bu komutlar **bulut adaptörünü** (deneysel) gerektirir — bir yapılandırma `apiUrl` ve `token` alanları içerdiğinde etkinleştirilir. Ana CLI referansı için [CLI Uygulaması](/tr/docs/cli-application) sayfasına bakın."
+    },
+    "cloudPageTitle": "Rediacc CLI Referansı (Bulut / Deneysel)",
     "errors": {
       "heading": "Yaygın Hata Mesajları",
       "intro": "Bir şeyler ters gittiğinde, CLI net hata mesajları sağlar:",
       "meanings": {
         "authRequired": "Önce giriş yapmanız gerekiyor",
         "machineRequired": "`--machine` ile bir makine belirtin veya bağlam varsayılanı ayarlayın",
-        "noActiveContext": "Bağlam seçilmedi — bir tane oluşturun veya birine geçin",
+        "noActiveConfig": "Etkin yapılandırma yok — `rdc config init` ile bir tane oluşturun",
         "permissionDenied": "Hesabınız gerekli izinlere sahip değil",
         "regionRequired": "`--region` ile bir bölge belirtin veya bağlam varsayılanı ayarlayın",
         "teamRequired": "`--team` ile bir takım belirtin veya bağlam varsayılanı ayarlayın"
@@ -1462,7 +1480,7 @@
       "backup": "Yedekleme Yönetimi",
       "bridge": "Bridge Yönetimi",
       "ceph": "Ceph Depolama Yönetimi",
-      "context": "Bağlam Yönetimi",
+      "config": "Yapılandırma Yönetimi",
       "doctor": "Sistem Tanılama",
       "machine": "Makine Yönetimi",
       "ops": "Deneysel VM Islemleri",
@@ -1476,6 +1494,7 @@
       "shortcuts": "Hızlı Komutlar (Kısayollar)",
       "snapshot": "Anlık Görüntü Yönetimi",
       "storage": "Depolama Yönetimi",
+      "store": "Depo Yönetimi",
       "sync": "Dosya Senkronizasyonu",
       "team": "Takım Yönetimi",
       "term": "SSH Terminal Erişimi",
@@ -1490,13 +1509,13 @@
         },
         "tip": "Kimlik doğrulama jetonunuz bağlamınızda yerel olarak saklanır. Birden fazla ortam için kimlik bilgilerini adlandırılmış bir bağlam altında saklamak üzere `--save-as` kullanın."
       },
-      "context": {
-        "afterDescription": "Bağlamlar, ortamlar arasında hızlıca geçiş yapabilmeniz için bağlantı ayrıntılarını (API URL'si, kimlik bilgileri, varsayılan takım/bölge/makine) saklar.",
-        "createLocal": {
+      "config": {
+        "afterDescription": "Yapılandırma dosyaları bağlantı ayrıntılarını (API URL'si, kimlik bilgileri, varsayılan takım/bölge/makine) saklar; böylece ortamlar arasında hızlıca geçiş yapabilirsiniz.",
+        "init": {
           "afterDescription": "Yerel modda makineleri doğrudan ekleyebilirsiniz:"
         },
         "set": {
-          "tip": "Varsayılan değerleri ayarlamak, her komutta `--team`, `--region` veya `--machine` belirtmenize gerek kalmadığı anlamına gelir."
+          "tip": "Varsayılanları ayarlamak, her komutta `--team`, `--region` veya `--machine` belirtmenizi gereksiz kılar."
         }
       },
       "machine": {
@@ -1559,9 +1578,9 @@
     "invalidPriorityMin": "Geçersiz priority-min değeri. 1 ile 5 arasında olmalıdır.",
     "machineNotFound": "\"{{name}}\" makinesi bulunamadı",
     "machineRequired": "Makine adı gerekli. --machine kullanın veya bağlamı ayarlayın.",
-    "machineRequiredLocal": "Makine adı gerekli. --machine kullanın veya varsayılanı ayarlayın: rdc context set machine <name>",
+    "machineRequiredLocal": "Makine adı gerekli. --machine kullanın veya varsayılanı ayarlayın: rdc config set machine <name>",
     "networkError": "Ağ hatası: {{message}}",
-    "noActiveContext": "Etkin bağlam yok. Önce bir bağlam oluşturun veya seçin.",
+    "noActiveConfig": "Etkin yapılandırma yok. Şununla oluşturun: rdc config init <name>",
     "notAuthenticated": "Kimlik doğrulaması yapılmamış. Çalıştırın: rdc auth login",
     "passwordsMismatch": "Parolalar eşleşmiyor",
     "permissionDenied": "İzin reddedildi",
@@ -1626,12 +1645,12 @@
     "cleanupAll": "Tüm rediacc SSH yapılandırmalarını kaldırın",
     "cluster": "Ceph kümesi adı",
     "command": "Etkileşimli kabuk yerine bir komut yürütün",
+    "config": "Bu komut için belirli bir yapılandırma kullanın",
     "confirmPasswordNonInteractive": "Parolayı onayla (etkileşimli olmayan mod)",
     "confirmSync": "Değişiklikleri önizleyin ve senkronizasyondan önce onay isteyin",
     "connectionName": "Belirli bir bağlantıyı kaldırın",
     "container": "Belirli bir Docker konteynerine bağlanın",
     "containerAction": "Konteyner işlemi: terminal, günlükler, istatistikler, yürütme",
-    "context": "Bu komut için belirli bağlamı kullanın",
     "datastore": "Makinedeki depolama yolu",
     "debug": "Hata ayıklama çıkışını etkinleştir (yerel mod)",
     "dryRun": "Aslında senkronize etmeden aktarılacak dosyaları gösterin",

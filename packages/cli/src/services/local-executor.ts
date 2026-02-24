@@ -16,7 +16,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { contextService } from './context.js';
+import { configService } from './config-resources.js';
 import { outputService } from './output.js';
 import {
   buildLocalVault,
@@ -70,7 +70,7 @@ async function loadContextStorages(): Promise<
   Record<string, { vaultContent: Record<string, unknown> }> | undefined
 > {
   try {
-    const storageList = await contextService.listLocalStorages();
+    const storageList = await configService.listStorages();
     if (storageList.length === 0) return undefined;
     const storages: Record<string, { vaultContent: Record<string, unknown> }> = {};
     for (const s of storageList) {
@@ -87,7 +87,7 @@ async function loadContextRepositories(): Promise<{
   configs: Record<string, { guid: string; name: string; networkId?: number }> | undefined;
 }> {
   try {
-    const repoList = await contextService.listLocalRepositories();
+    const repoList = await configService.listRepositories();
     if (repoList.length === 0) return { credentials: undefined, configs: undefined };
     const credentials: Record<string, string> = {};
     const configs: Record<string, { guid: string; name: string; networkId?: number }> = {};
@@ -123,8 +123,8 @@ class LocalExecutorService {
     const startTime = Date.now();
 
     try {
-      const config = await contextService.getLocalConfig();
-      const machine = await contextService.getLocalMachine(options.machineName);
+      const config = await configService.getLocalConfig();
+      const machine = await configService.getLocalMachine(options.machineName);
 
       if (options.debug) {
         outputService.info(`[local] Executing '${options.functionName}' on ${options.machineName}`);
@@ -206,7 +206,7 @@ class LocalExecutorService {
    */
   async checkRenetAvailable(): Promise<boolean> {
     try {
-      const config = await contextService.getLocalConfig();
+      const config = await configService.getLocalConfig();
       const renetPath = await getLocalRenetPath(config);
       return new Promise((resolve) => {
         const child = spawn(renetPath, ['version'], {

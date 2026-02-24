@@ -4,7 +4,7 @@ description: >-
   Synchronisation de fichiers, accès terminal, intégration VS Code, mises à jour
   et diagnostics.
 category: Guides
-order: 8
+order: 9
 language: fr
 sourceHash: 80ca3cd3e1a55d4b
 ---

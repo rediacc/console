@@ -1,4 +1,4 @@
-<svg viewBox="0 0 800 450" width="800" height="450" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 800 480" width="800" height="480" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="serverGradient" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#2d2d2d"/>
@@ -9,96 +9,157 @@
     </filter>
   </defs>
 
-  <rect width="800" height="450" fill="#f5f5f5"/>
+  <rect width="800" height="480" fill="#f5f5f5"/>
 
-  <circle cx="22" cy="430" r="44" fill="rgba(85,107,47,0.12)"/>
-  <circle cx="778" cy="430" r="44" fill="rgba(85,107,47,0.12)"/>
+  <!-- Decorative corner circles -->
+  <circle cx="22" cy="460" r="44" fill="rgba(85,107,47,0.12)"/>
+  <circle cx="778" cy="460" r="44" fill="rgba(85,107,47,0.12)"/>
 
-  <rect x="30" y="25" width="230" height="340" rx="12" fill="#ffffff" stroke="#e0e0e0" filter="url(#shadow)"/>
-  <rect x="285" y="25" width="230" height="340" rx="12" fill="#ffffff" stroke="#e0e0e0" filter="url(#shadow)"/>
-  <rect x="540" y="25" width="230" height="340" rx="12" fill="#ffffff" stroke="#e0e0e0" filter="url(#shadow)"/>
+  <!-- ================================================================== -->
+  <!-- Top row: Two config files                                          -->
+  <!-- ================================================================== -->
 
-  <!-- Left column: Local Mode -->
+  <!-- Left card: Config Data -->
+  <rect x="55" y="28" width="310" height="138" rx="12" fill="#ffffff" stroke="#e0e0e0" filter="url(#shadow)"/>
   <g font-family="Arial, sans-serif">
-    <rect x="103" y="56" width="84" height="50" rx="5" fill="url(#serverGradient)" stroke="#3d3d3d"/>
-    <rect x="111" y="64" width="68" height="32" rx="3" fill="#f5f5f5"/>
-    <rect x="95" y="108" width="100" height="8" rx="3" fill="#3d3d3d"/>
-    <text x="145" y="136" text-anchor="middle" font-size="20" fill="#1a1a1a" font-weight="700">Local Mode</text>
+    <!-- File icon -->
+    <path d="M135 48 H185 L200 63 V108 H135 Z" fill="#ffffff" stroke="#3d3d3d" stroke-width="1.8"/>
+    <path d="M185 48 V63 H200" fill="none" stroke="#3d3d3d" stroke-width="1.8"/>
+    <line x1="144" y1="72" x2="190" y2="72" stroke="#d0d0d0" stroke-width="1.5"/>
+    <line x1="144" y1="80" x2="185" y2="80" stroke="#d0d0d0" stroke-width="1.5"/>
+    <line x1="144" y1="88" x2="188" y2="88" stroke="#d0d0d0" stroke-width="1.5"/>
+    <line x1="144" y1="96" x2="176" y2="96" stroke="#d0d0d0" stroke-width="1.5"/>
 
-    <line x1="145" y1="150" x2="145" y2="172" stroke="#556b2f" stroke-width="3"/>
-    <polygon points="145,179 138,169 152,169" fill="#556b2f"/>
+    <text x="222" y="64" font-size="13" fill="#1a1a1a" font-weight="700">Config Data</text>
+    <text x="222" y="82" font-size="11" fill="#666666">id, version, machines,</text>
+    <text x="222" y="96" font-size="11" fill="#666666">repos, ssh, defaults</text>
 
-    <path d="M88 186 H183 L198 199 V244 H88 Z" fill="#ffffff" stroke="#3d3d3d" stroke-width="2"/>
-    <path d="M183 186 V199 H198" fill="none" stroke="#3d3d3d" stroke-width="2"/>
-    <text x="143" y="224" text-anchor="middle" font-size="10.5" fill="#1a1a1a">~/.rediacc/config.json</text>
-
-    <text x="145" y="267" text-anchor="middle" font-size="14" fill="#1a1a1a">Single workstation</text>
-    <text x="145" y="287" text-anchor="middle" font-size="14" fill="#1a1a1a">Direct SSH</text>
-    <text x="145" y="307" text-anchor="middle" font-size="14" fill="#1a1a1a">No external services</text>
-
-    <rect x="57" y="320" width="176" height="30" rx="15" fill="rgba(85,107,47,0.15)" stroke="#556b2f"/>
-    <text x="145" y="340" text-anchor="middle" font-size="13" fill="#556b2f" font-weight="700">rdc context create-local</text>
+    <rect x="80" y="120" width="260" height="28" rx="6" fill="#f0f0f0" stroke="#d0d0d0"/>
+    <text x="210" y="139" text-anchor="middle" font-size="11.5" fill="#444444" font-family="monospace">~/.rediacc/rediacc.json</text>
   </g>
 
-  <!-- Center column: Cloud Mode -->
+  <!-- Right card: Store Credentials -->
+  <rect x="435" y="28" width="310" height="138" rx="12" fill="#ffffff" stroke="#e0e0e0" filter="url(#shadow)"/>
   <g font-family="Arial, sans-serif">
-    <rect x="358" y="56" width="84" height="50" rx="5" fill="url(#serverGradient)" stroke="#3d3d3d"/>
-    <rect x="366" y="64" width="68" height="32" rx="3" fill="#f5f5f5"/>
-    <rect x="350" y="108" width="100" height="8" rx="3" fill="#3d3d3d"/>
-    <text x="400" y="136" text-anchor="middle" font-size="20" fill="#1a1a1a" font-weight="700">Cloud Mode</text>
+    <!-- File icon with lock -->
+    <path d="M515 48 H565 L580 63 V108 H515 Z" fill="#ffffff" stroke="#3d3d3d" stroke-width="1.8"/>
+    <path d="M565 48 V63 H580" fill="none" stroke="#3d3d3d" stroke-width="1.8"/>
+    <!-- Lock symbol on file -->
+    <rect x="539" y="77" width="16" height="13" rx="2" fill="#556b2f" stroke="#3d5020" stroke-width="1.2"/>
+    <path d="M542 77 V72 a5 5 0 0 1 10 0 V77" fill="none" stroke="#3d5020" stroke-width="1.5"/>
 
-    <line x1="400" y1="150" x2="400" y2="172" stroke="#556b2f" stroke-width="3"/>
-    <polygon points="400,179 393,169 407,169" fill="#556b2f"/>
+    <text x="600" y="64" font-size="13" fill="#1a1a1a" font-weight="700">Store Credentials</text>
+    <text x="600" y="82" font-size="11" fill="#666666">names, types, tokens,</text>
+    <text x="600" y="96" font-size="11" fill="#666666">keys, endpoints</text>
 
-    <path d="M359 228
-             C347 228 337 219 337 207
-             C337 196 344 188 355 186
-             C359 176 369 169 381 169
-             C395 169 406 178 409 191
-             C420 192 429 201 429 213
-             C429 222 422 228 412 228 Z"
-          fill="#e0e0e0" stroke="#3d3d3d" stroke-width="2"/>
-    <text x="383" y="208" text-anchor="middle" font-size="13" fill="#1a1a1a">Rediacc API</text>
-
-    <text x="400" y="267" text-anchor="middle" font-size="14" fill="#1a1a1a">Multi-user teams</text>
-    <text x="400" y="287" text-anchor="middle" font-size="14" fill="#1a1a1a">Web console</text>
-    <text x="400" y="307" text-anchor="middle" font-size="14" fill="#1a1a1a">Role-based access</text>
-
-    <rect x="327" y="320" width="146" height="30" rx="15" fill="rgba(85,107,47,0.15)" stroke="#556b2f"/>
-    <text x="400" y="340" text-anchor="middle" font-size="13" fill="#556b2f" font-weight="700">rdc context create</text>
+    <rect x="455" y="120" width="270" height="28" rx="6" fill="#f0f0f0" stroke="#d0d0d0"/>
+    <text x="590" y="139" text-anchor="middle" font-size="11.5" fill="#444444" font-family="monospace">~/.rediacc/.credentials.json</text>
+    <text x="740" y="139" font-size="9" fill="#999999">(0600)</text>
   </g>
 
-  <!-- Right column: S3 Mode -->
-  <g font-family="Arial, sans-serif">
-    <rect x="613" y="56" width="84" height="50" rx="5" fill="url(#serverGradient)" stroke="#3d3d3d"/>
-    <rect x="621" y="64" width="68" height="32" rx="3" fill="#f5f5f5"/>
-    <rect x="605" y="108" width="100" height="8" rx="3" fill="#3d3d3d"/>
-    <text x="655" y="136" text-anchor="middle" font-size="20" fill="#1a1a1a" font-weight="700">S3 Mode</text>
+  <!-- ================================================================== -->
+  <!-- Connecting lines from both cards to center badge                   -->
+  <!-- ================================================================== -->
 
-    <line x1="655" y1="150" x2="655" y2="172" stroke="#556b2f" stroke-width="3"/>
-    <polygon points="655,179 648,169 662,169" fill="#556b2f"/>
+  <line x1="210" y1="166" x2="210" y2="194" stroke="#556b2f" stroke-width="2.5"/>
+  <line x1="210" y1="194" x2="340" y2="218" stroke="#556b2f" stroke-width="2.5"/>
 
-    <ellipse cx="655" cy="193" rx="41" ry="12" fill="#e0e0e0" stroke="#3d3d3d" stroke-width="2"/>
-    <rect x="614" y="193" width="82" height="46" fill="#e0e0e0" stroke="#3d3d3d" stroke-width="2"/>
-    <ellipse cx="655" cy="239" rx="41" ry="12" fill="#d2d2d2" stroke="#3d3d3d" stroke-width="2"/>
-    <text x="655" y="211" text-anchor="middle" font-size="13" fill="#1a1a1a">S3/R2 Bucket</text>
-    <rect x="627" y="217" width="56" height="16" rx="4" fill="#ffffff" stroke="#3d3d3d"/>
-    <text x="655" y="229" text-anchor="middle" font-size="11" fill="#1a1a1a">state.json</text>
+  <line x1="590" y1="166" x2="590" y2="194" stroke="#556b2f" stroke-width="2.5"/>
+  <line x1="590" y1="194" x2="460" y2="218" stroke="#556b2f" stroke-width="2.5"/>
 
-    <text x="655" y="267" text-anchor="middle" font-size="14" fill="#1a1a1a">Portable</text>
-    <text x="655" y="287" text-anchor="middle" font-size="14" fill="#1a1a1a">AES-256-GCM encrypted</text>
-    <text x="655" y="307" text-anchor="middle" font-size="14" fill="#1a1a1a">Any workstation</text>
-
-    <rect x="579" y="320" width="152" height="30" rx="15" fill="rgba(85,107,47,0.15)" stroke="#556b2f"/>
-    <text x="655" y="340" text-anchor="middle" font-size="13" fill="#556b2f" font-weight="700">rdc context create-s3</text>
-  </g>
-
-  <rect x="130" y="390" width="540" height="38" rx="19" fill="#556b2f" filter="url(#shadow)"/>
-  <text x="400" y="414" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#ffffff" font-weight="700">
-    Same CLI Commands — Only State Storage Differs
+  <!-- Center badge: rdc store push/pull -->
+  <rect x="300" y="210" width="200" height="36" rx="18" fill="#556b2f" filter="url(#shadow)"/>
+  <text x="400" y="233" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#ffffff" font-weight="700">
+    rdc store push / pull
   </text>
 
-  <text x="400" y="445" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#999999">
-    Rediacc Operating Modes
+  <!-- ================================================================== -->
+  <!-- Fan-out lines from badge to 5 stores                               -->
+  <!-- ================================================================== -->
+
+  <!-- Center point at bottom of badge: (400, 246) -->
+  <!-- Store card centers: 90, 235, 400, 565, 710 -->
+  <line x1="400" y1="246" x2="90"  y2="300" stroke="#556b2f" stroke-width="2" opacity="0.5"/>
+  <line x1="400" y1="246" x2="235" y2="300" stroke="#556b2f" stroke-width="2" opacity="0.5"/>
+  <line x1="400" y1="246" x2="400" y2="300" stroke="#556b2f" stroke-width="2" opacity="0.5"/>
+  <line x1="400" y1="246" x2="565" y2="300" stroke="#556b2f" stroke-width="2" opacity="0.5"/>
+  <line x1="400" y1="246" x2="710" y2="300" stroke="#556b2f" stroke-width="2" opacity="0.5"/>
+
+  <!-- Arrow heads -->
+  <polygon points="90,300  84,290  96,290"  fill="#556b2f" opacity="0.5"/>
+  <polygon points="235,300 229,290 241,290" fill="#556b2f" opacity="0.5"/>
+  <polygon points="400,300 394,290 406,290" fill="#556b2f" opacity="0.5"/>
+  <polygon points="565,300 559,290 571,290" fill="#556b2f" opacity="0.5"/>
+  <polygon points="710,300 704,290 716,290" fill="#556b2f" opacity="0.5"/>
+
+  <!-- ================================================================== -->
+  <!-- 5 Store cards                                                       -->
+  <!-- ================================================================== -->
+
+  <!-- Store 1: Git -->
+  <rect x="30" y="302" width="120" height="120" rx="10" fill="#ffffff" stroke="#e0e0e0" filter="url(#shadow)"/>
+  <g font-family="Arial, sans-serif">
+    <!-- Git branch icon -->
+    <circle cx="78" cy="332" r="5" fill="none" stroke="#3d3d3d" stroke-width="1.8"/>
+    <circle cx="102" cy="332" r="5" fill="none" stroke="#3d3d3d" stroke-width="1.8"/>
+    <circle cx="102" cy="356" r="5" fill="none" stroke="#3d3d3d" stroke-width="1.8"/>
+    <line x1="83" y1="332" x2="97" y2="332" stroke="#3d3d3d" stroke-width="1.8"/>
+    <line x1="102" y1="337" x2="102" y2="351" stroke="#3d3d3d" stroke-width="1.8"/>
+    <text x="90" y="385" text-anchor="middle" font-size="14" fill="#1a1a1a" font-weight="700">Git</text>
+    <text x="90" y="401" text-anchor="middle" font-size="10" fill="#888888">Repository</text>
+  </g>
+
+  <!-- Store 2: Bitwarden -->
+  <rect x="175" y="302" width="120" height="120" rx="10" fill="#ffffff" stroke="#e0e0e0" filter="url(#shadow)"/>
+  <g font-family="Arial, sans-serif">
+    <!-- Shield icon -->
+    <path d="M235 322 L253 328 V345 C253 356 245 362 235 366 C225 362 217 356 217 345 V328 Z"
+          fill="none" stroke="#3d3d3d" stroke-width="1.8"/>
+    <rect x="230" y="340" width="10" height="8" rx="1.5" fill="#3d3d3d"/>
+    <path d="M232 340 V337 a3 3 0 0 1 6 0 V340" fill="none" stroke="#3d3d3d" stroke-width="1.5"/>
+    <text x="235" y="385" text-anchor="middle" font-size="14" fill="#1a1a1a" font-weight="700">Bitwarden</text>
+    <text x="235" y="401" text-anchor="middle" font-size="10" fill="#888888">Secure Notes</text>
+  </g>
+
+  <!-- Store 3: S3 -->
+  <rect x="340" y="302" width="120" height="120" rx="10" fill="#ffffff" stroke="#e0e0e0" filter="url(#shadow)"/>
+  <g font-family="Arial, sans-serif">
+    <!-- Bucket/cylinder icon -->
+    <ellipse cx="400" cy="326" rx="22" ry="7" fill="#e0e0e0" stroke="#3d3d3d" stroke-width="1.8"/>
+    <rect x="378" y="326" width="44" height="28" fill="#e0e0e0" stroke="#3d3d3d" stroke-width="1.8"/>
+    <ellipse cx="400" cy="354" rx="22" ry="7" fill="#d2d2d2" stroke="#3d3d3d" stroke-width="1.8"/>
+    <text x="400" y="385" text-anchor="middle" font-size="14" fill="#1a1a1a" font-weight="700">S3</text>
+    <text x="400" y="401" text-anchor="middle" font-size="10" fill="#888888">S3 / R2 Bucket</text>
+  </g>
+
+  <!-- Store 4: Vault -->
+  <rect x="505" y="302" width="120" height="120" rx="10" fill="#ffffff" stroke="#e0e0e0" filter="url(#shadow)"/>
+  <g font-family="Arial, sans-serif">
+    <!-- Vault door icon (circle with handle) -->
+    <circle cx="565" cy="340" r="18" fill="none" stroke="#3d3d3d" stroke-width="1.8"/>
+    <circle cx="565" cy="340" r="12" fill="none" stroke="#d0d0d0" stroke-width="1"/>
+    <rect x="571" y="336" width="8" height="4" rx="1" fill="#3d3d3d"/>
+    <circle cx="571" cy="338" r="2.5" fill="#3d3d3d"/>
+    <text x="565" y="385" text-anchor="middle" font-size="14" fill="#1a1a1a" font-weight="700">Vault</text>
+    <text x="565" y="401" text-anchor="middle" font-size="10" fill="#888888">KV v2 Secrets</text>
+  </g>
+
+  <!-- Store 5: Local File -->
+  <rect x="650" y="302" width="120" height="120" rx="10" fill="#ffffff" stroke="#e0e0e0" filter="url(#shadow)"/>
+  <g font-family="Arial, sans-serif">
+    <!-- Folder icon -->
+    <path d="M690 326 H700 L706 320 H730 V322 H735 V358 H690 Z" fill="#e0e0e0" stroke="#3d3d3d" stroke-width="1.8"/>
+    <rect x="690" y="330" width="45" height="28" rx="2" fill="#f0f0f0" stroke="#3d3d3d" stroke-width="1.2"/>
+    <text x="710" y="385" text-anchor="middle" font-size="14" fill="#1a1a1a" font-weight="700">Local File</text>
+    <text x="710" y="401" text-anchor="middle" font-size="10" fill="#888888">Directory</text>
+  </g>
+
+  <!-- ================================================================== -->
+  <!-- Footer                                                              -->
+  <!-- ================================================================== -->
+
+  <rect x="170" y="440" width="460" height="30" rx="15" fill="rgba(85,107,47,0.12)" stroke="rgba(85,107,47,0.3)"/>
+  <text x="400" y="460" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#556b2f" font-weight="600">
+    Config synced to any store — backup, share, or multi-device access
   </text>
 </svg>

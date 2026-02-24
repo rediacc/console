@@ -9,7 +9,7 @@ import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type { ListResult } from '@rediacc/shared/queue-vault/data/list-types.generated';
 import { isListResult } from '@rediacc/shared/queue-vault/data/list-types.generated';
-import { contextService } from './context.js';
+import { configService } from './config-resources.js';
 import { outputService } from './output.js';
 import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
 
@@ -30,7 +30,7 @@ export async function fetchMachineStatus(
   machineName: string,
   options: FetchStatusOptions = {}
 ): Promise<ListResult> {
-  const localConfig = await contextService.getLocalConfig();
+  const localConfig = await configService.getLocalConfig();
   const machine = localConfig.machines[machineName];
   if (!machine) {
     const available = Object.keys(localConfig.machines).join(', ');

@@ -4,7 +4,11 @@ import { getBaseSlug } from '../../../utils/slug';
 import type { APIRoute, GetStaticPaths } from 'astro';
 
 // Docs excluded from LLM text endpoints (cloud-specific or auto-generated references)
-const EXCLUDED_BASE_SLUGS = ['cli-application', 'web-application'] as const;
+const EXCLUDED_BASE_SLUGS = [
+  'cli-application',
+  'cli-application-cloud',
+  'web-application',
+] as const;
 const isExcludedBaseSlug = (slug: string) =>
   EXCLUDED_BASE_SLUGS.includes(slug as (typeof EXCLUDED_BASE_SLUGS)[number]);
 

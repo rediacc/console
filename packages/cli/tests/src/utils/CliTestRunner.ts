@@ -135,7 +135,7 @@ export class CliTestRunner {
     const context = options.context ?? this.config.context;
 
     // Build args: context flag (if available), output format, then user args
-    const contextArgs = context ? ['--context', context] : [];
+    const contextArgs = context ? ['--config', context] : [];
     const fullArgs = [CLI_BUNDLE_PATH, ...contextArgs, '--output', outputFormat, ...args];
 
     // Log command for Playwright capture
@@ -240,23 +240,19 @@ export class CliTestRunner {
   }
 
   // ===========================================================================
-  // Context Commands
+  // Config Commands
   // ===========================================================================
 
   async contextCreate(name: string): Promise<CliResult> {
-    return this.run(['context', 'create', name, '--api-url', this.config.apiUrl]);
+    return this.run(['config', 'init', name, '--api-url', this.config.apiUrl]);
   }
 
   async contextDelete(name: string): Promise<CliResult> {
-    return this.run(['context', 'delete', name]);
+    return this.run(['config', 'delete', name]);
   }
 
   async contextList(): Promise<CliResult> {
-    return this.run(['context', 'list']);
-  }
-
-  async contextUse(name: string): Promise<CliResult> {
-    return this.run(['context', 'use', name]);
+    return this.run(['config', 'list']);
   }
 
   // ===========================================================================

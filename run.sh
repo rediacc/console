@@ -162,8 +162,8 @@ ensure_renet_built() {
 
     check_go_installed
 
-    # Build renet using the Go build script (handles embed_assets automatically)
-    (cd "$renet_dir" && ./go dev)
+    # Build renet using the build script (handles embed_assets automatically)
+    (cd "$renet_dir" && ./build.sh dev)
 
     if [[ ! -f "$renet_bin" ]]; then
         log_error "Renet build failed: binary not found at $renet_bin"

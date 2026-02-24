@@ -3,7 +3,11 @@ import { getBaseSlug } from '../utils/slug';
 import type { APIRoute } from 'astro';
 
 // Docs excluded from the LLM index (auto-generated references)
-const EXCLUDED_SLUGS = ['en/cli-application', 'en/web-application'] as const;
+const EXCLUDED_SLUGS = [
+  'en/cli-application',
+  'en/cli-application-cloud',
+  'en/web-application',
+] as const;
 
 // Category display order (matches DocsTopTabs / DocsSidebar)
 const CATEGORY_ORDER: Record<string, number> = {

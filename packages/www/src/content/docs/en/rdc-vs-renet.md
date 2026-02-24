@@ -23,7 +23,7 @@ Rediacc has two binaries. Here is when to use each one.
 
 `rdc` connects to your server over SSH and runs `renet` commands for you. You type a single command on your workstation, and `rdc` handles the rest:
 
-1. Reads your local config (`~/.rediacc/config.json`)
+1. Reads your local config (`~/.rediacc/rediacc.json`)
 2. Connects to the server over SSH
 3. Updates the `renet` binary if needed
 4. Runs the matching `renet` operation on the server
@@ -35,7 +35,7 @@ All common tasks go through `rdc` on your workstation:
 
 ```bash
 # Set up a new server
-rdc context setup-machine server-1
+rdc config setup-machine server-1
 
 # Create and start a repository
 rdc repo create my-app -m server-1 --size 10G
@@ -65,12 +65,15 @@ All `renet` commands need root privileges (`sudo`). See [Server Reference](/en/d
 `rdc ops` wraps `renet ops` for managing local VM clusters on your workstation:
 
 ```bash
-rdc ops setup       # Install prerequisites (KVM or QEMU)
-rdc ops up --basic  # Start a minimal cluster
-rdc ops status      # Check VM status
-rdc ops ssh 1       # SSH into bridge VM
-rdc ops down        # Destroy cluster
+rdc ops setup              # Install prerequisites (KVM or QEMU)
+rdc ops up --basic         # Start a minimal cluster
+rdc ops status             # Check VM status
+rdc ops ssh 1              # SSH into bridge VM
+rdc ops ssh 1 hostname     # Run a command on bridge VM
+rdc ops down               # Destroy cluster
 ```
+
+> Requires the local adapter. Not available with the cloud adapter.
 
 These commands run `renet` locally (not over SSH). See [Experimental VMs](/en/docs/experimental-vms) for full documentation.
 
