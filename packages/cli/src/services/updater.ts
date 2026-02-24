@@ -10,7 +10,6 @@ import {
   getPlatformKey,
   isSEA,
   isUpdateDisabled,
-  releaseUpdateLock,
   STAGED_UPDATE_DIR,
 } from '../utils/platform.js';
 import { VERSION } from '../version.js';
@@ -335,8 +334,8 @@ export async function performUpdate(
   const platformKey = getPlatformKey();
   if (!platformKey) return errorResult('update.errors.unsupportedPlatform');
 
-  const locked = await acquireUpdateLock();
-  if (!locked) return errorResult('update.errors.lockFailed');
+  const releaseLock = await acquireUpdateLock();
+  if (!releaseLock) return errorResult('update.errors.lockFailed');
 
   try {
     const manifest = await fetchManifest(10_000);
@@ -366,6 +365,6 @@ export async function performUpdate(
   } catch (err) {
     return handleUpdateError(err);
   } finally {
-    await releaseUpdateLock();
+    await releaseLock();
   }
 }

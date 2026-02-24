@@ -1,13 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  acquireUpdateLock,
-  getPlatformKey,
-  isSEA,
-  isUpdateDisabled,
-  releaseUpdateLock,
-} from '../../utils/platform.js';
+import { acquireUpdateLock, getPlatformKey, isSEA, isUpdateDisabled } from '../../utils/platform.js';
 // Note: startupUpdateCheck was removed — replaced by background-updater
 import { checkForUpdate, compareVersions, performUpdate } from '../updater.js';
+
+const mockReleaseLock = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('../../utils/platform.js', () => ({
   isSEA: vi.fn(),
@@ -15,7 +11,6 @@ vi.mock('../../utils/platform.js', () => ({
   getPlatformKey: vi.fn(),
   getOldBinaryPath: vi.fn().mockReturnValue('/usr/local/bin/rdc.old'),
   acquireUpdateLock: vi.fn(),
-  releaseUpdateLock: vi.fn(),
   STAGED_UPDATE_DIR: '/home/testuser/.rediacc/staged-update',
 }));
 
@@ -256,8 +251,8 @@ describe('services/updater', () => {
     beforeEach(() => {
       vi.mocked(isSEA).mockReturnValue(true);
       vi.mocked(getPlatformKey).mockReturnValue('linux-x64');
-      vi.mocked(acquireUpdateLock).mockResolvedValue(true);
-      vi.mocked(releaseUpdateLock).mockResolvedValue(undefined);
+      mockReleaseLock.mockClear();
+      vi.mocked(acquireUpdateLock).mockResolvedValue(mockReleaseLock);
       Object.defineProperty(process, 'execPath', { value: '/usr/local/bin/rdc', writable: true });
       Object.defineProperty(process, 'platform', { value: 'linux' });
     });
@@ -281,7 +276,7 @@ describe('services/updater', () => {
     });
 
     it('returns error when lock cannot be acquired', async () => {
-      vi.mocked(acquireUpdateLock).mockResolvedValue(false);
+      vi.mocked(acquireUpdateLock).mockResolvedValue(null);
 
       const result = await performUpdate();
 
@@ -307,7 +302,7 @@ describe('services/updater', () => {
 
       await performUpdate();
 
-      expect(releaseUpdateLock).toHaveBeenCalled();
+      expect(mockReleaseLock).toHaveBeenCalled();
     });
 
     it('returns alreadyUpToDate when same version without force', async () => {
