@@ -21,29 +21,34 @@ export interface RediaccDirs {
  */
 export function getEffectiveHomedir(): string {
   const sudoUser = process.env.SUDO_USER;
-  if (sudoUser && process.getuid?.() === 0) {
-    try {
-      if (process.platform === 'darwin') {
-        const output = execFileSync(
-          'dscl',
-          ['.', '-read', `/Users/${sudoUser}`, 'NFSHomeDirectory'],
-          { encoding: 'utf-8', timeout: 5000 }
-        ).trim();
-        const match = output.match(/NFSHomeDirectory:\s*(.+)/);
-        if (match?.[1]) return match[1];
-      } else {
-        const entry = execFileSync('getent', ['passwd', sudoUser], {
-          encoding: 'utf-8',
-          timeout: 5000,
-        }).trim();
-        const home = entry.split(':')[5];
-        if (home) return home;
-      }
-    } catch {
-      // getent/dscl unavailable or user not found — fall through
-    }
+  if (!sudoUser || process.getuid?.() !== 0) return homedir();
+
+  return resolveSudoUserHome(sudoUser) ?? homedir();
+}
+
+function resolveSudoUserHome(user: string): string | undefined {
+  try {
+    return process.platform === 'darwin' ? resolveMacOSHome(user) : resolveLinuxHome(user);
+  } catch {
+    return undefined;
   }
-  return homedir();
+}
+
+function resolveLinuxHome(user: string): string | undefined {
+  const entry = execFileSync('getent', ['passwd', user], {
+    encoding: 'utf-8',
+    timeout: 5000,
+  }).trim();
+  return entry.split(':')[5] || undefined;
+}
+
+function resolveMacOSHome(user: string): string | undefined {
+  const output = execFileSync('dscl', ['.', '-read', `/Users/${user}`, 'NFSHomeDirectory'], {
+    encoding: 'utf-8',
+    timeout: 5000,
+  }).trim();
+  const result = /NFSHomeDirectory:\s*(.+)/.exec(output);
+  return result?.[1] || undefined;
 }
 
 /**
