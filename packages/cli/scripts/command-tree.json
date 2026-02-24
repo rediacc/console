@@ -3861,6 +3861,27 @@
           "subcommands": []
         },
         {
+          "name": "recover",
+          "descriptionKey": "commands.config.recover.description",
+          "options": [
+            {
+              "flags": "-y, --yes",
+              "descriptionKey": "options.yes",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": false,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
           "name": "add-machine",
           "descriptionKey": "commands.config.addMachine.description",
           "options": [

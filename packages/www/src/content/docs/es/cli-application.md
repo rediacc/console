@@ -6,7 +6,7 @@ order: 2
 language: es
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/es/cli.json
-sourceHash: "75848a061303dd46"
+sourceHash: "79ff3e9383ab67a5"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -115,7 +115,20 @@ rdc config set <key> <value>
 rdc config clear [key]
 ```
 
-### 1.7 add-machine
+### 1.7 recover
+
+{{t:cli.commands.config.recover.description}}
+
+```bash
+rdc config recover [name] [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+### 1.8 add-machine
 
 {{t:cli.commands.config.addMachine.description}}
 
@@ -131,7 +144,7 @@ rdc config add-machine <name> [options]
 | `--datastore <path>` | {{t:cli.options.datastore}} | {{t:cli.docs.optionLabels.no}} | `/mnt/rediacc` |
 
 
-### 1.8 scan-keys
+### 1.9 scan-keys
 
 {{t:cli.commands.config.scanKeys.description}}
 
@@ -139,7 +152,7 @@ rdc config add-machine <name> [options]
 rdc config scan-keys [machine]
 ```
 
-### 1.9 remove-machine
+### 1.10 remove-machine
 
 {{t:cli.commands.config.removeMachine.description}}
 
@@ -147,7 +160,7 @@ rdc config scan-keys [machine]
 rdc config remove-machine <name>
 ```
 
-### 1.10 machines
+### 1.11 machines
 
 {{t:cli.commands.config.machines.description}}
 
@@ -155,7 +168,7 @@ rdc config remove-machine <name>
 rdc config machines
 ```
 
-### 1.11 set-ssh
+### 1.12 set-ssh
 
 {{t:cli.commands.config.setSsh.description}}
 
@@ -169,7 +182,7 @@ rdc config set-ssh [options]
 | `--public-key <path>` | {{t:cli.options.sshPublicKey}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 1.12 set-renet
+### 1.13 set-renet
 
 {{t:cli.commands.config.setRenet.description}}
 
@@ -177,7 +190,7 @@ rdc config set-ssh [options]
 rdc config set-renet <path>
 ```
 
-### 1.13 setup-machine
+### 1.14 setup-machine
 
 {{t:cli.commands.config.setupMachine.description}}
 
@@ -192,7 +205,7 @@ rdc config setup-machine <name> [options]
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 1.14 import-storage
+### 1.15 import-storage
 
 {{t:cli.commands.config.importStorage.description}}
 
@@ -205,7 +218,7 @@ rdc config import-storage <file> [options]
 | `--name <name>` | {{t:cli.commands.config.importStorage.optionName}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 1.15 remove-storage
+### 1.16 remove-storage
 
 {{t:cli.commands.config.removeStorage.description}}
 
@@ -213,7 +226,7 @@ rdc config import-storage <file> [options]
 rdc config remove-storage <name>
 ```
 
-### 1.16 storages
+### 1.17 storages
 
 {{t:cli.commands.config.storages.description}}
 
@@ -221,7 +234,7 @@ rdc config remove-storage <name>
 rdc config storages
 ```
 
-### 1.17 add-repository
+### 1.18 add-repository
 
 {{t:cli.commands.config.addRepository.description}}
 
@@ -237,7 +250,7 @@ rdc config add-repository <name> [options]
 | `--network-id <id>` | {{t:cli.commands.config.addRepository.optionNetworkId}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 1.18 remove-repository
+### 1.19 remove-repository
 
 {{t:cli.commands.config.removeRepository.description}}
 
@@ -245,7 +258,7 @@ rdc config add-repository <name> [options]
 rdc config remove-repository <name>
 ```
 
-### 1.19 repositories
+### 1.20 repositories
 
 {{t:cli.commands.config.repositories.description}}
 
@@ -253,7 +266,7 @@ rdc config remove-repository <name>
 rdc config repositories
 ```
 
-### 1.20 set-infra
+### 1.21 set-infra
 
 {{t:cli.commands.config.setInfra.description}}
 
@@ -272,7 +285,7 @@ rdc config set-infra <machine> [options]
 | `--udp-ports <ports>` | {{t:cli.commands.config.setInfra.optionUdpPorts}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 1.21 show-infra
+### 1.22 show-infra
 
 {{t:cli.commands.config.showInfra.description}}
 
@@ -280,7 +293,7 @@ rdc config set-infra <machine> [options]
 rdc config show-infra <machine>
 ```
 
-### 1.22 push-infra
+### 1.23 push-infra
 
 {{t:cli.commands.config.pushInfra.description}}
 
