@@ -118,6 +118,9 @@ export const PROTOCOL_DEFAULTS = {
 
   /** Desktop protocol action */
   ACTION_DESKTOP: 'desktop',
+
+  /** Default public site URL */
+  SITE_URL: 'https://www.rediacc.com',
 } as const;
 
 /**
