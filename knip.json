@@ -125,5 +125,5 @@
     "react-i18next",
     "asciinema-player"
   ],
-  "ignoreBinaries": ["rimraf", "wrangler"]
+  "ignoreBinaries": ["rimraf", "vite", "wrangler"]
 }
