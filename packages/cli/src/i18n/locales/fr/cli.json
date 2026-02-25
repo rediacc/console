@@ -322,113 +322,98 @@
         }
       }
     },
-    "context": {
+    "config": {
       "addMachine": {
-        "description": "Ajouter une machine au contexte local actuel",
+        "description": "Ajouter une machine à la configuration actuelle",
         "success": "Machine \"{{name}}\" ajoutée ({{user}}@{{ip}})"
       },
       "addRepository": {
-        "description": "Ajouter un mappage GUID de dépôt au contexte local actuel",
+        "description": "Ajouter un mappage GUID de dépôt à la configuration actuelle",
         "networkIdAssigned": "ID réseau : {{networkId}}",
         "optionCredential": "Identifiant du dépôt (phrase secrète de chiffrement)",
-        "optionGuid": "GUID du dépôt (UUID issu des noms de fichiers de sauvegarde)",
-        "optionNetworkId": "ID réseau pour l'isolation Docker (2816, 2880, ...). Attribué automatiquement si omis",
-        "optionTag": "Étiquette du dépôt",
+        "optionGuid": "GUID du dépôt (UUID depuis les noms de fichiers de sauvegarde)",
+        "optionNetworkId": "ID réseau pour l'isolation Docker (2816, 2880, ...). Assigné automatiquement si omis",
+        "optionTag": "Tag du dépôt",
         "success": "Dépôt \"{{name}}\" ajouté ({{guid}}, tag : {{tag}})"
       },
       "clear": {
         "allCleared": "Toutes les valeurs par défaut effacées",
         "description": "Effacer les valeurs par défaut (toutes ou une clé spécifique)",
-        "keyCleared": "\"{{key}}\" effacée"
+        "keyCleared": "\"{{key}}\" effacé"
       },
-      "create": {
-        "description": "Créer un nouveau contexte",
-        "success": "Contexte \"{{name}}\" créé"
-      },
-      "createLocal": {
-        "description": "Créer un nouveau contexte local pour une opération sans middleware",
-        "encryptionEnabled": "Chiffrement au repos activé. Les ressources seront chiffrées dans config.json.",
-        "nextStep": "Ajoutez des machines avec : rdc context add-machine <name> --ip <ip> --user <user>",
-        "optionMasterPassword": "Chiffrer les ressources avec un mot de passe principal",
-        "success": "Contexte local \"{{name}}\" créé"
-      },
-      "createS3": {
-        "accessVerified": "Accès S3 vérifié",
-        "description": "Créer un nouveau contexte S3/R2 pour l'état distant avec exécution locale",
-        "errorSecretAccessKeyRequired": "La clé d'accès secrète S3 est requise",
-        "nextStep": "Suivant : Ajoutez des machines avec \"rdc context add-machine\"",
-        "optionAccessKeyId": "ID de clé d'accès S3",
-        "optionBucket": "Nom du bucket S3",
-        "optionEndpoint": "URL du point de terminaison S3",
-        "optionMasterPassword": "Mot de passe principal pour le chiffrement (optionnel, laisser vide pour ignorer)",
-        "optionPrefix": "Préfixe de clé/espace de noms dans le bucket",
-        "optionRegion": "Région S3",
-        "optionRenetPath": "Chemin vers le binaire renet",
-        "optionSecretAccessKey": "Clé d'accès secrète S3 (demandée si non fournie)",
-        "optionSshKey": "Chemin vers la clé privée SSH",
-        "promptMasterPassword": "Mot de passe principal pour le chiffrement (laisser vide pour ignorer) :",
-        "promptSecretAccessKey": "Clé d'accès secrète S3 :",
-        "success": "Contexte S3 \"{{name}}\" créé",
-        "verifyingAccess": "Vérification de l'accès S3..."
-      },
-      "current": {
-        "description": "Afficher le nom du contexte actuel",
-        "noContext": "Aucun contexte actif"
+      "recover": {
+        "description": "Restaurer la configuration depuis le fichier de sauvegarde (.bak)",
+        "noBackup": "Aucune sauvegarde trouvée pour la configuration \"{{name}}\"",
+        "confirm": "Restaurer la configuration \"{{name}}\" depuis la sauvegarde ?",
+        "success": "Configuration \"{{name}}\" restaurée depuis la sauvegarde (version {{version}})",
+        "failed": "Échec de la restauration de la configuration \"{{name}}\" depuis la sauvegarde"
       },
       "delete": {
-        "confirm": "Êtes-vous sûr de vouloir supprimer le contexte \"{{name}}\" ?",
-        "description": "Supprimer un contexte",
-        "success": "Contexte \"{{name}}\" supprimé"
+        "description": "Supprimer un fichier de configuration",
+        "success": "Configuration \"{{name}}\" supprimée"
       },
-      "description": "Gérer les contextes CLI",
+      "description": "Gérer les fichiers de configuration du CLI",
       "importStorage": {
         "description": "Importer des stockages depuis un fichier de configuration rclone",
         "imported": "Stockage \"{{name}}\" importé ({{type}})",
         "noConfigs": "Aucune configuration de stockage valide trouvée dans le fichier",
-        "notFound": "Stockage \"{{name}}\" introuvable dans le fichier de configuration",
+        "notFound": "Stockage \"{{name}}\" non trouvé dans le fichier de configuration",
         "optionName": "Importer uniquement cette section nommée",
         "summary": "{{count}} stockage(s) importé(s)",
-        "unsupported": "\"{{name}}\" ignoré : type de fournisseur non supporté \"{{type}}\""
+        "unsupported": "\"{{name}}\" ignoré : type de fournisseur non pris en charge \"{{type}}\""
+      },
+      "init": {
+        "alreadyExists": "La configuration \"{{name}}\" existe déjà",
+        "description": "Initialiser un nouveau fichier de configuration",
+        "optionMasterPassword": "Chiffrer les ressources avec un mot de passe principal",
+        "optionS3AccessKeyId": "ID de clé d'accès S3",
+        "optionS3Bucket": "Nom du bucket S3",
+        "optionS3Endpoint": "URL du point de terminaison S3",
+        "optionS3Prefix": "Préfixe de clé dans le bucket S3",
+        "optionS3Region": "Région S3",
+        "optionS3SecretAccessKey": "Clé d'accès secrète S3",
+        "promptS3SecretAccessKey": "Clé d'accès secrète S3 :",
+        "s3Required": "--s3-endpoint, --s3-bucket et --s3-access-key-id sont requis pour l'état des ressources S3",
+        "s3SecretRequired": "La clé d'accès secrète S3 est requise",
+        "s3Verified": "Accès S3 vérifié",
+        "success": "Configuration \"{{name}}\" initialisée",
+        "verifyingS3": "Vérification de l'accès S3..."
       },
       "list": {
-        "description": "Lister tous les contextes",
-        "noContexts": "Aucun contexte configuré"
+        "description": "Lister tous les fichiers de configuration",
+        "noConfigs": "Aucun fichier de configuration trouvé. Créez-en un avec : rdc config init"
       },
       "machines": {
-        "description": "Lister les machines dans le contexte local actuel",
-        "noMachines": "Aucune machine configurée. Ajoutez-en une avec : rdc context add-machine <name> --ip <ip> --user <user>"
+        "description": "Lister les machines dans la configuration actuelle",
+        "noMachines": "Aucune machine configurée. Ajoutez-en une avec : rdc config add-machine <name> --ip <ip> --user <user>"
       },
       "pushInfra": {
         "description": "Pousser la configuration d'infrastructure vers la machine distante",
         "installingProxy": "Installation et démarrage du proxy...",
-        "proxyInstallWarning": "Échec de l'installation du proxy (code {{code}}). Exécutez manuellement : sudo renet proxy install",
+        "proxyInstallWarning": "L'installation du proxy a échoué (code {{code}}). Exécutez manuellement : sudo renet proxy install",
         "success": "Configuration d'infrastructure poussée vers \"{{name}}\""
       },
       "removeMachine": {
-        "description": "Supprimer une machine du contexte local actuel",
-        "success": "Machine \"{{name}}\" supprimée"
+        "description": "Retirer une machine de la configuration actuelle",
+        "success": "Machine \"{{name}}\" retirée"
       },
       "removeRepository": {
-        "description": "Supprimer un mappage de dépôt du contexte local actuel",
-        "success": "Dépôt \"{{name}}\" supprimé"
+        "description": "Retirer un mappage de dépôt de la configuration actuelle",
+        "success": "Dépôt \"{{name}}\" retiré"
       },
       "removeStorage": {
-        "description": "Supprimer un stockage du contexte local actuel",
-        "success": "Stockage \"{{name}}\" supprimé"
-      },
-      "rename": {
-        "description": "Renommer un contexte",
-        "success": "Contexte renommé de \"{{oldName}}\" à \"{{newName}}\""
+        "description": "Retirer un stockage de la configuration actuelle",
+        "success": "Stockage \"{{name}}\" retiré"
       },
       "repositories": {
-        "description": "Lister les mappages GUID de dépôt dans le contexte local actuel",
-        "noRepositories": "Aucun dépôt configuré. Ajoutez-en un avec : rdc context add-repository <name> --guid <guid>"
+        "description": "Lister les mappages GUID de dépôts dans la configuration actuelle",
+        "noRepositories": "Aucun dépôt configuré. Ajoutez-en un avec : rdc config add-repository <name> --guid <guid>"
       },
       "scanKeys": {
-        "completed": "{{count}}/{{total}} machines scannées",
-        "description": "Scanner les clés d'hôte SSH des machines dans le contexte actuel",
-        "keysScanned": "Clés d'hôte scannées pour \"{{name}}\"",
-        "noKeys": "Impossible de scanner les clés d'hôte pour \"{{name}}\""
+        "completed": "{{count}}/{{total}} machines analysées",
+        "description": "Analyser les clés d'hôte SSH pour les machines dans la configuration actuelle",
+        "keysScanned": "Clés d'hôte analysées pour \"{{name}}\"",
+        "noKeys": "Impossible d'analyser les clés d'hôte pour \"{{name}}\""
       },
       "set": {
         "description": "Définir une valeur par défaut (équipe, région, pont, machine)",
@@ -440,86 +425,47 @@
         "invalidIPv6": "Adresse IPv6 invalide : {{ip}}",
         "noOptions": "Aucune option spécifiée. Utilisez --public-ipv4, --base-domain, etc.",
         "optionBaseDomain": "Domaine de base pour les applications",
-        "optionCertEmail": "E-mail pour les notifications de certificat TLS",
+        "optionCertEmail": "Email pour les notifications de certificats TLS",
         "optionCfDnsToken": "Jeton API DNS Cloudflare pour le défi ACME DNS-01",
         "optionPublicIPv4": "Adresse IPv4 publique",
         "optionPublicIPv6": "Adresse IPv6 publique",
-        "optionTcpPorts": "Ports TCP à transférer (séparés par des virgules, ex. 25,143,465)",
-        "optionUdpPorts": "Ports UDP à transférer (séparés par des virgules, ex. 53)",
+        "optionTcpPorts": "Ports TCP à rediriger (séparés par des virgules, ex. 25,143,465)",
+        "optionUdpPorts": "Ports UDP à rediriger (séparés par des virgules, ex. 53)",
         "success": "Configuration d'infrastructure mise à jour pour \"{{name}}\""
-      },
-      "setLanguage": {
-        "description": "Définir la langue préférée",
-        "success": "Langue définie à \"{{code}}\"",
-        "unsupported": "Langue non supportée. Langues supportées : {{languages}}"
       },
       "setRenet": {
         "description": "Définir le chemin vers le binaire renet pour le mode local",
-        "success": "Chemin Renet défini à : {{path}}"
+        "success": "Chemin renet défini à : {{path}}"
       },
       "setSsh": {
-        "description": "Mettre à jour la configuration SSH pour le contexte local actuel",
+        "description": "Mettre à jour la configuration SSH pour la configuration actuelle",
         "success": "Configuration SSH mise à jour"
       },
       "setupMachine": {
-        "completed": "Configuration de la machine '{{machine}}' terminée avec succès",
+        "completed": "La configuration de la machine '{{machine}}' s'est terminée avec succès",
         "datastoreOption": "Chemin du magasin de données sur la machine distante",
         "datastoreSizeOption": "Taille du magasin de données (ex. 95%, 100G)",
         "description": "Exécuter la configuration sur une machine distante (installe btrfs, Docker, etc.)",
-        "failed": "Échec de la configuration de la machine '{{machine}}' : {{error}}",
+        "failed": "La configuration de la machine '{{machine}}' a échoué : {{error}}",
         "starting": "Configuration de la machine '{{machine}}'..."
       },
       "show": {
-        "description": "Afficher les détails du contexte actuel",
-        "noContext": "Aucun contexte actif"
+        "description": "Afficher les détails de la configuration actuelle",
+        "noConfig": "Aucune configuration active. Créez-en une avec : rdc config init"
       },
       "showInfra": {
-        "description": "Afficher la configuration d'infrastructure d'une machine",
+        "description": "Afficher la configuration d'infrastructure pour une machine",
         "noInfra": "Aucune configuration d'infrastructure définie pour \"{{name}}\""
       },
       "storages": {
-        "description": "Lister les stockages dans le contexte local actuel",
-        "noStorages": "Aucun stockage configuré. Importez avec : rdc context import-storage <file>"
-      },
-      "toLocal": {
-        "description": "Migrer le contexte S3 actuel vers le mode local",
-        "errorNoS3Config": "Le contexte \"{{name}}\" n'a pas de configuration S3",
-        "errorNotS3": "Le contexte \"{{name}}\" n'est pas en mode S3 (actuel : {{mode}})",
-        "loading": "Chargement de l'état depuis S3...",
-        "nonDestructive": "Le fichier state.json reste dans le bucket S3 (non destructif)",
-        "optionSshKeyPath": "Emplacement d'écriture de la clé privée SSH (par défaut : chemin existant)",
-        "sshWritten": "Clé SSH écrite dans {{path}}",
-        "success": "Migration vers le mode local effectuée : {{machines}} machines, {{storages}} stockages, {{repos}} dépôts"
-      },
-      "toS3": {
-        "description": "Migrer le contexte local actuel vers le mode S3",
-        "errorNotLocal": "Le contexte \"{{name}}\" n'est pas en mode local (actuel : {{mode}})",
-        "errorSecretRequired": "La clé d'accès secrète est requise",
-        "optionAccessKeyId": "ID de clé d'accès S3",
-        "optionBucket": "Nom du bucket S3",
-        "optionEndpoint": "URL du point de terminaison S3",
-        "optionMasterPassword": "Activer le chiffrement avec ce mot de passe principal",
-        "optionPrefix": "Préfixe de clé dans le bucket",
-        "optionRegion": "Région S3",
-        "optionSecretAccessKey": "Clé d'accès secrète S3 (demandée si non fournie)",
-        "promptSecretAccessKey": "Entrez la clé d'accès secrète S3 :",
-        "success": "Migration vers le mode S3 effectuée : {{machines}} machines, {{storages}} stockages, {{repos}} dépôts",
-        "verified": "Accès S3 vérifié",
-        "verifying": "Vérification de l'accès S3..."
-      },
-      "unset": {
-        "description": "Supprimer une valeur par défaut du contexte",
-        "success": "{{key}} supprimé du contexte actuel"
-      },
-      "use": {
-        "description": "Basculer vers un contexte différent",
-        "switched": "Basculé vers le contexte \"{{name}}\""
+        "description": "Lister les stockages dans la configuration actuelle",
+        "noStorages": "Aucun stockage configuré. Importez avec : rdc config import-storage <file>"
       }
     },
     "doctor": {
       "allPassed": "Toutes les vérifications réussies",
       "checks": {
-        "activeContext": "Contexte actif",
+        "activeConfig": "Configuration active",
         "authStatus": "Statut",
         "cliVersion": "Version CLI",
         "contextMode": "Mode de contexte",
@@ -527,13 +473,13 @@
         "goInstalled": "Go",
         "machines": "Machines",
         "nodeVersion": "Node.js",
+        "opsPrereqs": "Prérequis OPS",
         "renetBinary": "Binaire",
         "renetCriu": "CRIU intégré",
         "renetRsync": "rsync intégré",
         "renetVersion": "Version",
         "seaMode": "Mode SEA",
-        "sshKey": "Clé SSH",
-        "opsPrereqs": "Prérequis OPS"
+        "sshKey": "Clé SSH"
       },
       "description": "Diagnostiquer l'environnement CLI et l'intégration renet",
       "devMode": "non (mode développement)",
@@ -542,9 +488,9 @@
       "notAuthenticated": "non authentifié",
       "notConfigured": "non configuré",
       "notInstalled": "non installé",
-      "seaActive": "oui (Single Executable Application)",
       "opsNotSupported": "non pris en charge sur {{platform}}",
       "opsSkipped": "renet non disponible (ignoré)",
+      "seaActive": "oui (Single Executable Application)",
       "sections": {
         "authentication": "Authentification",
         "configuration": "Configuration",
@@ -1183,6 +1129,75 @@
         "starting": "Téléchargement de \"{{repository}}\" depuis \"{{storage}}\" vers \"{{machine}}\"..."
       }
     },
+    "store": {
+      "add": {
+        "addedButUnverified": "Store \"{{name}}\" ajouté mais la connexion n'a pas pu être vérifiée",
+        "alreadyExists": "Le store \"{{name}}\" existe déjà",
+        "description": "Ajouter un nouveau store de synchronisation",
+        "gitUrlRequired": "--git-url est requis pour les stores Git",
+        "invalidType": "Type de store invalide : \"{{type}}\". Types valides : {{valid}}",
+        "localPathRequired": "--local-path est requis pour les stores de fichiers locaux",
+        "optionBwFolderId": "ID de dossier Bitwarden pour organiser les éléments de configuration (optionnel)",
+        "optionEncryptionKey": "Clé de chiffrement pour ce store",
+        "optionGitBranch": "Nom de branche Git",
+        "optionGitPath": "Chemin dans le dépôt Git",
+        "optionGitUrl": "URL du dépôt Git",
+        "optionLocalPath": "Chemin du répertoire local",
+        "optionS3AccessKeyId": "ID de clé d'accès S3",
+        "optionS3Bucket": "Nom du bucket S3",
+        "optionS3Endpoint": "URL du point de terminaison S3",
+        "optionS3Prefix": "Préfixe de clé S3",
+        "optionS3Region": "Région S3",
+        "optionS3SecretAccessKey": "Clé d'accès secrète S3",
+        "optionType": "Type de store (s3, local-file, bitwarden, git, vault)",
+        "optionVaultAddr": "Adresse du serveur Vault (ex. http://127.0.0.1:8200)",
+        "optionVaultMount": "Chemin de montage KV v2 de Vault (par défaut : secret)",
+        "optionVaultNamespace": "Espace de noms Vault (entreprise uniquement)",
+        "optionVaultPrefix": "Préfixe de chemin dans le moteur KV de Vault (par défaut : rdc/configs)",
+        "optionVaultToken": "Jeton d'authentification Vault",
+        "promptS3SecretAccessKey": "Clé d'accès secrète S3 :",
+        "promptVaultToken": "Jeton Vault (ou définissez la variable VAULT_TOKEN) :",
+        "s3Required": "--s3-endpoint, --s3-bucket et --s3-access-key-id sont requis pour les stores S3",
+        "s3SecretRequired": "La clé d'accès secrète S3 est requise",
+        "success": "Store \"{{name}}\" ajouté ({{type}})",
+        "vaultAddrRequired": "--vault-addr est requis pour les stores Vault",
+        "vaultTokenRequired": "Le jeton Vault est requis (passez --vault-token ou définissez la variable VAULT_TOKEN)"
+      },
+      "description": "Gérer les stores de synchronisation de configuration (S3, fichier local, Bitwarden, Git, Vault)",
+      "list": {
+        "description": "Lister les stores configurés",
+        "noStores": "Aucun store configuré. Ajoutez-en un avec : rdc store add <name> --type <type>"
+      },
+      "pull": {
+        "description": "Récupérer la configuration depuis un store",
+        "failed": "Échec de la récupération depuis le store \"{{store}}\" : {{error}}",
+        "notFound": "Store \"{{name}}\" non trouvé",
+        "optionConfig": "Nom de la configuration à récupérer",
+        "optionStore": "Récupérer depuis un store spécifique",
+        "success": "Configuration \"{{config}}\" récupérée depuis le store \"{{store}}\""
+      },
+      "push": {
+        "description": "Pousser la configuration actuelle vers les stores",
+        "failed": "Échec de l'envoi vers le store \"{{store}}\" : {{error}}",
+        "noStores": "Aucun store configuré",
+        "optionAll": "Pousser vers tous les stores",
+        "optionStore": "Pousser vers un store spécifique",
+        "success": "Configuration \"{{config}}\" poussée vers le store \"{{store}}\""
+      },
+      "remove": {
+        "description": "Supprimer un store de synchronisation",
+        "success": "Store \"{{name}}\" supprimé"
+      },
+      "sync": {
+        "description": "Synchroniser la configuration avec les stores (récupération puis envoi)",
+        "failed": "Échec de la synchronisation pour le store \"{{store}}\" : {{error}}",
+        "noStores": "Aucun store configuré",
+        "optionAll": "Synchroniser avec tous les stores",
+        "optionStore": "Synchroniser avec un store spécifique",
+        "pulled": "Version plus récente récupérée depuis le store \"{{store}}\"",
+        "pushed": "Poussé vers le store \"{{store}}\""
+      }
+    },
     "sync": {
       "cancelled": "Synchronisation annulée.",
       "description": "Synchronisation des fichiers avec les dépôts en utilisant rsync",
@@ -1417,13 +1432,23 @@
       "tip": "Astuce",
       "warning": "Avertissement"
     },
+    "cloudFrontmatter": {
+      "category": "Reference",
+      "description": "Commandes cloud exclusives pour la CLI Rediacc — authentification, équipes, organisations et gestion multi-tenant",
+      "title": "Application CLI (Cloud / Expérimental)"
+    },
+    "cloudOverview": {
+      "heading": "Aperçu",
+      "text": "Ces commandes nécessitent l'**adaptateur cloud** (expérimental) — activé lorsqu'une configuration contient les champs `apiUrl` et `token`. Pour la référence principale du CLI, voir [Application CLI](/fr/docs/cli-application)."
+    },
+    "cloudPageTitle": "Référence CLI Rediacc (Cloud / Expérimental)",
     "errors": {
       "heading": "Messages d'Erreur Courants",
       "intro": "Lorsque quelque chose ne va pas, la CLI fournit des messages d'erreur clairs :",
       "meanings": {
         "authRequired": "Vous devez d'abord vous connecter",
         "machineRequired": "Spécifiez une machine avec `--machine` ou définissez un défaut de contexte",
-        "noActiveContext": "Aucun contexte sélectionné — créez-en un ou basculez vers un existant",
+        "noActiveConfig": "Aucune configuration active — créez-en une avec `rdc config init`",
         "permissionDenied": "Votre compte ne dispose pas des permissions requises",
         "regionRequired": "Spécifiez une région avec `--region` ou définissez un défaut de contexte",
         "teamRequired": "Spécifiez une équipe avec `--team` ou définissez un défaut de contexte"
@@ -1462,10 +1487,10 @@
       "backup": "Gestion des sauvegardes",
       "bridge": "Gestion des Bridges",
       "ceph": "Gestion du Stockage Ceph",
-      "context": "Gestion des Contextes",
+      "config": "Gestion de la Configuration",
       "doctor": "Diagnostics système",
       "machine": "Gestion des Machines",
-      "ops": "Operations VM experimentales",
+      "ops": "Opérations VM Expérimentales",
       "organization": "Gestion de l'Organisation",
       "permission": "Gestion des Permissions",
       "protocol": "Gestionnaire de Protocole",
@@ -1476,6 +1501,7 @@
       "shortcuts": "Commandes Rapides (Raccourcis)",
       "snapshot": "Gestion des instantanés",
       "storage": "Gestion du Stockage",
+      "store": "Gestion des Stores",
       "sync": "Synchronisation de Fichiers",
       "team": "Gestion des Équipes",
       "term": "Accès Terminal SSH",
@@ -1490,13 +1516,13 @@
         },
         "tip": "Votre jeton d'authentification est stocké localement dans votre contexte. Utilisez `--save-as` pour stocker les identifiants sous un contexte nommé pour plusieurs environnements."
       },
-      "context": {
-        "afterDescription": "Les contextes stockent les détails de connexion (URL API, identifiants, équipe/région/machine par défaut) pour que vous puissiez basculer rapidement entre les environnements.",
-        "createLocal": {
+      "config": {
+        "afterDescription": "Les fichiers de configuration stockent les informations de connexion (URL API, identifiants, équipe/région/machine par défaut) pour basculer rapidement entre les environnements.",
+        "init": {
           "afterDescription": "En mode local, vous pouvez ajouter des machines directement :"
         },
         "set": {
-          "tip": "Définir des valeurs par défaut signifie que vous n'avez pas besoin de passer `--team`, `--region` ou `--machine` à chaque commande."
+          "tip": "Définir des valeurs par défaut évite de passer `--team`, `--region` ou `--machine` à chaque commande."
         }
       },
       "machine": {
@@ -1559,9 +1585,9 @@
     "invalidPriorityMin": "Valeur priority-min invalide. Doit être entre 1 et 5.",
     "machineNotFound": "Machine \"{{name}}\" non trouvée",
     "machineRequired": "Le nom de la machine est requis. Utilisez --machine ou définissez un contexte.",
-    "machineRequiredLocal": "Le nom de la machine est requis. Utilisez --machine ou définissez une valeur par défaut avec : rdc context set machine <name>",
+    "machineRequiredLocal": "Le nom de la machine est requis. Utilisez --machine ou définissez une valeur par défaut avec : rdc config set machine <name>",
     "networkError": "Erreur réseau : {{message}}",
-    "noActiveContext": "Aucun contexte actif. Créez ou sélectionnez d'abord un contexte.",
+    "noActiveConfig": "Aucune configuration active. Créez-en une avec : rdc config init <name>",
     "notAuthenticated": "Non authentifié. Exécutez : rdc auth login",
     "passwordsMismatch": "Les mots de passe ne correspondent pas",
     "permissionDenied": "Permission refusée",
@@ -1626,12 +1652,12 @@
     "cleanupAll": "Supprimer toutes les configurations SSH rediacc",
     "cluster": "Nom du cluster Ceph",
     "command": "Exécuter une commande au lieu d'un shell interactif",
+    "config": "Utiliser une configuration spécifique pour cette commande",
     "confirmPasswordNonInteractive": "Confirmer le mot de passe (mode non-interactif)",
     "confirmSync": "Aperçu des modifications et demande de confirmation avant synchronisation",
     "connectionName": "Supprimer une connexion spécifique",
     "container": "Se connecter à un conteneur Docker spécifique",
     "containerAction": "Action du conteneur : terminal, logs, stats, exec",
-    "context": "Utiliser un contexte spécifique pour cette commande",
     "datastore": "Chemin du magasin de données sur la machine",
     "debug": "Activer la sortie de débogage (mode local)",
     "dryRun": "Afficher ce qui serait transféré sans réellement synchroniser",

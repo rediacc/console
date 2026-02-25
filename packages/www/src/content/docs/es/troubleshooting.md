@@ -4,6 +4,7 @@ description: "Soluciones para problemas comunes con SSH, configuración, reposit
 category: "Guides"
 order: 10
 language: es
+sourceHash: 4c3163007e6a3326
 ---
 
 # Solución de problemas
@@ -13,16 +14,16 @@ Problemas comunes y sus soluciones. En caso de duda, comience con `rdc doctor` p
 ## Falla la conexión SSH
 
 - Verifique que puede conectarse manualmente: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Ejecute `rdc context scan-keys server-1` para actualizar las claves del host
+- Ejecute `rdc config scan-keys server-1` para actualizar las claves del host
 - Compruebe que el puerto SSH coincida: `--port 22`
-- Pruebe la conectividad: `rdc machine test-connection --ip 203.0.113.50 --user deploy`
+- Pruebe con un comando simple: `rdc term server-1 -c "hostname"`
 
 ## Discrepancia de clave del host
 
 Si un servidor fue reinstalado o sus claves SSH cambiaron, verá "host key verification failed":
 
 ```bash
-rdc context scan-keys server-1
+rdc config scan-keys server-1
 ```
 
 Este comando obtiene claves de host nuevas y actualiza su configuración.
@@ -31,7 +32,7 @@ Este comando obtiene claves de host nuevas y actualiza su configuración.
 
 - Asegúrese de que el usuario SSH tenga acceso sudo sin contraseña, o configure `NOPASSWD` para los comandos requeridos
 - Verifique el espacio en disco disponible en el servidor
-- Ejecute con `--debug` para una salida detallada: `rdc context setup-machine server-1 --debug`
+- Ejecute con `--debug` para una salida detallada: `rdc config setup-machine server-1 --debug`
 
 ## Falla la creación de repositorio
 
@@ -74,7 +75,7 @@ rdc term server-1 my-app -c "docker ps"
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
 ```
 
-Reemplace `2816` con el ID de red de su repositorio (se encuentra en `config.json` o `rdc repo status`).
+Reemplace `2816` con el ID de red de su repositorio (se encuentra en `rediacc.json` o `rdc repo status`).
 
 ## Contenedores creados en el Docker daemon incorrecto
 
@@ -103,4 +104,4 @@ Si `rdc term` no logra abrir una ventana de terminal:
 rdc doctor
 ```
 
-Este comando verifica su entorno, la instalación de renet, la configuración del contexto y el estado de autenticación. Cada verificación reporta OK, Warning o Error con una breve explicación.
+Este comando verifica su entorno, la instalación de renet, la configuración de la config y el estado de autenticación. Cada verificación reporta OK, Warning o Error con una breve explicación.

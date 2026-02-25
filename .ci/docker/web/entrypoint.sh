@@ -154,7 +154,7 @@ EOF
 # =============================================================================
 configure_https() {
     _cert_dir="/etc/nginx/certs"
-    _https_conf="/etc/nginx/conf.d/https.conf"
+    _https_conf="/etc/nginx/http.d/https.conf"
     _https_template="/etc/nginx/nginx-https.conf"
 
     if [ -f "$_cert_dir/cert.pem" ] && [ -f "$_cert_dir/key.pem" ]; then
@@ -179,7 +179,7 @@ configure_https() {
 # =============================================================================
 log_startup() {
     _ssl_mode="HTTP only"
-    [ -f "/etc/nginx/conf.d/https.conf" ] && _ssl_mode="HTTP + HTTPS"
+    [ -f "/etc/nginx/http.d/https.conf" ] && _ssl_mode="HTTP + HTTPS"
 
     echo "=========================================="
     echo "Starting Rediacc Console"
@@ -217,6 +217,19 @@ main() {
 
     # Configure HTTPS if certificates are available
     configure_https || true
+
+    # Start account server (background) if present
+    # The server is optional - nginx will serve the SPA even if the API is down
+    if [ -f /app/account/bundle.js ]; then
+        echo "Starting account server on port 3000..."
+        (node /app/account/bundle.js || echo "Warning: account server exited with code $?") &
+    fi
+
+    # Configure account server backend (default: embedded 127.0.0.1:3000)
+    if [ -n "$ACCOUNT_BACKEND" ]; then
+        sed -i "s|set \$account_backend \"127.0.0.1:3000\"|set \$account_backend \"${ACCOUNT_BACKEND}\"|" \
+            /etc/nginx/http.d/default.conf
+    fi
 
     # Log startup info
     log_startup

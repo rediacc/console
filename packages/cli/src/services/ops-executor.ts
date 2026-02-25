@@ -9,7 +9,7 @@
 import { spawn } from 'node:child_process';
 import { execSync } from 'node:child_process';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { contextService } from './context.js';
+import { configService } from './config-resources.js';
 import { extractRenetToLocal, isSEA } from './embedded-assets.js';
 
 /** Default timeout for ops commands (10 minutes) */
@@ -65,7 +65,7 @@ class OpsExecutorService {
 
     // Try context-configured renetPath directly (avoids requiring machines/SSH)
     try {
-      const context = await contextService.getCurrent();
+      const context = await configService.getCurrent();
       if (context?.renetPath && context.renetPath !== DEFAULTS.CONTEXT.RENET_BINARY) {
         return context.renetPath;
       }
@@ -79,7 +79,7 @@ class OpsExecutorService {
       return execSync(whichCmd, { encoding: 'utf-8' }).trim().split('\n')[0];
     } catch {
       throw new Error(
-        'renet binary not found. Set a renet path with "rdc context set-renet <path>" ' +
+        'renet binary not found. Set a renet path with "rdc config set-renet <path>" ' +
           'or ensure renet is in your PATH.'
       );
     }

@@ -974,10 +974,6 @@
           "moneyBack": "14日間の返金保証",
           "noContracts": "長期契約はありません"
         },
-        "billingToggle": {
-          "monthly": "月額",
-          "annual": "年額"
-        },
         "keyBenefits": "主な利点",
         "learnMore": "もっと詳しく知る",
         "limitedOffer": "限定発売オファー",
@@ -1105,6 +1101,10 @@
         "title": "インストール | Rediacc CLI"
       },
       "methods": {
+        "apk": {
+          "description": "Alpine Linuxおよび派生ディストリビューション向け",
+          "title": "APK (Alpine Linux)"
+        },
         "apt": {
           "description": "Debian、Ubuntu、およびその派生向け",
           "title": "APT (Debian / Ubuntu)"
@@ -1117,14 +1117,6 @@
           "description": "Fedora、RHEL、CentOS、Rocky Linux向け",
           "title": "DNF (Fedora / RHEL)"
         },
-        "apk": {
-          "title": "APK (Alpine Linux)",
-          "description": "Alpine Linuxおよび派生ディストリビューション向け"
-        },
-        "pacman": {
-          "title": "Pacman (Arch Linux)",
-          "description": "Arch Linuxおよび派生ディストリビューション向け"
-        },
         "docker": {
           "description": "コンテナ環境向け",
           "title": "Docker"
@@ -1132,6 +1124,10 @@
         "homebrew": {
           "description": "HomebrewをインストールしたmacOSおよびLinuxユーザー向け",
           "title": "Homebrew (macOS / Linux)"
+        },
+        "pacman": {
+          "description": "Arch Linuxおよび派生ディストリビューション向け",
+          "title": "Pacman (Arch Linux)"
         },
         "quick": {
           "description": "推奨 - バージョン管理付き自動インストール",
@@ -1621,6 +1617,10 @@
       "ui": {
         "anchor": "戦略的アンカー",
         "bestValue": "ベストバリュー",
+        "billingToggle": {
+          "annual": "年額",
+          "monthly": "月額"
+        },
         "contactSales": "営業担当者へのお問い合わせ",
         "cta": {
           "business": {
@@ -1660,11 +1660,7 @@
         "monthOrYear": "月額または年間 {{price}}",
         "popular": "最も人気のある",
         "startingAt": "*開始時間",
-        "whatsIncluded": "含まれるもの:",
-        "billingToggle": {
-          "monthly": "月額",
-          "annual": "年額"
-        }
+        "whatsIncluded": "含まれるもの:"
       }
     },
     "privacyPolicy": {

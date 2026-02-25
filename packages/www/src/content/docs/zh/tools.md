@@ -2,7 +2,7 @@
 title: 工具
 description: 文件同步、终端访问、VS Code 集成、更新和诊断。
 category: Guides
-order: 8
+order: 9
 language: zh
 sourceHash: 80ca3cd3e1a55d4b
 ---

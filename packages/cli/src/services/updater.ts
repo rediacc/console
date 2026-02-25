@@ -10,7 +10,6 @@ import {
   getPlatformKey,
   isSEA,
   isUpdateDisabled,
-  releaseUpdateLock,
   STAGED_UPDATE_DIR,
 } from '../utils/platform.js';
 import { VERSION } from '../version.js';
@@ -18,7 +17,6 @@ import { telemetryService } from './telemetry.js';
 import { getStagedBinaryPath, readUpdateState, writeUpdateState } from './update-state.js';
 
 const MANIFEST_URL = 'https://www.rediacc.com/cli/manifest.json';
-const GITHUB_API_FALLBACK = 'https://api.github.com/repos/rediacc/console/releases/latest';
 const CHECK_TIMEOUT_MS = 3000;
 const DOWNLOAD_TIMEOUT_MS = 120_000;
 
@@ -35,13 +33,6 @@ export interface UpdateResult {
   fromVersion: string;
   toVersion: string;
   error?: string;
-}
-
-interface GitHubRelease {
-  tag_name: string;
-  html_url: string;
-  published_at: string;
-  assets: { name: string; browser_download_url: string }[];
 }
 
 /**
@@ -177,80 +168,10 @@ export function compareVersions(a: string, b: string): number {
 }
 
 /**
- * Parse a GitHub release response into an UpdateManifest.
- */
-async function parseGitHubRelease(
-  release: GitHubRelease,
-  timeoutMs: number
-): Promise<UpdateManifest> {
-  const version = release.tag_name.replace(/^v/, '');
-  const manifest: UpdateManifest = {
-    version,
-    releaseDate: release.published_at,
-    releaseNotesUrl: release.html_url,
-    binaries: {},
-  };
-
-  // Build a map of checksum asset URLs keyed by binary name
-  const checksumAssets = new Map<string, string>();
-  for (const asset of release.assets) {
-    if (asset.name.endsWith('.sha256')) {
-      const baseName = asset.name.replace('.sha256', '');
-      checksumAssets.set(baseName, asset.browser_download_url);
-    }
-  }
-
-  const binaryPattern = /^rdc-(linux|mac|win)-(x64|arm64)(\.exe)?$/;
-
-  // Find CLI binaries and fetch their checksums
-  for (const asset of release.assets) {
-    const match = binaryPattern.exec(asset.name);
-    if (!match) continue;
-
-    const key = `${match[1]}-${match[2]}` as keyof UpdateManifest['binaries'];
-    const sha256 = await fetchChecksumForAsset(asset.name, checksumAssets, timeoutMs);
-
-    manifest.binaries[key] = {
-      url: asset.browser_download_url,
-      sha256,
-    };
-  }
-
-  return manifest;
-}
-
-/**
- * Fetch the SHA256 checksum for a given binary asset.
- */
-async function fetchChecksumForAsset(
-  assetName: string,
-  checksumAssets: Map<string, string>,
-  timeoutMs: number
-): Promise<string> {
-  const checksumUrl = checksumAssets.get(assetName);
-  if (!checksumUrl) return '';
-
-  try {
-    const content = await fetchText(checksumUrl, timeoutMs);
-    // Format: "hash  filename" or just "hash"
-    return content.trim().split(/\s+/)[0] ?? '';
-  } catch {
-    // If checksum can't be fetched, leave empty (update will be refused)
-    return '';
-  }
-}
-
-/**
- * Fetch the update manifest (Pages primary, GitHub API fallback).
+ * Fetch the update manifest from the primary manifest URL.
  */
 export async function fetchManifest(timeoutMs: number = CHECK_TIMEOUT_MS): Promise<UpdateManifest> {
-  try {
-    return await fetchJson<UpdateManifest>(MANIFEST_URL, timeoutMs);
-  } catch {
-    // Fallback: GitHub Releases API
-    const release = await fetchJson<GitHubRelease>(GITHUB_API_FALLBACK, timeoutMs);
-    return parseGitHubRelease(release, timeoutMs);
-  }
+  return await fetchJson<UpdateManifest>(MANIFEST_URL, timeoutMs);
 }
 
 /**
@@ -413,8 +334,8 @@ export async function performUpdate(
   const platformKey = getPlatformKey();
   if (!platformKey) return errorResult('update.errors.unsupportedPlatform');
 
-  const locked = await acquireUpdateLock();
-  if (!locked) return errorResult('update.errors.lockFailed');
+  const releaseLock = await acquireUpdateLock();
+  if (!releaseLock) return errorResult('update.errors.lockFailed');
 
   try {
     const manifest = await fetchManifest(10_000);
@@ -444,6 +365,6 @@ export async function performUpdate(
   } catch (err) {
     return handleUpdateError(err);
   } finally {
-    await releaseUpdateLock();
+    await releaseLock();
   }
 }

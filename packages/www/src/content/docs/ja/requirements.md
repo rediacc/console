@@ -4,7 +4,7 @@ description: Rediaccを実行するためのシステム要件とサポートさ
 category: Guides
 order: 0
 language: ja
-sourceHash: 35e75948e9858c6d
+sourceHash: 40a59ab9c9625911
 ---
 
 # システム要件
@@ -53,7 +53,7 @@ Rediaccでデプロイする前に、ワークステーションとリモート�
 
 ### 自動インストール
 
-`rdc context setup-machine`コマンドは、リモートサーバーに以下をインストールします：
+`rdc config setup-machine`コマンドは、リモートサーバーに以下をインストールします：
 
 - **Docker** と **containerd**（コンテナランタイム）
 - **cryptsetup**（LUKS ディスク暗号化）

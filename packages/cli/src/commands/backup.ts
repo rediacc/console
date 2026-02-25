@@ -8,7 +8,7 @@ import {
 } from './queue.js';
 import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
-import { contextService } from '../services/context.js';
+import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { handleError, ValidationError } from '../utils/errors.js';
@@ -31,11 +31,11 @@ async function resolveExtraMachines(
   params: Record<string, unknown>
 ): Promise<Record<string, { ip: string; port?: number; user: string }> | undefined> {
   if (params.destinationType === 'machine' && typeof params.to === 'string') {
-    const machine = await contextService.getLocalMachine(params.to);
+    const machine = await configService.getLocalMachine(params.to);
     return { [params.to]: { ip: machine.ip, port: machine.port, user: machine.user } };
   }
   if (params.sourceType === 'machine' && typeof params.from === 'string') {
-    const machine = await contextService.getLocalMachine(params.from);
+    const machine = await configService.getLocalMachine(params.from);
     return { [params.from]: { ip: machine.ip, port: machine.port, user: machine.user } };
   }
   return undefined;
@@ -49,7 +49,7 @@ async function executeFunction(
   program?: Command
 ): Promise<void> {
   const provider = await getStateProvider();
-  const machineName = options.machine ?? (await contextService.getMachine());
+  const machineName = options.machine ?? (await configService.getMachine());
 
   if (!machineName) {
     throw new ValidationError(t('errors.machineRequiredLocal'));
@@ -58,45 +58,38 @@ async function executeFunction(
   const coerced = coerceCliParams(functionName, params as Record<string, string>);
   validateFunctionParams(functionName, coerced);
 
-  switch (provider.mode) {
-    case 'local':
-    case 's3': {
-      outputService.info(
-        t('commands.shortcuts.run.executingLocal', { function: functionName, machine: machineName })
-      );
-      const extraMachines = await resolveExtraMachines(coerced);
-      const result = await localExecutorService.execute({
-        functionName,
-        machineName,
-        params: coerced,
-        extraMachines,
-        debug: options.debug,
-        skipRouterRestart: options.skipRouterRestart,
-      });
-      if (result.success) {
-        outputService.success(
-          t('commands.shortcuts.run.completedLocal', { duration: result.durationMs })
-        );
-      } else {
-        outputService.error(t('commands.shortcuts.run.failedLocal', { error: result.error }));
-        process.exitCode = result.exitCode;
-      }
-      break;
+  if (provider.isCloud) {
+    const createOptions: CreateActionOptions = {
+      function: functionName,
+      machine: machineName,
+      priority: String(DEFAULTS.PRIORITY.QUEUE_PRIORITY),
+      param: Object.entries(coerced).map(([k, v]) => `${k}=${v}`),
+    };
+    const result = await createAction(createOptions);
+    if (options.watch && result.taskId && program) {
+      outputService.info(t('commands.shortcuts.run.watching'));
+      await traceAction(result.taskId, { watch: true, interval: '2000' }, program);
     }
-    case 'cloud':
-    default: {
-      const createOptions: CreateActionOptions = {
-        function: functionName,
-        machine: machineName,
-        priority: String(DEFAULTS.PRIORITY.QUEUE_PRIORITY),
-        param: Object.entries(coerced).map(([k, v]) => `${k}=${v}`),
-      };
-      const result = await createAction(createOptions);
-      if (options.watch && result.taskId && program) {
-        outputService.info(t('commands.shortcuts.run.watching'));
-        await traceAction(result.taskId, { watch: true, interval: '2000' }, program);
-      }
-      break;
+  } else {
+    outputService.info(
+      t('commands.shortcuts.run.executingLocal', { function: functionName, machine: machineName })
+    );
+    const extraMachines = await resolveExtraMachines(coerced);
+    const result = await localExecutorService.execute({
+      functionName,
+      machineName,
+      params: coerced,
+      extraMachines,
+      debug: options.debug,
+      skipRouterRestart: options.skipRouterRestart,
+    });
+    if (result.success) {
+      outputService.success(
+        t('commands.shortcuts.run.completedLocal', { duration: result.durationMs })
+      );
+    } else {
+      outputService.error(t('commands.shortcuts.run.failedLocal', { error: result.error }));
+      process.exitCode = result.exitCode;
     }
   }
 }
@@ -115,7 +108,7 @@ function validateSyncDirection(options: { to?: string; from?: string }): void {
 async function resolveRepoGUIDs(repoNames: string[]): Promise<string[]> {
   const guids: string[] = [];
   for (const repoName of repoNames) {
-    const repoConfig = await contextService.getLocalRepository(repoName);
+    const repoConfig = await configService.getRepository(repoName);
     if (!repoConfig) {
       throw new ValidationError(t('errors.repositoryNotFound', { name: repoName }));
     }
@@ -192,7 +185,7 @@ export function registerBackupCommands(program: Command): void {
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (repo, options) => {
       try {
-        const repoConfig = await contextService.getLocalRepository(repo);
+        const repoConfig = await configService.getRepository(repo);
         if (!repoConfig) {
           throw new ValidationError(t('errors.repositoryNotFound', { name: repo }));
         }
@@ -351,7 +344,7 @@ export function registerBackupCommands(program: Command): void {
         if (options.enable) updates.enabled = true;
         if (options.disable) updates.enabled = false;
 
-        await contextService.setBackupConfig(updates);
+        await configService.setBackupConfig(updates);
         outputService.success(t('commands.backup.schedule.set.saved'));
       } catch (error) {
         handleError(error);
@@ -364,7 +357,7 @@ export function registerBackupCommands(program: Command): void {
     .description(t('commands.backup.schedule.show.description'))
     .action(async () => {
       try {
-        const config = await contextService.getBackupConfig();
+        const config = await configService.getBackupConfig();
         if (!config) {
           outputService.info(t('commands.backup.schedule.show.notConfigured'));
           return;

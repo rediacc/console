@@ -201,6 +201,14 @@
     "./update/*": {
       "types": "./dist/update/*.d.ts",
       "default": "./dist/update/*.js"
+    },
+    "./paths": {
+      "types": "./dist/paths/index.d.ts",
+      "default": "./dist/paths/index.js"
+    },
+    "./paths/*": {
+      "types": "./dist/paths/*.d.ts",
+      "default": "./dist/paths/*.js"
     }
   },
   "files": [

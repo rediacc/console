@@ -3,7 +3,7 @@ import { type ContainerInfo, getMachineContainers } from '@rediacc/shared/servic
 import { t } from '../../i18n/index.js';
 import { getStateProvider } from '../../providers/index.js';
 import { authService } from '../../services/auth.js';
-import { contextService } from '../../services/context.js';
+import { configService } from '../../services/config-resources.js';
 import { outputService } from '../../services/output.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 import { withSpinner } from '../../utils/spinner.js';
@@ -51,12 +51,12 @@ export function registerContainersCommand(machine: Command, program: Command): v
     .action(async (name: string, options: { team?: string; healthCheck?: boolean }) => {
       try {
         const provider = await getStateProvider();
-        if (provider.mode === 'cloud') {
+        if (provider.isCloud) {
           await authService.requireAuth();
         }
-        const opts = await contextService.applyDefaults(options);
+        const opts = await configService.applyDefaults(options);
 
-        if (provider.mode === 'cloud' && !opts.team) {
+        if (provider.isCloud && !opts.team) {
           throw new ValidationError(t('errors.teamRequired'));
         }
 

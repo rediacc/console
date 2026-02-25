@@ -974,10 +974,6 @@
           "moneyBack": "ضمان استرداد الأموال لمدة 14 يومًا",
           "noContracts": "لا عقود طويلة الأجل"
         },
-        "billingToggle": {
-          "monthly": "شهري",
-          "annual": "سنوي"
-        },
         "keyBenefits": "الفوائد الرئيسية",
         "learnMore": "اعرف المزيد",
         "limitedOffer": "عرض إطلاق محدود",
@@ -1105,6 +1101,10 @@
         "title": "تثبيت | Rediacc CLI"
       },
       "methods": {
+        "apk": {
+          "description": "لألباين لينكس ومشتقاته",
+          "title": "APK (ألباين لينكس)"
+        },
         "apt": {
           "description": "لـ Debian و Ubuntu والمشتقات",
           "title": "APT (Debian / Ubuntu)"
@@ -1117,14 +1117,6 @@
           "description": "لـ Fedora و RHEL و CentOS و Rocky Linux",
           "title": "DNF (Fedora / RHEL)"
         },
-        "apk": {
-          "title": "APK (ألباين لينكس)",
-          "description": "لألباين لينكس ومشتقاته"
-        },
-        "pacman": {
-          "title": "Pacman (آرتش لينكس)",
-          "description": "لآرتش لينكس ومشتقاته"
-        },
         "docker": {
           "description": "لبيئات الحاويات",
           "title": "Docker"
@@ -1132,6 +1124,10 @@
         "homebrew": {
           "description": "لمستخدمي macOS وLinux مع Homebrew",
           "title": "Homebrew (macOS / Linux)"
+        },
+        "pacman": {
+          "description": "لآرتش لينكس ومشتقاته",
+          "title": "Pacman (آرتش لينكس)"
         },
         "quick": {
           "description": "موصى به - تثبيت تلقائي مع إدارة الإصدارات",
@@ -1619,6 +1615,10 @@
       "ui": {
         "anchor": "مرساة استراتيجية",
         "bestValue": "أفضل قيمة",
+        "billingToggle": {
+          "annual": "سنوي",
+          "monthly": "شهري"
+        },
         "contactSales": "اتصل بالمبيعات",
         "cta": {
           "business": {
@@ -1658,11 +1658,7 @@
         "monthOrYear": "شهريًا أو {{price}} سنويًا",
         "popular": "الأكثر شعبية",
         "startingAt": "* ابتداء من",
-        "whatsIncluded": "ما هو مدرج:",
-        "billingToggle": {
-          "monthly": "شهري",
-          "annual": "سنوي"
-        }
+        "whatsIncluded": "ما هو مدرج:"
       }
     },
     "privacyPolicy": {

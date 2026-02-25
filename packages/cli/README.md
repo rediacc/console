@@ -30,12 +30,12 @@ The CLI also supports self-update via `rdc update`.
 
 ```bash
 # Create a context and log in
-rdc context create production --api-url https://www.rediacc.com/api
+rdc config create production --api-url https://www.rediacc.com/api
 rdc auth login --email you@example.com
 
 # Set defaults
-rdc context set team my-team
-rdc context set region eu-central
+rdc config set team my-team
+rdc config set region eu-central
 
 # Run a function
 rdc run my-function -m my-machine --watch
@@ -47,7 +47,7 @@ S3 mode stores all state (queue items, vault secrets) in any S3-compatible bucke
 
 ```bash
 # Create an S3 context
-rdc context create-s3 selfhosted \
+rdc config create-s3 selfhosted \
   --endpoint https://s3.example.com \
   --bucket my-rediacc-bucket \
   --access-key-id AKID... \
@@ -56,7 +56,7 @@ rdc context create-s3 selfhosted \
   --region auto
 
 # Add machines
-rdc context add-machine web-server --ip 192.168.1.10 --user deploy
+rdc config add-machine web-server --ip 192.168.1.10 --user deploy
 
 # Run a function
 rdc run my-function -m web-server
@@ -85,10 +85,10 @@ If you skip the master password (press Enter or omit `--master-password`):
 
 ```bash
 # S3 mode — with encryption
-rdc context create-s3 myctx ... --master-password <pw>
+rdc config create-s3 myctx ... --master-password <pw>
 
 # S3 mode — without encryption (leave empty when prompted, or omit the flag)
-rdc context create-s3 myctx ...
+rdc config create-s3 myctx ...
 
 # Cloud mode
 rdc auth login --master-password <pw>
@@ -153,8 +153,8 @@ Configuration is stored per-context in `~/.config/rediacc/` (XDG-compatible). Ea
 The default context is `"default"`. Override with `--context <name>` or set a different default via the config.
 
 ```bash
-rdc context list                  # List all contexts
-rdc context show                  # Show current context details
+rdc config list                  # List all contexts
+rdc config show                  # Show current context details
 rdc --context staging queue list  # Use a specific context
 ```
 

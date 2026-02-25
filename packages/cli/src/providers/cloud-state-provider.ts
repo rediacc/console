@@ -233,7 +233,7 @@ class CloudVaultProvider implements VaultProvider {
 }
 
 export class CloudStateProvider implements IStateProvider {
-  readonly mode = 'cloud' as const;
+  readonly isCloud = true as const;
   readonly machines: MachineProvider;
   readonly queue: QueueProvider;
   readonly storage: StorageProvider;

@@ -1,17 +1,15 @@
 ---
 title: 架构
-description: Rediacc 的工作原理：双工具架构、运行模式、安全模型和配置结构。
+description: Rediacc 的工作原理：双工具架构、适配器检测、安全模型和配置结构。
 category: Concepts
 order: 0
 language: zh
-sourceHash: 58ba0da9645bb9dd
+sourceHash: 5a717ddac450cb81
 ---
 
 # 架构
 
-如果你不确定该使用哪个工具，请参考 [rdc vs renet](/zh/docs/rdc-vs-renet)。
-
-本页面介绍 Rediacc 的内部工作原理：双工具架构、运行模式、安全模型和配置结构。
+本页面介绍 Rediacc 的内部工作原理：双工具架构、适配器检测、安全模型和配置结构。
 
 ## Full Stack Overview
 
@@ -32,46 +30,48 @@ Rediacc 采用两个通过 SSH 协同工作的二进制文件：
 
 您在本地输入的每条命令都会转化为一个 SSH 调用，在远程机器上执行 renet。您无需手动 SSH 登录服务器。
 
-## 运行模式
+如需以运维为中心的使用规则，请参阅 [rdc vs renet](/zh/docs/rdc-vs-renet)。您也可以使用 `rdc ops` 运行本地虚拟机集群进行测试 — 请参阅[实验性虚拟机](/zh/docs/experimental-vms)。
 
-Rediacc 支持三种模式，每种模式决定了状态的存储位置和命令的执行方式。
+## 配置与存储
 
-![运行模式](/img/arch-operating-modes.svg)
+所有 CLI 状态存储在 `~/.config/rediacc/` 下的扁平 JSON 配置文件中。存储适配器让您可以将这些配置同步到外部后端，用于备份、共享或多设备访问。存储凭据单独保存在 `~/.config/rediacc/.credentials.json` 中。
 
-### 本地模式
+![配置与存储](/img/arch-operating-modes.svg)
 
-自托管使用的默认模式。所有状态存储在工作站的 `~/.rediacc/config.json` 中。
+### 本地适配器（默认）
+
+自托管使用的默认选项。所有状态存储在工作站的配置文件中（例如 `~/.config/rediacc/rediacc.json`）。
 
 - 直接通过 SSH 连接到机器
 - 无需外部服务
 - 单用户、单工作站
-- 使用 `rdc context create-local` 创建上下文
+- 首次使用 CLI 时自动创建默认配置。命名配置通过 `rdc config init <name>` 创建
 
-### 云模式（实验性）
+### 云适配器（实验性）
 
-使用 Rediacc API 进行状态管理和团队协作。
+当配置中包含 `apiUrl` 和 `token` 字段时自动激活。使用 Rediacc API 进行状态管理和团队协作。
 
 - 状态存储在云 API 中
 - 支持基于角色的多用户团队访问
 - Web 控制台提供可视化管理
-- 使用 `rdc context create` 创建上下文
+- 使用 `rdc auth login` 设置
 
-> **注意：**云模式命令为实验性功能。使用 `rdc --experimental <command>` 或设置 `REDIACC_EXPERIMENTAL=1` 来启用。
+> **注意：**云适配器命令为实验性功能。使用 `rdc --experimental <command>` 或设置 `REDIACC_EXPERIMENTAL=1` 来启用。
 
-### S3 模式
+### S3 资源状态（可选）
 
-将加密状态存储在兼容 S3 的存储桶中。结合了本地模式的自托管特性和跨工作站的可移植性。
+当配置中包含 S3 设置（端点、存储桶、访问密钥）时，资源状态存储在兼容 S3 的存储桶中。这与本地适配器配合使用，将自托管操作与跨工作站的可移植性相结合。
 
-- 状态以 `state.json` 形式存储在 S3/R2 存储桶中
+- 资源状态以 `state.json` 形式存储在 S3/R2 存储桶中
 - 使用 AES-256-GCM 加密和主密码保护
 - 可移植：任何拥有存储桶凭据的工作站都可以管理基础设施
-- 使用 `rdc context create-s3` 创建上下文
+- 通过 `rdc config init <name> --s3-endpoint <url> --s3-bucket <bucket> --s3-access-key-id <key>` 配置
 
-三种模式使用相同的 CLI 命令。模式仅影响状态的存储位置和认证方式。
+所有适配器使用相同的 CLI 命令。适配器仅影响状态的存储位置和认证方式。
 
 ## rediacc 用户
 
-运行 `rdc context setup-machine` 时，renet 会在远程服务器上创建一个名为 `rediacc` 的系统用户：
+运行 `rdc config setup-machine` 时，renet 会在远程服务器上创建一个名为 `rediacc` 的系统用户：
 
 - **UID**：7111
 - **Shell**：`/sbin/nologin`（无法通过 SSH 登录）
@@ -115,44 +115,39 @@ Rediaccfile 函数会自动设置 `DOCKER_HOST` 为正确的套接字。
 2. 以文件形式存储：`{datastore}/repos/{guid}.img`
 3. 访问时通过 `cryptsetup` 挂载
 
-凭据存储在本地 `config.json` 中，但**绝不**存储在服务器上。没有凭据，仓库数据将无法读取。启用开机自启时，会在服务器上存储一个辅助 LUKS 密钥文件，以便启动时自动挂载。
+凭据存储在本地配置文件中，但**绝不**存储在服务器上。没有凭据，仓库数据将无法读取。启用开机自启时，会在服务器上存储一个辅助 LUKS 密钥文件，以便启动时自动挂载。
 
 ## 配置结构
 
-所有配置存储在 `~/.rediacc/config.json` 中。以下是一个注释示例：
+每个配置是存储在 `~/.config/rediacc/` 中的扁平 JSON 文件。默认配置为 `rediacc.json`；命名配置使用名称作为文件名（例如 `production.json`）。以下是一个注释示例：
 
 ```json
 {
-  "contexts": {
-    "production": {
-      "name": "production",
-      "mode": "local",
-      "apiUrl": "local://",
-      "ssh": {
-        "privateKeyPath": "/home/you/.ssh/id_ed25519"
-      },
-      "machines": {
-        "prod-1": {
-          "ip": "203.0.113.50",
-          "user": "deploy",
-          "port": 22,
-          "datastore": "/mnt/rediacc",
-          "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
-        }
-      },
-      "storages": {
-        "backblaze": {
-          "provider": "b2",
-          "vaultContent": { "...": "..." }
-        }
-      },
-      "repositories": {
-        "webapp": {
-          "repositoryGuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-          "credential": "base64-encoded-random-passphrase",
-          "networkId": 2816
-        }
-      }
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "version": 1,
+  "ssh": {
+    "privateKeyPath": "/home/you/.ssh/id_ed25519"
+  },
+  "machines": {
+    "prod-1": {
+      "ip": "203.0.113.50",
+      "user": "deploy",
+      "port": 22,
+      "datastore": "/mnt/rediacc",
+      "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
+    }
+  },
+  "storages": {
+    "backblaze": {
+      "provider": "b2",
+      "vaultContent": { "...": "..." }
+    }
+  },
+  "repositories": {
+    "webapp": {
+      "repositoryGuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "credential": "base64-encoded-random-passphrase",
+      "networkId": 2816
     }
   },
   "nextNetworkId": 2880,
@@ -163,15 +158,15 @@ Rediaccfile 函数会自动设置 `DOCKER_HOST` 为正确的套接字。
 **关键字段：**
 
 | 字段 | 描述 |
-|------|------|
-| `mode` | `"local"`、`"s3"` 或省略表示云模式 |
-| `apiUrl` | `"local://"` 表示本地模式，云模式使用 API URL |
+|-------|-------------|
+| `id` | 此配置文件的唯一标识符 |
+| `version` | 配置文件模式版本 |
 | `ssh.privateKeyPath` | 用于所有机器连接的 SSH 私钥路径 |
 | `machines.<name>.user` | 连接到机器的 SSH 用户名 |
 | `machines.<name>.knownHosts` | 来自 `ssh-keyscan` 的 SSH 主机密钥 |
 | `repositories.<name>.repositoryGuid` | 标识加密磁盘映像的 UUID |
 | `repositories.<name>.credential` | LUKS 加密密码短语（**不存储在服务器上**） |
-| `repositories.<name>.networkId` | 确定 IP 子网的网络 ID（2816 + n*64），自动分配 |
+| `repositories.<name>.networkId` | 确定 IP 子网（2816 + n*64），自动分配 |
 | `nextNetworkId` | 用于分配网络 ID 的全局计数器 |
 | `universalUser` | 覆盖默认系统用户（`rediacc`） |
 

@@ -2,7 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { Command } from 'commander';
 import { registerExtendedRepoCommands } from './repo-extended.js';
 import { t } from '../i18n/index.js';
-import { contextService } from '../services/context.js';
+import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { handleError } from '../utils/errors.js';
@@ -24,7 +24,7 @@ async function executeRepoFunction(
   messages: { starting: string; completed: string; failed: string }
 ): Promise<void> {
   // Validate repository exists in context
-  const repo = await contextService.getLocalRepository(repoName);
+  const repo = await configService.getRepository(repoName);
   if (!repo) {
     throw new Error(`Repository "${repoName}" not found in context`);
   }
@@ -33,7 +33,7 @@ async function executeRepoFunction(
   }
 
   // Ensure network_id is assigned (auto-allocates for legacy repos without one)
-  await contextService.ensureRepositoryNetworkId(repoName);
+  await configService.ensureRepositoryNetworkId(repoName);
 
   outputService.info(messages.starting);
 
@@ -71,7 +71,7 @@ export function registerRepoCommands(program: Command): void {
       ) => {
         try {
           // Validate doesn't already exist
-          const existing = await contextService.getLocalRepository(name);
+          const existing = await configService.getRepository(name);
           if (existing) {
             throw new Error(t('commands.repo.create.alreadyExists', { name }));
           }
@@ -79,10 +79,10 @@ export function registerRepoCommands(program: Command): void {
           // Generate UUID, credential, and allocate networkId
           const repositoryGuid = randomUUID();
           const credential = generateCredential();
-          const networkId = await contextService.allocateNetworkId();
+          const networkId = await configService.allocateNetworkId();
 
           // Register in config.json first (so the executor can find it)
-          await contextService.addLocalRepository(name, {
+          await configService.addRepository(name, {
             repositoryGuid,
             tag: 'latest',
             credential,
@@ -117,16 +117,16 @@ export function registerRepoCommands(program: Command): void {
             outputService.success(t('commands.repo.create.completed'));
           } else {
             // Rollback: remove from config.json
-            await contextService.removeLocalRepository(name);
+            await configService.removeRepository(name);
             outputService.warn(t('commands.repo.create.rollback', { repository: name }));
             outputService.error(result.error ?? t('commands.repo.create.failed'));
             process.exitCode = result.exitCode;
           }
         } catch (error) {
           // Rollback on unexpected error
-          const exists = await contextService.getLocalRepository(name);
+          const exists = await configService.getRepository(name);
           if (exists) {
-            await contextService.removeLocalRepository(name);
+            await configService.removeRepository(name);
             outputService.warn(t('commands.repo.create.rollback', { repository: name }));
           }
           handleError(error);
@@ -148,12 +148,12 @@ export function registerRepoCommands(program: Command): void {
       ) => {
         try {
           // Validate exists
-          const repoConfig = await contextService.getLocalRepository(name);
+          const repoConfig = await configService.getRepository(name);
           if (!repoConfig) {
             throw new Error(`Repository "${name}" not found in context`);
           }
 
-          await contextService.ensureRepositoryNetworkId(name);
+          await configService.ensureRepositoryNetworkId(name);
 
           outputService.info(
             t('commands.repo.delete.starting', { repository: name, machine: options.machine })
@@ -168,7 +168,7 @@ export function registerRepoCommands(program: Command): void {
           });
 
           if (result.success) {
-            await contextService.removeLocalRepository(name);
+            await configService.removeRepository(name);
             outputService.info(t('commands.repo.delete.removed', { repository: name }));
             outputService.success(t('commands.repo.delete.completed'));
           } else {
@@ -282,7 +282,7 @@ export function registerRepoCommands(program: Command): void {
 
           // Resolve grand repo friendly name → GUID
           if (options.grand) {
-            const grandRepo = await contextService.getLocalRepository(options.grand);
+            const grandRepo = await configService.getRepository(options.grand);
             params.grand = grandRepo?.repositoryGuid ?? options.grand;
           }
 
@@ -381,7 +381,7 @@ export function registerRepoCommands(program: Command): void {
 
           // Resolve grand repo friendly name → GUID
           if (options.grand) {
-            const grandRepo = await contextService.getLocalRepository(options.grand);
+            const grandRepo = await configService.getRepository(options.grand);
             params.grand = grandRepo?.repositoryGuid ?? options.grand;
           }
 

@@ -19,15 +19,15 @@ Before pushing backups, register a storage provider. Rediacc supports any rclone
 If you already have an rclone remote configured:
 
 ```bash
-rdc context import-storage my-storage
+rdc config import-storage rclone.conf
 ```
 
-This imports the storage configuration from your rclone config into the current context.
+This imports storage configurations from an rclone config file into the current config. Supported types: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob, and Swift.
 
 ### View Storages
 
 ```bash
-rdc context storages
+rdc config storages
 ```
 
 ## Push a Backup

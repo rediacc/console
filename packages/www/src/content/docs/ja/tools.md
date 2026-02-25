@@ -2,7 +2,7 @@
 title: ツール
 description: ファイル同期、ターミナルアクセス、VS Code統合、アップデート、診断。
 category: Guides
-order: 8
+order: 9
 language: ja
 sourceHash: 80ca3cd3e1a55d4b
 ---

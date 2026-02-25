@@ -4,6 +4,7 @@ description: "Решения распространённых проблем с 
 category: "Guides"
 order: 10
 language: ru
+sourceHash: 4c3163007e6a3326
 ---
 
 # Устранение неполадок
@@ -13,16 +14,16 @@ language: ru
 ## Ошибка подключения SSH
 
 - Убедитесь, что можете подключиться вручную: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Выполните `rdc context scan-keys server-1` для обновления ключей хоста
+- Выполните `rdc config scan-keys server-1` для обновления ключей хоста
 - Проверьте соответствие порта SSH: `--port 22`
-- Проверьте подключение: `rdc machine test-connection --ip 203.0.113.50 --user deploy`
+- Проверьте простой командой: `rdc term server-1 -c "hostname"`
 
 ## Несоответствие ключа хоста
 
 Если сервер был переустановлен или его SSH-ключи изменились, вы увидите "host key verification failed":
 
 ```bash
-rdc context scan-keys server-1
+rdc config scan-keys server-1
 ```
 
 Эта команда получает новые ключи хоста и обновляет вашу конфигурацию.
@@ -31,7 +32,7 @@ rdc context scan-keys server-1
 
 - Убедитесь, что SSH-пользователь имеет доступ sudo без пароля, или настройте `NOPASSWD` для необходимых команд
 - Проверьте доступное дисковое пространство на сервере
-- Запустите с `--debug` для подробного вывода: `rdc context setup-machine server-1 --debug`
+- Запустите с `--debug` для подробного вывода: `rdc config setup-machine server-1 --debug`
 
 ## Ошибка создания репозитория
 
@@ -74,7 +75,7 @@ rdc term server-1 my-app -c "docker ps"
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
 ```
 
-Замените `2816` на идентификатор сети вашего репозитория (можно найти в `config.json` или через `rdc repo status`).
+Замените `2816` на идентификатор сети вашего репозитория (можно найти в `rediacc.json` или через `rdc repo status`).
 
 ## Контейнеры созданы на неправильном Docker daemon
 
@@ -103,4 +104,4 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 rdc doctor
 ```
 
-Эта команда проверяет вашу среду, установку renet, конфигурацию контекста и статус аутентификации. Каждая проверка сообщает OK, Warning или Error с кратким пояснением.
+Эта команда проверяет вашу среду, установку renet, конфигурацию и статус аутентификации. Каждая проверка сообщает OK, Warning или Error с кратким пояснением.

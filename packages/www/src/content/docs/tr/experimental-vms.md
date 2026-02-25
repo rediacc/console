@@ -4,48 +4,56 @@ description: "rdc ops ile geliştirme ve test için yerel VM kümeleri oluşturm
 category: "Concepts"
 order: 2
 language: tr
-sourceHash: "30b5f6267314cfb2"
+sourceHash: "fa4069c48c650a79"
 ---
 
-# Experimental VMs
+# Deneysel VM'ler
 
-Provision local VM clusters on your workstation for development and testing — no external cloud providers required.
+İş istasyonunuzda geliştirme ve test için yerel VM kümeleri oluşturun — harici bulut sağlayıcılarına gerek yok.
 
-## Overview
+## Gereksinimler
+
+`rdc ops` **yerel adaptör** gerektirir. Bulut adaptörüyle kullanılamaz.
+
+```bash
+rdc ops check
+```
+
+## Genel Bakış
 
 `rdc ops` komutları, deneysel VM kümelerini yerel olarak oluşturmanıza ve yönetmenize olanak tanır. Bu, CI hattı tarafından entegrasyon testleri için kullanılan altyapının aynısıdır ve artık uygulamalı deneyler için kullanılabilir.
 
-Use cases:
-- Test Rediacc deployments without external VM providers (Linode, Vultr, etc.)
-- Develop and debug repository configurations locally
-- Learn the platform in a fully isolated environment
-- Run integration tests on your workstation
+Kullanım senaryoları:
+- Harici VM sağlayıcıları olmadan Rediacc dağıtımlarını test edin (Linode, Vultr, vb.)
+- Depo yapılandırmalarını yerel olarak geliştirin ve hata ayıklayın
+- Tamamen izole bir ortamda platformu öğrenin
+- İş istasyonunuzda entegrasyon testleri çalıştırın
 
-## Platform Support
+## Platform Desteği
 
-| Platform | Architecture | Backend | Status |
-|----------|-------------|---------|--------|
-| Linux | x86_64 | KVM (libvirt) | Full support |
-| Linux | ARM64 | KVM (libvirt) | Full support |
-| macOS | ARM (Apple Silicon) | QEMU + HVF | Full support |
-| macOS | Intel | QEMU + HVF | Full support |
-| Windows | x86_64 / ARM64 | Hyper-V | Planned |
+| Platform | Mimari | Arka Uç | Durum |
+|----------|--------|---------|-------|
+| Linux | x86_64 | KVM (libvirt) | CI'da test edildi |
+| macOS | Intel | QEMU + HVF | CI'da test edildi |
+| Linux | ARM64 | KVM (libvirt) | Destekleniyor (CI testi yok) |
+| macOS | ARM (Apple Silicon) | QEMU + HVF | Destekleniyor (CI testi yok) |
+| Windows | x86_64 / ARM64 | Hyper-V | Planlandı |
 
-**Linux (KVM)** uses libvirt for native hardware virtualization with bridged networking.
+**Linux (KVM)**, köprülü ağ ile yerel donanım sanallaştırması için libvirt kullanır.
 
-**macOS (QEMU)** uses QEMU with Apple's Hypervisor Framework (HVF) for near-native performance, with user-mode networking and SSH port forwarding.
+**macOS (QEMU)**, kullanıcı modu ağ ve SSH port yönlendirmesiyle neredeyse yerel performans için Apple'ın Hypervisor Framework (HVF) ile QEMU kullanır.
 
-**Windows (Hyper-V)** support is planned. See [issue #380](https://github.com/rediacc/console/issues/380) for details. Requires Windows Pro/Enterprise.
+**Windows (Hyper-V)** desteği planlanmaktadır. Ayrıntılar için [issue #380](https://github.com/rediacc/console/issues/380) sayfasına bakın. Windows Pro/Enterprise gerektirir.
 
-## Prerequisites & Setup
+## Ön Koşullar ve Kurulum
 
 ### Linux
 
 ```bash
-# Install prerequisites automatically
+# Ön koşulları otomatik kur
 rdc ops setup
 
-# Or manually:
+# Veya manuel olarak:
 sudo apt install libvirt-daemon-system virtinst qemu-utils cloud-image-utils docker.io
 sudo systemctl enable --now libvirtd
 ```
@@ -53,132 +61,142 @@ sudo systemctl enable --now libvirtd
 ### macOS
 
 ```bash
-# Install prerequisites automatically
+# Ön koşulları otomatik kur
 rdc ops setup
 
-# Or manually:
+# Veya manuel olarak:
 brew install qemu cdrtools
 ```
 
-### Verify Setup
+### Kurulumu Doğrulama
 
 ```bash
 rdc ops check
 ```
 
-This runs platform-specific checks and reports pass/fail for each prerequisite.
+Bu komut platforma özgü kontroller çalıştırır ve her ön koşul için başarı/başarısızlık raporlar.
 
-## Quick Start
+## Hızlı Başlangıç
 
 ```bash
-# 1. Check prerequisites
+# 1. Ön koşulları kontrol et
 rdc ops check
 
-# 2. Provision a minimal cluster (bridge + 1 worker)
+# 2. Minimal küme hazırla (köprü + 1 çalışan)
 rdc ops up --basic
 
-# 3. Check VM status
+# 3. VM durumunu kontrol et
 rdc ops status
 
-# 4. SSH into the bridge VM
+# 4. Köprü VM'ye SSH ile bağlan
 rdc ops ssh 1
 
-# 5. Tear down
+# 4b. Veya doğrudan bir komut çalıştır
+rdc ops ssh 1 hostname
+
+# 5. Kapat
 rdc ops down
 ```
 
-## Cluster Composition
+## Küme Bileşimi
 
-By default, `rdc ops up` provisions:
+Varsayılan olarak `rdc ops up` şunları hazırlar:
 
-| VM | ID | Role |
-|----|-----|------|
-| Bridge | 1 | Primary node — runs the Rediacc bridge service |
-| Worker 1 | 11 | Worker node for repository deployments |
-| Worker 2 | 12 | Worker node for repository deployments |
+| VM | Kimlik | Rol |
+|----|--------|-----|
+| Köprü | 1 | Birincil düğüm — Rediacc köprü servisini çalıştırır |
+| Çalışan 1 | 11 | Depo dağıtımları için çalışan düğüm |
+| Çalışan 2 | 12 | Depo dağıtımları için çalışan düğüm |
 
-Use the `--basic` flag to provision only the bridge and first worker (IDs 1 and 11).
+Yalnızca köprüyü ve ilk çalışanı hazırlamak için `--basic` bayrağını kullanın (kimlik 1 ve 11).
 
-Use `--skip-orchestration` to provision VMs without starting Rediacc services — useful for testing the VM layer in isolation.
+Rediacc servislerini başlatmadan VM'leri hazırlamak için `--skip-orchestration` kullanın — VM katmanını izole test etmek için kullanışlıdır.
 
-## Configuration
+## Yapılandırma
 
-Environment variables control VM resources:
+Köprü VM, çalışan VM'lerden daha küçük varsayılanlar kullanır:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `VM_CPU` | 2 | CPU cores per VM |
-| `VM_RAM` | 4096 | RAM in MB per VM |
-| `VM_DSK` | 16 | Disk size in GB |
-| `VM_NET_BASE` | 192.168.111 | Network base (KVM only) |
-| `RENET_DATA_DIR` | ~/.renet | Data directory for VM disks and config |
+| VM Rolü | CPU | RAM | Disk |
+|---------|-----|-----|------|
+| Köprü | 1 | 1024 MB | 8 GB |
+| Çalışan | 2 | 4096 MB | 16 GB |
 
-## Command Reference
+Ortam değişkenleri çalışan VM kaynaklarını geçersiz kılar:
 
-| Command | Description |
-|---------|-------------|
-| `rdc ops setup` | Install platform prerequisites (KVM or QEMU) |
-| `rdc ops check` | Verify prerequisites are installed and working |
-| `rdc ops up [options]` | Provision VM cluster |
-| `rdc ops down` | Destroy all VMs and cleanup |
-| `rdc ops status` | Show status of all VMs |
-| `rdc ops ssh <vm-id>` | SSH into a specific VM |
+| Değişken | Varsayılan | Açıklama |
+|----------|-----------|----------|
+| `VM_CPU` | 2 | Çalışan VM başına CPU çekirdeği |
+| `VM_RAM` | 4096 | Çalışan VM başına MB cinsinden RAM |
+| `VM_DSK` | 16 | Çalışan VM başına GB cinsinden disk boyutu |
+| `VM_NET_BASE` | 192.168.111 | Ağ tabanı (yalnızca KVM) |
+| `RENET_DATA_DIR` | ~/.renet | VM diskleri ve yapılandırma için veri dizini |
 
-### `rdc ops up` Options
+## Komut Referansı
 
-| Option | Description |
-|--------|-------------|
-| `--basic` | Minimal cluster (bridge + 1 worker) |
-| `--lite` | Lightweight resources |
-| `--force` | Force recreate existing VMs |
-| `--parallel` | Provision VMs in parallel |
-| `--skip-orchestration` | VMs only, no Rediacc services |
-| `--backend <kvm\|qemu>` | Override auto-detected backend |
-| `--os <name>` | OS image (default: ubuntu-24.04) |
-| `--debug` | Verbose output |
+| Komut | Açıklama |
+|-------|----------|
+| `rdc ops setup` | Platform ön koşullarını kur (KVM veya QEMU) |
+| `rdc ops check` | Ön koşulların kurulu ve çalışır durumda olduğunu doğrula |
+| `rdc ops up [seçenekler]` | VM kümesi hazırla |
+| `rdc ops down` | Tüm VM'leri yok et ve temizle |
+| `rdc ops status` | Tüm VM'lerin durumunu göster |
+| `rdc ops ssh <vm-id> [komut...]` | Bir VM'ye SSH ile bağlan veya üzerinde komut çalıştır |
 
-## Platform Differences
+### `rdc ops up` Seçenekleri
+
+| Seçenek | Açıklama |
+|---------|----------|
+| `--basic` | Minimal küme (köprü + 1 çalışan) |
+| `--lite` | VM hazırlamayı atla (yalnızca SSH anahtarları) |
+| `--force` | Mevcut VM'leri yeniden oluşturmaya zorla |
+| `--parallel` | VM'leri paralel olarak hazırla |
+| `--skip-orchestration` | Yalnızca VM'ler, Rediacc servisleri yok |
+| `--backend <kvm\|qemu>` | Otomatik algılanan arka ucu geçersiz kıl |
+| `--os <ad>` | İşletim sistemi imajı (varsayılan: ubuntu-24.04) |
+| `--debug` | Ayrıntılı çıktı |
+
+## Platform Farklılıkları
 
 ### Linux (KVM)
-- Uses libvirt for VM lifecycle management
-- Bridged networking — VMs get IPs on a virtual network (192.168.111.x)
-- Direct SSH to VM IPs
-- Requires `/dev/kvm` and libvirtd service
+- VM yaşam döngüsü yönetimi için libvirt kullanır
+- Köprülü ağ — VM'ler sanal ağda IP alır (192.168.111.x)
+- VM IP'lerine doğrudan SSH
+- `/dev/kvm` ve libvirtd servisi gerektirir
 
 ### macOS (QEMU + HVF)
-- Uses QEMU processes managed via PID files
-- User-mode networking with SSH port forwarding (localhost:222XX)
-- SSH via forwarded ports, not direct IPs
-- Cloud-init ISOs created via `mkisofs`
+- PID dosyaları aracılığıyla yönetilen QEMU süreçleri kullanır
+- SSH port yönlendirmeli kullanıcı modu ağ (localhost:222XX)
+- Doğrudan IP değil, yönlendirilen portlar üzerinden SSH
+- `mkisofs` ile oluşturulan Cloud-init ISO'ları
 
-## Troubleshooting
+## Sorun Giderme
 
-### Debug mode
+### Hata ayıklama modu
 
-Add `--debug` to any command for verbose output:
+Ayrıntılı çıktı için herhangi bir komuta `--debug` ekleyin:
 
 ```bash
 rdc ops up --basic --debug
 ```
 
-### Common issues
+### Yaygın sorunlar
 
-**KVM not available (Linux)**
-- Check `/dev/kvm` exists: `ls -la /dev/kvm`
-- Enable virtualization in BIOS/UEFI
-- Load the kernel module: `sudo modprobe kvm_intel` or `sudo modprobe kvm_amd`
+**KVM mevcut değil (Linux)**
+- `/dev/kvm` dosyasının var olduğunu kontrol edin: `ls -la /dev/kvm`
+- BIOS/UEFI'de sanallaştırmayı etkinleştirin
+- Çekirdek modülünü yükleyin: `sudo modprobe kvm_intel` veya `sudo modprobe kvm_amd`
 
-**libvirtd not running (Linux)**
+**libvirtd çalışmıyor (Linux)**
 ```bash
 sudo systemctl enable --now libvirtd
 ```
 
-**QEMU not found (macOS)**
+**QEMU bulunamadı (macOS)**
 ```bash
 brew install qemu cdrtools
 ```
 
-**VMs won't start**
-- Check disk space in `~/.renet/disks/`
-- Run `rdc ops check` to verify all prerequisites
-- Try `rdc ops down` then `rdc ops up --force`
+**VM'ler başlamıyor**
+- `~/.renet/disks/` dizinindeki disk alanını kontrol edin
+- Tüm ön koşulları doğrulamak için `rdc ops check` çalıştırın
+- `rdc ops down` ardından `rdc ops up --force` deneyin

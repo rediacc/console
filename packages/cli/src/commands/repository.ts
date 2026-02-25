@@ -12,7 +12,7 @@ import type { GetOrganizationVaults_ResultSet1 } from '@rediacc/shared/types';
 import { t } from '../i18n/index.js';
 import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
-import { contextService } from '../services/context.js';
+import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
@@ -68,7 +68,7 @@ export function registerRepositoryCommands(program: Command): void {
     .action(async (options) => {
       try {
         await authService.requireAuth();
-        const opts = await contextService.applyDefaults(options);
+        const opts = await configService.applyDefaults(options);
 
         if (!opts.team) {
           throw new ValidationError(t('errors.teamRequired'));
@@ -101,7 +101,7 @@ export function registerRepositoryCommands(program: Command): void {
     .action(async (name, options) => {
       try {
         await authService.requireAuth();
-        const opts = await contextService.applyDefaults(options);
+        const opts = await configService.applyDefaults(options);
 
         if (!opts.team) {
           throw new ValidationError(t('errors.teamRequired'));
@@ -136,7 +136,7 @@ export function registerRepositoryCommands(program: Command): void {
     .action(async (oldName, newName, options) => {
       try {
         await authService.requireAuth();
-        const opts = await contextService.applyDefaults(options);
+        const opts = await configService.applyDefaults(options);
 
         if (!opts.team) {
           throw new ValidationError(t('errors.teamRequired'));
@@ -167,7 +167,7 @@ export function registerRepositoryCommands(program: Command): void {
     .action(async (name, options) => {
       try {
         await authService.requireAuth();
-        const opts = await contextService.applyDefaults(options);
+        const opts = await configService.applyDefaults(options);
 
         if (!opts.team) {
           throw new ValidationError(t('errors.teamRequired'));
@@ -225,7 +225,7 @@ export function registerRepositoryCommands(program: Command): void {
     .action(async (name, options) => {
       try {
         await authService.requireAuth();
-        const opts = await contextService.applyDefaults(options);
+        const opts = await configService.applyDefaults(options);
 
         if (!opts.team) {
           throw new ValidationError(t('errors.teamRequired'));
@@ -310,7 +310,7 @@ export function registerRepositoryCommands(program: Command): void {
     .action(async (repositoryName, options) => {
       try {
         await authService.requireAuth();
-        const opts = await contextService.applyDefaults(options);
+        const opts = await configService.applyDefaults(options);
 
         if (!opts.team) {
           throw new ValidationError(t('errors.teamRequired'));
@@ -361,7 +361,7 @@ export function registerRepositoryCommands(program: Command): void {
     .action(async (repositoryName, options) => {
       try {
         await authService.requireAuth();
-        const opts = await contextService.applyDefaults(options);
+        const opts = await configService.applyDefaults(options);
 
         if (!opts.team) {
           throw new ValidationError(t('errors.teamRequired'));

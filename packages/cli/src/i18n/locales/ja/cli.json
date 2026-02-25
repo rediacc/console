@@ -322,116 +322,101 @@
         }
       }
     },
-    "context": {
+    "config": {
       "addMachine": {
-        "description": "現在のローカルコンテキストにマシンを追加する",
+        "description": "現在の設定にマシンを追加する",
         "success": "マシン \"{{name}}\" が追加されました ({{user}}@{{ip}})"
       },
       "addRepository": {
-        "description": "現在のローカルコンテキストにリポジトリ GUID マッピングを追加する",
+        "description": "現在の設定にリポジトリの GUID マッピングを追加する",
         "networkIdAssigned": "ネットワーク ID: {{networkId}}",
-        "optionCredential": "リポジトリ認証情報 (暗号化パスフレーズ)",
-        "optionGuid": "リポジトリ GUID (ストレージバックアップファイル名の UUID)",
-        "optionNetworkId": "Docker 分離用ネットワーク ID (2816, 2880, ...)。省略時は自動割り当て",
+        "optionCredential": "リポジトリの認証情報 (暗号化パスフレーズ)",
+        "optionGuid": "リポジトリの GUID (ストレージバックアップファイル名の UUID)",
+        "optionNetworkId": "Docker 分離用のネットワーク ID (2816, 2880, ...)。省略した場合は自動割り当て",
         "optionTag": "リポジトリタグ",
-        "success": "リポジトリ \"{{name}}\" を追加しました ({{guid}}, タグ: {{tag}})"
+        "success": "リポジトリ \"{{name}}\" が追加されました ({{guid}}、タグ: {{tag}})"
       },
       "clear": {
         "allCleared": "すべてのデフォルトをクリアしました",
-        "description": "デフォルトをクリアする (すべて、または特定のキー)",
+        "description": "デフォルト値をクリアする（すべてまたは特定のキー）",
         "keyCleared": "\"{{key}}\" をクリアしました"
       },
-      "create": {
-        "description": "新しいコンテキストを作成する",
-        "success": "コンテキスト \"{{name}}\" が作成されました"
-      },
-      "createLocal": {
-        "description": "ミドルウェアなしで操作するための新しいローカルコンテキストを作成する",
-        "encryptionEnabled": "保存時の暗号化が有効です。リソースは config.json で暗号化されます。",
-        "nextStep": "マシンを追加: rdc context add-machine <name> --ip <ip> --user <user>",
-        "optionMasterPassword": "マスターパスワードでリソースを暗号化する",
-        "success": "ローカルコンテキスト \"{{name}}\" が作成されました"
-      },
-      "createS3": {
-        "accessVerified": "S3アクセスが確認されました",
-        "description": "ローカル実行でリモート状態を管理する新しいS3/R2コンテキストを作成する",
-        "errorSecretAccessKeyRequired": "S3シークレットアクセスキーが必要です",
-        "nextStep": "次のステップ: \"rdc context add-machine\" でマシンを追加してください",
-        "optionAccessKeyId": "S3アクセスキーID",
-        "optionBucket": "S3バケット名",
-        "optionEndpoint": "S3エンドポイントURL",
-        "optionMasterPassword": "暗号化用マスターパスワード（オプション、スキップするには空のままにしてください）",
-        "optionPrefix": "バケット内のキープレフィックス/名前空間",
-        "optionRegion": "S3リージョン",
-        "optionRenetPath": "renetバイナリのパス",
-        "optionSecretAccessKey": "S3シークレットアクセスキー（未指定の場合はプロンプトが表示されます）",
-        "optionSshKey": "SSH秘密鍵のパス",
-        "promptMasterPassword": "暗号化用マスターパスワード（スキップするには空のままにしてください）:",
-        "promptSecretAccessKey": "S3シークレットアクセスキー:",
-        "success": "S3コンテキスト \"{{name}}\" が作成されました",
-        "verifyingAccess": "S3アクセスを確認中..."
-      },
-      "current": {
-        "description": "現在のコンテキスト名を表示する",
-        "noContext": "アクティブなコンテキストがありません"
+      "recover": {
+        "description": "バックアップファイル (.bak) から設定を復元する",
+        "noBackup": "設定 \"{{name}}\" のバックアップが見つかりません",
+        "confirm": "設定 \"{{name}}\" をバックアップから復元しますか？",
+        "success": "設定 \"{{name}}\" をバックアップから復元しました（バージョン {{version}}）",
+        "failed": "設定 \"{{name}}\" のバックアップからの復元に失敗しました"
       },
       "delete": {
-        "confirm": "コンテキスト \"{{name}}\" を削除してもよろしいですか？",
-        "description": "コンテキストを削除する",
-        "success": "コンテキスト \"{{name}}\" が削除されました"
+        "description": "設定ファイルを削除する",
+        "success": "設定 \"{{name}}\" が削除されました"
       },
-      "description": "CLI コンテキストを管理する",
+      "description": "CLI 設定ファイルを管理する",
       "importStorage": {
         "description": "rclone 設定ファイルからストレージをインポートする",
         "imported": "ストレージ \"{{name}}\" をインポートしました ({{type}})",
-        "noConfigs": "ファイルに有効なストレージ設定が見つかりません",
-        "notFound": "ストレージ \"{{name}}\" が設定ファイルに見つかりません",
-        "optionName": "この名前のセクションのみインポート",
+        "noConfigs": "ファイル内に有効なストレージ設定が見つかりません",
+        "notFound": "設定ファイルにストレージ \"{{name}}\" が見つかりません",
+        "optionName": "この名前のセクションのみインポートする",
         "summary": "{{count}} 個のストレージをインポートしました",
         "unsupported": "\"{{name}}\" をスキップ: サポートされていないプロバイダータイプ \"{{type}}\""
       },
+      "init": {
+        "alreadyExists": "設定 \"{{name}}\" は既に存在します",
+        "description": "新しい設定ファイルを初期化する",
+        "optionMasterPassword": "マスターパスワードでリソースを暗号化する",
+        "optionS3AccessKeyId": "S3 アクセスキー ID",
+        "optionS3Bucket": "S3 バケット名",
+        "optionS3Endpoint": "S3 エンドポイント URL",
+        "optionS3Prefix": "S3 バケット内のキープレフィックス",
+        "optionS3Region": "S3 リージョン",
+        "optionS3SecretAccessKey": "S3 シークレットアクセスキー",
+        "promptS3SecretAccessKey": "S3 シークレットアクセスキー:",
+        "s3Required": "S3 リソース状態には --s3-endpoint、--s3-bucket、--s3-access-key-id が必要です",
+        "s3SecretRequired": "S3 シークレットアクセスキーは必須です",
+        "s3Verified": "S3 アクセスが確認されました",
+        "success": "設定 \"{{name}}\" が初期化されました",
+        "verifyingS3": "S3 アクセスを確認中..."
+      },
       "list": {
-        "description": "すべてのコンテキストをリスト表示する",
-        "noContexts": "コンテキストが設定されていません"
+        "description": "すべての設定ファイルをリスト表示する",
+        "noConfigs": "設定ファイルが見つかりません。次のコマンドで作成してください: rdc config init"
       },
       "machines": {
-        "description": "現在のローカルコンテキストのマシンをリスト表示する",
-        "noMachines": "設定されたマシンがありません。追加: rdc context add-machine <name> --ip <ip> --user <user>"
+        "description": "現在の設定のマシンをリスト表示する",
+        "noMachines": "マシンが設定されていません。次のコマンドで追加してください: rdc config add-machine <name> --ip <ip> --user <user>"
       },
       "pushInfra": {
         "description": "インフラ設定をリモートマシンにプッシュする",
-        "installingProxy": "プロキシをインストールして起動中...",
-        "proxyInstallWarning": "プロキシのインストールに失敗しました（コード {{code}}）。手動で実行してください: sudo renet proxy install",
-        "success": "\"{{name}}\" にインフラ設定をプッシュしました"
+        "installingProxy": "プロキシをインストールして起動中です...",
+        "proxyInstallWarning": "プロキシのインストールに失敗しました (コード {{code}})。手動で実行してください: sudo renet proxy install",
+        "success": "インフラ設定を \"{{name}}\" にプッシュしました"
       },
       "removeMachine": {
-        "description": "現在のローカルコンテキストからマシンを削除する",
+        "description": "現在の設定からマシンを削除する",
         "success": "マシン \"{{name}}\" が削除されました"
       },
       "removeRepository": {
-        "description": "現在のローカルコンテキストからリポジトリマッピングを削除する",
-        "success": "リポジトリ \"{{name}}\" を削除しました"
+        "description": "現在の設定からリポジトリのマッピングを削除する",
+        "success": "リポジトリ \"{{name}}\" が削除されました"
       },
       "removeStorage": {
-        "description": "現在のローカルコンテキストからストレージを削除する",
-        "success": "ストレージ \"{{name}}\" を削除しました"
-      },
-      "rename": {
-        "description": "コンテキストの名前を変更する",
-        "success": "コンテキスト \"{{oldName}}\" を \"{{newName}}\" に名前変更しました"
+        "description": "現在の設定からストレージを削除する",
+        "success": "ストレージ \"{{name}}\" が削除されました"
       },
       "repositories": {
-        "description": "現在のローカルコンテキストのリポジトリ GUID マッピングをリスト表示する",
-        "noRepositories": "リポジトリが設定されていません。追加: rdc context add-repository <name> --guid <guid>"
+        "description": "現在の設定のリポジトリ GUID マッピングをリスト表示する",
+        "noRepositories": "リポジトリが設定されていません。次のコマンドで追加してください: rdc config add-repository <name> --guid <guid>"
       },
       "scanKeys": {
-        "completed": "{{count}}/{{total}} 台のマシンをスキャンしました",
-        "description": "現在のコンテキスト内のマシンの SSH ホストキーをスキャンする",
+        "completed": "{{count}}/{{total}} 台のマシンのホストキーをスキャンしました",
+        "description": "現在の設定のマシンの SSH ホストキーをスキャンする",
         "keysScanned": "\"{{name}}\" のホストキーをスキャンしました",
         "noKeys": "\"{{name}}\" のホストキーをスキャンできませんでした"
       },
       "set": {
-        "description": "デフォルト値を設定する (team, region, bridge, machine)",
+        "description": "デフォルト値を設定する (team、region、bridge、machine)",
         "success": "\"{{key}}\" を \"{{value}}\" に設定しました"
       },
       "setInfra": {
@@ -439,87 +424,48 @@
         "invalidIPv4": "無効な IPv4 アドレス: {{ip}}",
         "invalidIPv6": "無効な IPv6 アドレス: {{ip}}",
         "noOptions": "オプションが指定されていません。--public-ipv4、--base-domain などを使用してください。",
-        "optionBaseDomain": "アプリケーション用ベースドメイン",
-        "optionCertEmail": "TLS証明書通知用メールアドレス",
-        "optionCfDnsToken": "ACME DNS-01チャレンジ用のCloudflare DNS APIトークン",
+        "optionBaseDomain": "アプリケーションのベースドメイン",
+        "optionCertEmail": "TLS 証明書通知用のメールアドレス",
+        "optionCfDnsToken": "ACME DNS-01 チャレンジ用の Cloudflare DNS API トークン",
         "optionPublicIPv4": "パブリック IPv4 アドレス",
         "optionPublicIPv6": "パブリック IPv6 アドレス",
-        "optionTcpPorts": "転送するTCPポート（カンマ区切り、例: 25,143,465）",
-        "optionUdpPorts": "転送するUDPポート（カンマ区切り、例: 53）",
+        "optionTcpPorts": "転送する TCP ポート (カンマ区切り、例: 25,143,465)",
+        "optionUdpPorts": "転送する UDP ポート (カンマ区切り、例: 53)",
         "success": "\"{{name}}\" のインフラ設定を更新しました"
       },
-      "setLanguage": {
-        "description": "優先言語を設定する",
-        "success": "言語を \"{{code}}\" に設定しました",
-        "unsupported": "サポートされていない言語です。サポート対象: {{languages}}"
-      },
       "setRenet": {
-        "description": "ローカルモード用の renet バイナリへのパスを設定する",
-        "success": "Renet パスが設定されました: {{path}}"
+        "description": "ローカルモード用の renet バイナリのパスを設定する",
+        "success": "renet のパスを設定しました: {{path}}"
       },
       "setSsh": {
-        "description": "現在のローカルコンテキストの SSH 設定を更新する",
+        "description": "現在の設定の SSH 設定を更新する",
         "success": "SSH 設定が更新されました"
       },
       "setupMachine": {
         "completed": "マシン '{{machine}}' のセットアップが正常に完了しました",
         "datastoreOption": "リモートマシン上のデータストアパス",
-        "datastoreSizeOption": "データストアサイズ（例: 95%、100G）",
-        "description": "リモートマシンでセットアップを実行（btrfs、Dockerなどをインストール）",
+        "datastoreSizeOption": "データストアサイズ (例: 95%、100G)",
+        "description": "リモートマシンでセットアップを実行する (btrfs、Docker などをインストール)",
         "failed": "マシン '{{machine}}' のセットアップに失敗しました: {{error}}",
-        "starting": "マシン '{{machine}}' をセットアップ中..."
+        "starting": "マシン '{{machine}}' をセットアップ中です..."
       },
       "show": {
-        "description": "現在のコンテキストの詳細を表示する",
-        "noContext": "アクティブなコンテキストがありません"
+        "description": "現在の設定の詳細を表示する",
+        "noConfig": "アクティブな設定がありません。次のコマンドで作成してください: rdc config init"
       },
       "showInfra": {
         "description": "マシンのインフラ設定を表示する",
-        "noInfra": "\"{{name}}\" のインフラ設定がありません"
+        "noInfra": "\"{{name}}\" のインフラ設定が設定されていません"
       },
       "storages": {
-        "description": "現在のローカルコンテキストのストレージをリスト表示する",
-        "noStorages": "ストレージが設定されていません。インポート: rdc context import-storage <file>"
-      },
-      "toLocal": {
-        "description": "現在の S3 コンテキストをローカルモードに移行する",
-        "errorNoS3Config": "コンテキスト \"{{name}}\" に S3 設定がありません",
-        "errorNotS3": "コンテキスト \"{{name}}\" は S3 モードではありません (現在: {{mode}})",
-        "loading": "S3 から状態を読み込み中...",
-        "nonDestructive": "state.json は S3 バケットに残ります (非破壊的)",
-        "optionSshKeyPath": "SSH 秘密鍵の書き込み先 (デフォルト: 既存パス)",
-        "sshWritten": "SSH キーを {{path}} に書き込みました",
-        "success": "ローカルモードに移行しました: {{machines}} 台のマシン、{{storages}} 個のストレージ、{{repos}} 個のリポジトリ"
-      },
-      "toS3": {
-        "description": "現在のローカルコンテキストを S3 モードに移行する",
-        "errorNotLocal": "コンテキスト \"{{name}}\" はローカルモードではありません (現在: {{mode}})",
-        "errorSecretRequired": "シークレットアクセスキーは必須です",
-        "optionAccessKeyId": "S3 アクセスキー ID",
-        "optionBucket": "S3 バケット名",
-        "optionEndpoint": "S3 エンドポイント URL",
-        "optionMasterPassword": "このマスターパスワードで暗号化を有効にする",
-        "optionPrefix": "バケット内のキープレフィックス",
-        "optionRegion": "S3 リージョン",
-        "optionSecretAccessKey": "S3 シークレットアクセスキー (省略時はプロンプト表示)",
-        "promptSecretAccessKey": "S3 シークレットアクセスキーを入力してください:",
-        "success": "S3 モードに移行しました: {{machines}} 台のマシン、{{storages}} 個のストレージ、{{repos}} 個のリポジトリ",
-        "verified": "S3 アクセスが確認されました",
-        "verifying": "S3 アクセスを確認中..."
-      },
-      "unset": {
-        "description": "コンテキストのデフォルト値を削除する",
-        "success": "現在のコンテキストから {{key}} を削除しました"
-      },
-      "use": {
-        "description": "別のコンテキストに切り替える",
-        "switched": "コンテキスト \"{{name}}\" に切り替えました"
+        "description": "現在の設定のストレージをリスト表示する",
+        "noStorages": "ストレージが設定されていません。次のコマンドでインポートしてください: rdc config import-storage <file>"
       }
     },
     "doctor": {
       "allPassed": "すべてのチェックに合格しました",
       "checks": {
-        "activeContext": "アクティブコンテキスト",
+        "activeConfig": "アクティブな設定",
         "authStatus": "ステータス",
         "cliVersion": "CLIバージョン",
         "contextMode": "コンテキストモード",
@@ -527,13 +473,13 @@
         "goInstalled": "Go",
         "machines": "マシン",
         "nodeVersion": "Node.js",
+        "opsPrereqs": "OPS前提条件",
         "renetBinary": "バイナリ",
         "renetCriu": "組み込みCRIU",
         "renetRsync": "組み込みrsync",
         "renetVersion": "バージョン",
         "seaMode": "SEAモード",
-        "sshKey": "SSHキー",
-        "opsPrereqs": "OPS前提条件"
+        "sshKey": "SSHキー"
       },
       "description": "CLI環境とrenet統合を診断",
       "devMode": "いいえ（開発モード）",
@@ -542,9 +488,9 @@
       "notAuthenticated": "未認証",
       "notConfigured": "未設定",
       "notInstalled": "未インストール",
-      "seaActive": "はい（単一実行可能アプリケーション）",
       "opsNotSupported": "{{platform}}ではサポートされていません",
       "opsSkipped": "renetが利用できません（スキップ）",
+      "seaActive": "はい（単一実行可能アプリケーション）",
       "sections": {
         "authentication": "認証",
         "configuration": "設定",
@@ -1183,6 +1129,75 @@
         "starting": "\"{{repository}}\" を \"{{storage}}\" から \"{{machine}}\" にプル中..."
       }
     },
+    "store": {
+      "add": {
+        "addedButUnverified": "ストア \"{{name}}\" を追加しましたが、接続を確認できませんでした",
+        "alreadyExists": "ストア \"{{name}}\" は既に存在します",
+        "description": "新しい同期ストアを追加する",
+        "gitUrlRequired": "Git ストアには --git-url が必要です",
+        "invalidType": "無効なストアタイプ: \"{{type}}\"。有効なタイプ: {{valid}}",
+        "localPathRequired": "ローカルファイルストアには --local-path が必要です",
+        "optionBwFolderId": "設定項目を整理する Bitwarden フォルダー ID（オプション）",
+        "optionEncryptionKey": "このストアの暗号化キー",
+        "optionGitBranch": "Git ブランチ名",
+        "optionGitPath": "Git リポジトリ内のパス",
+        "optionGitUrl": "Git リポジトリ URL",
+        "optionLocalPath": "ローカルディレクトリパス",
+        "optionS3AccessKeyId": "S3 アクセスキー ID",
+        "optionS3Bucket": "S3 バケット名",
+        "optionS3Endpoint": "S3 エンドポイント URL",
+        "optionS3Prefix": "S3 キープレフィックス",
+        "optionS3Region": "S3 リージョン",
+        "optionS3SecretAccessKey": "S3 シークレットアクセスキー",
+        "optionType": "ストアタイプ (s3、local-file、bitwarden、git、vault)",
+        "optionVaultAddr": "Vault サーバーアドレス (例: http://127.0.0.1:8200)",
+        "optionVaultMount": "Vault KV v2 マウントパス (デフォルト: secret)",
+        "optionVaultNamespace": "Vault ネームスペース (エンタープライズのみ)",
+        "optionVaultPrefix": "Vault KV エンジン内のパスプレフィックス (デフォルト: rdc/configs)",
+        "optionVaultToken": "Vault 認証トークン",
+        "promptS3SecretAccessKey": "S3 シークレットアクセスキー:",
+        "promptVaultToken": "Vault トークン (または VAULT_TOKEN 環境変数を設定):",
+        "s3Required": "S3 ストアには --s3-endpoint、--s3-bucket、--s3-access-key-id が必要です",
+        "s3SecretRequired": "S3 シークレットアクセスキーは必須です",
+        "success": "ストア \"{{name}}\" が追加されました ({{type}})",
+        "vaultAddrRequired": "Vault ストアには --vault-addr が必要です",
+        "vaultTokenRequired": "Vault トークンが必要です (--vault-token を渡すか、VAULT_TOKEN 環境変数を設定してください)"
+      },
+      "description": "設定同期ストアを管理する (S3、ローカルファイル、Bitwarden、Git、Vault)",
+      "list": {
+        "description": "設定済みのストアをリスト表示する",
+        "noStores": "ストアが設定されていません。次のコマンドで追加してください: rdc store add <name> --type <type>"
+      },
+      "pull": {
+        "description": "ストアから設定をプルする",
+        "failed": "ストア \"{{store}}\" からのプルに失敗しました: {{error}}",
+        "notFound": "ストア \"{{name}}\" が見つかりません",
+        "optionConfig": "プル先の設定名",
+        "optionStore": "特定のストアからプルする",
+        "success": "設定 \"{{config}}\" をストア \"{{store}}\" からプルしました"
+      },
+      "push": {
+        "description": "現在の設定をストアにプッシュする",
+        "failed": "ストア \"{{store}}\" へのプッシュに失敗しました: {{error}}",
+        "noStores": "ストアが設定されていません",
+        "optionAll": "すべてのストアにプッシュする",
+        "optionStore": "特定のストアにプッシュする",
+        "success": "設定 \"{{config}}\" をストア \"{{store}}\" にプッシュしました"
+      },
+      "remove": {
+        "description": "同期ストアを削除する",
+        "success": "ストア \"{{name}}\" が削除されました"
+      },
+      "sync": {
+        "description": "ストアと設定を同期する（プルしてからプッシュ）",
+        "failed": "ストア \"{{store}}\" の同期に失敗しました: {{error}}",
+        "noStores": "ストアが設定されていません",
+        "optionAll": "すべてのストアと同期する",
+        "optionStore": "特定のストアと同期する",
+        "pulled": "ストア \"{{store}}\" から新しいバージョンをプルしました",
+        "pushed": "ストア \"{{store}}\" にプッシュしました"
+      }
+    },
     "sync": {
       "cancelled": "同期がキャンセルされました。",
       "description": "rsync を使用したリポジトリとのファイル同期",
@@ -1417,13 +1432,23 @@
       "tip": "ヒント",
       "warning": "警告"
     },
+    "cloudFrontmatter": {
+      "category": "Reference",
+      "description": "Rediacc CLIのクラウド専用コマンド — 認証、チーム、組織、マルチテナント管理",
+      "title": "CLIアプリケーション（クラウド / 実験的）"
+    },
+    "cloudOverview": {
+      "heading": "概要",
+      "text": "これらのコマンドは**クラウドアダプター**（実験的）が必要です — 設定に `apiUrl` と `token` フィールドが含まれている場合に有効化されます。メインのCLIリファレンスについては、[CLIアプリケーション](/ja/docs/cli-application)を参照してください。"
+    },
+    "cloudPageTitle": "Rediacc CLIリファレンス（クラウド / 実験的）",
     "errors": {
       "heading": "一般的なエラーメッセージ",
       "intro": "問題が発生した場合、CLIは明確なエラーメッセージを提供します：",
       "meanings": {
         "authRequired": "最初にログインする必要があります",
         "machineRequired": "`--machine`でマシンを指定するか、コンテキストのデフォルトを設定してください",
-        "noActiveContext": "コンテキストが選択されていません — 作成するか切り替えてください",
+        "noActiveConfig": "アクティブな設定がありません — `rdc config init` で作成してください",
         "permissionDenied": "アカウントに必要な権限がありません",
         "regionRequired": "`--region`でリージョンを指定するか、コンテキストのデフォルトを設定してください",
         "teamRequired": "`--team`でチームを指定するか、コンテキストのデフォルトを設定してください"
@@ -1462,7 +1487,7 @@
       "backup": "バックアップ管理",
       "bridge": "ブリッジ管理",
       "ceph": "Cephストレージ管理",
-      "context": "コンテキスト管理",
+      "config": "設定管理",
       "doctor": "システム診断",
       "machine": "マシン管理",
       "ops": "実験的 VM 操作",
@@ -1476,6 +1501,7 @@
       "shortcuts": "クイックコマンド（ショートカット）",
       "snapshot": "スナップショット管理",
       "storage": "ストレージ管理",
+      "store": "ストア管理",
       "sync": "ファイル同期",
       "team": "チーム管理",
       "term": "SSHターミナルアクセス",
@@ -1490,13 +1516,13 @@
         },
         "tip": "認証トークンはコンテキストにローカルに保存されます。`--save-as`を使用して、複数の環境用に名前付きコンテキストに資格情報を保存できます。"
       },
-      "context": {
-        "afterDescription": "コンテキストは接続詳細（API URL、資格情報、デフォルトのチーム/リージョン/マシン）を保存し、環境間をすばやく切り替えられるようにします。",
-        "createLocal": {
-          "afterDescription": "ローカルモードではマシンを直接追加できます："
+      "config": {
+        "afterDescription": "設定ファイルには接続の詳細（API URL、認証情報、デフォルトのチーム/リージョン/マシン）が保存されており、環境間を素早く切り替えることができます。",
+        "init": {
+          "afterDescription": "ローカルモードでは、マシンを直接追加できます:"
         },
         "set": {
-          "tip": "デフォルト値を設定すると、毎回のコマンドで`--team`、`--region`、`--machine`を渡す必要がなくなります。"
+          "tip": "デフォルトを設定しておくと、コマンドごとに `--team`、`--region`、`--machine` を指定する必要がなくなります。"
         }
       },
       "machine": {
@@ -1559,9 +1585,9 @@
     "invalidPriorityMin": "無効な priority-min 値です。1 から 5 の間である必要があります。",
     "machineNotFound": "マシン \"{{name}}\" が見つかりません",
     "machineRequired": "マシン名が必要です。--machine を使用するか、コンテキストを設定してください。",
-    "machineRequiredLocal": "マシン名が必要です。--machine を使用するか、次のコマンドでデフォルトを設定してください: rdc context set machine <name>",
+    "machineRequiredLocal": "マシン名が必要です。--machine を使用するか、次のコマンドでデフォルトを設定してください: rdc config set machine <name>",
     "networkError": "ネットワークエラー: {{message}}",
-    "noActiveContext": "アクティブなコンテキストがありません。最初にコンテキストを作成または選択してください。",
+    "noActiveConfig": "アクティブな設定がありません。`rdc config init <name>` で作成してください。",
     "notAuthenticated": "認証されていません。実行してください: rdc auth login",
     "passwordsMismatch": "パスワードが一致しません",
     "permissionDenied": "権限がありません",
@@ -1626,12 +1652,12 @@
     "cleanupAll": "すべての rediacc SSH 設定を削除する",
     "cluster": "Ceph クラスター名",
     "command": "インタラクティブシェルの代わりにコマンドを実行する",
+    "config": "このコマンドに特定の設定を使用する",
     "confirmPasswordNonInteractive": "パスワード確認 (非対話型モード)",
     "confirmSync": "同期前に変更をプレビューして確認を要求する",
     "connectionName": "特定の接続を削除する",
     "container": "特定の Docker コンテナに接続する",
     "containerAction": "コンテナアクション: terminal, logs, stats, exec",
-    "context": "このコマンドで使用する特定のコンテキスト",
     "datastore": "マシン上のデータストアパス",
     "debug": "デバッグ出力を有効化 (ローカルモード)",
     "dryRun": "実際に同期せずに転送されるものを表示する",

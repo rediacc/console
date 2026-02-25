@@ -52,7 +52,7 @@ These are the distributions tested in CI. Other Linux distributions with systemd
 
 ### Installed Automatically
 
-The `rdc context setup-machine` command installs the following on the remote server:
+The `rdc config setup-machine` command installs the following on the remote server:
 
 - **Docker** and **containerd** (container runtime)
 - **cryptsetup** (LUKS disk encryption)

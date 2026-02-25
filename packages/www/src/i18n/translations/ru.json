@@ -975,10 +975,6 @@
           "moneyBack": "14-дневная гарантия возврата денег",
           "noContracts": "Никаких долгосрочных контрактов."
         },
-        "billingToggle": {
-          "monthly": "Ежемесячно",
-          "annual": "Ежегодно"
-        },
         "keyBenefits": "Ключевые преимущества",
         "learnMore": "Узнать больше",
         "limitedOffer": "Ограниченное предложение по запуску",
@@ -1106,6 +1102,10 @@
         "title": "Установка | Rediacc CLI"
       },
       "methods": {
+        "apk": {
+          "description": "Для Alpine Linux и производных",
+          "title": "APK (Alpine Linux)"
+        },
         "apt": {
           "description": "Для Debian, Ubuntu и производных",
           "title": "APT (Debian / Ubuntu)"
@@ -1118,14 +1118,6 @@
           "description": "Для Fedora, RHEL, CentOS, Rocky Linux",
           "title": "DNF (Fedora / RHEL)"
         },
-        "apk": {
-          "title": "APK (Alpine Linux)",
-          "description": "Для Alpine Linux и производных"
-        },
-        "pacman": {
-          "title": "Pacman (Arch Linux)",
-          "description": "Для Arch Linux и производных"
-        },
         "docker": {
           "description": "Для контейнерных сред",
           "title": "Docker"
@@ -1133,6 +1125,10 @@
         "homebrew": {
           "description": "Для пользователей macOS и Linux с Homebrew",
           "title": "Homebrew (macOS / Linux)"
+        },
+        "pacman": {
+          "description": "Для Arch Linux и производных",
+          "title": "Pacman (Arch Linux)"
         },
         "quick": {
           "description": "Рекомендуется - автоматическая установка с управлением версиями",
@@ -1620,6 +1616,10 @@
       "ui": {
         "anchor": "Стратегический якорь",
         "bestValue": "Лучшее соотношение цены и качества",
+        "billingToggle": {
+          "annual": "Ежегодно",
+          "monthly": "Ежемесячно"
+        },
         "contactSales": "Свяжитесь с отделом продаж",
         "cta": {
           "business": {
@@ -1659,11 +1659,7 @@
         "monthOrYear": "в месяц или {{price}} в год",
         "popular": "Самый популярный",
         "startingAt": "*Начиная с",
-        "whatsIncluded": "Что включено:",
-        "billingToggle": {
-          "monthly": "Ежемесячно",
-          "annual": "Ежегодно"
-        }
+        "whatsIncluded": "Что включено:"
       }
     },
     "privacyPolicy": {

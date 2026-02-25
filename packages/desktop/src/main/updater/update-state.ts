@@ -1,12 +1,12 @@
 import { join } from 'node:path';
-import { app } from 'electron';
+import { getStateDir } from '@rediacc/shared/paths';
 import type { DesktopUpdateState } from '@rediacc/shared/update';
 import {
   readUpdateState as readState,
   writeUpdateState as writeState,
 } from '@rediacc/shared/update';
 
-const STATE_FILE = join(app.getPath('home'), '.rediacc', 'update-state-desktop.json');
+const STATE_FILE = join(getStateDir(), 'update-state-desktop.json');
 
 const DEFAULT_STATE: DesktopUpdateState = {
   schemaVersion: 1,

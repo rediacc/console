@@ -1,9 +1,14 @@
 import { getCollection } from 'astro:content';
+import { SITE_URL } from '../config/constants';
 import { getBaseSlug } from '../utils/slug';
 import type { APIRoute } from 'astro';
 
 // Docs excluded from the LLM index (auto-generated references)
-const EXCLUDED_SLUGS = ['en/cli-application', 'en/web-application'] as const;
+const EXCLUDED_SLUGS = [
+  'en/cli-application',
+  'en/cli-application-cloud',
+  'en/web-application',
+] as const;
 
 // Category display order (matches DocsTopTabs / DocsSidebar)
 const CATEGORY_ORDER: Record<string, number> = {
@@ -14,8 +19,6 @@ const CATEGORY_ORDER: Record<string, number> = {
 };
 
 const ORDER_FALLBACK = 99;
-
-const BASE_URL = 'https://www.rediacc.com';
 
 export const GET: APIRoute = async () => {
   const docs = await getCollection(
@@ -58,12 +61,12 @@ Rediacc enables you to deploy and manage isolated, encrypted application environ
     content += `## ${category}\n\n`;
     for (const doc of catDocs) {
       const slug = getBaseSlug(doc.slug);
-      content += `- [${doc.data.title}](${BASE_URL}/en/docs/${slug}.txt): ${doc.data.description}\n`;
+      content += `- [${doc.data.title}](${SITE_URL}/en/docs/${slug}.txt): ${doc.data.description}\n`;
     }
     content += '\n';
   }
 
-  content += `## Optional\n\n- [Full Documentation](${BASE_URL}/llms-full.txt): Complete documentation in a single file\n`;
+  content += `## Optional\n\n- [Full Documentation](${SITE_URL}/llms-full.txt): Complete documentation in a single file\n`;
 
   return new Response(content, {
     headers: { 'Content-Type': 'text/plain; charset=utf-8' },

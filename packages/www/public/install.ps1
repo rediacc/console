@@ -11,7 +11,7 @@
 $ErrorActionPreference = "Stop"
 
 # Configuration (can be overridden via environment variables)
-$Repo = if ($env:REDIACC_REPO) { $env:REDIACC_REPO } else { "rediacc/console" }
+$ReleasesUrl = if ($env:REDIACC_RELEASES_URL) { $env:REDIACC_RELEASES_URL } else { "https://releases.rediacc.com" }
 $UserAgent = "Rediacc-Installer/1.0"
 $InstallDir = "$env:LOCALAPPDATA\rediacc\bin"
 $VersionsDir = "$env:LOCALAPPDATA\rediacc\versions"
@@ -44,25 +44,24 @@ function Install-RDC {
 
     Write-Host "Detected: Windows ($Arch)"
 
-    # Get latest version from GitHub API
+    # Get latest version
     Write-Host "Fetching latest version..."
     try {
         $Headers = @{"User-Agent" = $UserAgent}
-        $Release = Invoke-RestMethod "https://api.github.com/repos/$Repo/releases/latest" -Headers $Headers
+        $Latest = Invoke-RestMethod "$ReleasesUrl/cli/latest.json" -Headers $Headers
     }
     catch {
-        throw "Failed to fetch release information: $_"
+        throw "Failed to fetch version information: $_"
     }
 
-    # Extract version - handles both "v1.2.3" and "1.2.3" formats
-    $Version = $Release.tag_name -replace '^v', ''
+    $Version = $Latest.version
     if (-not $Version) {
         throw "Could not determine latest version"
     }
 
     Write-Host "Latest version: v$Version"
 
-    $DownloadUrl = "https://github.com/$Repo/releases/download/v$Version/$BinaryName"
+    $DownloadUrl = "$ReleasesUrl/cli/v$Version/$BinaryName"
     $ChecksumUrl = "$DownloadUrl.sha256"
 
     # Create directories

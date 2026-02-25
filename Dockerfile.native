@@ -1,7 +1,8 @@
 # CI Dockerfile for web image - uses pre-built assets from CI
 # This Dockerfile avoids npm install/build inside Docker by accepting
-# pre-built web, www, and CLI npm assets from CI artifacts.
+# pre-built web, www, account, and CLI npm assets from CI artifacts.
 # Renet binaries are cross-compiled (lightweight, no embedded CRIU/rsync).
+# Account server is built from source (Hono API on port 3000).
 #
 # Usage in CI:
 #   docker buildx build \
@@ -12,17 +13,22 @@
 #     --push .
 #
 # Expected files in context:
-#   - web-assets/       (packages/web/dist from CI)
-#   - www-assets/       (packages/www/dist from CI)
-#   - cli-npm/          (CLI npm packages from CI)
-#   - private/renet/    (renet Go source, checked out via submodules)
-#   - .ci/docker/web/   (nginx config and entrypoint)
+#   - web-assets/           (packages/web/dist from CI)
+#   - www-assets/           (packages/www/dist from CI)
+#   - account-web-assets/   (private/account/web build from CI)
+#   - cli-npm/              (CLI npm packages from CI)
+#   - private/renet/        (renet Go source, checked out via submodules)
+#   - private/account/      (account server source, checked out via submodules)
+#   - packages/shared/      (shared package source)
+#   - tsconfig.json         (root tsconfig)
+#   - .ci/docker/web/       (nginx config and entrypoint)
 
 # =============================================================================
 # Stage 1: Renet Builder (Go)
 # Cross-compile lightweight renet for linux/amd64 and linux/arm64
 # =============================================================================
 ARG GO_IMAGE=golang:1.24-alpine
+ARG NODE_IMAGE=node:22-alpine
 FROM ${GO_IMAGE} AS renet-builder
 
 ARG VITE_APP_VERSION=latest
@@ -42,20 +48,57 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build \
     ./cmd/renet
 
 # =============================================================================
-# Stage 2: Runtime (Nginx)
-# Combine pre-built web, www, CLI npm, and renet into final image
+# Stage 2: Account Server Builder (Node.js)
+# Build the account Hono API server bundle
 # =============================================================================
-FROM nginx:alpine
+ARG NODE_IMAGE
+FROM ${NODE_IMAGE} AS account-builder
 
-# Install dependencies for entrypoint script
-# - coreutils: For sha256sum
-RUN apk add --no-cache coreutils
+# Build shared package first (account depends on it)
+WORKDIR /
+COPY tsconfig.json /tsconfig.json
+WORKDIR /packages/shared
+COPY packages/shared/package.json packages/shared/tsconfig.json ./
+COPY packages/shared/src ./src
+RUN npm install --ignore-scripts && npm run build
+
+# Build account server
+WORKDIR /app
+COPY private/account/package.json ./
+RUN --mount=type=cache,target=/root/.npm \
+    npm install
+COPY private/account/tsconfig.json ./
+COPY private/account/src/ ./src/
+RUN npm run build
+# Bundle for Node.js ESM compatibility
+RUN npx --yes esbuild dist/entry/node.js --bundle --platform=node --format=esm \
+    --outfile=dist/bundle.js --external:@aws-sdk/* --external:@smithy/*
+
+# =============================================================================
+# Stage 3: Runtime (Node.js + Nginx)
+# Combine pre-built web, www, account, CLI npm, and renet into final image
+# =============================================================================
+FROM ${NODE_IMAGE}
+
+# Install nginx and dependencies for entrypoint script
+RUN apk add --no-cache nginx coreutils
 
 # Copy www (public website) to root
 COPY ./www-assets/ /usr/share/nginx/html/
 
 # Copy web (console app) to /console/ subdirectory
 COPY ./web-assets/ /usr/share/nginx/html/console/
+
+# Copy account portal (SPA) to /account/ subdirectory
+COPY ./account-web-assets/ /usr/share/nginx/html/account/
+
+# Copy account server bundle and production dependencies
+COPY --from=account-builder /app/dist/bundle.js /app/account/bundle.js
+COPY --from=account-builder /app/package.json /app/account/package.json
+WORKDIR /app/account
+RUN --mount=type=cache,target=/root/.npm \
+    npm install --omit=dev
+WORKDIR /
 
 # Copy CLI npm packages
 COPY ./cli-npm/ /usr/share/nginx/html/npm/
@@ -70,7 +113,7 @@ RUN cd /usr/share/nginx/html/bin && \
     cp renet-linux-arm64 renet-linux-arm64-latest
 
 # Copy nginx configuration
-COPY .ci/docker/web/nginx.conf /etc/nginx/conf.d/default.conf
+COPY .ci/docker/web/nginx.conf /etc/nginx/http.d/default.conf
 COPY .ci/docker/web/nginx-https.conf /etc/nginx/nginx-https.conf
 
 # Copy entrypoint script

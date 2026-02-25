@@ -7,12 +7,11 @@
  * Commands marked `experimental: true` are hidden by default.
  * Enable with --experimental flag or REDIACC_EXPERIMENTAL=1 env var.
  */
-import type { ContextMode } from '../types/index.js';
+export type CommandCategory = 'cloud' | 'local';
+export type ModeSet = readonly CommandCategory[];
 
-export type ModeSet = readonly ContextMode[];
-
-export const ALL_MODES: ModeSet = ['cloud', 'local', 's3'] as const;
-export const SELF_HOSTED_MODES: ModeSet = ['local', 's3'] as const;
+export const ALL_MODES: ModeSet = ['cloud', 'local'] as const;
+export const SELF_HOSTED_MODES: ModeSet = ['local'] as const;
 
 export const COMMAND_DOMAINS = {
   INFRASTRUCTURE: 'Infrastructure',
@@ -91,13 +90,11 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
 
   // ── Tools ───────────────────────────────────────────────────────────
   {
-    name: 'context',
+    name: 'config',
     modes: ALL_MODES,
     domain: 'TOOLS',
-    subcommands: {
-      create: { modes: ['cloud'], experimental: true },
-    },
   },
+  { name: 'store', modes: ALL_MODES, domain: 'TOOLS' },
   { name: 'doctor', modes: ALL_MODES, domain: 'TOOLS' },
   { name: 'update', modes: ALL_MODES, domain: 'TOOLS' },
   { name: 'protocol', modes: ALL_MODES, domain: 'TOOLS' },
@@ -113,6 +110,7 @@ export function getCommandDef(commandName: string): CommandDef | undefined {
  * Format a mode tag for display in help text.
  */
 export function formatModeTag(modes: ModeSet): string {
+  if (modes.length >= ALL_MODES.length) return '';
   return `[${modes.join('|')}]`;
 }
 

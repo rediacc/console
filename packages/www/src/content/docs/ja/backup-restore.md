@@ -4,7 +4,7 @@ description: 暗号化されたリポジトリを外部ストレージにバッ�
 category: Guides
 order: 7
 language: ja
-sourceHash: 3d127a0a186d7487
+sourceHash: cf186b18b0c50eba
 ---
 
 # バックアップと復元
@@ -20,15 +20,15 @@ Rediaccは暗号化されたリポジトリを外部ストレージプロバイ�
 既にrcloneリモートが設定されている場合：
 
 ```bash
-rdc context import-storage my-storage
+rdc config import-storage rclone.conf
 ```
 
-これにより、rclone設定からストレージ構成が現在のコンテキストにインポートされます。
+これにより、rclone設定ファイルからストレージ構成が現在の設定にインポートされます。サポートされているタイプ：S3、B2、Google Drive、OneDrive、Mega、Dropbox、Box、Azure Blob、Swift。
 
 ### ストレージの表示
 
 ```bash
-rdc context storages
+rdc config storages
 ```
 
 ## バックアップの送信

@@ -2,7 +2,7 @@
 title: الأدوات
 description: مزامنة الملفات، والوصول عبر الطرفية، وتكامل VS Code، والتحديثات، والتشخيصات.
 category: Guides
-order: 8
+order: 9
 language: ar
 sourceHash: 80ca3cd3e1a55d4b
 ---

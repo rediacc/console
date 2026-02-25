@@ -11,7 +11,6 @@ import {
   getPlatformKey,
   isSEA,
   isUpdateDisabled,
-  releaseUpdateLock,
   STAGED_UPDATE_DIR,
   type PlatformKey,
 } from '../utils/platform.js';
@@ -115,8 +114,8 @@ export async function runBackgroundUpdateWorker(): Promise<void> {
   safetyTimer.unref();
 
   try {
-    const locked = await acquireUpdateLock();
-    if (!locked) return;
+    const releaseLock = await acquireUpdateLock();
+    if (!releaseLock) return;
 
     try {
       const state = await readUpdateState();
@@ -135,7 +134,7 @@ export async function runBackgroundUpdateWorker(): Promise<void> {
 
       await downloadAndStage(state, manifest, platformKey);
     } finally {
-      await releaseUpdateLock();
+      await releaseLock();
     }
   } catch (err) {
     try {
@@ -339,8 +338,8 @@ export async function applyPendingUpdate(): Promise<boolean> {
     return false;
   }
 
-  const locked = await acquireUpdateLock();
-  if (!locked) return false;
+  const releaseLock = await acquireUpdateLock();
+  if (!releaseLock) return false;
 
   try {
     await atomicBinarySwap(stagedPath);
@@ -356,6 +355,6 @@ export async function applyPendingUpdate(): Promise<boolean> {
     await handleSwapError(state, err, version, attempts);
     return false;
   } finally {
-    await releaseUpdateLock();
+    await releaseLock();
   }
 }

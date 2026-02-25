@@ -6,18 +6,26 @@ import {
   getPlatformKey,
   isSEA,
   isUpdateDisabled,
-  releaseUpdateLock,
 } from '../platform.js';
 
 const mockFs = vi.hoisted(() => ({
+  access: vi.fn(),
   mkdir: vi.fn().mockResolvedValue(undefined),
   readFile: vi.fn(),
   unlink: vi.fn().mockResolvedValue(undefined),
   writeFile: vi.fn().mockResolvedValue(undefined),
 }));
 
+const mockLockfile = vi.hoisted(() => ({
+  lock: vi.fn(),
+}));
+
 vi.mock('node:fs', () => ({
   promises: mockFs,
+}));
+
+vi.mock('proper-lockfile', () => ({
+  default: mockLockfile,
 }));
 
 vi.mock('node:os', () => ({
@@ -210,80 +218,78 @@ describe('utils/platform', () => {
     });
   });
 
-  describe('acquireUpdateLock() / releaseUpdateLock()', () => {
+  describe('acquireUpdateLock()', () => {
+    const mockRelease = vi.fn().mockResolvedValue(undefined);
+
     beforeEach(() => {
-      mockFs.readFile.mockRejectedValue(new Error('ENOENT'));
-      mockFs.writeFile.mockResolvedValue(undefined);
-      mockFs.mkdir.mockResolvedValue(undefined);
-      mockFs.unlink.mockResolvedValue(undefined);
+      mockFs.mkdir.mockClear().mockResolvedValue(undefined);
+      mockFs.access.mockClear().mockRejectedValue(new Error('ENOENT'));
+      mockFs.writeFile.mockClear().mockResolvedValue(undefined);
+      mockLockfile.lock.mockClear().mockResolvedValue(mockRelease);
+      mockRelease.mockClear().mockResolvedValue(undefined);
     });
 
-    it('acquires lock when no lock exists and returns true', async () => {
-      mockFs.readFile.mockResolvedValue(null);
-
+    it('returns a release function when lock is acquired', async () => {
       const result = await acquireUpdateLock();
 
-      expect(result).toBe(true);
-      expect(mockFs.writeFile).toHaveBeenCalledWith(
+      expect(result).toBeTypeOf('function');
+      expect(mockLockfile.lock).toHaveBeenCalledWith(
         expect.stringContaining('update.lock'),
-        process.pid.toString(),
-        { mode: 0o600 }
+        expect.objectContaining({ stale: 300000, retries: 0 })
       );
     });
 
     it('creates lock directory recursively', async () => {
-      mockFs.readFile.mockResolvedValue(null);
-
       await acquireUpdateLock();
 
-      expect(mockFs.mkdir).toHaveBeenCalledWith(expect.stringContaining('.rediacc'), {
+      expect(mockFs.mkdir).toHaveBeenCalledWith(expect.stringContaining('rediacc'), {
         recursive: true,
       });
     });
 
-    it('returns false when lock exists with alive PID', async () => {
-      const alivePid = process.pid;
-      mockFs.readFile.mockResolvedValue(String(alivePid));
-      const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => true);
+    it('creates lock file if it does not exist', async () => {
+      mockFs.access.mockRejectedValue(new Error('ENOENT'));
 
-      const result = await acquireUpdateLock();
+      await acquireUpdateLock();
 
-      expect(result).toBe(false);
-      killSpy.mockRestore();
-    });
-
-    it('acquires lock when existing lock has dead PID (stale)', async () => {
-      mockFs.readFile.mockResolvedValue('99999999');
-      const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => {
-        throw new Error('ESRCH');
+      expect(mockFs.writeFile).toHaveBeenCalledWith(expect.stringContaining('update.lock'), '', {
+        mode: 0o600,
       });
+    });
+
+    it('does not recreate lock file if it already exists', async () => {
+      mockFs.access.mockResolvedValue(undefined);
+
+      await acquireUpdateLock();
+
+      expect(mockFs.writeFile).not.toHaveBeenCalled();
+    });
+
+    it('returns null when lock is already held', async () => {
+      const error = new Error('Lock file is already being held');
+      (error as NodeJS.ErrnoException).code = 'ELOCKED';
+      mockLockfile.lock.mockRejectedValue(error);
 
       const result = await acquireUpdateLock();
 
-      expect(result).toBe(true);
-      expect(mockFs.writeFile).toHaveBeenCalled();
-      killSpy.mockRestore();
+      expect(result).toBeNull();
     });
 
-    it('returns false when writeFile fails', async () => {
-      mockFs.readFile.mockResolvedValue(null);
-      mockFs.writeFile.mockRejectedValue(new Error('EACCES'));
+    it('returns null on other errors', async () => {
+      mockLockfile.lock.mockRejectedValue(new Error('EACCES'));
 
       const result = await acquireUpdateLock();
 
-      expect(result).toBe(false);
+      expect(result).toBeNull();
     });
 
-    it('releaseUpdateLock removes the lock file', async () => {
-      await releaseUpdateLock();
+    it('release function does not throw on errors', async () => {
+      const failingRelease = vi.fn().mockRejectedValue(new Error('already released'));
+      mockLockfile.lock.mockResolvedValue(failingRelease);
 
-      expect(mockFs.unlink).toHaveBeenCalledWith(expect.stringContaining('update.lock'));
-    });
-
-    it('releaseUpdateLock does not throw on ENOENT', async () => {
-      mockFs.unlink.mockRejectedValue(new Error('ENOENT'));
-
-      await expect(releaseUpdateLock()).resolves.toBeUndefined();
+      const release = await acquireUpdateLock();
+      expect(release).not.toBeNull();
+      await expect(release!()).resolves.toBeUndefined();
     });
   });
 });

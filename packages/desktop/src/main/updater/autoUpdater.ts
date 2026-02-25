@@ -1,9 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { app } from 'electron';
 import log from 'electron-log';
 import { autoUpdater, ProgressInfo, UpdateInfo } from 'electron-updater';
 import { UPDATE_DEFAULTS } from '@rediacc/shared/config/defaults';
+import { getConfigDir } from '@rediacc/shared/paths';
 import { isCooldownExpired, UPDATE_STATE_DEFAULTS } from '@rediacc/shared/update';
 import { readDesktopUpdateState, writeDesktopUpdateState } from './update-state';
 import { sendToAllWindows } from '../ipc/updater';
@@ -14,7 +14,7 @@ autoUpdater.logger = log;
 log.transports.file.level = 'info';
 
 /**
- * Update configuration from ~/.rediacc/updates.json
+ * Update configuration from updates.json in config dir.
  *
  * Example configuration:
  * {
@@ -33,11 +33,11 @@ interface UpdateConfig {
 }
 
 /**
- * Load update configuration from ~/.rediacc/updates.json
+ * Load update configuration from updates.json in config dir.
  * @returns The update configuration or null if not found/invalid
  */
 function getUpdateConfig(): UpdateConfig | null {
-  const configPath = join(app.getPath('home'), '.rediacc', 'updates.json');
+  const configPath = join(getConfigDir(), 'updates.json');
 
   if (existsSync(configPath)) {
     try {
@@ -91,7 +91,7 @@ async function recordSuccessfulCheck(): Promise<void> {
 }
 
 export function setupAutoUpdater(): void {
-  // Check for custom update config from ~/.rediacc/updates.json
+  // Check for custom update config from updates.json
   const updateConfig = getUpdateConfig();
 
   if (updateConfig?.feedUrl) {

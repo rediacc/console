@@ -57,6 +57,10 @@ readonly CI_CONTAINER_SQL="rediacc-sql"
 # Backend state file
 readonly BACKEND_STATE_FILE="$CONSOLE_ROOT_DIR/.backend-state"
 
+# Service mode configuration
+readonly SERVICE_DOCKER_DIR="${CONSOLE_ROOT_DIR}/.ci/docker/service"
+readonly SERVICE_STATE_FILE="$CONSOLE_ROOT_DIR/.service-state"
+
 # Provision state file
 readonly PROVISION_STATE_FILE="$CONSOLE_ROOT_DIR/.provision-state"
 
@@ -164,6 +168,12 @@ readonly VERSION_FILE_GO="private/renet/cmd/renet/version.go"
 readonly VERSION_FILE_CSPROJ="private/middleware/middleware.csproj"
 
 # =============================================================================
+# RELEASE DISTRIBUTION CONFIGURATION (Cloudflare R2)
+# =============================================================================
+readonly RELEASES_BASE_URL="${RELEASES_BASE_URL:-https://releases.rediacc.com}"
+readonly RELEASES_BUCKET="${RELEASES_BUCKET:-rediacc-releases}"
+
+# =============================================================================
 # PACKAGE REPOSITORY CONFIGURATION
 # =============================================================================
 readonly PKG_NAME="rediacc-cli"
@@ -175,6 +185,7 @@ readonly PKG_HOMEPAGE="https://www.rediacc.com"
 readonly PKG_SECTION="utils"
 readonly PKG_PRIORITY="optional"
 readonly PKG_MAX_VERSIONS=3
+readonly R2_MAX_RELEASE_VERSIONS=3
 readonly PKG_RELEASE_REPO="rediacc/console"
 
 # nfpm configuration (replaces dpkg-deb + rpmbuild for package creation)

@@ -1,19 +1,17 @@
 ---
 title: Architecture
 description: >-
-  Comment Rediacc fonctionne : architecture à deux outils, modes de
-  fonctionnement, modèle de sécurité et structure de configuration.
+  Comment Rediacc fonctionne : architecture à deux outils, détection
+  d'adaptateur, modèle de sécurité et structure de configuration.
 category: Concepts
 order: 0
 language: fr
-sourceHash: 58ba0da9645bb9dd
+sourceHash: 5a717ddac450cb81
 ---
 
 # Architecture
 
-Si vous hésitez sur l'outil a utiliser, consultez [rdc vs renet](/fr/docs/rdc-vs-renet).
-
-Cette page explique le fonctionnement interne de Rediacc : l'architecture à deux outils, les modes de fonctionnement, le modèle de sécurité et la structure de configuration.
+Cette page explique le fonctionnement interne de Rediacc : l'architecture à deux outils, la détection d'adaptateur, le modèle de sécurité et la structure de configuration.
 
 ## Full Stack Overview
 
@@ -34,46 +32,48 @@ Rediacc utilise deux binaires qui fonctionnent ensemble via SSH :
 
 Chaque commande que vous tapez localement se traduit par un appel SSH qui exécute renet sur la machine distante. Vous n'avez jamais besoin de vous connecter manuellement aux serveurs en SSH.
 
-## Modes de fonctionnement
+Pour un guide pratique orienté opérateur, consultez [rdc vs renet](/fr/docs/rdc-vs-renet). Vous pouvez aussi utiliser `rdc ops` pour lancer un cluster de VM locales — voir [VM expérimentales](/fr/docs/experimental-vms).
 
-Rediacc prend en charge trois modes, chacun déterminant où l'état est stocké et comment les commandes sont exécutées.
+## Config & Stores
 
-![Modes de fonctionnement](/img/arch-operating-modes.svg)
+Tout l'état du CLI est stocké dans des fichiers de configuration JSON plats sous `~/.config/rediacc/`. Les stores permettent de synchroniser ces configurations vers des backends externes pour la sauvegarde, le partage ou l'accès multi-appareils. Les identifiants des stores sont conservés séparément dans `~/.config/rediacc/.credentials.json`.
 
-### Mode local
+![Config & Stores](/img/arch-operating-modes.svg)
 
-Le mode par défaut pour un usage auto-hébergé. Tout l'état réside dans `~/.rediacc/config.json` sur votre poste de travail.
+### Adaptateur local (par défaut)
+
+Le mode par défaut pour un usage auto-hébergé. Tout l'état réside dans un fichier de configuration sur votre poste de travail (par ex., `~/.config/rediacc/rediacc.json`).
 
 - Connexions SSH directes aux machines
 - Aucun service externe requis
 - Mono-utilisateur, mono-poste
-- Le contexte est créé avec `rdc context create-local`
+- La configuration par défaut est créée automatiquement au premier lancement du CLI. Les configurations nommées sont créées avec `rdc config init <name>`
 
-### Mode cloud (expérimental)
+### Adaptateur cloud (expérimental)
 
-Utilise l'API Rediacc pour la gestion de l'état et la collaboration en équipe.
+Activé automatiquement lorsqu'une configuration contient les champs `apiUrl` et `token`. Utilise l'API Rediacc pour la gestion de l'état et la collaboration en équipe.
 
 - État stocké dans l'API cloud
 - Équipes multi-utilisateurs avec contrôle d'accès basé sur les rôles
 - Console web pour la gestion visuelle
-- Le contexte est créé avec `rdc context create`
+- Configuré avec `rdc auth login`
 
-> **Note :** Les commandes du mode cloud sont expérimentales. Activez-les avec `rdc --experimental <command>` ou en définissant `REDIACC_EXPERIMENTAL=1`.
+> **Note :** Les commandes de l'adaptateur cloud sont expérimentales. Activez-les avec `rdc --experimental <command>` ou en définissant `REDIACC_EXPERIMENTAL=1`.
 
-### Mode S3
+### État de ressource S3 (optionnel)
 
-Stocke l'état chiffré dans un bucket compatible S3. Combine la nature auto-hébergée du mode local avec la portabilité entre postes de travail.
+Lorsqu'une configuration inclut des paramètres S3 (endpoint, bucket, clé d'accès), l'état des ressources est stocké dans un bucket compatible S3. Cela fonctionne conjointement avec l'adaptateur local, combinant l'exploitation auto-hébergée avec la portabilité entre postes de travail.
 
-- État stocké dans un bucket S3/R2 sous forme de `state.json`
+- État des ressources stocké dans un bucket S3/R2 sous forme de `state.json`
 - Chiffrement AES-256-GCM avec un mot de passe maître
 - Portable : tout poste de travail disposant des identifiants du bucket peut gérer l'infrastructure
-- Le contexte est créé avec `rdc context create-s3`
+- Configuré via `rdc config init <name> --s3-endpoint <url> --s3-bucket <bucket> --s3-access-key-id <key>`
 
-Les trois modes utilisent les mêmes commandes CLI. Le mode n'affecte que l'emplacement de stockage de l'état et le fonctionnement de l'authentification.
+Tous les adaptateurs utilisent les mêmes commandes CLI. L'adaptateur n'affecte que l'emplacement de stockage de l'état et le fonctionnement de l'authentification.
 
 ## L'utilisateur rediacc
 
-Lorsque vous exécutez `rdc context setup-machine`, renet crée un utilisateur système appelé `rediacc` sur le serveur distant :
+Lorsque vous exécutez `rdc config setup-machine`, renet crée un utilisateur système appelé `rediacc` sur le serveur distant :
 
 - **UID** : 7111
 - **Shell** : `/sbin/nologin` (ne peut pas se connecter via SSH)
@@ -117,44 +117,39 @@ Les dépôts sont des images disque chiffrées LUKS stockées dans le datastore 
 2. Est stocké sous forme de fichier : `{datastore}/repos/{guid}.img`
 3. Est monté via `cryptsetup` lors de l'accès
 
-L'identifiant est stocké dans votre fichier local `config.json` mais **jamais** sur le serveur. Sans l'identifiant, les données du dépôt ne peuvent pas être lues. Lorsque le démarrage automatique est activé, un fichier de clé LUKS secondaire est stocké sur le serveur pour permettre le montage automatique au démarrage.
+L'identifiant est stocké dans votre fichier de configuration mais **jamais** sur le serveur. Sans l'identifiant, les données du dépôt ne peuvent pas être lues. Lorsque le démarrage automatique est activé, un fichier de clé LUKS secondaire est stocké sur le serveur pour permettre le montage automatique au démarrage.
 
 ## Structure de configuration
 
-Toute la configuration est stockée dans `~/.rediacc/config.json`. Voici un exemple annoté :
+Chaque configuration est un fichier JSON plat stocké dans `~/.config/rediacc/`. La configuration par défaut est `rediacc.json` ; les configurations nommées utilisent le nom comme nom de fichier (par ex., `production.json`). Voici un exemple annoté :
 
 ```json
 {
-  "contexts": {
-    "production": {
-      "name": "production",
-      "mode": "local",
-      "apiUrl": "local://",
-      "ssh": {
-        "privateKeyPath": "/home/you/.ssh/id_ed25519"
-      },
-      "machines": {
-        "prod-1": {
-          "ip": "203.0.113.50",
-          "user": "deploy",
-          "port": 22,
-          "datastore": "/mnt/rediacc",
-          "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
-        }
-      },
-      "storages": {
-        "backblaze": {
-          "provider": "b2",
-          "vaultContent": { "...": "..." }
-        }
-      },
-      "repositories": {
-        "webapp": {
-          "repositoryGuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-          "credential": "base64-encoded-random-passphrase",
-          "networkId": 2816
-        }
-      }
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "version": 1,
+  "ssh": {
+    "privateKeyPath": "/home/you/.ssh/id_ed25519"
+  },
+  "machines": {
+    "prod-1": {
+      "ip": "203.0.113.50",
+      "user": "deploy",
+      "port": 22,
+      "datastore": "/mnt/rediacc",
+      "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
+    }
+  },
+  "storages": {
+    "backblaze": {
+      "provider": "b2",
+      "vaultContent": { "...": "..." }
+    }
+  },
+  "repositories": {
+    "webapp": {
+      "repositoryGuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "credential": "base64-encoded-random-passphrase",
+      "networkId": 2816
     }
   },
   "nextNetworkId": 2880,
@@ -166,8 +161,8 @@ Toute la configuration est stockée dans `~/.rediacc/config.json`. Voici un exem
 
 | Champ | Description |
 |-------|-------------|
-| `mode` | `"local"`, `"s3"`, ou omis pour le mode cloud |
-| `apiUrl` | `"local://"` pour le mode local, URL de l'API pour le mode cloud |
+| `id` | Identifiant unique pour ce fichier de configuration |
+| `version` | Version du schéma du fichier de configuration |
 | `ssh.privateKeyPath` | Clé privée SSH utilisée pour toutes les connexions aux machines |
 | `machines.<name>.user` | Nom d'utilisateur SSH pour la connexion à la machine |
 | `machines.<name>.knownHosts` | Clés d'hôte SSH issues de `ssh-keyscan` |

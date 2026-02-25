@@ -118,6 +118,9 @@ export const PROTOCOL_DEFAULTS = {
 
   /** Desktop protocol action */
   ACTION_DESKTOP: 'desktop',
+
+  /** Default public site URL */
+  SITE_URL: 'https://www.rediacc.com',
 } as const;
 
 /**
@@ -259,17 +262,37 @@ export const VSCODE_DEFAULTS = {
  * Context and CLI configuration defaults
  */
 export const CONTEXT_DEFAULTS = {
-  /** Default context mode */
-  MODE: 'cloud',
-
   /** Default renet path indicator */
   RENET_PATH: 'renet (in PATH)',
 
   /** Default renet binary name */
   RENET_BINARY: 'renet',
 
-  /** Default SSH key path for local/S3 contexts */
+  /** Default SSH key path */
   SSH_KEY_PATH: '~/.ssh/rediacc',
+
+  /** Default config file name */
+  CONFIG_NAME: 'rediacc',
+} as const;
+
+/**
+ * Store adapter defaults
+ */
+export const STORE_DEFAULTS = {
+  /** Default S3 region */
+  S3_REGION: 'auto',
+
+  /** Default git branch for git store */
+  GIT_BRANCH: 'main',
+
+  /** Default path within git repo for config files */
+  GIT_PATH: 'configs',
+
+  /** Default Vault KV v2 mount path */
+  VAULT_MOUNT: 'secret',
+
+  /** Default Vault config prefix */
+  VAULT_PREFIX: 'rdc/configs',
 } as const;
 
 /**
@@ -363,6 +386,7 @@ export const DEFAULTS = {
   SUBSCRIPTION: SUBSCRIPTION_DEFAULTS,
   VSCODE: VSCODE_DEFAULTS,
   CONTEXT: CONTEXT_DEFAULTS,
+  STORE: STORE_DEFAULTS,
   ANALYTICS: ANALYTICS_DEFAULTS,
   PROCESS: PROCESS_DEFAULTS,
   CLI_TEST: CLI_TEST_DEFAULTS,
@@ -525,6 +549,14 @@ export const WINDOW_DEFAULTS = {
 } as const;
 
 /**
+ * Website / documentation defaults
+ */
+export const WWW_DEFAULTS = {
+  /** Default tutorial player title */
+  TUTORIAL_TITLE: 'Terminal Tutorial',
+} as const;
+
+/**
  * Auto-update defaults
  */
 export const UPDATE_DEFAULTS = {
@@ -550,4 +582,5 @@ export const DEFAULTS_EXTENDED = {
   CLI_TEST: CLI_TEST_DEFAULTS,
   WINDOW: WINDOW_DEFAULTS,
   UPDATE: UPDATE_DEFAULTS,
+  WWW: WWW_DEFAULTS,
 } as const;

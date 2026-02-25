@@ -1,7 +1,9 @@
 // CLI-specific types
+import { randomUUID } from 'node:crypto';
+import type { PlatformKey } from '../utils/platform.js';
 
 // ============================================================================
-// Multi-Context Configuration
+// Config File Types
 // ============================================================================
 
 /**
@@ -116,51 +118,52 @@ export interface BackupConfig {
 }
 
 /**
- * Context mode: 'cloud' uses middleware API, 'local' uses direct renet execution,
- * 's3' uses S3-compatible storage for state with local renet execution.
+ * A flat config file (e.g., rediacc.json, production.json).
+ * Each file is an independent, self-contained unit with a unique GUID
+ * and version number for conflict detection during store sync.
+ *
+ * Adapter detection is automatic:
+ * - Has apiUrl + token → Cloud adapter (experimental)
+ * - Otherwise → Local adapter (default)
+ * - Has s3 config → S3 resource state (with local adapter)
  */
-export type ContextMode = 'cloud' | 'local' | 's3';
+export interface RdcConfig {
+  /** UUID v4 — unique identifier for this config file. Never changes. Unencrypted, always visible. */
+  id: string;
+  /** Monotonically increasing version number. Incremented on every write. */
+  version: number;
 
-/**
- * A named context containing all configuration for a specific environment.
- * Each context has its own API endpoint, credentials, and default team/region.
- */
-export interface NamedContext {
-  /** Unique name for this context (e.g., "production", "local", "staging") */
-  name: string;
-  /** Context mode: 'cloud' (default) or 'local' */
-  mode?: ContextMode;
-  /** API endpoint URL (required for cloud mode) */
-  apiUrl: string;
-  /** Authentication token for this endpoint (cloud mode) */
+  // ============================================================================
+  // Cloud (experimental — requires REDIACC_EXPERIMENTAL=1)
+  // ============================================================================
+
+  /** API endpoint URL (cloud mode only) */
+  apiUrl?: string;
+  /** Authentication token (cloud mode only) */
   token?: string;
-  /** Encrypted master password for vault operations */
-  masterPassword?: string;
-  /** User email address */
+  /** User email address (cloud mode only) */
   userEmail?: string;
-  /** Default team for this context */
+  /** Default team (cloud mode only) */
   team?: string;
-  /** Default region for this context */
+  /** Default region (cloud mode only) */
   region?: string;
-  /** Default bridge for this context */
+  /** Default bridge (cloud mode only) */
   bridge?: string;
-  /** Default machine for this context */
-  machine?: string;
-  /** Preferred language code (en, de, es, fr, ja, ar, ru, tr, zh) */
-  language?: string;
 
   // ============================================================================
-  // Local/S3 Mode Configuration (used when mode === 'local' or mode === 's3')
+  // Self-Hosted (local adapter)
   // ============================================================================
 
-  /** Machine configurations for local/s3 mode (name -> config) */
+  /** Machine configurations (name -> config) */
   machines?: Record<string, MachineConfig>;
-  /** Storage configurations for local/s3 mode (name -> config) */
+  /** Storage configurations (name -> config) */
   storages?: Record<string, StorageConfig>;
-  /** Repository name-to-GUID mappings for storage browse (name -> config) */
+  /** Repository name-to-GUID mappings (name -> config) */
   repositories?: Record<string, RepositoryConfig>;
-  /** SSH configuration for local/s3 mode */
+  /** SSH configuration */
   ssh?: SSHConfig;
+  /** Inline SSH key content for portability */
+  sshContent?: SSHContent;
   /** Path to renet binary (default: 'renet' in PATH) */
   renetPath?: string;
   /** Backup schedule configuration */
@@ -169,38 +172,55 @@ export interface NamedContext {
   encrypted?: boolean;
   /** Encrypted blob of {machines, storages, repositories, sshContent} */
   encryptedResources?: string;
-  /** Inline SSH key content for portability (both local and S3 modes) */
-  sshContent?: SSHContent;
+  /** Encrypted master password for vault operations */
+  masterPassword?: string;
 
   // ============================================================================
-  // S3 Mode Configuration (only used when mode === 's3')
+  // S3 Resource State (used when config.s3 is populated)
   // ============================================================================
 
-  /** S3/R2 bucket configuration for S3 mode */
+  /** S3/R2 bucket configuration for remote resource state */
   s3?: S3Config;
-}
 
-/**
- * Root configuration containing multiple named contexts.
- * Note: No currentContext field - context is always specified explicitly via
- * --context flag, or defaults to "default".
- */
-export interface CliConfig {
-  /** Map of context names to their configurations */
-  contexts: { [name: string]: NamedContext | undefined };
-  /** Global network ID counter. Monotonically increasing across all contexts. */
+  // ============================================================================
+  // Defaults & Global Settings
+  // ============================================================================
+
+  /** Default machine for commands */
+  machine?: string;
+  /** Preferred language code (en, de, es, fr, ja, ar, ru, tr, zh) */
+  language?: string;
+  /** Network ID counter. Monotonically increasing. */
   nextNetworkId?: number;
   /** Override the default universal user ("rediacc") for command execution */
   universalUser?: string;
 }
 
 /**
- * Create an empty config with no contexts.
+ * Create a new empty config with a fresh UUID and version 1.
  */
-export function createEmptyConfig(): CliConfig {
+export function createEmptyRdcConfig(): RdcConfig {
   return {
-    contexts: {},
+    id: randomUUID(),
+    version: 1,
   };
+}
+
+/**
+ * Detect if a config has cloud credentials (apiUrl + token).
+ * Used for adapter-based detection instead of an explicit mode field.
+ */
+export function hasCloudCredentials(config: RdcConfig | null | undefined): boolean {
+  return Boolean(config?.apiUrl && config.token);
+}
+
+/**
+ * Detect if a config has cloud intent (apiUrl present, token may be absent).
+ * Used by the mode guard to allow pre-authentication commands (auth register/login)
+ * to run before a token is obtained.
+ */
+export function hasCloudIntent(config: RdcConfig | null | undefined): boolean {
+  return Boolean(config?.apiUrl);
 }
 
 export interface OutputConfig {
@@ -308,8 +328,6 @@ export interface S3StateData {
 // ============================================================================
 // Auto-Update Types
 // ============================================================================
-
-import type { PlatformKey } from '../utils/platform.js';
 
 export interface BinaryInfo {
   url: string;

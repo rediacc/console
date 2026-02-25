@@ -1,6 +1,6 @@
 ---
 title: "Machine Setup"
-description: "Create a context, add machines, provision servers, and configure infrastructure."
+description: "Create a config, add machines, provision servers, and configure infrastructure."
 category: "Guides"
 order: 3
 language: en
@@ -8,14 +8,14 @@ language: en
 
 # Machine Setup
 
-This page walks you through setting up your first machine: creating a context, registering a server, provisioning it, and optionally configuring infrastructure for public access.
+This page walks you through setting up your first machine: creating a config, registering a server, provisioning it, and optionally configuring infrastructure for public access.
 
-## Step 1: Create a Local Context
+## Step 1: Create a Config
 
-A **context** is a named configuration that stores your SSH credentials, machine definitions, and repository mappings. Think of it as a project workspace.
+A **config** is a named configuration file that stores your SSH credentials, machine definitions, and repository mappings. Think of it as a project workspace.
 
 ```bash
-rdc context create-local my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 | Option | Required | Description |
@@ -23,16 +23,16 @@ rdc context create-local my-infra --ssh-key ~/.ssh/id_ed25519
 | `--ssh-key <path>` | Yes | Path to your SSH private key. Tilde (`~`) is expanded automatically. |
 | `--renet-path <path>` | No | Custom path to the renet binary on remote machines. Defaults to the standard install location. |
 
-This creates a local context named `my-infra` and stores it in `~/.rediacc/config.json`.
+This creates a config named `my-infra` and stores it in `~/.config/rediacc/my-infra.json`. The default config (when no name is given) is stored as `~/.config/rediacc/rediacc.json`.
 
-> You can have multiple contexts (e.g., `production`, `staging`, `dev`). Switch between them with the `--context` flag on any command.
+> You can have multiple configs (e.g., `production`, `staging`, `dev`). Switch between them with the `--config` flag on any command.
 
 ## Step 2: Add a Machine
 
-Register your remote server as a machine in the context:
+Register your remote server as a machine in the config:
 
 ```bash
-rdc context add-machine server-1 --ip 203.0.113.50 --user deploy
+rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | Option | Required | Default | Description |
@@ -45,13 +45,13 @@ rdc context add-machine server-1 --ip 203.0.113.50 --user deploy
 After adding the machine, rdc automatically runs `ssh-keyscan` to fetch the server's host keys. You can also run this manually:
 
 ```bash
-rdc context scan-keys server-1
+rdc config scan-keys server-1
 ```
 
 To view all registered machines:
 
 ```bash
-rdc context machines
+rdc config machines
 ```
 
 ## Step 3: Set Up the Machine
@@ -59,7 +59,7 @@ rdc context machines
 Provision the remote server with all required dependencies:
 
 ```bash
-rdc context setup-machine server-1
+rdc config setup-machine server-1
 ```
 
 This command:
@@ -81,26 +81,28 @@ This command:
 If a server's SSH host key changes (e.g., after reinstallation), refresh the stored keys:
 
 ```bash
-rdc context scan-keys server-1
+rdc config scan-keys server-1
 ```
 
 This updates the `knownHosts` field in your config for that machine.
 
 ## Test SSH Connectivity
 
-Verify your machine is reachable before proceeding:
+After adding a machine, verify it's reachable:
 
 ```bash
-rdc machine test-connection --ip 203.0.113.50 --user deploy
+rdc term server-1 -c "hostname"
 ```
 
-This tests the SSH connection and reports:
-- Connection status
-- Authentication method used
-- SSH key configuration
-- Known hosts entry
+This opens an SSH connection to the machine and runs the command. If it succeeds, your SSH configuration is correct.
 
-You can save the verified host key to your machine config with `--save -m server-1`.
+For more detailed diagnostics, run:
+
+```bash
+rdc doctor
+```
+
+> **Cloud adapter only**: The `rdc machine test-connection` command provides detailed SSH diagnostics but requires the cloud adapter. For the local adapter, use `rdc term` or `ssh` directly.
 
 ## Infrastructure Configuration
 
@@ -109,7 +111,7 @@ For machines that need to serve traffic publicly, configure infrastructure setti
 ### Set Infrastructure
 
 ```bash
-rdc context set-infra server-1 \
+rdc config set-infra server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
@@ -129,7 +131,7 @@ rdc context set-infra server-1 \
 ### View Infrastructure
 
 ```bash
-rdc context show-infra server-1
+rdc config show-infra server-1
 ```
 
 ### Push to Server
@@ -137,7 +139,7 @@ rdc context show-infra server-1
 Generate and deploy the Traefik reverse proxy configuration to the server:
 
 ```bash
-rdc context push-infra server-1
+rdc config push-infra server-1
 ```
 
 This pushes the proxy configuration based on your infra settings. Traefik handles TLS termination, routing, and port forwarding.
@@ -147,8 +149,8 @@ This pushes the proxy configuration based on your infra settings. Traefik handle
 Set default values so you don't need to specify them on every command:
 
 ```bash
-rdc context set machine server-1    # Default machine
-rdc context set team my-team        # Default team (cloud mode, experimental)
+rdc config set machine server-1    # Default machine
+rdc config set team my-team        # Default team (cloud adapter, experimental)
 ```
 
 After setting a default machine, you can omit `-m server-1` from commands:
@@ -157,28 +159,28 @@ After setting a default machine, you can omit `-m server-1` from commands:
 rdc repo create my-app --size 10G   # Uses default machine
 ```
 
-## Multiple Contexts
+## Multiple Configs
 
-Manage multiple environments with named contexts:
+Manage multiple environments with named configs:
 
 ```bash
-# Create separate contexts
-rdc context create-local production --ssh-key ~/.ssh/id_prod
-rdc context create-local staging --ssh-key ~/.ssh/id_staging
+# Create separate configs
+rdc config init production --ssh-key ~/.ssh/id_prod
+rdc config init staging --ssh-key ~/.ssh/id_staging
 
-# Use a specific context
-rdc repo list -m server-1 --context production
-rdc repo list -m staging-1 --context staging
+# Use a specific config
+rdc repo list -m server-1 --config production
+rdc repo list -m staging-1 --config staging
 ```
 
-View all contexts:
+View all configs:
 
 ```bash
-rdc context list
+rdc config list
 ```
 
-Show current context details:
+Show current config details:
 
 ```bash
-rdc context show
+rdc config show
 ```

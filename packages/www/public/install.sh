@@ -12,7 +12,7 @@
 set -euo pipefail
 
 # Configuration (can be overridden via environment variables)
-REPO="${REDIACC_REPO:-rediacc/console}"
+RELEASES_URL="${REDIACC_RELEASES_URL:-https://releases.rediacc.com}"
 INSTALL_DIR="${HOME}/.local/bin"
 VERSIONS_DIR="${HOME}/.local/share/rediacc/versions"
 MAX_VERSIONS=5
@@ -109,16 +109,15 @@ main() {
 
   echo "Detected: $PLATFORM ($ARCH)"
 
-  # Get latest version from GitHub API
+  # Get latest version
   echo "Fetching latest version..."
-  RELEASE_INFO=$(curl -fsSL -A "Rediacc-Installer/1.0" "https://api.github.com/repos/$REPO/releases/latest") || error "Failed to fetch release information"
+  LATEST_JSON=$(curl -fsSL -A "Rediacc-Installer/1.0" "${RELEASES_URL}/cli/latest.json") || error "Failed to fetch version information"
 
   # Extract version - use jq if available, otherwise fall back to grep/sed
   if command -v jq &> /dev/null; then
-    VERSION=$(echo "$RELEASE_INFO" | jq -r '.tag_name | ltrimstr("v")')
+    VERSION=$(echo "$LATEST_JSON" | jq -r '.version')
   else
-    # Use grep -o to extract just the tag_name field (works with minified JSON)
-    VERSION=$(echo "$RELEASE_INFO" | grep -o '"tag_name":"[^"]*"' | sed -E 's/"tag_name":"v?([^"]+)"/\1/')
+    VERSION=$(echo "$LATEST_JSON" | grep -o '"version":"[^"]*"' | sed -E 's/"version":"([^"]+)"/\1/')
   fi
 
   if [[ -z "$VERSION" ]]; then
@@ -128,7 +127,7 @@ main() {
   echo "Latest version: v$VERSION"
 
   BINARY_NAME="rdc-${PLATFORM}-${ARCH}"
-  DOWNLOAD_URL="https://github.com/$REPO/releases/download/v${VERSION}/${BINARY_NAME}"
+  DOWNLOAD_URL="${RELEASES_URL}/cli/v${VERSION}/${BINARY_NAME}"
   CHECKSUM_URL="${DOWNLOAD_URL}.sha256"
 
   # Create directories

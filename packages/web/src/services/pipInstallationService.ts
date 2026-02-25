@@ -237,8 +237,9 @@ class PipInstallationService {
         'pip uninstall rediacc',
         '',
         '# Remove configuration (optional)',
-        '# Linux/macOS: rm -rf ~/.rediacc',
-        '# Windows: rmdir /s %USERPROFILE%\\.rediacc',
+        '# Linux: rm -rf ~/.config/rediacc ~/.local/state/rediacc ~/.cache/rediacc',
+        '# macOS: rm -rf ~/Library/Application\\ Support/rediacc ~/Library/Caches/rediacc',
+        '# Windows: rmdir /s %APPDATA%\\rediacc %LOCALAPPDATA%\\rediacc',
       ],
     };
   }

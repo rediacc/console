@@ -4,7 +4,7 @@ description: Différences entre rdc et renet, et à quel moment utiliser chacun 
 category: Concepts
 order: 1
 language: fr
-sourceHash: 0396eec8815a0b4e
+sourceHash: e0ef5f051cefb407
 ---
 
 # rdc vs renet
@@ -24,7 +24,7 @@ Rediacc possède deux binaires. Voici quand utiliser chacun d'entre eux.
 
 `rdc` se connecte à votre serveur via SSH et exécute les commandes `renet` à votre place. Vous tapez une seule commande sur votre poste de travail, et `rdc` gère le reste :
 
-1. Lit votre configuration locale (`~/.rediacc/config.json`)
+1. Lit votre configuration locale (`~/.config/rediacc/rediacc.json`)
 2. Se connecte au serveur via SSH
 3. Met à jour le binaire `renet` si nécessaire
 4. Exécute l'opération `renet` correspondante sur le serveur
@@ -36,7 +36,7 @@ Toutes les tâches courantes passent par `rdc` sur votre poste de travail :
 
 ```bash
 # Configurer un nouveau serveur
-rdc context setup-machine server-1
+rdc config setup-machine server-1
 
 # Créer et démarrer un dépôt
 rdc repo create my-app -m server-1 --size 10G
@@ -66,12 +66,15 @@ Toutes les commandes `renet` nécessitent les privilèges root (`sudo`). Consult
 `rdc ops` encapsule `renet ops` pour gérer des clusters de VM locaux sur votre poste de travail :
 
 ```bash
-rdc ops setup       # Installer les prérequis (KVM ou QEMU)
-rdc ops up --basic  # Démarrer un cluster minimal
-rdc ops status      # Vérifier l'état des VM
-rdc ops ssh 1       # Se connecter en SSH à la VM bridge
-rdc ops down        # Détruire le cluster
+rdc ops setup              # Installer les prérequis (KVM ou QEMU)
+rdc ops up --basic         # Démarrer un cluster minimal
+rdc ops status             # Vérifier l'état des VM
+rdc ops ssh 1              # Se connecter en SSH à la VM bridge
+rdc ops ssh 1 hostname     # Exécuter une commande sur la VM bridge
+rdc ops down               # Détruire le cluster
 ```
+
+> Nécessite l'adaptateur local. Non disponible avec l'adaptateur cloud.
 
 Ces commandes exécutent `renet` localement (pas via SSH). Consultez [VM expérimentales](/fr/docs/experimental-vms) pour la documentation complète.
 

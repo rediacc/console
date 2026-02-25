@@ -21,7 +21,7 @@ import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
-import { contextService } from '../services/context.js';
+import { configService } from '../services/config-resources.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import type { SyncProgress } from '@rediacc/shared-desktop/types';
@@ -294,10 +294,10 @@ async function executeSyncWithProgress(
  * Uploads files to a repository
  */
 async function syncUpload(options: SyncUploadOptions): Promise<void> {
-  const opts = await contextService.applyDefaults(options);
+  const opts = await configService.applyDefaults(options);
 
   const provider = await getStateProvider();
-  if (provider.mode === 'cloud' && !opts.team) {
+  if (provider.isCloud && !opts.team) {
     throw new Error(t('errors.teamRequired'));
   }
   if (!opts.machine) {
@@ -360,10 +360,10 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
  * Downloads files from a repository
  */
 async function syncDownload(options: SyncDownloadOptions): Promise<void> {
-  const opts = await contextService.applyDefaults(options);
+  const opts = await configService.applyDefaults(options);
 
   const provider = await getStateProvider();
-  if (provider.mode === 'cloud' && !opts.team) {
+  if (provider.isCloud && !opts.team) {
     throw new Error(t('errors.teamRequired'));
   }
   if (!opts.machine) {
@@ -436,7 +436,7 @@ export function registerSyncCommands(program: Command): void {
     .action(async (options: SyncUploadOptions) => {
       try {
         const provider = await getStateProvider();
-        if (provider.mode === 'cloud') {
+        if (provider.isCloud) {
           await authService.requireAuth();
         }
         await syncUpload(options);
@@ -461,7 +461,7 @@ export function registerSyncCommands(program: Command): void {
     .action(async (options: SyncDownloadOptions) => {
       try {
         const provider = await getStateProvider();
-        if (provider.mode === 'cloud') {
+        if (provider.isCloud) {
           await authService.requireAuth();
         }
         await syncDownload(options);
@@ -481,7 +481,7 @@ export function registerSyncCommands(program: Command): void {
     .action(async (options: SyncDownloadOptions) => {
       try {
         const provider = await getStateProvider();
-        if (provider.mode === 'cloud') {
+        if (provider.isCloud) {
           await authService.requireAuth();
         }
         await syncDownload({ ...options, dryRun: true });

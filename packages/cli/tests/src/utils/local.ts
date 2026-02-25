@@ -64,7 +64,7 @@ export function createTestLocalContext(
 ): Promise<CliResult> {
   const runner = new CliTestRunner();
   const sshKey = options?.sshKeyPath ?? DEFAULTS.CLI_TEST.SSH_KEY_PATH;
-  const args = ['context', 'create-local', name, '--ssh-key', sshKey];
+  const args = ['config', 'init', name, '--ssh-key', sshKey];
 
   if (options?.renetPath) {
     args.push('--renet-path', options.renetPath);
@@ -87,7 +87,7 @@ export function addTestMachine(
   }
 ): Promise<CliResult> {
   const runner = CliTestRunner.withContext(contextName);
-  const args = ['context', 'add-machine', name, '--ip', ip, '--user', user];
+  const args = ['config', 'add-machine', name, '--ip', ip, '--user', user];
 
   if (options?.port) {
     args.push('--port', String(options.port));
@@ -128,7 +128,7 @@ export async function setupE2EEnvironment(
 
   return async () => {
     const runner = new CliTestRunner();
-    await runner.run(['context', 'delete', contextName]);
+    await runner.run(['config', 'delete', contextName]);
   };
 }
 
@@ -260,7 +260,7 @@ export async function cleanupContexts(...contextNames: string[]): Promise<void> 
   const runner = new CliTestRunner();
   for (const name of contextNames) {
     try {
-      await runner.run(['context', 'delete', name]);
+      await runner.run(['config', 'delete', name]);
     } catch {
       // Ignore errors during cleanup
     }

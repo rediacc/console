@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 0
 language: de
-sourceHash: 35e75948e9858c6d
+sourceHash: 40a59ab9c9625911
 ---
 
 # Voraussetzungen
@@ -55,7 +55,7 @@ Dies sind die in CI getesteten Distributionen. Andere Linux-Distributionen mit s
 
 ### Automatisch installiert
 
-Der Befehl `rdc context setup-machine` installiert Folgendes auf dem entfernten Server:
+Der Befehl `rdc config setup-machine` installiert Folgendes auf dem entfernten Server:
 
 - **Docker** und **containerd** (Container-Runtime)
 - **cryptsetup** (LUKS-Festplattenverschlüsselung)

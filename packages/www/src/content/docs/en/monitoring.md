@@ -19,12 +19,9 @@ rdc machine health server-1
 ```
 
 This reports:
-- **System**: uptime, memory usage, disk usage
-- **Datastore**: capacity and usage
+- **System**: uptime, disk usage, datastore usage
 - **Containers**: running, healthy, unhealthy counts
-- **Services**: status and restart counts
-- **Storage**: SMART health and temperature
-- **Repositories**: mount status and Docker daemon status
+- **Storage**: SMART health status
 - **Issues**: identified problems
 
 Use `--output json` for machine-readable output.
@@ -40,10 +37,11 @@ rdc machine containers server-1
 | Column | Description |
 |--------|-------------|
 | Name | Container name |
-| Status | Running, stopped, etc. |
+| Status | Uptime or exit reason |
+| State | Running, exited, etc. |
 | Health | Healthy, unhealthy, none |
 | CPU | CPU usage percentage |
-| Memory | Memory usage |
+| Memory | Memory usage / limit |
 | Repository | Which repository owns the container |
 
 Options:
@@ -111,6 +109,8 @@ Use `--output json` for machine-readable output.
 
 ## Test Connection
 
+> **Cloud adapter only.** In local mode, use `rdc term server-1 -c "hostname"` to verify connectivity.
+
 Verify SSH connectivity to a machine:
 
 ```bash
@@ -140,8 +140,7 @@ rdc doctor
 |----------|--------|
 | **Environment** | Node.js version, CLI version, SEA mode, Go installation, Docker availability |
 | **Renet** | Binary location, version, CRIU, rsync, SEA embedded assets |
-| **Configuration** | Active context, mode, machines, SSH key |
-| **Authentication** | Login status, user email |
+| **Configuration** | Active config, adapter, machines, SSH key |
 | **Virtualization** | Checks if your system can run local virtual machines (`rdc ops`) |
 
 Each check reports **OK**, **Warning**, or **Error**. Use this as a first step when troubleshooting any issue.

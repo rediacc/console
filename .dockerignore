@@ -1,0 +1,55 @@
+# Dependencies (installed inside Docker via npm ci)
+node_modules
+**/node_modules
+
+# Git
+.git
+.gitmodules
+
+# Build output (rebuilt inside Docker)
+dist
+**/dist
+**/*.tsbuildinfo
+
+# Packages not needed for web image
+packages/plugins
+
+# Private submodules not needed for Docker builds
+# Note: private/middleware is NOT excluded — API Docker build needs it
+private/homebrew-tap
+private/growth
+
+# CI files not needed in build context
+.ci/docker/ci
+.ci/docker/service
+.ci/docker/desktop
+.ci/scripts
+.ci/config
+.ci/lib
+
+# Devcontainer
+.devcontainer
+
+# IDE / editor
+.vscode
+.idea
+*.swp
+*.swo
+
+# Claude / worktrees
+.claude
+.worktrees
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.md
+LICENSE
+.env
+.env.*
+.backend-state
+.provision-state
+.service-state
+.vm-info

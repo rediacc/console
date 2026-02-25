@@ -445,6 +445,40 @@ jobs:
             private/account/e2e/test-results/
           retention-days: 3
 
+  quality-vault-integration:
+    name: Vault Integration
+    runs-on: ubuntu-latest
+    if: inputs.is_bot != 'true'
+    services:
+      vault:
+        image: hashicorp/vault:1.17
+        env:
+          VAULT_DEV_ROOT_TOKEN_ID: test-root-token
+          VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+          VAULT_ADDR: http://127.0.0.1:8200
+        ports:
+          - 8200:8200
+        options: >-
+          --health-cmd "vault status -address=http://127.0.0.1:8200"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+          --health-start-period 10s
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - name: Build shared package
+        run: npm run build --workspace=@rediacc/shared
+      - name: Run Vault integration tests
+        run: cd packages/cli && npm run test:unit:vault
+        env:
+          VAULT_ADDR: http://localhost:8200
+          VAULT_TOKEN: test-root-token
+
   quality-sql:
     name: SQL Coordinator
     runs-on: ubuntu-latest

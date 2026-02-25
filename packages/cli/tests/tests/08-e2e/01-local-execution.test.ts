@@ -131,12 +131,12 @@ test.describe('E2E Local Execution @cli @e2e', () => {
       const runner = new CliTestRunner();
       const timeoutContext = `timeout-test-${Date.now()}`;
 
-      await runner.run(['context', 'create-local', timeoutContext, '--ssh-key', config.sshKeyPath]);
+      await runner.run(['config', 'init', timeoutContext, '--ssh-key', config.sshKeyPath]);
 
       // Add a non-routable machine
       const timeoutRunner = CliTestRunner.withContext(timeoutContext);
       await timeoutRunner.run([
-        'context',
+        'config',
         'add-machine',
         'timeout-vm',
         '--ip',
@@ -153,7 +153,7 @@ test.describe('E2E Local Execution @cli @e2e', () => {
       expect(result.success).toBe(false);
 
       // Cleanup
-      await runner.run(['context', 'delete', timeoutContext]);
+      await runner.run(['config', 'delete', timeoutContext]);
     });
   });
 
@@ -213,19 +213,13 @@ test.describe('E2E Context Switching @cli @e2e', () => {
     runner = new CliTestRunner();
 
     // Create both contexts
-    await runner.run(['context', 'create-local', localContext, '--ssh-key', config.sshKeyPath]);
-    await runner.run([
-      'context',
-      'create',
-      cloudContext,
-      '--api-url',
-      'https://test.example.com/api',
-    ]);
+    await runner.run(['config', 'init', localContext, '--ssh-key', config.sshKeyPath]);
+    await runner.run(['config', 'init', cloudContext, '--api-url', 'https://test.example.com/api']);
 
     // Add a machine to local context
     const localRunner = CliTestRunner.withContext(localContext);
     await localRunner.run([
-      'context',
+      'config',
       'add-machine',
       'e2e-vm',
       '--ip',
@@ -237,21 +231,24 @@ test.describe('E2E Context Switching @cli @e2e', () => {
 
   test.afterAll(async () => {
     if (runner) {
-      await runner.run(['context', 'delete', localContext]).catch(() => {});
-      await runner.run(['context', 'delete', cloudContext]).catch(() => {});
+      await runner.run(['config', 'delete', localContext]).catch(() => {});
+      await runner.run(['config', 'delete', cloudContext]).catch(() => {});
     }
   });
 
-  test('should detect mode correctly', async () => {
+  test('should detect adapter correctly', async () => {
     test.skip(!config.enabled, 'E2E not configured');
 
+    // Local config (with --ssh-key) shows adapter: 'local'
     const localRunner = CliTestRunner.withContext(localContext);
-    const localShow = await localRunner.run(['context', 'show']);
-    expect((localShow.json as { mode: string }).mode).toBe('local');
+    const localShow = await localRunner.run(['config', 'show']);
+    expect((localShow.json as { adapter: string }).adapter).toBe('local');
 
+    // Config with --api-url but no token also shows adapter: 'local'
+    // (cloud adapter requires both apiUrl AND token from authentication)
     const cloudRunner = CliTestRunner.withContext(cloudContext);
-    const cloudShow = await cloudRunner.run(['context', 'show']);
-    expect((cloudShow.json as { mode: string }).mode).toBe('cloud');
+    const cloudShow = await cloudRunner.run(['config', 'show']);
+    expect((cloudShow.json as { adapter: string }).adapter).toBe('local');
   });
 
   test('should execute with context override', async () => {
@@ -283,8 +280,8 @@ test.describe('E2E Renet Availability @cli @e2e', () => {
 
     // Create minimal local context
     const createResult = await runner.run([
-      'context',
-      'create-local',
+      'config',
+      'init',
       renetContextName,
       '--ssh-key',
       config.sshKeyPath,
@@ -294,7 +291,7 @@ test.describe('E2E Renet Availability @cli @e2e', () => {
     // Add machine
     const contextRunner = CliTestRunner.withContext(renetContextName);
     await contextRunner.run([
-      'context',
+      'config',
       'add-machine',
       'check-vm',
       '--ip',
@@ -319,6 +316,6 @@ test.describe('E2E Renet Availability @cli @e2e', () => {
     }
 
     // Cleanup
-    await runner.run(['context', 'delete', renetContextName]);
+    await runner.run(['config', 'delete', renetContextName]);
   });
 });

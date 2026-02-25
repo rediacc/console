@@ -1,17 +1,15 @@
 ---
 title: アーキテクチャ
-description: Rediaccの仕組み：2ツールアーキテクチャ、動作モード、セキュリティモデル、設定構造。
+description: Rediaccの仕組み：2ツールアーキテクチャ、アダプター検出、セキュリティモデル、設定構造。
 category: Concepts
 order: 0
 language: ja
-sourceHash: 58ba0da9645bb9dd
+sourceHash: 5a717ddac450cb81
 ---
 
 # アーキテクチャ
 
-どのツールを使うべきか迷う場合は、[rdc vs renet](/ja/docs/rdc-vs-renet) を参照してください。
-
-このページでは、Rediaccの内部の仕組みについて説明します：2ツールアーキテクチャ、動作モード、セキュリティモデル、設定構造。
+このページでは、Rediaccの内部の仕組みについて説明します：2ツールアーキテクチャ、アダプター検出、セキュリティモデル、設定構造。
 
 ## Full Stack Overview
 
@@ -32,46 +30,48 @@ RediaccはSSH経由で連携する2つのバイナリを使用します：
 
 ローカルで入力するすべてのコマンドは、リモートマシン上でrenetを実行するSSH呼び出しに変換されます。手動でサーバーにSSHする必要はありません。
 
-## 動作モード
+オペレーター向けの実用的なルールについては、[rdc vs renet](/ja/docs/rdc-vs-renet) を参照してください。また、`rdc ops` を使用してテスト用のローカルVMクラスターを実行することもできます — [実験的VM](/ja/docs/experimental-vms) を参照してください。
 
-Rediaccは3つのモードをサポートしており、それぞれ状態の保存場所とコマンドの実行方法が異なります。
+## Config & Stores
 
-![動作モード](/img/arch-operating-modes.svg)
+すべてのCLI状態は `~/.config/rediacc/` 配下のフラットなJSON設定ファイルに保存されます。Storeを使用することで、バックアップ、共有、マルチデバイスアクセスのために外部バックエンドにこれらの設定を同期できます。Storeの認証情報は `~/.config/rediacc/.credentials.json` に別途保管されます。
 
-### ローカルモード
+![Config & Stores](/img/arch-operating-modes.svg)
 
-セルフホスト利用のデフォルトモードです。すべての状態はワークステーションの`~/.rediacc/config.json`に保存されます。
+### ローカルアダプター（デフォルト）
+
+セルフホスト利用のデフォルトです。すべての状態はワークステーションの設定ファイル（例：`~/.config/rediacc/rediacc.json`）に保存されます。
 
 - マシンへの直接SSH接続
 - 外部サービス不要
 - シングルユーザー、シングルワークステーション
-- コンテキストは`rdc context create-local`で作成
+- デフォルト設定はCLI初回使用時に自動作成。名前付き設定は `rdc config init <name>` で作成
 
-### クラウドモード（実験的）
+### クラウドアダプター（実験的）
 
-Rediacc APIを使用して状態管理とチームコラボレーションを行います。
+設定に `apiUrl` と `token` フィールドが含まれている場合に自動的に有効になります。状態管理とチームコラボレーションにRediacc APIを使用します。
 
 - 状態はクラウドAPIに保存
 - ロールベースアクセス制御によるマルチユーザーチーム
 - ビジュアル管理用Webコンソール
-- コンテキストは`rdc context create`で作成
+- `rdc auth login` でセットアップ
 
-> **注意：** クラウドモードのコマンドは実験的です。`rdc --experimental <command>`または`REDIACC_EXPERIMENTAL=1`を設定して有効にしてください。
+> **注意：** クラウドアダプターのコマンドは実験的です。`rdc --experimental <command>`または`REDIACC_EXPERIMENTAL=1`を設定して有効にしてください。
 
-### S3モード
+### S3リソース状態（オプション）
 
-暗号化された状態をS3互換バケットに保存します。ローカルモードのセルフホストの性質と、ワークステーション間の移植性を兼ね備えています。
+設定にS3設定（エンドポイント、バケット、アクセスキー）が含まれている場合、リソース状態はS3互換バケットに保存されます。ローカルアダプターと組み合わせて使用することで、セルフホストの運用とワークステーション間の移植性を兼ね備えます。
 
-- 状態はS3/R2バケットに`state.json`として保存
+- リソース状態はS3/R2バケットに`state.json`として保存
 - マスターパスワードによるAES-256-GCM暗号化
 - ポータブル：バケット資格情報を持つ任意のワークステーションからインフラストラクチャを管理可能
-- コンテキストは`rdc context create-s3`で作成
+- `rdc config init <name> --s3-endpoint <url> --s3-bucket <bucket> --s3-access-key-id <key>` で設定
 
-3つのモードすべてで同じCLIコマンドを使用します。モードは状態の保存場所と認証方法にのみ影響します。
+すべてのアダプターで同じCLIコマンドを使用します。アダプターは状態の保存場所と認証方法にのみ影響します。
 
 ## rediaccユーザー
 
-`rdc context setup-machine`を実行すると、renetはリモートサーバー上に`rediacc`というシステムユーザーを作成します：
+`rdc config setup-machine`を実行すると、renetはリモートサーバー上に`rediacc`というシステムユーザーを作成します：
 
 - **UID**: 7111
 - **シェル**: `/sbin/nologin`（SSH経由でログイン不可）
@@ -115,44 +115,39 @@ Rediaccfile関数では、`DOCKER_HOST`が自動的に正しいソケットに�
 2. ファイルとして保存される：`{datastore}/repos/{guid}.img`
 3. アクセス時に`cryptsetup`経由でマウントされる
 
-クレデンシャルはローカルの`config.json`に保存されますが、サーバーには**保存されません**。クレデンシャルがなければ、リポジトリデータを読み取ることはできません。自動開始が有効な場合、起動時の自動マウントを可能にするために、サーバー上にセカンダリLUKSキーファイルが保存されます。
+クレデンシャルは設定ファイルに保存されますが、サーバーには**保存されません**。クレデンシャルがなければ、リポジトリデータを読み取ることはできません。自動開始が有効な場合、起動時の自動マウントを可能にするために、サーバー上にセカンダリLUKSキーファイルが保存されます。
 
 ## 設定構造
 
-すべての設定は`~/.rediacc/config.json`に保存されます。以下は注釈付きの例です：
+各設定は `~/.config/rediacc/` に保存されるフラットなJSONファイルです。デフォルト設定は `rediacc.json`; 名前付き設定はファイル名として名前を使用します（例：`production.json`）。以下は注釈付きの例です：
 
 ```json
 {
-  "contexts": {
-    "production": {
-      "name": "production",
-      "mode": "local",
-      "apiUrl": "local://",
-      "ssh": {
-        "privateKeyPath": "/home/you/.ssh/id_ed25519"
-      },
-      "machines": {
-        "prod-1": {
-          "ip": "203.0.113.50",
-          "user": "deploy",
-          "port": 22,
-          "datastore": "/mnt/rediacc",
-          "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
-        }
-      },
-      "storages": {
-        "backblaze": {
-          "provider": "b2",
-          "vaultContent": { "...": "..." }
-        }
-      },
-      "repositories": {
-        "webapp": {
-          "repositoryGuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-          "credential": "base64-encoded-random-passphrase",
-          "networkId": 2816
-        }
-      }
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "version": 1,
+  "ssh": {
+    "privateKeyPath": "/home/you/.ssh/id_ed25519"
+  },
+  "machines": {
+    "prod-1": {
+      "ip": "203.0.113.50",
+      "user": "deploy",
+      "port": 22,
+      "datastore": "/mnt/rediacc",
+      "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
+    }
+  },
+  "storages": {
+    "backblaze": {
+      "provider": "b2",
+      "vaultContent": { "...": "..." }
+    }
+  },
+  "repositories": {
+    "webapp": {
+      "repositoryGuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "credential": "base64-encoded-random-passphrase",
+      "networkId": 2816
     }
   },
   "nextNetworkId": 2880,
@@ -164,12 +159,12 @@ Rediaccfile関数では、`DOCKER_HOST`が自動的に正しいソケットに�
 
 | フィールド | 説明 |
 |-------|-------------|
-| `mode` | ローカルモードは`"local"`、S3モードは`"s3"`、クラウドモードは省略 |
-| `apiUrl` | ローカルモードは`"local://"`、クラウドモードはAPI URL |
+| `id` | この設定ファイルの一意識別子 |
+| `version` | 設定ファイルのスキーマバージョン |
 | `ssh.privateKeyPath` | すべてのマシン接続に使用されるSSH秘密鍵のパス |
 | `machines.<name>.user` | マシンへの接続に使用されるSSHユーザー名 |
-| `machines.<name>.knownHosts` | `ssh-keyscan`からのSSHホスト鍵。サーバーIDの検証に使用 |
-| `repositories.<name>.repositoryGuid` | サーバー上の暗号化ディスクイメージを識別するUUID |
+| `machines.<name>.knownHosts` | `ssh-keyscan`からのSSHホスト鍵 |
+| `repositories.<name>.repositoryGuid` | 暗号化ディスクイメージを識別するUUID |
 | `repositories.<name>.credential` | LUKS暗号化パスフレーズ（**サーバーには保存されません**） |
 | `repositories.<name>.networkId` | IPサブネットを決定するネットワークID（2816 + n*64）。自動割り当て |
 | `nextNetworkId` | ネットワークID割り当て用のグローバルカウンター |

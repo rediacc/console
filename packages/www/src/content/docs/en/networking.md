@@ -89,13 +89,13 @@ These use standard [Traefik v3 label syntax](https://doc.traefik.io/traefik/rout
 1. Infrastructure configured on the machine ([Machine Setup — Infrastructure Configuration](/en/docs/setup#infrastructure-configuration)):
 
    ```bash
-   rdc context set-infra server-1 \
+   rdc config set-infra server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
-   rdc context push-infra server-1
+   rdc config push-infra server-1
    ```
 
 2. DNS records pointing your domain to the server's public IP (see [DNS Configuration](#dns-configuration) below).
@@ -142,7 +142,7 @@ The `{name}` in labels is an arbitrary identifier — it just needs to be consis
 TLS certificates are obtained automatically via Let's Encrypt using the Cloudflare DNS-01 challenge. This is configured once during infrastructure setup:
 
 ```bash
-rdc context set-infra server-1 \
+rdc config set-infra server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
@@ -164,16 +164,16 @@ For non-HTTP protocols (mail servers, DNS, databases exposed externally), use TC
 Add the required ports during infrastructure configuration:
 
 ```bash
-rdc context set-infra server-1 \
+rdc config set-infra server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc context push-infra server-1
+rdc config push-infra server-1
 ```
 
 This creates Traefik entrypoints named `tcp-{port}` and `udp-{port}`.
 
-> After adding or removing ports, always re-run `rdc context push-infra` to update the proxy configuration.
+> After adding or removing ports, always re-run `rdc config push-infra` to update the proxy configuration.
 
 ### Step 2: Add TCP/UDP Labels
 
@@ -339,7 +339,7 @@ Shows TCP and UDP port mappings for dynamically allocated ports.
 | Service not in routes | Container not running or missing labels | Verify with `docker ps` on the repository's daemon; check labels |
 | Certificate not issued | DNS not pointing to server, or invalid Cloudflare token | Verify DNS resolution; check Cloudflare API token permissions |
 | 502 Bad Gateway | Application not listening on the declared port | Verify the app binds to its `{SERVICE}_IP` and the port matches `loadbalancer.server.port` |
-| TCP port not reachable | Port not registered in infrastructure | Run `rdc context set-infra --tcp-ports ...` and `push-infra` |
+| TCP port not reachable | Port not registered in infrastructure | Run `rdc config set-infra --tcp-ports ...` and `push-infra` |
 | Route server running old version | Binary was updated but service not restarted | Happens automatically on provisioning; manual: `sudo systemctl restart rediacc-router` |
 | STUN/TURN relay not reachable | Relay addresses cached at startup | Recreate the service after DNS or IP changes so it picks up the new network config |
 

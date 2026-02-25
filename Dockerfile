@@ -2,9 +2,10 @@
 # This is for open-source users who want to run the console independently
 #
 # Multi-stage build:
-# 1. cli-builder: Build web app and pack CLI
-# 2. renet-builder: Cross-compile renet binaries
-# 3. runtime: Nginx with all assets
+# 1. cli-builder: Build web app, account SPA, and pack CLI
+# 2. account-builder: Build account server (Hono API)
+# 3. renet-builder: Cross-compile renet binaries
+# 4. runtime: Node.js + Nginx with all assets
 #
 # Build: docker build -t rediacc/web:latest .
 # Run: docker run -p 80:80 -p 443:443 rediacc/web:latest
@@ -12,11 +13,10 @@
 # Base image ARGs must be declared before any FROM for multi-stage build
 ARG NODE_IMAGE=node:22-alpine
 ARG GO_IMAGE=golang:1.24-alpine
-ARG NGINX_IMAGE=nginx:alpine
 
 # =============================================================================
 # Stage 1: CLI Builder (Node.js)
-# Build web app and create CLI npm package
+# Build web app, account SPA, and create CLI npm package
 # =============================================================================
 FROM ${NODE_IMAGE} AS cli-builder
 ARG NODE_IMAGE
@@ -55,6 +55,15 @@ RUN --mount=type=cache,target=/app/node_modules/.cache \
 WORKDIR /app/packages/www
 RUN npm run build
 
+# Build account portal SPA
+WORKDIR /app/private/account
+RUN --mount=type=cache,target=/root/.npm \
+    npm install
+WORKDIR /app/private/account/web
+RUN --mount=type=cache,target=/root/.npm \
+    npm install
+RUN npx vite build --outDir /app/dist/account-web
+
 # Build and pack CLI
 WORKDIR /app/packages/cli
 RUN npm run build && npm run build:bundle
@@ -70,7 +79,36 @@ RUN cd /app/dist/npm && \
     fi
 
 # =============================================================================
-# Stage 2: Renet Builder (Go)
+# Stage 2: Account Server Builder (Node.js)
+# Build the account Hono API server bundle
+# =============================================================================
+FROM ${NODE_IMAGE} AS account-builder
+ARG NODE_IMAGE
+LABEL com.rediacc.stage="account-builder"
+LABEL com.rediacc.base-image="${NODE_IMAGE}"
+
+# Build shared package first (account depends on it)
+WORKDIR /
+COPY tsconfig.json /tsconfig.json
+WORKDIR /packages/shared
+COPY packages/shared/package.json packages/shared/tsconfig.json ./
+COPY packages/shared/src ./src
+RUN npm install --ignore-scripts && npm run build
+
+# Build account server
+WORKDIR /app
+COPY private/account/package.json ./
+RUN --mount=type=cache,target=/root/.npm \
+    npm install
+COPY private/account/tsconfig.json ./
+COPY private/account/src/ ./src/
+RUN npm run build
+# Bundle for Node.js ESM compatibility
+RUN npx --yes esbuild dist/entry/node.js --bundle --platform=node --format=esm \
+    --outfile=dist/bundle.js --external:@aws-sdk/* --external:@smithy/*
+
+# =============================================================================
+# Stage 3: Renet Builder (Go)
 # Cross-compile renet for linux/amd64 and linux/arm64
 # =============================================================================
 FROM ${GO_IMAGE} AS renet-builder
@@ -102,23 +140,33 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     ./cmd/renet
 
 # =============================================================================
-# Stage 3: Runtime (Nginx)
-# Combine web, CLI, and renet into final image
+# Stage 4: Runtime (Node.js + Nginx)
+# Combine web, account, CLI, and renet into final image
 # =============================================================================
-FROM ${NGINX_IMAGE}
-ARG NGINX_IMAGE
+FROM ${NODE_IMAGE}
+ARG NODE_IMAGE
 LABEL com.rediacc.stage="runtime"
-LABEL com.rediacc.base-image="${NGINX_IMAGE}"
+LABEL com.rediacc.base-image="${NODE_IMAGE}"
 
-# Install dependencies for entrypoint script
-# - coreutils: For sha256sum
-RUN apk add --no-cache coreutils
+# Install nginx and dependencies for entrypoint script
+RUN apk add --no-cache nginx coreutils
 
 # Copy www (public website) to root
 COPY --from=cli-builder /app/packages/www/dist /usr/share/nginx/html
 
 # Copy web (console app) to /console/ subdirectory
 COPY --from=cli-builder /app/packages/web/dist /usr/share/nginx/html/console
+
+# Copy account portal (SPA) to /account/ subdirectory
+COPY --from=cli-builder /app/dist/account-web /usr/share/nginx/html/account
+
+# Copy account server bundle and production dependencies
+COPY --from=account-builder /app/dist/bundle.js /app/account/bundle.js
+COPY --from=account-builder /app/package.json /app/account/package.json
+WORKDIR /app/account
+RUN --mount=type=cache,target=/root/.npm \
+    npm install --omit=dev
+WORKDIR /
 
 # Copy CLI npm packages
 COPY --from=cli-builder /app/dist/npm /usr/share/nginx/html/npm
@@ -133,7 +181,7 @@ RUN cd /usr/share/nginx/html/bin && \
     cp renet-linux-arm64 renet-linux-arm64-latest
 
 # Copy nginx configuration
-COPY .ci/docker/web/nginx.conf /etc/nginx/conf.d/default.conf
+COPY .ci/docker/web/nginx.conf /etc/nginx/http.d/default.conf
 COPY .ci/docker/web/nginx-https.conf /etc/nginx/nginx-https.conf
 
 # Copy entrypoint script

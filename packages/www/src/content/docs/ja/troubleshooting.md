@@ -4,6 +4,7 @@ description: "SSH、セットアップ、リポジトリ、サービス、Docker
 category: "Guides"
 order: 10
 language: ja
+sourceHash: 4c3163007e6a3326
 ---
 
 # トラブルシューティング
@@ -13,16 +14,16 @@ language: ja
 ## SSH接続の失敗
 
 - 手動で接続できるか確認してください: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- `rdc context scan-keys server-1` を実行してホストキーを更新してください
+- `rdc config scan-keys server-1` を実行してホストキーを更新してください
 - SSHポートが一致しているか確認してください: `--port 22`
-- 接続をテストしてください: `rdc machine test-connection --ip 203.0.113.50 --user deploy`
+- 簡単なコマンドでテストしてください: `rdc term server-1 -c "hostname"`
 
 ## ホストキーの不一致
 
 サーバーが再インストールされた場合やSSHキーが変更された場合、「host key verification failed」というエラーが表示されます:
 
 ```bash
-rdc context scan-keys server-1
+rdc config scan-keys server-1
 ```
 
 このコマンドは新しいホストキーを取得し、設定を更新します。
@@ -31,7 +32,7 @@ rdc context scan-keys server-1
 
 - SSHユーザーがパスワードなしのsudoアクセスを持っているか確認するか、必要なコマンドに `NOPASSWD` を設定してください
 - サーバーの空きディスク容量を確認してください
-- `--debug` を付けて詳細な出力を取得してください: `rdc context setup-machine server-1 --debug`
+- `--debug` を付けて詳細な出力を取得してください: `rdc config setup-machine server-1 --debug`
 
 ## リポジトリの作成失敗
 
@@ -74,7 +75,7 @@ rdc term server-1 my-app -c "docker ps"
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
 ```
 
-`2816` をリポジトリのネットワークIDに置き換えてください（`config.json` または `rdc repo status` で確認できます）。
+`2816` をリポジトリのネットワークIDに置き換えてください（`rediacc.json` または `rdc repo status` で確認できます）。
 
 ## 間違ったDocker daemonにコンテナが作成される
 
@@ -103,4 +104,4 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 rdc doctor
 ```
 
-このコマンドは環境、renetのインストール状況、コンテキスト設定、認証ステータスをチェックします。各チェックはOK、Warning、またはErrorを簡単な説明付きで報告します。
+このコマンドは環境、renetのインストール状況、設定、認証ステータスをチェックします。各チェックはOK、Warning、またはErrorを簡単な説明付きで報告します。

@@ -4,7 +4,7 @@ description: 通过反向代理、Docker 标签、TLS 证书、DNS 和 TCP/UDP �
 category: Guides
 order: 6
 language: zh
-sourceHash: 47ee41d44be935a8
+sourceHash: 4a0c6a695d72aa55
 ---
 
 # 网络
@@ -92,13 +92,13 @@ labels:
 1. 已在机器上配置基础设施（[机器设置 — 基础设施配置](/zh/docs/setup#基础设施配置)）：
 
    ```bash
-   rdc context set-infra server-1 \
+   rdc config set-infra server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
-   rdc context push-infra server-1
+   rdc config push-infra server-1
    ```
 
 2. DNS 记录将您的域名指向服务器的公网 IP（参见下方的 [DNS 配置](#dns-配置)）。
@@ -145,7 +145,7 @@ services:
 TLS 证书通过 Let's Encrypt 使用 Cloudflare DNS-01 挑战自动获取。此功能在基础设施设置时一次性配置：
 
 ```bash
-rdc context set-infra server-1 \
+rdc config set-infra server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
@@ -167,11 +167,11 @@ Cloudflare DNS API 令牌需要对您要保护的域名具有 `Zone:DNS:Edit` �
 在基础设施配置时添加所需的端口：
 
 ```bash
-rdc context set-infra server-1 \
+rdc config set-infra server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc context push-infra server-1
+rdc config push-infra server-1
 ```
 
 此操作创建名为 `tcp-{port}` 和 `udp-{port}` 的 Traefik 入口点。
@@ -197,7 +197,7 @@ Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
 
 > **Security note:** Exposing a database to the internet is a risk. Use this only when remote clients need direct access. For most setups, keep the database internal and connect through your application.
 
-> 添加或移除端口后，务必重新运行 `rdc context push-infra` 以更新代理配置。
+> 添加或移除端口后，务必重新运行 `rdc config push-infra` 以更新代理配置。
 
 ### 步骤 2：添加 TCP/UDP 标签
 
@@ -342,7 +342,7 @@ curl -s http://127.0.0.1:7111/ports | python3 -m json.tool
 | 服务不在路由中 | 容器未运行或缺少标签 | 在仓库的守护进程上使用 `docker ps` 验证；检查标签 |
 | 证书未签发 | DNS 未指向服务器，或 Cloudflare 令牌无效 | 验证 DNS 解析；检查 Cloudflare API 令牌权限 |
 | 502 Bad Gateway | 应用未在声明的端口上监听 | 验证应用绑定到其 `{SERVICE}_IP` 且端口与 `loadbalancer.server.port` 匹配 |
-| TCP 端口不可达 | 端口未在基础设施中注册 | 运行 `rdc context set-infra --tcp-ports ...` 和 `push-infra` |
+| TCP 端口不可达 | 端口未在基础设施中注册 | 运行 `rdc config set-infra --tcp-ports ...` 和 `push-infra` |
 
 ## 完整示例
 

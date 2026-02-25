@@ -15,6 +15,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Source configuration and utilities
 source "$ROOT_DIR/.ci/config/constants.sh"
 source "$ROOT_DIR/.ci/lib/elite-backend.sh"
+source "$ROOT_DIR/.ci/lib/service.sh"
 source "$ROOT_DIR/.ci/scripts/lib/common.sh"
 
 # Backward compatibility: Load parent .env if exists
@@ -162,8 +163,8 @@ ensure_renet_built() {
 
     check_go_installed
 
-    # Build renet using the Go build script (handles embed_assets automatically)
-    (cd "$renet_dir" && ./go dev)
+    # Build renet using the build script (handles embed_assets automatically)
+    (cd "$renet_dir" && ./build.sh dev)
 
     if [[ ! -f "$renet_bin" ]]; then
         log_error "Renet build failed: binary not found at $renet_bin"
@@ -632,6 +633,12 @@ BACKEND COMMANDS:
   backend reset              Reset backend (deletes data)
   backend auto               Auto-start backend (idempotent, for devcontainer)
 
+SERVICE COMMANDS:
+  service start [port] [--no-build]  Build and run rediacc/web (default port: 8080)
+  service stop                    Stop service containers
+  service status                  Show service status
+  service logs [container]        Show logs (web, rustfs, all)
+
 PROVISION COMMANDS:
   provision start            Provision KVM VMs (bridge + workers)
   provision stop             Destroy all VMs
@@ -733,6 +740,29 @@ main() {
                     log_error "Unknown backend command: ${1:-}"
                     echo ""
                     echo "Usage: ./run.sh backend [start|stop|status|logs|health|pull|reset|auto]"
+                    exit 1
+                    ;;
+            esac
+            ;;
+
+        # Service mode (rediacc/web + RustFS)
+        service)
+            shift
+            case "${1:-}" in
+                start)
+                    shift
+                    service_start "$@"
+                    ;;
+                stop) service_stop ;;
+                status) service_status ;;
+                logs)
+                    shift
+                    service_logs "$@"
+                    ;;
+                *)
+                    log_error "Unknown service command: ${1:-}"
+                    echo ""
+                    echo "Usage: ./run.sh service [start|stop|status|logs]"
                     exit 1
                     ;;
             esac

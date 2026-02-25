@@ -24,7 +24,7 @@ import { withSpinner } from './spinner.js';
 import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
-import { contextService } from '../services/context.js';
+import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
 import type { OutputFormat } from '../types/index.js';
 
@@ -34,7 +34,7 @@ import type { OutputFormat } from '../types/index.js';
  */
 async function requireAuthForMode(): Promise<void> {
   const provider = await getStateProvider();
-  if (provider.mode === 'cloud') {
+  if (provider.isCloud) {
     await authService.requireAuth();
   }
 }
@@ -82,7 +82,7 @@ function createParentCheck(parentOption: 'team' | 'region' | 'none') {
   return async (opts: ParentContextOptions): Promise<boolean> => {
     if (parentOption === 'none') return true;
     const provider = await getStateProvider();
-    if (provider.mode !== 'cloud') return true; // team/region not needed in local/s3
+    if (!provider.isCloud) return true; // team/region not needed in local/s3
     if (parentOption === 'team' && !opts.team) {
       outputService.error(t('errors.teamRequired'));
       return false;
@@ -121,7 +121,7 @@ function setupListCommand(
   listCmd.action(async (options) => {
     try {
       await requireAuthForMode();
-      const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
+      const opts = ctx.hasParent ? await configService.applyDefaults(options) : options;
       if (!(await ctx.checkParent(opts))) process.exit(1);
       const params = buildListParams(ctx.hasParent, ctx.parentOption, opts);
       const response = await withSpinner(
@@ -157,7 +157,7 @@ function setupCreateCommand(
   createCmd.action(async (name, options) => {
     try {
       await requireAuthForMode();
-      const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
+      const opts = ctx.hasParent ? await configService.applyDefaults(options) : options;
 
       if (!(await ctx.checkParent(opts))) process.exit(1);
 
@@ -199,7 +199,7 @@ function setupRenameCommand(
   renameCmd.action(async (oldName, newName, options) => {
     try {
       await requireAuthForMode();
-      const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
+      const opts = ctx.hasParent ? await configService.applyDefaults(options) : options;
       if (!(await ctx.checkParent(opts))) process.exit(1);
 
       const currentField = `current${capitalizeFirst(ctx.nameField)}`;
@@ -232,7 +232,7 @@ function setupDeleteCommand(
   deleteCmd.option('-f, --force', t('options.force')).action(async (name, options) => {
     try {
       await requireAuthForMode();
-      const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
+      const opts = ctx.hasParent ? await configService.applyDefaults(options) : options;
       if (!(await ctx.checkParent(opts))) process.exit(1);
       if (!options.force) {
         const { askConfirm } = await import('./prompt.js');
@@ -272,7 +272,7 @@ function setupVaultGetCommand(
   getCmd.action(async (resourceItemName, options) => {
     try {
       await requireAuthForMode();
-      const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
+      const opts = ctx.hasParent ? await configService.applyDefaults(options) : options;
       if (!(await ctx.checkParent(opts))) process.exit(1);
       const params: Record<string, unknown> = { [ctx.nameField]: resourceItemName };
       addParentToPayload(params, ctx.hasParent, ctx.parentOption, opts);
@@ -316,7 +316,7 @@ function setupVaultUpdateCommand(
   updateCmd.action(async (resourceItemName, options) => {
     try {
       await requireAuthForMode();
-      const opts = ctx.hasParent ? await contextService.applyDefaults(options) : options;
+      const opts = ctx.hasParent ? await configService.applyDefaults(options) : options;
 
       if (!(await ctx.checkParent(opts))) {
         process.exit(1);
@@ -443,7 +443,7 @@ export function addStatusCommand(
     .action(async (name, options) => {
       try {
         await requireAuthForMode();
-        const opts = await contextService.applyDefaults(options);
+        const opts = await configService.applyDefaults(options);
 
         if (!(await checkParent(opts))) {
           process.exit(1);
@@ -498,7 +498,7 @@ export function addAssignCommand(
     .action(async (resourceItemName, targetItemName, options) => {
       try {
         await requireAuthForMode();
-        const opts = await contextService.applyDefaults(options);
+        const opts = await configService.applyDefaults(options);
 
         if (!(await checkParent(opts))) {
           process.exit(1);
