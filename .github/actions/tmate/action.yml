@@ -1,0 +1,57 @@
+name: 'tmate Session'
+description: 'Create interactive terminal session via SSH/web for CI/CD debugging in background'
+author: 'Rediacc'
+
+inputs:
+  timeout:
+    description: 'Max seconds to wait for session startup'
+    required: false
+    default: '30'
+  install-dependencies:
+    description: 'Whether to install tmate (set false if already installed)'
+    required: false
+    default: 'true'
+  silent-mode:
+    description: 'Do not print connection strings to logs (outputs only)'
+    required: false
+    default: 'false'
+  server-host:
+    description: 'Custom tmate server host (optional)'
+    required: false
+    default: ''
+  server-port:
+    description: 'Custom tmate server port (optional)'
+    required: false
+    default: ''
+
+outputs:
+  ssh-connection:
+    description: 'SSH connection command'
+    value: ${{ steps.start.outputs.ssh-connection }}
+  web-url:
+    description: 'Web browser access URL'
+    value: ${{ steps.start.outputs.web-url }}
+  session-pid:
+    description: 'tmate process ID (for cleanup)'
+    value: ${{ steps.start.outputs.session-pid }}
+  ssh-ro-connection:
+    description: 'Read-only SSH connection command'
+    value: ${{ steps.start.outputs.ssh-ro-connection }}
+  web-ro-url:
+    description: 'Read-only web browser access URL'
+    value: ${{ steps.start.outputs.web-ro-url }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install tmate
+      if: inputs.install-dependencies == 'true'
+      shell: bash
+      run: ${{ github.action_path }}/scripts/install-tmate.sh
+
+    - name: Start tmate Session
+      id: start
+      shell: bash
+      env:
+        SILENT_MODE: ${{ inputs.silent-mode }}
+      run: ${{ github.action_path }}/scripts/start-session.sh "${{ inputs.timeout }}" "${{ inputs.server-host }}" "${{ inputs.server-port }}"

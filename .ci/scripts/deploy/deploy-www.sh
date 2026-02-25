@@ -37,11 +37,12 @@ if [[ -n "${ARG_NAME:-}" ]]; then
     cat >wrangler.preview.toml <<TOML
 name = "$ARG_NAME"
 main = "src/index.ts"
-compatibility_date = "2025-01-01"
+compatibility_date = "2026-01-20"
 compatibility_flags = ["nodejs_compat"]
 
 [assets]
 directory = "./dist"
+not_found_handling = "404-page"
 run_worker_first = ["/account", "/account/*"]
 
 [vars]

@@ -10,6 +10,14 @@ language: en
 
 Provision local VM clusters on your workstation for development and testing â€” no external cloud providers required.
 
+## Requirements
+
+`rdc ops` requires the **local adapter**. It is not available with the cloud adapter.
+
+```bash
+rdc ops check
+```
+
 ## Overview
 
 The `rdc ops` commands let you create and manage experimental VM clusters locally. This is the same infrastructure used by the CI pipeline for integration tests, now available for hands-on experimentation.
@@ -82,6 +90,9 @@ rdc ops status
 # 4. SSH into the bridge VM
 rdc ops ssh 1
 
+# 4b. Or run a command directly
+rdc ops ssh 1 hostname
+
 # 5. Tear down
 rdc ops down
 ```
@@ -102,13 +113,20 @@ Use `--skip-orchestration` to provision VMs without starting Rediacc services â€
 
 ## Configuration
 
-Environment variables control VM resources:
+The bridge VM uses smaller defaults than worker VMs:
+
+| VM Role | CPUs | RAM | Disk |
+|---------|------|-----|------|
+| Bridge | 1 | 1024 MB | 8 GB |
+| Worker | 2 | 4096 MB | 16 GB |
+
+Environment variables override worker VM resources:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `VM_CPU` | 2 | CPU cores per VM |
-| `VM_RAM` | 4096 | RAM in MB per VM |
-| `VM_DSK` | 16 | Disk size in GB |
+| `VM_CPU` | 2 | CPU cores per worker VM |
+| `VM_RAM` | 4096 | RAM in MB per worker VM |
+| `VM_DSK` | 16 | Disk size in GB per worker VM |
 | `VM_NET_BASE` | 192.168.111 | Network base (KVM only) |
 | `RENET_DATA_DIR` | ~/.renet | Data directory for VM disks and config |
 
@@ -121,14 +139,14 @@ Environment variables control VM resources:
 | `rdc ops up [options]` | Provision VM cluster |
 | `rdc ops down` | Destroy all VMs and cleanup |
 | `rdc ops status` | Show status of all VMs |
-| `rdc ops ssh <vm-id>` | SSH into a specific VM |
+| `rdc ops ssh <vm-id> [command...]` | SSH into a VM, or run a command on it |
 
 ### `rdc ops up` Options
 
 | Option | Description |
 |--------|-------------|
 | `--basic` | Minimal cluster (bridge + 1 worker) |
-| `--lite` | Lightweight resources |
+| `--lite` | Skip VM provisioning (SSH keys only) |
 | `--force` | Force recreate existing VMs |
 | `--parallel` | Provision VMs in parallel |
 | `--skip-orchestration` | VMs only, no Rediacc services |

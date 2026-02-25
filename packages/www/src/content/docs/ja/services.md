@@ -4,7 +4,7 @@ description: Rediaccfile、サービスネットワーキング、自動開始�
 category: Guides
 order: 5
 language: ja
-sourceHash: c4048b13799a7767
+sourceHash: 294f92dc32f10c86
 ---
 
 # サービス
@@ -202,7 +202,7 @@ rdc repo down my-app -m server-1
 
 | オプション | 説明 |
 |--------|-------------|
-| `--unmount` | 停止後に暗号化リポジトリをアンマウント |
+| `--unmount` | 停止後に暗号化リポジトリをアンマウント。効果が現れない場合は、`rdc repo unmount` を別途使用してください。 |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 実行シーケンスは以下の通りです：
@@ -279,9 +279,9 @@ rdc repo autostart list -m server-1
 
 ```bash
 curl -fsSL https://get.rediacc.com | sh
-rdc context create-local production --ssh-key ~/.ssh/id_ed25519
-rdc context add-machine prod-1 --ip 203.0.113.50 --user deploy
-rdc context setup-machine prod-1
+rdc config init production --ssh-key ~/.ssh/id_ed25519
+rdc config add-machine prod-1 --ip 203.0.113.50 --user deploy
+rdc config setup-machine prod-1
 rdc repo create webapp -m prod-1 --size 10G
 ```
 

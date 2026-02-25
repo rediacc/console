@@ -4,12 +4,12 @@ description: 5分钟内在您的服务器上运行容器化服务。
 category: Guides
 order: -1
 language: zh
+sourceHash: b368b94e7064efe1
 ---
 
 # 快速开始
 
-如果你不确定该使用哪个工具，请参考 [rdc vs renet](/zh/docs/rdc-vs-renet)。
-5分钟内在您自己的服务器上部署加密、隔离的容器环境。本指南使用**本地模式** — 无需云账户或SaaS依赖。
+5分钟内在您自己的服务器上部署加密、隔离的容器环境。无需云账户或SaaS依赖。
 
 ## 前提条件
 
@@ -23,22 +23,22 @@ language: zh
 curl -fsSL https://get.rediacc.com | sh
 ```
 
-## 2. 创建上下文
+## 2. 创建配置
 
 ```bash
-rdc context create-local my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 ## 3. 添加服务器
 
 ```bash
-rdc context add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
+rdc config add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
 ```
 
 ## 4. 配置服务器
 
 ```bash
-rdc context setup-machine server-1
+rdc config setup-machine server-1
 ```
 
 此命令会在您的服务器上安装Docker、cryptsetup和renet二进制文件。
@@ -73,8 +73,9 @@ Rediacc将容器化服务部署到您控制的远程服务器上。所有数据�
 
 ## 后续步骤
 
-- **[架构](/zh/docs/architecture)** — 了解Rediacc的工作原理：模式、安全模型、Docker隔离
-- **[服务器设置](/zh/docs/setup)** — 详细设置指南：上下文、机器、基础设施配置
+- **[架构](/zh/docs/architecture)** — 了解Rediacc的工作原理：适配器检测、安全模型、Docker隔离
+- **[rdc vs renet](/zh/docs/rdc-vs-renet)** — 了解日常操作与底层远程工作分别使用哪个CLI
+- **[服务器设置](/zh/docs/setup)** — 详细设置指南：配置、机器、基础设施配置
 - **[仓库](/zh/docs/repositories)** — 创建、管理、调整大小、分叉和验证仓库
 - **[服务](/zh/docs/services)** — Rediaccfile、服务网络、部署、自动启动
 - **[备份与恢复](/zh/docs/backup-restore)** — 备份到外部存储并安排自动备份

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: es
-sourceHash: 3d127a0a186d7487
+sourceHash: cf186b18b0c50eba
 ---
 
 # Respaldo y Restauración
@@ -22,15 +22,15 @@ Antes de enviar respaldos, registre un proveedor de almacenamiento. Rediacc sopo
 Si ya tiene un remote de rclone configurado:
 
 ```bash
-rdc context import-storage my-storage
+rdc config import-storage rclone.conf
 ```
 
-Esto importa la configuración de almacenamiento desde su configuración de rclone al contexto actual.
+Esto importa configuraciones de almacenamiento desde un archivo de configuración rclone a la configuración actual. Tipos compatibles: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob y Swift.
 
 ### Ver Almacenamientos
 
 ```bash
-rdc context storages
+rdc config storages
 ```
 
 ## Enviar un Respaldo

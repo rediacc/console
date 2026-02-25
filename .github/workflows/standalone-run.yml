@@ -186,7 +186,7 @@ jobs:
       - name: Create Debug Session
         if: inputs.enable-debug
         id: tmate
-        uses: rediacc/action-tmate@84ce86575650e10d29cf62cf619d48d16247dc19  # v1
+        uses: ./.github/actions/tmate
         with:
           timeout: 60
 

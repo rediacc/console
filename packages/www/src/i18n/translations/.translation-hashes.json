@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 991
+    "keyCount": 967
   },
   "hashes": {
     "bridge.text": "76620bbb",

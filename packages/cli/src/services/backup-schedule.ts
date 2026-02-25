@@ -9,7 +9,7 @@
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { buildRcloneArgs } from '@rediacc/shared/queue-vault';
-import { contextService } from './context.js';
+import { configService } from './config-resources.js';
 import { outputService } from './output.js';
 import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
 
@@ -151,7 +151,7 @@ export async function pushBackupSchedule(
   options: PushScheduleOptions = {}
 ): Promise<void> {
   // Load backup config
-  const backupConfig = await contextService.getBackupConfig();
+  const backupConfig = await configService.getBackupConfig();
   if (!backupConfig?.defaultDestination) {
     throw new Error(
       'No backup configuration found. Set it with: rdc backup schedule set --destination <storage>'
@@ -164,10 +164,10 @@ export async function pushBackupSchedule(
   }
 
   // Load storage config
-  const storage = await contextService.getLocalStorage(backupConfig.defaultDestination);
+  const storage = await configService.getStorage(backupConfig.defaultDestination);
 
   // Load machine config
-  const localConfig = await contextService.getLocalConfig();
+  const localConfig = await configService.getLocalConfig();
   const machine = localConfig.machines[machineName];
   if (!machine) {
     const available = Object.keys(localConfig.machines).join(', ');

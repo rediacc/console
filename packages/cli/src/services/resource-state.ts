@@ -3,17 +3,17 @@
  *
  * ResourceState abstracts access to machines, storages, repositories, and SSH keys.
  * S3StateService and LocalResourceState both implement it, eliminating mode branching
- * in context-resources.ts.
+ * in config-resources.ts.
  *
- * LocalResourceState wraps config.json reads/writes with optional AES-256-GCM encryption.
- * When encrypted, all resource data is stored as a single blob in NamedContext.encryptedResources.
+ * LocalResourceState wraps config file reads/writes with optional AES-256-GCM encryption.
+ * When encrypted, all resource data is stored as a single blob in RdcConfig.encryptedResources.
  */
 
+import { configFileStorage } from '../adapters/config-file-storage.js';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
-import { configStorage } from '../adapters/storage.js';
 import type {
   MachineConfig,
-  NamedContext,
+  RdcConfig,
   RepositoryConfig,
   SSHContent,
   StorageConfig,
@@ -64,35 +64,36 @@ interface LocalState {
  * Supports optional AES-256-GCM encryption via masterPassword.
  */
 export class LocalResourceState implements ResourceState {
-  private readonly contextName: string;
+  private readonly configName: string;
   private readonly masterPassword: string | null;
   private readonly state: LocalState;
 
-  private constructor(contextName: string, masterPassword: string | null, state: LocalState) {
-    this.contextName = contextName;
+  private constructor(configName: string, masterPassword: string | null, state: LocalState) {
+    this.configName = configName;
     this.masterPassword = masterPassword;
     this.state = state;
   }
 
   /**
-   * Load resource state from a NamedContext.
+   * Load resource state from an RdcConfig.
    * If encrypted, decrypts the encryptedResources blob.
-   * If unencrypted, reads from inline context fields.
+   * If unencrypted, reads from inline config fields.
    */
   static async load(
-    context: NamedContext,
+    config: RdcConfig,
+    configName: string,
     masterPassword: string | null
   ): Promise<LocalResourceState> {
     let state: LocalState;
 
-    if (context.encrypted && context.encryptedResources && masterPassword) {
-      // Encrypted local mode: decrypt the single blob
+    if (config.encrypted && config.encryptedResources && masterPassword) {
+      // Encrypted mode: decrypt the single blob
       const decrypted = await decryptSection<{
         machines: Record<string, MachineConfig>;
         storages: Record<string, StorageConfig>;
         repositories: Record<string, RepositoryConfig>;
         sshContent?: SSHContent | null;
-      }>(context.encryptedResources, masterPassword);
+      }>(config.encryptedResources, masterPassword);
 
       state = {
         machines: decrypted.machines,
@@ -101,16 +102,16 @@ export class LocalResourceState implements ResourceState {
         sshContent: decrypted.sshContent ?? null,
       };
     } else {
-      // Unencrypted local mode: read directly from context fields
+      // Unencrypted mode: read directly from config fields
       state = {
-        machines: context.machines ?? {},
-        storages: context.storages ?? {},
-        repositories: context.repositories ?? {},
-        sshContent: context.sshContent ?? null,
+        machines: config.machines ?? {},
+        storages: config.storages ?? {},
+        repositories: config.repositories ?? {},
+        sshContent: config.sshContent ?? null,
       };
     }
 
-    return new LocalResourceState(context.name, masterPassword, state);
+    return new LocalResourceState(configName, masterPassword, state);
   }
 
   // ===========================================================================
@@ -162,7 +163,7 @@ export class LocalResourceState implements ResourceState {
   // ===========================================================================
 
   private async persist(): Promise<void> {
-    const contextName = this.contextName;
+    const configName = this.configName;
 
     if (this.masterPassword) {
       // Encrypted: store all sections as a single encrypted blob
@@ -176,46 +177,26 @@ export class LocalResourceState implements ResourceState {
         this.masterPassword
       );
 
-      await configStorage.update((config) => {
-        const ctx = config.contexts[contextName];
-        if (!ctx) throw new Error(`Context "${contextName}" not found`);
-        return {
-          ...config,
-          contexts: {
-            ...config.contexts,
-            [contextName]: {
-              ...ctx,
-              encrypted: true,
-              encryptedResources: blob,
-              machines: undefined,
-              storages: undefined,
-              repositories: undefined,
-              sshContent: undefined,
-            },
-          },
-        };
-      });
+      await configFileStorage.update(configName, (cfg) => ({
+        ...cfg,
+        encrypted: true,
+        encryptedResources: blob,
+        machines: undefined,
+        storages: undefined,
+        repositories: undefined,
+        sshContent: undefined,
+      }));
     } else {
-      // Unencrypted: store sections directly on the context
-      await configStorage.update((config) => {
-        const ctx = config.contexts[contextName];
-        if (!ctx) throw new Error(`Context "${contextName}" not found`);
-        return {
-          ...config,
-          contexts: {
-            ...config.contexts,
-            [contextName]: {
-              ...ctx,
-              machines: this.state.machines,
-              storages: this.state.storages,
-              repositories: this.state.repositories,
-              sshContent: this.state.sshContent ?? undefined,
-              encrypted: undefined,
-              encryptedResources: undefined,
-            },
-          },
-        };
-      });
+      // Unencrypted: store sections directly on the config
+      await configFileStorage.update(configName, (cfg) => ({
+        ...cfg,
+        machines: this.state.machines,
+        storages: this.state.storages,
+        repositories: this.state.repositories,
+        sshContent: this.state.sshContent ?? undefined,
+        encrypted: undefined,
+        encryptedResources: undefined,
+      }));
     }
   }
 }

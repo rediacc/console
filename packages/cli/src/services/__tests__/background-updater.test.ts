@@ -49,17 +49,17 @@ vi.mock('../../version.js', () => ({
   VERSION: '0.4.42',
 }));
 
+const mockReleaseLock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+
 const mockPlatform = vi.hoisted(() => ({
   isSEA: vi.fn().mockReturnValue(true),
   isUpdateDisabled: vi.fn().mockReturnValue(false),
   getPlatformKey: vi.fn().mockReturnValue('linux-x64'),
-  acquireUpdateLock: vi.fn().mockResolvedValue(true),
-  releaseUpdateLock: vi.fn().mockResolvedValue(undefined),
+  acquireUpdateLock: vi.fn().mockResolvedValue(mockReleaseLock),
   cleanupOldBinary: vi.fn().mockResolvedValue(undefined),
   getOldBinaryPath: vi.fn().mockReturnValue('/usr/local/bin/rdc.old'),
-  REDIACC_DIR: '/home/testuser/.rediacc',
-  STAGED_UPDATE_DIR: '/home/testuser/.rediacc/staged-update',
-  UPDATE_STATE_FILE: '/home/testuser/.rediacc/update-state.json',
+  STAGED_UPDATE_DIR: '/home/testuser/.cache/rediacc/staged-update',
+  UPDATE_STATE_FILE: '/home/testuser/.local/state/rediacc/update-state.json',
 }));
 
 vi.mock('../../utils/platform.js', () => mockPlatform);
@@ -73,7 +73,9 @@ vi.mock('@rediacc/shared/update', () => mockSharedUpdate);
 const mockUpdateState = vi.hoisted(() => ({
   readUpdateState: vi.fn(),
   writeUpdateState: vi.fn().mockResolvedValue(undefined),
-  getStagedBinaryPath: vi.fn().mockReturnValue('/home/testuser/.rediacc/staged-update/rdc-0.5.0'),
+  getStagedBinaryPath: vi
+    .fn()
+    .mockReturnValue('/home/testuser/.cache/rediacc/staged-update/rdc-0.5.0'),
   cleanupStaleStagedFiles: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -118,8 +120,8 @@ describe('services/background-updater', () => {
     mockPlatform.isSEA.mockReturnValue(true);
     mockPlatform.isUpdateDisabled.mockReturnValue(false);
     mockPlatform.getPlatformKey.mockReturnValue('linux-x64');
-    mockPlatform.acquireUpdateLock.mockResolvedValue(true);
-    mockPlatform.releaseUpdateLock.mockResolvedValue(undefined);
+    mockReleaseLock.mockResolvedValue(undefined);
+    mockPlatform.acquireUpdateLock.mockResolvedValue(mockReleaseLock);
     mockPlatform.cleanupOldBinary.mockResolvedValue(undefined);
     mockPlatform.getOldBinaryPath.mockReturnValue('/usr/local/bin/rdc.old');
 
@@ -128,7 +130,7 @@ describe('services/background-updater', () => {
     mockUpdateState.writeUpdateState.mockResolvedValue(undefined);
     mockSharedUpdate.isCooldownExpired.mockReturnValue(true);
     mockUpdateState.getStagedBinaryPath.mockReturnValue(
-      '/home/testuser/.rediacc/staged-update/rdc-0.5.0'
+      '/home/testuser/.cache/rediacc/staged-update/rdc-0.5.0'
     );
     mockUpdateState.cleanupStaleStagedFiles.mockResolvedValue(undefined);
 
@@ -158,7 +160,7 @@ describe('services/background-updater', () => {
 
   describe('runBackgroundUpdateWorker()', () => {
     it('exits early when lock is held', async () => {
-      mockPlatform.acquireUpdateLock.mockResolvedValue(false);
+      mockPlatform.acquireUpdateLock.mockResolvedValue(null);
 
       await runBackgroundUpdateWorker();
 
@@ -171,7 +173,7 @@ describe('services/background-updater', () => {
       await runBackgroundUpdateWorker();
 
       expect(mockUpdater.fetchManifest).not.toHaveBeenCalled();
-      expect(mockPlatform.releaseUpdateLock).toHaveBeenCalled();
+      expect(mockReleaseLock).toHaveBeenCalled();
     });
 
     it('downloads and stages binary when update is available', async () => {
@@ -202,7 +204,7 @@ describe('services/background-updater', () => {
           consecutiveFailures: 0,
         })
       );
-      expect(mockPlatform.releaseUpdateLock).toHaveBeenCalled();
+      expect(mockReleaseLock).toHaveBeenCalled();
     });
 
     it('increments failure counter on error', async () => {
@@ -346,7 +348,7 @@ describe('services/background-updater', () => {
         makeState({
           pendingUpdate: {
             version: '0.4.42',
-            stagedPath: '/home/testuser/.rediacc/staged-update/rdc-0.4.42',
+            stagedPath: '/home/testuser/.cache/rediacc/staged-update/rdc-0.4.42',
             sha256: 'abc',
             platformKey: 'linux-x64',
             downloadedAt: '2026-01-01T00:00:00.000Z',
@@ -369,7 +371,7 @@ describe('services/background-updater', () => {
         makeState({
           pendingUpdate: {
             version: '0.5.0',
-            stagedPath: '/home/testuser/.rediacc/staged-update/rdc-0.5.0',
+            stagedPath: '/home/testuser/.cache/rediacc/staged-update/rdc-0.5.0',
             sha256: 'expected_hash',
             platformKey: 'linux-x64',
             downloadedAt: '2026-01-01T00:00:00.000Z',
@@ -395,7 +397,7 @@ describe('services/background-updater', () => {
         makeState({
           pendingUpdate: {
             version: '0.5.0',
-            stagedPath: '/home/testuser/.rediacc/staged-update/rdc-0.5.0',
+            stagedPath: '/home/testuser/.cache/rediacc/staged-update/rdc-0.5.0',
             sha256: 'correct_hash',
             platformKey: 'linux-x64',
             downloadedAt: '2026-01-01T00:00:00.000Z',
@@ -430,7 +432,7 @@ describe('services/background-updater', () => {
         makeState({
           pendingUpdate: {
             version: '0.5.0',
-            stagedPath: '/home/testuser/.rediacc/staged-update/rdc-0.5.0',
+            stagedPath: '/home/testuser/.cache/rediacc/staged-update/rdc-0.5.0',
             sha256: 'correct_hash',
             platformKey: 'linux-x64',
             downloadedAt: '2026-01-01T00:00:00.000Z',
@@ -466,7 +468,7 @@ describe('services/background-updater', () => {
         makeState({
           pendingUpdate: {
             version: '0.5.0',
-            stagedPath: '/home/testuser/.rediacc/staged-update/rdc-0.5.0',
+            stagedPath: '/home/testuser/.cache/rediacc/staged-update/rdc-0.5.0',
             sha256: 'correct_hash',
             platformKey: 'linux-x64',
             downloadedAt: '2026-01-01T00:00:00.000Z',
@@ -497,7 +499,7 @@ describe('services/background-updater', () => {
         makeState({
           pendingUpdate: {
             version: '0.5.0',
-            stagedPath: '/home/testuser/.rediacc/staged-update/rdc-0.5.0',
+            stagedPath: '/home/testuser/.cache/rediacc/staged-update/rdc-0.5.0',
             sha256: 'correct_hash',
             platformKey: 'linux-x64',
             downloadedAt: '2026-01-01T00:00:00.000Z',
@@ -530,7 +532,7 @@ describe('services/background-updater', () => {
         makeState({
           pendingUpdate: {
             version: '0.5.0',
-            stagedPath: '/home/testuser/.rediacc/staged-update/rdc-0.5.0',
+            stagedPath: '/home/testuser/.cache/rediacc/staged-update/rdc-0.5.0',
             sha256: 'correct_hash',
             platformKey: 'linux-x64',
             downloadedAt: '2026-01-01T00:00:00.000Z',
@@ -562,7 +564,7 @@ describe('services/background-updater', () => {
         makeState({
           pendingUpdate: {
             version: '0.5.0',
-            stagedPath: '/home/testuser/.rediacc/staged-update/rdc-0.5.0',
+            stagedPath: '/home/testuser/.cache/rediacc/staged-update/rdc-0.5.0',
             sha256: 'correct_hash',
             platformKey: 'linux-x64',
             downloadedAt: '2026-01-01T00:00:00.000Z',
@@ -594,7 +596,7 @@ describe('services/background-updater', () => {
         makeState({
           pendingUpdate: {
             version: '0.5.0',
-            stagedPath: '/home/testuser/.rediacc/staged-update/rdc-0.5.0',
+            stagedPath: '/home/testuser/.cache/rediacc/staged-update/rdc-0.5.0',
             sha256: 'correct_hash',
             platformKey: 'linux-x64',
             downloadedAt: '2026-01-01T00:00:00.000Z',

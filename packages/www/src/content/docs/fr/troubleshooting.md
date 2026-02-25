@@ -4,6 +4,7 @@ description: "Solutions aux problèmes courants avec SSH, la configuration, les 
 category: "Guides"
 order: 10
 language: fr
+sourceHash: 4c3163007e6a3326
 ---
 
 # Dépannage
@@ -13,16 +14,16 @@ Problèmes courants et leurs solutions. En cas de doute, commencez par `rdc doct
 ## Échec de la connexion SSH
 
 - Vérifiez que vous pouvez vous connecter manuellement : `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Exécutez `rdc context scan-keys server-1` pour actualiser les clés de l'hôte
+- Exécutez `rdc config scan-keys server-1` pour actualiser les clés de l'hôte
 - Vérifiez que le port SSH correspond : `--port 22`
-- Testez la connectivité : `rdc machine test-connection --ip 203.0.113.50 --user deploy`
+- Testez avec une commande simple : `rdc term server-1 -c "hostname"`
 
 ## Discordance de clé d'hôte
 
 Si un serveur a été réinstallé ou ses clés SSH ont changé, vous verrez "host key verification failed" :
 
 ```bash
-rdc context scan-keys server-1
+rdc config scan-keys server-1
 ```
 
 Cette commande récupère de nouvelles clés d'hôte et met à jour votre configuration.
@@ -31,7 +32,7 @@ Cette commande récupère de nouvelles clés d'hôte et met à jour votre config
 
 - Assurez-vous que l'utilisateur SSH dispose d'un accès sudo sans mot de passe, ou configurez `NOPASSWD` pour les commandes requises
 - Vérifiez l'espace disque disponible sur le serveur
-- Exécutez avec `--debug` pour une sortie détaillée : `rdc context setup-machine server-1 --debug`
+- Exécutez avec `--debug` pour une sortie détaillée : `rdc config setup-machine server-1 --debug`
 
 ## Échec de la création du dépôt
 
@@ -74,7 +75,7 @@ rdc term server-1 my-app -c "docker ps"
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
 ```
 
-Remplacez `2816` par l'identifiant réseau de votre dépôt (disponible dans `config.json` ou `rdc repo status`).
+Remplacez `2816` par l'identifiant réseau de votre dépôt (disponible dans `rediacc.json` ou `rdc repo status`).
 
 ## Conteneurs créés sur le mauvais Docker daemon
 
@@ -103,4 +104,4 @@ Si `rdc term` ne parvient pas à ouvrir une fenêtre de terminal :
 rdc doctor
 ```
 
-Cette commande vérifie votre environnement, l'installation de renet, la configuration du contexte et l'état de l'authentification. Chaque vérification signale OK, Warning ou Error avec une brève explication.
+Cette commande vérifie votre environnement, l'installation de renet, la configuration et l'état de l'authentification. Chaque vérification signale OK, Warning ou Error avec une brève explication.

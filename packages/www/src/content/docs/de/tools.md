@@ -1,10 +1,8 @@
 ---
 title: Werkzeuge
-description: >-
-  Dateisynchronisation, Terminalzugriff, VS Code-Integration, Updates und
-  Übersicht über Diagnosefunktionen.
+description: "Dateisynchronisation, Terminalzugriff, VS Code-Unterstützung und CLI-Updates."
 category: Guides
-order: 8
+order: 9
 language: de
 sourceHash: 80ca3cd3e1a55d4b
 ---

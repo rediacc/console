@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 
-// Mock contextService used by LocalStateProvider
-vi.mock('../../services/context.js', () => ({
-  contextService: {
-    listLocalMachines: vi.fn().mockResolvedValue([]),
-    addLocalMachine: vi.fn().mockResolvedValue(undefined),
-    removeLocalMachine: vi.fn().mockResolvedValue(undefined),
+// Mock configService used by LocalStateProvider
+vi.mock('../../services/config-resources.js', () => ({
+  configService: {
+    listMachines: vi.fn().mockResolvedValue([]),
+    addMachine: vi.fn().mockResolvedValue(undefined),
+    removeMachine: vi.fn().mockResolvedValue(undefined),
     getLocalConfig: vi.fn().mockResolvedValue({
       machines: {},
       ssh: { privateKeyPath: '' },
@@ -35,8 +35,8 @@ describe('LocalStateProvider', () => {
     });
   });
 
-  it('should have mode set to local', () => {
+  it('should have isCloud set to false', () => {
     const provider = new LocalStateProvider();
-    expect(provider.mode).toBe('local');
+    expect(provider.isCloud).toBe(false);
   });
 });

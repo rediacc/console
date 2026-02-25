@@ -8,7 +8,7 @@ language: en
 
 # Quick Start
 
-Deploy an encrypted, isolated container environment on your own server in 5 minutes. This guide uses **local mode** — no cloud accounts or SaaS dependencies.
+Deploy an encrypted, isolated container environment on your own server in 5 minutes. No cloud accounts or SaaS dependencies required.
 
 ## Prerequisites
 
@@ -22,22 +22,22 @@ Deploy an encrypted, isolated container environment on your own server in 5 minu
 curl -fsSL https://get.rediacc.com | sh
 ```
 
-## 2. Create a Context
+## 2. Create a Config
 
 ```bash
-rdc context create-local my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 ## 3. Add Your Server
 
 ```bash
-rdc context add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
+rdc config add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
 ```
 
 ## 4. Provision the Server
 
 ```bash
-rdc context setup-machine server-1
+rdc config setup-machine server-1
 ```
 
 This installs Docker, cryptsetup, and the renet binary on your server.
@@ -72,9 +72,9 @@ No cloud accounts. No SaaS dependencies. Your data stays on your servers.
 
 ## Next Steps
 
-- **[Architecture](/en/docs/architecture)** — Understand how Rediacc works: modes, security model, Docker isolation
+- **[Architecture](/en/docs/architecture)** — Understand how Rediacc works: adapter detection, security model, Docker isolation
 - **[rdc vs renet](/en/docs/rdc-vs-renet)** — Understand which CLI to use for daily operations vs low-level remote work
-- **[Machine Setup](/en/docs/setup)** — Detailed setup guide: contexts, machines, infrastructure configuration
+- **[Machine Setup](/en/docs/setup)** — Detailed setup guide: configs, machines, infrastructure configuration
 - **[Repositories](/en/docs/repositories)** — Create, manage, resize, fork, and validate repositories
 - **[Services](/en/docs/services)** — Rediaccfiles, service networking, deployment, autostart
 - **[Backup & Restore](/en/docs/backup-restore)** — Back up to external storage and schedule automated backups

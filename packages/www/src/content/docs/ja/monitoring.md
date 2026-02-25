@@ -4,7 +4,7 @@ description: マシンの健全性、コンテナ、サービス、リポジト�
 category: Guides
 order: 9
 language: ja
-sourceHash: 72f77c1ae5a0dbce
+sourceHash: 5a0f43834cb143a2
 ---
 
 # モニタリング
@@ -20,12 +20,9 @@ rdc machine health server-1
 ```
 
 レポート内容：
-- **System**: アップタイム、メモリ使用量、ディスク使用量
-- **Datastore**: 容量と使用量
+- **System**: アップタイム、ディスク使用量、データストア使用量
 - **コンテナ**: 実行中、正常、異常のコンテナ数
-- **サービス**: ステータスと再起動回数
-- **ストレージ**: SMARTヘルスと温度
-- **リポジトリ**: マウント状態とDocker daemonの状態
+- **ストレージ**: SMARTヘルスステータス
 - **問題点**: 検出された問題
 
 マシン可読な出力には `--output json` を使用してください。
@@ -41,10 +38,11 @@ rdc machine containers server-1
 | カラム | 説明 |
 |--------|------|
 | Name | コンテナ名 |
-| Status | 実行中、停止中など |
+| Status | アップタイムまたは終了理由 |
+| State | 実行中、終了済みなど |
 | Health | 正常、異常、なし |
 | CPU | CPU使用率 |
-| Memory | メモリ使用量 |
+| Memory | メモリ使用量 / 上限 |
 | Repository | コンテナが属するリポジトリ |
 
 オプション：
@@ -104,13 +102,15 @@ rdc machine vault-status server-1
 
 提供される情報：
 - ホスト名とアップタイム
-- メモリ、ディスク、Datastoreの使用量
+- メモリ、ディスク、データストアの使用量
 - リポジトリの総数、マウント数、Docker実行数
 - リポジトリごとの詳細情報
 
 マシン可読な出力には `--output json` を使用してください。
 
 ## 接続テスト
+
+> **クラウドアダプターのみ。** ローカルモードでは、`rdc term server-1 -c "hostname"` を使用して接続を確認してください。
 
 マシンへのSSH接続を確認します：
 
@@ -141,9 +141,8 @@ rdc doctor
 |----------|-------------|
 | **環境** | Node.jsバージョン、CLIバージョン、SEAモード、Goインストール、Dockerの利用可否 |
 | **Renet** | バイナリの場所、バージョン、CRIU、rsync、SEA埋め込みアセット |
-| **設定** | アクティブなコンテキスト、モード、マシン、SSH鍵 |
-| **認証** | ログイン状態、ユーザーメールアドレス |
-| **Virtualization** | Checks if your system can run local virtual machines (`rdc ops`) |
+| **設定** | アクティブな設定、アダプター、マシン、SSH鍵 |
+| **Virtualization** | ローカル仮想マシンを実行できるか確認（`rdc ops`） |
 
 各チェックは **OK**、**警告**、または **エラー** を報告します。問題のトラブルシューティングの最初のステップとしてこれを使用してください。
 

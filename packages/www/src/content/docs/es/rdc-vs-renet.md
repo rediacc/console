@@ -4,7 +4,7 @@ description: Cuándo usar rdc y cuándo usar renet.
 category: Concepts
 order: 1
 language: es
-sourceHash: 0396eec8815a0b4e
+sourceHash: e0ef5f051cefb407
 ---
 
 # rdc vs renet
@@ -24,7 +24,7 @@ Rediacc tiene dos binarios. Aquí se explica cuándo usar cada uno.
 
 `rdc` se conecta a su servidor mediante SSH y ejecuta comandos de `renet` por usted. Usted escribe un solo comando en su estación de trabajo, y `rdc` se encarga del resto:
 
-1. Lee su configuración local (`~/.rediacc/config.json`)
+1. Lee su configuración local (`~/.config/rediacc/rediacc.json`)
 2. Se conecta al servidor mediante SSH
 3. Actualiza el binario `renet` si es necesario
 4. Ejecuta la operación correspondiente de `renet` en el servidor
@@ -36,7 +36,7 @@ Todas las tareas comunes se realizan a través de `rdc` en su estación de traba
 
 ```bash
 # Configurar un nuevo servidor
-rdc context setup-machine server-1
+rdc config setup-machine server-1
 
 # Crear e iniciar un repositorio
 rdc repo create my-app -m server-1 --size 10G
@@ -66,12 +66,15 @@ Todos los comandos de `renet` necesitan privilegios de root (`sudo`). Consulte l
 `rdc ops` envuelve `renet ops` para gestionar clústeres de VMs locales en su estación de trabajo:
 
 ```bash
-rdc ops setup       # Instalar prerrequisitos (KVM o QEMU)
-rdc ops up --basic  # Iniciar un clúster mínimo
-rdc ops status      # Verificar el estado de las VMs
-rdc ops ssh 1       # Conectarse por SSH a la VM puente
-rdc ops down        # Destruir el clúster
+rdc ops setup              # Instalar prerrequisitos (KVM o QEMU)
+rdc ops up --basic         # Iniciar un clúster mínimo
+rdc ops status             # Verificar el estado de las VMs
+rdc ops ssh 1              # Conectarse por SSH a la VM puente
+rdc ops ssh 1 hostname     # Ejecutar un comando en la VM puente
+rdc ops down               # Destruir el clúster
 ```
+
+> Requiere el adaptador local. No disponible con el adaptador cloud.
 
 Estos comandos ejecutan `renet` localmente (no mediante SSH). Consulte [VMs Experimentales](/es/docs/experimental-vms) para la documentación completa.
 

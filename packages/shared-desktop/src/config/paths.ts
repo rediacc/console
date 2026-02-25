@@ -1,25 +1,26 @@
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { getConfigPath, getPlatform } from '../utils/platform.js';
+import { getCacheDir, getConfigDir, getStateDir } from '@rediacc/shared/paths';
+import { getPlatform } from '../utils/platform.js';
 
 /**
  * Rediacc configuration directory structure
  */
 export interface ConfigPaths {
-  /** Main config directory: ~/.rediacc */
+  /** Main config directory (platform-native) */
   root: string;
-  /** Cache directory: ~/.rediacc/cache */
+  /** Cache directory (platform-native) */
   cache: string;
-  /** Logs directory: ~/.rediacc/logs */
+  /** Logs directory (inside state dir) */
   logs: string;
-  /** SSH keys directory: ~/.rediacc/keys */
+  /** SSH keys directory (inside config dir) */
   keys: string;
-  /** Main config file: ~/.rediacc/config.json */
+  /** Main config file (inside config dir) */
   configFile: string;
-  /** Terminal cache file: ~/.rediacc/cache/terminal.json */
+  /** Terminal cache file (inside cache dir) */
   terminalCache: string;
-  /** Known hosts file: ~/.rediacc/known_hosts */
+  /** Known hosts file (inside config dir) */
   knownHosts: string;
 }
 
@@ -27,13 +28,13 @@ export interface ConfigPaths {
  * Gets all configuration paths
  */
 export function getConfigPaths(): ConfigPaths {
-  const root = getConfigPath();
-  const cache = join(root, 'cache');
+  const root = getConfigDir();
+  const cache = getCacheDir();
 
   return {
     root,
     cache,
-    logs: join(root, 'logs'),
+    logs: join(getStateDir(), 'logs'),
     keys: join(root, 'keys'),
     configFile: join(root, 'config.json'),
     terminalCache: join(cache, 'terminal.json'),
@@ -47,7 +48,7 @@ export function getConfigPaths(): ConfigPaths {
 export async function ensureConfigDirs(): Promise<ConfigPaths> {
   const paths = getConfigPaths();
 
-  // Create directories with secure permissions
+  // Create directories with secure permissions (config, cache, state/logs, keys)
   const dirs = [paths.root, paths.cache, paths.logs, paths.keys];
 
   for (const dir of dirs) {

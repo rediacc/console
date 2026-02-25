@@ -3,6 +3,12 @@
   "descriptionKey": null,
   "options": [
     {
+      "flags": "--config <name>",
+      "descriptionKey": "options.config",
+      "mandatory": false,
+      "defaultValue": null
+    },
+    {
       "flags": "--experimental",
       "descriptionKey": "options.experimental",
       "mandatory": false,
@@ -52,7 +58,7 @@
               "defaultValue": null
             },
             {
-              "flags": "--save-as <context>",
+              "flags": "--save-as <name>",
               "descriptionKey": "options.saveAs",
               "mandatory": false,
               "defaultValue": null
@@ -3712,22 +3718,69 @@
       ]
     },
     {
-      "name": "context",
-      "descriptionKey": "commands.context.description",
+      "name": "config",
+      "descriptionKey": "commands.config.description",
       "options": [],
       "arguments": [],
       "subcommands": [
         {
-          "name": "list",
-          "descriptionKey": "commands.context.list.description",
-          "options": [],
-          "arguments": [],
-          "subcommands": []
-        },
-        {
-          "name": "create",
-          "descriptionKey": "commands.context.create.description",
+          "name": "init",
+          "descriptionKey": "commands.config.init.description",
           "options": [
+            {
+              "flags": "--ssh-key <path>",
+              "descriptionKey": "options.sshKey",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--renet-path <path>",
+              "descriptionKey": "options.renetPath",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--master-password <password>",
+              "descriptionKey": "commands.config.init.optionMasterPassword",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--s3-endpoint <url>",
+              "descriptionKey": "commands.config.init.optionS3Endpoint",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--s3-bucket <name>",
+              "descriptionKey": "commands.config.init.optionS3Bucket",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--s3-access-key-id <key>",
+              "descriptionKey": "commands.config.init.optionS3AccessKeyId",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--s3-secret-access-key <key>",
+              "descriptionKey": "commands.config.init.optionS3SecretAccessKey",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--s3-region <region>",
+              "descriptionKey": "commands.config.init.optionS3Region",
+              "mandatory": false,
+              "defaultValue": "auto"
+            },
+            {
+              "flags": "--s3-prefix <prefix>",
+              "descriptionKey": "commands.config.init.optionS3Prefix",
+              "mandatory": false,
+              "defaultValue": null
+            },
             {
               "flags": "-u, --api-url <url>",
               "descriptionKey": "options.apiUrl",
@@ -3738,7 +3791,7 @@
           "arguments": [
             {
               "name": "name",
-              "required": true,
+              "required": false,
               "variadic": false,
               "defaultValue": null
             }
@@ -3746,8 +3799,22 @@
           "subcommands": []
         },
         {
+          "name": "list",
+          "descriptionKey": "commands.config.list.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "show",
+          "descriptionKey": "commands.config.show.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
           "name": "delete",
-          "descriptionKey": "commands.context.delete.description",
+          "descriptionKey": "commands.config.delete.description",
           "options": [],
           "arguments": [
             {
@@ -3760,42 +3827,8 @@
           "subcommands": []
         },
         {
-          "name": "rename",
-          "descriptionKey": "commands.context.rename.description",
-          "options": [],
-          "arguments": [
-            {
-              "name": "oldName",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            },
-            {
-              "name": "newName",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
-          "subcommands": []
-        },
-        {
-          "name": "current",
-          "descriptionKey": "commands.context.current.description",
-          "options": [],
-          "arguments": [],
-          "subcommands": []
-        },
-        {
-          "name": "show",
-          "descriptionKey": "commands.context.show.description",
-          "options": [],
-          "arguments": [],
-          "subcommands": []
-        },
-        {
           "name": "set",
-          "descriptionKey": "commands.context.set.description",
+          "descriptionKey": "commands.config.set.description",
           "options": [],
           "arguments": [
             {
@@ -3815,7 +3848,7 @@
         },
         {
           "name": "clear",
-          "descriptionKey": "commands.context.clear.description",
+          "descriptionKey": "commands.config.clear.description",
           "options": [],
           "arguments": [
             {
@@ -3828,24 +3861,12 @@
           "subcommands": []
         },
         {
-          "name": "create-local",
-          "descriptionKey": "commands.context.createLocal.description",
+          "name": "recover",
+          "descriptionKey": "commands.config.recover.description",
           "options": [
             {
-              "flags": "--ssh-key <path>",
-              "descriptionKey": "options.sshKey",
-              "mandatory": true,
-              "defaultValue": null
-            },
-            {
-              "flags": "--renet-path <path>",
-              "descriptionKey": "options.renetPath",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
-              "flags": "--master-password <password>",
-              "descriptionKey": "commands.context.createLocal.optionMasterPassword",
+              "flags": "-y, --yes",
+              "descriptionKey": "options.yes",
               "mandatory": false,
               "defaultValue": null
             }
@@ -3853,76 +3874,7 @@
           "arguments": [
             {
               "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
-          "subcommands": []
-        },
-        {
-          "name": "create-s3",
-          "descriptionKey": "commands.context.createS3.description",
-          "options": [
-            {
-              "flags": "--endpoint <url>",
-              "descriptionKey": "commands.context.createS3.optionEndpoint",
-              "mandatory": true,
-              "defaultValue": null
-            },
-            {
-              "flags": "--bucket <name>",
-              "descriptionKey": "commands.context.createS3.optionBucket",
-              "mandatory": true,
-              "defaultValue": null
-            },
-            {
-              "flags": "--access-key-id <key>",
-              "descriptionKey": "commands.context.createS3.optionAccessKeyId",
-              "mandatory": true,
-              "defaultValue": null
-            },
-            {
-              "flags": "--ssh-key <path>",
-              "descriptionKey": "options.sshPrivateKey",
-              "mandatory": true,
-              "defaultValue": null
-            },
-            {
-              "flags": "--secret-access-key <key>",
-              "descriptionKey": "commands.context.createS3.optionSecretAccessKey",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
-              "flags": "--region <region>",
-              "descriptionKey": "commands.context.createS3.optionRegion",
-              "mandatory": false,
-              "defaultValue": "auto"
-            },
-            {
-              "flags": "--prefix <prefix>",
-              "descriptionKey": "commands.context.createS3.optionPrefix",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
-              "flags": "--renet-path <path>",
-              "descriptionKey": "commands.context.createS3.optionRenetPath",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
-              "flags": "--master-password <password>",
-              "descriptionKey": "commands.context.createS3.optionMasterPassword",
-              "mandatory": false,
-              "defaultValue": null
-            }
-          ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
+              "required": false,
               "variadic": false,
               "defaultValue": null
             }
@@ -3931,7 +3883,7 @@
         },
         {
           "name": "add-machine",
-          "descriptionKey": "commands.context.addMachine.description",
+          "descriptionKey": "commands.config.addMachine.description",
           "options": [
             {
               "flags": "--ip <address>",
@@ -3970,7 +3922,7 @@
         },
         {
           "name": "scan-keys",
-          "descriptionKey": "commands.context.scanKeys.description",
+          "descriptionKey": "commands.config.scanKeys.description",
           "options": [],
           "arguments": [
             {
@@ -3984,7 +3936,7 @@
         },
         {
           "name": "remove-machine",
-          "descriptionKey": "commands.context.removeMachine.description",
+          "descriptionKey": "commands.config.removeMachine.description",
           "options": [],
           "arguments": [
             {
@@ -3998,14 +3950,14 @@
         },
         {
           "name": "machines",
-          "descriptionKey": "commands.context.machines.description",
+          "descriptionKey": "commands.config.machines.description",
           "options": [],
           "arguments": [],
           "subcommands": []
         },
         {
           "name": "set-ssh",
-          "descriptionKey": "commands.context.setSsh.description",
+          "descriptionKey": "commands.config.setSsh.description",
           "options": [
             {
               "flags": "--private-key <path>",
@@ -4025,7 +3977,7 @@
         },
         {
           "name": "set-renet",
-          "descriptionKey": "commands.context.setRenet.description",
+          "descriptionKey": "commands.config.setRenet.description",
           "options": [],
           "arguments": [
             {
@@ -4039,17 +3991,17 @@
         },
         {
           "name": "setup-machine",
-          "descriptionKey": "commands.context.setupMachine.description",
+          "descriptionKey": "commands.config.setupMachine.description",
           "options": [
             {
               "flags": "--datastore <path>",
-              "descriptionKey": "commands.context.setupMachine.datastoreOption",
+              "descriptionKey": "commands.config.setupMachine.datastoreOption",
               "mandatory": false,
               "defaultValue": "/mnt/rediacc"
             },
             {
               "flags": "--datastore-size <size>",
-              "descriptionKey": "commands.context.setupMachine.datastoreSizeOption",
+              "descriptionKey": "commands.config.setupMachine.datastoreSizeOption",
               "mandatory": false,
               "defaultValue": "95%"
             },
@@ -4072,11 +4024,11 @@
         },
         {
           "name": "import-storage",
-          "descriptionKey": "commands.context.importStorage.description",
+          "descriptionKey": "commands.config.importStorage.description",
           "options": [
             {
               "flags": "--name <name>",
-              "descriptionKey": "commands.context.importStorage.optionName",
+              "descriptionKey": "commands.config.importStorage.optionName",
               "mandatory": false,
               "defaultValue": null
             }
@@ -4093,7 +4045,7 @@
         },
         {
           "name": "remove-storage",
-          "descriptionKey": "commands.context.removeStorage.description",
+          "descriptionKey": "commands.config.removeStorage.description",
           "options": [],
           "arguments": [
             {
@@ -4107,18 +4059,18 @@
         },
         {
           "name": "storages",
-          "descriptionKey": "commands.context.storages.description",
+          "descriptionKey": "commands.config.storages.description",
           "options": [],
           "arguments": [],
           "subcommands": []
         },
         {
           "name": "add-repository",
-          "descriptionKey": "commands.context.addRepository.description",
+          "descriptionKey": "commands.config.addRepository.description",
           "options": [
             {
               "flags": "--guid <guid>",
-              "descriptionKey": "commands.context.addRepository.optionGuid",
+              "descriptionKey": "commands.config.addRepository.optionGuid",
               "mandatory": true,
               "defaultValue": null
             },
@@ -4130,13 +4082,13 @@
             },
             {
               "flags": "--credential <credential>",
-              "descriptionKey": "commands.context.addRepository.optionCredential",
+              "descriptionKey": "commands.config.addRepository.optionCredential",
               "mandatory": false,
               "defaultValue": null
             },
             {
               "flags": "--network-id <id>",
-              "descriptionKey": "commands.context.addRepository.optionNetworkId",
+              "descriptionKey": "commands.config.addRepository.optionNetworkId",
               "mandatory": false,
               "defaultValue": null
             }
@@ -4153,7 +4105,7 @@
         },
         {
           "name": "remove-repository",
-          "descriptionKey": "commands.context.removeRepository.description",
+          "descriptionKey": "commands.config.removeRepository.description",
           "options": [],
           "arguments": [
             {
@@ -4167,118 +4119,54 @@
         },
         {
           "name": "repositories",
-          "descriptionKey": "commands.context.repositories.description",
+          "descriptionKey": "commands.config.repositories.description",
           "options": [],
           "arguments": [],
           "subcommands": []
         },
         {
-          "name": "to-s3",
-          "descriptionKey": "commands.context.toS3.description",
-          "options": [
-            {
-              "flags": "--endpoint <url>",
-              "descriptionKey": "commands.context.createS3.optionEndpoint",
-              "mandatory": true,
-              "defaultValue": null
-            },
-            {
-              "flags": "--bucket <name>",
-              "descriptionKey": "commands.context.createS3.optionBucket",
-              "mandatory": true,
-              "defaultValue": null
-            },
-            {
-              "flags": "--access-key-id <key>",
-              "descriptionKey": "commands.context.createS3.optionAccessKeyId",
-              "mandatory": true,
-              "defaultValue": null
-            },
-            {
-              "flags": "--secret-access-key <key>",
-              "descriptionKey": "commands.context.toS3.optionSecretAccessKey",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
-              "flags": "--region <region>",
-              "descriptionKey": "commands.context.createS3.optionRegion",
-              "mandatory": false,
-              "defaultValue": "auto"
-            },
-            {
-              "flags": "--prefix <prefix>",
-              "descriptionKey": "commands.context.toS3.optionPrefix",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
-              "flags": "--master-password <password>",
-              "descriptionKey": "commands.context.toS3.optionMasterPassword",
-              "mandatory": false,
-              "defaultValue": null
-            }
-          ],
-          "arguments": [],
-          "subcommands": []
-        },
-        {
-          "name": "to-local",
-          "descriptionKey": "commands.context.toLocal.description",
-          "options": [
-            {
-              "flags": "--ssh-key-path <path>",
-              "descriptionKey": "commands.context.toLocal.optionSshKeyPath",
-              "mandatory": false,
-              "defaultValue": null
-            }
-          ],
-          "arguments": [],
-          "subcommands": []
-        },
-        {
           "name": "set-infra",
-          "descriptionKey": "commands.context.setInfra.description",
+          "descriptionKey": "commands.config.setInfra.description",
           "options": [
             {
               "flags": "--public-ipv4 <ip>",
-              "descriptionKey": "commands.context.setInfra.optionPublicIPv4",
+              "descriptionKey": "commands.config.setInfra.optionPublicIPv4",
               "mandatory": false,
               "defaultValue": null
             },
             {
               "flags": "--public-ipv6 <ip>",
-              "descriptionKey": "commands.context.setInfra.optionPublicIPv6",
+              "descriptionKey": "commands.config.setInfra.optionPublicIPv6",
               "mandatory": false,
               "defaultValue": null
             },
             {
               "flags": "--base-domain <domain>",
-              "descriptionKey": "commands.context.setInfra.optionBaseDomain",
+              "descriptionKey": "commands.config.setInfra.optionBaseDomain",
               "mandatory": false,
               "defaultValue": null
             },
             {
               "flags": "--cert-email <email>",
-              "descriptionKey": "commands.context.setInfra.optionCertEmail",
+              "descriptionKey": "commands.config.setInfra.optionCertEmail",
               "mandatory": false,
               "defaultValue": null
             },
             {
               "flags": "--cf-dns-token <token>",
-              "descriptionKey": "commands.context.setInfra.optionCfDnsToken",
+              "descriptionKey": "commands.config.setInfra.optionCfDnsToken",
               "mandatory": false,
               "defaultValue": null
             },
             {
               "flags": "--tcp-ports <ports>",
-              "descriptionKey": "commands.context.setInfra.optionTcpPorts",
+              "descriptionKey": "commands.config.setInfra.optionTcpPorts",
               "mandatory": false,
               "defaultValue": null
             },
             {
               "flags": "--udp-ports <ports>",
-              "descriptionKey": "commands.context.setInfra.optionUdpPorts",
+              "descriptionKey": "commands.config.setInfra.optionUdpPorts",
               "mandatory": false,
               "defaultValue": null
             }
@@ -4295,7 +4183,7 @@
         },
         {
           "name": "show-infra",
-          "descriptionKey": "commands.context.showInfra.description",
+          "descriptionKey": "commands.config.showInfra.description",
           "options": [],
           "arguments": [
             {
@@ -4309,7 +4197,7 @@
         },
         {
           "name": "push-infra",
-          "descriptionKey": "commands.context.pushInfra.description",
+          "descriptionKey": "commands.config.pushInfra.description",
           "options": [
             {
               "flags": "--debug",
@@ -4326,6 +4214,218 @@
               "defaultValue": null
             }
           ],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "store",
+      "descriptionKey": "commands.store.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "add",
+          "descriptionKey": "commands.store.add.description",
+          "options": [
+            {
+              "flags": "--type <type>",
+              "descriptionKey": "commands.store.add.optionType",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--encryption-key <key>",
+              "descriptionKey": "commands.store.add.optionEncryptionKey",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--s3-endpoint <url>",
+              "descriptionKey": "commands.config.init.optionS3Endpoint",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--s3-bucket <name>",
+              "descriptionKey": "commands.config.init.optionS3Bucket",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--s3-region <region>",
+              "descriptionKey": "commands.config.init.optionS3Region",
+              "mandatory": false,
+              "defaultValue": "auto"
+            },
+            {
+              "flags": "--s3-access-key-id <key>",
+              "descriptionKey": "commands.config.init.optionS3AccessKeyId",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--s3-secret-access-key <key>",
+              "descriptionKey": "commands.config.init.optionS3SecretAccessKey",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--s3-prefix <prefix>",
+              "descriptionKey": "commands.store.add.optionS3Prefix",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--local-path <path>",
+              "descriptionKey": "commands.store.add.optionLocalPath",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--bw-folder-id <id>",
+              "descriptionKey": "commands.store.add.optionBwFolderId",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--git-url <url>",
+              "descriptionKey": "commands.store.add.optionGitUrl",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--git-branch <branch>",
+              "descriptionKey": "commands.store.add.optionGitBranch",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--git-path <path>",
+              "descriptionKey": "commands.store.add.optionGitPath",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--vault-addr <url>",
+              "descriptionKey": "commands.store.add.optionVaultAddr",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--vault-token <token>",
+              "descriptionKey": "commands.store.add.optionVaultToken",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--vault-mount <path>",
+              "descriptionKey": "commands.store.add.optionVaultMount",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--vault-prefix <path>",
+              "descriptionKey": "commands.store.add.optionVaultPrefix",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--vault-namespace <ns>",
+              "descriptionKey": "commands.store.add.optionVaultNamespace",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "list",
+          "descriptionKey": "commands.store.list.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "remove",
+          "descriptionKey": "commands.store.remove.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "push",
+          "descriptionKey": "commands.store.push.description",
+          "options": [
+            {
+              "flags": "--store <name>",
+              "descriptionKey": "commands.store.push.optionStore",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--all",
+              "descriptionKey": "commands.store.push.optionAll",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "pull",
+          "descriptionKey": "commands.store.pull.description",
+          "options": [
+            {
+              "flags": "--store <name>",
+              "descriptionKey": "commands.store.pull.optionStore",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--config <name>",
+              "descriptionKey": "commands.store.pull.optionConfig",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "sync",
+          "descriptionKey": "commands.store.sync.description",
+          "options": [
+            {
+              "flags": "--store <name>",
+              "descriptionKey": "commands.store.sync.optionStore",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--all",
+              "descriptionKey": "commands.store.sync.optionAll",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
           "subcommands": []
         }
       ]
@@ -5642,6 +5742,12 @@
               "name": "vmId",
               "required": true,
               "variadic": false,
+              "defaultValue": null
+            },
+            {
+              "name": "command",
+              "required": false,
+              "variadic": true,
               "defaultValue": null
             }
           ],

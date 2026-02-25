@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: es
-sourceHash: 72f77c1ae5a0dbce
+sourceHash: 5a0f43834cb143a2
 ---
 
 # Monitoreo
@@ -22,12 +22,9 @@ rdc machine health server-1
 ```
 
 Esto reporta:
-- **Sistema**: tiempo de actividad, uso de memoria, uso de disco
-- **Datastore**: capacidad y uso
+- **Sistema**: tiempo de actividad, uso de disco, uso del datastore
 - **Contenedores**: conteos de en ejecución, saludables, no saludables
-- **Servicios**: estado y conteos de reinicios
-- **Almacenamiento**: estado SMART y temperatura
-- **Repositorios**: estado de montaje y estado del daemon Docker
+- **Almacenamiento**: estado SMART
 - **Problemas**: problemas identificados
 
 Use `--output json` para salida legible por máquinas.
@@ -43,15 +40,16 @@ rdc machine containers server-1
 | Columna | Descripción |
 |---------|-------------|
 | Name | Nombre del contenedor |
-| Status | En ejecución, detenido, etc. |
+| Status | Tiempo de actividad o motivo de salida |
+| State | En ejecución, detenido, etc. |
 | Health | Saludable, no saludable, ninguno |
 | CPU | Porcentaje de uso de CPU |
-| Memory | Uso de memoria |
+| Memory | Uso de memoria / límite |
 | Repository | Qué repositorio es propietario del contenedor |
 
 Opciones:
-- `--health-check` -- Realizar verificaciones de estado activas en los contenedores
-- `--output json` -- Salida JSON legible por máquinas
+- `--health-check` — Realizar verificaciones de estado activas en los contenedores
+- `--output json` — Salida JSON legible por máquinas
 
 ## Listar Servicios
 
@@ -71,8 +69,8 @@ rdc machine services server-1
 | Repository | Repositorio asociado |
 
 Opciones:
-- `--stability-check` -- Marcar servicios inestables (fallidos, >3 reinicios, reinicio automático)
-- `--output json` -- Salida JSON legible por máquinas
+- `--stability-check` — Marcar servicios inestables (fallidos, >3 reinicios, reinicio automático)
+- `--output json` — Salida JSON legible por máquinas
 
 ## Listar Repositorios
 
@@ -93,8 +91,8 @@ rdc machine repos server-1
 | Modified | Hora de última modificación |
 
 Opciones:
-- `--search <text>` -- Filtrar por nombre o ruta de montaje
-- `--output json` -- Salida JSON legible por máquinas
+- `--search <text>` — Filtrar por nombre o ruta de montaje
+- `--output json` — Salida JSON legible por máquinas
 
 ## Estado del Vault
 
@@ -114,6 +112,8 @@ Use `--output json` para salida legible por máquinas.
 
 ## Probar Conexión
 
+> **Solo adaptador cloud.** En modo local, use `rdc term server-1 -c "hostname"` para verificar la conectividad.
+
 Verifique la conectividad SSH a una máquina:
 
 ```bash
@@ -128,8 +128,8 @@ Reporta:
 - Entrada de hosts conocidos
 
 Opciones:
-- `--port <number>` -- Puerto SSH (predeterminado: 22)
-- `--save -m server-1` -- Guardar la clave del host verificada en la configuración de la máquina
+- `--port <number>` — Puerto SSH (predeterminado: 22)
+- `--save -m server-1` — Guardar la clave del host verificada en la configuración de la máquina
 
 ## Diagnósticos (doctor)
 
@@ -140,11 +140,10 @@ rdc doctor
 ```
 
 | Categoría | Verificaciones |
-|-----------|---------------|
+|----------|--------|
 | **Entorno** | Versión de Node.js, versión de la CLI, modo SEA, instalación de Go, disponibilidad de Docker |
 | **Renet** | Ubicación del binario, versión, CRIU, rsync, activos embebidos SEA |
-| **Configuración** | Contexto activo, modo, máquinas, clave SSH |
-| **Autenticación** | Estado de inicio de sesión, correo del usuario |
+| **Configuración** | Configuración activa, adaptador, máquinas, clave SSH |
 | **Virtualización** | Verifica si su sistema puede ejecutar máquinas virtuales locales (`rdc ops`) |
 
 Cada verificación reporta **OK**, **Advertencia** o **Error**. Use esto como primer paso al resolver cualquier problema.

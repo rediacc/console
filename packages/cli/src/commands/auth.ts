@@ -10,7 +10,7 @@ import { isValidEmail } from '@rediacc/shared/validation';
 import { t } from '../i18n/index.js';
 import { apiClient, typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
-import { contextService } from '../services/context.js';
+import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { askConfirm, askPassword, askText } from '../utils/prompt.js';
@@ -29,21 +29,24 @@ export function registerAuthCommands(program: Command): void {
     .option('-m, --master-password <password>', t('options.masterPassword'))
     .option('-n, --name <name>', t('options.sessionName'))
     .option('--endpoint <url>', t('options.endpoint'))
-    .option('--save-as <context>', t('options.saveAs'))
+    .option('--save-as <name>', t('options.saveAs'))
     .action(async (options) => {
       try {
-        // Determine context name (--save-as overrides current context)
-        const contextName = options.saveAs ?? contextService.getCurrentName();
+        // Determine config name (--save-as overrides current config)
+        const configName = options.saveAs ?? configService.getCurrentName();
 
         // Determine API URL
         let apiUrl: string;
         if (options.endpoint) {
           apiUrl = apiClient.normalizeApiUrl(options.endpoint);
-        } else if (contextName) {
-          const existingContext = await contextService.get(contextName);
-          apiUrl = existingContext?.apiUrl ?? (await contextService.getApiUrl());
+        } else if (configName) {
+          const { configFileStorage } = await import('../adapters/config-file-storage.js');
+          const existingConfig = (await configFileStorage.exists(configName))
+            ? await configFileStorage.load(configName)
+            : null;
+          apiUrl = existingConfig?.apiUrl ?? (await configService.getApiUrl());
         } else {
-          apiUrl = await contextService.getApiUrl();
+          apiUrl = await configService.getApiUrl();
         }
 
         // Set API URL for this login request
@@ -59,13 +62,13 @@ export function registerAuthCommands(program: Command): void {
         // Get password
         const password = options.password ?? (await askPassword(t('prompts.password')));
 
-        // Attempt login with context info
+        // Attempt login with config info
         const result = await withSpinner(
           t('commands.auth.login.authenticating'),
           () =>
             authService.login(email, password, {
               sessionName: options.name,
-              contextName: contextName ?? 'default',
+              configName: configName ?? 'default',
               apiUrl,
               masterPassword: options.masterPassword,
             }),
@@ -86,7 +89,7 @@ export function registerAuthCommands(program: Command): void {
           throw new ValidationError(result.message ?? t('errors.authFailed'));
         }
 
-        const savedTo = contextName ?? 'default';
+        const savedTo = configName ?? 'default';
         outputService.success(t('commands.auth.login.success', { context: savedTo }));
       } catch (error) {
         handleError(error);

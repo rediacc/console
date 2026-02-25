@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: de
-sourceHash: 47ee41d44be935a8
+sourceHash: 4a0c6a695d72aa55
 ---
 
 # Netzwerk
@@ -92,13 +92,13 @@ Diese verwenden die Standard-[Traefik v3 Label-Syntax](https://doc.traefik.io/tr
 1. Infrastruktur auf der Maschine konfiguriert ([Maschineneinrichtung -- Infrastruktur-Konfiguration](/de/docs/setup#infrastruktur-konfiguration)):
 
    ```bash
-   rdc context set-infra server-1 \
+   rdc config set-infra server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
-   rdc context push-infra server-1
+   rdc config push-infra server-1
    ```
 
 2. DNS-Einträge, die Ihre Domain auf die öffentliche IP des Servers verweisen (siehe [DNS-Konfiguration](#dns-konfiguration) unten).
@@ -145,7 +145,7 @@ Der `{name}` in den Labels ist ein beliebiger Bezeichner -- er muss nur über zu
 TLS-Zertifikate werden automatisch über Let's Encrypt mittels der Cloudflare DNS-01-Challenge bezogen. Dies wird einmalig bei der Infrastruktureinrichtung konfiguriert:
 
 ```bash
-rdc context set-infra server-1 \
+rdc config set-infra server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
@@ -167,11 +167,11 @@ Für Nicht-HTTP-Protokolle (Mailserver, DNS, extern bereitgestellte Datenbanken)
 Fügen Sie die erforderlichen Ports bei der Infrastruktur-Konfiguration hinzu:
 
 ```bash
-rdc context set-infra server-1 \
+rdc config set-infra server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc context push-infra server-1
+rdc config push-infra server-1
 ```
 
 Dies erstellt Traefik-Einstiegspunkte namens `tcp-{port}` und `udp-{port}`.
@@ -197,7 +197,7 @@ Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
 
 > **Security note:** Exposing a database to the internet is a risk. Use this only when remote clients need direct access. For most setups, keep the database internal and connect through your application.
 
-> Nach dem Hinzufügen oder Entfernen von Ports führen Sie immer `rdc context push-infra` erneut aus, um die Proxy-Konfiguration zu aktualisieren.
+> Nach dem Hinzufügen oder Entfernen von Ports führen Sie immer `rdc config push-infra` erneut aus, um die Proxy-Konfiguration zu aktualisieren.
 
 ### Schritt 2: TCP/UDP-Labels hinzufügen
 
@@ -342,7 +342,7 @@ Zeigt TCP- und UDP-Port-Zuordnungen für dynamisch zugewiesene Ports.
 | Dienst nicht in Routen | Container läuft nicht oder Labels fehlen | Mit `docker ps` auf dem Repository-Daemon überprüfen; Labels prüfen |
 | Zertifikat nicht ausgestellt | DNS zeigt nicht auf den Server oder ungültiges Cloudflare-Token | DNS-Auflösung überprüfen; Cloudflare-API-Token-Berechtigungen prüfen |
 | 502 Bad Gateway | Anwendung lauscht nicht auf dem deklarierten Port | Überprüfen, ob die App an ihre `{SERVICE}_IP` gebunden ist und der Port mit `loadbalancer.server.port` übereinstimmt |
-| TCP-Port nicht erreichbar | Port nicht in der Infrastruktur registriert | `rdc context set-infra --tcp-ports ...` und `push-infra` ausführen |
+| TCP-Port nicht erreichbar | Port nicht in der Infrastruktur registriert | `rdc config set-infra --tcp-ports ...` und `push-infra` ausführen |
 | Route server running old version | Binary was updated but service not restarted | Happens automatically on provisioning; manual: `sudo systemctl restart rediacc-router` |
 | STUN/TURN relay not reachable | Relay addresses cached at startup | Recreate the service after DNS or IP changes so it picks up the new network config |
 

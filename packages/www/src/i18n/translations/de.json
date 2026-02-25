@@ -974,10 +974,6 @@
           "moneyBack": "14-tägige Geld-zurück-Garantie",
           "noContracts": "Keine langfristigen Verträge"
         },
-        "billingToggle": {
-          "monthly": "Monatlich",
-          "annual": "Jährlich"
-        },
         "keyBenefits": "Hauptvorteile",
         "learnMore": "Mehr erfahren",
         "limitedOffer": "Begrenztes Einführungsangebot",
@@ -1105,6 +1101,10 @@
         "title": "Installieren | Rediacc CLI"
       },
       "methods": {
+        "apk": {
+          "description": "Für Alpine Linux und Derivate",
+          "title": "APK (Alpine Linux)"
+        },
         "apt": {
           "description": "Für Debian, Ubuntu und Derivate",
           "title": "APT (Debian / Ubuntu)"
@@ -1117,14 +1117,6 @@
           "description": "Für Fedora, RHEL, CentOS, Rocky Linux",
           "title": "DNF (Fedora / RHEL)"
         },
-        "apk": {
-          "title": "APK (Alpine Linux)",
-          "description": "Für Alpine Linux und Derivate"
-        },
-        "pacman": {
-          "title": "Pacman (Arch Linux)",
-          "description": "Für Arch Linux und Derivate"
-        },
         "docker": {
           "description": "Für Container-Umgebungen",
           "title": "Docker"
@@ -1132,6 +1124,10 @@
         "homebrew": {
           "description": "Für macOS- und Linux-Benutzer mit Homebrew",
           "title": "Homebrew (macOS / Linux)"
+        },
+        "pacman": {
+          "description": "Für Arch Linux und Derivate",
+          "title": "Pacman (Arch Linux)"
         },
         "quick": {
           "description": "Empfohlen - automatische Installation mit Versionsverwaltung",
@@ -1619,6 +1615,10 @@
       "ui": {
         "anchor": "Strategischer Anker",
         "bestValue": "Bestes Preis-Leistungs-Verhältnis",
+        "billingToggle": {
+          "annual": "Jährlich",
+          "monthly": "Monatlich"
+        },
         "contactSales": "Kontaktieren Sie den Vertrieb",
         "cta": {
           "business": {
@@ -1658,11 +1658,7 @@
         "monthOrYear": "pro Monat oder {{price}} pro Jahr",
         "popular": "Am beliebtesten",
         "startingAt": "*Beginnt um",
-        "whatsIncluded": "Was ist enthalten:",
-        "billingToggle": {
-          "monthly": "Monatlich",
-          "annual": "Jährlich"
-        }
+        "whatsIncluded": "Was ist enthalten:"
       }
     },
     "privacyPolicy": {

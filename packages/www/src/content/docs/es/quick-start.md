@@ -4,12 +4,12 @@ description: Ejecute un servicio en contenedores en su servidor en 5 minutos.
 category: Guides
 order: -1
 language: es
+sourceHash: b368b94e7064efe1
 ---
 
 # Inicio rápido
 
-Si no tienes claro que herramienta usar, consulta [rdc vs renet](/es/docs/rdc-vs-renet).
-Despliegue un entorno de contenedores cifrado y aislado en su propio servidor en 5 minutos. Esta guía utiliza el **modo local** — sin cuentas en la nube ni dependencias de SaaS.
+Despliegue un entorno de contenedores cifrado y aislado en su propio servidor en 5 minutos. No se requieren cuentas en la nube ni dependencias de SaaS.
 
 ## Requisitos previos
 
@@ -23,22 +23,22 @@ Despliegue un entorno de contenedores cifrado y aislado en su propio servidor en
 curl -fsSL https://get.rediacc.com | sh
 ```
 
-## 2. Crear un contexto
+## 2. Crear una Configuración
 
 ```bash
-rdc context create-local my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 ## 3. Agregar su servidor
 
 ```bash
-rdc context add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
+rdc config add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
 ```
 
 ## 4. Aprovisionar el servidor
 
 ```bash
-rdc context setup-machine server-1
+rdc config setup-machine server-1
 ```
 
 Esto instala Docker, cryptsetup y el binario renet en su servidor.
@@ -73,8 +73,9 @@ Sin cuentas en la nube. Sin dependencias de SaaS. Sus datos permanecen en sus se
 
 ## Próximos pasos
 
-- **[Arquitectura](/es/docs/architecture)** — Comprenda cómo funciona Rediacc: modos, modelo de seguridad, aislamiento Docker
-- **[Configuración del servidor](/es/docs/setup)** — Guía detallada de configuración: contextos, máquinas, configuración de infraestructura
+- **[Arquitectura](/es/docs/architecture)** — Comprenda cómo funciona Rediacc: detección de adaptadores, modelo de seguridad, aislamiento Docker
+- **[rdc vs renet](/es/docs/rdc-vs-renet)** — Comprenda qué CLI usar para operaciones diarias vs trabajo remoto de bajo nivel
+- **[Configuración del servidor](/es/docs/setup)** — Guía detallada de configuración: configs, máquinas, configuración de infraestructura
 - **[Repositorios](/es/docs/repositories)** — Crear, gestionar, redimensionar, bifurcar y validar repositorios
 - **[Servicios](/es/docs/services)** — Rediaccfiles, redes de servicios, despliegue, inicio automático
 - **[Copia de seguridad y restauración](/es/docs/backup-restore)** — Respaldar en almacenamiento externo y programar copias de seguridad automáticas

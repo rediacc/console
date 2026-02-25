@@ -4,12 +4,12 @@ description: Führen Sie einen containerisierten Dienst auf Ihrem Server in fün
 category: Guides
 order: -1
 language: de
+sourceHash: b368b94e7064efe1
 ---
 
 # Schnellstart
 
-Wenn Sie unsicher sind, welches Tool Sie verwenden sollen, lesen Sie [rdc vs renet](/de/docs/rdc-vs-renet).
-Stellen Sie eine verschlüsselte, isolierte Container-Umgebung auf Ihrem eigenen Server in 5 Minuten bereit. Diese Anleitung verwendet den **lokalen Modus** — keine Cloud-Konten oder SaaS-Abhängigkeiten.
+Stellen Sie eine verschlüsselte, isolierte Container-Umgebung auf Ihrem eigenen Server in 5 Minuten bereit. Keine Cloud-Konten oder SaaS-Abhängigkeiten erforderlich.
 
 ## Voraussetzungen
 
@@ -23,22 +23,22 @@ Stellen Sie eine verschlüsselte, isolierte Container-Umgebung auf Ihrem eigenen
 curl -fsSL https://get.rediacc.com | sh
 ```
 
-## 2. Kontext erstellen
+## 2. Konfiguration erstellen
 
 ```bash
-rdc context create-local my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 ## 3. Server hinzufügen
 
 ```bash
-rdc context add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
+rdc config add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
 ```
 
 ## 4. Server einrichten
 
 ```bash
-rdc context setup-machine server-1
+rdc config setup-machine server-1
 ```
 
 Dies installiert Docker, cryptsetup und die renet-Binary auf Ihrem Server.
@@ -73,8 +73,9 @@ Keine Cloud-Konten. Keine SaaS-Abhängigkeiten. Ihre Daten bleiben auf Ihren Ser
 
 ## Nächste Schritte
 
-- **[Architektur](/de/docs/architecture)** — Verstehen Sie, wie Rediacc funktioniert: Modi, Sicherheitsmodell, Docker-Isolation
-- **[Server-Einrichtung](/de/docs/setup)** — Detaillierte Einrichtungsanleitung: Kontexte, Maschinen, Infrastrukturkonfiguration
+- **[Architektur](/de/docs/architecture)** — Verstehen Sie, wie Rediacc funktioniert: Adapter-Erkennung, Sicherheitsmodell, Docker-Isolation
+- **[rdc vs renet](/de/docs/rdc-vs-renet)** — Verstehen Sie, welche CLI Sie für die tägliche Arbeit vs. Low-Level-Remote-Arbeit verwenden
+- **[Server-Einrichtung](/de/docs/setup)** — Detaillierte Einrichtungsanleitung: Konfigurationen, Maschinen, Infrastrukturkonfiguration
 - **[Repositories](/de/docs/repositories)** — Repositories erstellen, verwalten, skalieren, forken und validieren
 - **[Dienste](/de/docs/services)** — Rediaccfiles, Service-Netzwerke, Bereitstellung, Autostart
 - **[Backup & Wiederherstellung](/de/docs/backup-restore)** — Sicherung auf externen Speicher und automatisierte Backups planen

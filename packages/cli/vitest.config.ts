@@ -9,7 +9,7 @@ export default defineConfig({
       'node_modules',
       'dist',
       'tests/**',
-      'src/**/*.integration.test.ts', // S3 integration tests (run via test:unit:s3)
+      'src/**/*.integration.test.ts', // Integration tests (run via test:unit:s3 / test:unit:vault)
     ],
   },
 });

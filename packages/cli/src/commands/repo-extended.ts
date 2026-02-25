@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { t } from '../i18n/index.js';
-import { contextService } from '../services/context.js';
+import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { handleError } from '../utils/errors.js';
@@ -46,7 +46,7 @@ async function executeRepoFunction(
   messages: { starting: string; completed: string; failed: string }
 ): Promise<void> {
   // Validate repository exists in context
-  const repo = await contextService.getLocalRepository(repoName);
+  const repo = await configService.getRepository(repoName);
   if (!repo) {
     throw new Error(`Repository "${repoName}" not found in context`);
   }
@@ -55,7 +55,7 @@ async function executeRepoFunction(
   }
 
   // Ensure network_id is assigned (auto-allocates for legacy repos without one)
-  await contextService.ensureRepositoryNetworkId(repoName);
+  await configService.ensureRepositoryNetworkId(repoName);
 
   outputService.info(messages.starting);
 
@@ -96,22 +96,22 @@ export function registerExtendedRepoCommands(repo: Command): void {
         const forkName = options.tag;
         try {
           // Validate parent exists
-          const parentConfig = await contextService.getLocalRepository(parent);
+          const parentConfig = await configService.getRepository(parent);
           if (!parentConfig) {
             throw new Error(`Repository "${parent}" not found in context`);
           }
 
           // Validate fork doesn't already exist
-          const existing = await contextService.getLocalRepository(forkName);
+          const existing = await configService.getRepository(forkName);
           if (existing) {
             throw new Error(t('commands.repo.fork.alreadyExists', { name: forkName }));
           }
 
           // Generate new GUID and allocate networkId; reuse parent's credential (same LUKS password)
           const repositoryGuid = randomUUID();
-          const networkId = await contextService.allocateNetworkId();
+          const networkId = await configService.allocateNetworkId();
 
-          await contextService.addLocalRepository(forkName, {
+          await configService.addRepository(forkName, {
             repositoryGuid,
             tag: 'latest',
             credential: parentConfig.credential,
@@ -145,15 +145,15 @@ export function registerExtendedRepoCommands(repo: Command): void {
           if (result.success) {
             outputService.success(t('commands.repo.fork.completed'));
           } else {
-            await contextService.removeLocalRepository(forkName);
+            await configService.removeRepository(forkName);
             outputService.warn(t('commands.repo.fork.rollback', { repository: forkName }));
             outputService.error(result.error ?? t('commands.repo.fork.failed'));
             process.exitCode = result.exitCode;
           }
         } catch (error) {
-          const exists = await contextService.getLocalRepository(forkName);
+          const exists = await configService.getRepository(forkName);
           if (exists) {
-            await contextService.removeLocalRepository(forkName);
+            await configService.removeRepository(forkName);
             outputService.warn(t('commands.repo.fork.rollback', { repository: forkName }));
           }
           handleError(error);
@@ -460,7 +460,7 @@ export function registerExtendedRepoCommands(repo: Command): void {
 
           // Resolve grand repo friendly name -> GUID
           if (options.grand) {
-            const grandRepo = await contextService.getLocalRepository(options.grand);
+            const grandRepo = await configService.getRepository(options.grand);
             params.grand = grandRepo?.repositoryGuid ?? options.grand;
           }
 

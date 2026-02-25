@@ -3,22 +3,24 @@
  * Blocks commands from running in unsupported modes and auto-tags help descriptions.
  * Hides experimental (cloud) commands unless --experimental or REDIACC_EXPERIMENTAL=1.
  */
-import { DEFAULTS } from '@rediacc/shared/config';
+
 import {
   ALL_MODES,
   COMMAND_DOMAINS,
   formatModeTag,
   getCommandDef,
   isExperimentalEnabled,
+  type CommandCategory,
   type ModeSet,
   type SubcommandDef,
 } from '../config/command-registry.js';
-import { contextService } from '../services/context.js';
+import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
+import { hasCloudIntent } from '../types/index.js';
 import type { Command } from 'commander';
 
-// Fixed column width for the mode tag (longest tag is "[cloud|local|s3]" = 16 chars + padding)
-const TAG_COL_WIDTH = 19;
+// Fixed column width for the mode tag (longest tag is "[cloud|local]" = 13 chars + padding)
+const TAG_COL_WIDTH = 16;
 
 /**
  * Add a preAction hook that blocks the command in unsupported modes.
@@ -28,13 +30,13 @@ export function addModeGuard(command: Command, supportedModes: ModeSet): void {
   if (supportedModes.length >= ALL_MODES.length) return;
 
   command.hook('preAction', async () => {
-    const context = await contextService.getCurrent();
-    const mode = context?.mode ?? DEFAULTS.CONTEXT.MODE;
+    const config = await configService.getCurrent();
+    const current: CommandCategory = hasCloudIntent(config) ? 'cloud' : 'local';
 
-    if (!supportedModes.includes(mode)) {
+    if (!supportedModes.includes(current)) {
       const tag = formatModeTag(supportedModes);
       outputService.error(
-        `"${command.name()}" is only available in ${supportedModes.join(' or ')} mode ${tag}. Current mode: ${mode}`
+        `"${command.name()}" requires the ${supportedModes.join(' or ')} adapter ${tag}. Current adapter: ${current}`
       );
       process.exit(1);
     }

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: tr
-sourceHash: 72f77c1ae5a0dbce
+sourceHash: 5a0f43834cb143a2
 ---
 
 # İzleme
@@ -22,12 +22,9 @@ rdc machine health server-1
 ```
 
 Rapor içeriği:
-- **System**: çalışma süresi, bellek kullanımı, disk kullanımı
-- **Datastore**: kapasite ve kullanım
+- **Sistem**: çalışma süresi, disk kullanımı, datastore kullanımı
 - **Konteynerler**: çalışan, sağlıklı ve sağlıksız konteyner sayıları
-- **Servisler**: durum ve yeniden başlatma sayıları
-- **Depolama**: SMART sağlık durumu ve sıcaklık
-- **Depolar**: bağlama durumu ve Docker daemon durumu
+- **Depolama**: SMART sağlık durumu
 - **Sorunlar**: tespit edilen sorunlar
 
 Makine tarafından okunabilir çıktı için `--output json` kullanın.
@@ -43,10 +40,11 @@ rdc machine containers server-1
 | Sütun | Açıklama |
 |-------|----------|
 | Name | Konteyner adı |
-| Status | Çalışıyor, durdurulmuş vb. |
+| Status | Çalışma süresi veya çıkış nedeni |
+| State | Çalışıyor, çıktı vb. |
 | Health | Sağlıklı, sağlıksız, yok |
 | CPU | CPU kullanım yüzdesi |
-| Memory | Bellek kullanımı |
+| Memory | Bellek kullanımı / limit |
 | Repository | Konteynerin ait olduğu depo |
 
 Seçenekler:
@@ -106,13 +104,15 @@ rdc machine vault-status server-1
 
 Sağlanan bilgiler:
 - Ana bilgisayar adı ve çalışma süresi
-- Bellek, disk ve Datastore kullanımı
+- Bellek, disk ve datastore kullanımı
 - Toplam depo sayısı, bağlı olan sayısı ve çalışan Docker sayısı
 - Depo başına ayrıntılı bilgi
 
 Makine tarafından okunabilir çıktı için `--output json` kullanın.
 
 ## Bağlantı Testi
+
+> **Yalnızca bulut adaptörü.** Yerel modda, bağlantıyı doğrulamak için `rdc term server-1 -c "hostname"` kullanın.
 
 Bir makineye SSH bağlantısını doğrulayın:
 
@@ -143,9 +143,8 @@ rdc doctor
 |----------|-----------|
 | **Ortam** | Node.js sürümü, CLI sürümü, SEA modu, Go kurulumu, Docker kullanılabilirliği |
 | **Renet** | İkili dosya konumu, sürüm, CRIU, rsync, SEA gömülü varlıklar |
-| **Yapılandırma** | Aktif bağlam, mod, makineler, SSH anahtarı |
-| **Kimlik Doğrulama** | Oturum açma durumu, kullanıcı e-postası |
-| **Virtualization** | Checks if your system can run local virtual machines (`rdc ops`) |
+| **Yapılandırma** | Aktif yapılandırma, adaptör, makineler, SSH anahtarı |
+| **Sanallaştırma** | Sisteminizin yerel sanal makineler çalıştırıp çalıştıramayacağını kontrol eder (`rdc ops`) |
 
 Her kontrol **OK**, **Uyarı** veya **Hata** olarak raporlanır. Herhangi bir sorunu giderirken ilk adım olarak bunu kullanın.
 

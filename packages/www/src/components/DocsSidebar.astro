@@ -37,6 +37,7 @@ const categoryOrder: Record<string, number> = {
   'Guides': 0,
   'Concepts': 1,
   'Reference': 2,
+  'Tutorials': 3,
 };
 const categories = Object.keys(docsByCategory).sort((a, b) => {
   const pa = categoryOrder[a] ?? 99;

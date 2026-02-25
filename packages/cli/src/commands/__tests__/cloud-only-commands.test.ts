@@ -12,16 +12,16 @@ vi.mock('../../services/telemetry.js', () => ({
   },
 }));
 
-vi.mock('../../services/context.js', () => ({
-  contextService: {
-    getCurrent: vi.fn().mockResolvedValue({ mode: 'cloud' }),
+vi.mock('../../services/config-resources.js', () => ({
+  configService: {
+    getCurrent: vi.fn().mockResolvedValue({ apiUrl: 'https://api.example.com', token: 'tok' }),
     getLanguage: vi.fn().mockResolvedValue('en'),
     getUserEmail: vi.fn().mockResolvedValue(null),
     getTeam: vi.fn().mockResolvedValue(null),
-    setRuntimeContext: vi.fn(),
+    setRuntimeConfig: vi.fn(),
     applyDefaults: vi.fn((opts: unknown) => opts),
     getCurrentName: vi.fn().mockReturnValue('default'),
-    listLocalMachines: vi.fn().mockResolvedValue([]),
+    listMachines: vi.fn().mockResolvedValue([]),
   },
 }));
 
@@ -49,7 +49,7 @@ vi.mock('../../services/api.js', () => ({
 
 vi.mock('../../providers/index.js', () => ({
   getStateProvider: vi.fn().mockResolvedValue({
-    mode: 'cloud',
+    isCloud: true,
     machines: {
       list: vi.fn().mockResolvedValue([]),
       create: vi.fn(),
@@ -94,12 +94,12 @@ describe('Command mode guards and tags', () => {
     'queue',
   ];
 
-  const localS3Commands = ['repo', 'snapshot'];
+  const localOnlyCommands = ['repo', 'snapshot'];
 
   const allModeCommands = [
     'machine',
     'storage',
-    'context',
+    'config',
     'doctor',
     'sync',
     'run',
@@ -117,20 +117,23 @@ describe('Command mode guards and tags', () => {
     }
   });
 
-  describe('[local|s3] tag column in help', () => {
-    for (const cmdName of localS3Commands) {
-      it(`"${cmdName}" should show [local|s3] tag in help output`, () => {
-        const pattern = new RegExp(`^\\s+${cmdName}\\b.*\\[local\\|s3\\]`, 'm');
+  describe('[local] tag column in help', () => {
+    for (const cmdName of localOnlyCommands) {
+      it(`"${cmdName}" should show [local] tag in help output`, () => {
+        const pattern = new RegExp(`^\\s+${cmdName}\\b.*\\[local\\]`, 'm');
         expect(rootHelp).toMatch(pattern);
       });
     }
   });
 
-  describe('[cloud|local|s3] tag column in help', () => {
+  describe('all-mode commands have no mode tag in help', () => {
     for (const cmdName of allModeCommands) {
-      it(`"${cmdName}" should show [cloud|local|s3] tag in help output`, () => {
-        const pattern = new RegExp(`^\\s+${cmdName}\\b.*\\[cloud\\|local\\|s3\\]`, 'm');
-        expect(rootHelp).toMatch(pattern);
+      it(`"${cmdName}" should not show a mode tag in help output`, () => {
+        // All-mode commands should NOT have [cloud] or [local] tags
+        const cloudTag = new RegExp(`^\\s+${cmdName}\\b.*\\[cloud\\]`, 'm');
+        const localTag = new RegExp(`^\\s+${cmdName}\\b.*\\[local\\]`, 'm');
+        expect(rootHelp).not.toMatch(cloudTag);
+        expect(rootHelp).not.toMatch(localTag);
       });
     }
   });
@@ -158,19 +161,13 @@ describe('Command mode guards and tags', () => {
       const machineHelp = machineCmd.helpInformation();
       expect(machineHelp).toMatch(/test-connection.*\[cloud\]/);
     });
-
-    it('"list" should inherit [cloud|local|s3] from parent in machine help', () => {
-      const machineCmd = cli.commands.find((c) => c.name() === 'machine')!;
-      const machineHelp = machineCmd.helpInformation();
-      expect(machineHelp).toMatch(/list.*\[cloud\|local\|s3\]/);
-    });
   });
 
   describe('Storage subcommand tags', () => {
-    it('"browse" should show [local|s3] in storage help', () => {
+    it('"browse" should show [local] in storage help', () => {
       const storageCmd = cli.commands.find((c) => c.name() === 'storage')!;
       const storageHelp = storageCmd.helpInformation();
-      expect(storageHelp).toMatch(/browse.*\[local\|s3\]/);
+      expect(storageHelp).toMatch(/browse.*\[local\]/);
     });
   });
 
@@ -188,9 +185,9 @@ describe('Command mode guards and tags', () => {
     });
 
     it('tool commands have correct group', () => {
-      const contextCmd = cli.commands.find((c) => c.name() === 'context');
-      expect(contextCmd).toBeDefined();
-      expect(contextCmd!.helpGroup()).toBe('Tools');
+      const configCmd = cli.commands.find((c) => c.name() === 'config');
+      expect(configCmd).toBeDefined();
+      expect(configCmd!.helpGroup()).toBe('Tools');
     });
 
     it('help output contains domain headings', () => {

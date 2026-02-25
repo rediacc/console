@@ -23,7 +23,7 @@ import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
-import { contextService } from '../services/context.js';
+import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
 import { queueService } from '../services/queue.js';
 import { handleError, ValidationError } from '../utils/errors.js';
@@ -169,7 +169,7 @@ async function buildQueueVaultFromParams(
 ): Promise<string> {
   const params = parseParamOptions(options.param);
   validateFunctionParams(options.function, params);
-  const language = await contextService.getLanguage();
+  const language = await configService.getLanguage();
   return withSpinner(
     t('commands.queue.create.buildingVault'),
     () =>
@@ -188,10 +188,10 @@ async function buildQueueVaultFromParams(
 
 export async function createAction(options: CreateActionOptions): Promise<{ taskId?: string }> {
   const provider = await getStateProvider();
-  if (provider.mode === 'cloud') {
+  if (provider.isCloud) {
     await authService.requireAuth();
   }
-  const opts = await contextService.applyDefaults(options);
+  const opts = await configService.applyDefaults(options);
   if (!opts.team) {
     throw new ValidationError(t('errors.teamRequired'));
   }
@@ -247,7 +247,7 @@ async function fetchTraceSummary(
   provider: import('../providers/types.js').IStateProvider,
   taskId: string
 ): Promise<QueueTraceSummary | null> {
-  if (provider.mode === 'cloud') {
+  if (provider.isCloud) {
     const apiResponse = await typedApi.GetQueueItemTrace({ taskId });
     return mapTraceToSummary(parseGetQueueItemTrace(apiResponse as never));
   }
@@ -324,7 +324,7 @@ export async function traceAction(
   program: Command
 ): Promise<void> {
   const provider = await getStateProvider();
-  if (provider.mode === 'cloud') await authService.requireAuth();
+  if (provider.isCloud) await authService.requireAuth();
   if (options.watch) {
     await watchTraceLoop(provider, taskId, Number.parseInt(options.interval, 10), program);
   } else {
@@ -334,7 +334,7 @@ export async function traceAction(
 
 async function cancelAction(taskId: string): Promise<void> {
   const provider = await getStateProvider();
-  if (provider.mode === 'cloud') await authService.requireAuth();
+  if (provider.isCloud) await authService.requireAuth();
   await withSpinner(
     t('commands.queue.cancel.cancelling', { taskId }),
     () => provider.queue.cancel(taskId),
@@ -344,7 +344,7 @@ async function cancelAction(taskId: string): Promise<void> {
 
 async function retryAction(taskId: string): Promise<void> {
   const provider = await getStateProvider();
-  if (provider.mode === 'cloud') await authService.requireAuth();
+  if (provider.isCloud) await authService.requireAuth();
   await withSpinner(
     t('commands.queue.retry.retrying', { taskId }),
     () => provider.queue.retry(taskId),
@@ -422,12 +422,12 @@ function formatQueueItemForTable(item: GetTeamQueueItems_ResultSet1) {
 
 async function listAction(options: QueueListOptions, program: Command): Promise<void> {
   const provider = await getStateProvider();
-  if (provider.mode === 'cloud') {
+  if (provider.isCloud) {
     await authService.requireAuth();
   }
   validatePriorityRange(options.priorityMin, 'errors.invalidPriorityMin');
   validatePriorityRange(options.priorityMax, 'errors.invalidPriorityMax');
-  const opts = await contextService.applyDefaults(options);
+  const opts = await configService.applyDefaults(options);
   if (!opts.team) {
     throw new ValidationError(t('errors.teamRequired'));
   }
@@ -455,7 +455,7 @@ async function listAction(options: QueueListOptions, program: Command): Promise<
 
 async function deleteAction(taskId: string, options: { force?: boolean }): Promise<void> {
   const provider = await getStateProvider();
-  if (provider.mode === 'cloud') {
+  if (provider.isCloud) {
     await authService.requireAuth();
   }
   if (!options.force) {

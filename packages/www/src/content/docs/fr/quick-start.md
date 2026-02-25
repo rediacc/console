@@ -4,12 +4,12 @@ description: Lancez un service conteneurisé sur votre serveur en 5 minutes.
 category: Guides
 order: -1
 language: fr
+sourceHash: b368b94e7064efe1
 ---
 
 # Démarrage rapide
 
-Si vous hésitez sur l'outil a utiliser, consultez [rdc vs renet](/fr/docs/rdc-vs-renet).
-Déployez un environnement de conteneurs chiffré et isolé sur votre propre serveur en 5 minutes. Ce guide utilise le **mode local** — aucun compte cloud ni dépendance SaaS.
+Déployez un environnement de conteneurs chiffré et isolé sur votre propre serveur en 5 minutes. Aucun compte cloud ni dépendance SaaS requis.
 
 ## Prérequis
 
@@ -23,22 +23,22 @@ Déployez un environnement de conteneurs chiffré et isolé sur votre propre ser
 curl -fsSL https://get.rediacc.com | sh
 ```
 
-## 2. Créer un contexte
+## 2. Créer une configuration
 
 ```bash
-rdc context create-local my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 ## 3. Ajouter votre serveur
 
 ```bash
-rdc context add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
+rdc config add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
 ```
 
 ## 4. Provisionner le serveur
 
 ```bash
-rdc context setup-machine server-1
+rdc config setup-machine server-1
 ```
 
 Cela installe Docker, cryptsetup et le binaire renet sur votre serveur.
@@ -73,8 +73,9 @@ Pas de comptes cloud. Pas de dépendances SaaS. Vos données restent sur vos ser
 
 ## Étapes suivantes
 
-- **[Architecture](/fr/docs/architecture)** — Comprendre le fonctionnement de Rediacc : modes, modèle de sécurité, isolation Docker
-- **[Configuration du serveur](/fr/docs/setup)** — Guide de configuration détaillé : contextes, machines, configuration de l'infrastructure
+- **[Architecture](/fr/docs/architecture)** — Comprendre le fonctionnement de Rediacc : détection d'adaptateur, modèle de sécurité, isolation Docker
+- **[rdc vs renet](/fr/docs/rdc-vs-renet)** — Comprendre quel CLI utiliser pour les opérations quotidiennes ou le travail distant de bas niveau
+- **[Configuration du serveur](/fr/docs/setup)** — Guide de configuration détaillé : configs, machines, configuration de l'infrastructure
 - **[Dépôts](/fr/docs/repositories)** — Créer, gérer, redimensionner, dupliquer et valider des dépôts
 - **[Services](/fr/docs/services)** — Rediaccfiles, réseau de services, déploiement, démarrage automatique
 - **[Sauvegarde et restauration](/fr/docs/backup-restore)** — Sauvegarder vers un stockage externe et planifier des sauvegardes automatisées

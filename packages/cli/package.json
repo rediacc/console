@@ -26,6 +26,7 @@
     "test:security": "playwright test --config tests/playwright.config.ts --project=security",
     "test:unit": "vitest run",
     "test:unit:s3": "vitest run --config vitest.s3.config.ts",
+    "test:unit:vault": "vitest run --config vitest.vault.config.ts",
     "test:unit:watch": "vitest",
     "test:vscode": "playwright test --config tests/playwright.config.ts --project=vscode",
     "typecheck": "tsc --noEmit"

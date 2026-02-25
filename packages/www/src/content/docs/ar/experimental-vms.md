@@ -4,48 +4,56 @@ description: "إنشاء مجموعات أجهزة افتراضية محلية �
 category: "Concepts"
 order: 2
 language: ar
-sourceHash: "30b5f6267314cfb2"
+sourceHash: fa4069c48c650a79
 ---
 
-# Experimental VMs
+# الأجهزة الافتراضية التجريبية
 
-Provision local VM clusters on your workstation for development and testing — no external cloud providers required.
+أنشئ مجموعات أجهزة افتراضية محلية على محطة عملك للتطوير والاختبار — دون الحاجة إلى مزوّدي سحابة خارجيين.
 
-## Overview
+## المتطلبات
 
-تتيح لك أوامر `rdc ops` إنشاء وإدارة مجموعات VM التجريبية محليًا. هذه هي نفس البنية التحتية المستخدمة بواسطة خط أنابيب CI لاختبارات التكامل، وهي متاحة الآن للتجربة العملية.
+يتطلب `rdc ops` **المحوّل المحلي**. غير متاح مع محوّل السحابة.
 
-Use cases:
-- Test Rediacc deployments without external VM providers (Linode, Vultr, etc.)
-- Develop and debug repository configurations locally
-- Learn the platform in a fully isolated environment
-- Run integration tests on your workstation
+```bash
+rdc ops check
+```
 
-## Platform Support
+## نظرة عامة
 
-| Platform | Architecture | Backend | Status |
-|----------|-------------|---------|--------|
-| Linux | x86_64 | KVM (libvirt) | Full support |
-| Linux | ARM64 | KVM (libvirt) | Full support |
-| macOS | ARM (Apple Silicon) | QEMU + HVF | Full support |
-| macOS | Intel | QEMU + HVF | Full support |
-| Windows | x86_64 / ARM64 | Hyper-V | Planned |
+تتيح لك أوامر `rdc ops` إنشاء وإدارة مجموعات VM التجريبية محلياً. هذه هي نفس البنية التحتية المستخدمة بواسطة خط أنابيب CI لاختبارات التكامل، وهي متاحة الآن للتجربة العملية.
 
-**Linux (KVM)** uses libvirt for native hardware virtualization with bridged networking.
+حالات الاستخدام:
+- اختبار نشر Rediacc بدون مزوّدي VM خارجيين (Linode، Vultr، إلخ.)
+- تطوير تكوينات المستودعات وتصحيح أخطائها محلياً
+- تعلّم المنصة في بيئة معزولة تماماً
+- تشغيل اختبارات التكامل على محطة عملك
 
-**macOS (QEMU)** uses QEMU with Apple's Hypervisor Framework (HVF) for near-native performance, with user-mode networking and SSH port forwarding.
+## دعم المنصات
 
-**Windows (Hyper-V)** support is planned. See [issue #380](https://github.com/rediacc/console/issues/380) for details. Requires Windows Pro/Enterprise.
+| المنصة | المعمارية | الخلفية | الحالة |
+|--------|-----------|---------|--------|
+| Linux | x86_64 | KVM (libvirt) | مختبر في CI |
+| macOS | Intel | QEMU + HVF | مختبر في CI |
+| Linux | ARM64 | KVM (libvirt) | مدعوم (غير مختبر في CI) |
+| macOS | ARM (Apple Silicon) | QEMU + HVF | مدعوم (غير مختبر في CI) |
+| Windows | x86_64 / ARM64 | Hyper-V | مخطط |
 
-## Prerequisites & Setup
+**Linux (KVM)** يستخدم libvirt للمحاكاة الافتراضية للأجهزة الأصلية مع الشبكات الجسرية.
+
+**macOS (QEMU)** يستخدم QEMU مع إطار عمل Hypervisor (HVF) من Apple للحصول على أداء شبه أصلي، مع شبكات وضع المستخدم وإعادة توجيه منافذ SSH.
+
+**Windows (Hyper-V)** الدعم مخطط. راجع [issue #380](https://github.com/rediacc/console/issues/380) للتفاصيل. يتطلب Windows Pro/Enterprise.
+
+## المتطلبات الأساسية والإعداد
 
 ### Linux
 
 ```bash
-# Install prerequisites automatically
+# تثبيت المتطلبات الأساسية تلقائياً
 rdc ops setup
 
-# Or manually:
+# أو يدوياً:
 sudo apt install libvirt-daemon-system virtinst qemu-utils cloud-image-utils docker.io
 sudo systemctl enable --now libvirtd
 ```
@@ -53,132 +61,142 @@ sudo systemctl enable --now libvirtd
 ### macOS
 
 ```bash
-# Install prerequisites automatically
+# تثبيت المتطلبات الأساسية تلقائياً
 rdc ops setup
 
-# Or manually:
+# أو يدوياً:
 brew install qemu cdrtools
 ```
 
-### Verify Setup
+### التحقق من الإعداد
 
 ```bash
 rdc ops check
 ```
 
-This runs platform-specific checks and reports pass/fail for each prerequisite.
+يُشغّل هذا الأمر فحوصات خاصة بالمنصة ويُبلّغ عن نجاح/فشل كل متطلب أساسي.
 
-## Quick Start
+## البدء السريع
 
 ```bash
-# 1. Check prerequisites
+# 1. التحقق من المتطلبات الأساسية
 rdc ops check
 
-# 2. Provision a minimal cluster (bridge + 1 worker)
+# 2. تجهيز مجموعة بسيطة (جسر + عامل واحد)
 rdc ops up --basic
 
-# 3. Check VM status
+# 3. التحقق من حالة VM
 rdc ops status
 
-# 4. SSH into the bridge VM
+# 4. الاتصال بـ VM الجسر عبر SSH
 rdc ops ssh 1
 
-# 5. Tear down
+# 4b. أو تشغيل أمر مباشرة
+rdc ops ssh 1 hostname
+
+# 5. إيقاف التشغيل
 rdc ops down
 ```
 
-## Cluster Composition
+## تكوين المجموعة
 
-By default, `rdc ops up` provisions:
+بشكل افتراضي، يُجهّز `rdc ops up`:
 
-| VM | ID | Role |
-|----|-----|------|
-| Bridge | 1 | Primary node — runs the Rediacc bridge service |
-| Worker 1 | 11 | Worker node for repository deployments |
-| Worker 2 | 12 | Worker node for repository deployments |
+| VM | المعرّف | الدور |
+|----|---------|-------|
+| Bridge | 1 | العقدة الأساسية — تشغّل خدمة Rediacc bridge |
+| Worker 1 | 11 | عقدة عاملة لنشر المستودعات |
+| Worker 2 | 12 | عقدة عاملة لنشر المستودعات |
 
-Use the `--basic` flag to provision only the bridge and first worker (IDs 1 and 11).
+استخدم خيار `--basic` لتجهيز الجسر والعامل الأول فقط (المعرّفان 1 و 11).
 
-Use `--skip-orchestration` to provision VMs without starting Rediacc services — useful for testing the VM layer in isolation.
+استخدم `--skip-orchestration` لتجهيز الأجهزة الافتراضية بدون بدء خدمات Rediacc — مفيد لاختبار طبقة VM بمعزل.
 
-## Configuration
+## الإعداد
 
-Environment variables control VM resources:
+يستخدم VM الجسر إعدادات افتراضية أصغر من VMs العاملة:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `VM_CPU` | 2 | CPU cores per VM |
-| `VM_RAM` | 4096 | RAM in MB per VM |
-| `VM_DSK` | 16 | Disk size in GB |
-| `VM_NET_BASE` | 192.168.111 | Network base (KVM only) |
-| `RENET_DATA_DIR` | ~/.renet | Data directory for VM disks and config |
+| دور VM | وحدات المعالج | ذاكرة الوصول العشوائي | القرص |
+|--------|--------------|----------------------|-------|
+| Bridge | 1 | 1024 MB | 8 GB |
+| Worker | 2 | 4096 MB | 16 GB |
 
-## Command Reference
+تتجاوز متغيرات البيئة موارد VM العاملة:
 
-| Command | Description |
-|---------|-------------|
-| `rdc ops setup` | Install platform prerequisites (KVM or QEMU) |
-| `rdc ops check` | Verify prerequisites are installed and working |
-| `rdc ops up [options]` | Provision VM cluster |
-| `rdc ops down` | Destroy all VMs and cleanup |
-| `rdc ops status` | Show status of all VMs |
-| `rdc ops ssh <vm-id>` | SSH into a specific VM |
+| المتغير | الافتراضي | الوصف |
+|---------|-----------|-------|
+| `VM_CPU` | 2 | أنوية المعالج لكل VM عاملة |
+| `VM_RAM` | 4096 | ذاكرة الوصول العشوائي بالميغابايت لكل VM عاملة |
+| `VM_DSK` | 16 | حجم القرص بالغيغابايت لكل VM عاملة |
+| `VM_NET_BASE` | 192.168.111 | قاعدة الشبكة (KVM فقط) |
+| `RENET_DATA_DIR` | ~/.renet | مجلد البيانات لأقراص VM والإعداد |
 
-### `rdc ops up` Options
+## مرجع الأوامر
 
-| Option | Description |
-|--------|-------------|
-| `--basic` | Minimal cluster (bridge + 1 worker) |
-| `--lite` | Lightweight resources |
-| `--force` | Force recreate existing VMs |
-| `--parallel` | Provision VMs in parallel |
-| `--skip-orchestration` | VMs only, no Rediacc services |
-| `--backend <kvm\|qemu>` | Override auto-detected backend |
-| `--os <name>` | OS image (default: ubuntu-24.04) |
-| `--debug` | Verbose output |
+| الأمر | الوصف |
+|-------|-------|
+| `rdc ops setup` | تثبيت متطلبات المنصة الأساسية (KVM أو QEMU) |
+| `rdc ops check` | التحقق من تثبيت المتطلبات الأساسية وعملها |
+| `rdc ops up [options]` | تجهيز مجموعة VM |
+| `rdc ops down` | تدمير جميع VMs وتنظيف الموارد |
+| `rdc ops status` | عرض حالة جميع VMs |
+| `rdc ops ssh <vm-id> [command...]` | الاتصال بـ VM عبر SSH، أو تشغيل أمر عليها |
 
-## Platform Differences
+### خيارات `rdc ops up`
+
+| الخيار | الوصف |
+|--------|-------|
+| `--basic` | مجموعة بسيطة (جسر + عامل واحد) |
+| `--lite` | تخطي تجهيز VM (مفاتيح SSH فقط) |
+| `--force` | فرض إعادة إنشاء الأجهزة الافتراضية الموجودة |
+| `--parallel` | تجهيز VMs بالتوازي |
+| `--skip-orchestration` | VMs فقط، بدون خدمات Rediacc |
+| `--backend <kvm\|qemu>` | تجاوز الخلفية المكتشفة تلقائياً |
+| `--os <name>` | صورة نظام التشغيل (الافتراضي: ubuntu-24.04) |
+| `--debug` | مخرجات مفصّلة |
+
+## الفروق بين المنصات
 
 ### Linux (KVM)
-- Uses libvirt for VM lifecycle management
-- Bridged networking — VMs get IPs on a virtual network (192.168.111.x)
-- Direct SSH to VM IPs
-- Requires `/dev/kvm` and libvirtd service
+- يستخدم libvirt لإدارة دورة حياة VM
+- شبكات جسرية — تحصل VMs على عناوين IP على شبكة افتراضية (192.168.111.x)
+- اتصال SSH مباشر بعناوين IP للـ VM
+- يتطلب `/dev/kvm` وخدمة libvirtd
 
 ### macOS (QEMU + HVF)
-- Uses QEMU processes managed via PID files
-- User-mode networking with SSH port forwarding (localhost:222XX)
-- SSH via forwarded ports, not direct IPs
-- Cloud-init ISOs created via `mkisofs`
+- يستخدم عمليات QEMU تُدار عبر ملفات PID
+- شبكات وضع المستخدم مع إعادة توجيه منافذ SSH (localhost:222XX)
+- SSH عبر المنافذ المُعاد توجيهها، وليس عناوين IP المباشرة
+- إنشاء ISOs لـ Cloud-init عبر `mkisofs`
 
-## Troubleshooting
+## استكشاف الأخطاء وإصلاحها
 
-### Debug mode
+### وضع التصحيح
 
-Add `--debug` to any command for verbose output:
+أضف `--debug` إلى أي أمر للحصول على مخرجات مفصّلة:
 
 ```bash
 rdc ops up --basic --debug
 ```
 
-### Common issues
+### المشاكل الشائعة
 
-**KVM not available (Linux)**
-- Check `/dev/kvm` exists: `ls -la /dev/kvm`
-- Enable virtualization in BIOS/UEFI
-- Load the kernel module: `sudo modprobe kvm_intel` or `sudo modprobe kvm_amd`
+**KVM غير متاح (Linux)**
+- تحقق من وجود `/dev/kvm`: `ls -la /dev/kvm`
+- فعّل المحاكاة الافتراضية في BIOS/UEFI
+- حمّل وحدة النواة: `sudo modprobe kvm_intel` أو `sudo modprobe kvm_amd`
 
-**libvirtd not running (Linux)**
+**libvirtd لا يعمل (Linux)**
 ```bash
 sudo systemctl enable --now libvirtd
 ```
 
-**QEMU not found (macOS)**
+**QEMU غير موجود (macOS)**
 ```bash
 brew install qemu cdrtools
 ```
 
-**VMs won't start**
-- Check disk space in `~/.renet/disks/`
-- Run `rdc ops check` to verify all prerequisites
-- Try `rdc ops down` then `rdc ops up --force`
+**VMs لا تبدأ**
+- تحقق من مساحة القرص في `~/.renet/disks/`
+- شغّل `rdc ops check` للتحقق من جميع المتطلبات الأساسية
+- جرّب `rdc ops down` ثم `rdc ops up --force`

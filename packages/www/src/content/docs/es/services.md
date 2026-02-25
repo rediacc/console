@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: es
-sourceHash: c4048b13799a7767
+sourceHash: 294f92dc32f10c86
 ---
 
 # Servicios
@@ -204,7 +204,7 @@ rdc repo down my-app -m server-1
 
 | Opción | Descripción |
 |--------|-------------|
-| `--unmount` | Desmontar el repositorio cifrado después de detener los servicios |
+| `--unmount` | Desmontar el repositorio cifrado después de detener los servicios. Si esto no tiene efecto, use `rdc repo unmount` por separado. |
 | `--skip-router-restart` | Omitir el reinicio del servidor de rutas después de la operación |
 
 La secuencia de ejecución es:
@@ -281,9 +281,9 @@ Este ejemplo despliega una aplicación web con PostgreSQL, Redis y un servidor A
 
 ```bash
 curl -fsSL https://get.rediacc.com | sh
-rdc context create-local production --ssh-key ~/.ssh/id_ed25519
-rdc context add-machine prod-1 --ip 203.0.113.50 --user deploy
-rdc context setup-machine prod-1
+rdc config init production --ssh-key ~/.ssh/id_ed25519
+rdc config add-machine prod-1 --ip 203.0.113.50 --user deploy
+rdc config setup-machine prod-1
 rdc repo create webapp -m prod-1 --size 10G
 ```
 

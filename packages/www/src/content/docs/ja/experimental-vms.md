@@ -4,12 +4,20 @@ description: "rdc opsを使用して、開発およびテスト用のローカ�
 category: "Concepts"
 order: 2
 language: ja
-sourceHash: "30b5f6267314cfb2"
+sourceHash: fa4069c48c650a79
 ---
 
 # 実験的VM
 
 ワークステーション上にローカルVMクラスターをプロビジョニングし、開発やテストに使用できます。外部クラウドプロバイダーは不要です。
+
+## 前提条件
+
+`rdc ops` は**ローカルアダプター**が必要です。クラウドアダプターでは利用できません。
+
+```bash
+rdc ops check
+```
 
 ## 概要
 
@@ -25,10 +33,10 @@ sourceHash: "30b5f6267314cfb2"
 
 | プラットフォーム | アーキテクチャ | バックエンド | ステータス |
 |----------|-------------|---------|--------|
-| Linux | x86_64 | KVM (libvirt) | フルサポート |
-| Linux | ARM64 | KVM (libvirt) | フルサポート |
-| macOS | ARM (Apple Silicon) | QEMU + HVF | フルサポート |
-| macOS | Intel | QEMU + HVF | フルサポート |
+| Linux | x86_64 | KVM (libvirt) | CIでテスト済み |
+| macOS | Intel | QEMU + HVF | CIでテスト済み |
+| Linux | ARM64 | KVM (libvirt) | サポート済み（CIテストなし） |
+| macOS | ARM (Apple Silicon) | QEMU + HVF | サポート済み（CIテストなし） |
 | Windows | x86_64 / ARM64 | Hyper-V | 計画中 |
 
 **Linux (KVM)** はlibvirtを使用し、ブリッジネットワーキングによるネイティブハードウェア仮想化を提供します。
@@ -83,6 +91,9 @@ rdc ops status
 # 4. SSH into the bridge VM
 rdc ops ssh 1
 
+# 4b. Or run a command directly
+rdc ops ssh 1 hostname
+
 # 5. Tear down
 rdc ops down
 ```
@@ -103,13 +114,20 @@ rdc ops down
 
 ## 設定
 
-環境変数でVMリソースを制御します：
+ブリッジVMはワーカーVMよりも小さいデフォルト値を使用します：
+
+| VMの役割 | CPU | RAM | ディスク |
+|---------|------|-----|------|
+| ブリッジ | 1 | 1024 MB | 8 GB |
+| ワーカー | 2 | 4096 MB | 16 GB |
+
+環境変数でワーカーVMリソースを上書きできます：
 
 | 変数 | デフォルト | 説明 |
 |----------|---------|-------------|
-| `VM_CPU` | 2 | VM あたりのCPUコア数 |
-| `VM_RAM` | 4096 | VMあたりのRAM（MB） |
-| `VM_DSK` | 16 | ディスクサイズ（GB） |
+| `VM_CPU` | 2 | ワーカーVM あたりのCPUコア数 |
+| `VM_RAM` | 4096 | ワーカーVMあたりのRAM（MB） |
+| `VM_DSK` | 16 | ワーカーVMあたりのディスクサイズ（GB） |
 | `VM_NET_BASE` | 192.168.111 | ネットワークベース（KVMのみ） |
 | `RENET_DATA_DIR` | ~/.renet | VMディスクと設定のデータディレクトリ |
 
@@ -122,14 +140,14 @@ rdc ops down
 | `rdc ops up [options]` | VMクラスターをプロビジョニング |
 | `rdc ops down` | すべてのVMを破棄しクリーンアップ |
 | `rdc ops status` | すべてのVMのステータスを表示 |
-| `rdc ops ssh <vm-id>` | 特定のVMにSSH接続 |
+| `rdc ops ssh <vm-id> [command...]` | VMにSSH接続、またはVM上でコマンドを実行 |
 
 ### `rdc ops up` オプション
 
 | オプション | 説明 |
 |--------|-------------|
 | `--basic` | 最小構成のクラスター（ブリッジ + ワーカー1台） |
-| `--lite` | 軽量リソース |
+| `--lite` | VMプロビジョニングをスキップ（SSHキーのみ） |
 | `--force` | 既存のVMを強制的に再作成 |
 | `--parallel` | VMを並列でプロビジョニング |
 | `--skip-orchestration` | VMのみ、Rediaccサービスなし |

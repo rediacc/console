@@ -322,111 +322,96 @@
         }
       }
     },
-    "context": {
+    "config": {
       "addMachine": {
-        "description": "إضافة آلة إلى السياق المحلي الحالي",
+        "description": "إضافة آلة إلى الإعدادات الحالية",
         "success": "تمت إضافة الآلة \"{{name}}\" ({{user}}@{{ip}})"
       },
       "addRepository": {
-        "description": "إضافة ربط GUID لمستودع إلى السياق المحلي الحالي",
-        "networkIdAssigned": "معرّف الشبكة: {{networkId}}",
+        "description": "إضافة تعيين GUID للمستودع إلى الإعدادات الحالية",
+        "networkIdAssigned": "معرف الشبكة: {{networkId}}",
         "optionCredential": "بيانات اعتماد المستودع (عبارة مرور التشفير)",
-        "optionGuid": "معرّف GUID للمستودع (UUID من أسماء ملفات النسخ الاحتياطي)",
-        "optionNetworkId": "معرّف الشبكة لعزل Docker (2816، 2880، ...). يُعيَّن تلقائيًا إذا لم يُحدَّد",
-        "optionTag": "وسم المستودع",
-        "success": "تمت إضافة المستودع \"{{name}}\" ({{guid}}، الوسم: {{tag}})"
+        "optionGuid": "GUID المستودع (UUID من أسماء ملفات النسخ الاحتياطي)",
+        "optionNetworkId": "معرف الشبكة لعزل Docker (2816، 2880، ...). يُعيَّن تلقائياً إذا لم يُحدَّد",
+        "optionTag": "علامة المستودع",
+        "success": "تمت إضافة المستودع \"{{name}}\" ({{guid}}، علامة: {{tag}})"
       },
       "clear": {
-        "allCleared": "تم مسح جميع الإعدادات الافتراضية",
-        "description": "مسح الإعدادات الافتراضية (الكل أو مفتاح محدد)",
+        "allCleared": "تم مسح جميع القيم الافتراضية",
+        "description": "مسح القيم الافتراضية (الكل أو مفتاح معين)",
         "keyCleared": "تم مسح \"{{key}}\""
       },
-      "create": {
-        "description": "إنشاء سياق جديد",
-        "success": "تم إنشاء السياق \"{{name}}\""
-      },
-      "createLocal": {
-        "description": "إنشاء سياق محلي جديد للعمل بدون middleware",
-        "encryptionEnabled": "تم تمكين التشفير في حالة السكون. سيتم تشفير الموارد في config.json.",
-        "nextStep": "أضف الآلات باستخدام: rdc context add-machine <name> --ip <ip> --user <user>",
-        "optionMasterPassword": "تشفير الموارد بكلمة مرور رئيسية",
-        "success": "تم إنشاء السياق المحلي \"{{name}}\""
-      },
-      "createS3": {
-        "accessVerified": "تم التحقق من الوصول إلى S3",
-        "description": "إنشاء سياق S3/R2 جديد للحالة البعيدة مع التنفيذ المحلي",
-        "errorSecretAccessKeyRequired": "مفتاح الوصول السري لـ S3 مطلوب",
-        "nextStep": "التالي: أضف الأجهزة باستخدام \"rdc context add-machine\"",
-        "optionAccessKeyId": "معرف مفتاح الوصول لـ S3",
-        "optionBucket": "اسم حاوية S3",
-        "optionEndpoint": "عنوان URL لنقطة نهاية S3",
-        "optionMasterPassword": "كلمة المرور الرئيسية للتشفير (اختياري، اتركها فارغة للتخطي)",
-        "optionPrefix": "بادئة المفتاح/مساحة الاسم في الحاوية",
-        "optionRegion": "منطقة S3",
-        "optionRenetPath": "مسار ملف renet التنفيذي",
-        "optionSecretAccessKey": "مفتاح الوصول السري لـ S3 (يُطلب إذا لم يُعطَ)",
-        "optionSshKey": "مسار مفتاح SSH الخاص",
-        "promptMasterPassword": "كلمة المرور الرئيسية للتشفير (اتركها فارغة للتخطي):",
-        "promptSecretAccessKey": "مفتاح الوصول السري لـ S3:",
-        "success": "تم إنشاء سياق S3 \"{{name}}\"",
-        "verifyingAccess": "جارٍ التحقق من الوصول إلى S3..."
-      },
-      "current": {
-        "description": "عرض اسم السياق الحالي",
-        "noContext": "لا يوجد سياق نشط"
+      "recover": {
+        "description": "استعادة الإعدادات من ملف النسخة الاحتياطية (.bak)",
+        "noBackup": "لم يتم العثور على نسخة احتياطية للإعدادات \"{{name}}\"",
+        "confirm": "استعادة الإعدادات \"{{name}}\" من النسخة الاحتياطية؟",
+        "success": "تمت استعادة الإعدادات \"{{name}}\" من النسخة الاحتياطية (الإصدار {{version}})",
+        "failed": "فشلت استعادة الإعدادات \"{{name}}\" من النسخة الاحتياطية"
       },
       "delete": {
-        "confirm": "هل تريد بالتأكيد حذف السياق \"{{name}}\"؟",
-        "description": "حذف سياق",
-        "success": "تم حذف السياق \"{{name}}\""
+        "description": "حذف ملف إعدادات",
+        "success": "تم حذف الإعدادات \"{{name}}\""
       },
-      "description": "إدارة السياقات في سطر الأوامر",
+      "description": "إدارة ملفات إعدادات CLI",
       "importStorage": {
-        "description": "استيراد وحدات التخزين من ملف إعدادات rclone",
+        "description": "استيراد وحدات تخزين من ملف إعدادات rclone",
         "imported": "تم استيراد التخزين \"{{name}}\" ({{type}})",
-        "noConfigs": "لم يتم العثور على إعدادات تخزين صالحة في الملف",
-        "notFound": "لم يتم العثور على التخزين \"{{name}}\" في ملف الإعدادات",
-        "optionName": "استيراد هذا القسم المُسمّى فقط",
+        "noConfigs": "لم يتم العثور على إعدادات تخزين صحيحة في الملف",
+        "notFound": "التخزين \"{{name}}\" غير موجود في ملف الإعدادات",
+        "optionName": "استيراد هذا القسم المسمى فقط",
         "summary": "تم استيراد {{count}} وحدة تخزين",
-        "unsupported": "تخطّي \"{{name}}\": نوع مزوّد غير مدعوم \"{{type}}\""
+        "unsupported": "تخطي \"{{name}}\": نوع المزود غير مدعوم \"{{type}}\""
+      },
+      "init": {
+        "alreadyExists": "الإعدادات \"{{name}}\" موجودة بالفعل",
+        "description": "تهيئة ملف إعدادات جديد",
+        "optionMasterPassword": "تشفير الموارد بكلمة مرور رئيسية",
+        "optionS3AccessKeyId": "معرف مفتاح الوصول S3",
+        "optionS3Bucket": "اسم حاوية S3",
+        "optionS3Endpoint": "عنوان URL لنقطة نهاية S3",
+        "optionS3Prefix": "بادئة المفتاح في حاوية S3",
+        "optionS3Region": "منطقة S3",
+        "optionS3SecretAccessKey": "مفتاح الوصول السري لـ S3",
+        "promptS3SecretAccessKey": "مفتاح الوصول السري لـ S3:",
+        "s3Required": "--s3-endpoint و --s3-bucket و --s3-access-key-id مطلوبة لحالة موارد S3",
+        "s3SecretRequired": "مفتاح الوصول السري لـ S3 مطلوب",
+        "s3Verified": "تم التحقق من وصول S3",
+        "success": "تمت تهيئة الإعدادات \"{{name}}\"",
+        "verifyingS3": "جاري التحقق من وصول S3..."
       },
       "list": {
-        "description": "قائمة جميع السياقات",
-        "noContexts": "لا توجد سياقات مكونة"
+        "description": "عرض جميع ملفات الإعدادات",
+        "noConfigs": "لم يتم العثور على ملفات إعدادات. أنشئ واحداً باستخدام: rdc config init"
       },
       "machines": {
-        "description": "قائمة الآلات في السياق المحلي الحالي",
-        "noMachines": "لا توجد آلات مكونة. أضف واحدة باستخدام: rdc context add-machine <name> --ip <ip> --user <user>"
+        "description": "عرض الآلات في الإعدادات الحالية",
+        "noMachines": "لا توجد آلات مكونة. أضف واحدة باستخدام: rdc config add-machine <name> --ip <ip> --user <user>"
       },
       "pushInfra": {
-        "description": "دفع تكوين البنية التحتية إلى الجهاز البعيد",
-        "installingProxy": "جارٍ تثبيت وتشغيل الوكيل...",
-        "proxyInstallWarning": "فشل تثبيت الوكيل (رمز {{code}}). شغّل يدوياً: sudo renet proxy install",
-        "success": "تم دفع تكوين البنية التحتية إلى \"{{name}}\""
+        "description": "دفع إعدادات البنية التحتية إلى الجهاز البعيد",
+        "installingProxy": "جاري تثبيت وتشغيل البروكسي...",
+        "proxyInstallWarning": "فشل تثبيت البروكسي (الرمز {{code}}). قم بالتشغيل يدوياً: sudo renet proxy install",
+        "success": "تم دفع إعدادات البنية التحتية إلى \"{{name}}\""
       },
       "removeMachine": {
-        "description": "إزالة آلة من السياق المحلي الحالي",
+        "description": "إزالة آلة من الإعدادات الحالية",
         "success": "تمت إزالة الآلة \"{{name}}\""
       },
       "removeRepository": {
-        "description": "إزالة ربط مستودع من السياق المحلي الحالي",
+        "description": "إزالة تعيين مستودع من الإعدادات الحالية",
         "success": "تمت إزالة المستودع \"{{name}}\""
       },
       "removeStorage": {
-        "description": "إزالة وحدة تخزين من السياق المحلي الحالي",
+        "description": "إزالة وحدة تخزين من الإعدادات الحالية",
         "success": "تمت إزالة التخزين \"{{name}}\""
       },
-      "rename": {
-        "description": "إعادة تسمية سياق",
-        "success": "تمت إعادة تسمية السياق من \"{{oldName}}\" إلى \"{{newName}}\""
-      },
       "repositories": {
-        "description": "عرض روابط GUID للمستودعات في السياق المحلي الحالي",
-        "noRepositories": "لا توجد مستودعات مهيّأة. أضف واحدًا باستخدام: rdc context add-repository <name> --guid <guid>"
+        "description": "عرض تعيينات GUID للمستودعات في الإعدادات الحالية",
+        "noRepositories": "لا توجد مستودعات مكونة. أضف واحداً باستخدام: rdc config add-repository <name> --guid <guid>"
       },
       "scanKeys": {
-        "completed": "تم فحص {{count}}/{{total}} جهاز",
-        "description": "فحص مفاتيح مضيف SSH للأجهزة في السياق الحالي",
+        "completed": "تم فحص {{count}}/{{total}} آلة",
+        "description": "فحص مفاتيح مضيف SSH للآلات في الإعدادات الحالية",
         "keysScanned": "تم فحص مفاتيح المضيف لـ \"{{name}}\"",
         "noKeys": "تعذّر فحص مفاتيح المضيف لـ \"{{name}}\""
       },
@@ -435,91 +420,52 @@
         "success": "تم تعيين \"{{key}}\" إلى \"{{value}}\""
       },
       "setInfra": {
-        "description": "تعيين تكوين البنية التحتية لجهاز",
-        "invalidIPv4": "عنوان IPv4 غير صالح: {{ip}}",
-        "invalidIPv6": "عنوان IPv6 غير صالح: {{ip}}",
-        "noOptions": "لم يتم تحديد خيارات. استخدم --public-ipv4، --base-domain، إلخ.",
+        "description": "تعيين إعدادات البنية التحتية لآلة",
+        "invalidIPv4": "عنوان IPv4 غير صحيح: {{ip}}",
+        "invalidIPv6": "عنوان IPv6 غير صحيح: {{ip}}",
+        "noOptions": "لم يتم تحديد خيارات. استخدم --public-ipv4 أو --base-domain وغيرها.",
         "optionBaseDomain": "النطاق الأساسي للتطبيقات",
-        "optionCertEmail": "البريد الإلكتروني لإشعارات شهادة TLS",
-        "optionCfDnsToken": "رمز Cloudflare DNS API لتحدي ACME DNS-01",
+        "optionCertEmail": "البريد الإلكتروني لإشعارات شهادات TLS",
+        "optionCfDnsToken": "رمز واجهة برمجة تطبيقات DNS لـ Cloudflare لتحدي ACME DNS-01",
         "optionPublicIPv4": "عنوان IPv4 العام",
         "optionPublicIPv6": "عنوان IPv6 العام",
-        "optionTcpPorts": "منافذ TCP للتوجيه (مفصولة بفواصل، مثلاً 25,143,465)",
-        "optionUdpPorts": "منافذ UDP للتوجيه (مفصولة بفواصل، مثلاً 53)",
-        "success": "تم تحديث تكوين البنية التحتية لـ \"{{name}}\""
-      },
-      "setLanguage": {
-        "description": "تعيين اللغة المفضلة",
-        "success": "تم تعيين اللغة إلى \"{{code}}\"",
-        "unsupported": "لغة غير مدعومة. اللغات المدعومة: {{languages}}"
+        "optionTcpPorts": "منافذ TCP لإعادة التوجيه (مفصولة بفواصل، مثلاً 25,143,465)",
+        "optionUdpPorts": "منافذ UDP لإعادة التوجيه (مفصولة بفواصل، مثلاً 53)",
+        "success": "تم تحديث إعدادات البنية التحتية لـ \"{{name}}\""
       },
       "setRenet": {
-        "description": "تعيين المسار إلى ثنائي renet للوضع المحلي",
+        "description": "تعيين مسار الملف الثنائي renet للوضع المحلي",
         "success": "تم تعيين مسار Renet إلى: {{path}}"
       },
       "setSsh": {
-        "description": "تحديث إعدادات SSH للسياق المحلي الحالي",
+        "description": "تحديث إعدادات SSH للإعدادات الحالية",
         "success": "تم تحديث إعدادات SSH"
       },
       "setupMachine": {
         "completed": "اكتمل إعداد الجهاز '{{machine}}' بنجاح",
-        "datastoreOption": "مسار مخزن البيانات على الجهاز البعيد",
-        "datastoreSizeOption": "حجم مخزن البيانات (مثلاً 95%، 100G)",
-        "description": "تشغيل الإعداد على جهاز بعيد (يثبّت btrfs و Docker وغيرها)",
+        "datastoreOption": "مسار التخزين على الجهاز البعيد",
+        "datastoreSizeOption": "حجم التخزين (مثلاً 95%، 100G)",
+        "description": "تشغيل الإعداد على جهاز بعيد (يثبت btrfs وDocker وغيرها)",
         "failed": "فشل إعداد الجهاز '{{machine}}': {{error}}",
-        "starting": "جارٍ إعداد الجهاز '{{machine}}'..."
+        "starting": "جاري إعداد الجهاز '{{machine}}'..."
       },
       "show": {
-        "description": "عرض تفاصيل السياق الحالي",
-        "noContext": "لا يوجد سياق نشط"
+        "description": "عرض تفاصيل الإعدادات الحالية",
+        "noConfig": "لا توجد إعدادات نشطة. أنشئ واحدة باستخدام: rdc config init"
       },
       "showInfra": {
-        "description": "عرض تكوين البنية التحتية لجهاز",
-        "noInfra": "لم يتم تعيين تكوين بنية تحتية لـ \"{{name}}\""
+        "description": "عرض إعدادات البنية التحتية لآلة",
+        "noInfra": "لم يتم تعيين إعدادات بنية تحتية لـ \"{{name}}\""
       },
       "storages": {
-        "description": "عرض وحدات التخزين في السياق المحلي الحالي",
-        "noStorages": "لا توجد وحدات تخزين مهيّأة. استوردها باستخدام: rdc context import-storage <file>"
-      },
-      "toLocal": {
-        "description": "ترحيل سياق S3 الحالي إلى الوضع المحلي",
-        "errorNoS3Config": "السياق \"{{name}}\" لا يحتوي على إعدادات S3",
-        "errorNotS3": "السياق \"{{name}}\" ليس في وضع S3 (الحالي: {{mode}})",
-        "loading": "جارٍ تحميل الحالة من S3...",
-        "nonDestructive": "يبقى ملف State.json في حاوية S3 (عملية غير مدمّرة)",
-        "optionSshKeyPath": "مسار كتابة مفتاح SSH الخاص (الافتراضي: المسار الحالي)",
-        "sshWritten": "تم كتابة مفتاح SSH إلى {{path}}",
-        "success": "تم الترحيل إلى الوضع المحلي: {{machines}} جهاز، {{storages}} وحدة تخزين، {{repos}} مستودع"
-      },
-      "toS3": {
-        "description": "ترحيل السياق المحلي الحالي إلى وضع S3",
-        "errorNotLocal": "السياق \"{{name}}\" ليس في الوضع المحلي (الحالي: {{mode}})",
-        "errorSecretRequired": "مفتاح الوصول السري مطلوب",
-        "optionAccessKeyId": "معرّف مفتاح الوصول لـ S3",
-        "optionBucket": "اسم حاوية S3",
-        "optionEndpoint": "عنوان URL لنقطة نهاية S3",
-        "optionMasterPassword": "تفعيل التشفير بكلمة المرور الرئيسية هذه",
-        "optionPrefix": "بادئة المفتاح في الحاوية",
-        "optionRegion": "منطقة S3",
-        "optionSecretAccessKey": "مفتاح الوصول السري لـ S3 (يُطلب إذا لم يُحدَّد)",
-        "promptSecretAccessKey": "أدخل مفتاح الوصول السري لـ S3:",
-        "success": "تم الترحيل إلى وضع S3: {{machines}} جهاز، {{storages}} وحدة تخزين، {{repos}} مستودع",
-        "verified": "تم التحقق من الوصول إلى S3",
-        "verifying": "جارٍ التحقق من الوصول إلى S3..."
-      },
-      "unset": {
-        "description": "إزالة قيمة افتراضية للسياق",
-        "success": "تمت إزالة {{key}} من السياق الحالي"
-      },
-      "use": {
-        "description": "الانتقال إلى سياق مختلف",
-        "switched": "تم الانتقال إلى السياق \"{{name}}\""
+        "description": "عرض وحدات التخزين في الإعدادات الحالية",
+        "noStorages": "لا توجد وحدات تخزين مكونة. استورد باستخدام: rdc config import-storage <file>"
       }
     },
     "doctor": {
       "allPassed": "نجحت جميع الفحوصات",
       "checks": {
-        "activeContext": "السياق النشط",
+        "activeConfig": "الإعدادات النشطة",
         "authStatus": "الحالة",
         "cliVersion": "إصدار CLI",
         "contextMode": "وضع السياق",
@@ -527,13 +473,13 @@
         "goInstalled": "Go",
         "machines": "الأجهزة",
         "nodeVersion": "Node.js",
+        "opsPrereqs": "متطلبات OPS",
         "renetBinary": "الملف الثنائي",
         "renetCriu": "CRIU مضمّن",
         "renetRsync": "rsync مضمّن",
         "renetVersion": "الإصدار",
         "seaMode": "وضع SEA",
-        "sshKey": "مفتاح SSH",
-        "opsPrereqs": "متطلبات OPS"
+        "sshKey": "مفتاح SSH"
       },
       "description": "تشخيص بيئة CLI وتكامل renet",
       "devMode": "لا (وضع التطوير)",
@@ -542,9 +488,9 @@
       "notAuthenticated": "غير مصادق",
       "notConfigured": "غير مهيّأ",
       "notInstalled": "غير مثبّت",
-      "seaActive": "نعم (تطبيق ملف تنفيذي واحد)",
       "opsNotSupported": "غير مدعوم على {{platform}}",
       "opsSkipped": "renet غير متاح (تم التخطي)",
+      "seaActive": "نعم (تطبيق ملف تنفيذي واحد)",
       "sections": {
         "authentication": "المصادقة",
         "configuration": "الإعدادات",
@@ -1183,6 +1129,75 @@
         "starting": "جارٍ سحب \"{{repository}}\" من \"{{storage}}\" إلى \"{{machine}}\"..."
       }
     },
+    "store": {
+      "add": {
+        "addedButUnverified": "تمت إضافة المتجر \"{{name}}\" لكن تعذّر التحقق من الاتصال",
+        "alreadyExists": "المتجر \"{{name}}\" موجود بالفعل",
+        "description": "إضافة متجر مزامنة جديد",
+        "gitUrlRequired": "--git-url مطلوب لمتاجر Git",
+        "invalidType": "نوع متجر غير صحيح: \"{{type}}\". الأنواع الصحيحة: {{valid}}",
+        "localPathRequired": "--local-path مطلوب لمتاجر الملف المحلي",
+        "optionBwFolderId": "معرف مجلد Bitwarden لتنظيم عناصر الإعدادات (اختياري)",
+        "optionEncryptionKey": "مفتاح التشفير لهذا المتجر",
+        "optionGitBranch": "اسم فرع Git",
+        "optionGitPath": "المسار داخل مستودع Git",
+        "optionGitUrl": "عنوان URL لمستودع Git",
+        "optionLocalPath": "مسار المجلد المحلي",
+        "optionS3AccessKeyId": "معرف مفتاح الوصول S3",
+        "optionS3Bucket": "اسم حاوية S3",
+        "optionS3Endpoint": "عنوان URL لنقطة نهاية S3",
+        "optionS3Prefix": "بادئة مفتاح S3",
+        "optionS3Region": "منطقة S3",
+        "optionS3SecretAccessKey": "مفتاح الوصول السري لـ S3",
+        "optionType": "نوع المتجر (s3، local-file، bitwarden، git، vault)",
+        "optionVaultAddr": "عنوان خادم Vault (مثلاً http://127.0.0.1:8200)",
+        "optionVaultMount": "مسار تثبيت Vault KV v2 (افتراضي: secret)",
+        "optionVaultNamespace": "مساحة اسم Vault (للمؤسسات فقط)",
+        "optionVaultPrefix": "بادئة المسار داخل محرك Vault KV (افتراضي: rdc/configs)",
+        "optionVaultToken": "رمز مصادقة Vault",
+        "promptS3SecretAccessKey": "مفتاح الوصول السري لـ S3:",
+        "promptVaultToken": "رمز Vault (أو عيّن متغير البيئة VAULT_TOKEN):",
+        "s3Required": "--s3-endpoint و --s3-bucket و --s3-access-key-id مطلوبة لمتاجر S3",
+        "s3SecretRequired": "مفتاح الوصول السري لـ S3 مطلوب",
+        "success": "تمت إضافة المتجر \"{{name}}\" ({{type}})",
+        "vaultAddrRequired": "--vault-addr مطلوب لمتاجر Vault",
+        "vaultTokenRequired": "رمز Vault مطلوب (مرر --vault-token أو عيّن متغير البيئة VAULT_TOKEN)"
+      },
+      "description": "إدارة متاجر مزامنة الإعدادات (S3، ملف محلي، Bitwarden، Git، Vault)",
+      "list": {
+        "description": "عرض المتاجر المكونة",
+        "noStores": "لا توجد متاجر مكونة. أضف واحداً باستخدام: rdc store add <name> --type <type>"
+      },
+      "pull": {
+        "description": "سحب الإعدادات من متجر",
+        "failed": "فشل السحب من المتجر \"{{store}}\": {{error}}",
+        "notFound": "المتجر \"{{name}}\" غير موجود",
+        "optionConfig": "اسم الإعدادات المراد السحب إليها",
+        "optionStore": "السحب من متجر محدد",
+        "success": "تم سحب الإعدادات \"{{config}}\" من المتجر \"{{store}}\""
+      },
+      "push": {
+        "description": "دفع الإعدادات الحالية إلى المتاجر",
+        "failed": "فشل الدفع إلى المتجر \"{{store}}\": {{error}}",
+        "noStores": "لا توجد متاجر مكونة",
+        "optionAll": "الدفع إلى جميع المتاجر",
+        "optionStore": "الدفع إلى متجر محدد",
+        "success": "تم دفع الإعدادات \"{{config}}\" إلى المتجر \"{{store}}\""
+      },
+      "remove": {
+        "description": "إزالة متجر مزامنة",
+        "success": "تمت إزالة المتجر \"{{name}}\""
+      },
+      "sync": {
+        "description": "مزامنة الإعدادات مع المتاجر (سحب ثم دفع)",
+        "failed": "فشلت المزامنة للمتجر \"{{store}}\": {{error}}",
+        "noStores": "لا توجد متاجر مكونة",
+        "optionAll": "المزامنة مع جميع المتاجر",
+        "optionStore": "المزامنة مع متجر محدد",
+        "pulled": "تم سحب إصدار أحدث من المتجر \"{{store}}\"",
+        "pushed": "تم الدفع إلى المتجر \"{{store}}\""
+      }
+    },
     "sync": {
       "cancelled": "تم إلغاء المزامنة.",
       "description": "مزامنة الملفات مع المستودعات باستخدام rsync",
@@ -1417,20 +1432,30 @@
       "tip": "نصيحة",
       "warning": "تحذير"
     },
+    "cloudFrontmatter": {
+      "category": "مرجع",
+      "description": "أوامر سحابية حصرية لـ Rediacc CLI — المصادقة والفرق والمنظمات وإدارة المستأجرين المتعددين",
+      "title": "تطبيق CLI (سحابي / تجريبي)"
+    },
+    "cloudOverview": {
+      "heading": "نظرة عامة",
+      "text": "تتطلب هذه الأوامر **المحول السحابي** (تجريبي) — يتم تفعيله عندما يحتوي التكوين على حقلي `apiUrl` و `token`. للمرجع الرئيسي لـ CLI، راجع [تطبيق CLI](/ar/docs/cli-application)."
+    },
+    "cloudPageTitle": "مرجع Rediacc CLI (سحابي / تجريبي)",
     "errors": {
       "heading": "رسائل الخطأ الشائعة",
       "intro": "عندما يحدث خطأ ما، يوفر سطر الأوامر رسائل خطأ واضحة:",
       "meanings": {
         "authRequired": "تحتاج إلى تسجيل الدخول أولاً",
         "machineRequired": "حدد جهازاً باستخدام `--machine` أو عيّن قيمة افتراضية للسياق",
-        "noActiveContext": "لم يتم تحديد سياق — قم بإنشاء أو التبديل إلى واحد",
+        "noActiveConfig": "لا توجد إعدادات نشطة — أنشئ واحدة باستخدام `rdc config init`",
         "permissionDenied": "حسابك لا يملك الصلاحيات المطلوبة",
         "regionRequired": "حدد منطقة باستخدام `--region` أو عيّن قيمة افتراضية للسياق",
         "teamRequired": "حدد فريقاً باستخدام `--team` أو عيّن قيمة افتراضية للسياق"
       }
     },
     "frontmatter": {
-      "category": "Reference",
+      "category": "مرجع",
       "description": "دليل شامل لاستخدام واجهة سطر أوامر Rediacc لإدارة المنصة",
       "title": "تطبيق سطر الأوامر"
     },
@@ -1462,7 +1487,7 @@
       "backup": "إدارة النسخ الاحتياطي",
       "bridge": "إدارة الجسر",
       "ceph": "إدارة تخزين Ceph",
-      "context": "إدارة السياق",
+      "config": "إدارة الإعدادات",
       "doctor": "تشخيص النظام",
       "machine": "إدارة الأجهزة",
       "ops": "عمليات VM التجريبية",
@@ -1476,6 +1501,7 @@
       "shortcuts": "أوامر سريعة (اختصارات)",
       "snapshot": "إدارة اللقطات",
       "storage": "إدارة التخزين",
+      "store": "إدارة المتاجر",
       "sync": "مزامنة الملفات",
       "team": "إدارة الفرق",
       "term": "وصول طرفية SSH",
@@ -1490,13 +1516,13 @@
         },
         "tip": "يتم تخزين رمز المصادقة الخاص بك محلياً في سياقك. استخدم `--save-as` لتخزين بيانات الاعتماد تحت سياق مسمى لبيئات متعددة."
       },
-      "context": {
-        "afterDescription": "تخزن السياقات تفاصيل الاتصال (عنوان API، بيانات الاعتماد، الفريق/المنطقة/الجهاز الافتراضي) حتى تتمكن من التبديل بين البيئات بسرعة.",
-        "createLocal": {
-          "afterDescription": "في الوضع المحلي يمكنك إضافة أجهزة مباشرة:"
+      "config": {
+        "afterDescription": "تخزن ملفات الإعدادات تفاصيل الاتصال (عنوان URL للـ API، بيانات الاعتماد، الفريق/المنطقة/الآلة الافتراضية) حتى تتمكن من التبديل بين البيئات بسرعة.",
+        "init": {
+          "afterDescription": "في الوضع المحلي يمكنك إضافة الآلات مباشرة:"
         },
         "set": {
-          "tip": "تعيين القيم الافتراضية يعني أنك لا تحتاج إلى تمرير `--team` أو `--region` أو `--machine` مع كل أمر."
+          "tip": "يعني تعيين القيم الافتراضية أنك لن تحتاج إلى تمرير `--team` أو `--region` أو `--machine` مع كل أمر."
         }
       },
       "machine": {
@@ -1559,9 +1585,9 @@
     "invalidPriorityMin": "قيمة priority-min غير صحيحة. يجب أن تكون بين 1 و 5.",
     "machineNotFound": "لم يتم العثور على الآلة \"{{name}}\"",
     "machineRequired": "اسم الآلة مطلوب. استخدم --machine أو اضبط السياق.",
-    "machineRequiredLocal": "اسم الآلة مطلوب. استخدم --machine أو اضبط الافتراضي باستخدام: rdc context set machine <name>",
+    "machineRequiredLocal": "اسم الآلة مطلوب. استخدم --machine أو اضبط الافتراضي باستخدام: rdc config set machine <name>",
     "networkError": "خطأ الشبكة: {{message}}",
-    "noActiveContext": "لا يوجد سياق نشط. قم بإنشاء أو تحديد سياق أولاً.",
+    "noActiveConfig": "لا توجد إعدادات نشطة. أنشئ واحدة باستخدام: rdc config init <name>",
     "notAuthenticated": "لم تتم المصادقة. قم بتشغيل: rdc auth login",
     "passwordsMismatch": "كلمات المرور غير متطابقة",
     "permissionDenied": "تم رفض الإذن",
@@ -1626,12 +1652,12 @@
     "cleanupAll": "إزالة جميع إعدادات SSH الخاصة بـ rediacc",
     "cluster": "اسم مجموعة Ceph",
     "command": "تنفيذ أمر بدلاً من الصدفة التفاعلية",
+    "config": "استخدام إعدادات محددة لهذا الأمر",
     "confirmPasswordNonInteractive": "تأكيد كلمة المرور (الوضع غير التفاعلي)",
     "confirmSync": "معاينة التغييرات وطلب التأكيد قبل المزامنة",
     "connectionName": "إزالة اتصال معين",
     "container": "الاتصال بحاوية Docker معينة",
     "containerAction": "إجراء الحاوية: terminal أو logs أو stats أو exec",
-    "context": "استخدم سياق معين لهذا الأمر",
     "datastore": "مسار التخزين على الآلة",
     "debug": "تفعيل مخرجات التصحيح (الوضع المحلي)",
     "dryRun": "عرض ما سيتم نقله دون المزامنة الفعلية",

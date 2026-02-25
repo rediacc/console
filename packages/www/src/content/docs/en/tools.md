@@ -2,7 +2,7 @@
 title: "Tools"
 description: "File sync, terminal access, VS Code integration, and CLI updates."
 category: "Guides"
-order: 8
+order: 9
 language: en
 ---
 

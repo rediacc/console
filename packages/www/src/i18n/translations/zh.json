@@ -941,10 +941,6 @@
           "moneyBack": "14 天退款保证",
           "noContracts": "无长期合同"
         },
-        "billingToggle": {
-          "monthly": "月付",
-          "annual": "年付"
-        },
         "keyBenefits": "主要优点",
         "learnMore": "了解更多",
         "limitedOffer": "限量发售",
@@ -1072,6 +1068,10 @@
         "title": "安装 | Rediacc CLI"
       },
       "methods": {
+        "apk": {
+          "description": "适用于 Alpine Linux 及衍生发行版",
+          "title": "APK (Alpine Linux)"
+        },
         "apt": {
           "description": "适用于Debian、Ubuntu及其衍生版",
           "title": "APT (Debian / Ubuntu)"
@@ -1084,14 +1084,6 @@
           "description": "适用于Fedora、RHEL、CentOS、Rocky Linux",
           "title": "DNF (Fedora / RHEL)"
         },
-        "apk": {
-          "title": "APK (Alpine Linux)",
-          "description": "适用于 Alpine Linux 及衍生发行版"
-        },
-        "pacman": {
-          "title": "Pacman (Arch Linux)",
-          "description": "适用于 Arch Linux 及衍生发行版"
-        },
         "docker": {
           "description": "适用于容器环境",
           "title": "Docker"
@@ -1099,6 +1091,10 @@
         "homebrew": {
           "description": "适用于使用 Homebrew 的 macOS 和 Linux 用户",
           "title": "Homebrew (macOS / Linux)"
+        },
+        "pacman": {
+          "description": "适用于 Arch Linux 及衍生发行版",
+          "title": "Pacman (Arch Linux)"
         },
         "quick": {
           "description": "推荐 - 自动安装并支持版本管理",
@@ -1575,6 +1571,10 @@
       "ui": {
         "anchor": "战略锚",
         "bestValue": "最超值",
+        "billingToggle": {
+          "annual": "年付",
+          "monthly": "月付"
+        },
         "contactSales": "联系销售人员",
         "cta": {
           "business": {
@@ -1614,11 +1614,7 @@
         "monthOrYear": "每月或每年 {{price}}",
         "popular": "最受欢迎",
         "startingAt": "*开始于",
-        "whatsIncluded": "包含内容：",
-        "billingToggle": {
-          "monthly": "月付",
-          "annual": "年付"
-        }
+        "whatsIncluded": "包含内容："
       }
     },
     "privacyPolicy": {

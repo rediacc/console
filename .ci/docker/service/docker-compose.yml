@@ -1,0 +1,118 @@
+# Docker Compose for service mode — rediacc/web image with S3 storage
+# Lightweight stack for testing the web container locally
+#
+# Usage:
+#   source .ci/docker/service/env.sh
+#   docker compose -p rediacc-service -f .ci/docker/service/docker-compose.yml up -d
+
+services:
+  web:
+    image: rediacc/web:${SERVICE_TAG:-local}
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    pull_policy: never
+    container_name: rediacc-service-web
+    hostname: rediacc-service-web
+    ports:
+      - "${SERVICE_HTTP_PORT:-8080}:80"
+    environment:
+      - SYSTEM_DOMAIN=${SYSTEM_DOMAIN:-localhost}
+      - ENABLE_HTTPS=false
+      - INSTANCE_NAME=service
+      - BUILD_TYPE=DEBUG
+      - ENABLE_DEBUG=true
+      # Account server env vars (passed to entrypoint -> node process)
+      - S3_ENDPOINT=http://rustfs:9000
+      - S3_BUCKET=subscriptions
+      - S3_ACCESS_KEY_ID=${RUSTFS_ACCESS_KEY:-rustfsadmin}
+      - S3_SECRET_ACCESS_KEY=${RUSTFS_SECRET_KEY:-rustfsadmin}
+      - S3_REGION=us-east-1
+      - ED25519_PRIVATE_KEY=${ED25519_PRIVATE_KEY}
+      - ED25519_PUBLIC_KEY=${ED25519_PUBLIC_KEY}
+      - API_KEY=${ACCOUNT_SERVER_API_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@rediacc.io}
+    networks:
+      - service
+    depends_on:
+      rustfs:
+        condition: service_healthy
+      rustfs-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: rediacc-service-rustfs
+    hostname: rustfs
+    ports:
+      - "${SERVICE_RUSTFS_CONSOLE_PORT:-9001}:9001"
+    environment:
+      - RUSTFS_VOLUMES=/data/rustfs{0...3}
+      - RUSTFS_ADDRESS=0.0.0.0:9000
+      - RUSTFS_CONSOLE_ADDRESS=0.0.0.0:9001
+      - RUSTFS_CONSOLE_ENABLE=true
+      - RUSTFS_ACCESS_KEY=${RUSTFS_ACCESS_KEY:-rustfsadmin}
+      - RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY:-rustfsadmin}
+    volumes:
+      - rustfs_data_0:/data/rustfs0
+      - rustfs_data_1:/data/rustfs1
+      - rustfs_data_2:/data/rustfs2
+      - rustfs_data_3:/data/rustfs3
+    depends_on:
+      rustfs-volume-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -f http://127.0.0.1:9000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    networks:
+      - service
+    restart: unless-stopped
+
+  # Fix volume permissions (RustFS runs as UID 10001)
+  rustfs-volume-init:
+    image: alpine
+    container_name: rediacc-service-rustfs-volume-init
+    volumes:
+      - rustfs_data_0:/data0
+      - rustfs_data_1:/data1
+      - rustfs_data_2:/data2
+      - rustfs_data_3:/data3
+    command: sh -c "chown -R 10001:10001 /data0 /data1 /data2 /data3"
+    restart: "no"
+
+  # Create the S3 bucket on startup
+  rustfs-init:
+    image: amazon/aws-cli:latest
+    container_name: rediacc-service-rustfs-init
+    depends_on:
+      rustfs:
+        condition: service_healthy
+    environment:
+      - AWS_ACCESS_KEY_ID=${RUSTFS_ACCESS_KEY:-rustfsadmin}
+      - AWS_SECRET_ACCESS_KEY=${RUSTFS_SECRET_KEY:-rustfsadmin}
+      - AWS_DEFAULT_REGION=us-east-1
+    entrypoint: /bin/sh -c "aws --endpoint-url http://rustfs:9000 s3 mb s3://subscriptions 2>/dev/null || true"
+    networks:
+      - service
+    restart: "no"
+
+networks:
+  service:
+    name: rediacc_service
+
+volumes:
+  rustfs_data_0:
+  rustfs_data_1:
+  rustfs_data_2:
+  rustfs_data_3:

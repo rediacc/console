@@ -79,8 +79,8 @@ export class AccountManager {
 
     // 1. Create CLI context (allows storing credentials separately)
     const createResult = await runner.run([
-      'context',
-      'create',
+      'config',
+      'init',
       account.contextName,
       '--api-url',
       this.apiUrl,
@@ -104,7 +104,7 @@ export class AccountManager {
 
     if (!registerResult.success) {
       // Cleanup context on failure
-      await runner.run(['context', 'delete', account.contextName]);
+      await runner.run(['config', 'delete', account.contextName]);
       throw new Error(`Registration failed: ${contextRunner.getErrorMessage(registerResult)}`);
     }
 
@@ -116,7 +116,7 @@ export class AccountManager {
     );
 
     if (!activateResult.success) {
-      await runner.run(['context', 'delete', account.contextName]);
+      await runner.run(['config', 'delete', account.contextName]);
       throw new Error(`Activation failed: ${contextRunner.getErrorMessage(activateResult)}`);
     }
 
@@ -124,7 +124,7 @@ export class AccountManager {
     const loginResult = await contextRunner.login(account.email, account.password);
 
     if (!loginResult.success) {
-      await runner.run(['context', 'delete', account.contextName]);
+      await runner.run(['config', 'delete', account.contextName]);
       throw new Error(`Login failed: ${contextRunner.getErrorMessage(loginResult)}`);
     }
 
@@ -148,8 +148,8 @@ export class AccountManager {
 
     // 1. Create CLI context
     const createResult = await runner.run([
-      'context',
-      'create',
+      'config',
+      'init',
       account.contextName,
       '--api-url',
       this.apiUrl,
@@ -171,7 +171,7 @@ export class AccountManager {
     );
 
     if (!registerResult.success) {
-      await runner.run(['context', 'delete', account.contextName]);
+      await runner.run(['config', 'delete', account.contextName]);
       throw new Error(`Registration failed: ${contextRunner.getErrorMessage(registerResult)}`);
     }
 
@@ -183,7 +183,7 @@ export class AccountManager {
     );
 
     if (!activateResult.success) {
-      await runner.run(['context', 'delete', account.contextName]);
+      await runner.run(['config', 'delete', account.contextName]);
       throw new Error(`Activation failed: ${contextRunner.getErrorMessage(activateResult)}`);
     }
 
@@ -191,7 +191,7 @@ export class AccountManager {
     const loginResult = await contextRunner.login(account.email, account.password);
 
     if (!loginResult.success) {
-      await runner.run(['context', 'delete', account.contextName]);
+      await runner.run(['config', 'delete', account.contextName]);
       throw new Error(`Login failed: ${contextRunner.getErrorMessage(loginResult)}`);
     }
 
@@ -215,7 +215,7 @@ export class AccountManager {
     await runner.run(['auth', 'logout'], { context: contextName }).catch(() => {});
 
     // Delete context (no --force flag needed for context delete)
-    await runner.run(['context', 'delete', contextName]).catch(() => {});
+    await runner.run(['config', 'delete', contextName]).catch(() => {});
 
     console.warn(`[AccountManager] Context cleanup complete`);
   }

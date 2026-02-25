@@ -9,7 +9,7 @@
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { buildRcloneArgs } from '@rediacc/shared/queue-vault';
-import { contextService } from './context.js';
+import { configService } from './config-resources.js';
 import { outputService } from './output.js';
 import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
 
@@ -70,20 +70,20 @@ function buildSyncRcloneFlags(vaultContent: Record<string, unknown>): string[] {
  * Run backup sync push — upload all repos from a machine to storage.
  */
 export async function runBackupSyncPush(options: SyncOptions): Promise<void> {
-  const machineName = options.machine ?? (await contextService.getMachine());
+  const machineName = options.machine ?? (await configService.getMachine());
   if (!machineName) {
     throw new Error('No machine specified. Use -m <machine> or set a default machine.');
   }
 
   // Load configs
-  const localConfig = await contextService.getLocalConfig();
+  const localConfig = await configService.getLocalConfig();
   const machine = localConfig.machines[machineName];
   if (!machine) {
     const available = Object.keys(localConfig.machines).join(', ');
     throw new Error(`Machine "${machineName}" not found. Available: ${available}`);
   }
 
-  const storage = await contextService.getLocalStorage(options.storageName);
+  const storage = await configService.getStorage(options.storageName);
   const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
@@ -158,19 +158,19 @@ export async function runBackupSyncPush(options: SyncOptions): Promise<void> {
 }
 
 async function loadSyncConfigs(options: SyncOptions) {
-  const machineName = options.machine ?? (await contextService.getMachine());
+  const machineName = options.machine ?? (await configService.getMachine());
   if (!machineName) {
     throw new Error('No machine specified. Use -m <machine> or set a default machine.');
   }
 
-  const localConfig = await contextService.getLocalConfig();
+  const localConfig = await configService.getLocalConfig();
   const machine = localConfig.machines[machineName];
   if (!machine) {
     const available = Object.keys(localConfig.machines).join(', ');
     throw new Error(`Machine "${machineName}" not found. Available: ${available}`);
   }
 
-  const storage = await contextService.getLocalStorage(options.storageName);
+  const storage = await configService.getStorage(options.storageName);
   const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));

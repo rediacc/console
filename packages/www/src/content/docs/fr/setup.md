@@ -1,21 +1,22 @@
 ---
 title: "Configuration de la machine"
-description: "Créez un contexte, ajoutez des machines, provisionnez des serveurs et configurez l'infrastructure."
+description: "Créez une configuration, ajoutez des machines, provisionnez des serveurs et configurez l'infrastructure."
 category: "Guides"
 order: 3
 language: fr
+sourceHash: bdc41b37f24ae8f8
 ---
 
 # Configuration de la machine
 
-Cette page vous guide dans la configuration de votre première machine : création d'un contexte, enregistrement d'un serveur, provisionnement et configuration optionnelle de l'infrastructure pour l'accès public.
+Cette page vous guide dans la configuration de votre première machine : création d'une configuration, enregistrement d'un serveur, provisionnement et configuration optionnelle de l'infrastructure pour l'accès public.
 
-## Étape 1 : Créer un contexte local
+## Étape 1 : Créer une configuration
 
-Un **contexte** est une configuration nommée qui stocke vos identifiants SSH, les définitions de machines et les mappages de dépôts. Considérez-le comme un espace de travail de projet.
+Un **config** est un fichier de configuration nommé qui stocke vos identifiants SSH, les définitions de machines et les mappages de dépôts. Considérez-le comme un espace de travail de projet.
 
 ```bash
-rdc context create-local my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 | Option | Requis | Description |
@@ -23,16 +24,16 @@ rdc context create-local my-infra --ssh-key ~/.ssh/id_ed25519
 | `--ssh-key <path>` | Oui | Chemin vers votre clé privée SSH. Le tilde (`~`) est développé automatiquement. |
 | `--renet-path <path>` | Non | Chemin personnalisé vers le binaire renet sur les machines distantes. Par défaut, l'emplacement d'installation standard. |
 
-Ceci crée un contexte local nommé `my-infra` et le stocke dans `~/.rediacc/config.json`.
+Ceci crée une configuration nommée `my-infra` et la stocke dans `~/.config/rediacc/my-infra.json`. La configuration par défaut (sans nom) est stockée sous `~/.config/rediacc/rediacc.json`.
 
-> Vous pouvez avoir plusieurs contextes (par ex., `production`, `staging`, `dev`). Basculez entre eux avec le drapeau `--context` sur n'importe quelle commande.
+> Vous pouvez avoir plusieurs configurations (par ex., `production`, `staging`, `dev`). Basculez entre elles avec le drapeau `--config` sur n'importe quelle commande.
 
 ## Étape 2 : Ajouter une machine
 
-Enregistrez votre serveur distant comme machine dans le contexte :
+Enregistrez votre serveur distant comme machine dans la configuration :
 
 ```bash
-rdc context add-machine server-1 --ip 203.0.113.50 --user deploy
+rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | Option | Requis | Par défaut | Description |
@@ -45,13 +46,13 @@ rdc context add-machine server-1 --ip 203.0.113.50 --user deploy
 Après l'ajout de la machine, rdc exécute automatiquement `ssh-keyscan` pour récupérer les clés d'hôte du serveur. Vous pouvez également l'exécuter manuellement :
 
 ```bash
-rdc context scan-keys server-1
+rdc config scan-keys server-1
 ```
 
 Pour afficher toutes les machines enregistrées :
 
 ```bash
-rdc context machines
+rdc config machines
 ```
 
 ## Étape 3 : Configurer la machine
@@ -59,7 +60,7 @@ rdc context machines
 Provisionnez le serveur distant avec toutes les dépendances requises :
 
 ```bash
-rdc context setup-machine server-1
+rdc config setup-machine server-1
 ```
 
 Cette commande :
@@ -81,26 +82,28 @@ Cette commande :
 Si la clé d'hôte SSH d'un serveur change (par ex., après une réinstallation), rafraîchissez les clés stockées :
 
 ```bash
-rdc context scan-keys server-1
+rdc config scan-keys server-1
 ```
 
 Ceci met à jour le champ `knownHosts` dans votre configuration pour cette machine.
 
 ## Tester la connectivité SSH
 
-Vérifiez que votre machine est accessible avant de continuer :
+Après l'ajout d'une machine, vérifiez qu'elle est accessible :
 
 ```bash
-rdc machine test-connection --ip 203.0.113.50 --user deploy
+rdc term server-1 -c "hostname"
 ```
 
-Ceci teste la connexion SSH et rapporte :
-- Le statut de la connexion
-- La méthode d'authentification utilisée
-- La configuration de la clé SSH
-- L'entrée des clés d'hôte connues
+Cette commande ouvre une connexion SSH vers la machine et exécute la commande. Si elle réussit, votre configuration SSH est correcte.
 
-Vous pouvez enregistrer la clé d'hôte vérifiée dans la configuration de votre machine avec `--save -m server-1`.
+Pour des diagnostics plus détaillés, exécutez :
+
+```bash
+rdc doctor
+```
+
+> **Adaptateur cloud uniquement** : La commande `rdc machine test-connection` fournit des diagnostics SSH détaillés mais nécessite l'adaptateur cloud. Pour l'adaptateur local, utilisez `rdc term` ou `ssh` directement.
 
 ## Configuration de l'infrastructure
 
@@ -109,7 +112,7 @@ Pour les machines devant servir du trafic public, configurez les paramètres d'i
 ### Définir l'infrastructure
 
 ```bash
-rdc context set-infra server-1 \
+rdc config set-infra server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
@@ -129,7 +132,7 @@ rdc context set-infra server-1 \
 ### Afficher l'infrastructure
 
 ```bash
-rdc context show-infra server-1
+rdc config show-infra server-1
 ```
 
 ### Déployer sur le serveur
@@ -137,7 +140,7 @@ rdc context show-infra server-1
 Générez et déployez la configuration du proxy inverse Traefik sur le serveur :
 
 ```bash
-rdc context push-infra server-1
+rdc config push-infra server-1
 ```
 
 Ceci déploie la configuration du proxy basée sur vos paramètres d'infrastructure. Traefik gère la terminaison TLS, le routage et la redirection des ports.
@@ -147,8 +150,8 @@ Ceci déploie la configuration du proxy basée sur vos paramètres d'infrastruct
 Définissez des valeurs par défaut pour ne pas avoir à les spécifier à chaque commande :
 
 ```bash
-rdc context set machine server-1    # Machine par défaut
-rdc context set team my-team        # Équipe par défaut (mode cloud, expérimental)
+rdc config set machine server-1    # Machine par défaut
+rdc config set team my-team        # Équipe par défaut (adaptateur cloud, expérimental)
 ```
 
 Après avoir défini une machine par défaut, vous pouvez omettre `-m server-1` dans les commandes :
@@ -157,28 +160,28 @@ Après avoir défini une machine par défaut, vous pouvez omettre `-m server-1` 
 rdc repo create my-app --size 10G   # Utilise la machine par défaut
 ```
 
-## Contextes multiples
+## Configurations multiples
 
-Gérez plusieurs environnements avec des contextes nommés :
+Gérez plusieurs environnements avec des configurations nommées :
 
 ```bash
-# Créer des contextes séparés
-rdc context create-local production --ssh-key ~/.ssh/id_prod
-rdc context create-local staging --ssh-key ~/.ssh/id_staging
+# Créer des configurations séparées
+rdc config init production --ssh-key ~/.ssh/id_prod
+rdc config init staging --ssh-key ~/.ssh/id_staging
 
-# Utiliser un contexte spécifique
-rdc repo list -m server-1 --context production
-rdc repo list -m staging-1 --context staging
+# Utiliser une configuration spécifique
+rdc repo list -m server-1 --config production
+rdc repo list -m staging-1 --config staging
 ```
 
-Afficher tous les contextes :
+Afficher toutes les configurations :
 
 ```bash
-rdc context list
+rdc config list
 ```
 
-Afficher les détails du contexte actuel :
+Afficher les détails de la configuration actuelle :
 
 ```bash
-rdc context show
+rdc config show
 ```

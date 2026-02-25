@@ -1,43 +1,35 @@
 /**
- * StateProvider factory - returns the appropriate provider based on context mode.
- * Uses lazy initialization and caching per context name.
+ * StateProvider factory - auto-detects adapter from config contents.
+ * Uses lazy initialization and caching per config name.
  */
 
-import { DEFAULTS } from '@rediacc/shared/config';
-import { contextService } from '../services/context.js';
+import { configService } from '../services/config-resources.js';
+import { hasCloudCredentials } from '../types/index.js';
 import type { IStateProvider } from './types.js';
 
 const providerCache = new Map<string, IStateProvider>();
 
 /**
- * Get the state provider for the current context.
- * Cached per context name — subsequent calls return the same instance.
+ * Get the state provider for the current config.
+ * Cached per config name — subsequent calls return the same instance.
  */
 export async function getStateProvider(): Promise<IStateProvider> {
-  const contextName = contextService.getCurrentName();
-  const cached = providerCache.get(contextName);
+  const configName = configService.getCurrentName();
+  const cached = providerCache.get(configName);
   if (cached) return cached;
 
-  const context = await contextService.getCurrent();
-  const mode = context?.mode ?? DEFAULTS.CONTEXT.MODE;
+  const config = await configService.getCurrent();
 
   let provider: IStateProvider;
 
-  switch (mode) {
-    case 's3':
-    case 'local': {
-      const { LocalStateProvider } = await import('./local-state-provider.js');
-      provider = new LocalStateProvider(mode);
-      break;
-    }
-    case 'cloud':
-    default: {
-      const { CloudStateProvider } = await import('./cloud-state-provider.js');
-      provider = new CloudStateProvider();
-      break;
-    }
+  if (hasCloudCredentials(config)) {
+    const { CloudStateProvider } = await import('./cloud-state-provider.js');
+    provider = new CloudStateProvider();
+  } else {
+    const { LocalStateProvider } = await import('./local-state-provider.js');
+    provider = new LocalStateProvider();
   }
 
-  providerCache.set(contextName, provider);
+  providerCache.set(configName, provider);
   return provider;
 }

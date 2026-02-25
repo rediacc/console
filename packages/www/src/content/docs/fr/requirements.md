@@ -4,7 +4,7 @@ description: Configuration requise et plateformes prises en charge pour exécute
 category: Guides
 order: 0
 language: fr
-sourceHash: 35e75948e9858c6d
+sourceHash: 40a59ab9c9625911
 ---
 
 # Prérequis
@@ -53,7 +53,7 @@ Ce sont les distributions testées en CI. D'autres distributions Linux avec syst
 
 ### Installé automatiquement
 
-La commande `rdc context setup-machine` installe les éléments suivants sur le serveur distant :
+La commande `rdc config setup-machine` installe les éléments suivants sur le serveur distant :
 
 - **Docker** et **containerd** (moteur d'exécution de conteneurs)
 - **cryptsetup** (chiffrement de disque LUKS)

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: 3d127a0a186d7487
+sourceHash: cf186b18b0c50eba
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -22,15 +22,15 @@ Yedekleri göndermeden önce bir depolama sağlayıcısı kaydedin. Rediacc, rcl
 Zaten yapılandırılmış bir rclone uzak bağlantınız varsa:
 
 ```bash
-rdc context import-storage my-storage
+rdc config import-storage rclone.conf
 ```
 
-Bu, rclone yapılandırmanızdaki depolama ayarını mevcut bağlama aktarır.
+Bu, bir rclone yapılandırma dosyasındaki depolama yapılandırmalarını mevcut yapılandırmaya aktarır. Desteklenen türler: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob ve Swift.
 
 ### Depolamaları Görüntüleme
 
 ```bash
-rdc context storages
+rdc config storages
 ```
 
 ## Yedek Gönderme

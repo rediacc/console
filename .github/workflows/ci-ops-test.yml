@@ -63,15 +63,13 @@ jobs:
       - name: Build CLI
         run: npm run build -w @rediacc/cli && npm run build:bundle -w @rediacc/cli
 
-      - name: Configure local context
+      - name: Configure local config
         run: |
-          mkdir -p ~/.rediacc
+          CONFIG_DIR=$(node -e "import('./packages/shared/dist/paths/index.js').then(m=>console.log(m.getConfigDir()))")
+          mkdir -p "$CONFIG_DIR"
           jq -n --arg renet "$RENET_BINARY" \
-            '{contexts:{default:{name:"default",mode:"local",apiUrl:"http://localhost",renetPath:$renet}}}' \
-            > ~/.rediacc/config.json
-          # Copy to root's home for sudo commands (os.homedir() returns /root under sudo)
-          sudo mkdir -p /root/.rediacc
-          sudo cp ~/.rediacc/config.json /root/.rediacc/config.json
+            '{id:"00000000-0000-0000-0000-000000000000",version:1,renetPath:$renet}' \
+            > "$CONFIG_DIR/rediacc.json"
 
       - name: "Test: rdc ops setup"
         run: node packages/cli/dist/cli-bundle.cjs ops setup
@@ -116,6 +114,22 @@ jobs:
       - name: "Test: rdc ops down"
         if: always()
         run: sudo -E node packages/cli/dist/cli-bundle.cjs ops down -o json || true
+
+      - name: Install asciinema
+        if: success()
+        run: pip install asciinema
+
+      - name: Record tutorials
+        if: success()
+        run: .ci/tutorials/record.sh .ci/tutorials/ops-tutorial.sh /tmp/ops-tutorial.cast
+
+      - name: Upload tutorial recordings
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: tutorial-recordings-${{ github.sha }}
+          path: /tmp/*.cast
+          retention-days: 30
 
       - name: "Verify: cleanup"
         if: always()
@@ -169,13 +183,14 @@ jobs:
         shell: bash
         run: npm run build -w @rediacc/cli && npm run build:bundle -w @rediacc/cli
 
-      - name: Configure local context
+      - name: Configure local config
         shell: bash
         run: |
-          mkdir -p ~/.rediacc
+          CONFIG_DIR=$(node -e "import('./packages/shared/dist/paths/index.js').then(m=>console.log(m.getConfigDir()))")
+          mkdir -p "$CONFIG_DIR"
           jq -n --arg renet "$RENET_BINARY" \
-            '{contexts:{default:{name:"default",mode:"local",apiUrl:"http://localhost",renetPath:$renet}}}' \
-            > ~/.rediacc/config.json
+            '{id:"00000000-0000-0000-0000-000000000000",version:1,renetPath:$renet}' \
+            > "$CONFIG_DIR/rediacc.json"
 
       - name: "Test: rdc ops setup"
         shell: bash
@@ -299,13 +314,14 @@ jobs:
         shell: bash
         run: npm run build -w @rediacc/cli && npm run build:bundle -w @rediacc/cli
 
-      - name: Configure local context
+      - name: Configure local config
         shell: bash
         run: |
-          mkdir -p ~/.rediacc
+          CONFIG_DIR=$(node -e "import('./packages/shared/dist/paths/index.js').then(m=>console.log(m.getConfigDir()))")
+          mkdir -p "$CONFIG_DIR"
           jq -n --arg renet "$RENET_BINARY" \
-            '{contexts:{default:{name:"default",mode:"local",apiUrl:"http://localhost",renetPath:$renet}}}' \
-            > ~/.rediacc/config.json
+            '{id:"00000000-0000-0000-0000-000000000000",version:1,renetPath:$renet}' \
+            > "$CONFIG_DIR/rediacc.json"
 
       - name: "Test: rdc ops setup"
         shell: bash

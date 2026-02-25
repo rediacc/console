@@ -4,7 +4,7 @@ description: 运行 Rediacc 的系统要求和支持的平台。
 category: Guides
 order: 0
 language: zh
-sourceHash: 35e75948e9858c6d
+sourceHash: 40a59ab9c9625911
 ---
 
 # 系统要求
@@ -53,7 +53,7 @@ sourceHash: 35e75948e9858c6d
 
 ### 自动安装的组件
 
-`rdc context setup-machine` 命令会在远程服务器上安装以下组件：
+`rdc config setup-machine` 命令会在远程服务器上安装以下组件：
 
 - **Docker** 和 **containerd**（容器运行时）
 - **cryptsetup**（LUKS 磁盘加密）

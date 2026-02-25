@@ -2,7 +2,7 @@
  * CLI i18n module
  *
  * Provides internationalization support for the CLI.
- * Language preference is stored in context config (~/.rediacc/).
+ * Language preference is stored in context config (platform config dir).
  *
  * Usage:
  *   import { t, initI18n, changeLanguage } from './i18n/index.js';

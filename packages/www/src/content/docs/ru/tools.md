@@ -4,7 +4,7 @@ description: >-
   Синхронизация файлов, доступ через терминал, интеграция с VS Code, обновления
   и диагностика.
 category: Guides
-order: 8
+order: 9
 language: ru
 sourceHash: 80ca3cd3e1a55d4b
 ---

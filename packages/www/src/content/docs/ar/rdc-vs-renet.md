@@ -4,7 +4,7 @@ description: متى تستخدم rdc ومتى تستخدم renet.
 category: Concepts
 order: 1
 language: ar
-sourceHash: 0396eec8815a0b4e
+sourceHash: e0ef5f051cefb407
 ---
 
 # rdc مقابل renet
@@ -24,7 +24,7 @@ sourceHash: 0396eec8815a0b4e
 
 يتصل `rdc` بخادمك عبر SSH وينفذ أوامر `renet` نيابة عنك. تكتب أمرًا واحدًا على جهاز العمل الخاص بك، ويتولى `rdc` الباقي:
 
-1. يقرأ التكوين المحلي (`~/.rediacc/config.json`)
+1. يقرأ الإعداد المحلي (`~/.config/rediacc/rediacc.json`)
 2. يتصل بالخادم عبر SSH
 3. يحدّث ملف `renet` الثنائي إذا لزم الأمر
 4. ينفذ عملية `renet` المطابقة على الخادم
@@ -36,7 +36,7 @@ sourceHash: 0396eec8815a0b4e
 
 ```bash
 # Set up a new server
-rdc context setup-machine server-1
+rdc config setup-machine server-1
 
 # Create and start a repository
 rdc repo create my-app -m server-1 --size 10G
@@ -66,17 +66,20 @@ rdc machine health server-1
 يغلّف `rdc ops` أوامر `renet ops` لإدارة مجموعات الأجهزة الافتراضية المحلية على جهاز العمل الخاص بك:
 
 ```bash
-rdc ops setup       # Install prerequisites (KVM or QEMU)
-rdc ops up --basic  # Start a minimal cluster
-rdc ops status      # Check VM status
-rdc ops ssh 1       # SSH into bridge VM
-rdc ops down        # Destroy cluster
+rdc ops setup              # Install prerequisites (KVM or QEMU)
+rdc ops up --basic         # Start a minimal cluster
+rdc ops status             # Check VM status
+rdc ops ssh 1              # SSH into bridge VM
+rdc ops ssh 1 hostname     # Run a command on bridge VM
+rdc ops down               # Destroy cluster
 ```
+
+> يتطلب المحوّل المحلي. غير متاح مع محوّل السحابة.
 
 تعمل هذه الأوامر بتشغيل `renet` محليًا (وليس عبر SSH). راجع [الأجهزة الافتراضية التجريبية](/ar/docs/experimental-vms) للاطلاع على التوثيق الكامل.
 
 ## ملاحظة حول Rediaccfile
 
-قد ترى `renet compose -- ...` داخل ملف `Rediaccfile`. هذا أمر طبيعي -- تعمل دوال Rediaccfile على الخادم حيث يكون `renet` متاحًا.
+قد ترى `renet compose -- ...` داخل ملف `Rediaccfile`. هذا أمر طبيعي — تعمل دوال Rediaccfile على الخادم حيث يكون `renet` متاحًا.
 
 من جهاز العمل الخاص بك، قم بتشغيل وإيقاف أحمال العمل باستخدام `rdc repo up` و `rdc repo down`.

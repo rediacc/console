@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: ar
-sourceHash: 3d127a0a186d7487
+sourceHash: cf186b18b0c50eba
 ---
 
 # النسخ الاحتياطي والاستعادة
@@ -22,15 +22,15 @@ sourceHash: 3d127a0a186d7487
 إذا كان لديك بالفعل جهاز rclone بعيد مُكوَّن:
 
 ```bash
-rdc context import-storage my-storage
+rdc config import-storage rclone.conf
 ```
 
-يستورد هذا تكوين التخزين من إعدادات rclone الخاصة بك إلى السياق الحالي.
+يستورد هذا تكوينات التخزين من ملف إعدادات rclone إلى التكوين الحالي. الأنواع المدعومة: S3 وB2 وGoogle Drive وOneDrive وMega وDropbox وBox وAzure Blob وSwift.
 
 ### عرض وحدات التخزين
 
 ```bash
-rdc context storages
+rdc config storages
 ```
 
 ## إرسال نسخة احتياطية

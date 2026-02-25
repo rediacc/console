@@ -1105,6 +1105,10 @@
         "title": "Installer | Rediacc CLI"
       },
       "methods": {
+        "apk": {
+          "description": "Pour Alpine Linux et dérivés",
+          "title": "APK (Alpine Linux)"
+        },
         "apt": {
           "description": "Pour Debian, Ubuntu et dérivés",
           "title": "APT (Debian / Ubuntu)"
@@ -1117,14 +1121,6 @@
           "description": "Pour Fedora, RHEL, CentOS, Rocky Linux",
           "title": "DNF (Fedora / RHEL)"
         },
-        "apk": {
-          "title": "APK (Alpine Linux)",
-          "description": "Pour Alpine Linux et dérivés"
-        },
-        "pacman": {
-          "title": "Pacman (Arch Linux)",
-          "description": "Pour Arch Linux et dérivés"
-        },
         "docker": {
           "description": "Pour les environnements conteneurisés",
           "title": "Docker"
@@ -1132,6 +1128,10 @@
         "homebrew": {
           "description": "Pour les utilisateurs macOS et Linux avec Homebrew",
           "title": "Homebrew (macOS / Linux)"
+        },
+        "pacman": {
+          "description": "Pour Arch Linux et dérivés",
+          "title": "Pacman (Arch Linux)"
         },
         "quick": {
           "description": "Recommandé - installation automatique avec gestion des versions",
@@ -1621,6 +1621,10 @@
       "ui": {
         "anchor": "Ancrage stratégique",
         "bestValue": "Meilleur rapport qualité-prix",
+        "billingToggle": {
+          "annual": "Annuel",
+          "monthly": "Mensuel"
+        },
         "contactSales": "Contacter le service commercial",
         "cta": {
           "business": {
@@ -1660,11 +1664,7 @@
         "monthOrYear": "par mois ou {{price}} par an",
         "popular": "Le plus populaire",
         "startingAt": "*À partir de",
-        "whatsIncluded": "Ce qui est inclus :",
-        "billingToggle": {
-          "monthly": "Mensuel",
-          "annual": "Annuel"
-        }
+        "whatsIncluded": "Ce qui est inclus :"
       }
     },
     "privacyPolicy": {

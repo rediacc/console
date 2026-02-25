@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: fr
-sourceHash: 72f77c1ae5a0dbce
+sourceHash: 5a0f43834cb143a2
 ---
 
 # Supervision
@@ -22,12 +22,9 @@ rdc machine health server-1
 ```
 
 Ce rapport inclut :
-- **Système** : temps de fonctionnement, utilisation de la mémoire, utilisation du disque
-- **Datastore** : capacité et utilisation
+- **Système** : temps de fonctionnement, utilisation du disque, utilisation du datastore
 - **Conteneurs** : nombre en cours d'exécution, sains, défaillants
-- **Services** : statut et nombre de redémarrages
-- **Stockage** : santé SMART et température
-- **Dépôts** : statut de montage et statut du démon Docker
+- **Stockage** : santé SMART
 - **Problèmes** : problèmes identifiés
 
 Utilisez `--output json` pour une sortie lisible par les machines.
@@ -43,10 +40,11 @@ rdc machine containers server-1
 | Colonne | Description |
 |---------|-------------|
 | Name | Nom du conteneur |
-| Status | En cours d'exécution, arrêté, etc. |
+| Status | Temps de fonctionnement ou raison de l'arrêt |
+| State | En cours d'exécution, arrêté, etc. |
 | Health | Sain, défaillant, aucun |
 | CPU | Pourcentage d'utilisation du processeur |
-| Memory | Utilisation de la mémoire |
+| Memory | Utilisation de la mémoire / limite |
 | Repository | Dépôt propriétaire du conteneur |
 
 Options :
@@ -114,6 +112,8 @@ Utilisez `--output json` pour une sortie lisible par les machines.
 
 ## Tester la connexion
 
+> **Adaptateur cloud uniquement.** En mode local, utilisez `rdc term server-1 -c "hostname"` pour vérifier la connectivité.
+
 Vérifiez la connectivité SSH vers une machine :
 
 ```bash
@@ -143,9 +143,8 @@ rdc doctor
 |-----------|---------------|
 | **Environnement** | Version de Node.js, version du CLI, mode SEA, installation de Go, disponibilité de Docker |
 | **Renet** | Emplacement du binaire, version, CRIU, rsync, ressources SEA embarquées |
-| **Configuration** | Contexte actif, mode, machines, clé SSH |
-| **Authentification** | Statut de connexion, email utilisateur |
-| **Virtualization** | Checks if your system can run local virtual machines (`rdc ops`) |
+| **Configuration** | Configuration active, adaptateur, machines, clé SSH |
+| **Virtualisation** | Vérifie si votre système peut exécuter des machines virtuelles locales (`rdc ops`) |
 
 Chaque vérification indique **OK**, **Avertissement** ou **Erreur**. Utilisez cette commande comme première étape lors du dépannage de tout problème.
 

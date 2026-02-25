@@ -8,7 +8,7 @@
 
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { contextService } from './context.js';
+import { configService } from './config-resources.js';
 import { outputService } from './output.js';
 import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
 import { t } from '../i18n/index.js';
@@ -47,7 +47,7 @@ export async function pushInfraConfig(
   machineName: string,
   options: PushInfraOptions = {}
 ): Promise<void> {
-  const localConfig = await contextService.getLocalConfig();
+  const localConfig = await configService.getLocalConfig();
   const machine = localConfig.machines[machineName];
   if (!machine) {
     const available = Object.keys(localConfig.machines).join(', ');
@@ -56,7 +56,7 @@ export async function pushInfraConfig(
 
   if (!machine.infra) {
     throw new Error(
-      `Machine "${machineName}" has no infrastructure config. Set it with: rdc context set-infra ${machineName}`
+      `Machine "${machineName}" has no infrastructure config. Set it with: rdc config set-infra ${machineName}`
     );
   }
 

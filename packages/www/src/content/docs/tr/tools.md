@@ -1,10 +1,8 @@
 ---
 title: Araçlar
-description: >-
-  Dosya senkronizasyonu, terminal erişimi, VS Code entegrasyonu, güncellemeler
-  ve tanılamalar.
+description: "Dosya senkronizasyonu, terminal erişimi, VS Code entegrasyonu ve CLI güncellemeleri."
 category: Guides
-order: 8
+order: 9
 language: tr
 sourceHash: 80ca3cd3e1a55d4b
 ---

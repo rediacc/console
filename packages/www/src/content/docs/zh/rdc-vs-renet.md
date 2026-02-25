@@ -4,7 +4,7 @@ description: 什么时候使用 rdc，什么时候使用 renet。
 category: Concepts
 order: 1
 language: zh
-sourceHash: 0396eec8815a0b4e
+sourceHash: e0ef5f051cefb407
 ---
 
 # rdc vs renet
@@ -24,7 +24,7 @@ Rediacc 有两个二进制文件。以下是各自的使用场景。
 
 `rdc` 通过 SSH 连接到您的服务器，并代替您运行 `renet` 命令。您在工作站上输入一条命令，`rdc` 处理剩下的一切：
 
-1. 读取本地配置（`~/.rediacc/config.json`）
+1. 读取本地配置（`~/.config/rediacc/rediacc.json`）
 2. 通过 SSH 连接到服务器
 3. 如有需要，更新 `renet` 二进制文件
 4. 在服务器上运行对应的 `renet` 操作
@@ -36,7 +36,7 @@ Rediacc 有两个二进制文件。以下是各自的使用场景。
 
 ```bash
 # Set up a new server
-rdc context setup-machine server-1
+rdc config setup-machine server-1
 
 # Create and start a repository
 rdc repo create my-app -m server-1 --size 10G
@@ -66,12 +66,15 @@ rdc machine health server-1
 `rdc ops` 封装了 `renet ops`，用于在工作站上管理本地 VM 集群：
 
 ```bash
-rdc ops setup       # Install prerequisites (KVM or QEMU)
-rdc ops up --basic  # Start a minimal cluster
-rdc ops status      # Check VM status
-rdc ops ssh 1       # SSH into bridge VM
-rdc ops down        # Destroy cluster
+rdc ops setup              # Install prerequisites (KVM or QEMU)
+rdc ops up --basic         # Start a minimal cluster
+rdc ops status             # Check VM status
+rdc ops ssh 1              # SSH into bridge VM
+rdc ops ssh 1 hostname     # Run a command on bridge VM
+rdc ops down               # Destroy cluster
 ```
+
+> 需要本地适配器。云适配器不支持此功能。
 
 这些命令在本地运行 `renet`（不通过 SSH）。完整文档请参阅[实验性虚拟机](/zh/docs/experimental-vms)。
 

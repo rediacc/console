@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: ar
-sourceHash: c4048b13799a7767
+sourceHash: 294f92dc32f10c86
 ---
 
 # الخدمات
@@ -204,7 +204,7 @@ rdc repo down my-app -m server-1
 
 | الخيار | الوصف |
 |--------|-------|
-| `--unmount` | إلغاء تحميل المستودع المشفر بعد إيقاف الخدمات |
+| `--unmount` | إلغاء تحميل المستودع المشفر بعد إيقاف الخدمات. إذا لم يسرِ مفعوله، استخدم `rdc repo unmount` بشكل منفصل. |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 تسلسل التنفيذ هو:
@@ -281,9 +281,9 @@ rdc repo autostart list -m server-1
 
 ```bash
 curl -fsSL https://get.rediacc.com | sh
-rdc context create-local production --ssh-key ~/.ssh/id_ed25519
-rdc context add-machine prod-1 --ip 203.0.113.50 --user deploy
-rdc context setup-machine prod-1
+rdc config init production --ssh-key ~/.ssh/id_ed25519
+rdc config add-machine prod-1 --ip 203.0.113.50 --user deploy
+rdc config setup-machine prod-1
 rdc repo create webapp -m prod-1 --size 10G
 ```
 

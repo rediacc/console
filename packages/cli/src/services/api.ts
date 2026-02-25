@@ -10,9 +10,9 @@ import {
 } from '@rediacc/shared/api';
 import { createVaultEncryptor } from '@rediacc/shared/encryption';
 import type { ApiResponse } from '@rediacc/shared/types';
-import { contextService } from './context.js';
+import { configService } from './config-resources.js';
 import {
-  configStorage,
+  configFileStorage,
   errorHandler,
   nodeCryptoProvider,
   telemetryAdapter,
@@ -105,7 +105,7 @@ class CliApiClient {
    * Get the current API URL.
    */
   async getApiUrl(): Promise<string> {
-    return contextService.getApiUrl();
+    return configService.getApiUrl();
   }
 
   /**
@@ -122,14 +122,14 @@ class CliApiClient {
     passwordHash: string,
     sessionName = 'CLI Session'
   ): Promise<ApiResponse> {
-    return configStorage.withApiLock(async () => {
+    return configFileStorage.withApiLock(configService.getCurrentName(), async () => {
       const client = this.ensureInitialized();
       return client.login(email, passwordHash, sessionName);
     });
   }
 
   async logout(): Promise<ApiResponse> {
-    return configStorage.withApiLock(async () => {
+    return configFileStorage.withApiLock(configService.getCurrentName(), async () => {
       const client = this.ensureInitialized();
       return client.logout();
     });
@@ -140,7 +140,7 @@ class CliApiClient {
     activationCode: string,
     passwordHash: string
   ): Promise<ApiResponse> {
-    return configStorage.withApiLock(async () => {
+    return configFileStorage.withApiLock(configService.getCurrentName(), async () => {
       const client = this.ensureInitialized();
       return client.activateUser(email, activationCode, passwordHash);
     });
@@ -153,7 +153,7 @@ class CliApiClient {
     subscriptionPlan = 'COMMUNITY',
     languagePreference = 'en'
   ): Promise<ApiResponse> {
-    return configStorage.withApiLock(async () => {
+    return configFileStorage.withApiLock(configService.getCurrentName(), async () => {
       const client = this.ensureInitialized();
       return client.register(organizationName, email, passwordHash, {
         languagePreference,
@@ -168,7 +168,7 @@ class CliApiClient {
     params?: Record<string, unknown>,
     _config?: Record<string, unknown>
   ): Promise<ApiResponse<T>> {
-    return configStorage.withApiLock(async () => {
+    return configFileStorage.withApiLock(configService.getCurrentName(), async () => {
       const client = this.ensureInitialized();
       return client.get<T>(endpoint, params);
     });
@@ -179,7 +179,7 @@ class CliApiClient {
     data?: Record<string, unknown>,
     _config?: Record<string, unknown>
   ): Promise<ApiResponse<T>> {
-    return configStorage.withApiLock(async () => {
+    return configFileStorage.withApiLock(configService.getCurrentName(), async () => {
       const client = this.ensureInitialized();
       return client.post<T>(endpoint, data);
     });
@@ -190,7 +190,7 @@ class CliApiClient {
     data?: Record<string, unknown>,
     _config?: Record<string, unknown>
   ): Promise<ApiResponse<T>> {
-    return configStorage.withApiLock(async () => {
+    return configFileStorage.withApiLock(configService.getCurrentName(), async () => {
       const client = this.ensureInitialized();
       return client.put<T>(endpoint, data);
     });
@@ -201,7 +201,7 @@ class CliApiClient {
     data?: Record<string, unknown>,
     _config?: Record<string, unknown>
   ): Promise<ApiResponse<T>> {
-    return configStorage.withApiLock(async () => {
+    return configFileStorage.withApiLock(configService.getCurrentName(), async () => {
       const client = this.ensureInitialized();
       return client.delete<T>(endpoint, data);
     });
@@ -217,7 +217,7 @@ class CliApiClient {
   }
 
   async hasToken(): Promise<boolean> {
-    return contextService.hasToken();
+    return configService.hasToken();
   }
 }
 

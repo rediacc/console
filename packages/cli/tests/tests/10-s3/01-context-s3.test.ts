@@ -1,8 +1,8 @@
 /**
- * Playwright CLI tests for S3 context commands.
+ * Playwright CLI tests for S3 config commands.
  *
- * Exercises `context create-s3`, `context show`, `context add-machine`,
- * and `context list` against a real RustFS server.
+ * Exercises `config init` (with S3 flags), `config show`, `config add-machine`,
+ * and `config list` against a real RustFS server.
  *
  * Tests both encrypted (with master password) and plaintext (without) modes.
  *
@@ -33,37 +33,37 @@ const encContextName = generateS3ContextName('ctx-s3-enc');
 const encMasterPassword = `test-master-pw-${Date.now()}`;
 const encPrefix = `pw-ctx-enc-${Date.now()}`;
 
-test.describe('S3 Context Commands (with master password) @cli @s3', () => {
+test.describe('S3 Config Commands (with master password) @cli @s3', () => {
   test.skip(!s3Available, 'S3_TEST_* environment variables not set');
   const runner = new CliTestRunner();
 
   test.afterAll(async () => {
     try {
-      await runner.run(['context', 'delete', encContextName]);
+      await runner.run(['config', 'delete', encContextName]);
     } catch {
       // Ignore errors during cleanup
     }
   });
 
-  test('should create an S3 context with master password', async () => {
+  test('should create an S3 config with master password', async () => {
     const result = await runner.run(
       [
-        'context',
-        'create-s3',
+        'config',
+        'init',
         encContextName,
-        '--endpoint',
+        '--s3-endpoint',
         s3Env.endpoint,
-        '--bucket',
+        '--s3-bucket',
         s3Env.bucket,
-        '--access-key-id',
+        '--s3-access-key-id',
         s3Env.accessKeyId,
-        '--secret-access-key',
+        '--s3-secret-access-key',
         s3Env.secretAccessKey,
         '--ssh-key',
         sshKeyPath,
-        '--region',
+        '--s3-region',
         'us-east-1',
-        '--prefix',
+        '--s3-prefix',
         encPrefix,
         '--master-password',
         encMasterPassword,
@@ -74,61 +74,62 @@ test.describe('S3 Context Commands (with master password) @cli @s3', () => {
     runner.expectSuccess(result);
     const output = result.stdout + result.stderr;
     expect(output).toContain('S3 access verified');
-    expect(output).toContain(`S3 context "${encContextName}" created`);
+    expect(output).toContain(`"${encContextName}" initialized`);
   });
 
-  test('should show S3 context details (mode=s3, endpoint, bucket)', async () => {
+  test('should show S3 config details (adapter=local, s3State=yes)', async () => {
     const ctxRunner = new CliTestRunner({
       context: encContextName,
       credentials: { email: '', password: '', masterPassword: encMasterPassword },
     });
-    const result = await ctxRunner.run(['context', 'show']);
+    const result = await ctxRunner.run(['config', 'show']);
 
     runner.expectSuccess(result);
     const data = runner.expectSuccessObject<Record<string, unknown>>(result);
-    expect(data.mode).toBe('s3');
+    expect(data.adapter).toBe('local');
+    expect(data.s3State).toBe('yes');
     expect(data.endpoint).toBe(s3Env.endpoint);
     expect(data.bucket).toBe(s3Env.bucket);
     expect(data.prefix).toBe(encPrefix);
   });
 
-  test('should add a machine to S3 context', async () => {
+  test('should add a machine to S3 config', async () => {
     const ctxRunner = new CliTestRunner({
       context: encContextName,
       credentials: { email: '', password: '', masterPassword: encMasterPassword },
     });
     const result = await ctxRunner.run(
-      ['context', 'add-machine', 'test-vm', '--ip', '192.168.1.100', '--user', 'root'],
+      ['config', 'add-machine', 'test-vm', '--ip', '192.168.1.100', '--user', 'root'],
       { skipJsonParse: true }
     );
 
     runner.expectSuccess(result);
   });
 
-  test('should list contexts and show S3 mode', async () => {
-    const result = await runner.run(['context', 'list']);
+  test('should list configs and show local adapter for S3', async () => {
+    const result = await runner.run(['config', 'list']);
     runner.expectSuccess(result);
 
     const contexts = runner.expectSuccessArray<Record<string, string>>(result);
     const s3Context = contexts.find((c) => c.name === encContextName);
     expect(s3Context).toBeDefined();
-    expect(s3Context!.mode).toBe('s3');
+    expect(s3Context!.adapter).toBe('local');
   });
 
-  test('should reject create-s3 with invalid endpoint', async () => {
+  test('should reject init with invalid S3 endpoint', async () => {
     const badName = generateS3ContextName('bad-s3');
     const result = await runner.run(
       [
-        'context',
-        'create-s3',
+        'config',
+        'init',
         badName,
-        '--endpoint',
+        '--s3-endpoint',
         'http://127.0.0.1:19999',
-        '--bucket',
+        '--s3-bucket',
         'nonexistent',
-        '--access-key-id',
+        '--s3-access-key-id',
         'fake',
-        '--secret-access-key',
+        '--s3-secret-access-key',
         'fake',
         '--ssh-key',
         sshKeyPath,
@@ -146,7 +147,7 @@ test.describe('S3 Context Commands (with master password) @cli @s3', () => {
       context: encContextName,
       credentials: { email: '', password: '', masterPassword: encMasterPassword },
     });
-    const result = await ctxRunner.run(['context', 'machines']);
+    const result = await ctxRunner.run(['config', 'machines']);
 
     runner.expectSuccess(result);
     const machines = runner.expectSuccessArray<Record<string, unknown>>(result);
@@ -162,37 +163,37 @@ test.describe('S3 Context Commands (with master password) @cli @s3', () => {
 const ptContextName = generateS3ContextName('ctx-s3-pt');
 const ptPrefix = `pw-ctx-pt-${Date.now()}`;
 
-test.describe('S3 Context Commands (without master password) @cli @s3', () => {
+test.describe('S3 Config Commands (without master password) @cli @s3', () => {
   test.skip(!s3Available, 'S3_TEST_* environment variables not set');
   const runner = new CliTestRunner();
 
   test.afterAll(async () => {
     try {
-      await runner.run(['context', 'delete', ptContextName]);
+      await runner.run(['config', 'delete', ptContextName]);
     } catch {
       // Ignore errors during cleanup
     }
   });
 
-  test('should create an S3 context without master password', async () => {
+  test('should create an S3 config without master password', async () => {
     const result = await runner.run(
       [
-        'context',
-        'create-s3',
+        'config',
+        'init',
         ptContextName,
-        '--endpoint',
+        '--s3-endpoint',
         s3Env.endpoint,
-        '--bucket',
+        '--s3-bucket',
         s3Env.bucket,
-        '--access-key-id',
+        '--s3-access-key-id',
         s3Env.accessKeyId,
-        '--secret-access-key',
+        '--s3-secret-access-key',
         s3Env.secretAccessKey,
         '--ssh-key',
         sshKeyPath,
-        '--region',
+        '--s3-region',
         'us-east-1',
-        '--prefix',
+        '--s3-prefix',
         ptPrefix,
       ],
       { skipJsonParse: true }
@@ -201,34 +202,35 @@ test.describe('S3 Context Commands (without master password) @cli @s3', () => {
     runner.expectSuccess(result);
     const output = result.stdout + result.stderr;
     expect(output).toContain('S3 access verified');
-    expect(output).toContain(`S3 context "${ptContextName}" created`);
+    expect(output).toContain(`"${ptContextName}" initialized`);
   });
 
-  test('should show S3 context details without master password', async () => {
+  test('should show S3 config details without master password', async () => {
     const ctxRunner = CliTestRunner.withContext(ptContextName);
-    const result = await ctxRunner.run(['context', 'show']);
+    const result = await ctxRunner.run(['config', 'show']);
 
     runner.expectSuccess(result);
     const data = runner.expectSuccessObject<Record<string, unknown>>(result);
-    expect(data.mode).toBe('s3');
+    expect(data.adapter).toBe('local');
+    expect(data.s3State).toBe('yes');
     expect(data.endpoint).toBe(s3Env.endpoint);
     expect(data.bucket).toBe(s3Env.bucket);
     expect(data.prefix).toBe(ptPrefix);
   });
 
-  test('should add a machine to S3 context without master password', async () => {
+  test('should add a machine to S3 config without master password', async () => {
     const ctxRunner = CliTestRunner.withContext(ptContextName);
     const result = await ctxRunner.run(
-      ['context', 'add-machine', 'test-vm', '--ip', '192.168.1.150', '--user', 'root'],
+      ['config', 'add-machine', 'test-vm', '--ip', '192.168.1.150', '--user', 'root'],
       { skipJsonParse: true }
     );
 
     runner.expectSuccess(result);
   });
 
-  test('should show machines in plaintext context', async () => {
+  test('should show machines in plaintext config', async () => {
     const ctxRunner = CliTestRunner.withContext(ptContextName);
-    const result = await ctxRunner.run(['context', 'machines']);
+    const result = await ctxRunner.run(['config', 'machines']);
 
     runner.expectSuccess(result);
     const machines = runner.expectSuccessArray<Record<string, unknown>>(result);

@@ -15,7 +15,7 @@ import type {
 import { t } from '../i18n/index.js';
 import { typedApi } from '../services/api.js';
 import { authService } from '../services/auth.js';
-import { contextService } from '../services/context.js';
+import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
 import { createResourceCommands } from '../utils/commandFactory.js';
 import { handleError, ValidationError } from '../utils/errors.js';
@@ -69,7 +69,7 @@ export function registerBridgeCommands(program: Command): void {
     .action(async (name: string, options: { region?: string }) => {
       try {
         await authService.requireAuth();
-        const opts = await contextService.applyDefaults(options);
+        const opts = await configService.applyDefaults(options);
 
         if (!opts.region) {
           throw new ValidationError(t('errors.regionRequired'));

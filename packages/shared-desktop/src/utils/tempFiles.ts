@@ -2,7 +2,8 @@ import { randomBytes } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { getConfigPath, getPlatform, getTempPath } from './platform.js';
+import { getCacheDir as getXdgCacheDir } from '@rediacc/shared/paths';
+import { getPlatform, getTempPath } from './platform.js';
 
 /**
  * Generates a random file name with optional prefix and extension
@@ -141,8 +142,7 @@ export async function createAutoCleanTempFile(
  * Gets or creates the Rediacc cache directory
  */
 export async function getCacheDir(): Promise<string> {
-  const configPath = getConfigPath();
-  const cacheDir = join(configPath, 'cache');
+  const cacheDir = getXdgCacheDir();
 
   if (!existsSync(cacheDir)) {
     await mkdir(cacheDir, { recursive: true, mode: 0o700 });

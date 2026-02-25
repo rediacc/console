@@ -4,7 +4,7 @@ description: 使用 Rediaccfile、服务网络和开机自启来部署和管理�
 category: Guides
 order: 5
 language: zh
-sourceHash: c4048b13799a7767
+sourceHash: 294f92dc32f10c86
 ---
 
 # 服务
@@ -202,7 +202,7 @@ rdc repo down my-app -m server-1
 
 | 选项 | 描述 |
 |------|------|
-| `--unmount` | 停止服务后卸载加密仓库 |
+| `--unmount` | 停止服务后卸载加密仓库。如果此操作未生效，请单独使用 `rdc repo unmount`。 |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 执行顺序为：
@@ -279,9 +279,9 @@ rdc repo autostart list -m server-1
 
 ```bash
 curl -fsSL https://get.rediacc.com | sh
-rdc context create-local production --ssh-key ~/.ssh/id_ed25519
-rdc context add-machine prod-1 --ip 203.0.113.50 --user deploy
-rdc context setup-machine prod-1
+rdc config init production --ssh-key ~/.ssh/id_ed25519
+rdc config add-machine prod-1 --ip 203.0.113.50 --user deploy
+rdc config setup-machine prod-1
 rdc repo create webapp -m prod-1 --size 10G
 ```
 

@@ -1,12 +1,12 @@
 import { promises as fs } from 'node:fs';
-import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
+import lockfile from 'proper-lockfile';
+import { getCacheDir, getStateDir } from '@rediacc/shared/paths';
 
-const REDIACC_DIR = join(homedir(), '.rediacc');
-export const STAGED_UPDATE_DIR = join(REDIACC_DIR, 'staged-update');
-export const UPDATE_STATE_FILE = join(REDIACC_DIR, 'update-state.json');
+export const STAGED_UPDATE_DIR = join(getCacheDir(), 'staged-update');
+export const UPDATE_STATE_FILE = join(getStateDir(), 'update-state.json');
 
-const UPDATE_LOCK_FILE = join(REDIACC_DIR, 'update.lock');
+const UPDATE_LOCK_FILE = join(getStateDir(), 'update.lock');
 
 export type PlatformKey =
   | 'linux-x64'
@@ -92,54 +92,32 @@ export async function cleanupOldBinary(): Promise<void> {
 }
 
 /**
- * Acquire the update lock file. Returns true if lock was acquired.
- * Uses PID-based stale lock detection.
+ * Acquire the update lock file.
+ * Returns a release function on success, or null if already locked.
  */
-export async function acquireUpdateLock(): Promise<boolean> {
+export async function acquireUpdateLock(): Promise<(() => Promise<void>) | null> {
   try {
     await fs.mkdir(dirname(UPDATE_LOCK_FILE), { recursive: true });
-  } catch {
-    // Directory may already exist
-  }
-
-  try {
-    // Check for existing lock
-    const existing = await fs.readFile(UPDATE_LOCK_FILE, 'utf-8').catch(() => null);
-    if (existing) {
-      const pid = Number.parseInt(existing.trim(), 10);
-      if (!Number.isNaN(pid) && isProcessAlive(pid)) {
-        return false; // Another update is in progress
-      }
-      // Stale lock - remove it
+    // Ensure lock file exists (proper-lockfile requires it)
+    try {
+      await fs.access(UPDATE_LOCK_FILE);
+    } catch {
+      await fs.writeFile(UPDATE_LOCK_FILE, '', { mode: 0o600 });
     }
 
-    // Write our PID
-    await fs.writeFile(UPDATE_LOCK_FILE, process.pid.toString(), { mode: 0o600 });
-    return true;
-  } catch {
-    return false;
-  }
-}
+    const release = await lockfile.lock(UPDATE_LOCK_FILE, {
+      stale: 300000, // 5 minutes (updates can involve large downloads)
+      retries: 0, // Don't wait — skip if already locked
+    });
 
-/**
- * Release the update lock file.
- */
-export async function releaseUpdateLock(): Promise<void> {
-  try {
-    await fs.unlink(UPDATE_LOCK_FILE);
+    return async () => {
+      try {
+        await release();
+      } catch {
+        // Ignore release errors (lock may already be stale/released)
+      }
+    };
   } catch {
-    // Ignore - may already be cleaned up
-  }
-}
-
-/**
- * Check if a process with the given PID is alive.
- */
-function isProcessAlive(pid: number): boolean {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch {
-    return false;
+    return null;
   }
 }

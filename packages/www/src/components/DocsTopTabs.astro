@@ -34,10 +34,11 @@ const docsByCategory = docs.reduce((acc, doc) => {
 }, {} as Record<string, typeof docs>);
 
 const categoryOrder: Record<string, number> = {
-  Guides: 0,
-  Concepts: 1,
-  Reference: 2,
-  'Use Cases': 3,
+  Tutorials: 0,
+  Guides: 1,
+  Concepts: 2,
+  Reference: 3,
+  'Use Cases': 4,
 };
 
 const categories = Object.keys(docsByCategory).sort((a, b) => {

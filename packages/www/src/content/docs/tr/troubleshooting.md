@@ -4,6 +4,7 @@ description: "SSH, kurulum, depolar, servisler ve Docker ile ilgili yaygın soru
 category: "Guides"
 order: 10
 language: tr
+sourceHash: 4c3163007e6a3326
 ---
 
 # Sorun Giderme
@@ -13,16 +14,16 @@ Yaygın sorunlar ve çözümleri. Şüphe durumunda, kapsamlı bir tanılama kon
 ## SSH Bağlantısı Başarısız
 
 - Manuel olarak bağlanabildiğinizi doğrulayın: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Host anahtarlarını yenilemek için `rdc context scan-keys server-1` komutunu çalıştırın
+- Host anahtarlarını yenilemek için `rdc config scan-keys server-1` komutunu çalıştırın
 - SSH portunun eşleştiğini kontrol edin: `--port 22`
-- Bağlantıyı test edin: `rdc machine test-connection --ip 203.0.113.50 --user deploy`
+- Basit bir komutla test edin: `rdc term server-1 -c "hostname"`
 
 ## Host Anahtarı Uyuşmazlığı
 
 Bir sunucu yeniden kurulduysa veya SSH anahtarları değiştiyse, "host key verification failed" hatası görürsünüz:
 
 ```bash
-rdc context scan-keys server-1
+rdc config scan-keys server-1
 ```
 
 Bu komut yeni host anahtarlarını alır ve yapılandırmanızı günceller.
@@ -31,7 +32,7 @@ Bu komut yeni host anahtarlarını alır ve yapılandırmanızı günceller.
 
 - SSH kullanıcısının şifresiz sudo erişimine sahip olduğundan emin olun veya gerekli komutlar için `NOPASSWD` yapılandırın
 - Sunucudaki kullanılabilir disk alanını kontrol edin
-- Ayrıntılı çıktı için `--debug` ile çalıştırın: `rdc context setup-machine server-1 --debug`
+- Ayrıntılı çıktı için `--debug` ile çalıştırın: `rdc config setup-machine server-1 --debug`
 
 ## Depo Oluşturma Başarısız
 
@@ -74,7 +75,7 @@ rdc term server-1 my-app -c "docker ps"
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
 ```
 
-`2816` değerini deponuzun ağ kimliği ile değiştirin (`config.json` veya `rdc repo status` içinde bulunabilir).
+`2816` değerini deponuzun ağ kimliği ile değiştirin (`rediacc.json` veya `rdc repo status` içinde bulunabilir).
 
 ## Konteynerler Yanlış Docker Daemon'da Oluşturulmuş
 
@@ -103,4 +104,4 @@ Konteynerleriniz deponun izole daemon'u yerine ana sistemin Docker daemon'unda g
 rdc doctor
 ```
 
-Bu komut ortamınızı, renet kurulumunu, bağlam yapılandırmasını ve kimlik doğrulama durumunu kontrol eder. Her kontrol OK, Warning veya Error durumunu kısa bir açıklama ile bildirir.
+Bu komut ortamınızı, renet kurulumunu, yapılandırmayı ve kimlik doğrulama durumunu kontrol eder. Her kontrol OK, Warning veya Error durumunu kısa bir açıklama ile bildirir.

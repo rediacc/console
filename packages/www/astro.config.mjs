@@ -1,4 +1,4 @@
-/* global console */
+/* global console, process */
 // @ts-check
 import { defineConfig } from 'astro/config';
 import { execSync } from 'child_process';
@@ -7,6 +7,7 @@ import { version } from './package.json' with { type: 'json' };
 import react from '@astrojs/react';
 import sitemap, { ChangeFreqEnum } from '@astrojs/sitemap';
 import { remarkResolveTranslations } from './src/plugins/remark-resolve-translations.ts';
+import { remarkTutorialEmbed } from './src/plugins/remark-tutorial-embed.ts';
 import { remarkVideoEmbed } from './src/plugins/remark-video-embed.ts';
 import jsonGeneratorIntegration from './src/integrations/json-generator.ts';
 
@@ -26,7 +27,7 @@ const searchIndexIntegration = {
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://www.rediacc.com',
+  site: process.env.PUBLIC_SITE_URL || 'https://www.rediacc.com',
   integrations: [
     react(),
     sitemap({
@@ -69,7 +70,7 @@ export default defineConfig({
           item.changefreq = ChangeFreqEnum.WEEKLY;
         }
         // Root homepage
-        else if (url === 'https://www.rediacc.com/') {
+        else if (url === (process.env.PUBLIC_SITE_URL || 'https://www.rediacc.com') + '/') {
           item.priority = 1.0;
           item.changefreq = ChangeFreqEnum.WEEKLY;
         }
@@ -137,6 +138,7 @@ export default defineConfig({
   markdown: {
     remarkPlugins: [
       remarkVideoEmbed,
+      remarkTutorialEmbed,
       remarkResolveTranslations
     ]
   }

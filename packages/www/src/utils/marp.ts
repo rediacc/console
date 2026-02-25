@@ -32,7 +32,7 @@ export interface CheatSheetResult {
  * theme: rediacc-cheatsheet
  * ---
  * ## Contexts
- * `rdc context list`
+ * `rdc config list`
  * ```
  */
 export function renderCheatSheet(markdown: string): CheatSheetResult {

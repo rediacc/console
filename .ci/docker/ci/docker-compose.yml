@@ -23,6 +23,7 @@ services:
     environment:
       - SYSTEM_DOMAIN=${SYSTEM_DOMAIN:-localhost}
       - ENABLE_HTTPS=${ENABLE_HTTPS:-false}
+      - ACCOUNT_BACKEND=account-server:3000
     networks:
       internet:
       intranet:

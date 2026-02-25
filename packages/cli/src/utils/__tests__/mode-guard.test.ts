@@ -1,14 +1,14 @@
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SELF_HOSTED_MODES } from '../../config/command-registry.js';
-import type { NamedContext } from '../../types/index.js';
+import type { RdcConfig } from '../../types/index.js';
 
-// Mock contextService and outputService
+// Mock configService and outputService
 const mockGetCurrent = vi.fn();
 const mockError = vi.fn();
 
-vi.mock('../../services/context.js', () => ({
-  contextService: {
+vi.mock('../../services/config-resources.js', () => ({
+  configService: {
     getCurrent: (...args: unknown[]) => mockGetCurrent(...args),
   },
 }));
@@ -48,7 +48,7 @@ describe('utils/mode-guard', () => {
 
   describe('addModeGuard', () => {
     it('should block cloud-only command in local mode', async () => {
-      mockGetCurrent.mockResolvedValue({ name: 'test', mode: 'local' } as NamedContext);
+      mockGetCurrent.mockResolvedValue({ id: '1', version: 1 } as RdcConfig);
 
       const cmd = new Command('auth');
       addModeGuard(cmd, ['cloud']);
@@ -60,19 +60,13 @@ describe('utils/mode-guard', () => {
       expect(exitSpy).toHaveBeenCalledWith(1);
     });
 
-    it('should block cloud-only command in s3 mode', async () => {
-      mockGetCurrent.mockResolvedValue({ name: 'test', mode: 's3' } as NamedContext);
-
-      const cmd = new Command('repository');
-      addModeGuard(cmd, ['cloud']);
-      await runGuardHook(cmd);
-
-      expect(mockError).toHaveBeenCalledWith(expect.stringContaining('"repository"'));
-      expect(exitSpy).toHaveBeenCalledWith(1);
-    });
-
-    it('should block local|s3 command in cloud mode', async () => {
-      mockGetCurrent.mockResolvedValue({ name: 'test', mode: 'cloud' } as NamedContext);
+    it('should block local command in cloud mode', async () => {
+      mockGetCurrent.mockResolvedValue({
+        id: '1',
+        version: 1,
+        apiUrl: 'https://api.example.com',
+        token: 'tok',
+      } as RdcConfig);
 
       const cmd = new Command('repo');
       addModeGuard(cmd, SELF_HOSTED_MODES);
@@ -83,7 +77,12 @@ describe('utils/mode-guard', () => {
     });
 
     it('should allow cloud-only command in cloud mode', async () => {
-      mockGetCurrent.mockResolvedValue({ name: 'test', mode: 'cloud' } as NamedContext);
+      mockGetCurrent.mockResolvedValue({
+        id: '1',
+        version: 1,
+        apiUrl: 'https://api.example.com',
+        token: 'tok',
+      } as RdcConfig);
 
       const cmd = new Command('auth');
       addModeGuard(cmd, ['cloud']);
@@ -93,8 +92,23 @@ describe('utils/mode-guard', () => {
       expect(exitSpy).not.toHaveBeenCalled();
     });
 
-    it('should allow local|s3 command in local mode', async () => {
-      mockGetCurrent.mockResolvedValue({ name: 'test', mode: 'local' } as NamedContext);
+    it('should allow cloud-only command when apiUrl set but no token (pre-auth)', async () => {
+      mockGetCurrent.mockResolvedValue({
+        id: '1',
+        version: 1,
+        apiUrl: 'https://api.example.com',
+      } as RdcConfig);
+
+      const cmd = new Command('auth');
+      addModeGuard(cmd, ['cloud']);
+      await runGuardHook(cmd);
+
+      expect(mockError).not.toHaveBeenCalled();
+      expect(exitSpy).not.toHaveBeenCalled();
+    });
+
+    it('should allow local command in local mode', async () => {
+      mockGetCurrent.mockResolvedValue({ id: '1', version: 1 } as RdcConfig);
 
       const cmd = new Command('repo');
       addModeGuard(cmd, SELF_HOSTED_MODES);
@@ -105,8 +119,8 @@ describe('utils/mode-guard', () => {
     });
 
     it('should not add guard for all-modes command', () => {
-      const cmd = new Command('context');
-      addModeGuard(cmd, ['cloud', 'local', 's3']);
+      const cmd = new Command('config');
+      addModeGuard(cmd, ['cloud', 'local']);
 
       // No hooks should have been added
       const hooks = (cmd as unknown as { _lifeCycleHooks: Record<string, HookFn[] | undefined> })
@@ -114,11 +128,23 @@ describe('utils/mode-guard', () => {
       expect(hooks.preAction ?? []).toHaveLength(0);
     });
 
-    it('should default to cloud when context is null', async () => {
+    it('should default to local when context is null', async () => {
       mockGetCurrent.mockResolvedValue(null);
 
+      // cloud-only command should be blocked when no config (defaults to local)
       const cmd = new Command('auth');
       addModeGuard(cmd, ['cloud']);
+      await runGuardHook(cmd);
+
+      expect(mockError).toHaveBeenCalledWith(expect.stringContaining('"auth"'));
+      expect(exitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it('should allow self-hosted command when context is null (default local)', async () => {
+      mockGetCurrent.mockResolvedValue(null);
+
+      const cmd = new Command('repo');
+      addModeGuard(cmd, SELF_HOSTED_MODES);
       await runGuardHook(cmd);
 
       expect(mockError).not.toHaveBeenCalled();

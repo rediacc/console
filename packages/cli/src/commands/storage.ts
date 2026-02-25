@@ -6,7 +6,7 @@ import {
 } from '@rediacc/shared/queue-vault';
 import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
-import { contextService } from '../services/context.js';
+import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { storageBrowserService } from '../services/storage-browser.js';
@@ -78,8 +78,8 @@ export function registerStorageCommands(program: Command): void {
     .option('--path <subpath>', t('commands.storage.browse.pathOption'), '')
     .action(async (name: string, options: { path: string }) => {
       try {
-        const storageConfig = await contextService.getLocalStorage(name);
-        const guidMap = await contextService.getRepositoryGuidMap();
+        const storageConfig = await configService.getStorage(name);
+        const guidMap = await configService.getRepositoryGuidMap();
 
         let files = await withSpinner(t('commands.storage.browse.listing', { name }), () =>
           storageBrowserService.browse(storageConfig.vaultContent, options.path || undefined)
@@ -126,10 +126,10 @@ export function registerStorageCommands(program: Command): void {
       ) => {
         try {
           // Validate storage exists in context
-          await contextService.getLocalStorage(storageName);
+          await configService.getStorage(storageName);
 
           // Validate repository exists and warn if no credential
-          const repo = await contextService.getLocalRepository(options.repository);
+          const repo = await configService.getRepository(options.repository);
           if (!repo) {
             throw new Error(`Repository "${options.repository}" not found in context`);
           }

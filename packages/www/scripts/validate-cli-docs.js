@@ -2,12 +2,12 @@
 /**
  * CLI Documentation Validator
  *
- * Validates that the generated cli-application.md files are fresh and consistent
- * across all supported languages.
+ * Validates that the generated cli-application.md and cli-application-cloud.md
+ * files are fresh and consistent across all supported languages.
  *
  * Rules:
- * - cli-doc-freshness: Re-generates in memory and diffs against file on disk (all languages)
- * - cli-doc-generated-marker: File must contain the auto-generated comment (all languages)
+ * - cli-doc-freshness: Re-generates in memory and diffs against file on disk (all languages, both doc types)
+ * - cli-doc-generated-marker: File must contain the auto-generated comment (all languages, both doc types)
  * - cli-doc-supplement-paths: Every path in docs.supplements must match a command in cli.json
  *
  * Usage:
@@ -27,13 +27,20 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // All supported languages
 const LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh'];
 
+// Both doc types to validate
+const DOC_TYPES = [
+  { type: 'local', filename: 'cli-application.md' },
+  { type: 'cloud', filename: 'cli-application-cloud.md' },
+];
+
 // Path helpers
 function getCliJsonPath(lang) {
   return path.resolve(__dirname, `../../cli/src/i18n/locales/${lang}/cli.json`);
 }
 
-function getDocPath(lang) {
-  return path.resolve(__dirname, `../src/content/docs/${lang}/cli-application.md`);
+function getDocPath(lang, docType = 'local') {
+  const filename = docType === 'cloud' ? 'cli-application-cloud.md' : 'cli-application.md';
+  return path.resolve(__dirname, `../src/content/docs/${lang}/${filename}`);
 }
 
 const GENERATOR_PATH = path.resolve(__dirname, './generate-cli-docs.js');
@@ -104,55 +111,65 @@ async function main() {
   const matter = (await import('gray-matter')).default;
   const cliJsonEn = JSON.parse(fs.readFileSync(getCliJsonPath('en'), 'utf-8'));
 
-  // Compute sourceHash from English content (generate without hash first)
-  const enRaw = generate('en', cliJsonEn);
-  const parsed = matter(enRaw);
-  const sourceHash = computeSourceHash(parsed.data, parsed.content);
+  // Compute sourceHash per doc type from English content (generate without hash first)
+  const sourceHashes = {};
+  for (const { type } of DOC_TYPES) {
+    const enRaw = generate('en', cliJsonEn, { docType: type });
+    const parsed = matter(enRaw);
+    sourceHashes[type] = computeSourceHash(parsed.data, parsed.content);
+  }
 
-  // ── Rule 1: cli-doc-freshness (all languages) ──
+  // ── Rule 1: cli-doc-freshness (all languages, both doc types) ──
   console.log('Checking cli-doc-freshness...');
 
-  for (const lang of LANGUAGES) {
-    const docPath = getDocPath(lang);
+  for (const { type, filename } of DOC_TYPES) {
+    for (const lang of LANGUAGES) {
+      const docPath = getDocPath(lang, type);
 
-    if (!fs.existsSync(docPath)) {
-      errors.push({
-        rule: 'cli-doc-freshness',
-        message: `${lang}/cli-application.md does not exist`,
-        suggestion: 'Run: npm run generate:cli-docs -w @rediacc/www',
-      });
-    } else {
-      const expected = generate(lang, cliJsonEn, { sourceHash });
-      const actual = fs.readFileSync(docPath, 'utf-8');
-
-      if (expected !== actual) {
+      if (!fs.existsSync(docPath)) {
         errors.push({
           rule: 'cli-doc-freshness',
-          message: `${lang}/cli-application.md: generated output differs from file on disk`,
+          message: `${lang}/${filename} does not exist`,
           suggestion: 'Run: npm run generate:cli-docs -w @rediacc/www',
         });
       } else {
-        console.log(colors.green(`  ✓ ${lang}/cli-application.md is up to date`));
+        const expected = generate(lang, cliJsonEn, {
+          sourceHash: sourceHashes[type],
+          docType: type,
+        });
+        const actual = fs.readFileSync(docPath, 'utf-8');
+
+        if (expected !== actual) {
+          errors.push({
+            rule: 'cli-doc-freshness',
+            message: `${lang}/${filename}: generated output differs from file on disk`,
+            suggestion: 'Run: npm run generate:cli-docs -w @rediacc/www',
+          });
+        } else {
+          console.log(colors.green(`  ✓ ${lang}/${filename} is up to date`));
+        }
       }
     }
   }
 
-  // ── Rule 2: cli-doc-generated-marker (all languages) ──
+  // ── Rule 2: cli-doc-generated-marker (all languages, both doc types) ──
   console.log('Checking cli-doc-generated-marker...');
 
-  for (const lang of LANGUAGES) {
-    const docPath = getDocPath(lang);
+  for (const { type, filename } of DOC_TYPES) {
+    for (const lang of LANGUAGES) {
+      const docPath = getDocPath(lang, type);
 
-    if (fs.existsSync(docPath)) {
-      const content = fs.readFileSync(docPath, 'utf-8');
-      if (!content.includes(AUTO_GENERATED_MARKER)) {
-        errors.push({
-          rule: 'cli-doc-generated-marker',
-          message: `${lang}/cli-application.md is missing the auto-generated marker comment`,
-          suggestion: `File must contain: ${AUTO_GENERATED_MARKER}`,
-        });
-      } else {
-        console.log(colors.green(`  ✓ ${lang}/cli-application.md: auto-generated marker present`));
+      if (fs.existsSync(docPath)) {
+        const content = fs.readFileSync(docPath, 'utf-8');
+        if (!content.includes(AUTO_GENERATED_MARKER)) {
+          errors.push({
+            rule: 'cli-doc-generated-marker',
+            message: `${lang}/${filename} is missing the auto-generated marker comment`,
+            suggestion: `File must contain: ${AUTO_GENERATED_MARKER}`,
+          });
+        } else {
+          console.log(colors.green(`  ✓ ${lang}/${filename}: auto-generated marker present`));
+        }
       }
     }
   }

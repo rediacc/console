@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: fr
-sourceHash: 3d127a0a186d7487
+sourceHash: cf186b18b0c50eba
 ---
 
 # Sauvegarde et restauration
@@ -22,15 +22,15 @@ Avant d'envoyer des sauvegardes, enregistrez un fournisseur de stockage. Rediacc
 Si vous avez déjà un remote rclone configuré :
 
 ```bash
-rdc context import-storage my-storage
+rdc config import-storage rclone.conf
 ```
 
-Ceci importe la configuration de stockage depuis votre configuration rclone dans le contexte actuel.
+Ceci importe des configurations de stockage depuis un fichier de configuration rclone dans la configuration actuelle. Types pris en charge : S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob et Swift.
 
 ### Afficher les stockages
 
 ```bash
-rdc context storages
+rdc config storages
 ```
 
 ## Envoyer une sauvegarde

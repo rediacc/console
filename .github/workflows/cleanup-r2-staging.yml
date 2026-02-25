@@ -1,0 +1,32 @@
+name: Cleanup R2 Staging
+
+# Delete staging R2 artifacts when a PR is closed (merged or abandoned)
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    name: Delete R2 Staging
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete staging artifacts
+        run: |
+          PR_NUM="${{ github.event.pull_request.number }}"
+          echo "Cleaning up R2 staging for PR #${PR_NUM}..."
+
+          aws s3 rm "s3://${RELEASES_BUCKET}/staging/pr-${PR_NUM}/" \
+            --recursive \
+            --endpoint-url "$R2_ENDPOINT" || true
+
+          echo "Staging artifacts deleted for PR #${PR_NUM}"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          RELEASES_BUCKET: rediacc-releases

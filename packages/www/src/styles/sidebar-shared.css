@@ -260,6 +260,24 @@
 }
 
 /* ============================================================================
+   Collapsible TOC (auto-applied when heading count exceeds threshold)
+   h3/h4+ children are hidden by default; revealed when parent h2 group is active
+   ============================================================================ */
+
+.sidebar-base .toc-collapsible .toc-children {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height var(--transition-speed);
+}
+
+.sidebar-base .toc-collapsible .toc-group.toc-group-active > .toc-children {
+  max-height: 9999px;
+}
+
+/* ============================================================================
    Accessibility and Responsive Design
    ============================================================================ */
 
@@ -267,7 +285,8 @@
 @media (prefers-reduced-motion: reduce) {
   .sidebar-base .sidebar-link,
   .sidebar-base .category-header,
-  .sidebar-base .collapsible-list {
+  .sidebar-base .collapsible-list,
+  .sidebar-base .toc-children {
     transition: none;
   }
 }

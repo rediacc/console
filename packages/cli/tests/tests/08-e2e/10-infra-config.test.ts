@@ -71,7 +71,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
       test.skip(!config.enabled, 'E2E not configured');
 
       const result = await runner.run([
-        'context',
+        'config',
         'set-infra',
         'vm1',
         '--public-ipv4',
@@ -92,7 +92,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
     test('should show infrastructure config', async () => {
       test.skip(!config.enabled, 'E2E not configured');
 
-      const result = await runner.run(['context', 'show-infra', 'vm1']);
+      const result = await runner.run(['config', 'show-infra', 'vm1']);
 
       expect(result.success, `show-infra failed: ${result.stderr}`).toBe(true);
 
@@ -107,7 +107,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
 
       // Update only baseDomain
       const updateResult = await runner.run([
-        'context',
+        'config',
         'set-infra',
         'vm1',
         '--base-domain',
@@ -116,7 +116,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
       expect(updateResult.success, `set-infra update failed: ${updateResult.stderr}`).toBe(true);
 
       // Verify previous values are preserved
-      const showResult = await runner.run(['context', 'show-infra', 'vm1']);
+      const showResult = await runner.run(['config', 'show-infra', 'vm1']);
       expect(showResult.success).toBe(true);
 
       const output = showResult.stdout;
@@ -131,7 +131,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
     test('should warn when no options provided', async () => {
       test.skip(!config.enabled, 'E2E not configured');
 
-      const result = await runner.run(['context', 'set-infra', 'vm1']);
+      const result = await runner.run(['config', 'set-infra', 'vm1']);
       // Should not fail, but warn
       const output = result.stdout + result.stderr;
       expect(output).toContain('No options');
@@ -145,7 +145,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
 
       // Set infra config with test values before push
       await runner.run([
-        'context',
+        'config',
         'set-infra',
         'vm1',
         '--public-ipv4',
@@ -160,7 +160,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
         '53',
       ]);
 
-      const result = await runner.run(['context', 'push-infra', 'vm1', '--debug'], {
+      const result = await runner.run(['config', 'push-infra', 'vm1', '--debug'], {
         timeout: 300_000,
       });
 
@@ -223,7 +223,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
       );
 
       // Push again
-      const result = await runner.run(['context', 'push-infra', 'vm1'], { timeout: 300_000 });
+      const result = await runner.run(['config', 'push-infra', 'vm1'], { timeout: 300_000 });
       expect(result.success).toBe(true);
 
       // Get checksums after second push
@@ -244,17 +244,11 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
       const partialContext = generateTestContextName('e2e-infra-partial');
       const partialRunner = new CliTestRunner();
 
-      await partialRunner.run([
-        'context',
-        'create-local',
-        partialContext,
-        '--ssh-key',
-        config.sshKeyPath,
-      ]);
+      await partialRunner.run(['config', 'init', partialContext, '--ssh-key', config.sshKeyPath]);
 
       const ctxRunner = CliTestRunner.withContext(partialContext);
       await ctxRunner.run([
-        'context',
+        'config',
         'add-machine',
         'vm1',
         '--ip',
@@ -264,10 +258,10 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
       ]);
 
       // Set only baseDomain
-      await ctxRunner.run(['context', 'set-infra', 'vm1', '--base-domain', 'partial.local']);
+      await ctxRunner.run(['config', 'set-infra', 'vm1', '--base-domain', 'partial.local']);
 
       // Push should succeed with partial config
-      const result = await ctxRunner.run(['context', 'push-infra', 'vm1'], { timeout: 300_000 });
+      const result = await ctxRunner.run(['config', 'push-infra', 'vm1'], { timeout: 300_000 });
 
       expect(result.success, `Partial push failed: ${result.stderr}`).toBe(true);
 
@@ -279,7 +273,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
       for (const file of remoteFiles) {
         await ssh.exec(`rm -f ${file}`).catch(() => {});
       }
-      await partialRunner.run(['context', 'delete', partialContext]);
+      await partialRunner.run(['config', 'delete', partialContext]);
     });
   });
 });

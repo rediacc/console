@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: ru
-sourceHash: 47ee41d44be935a8
+sourceHash: 4a0c6a695d72aa55
 ---
 
 # Сетевое взаимодействие
@@ -94,13 +94,13 @@ labels:
 1. Настроенная инфраструктура на машине ([Настройка машины — Настройка инфраструктуры](/ru/docs/setup#настройка-инфраструктуры)):
 
    ```bash
-   rdc context set-infra server-1 \
+   rdc config set-infra server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
-   rdc context push-infra server-1
+   rdc config push-infra server-1
    ```
 
 2. DNS-записи, указывающие ваш домен на публичный IP сервера (см. [Настройка DNS](#настройка-dns) ниже).
@@ -147,7 +147,7 @@ services:
 TLS-сертификаты получаются автоматически через Let's Encrypt с использованием DNS-01 проверки Cloudflare. Это настраивается один раз при настройке инфраструктуры:
 
 ```bash
-rdc context set-infra server-1 \
+rdc config set-infra server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
@@ -169,11 +169,11 @@ API-токен Cloudflare DNS должен иметь разрешение `Zone
 Добавьте необходимые порты при настройке инфраструктуры:
 
 ```bash
-rdc context set-infra server-1 \
+rdc config set-infra server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc context push-infra server-1
+rdc config push-infra server-1
 ```
 
 Это создает точки входа Traefik с именами `tcp-{port}` и `udp-{port}`.
@@ -199,7 +199,7 @@ Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
 
 > **Security note:** Exposing a database to the internet is a risk. Use this only when remote clients need direct access. For most setups, keep the database internal and connect through your application.
 
-> После добавления или удаления портов всегда повторно выполняйте `rdc context push-infra` для обновления конфигурации прокси.
+> После добавления или удаления портов всегда повторно выполняйте `rdc config push-infra` для обновления конфигурации прокси.
 
 ### Шаг 2: Добавление TCP/UDP-меток
 
@@ -344,7 +344,7 @@ curl -s http://127.0.0.1:7111/ports | python3 -m json.tool
 | Сервис не отображается в маршрутах | Контейнер не запущен или отсутствуют метки | Проверьте с помощью `docker ps` на демоне репозитория; проверьте метки |
 | Сертификат не выпущен | DNS не указывает на сервер или невалидный токен Cloudflare | Проверьте разрешение DNS; проверьте разрешения API-токена Cloudflare |
 | 502 Bad Gateway | Приложение не слушает на объявленном порту | Убедитесь, что приложение привязано к `{SERVICE}_IP` и порт совпадает с `loadbalancer.server.port` |
-| TCP-порт недоступен | Порт не зарегистрирован в инфраструктуре | Выполните `rdc context set-infra --tcp-ports ...` и `push-infra` |
+| TCP-порт недоступен | Порт не зарегистрирован в инфраструктуре | Выполните `rdc config set-infra --tcp-ports ...` и `push-infra` |
 
 ## Полный пример
 

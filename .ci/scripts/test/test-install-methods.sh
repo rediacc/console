@@ -9,11 +9,13 @@
 #   --version <ver>      Version to test (default: latest)
 #   --platform <plat>    Platform: linux, mac, win (default: auto-detect)
 #   --arch <arch>        Architecture: x64, arm64 (default: auto-detect)
+#   --local-artifacts DIR  Test with locally-built artifacts instead of downloading
 #
 # Examples:
 #   ./test-install-methods.sh --dry-run
 #   ./test-install-methods.sh --method apt --version 0.4.58
 #   ./test-install-methods.sh --method binary --platform linux --arch arm64
+#   ./test-install-methods.sh --local-artifacts dist/
 
 set -euo pipefail
 
@@ -30,6 +32,7 @@ METHOD="all"
 VERSION="latest"
 PLATFORM=""
 ARCH=""
+LOCAL_ARTIFACTS=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -51,6 +54,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --arch)
             ARCH="${2:-}"
+            shift 2
+            ;;
+        --local-artifacts)
+            LOCAL_ARTIFACTS="${2:-}"
             shift 2
             ;;
         *)
@@ -77,7 +84,6 @@ fi
 # Configuration
 # =============================================================================
 
-GITHUB_REPO="rediacc/console"
 DOCKER_IMAGE="ghcr.io/rediacc/elite/cli"
 SITE_URL="https://www.rediacc.com"
 HOMEBREW_TAP="rediacc/tap/rediacc-cli"
@@ -154,11 +160,7 @@ get_binary_url() {
         win) filename="rdc-win-${arch}.exe" ;;
     esac
 
-    if [[ "$version" == "latest" ]]; then
-        echo "https://github.com/${GITHUB_REPO}/releases/latest/download/${filename}"
-    else
-        echo "https://github.com/${GITHUB_REPO}/releases/download/v${version}/${filename}"
-    fi
+    echo "${RELEASES_BASE_URL}/cli/v${version}/${filename}"
 }
 
 # Verify version output
@@ -182,10 +184,45 @@ test_binary_download() {
     local platform="${1:-$PLATFORM}"
     local arch="${2:-$ARCH}"
 
-    local url
-    url="$(get_binary_url "$platform" "$arch" "$VERSION")"
     local binary_name="rdc"
     [[ "$platform" == "win" ]] && binary_name="rdc.exe"
+
+    local filename
+    case "$platform" in
+        linux) filename="rdc-linux-${arch}" ;;
+        mac) filename="rdc-mac-${arch}" ;;
+        win) filename="rdc-win-${arch}.exe" ;;
+    esac
+
+    # Local artifacts mode: copy binary directly
+    if [[ -n "$LOCAL_ARTIFACTS" ]]; then
+        local local_binary="$LOCAL_ARTIFACTS/cli/${filename}"
+        if [[ ! -f "$local_binary" ]]; then
+            log_warn "Local binary not found: $local_binary"
+            return 77
+        fi
+
+        local download_dir="$TEST_DIR/binary-${platform}-${arch}"
+        mkdir -p "$download_dir"
+        cp "$local_binary" "$download_dir/$binary_name"
+        chmod +x "$download_dir/$binary_name"
+
+        if [[ "$platform" == "win" ]]; then
+            log_info "Local binary copied: $local_binary"
+            return 0
+        fi
+
+        local output
+        output=$("$download_dir/$binary_name" --version 2>&1 || true)
+        if ! verify_version "$output" "$VERSION"; then
+            log_error "Version mismatch: expected '$VERSION', got '$output'"
+            return 1
+        fi
+        return 0
+    fi
+
+    local url
+    url="$(get_binary_url "$platform" "$arch" "$VERSION")"
 
     local test_script
     if [[ "$platform" == "win" ]]; then
@@ -331,15 +368,11 @@ test_apk_install() {
         echo '${SITE_URL}/apk/x86_64' >> /etc/apk/repositories
         apk update --allow-untrusted 2>/dev/null || true
 
-        # Direct download and install (repo metadata may not be available yet)
+        # Direct download and install
         apk add --no-cache curl
-        curl -fsSL '${SITE_URL}/apk/x86_64/${PKG_NAME}-${VERSION}-r1-amd64.apk' -o /tmp/${PKG_NAME}.apk || {
+        curl -fsSL '${RELEASES_BASE_URL}/packages/v${VERSION}/${PKG_NAME}-${VERSION}-r1-amd64.apk' -o /tmp/${PKG_NAME}.apk || {
             echo 'Direct download not available, trying repo install...'
-            apk add --no-cache --allow-untrusted ${PKG_NAME} 2>/dev/null || {
-                echo 'APK repo not yet configured — testing with GitHub Release download'
-                curl -fsSL 'https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}/${PKG_NAME}-${VERSION}-r1-amd64.apk' -o /tmp/${PKG_NAME}.apk
-                apk add --no-cache --allow-untrusted /tmp/${PKG_NAME}.apk
-            }
+            apk add --no-cache --allow-untrusted ${PKG_NAME} 2>/dev/null || exit 1
         }
         [ -f /tmp/${PKG_NAME}.apk ] && apk add --no-cache --allow-untrusted /tmp/${PKG_NAME}.apk 2>/dev/null || true
 
@@ -370,11 +403,11 @@ test_pacman_install() {
 
         pacman -Sy --noconfirm 2>/dev/null || true
 
-        # Try repo install first, fall back to direct download
+        # Try repo install first, fall back to direct download from R2
         pacman -S --noconfirm ${PKG_NAME} 2>/dev/null || {
-            echo 'Pacman repo not yet configured — testing with GitHub Release download'
+            echo 'Pacman repo not available — downloading from R2...'
             pacman -S --noconfirm curl 2>/dev/null || true
-            curl -fsSL 'https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}/${PKG_NAME}-${VERSION}-1-x86_64.pkg.tar.zst' -o /tmp/${PKG_NAME}.pkg.tar.zst
+            curl -fsSL '${RELEASES_BASE_URL}/packages/v${VERSION}/${PKG_NAME}-${VERSION}-1-x86_64.pkg.tar.zst' -o /tmp/${PKG_NAME}.pkg.tar.zst
             pacman -U --noconfirm /tmp/${PKG_NAME}.pkg.tar.zst
         }
 
@@ -453,12 +486,26 @@ test_quick_install() {
 # Main Test Execution
 # =============================================================================
 
+# Resolve "latest" version from R2
+if [[ "$VERSION" == "latest" && -z "$LOCAL_ARTIFACTS" && "$DRY_RUN" == "false" ]]; then
+    LATEST_JSON=$(curl -fsSL "${RELEASES_BASE_URL}/cli/latest.json" 2>/dev/null || echo "")
+    if [[ -n "$LATEST_JSON" ]] && command -v jq &>/dev/null; then
+        RESOLVED=$(echo "$LATEST_JSON" | jq -r '.version' 2>/dev/null)
+        if [[ -n "$RESOLVED" && "$RESOLVED" != "null" ]]; then
+            VERSION="$RESOLVED"
+        fi
+    fi
+fi
+
 log_step "Installation Method Tests"
 log_info "  Method: $METHOD"
 log_info "  Version: $VERSION"
 log_info "  Platform: $PLATFORM"
 log_info "  Arch: $ARCH"
 log_info "  Dry-run: $DRY_RUN"
+if [[ -n "$LOCAL_ARTIFACTS" ]]; then
+    log_info "  Local artifacts: $LOCAL_ARTIFACTS"
+fi
 echo ""
 
 # Validate requirements

@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { homedir, platform as osPlatform, tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { getConfigDir } from '@rediacc/shared/paths';
 import type { Platform, PlatformInfo, WindowsSubsystem } from '../types/index.js';
 
 /**
@@ -81,8 +81,7 @@ export function getTempPath(): string {
  * Gets the Rediacc config directory path
  */
 export function getConfigPath(): string {
-  const home = getHomePath();
-  return join(home, '.rediacc');
+  return getConfigDir();
 }
 
 /**

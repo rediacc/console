@@ -1,15 +1,15 @@
 import type { TokenAdapter } from '@rediacc/shared/api';
-import { contextService } from '../services/context.js';
+import { configService } from '../services/config-resources.js';
 
 /**
- * CLI token adapter wrapping the contextService.
- * Stores tokens in file-based config (~/.rediacc/).
+ * CLI token adapter wrapping the configService.
+ * Stores tokens in file-based config (platform config dir).
  */
 export const tokenAdapter: TokenAdapter = {
-  get: () => contextService.getToken(),
-  set: (token: string) => contextService.setToken(token),
+  get: () => configService.getToken(),
+  set: (token: string) => configService.setToken(token),
   clear: async () => {
     // In CLI, clearing token means clearing credentials from context
-    await contextService.clearCredentials();
+    await configService.clearCredentials();
   },
 };

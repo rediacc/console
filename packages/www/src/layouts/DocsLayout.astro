@@ -58,6 +58,24 @@ const breadcrumbItems = variant === 'article'
 const tocFromContent = generateTOCFromHtml(await Astro.slots.render('default'));
 const toc = tocItems ?? tocFromContent;
 const shouldTrackTOC = !tocItems && toc.length > 0;
+
+// Smart TOC: auto-collapse deeper headings when the list is crowded
+const TOC_COLLAPSE_THRESHOLD = 20;
+const isCollapsible = toc.length > TOC_COLLAPSE_THRESHOLD;
+
+interface TOCGroup {
+  heading: typeof toc[0];
+  children: typeof toc;
+}
+const tocGroups: TOCGroup[] = [];
+for (const item of toc) {
+  if (item.level === 2) {
+    tocGroups.push({ heading: item, children: [] });
+  } else if (tocGroups.length > 0) {
+    tocGroups[tocGroups.length - 1].children.push(item);
+  }
+}
+const useGrouped = isCollapsible && tocGroups.length > 0;
 ---
 
 <BaseLayout
@@ -116,15 +134,32 @@ const shouldTrackTOC = !tocItems && toc.length > 0;
       </main>
 
       {showTOC && toc.length > 0 && (
-        <aside class="sidebar-base sidebar-toc toc-sidebar">
+        <aside class="sidebar-base sidebar-toc toc-sidebar" data-track={shouldTrackTOC ? 'true' : 'false'} data-selector={tocTrackingSelector}>
           <nav class="sidebar-nav sidebar-nav-with-accent toc-nav" role="navigation" aria-label="Table of contents">
             <h3 class="sidebar-title toc-title">{t('pages.docs.tableOfContents')}</h3>
-            <ul class="sidebar-list toc-list">
-              {toc.map(heading => (
-                <li class={`sidebar-item toc-item toc-level-${heading.level}`}>
-                  <a href={`#${heading.id}`} class="sidebar-link toc-link">{heading.title}</a>
-                </li>
-              ))}
+            <ul class={`sidebar-list toc-list${useGrouped ? ' toc-collapsible' : ''}`}>
+              {useGrouped ? (
+                tocGroups.map(group => (
+                  <li class="sidebar-item toc-item toc-level-2 toc-group">
+                    <a href={`#${group.heading.id}`} class="sidebar-link toc-link">{group.heading.title}</a>
+                    {group.children.length > 0 && (
+                      <ul class="toc-children">
+                        {group.children.map(child => (
+                          <li class={`sidebar-item toc-item toc-level-${child.level}`}>
+                            <a href={`#${child.id}`} class="sidebar-link toc-link">{child.title}</a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                ))
+              ) : (
+                toc.map(heading => (
+                  <li class={`sidebar-item toc-item toc-level-${heading.level}`}>
+                    <a href={`#${heading.id}`} class="sidebar-link toc-link">{heading.title}</a>
+                  </li>
+                ))
+              )}
             </ul>
           </nav>
         </aside>
@@ -140,13 +175,14 @@ const shouldTrackTOC = !tocItems && toc.length > 0;
       window.rediaccTOCInitialized = true;
 
       function initTOCActiveState() {
-        const shouldTrack = ${shouldTrackTOC ? 'true' : 'false'};
-        if (!shouldTrack) return;
-
         const container = document.querySelector('.toc-sidebar');
         if (!container) return; // No TOC sidebar on this page
 
-        const headings = document.querySelectorAll(`${tocTrackingSelector}`);
+        const shouldTrack = container.getAttribute('data-track') === 'true';
+        if (!shouldTrack) return;
+
+        const selector = container.getAttribute('data-selector') || '.article-content h2, .article-content h3, .article-content h4';
+        const headings = document.querySelectorAll(selector);
         if (headings.length === 0) return; // No headings to track
 
         const observer = new IntersectionObserver((entries) => {
@@ -165,6 +201,13 @@ const shouldTrackTOC = !tocItems && toc.length > 0;
 
               // Add active class to current link
               tocLink.classList.add('active');
+
+              // Update collapsible group active state
+              container?.querySelectorAll('.toc-group').forEach(g => g.classList.remove('toc-group-active'));
+              const parentGroup = tocLink.closest('.toc-group');
+              if (parentGroup) {
+                parentGroup.classList.add('toc-group-active');
+              }
             }
           });
         }, {
@@ -175,6 +218,10 @@ const shouldTrackTOC = !tocItems && toc.length > 0;
         headings.forEach(heading => {
           observer.observe(heading);
         });
+
+        // Expand first group by default so page doesn't start fully collapsed
+        const firstGroup = container?.querySelector('.toc-group');
+        if (firstGroup) firstGroup.classList.add('toc-group-active');
       }
 
       // Initialize on load events
@@ -193,6 +240,9 @@ const shouldTrackTOC = !tocItems && toc.length > 0;
       }
     })();
   </script>
+
+  <!-- Tutorial player hydration (lazy — only loads if page has .cast embeds) -->
+  <script src="../scripts/tutorial-hydrate.ts"></script>
 
   <style>
     .docs-shell {
@@ -403,6 +453,58 @@ const shouldTrackTOC = !tocItems && toc.length > 0;
       margin-top: var(--space-3);
       font-style: italic;
       line-height: var(--leading-normal);
+    }
+
+    /* Terminal tutorial player */
+    .article-content :global(.terminal-tutorial) {
+      margin: var(--space-6) 0;
+    }
+    .article-content :global(.terminal-tutorial-header) {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-3);
+    }
+    .article-content :global(.terminal-tutorial-layout) {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: #1a1a2e;
+    }
+    .article-content :global(.terminal-tutorial-player) {
+      display: flex;
+      flex-direction: column;
+    }
+    .article-content :global(.terminal-tutorial-player-inner) {
+      flex: 1;
+      min-height: 400px;
+      /* No overflow hidden here — asciinema's .ap-terminal already clips
+         terminal text, and we need control-bar tooltips to overflow. */
+    }
+    /* Override asciinema-player's overflow:hidden on .ap-player so that
+       control-bar tooltips (marker labels, "Fullscreen (f)") are visible.
+       Terminal text stays clipped via .ap-terminal's own overflow:hidden. */
+    .article-content :global(.terminal-tutorial-player-inner .ap-player) {
+      overflow: visible !important;
+    }
+    /* Reset player size after exiting fullscreen */
+    .article-content :global(.terminal-tutorial-player-inner .ap-wrapper) {
+      max-width: 100%;
+    }
+    .article-content :global(.terminal-tutorial-controls) {
+      padding: var(--space-2) var(--space-3);
+      background: rgba(0, 0, 0, 0.3);
+    }
+    .article-content :global(.terminal-tutorial-play-btn) {
+      padding: var(--space-1) var(--space-3);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: #fff;
+      cursor: pointer;
+      font-size: var(--font-size-sm);
+    }
+    .article-content :global(.terminal-tutorial-play-btn:hover) {
+      background: rgba(255, 255, 255, 0.1);
     }
 
     /* Responsive Design - TOC sidebar is hidden on tablets/phones (handled in sidebar-shared.css) */
