@@ -119,6 +119,9 @@ if [[ ! -f "$DOCKER_OUTPUT" ]]; then
     exit 1
 fi
 
+# Fix ownership of Docker-created files (container runs as root)
+sudo chown -R "$(id -u):$(id -g)" "$REPO_ROOT/dist/cli/" 2>/dev/null || true
+
 # Rename to musl variant
 mkdir -p "$OUTPUT_DIR"
 mv "$DOCKER_OUTPUT" "$OUTPUT_DIR/$BINARY_NAME"
