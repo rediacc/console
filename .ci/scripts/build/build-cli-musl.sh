@@ -95,7 +95,7 @@ docker run --rm \
 set -e
 
 echo "→ Installing build dependencies..."
-apk add --no-cache python3 make g++ binutils
+apk add --no-cache python3 make g++ binutils bash jq
 
 echo "→ Installing npm dependencies..."
 npm ci --ignore-scripts
