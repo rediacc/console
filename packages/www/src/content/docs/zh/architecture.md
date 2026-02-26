@@ -4,7 +4,7 @@ description: Rediacc 的工作原理：双工具架构、适配器检测、安�
 category: Concepts
 order: 0
 language: zh
-sourceHash: 5a717ddac450cb81
+sourceHash: "50f5168f0effbc44"
 ---
 
 # 架构

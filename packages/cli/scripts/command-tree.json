@@ -5775,6 +5775,55 @@
           "subcommands": []
         }
       ]
+    },
+    {
+      "name": "subscription",
+      "descriptionKey": "commands.subscription.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "login",
+          "descriptionKey": "commands.subscription.login.description",
+          "options": [
+            {
+              "flags": "-t, --token <token>",
+              "descriptionKey": "options.apiToken",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--server <url>",
+              "descriptionKey": "options.serverUrl",
+              "mandatory": false,
+              "defaultValue": "https://account.rediacc.com"
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "activate",
+          "descriptionKey": "commands.subscription.activate.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "status",
+          "descriptionKey": "commands.subscription.status.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "refresh",
+          "descriptionKey": "commands.subscription.refresh.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        }
+      ]
     }
   ]
 }

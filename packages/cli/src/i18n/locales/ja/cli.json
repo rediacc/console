@@ -1413,6 +1413,51 @@
         "noConnections": "VS Code SSH 接続が設定されていません。",
         "total": "\n合計: {{count}} 個の接続"
       }
+    },
+    "subscription": {
+      "description": "マシンライセンスとサブスクリプションの管理",
+      "login": {
+        "description": "WebポータルのAPIトークンで認証",
+        "tokenPrompt": "APIトークンを入力してください（Webポータルから）:",
+        "tokenInvalid": "トークンは rdt_ で始まる必要があります",
+        "validating": "トークンを検証中...",
+        "validated": "トークン検証済み",
+        "success": "ログイン成功",
+        "plan": "プラン: {{plan}}",
+        "machines": "マシン: {{active}}/{{max}}"
+      },
+      "activate": {
+        "description": "このマシンをアクティベートしてライセンスを発行",
+        "activating": "マシンをアクティベート中...",
+        "activated": "マシンがアクティベートされました",
+        "installed": "ライセンスがインストールされました",
+        "licenseFile": "ライセンスファイル: {{path}}"
+      },
+      "status": {
+        "description": "サブスクリプションとライセンスの状態を表示",
+        "localLicense": "ローカルライセンス:",
+        "plan": "  プラン:     {{plan}}",
+        "statusLabel": "  ステータス: {{status}}",
+        "machine": "  マシン:     {{machineId}}",
+        "issued": "  発行日:     {{issuedAt}}",
+        "expires": "  有効期限:   {{expiresAt}}",
+        "sequence": "  シーケンス: {{sequenceNumber}}",
+        "expired": "  ライセンスが期限切れです — `rdc subscription refresh` を実行してください",
+        "valid": "  有効（残り {{mins}} 分で期限切れ）",
+        "parseFailed": "  ライセンスファイルを解析できませんでした",
+        "noLicense": "ローカルライセンスがインストールされていません。",
+        "remote": "\nリモートサブスクリプション:",
+        "remotePlan": "  プラン:     {{plan}}",
+        "remoteStatus": "  ステータス: {{status}}",
+        "remoteMachines": "  マシン: {{active}}/{{max}}",
+        "remoteMachine": "    - {{id}}... (最終確認: {{lastSeen}})"
+      },
+      "refresh": {
+        "description": "マシンライセンスを更新",
+        "refreshing": "ライセンスを更新中...",
+        "refreshed": "ライセンスが更新されました",
+        "success": "ライセンスが更新・インストールされました"
+      }
     }
   },
   "common": {
@@ -1502,6 +1547,7 @@
       "snapshot": "スナップショット管理",
       "storage": "ストレージ管理",
       "store": "ストア管理",
+      "subscription": "サブスクリプション管理",
       "sync": "ファイル同期",
       "team": "チーム管理",
       "term": "SSHターミナルアクセス",
@@ -1643,6 +1689,11 @@
       "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
       "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません",
       "notFound": "VS Code が見つかりません。\n\nhttps://code.visualstudio.com/ からインストールしてください\nまたは REDIACC_VSCODE_PATH 環境変数を設定してください。"
+    },
+    "subscription": {
+      "notLoggedIn": "ログインしていません。先に `rdc subscription login` を実行してください。",
+      "noMachineId": "マシンIDを特定できませんでした。renetがインストールされているか、/etc/machine-idが存在することを確認してください。",
+      "writeFailed": "ライセンスファイルの書き込みに失敗しました。sudoで実行するか、{{path}} が書き込み可能であることを確認してください。"
     }
   },
   "options": {
@@ -1757,7 +1808,9 @@
     "verifyChecksum": "同期後にチェックサムを使用してファイルを検証する",
     "watch": "変更を監視する",
     "watchUpdates": "更新を監視する",
-    "yes": "確認プロンプトをスキップする"
+    "yes": "確認プロンプトをスキップする",
+    "apiToken": "APIトークン (rdt_...)",
+    "serverUrl": "アカウントサーバーURL"
   },
   "prompts": {
     "apiUrl": "API URL (エンドポイント):",

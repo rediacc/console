@@ -1413,6 +1413,51 @@
         "noConnections": "Yapılandırılmış VS Code SSH bağlantısı yok.",
         "total": "\nToplam: {{count}} bağlantı(lar)"
       }
+    },
+    "subscription": {
+      "description": "Makine lisanslama ve abonelik yönetimi",
+      "login": {
+        "description": "Web portaldan alınan API belirteci ile kimlik doğrulama",
+        "tokenPrompt": "API belirtecinizi girin (web portaldan):",
+        "tokenInvalid": "Belirteç rdt_ ile başlamalıdır",
+        "validating": "Belirteç doğrulanıyor...",
+        "validated": "Belirteç doğrulandı",
+        "success": "Giriş başarılı",
+        "plan": "Abonelik: {{plan}}",
+        "machines": "Makineler: {{active}}/{{max}}"
+      },
+      "activate": {
+        "description": "Bu makineyi etkinleştir ve lisans ver",
+        "activating": "Makine etkinleştiriliyor...",
+        "activated": "Makine etkinleştirildi",
+        "installed": "Lisans yüklendi",
+        "licenseFile": "Lisans dosyası: {{path}}"
+      },
+      "status": {
+        "description": "Abonelik ve lisans durumunu göster",
+        "localLicense": "Yerel lisans:",
+        "plan": "  Plan:      {{plan}}",
+        "statusLabel": "  Durum:     {{status}}",
+        "machine": "  Makine:    {{machineId}}",
+        "issued": "  Verildi:   {{issuedAt}}",
+        "expires": "  Bitiyor:   {{expiresAt}}",
+        "sequence": "  Sıra:      {{sequenceNumber}}",
+        "expired": "  Lisans SÜRESNİ GEÇMİŞ — `rdc subscription refresh` komutunu çalıştırın",
+        "valid": "  Geçerli ({{mins}} dakika sonra süresi doluyor)",
+        "parseFailed": "  Lisans dosyası ayrıştırılamadı",
+        "noLicense": "Yerel lisans yüklü değil.",
+        "remote": "\nUzak abonelik:",
+        "remotePlan": "  Plan:      {{plan}}",
+        "remoteStatus": "  Durum:     {{status}}",
+        "remoteMachines": "  Makineler: {{active}}/{{max}}",
+        "remoteMachine": "    - {{id}}... (son görülme: {{lastSeen}})"
+      },
+      "refresh": {
+        "description": "Makine lisansını yenile",
+        "refreshing": "Lisans yenileniyor...",
+        "refreshed": "Lisans yenilendi",
+        "success": "Lisans yenilendi ve yüklendi"
+      }
     }
   },
   "common": {
@@ -1502,6 +1547,7 @@
       "snapshot": "Anlık Görüntü Yönetimi",
       "storage": "Depolama Yönetimi",
       "store": "Depo Yönetimi",
+      "subscription": "Abonelik Yönetimi",
       "sync": "Dosya Senkronizasyonu",
       "team": "Takım Yönetimi",
       "term": "SSH Terminal Erişimi",
@@ -1643,6 +1689,11 @@
       "noIpAddress": "\"{{machine}}\" makinesinin yapılandırılmış bir IP adresi yok",
       "noPrivateKey": "\"{{team}}\" takımının yapılandırılmış bir SSH özel anahtarı yok",
       "notFound": "VS Code bulunamadı.\n\nLütfen buradan yükleyin: https://code.visualstudio.com/\nVeya REDIACC_VSCODE_PATH ortam değişkenini ayarlayın."
+    },
+    "subscription": {
+      "notLoggedIn": "Giriş yapılmamış. Önce `rdc subscription login` komutunu çalıştırın.",
+      "noMachineId": "Makine kimliği belirlenemedi. renet'in kurulu olduğundan veya /etc/machine-id dosyasının mevcut olduğundan emin olun.",
+      "writeFailed": "Lisans dosyası yazılamadı. sudo ile çalıştırın veya {{path}} yazılabilir olduğundan emin olun."
     }
   },
   "options": {
@@ -1757,7 +1808,9 @@
     "verifyChecksum": "Senkronizasyondan sonra dosyaları sağlama toplamı kullanarak doğrulayın",
     "watch": "Değişiklikleri izleyin",
     "watchUpdates": "Güncellemeleri izleyin",
-    "yes": "Onay istemini atla"
+    "yes": "Onay istemini atla",
+    "apiToken": "API belirteci (rdt_...)",
+    "serverUrl": "Hesap sunucusu URL'si"
   },
   "prompts": {
     "apiUrl": "API URL'si:",

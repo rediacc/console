@@ -48,6 +48,16 @@ jobs:
             platform: win
             arch: arm64
             timeout: 30
+          # Musl-linked Linux binaries (for Alpine/musl distros)
+          # Built inside node:22-alpine Docker container on Ubuntu runners
+          - os: ubuntu-latest
+            platform: linux-musl
+            arch: x64
+            timeout: 20
+          - os: ubuntu-24.04-arm
+            platform: linux-musl
+            arch: arm64
+            timeout: 20
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -63,19 +73,30 @@ jobs:
         shell: bash
         run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
 
+      # Native build steps (skip for musl — handled inside Docker)
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6
+        if: matrix.platform != 'linux-musl'
         with:
           node-version: '22'
           cache: 'npm'
 
       - run: .ci/scripts/setup/install-deps.sh ${{ runner.os == 'Windows' && '--ignore-scripts' || '' }}
+        if: matrix.platform != 'linux-musl'
         shell: bash
       - run: .ci/scripts/setup/build-packages.sh
+        if: matrix.platform != 'linux-musl'
         shell: bash
 
       - name: Build CLI SEA executable
+        if: matrix.platform != 'linux-musl'
         shell: bash
         run: .ci/scripts/build/build-cli-executables.sh --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
+
+      # Musl build (runs entire build inside Alpine Docker container)
+      - name: Build CLI SEA executable (musl)
+        if: matrix.platform == 'linux-musl'
+        shell: bash
+        run: .ci/scripts/build/build-cli-musl.sh --arch ${{ matrix.arch }}
 
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
         with:

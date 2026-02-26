@@ -4,6 +4,7 @@ description: 利用实时数据复制和查询分发，无需迁移即可扩展�
 category: Use Cases
 order: 3
 language: zh
+sourceHash: "b15507f1e0da46d2"
 ---
 
 > **您的旧数据库正在阻碍您。 不破坏它就挣脱束缚。**

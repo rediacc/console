@@ -126,14 +126,29 @@ function extractKeys(content: string): string[] {
 }
 
 /**
- * Extract all {{t:key}} with their line numbers
+ * Detect the end of YAML frontmatter (line index after closing '---').
+ * Returns 0 if no frontmatter is found.
+ */
+function getFrontmatterEnd(lines: string[]): number {
+  if (lines[0]?.trim() !== '---') return 0;
+  for (let i = 1; i < lines.length; i++) {
+    if (lines[i].trim() === '---') return i + 1;
+  }
+  return 0;
+}
+
+/**
+ * Extract all {{t:key}} with their line numbers, relative to the body
+ * (after frontmatter). This normalizes for frontmatter size differences
+ * between English and translated files (e.g., sourceHash line).
  */
 function extractKeyLocations(content: string): KeyLocation[] {
   const locations: KeyLocation[] = [];
   const lines = content.split('\n');
+  const bodyStart = getFrontmatterEnd(lines);
   const pattern = new RegExp(KEY_PATTERN.source, 'g');
 
-  for (let lineNum = 0; lineNum < lines.length; lineNum++) {
+  for (let lineNum = bodyStart; lineNum < lines.length; lineNum++) {
     const line = lines[lineNum];
     let match: RegExpExecArray | null;
     pattern.lastIndex = 0;
@@ -141,7 +156,7 @@ function extractKeyLocations(content: string): KeyLocation[] {
     while ((match = pattern.exec(line)) !== null) {
       locations.push({
         key: `${match[1]}.${match[2]}`,
-        line: lineNum + 1, // 1-indexed line numbers
+        line: lineNum - bodyStart + 1, // 1-indexed, relative to body start
       });
     }
   }

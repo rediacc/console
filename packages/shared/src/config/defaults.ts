@@ -309,6 +309,12 @@ export const ANALYTICS_DEFAULTS = {
 export const SUBSCRIPTION_DEFAULTS = {
   /** Default subscription plan */
   PLAN: 'COMMUNITY',
+
+  /** Fallback for unknown plan code */
+  UNKNOWN_PLAN: 'unknown',
+
+  /** Fallback for unknown machine quota */
+  UNKNOWN_QUOTA: '?',
 } as const;
 
 /**

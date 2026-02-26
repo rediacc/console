@@ -4,6 +4,7 @@ description: Rediacc ile web uygulaması mimarisi ve dağıtımını anlama
 category: Reference
 order: 1
 language: tr
+sourceHash: "ee9dff9ac2c8bce1"
 ---
 
 # Rediacc Platformu Kullanım Kılavuzu

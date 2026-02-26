@@ -4,6 +4,7 @@ description: قم بتوسيع نطاق قواعد البيانات القديم
 category: Use Cases
 order: 3
 language: ar
+sourceHash: "b15507f1e0da46d2"
 ---
 
 > **قاعدة بياناتك القديمة تعيقك. تحرر دون كسره.**

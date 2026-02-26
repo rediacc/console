@@ -4,6 +4,7 @@ description: Faites évoluer les bases de données existantes sans migration en 
 category: Use Cases
 order: 3
 language: fr
+sourceHash: "b15507f1e0da46d2"
 ---
 
 > **Votre base de données héritée vous retient. Libérez-vous sans le casser.**

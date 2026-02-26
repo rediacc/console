@@ -1126,6 +1126,51 @@
         "description": "Check sync status and compare local/remote files"
       }
     },
+    "subscription": {
+      "description": "Manage machine licensing and subscription",
+      "login": {
+        "description": "Authenticate with an API token from the web portal",
+        "tokenPrompt": "Enter your API token (from web portal):",
+        "tokenInvalid": "Token must start with rdt_",
+        "validating": "Validating token...",
+        "validated": "Token validated",
+        "success": "Logged in successfully",
+        "plan": "Plan: {{plan}}",
+        "machines": "Machines: {{active}}/{{max}}"
+      },
+      "activate": {
+        "description": "Activate this machine and issue a license",
+        "activating": "Activating machine...",
+        "activated": "Machine activated",
+        "installed": "License installed",
+        "licenseFile": "License file: {{path}}"
+      },
+      "status": {
+        "description": "Show subscription and license status",
+        "localLicense": "Local license:",
+        "plan": "  Plan:     {{plan}}",
+        "statusLabel": "  Status:   {{status}}",
+        "machine": "  Machine:  {{machineId}}",
+        "issued": "  Issued:   {{issuedAt}}",
+        "expires": "  Expires:  {{expiresAt}}",
+        "sequence": "  Sequence: {{sequenceNumber}}",
+        "expired": "  License has EXPIRED — run `rdc subscription refresh`",
+        "valid": "  Valid (expires in {{mins}} minutes)",
+        "parseFailed": "  Could not parse license file",
+        "noLicense": "No local license installed.",
+        "remote": "\nRemote subscription:",
+        "remotePlan": "  Plan:     {{plan}}",
+        "remoteStatus": "  Status:   {{status}}",
+        "remoteMachines": "  Machines: {{active}}/{{max}}",
+        "remoteMachine": "    - {{id}}... (last seen: {{lastSeen}})"
+      },
+      "refresh": {
+        "description": "Refresh the machine license",
+        "refreshing": "Refreshing license...",
+        "refreshed": "License refreshed",
+        "success": "License refreshed and installed"
+      }
+    },
     "team": {
       "description": "Team management",
       "list": {
@@ -1473,6 +1518,11 @@
       "noHostKey": "Machine '{{machine}}' does not have a host key configured in the vault",
       "localPathNotFound": "Local path does not exist: {{path}}"
     },
+    "subscription": {
+      "notLoggedIn": "Not logged in. Run `rdc subscription login` first.",
+      "noMachineId": "Could not determine machine ID. Ensure renet is installed or /etc/machine-id exists.",
+      "writeFailed": "Failed to write license file. Run with sudo or ensure {{path}} is writable."
+    },
     "teamRequired": "Team name required. Use --team or set default with: rdc config set team <name>",
     "term": {
       "connectivityFailed": "Cannot reach {{host}}:{{port}}. {{error}}\n\nTroubleshooting:\n  - Check if the machine is powered on and connected to the network\n  - Verify the IP address is correct in the machine vault\n  - Ensure port {{port}} is not blocked by a firewall\n  - Try pinging the machine: ping {{host}}",
@@ -1543,6 +1593,8 @@
     "sshPrivateKey": "Path to SSH private key",
     "sshPublicKey": "Path to SSH public key",
     "sshUser": "SSH username",
+    "apiToken": "API token (rdt_...)",
+    "serverUrl": "Account server URL",
     "subscriptionPlan": "Subscription plan (COMMUNITY, PROFESSIONAL, BUSINESS, ENTERPRISE)",
     "switch": "Switch to this config after creation",
     "team": "Team name",
@@ -1739,7 +1791,8 @@
       "shortcuts": "Quick Commands (Shortcuts)",
       "update": "CLI Updates",
       "doctor": "System Diagnostics",
-      "ops": "Experimental VM Operations"
+      "ops": "Experimental VM Operations",
+      "subscription": "Subscription Management"
     },
     "errors": {
       "heading": "Common Error Messages",

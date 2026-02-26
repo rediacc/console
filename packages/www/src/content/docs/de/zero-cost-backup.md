@@ -4,6 +4,7 @@ description: Reduzieren Sie die Einrichtung der Umgebung mit intelligentem Dedup
 category: Use Cases
 order: 7
 language: de
+sourceHash: "c72f558d409d40ea"
 ---
 
 > **Reduzieren Sie die Umgebungseinrichtung von Tagen auf Minuten mit der intelligenten Deduplizierungsspeicherarchitektur.**

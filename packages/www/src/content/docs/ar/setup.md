@@ -4,7 +4,7 @@ description: "إنشاء إعداد، وإضافة أجهزة، وتجهيز ا�
 category: "Guides"
 order: 3
 language: ar
-sourceHash: bdc41b37f24ae8f8
+sourceHash: "0c725f9eb65e6c0f"
 ---
 
 # إعداد الجهاز

@@ -1413,6 +1413,51 @@
         "noConnections": "Aucune connexion SSH VS Code configurée.",
         "total": "\nTotal : {{count}} connexion(s)"
       }
+    },
+    "subscription": {
+      "description": "Gérer les licences machine et l’abonnement",
+      "login": {
+        "description": "S’authentifier avec un jeton API du portail web",
+        "tokenPrompt": "Entrez votre jeton API (depuis le portail web) :",
+        "tokenInvalid": "Le jeton doit commencer par rdt_",
+        "validating": "Validation du jeton...",
+        "validated": "Jeton validé",
+        "success": "Connexion réussie",
+        "plan": "Forfait : {{plan}}",
+        "machines": "Machines : {{active}}/{{max}}"
+      },
+      "activate": {
+        "description": "Activer cette machine et émettre une licence",
+        "activating": "Activation de la machine...",
+        "activated": "Machine activée",
+        "installed": "Licence installée",
+        "licenseFile": "Fichier de licence : {{path}}"
+      },
+      "status": {
+        "description": "Afficher l’état de l’abonnement et de la licence",
+        "localLicense": "Licence locale :",
+        "plan": "  Forfait :     {{plan}}",
+        "statusLabel": "  État :       {{status}}",
+        "machine": "  Machine :    {{machineId}}",
+        "issued": "  Émis le :    {{issuedAt}}",
+        "expires": "  Expire le :  {{expiresAt}}",
+        "sequence": "  Séquence :   {{sequenceNumber}}",
+        "expired": "  La licence a EXPIRÉ — exécutez `rdc subscription refresh`",
+        "valid": "  Valide (expire dans {{mins}} minutes)",
+        "parseFailed": "  Impossible d’analyser le fichier de licence",
+        "noLicense": "Aucune licence locale installée.",
+        "remote": "\nAbonnement distant :",
+        "remotePlan": "  Forfait :     {{plan}}",
+        "remoteStatus": "  État :       {{status}}",
+        "remoteMachines": "  Machines : {{active}}/{{max}}",
+        "remoteMachine": "    - {{id}}... (vu pour la dernière fois : {{lastSeen}})"
+      },
+      "refresh": {
+        "description": "Renouveler la licence de la machine",
+        "refreshing": "Renouvellement de la licence...",
+        "refreshed": "Licence renouvelée",
+        "success": "Licence renouvelée et installée"
+      }
     }
   },
   "common": {
@@ -1502,6 +1547,7 @@
       "snapshot": "Gestion des instantanés",
       "storage": "Gestion du Stockage",
       "store": "Gestion des Stores",
+      "subscription": "Gestion des Abonnements",
       "sync": "Synchronisation de Fichiers",
       "team": "Gestion des Équipes",
       "term": "Accès Terminal SSH",
@@ -1643,6 +1689,11 @@
       "noIpAddress": "La machine '{{machine}}' n'a pas d'adresse IP configurée",
       "noPrivateKey": "L'équipe '{{team}}' n'a pas de clé privée SSH configurée",
       "notFound": "VS Code non trouvé.\n\nVeuillez installer depuis : https://code.visualstudio.com/\nOu définir la variable d'environnement REDIACC_VSCODE_PATH."
+    },
+    "subscription": {
+      "notLoggedIn": "Non connecté. Exécutez d’abord `rdc subscription login`.",
+      "noMachineId": "Impossible de déterminer l’identifiant de la machine. Vérifiez que renet est installé ou que /etc/machine-id existe.",
+      "writeFailed": "Échec de l’écriture du fichier de licence. Exécutez avec sudo ou vérifiez que {{path}} est accessible en écriture."
     }
   },
   "options": {
@@ -1757,7 +1808,9 @@
     "verifyChecksum": "Vérifier les fichiers à l'aide de sommes de contrôle après synchronisation",
     "watch": "Surveiller les modifications",
     "watchUpdates": "Surveiller les mises à jour",
-    "yes": "Ignorer l'invite de confirmation"
+    "yes": "Ignorer l'invite de confirmation",
+    "apiToken": "Jeton API (rdt_...)",
+    "serverUrl": "URL du serveur de compte"
   },
   "prompts": {
     "apiUrl": "URL de l'API :",

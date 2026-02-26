@@ -48,6 +48,7 @@ const LOCAL_COMMAND_ORDER = [
   'snapshot',
   'backup',
   'shortcuts',
+  'subscription',
   'update',
   'doctor',
   'ops',

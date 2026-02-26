@@ -4,7 +4,7 @@ description: "创建配置、添加机器、配置服务器和设置基础设施
 category: "Guides"
 order: 3
 language: zh
-sourceHash: bdc41b37f24ae8f8
+sourceHash: "0c725f9eb65e6c0f"
 ---
 
 # 机器设置

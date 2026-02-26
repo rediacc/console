@@ -4,7 +4,7 @@ description: rdc を使う場面と renet を使う場面。
 category: Concepts
 order: 1
 language: ja
-sourceHash: e0ef5f051cefb407
+sourceHash: "d3e2a6750f95b6c1"
 ---
 
 # rdc vs renet

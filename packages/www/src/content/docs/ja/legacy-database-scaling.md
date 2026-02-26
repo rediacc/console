@@ -4,6 +4,7 @@ description: リアルタイムのデータ レプリケーションとクエリ
 category: Use Cases
 order: 3
 language: ja
+sourceHash: "b15507f1e0da46d2"
 ---
 
 > **レガシーデータベースがあなたの足を引っ張っています。 壊さずに自由に。**

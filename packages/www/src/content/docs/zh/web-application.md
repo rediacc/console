@@ -4,6 +4,7 @@ description: 了解 Rediacc 网页应用的架构和部署
 category: Reference
 order: 1
 language: zh
+sourceHash: "ee9dff9ac2c8bce1"
 ---
 
 # Rediacc 平台用户指南

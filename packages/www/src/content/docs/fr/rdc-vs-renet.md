@@ -4,7 +4,7 @@ description: Différences entre rdc et renet, et à quel moment utiliser chacun 
 category: Concepts
 order: 1
 language: fr
-sourceHash: e0ef5f051cefb407
+sourceHash: "d3e2a6750f95b6c1"
 ---
 
 # rdc vs renet

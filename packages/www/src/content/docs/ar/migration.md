@@ -4,6 +4,7 @@ description: "ترحيل المشاريع الحالية إلى مستودعات
 category: "Guides"
 order: 11
 language: ar
+sourceHash: "5064d721c8cf32ff"
 ---
 
 # دليل الترحيل

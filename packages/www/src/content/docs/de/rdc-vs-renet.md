@@ -4,7 +4,7 @@ description: Wann Sie rdc verwenden und wann renet — eine Übersicht.
 category: Concepts
 order: 1
 language: de
-sourceHash: e0ef5f051cefb407
+sourceHash: "d3e2a6750f95b6c1"
 ---
 
 # rdc vs renet

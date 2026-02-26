@@ -52,9 +52,15 @@ fi
 
 # Track background processes for cleanup
 BACKEND_PID=""
+STRIPE_LISTEN_PID=""
 
 cleanup() {
     log_step "Cleaning up..."
+    if [[ -n "$STRIPE_LISTEN_PID" ]] && kill -0 "$STRIPE_LISTEN_PID" 2>/dev/null; then
+        log_info "Stopping stripe listen (PID $STRIPE_LISTEN_PID)"
+        kill "$STRIPE_LISTEN_PID" 2>/dev/null || true
+        wait "$STRIPE_LISTEN_PID" 2>/dev/null || true
+    fi
     if [[ -n "$BACKEND_PID" ]] && kill -0 "$BACKEND_PID" 2>/dev/null; then
         log_info "Stopping backend API (PID $BACKEND_PID)"
         kill "$BACKEND_PID" 2>/dev/null || true
@@ -109,17 +115,55 @@ console.log('Bucket e2e-account ready');
 "
     cd "$REPO_ROOT"
 
+    # Phase 2.5: Start stripe listen for real Stripe e2e tests (optional)
+    STRIPE_LISTEN_WEBHOOK_SECRET=""
+    if [[ -n "${STRIPE_SANDBOX_SECRET_KEY:-}" ]] && command -v stripe &>/dev/null; then
+        log_step "Syncing Stripe products/prices to sandbox..."
+        cd "$ACCOUNT_DIR"
+        STRIPE_SECRET_KEY="$STRIPE_SANDBOX_SECRET_KEY" npx tsx scripts/stripe-sync.ts 2>&1 || true
+        cd "$REPO_ROOT"
+
+        log_step "Starting stripe listen for real Stripe webhook forwarding..."
+        STRIPE_LISTEN_LOG=$(mktemp)
+        stripe listen \
+            --api-key "$STRIPE_SANDBOX_SECRET_KEY" \
+            --forward-to "http://localhost:${ACCOUNT_API_PORT}/account/api/v1/webhooks/stripe" \
+            >"$STRIPE_LISTEN_LOG" 2>&1 &
+        STRIPE_LISTEN_PID=$!
+
+        LISTEN_TIMEOUT=30
+        LISTEN_ELAPSED=0
+        while [[ $LISTEN_ELAPSED -lt $LISTEN_TIMEOUT ]]; do
+            if STRIPE_LISTEN_WEBHOOK_SECRET=$(grep -oP 'whsec_\S+' "$STRIPE_LISTEN_LOG" 2>/dev/null); then
+                break
+            fi
+            sleep 1
+            LISTEN_ELAPSED=$((LISTEN_ELAPSED + 1))
+        done
+
+        if [[ -n "$STRIPE_LISTEN_WEBHOOK_SECRET" ]]; then
+            log_info "stripe listen ready (webhook secret captured)"
+        else
+            log_warn "stripe listen did not output secret within ${LISTEN_TIMEOUT}s, Stripe e2e tests will be skipped"
+            kill "$STRIPE_LISTEN_PID" 2>/dev/null || true
+            STRIPE_LISTEN_PID=""
+        fi
+    fi
+
     log_step "Starting backend API on port $ACCOUNT_API_PORT..."
     cd "$ACCOUNT_DIR"
-    ED25519_PRIVATE_KEY="MC4CAQAwBQYDK2VwBCIEIBXIuPTQjPy6a4X2qbLBwF3VDj7yMqJ4kGzJu8vKMKqd" \
-        ED25519_PUBLIC_KEY="MCowBQYDK2VwAyEAqS7xKEfPYFtCWxOCRUvKG5N6peFHSAYBNMJqGRMHN5I=" \
-        API_KEY="e2e-test-api-key-that-is-at-least-32-chars" \
-        JWT_SECRET="e2e-test-jwt-secret-that-is-at-least-32-chars" \
-        ADMIN_EMAIL="e2e-admin@example.com" \
+    ED25519_PRIVATE_KEY="${ED25519_PRIVATE_KEY:?ED25519_PRIVATE_KEY must be set}" \
+        ED25519_PUBLIC_KEY="${ED25519_PUBLIC_KEY:?ED25519_PUBLIC_KEY must be set}" \
+        API_KEY="${API_KEY:?API_KEY must be set}" \
+        JWT_SECRET="${JWT_SECRET:?JWT_SECRET must be set}" \
+        ADMIN_EMAIL="${ADMIN_EMAIL:?ADMIN_EMAIL must be set}" \
         S3_ENDPOINT="http://localhost:9100" \
         S3_BUCKET="e2e-account" \
         S3_ACCESS_KEY_ID="testadmin" \
         S3_SECRET_ACCESS_KEY="testadmin" \
+        STRIPE_WEBHOOK_SECRET="${STRIPE_LISTEN_WEBHOOK_SECRET:-}" \
+        STRIPE_SANDBOX_WEBHOOK_SECRET="${STRIPE_SANDBOX_WEBHOOK_SECRET:-}" \
+        STRIPE_SANDBOX_SECRET_KEY="${STRIPE_SANDBOX_SECRET_KEY:-}" \
         PORT="$ACCOUNT_API_PORT" \
         npx tsx src/entry/node.ts &
     BACKEND_PID=$!
@@ -163,7 +207,9 @@ if [[ -n "$GREP" ]]; then
     CMD+=("--grep" "$GREP")
 fi
 
-if VITE_API_URL="http://localhost:${ACCOUNT_API_PORT}" "${CMD[@]}"; then
+if VITE_API_URL="http://localhost:${ACCOUNT_API_PORT}" \
+    E2E_WEBHOOK_SECRET="${STRIPE_SANDBOX_WEBHOOK_SECRET:-}" \
+    "${CMD[@]}"; then
     log_info "Account Portal E2E tests passed"
 else
     log_error "Account Portal E2E tests failed"

@@ -4,6 +4,7 @@ description: Créez une architecture cloud avec une flexibilité illimitée pour
 category: Use Cases
 order: 1
 language: fr
+sourceHash: "7a75ab45703267eb"
 ---
 
 > **Votre architecture cloud est-elle rigide ? Construisez avec une flexibilité illimitée.**

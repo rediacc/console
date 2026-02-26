@@ -6,7 +6,7 @@ order: 2
 language: tr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/tr/cli.json
-sourceHash: "79ff3e9383ab67a5"
+sourceHash: "07833661d8da1e8e"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -1386,7 +1386,51 @@ rdc retry
 
 ---
 
-## 13. {{t:cli.docs.sectionTitles.update}}
+## 13. {{t:cli.docs.sectionTitles.subscription}}
+
+{{t:cli.commands.subscription.description}}
+
+### 13.1 login
+
+{{t:cli.commands.subscription.login.description}}
+
+```bash
+rdc subscription login [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-t, --token <token>` | {{t:cli.options.apiToken}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--server <url>` | {{t:cli.options.serverUrl}} | {{t:cli.docs.optionLabels.no}} | `https://account.rediacc.com` |
+
+
+### 13.2 activate
+
+{{t:cli.commands.subscription.activate.description}}
+
+```bash
+rdc subscription activate
+```
+
+### 13.3 status
+
+{{t:cli.commands.subscription.status.description}}
+
+```bash
+rdc subscription status
+```
+
+### 13.4 refresh
+
+{{t:cli.commands.subscription.refresh.description}}
+
+```bash
+rdc subscription refresh
+```
+
+---
+
+## 14. {{t:cli.docs.sectionTitles.update}}
 
 {{t:cli.commands.update.description}}
 
@@ -1404,7 +1448,7 @@ rdc update [options]
 
 ---
 
-## 14. {{t:cli.docs.sectionTitles.doctor}}
+## 15. {{t:cli.docs.sectionTitles.doctor}}
 
 {{t:cli.commands.doctor.description}}
 
@@ -1414,11 +1458,11 @@ rdc doctor
 
 ---
 
-## 15. {{t:cli.docs.sectionTitles.ops}}
+## 16. {{t:cli.docs.sectionTitles.ops}}
 
 {{t:cli.commands.ops.description}}
 
-### 15.1 up
+### 16.1 up
 
 {{t:cli.commands.ops.up.description}}
 
@@ -1438,7 +1482,7 @@ rdc ops up [options]
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 15.2 down
+### 16.2 down
 
 {{t:cli.commands.ops.down.description}}
 
@@ -1452,7 +1496,7 @@ rdc ops down [options]
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 15.3 status
+### 16.3 status
 
 {{t:cli.commands.ops.status.description}}
 
@@ -1465,7 +1509,7 @@ rdc ops status [options]
 | `--backend <backend>` | {{t:cli.options.opsBackend}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 15.4 ssh
+### 16.4 ssh
 
 {{t:cli.commands.ops.ssh.description}}
 
@@ -1479,7 +1523,7 @@ rdc ops ssh <vmId> [command...] [options]
 | `--user <user>` | {{t:cli.options.opsSSHUser}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 15.5 setup
+### 16.5 setup
 
 {{t:cli.commands.ops.setup.description}}
 
@@ -1492,7 +1536,7 @@ rdc ops setup [options]
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 15.6 check
+### 16.6 check
 
 {{t:cli.commands.ops.check.description}}
 

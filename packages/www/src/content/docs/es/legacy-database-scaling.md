@@ -4,6 +4,7 @@ description: Escale las bases de datos heredadas sin migrar aprovechando la repl
 category: Use Cases
 order: 3
 language: es
+sourceHash: "b15507f1e0da46d2"
 ---
 
 > **Su base de datos heredada lo está frenando. Libérate sin romperlo.**

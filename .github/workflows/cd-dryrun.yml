@@ -120,6 +120,11 @@ jobs:
           for format in deb rpm apk archlinux; do
             for pair in "dist/cli/rdc-linux-x64:amd64" "dist/cli/rdc-linux-arm64:arm64"; do
               binary="${pair%%:*}"; arch="${pair##*:}"
+              # APK targets Alpine (musl) — use musl-linked binary if available
+              if [[ "$format" == "apk" ]]; then
+                musl_binary="${binary/rdc-linux-/rdc-linux-musl-}"
+                [[ -f "$musl_binary" ]] && binary="$musl_binary"
+              fi
               .ci/scripts/build/build-linux-pkg.sh \
                 --binary "$binary" --version "$VERSION" \
                 --arch "$arch" --format "$format" \

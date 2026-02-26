@@ -118,6 +118,55 @@ export interface SignedSubscriptionBlob {
 }
 
 /**
+ * Machine license payload.
+ * Short-lived (1 hour), machine-specific, signed by account server.
+ */
+export interface MachineLicense {
+  version: 1;
+  subscriptionId: string;
+  machineId: string;
+  planCode: PlanCode;
+  status: SubscriptionStatus;
+  resources: ResourceLimits;
+  features: FeatureFlags;
+  issuedAt: string;
+  expiresAt: string;
+  sequenceNumber: number;
+  ipAddress: string;
+}
+
+/**
+ * Signed machine license blob (Ed25519).
+ */
+export interface SignedMachineLicense {
+  payload: string;
+  signature: string;
+  publicKeyId: string;
+}
+
+/**
+ * API token scopes for machine licensing.
+ */
+export type ApiTokenScope = 'license:read' | 'license:activate' | 'subscription:read';
+
+/**
+ * API token for machine authentication.
+ * Generated from web portal, IP-bound on first use.
+ */
+export interface ApiToken {
+  id: string;
+  name: string;
+  tokenHash: string;
+  subscriptionId: string;
+  scopes: ApiTokenScope[];
+  boundIp: string | null;
+  createdAt: string;
+  expiresAt: string | null;
+  lastUsedAt: string | null;
+  revokedAt: string | null;
+}
+
+/**
  * Subscription storage format in Organization.License column.
  */
 export interface OrganizationSubscription {

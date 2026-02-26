@@ -4,6 +4,7 @@ description: Akıllı veri tekilleştirme depolamasıyla ortam kurulumunu günle
 category: Use Cases
 order: 7
 language: tr
+sourceHash: "c72f558d409d40ea"
 ---
 
 > **Akıllı veri tekilleştirme Depolama Mimarisi ile Ortam Kurulumunu Günlerden Dakikalara İndirin.**

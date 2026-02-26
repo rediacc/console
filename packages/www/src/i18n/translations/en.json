@@ -924,28 +924,28 @@
             "jobsPerMonth": "500",
             "repoSize": "10 GB",
             "repositories": "Unlimited",
-            "machines": "Unlimited",
+            "machines": "2",
             "usersTeams": "Unlimited"
           },
           "professional": {
             "jobsPerMonth": "5,000",
             "repoSize": "100 GB",
             "repositories": "Unlimited",
-            "machines": "Unlimited",
+            "machines": "5",
             "usersTeams": "Unlimited"
           },
           "business": {
             "jobsPerMonth": "20,000",
             "repoSize": "500 GB",
             "repositories": "Unlimited",
-            "machines": "Unlimited",
+            "machines": "20",
             "usersTeams": "Unlimited"
           },
           "enterprise": {
             "jobsPerMonth": "100,000",
             "repoSize": "2 TB+",
             "repositories": "Unlimited",
-            "machines": "Unlimited",
+            "machines": "50",
             "usersTeams": "Unlimited"
           }
         }

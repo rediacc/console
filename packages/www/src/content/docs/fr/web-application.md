@@ -4,6 +4,7 @@ description: Comprendre l'architecture et le déploiement de l'application web a
 category: Reference
 order: 1
 language: fr
+sourceHash: "ee9dff9ac2c8bce1"
 ---
 
 # Guide d'Utilisation de la Plateforme Rediacc

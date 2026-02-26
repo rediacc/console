@@ -136,6 +136,27 @@ export const PLAN_ORDER: readonly PlanCode[] = [
 ] as const;
 
 /**
+ * Maximum machines allowed per plan.
+ */
+export const PLAN_MAX_MACHINES: Record<PlanCode, number> = {
+  COMMUNITY: 2,
+  PROFESSIONAL: 5,
+  BUSINESS: 20,
+  ENTERPRISE: 50,
+} as const;
+
+/**
+ * Get maximum machines for a plan code.
+ * Returns COMMUNITY limit if plan code is invalid.
+ */
+export function getMaxMachines(planCode: string): number {
+  if (planCode in PLAN_MAX_MACHINES) {
+    return PLAN_MAX_MACHINES[planCode as PlanCode];
+  }
+  return PLAN_MAX_MACHINES.COMMUNITY;
+}
+
+/**
  * Resource limit keys that should increase with higher plans.
  * Used for validation tests.
  */

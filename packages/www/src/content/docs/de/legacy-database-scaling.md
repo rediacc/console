@@ -4,6 +4,7 @@ description: Skalieren Sie Legacy-Datenbanken ohne Migration, indem Sie die Date
 category: Use Cases
 order: 3
 language: de
+sourceHash: "b15507f1e0da46d2"
 ---
 
 > **Ihre alte Datenbank hält Sie zurück. Befreien Sie sich, ohne es zu zerstören.**
