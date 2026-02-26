@@ -4,6 +4,7 @@ description: AI トレーニングと動的なワークロードに対応する�
 category: Use Cases
 order: 1
 language: ja
+sourceHash: "7a75ab45703267eb"
 ---
 
 > **クラウド アーキテクチャは厳格ですか? 無限の柔軟性を備えた構築。**

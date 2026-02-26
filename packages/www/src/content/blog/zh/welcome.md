@@ -9,6 +9,7 @@ tags:
   - welcome
 featured: true
 language: zh
+sourceHash: "1a84feb14d8b2654"
 ---
 
 # 欢迎来到Rediacc博客

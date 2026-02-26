@@ -4,6 +4,7 @@ description: スマートな重複排除ストレージにより、環境セッ�
 category: Use Cases
 order: 7
 language: ja
+sourceHash: "c72f558d409d40ea"
 ---
 
 > **スマート重複排除ストレージ アーキテクチャにより、環境セットアップを数日から数分に短縮します。**

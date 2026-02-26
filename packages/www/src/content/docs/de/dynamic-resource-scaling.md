@@ -4,6 +4,7 @@ description: Erstellen Sie eine Cloud-Architektur mit grenzenloser Flexibilität
 category: Use Cases
 order: 1
 language: de
+sourceHash: "7a75ab45703267eb"
 ---
 
 > **Ist Ihre Cloud-Architektur starr? Bauen Sie mit grenzenloser Flexibilität.**

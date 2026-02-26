@@ -19,6 +19,7 @@ import { registerShortcuts } from './commands/shortcuts.js';
 import { registerSnapshotCommands } from './commands/snapshot.js';
 import { registerStorageCommands } from './commands/storage.js';
 import { registerStoreCommands } from './commands/store.js';
+import { autoRefreshLicense, registerSubscriptionCommands } from './commands/subscription.js';
 import { registerSyncCommands } from './commands/sync.js';
 import { registerTeamCommands } from './commands/team.js';
 import { registerTermCommands } from './commands/term.js';
@@ -112,6 +113,9 @@ cli
     } catch {
       // Ignore errors getting user context
     }
+
+    // Auto-refresh license if >50 minutes old (non-blocking)
+    autoRefreshLicense().catch(() => {});
   })
   .hook('postAction', (_thisCommand, actionCommand) => {
     // End telemetry tracking for the command
@@ -156,6 +160,7 @@ registerUpdateCommand(cli);
 registerSnapshotCommands(cli);
 registerBackupCommands(cli);
 registerOpsCommands(cli);
+registerSubscriptionCommands(cli);
 registerShortcuts(cli);
 
 // Apply mode guards, help tags, and domain grouping from the command registry

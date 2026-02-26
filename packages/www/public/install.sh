@@ -61,6 +61,14 @@ detect_arch() {
   esac
 }
 
+# Detect C library (musl vs glibc) on Linux
+detect_libc() {
+  if [ "$(uname -s)" != "Linux" ]; then echo ""; return; fi
+  # ldd is linked against the system libc — its --version output identifies it
+  if ldd --version 2>&1 | grep -qi musl; then echo "musl"; return; fi
+  echo ""
+}
+
 # Check for required commands
 check_requirements() {
   local missing=""
@@ -107,7 +115,13 @@ main() {
     error "Unsupported architecture: $(uname -m). Supported architectures: x86_64, arm64"
   fi
 
-  echo "Detected: $PLATFORM ($ARCH)"
+  LIBC=$(detect_libc)
+
+  if [ -n "$LIBC" ]; then
+    echo "Detected: $PLATFORM-$LIBC ($ARCH)"
+  else
+    echo "Detected: $PLATFORM ($ARCH)"
+  fi
 
   # Get latest version
   echo "Fetching latest version..."
@@ -126,7 +140,11 @@ main() {
 
   echo "Latest version: v$VERSION"
 
-  BINARY_NAME="rdc-${PLATFORM}-${ARCH}"
+  if [ -n "$LIBC" ]; then
+    BINARY_NAME="rdc-${PLATFORM}-${LIBC}-${ARCH}"
+  else
+    BINARY_NAME="rdc-${PLATFORM}-${ARCH}"
+  fi
   DOWNLOAD_URL="${RELEASES_URL}/cli/v${VERSION}/${BINARY_NAME}"
   CHECKSUM_URL="${DOWNLOAD_URL}.sha256"
 

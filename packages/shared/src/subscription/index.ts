@@ -7,10 +7,14 @@
 
 // Types
 export type {
+  ApiToken,
+  ApiTokenScope,
   BillingPeriod,
   FeatureFlags,
+  MachineLicense,
   PlanMetadata,
   PlanPricing,
+  SignedMachineLicense,
   SubscriptionData,
   SubscriptionStatus,
   SubscriptionValidationResult,
@@ -25,6 +29,7 @@ export {
   comparePlans,
   exceedsLimit,
   getDisplayPrice,
+  getMaxMachines,
   getPaidPlans,
   getPlanFeatures,
   getPlanMetadata,
@@ -35,6 +40,7 @@ export {
   hasFeature,
   isValidPlanCode,
   PLAN_FEATURES,
+  PLAN_MAX_MACHINES,
   PLAN_METADATA,
   PLAN_ORDER,
   PLAN_PRICING,

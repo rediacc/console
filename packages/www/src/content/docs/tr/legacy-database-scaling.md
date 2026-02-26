@@ -4,6 +4,7 @@ description: Gerçek zamanlı veri çoğaltma ve sorgu dağıtımından yararlan
 category: Use Cases
 order: 3
 language: tr
+sourceHash: "b15507f1e0da46d2"
 ---
 
 > **Eski Veritabanınız Sizi Geride Tutuyor. Kırmadan Özgürleşin.**

@@ -4,7 +4,7 @@ description: 什么时候使用 rdc，什么时候使用 renet。
 category: Concepts
 order: 1
 language: zh
-sourceHash: e0ef5f051cefb407
+sourceHash: "d3e2a6750f95b6c1"
 ---
 
 # rdc vs renet

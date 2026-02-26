@@ -1413,6 +1413,51 @@
         "noConnections": "لا توجد اتصالات VS Code SSH مكونة.",
         "total": "\nالإجمالي: {{count}} اتصال(اتصالات)"
       }
+    },
+    "subscription": {
+      "description": "إدارة تراخيص الجهاز والاشتراك",
+      "login": {
+        "description": "المصادقة باستخدام رمز API من بوابة الويب",
+        "tokenPrompt": "أدخل رمز API الخاص بك (من بوابة الويب):",
+        "tokenInvalid": "يجب أن يبدأ الرمز بـ rdt_",
+        "validating": "جارٍ التحقق من الرمز...",
+        "validated": "تم التحقق من الرمز",
+        "success": "تم تسجيل الدخول بنجاح",
+        "plan": "الخطة: {{plan}}",
+        "machines": "الأجهزة: {{active}}/{{max}}"
+      },
+      "activate": {
+        "description": "تفعيل هذا الجهاز وإصدار ترخيص",
+        "activating": "جارٍ تفعيل الجهاز...",
+        "activated": "تم تفعيل الجهاز",
+        "installed": "تم تثبيت الترخيص",
+        "licenseFile": "ملف الترخيص: {{path}}"
+      },
+      "status": {
+        "description": "عرض حالة الاشتراك والترخيص",
+        "localLicense": "الترخيص المحلي:",
+        "plan": "  الخطة:    {{plan}}",
+        "statusLabel": "  الحالة:   {{status}}",
+        "machine": "  الجهاز:   {{machineId}}",
+        "issued": "  الإصدار:   {{issuedAt}}",
+        "expires": "  الانتهاء:  {{expiresAt}}",
+        "sequence": "  التسلسل:  {{sequenceNumber}}",
+        "expired": "  انتهت صلاحية الترخيص — شغّل `rdc subscription refresh`",
+        "valid": "  صالح (ينتهي خلال {{mins}} دقيقة)",
+        "parseFailed": "  تعذر تحليل ملف الترخيص",
+        "noLicense": "لا يوجد ترخيص محلي مثبت.",
+        "remote": "\nالاشتراك البعيد:",
+        "remotePlan": "  الخطة:    {{plan}}",
+        "remoteStatus": "  الحالة:   {{status}}",
+        "remoteMachines": "  الأجهزة: {{active}}/{{max}}",
+        "remoteMachine": "    - {{id}}... (آخر ظهور: {{lastSeen}})"
+      },
+      "refresh": {
+        "description": "تحديث ترخيص الجهاز",
+        "refreshing": "جارٍ تحديث الترخيص...",
+        "refreshed": "تم تحديث الترخيص",
+        "success": "تم تحديث وتثبيت الترخيص"
+      }
     }
   },
   "common": {
@@ -1502,6 +1547,7 @@
       "snapshot": "إدارة اللقطات",
       "storage": "إدارة التخزين",
       "store": "إدارة المتاجر",
+      "subscription": "إدارة الاشتراكات",
       "sync": "مزامنة الملفات",
       "team": "إدارة الفرق",
       "term": "وصول طرفية SSH",
@@ -1643,6 +1689,11 @@
       "noIpAddress": "الآلة '{{machine}}' لا تحتوي على عنوان IP مكون",
       "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون",
       "notFound": "لم يتم العثور على VS Code.\n\nالرجاء التثبيت من: https://code.visualstudio.com/\nأو قم بتعيين متغير البيئة REDIACC_VSCODE_PATH."
+    },
+    "subscription": {
+      "notLoggedIn": "لم يتم تسجيل الدخول. شغّل `rdc subscription login` أولاً.",
+      "noMachineId": "تعذر تحديد معرف الجهاز. تأكد من تثبيت renet أو وجود /etc/machine-id.",
+      "writeFailed": "فشلت كتابة ملف الترخيص. شغّل بصلاحيات sudo أو تأكد من قابلية الكتابة على {{path}}."
     }
   },
   "options": {
@@ -1757,7 +1808,9 @@
     "verifyChecksum": "التحقق من الملفات باستخدام المجاميع الاختبارية بعد المزامنة",
     "watch": "الانتظار للتغييرات",
     "watchUpdates": "الانتظار للتحديثات",
-    "yes": "تخطي نافذة التأكيد"
+    "yes": "تخطي نافذة التأكيد",
+    "apiToken": "رمز API (rdt_...)",
+    "serverUrl": "عنوان خادم الحساب"
   },
   "prompts": {
     "apiUrl": "عنوان URL للـ API:",

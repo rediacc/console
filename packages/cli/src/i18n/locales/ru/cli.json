@@ -1413,6 +1413,51 @@
         "noConnections": "Нет настроенных SSH-соединений VS Code.",
         "total": "\nВсего: {{count}} соединений"
       }
+    },
+    "subscription": {
+      "description": "Управление лицензиями машин и подпиской",
+      "login": {
+        "description": "Аутентификация с помощью API-токена из веб-портала",
+        "tokenPrompt": "Введите ваш API-токен (из веб-портала):",
+        "tokenInvalid": "Токен должен начинаться с rdt_",
+        "validating": "Проверка токена...",
+        "validated": "Токен проверен",
+        "success": "Вход выполнен успешно",
+        "plan": "Тариф: {{plan}}",
+        "machines": "Машины: {{active}}/{{max}}"
+      },
+      "activate": {
+        "description": "Активировать эту машину и выдать лицензию",
+        "activating": "Активация машины...",
+        "activated": "Машина активирована",
+        "installed": "Лицензия установлена",
+        "licenseFile": "Файл лицензии: {{path}}"
+      },
+      "status": {
+        "description": "Показать статус подписки и лицензии",
+        "localLicense": "Локальная лицензия:",
+        "plan": "  Тариф:   {{plan}}",
+        "statusLabel": "  Статус:   {{status}}",
+        "machine": "  Машина:  {{machineId}}",
+        "issued": "  Выдана:   {{issuedAt}}",
+        "expires": "  Истекает: {{expiresAt}}",
+        "sequence": "  Секвенция: {{sequenceNumber}}",
+        "expired": "  Лицензия ИСТЕКЛА — выполните `rdc subscription refresh`",
+        "valid": "  Действительна (истекает через {{mins}} минут)",
+        "parseFailed": "  Не удалось разобрать файл лицензии",
+        "noLicense": "Локальная лицензия не установлена.",
+        "remote": "\nУдалённая подписка:",
+        "remotePlan": "  Тариф:   {{plan}}",
+        "remoteStatus": "  Статус:   {{status}}",
+        "remoteMachines": "  Машины: {{active}}/{{max}}",
+        "remoteMachine": "    - {{id}}... (последний раз: {{lastSeen}})"
+      },
+      "refresh": {
+        "description": "Обновить лицензию машины",
+        "refreshing": "Обновление лицензии...",
+        "refreshed": "Лицензия обновлена",
+        "success": "Лицензия обновлена и установлена"
+      }
     }
   },
   "common": {
@@ -1502,6 +1547,7 @@
       "snapshot": "Управление снимками",
       "storage": "Управление хранилищем",
       "store": "Управление хранилищами синхронизации",
+      "subscription": "Управление подписками",
       "sync": "Синхронизация файлов",
       "team": "Управление командами",
       "term": "Доступ к SSH-терминалу",
@@ -1643,6 +1689,11 @@
       "noIpAddress": "Машина '{{machine}}' не имеет настроенного IP-адреса",
       "noPrivateKey": "Команда '{{team}}' не имеет настроенного SSH приватного ключа",
       "notFound": "VS Code не найден.\n\nПожалуйста, установите из: https://code.visualstudio.com/\nИли установите переменную окружения REDIACC_VSCODE_PATH."
+    },
+    "subscription": {
+      "notLoggedIn": "Вы не вошли в систему. Сначала выполните `rdc subscription login`.",
+      "noMachineId": "Не удалось определить ID машины. Убедитесь, что renet установлен или /etc/machine-id существует.",
+      "writeFailed": "Не удалось записать файл лицензии. Запустите с sudo или убедитесь, что {{path}} доступен для записи."
     }
   },
   "options": {
@@ -1757,7 +1808,9 @@
     "verifyChecksum": "Проверить файлы с помощью контрольных сумм после синхронизации",
     "watch": "Следить за изменениями",
     "watchUpdates": "Следить за обновлениями",
-    "yes": "Пропустить подсказку подтверждения"
+    "yes": "Пропустить подсказку подтверждения",
+    "apiToken": "API-токен (rdt_...)",
+    "serverUrl": "URL сервера аккаунта"
   },
   "prompts": {
     "apiUrl": "URL API:",

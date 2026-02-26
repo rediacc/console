@@ -4,6 +4,7 @@ description: "Migrar proyectos existentes a repositorios cifrados de Rediacc."
 category: "Guides"
 order: 11
 language: es
+sourceHash: "5064d721c8cf32ff"
 ---
 
 # Guía de migración

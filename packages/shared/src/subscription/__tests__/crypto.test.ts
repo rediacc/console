@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { PLAN_FEATURES, PLAN_RESOURCES } from '../constants.js';
 import {
   clearPublicKeys,
@@ -397,10 +397,17 @@ describe('Subscription Crypto', () => {
       expectedValid: boolean;
     }
 
+    interface LicenseFixture {
+      name: string;
+      signedBlob: { payload: string; signature: string; publicKeyId: string };
+      expectedValid: boolean;
+    }
+
     interface FixturesFile {
       publicKey: { spki: string };
       keyId: string;
       fixtures: Fixture[];
+      licenseFixtures: LicenseFixture[];
     }
 
     let fixtures: FixturesFile;
@@ -411,19 +418,37 @@ describe('Subscription Crypto', () => {
       return fixture;
     }
 
-    beforeAll(async () => {
+    function getLicenseFixture(name: string): LicenseFixture {
+      const fixture = fixtures.licenseFixtures.find((f) => f.name === name);
+      if (!fixture) throw new Error(`License fixture ${name} not found`);
+      return fixture;
+    }
+
+    beforeEach(async () => {
       fixtures = JSON.parse(readFileSync(FIXTURES_PATH, 'utf-8'));
       await importPublicKey(fixtures.keyId, fixtures.publicKey.spki);
     });
 
-    it('should verify valid_business_license fixture signature', async () => {
-      const fixture = getFixture('valid_business_license');
+    it('should verify valid_business_subscription fixture signature', async () => {
+      const fixture = getFixture('valid_business_subscription');
       const isValid = await verifySignature(fixture.signedBlob);
       expect(isValid).toBe(true);
     });
 
     it('should reject tampered_signature fixture', async () => {
       const fixture = getFixture('tampered_signature');
+      const isValid = await verifySignature(fixture.signedBlob);
+      expect(isValid).toBe(false);
+    });
+
+    it('should verify valid_business_license fixture signature', async () => {
+      const fixture = getLicenseFixture('valid_business_license');
+      const isValid = await verifySignature(fixture.signedBlob);
+      expect(isValid).toBe(true);
+    });
+
+    it('should reject tampered_license_signature fixture', async () => {
+      const fixture = getLicenseFixture('tampered_license_signature');
       const isValid = await verifySignature(fixture.signedBlob);
       expect(isValid).toBe(false);
     });

@@ -4,6 +4,7 @@ description: Масштабируйте устаревшие базы данны
 category: Use Cases
 order: 3
 language: ru
+sourceHash: "b15507f1e0da46d2"
 ---
 
 > **Ваша устаревшая база данных сдерживает вас. Освободитесь, не сломав его.**

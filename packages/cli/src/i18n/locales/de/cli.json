@@ -1413,6 +1413,51 @@
         "noConnections": "Keine VS Code-SSH-Verbindungen konfiguriert.",
         "total": "\nGesamt: {{count}} Verbindung(en)"
       }
+    },
+    "subscription": {
+      "description": "Maschinenlizenzierung und Abonnement verwalten",
+      "login": {
+        "description": "Mit einem API-Token aus dem Webportal authentifizieren",
+        "tokenPrompt": "Geben Sie Ihr API-Token ein (aus dem Webportal):",
+        "tokenInvalid": "Token muss mit rdt_ beginnen",
+        "validating": "Token wird überprüft...",
+        "validated": "Token überprüft",
+        "success": "Erfolgreich angemeldet",
+        "plan": "Tarif: {{plan}}",
+        "machines": "Maschinen: {{active}}/{{max}}"
+      },
+      "activate": {
+        "description": "Diese Maschine aktivieren und Lizenz ausstellen",
+        "activating": "Maschine wird aktiviert...",
+        "activated": "Maschine aktiviert",
+        "installed": "Lizenz installiert",
+        "licenseFile": "Lizenzdatei: {{path}}"
+      },
+      "status": {
+        "description": "Abonnement- und Lizenzstatus anzeigen",
+        "localLicense": "Lokale Lizenz:",
+        "plan": "  Tarif:    {{plan}}",
+        "statusLabel": "  Zustand:  {{status}}",
+        "machine": "  Maschine: {{machineId}}",
+        "issued": "  Ausgestellt: {{issuedAt}}",
+        "expires": "  Läuft ab:   {{expiresAt}}",
+        "sequence": "  Sequenz:  {{sequenceNumber}}",
+        "expired": "  Lizenz ist ABGELAUFEN — führen Sie `rdc subscription refresh` aus",
+        "valid": "  Gültig (läuft in {{mins}} Minuten ab)",
+        "parseFailed": "  Lizenzdatei konnte nicht gelesen werden",
+        "noLicense": "Keine lokale Lizenz installiert.",
+        "remote": "\nRemote-Abonnement:",
+        "remotePlan": "  Tarif:    {{plan}}",
+        "remoteStatus": "  Zustand:  {{status}}",
+        "remoteMachines": "  Maschinen: {{active}}/{{max}}",
+        "remoteMachine": "    - {{id}}... (zuletzt gesehen: {{lastSeen}})"
+      },
+      "refresh": {
+        "description": "Maschinenlizenz erneuern",
+        "refreshing": "Lizenz wird erneuert...",
+        "refreshed": "Lizenz erneuert",
+        "success": "Lizenz erneuert und installiert"
+      }
     }
   },
   "common": {
@@ -1502,6 +1547,7 @@
       "snapshot": "Snapshot-Verwaltung",
       "storage": "Speicherverwaltung",
       "store": "Store-Verwaltung",
+      "subscription": "Abonnementverwaltung",
       "sync": "Dateisynchronisation",
       "team": "Teamverwaltung",
       "term": "SSH-Terminalzugang",
@@ -1643,6 +1689,11 @@
       "noIpAddress": "Machine '{{machine}}' hat keine IP-Adresse konfiguriert",
       "noPrivateKey": "Team '{{team}}' hat keinen SSH-Private-Key konfiguriert",
       "notFound": "VS Code nicht gefunden.\n\nBitte installieren Sie von: https://code.visualstudio.com/\nOder setzen Sie die REDIACC_VSCODE_PATH-Umgebungsvariable."
+    },
+    "subscription": {
+      "notLoggedIn": "Nicht angemeldet. Führen Sie zuerst `rdc subscription login` aus.",
+      "noMachineId": "Maschinen-ID konnte nicht ermittelt werden. Stellen Sie sicher, dass renet installiert ist oder /etc/machine-id existiert.",
+      "writeFailed": "Lizenzdatei konnte nicht geschrieben werden. Mit sudo ausführen oder sicherstellen, dass {{path}} beschreibbar ist."
     }
   },
   "options": {
@@ -1757,7 +1808,9 @@
     "verifyChecksum": "Dateien mit Prüfsummen nach der Synchronisierung überprüfen",
     "watch": "Auf Änderungen achten",
     "watchUpdates": "Auf Updates achten",
-    "yes": "Bestätigungsaufforderung überspringen"
+    "yes": "Bestätigungsaufforderung überspringen",
+    "apiToken": "API-Token (rdt_...)",
+    "serverUrl": "Account-Server-URL"
   },
   "prompts": {
     "apiUrl": "API-URL:",
