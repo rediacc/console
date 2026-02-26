@@ -102,10 +102,10 @@ npm ci --ignore-scripts
 # Rebuild native addons for musl
 npm rebuild
 
-echo "→ Building shared package..."
-cd packages/shared
-npx tsc -p tsconfig.json
-cd /workspace
+echo "→ Building shared packages..."
+cd packages/shared && npx tsc -p tsconfig.json && cd /workspace
+cd packages/shared-desktop && npx tsc -p tsconfig.json && cd /workspace
+cd packages/provisioning && npx tsc -p tsconfig.json && cd /workspace
 
 echo "→ Building CLI bundle and SEA binary..."
 .ci/scripts/build/build-cli-executables.sh --platform linux --arch '"$ARCH"'
