@@ -138,7 +138,7 @@ console.log('Bucket e2e-account ready');
                 break
             fi
             sleep 1
-            ((LISTEN_ELAPSED++))
+            LISTEN_ELAPSED=$((LISTEN_ELAPSED + 1))
         done
 
         if [[ -n "$STRIPE_LISTEN_WEBHOOK_SECRET" ]]; then
