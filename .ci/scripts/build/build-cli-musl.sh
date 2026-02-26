@@ -73,7 +73,7 @@ require_cmd docker
 # Select Docker platform for cross-arch builds
 DOCKER_PLATFORM=""
 case "$ARCH" in
-    x64)  DOCKER_PLATFORM="linux/amd64" ;;
+    x64) DOCKER_PLATFORM="linux/amd64" ;;
     arm64) DOCKER_PLATFORM="linux/arm64" ;;
     *)
         log_error "Invalid architecture '$ARCH'. Must be x64 or arm64"
@@ -126,17 +126,17 @@ mv "$DOCKER_OUTPUT" "$OUTPUT_DIR/$BINARY_NAME"
 # Move checksum if present, otherwise generate
 if [[ -f "${DOCKER_OUTPUT}.sha256" ]]; then
     # Update filename inside checksum file
-    sed "s/rdc-linux-${ARCH}/${BINARY_NAME}/" "${DOCKER_OUTPUT}.sha256" > "$OUTPUT_DIR/${BINARY_NAME}.sha256"
+    sed "s/rdc-linux-${ARCH}/${BINARY_NAME}/" "${DOCKER_OUTPUT}.sha256" >"$OUTPUT_DIR/${BINARY_NAME}.sha256"
     rm -f "${DOCKER_OUTPUT}.sha256"
 else
     if command -v sha256sum &>/dev/null; then
-        (cd "$OUTPUT_DIR" && sha256sum "$BINARY_NAME" > "${BINARY_NAME}.sha256")
+        (cd "$OUTPUT_DIR" && sha256sum "$BINARY_NAME" >"${BINARY_NAME}.sha256")
     elif command -v shasum &>/dev/null; then
-        (cd "$OUTPUT_DIR" && shasum -a 256 "$BINARY_NAME" > "${BINARY_NAME}.sha256")
+        (cd "$OUTPUT_DIR" && shasum -a 256 "$BINARY_NAME" >"${BINARY_NAME}.sha256")
     fi
 fi
 
-BINARY_SIZE=$(wc -c < "$OUTPUT_DIR/$BINARY_NAME")
+BINARY_SIZE=$(wc -c <"$OUTPUT_DIR/$BINARY_NAME")
 log_info "Musl binary: $OUTPUT_DIR/$BINARY_NAME ($((BINARY_SIZE / 1024 / 1024))MB)"
 
 if [[ -f "$OUTPUT_DIR/${BINARY_NAME}.sha256" ]]; then

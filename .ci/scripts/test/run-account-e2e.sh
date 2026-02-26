@@ -128,7 +128,7 @@ console.log('Bucket e2e-account ready');
         stripe listen \
             --api-key "$STRIPE_SANDBOX_SECRET_KEY" \
             --forward-to "http://localhost:${ACCOUNT_API_PORT}/account/api/v1/webhooks/stripe" \
-            > "$STRIPE_LISTEN_LOG" 2>&1 &
+            >"$STRIPE_LISTEN_LOG" 2>&1 &
         STRIPE_LISTEN_PID=$!
 
         LISTEN_TIMEOUT=30
@@ -207,7 +207,9 @@ if [[ -n "$GREP" ]]; then
     CMD+=("--grep" "$GREP")
 fi
 
-if VITE_API_URL="http://localhost:${ACCOUNT_API_PORT}" "${CMD[@]}"; then
+if VITE_API_URL="http://localhost:${ACCOUNT_API_PORT}" \
+    E2E_WEBHOOK_SECRET="${STRIPE_SANDBOX_WEBHOOK_SECRET:-}" \
+    "${CMD[@]}"; then
     log_info "Account Portal E2E tests passed"
 else
     log_error "Account Portal E2E tests failed"
