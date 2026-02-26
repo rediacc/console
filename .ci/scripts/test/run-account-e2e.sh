@@ -120,7 +120,9 @@ console.log('Bucket e2e-account ready');
     if [[ -n "${STRIPE_SANDBOX_SECRET_KEY:-}" ]] && command -v stripe &>/dev/null; then
         log_step "Syncing Stripe products/prices to sandbox..."
         cd "$ACCOUNT_DIR"
-        STRIPE_SECRET_KEY="$STRIPE_SANDBOX_SECRET_KEY" npx tsx scripts/stripe-sync.ts 2>&1 || true
+        if ! STRIPE_SECRET_KEY="$STRIPE_SANDBOX_SECRET_KEY" npx tsx scripts/stripe-sync.ts 2>&1; then
+            log_warn "Stripe price sync failed, Stripe e2e tests may fail"
+        fi
         cd "$REPO_ROOT"
 
         log_step "Starting stripe listen for real Stripe webhook forwarding..."

@@ -95,12 +95,12 @@ docker run --rm \
 set -e
 
 echo "→ Installing build dependencies..."
-apk add --no-cache python3 make g++ binutils >/dev/null 2>&1
+apk add --no-cache python3 make g++ binutils
 
 echo "→ Installing npm dependencies..."
-npm ci --ignore-scripts 2>&1 | tail -3
+npm ci --ignore-scripts
 # Rebuild native addons for musl
-npm rebuild 2>&1 | tail -3
+npm rebuild
 
 echo "→ Building shared package..."
 cd packages/shared
