@@ -1413,6 +1413,51 @@
         "noConnections": "未配置任何 VS Code SSH 连接。",
         "total": "\n总计：{{count}} 个连接"
       }
+    },
+    "subscription": {
+      "description": "管理机器许可证和订阅",
+      "login": {
+        "description": "使用Web门户的API令牌进行认证",
+        "tokenPrompt": "请输入您的API令牌（来自Web门户）:",
+        "tokenInvalid": "令牌必须以 rdt_ 开头",
+        "validating": "正在验证令牌...",
+        "validated": "令牌已验证",
+        "success": "登录成功",
+        "plan": "计划: {{plan}}",
+        "machines": "机器: {{active}}/{{max}}"
+      },
+      "activate": {
+        "description": "激活此机器并颁发许可证",
+        "activating": "正在激活机器...",
+        "activated": "机器已激活",
+        "installed": "许可证已安装",
+        "licenseFile": "许可证文件: {{path}}"
+      },
+      "status": {
+        "description": "显示订阅和许可证状态",
+        "localLicense": "本地许可证:",
+        "plan": "  计划:     {{plan}}",
+        "statusLabel": "  状态:     {{status}}",
+        "machine": "  机器:     {{machineId}}",
+        "issued": "  颁发日期: {{issuedAt}}",
+        "expires": "  过期日期: {{expiresAt}}",
+        "sequence": "  序列号:   {{sequenceNumber}}",
+        "expired": "  许可证已过期 — 请运行 `rdc subscription refresh`",
+        "valid": "  有效（{{mins}} 分钟后过期）",
+        "parseFailed": "  无法解析许可证文件",
+        "noLicense": "未安装本地许可证。",
+        "remote": "\n远程订阅:",
+        "remotePlan": "  计划:     {{plan}}",
+        "remoteStatus": "  状态:     {{status}}",
+        "remoteMachines": "  机器: {{active}}/{{max}}",
+        "remoteMachine": "    - {{id}}...（最后上线: {{lastSeen}}）"
+      },
+      "refresh": {
+        "description": "刷新机器许可证",
+        "refreshing": "正在刷新许可证...",
+        "refreshed": "许可证已刷新",
+        "success": "许可证已刷新并安装"
+      }
     }
   },
   "common": {
@@ -1502,6 +1547,7 @@
       "snapshot": "快照管理",
       "storage": "存储管理",
       "store": "同步存储管理",
+      "subscription": "订阅管理",
       "sync": "文件同步",
       "team": "团队管理",
       "term": "SSH 终端访问",
@@ -1643,6 +1689,11 @@
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
       "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
       "notFound": "未找到 VS Code。\n\n请从以下地址安装：https://code.visualstudio.com/\n或设置 REDIACC_VSCODE_PATH 环境变量。"
+    },
+    "subscription": {
+      "notLoggedIn": "未登录。请先运行 `rdc subscription login`。",
+      "noMachineId": "无法确定机器ID。请确保renet已安装或/etc/machine-id存在。",
+      "writeFailed": "写入许可证文件失败。请使用sudo运行或确保 {{path}} 可写。"
     }
   },
   "options": {
@@ -1757,7 +1808,9 @@
     "verifyChecksum": "同步后使用校验和验证文件",
     "watch": "监视更改",
     "watchUpdates": "监视更新",
-    "yes": "跳过确认提示"
+    "yes": "跳过确认提示",
+    "apiToken": "API令牌 (rdt_...)",
+    "serverUrl": "账户服务器URL"
   },
   "prompts": {
     "apiUrl": "API URL：",

@@ -4,6 +4,7 @@ description: Понимание архитектуры и развертыван
 category: Reference
 order: 1
 language: ru
+sourceHash: "ee9dff9ac2c8bce1"
 ---
 
 # Руководство пользователя платформы Rediacc

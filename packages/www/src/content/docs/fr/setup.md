@@ -4,7 +4,7 @@ description: "Créez une configuration, ajoutez des machines, provisionnez des s
 category: "Guides"
 order: 3
 language: fr
-sourceHash: bdc41b37f24ae8f8
+sourceHash: "0c725f9eb65e6c0f"
 ---
 
 # Configuration de la machine

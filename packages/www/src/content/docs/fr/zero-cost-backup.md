@@ -4,6 +4,7 @@ description: Réduisez la configuration de l'environnement de quelques jours à 
 category: Use Cases
 order: 7
 language: fr
+sourceHash: "c72f558d409d40ea"
 ---
 
 > **Réduisez la configuration de l'environnement de quelques jours à quelques minutes grâce à l'architecture de stockage avec déduplication intelligente.**

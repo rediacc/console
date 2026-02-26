@@ -4,6 +4,7 @@ description: Reduzca la configuración del entorno de días a minutos con almace
 category: Use Cases
 order: 7
 language: es
+sourceHash: "c72f558d409d40ea"
 ---
 
 > **Reduzca la configuración del entorno de días a minutos con una arquitectura de almacenamiento con deduplicación inteligente.**

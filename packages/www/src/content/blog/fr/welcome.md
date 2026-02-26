@@ -9,6 +9,7 @@ tags:
   - welcome
 featured: true
 language: fr
+sourceHash: "1a84feb14d8b2654"
 ---
 
 # Bienvenue sur le Blog Rediacc

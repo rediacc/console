@@ -4,7 +4,7 @@ description: Rediaccの仕組み：2ツールアーキテクチャ、アダプ�
 category: Concepts
 order: 0
 language: ja
-sourceHash: 5a717ddac450cb81
+sourceHash: "50f5168f0effbc44"
 ---
 
 # アーキテクチャ

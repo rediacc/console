@@ -4,6 +4,7 @@ description: Verständnis der Webanwendungsarchitektur und Bereitstellung mit Re
 category: Reference
 order: 1
 language: de
+sourceHash: "ee9dff9ac2c8bce1"
 ---
 
 # Rediacc-Plattform Benutzerhandbuch

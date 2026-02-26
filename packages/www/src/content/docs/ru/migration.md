@@ -4,6 +4,7 @@ description: "Миграция существующих проектов в за
 category: "Guides"
 order: 11
 language: ru
+sourceHash: "5064d721c8cf32ff"
 ---
 
 # Руководство по миграции

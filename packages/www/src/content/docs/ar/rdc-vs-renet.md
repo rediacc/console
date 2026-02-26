@@ -4,7 +4,7 @@ description: متى تستخدم rdc ومتى تستخدم renet.
 category: Concepts
 order: 1
 language: ar
-sourceHash: e0ef5f051cefb407
+sourceHash: "d3e2a6750f95b6c1"
 ---
 
 # rdc مقابل renet

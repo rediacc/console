@@ -4,6 +4,7 @@ description: 为 AI 训练和动态工作负载构建具有无限灵活性的云
 category: Use Cases
 order: 1
 language: zh
+sourceHash: "7a75ab45703267eb"
 ---
 
 > **您的云架构是否僵化？ 构建具有无限的灵活性。**

@@ -61,8 +61,7 @@ archlinux:
 
 overrides:
   apk:
-    # The CLI is a Node.js SEA binary linked against glibc + libstdc++.
-    # Alpine uses musl, so gcompat (glibc shim) and libstdc++ are required.
+    # The CLI APK is built from a musl-linked SEA binary (node:22-alpine).
+    # Only libstdc++ is needed — no glibc shim required.
     depends:
-      - gcompat
       - libstdc++

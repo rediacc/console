@@ -4,6 +4,7 @@ description: Cree una arquitectura en la nube con flexibilidad ilimitada para ca
 category: Use Cases
 order: 1
 language: es
+sourceHash: "7a75ab45703267eb"
 ---
 
 > **¿Es rígida su arquitectura en la nube? Construya con flexibilidad ilimitada.**
