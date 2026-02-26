@@ -120,9 +120,7 @@ console.log('Bucket e2e-account ready');
     if [[ -n "${STRIPE_SANDBOX_SECRET_KEY:-}" ]] && command -v stripe &>/dev/null; then
         log_step "Syncing Stripe products/prices to sandbox..."
         cd "$ACCOUNT_DIR"
-        if ! STRIPE_SECRET_KEY="$STRIPE_SANDBOX_SECRET_KEY" npx tsx scripts/stripe-sync.ts 2>&1; then
-            log_warn "Stripe price sync failed, Stripe e2e tests may fail"
-        fi
+        STRIPE_SECRET_KEY="$STRIPE_SANDBOX_SECRET_KEY" npx tsx scripts/stripe-sync.ts 2>&1 || true
         cd "$REPO_ROOT"
 
         log_step "Starting stripe listen for real Stripe webhook forwarding..."
@@ -130,7 +128,7 @@ console.log('Bucket e2e-account ready');
         stripe listen \
             --api-key "$STRIPE_SANDBOX_SECRET_KEY" \
             --forward-to "http://localhost:${ACCOUNT_API_PORT}/account/api/v1/webhooks/stripe" \
-            >"$STRIPE_LISTEN_LOG" 2>&1 &
+            > "$STRIPE_LISTEN_LOG" 2>&1 &
         STRIPE_LISTEN_PID=$!
 
         LISTEN_TIMEOUT=30
@@ -140,7 +138,7 @@ console.log('Bucket e2e-account ready');
                 break
             fi
             sleep 1
-            LISTEN_ELAPSED=$((LISTEN_ELAPSED + 1))
+            ((LISTEN_ELAPSED++))
         done
 
         if [[ -n "$STRIPE_LISTEN_WEBHOOK_SECRET" ]]; then
@@ -209,9 +207,7 @@ if [[ -n "$GREP" ]]; then
     CMD+=("--grep" "$GREP")
 fi
 
-if VITE_API_URL="http://localhost:${ACCOUNT_API_PORT}" \
-    E2E_WEBHOOK_SECRET="${STRIPE_SANDBOX_WEBHOOK_SECRET:-}" \
-    "${CMD[@]}"; then
+if VITE_API_URL="http://localhost:${ACCOUNT_API_PORT}" "${CMD[@]}"; then
     log_info "Account Portal E2E tests passed"
 else
     log_error "Account Portal E2E tests failed"
