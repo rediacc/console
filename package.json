@@ -107,6 +107,7 @@
     "rimraf": "^6.0.0",
     "inflight": "npm:@isaacs/inflight@^1.0.1",
     "cacache": "^18.0.0",
-    "@npmcli/move-file": "npm:@npmcli/fs@^3.1.0"
+    "@npmcli/move-file": "npm:@npmcli/fs@^3.1.0",
+    "rollup": "^4.59.0"
   }
 }
