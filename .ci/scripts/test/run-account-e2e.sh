@@ -207,7 +207,9 @@ if [[ -n "$GREP" ]]; then
     CMD+=("--grep" "$GREP")
 fi
 
-if VITE_API_URL="http://localhost:${ACCOUNT_API_PORT}" "${CMD[@]}"; then
+if VITE_API_URL="http://localhost:${ACCOUNT_API_PORT}" \
+    E2E_WEBHOOK_SECRET="${STRIPE_SANDBOX_WEBHOOK_SECRET:-}" \
+    "${CMD[@]}"; then
     log_info "Account Portal E2E tests passed"
 else
     log_error "Account Portal E2E tests failed"
