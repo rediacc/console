@@ -128,7 +128,7 @@ console.log('Bucket e2e-account ready');
         stripe listen \
             --api-key "$STRIPE_SANDBOX_SECRET_KEY" \
             --forward-to "http://localhost:${ACCOUNT_API_PORT}/account/api/v1/webhooks/stripe" \
-            > "$STRIPE_LISTEN_LOG" 2>&1 &
+            >"$STRIPE_LISTEN_LOG" 2>&1 &
         STRIPE_LISTEN_PID=$!
 
         LISTEN_TIMEOUT=30
