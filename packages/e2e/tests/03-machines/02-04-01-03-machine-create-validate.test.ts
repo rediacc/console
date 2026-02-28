@@ -4,7 +4,7 @@ import { LoginPage } from '@/pages/auth/LoginPage';
 import { TestReporter } from '@/utils/report/TestReporter';
 import { skipIfNoVm } from '@/utils/vm';
 
-test.describe('Machine Creation Tests - Authenticated', () => {
+test.describe('Machine Creation Tests - Validate Fields', () => {
   test.describe.configure({ mode: 'serial' });
 
   // Skip all tests in this file if VM infrastructure is not available
@@ -57,19 +57,13 @@ test.describe('Machine Creation Tests - Authenticated', () => {
     }
   });
 
-  test('should open machine creation dialog @resources @smoke', async ({
-    testDataManager: _testDataManager,
-  }, testInfo) => {
-    // Manually instantiate reporter with shared page
+  test('should validate required fields @resources', async ({ testDataManager: _dm }, testInfo) => {
     const testReporter = new TestReporter(page, testInfo);
-
-    testReporter.startStep('Navigate to machines section');
-
-    const createMachineButton = page.getByTestId('machines-create-machine-button');
-    await expect(createMachineButton).toBeVisible({ timeout: 10000 });
 
     testReporter.startStep('Open machine creation dialog');
 
+    const createMachineButton = page.getByTestId('machines-create-machine-button');
+    await expect(createMachineButton).toBeVisible({ timeout: 10000 });
     await createMachineButton.click();
 
     const createMachineDialog = page.getByTestId('resource-modal-form');
@@ -77,15 +71,24 @@ test.describe('Machine Creation Tests - Authenticated', () => {
 
     testReporter.completeStep('Open machine creation dialog', 'passed');
 
-    testReporter.startStep('Verify dialog fields');
+    testReporter.startStep('Test validation without filling fields');
 
-    const nameField = page.getByTestId('resource-modal-field-machineName-input');
-    const ipField = page.getByTestId('vault-editor-field-ip');
+    const submitButton = page.getByTestId('resource-modal-ok-button');
 
-    await expect(nameField).toBeVisible();
-    await expect(ipField).toBeVisible();
+    // Verify that submit button is disabled when required fields are empty
+    const isDisabled = await submitButton.isDisabled();
 
-    testReporter.completeStep('Verify dialog fields', 'passed');
+    if (isDisabled) {
+      console.warn('Submit button is disabled - validation working correctly');
+      testReporter.completeStep('Test validation without filling fields', 'passed');
+    } else {
+      console.warn('Submit button is NOT disabled - validation may not be working');
+      testReporter.completeStep(
+        'Test validation without filling fields',
+        'failed',
+        'Submit button should be disabled when fields are empty'
+      );
+    }
 
     await testReporter.finalizeTest();
   });

@@ -5,7 +5,7 @@ import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { UserPageIDs } from '@/pages/user/UserPageIDs';
 import { createUserViaUI } from '@/test-helpers/user-helpers';
 
-test.describe('User Permission Tests', () => {
+test.describe('User Permission Tests - Deactivate', () => {
   let dashboardPage: DashboardPage;
   let loginPage: LoginPage;
 
@@ -18,7 +18,7 @@ test.describe('User Permission Tests', () => {
     await dashboardPage.waitForNetworkIdle();
   });
 
-  test('should activate user @system @users @permissions @regression', async ({
+  test('should deactivate user @system @users @permissions @regression', async ({
     page,
     testReporter,
     testDataManager,
@@ -77,7 +77,7 @@ test.describe('User Permission Tests', () => {
     const confirmYes = async (): Promise<void> => {
       const confirmButton = page.getByRole('button', { name: /yes/i });
       await expect(confirmButton).toBeVisible();
-      await confirmButton.click({ force: true });
+      await confirmButton.click();
       await waitForNoModal();
     };
 
@@ -102,42 +102,38 @@ test.describe('User Permission Tests', () => {
     await filterUsersList(newUserEmail);
     testReporter.completeStep('Navigate to Users section', 'passed');
 
-    testReporter.startStep('Activate user');
+    testReporter.startStep('Deactivate user');
     const isTableLayout = await userTable.isVisible().catch(() => false);
     if (isTableLayout) {
       const activateButton = page.getByTestId(UserPageIDs.systemUserActivateButton(newUserEmail));
       const deactivateButton = page.getByTestId(
         UserPageIDs.systemUserDeactivateButton(newUserEmail)
       );
-      if (await deactivateButton.isVisible().catch(() => false)) {
+      if (await activateButton.isVisible().catch(() => false)) {
         await waitForNoModal();
-        await deactivateButton.click();
+        await activateButton.click();
         await confirmYes();
       }
-      await expect(activateButton).toBeVisible({ timeout: 5000 });
-      await waitForNoModal();
-      await activateButton.click();
-      await confirmYes();
       await expect(deactivateButton).toBeVisible({ timeout: 5000 });
+      await waitForNoModal();
+      await deactivateButton.click();
+      await confirmYes();
+      await expect(activateButton).toBeVisible({ timeout: 5000 });
     } else {
       const listItem = page.getByTestId(UserPageIDs.resourceListItem(newUserEmail));
       await expect(listItem).toBeVisible({ timeout: 5000 });
       const activeTag = listItem.getByText('Active', { exact: true });
       const inactiveTag = listItem.getByText('Inactive', { exact: true });
-      if (await activeTag.isVisible().catch(() => false)) {
-        await clickListAction(newUserEmail, 'deactivate');
-        await expect
-          .poll(async () => inactiveTag.isVisible().catch(() => false), { timeout: 10000 })
-          .toBe(true);
+      if (await inactiveTag.isVisible().catch(() => false)) {
+        await clickListAction(newUserEmail, 'activate');
+        await expect(activeTag).toBeVisible();
       }
-      await clickListAction(newUserEmail, 'activate');
-      await expect
-        .poll(async () => activeTag.isVisible().catch(() => false), { timeout: 10000 })
-        .toBe(true);
+      await clickListAction(newUserEmail, 'deactivate');
+      await expect(inactiveTag).toBeVisible();
     }
 
-    await testDataManager.updateCreatedUserActivation(newUserEmail, true);
-    testReporter.completeStep('Activate user', 'passed');
+    await testDataManager.updateCreatedUserActivation(newUserEmail, false);
+    testReporter.completeStep('Deactivate user', 'passed');
     await testReporter.finalizeTest();
   });
 });
