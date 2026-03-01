@@ -41,7 +41,6 @@
     "@vitest/utils": "^4.0.18",
     "asciinema-player": "^3.15.1",
     "astro": "^5.17.3",
-    "astro-seo": "^1.1.0",
     "fuse.js": "^7.1.0",
     "gray-matter": "^4.0.3",
     "react": "^19.1.1",
@@ -49,5 +48,8 @@
     "react-i18next": "^16.5.4",
     "unist-util-visit": "^5.1.0",
     "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "astro-seo": "^1.1.0"
   }
 }
