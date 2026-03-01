@@ -1424,14 +1424,13 @@
         "validated": "トークン検証済み",
         "success": "ログイン成功",
         "plan": "プラン: {{plan}}",
-        "machines": "マシン: {{active}}/{{max}}"
-      },
-      "activate": {
-        "description": "このマシンをアクティベートしてライセンスを発行",
-        "activating": "マシンをアクティベート中...",
-        "activated": "マシンがアクティベートされました",
-        "installed": "ライセンスがインストールされました",
-        "licenseFile": "ライセンスファイル: {{path}}"
+        "machines": "マシン: {{active}}/{{max}}",
+        "openBrowser": "このURLにアクセスして認証してください：",
+        "waitingApproval": "ブラウザでの認証を待っています...",
+        "polling": "承認を待っています（Ctrl+Cでキャンセル）...",
+        "expired": "認証がタイムアウトしました。もう一度お試しください。",
+        "browserFailed": "ブラウザを自動的に開けませんでした。上記のURLにアクセスしてください。",
+        "initFailed": "ログインの開始に失敗しました。サーバーは稼働していますか？"
       },
       "status": {
         "description": "サブスクリプションとライセンスの状態を表示",
@@ -1691,9 +1690,7 @@
       "notFound": "VS Code が見つかりません。\n\nhttps://code.visualstudio.com/ からインストールしてください\nまたは REDIACC_VSCODE_PATH 環境変数を設定してください。"
     },
     "subscription": {
-      "notLoggedIn": "ログインしていません。先に `rdc subscription login` を実行してください。",
-      "noMachineId": "マシンIDを特定できませんでした。renetがインストールされているか、/etc/machine-idが存在することを確認してください。",
-      "writeFailed": "ライセンスファイルの書き込みに失敗しました。sudoで実行するか、{{path}} が書き込み可能であることを確認してください。"
+      "notLoggedIn": "ログインしていません。先に `rdc subscription login` を実行してください。"
     }
   },
   "options": {

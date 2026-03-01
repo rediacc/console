@@ -6,7 +6,7 @@ order: 2
 language: ar
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ar/cli.json
-sourceHash: "07833661d8da1e8e"
+sourceHash: "15b88c4c24232a54"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -1401,32 +1401,34 @@ rdc subscription login [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `-t, --token <token>` | {{t:cli.options.apiToken}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--server <url>` | {{t:cli.options.serverUrl}} | {{t:cli.docs.optionLabels.no}} | `https://account.rediacc.com` |
+| `--server <url>` | {{t:cli.options.serverUrl}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-### 13.2 activate
-
-{{t:cli.commands.subscription.activate.description}}
-
-```bash
-rdc subscription activate
-```
-
-### 13.3 status
+### 13.2 status
 
 {{t:cli.commands.subscription.status.description}}
 
 ```bash
-rdc subscription status
+rdc subscription status [options]
 ```
 
-### 13.4 refresh
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+### 13.3 refresh
 
 {{t:cli.commands.subscription.refresh.description}}
 
 ```bash
-rdc subscription refresh
+rdc subscription refresh [options]
 ```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
+
 
 ---
 

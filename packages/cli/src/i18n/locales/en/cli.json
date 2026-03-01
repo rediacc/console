@@ -1129,46 +1129,45 @@
     "subscription": {
       "description": "Manage machine licensing and subscription",
       "login": {
-        "description": "Authenticate with an API token from the web portal",
+        "description": "Authenticate via browser or API token",
         "tokenPrompt": "Enter your API token (from web portal):",
         "tokenInvalid": "Token must start with rdt_",
         "validating": "Validating token...",
         "validated": "Token validated",
         "success": "Logged in successfully",
         "plan": "Plan: {{plan}}",
-        "machines": "Machines: {{active}}/{{max}}"
-      },
-      "activate": {
-        "description": "Activate this machine and issue a license",
-        "activating": "Activating machine...",
-        "activated": "Machine activated",
-        "installed": "License installed",
-        "licenseFile": "License file: {{path}}"
+        "machines": "Machines: {{active}}/{{max}}",
+        "openBrowser": "Visit this URL to authorize:",
+        "waitingApproval": "Waiting for browser authorization...",
+        "polling": "Waiting for approval (press Ctrl+C to cancel)...",
+        "expired": "Authorization timed out. Please try again.",
+        "browserFailed": "Could not open browser automatically. Please visit the URL above.",
+        "initFailed": "Failed to initiate login. Is the server running?"
       },
       "status": {
         "description": "Show subscription and license status",
-        "localLicense": "Local license:",
+        "localLicense": "Machine license:",
         "plan": "  Plan:     {{plan}}",
         "statusLabel": "  Status:   {{status}}",
         "machine": "  Machine:  {{machineId}}",
         "issued": "  Issued:   {{issuedAt}}",
         "expires": "  Expires:  {{expiresAt}}",
         "sequence": "  Sequence: {{sequenceNumber}}",
-        "expired": "  License has EXPIRED — run `rdc subscription refresh`",
+        "expired": "  License has EXPIRED — run `rdc subscription refresh -m <machine>`",
         "valid": "  Valid (expires in {{mins}} minutes)",
-        "parseFailed": "  Could not parse license file",
-        "noLicense": "No local license installed.",
-        "remote": "\nRemote subscription:",
+        "parseFailed": "  Could not read license from remote machine",
+        "noLicense": "No license installed on this machine.",
+        "remote": "\nSubscription:",
         "remotePlan": "  Plan:     {{plan}}",
         "remoteStatus": "  Status:   {{status}}",
         "remoteMachines": "  Machines: {{active}}/{{max}}",
         "remoteMachine": "    - {{id}}... (last seen: {{lastSeen}})"
       },
       "refresh": {
-        "description": "Refresh the machine license",
+        "description": "Force-refresh license on a remote machine",
         "refreshing": "Refreshing license...",
         "refreshed": "License refreshed",
-        "success": "License refreshed and installed"
+        "success": "License refreshed and delivered to machine"
       }
     },
     "team": {
@@ -1519,9 +1518,7 @@
       "localPathNotFound": "Local path does not exist: {{path}}"
     },
     "subscription": {
-      "notLoggedIn": "Not logged in. Run `rdc subscription login` first.",
-      "noMachineId": "Could not determine machine ID. Ensure renet is installed or /etc/machine-id exists.",
-      "writeFailed": "Failed to write license file. Run with sudo or ensure {{path}} is writable."
+      "notLoggedIn": "Not logged in. Run `rdc subscription login` first."
     },
     "teamRequired": "Team name required. Use --team or set default with: rdc config set team <name>",
     "term": {

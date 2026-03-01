@@ -1294,7 +1294,7 @@
           "description": "複雑なエンタープライズインフラのためのホワイトグローブサポート",
           "features": [
             "Businessの全機能+",
-            "無制限のリポジトリ、各1 TB+",
+            "無制限のリポジトリ、各2 TB+",
             "100,000ジョブ/月",
             "保証された復元時間のカスタムSLA",
             "専用インフラテナント",
@@ -1571,8 +1571,8 @@
             "label": "リポジトリ"
           },
           {
-            "key": "machines",
-            "label": "マシン"
+            "key": "floatingLicenses",
+            "label": "フローティングライセンス"
           },
           {
             "key": "usersTeams",
@@ -1582,28 +1582,28 @@
         "values": {
           "business": {
             "jobsPerMonth": "20,000",
-            "machines": "無制限",
+            "floatingLicenses": "20",
             "repositories": "無制限",
             "repoSize": "500 GB",
             "usersTeams": "無制限"
           },
           "community": {
             "jobsPerMonth": "500",
-            "machines": "無制限",
+            "floatingLicenses": "2",
             "repositories": "無制限",
             "repoSize": "10 GB",
             "usersTeams": "無制限"
           },
           "enterprise": {
             "jobsPerMonth": "100,000",
-            "machines": "無制限",
+            "floatingLicenses": "50",
             "repositories": "無制限",
-            "repoSize": "1 TB+",
+            "repoSize": "2 TB+",
             "usersTeams": "無制限"
           },
           "professional": {
             "jobsPerMonth": "5,000",
-            "machines": "無制限",
+            "floatingLicenses": "5",
             "repositories": "無制限",
             "repoSize": "100 GB",
             "usersTeams": "無制限"

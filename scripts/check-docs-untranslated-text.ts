@@ -301,7 +301,6 @@ function extractTextParts(content: string): {
   bodyText: string;
   frontmatterTitle: string;
   frontmatterDescription: string;
-  isTranslationPending: boolean;
   isGenerated: boolean;
 } {
   const lines = content.split('\n');
@@ -311,7 +310,6 @@ function extractTextParts(content: string): {
   let frontmatterCount = 0;
   let frontmatterTitle = '';
   let frontmatterDescription = '';
-  let isTranslationPending = false;
   let isGenerated = false;
   let collectingDescription = false;
 
@@ -364,9 +362,6 @@ function extractTextParts(content: string): {
           collectingDescription = false;
         }
       }
-      if (/^translationPending:\s*true/.test(line)) {
-        isTranslationPending = true;
-      }
       if (/^generated:\s*true/.test(line)) {
         isGenerated = true;
       }
@@ -407,7 +402,6 @@ function extractTextParts(content: string): {
     bodyText: bodyLines.join(' '),
     frontmatterTitle: frontmatterTitle.trim(),
     frontmatterDescription: frontmatterDescription.trim(),
-    isTranslationPending,
     isGenerated,
   };
 }
@@ -429,11 +423,11 @@ function analyzeNativeChars(filePath: string, lang: string): NativeCharIssue[] {
   if (!config) return [];
 
   const content = fs.readFileSync(filePath, 'utf-8');
-  const { bodyText, frontmatterTitle, frontmatterDescription, isTranslationPending, isGenerated } =
+  const { bodyText, frontmatterTitle, frontmatterDescription, isGenerated } =
     extractTextParts(content);
 
-  // Skip files marked as translation pending or auto-generated ({{t:key}} content)
-  if (isTranslationPending || isGenerated) return [];
+  // Skip auto-generated files ({{t:key}} content)
+  if (isGenerated) return [];
 
   const issues: NativeCharIssue[] = [];
   const bodyChars = bodyText.length;
@@ -603,8 +597,7 @@ function main(): void {
         'To fix:\n' +
         '  1. Translate the English text to the appropriate language\n' +
         '  2. Ensure native diacritics are preserved (e.g., Turkish \u00e7/\u015f/\u011f, Spanish \u00f1/\u00e1)\n' +
-        '  3. Technical terms and code can remain in English\n' +
-        '  4. Add translationPending: true to frontmatter if translation is in progress\n'
+        '  3. Technical terms and code can remain in English\n'
     );
     process.exit(1);
   }

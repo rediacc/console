@@ -1424,14 +1424,13 @@
         "validated": "令牌已验证",
         "success": "登录成功",
         "plan": "计划: {{plan}}",
-        "machines": "机器: {{active}}/{{max}}"
-      },
-      "activate": {
-        "description": "激活此机器并颁发许可证",
-        "activating": "正在激活机器...",
-        "activated": "机器已激活",
-        "installed": "许可证已安装",
-        "licenseFile": "许可证文件: {{path}}"
+        "machines": "机器: {{active}}/{{max}}",
+        "openBrowser": "请访问此链接进行授权：",
+        "waitingApproval": "等待浏览器授权...",
+        "polling": "等待批准（按 Ctrl+C 取消）...",
+        "expired": "授权已超时。请重试。",
+        "browserFailed": "无法自动打开浏览器。请访问上方链接。",
+        "initFailed": "无法启动登录。服务器是否正在运行？"
       },
       "status": {
         "description": "显示订阅和许可证状态",
@@ -1691,9 +1690,7 @@
       "notFound": "未找到 VS Code。\n\n请从以下地址安装：https://code.visualstudio.com/\n或设置 REDIACC_VSCODE_PATH 环境变量。"
     },
     "subscription": {
-      "notLoggedIn": "未登录。请先运行 `rdc subscription login`。",
-      "noMachineId": "无法确定机器ID。请确保renet已安装或/etc/machine-id存在。",
-      "writeFailed": "写入许可证文件失败。请使用sudo运行或确保 {{path}} 可写。"
+      "notLoggedIn": "未登录。请先运行 `rdc subscription login`。"
     }
   },
   "options": {

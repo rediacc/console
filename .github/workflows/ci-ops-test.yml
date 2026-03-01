@@ -125,7 +125,7 @@ jobs:
 
       - name: Upload tutorial recordings
         if: success()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
           name: tutorial-recordings-${{ github.sha }}
           path: /tmp/*.cast
@@ -167,7 +167,7 @@ jobs:
         shell: bash
 
       - name: Download renet binaries
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           name: renet-binaries-${{ github.sha }}
           path: private/bin/
@@ -294,7 +294,7 @@ jobs:
         shell: bash
 
       - name: Download renet binaries
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           name: renet-binaries-${{ github.sha }}
           path: private/bin/

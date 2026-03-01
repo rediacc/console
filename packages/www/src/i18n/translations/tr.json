@@ -1292,7 +1292,7 @@
           "description": "Karmaşık kurumsal altyapı için beyaz eldiven desteği",
           "features": [
             "Business'taki her şey +",
-            "Sınırsız depo, her biri 1 TB+",
+            "Sınırsız depo, her biri 2 TB+",
             "100.000 iş/ay",
             "Garantili geri yükleme süreleriyle özel SLA",
             "Özel altyapı kiracısı",
@@ -1567,8 +1567,8 @@
             "label": "Depolar"
           },
           {
-            "key": "machines",
-            "label": "Makineler"
+            "key": "floatingLicenses",
+            "label": "Yüzen Lisanslar"
           },
           {
             "key": "usersTeams",
@@ -1578,28 +1578,28 @@
         "values": {
           "business": {
             "jobsPerMonth": "20.000",
-            "machines": "Sınırsız",
+            "floatingLicenses": "20",
             "repositories": "Sınırsız",
             "repoSize": "500 GB",
             "usersTeams": "Sınırsız"
           },
           "community": {
             "jobsPerMonth": "500",
-            "machines": "Sınırsız",
+            "floatingLicenses": "2",
             "repositories": "Sınırsız",
             "repoSize": "10 GB",
             "usersTeams": "Sınırsız"
           },
           "enterprise": {
             "jobsPerMonth": "100.000",
-            "machines": "Sınırsız",
+            "floatingLicenses": "50",
             "repositories": "Sınırsız",
-            "repoSize": "1 TB+",
+            "repoSize": "2 TB+",
             "usersTeams": "Sınırsız"
           },
           "professional": {
             "jobsPerMonth": "5.000",
-            "machines": "Sınırsız",
+            "floatingLicenses": "5",
             "repositories": "Sınırsız",
             "repoSize": "100 GB",
             "usersTeams": "Sınırsız"

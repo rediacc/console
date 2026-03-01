@@ -911,8 +911,8 @@
             "label": "Repositories"
           },
           {
-            "key": "machines",
-            "label": "Machines"
+            "key": "floatingLicenses",
+            "label": "Floating Licenses"
           },
           {
             "key": "usersTeams",
@@ -924,28 +924,28 @@
             "jobsPerMonth": "500",
             "repoSize": "10 GB",
             "repositories": "Unlimited",
-            "machines": "2",
+            "floatingLicenses": "2",
             "usersTeams": "Unlimited"
           },
           "professional": {
             "jobsPerMonth": "5,000",
             "repoSize": "100 GB",
             "repositories": "Unlimited",
-            "machines": "5",
+            "floatingLicenses": "5",
             "usersTeams": "Unlimited"
           },
           "business": {
             "jobsPerMonth": "20,000",
             "repoSize": "500 GB",
             "repositories": "Unlimited",
-            "machines": "20",
+            "floatingLicenses": "20",
             "usersTeams": "Unlimited"
           },
           "enterprise": {
             "jobsPerMonth": "100,000",
             "repoSize": "2 TB+",
             "repositories": "Unlimited",
-            "machines": "50",
+            "floatingLicenses": "50",
             "usersTeams": "Unlimited"
           }
         }

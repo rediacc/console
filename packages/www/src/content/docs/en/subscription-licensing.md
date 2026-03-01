@@ -1,6 +1,6 @@
 ---
 title: "Subscription & Licensing"
-description: "Activate a subscription, issue machine licenses, and manage plan enforcement in local deployments."
+description: "Manage subscriptions and machine licenses for local deployments."
 category: "Guides"
 order: 7
 language: en
@@ -8,75 +8,59 @@ language: en
 
 # Subscription & Licensing
 
-Machines running in local deployments need a subscription license to enforce plan-based resource limits. The CLI delivers signed license blobs directly to each machine — no cloud API connection required after initial activation.
+Machines running in local deployments need a subscription license to enforce plan-based resource limits. The CLI automatically delivers signed license blobs to remote machines via SSH — no manual activation or cloud connection required from the server side.
 
 ## Overview
 
-The licensing flow has four steps:
+1. Login with `rdc subscription login` (opens browser for authentication)
+2. Use any machine command — licenses are handled automatically
 
-1. Create an API token in the account web portal
-2. Login on the machine with `rdc subscription login`
-3. Activate the machine with `rdc subscription activate`
-4. Licenses auto-refresh in the background during normal CLI usage
+When you run a command targeting a machine (`rdc machine info`, `rdc repo up`, etc.), the CLI automatically checks if the machine has a valid license. If not, it fetches one from the account server and delivers it via SSH.
 
-Licenses are short-lived (1 hour), Ed25519-signed blobs that the CLI refreshes automatically. A 3-day grace period ensures continuity if a check-in is temporarily missed.
-
-## Step 1: Get an API Token
-
-Log into the account portal at `https://account.rediacc.com`. Navigate to your subscription settings and create an API token with the following scopes:
-
-- `license:read` — check subscription and license status
-- `license:activate` — activate machines and issue licenses
-
-Copy the token — it is only shown once.
-
-## Step 2: Login
+## Login
 
 ```bash
-rdc subscription login --token <your-token>
+rdc subscription login
 ```
+
+Opens a browser for authentication via the device code flow. After approval, the CLI stores an API token locally at `~/.config/rediacc/api-token.json`.
 
 | Option | Required | Default | Description |
 |--------|----------|---------|-------------|
-| `-t, --token <token>` | No | - | API token. Prompts interactively if omitted. |
+| `-t, --token <token>` | No | - | API token (skips browser flow) |
 | `--server <url>` | No | `https://account.rediacc.com` | Account server URL |
-
-This validates the token against the account server and stores it locally at `~/.config/rediacc/api-token.json`. On success, it displays your plan name and machine quota.
-
-## Step 3: Activate
-
-```bash
-rdc subscription activate
-```
-
-This reads the machine's hardware ID, calls the account server to issue a license, and stores it at `/var/lib/rediacc/license/license.json`. If the CLI cannot write to that path directly, it will retry with `sudo`.
-
-Each activation consumes one machine slot in your subscription. To free a slot, deactivate a machine from the account portal.
 
 ## Checking Status
 
 ```bash
+# Account-level status (plan, machines)
 rdc subscription status
+
+# Include license details from a specific machine
+rdc subscription status -m hostinger
 ```
 
-Shows both local license info and remote subscription details:
+Shows subscription details from the account server. With `-m`, also SSHes to the machine and displays its current license info.
 
-- **Local**: plan, status, machine ID, issued/expiry times, sequence number
-- **Remote**: plan, subscription status, active machines and their last-seen timestamps
-
-## Refreshing a License
+## Force-Refreshing a License
 
 ```bash
-rdc subscription refresh
+rdc subscription refresh -m <machine>
 ```
 
-Manually reissues the license for this machine. This is normally not needed — see auto-refresh below.
+Force re-issues and delivers a fresh license to the specified machine. This is normally not needed — licenses are refreshed automatically every 50 minutes during normal CLI usage.
 
-## Auto-Refresh
+## How It Works
 
-Every CLI command automatically checks the local license age. If the license is older than 50 minutes, it refreshes in the background without blocking the command. No user action is required.
+1. **Login** stores an API token on your workstation
+2. **Any machine command** triggers an automatic license check via SSH
+3. If the remote license is missing or older than 50 minutes, the CLI:
+   - Reads the remote machine's hardware ID via SSH
+   - Calls the account API to issue a new license
+   - Delivers both the machine license and subscription blob to the remote via SSH
+4. A 50-minute in-memory cache prevents redundant SSH round-trips within the same session
 
-If the machine is offline, the current license remains valid until its 1-hour expiry. After that, the grace period begins.
+Each machine activation consumes one slot in your subscription. To free a slot, deactivate a machine from the account portal.
 
 ## Grace Period & Degradation
 
@@ -84,9 +68,9 @@ If a license expires and cannot be refreshed within the 3-day grace period, the 
 
 ## Plan Limits
 
-### Machine Limits
+### Floating License Limits
 
-| Plan | Max Machines |
+| Plan | Floating Licenses |
 |------|-------------|
 | Community | 2 |
 | Professional | 5 |
@@ -100,7 +84,7 @@ If a license expires and cannot be refreshed within the 3-day grace period, the 
 | Bridges | 0 | 1 | 2 | 10 |
 | Max reserved jobs | 1 | 2 | 3 | 5 |
 | Job timeout (hours) | 2 | 24 | 72 | 96 |
-| Repository size (GB) | 10 | 100 | 500 | 1,024 |
+| Repository size (GB) | 10 | 100 | 500 | 2,048 |
 | Jobs per month | 500 | 5,000 | 20,000 | 100,000 |
 | Pending per user | 5 | 10 | 20 | 50 |
 | Tasks per machine | 1 | 2 | 3 | 5 |

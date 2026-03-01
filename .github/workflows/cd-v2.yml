@@ -282,7 +282,7 @@ jobs:
       # Step 2: Bump version & commit (includes all submodules)
       # -----------------------------------------------------------------------
       - name: Download staging release artifact
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           name: staging-release-${{ needs.init.outputs.ci_sha }}
           path: dist/
@@ -374,7 +374,7 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq dpkg-dev createrepo-c gnupg
 
       - name: Download staging pages artifact
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           name: staging-pages-${{ needs.init.outputs.ci_sha }}
           path: dist/pages/

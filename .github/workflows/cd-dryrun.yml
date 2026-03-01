@@ -77,27 +77,27 @@ jobs:
       # Step 1: Download all build artifacts
       # -----------------------------------------------------------------------
       - name: Download desktop artifacts
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           pattern: build-desktop-*
           path: dist/desktop/
           merge-multiple: true
 
       - name: Download CLI executables
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           pattern: build-cli-*-${{ github.sha }}
           path: dist/cli/
           merge-multiple: true
 
       - name: Download www build
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           name: build-www-${{ github.sha }}
           path: packages/www/dist/
 
       - name: Download json build
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           name: build-json-${{ github.sha }}
           path: packages/json/dist/
@@ -320,7 +320,7 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Upload preview pages artifact
         if: ${{ inputs.upload_pages && inputs.dry_run }}
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
           name: preview-pages-${{ github.sha }}
           path: dist/pages/
@@ -331,7 +331,7 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Upload staging release artifact
         if: ${{ !inputs.dry_run }}
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
           name: staging-release-${{ github.sha }}
           path: |
@@ -342,7 +342,7 @@ jobs:
 
       - name: Upload staging pages artifact
         if: ${{ !inputs.dry_run }}
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
           name: staging-pages-${{ github.sha }}
           path: dist/pages/
@@ -353,7 +353,7 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Attest staging release artifact
         if: ${{ !inputs.dry_run }}
-        uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f  # v3
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32  # v4
         with:
           subject-path: |
             dist/desktop/**/*
@@ -362,7 +362,7 @@ jobs:
 
       - name: Attest staging pages artifact
         if: ${{ !inputs.dry_run }}
-        uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f  # v3
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32  # v4
         with:
           subject-path: |
             dist/pages/apt/dists/**/*

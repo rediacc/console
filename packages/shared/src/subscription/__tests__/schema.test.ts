@@ -66,7 +66,7 @@ describe('Subscription Schema Constants', () => {
     });
 
     it('should have ENTERPRISE with highest limits', () => {
-      expect(PLAN_RESOURCES.ENTERPRISE.maxRepositorySizeGb).toBe(1024);
+      expect(PLAN_RESOURCES.ENTERPRISE.maxRepositorySizeGb).toBe(2048);
       expect(PLAN_RESOURCES.ENTERPRISE.maxJobsPerMonth).toBe(100000);
     });
 

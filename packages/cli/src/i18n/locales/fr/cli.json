@@ -1424,14 +1424,13 @@
         "validated": "Jeton validé",
         "success": "Connexion réussie",
         "plan": "Forfait : {{plan}}",
-        "machines": "Machines : {{active}}/{{max}}"
-      },
-      "activate": {
-        "description": "Activer cette machine et émettre une licence",
-        "activating": "Activation de la machine...",
-        "activated": "Machine activée",
-        "installed": "Licence installée",
-        "licenseFile": "Fichier de licence : {{path}}"
+        "machines": "Machines : {{active}}/{{max}}",
+        "openBrowser": "Visitez cette URL pour autoriser :",
+        "waitingApproval": "En attente de l’autorisation du navigateur...",
+        "polling": "En attente de l’approbation (appuyez sur Ctrl+C pour annuler)...",
+        "expired": "L’autorisation a expiré. Veuillez réessayer.",
+        "browserFailed": "Impossible d’ouvrir le navigateur automatiquement. Veuillez visiter l’URL ci-dessus.",
+        "initFailed": "Échec de l’initialisation de la connexion. Le serveur est-il en cours d’exécution ?"
       },
       "status": {
         "description": "Afficher l’état de l’abonnement et de la licence",
@@ -1691,9 +1690,7 @@
       "notFound": "VS Code non trouvé.\n\nVeuillez installer depuis : https://code.visualstudio.com/\nOu définir la variable d'environnement REDIACC_VSCODE_PATH."
     },
     "subscription": {
-      "notLoggedIn": "Non connecté. Exécutez d’abord `rdc subscription login`.",
-      "noMachineId": "Impossible de déterminer l’identifiant de la machine. Vérifiez que renet est installé ou que /etc/machine-id existe.",
-      "writeFailed": "Échec de l’écriture du fichier de licence. Exécutez avec sudo ou vérifiez que {{path}} est accessible en écriture."
+      "notLoggedIn": "Non connecté. Exécutez d’abord `rdc subscription login`."
     }
   },
   "options": {

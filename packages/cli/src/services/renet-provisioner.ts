@@ -56,8 +56,8 @@ interface CacheEntry {
  *
  * Installation flow:
  * 1. Compute SHA256 of local binary
- * 2. Check remote /usr/bin/renet via sha256sum
- * 3. If mismatch: SFTP upload to staging path, sudo cp to /usr/bin/renet
+ * 2. Single SSH call: `renet hash` + `renet version` (sha256sum fallback)
+ * 3. If hash mismatch + version guard passes: SFTP upload to staging, atomic mv to /usr/bin/renet
  *
  * Maintains an in-memory cache to avoid redundant checks within TTL.
  */
@@ -99,17 +99,25 @@ class RenetProvisionerService {
         return { success: true, action: 'verified', arch };
       }
 
-      // Check remote binary via sha256sum
-      const needsInstall = await this.needsInstall(sftp, localHash);
+      // Single SSH call: get both hash and version from remote binary.
+      // Avoids two separate roundtrips for needsInstall + checkVersionGuard.
+      const remote = await this.getRemoteHashAndVersion(sftp);
 
-      if (!needsInstall) {
+      if (remote.hash === localHash) {
         this.cache.set(cacheKey, { hash: localHash, provisionedAt: Date.now() });
         return { success: true, action: 'verified', arch };
       }
 
       // Version guard: prevent accidental downgrade unless explicitly allowed
-      const rejection = await this.checkVersionGuard(sftp, arch);
-      if (rejection) return rejection;
+      const isDowngrade = remote.version && compareVersions(VERSION, remote.version) < 0;
+      if (isDowngrade && !process.env.RDC_ALLOW_DOWNGRADE) {
+        return {
+          success: false,
+          action: 'version_rejected',
+          arch,
+          error: `Remote has renet v${remote.version} but this CLI bundles v${VERSION}. Run \`rdc update\` to upgrade your CLI, or set RDC_ALLOW_DOWNGRADE=1 to force.`,
+        };
+      }
 
       // Stage and install: SFTP upload to /tmp, then atomic mv to /usr/bin/renet.
       // Uses mv (not cp) so the replacement works even when the binary is running
@@ -141,28 +149,6 @@ class RenetProvisionerService {
     } finally {
       sftp.close();
     }
-  }
-
-  /**
-   * Check version guard: prevent accidental downgrade unless RDC_ALLOW_DOWNGRADE is set.
-   */
-  private async checkVersionGuard(
-    sftp: SFTPClient,
-    arch: RenetArch
-  ): Promise<ProvisionResult | null> {
-    if (process.env.RDC_ALLOW_DOWNGRADE) return null;
-
-    const remoteVersion = await this.getRemoteVersion(sftp);
-    if (remoteVersion && compareVersions(VERSION, remoteVersion) < 0) {
-      return {
-        success: false,
-        action: 'version_rejected',
-        arch,
-        error: `Remote has renet v${remoteVersion} but this CLI bundles v${VERSION}. Run \`rdc update\` to upgrade your CLI, or set RDC_ALLOW_DOWNGRADE=1 to force.`,
-      };
-    }
-
-    return null;
   }
 
   /**
@@ -214,36 +200,26 @@ class RenetProvisionerService {
   }
 
   /**
-   * Check if the remote binary needs to be installed.
-   * Uses sha256sum on the remote to compare with expected hash.
+   * Get the remote binary's hash and version in a single SSH call.
+   * Returns hash (for content comparison) and version (for downgrade guard).
+   * Uses `renet hash` + `renet version` combined, with sha256sum fallback.
    */
-  private async needsInstall(sftp: SFTPClient, expectedHash: string): Promise<boolean> {
+  private async getRemoteHashAndVersion(
+    sftp: SFTPClient
+  ): Promise<{ hash: string | null; version: string | null }> {
     try {
-      const output = await sftp.exec(`sha256sum ${REMOTE_INSTALL_PATH}`);
-      // sha256sum output format: "<hash>  <path>"
-      const remoteHash = output.trim().split(/\s+/)[0];
-      return remoteHash !== expectedHash;
+      // Single SSH exec: get both hash and version. Two lines of output.
+      // Falls back to sha256sum if `renet hash` isn't available (pre-0.6.0).
+      const output = await sftp.exec(
+        `(${REMOTE_INSTALL_PATH} hash 2>/dev/null || sha256sum ${REMOTE_INSTALL_PATH} | cut -d' ' -f1) && ${REMOTE_INSTALL_PATH} version 2>/dev/null || true`
+      );
+      const lines = output.trim().split('\n');
+      const hash = lines[0]?.trim().split(/\s+/)[0] ?? null;
+      const versionMatch = /\d+\.\d+\.\d+/.exec(lines.slice(1).join(' '));
+      return { hash, version: versionMatch ? versionMatch[0] : null };
     } catch {
-      // Binary doesn't exist or sha256sum failed — needs install
-      return true;
-    }
-  }
-
-  /**
-   * Get the version of the renet binary currently on the remote machine.
-   * Returns null if the binary doesn't exist, can't execute, or version
-   * can't be parsed (in all these cases, we allow overwriting).
-   */
-  private async getRemoteVersion(sftp: SFTPClient): Promise<string | null> {
-    try {
-      const output = await sftp.exec(`${REMOTE_INSTALL_PATH} version`);
-      // Version output is i18n-localized but semver is always present.
-      // Examples: "renet version 0.5.0", "renet版本 0.5.0", "renet sürümü 0.5.0"
-      const match = /\d+\.\d+\.\d+/.exec(output);
-      return match ? match[0] : null;
-    } catch {
-      // Binary missing, corrupted, or can't execute — allow overwrite
-      return null;
+      // Binary doesn't exist or exec failed — needs install, no version to guard
+      return { hash: null, version: null };
     }
   }
 

@@ -1294,7 +1294,7 @@
           "description": "Soporte premium para infraestructura empresarial compleja",
           "features": [
             "Todo en Business +",
-            "Repositorios ilimitados, 1 TB+ cada uno",
+            "Repositorios ilimitados, 2 TB+ cada uno",
             "100.000 trabajos/mes",
             "SLA personalizado con tiempos de restauración garantizados",
             "Inquilino de infraestructura dedicado",
@@ -1569,8 +1569,8 @@
             "label": "Repositorios"
           },
           {
-            "key": "machines",
-            "label": "Máquinas"
+            "key": "floatingLicenses",
+            "label": "Licencias flotantes"
           },
           {
             "key": "usersTeams",
@@ -1580,28 +1580,28 @@
         "values": {
           "business": {
             "jobsPerMonth": "20.000",
-            "machines": "Ilimitado",
+            "floatingLicenses": "20",
             "repositories": "Ilimitado",
             "repoSize": "500 GB",
             "usersTeams": "Ilimitado"
           },
           "community": {
             "jobsPerMonth": "500",
-            "machines": "Ilimitado",
+            "floatingLicenses": "2",
             "repositories": "Ilimitado",
             "repoSize": "10 GB",
             "usersTeams": "Ilimitado"
           },
           "enterprise": {
             "jobsPerMonth": "100.000",
-            "machines": "Ilimitado",
+            "floatingLicenses": "50",
             "repositories": "Ilimitado",
-            "repoSize": "1 TB+",
+            "repoSize": "2 TB+",
             "usersTeams": "Ilimitado"
           },
           "professional": {
             "jobsPerMonth": "5.000",
-            "machines": "Ilimitado",
+            "floatingLicenses": "5",
             "repositories": "Ilimitado",
             "repoSize": "100 GB",
             "usersTeams": "Ilimitado"

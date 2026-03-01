@@ -1294,7 +1294,7 @@
           "description": "دعم متميز للبنية التحتية المؤسسية المعقدة",
           "features": [
             "كل ما في Business +",
-            "مستودعات غير محدودة، 1 تيرابايت+ لكل منها",
+            "مستودعات غير محدودة، 2 تيرابايت+ لكل منها",
             "100,000 وظيفة/شهر",
             "اتفاقية مستوى خدمة مخصصة مع أوقات استعادة مضمونة",
             "مستأجر بنية تحتية مخصص",
@@ -1569,8 +1569,8 @@
             "label": "المستودعات"
           },
           {
-            "key": "machines",
-            "label": "الأجهزة"
+            "key": "floatingLicenses",
+            "label": "التراخيص المتنقلة"
           },
           {
             "key": "usersTeams",
@@ -1580,28 +1580,28 @@
         "values": {
           "business": {
             "jobsPerMonth": "20,000",
-            "machines": "غير محدود",
+            "floatingLicenses": "20",
             "repositories": "غير محدود",
             "repoSize": "500 جيجابايت",
             "usersTeams": "غير محدود"
           },
           "community": {
             "jobsPerMonth": "500",
-            "machines": "غير محدود",
+            "floatingLicenses": "2",
             "repositories": "غير محدود",
             "repoSize": "10 جيجابايت",
             "usersTeams": "غير محدود"
           },
           "enterprise": {
             "jobsPerMonth": "100,000",
-            "machines": "غير محدود",
+            "floatingLicenses": "50",
             "repositories": "غير محدود",
-            "repoSize": "1 تيرابايت+",
+            "repoSize": "2 تيرابايت+",
             "usersTeams": "غير محدود"
           },
           "professional": {
             "jobsPerMonth": "5,000",
-            "machines": "غير محدود",
+            "floatingLicenses": "5",
             "repositories": "غير محدود",
             "repoSize": "100 جيجابايت",
             "usersTeams": "غير محدود"

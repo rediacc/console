@@ -67,7 +67,7 @@ jobs:
           cp packages/cli/dist/cli-bundle.cjs bundle/
           cp packages/cli/package.json bundle/
 
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
           name: cli-bundle-${{ github.sha }}
           path: bundle/
@@ -82,7 +82,7 @@ jobs:
           CLI_PKG=$(ls rediacc-cli-*.tgz 2>/dev/null | head -1)
           [ -n "$CLI_PKG" ] && cp "$CLI_PKG" rediacc-cli-latest.tgz
 
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
           name: cli-npm-${{ github.sha }}
           path: /tmp/cli-npm/
@@ -106,7 +106,7 @@ jobs:
         env:
           VITE_APP_VERSION: ${{ inputs.web_tag }}
           VITE_BASE_PATH: /console/
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
           name: build-web-${{ github.sha }}
           path: packages/web/dist/
@@ -127,7 +127,7 @@ jobs:
       - run: .ci/scripts/setup/install-deps.sh
       - run: .ci/scripts/setup/build-packages.sh
       - run: .ci/scripts/build/build-www.sh
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
           name: build-www-${{ github.sha }}
           path: packages/www/dist/
@@ -147,7 +147,7 @@ jobs:
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
       - run: .ci/scripts/build/build-json.sh
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
           name: build-json-${{ github.sha }}
           path: packages/json/dist/
@@ -209,17 +209,17 @@ jobs:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           name: build-web-${{ github.sha }}
           path: web-assets/
 
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           name: build-www-${{ github.sha }}
           path: www-assets/
 
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           name: cli-npm-${{ github.sha }}
           path: cli-npm/
@@ -290,7 +290,7 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           name: cli-bundle-${{ github.sha }}
           path: bundle/
@@ -399,7 +399,7 @@ jobs:
           GITHUB_BASE_REF: ${{ github.base_ref }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
 
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: always()
         with:
           name: build-middleware-coverage-amd64-${{ github.sha }}
@@ -450,7 +450,7 @@ jobs:
             cp -r ./* ../publish-final/
           fi
 
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: inputs.api_exists != 'true'
         with:
           name: middleware-publish-amd64-${{ github.sha }}
@@ -531,7 +531,7 @@ jobs:
             cp -r ./* ../publish-final/
           fi
 
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: inputs.api_exists != 'true'
         with:
           name: middleware-publish-arm64-${{ github.sha }}
@@ -559,12 +559,12 @@ jobs:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           name: middleware-publish-amd64-${{ github.sha }}
           path: publish/amd64/
 
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           name: middleware-publish-arm64-${{ github.sha }}
           path: publish/arm64/
@@ -638,19 +638,19 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
 
       # Download full renet binaries (with embedded CRIU/rsync) from unified build
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           name: renet-binaries-${{ github.sha }}
           path: binaries/
 
       # Download native CRIU/rsync binaries (also from unified build)
       # These are copied to /opt/ in Docker image for remote machine distribution
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           name: native-amd64-${{ github.sha }}
           path: binaries/
 
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           name: native-arm64-${{ github.sha }}
           path: binaries/

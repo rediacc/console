@@ -5796,30 +5796,37 @@
               "flags": "--server <url>",
               "descriptionKey": "options.serverUrl",
               "mandatory": false,
-              "defaultValue": "https://account.rediacc.com"
+              "defaultValue": null
             }
           ],
           "arguments": [],
           "subcommands": []
         },
         {
-          "name": "activate",
-          "descriptionKey": "commands.subscription.activate.description",
-          "options": [],
-          "arguments": [],
-          "subcommands": []
-        },
-        {
           "name": "status",
           "descriptionKey": "commands.subscription.status.description",
-          "options": [],
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machine",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
           "arguments": [],
           "subcommands": []
         },
         {
           "name": "refresh",
           "descriptionKey": "commands.subscription.refresh.description",
-          "options": [],
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machine",
+              "mandatory": true,
+              "defaultValue": null
+            }
+          ],
           "arguments": [],
           "subcommands": []
         }

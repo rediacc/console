@@ -1424,14 +1424,13 @@
         "validated": "تم التحقق من الرمز",
         "success": "تم تسجيل الدخول بنجاح",
         "plan": "الخطة: {{plan}}",
-        "machines": "الأجهزة: {{active}}/{{max}}"
-      },
-      "activate": {
-        "description": "تفعيل هذا الجهاز وإصدار ترخيص",
-        "activating": "جارٍ تفعيل الجهاز...",
-        "activated": "تم تفعيل الجهاز",
-        "installed": "تم تثبيت الترخيص",
-        "licenseFile": "ملف الترخيص: {{path}}"
+        "machines": "الأجهزة: {{active}}/{{max}}",
+        "openBrowser": "قم بزيارة هذا الرابط للتفويض:",
+        "waitingApproval": "في انتظار التفويض من المتصفح...",
+        "polling": "في انتظار الموافقة (اضغط Ctrl+C للإلغاء)...",
+        "expired": "انتهت مهلة التفويض. يرجى المحاولة مرة أخرى.",
+        "browserFailed": "تعذر فتح المتصفح تلقائياً. يرجى زيارة الرابط أعلاه.",
+        "initFailed": "فشل بدء تسجيل الدخول. هل الخادم يعمل؟"
       },
       "status": {
         "description": "عرض حالة الاشتراك والترخيص",
@@ -1691,9 +1690,7 @@
       "notFound": "لم يتم العثور على VS Code.\n\nالرجاء التثبيت من: https://code.visualstudio.com/\nأو قم بتعيين متغير البيئة REDIACC_VSCODE_PATH."
     },
     "subscription": {
-      "notLoggedIn": "لم يتم تسجيل الدخول. شغّل `rdc subscription login` أولاً.",
-      "noMachineId": "تعذر تحديد معرف الجهاز. تأكد من تثبيت renet أو وجود /etc/machine-id.",
-      "writeFailed": "فشلت كتابة ملف الترخيص. شغّل بصلاحيات sudo أو تأكد من قابلية الكتابة على {{path}}."
+      "notLoggedIn": "لم يتم تسجيل الدخول. شغّل `rdc subscription login` أولاً."
     }
   },
   "options": {

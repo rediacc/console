@@ -609,7 +609,7 @@
             "Maßgeschneidertes SLA (15–60 Minuten RTO) – Ihre Anforderungen, unser Engagement",
             "Dedizierter Infrastrukturmieter – maximale Sicherheit und Leistung",
             "24/7/365 White-Glove-Support",
-            "Unbegrenzte Repositories, je 1 TB+",
+            "Unbegrenzte Repositories, je 2 TB+",
             "96+ Stunden-Jobfenster mit 10+ aktiven/5+ reservierten Jobs",
             "1 Jahr+Aufbewahrung des Audit-Protokolls",
             "Vierteljährliche Notfallwiederherstellungsübungen – geprüfte Bereitschaft",
@@ -1294,7 +1294,7 @@
           "description": "White-Glove-Support für komplexe Unternehmensinfrastruktur",
           "features": [
             "Alles in Business +",
-            "Unbegrenzte Repositories, je 1 TB+",
+            "Unbegrenzte Repositories, je 2 TB+",
             "100.000 Jobs/Monat",
             "Benutzerdefinierte SLA mit garantierten Wiederherstellungszeiten",
             "Dedizierter Infrastruktur-Mandant",
@@ -1569,8 +1569,8 @@
             "label": "Repositories"
           },
           {
-            "key": "machines",
-            "label": "Maschinen"
+            "key": "floatingLicenses",
+            "label": "Floating-Lizenzen"
           },
           {
             "key": "usersTeams",
@@ -1580,28 +1580,28 @@
         "values": {
           "business": {
             "jobsPerMonth": "20.000",
-            "machines": "Unbegrenzt",
+            "floatingLicenses": "20",
             "repositories": "Unbegrenzt",
             "repoSize": "500 GB",
             "usersTeams": "Unbegrenzt"
           },
           "community": {
             "jobsPerMonth": "500",
-            "machines": "Unbegrenzt",
+            "floatingLicenses": "2",
             "repositories": "Unbegrenzt",
             "repoSize": "10 GB",
             "usersTeams": "Unbegrenzt"
           },
           "enterprise": {
             "jobsPerMonth": "100.000",
-            "machines": "Unbegrenzt",
+            "floatingLicenses": "50",
             "repositories": "Unbegrenzt",
-            "repoSize": "1 TB+",
+            "repoSize": "2 TB+",
             "usersTeams": "Unbegrenzt"
           },
           "professional": {
             "jobsPerMonth": "5.000",
-            "machines": "Unbegrenzt",
+            "floatingLicenses": "5",
             "repositories": "Unbegrenzt",
             "repoSize": "100 GB",
             "usersTeams": "Unbegrenzt"

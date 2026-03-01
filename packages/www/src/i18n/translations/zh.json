@@ -1261,7 +1261,7 @@
           "description": "面向复杂企业基础设施的白手套支持",
           "features": [
             "Business所有功能+",
-            "无限仓库，每个1 TB+",
+            "无限仓库，每个2 TB+",
             "100,000个作业/月",
             "带保证恢复时间的自定义SLA",
             "专用基础设施租户",
@@ -1525,8 +1525,8 @@
             "label": "仓库"
           },
           {
-            "key": "machines",
-            "label": "机器"
+            "key": "floatingLicenses",
+            "label": "浮动许可证"
           },
           {
             "key": "usersTeams",
@@ -1536,28 +1536,28 @@
         "values": {
           "business": {
             "jobsPerMonth": "20,000",
-            "machines": "无限制",
+            "floatingLicenses": "20",
             "repositories": "无限制",
             "repoSize": "500 GB",
             "usersTeams": "无限制"
           },
           "community": {
             "jobsPerMonth": "500",
-            "machines": "无限制",
+            "floatingLicenses": "2",
             "repositories": "无限制",
             "repoSize": "10 GB",
             "usersTeams": "无限制"
           },
           "enterprise": {
             "jobsPerMonth": "100,000",
-            "machines": "无限制",
+            "floatingLicenses": "50",
             "repositories": "无限制",
-            "repoSize": "1 TB+",
+            "repoSize": "2 TB+",
             "usersTeams": "无限制"
           },
           "professional": {
             "jobsPerMonth": "5,000",
-            "machines": "无限制",
+            "floatingLicenses": "5",
             "repositories": "无限制",
             "repoSize": "100 GB",
             "usersTeams": "无限制"

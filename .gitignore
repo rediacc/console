@@ -53,6 +53,8 @@ Thumbs.db
 .backend-state
 .provision-state
 .service-state
+.account-state
+.account-logs/
 .vm-info
 
 # Generated SEA config (platform-specific, created during CI build)

@@ -1295,7 +1295,7 @@
           "description": "Премиальная поддержка для сложной корпоративной инфраструктуры",
           "features": [
             "Всё из Business +",
-            "Неограниченное количество репозиториев, по 1 ТБ+ каждый",
+            "Неограниченное количество репозиториев, по 2 ТБ+ каждый",
             "100 000 заданий/месяц",
             "Индивидуальный SLA с гарантированным временем восстановления",
             "Выделенный инфраструктурный арендатор",
@@ -1570,8 +1570,8 @@
             "label": "Репозитории"
           },
           {
-            "key": "machines",
-            "label": "Машины"
+            "key": "floatingLicenses",
+            "label": "Плавающие лицензии"
           },
           {
             "key": "usersTeams",
@@ -1581,28 +1581,28 @@
         "values": {
           "business": {
             "jobsPerMonth": "20 000",
-            "machines": "Без ограничений",
+            "floatingLicenses": "20",
             "repositories": "Без ограничений",
             "repoSize": "500 ГБ",
             "usersTeams": "Без ограничений"
           },
           "community": {
             "jobsPerMonth": "500",
-            "machines": "Без ограничений",
+            "floatingLicenses": "2",
             "repositories": "Без ограничений",
             "repoSize": "10 ГБ",
             "usersTeams": "Без ограничений"
           },
           "enterprise": {
             "jobsPerMonth": "100 000",
-            "machines": "Без ограничений",
+            "floatingLicenses": "50",
             "repositories": "Без ограничений",
-            "repoSize": "1 ТБ+",
+            "repoSize": "2 ТБ+",
             "usersTeams": "Без ограничений"
           },
           "professional": {
             "jobsPerMonth": "5 000",
-            "machines": "Без ограничений",
+            "floatingLicenses": "5",
             "repositories": "Без ограничений",
             "repoSize": "100 ГБ",
             "usersTeams": "Без ограничений"

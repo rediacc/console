@@ -19,7 +19,7 @@ import { registerShortcuts } from './commands/shortcuts.js';
 import { registerSnapshotCommands } from './commands/snapshot.js';
 import { registerStorageCommands } from './commands/storage.js';
 import { registerStoreCommands } from './commands/store.js';
-import { autoRefreshLicense, registerSubscriptionCommands } from './commands/subscription.js';
+import { registerSubscriptionCommands } from './commands/subscription.js';
 import { registerSyncCommands } from './commands/sync.js';
 import { registerTeamCommands } from './commands/team.js';
 import { registerTermCommands } from './commands/term.js';
@@ -114,8 +114,7 @@ cli
       // Ignore errors getting user context
     }
 
-    // Auto-refresh license if >50 minutes old (non-blocking)
-    autoRefreshLicense().catch(() => {});
+    // License auto-refresh is now handled per-operation in services/license.ts
   })
   .hook('postAction', (_thisCommand, actionCommand) => {
     // End telemetry tracking for the command

@@ -1424,14 +1424,13 @@
         "validated": "Token überprüft",
         "success": "Erfolgreich angemeldet",
         "plan": "Tarif: {{plan}}",
-        "machines": "Maschinen: {{active}}/{{max}}"
-      },
-      "activate": {
-        "description": "Diese Maschine aktivieren und Lizenz ausstellen",
-        "activating": "Maschine wird aktiviert...",
-        "activated": "Maschine aktiviert",
-        "installed": "Lizenz installiert",
-        "licenseFile": "Lizenzdatei: {{path}}"
+        "machines": "Maschinen: {{active}}/{{max}}",
+        "openBrowser": "Besuchen Sie diese URL zur Autorisierung:",
+        "waitingApproval": "Warte auf Browser-Autorisierung...",
+        "polling": "Warte auf Genehmigung (drücken Sie Strg+C zum Abbrechen)...",
+        "expired": "Autorisierung abgelaufen. Bitte versuchen Sie es erneut.",
+        "browserFailed": "Browser konnte nicht automatisch geöffnet werden. Bitte besuchen Sie die obige URL.",
+        "initFailed": "Anmeldung konnte nicht gestartet werden. Läuft der Server?"
       },
       "status": {
         "description": "Abonnement- und Lizenzstatus anzeigen",
@@ -1691,9 +1690,7 @@
       "notFound": "VS Code nicht gefunden.\n\nBitte installieren Sie von: https://code.visualstudio.com/\nOder setzen Sie die REDIACC_VSCODE_PATH-Umgebungsvariable."
     },
     "subscription": {
-      "notLoggedIn": "Nicht angemeldet. Führen Sie zuerst `rdc subscription login` aus.",
-      "noMachineId": "Maschinen-ID konnte nicht ermittelt werden. Stellen Sie sicher, dass renet installiert ist oder /etc/machine-id existiert.",
-      "writeFailed": "Lizenzdatei konnte nicht geschrieben werden. Mit sudo ausführen oder sicherstellen, dass {{path}} beschreibbar ist."
+      "notLoggedIn": "Nicht angemeldet. Führen Sie zuerst `rdc subscription login` aus."
     }
   },
   "options": {

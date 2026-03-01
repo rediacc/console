@@ -53,7 +53,7 @@ export const PLAN_RESOURCES: Record<PlanCode, ResourceLimits> = {
     bridges: 10,
     maxReservedJobs: 5,
     jobTimeoutHours: 96,
-    maxRepositorySizeGb: 1024,
+    maxRepositorySizeGb: 2048,
     maxJobsPerMonth: 100000,
     maxPendingPerUser: 50,
     maxTasksPerMachine: 5,

@@ -611,7 +611,7 @@
             "SLA personnalisé (RTO de 15 à 60 minutes) : vos exigences, notre engagement",
             "Locataire d'infrastructure dédié : sécurité et performances maximales",
             "Assistance 24 heures sur 24, 7 jours sur 7 et 365 jours par an",
-            "Dépôts illimités, 1 To+ chacun",
+            "Dépôts illimités, 2 To+ chacun",
             "Fenêtres d'emploi de plus de 96 heures avec plus de 10 emplois actifs/5+ emplois réservés",
             "1 an+ de conservation des journaux d'audit",
             "Exercices trimestriels de reprise après sinistre : préparation testée",
@@ -1298,7 +1298,7 @@
           "description": "Support premium pour les infrastructures d'entreprise complexes",
           "features": [
             "Tout dans Business +",
-            "Dépôts illimités, 1 To+ chacun",
+            "Dépôts illimités, 2 To+ chacun",
             "100 000 emplois/mois",
             "SLA personnalisé avec temps de restauration garantis",
             "Locataire d'infrastructure dédié",
@@ -1575,8 +1575,8 @@
             "label": "Dépôts"
           },
           {
-            "key": "machines",
-            "label": "Machines"
+            "key": "floatingLicenses",
+            "label": "Licences flottantes"
           },
           {
             "key": "usersTeams",
@@ -1586,28 +1586,28 @@
         "values": {
           "business": {
             "jobsPerMonth": "20 000",
-            "machines": "Illimité",
+            "floatingLicenses": "20",
             "repositories": "Illimité",
             "repoSize": "500 Go",
             "usersTeams": "Illimité"
           },
           "community": {
             "jobsPerMonth": "500",
-            "machines": "Illimité",
+            "floatingLicenses": "2",
             "repositories": "Illimité",
             "repoSize": "10 Go",
             "usersTeams": "Illimité"
           },
           "enterprise": {
             "jobsPerMonth": "100 000",
-            "machines": "Illimité",
+            "floatingLicenses": "50",
             "repositories": "Illimité",
-            "repoSize": "1 To+",
+            "repoSize": "2 To+",
             "usersTeams": "Illimité"
           },
           "professional": {
             "jobsPerMonth": "5 000",
-            "machines": "Illimité",
+            "floatingLicenses": "5",
             "repositories": "Illimité",
             "repoSize": "100 Go",
             "usersTeams": "Illimité"

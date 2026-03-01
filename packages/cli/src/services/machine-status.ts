@@ -10,6 +10,7 @@ import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type { ListResult } from '@rediacc/shared/queue-vault/data/list-types.generated';
 import { isListResult } from '@rediacc/shared/queue-vault/data/list-types.generated';
 import { configService } from './config-resources.js';
+import { ensureMachineLicense } from './license.js';
 import { outputService } from './output.js';
 import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
 
@@ -39,6 +40,8 @@ export async function fetchMachineStatus(
 
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
+
+  await ensureMachineLicense(machine, sshPrivateKey);
 
   // Provision renet binary to remote
   if (options.debug) {

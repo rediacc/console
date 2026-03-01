@@ -1424,14 +1424,13 @@
         "validated": "Belirteç doğrulandı",
         "success": "Giriş başarılı",
         "plan": "Abonelik: {{plan}}",
-        "machines": "Makineler: {{active}}/{{max}}"
-      },
-      "activate": {
-        "description": "Bu makineyi etkinleştir ve lisans ver",
-        "activating": "Makine etkinleştiriliyor...",
-        "activated": "Makine etkinleştirildi",
-        "installed": "Lisans yüklendi",
-        "licenseFile": "Lisans dosyası: {{path}}"
+        "machines": "Makineler: {{active}}/{{max}}",
+        "openBrowser": "Yetkilendirmek için bu URL'yi ziyaret edin:",
+        "waitingApproval": "Tarayıcı yetkilendirmesi bekleniyor...",
+        "polling": "Onay bekleniyor (iptal etmek için Ctrl+C'ye basın)...",
+        "expired": "Yetkilendirme zaman aşımına uğradı. Lütfen tekrar deneyin.",
+        "browserFailed": "Tarayıcı otomatik olarak açılamadı. Lütfen yukarıdaki URL'yi ziyaret edin.",
+        "initFailed": "Giriş başlatılamadı. Sunucu çalışıyor mu?"
       },
       "status": {
         "description": "Abonelik ve lisans durumunu göster",
@@ -1691,9 +1690,7 @@
       "notFound": "VS Code bulunamadı.\n\nLütfen buradan yükleyin: https://code.visualstudio.com/\nVeya REDIACC_VSCODE_PATH ortam değişkenini ayarlayın."
     },
     "subscription": {
-      "notLoggedIn": "Giriş yapılmamış. Önce `rdc subscription login` komutunu çalıştırın.",
-      "noMachineId": "Makine kimliği belirlenemedi. renet'in kurulu olduğundan veya /etc/machine-id dosyasının mevcut olduğundan emin olun.",
-      "writeFailed": "Lisans dosyası yazılamadı. sudo ile çalıştırın veya {{path}} yazılabilir olduğundan emin olun."
+      "notLoggedIn": "Giriş yapılmamış. Önce `rdc subscription login` komutunu çalıştırın."
     }
   },
   "options": {

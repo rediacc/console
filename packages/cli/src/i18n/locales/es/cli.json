@@ -1424,14 +1424,13 @@
         "validated": "Token validado",
         "success": "Inicio de sesión exitoso",
         "plan": "Suscripción: {{plan}}",
-        "machines": "Máquinas: {{active}}/{{max}}"
-      },
-      "activate": {
-        "description": "Activar esta máquina y emitir una licencia",
-        "activating": "Activando máquina...",
-        "activated": "Máquina activada",
-        "installed": "Licencia instalada",
-        "licenseFile": "Archivo de licencia: {{path}}"
+        "machines": "Máquinas: {{active}}/{{max}}",
+        "openBrowser": "Visite esta URL para autorizar:",
+        "waitingApproval": "Esperando la autorización del navegador...",
+        "polling": "Esperando aprobación (presione Ctrl+C para cancelar)...",
+        "expired": "La autorización ha expirado. Por favor, inténtelo de nuevo.",
+        "browserFailed": "No se pudo abrir el navegador automáticamente. Por favor, visite la URL anterior.",
+        "initFailed": "No se pudo iniciar la sesión. ¿Está el servidor en ejecución?"
       },
       "status": {
         "description": "Mostrar estado de suscripción y licencia",
@@ -1691,9 +1690,7 @@
       "notFound": "VS Code no encontrado.\n\nInstale desde: https://code.visualstudio.com/\nO establezca la variable de entorno REDIACC_VSCODE_PATH."
     },
     "subscription": {
-      "notLoggedIn": "No ha iniciado sesión. Ejecute primero `rdc subscription login`.",
-      "noMachineId": "No se pudo determinar el ID de máquina. Asegúrese de que renet esté instalado o que exista /etc/machine-id.",
-      "writeFailed": "No se pudo escribir el archivo de licencia. Ejecute con sudo o asegúrese de que {{path}} sea escribible."
+      "notLoggedIn": "No ha iniciado sesión. Ejecute primero `rdc subscription login`."
     }
   },
   "options": {
