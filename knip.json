@@ -123,7 +123,8 @@
     "astro-seo",
     "glob",
     "react-i18next",
-    "asciinema-player"
+    "asciinema-player",
+    "tiny-typed-emitter"
   ],
   "ignoreBinaries": ["rimraf", "vite", "wrangler"]
 }
