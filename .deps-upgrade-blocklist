@@ -21,5 +21,8 @@ electron # v40.x breaks native module rebuild with nan library errors
 # Cloudflare workers-types - npm latest tag lags behind wrangler peer dep
 @cloudflare/workers-types # Pinned to match wrangler peerOptional; npm latest tag trails behind
 
+# react-syntax-highlighter - npm workspace hoisting bug with transitive deps
+react-syntax-highlighter # ^16.1.1 spec causes workspace-level install, losing transitive deps (lowlight, highlight.js, etc)
+
 # Zod v4 - major rewrite with different API surface
 zod # v4.x requires schema migration, different error handling
