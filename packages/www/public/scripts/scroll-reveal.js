@@ -3,16 +3,16 @@
  * One-shot: once visible, the element stays visible and the observer disconnects.
  */
 (function () {
-  var elements = document.querySelectorAll('.reveal');
+  const elements = document.querySelectorAll('.reveal');
   if (!elements.length) return;
 
-  var remaining = elements.length;
-  var observer = new IntersectionObserver(
-    function (entries) {
-      for (var i = 0; i < entries.length; i++) {
-        if (entries[i].isIntersecting) {
-          entries[i].target.classList.add('visible');
-          observer.unobserve(entries[i].target);
+  let remaining = elements.length;
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
           remaining--;
           if (remaining <= 0) observer.disconnect();
         }
@@ -21,5 +21,5 @@
     { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
   );
 
-  for (var i = 0; i < elements.length; i++) observer.observe(elements[i]);
+  for (const el of elements) observer.observe(el);
 })();

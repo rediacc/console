@@ -3,28 +3,27 @@
  * Separate from the existing solutions.ts — both systems coexist.
  */
 
-import type { ImageMetadata } from 'astro';
-
 // Problem section illustrations
-import illustrationEnvironmentCloning from '../assets/images/illustrations/environment-cloning.svg';
-import illustrationProductionParity from '../assets/images/illustrations/production-parity.svg';
-import illustrationInfrastructureCosts from '../assets/images/illustrations/infrastructure-costs.svg';
-import illustrationIntegrations from '../assets/images/illustrations/integrations.svg';
-import illustrationBackupVerification from '../assets/images/illustrations/backup-verification.svg';
-import illustrationRetentionCompliance from '../assets/images/illustrations/retention-compliance.svg';
-import illustrationInstantRecovery from '../assets/images/illustrations/instant-recovery.svg';
-import illustrationImmutableBackups from '../assets/images/illustrations/immutable-backups.svg';
-import illustrationSafeOsTesting from '../assets/images/illustrations/safe-os-testing.svg';
-import illustrationRapidRecovery from '../assets/images/illustrations/rapid-recovery.svg';
-import illustrationEncryption from '../assets/images/illustrations/encryption.svg';
-import illustrationAuditTrail from '../assets/images/illustrations/audit-trail.svg';
-import illustrationMigrationSafety from '../assets/images/illustrations/migration-safety.svg';
-import illustrationVendorLockIn from '../assets/images/illustrations/vendor-lock-in.svg';
-import illustrationFailoverTesting from '../assets/images/illustrations/failover-testing.svg';
-import illustrationCloudOutageProtection from '../assets/images/illustrations/cloud-outage-protection.svg';
 import illustrationAiPentesting from '../assets/images/illustrations/ai-pentesting.svg';
+import illustrationAuditTrail from '../assets/images/illustrations/audit-trail.svg';
+import illustrationBackupVerification from '../assets/images/illustrations/backup-verification.svg';
+import illustrationCloudOutageProtection from '../assets/images/illustrations/cloud-outage-protection.svg';
 import illustrationContinuousSecurityTesting from '../assets/images/illustrations/continuous-security-testing.svg';
+import illustrationEncryption from '../assets/images/illustrations/encryption.svg';
+import illustrationEnvironmentCloning from '../assets/images/illustrations/environment-cloning.svg';
+import illustrationFailoverTesting from '../assets/images/illustrations/failover-testing.svg';
+import illustrationImmutableBackups from '../assets/images/illustrations/immutable-backups.svg';
+import illustrationInfrastructureCosts from '../assets/images/illustrations/infrastructure-costs.svg';
+import illustrationInstantRecovery from '../assets/images/illustrations/instant-recovery.svg';
+import illustrationIntegrations from '../assets/images/illustrations/integrations.svg';
+import illustrationMigrationSafety from '../assets/images/illustrations/migration-safety.svg';
+import illustrationProductionParity from '../assets/images/illustrations/production-parity.svg';
+import illustrationRapidRecovery from '../assets/images/illustrations/rapid-recovery.svg';
+import illustrationRetentionCompliance from '../assets/images/illustrations/retention-compliance.svg';
+import illustrationSafeOsTesting from '../assets/images/illustrations/safe-os-testing.svg';
+import illustrationVendorLockIn from '../assets/images/illustrations/vendor-lock-in.svg';
 import illustrationVulnerabilityManagement from '../assets/images/illustrations/vulnerability-management.svg';
+import type { ImageMetadata } from 'astro';
 
 export type SectionType =
   | 'hero'
@@ -71,26 +70,30 @@ export interface SolutionPageConfig {
   illustration?: ImageMetadata;
 }
 
+const ALL_SECTIONS = [
+  'hero',
+  'stats',
+  'problem',
+  'costCalculator',
+  'howItWorks',
+  'techDiff',
+  'benefits',
+  'competitorComparison',
+  'socialProof',
+  'bottomCta',
+  'techStrip',
+  'exploreSolutions',
+  'references',
+] as const satisfies readonly SectionType[];
+
+const SECTIONS_NO_COMPARISON = ALL_SECTIONS.filter((s) => s !== 'competitorComparison');
+
 export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
   'environment-cloning': {
     contentKey: 'environmentCloning',
     category: 'dev-env',
     illustration: illustrationEnvironmentCloning,
-    sections: [
-      'hero',
-      'stats',
-      'problem',
-      'costCalculator',
-      'howItWorks',
-      'techDiff',
-      'benefits',
-      'competitorComparison',
-      'socialProof',
-      'bottomCta',
-      'techStrip',
-      'exploreSolutions',
-      'references',
-    ],
+    sections: ALL_SECTIONS,
     calculatorPreset: 'environment-cloning',
     competitors: ['Codespaces', 'Coder', 'Vercel', 'Delphix', 'Neon'],
     techStrip: [
@@ -108,21 +111,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'infrastructureCosts',
     category: 'dev-env',
     illustration: illustrationInfrastructureCosts,
-    sections: [
-      'hero',
-      'stats',
-      'problem',
-      'costCalculator',
-      'howItWorks',
-      'techDiff',
-      'benefits',
-      'competitorComparison',
-      'socialProof',
-      'bottomCta',
-      'techStrip',
-      'exploreSolutions',
-      'references',
-    ],
+    sections: ALL_SECTIONS,
     calculatorPreset: 'infrastructure-costs',
     competitors: ['Codespaces', 'Coder', 'Vercel', 'Railway', 'Rediacc'],
     techStrip: [
@@ -140,21 +129,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'productionParity',
     category: 'dev-env',
     illustration: illustrationProductionParity,
-    sections: [
-      'hero',
-      'stats',
-      'problem',
-      'costCalculator',
-      'howItWorks',
-      'techDiff',
-      'benefits',
-      'competitorComparison',
-      'socialProof',
-      'bottomCta',
-      'techStrip',
-      'exploreSolutions',
-      'references',
-    ],
+    sections: ALL_SECTIONS,
     calculatorPreset: 'production-parity',
     competitors: ['Codespaces', 'Coder', 'Vercel', 'Railway', 'Rediacc'],
     techStrip: [
@@ -172,21 +147,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'integrations',
     category: 'dev-env',
     illustration: illustrationIntegrations,
-    sections: [
-      'hero',
-      'stats',
-      'problem',
-      'costCalculator',
-      'howItWorks',
-      'techDiff',
-      'benefits',
-      'competitorComparison',
-      'socialProof',
-      'bottomCta',
-      'techStrip',
-      'exploreSolutions',
-      'references',
-    ],
+    sections: ALL_SECTIONS,
     calculatorPreset: 'integrations',
     competitors: ['Codespaces', 'Coder', 'Vercel', 'Railway', 'Rediacc'],
     techStrip: [
@@ -204,21 +165,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'immutableBackups',
     category: 'ransomware',
     illustration: illustrationImmutableBackups,
-    sections: [
-      'hero',
-      'stats',
-      'problem',
-      'costCalculator',
-      'howItWorks',
-      'techDiff',
-      'benefits',
-      'competitorComparison',
-      'socialProof',
-      'bottomCta',
-      'techStrip',
-      'exploreSolutions',
-      'references',
-    ],
+    sections: ALL_SECTIONS,
     calculatorPreset: 'immutable-backups',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva', 'Zerto'],
     techStrip: [
@@ -236,21 +183,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'migrationSafety',
     category: 'encryption',
     illustration: illustrationMigrationSafety,
-    sections: [
-      'hero',
-      'stats',
-      'problem',
-      'costCalculator',
-      'howItWorks',
-      'techDiff',
-      'benefits',
-      'competitorComparison',
-      'socialProof',
-      'bottomCta',
-      'techStrip',
-      'exploreSolutions',
-      'references',
-    ],
+    sections: ALL_SECTIONS,
     calculatorPreset: 'migration-safety',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva'],
     techStrip: [
@@ -268,21 +201,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'instantRecovery',
     category: 'backups',
     illustration: illustrationInstantRecovery,
-    sections: [
-      'hero',
-      'stats',
-      'problem',
-      'costCalculator',
-      'howItWorks',
-      'techDiff',
-      'benefits',
-      'competitorComparison',
-      'socialProof',
-      'bottomCta',
-      'techStrip',
-      'exploreSolutions',
-      'references',
-    ],
+    sections: ALL_SECTIONS,
     calculatorPreset: 'instant-recovery',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva'],
     techStrip: [
@@ -300,21 +219,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'safeOsTesting',
     category: 'ransomware',
     illustration: illustrationSafeOsTesting,
-    sections: [
-      'hero',
-      'stats',
-      'problem',
-      'costCalculator',
-      'howItWorks',
-      'techDiff',
-      'benefits',
-      'competitorComparison',
-      'socialProof',
-      'bottomCta',
-      'techStrip',
-      'exploreSolutions',
-      'references',
-    ],
+    sections: ALL_SECTIONS,
     calculatorPreset: 'safe-os-testing',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Zerto'],
     techStrip: [
@@ -332,21 +237,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'retentionCompliance',
     category: 'backups',
     illustration: illustrationRetentionCompliance,
-    sections: [
-      'hero',
-      'stats',
-      'problem',
-      'costCalculator',
-      'howItWorks',
-      'techDiff',
-      'benefits',
-      'competitorComparison',
-      'socialProof',
-      'bottomCta',
-      'techStrip',
-      'exploreSolutions',
-      'references',
-    ],
+    sections: ALL_SECTIONS,
     calculatorPreset: 'retention-compliance',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva'],
     techStrip: [
@@ -364,21 +255,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'cloudOutageProtection',
     category: 'multi-cloud',
     illustration: illustrationCloudOutageProtection,
-    sections: [
-      'hero',
-      'stats',
-      'problem',
-      'costCalculator',
-      'howItWorks',
-      'techDiff',
-      'benefits',
-      'competitorComparison',
-      'socialProof',
-      'bottomCta',
-      'techStrip',
-      'exploreSolutions',
-      'references',
-    ],
+    sections: ALL_SECTIONS,
     calculatorPreset: 'cloud-outage-protection',
     competitors: ['AWS Backup', 'Veeam', 'Zerto', 'Druva'],
     techStrip: [
@@ -396,21 +273,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'failoverTesting',
     category: 'multi-cloud',
     illustration: illustrationFailoverTesting,
-    sections: [
-      'hero',
-      'stats',
-      'problem',
-      'costCalculator',
-      'howItWorks',
-      'techDiff',
-      'benefits',
-      'competitorComparison',
-      'socialProof',
-      'bottomCta',
-      'techStrip',
-      'exploreSolutions',
-      'references',
-    ],
+    sections: ALL_SECTIONS,
     calculatorPreset: 'failover-testing',
     competitors: ['AWS Backup', 'Veeam', 'Zerto', 'Druva'],
     techStrip: [
@@ -428,21 +291,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'backupVerification',
     category: 'backups',
     illustration: illustrationBackupVerification,
-    sections: [
-      'hero',
-      'stats',
-      'problem',
-      'costCalculator',
-      'howItWorks',
-      'techDiff',
-      'benefits',
-      'competitorComparison',
-      'socialProof',
-      'bottomCta',
-      'techStrip',
-      'exploreSolutions',
-      'references',
-    ],
+    sections: ALL_SECTIONS,
     calculatorPreset: 'backup-verification',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva'],
     techStrip: [
@@ -460,20 +309,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'vulnerabilityManagement',
     category: 'defense',
     illustration: illustrationVulnerabilityManagement,
-    sections: [
-      'hero',
-      'stats',
-      'problem',
-      'costCalculator',
-      'howItWorks',
-      'techDiff',
-      'benefits',
-      'socialProof',
-      'bottomCta',
-      'techStrip',
-      'exploreSolutions',
-      'references',
-    ],
+    sections: SECTIONS_NO_COMPARISON,
     calculatorPreset: 'vulnerability-management',
     techStrip: [
       { name: 'GitLab', kind: 'devops' },
@@ -490,20 +326,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'aiPentesting',
     category: 'defense',
     illustration: illustrationAiPentesting,
-    sections: [
-      'hero',
-      'stats',
-      'problem',
-      'costCalculator',
-      'howItWorks',
-      'techDiff',
-      'benefits',
-      'socialProof',
-      'bottomCta',
-      'techStrip',
-      'exploreSolutions',
-      'references',
-    ],
+    sections: SECTIONS_NO_COMPARISON,
     calculatorPreset: 'ai-pentesting',
     techStrip: [
       { name: 'GitLab', kind: 'devops' },
@@ -520,21 +343,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'encryption',
     category: 'encryption',
     illustration: illustrationEncryption,
-    sections: [
-      'hero',
-      'stats',
-      'problem',
-      'costCalculator',
-      'howItWorks',
-      'techDiff',
-      'benefits',
-      'competitorComparison',
-      'socialProof',
-      'bottomCta',
-      'techStrip',
-      'exploreSolutions',
-      'references',
-    ],
+    sections: ALL_SECTIONS,
     calculatorPreset: 'encryption',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva'],
     techStrip: [
@@ -552,20 +361,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'continuousSecurityTesting',
     category: 'defense',
     illustration: illustrationContinuousSecurityTesting,
-    sections: [
-      'hero',
-      'stats',
-      'problem',
-      'costCalculator',
-      'howItWorks',
-      'techDiff',
-      'benefits',
-      'socialProof',
-      'bottomCta',
-      'techStrip',
-      'exploreSolutions',
-      'references',
-    ],
+    sections: SECTIONS_NO_COMPARISON,
     calculatorPreset: 'continuous-security-testing',
     techStrip: [
       { name: 'GitLab', kind: 'devops' },
@@ -582,21 +378,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'auditTrail',
     category: 'encryption',
     illustration: illustrationAuditTrail,
-    sections: [
-      'hero',
-      'stats',
-      'problem',
-      'costCalculator',
-      'howItWorks',
-      'techDiff',
-      'benefits',
-      'competitorComparison',
-      'socialProof',
-      'bottomCta',
-      'techStrip',
-      'exploreSolutions',
-      'references',
-    ],
+    sections: ALL_SECTIONS,
     calculatorPreset: 'audit-trail',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva'],
     techStrip: [
@@ -614,21 +396,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'rapidRecovery',
     category: 'ransomware',
     illustration: illustrationRapidRecovery,
-    sections: [
-      'hero',
-      'stats',
-      'problem',
-      'costCalculator',
-      'howItWorks',
-      'techDiff',
-      'benefits',
-      'competitorComparison',
-      'socialProof',
-      'bottomCta',
-      'techStrip',
-      'exploreSolutions',
-      'references',
-    ],
+    sections: ALL_SECTIONS,
     calculatorPreset: 'rapid-recovery',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva', 'Zerto'],
     techStrip: [
@@ -646,21 +414,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'vendorLockIn',
     category: 'multi-cloud',
     illustration: illustrationVendorLockIn,
-    sections: [
-      'hero',
-      'stats',
-      'problem',
-      'costCalculator',
-      'howItWorks',
-      'techDiff',
-      'benefits',
-      'competitorComparison',
-      'socialProof',
-      'bottomCta',
-      'techStrip',
-      'exploreSolutions',
-      'references',
-    ],
+    sections: ALL_SECTIONS,
     calculatorPreset: 'vendor-lock-in',
     competitors: ['AWS Backup', 'Veeam', 'Zerto', 'Druva'],
     techStrip: [

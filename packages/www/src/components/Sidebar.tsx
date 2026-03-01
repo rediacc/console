@@ -1,21 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { SOLUTION_PAGES, type SolutionCategory } from '../config/solution-pages';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
-import { SOLUTION_PAGES, type SolutionCategory } from '../config/solution-pages';
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const CATEGORY_ORDER: SolutionCategory[] = [
+const CATEGORY_ORDER = [
   'ransomware',
   'multi-cloud',
   'backups',
   'encryption',
   'dev-env',
   'defense',
-];
+] as const satisfies readonly SolutionCategory[];
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const currentLang = useLanguage();
@@ -35,7 +35,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         .filter((slug) => SOLUTION_PAGES[slug].category === cat)
         .map((slug) => {
           const config = SOLUTION_PAGES[slug];
-          const content = to(`pages.solutionPages.${config.contentKey}` as any) as any;
+          const content = to(`pages.solutionPages.${config.contentKey}`) as
+            | { hero?: { title?: string } }
+            | undefined;
           return {
             href: `/${currentLang}/solutions/${slug}`,
             label: content?.hero?.title ?? slug,

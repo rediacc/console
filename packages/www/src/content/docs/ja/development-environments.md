@@ -4,7 +4,7 @@ description: 開発環境を何日も待つ必要はありません。 オンデ
 category: Use Cases
 order: 10
 language: ja
-sourceHash: 6128ad0f1099ba85
+sourceHash: c13b017afc2c8371
 ---
 
 > **一時的な環境。 生産同等。 DevOps チケットはゼロです。**

@@ -6,7 +6,7 @@ description: >-
 category: Use Cases
 order: 10
 language: ru
-sourceHash: 6128ad0f1099ba85
+sourceHash: c13b017afc2c8371
 ---
 
 > **Эфемерная среда. Производственный паритет. Нулевые билеты DevOps.**

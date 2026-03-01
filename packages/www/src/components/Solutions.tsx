@@ -1,16 +1,16 @@
 import React from 'react';
+import { SOLUTION_PAGES, type SolutionCategory } from '../config/solution-pages';
 import { useTranslation } from '../i18n/react';
 import type { Language } from '../i18n/types';
-import { SOLUTION_PAGES, type SolutionCategory } from '../config/solution-pages';
 
-const CATEGORY_ORDER: SolutionCategory[] = [
+const CATEGORY_ORDER = [
   'ransomware',
   'multi-cloud',
   'backups',
   'encryption',
   'dev-env',
   'defense',
-];
+] as const satisfies readonly SolutionCategory[];
 
 interface WindowWithImageModal extends Window {
   openImageModal?: (src: string, alt: string) => void;
@@ -40,7 +40,9 @@ const Solutions: React.FC<SolutionsProps> = ({ lang = 'en' }) => {
         .filter((slug) => SOLUTION_PAGES[slug].category === cat)
         .map((slug) => {
           const config = SOLUTION_PAGES[slug];
-          const content = to(`pages.solutionPages.${config.contentKey}` as any) as any;
+          const content = to(`pages.solutionPages.${config.contentKey}`) as
+            | { hero?: { title?: string }; meta?: { description?: string } }
+            | undefined;
           return {
             slug,
             title: content?.hero?.title ?? slug,
@@ -64,7 +66,11 @@ const Solutions: React.FC<SolutionsProps> = ({ lang = 'en' }) => {
               <h3 className="solutions-category-title">{group.label}</h3>
               <div className="solutions-category-grid reveal-stagger">
                 {group.pages.map((page) => (
-                  <a key={page.slug} href={page.href} className="solution-card solution-card-link reveal">
+                  <a
+                    key={page.slug}
+                    href={page.href}
+                    className="solution-card solution-card-link reveal"
+                  >
                     <h4 className="solution-title">{page.title}</h4>
                     <p className="solution-description">{page.description}</p>
                     <div className="solution-card-footer">

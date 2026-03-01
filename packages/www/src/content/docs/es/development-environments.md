@@ -7,7 +7,7 @@ description: >-
 category: Use Cases
 order: 10
 language: es
-sourceHash: 6128ad0f1099ba85
+sourceHash: c13b017afc2c8371
 ---
 
 > **Ambientes efímeros. Paridad de producción. Cero tickets de DevOps.**

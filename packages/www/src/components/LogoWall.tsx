@@ -8,9 +8,9 @@ interface LogoWallProps {
 
 const LogoWall: React.FC<LogoWallProps> = ({ lang = 'en' }) => {
   const { t, to } = useTranslation(lang);
-  const categories = to('logoWall.categories') as string[];
+  const categories = to('logoWall.categories');
 
-  if (!categories || categories.length === 0) return null;
+  if (categories.length === 0) return null;
 
   return (
     <section className="logo-wall" aria-label={t('logoWall.title')}>

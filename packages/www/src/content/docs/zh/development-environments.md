@@ -4,7 +4,7 @@ description: 停止等待开发环境。 根据需要在 60 秒内克隆完整�
 category: Use Cases
 order: 10
 language: zh
-sourceHash: 6128ad0f1099ba85
+sourceHash: c13b017afc2c8371
 ---
 
 > **短暂的环境。 生产平价。 零 DevOps 门票。**

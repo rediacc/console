@@ -79,7 +79,8 @@
   --font-family:
     'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-family-mono:
-    'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+    'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono',
+    monospace;
   --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
   --font-size-lg: 1.125rem;
@@ -267,7 +268,7 @@
 
 /* ===== DARK THEME ===== */
 /* JS-driven: inline script in <head> sets data-theme from localStorage / OS preference */
-:root[data-theme="dark"] {
+:root[data-theme='dark'] {
   color-scheme: dark;
 
   /* Core palette */
@@ -2592,7 +2593,9 @@ a[target='_blank']::after {
 .reveal {
   opacity: 0;
   transform: translateY(20px);
-  transition: opacity 0.5s ease, transform 0.5s ease;
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s ease;
 }
 
 .reveal.visible {
@@ -2601,12 +2604,24 @@ a[target='_blank']::after {
 }
 
 /* Stagger children in grids */
-.reveal-stagger > .reveal:nth-child(1) { transition-delay: 0s; }
-.reveal-stagger > .reveal:nth-child(2) { transition-delay: 0.1s; }
-.reveal-stagger > .reveal:nth-child(3) { transition-delay: 0.15s; }
-.reveal-stagger > .reveal:nth-child(4) { transition-delay: 0.2s; }
-.reveal-stagger > .reveal:nth-child(5) { transition-delay: 0.25s; }
-.reveal-stagger > .reveal:nth-child(6) { transition-delay: 0.3s; }
+.reveal-stagger > .reveal:nth-child(1) {
+  transition-delay: 0s;
+}
+.reveal-stagger > .reveal:nth-child(2) {
+  transition-delay: 0.1s;
+}
+.reveal-stagger > .reveal:nth-child(3) {
+  transition-delay: 0.15s;
+}
+.reveal-stagger > .reveal:nth-child(4) {
+  transition-delay: 0.2s;
+}
+.reveal-stagger > .reveal:nth-child(5) {
+  transition-delay: 0.25s;
+}
+.reveal-stagger > .reveal:nth-child(6) {
+  transition-delay: 0.3s;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .reveal {

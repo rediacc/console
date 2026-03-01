@@ -29,7 +29,8 @@
 
   --sp-font-sans:
     'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --sp-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  --sp-font-mono:
+    'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
 
   --sp-page-max: 1200px;
   --sp-content-max: 720px;
@@ -1929,7 +1930,7 @@
 }
 
 /* ========== DARK THEME ========== */
-:root[data-theme="dark"] .sp-page {
+:root[data-theme='dark'] .sp-page {
   --sp-bg-light: #141416;
   --sp-bg-white: #1a1a1b;
   --sp-bg-stats: #1a2118;
