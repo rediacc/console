@@ -165,6 +165,18 @@ registerShortcuts(cli);
 // Apply mode guards, help tags, and domain grouping from the command registry
 applyRegistry(cli);
 
+// Add usage examples to top-level help
+cli.addHelpText(
+  'after',
+  `
+${t('help.examples')}
+  $ rdc machine info server-1              ${t('help.cli.machineInfo')}
+  $ rdc term server-1 my-app               ${t('help.cli.termRepo')}
+  $ rdc repo up my-app -m server-1         ${t('help.cli.repoUp')}
+  $ rdc sync upload -m server-1 -r my-app  ${t('help.cli.syncUpload')}
+`
+);
+
 // Provide a clear error for unsupported subcommands
 cli.on('command:*', (operands) => {
   const [first, second] = operands;

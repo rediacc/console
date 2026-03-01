@@ -1,0 +1,35 @@
+---
+interface ReferenceItem {
+  text: string;
+  url: string;
+}
+
+interface Props {
+  references: {
+    label: string;
+    items: ReferenceItem[];
+    disclaimer?: string;
+  };
+}
+
+const { references } = Astro.props;
+---
+
+<section class="sp-references">
+  <div class="sp-references-inner">
+    <div class="sp-references-label">{references.label}</div>
+    <ol class="sp-references-list">
+      {references.items.map((ref) => (
+        <li>
+          {ref.text}{' '}
+          <a href={ref.url} target="_blank" rel="noopener noreferrer">
+            {new URL(ref.url).hostname}
+          </a>
+        </li>
+      ))}
+    </ol>
+    {references.disclaimer && (
+      <div class="sp-ref-note">{references.disclaimer}</div>
+    )}
+  </div>
+</section>

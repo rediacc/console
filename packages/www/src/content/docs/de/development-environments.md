@@ -218,7 +218,7 @@ Basierend auf Branchenforschung aus über 100 Quellen und über 65.000 Entwickle
 
 * [**Time-Travel Recovery**](/de/docs/time-travel-recovery) – Wiederherstellung der Infrastruktur zu einem bestimmten Zeitpunkt
 * [**Risikofreie Upgrades**](/de/docs/risk-free-upgrades) – Testen Sie Betriebssystemmigrationen ohne Risiko
-* [**Disaster Recovery**](/de/solutions/disaster-recovery) – Verifizierte Backups, die tatsächlich funktionieren
+* [**Disaster Recovery**](/de/solutions/backup-verification) – Verifizierte Backups, die tatsächlich funktionieren
 
 ---
 

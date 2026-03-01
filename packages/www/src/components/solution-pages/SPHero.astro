@@ -1,0 +1,43 @@
+---
+import SPTerminalMockup from './SPTerminalMockup.astro';
+
+interface Props {
+  hero: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    differentiator?: string;
+    primaryCta: string;
+    secondaryCta?: string;
+  };
+  terminal?: {
+    lines: any[];
+  };
+}
+
+const { hero, terminal } = Astro.props;
+---
+
+<section class="sp-hero">
+  <div class="sp-hero-content">
+    <div class="sp-hero-badge">
+      <span class="sp-hero-badge-dot"></span>
+      {hero.badge}
+    </div>
+    <h1>{hero.title}</h1>
+    <p class="sp-hero-sub">{hero.subtitle}</p>
+    {hero.differentiator && (
+      <p class="sp-hero-differentiator">{hero.differentiator}</p>
+    )}
+    <div class="sp-hero-ctas">
+      <a href="#" class="sp-btn-primary">
+        {hero.primaryCta}
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      {hero.secondaryCta && (
+        <a href="#problem" class="sp-btn-secondary-dark">{hero.secondaryCta} &rarr;</a>
+      )}
+    </div>
+    {terminal && <SPTerminalMockup lines={terminal.lines} />}
+  </div>
+</section>

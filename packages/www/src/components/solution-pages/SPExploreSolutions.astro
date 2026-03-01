@@ -1,0 +1,48 @@
+---
+import type { Language } from '../../i18n/types';
+
+interface ExploreSolution {
+  category: string;
+  title: string;
+  description: string;
+  slug: string;
+  current?: boolean;
+}
+
+interface Props {
+  explore: {
+    title: string;
+    solutions: ExploreSolution[];
+  };
+  currentSlug: string;
+  lang: Language;
+}
+
+const { explore, currentSlug, lang } = Astro.props;
+---
+
+<section class="sp-explore">
+  <div class="sp-explore-inner">
+    <h2>{explore.title}</h2>
+    <div class="sp-explore-grid">
+      {explore.solutions.map((sol) => {
+        const isCurrent = sol.slug === currentSlug || sol.current;
+        const href = isCurrent ? '#' : `/${lang}/solutions/${sol.slug}`;
+        return (
+          <a
+            href={href}
+            class:list={['sp-explore-card', { current: isCurrent }]}
+            data-category={sol.category}
+          >
+            <span class="sp-explore-card-category">{sol.category.replace('-', ' ')}</span>
+            <h3>{sol.title}</h3>
+            <p>{sol.description}</p>
+            <span class="sp-explore-card-arrow">
+              {isCurrent ? 'Current page' : '\u2192'}
+            </span>
+          </a>
+        );
+      })}
+    </div>
+  </div>
+</section>

@@ -367,6 +367,15 @@ async function checkVSCodeSetup(isInsiders = false): Promise<void> {
 export function registerVSCodeCommands(program: Command): void {
   const vscode = program.command('vscode').description(t('commands.vscode.description'));
 
+  vscode.addHelpText(
+    'after',
+    `
+${t('help.examples')}
+  $ rdc vscode server-1              ${t('help.vscode.machine')}
+  $ rdc vscode server-1 my-app       ${t('help.vscode.repo')}
+`
+  );
+
   // Connect subcommand
   vscode
     .command('connect')

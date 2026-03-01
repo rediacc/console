@@ -132,6 +132,7 @@ function applyHelpConfig(cmd: Command): void {
   cmd.configureHelp({
     ...baseHelpConfig,
     optionTerm: buildOptionTerm([...cmd.options]),
+    helpWidth: 80,
   });
   for (const sub of cmd.commands) {
     applyHelpConfig(sub);

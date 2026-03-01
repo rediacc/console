@@ -1,6 +1,6 @@
 {
   "cli": {
-    "description": "Rediacc CLI - Interfaz de línea de comandos para operaciones de Rediacc"
+    "description": "Gestionar máquinas, repositorios y despliegues por SSH"
   },
   "commands": {
     "audit": {
@@ -102,7 +102,7 @@
       }
     },
     "backup": {
-      "description": "Respaldar y restaurar repositorios",
+      "description": "Respaldar y restaurar repositorios en almacenamiento externo",
       "list": {
         "description": "Listar respaldos disponibles en almacenamiento o máquina",
         "listing": "Listando respaldos...",
@@ -352,7 +352,7 @@
         "description": "Eliminar un archivo de configuración",
         "success": "Configuración \"{{name}}\" eliminada"
       },
-      "description": "Gestionar archivos de configuración del CLI",
+      "description": "Gestionar archivos de configuración, máquinas y conexiones SSH",
       "importStorage": {
         "description": "Importar almacenamientos desde un archivo de configuración rclone",
         "imported": "Almacenamiento \"{{name}}\" importado ({{type}})",
@@ -364,7 +364,7 @@
       },
       "init": {
         "alreadyExists": "La configuración \"{{name}}\" ya existe",
-        "description": "Inicializar un nuevo archivo de configuración",
+        "description": "Crear un nuevo archivo de configuración con nombre",
         "optionMasterPassword": "Cifrar recursos con una contraseña maestra",
         "optionS3AccessKeyId": "ID de clave de acceso S3",
         "optionS3Bucket": "Nombre del bucket S3",
@@ -508,7 +508,7 @@
     "machine": {
       "containers": {
         "allHealthy": "Todos los contenedores están saludables",
-        "description": "Listar contenedores Docker en una máquina",
+        "description": "Listar contenedores en ejecución en una máquina",
         "fetched": "Contenedores obtenidos",
         "fetching": "Obteniendo contenedores...",
         "healthCheck": "Modo de verificación de salud - sale con código 2 si hay algún no saludable",
@@ -526,7 +526,7 @@
         "description": "Eliminar una máquina",
         "success": "Máquina \"{{name}}\" eliminada"
       },
-      "description": "Gestión de máquinas",
+      "description": "Gestionar máquinas remotas (estado, contenedores, servicios, salud)",
       "health": {
         "containersSection": "\nContenedores:",
         "containersSummary": "  {{running}}/{{total}} en ejecución ({{healthy}} saludables, {{unhealthy}} no saludables)",
@@ -770,7 +770,7 @@
       "build": {
         "description": "Construir una URL {{scheme}}:// desde componentes"
       },
-      "description": "Gestionar registro de manejador de protocolo {{scheme}}:// y manejo de URL",
+      "description": "Registrar y manejar URLs de protocolo {{scheme}}://",
       "open": {
         "action": "Acción:",
         "cliCommand": "\nComando CLI equivalente:",
@@ -915,7 +915,7 @@
         "removed": "\"{{repository}}\" eliminado de la configuración",
         "starting": "Eliminando \"{{repository}}\" en \"{{machine}}\"..."
       },
-      "description": "Gestión del ciclo de vida de repositorios (modo local)",
+      "description": "Desplegar y gestionar repositorios cifrados en máquinas",
       "down": {
         "completed": "Servicios detenidos",
         "description": "Detener servicios del repositorio",
@@ -994,7 +994,7 @@
       },
       "up": {
         "completed": "Servicios iniciados",
-        "description": "Iniciar servicios del repositorio (orquestación Rediaccfile)",
+        "description": "Desplegar o actualizar un repositorio (montar, preparar, iniciar servicios)",
         "failed": "Fallo al iniciar servicios",
         "grandOption": "Nombre del repositorio Grand (se resuelve automáticamente a GUID)",
         "mountOption": "Montar repositorio primero",
@@ -1004,7 +1004,7 @@
       "upAll": {
         "completed": "Todos los repositorios iniciados",
         "concurrencyOption": "Máximo de repositorios concurrentes (predeterminado: 3)",
-        "description": "Iniciar todos los servicios de repositorios en una máquina",
+        "description": "Desplegar todos los repositorios en una máquina",
         "dryRunOption": "Mostrar lo que se haría sin ejecutar",
         "failed": "Fallo en la operación de inicio masivo",
         "includeForksOption": "También montar/iniciar repositorios bifurcados",
@@ -1114,7 +1114,7 @@
         "noFiles": "No se encontraron archivos",
         "pathOption": "Ruta del subdirectorio a listar"
       },
-      "description": "Gestión de almacenamiento",
+      "description": "Gestionar proveedores de almacenamiento y explorar archivos remotos",
       "list": {
         "description": "Listar proveedores de almacenamiento",
         "fetching": "Obteniendo proveedores de almacenamiento..."
@@ -1200,7 +1200,7 @@
     },
     "sync": {
       "cancelled": "Sincronización cancelada.",
-      "description": "Sincronización de archivos con repositorios usando rsync",
+      "description": "Transferir archivos entre repositorios locales y remotos vía rsync",
       "download": {
         "completed": "Descarga completada: {{count}} archivos transferidos",
         "description": "Descargar archivos de un repositorio",
@@ -1404,7 +1404,7 @@
         "success": "VS Code lanzado exitosamente.",
         "testingConnectivity": "Probando conectividad a {{host}}:{{port}}..."
       },
-      "description": "Integración de VS Code Remote SSH",
+      "description": "Abrir VS Code Remote SSH en una máquina o repositorio",
       "list": {
         "configFile": "\nArchivo de configuración: {{path}}",
         "description": "Listar conexiones SSH de VS Code configuradas",
@@ -1602,6 +1602,56 @@
       "flag": "Opción",
       "meaning": "Significado",
       "required": "Obligatorio"
+    }
+  },
+  "help": {
+    "examples": "Ejemplos:",
+    "cli": {
+      "machineInfo": "Mostrar estado de la máquina",
+      "termRepo": "SSH al repositorio",
+      "repoUp": "Desplegar servicios del repositorio",
+      "syncUpload": "Subir archivos al repositorio"
+    },
+    "machine": {
+      "info": "Mostrar estado completo de la máquina",
+      "containers": "Listar contenedores en ejecución",
+      "health": "Verificación de salud para CI/CD"
+    },
+    "repo": {
+      "create": "Crear repositorio cifrado",
+      "up": "Desplegar con montaje automático",
+      "down": "Detener servicios",
+      "fork": "Fork CoW para pruebas"
+    },
+    "term": {
+      "machine": "SSH a la máquina",
+      "repo": "SSH al repositorio (DOCKER_HOST automático)",
+      "command": "Ejecutar comando sin shell interactivo"
+    },
+    "vscode": {
+      "machine": "Abrir máquina en VS Code",
+      "repo": "Abrir repositorio en VS Code"
+    },
+    "config": {
+      "init": "Crear config con clave SSH",
+      "addMachine": "Agregar máquina al config",
+      "setupMachine": "Ejecutar setup en máquina remota",
+      "setMachine": "Establecer máquina predeterminada"
+    },
+    "store": {
+      "add": "Agregar backend de almacenamiento S3",
+      "push": "Enviar config a todos los almacenes",
+      "pull": "Obtener config de un almacén"
+    },
+    "sync": {
+      "upload": "Subir archivos locales al repositorio",
+      "download": "Descargar archivos del repositorio",
+      "status": "Mostrar estado de sincronización"
+    },
+    "backup": {
+      "push": "Enviar respaldo al almacenamiento",
+      "pull": "Obtener respaldo del almacenamiento",
+      "list": "Listar respaldos en almacenamiento"
     }
   },
   "errors": {

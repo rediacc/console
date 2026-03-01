@@ -1,0 +1,123 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import StructuredData from '../StructuredData.astro';
+import SPHero from './SPHero.astro';
+import SPStatsBar from './SPStatsBar.astro';
+import SPProblem from './SPProblem.astro';
+import SPCostCalculator from './SPCostCalculator';
+import SPHowItWorks from './SPHowItWorks.astro';
+import SPTechDiff from './SPTechDiff.astro';
+import SPBenefits from './SPBenefits.astro';
+import SPComparisonTable from './SPComparisonTable.astro';
+import SPSocialProof from './SPSocialProof.astro';
+import SPBottomCta from './SPBottomCta.astro';
+import SPTechStrip from './SPTechStrip.astro';
+import SPExploreSolutions from './SPExploreSolutions.astro';
+import SPReferences from './SPReferences.astro';
+import { createTranslator } from '../../i18n/utils';
+import type { Language } from '../../i18n/types';
+import { SOLUTION_PAGES } from '../../config/solution-pages';
+import { SITE_URL } from '../../config/constants';
+import '../../styles/solution-pages.css';
+
+interface Props {
+  lang: Language;
+  slug: string;
+}
+
+const { lang, slug } = Astro.props;
+const config = SOLUTION_PAGES[slug];
+
+if (!config) {
+  return Astro.redirect(`/${lang}/`);
+}
+
+const { t, to } = createTranslator(lang);
+const content = to(`pages.solutionPages.${config.contentKey}` as any);
+const metaPath = `pages.solutionPages.${config.contentKey}.meta`;
+
+const has = (section: string) => config.sections.includes(section as any);
+---
+
+<BaseLayout
+  lang={lang}
+  title={t(`${metaPath}.title`)}
+  description={t(`${metaPath}.description`)}
+  keywords={t(`${metaPath}.keywords`)}
+  ogType="website"
+>
+  <div class="sp-page">
+    {has('hero') && (
+      <SPHero hero={(content as any).hero} terminal={(content as any).terminal} />
+    )}
+
+    {has('stats') && (
+      <SPStatsBar stats={(content as any).stats} />
+    )}
+
+    {has('problem') && (
+      <SPProblem problem={(content as any).problem} illustration={config.illustration} />
+    )}
+
+    {has('costCalculator') && config.calculatorPreset && (
+      <SPCostCalculator
+        client:visible
+        content={(content as any).calculator}
+        preset={config.calculatorPreset}
+      />
+    )}
+
+    {has('howItWorks') && (
+      <SPHowItWorks howItWorks={(content as any).howItWorks} />
+    )}
+
+    {has('techDiff') && (
+      <SPTechDiff techDiff={(content as any).techDiff} />
+    )}
+
+    {has('benefits') && (
+      <SPBenefits benefits={(content as any).benefits} />
+    )}
+
+    {has('competitorComparison') && config.competitors && (
+      <SPComparisonTable
+        comparison={(content as any).comparison}
+        competitors={config.competitors}
+      />
+    )}
+
+    {has('socialProof') && (
+      <SPSocialProof socialProof={(content as any).socialProof} />
+    )}
+
+    {has('bottomCta') && (
+      <SPBottomCta bottomCta={(content as any).bottomCta} />
+    )}
+
+    {has('techStrip') && config.techStrip && (
+      <SPTechStrip techStrip={(content as any).techStrip} items={config.techStrip} />
+    )}
+
+    {has('exploreSolutions') && (
+      <SPExploreSolutions
+        explore={(content as any).explore}
+        currentSlug={slug}
+        lang={lang}
+      />
+    )}
+
+    {has('references') && (
+      <SPReferences references={(content as any).references} />
+    )}
+  </div>
+
+  <StructuredData
+    type="service"
+    data={{
+      name: (content as any).hero?.title ?? '',
+      description: t(`${metaPath}.description`),
+      serviceType: (content as any).hero?.badge ?? '',
+      url: `${SITE_URL}/${lang}/solutions/${slug}`,
+    }}
+  />
+</BaseLayout>

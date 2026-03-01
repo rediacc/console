@@ -957,16 +957,39 @@ a[target='_blank']::after {
 }
 
 .sidebar-sublink {
-  margin-inline-start: var(--space-4);
-  font-size: var(--font-size-base) !important;
+  margin-inline-start: var(--space-6);
+  font-size: var(--font-size-sm) !important;
   padding-block: var(--space-1);
 }
 
-.sidebar-solutions-list li:first-child .sidebar-sublink {
+.sidebar-category-group {
+  list-style: none;
+}
+
+.sidebar-category-group ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-category-label {
+  display: block;
+  margin-inline-start: var(--space-4);
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sidebar-category-group:first-child .sidebar-category-label {
   margin-top: var(--space-4);
 }
-.sidebar-solutions-list li + li .sidebar-sublink {
-  margin-top: var(--space-3);
+
+.sidebar-category-group + .sidebar-category-group .sidebar-category-label {
+  margin-top: var(--space-4);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1512,22 +1535,36 @@ a[target='_blank']::after {
   width: 100%;
 }
 
-.solutions-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-8);
+.solutions-categories {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-10);
   max-width: 100%;
   margin: 0 auto;
   padding: 0 var(--space-8);
 }
 
+.solutions-category-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-4);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: var(--font-size-sm);
+}
+
+.solutions-category-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-6);
+}
+
 .solution-card {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: var(--space-8);
+  padding: var(--space-6);
   background-color: var(--color-bg-alt);
-  text-align: center;
   border-radius: var(--radius-lg);
   border: 1px solid rgba(0, 0, 0, var(--opacity-08));
   transition:
@@ -1535,48 +1572,22 @@ a[target='_blank']::after {
     box-shadow var(--transition-duration-slow) ease;
 }
 
-.solution-card-number {
-  display: none;
-}
-
-.solution-icon {
-  display: none;
-}
-
 .solution-title {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
   margin-bottom: var(--space-2);
   color: var(--color-text);
-  min-height: var(--touch-target-min);
   line-height: var(--leading-snug);
-  display: block;
-  text-align: center;
-  white-space: normal;
   overflow-wrap: break-word;
   word-break: normal;
-  hyphens: none;
 }
 
 .solution-description {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   margin-bottom: var(--space-4);
-  max-width: var(--container-xs);
-}
-
-.solution-benefits {
-  list-style: none;
-  padding: 0;
-  max-width: var(--container-sm);
-}
-
-.solution-benefits li {
-  font-size: var(--font-size-sm);
-  color: var(--color-text);
-  padding: var(--space-1) 0;
-  text-align: center;
   line-height: var(--leading-normal);
+  flex: 1;
 }
 
 .solution-card-link {
@@ -2318,17 +2329,8 @@ a[target='_blank']::after {
     font-size: 1.25rem;
   }
 
-  .solution-title {
-    font-size: 1.375rem;
-    min-height: var(--touch-target-preferred);
-  }
-
-  .solution-description {
-    font-size: var(--font-size-lg);
-  }
-
   .solution-card {
-    padding: var(--space-12);
+    padding: var(--space-8);
   }
 }
 
@@ -2346,26 +2348,19 @@ a[target='_blank']::after {
     font-size: 3.25rem;
   }
 
-  .solution-title {
-    font-size: var(--font-size-xl);
-    min-height: var(--touch-target-preferred);
-  }
-
   .solution-card {
-    padding: var(--space-12);
+    padding: var(--space-8);
   }
 }
 
 @media (max-width: 60.5rem) {
   /* 968px - respects user font size */
-  .solutions-grid {
-    grid-template-columns: 1fr;
-    gap: var(--space-16);
-    padding: 0 var(--space-4);
+  .solutions-category-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .solution-card {
-    padding: var(--space-12);
+  .solutions-categories {
+    padding: 0 var(--space-4);
   }
 
   .testimonials-grid {
@@ -2376,6 +2371,10 @@ a[target='_blank']::after {
 
 @media (max-width: 40rem) {
   /* 640px */
+  .solutions-category-grid {
+    grid-template-columns: 1fr;
+  }
+
   .testimonials-grid {
     grid-template-columns: 1fr;
   }

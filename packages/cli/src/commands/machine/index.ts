@@ -7,6 +7,7 @@ import { registerServicesCommand } from './services.js';
 import { registerStatusCommand } from './status.js';
 import { registerTestConnectionCommand } from './test-connection.js';
 import { registerVaultStatusCommand } from './vault-status.js';
+import { t } from '../../i18n/index.js';
 
 export function registerMachineCommands(program: Command): void {
   // Create machine command and register CRUD commands
@@ -20,4 +21,14 @@ export function registerMachineCommands(program: Command): void {
   registerServicesCommand(machine, program);
   registerTestConnectionCommand(machine, program);
   registerStatusCommand(machine, program);
+
+  machine.addHelpText(
+    'after',
+    `
+${t('help.examples')}
+  $ rdc machine info server-1                  ${t('help.machine.info')}
+  $ rdc machine containers server-1            ${t('help.machine.containers')}
+  $ rdc machine health server-1 --output json  ${t('help.machine.health')}
+`
+  );
 }

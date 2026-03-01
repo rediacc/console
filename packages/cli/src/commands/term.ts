@@ -454,6 +454,16 @@ async function runInlineSSH(
 export function registerTermCommands(program: Command): void {
   const term = program.command('term').description(t('commands.term.description'));
 
+  term.addHelpText(
+    'after',
+    `
+${t('help.examples')}
+  $ rdc term server-1                  ${t('help.term.machine')}
+  $ rdc term server-1 my-app           ${t('help.term.repo')}
+  $ rdc term server-1 -c "uptime"      ${t('help.term.command')}
+`
+  );
+
   term
     .command('connect')
     .description(t('commands.term.connect.description'))

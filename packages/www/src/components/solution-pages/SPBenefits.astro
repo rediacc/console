@@ -1,0 +1,37 @@
+---
+import { getIcon } from './icons';
+
+interface BenefitItem {
+  title: string;
+  description: string;
+  icon: string;
+}
+
+interface Props {
+  benefits: {
+    overline: string;
+    title: string;
+    items: BenefitItem[];
+  };
+}
+
+const { benefits } = Astro.props;
+---
+
+<section class="sp-benefits">
+  <div class="sp-benefits-inner">
+    <div class="sp-overline">{benefits.overline}</div>
+    <h2>{benefits.title}</h2>
+    <div class="sp-benefits-grid">
+      {benefits.items.map((item) => (
+        <div class="sp-benefit-card">
+          <div class="sp-benefit-icon">
+            <Fragment set:html={getIcon(item.icon)} />
+          </div>
+          <h3>{item.title}</h3>
+          <p>{item.description}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

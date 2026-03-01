@@ -215,7 +215,7 @@ Rediacc 在 60 秒内创建与生产相同的环境：
 
 * [**时间旅行恢复**](/en/docs/time-travel-recovery) - 时间点基础设施恢复
  * [**无风险升级**](/en/docs/risk-free-upgrades) - 无风险测试操作系统迁移
- * [**灾难恢复**](/en/solutions/disaster-recovery) - 经过验证的实际有效的备份
+ * [**灾难恢复**](/en/solutions/backup-verification) - 经过验证的实际有效的备份
 
 ---
 

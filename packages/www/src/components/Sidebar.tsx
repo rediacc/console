@@ -1,47 +1,50 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
+import { SOLUTION_PAGES, type SolutionCategory } from '../config/solution-pages';
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+const CATEGORY_ORDER: SolutionCategory[] = [
+  'ransomware',
+  'multi-cloud',
+  'backups',
+  'encryption',
+  'dev-env',
+  'defense',
+];
+
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const currentLang = useLanguage();
-  const { t } = useTranslation(currentLang);
+  const { t, to } = useTranslation(currentLang);
   const sidebarRef = useRef<HTMLElement>(null);
   const [currentPath, setCurrentPath] = useState('');
   const [isSolutionsExpanded, setIsSolutionsExpanded] = useState(false);
 
   const topNavItems = [{ href: `/${currentLang}/`, label: t('navigation.home') }];
 
-  const solutionItems = [
-    {
-      href: `/${currentLang}/solutions/disaster-recovery`,
-      label: t('navigation.solutions.disasterRecovery'),
-    },
-    {
-      href: `/${currentLang}/solutions/threat-response`,
-      label: t('navigation.solutions.threatResponse'),
-    },
-    {
-      href: `/${currentLang}/solutions/data-security`,
-      label: t('navigation.solutions.dataSecurity'),
-    },
-    {
-      href: `/${currentLang}/solutions/system-portability`,
-      label: t('navigation.solutions.systemPortability'),
-    },
-    {
-      href: `/${currentLang}/solutions/development-environments`,
-      label: t('navigation.solutions.developmentEnvironments'),
-    },
-    {
-      href: `/${currentLang}/solutions/preemptive-defense`,
-      label: t('navigation.solutions.preemptiveDefense'),
-    },
-  ];
+  const categories = to('solutions.categories') as Record<string, string>;
+  const solutionCategories = React.useMemo(() => {
+    const slugs = Object.keys(SOLUTION_PAGES);
+    return CATEGORY_ORDER.map((cat) => ({
+      label: categories[cat] ?? cat,
+      items: slugs
+        .filter((slug) => SOLUTION_PAGES[slug].category === cat)
+        .map((slug) => {
+          const config = SOLUTION_PAGES[slug];
+          const content = to(`pages.solutionPages.${config.contentKey}` as any) as any;
+          return {
+            href: `/${currentLang}/solutions/${slug}`,
+            label: content?.hero?.title ?? slug,
+          };
+        }),
+    }));
+  }, [categories, currentLang, to]);
+
+  const allSolutionItems = solutionCategories.flatMap((cat) => cat.items);
 
   const bottomNavItems = [
     { href: `/${currentLang}/#pricing`, label: t('navigation.pricing') },
@@ -88,7 +91,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     return normalizedPath === normalizedHref || normalizedPath.startsWith(`${normalizedHref}/`);
   };
 
-  const activeSolutionHref = solutionItems.find((item) => isActive(item.href))?.href;
+  const activeSolutionHref = allSolutionItems.find((item) => isActive(item.href))?.href;
 
   const toggleSolutions = () => setIsSolutionsExpanded((prev) => !prev);
 
@@ -188,7 +191,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               aria-controls="sidebar-solutions-list"
               tabIndex={isOpen ? 0 : -1}
             >
-              <span>{t('navigation.solutions.title')}</span>
+              <span>{t('navigation.solutions')}</span>
               <svg
                 className={`sidebar-solutions-chevron${isSolutionsExpanded ? ' expanded' : ''}`}
                 width="16"
@@ -207,22 +210,29 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               className={`sidebar-solutions-list${isSolutionsExpanded ? ' expanded' : ''}`}
               role="list"
             >
-              {solutionItems.map((item) => {
-                const active = isActive(item.href);
-                return (
-                  <li key={item.href}>
-                    <a
-                      href={item.href}
-                      className={`sidebar-link sidebar-sublink${active ? ' active' : ''}`}
-                      onClick={handleLinkClick}
-                      tabIndex={isOpen && isSolutionsExpanded ? 0 : -1}
-                      aria-current={active ? 'page' : undefined}
-                    >
-                      {item.label}
-                    </a>
-                  </li>
-                );
-              })}
+              {solutionCategories.map((group) => (
+                <li key={group.label} className="sidebar-category-group">
+                  <span className="sidebar-category-label">{group.label}</span>
+                  <ul role="list">
+                    {group.items.map((item) => {
+                      const active = isActive(item.href);
+                      return (
+                        <li key={item.href}>
+                          <a
+                            href={item.href}
+                            className={`sidebar-link sidebar-sublink${active ? ' active' : ''}`}
+                            onClick={handleLinkClick}
+                            tabIndex={isOpen && isSolutionsExpanded ? 0 : -1}
+                            aria-current={active ? 'page' : undefined}
+                          >
+                            {item.label}
+                          </a>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </li>
+              ))}
             </ul>
           </div>
 

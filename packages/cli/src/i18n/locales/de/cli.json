@@ -1,6 +1,6 @@
 {
   "cli": {
-    "description": "Rediacc CLI - Befehlszeilenschnittstelle für Rediacc-Operationen"
+    "description": "Maschinen, Repositories und Deployments per SSH verwalten"
   },
   "commands": {
     "audit": {
@@ -102,7 +102,7 @@
       }
     },
     "backup": {
-      "description": "Repositories sichern und wiederherstellen",
+      "description": "Repositories auf externem Speicher sichern und wiederherstellen",
       "list": {
         "description": "Verfügbare Backups auf Speicher oder Rechner auflisten",
         "listing": "Backups werden aufgelistet...",
@@ -352,7 +352,7 @@
         "description": "Eine Konfigurationsdatei löschen",
         "success": "Konfiguration \"{{name}}\" gelöscht"
       },
-      "description": "CLI-Konfigurationsdateien verwalten",
+      "description": "Konfigurationsdateien, Maschinen und SSH-Verbindungen verwalten",
       "importStorage": {
         "description": "Speicher aus einer rclone-Konfigurationsdatei importieren",
         "imported": "Speicher \"{{name}}\" importiert ({{type}})",
@@ -364,7 +364,7 @@
       },
       "init": {
         "alreadyExists": "Konfiguration \"{{name}}\" existiert bereits",
-        "description": "Eine neue Konfigurationsdatei initialisieren",
+        "description": "Eine neue benannte Konfigurationsdatei erstellen",
         "optionMasterPassword": "Ressourcen mit einem Master-Passwort verschlüsseln",
         "optionS3AccessKeyId": "S3 Access Key ID",
         "optionS3Bucket": "S3-Bucket-Name",
@@ -508,7 +508,7 @@
     "machine": {
       "containers": {
         "allHealthy": "Alle Container sind gesund",
-        "description": "Docker-Container auf einer Machine auflisten",
+        "description": "Laufende Container auf einer Maschine auflisten",
         "fetched": "Container abgerufen",
         "fetching": "Container werden abgerufen...",
         "healthCheck": "Zustandsprüfungsmodus - beendet mit Code 2 bei ungesunden Containern",
@@ -526,7 +526,7 @@
         "description": "Eine Machine löschen",
         "success": "Machine \"{{name}}\" gelöscht"
       },
-      "description": "Machine-Verwaltung",
+      "description": "Remote-Maschinen verwalten (Status, Container, Dienste, Health)",
       "health": {
         "containersSection": "\nContainer:",
         "containersSummary": "  {{running}}/{{total}} laufen ({{healthy}} gesund, {{unhealthy}} ungesund)",
@@ -770,7 +770,7 @@
       "build": {
         "description": "Erstellen Sie eine {{scheme}}://-URL aus Komponenten"
       },
-      "description": "Verwaltung der {{scheme}}://-Protokollhandler-Registrierung und URL-Verarbeitung",
+      "description": "{{scheme}}://-Protokoll-URLs registrieren und verarbeiten",
       "open": {
         "action": "Aktion:",
         "cliCommand": "\nÄquivalenter CLI-Befehl:",
@@ -915,7 +915,7 @@
         "removed": "\"{{repository}}\" aus der Konfiguration entfernt",
         "starting": "\"{{repository}}\" wird auf \"{{machine}}\" gelöscht..."
       },
-      "description": "Repository-Lebenszyklus-Verwaltung (lokaler Modus)",
+      "description": "Verschlüsselte Repositories auf Maschinen deployen und verwalten",
       "down": {
         "completed": "Dienste gestoppt",
         "description": "Repository-Dienste stoppen",
@@ -994,7 +994,7 @@
       },
       "up": {
         "completed": "Dienste gestartet",
-        "description": "Repository-Dienste starten (Rediaccfile-Orchestrierung)",
+        "description": "Repository deployen oder aktualisieren (Mount, Prep, Dienste starten)",
         "failed": "Starten der Dienste fehlgeschlagen",
         "grandOption": "Grand-Repository-Name (wird automatisch in GUID aufgelöst)",
         "mountOption": "Repository vorher mounten",
@@ -1004,7 +1004,7 @@
       "upAll": {
         "completed": "Alle Repositories gestartet",
         "concurrencyOption": "Maximale gleichzeitige Repositories (Standard: 3)",
-        "description": "Alle Repository-Dienste auf einer Maschine starten",
+        "description": "Alle Repositories auf einer Maschine deployen",
         "dryRunOption": "Zeigen, was ausgeführt würde, ohne es tatsächlich auszuführen",
         "failed": "Sammelstart fehlgeschlagen",
         "includeForksOption": "Auch geforkte Repositories einbinden/starten",
@@ -1114,7 +1114,7 @@
         "noFiles": "Keine Dateien gefunden",
         "pathOption": "Unterverzeichnispfad zum Auflisten"
       },
-      "description": "Speicherverwaltung",
+      "description": "Speicheranbieter verwalten und Remote-Dateien durchsuchen",
       "list": {
         "description": "Speicheranbieter auflisten",
         "fetching": "Speicheranbieter werden abgerufen..."
@@ -1200,7 +1200,7 @@
     },
     "sync": {
       "cancelled": "Synchronisierung abgebrochen.",
-      "description": "Dateisynchronisierung mit Repositories mit rsync",
+      "description": "Dateien zwischen lokalen und Remote-Repositories per rsync übertragen",
       "download": {
         "completed": "Download abgeschlossen: {{count}} Dateien übertragen",
         "description": "Dateien aus einem Repository herunterladen",
@@ -1404,7 +1404,7 @@
         "success": "VS Code erfolgreich gestartet.",
         "testingConnectivity": "Konnektivität zu {{host}}:{{port}} wird getestet..."
       },
-      "description": "VS Code Remote-SSH-Integration",
+      "description": "VS Code Remote SSH zu einer Maschine oder einem Repository öffnen",
       "list": {
         "configFile": "\nKonfigurationsdatei: {{path}}",
         "description": "Konfigurierte VS Code-SSH-Verbindungen auflisten",
@@ -1602,6 +1602,56 @@
       "flag": "Option",
       "meaning": "Bedeutung",
       "required": "Erforderlich"
+    }
+  },
+  "help": {
+    "examples": "Beispiele:",
+    "cli": {
+      "machineInfo": "Maschinenstatus anzeigen",
+      "termRepo": "SSH in Repository",
+      "repoUp": "Repository-Dienste bereitstellen",
+      "syncUpload": "Dateien ins Repository hochladen"
+    },
+    "machine": {
+      "info": "Vollständigen Maschinenstatus anzeigen",
+      "containers": "Laufende Container auflisten",
+      "health": "Maschinenprüfung für CI/CD"
+    },
+    "repo": {
+      "create": "Verschlüsseltes Repository erstellen",
+      "up": "Bereitstellen mit Auto-Mount",
+      "down": "Dienste stoppen",
+      "fork": "CoW-Fork zum Testen"
+    },
+    "term": {
+      "machine": "SSH zur Maschine",
+      "repo": "SSH ins Repository (DOCKER_HOST automatisch)",
+      "command": "Befehl ohne interaktive Shell ausführen"
+    },
+    "vscode": {
+      "machine": "Maschine in VS Code öffnen",
+      "repo": "Repository in VS Code öffnen"
+    },
+    "config": {
+      "init": "Benannten Config mit SSH-Schlüssel erstellen",
+      "addMachine": "Maschine zur Konfiguration hinzufügen",
+      "setupMachine": "Setup auf Remote-Maschine ausführen",
+      "setMachine": "Standardmaschine festlegen"
+    },
+    "store": {
+      "add": "S3-Store-Backend hinzufügen",
+      "push": "Konfiguration an alle Stores pushen",
+      "pull": "Konfiguration von Store abrufen"
+    },
+    "sync": {
+      "upload": "Lokale Dateien ins Repository hochladen",
+      "download": "Repository-Dateien lokal herunterladen",
+      "status": "Synchronisierungsstatus anzeigen"
+    },
+    "backup": {
+      "push": "Repo-Backup zum Speicher pushen",
+      "pull": "Repo-Backup vom Speicher abrufen",
+      "list": "Backups auf Speicher auflisten"
     }
   },
   "errors": {

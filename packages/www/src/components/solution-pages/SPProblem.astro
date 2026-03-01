@@ -1,0 +1,83 @@
+---
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface StatCallout {
+  number: string;
+  text: string;
+  source: string;
+  ref: number;
+}
+
+interface TimelineStep {
+  day: string;
+  text: string;
+}
+
+interface Props {
+  problem: {
+    overline: string;
+    title: string;
+    description: string;
+    statCallouts?: StatCallout[];
+    timeline?: {
+      oldLabel: string;
+      oldSteps: TimelineStep[];
+      newLabel: string;
+      newSteps: string[];
+    };
+  };
+  illustration?: ImageMetadata;
+}
+
+const { problem, illustration } = Astro.props;
+---
+
+<section class="sp-problem" id="problem">
+  <div class="sp-problem-inner">
+    <div class="sp-overline">{problem.overline}</div>
+    <h2>{problem.title}</h2>
+    <p>{problem.description}</p>
+
+    {illustration && (
+      <div class="sp-problem-illustration">
+        <Image src={illustration} alt="" width={800} height={450} loading="lazy" />
+      </div>
+    )}
+
+    {problem.statCallouts && problem.statCallouts.length > 0 && (
+      <div class="sp-stat-callouts">
+        {problem.statCallouts.map((callout) => (
+          <div class="sp-stat-callout">
+            <span class="sp-stat-callout-number">{callout.number}</span>
+            {callout.text}
+            <span class="sp-stat-callout-source">
+              {callout.source} <span class="sp-ref-num">[{callout.ref}]</span>
+            </span>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {problem.timeline && (
+      <div class="sp-timeline-contrast">
+        <div class="sp-timeline-label old">{problem.timeline.oldLabel}</div>
+        <div class="sp-timeline-old">
+          {problem.timeline.oldSteps.map((step) => (
+            <div class="sp-timeline-old-step">
+              <span class="sp-timeline-old-day">{step.day}</span>
+              {step.text}
+            </div>
+          ))}
+        </div>
+
+        <div class="sp-timeline-label new">{problem.timeline.newLabel}</div>
+        <div class="sp-timeline-new">
+          {problem.timeline.newSteps.map((step) => (
+            <div class="sp-timeline-new-step">{step}</div>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+</section>

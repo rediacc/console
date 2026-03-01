@@ -217,7 +217,7 @@ Rediacc, 60 saniyeden kısa sürede üretimle aynı ortamları oluşturur:
 
 * [**Zaman Yolculuğu Kurtarma**](/en/docs/time-travel-recovery) - Belirli bir noktaya altyapı restorasyonu 
 * [**Risk-Free Yükseltmeler**](/en/docs/risk-free-upgrades) - İşletim sistemi geçişlerini risk olmadan test edin 
-* [**Felaket Kurtarma**](/en/solutions/disaster-recovery) - Gerçekten işe yarayan, doğrulanmış yedeklemeler
+* [**Felaket Kurtarma**](/en/solutions/backup-verification) - Gerçekten işe yarayan, doğrulanmış yedeklemeler
 
 ---
 

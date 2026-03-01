@@ -1,0 +1,25 @@
+---
+import type { TechItem } from '../../config/solution-pages';
+
+interface Props {
+  techStrip: {
+    label: string;
+    note?: string;
+  };
+  items: TechItem[];
+}
+
+const { techStrip, items } = Astro.props;
+---
+
+<section class="sp-tech-strip">
+  <div class="sp-tech-strip-label">{techStrip.label}</div>
+  <div class="sp-tech-strip-logos">
+    {items.map((item) => (
+      <span class="sp-tech-logo" data-kind={item.kind}>{item.name}</span>
+    ))}
+  </div>
+  {techStrip.note && (
+    <div class="sp-tech-strip-note">{techStrip.note}</div>
+  )}
+</section>

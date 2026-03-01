@@ -215,7 +215,7 @@ Rediacc は、運用環境と同一の環境を 60 秒以内に作成します�
 
 * [**Time-Travel Recovery**](/en/docs/time-travel-recovery) - ポイントインタイムのインフラストラクチャ復元
  * [**リスクフリー アップグレード**](/en/docs/risk-free-upgrades) - リスクなしで OS の移行をテストします
- * [**災害復旧**](/en/solutions/disaster-recovery) - 実際に機能する検証済みのバックアップ
+ * [**災害復旧**](/en/solutions/backup-verification) - 実際に機能する検証済みのバックアップ
 
 ---
 

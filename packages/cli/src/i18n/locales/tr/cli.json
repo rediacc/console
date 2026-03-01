@@ -1,6 +1,6 @@
 {
   "cli": {
-    "description": "Rediacc CLI - Rediacc işlemleri için komut satırı arayüzü"
+    "description": "SSH üzerinden makineleri, depoları ve dağıtımları yönetin"
   },
   "commands": {
     "audit": {
@@ -102,7 +102,7 @@
       }
     },
     "backup": {
-      "description": "Depoları yedekle ve geri yükle",
+      "description": "Depoları harici depolamaya yedekleyin ve geri yükleyin",
       "list": {
         "description": "Depolamadaki veya makinedeki mevcut yedekleri listele",
         "listing": "Yedekler listeleniyor...",
@@ -352,7 +352,7 @@
         "description": "Bir yapılandırma dosyasını silin",
         "success": "\"{{name}}\" yapılandırması silindi"
       },
-      "description": "CLI yapılandırma dosyalarını yönetin",
+      "description": "Yapılandırma dosyalarını, makineleri ve SSH bağlantılarını yönetin",
       "importStorage": {
         "description": "Bir rclone yapılandırma dosyasından depoları içe aktarın",
         "imported": "\"{{name}}\" deposu içe aktarıldı ({{type}})",
@@ -364,7 +364,7 @@
       },
       "init": {
         "alreadyExists": "\"{{name}}\" yapılandırması zaten mevcut",
-        "description": "Yeni bir yapılandırma dosyası başlatın",
+        "description": "Yeni bir adlandırılmış yapılandırma dosyası oluşturun",
         "optionMasterPassword": "Kaynakları bir ana şifreyle şifreleyin",
         "optionS3AccessKeyId": "S3 erişim anahtarı kimliği",
         "optionS3Bucket": "S3 paket adı",
@@ -508,7 +508,7 @@
     "machine": {
       "containers": {
         "allHealthy": "Tüm konteynerler sağlıklı",
-        "description": "Bir makinedeki Docker konteynerlerini listeleyin",
+        "description": "Bir makinedeki çalışan konteynerleri listeleyin",
         "fetched": "Konteynerler alındı",
         "fetching": "Konteynerler alınıyor...",
         "healthCheck": "Sağlık kontrolü modu - sağlıksız varsa kod 2 ile çıkar",
@@ -526,7 +526,7 @@
         "description": "Bir makineyi silin",
         "success": "\"{{name}}\" makinesi silindi"
       },
-      "description": "Makine yönetimi",
+      "description": "Uzak makineleri yönetin (durum, konteynerler, servisler, sağlık)",
       "health": {
         "containersSection": "\nKonteynerler:",
         "containersSummary": "  {{running}}/{{total}} çalışıyor ({{healthy}} sağlıklı, {{unhealthy}} sağlıksız)",
@@ -770,7 +770,7 @@
       "build": {
         "description": "Bileşenlerden bir {{scheme}}:// URL oluşturun"
       },
-      "description": "{{scheme}}:// protokol işleyicisi kaydını ve URL işlemesini yönetin",
+      "description": "{{scheme}}:// protokol URL'lerini kaydedin ve işleyin",
       "open": {
         "action": "İşlem:",
         "cliCommand": "\nEşdeğer CLI komutu:",
@@ -915,7 +915,7 @@
         "removed": "\"{{repository}}\" yapılandırmadan kaldırıldı",
         "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" siliniyor..."
       },
-      "description": "Depo yaşam döngüsü yönetimi (yerel mod)",
+      "description": "Makinelerde şifreli depoları dağıtın ve yönetin",
       "down": {
         "completed": "Servisler durduruldu",
         "description": "Depo servislerini durdur",
@@ -994,7 +994,7 @@
       },
       "up": {
         "completed": "Servisler başlatıldı",
-        "description": "Depo servislerini başlat (Rediaccfile orkestrasyonu)",
+        "description": "Bir depoyu dağıtın veya güncelleyin (bağlama, hazırlık, servisleri başlatma)",
         "failed": "Servis başlatma başarısız",
         "grandOption": "Ana depo adı (GUID'ye otomatik çözümlenir)",
         "mountOption": "Önce depoyu bağla",
@@ -1004,7 +1004,7 @@
       "upAll": {
         "completed": "Tüm depolar başlatıldı",
         "concurrencyOption": "Maksimum eş zamanlı depo sayısı (varsayılan: 3)",
-        "description": "Bir makinedeki tüm depo servislerini başlat",
+        "description": "Bir makinedeki tüm depoları dağıtın",
         "dryRunOption": "Çalıştırmadan ne yapılacağını göster",
         "failed": "Toplu başlatma işlemi başarısız",
         "includeForksOption": "Çatallanmış depoları da bağla/başlat",
@@ -1114,7 +1114,7 @@
         "noFiles": "Dosya bulunamadı",
         "pathOption": "Listelenecek alt dizin yolu"
       },
-      "description": "Depolama yönetimi",
+      "description": "Depolama sağlayıcılarını yönetin ve uzak dosyalara göz atın",
       "list": {
         "description": "Depolama sağlayıcılarını listeleyin",
         "fetching": "Depolama sağlayıcıları alınıyor..."
@@ -1200,7 +1200,7 @@
     },
     "sync": {
       "cancelled": "Senkronizasyon iptal edildi.",
-      "description": "rsync kullanarak depolarla dosya senkronizasyonu",
+      "description": "rsync ile yerel ve uzak depolar arasında dosya aktarın",
       "download": {
         "completed": "İndirme tamamlandı: {{count}} dosya aktarıldı",
         "description": "Dosyaları bir depodan indirin",
@@ -1404,7 +1404,7 @@
         "success": "VS Code başarıyla başlatıldı.",
         "testingConnectivity": "{{host}}:{{port}} adresine bağlantı sınanıyor..."
       },
-      "description": "VS Code Uzaktan SSH entegrasyonu",
+      "description": "Bir makine veya depoya VS Code Remote SSH ile bağlanın",
       "list": {
         "configFile": "\nYapılandırma dosyası: {{path}}",
         "description": "Yapılandırılmış VS Code SSH bağlantılarını listeleyin",
@@ -1602,6 +1602,56 @@
       "flag": "Bayrak",
       "meaning": "Anlam",
       "required": "Gerekli"
+    }
+  },
+  "help": {
+    "examples": "Örnekler:",
+    "cli": {
+      "machineInfo": "Makine durumunu göster",
+      "termRepo": "Depoya SSH bağlantısı",
+      "repoUp": "Depo servislerini dağıt",
+      "syncUpload": "Depoya dosya yükle"
+    },
+    "machine": {
+      "info": "Tam makine durumunu göster",
+      "containers": "Çalışan konteynerleri listele",
+      "health": "CI/CD için sağlık kontrolü"
+    },
+    "repo": {
+      "create": "Şifreli depo oluştur",
+      "up": "Otomatik bağlama ile dağıt",
+      "down": "Servisleri durdur",
+      "fork": "Test için CoW fork"
+    },
+    "term": {
+      "machine": "Makineye SSH bağlantısı",
+      "repo": "Depoya SSH bağlantısı (DOCKER_HOST otomatik)",
+      "command": "Etkileşimli kabuk olmadan komut çalıştır"
+    },
+    "vscode": {
+      "machine": "Makineyi VS Code'da aç",
+      "repo": "Depoyu VS Code'da aç"
+    },
+    "config": {
+      "init": "SSH anahtarıyla adlandırılmış Config oluştur",
+      "addMachine": "Config'e makine ekle",
+      "setupMachine": "Uzak makinede kurulum çalıştır",
+      "setMachine": "Varsayılan makineyi ayarla"
+    },
+    "store": {
+      "add": "S3 depo arka ucu ekle",
+      "push": "Config'i tüm depolara gönder",
+      "pull": "Depodan Config al"
+    },
+    "sync": {
+      "upload": "Yerel dosyaları depoya yükle",
+      "download": "Depo dosyalarını yerele indir",
+      "status": "Senkronizasyon durumunu göster"
+    },
+    "backup": {
+      "push": "Yedeklemeyi depolamaya gönder",
+      "pull": "Yedeklemeyi depolamadan al",
+      "list": "Depolamadaki yedeklemeleri listele"
     }
   },
   "errors": {

@@ -1,0 +1,47 @@
+---
+interface Props {
+  socialProof: {
+    quote: string;
+    author: string;
+    company: string;
+    impact?: {
+      beforeLabel: string;
+      beforeValue: string;
+      afterLabel: string;
+      afterValue: string;
+      improvement: string;
+    };
+  };
+}
+
+const { socialProof } = Astro.props;
+---
+
+<section class="sp-social-proof">
+  <div class="sp-social-proof-inner">
+    <div class="sp-quote-mark">&ldquo;</div>
+    <p class="sp-quote-text">{socialProof.quote}</p>
+    <p class="sp-quote-author">
+      {socialProof.author} <span>&mdash; {socialProof.company}</span>
+    </p>
+
+    {socialProof.impact && (
+      <Fragment>
+        <div class="sp-impact-card">
+          <div class="sp-impact-metric sp-impact-before">
+            <div class="sp-impact-label">{socialProof.impact.beforeLabel}</div>
+            <div class="sp-impact-value">{socialProof.impact.beforeValue}</div>
+          </div>
+          <div class="sp-impact-arrow">&rarr;</div>
+          <div class="sp-impact-metric sp-impact-after">
+            <div class="sp-impact-label">{socialProof.impact.afterLabel}</div>
+            <div class="sp-impact-value">{socialProof.impact.afterValue}</div>
+          </div>
+        </div>
+        <div class="sp-impact-improvement">
+          <span>{socialProof.impact.improvement}</span>
+        </div>
+      </Fragment>
+    )}
+  </div>
+</section>

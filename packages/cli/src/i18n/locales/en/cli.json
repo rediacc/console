@@ -1,6 +1,6 @@
 {
   "cli": {
-    "description": "Rediacc CLI - Command line interface for Rediacc operations"
+    "description": "Manage machines, repositories, and deployments over SSH"
   },
   "commands": {
     "auth": {
@@ -302,9 +302,9 @@
       "opsSkipped": "renet not available (skipped)"
     },
     "config": {
-      "description": "Manage CLI configuration files",
+      "description": "Manage config files, machines, and SSH connections",
       "init": {
-        "description": "Initialize a new config file",
+        "description": "Create a new named config file",
         "optionMasterPassword": "Encrypt resources with a master password",
         "optionS3Endpoint": "S3 endpoint URL",
         "optionS3Bucket": "S3 bucket name",
@@ -511,7 +511,7 @@
       }
     },
     "machine": {
-      "description": "Machine management",
+      "description": "Manage remote machines (status, containers, services, health)",
       "list": {
         "description": "List machines",
         "fetching": "Fetching machines..."
@@ -560,7 +560,7 @@
         "exitCode": "\nExit Code: {{code}}"
       },
       "containers": {
-        "description": "List Docker containers on a machine",
+        "description": "List running containers on a machine",
         "fetching": "Fetching containers...",
         "fetched": "Containers fetched",
         "noContainers": "No containers found on this machine",
@@ -731,7 +731,7 @@
       }
     },
     "protocol": {
-      "description": "Manage {{scheme}}:// protocol handler registration and URL handling",
+      "description": "Register and handle {{scheme}}:// protocol URLs",
       "register": {
         "description": "Register the protocol handler on the system",
         "systemWide": "Registering protocol handler system-wide...",
@@ -921,7 +921,7 @@
       }
     },
     "repo": {
-      "description": "Repository lifecycle management",
+      "description": "Deploy and manage encrypted repositories on machines",
       "machineOption": "Target machine name",
       "noCredential": "Warning: Repository \"{{name}}\" has no credential set. Operations on encrypted repos may fail.",
       "mount": {
@@ -939,7 +939,7 @@
         "failed": "Unmount failed"
       },
       "up": {
-        "description": "Start repository services (Rediaccfile orchestration)",
+        "description": "Deploy or update a repository (mount, prep, start services)",
         "mountOption": "Mount repository first",
         "prepOnlyOption": "Only run preparation step",
         "grandOption": "Grand repository name (auto-resolves to GUID)",
@@ -948,7 +948,7 @@
         "failed": "Service start failed"
       },
       "upAll": {
-        "description": "Start all repository services on a machine",
+        "description": "Deploy all repositories on a machine",
         "includeForksOption": "Also mount/start forked repositories",
         "mountOnlyOption": "Only mount, don't start services",
         "dryRunOption": "Show what would be done without executing",
@@ -1076,7 +1076,7 @@
       }
     },
     "storage": {
-      "description": "Storage management",
+      "description": "Manage storage providers and browse remote files",
       "list": {
         "description": "List storage providers",
         "fetching": "Fetching storage providers..."
@@ -1099,7 +1099,7 @@
       }
     },
     "sync": {
-      "description": "File synchronization with repositories using rsync",
+      "description": "Transfer files between local and remote repositories via rsync",
       "fetchingDetails": "Fetching connection details...",
       "previewingChanges": "\nPreviewing changes...\n",
       "noChanges": "No changes to sync.",
@@ -1219,7 +1219,7 @@
       }
     },
     "backup": {
-      "description": "Backup and restore repositories",
+      "description": "Back up and restore repositories to external storage",
       "push": {
         "description": "Push repository backup to storage or machine",
         "optionDest": "Destination filename",
@@ -1337,7 +1337,7 @@
       "testingConnectivity": "Testing connectivity to {{host}}:{{port}}..."
     },
     "vscode": {
-      "description": "VS Code Remote SSH integration",
+      "description": "Open VS Code Remote SSH to a machine or repository",
       "connect": {
         "description": "Connect to a machine or repository in VS Code",
         "detecting": "Detecting VS Code...",
@@ -1457,6 +1457,56 @@
           "success": "Permission assigned"
         }
       }
+    }
+  },
+  "help": {
+    "examples": "Examples:",
+    "cli": {
+      "machineInfo": "Show machine status",
+      "termRepo": "SSH into repository",
+      "repoUp": "Deploy repository services",
+      "syncUpload": "Upload files to repository"
+    },
+    "machine": {
+      "info": "Show full machine status",
+      "containers": "List running containers",
+      "health": "Health check for CI/CD"
+    },
+    "repo": {
+      "create": "Create encrypted repo",
+      "up": "Deploy with auto-mount",
+      "down": "Stop services",
+      "fork": "CoW fork for testing"
+    },
+    "term": {
+      "machine": "SSH into machine",
+      "repo": "SSH into repo (DOCKER_HOST auto-set)",
+      "command": "Run command without interactive shell"
+    },
+    "vscode": {
+      "machine": "Open machine in VS Code",
+      "repo": "Open repository in VS Code"
+    },
+    "config": {
+      "init": "Create named config with SSH key",
+      "addMachine": "Add machine to config",
+      "setupMachine": "Run setup on remote machine",
+      "setMachine": "Set default machine"
+    },
+    "store": {
+      "add": "Add S3 store backend",
+      "push": "Push config to all stores",
+      "pull": "Pull config from a store"
+    },
+    "sync": {
+      "upload": "Upload local files to repository",
+      "download": "Download repository files locally",
+      "status": "Show sync status"
+    },
+    "backup": {
+      "push": "Push repo backup to storage",
+      "pull": "Pull repo backup from storage",
+      "list": "List backups on storage"
     }
   },
   "errors": {
