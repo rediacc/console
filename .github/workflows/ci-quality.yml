@@ -350,7 +350,7 @@ jobs:
 
   quality-account:
     name: Account Server
-    runs-on: ubuntu-latest  # Requires Docker for integration tests
+    runs-on: ubuntu-latest
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
@@ -378,11 +378,9 @@ jobs:
           npm ci --workspace=@rediacc/shared
           npm run build --workspace=@rediacc/shared
 
-      - name: Start RustFS for integration tests
+      - name: Install account dependencies
         working-directory: private/account
-        run: |
-          npm ci
-          npm run test:setup
+        run: npm ci
 
       - name: Run account integration tests
         run: .ci/scripts/private/run-account.sh test
@@ -390,11 +388,6 @@ jobs:
       - name: Run Go cross-language signature tests
         working-directory: private/renet
         run: go test -v ./pkg/subscription/... -run TestCrossLanguage
-
-      - name: Stop RustFS
-        if: always()
-        working-directory: private/account
-        run: npm run test:teardown
 
   quality-account-portal:
     name: Account Portal
