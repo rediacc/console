@@ -54,21 +54,17 @@ const Solutions: React.FC<SolutionsProps> = ({ lang = 'en' }) => {
   return (
     <section className="solutions" id="solutions">
       <div className="container">
-        <div className="section-header">
+        <div className="section-header reveal">
           <h2 className="section-title">{t('solutions.title')}</h2>
           <p className="section-subtitle">{t('solutions.subtitle')}</p>
         </div>
-        <div className="solutions-categories">
+        <div className="solutions-categories reveal">
           {grouped.map((group) => (
             <div key={group.category} className="solutions-category">
               <h3 className="solutions-category-title">{group.label}</h3>
-              <div className="solutions-category-grid">
+              <div className="solutions-category-grid reveal-stagger">
                 {group.pages.map((page) => (
-                  <a
-                    key={page.slug}
-                    href={page.href}
-                    className="solution-card solution-card-link"
-                  >
+                  <a key={page.slug} href={page.href} className="solution-card solution-card-link reveal">
                     <h4 className="solution-title">{page.title}</h4>
                     <p className="solution-description">{page.description}</p>
                     <div className="solution-card-footer">

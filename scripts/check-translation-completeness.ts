@@ -176,6 +176,8 @@ const ALLOWED_IDENTICAL = new Set([
   'Priority',
   'Premium',
   'Enterprise',
+  'Multi-Cloud',
+  'MULTI-CLOUD',
 ]);
 
 // Patterns for strings that should not be translated (placeholders, format strings)
@@ -188,7 +190,7 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
   /^ocid1\./, // Oracle Cloud IDs
   /^\/[a-z]+\//, // Paths
   /\.(json|yaml|xml|txt|log|conf)$/i, // File extensions
-  /^(docker|npm|git|ssh|curl|wget|sudo|rclone)\s/, // Commands
+  /^(docker|npm|git|ssh|curl|wget|sudo|rclone|rdc)\s/, // Commands
   /^\{\{[^}]+\}\}$/, // Template-only strings
   /^[A-Z]\{\{/, // Format strings starting with letter + template
   /^v\{\{version\}\}$/, // Version format
@@ -229,6 +231,38 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
   /^\d+\.\s+\w+$/, // Numbered section titles like "1. Introduction", "1. Overview"
   /^~?\d+\s+minutes?$/, // Time durations like "~15 minutes", "30 minutes"
   /\.(rpo|rto)$/, // Recovery point/time objective values (technical metrics)
+  /\.cardClass$/, // CSS class identifiers (sealed, restored, verified, down, config, compliant)
+  /\.icon$/, // Icon identifiers (lock-arrow, refresh-arrow, etc.)
+  /\.command$/, // CLI command examples (rdc clone, rdc backup, etc.)
+  /^\d+\s*GB\s*·/, // Storage with annotation like "380 GB · locked"
+  /^~?\$[\d,]+$/, // Currency values like ~$200
+  /^\$[\d,]+\/mo$/, // Monthly prices like $4,500/mo, $1,440/mo, $33K/mo, $4.2K/mo
+  /^\$[\d,.]+K?\/mo$/, // Monthly prices with K suffix
+  /^<\d+\s+min$/, // Time values like <5 min, <4 min
+  /^\d+m\s+\d+s$/, // Duration values like 3m 47s, 4m 12s, 3m 12s
+  /^\d+\s+min$/, // Duration like 38 min
+  /^\d+x\/year$/, // Frequency like 1x/year, 52x/year
+  /^(Primary|Secondary)\s*\([a-z]+-[a-z]+-\d+\)$/, // Cloud region labels
+  /^(AWS|Hetzner)\s*\([a-z0-9-]+\)$/, // Cloud provider labels with region
+  /^(AES-256|SHA-256|AES-256-GCM)$/, // Encryption algorithm names
+  /^BTRFS\s+COW$/, // Technical label
+  /^Zero-knowledge$/, // Technical concept kept in English
+  /^daily-\d{4}-\d{2}-\d{2}$/, // Date-based snapshot names
+  /^\d{2}:\d{2}\s+UTC$/, // UTC timestamps
+  /\.cloneVisual\.arrow\.time$/, // Visual arrow timing values (technical)
+  /^Live$/, // Status labels kept short
+  /^Down$/, // Status labels kept short
+  /^brew$/, // Package manager command
+  /^\d+\/\d+\s+healthy$/, // Health status like 8/8 healthy
+  /^dev-sarah$/i, // Example dev environment name
+  /^Dev-Sarah$/i, // Example dev environment name
+  /^patch-test$/, // Example clone name
+  /^(sealed|restored|verified|down|config|compliant)$/, // CSS class values
+  /^24\/7$/, // Always-on indicator
+  /\.rediaccLabel$/, // Rediacc technical labels (e.g., "Rediacc (btrfs CoW)")
+  /^Rediacc\s+\(/, // Rediacc product labels with technical details
+  /^Rediacc\s+\w+$/, // Rediacc product sub-labels (e.g., "Rediacc Retention", "Rediacc Verification")
+  /\.patchInfo$/, // Patch info display strings (technical, kept in English)
 ];
 
 type TranslationValue = string | TranslationObject;

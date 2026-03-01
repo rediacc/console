@@ -38,9 +38,7 @@ interface Props {
 }
 
 /** Calculator compute presets — each page can have different formulas */
-function computeEnvironmentCloning(
-  vals: Record<string, number>
-): ComputeOutput {
+function computeEnvironmentCloning(vals: Record<string, number>): ComputeOutput {
   const devs = vals.devs;
   const reqs = vals.reqs;
   const wait = vals.wait;
@@ -70,9 +68,7 @@ function computeEnvironmentCloning(
   };
 }
 
-function computeInfrastructureCosts(
-  vals: Record<string, number>
-): ComputeOutput {
+function computeInfrastructureCosts(vals: Record<string, number>): ComputeOutput {
   const envs = vals.envs;
   const costPer = vals.cost;
   const util = vals.util;
@@ -100,19 +96,14 @@ function computeInfrastructureCosts(
   };
 }
 
-function computeProductionParity(
-  vals: Record<string, number>
-): ComputeOutput {
+function computeProductionParity(vals: Record<string, number>): ComputeOutput {
   const devs = vals.devs;
   const bugs = vals.bugs;
   const hours = vals.hours;
 
   const debugHours = bugs * hours;
   const sprintHours = devs * 10 * 8;
-  const capacityPct = Math.min(
-    Math.round((debugHours / sprintHours) * 100 * devs),
-    100
-  );
+  const capacityPct = Math.min(Math.round((debugHours / sprintHours) * 100 * devs), 100);
   const quarterlyIncidents = bugs * 6;
   const annualCost = debugHours * 26 * 75;
 
@@ -126,9 +117,7 @@ function computeProductionParity(
   };
 }
 
-function computeIntegrations(
-  vals: Record<string, number>
-): ComputeOutput {
+function computeIntegrations(vals: Record<string, number>): ComputeOutput {
   const devs = vals.devs;
   const failures = vals.failures;
   const hours = vals.hours;
@@ -148,9 +137,7 @@ function computeIntegrations(
   };
 }
 
-function computeImmutableBackups(
-  vals: Record<string, number>
-): ComputeOutput {
+function computeImmutableBackups(vals: Record<string, number>): ComputeOutput {
   const servers = vals.servers;
   const recovery = vals.recovery;
   const incidents = vals.incidents;
@@ -173,9 +160,7 @@ function computeImmutableBackups(
   };
 }
 
-function computeMigrationSafety(
-  vals: Record<string, number>
-): ComputeOutput {
+function computeMigrationSafety(vals: Record<string, number>): ComputeOutput {
   const data = vals.data;
   const migrations = vals.migrations;
   const hours = vals.hours;
@@ -196,9 +181,7 @@ function computeMigrationSafety(
   };
 }
 
-function computeInstantRecovery(
-  vals: Record<string, number>
-): ComputeOutput {
+function computeInstantRecovery(vals: Record<string, number>): ComputeOutput {
   const services = vals.services;
   const revHr = vals.revenue;
   const incidents = vals.incidents;
@@ -227,9 +210,7 @@ function computeInstantRecovery(
   };
 }
 
-function computeSafeOsTesting(
-  vals: Record<string, number>
-): ComputeOutput {
+function computeSafeOsTesting(vals: Record<string, number>): ComputeOutput {
   const servers = vals.servers;
   const patches = vals.patches;
   const recovery = vals.recovery;
@@ -239,10 +220,7 @@ function computeSafeOsTesting(
   const incidentsPerYear = Math.ceil(patches * failureRate);
   const downtimeCost = Math.round(incidentsPerYear * recovery * 60 * 93);
   const laborCost = Math.round(incidentsPerYear * 3 * recovery * 200);
-  const breachProb = Math.min(
-    (exposureDays / 365) * (servers / 50) * 0.02,
-    0.25
-  );
+  const breachProb = Math.min((exposureDays / 365) * (servers / 50) * 0.02, 0.25);
   const breachCost = Math.round(4880000 * breachProb);
   const total = downtimeCost + laborCost + breachCost;
 
@@ -257,9 +235,7 @@ function computeSafeOsTesting(
   };
 }
 
-function computeRetentionCompliance(
-  vals: Record<string, number>
-): ComputeOutput {
+function computeRetentionCompliance(vals: Record<string, number>): ComputeOutput {
   const audits = vals.audits;
   const hours = vals.hours;
   const data = vals.data;
@@ -281,9 +257,7 @@ function computeRetentionCompliance(
   };
 }
 
-function computeCloudOutageProtection(
-  vals: Record<string, number>
-): ComputeOutput {
+function computeCloudOutageProtection(vals: Record<string, number>): ComputeOutput {
   const rev = vals.rev;
   const outageHours = vals.hours;
   const failoverHours = vals.failover;
@@ -307,9 +281,7 @@ function computeCloudOutageProtection(
   };
 }
 
-function computeFailoverTesting(
-  vals: Record<string, number>
-): ComputeOutput {
+function computeFailoverTesting(vals: Record<string, number>): ComputeOutput {
   const services = vals.services;
   const hours = vals.hours;
   const rev = vals.rev;
@@ -331,9 +303,7 @@ function computeFailoverTesting(
   };
 }
 
-function computeBackupVerification(
-  vals: Record<string, number>
-): ComputeOutput {
+function computeBackupVerification(vals: Record<string, number>): ComputeOutput {
   const jobs = vals.jobs;
   const corruption = vals.corruption;
   const recovery = vals.recovery;
@@ -354,9 +324,7 @@ function computeBackupVerification(
   };
 }
 
-function computeVulnerabilityManagement(
-  vals: Record<string, number>
-): ComputeOutput {
+function computeVulnerabilityManagement(vals: Record<string, number>): ComputeOutput {
   const vulns = vals.vulns;
   const fixDays = vals.fixDays;
 
@@ -383,9 +351,7 @@ function computeVulnerabilityManagement(
   };
 }
 
-function computeAiPentesting(
-  vals: Record<string, number>
-): ComputeOutput {
+function computeAiPentesting(vals: Record<string, number>): ComputeOutput {
   const servers = vals.servers;
   const frequency = vals.frequency;
   const fixDays = vals.fixDays;
@@ -415,9 +381,7 @@ function computeAiPentesting(
   };
 }
 
-function computeEncryption(
-  vals: Record<string, number>
-): ComputeOutput {
+function computeEncryption(vals: Record<string, number>): ComputeOutput {
   const data = vals.data;
   const audits = vals.audits;
   const hours = vals.hours;
@@ -449,9 +413,7 @@ function computeEncryption(
   };
 }
 
-function computeContinuousSecurityTesting(
-  vals: Record<string, number>
-): ComputeOutput {
+function computeContinuousSecurityTesting(vals: Record<string, number>): ComputeOutput {
   const servers = vals.servers;
   const frequency = vals.frequency;
   const fixDays = vals.fixDays;
@@ -481,9 +443,7 @@ function computeContinuousSecurityTesting(
   };
 }
 
-function computeAuditTrail(
-  vals: Record<string, number>
-): ComputeOutput {
+function computeAuditTrail(vals: Record<string, number>): ComputeOutput {
   const audits = vals.audits;
   const hours = vals.hours;
   const servers = vals.servers;
@@ -516,9 +476,7 @@ function computeAuditTrail(
   };
 }
 
-function computeRapidRecovery(
-  vals: Record<string, number>
-): ComputeOutput {
+function computeRapidRecovery(vals: Record<string, number>): ComputeOutput {
   const rev = vals.rev;
   const hours = vals.hours;
   const inc = vals.inc;
@@ -547,15 +505,13 @@ function computeRapidRecovery(
   };
 }
 
-function computeVendorLockIn(
-  vals: Record<string, number>
-): ComputeOutput {
+function computeVendorLockIn(vals: Record<string, number>): ComputeOutput {
   const spend = vals.spend;
   const years = vals.years;
   const increase = vals.increase;
 
   const annualSpend = spend * 1000 * 12;
-  const markup = Math.round(annualSpend * ((increase / 100) * years / 2));
+  const markup = Math.round(annualSpend * (((increase / 100) * years) / 2));
   const migrateCost = Math.max(Math.round(2 * 6 * 10000 * (annualSpend / 120000)), 20000);
   const egressCost = Math.round(spend * 1000 * 0.5 * 0.09);
   const totalCost = markup + migrateCost + egressCost;
@@ -578,10 +534,7 @@ function computeVendorLockIn(
   };
 }
 
-const PRESETS: Record<
-  string,
-  (vals: Record<string, number>) => ComputeOutput
-> = {
+const PRESETS: Record<string, (vals: Record<string, number>) => ComputeOutput> = {
   'environment-cloning': computeEnvironmentCloning,
   'infrastructure-costs': computeInfrastructureCosts,
   'production-parity': computeProductionParity,
@@ -755,9 +708,7 @@ const SPCostCalculator: React.FC<Props> = ({ content, preset }) => {
                   max={slider.max}
                   step={slider.step ?? 1}
                   value={values[slider.id]}
-                  onChange={(e) =>
-                    handleChange(slider.id, parseInt(e.target.value))
-                  }
+                  onChange={(e) => handleChange(slider.id, parseInt(e.target.value))}
                 />
               </div>
             ))}
@@ -769,18 +720,12 @@ const SPCostCalculator: React.FC<Props> = ({ content, preset }) => {
               {resultKeys.map((key) => (
                 <div className="sp-calc-result-row" key={key}>
                   <span>{content.results[key]}</span>
-                  <span className="sp-calc-result-num">
-                    {computed.results[key] ?? '—'}
-                  </span>
+                  <span className="sp-calc-result-num">{computed.results[key] ?? '—'}</span>
                 </div>
               ))}
               <div className="sp-calc-result-big">
-                <div className="sp-calc-result-big-label">
-                  {content.annualLabel}
-                </div>
-                <div className="sp-calc-result-big-value">
-                  {computed.annual}
-                </div>
+                <div className="sp-calc-result-big-label">{content.annualLabel}</div>
+                <div className="sp-calc-result-big-value">{computed.annual}</div>
               </div>
             </div>
             <div className="sp-calc-result-col with">

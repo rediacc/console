@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2164
+    "keyCount": 2166
   },
   "hashes": {
     "bridge.text": "76620bbb",
@@ -125,6 +125,7 @@
     "layout.meta.siteName": "88fd799c",
     "layout.meta.twitter.creator": "969382fa",
     "layout.meta.twitter.site": "969382fa",
+    "logoWall.title": "b8e2ee26",
     "navigation.blog": "6027fe7d",
     "navigation.contact": "83dfdfa4",
     "navigation.disasterRecovery": "1bc3871e",
@@ -140,6 +141,7 @@
     "navigation.selectLanguage": "616dedf1",
     "navigation.solutions": "886175dd",
     "navigation.toggleMenu": "e88f778b",
+    "navigation.toggleTheme": "848cf513",
     "pages.acceptableUsePolicy.contact.description": "8f2866f3",
     "pages.acceptableUsePolicy.contact.title": "dd0a3b6f",
     "pages.acceptableUsePolicy.hero.effectiveDate": "e732e01a",
