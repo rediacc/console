@@ -25,8 +25,8 @@
       "contactSupport": "Contacter l'assistance",
       "goToHomepage": "Aller à la page d'accueil",
       "learnMore": "En savoir plus",
-      "requestEarlyAccess": "Appliquer",
-      "sendMessage": "Appliquer"
+      "getStarted": "Commencer",
+      "sendMessage": "Envoyer le message"
     },
     "contentNotAvailable": "Ce contenu n'est pas disponible en {{language}}. Affichage de la version anglaise.",
     "copied": "Copié !",
@@ -60,12 +60,12 @@
     },
     "theProblem": "Le problème"
   },
-  "earlyAccess": {
+  "getStarted": {
     "benefits": [
       "Travaillez directement avec notre équipe",
-      "Façonner le produit",
+      "Plateforme complète",
       "Assistance prioritaire",
-      "Accès anticipé aux nouvelles fonctionnalités"
+      "Mises à jour régulières"
     ],
     "form": {
       "fields": {
@@ -108,8 +108,8 @@
       "emailLabel": "contact@rediacc.com",
       "title": "Comment soumettre"
     },
-    "subtitle": "Soyez parmi les premiers à ne plus jamais perdre de données.",
-    "title": "Obtenez un accès anticipé"
+    "subtitle": "Ne perdez plus jamais de données.",
+    "title": "Commencer"
   },
   "footer": {
     "columns": {
@@ -187,7 +187,7 @@
   "layout": {
     "meta": {
       "author": "Rediacc",
-      "defaultDescription": "Plateforme d'automatisation d'infrastructure conçue pour les opérations de développement accélérées. Bénéficiez d’un accès anticipé aux environnements de développement instantanés et à la reprise après sinistre de nouvelle génération.",
+      "defaultDescription": "Plateforme d’automatisation d’infrastructure conçue pour les opérations de développement accélérées. Environnements de développement instantanés et reprise après sinistre de nouvelle génération.",
       "defaultKeywords": "automatisation des infrastructures, opérations d'IA, reprise après sinistre, environnements de développement, Model Context Protocol, DevOps, CI/CD",
       "locale": "fr_FR",
       "siteName": "Rediacc",
@@ -337,7 +337,7 @@
     },
     "contact": {
       "breadcrumb": {
-        "contact": "Appliquer",
+        "contact": "Contact",
         "home": "Accueil"
       },
       "form": {
@@ -356,7 +356,7 @@
           "subject": {
             "label": "Je suis intéressé par *",
             "options": {
-              "earlyAccess": "Reprise après sinistre",
+              "disasterRecovery": "Reprise après sinistre",
               "general": "Générale",
               "other": "Autre",
               "partnership": "Partenariat",
@@ -370,15 +370,15 @@
       },
       "hero": {
         "subtitle": "Remplissez le formulaire et nous vous contacterons dans les 48 heures.",
-        "title": "Postuler ci-dessous"
+        "title": "Contactez-nous"
       },
       "info": {
         "description": "Travaillez directement avec notre équipe. Sachez que vos sauvegardes fonctionnent.",
         "methods": {
-          "earlyAccess": {
-            "description": "Places limitées. Accompagnement prioritaire.",
+          "getStarted": {
+            "description": "Niveau communautaire gratuit. Support prioritaire.",
             "link": "En savoir plus",
-            "title": "Accès anticipé"
+            "title": "Commencer"
           },
           "general": {
             "email": "contact@rediacc.com",
@@ -392,9 +392,9 @@
         "title": "Ce que vous obtenez"
       },
       "meta": {
-        "description": "Places limitées disponibles.",
-        "keywords": "Accès anticipé Rediacc, plateforme de reprise après sinistre, sauvegardes vérifiées",
-        "title": "Postuler | Rediacc"
+        "description": "Contactez l'équipe Rediacc.",
+        "keywords": "Rediacc contact, plateforme de reprise après sinistre, sauvegardes vérifiées",
+        "title": "Contact | Rediacc"
       },
       "notice": {
         "description": "Cliquez sur Soumettre pour ouvrir votre e-mail. Des questions ? E-mail",
@@ -1192,11 +1192,11 @@
           "Retourner à la page d'accueil",
           "Découvrez nos solutions d’automatisation des infrastructures",
           "Contactez-nous via notre page contact",
-          "Demandez un accès anticipé à notre plateforme"
+          "Commencez à utiliser Rediacc aujourd'hui"
         ],
         "links": {
           "contact": "page de contact",
-          "earlyAccess": "accès anticipé",
+          "getStarted": "Rediacc",
           "homepage": "page d'accueil",
           "solutions": "solutions d'automatisation des infrastructures"
         },

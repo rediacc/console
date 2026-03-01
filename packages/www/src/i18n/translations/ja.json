@@ -25,8 +25,8 @@
       "contactSupport": "サポートに連絡する",
       "goToHomepage": "ホームページへ行く",
       "learnMore": "もっと詳しく知る",
-      "requestEarlyAccess": "適用する",
-      "sendMessage": "適用する"
+      "getStarted": "今すぐ始める",
+      "sendMessage": "メッセージを送信"
     },
     "contentNotAvailable": "このコンテンツは{{language}}では利用できません。英語版を表示しています。",
     "copied": "コピーしました！",
@@ -60,12 +60,12 @@
     },
     "theProblem": "問題点"
   },
-  "earlyAccess": {
+  "getStarted": {
     "benefits": [
       "私たちのチームと直接協力しましょう",
-      "製品の形を整える",
+      "フル機能プラットフォーム",
       "優先サポート",
-      "新機能への早期アクセス"
+      "定期的な機能アップデート"
     ],
     "form": {
       "fields": {
@@ -108,8 +108,8 @@
       "emailLabel": "contact@rediacc.com",
       "title": "提出方法"
     },
-    "subtitle": "誰よりも早くデータを二度と失わないようにしてください。",
-    "title": "早期アクセスを入手"
+    "subtitle": "データを二度と失わない。",
+    "title": "今すぐ始める"
   },
   "footer": {
     "columns": {
@@ -187,7 +187,7 @@
   "layout": {
     "meta": {
       "author": "Rediacc",
-      "defaultDescription": "開発運用を加速するために設計されたインフラストラクチャ自動化プラットフォーム。 インスタント開発環境と次世代の災害復旧に早期にアクセスできます。",
+      "defaultDescription": "開発運用を加速するために設計されたインフラストラクチャ自動化プラットフォーム。 インスタント開発環境と次世代の災害復旧。",
       "defaultKeywords": "インフラストラクチャの自動化、AI 運用、災害復旧、開発環境、モデル コンテキスト プロトコル、DevOps、CI/CD",
       "locale": "ja_JP",
       "siteName": "Rediacc",
@@ -337,7 +337,7 @@
     },
     "contact": {
       "breadcrumb": {
-        "contact": "適用する",
+        "contact": "お問い合わせ",
         "home": "ホーム"
       },
       "form": {
@@ -356,7 +356,7 @@
           "subject": {
             "label": "*に興味があります",
             "options": {
-              "earlyAccess": "災害復旧",
+              "disasterRecovery": "災害復旧",
               "general": "一般的な",
               "other": "他の",
               "partnership": "パートナーシップ",
@@ -370,15 +370,15 @@
       },
       "hero": {
         "subtitle": "フォームにご記入いただければ、48 時間以内にご連絡いたします。",
-        "title": "以下からお申し込みください"
+        "title": "お問い合わせ"
       },
       "info": {
         "description": "私たちのチームと直接協力してください。 バックアップが機能することを確認してください。",
         "methods": {
-          "earlyAccess": {
-            "description": "限られたスポット。 優先サポート。",
+          "getStarted": {
+            "description": "無料コミュニティプラン。優先サポート。",
             "link": "もっと詳しく知る",
-            "title": "早期アクセス"
+            "title": "今すぐ始める"
           },
           "general": {
             "email": "contact@rediacc.com",
@@ -392,9 +392,9 @@
         "title": "得られるもの"
       },
       "meta": {
-        "description": "利用できるスポットは限られています。",
-        "keywords": "Rediacc 早期アクセス、災害復旧プラットフォーム、検証済みバックアップ",
-        "title": "申し込む | Rediacc"
+        "description": "Rediaccチームにお問い合わせください。",
+        "keywords": "Rediacc お問い合わせ、災害復旧プラットフォーム、検証済みバックアップ",
+        "title": "お問い合わせ | Rediacc"
       },
       "notice": {
         "description": "「送信」をクリックして電子メールを開きます。 質問がありますか? 電子メール",
@@ -1188,11 +1188,11 @@
           "ホームページに戻る",
           "当社のインフラストラクチャ自動化ソリューションについて学ぶ",
           "お問い合わせページからご連絡ください",
-          "プラットフォームへの早期アクセスをリクエストする"
+          "今日からRediaccを使い始めましょう"
         ],
         "links": {
           "contact": "お問い合わせページ",
-          "earlyAccess": "早期アクセス",
+          "getStarted": "Rediacc",
           "homepage": "ホームページ",
           "solutions": "インフラ自動化ソリューション"
         },

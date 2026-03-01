@@ -142,6 +142,20 @@ const plans = PLAN_ORDER.map((code) => ({
     </div>
   </section>
 
+  <!-- Closing CTA -->
+  <section class="closing-cta">
+    <div class="container">
+      <div class="closing-cta-inner reveal">
+        <h2 class="closing-cta-title">{t('getStarted.title')}</h2>
+        <p class="closing-cta-subtitle">{t('getStarted.subtitle')}</p>
+        <div class="closing-cta-actions">
+          <a href={`/${lang}/install`} class="btn btn-primary">{t('hero.cta.contactUs')}</a>
+          <a href={`/${lang}/contact`} class="btn btn-secondary">{t('navigation.contact')}</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Success/Error Messages -->
   <div class="message-overlay" id="message-overlay" role="dialog" aria-hidden="true">
     <div class="message-content">

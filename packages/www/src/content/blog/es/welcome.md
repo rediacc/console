@@ -23,4 +23,4 @@ sourceHash: "1a84feb14d8b2654"
 - **Casos de estudio**: Ejemplos reales de Rediacc en acción
 - **Mejores prácticas**: Consejos y trucos de nuestro equipo
 
-¡Mantente atento para más contenido próximamente!
+¡Vuelve regularmente para ver nuevo contenido!

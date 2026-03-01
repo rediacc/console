@@ -112,7 +112,7 @@ const interest = Astro.url.searchParams.get('interest') || '';
               <label for="contact-subject" class="form-label">{t('pages.contact.form.fields.subject.label')}</label>
               <select id="contact-subject" name="subject" class="form-select" required>
                 <option value="" selected={!interest}>{t('pages.contact.form.fields.subject.options.placeholder')}</option>
-                <option value="earlyAccess" selected={interest === 'disaster-recovery'}>{t('pages.contact.form.fields.subject.options.earlyAccess')}</option>
+                <option value="disasterRecovery" selected={interest === 'disaster-recovery'}>{t('pages.contact.form.fields.subject.options.disasterRecovery')}</option>
                 <option value="partnership" selected={interest === 'partnership'}>{t('pages.contact.form.fields.subject.options.partnership')}</option>
                 <option value="technical" selected={interest === 'threat-response' || interest === 'system-portability' || interest === 'data-security'}>{t('pages.contact.form.fields.subject.options.technical')}</option>
                 <option value="general" selected={interest === 'general'}>{t('pages.contact.form.fields.subject.options.general')}</option>

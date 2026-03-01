@@ -23,4 +23,4 @@ Bienvenue sur notre blog officiel ! Vous y trouverez des tutoriels, des annonces
 - **Études de cas**: Exemples concrets de Rediacc en action
 - **Bonnes pratiques**: Conseils et astuces de notre équipe
 
-Restez à l'écoute pour plus de contenu à venir !
+Revenez régulièrement pour découvrir de nouveaux contenus !

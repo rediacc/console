@@ -4,6 +4,8 @@ interface Props {
     quote: string;
     author: string;
     company: string;
+    title?: string;
+    photo?: string;
     impact?: {
       beforeLabel: string;
       beforeValue: string;
@@ -19,11 +21,26 @@ const { socialProof } = Astro.props;
 
 <section class="sp-social-proof">
   <div class="sp-social-proof-inner">
-    <div class="sp-quote-mark">&ldquo;</div>
-    <p class="sp-quote-text">{socialProof.quote}</p>
-    <p class="sp-quote-author">
-      {socialProof.author} <span>&mdash; {socialProof.company}</span>
-    </p>
+    <div class="sp-quote-mark" aria-hidden="true">&ldquo;</div>
+    <blockquote class="sp-quote-text">{socialProof.quote}</blockquote>
+    <div class="sp-quote-attribution">
+      {socialProof.photo && (
+        <img
+          src={socialProof.photo}
+          alt=""
+          class="sp-quote-photo"
+          width="48"
+          height="48"
+          loading="lazy"
+          decoding="async"
+        />
+      )}
+      <cite class="sp-quote-author">
+        {socialProof.author}
+        {socialProof.title && <span class="sp-quote-title">, {socialProof.title}</span>}
+        <span> &mdash; {socialProof.company}</span>
+      </cite>
+    </div>
 
     {socialProof.impact && (
       <Fragment>

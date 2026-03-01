@@ -22,4 +22,4 @@ Welcome to our official blog! Here you'll find tutorials, announcements, and gui
 - **Case Studies**: Real-world examples of Rediacc in action
 - **Best Practices**: Tips and tricks from our team
 
-Stay tuned for more content coming soon!
+Check back regularly for new content!

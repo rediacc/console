@@ -10,7 +10,7 @@ import {
 } from '../config/constants';
 
 export interface Props {
-  type?: 'organization' | 'website' | 'service' | 'breadcrumb' | 'sitenavigation' | 'blogposting';
+  type?: 'organization' | 'website' | 'service' | 'software' | 'breadcrumb' | 'sitenavigation' | 'blogposting' | 'faq';
   data?: any;
 }
 
@@ -34,7 +34,8 @@ const getStructuredData = (type: string, customData: any = {}) => {
         description: 'Infrastructure Automation Platform designed for accelerated development operations',
         logo: `${baseUrl}/favicon.svg`,
         sameAs: [
-          // Add social media URLs when available
+          'https://github.com/orgs/rediacc/',
+          'https://www.linkedin.com/company/rediacc/'
         ],
         contactPoint: {
           '@type': 'ContactPoint',
@@ -96,7 +97,7 @@ const getStructuredData = (type: string, customData: any = {}) => {
         offers: {
           '@type': 'Offer',
           availability: 'https://schema.org/PreOrder',
-          priceValidUntil: '2025-12-31',
+          priceValidUntil: '2026-12-31',
           description: 'Early access program available'
         },
         ...customData
@@ -171,6 +172,45 @@ const getStructuredData = (type: string, customData: any = {}) => {
         keywords: customData.tags ? customData.tags.join(', ') : '',
         articleSection: customData.category,
         ...customData.additionalData
+      };
+
+    case 'faq':
+      return {
+        ...commonData,
+        '@type': 'FAQPage',
+        mainEntity: (customData.items || []).map((item: { question: string; answer: string }) => ({
+          '@type': 'Question',
+          name: item.question,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: item.answer
+          }
+        })),
+        ...customData.additionalData
+      };
+
+    case 'software':
+      return {
+        ...commonData,
+        '@type': 'SoftwareApplication',
+        name: 'Rediacc',
+        description: 'Infrastructure Automation Platform designed for accelerated development operations',
+        url: baseUrl,
+        applicationCategory: 'DeveloperApplication',
+        operatingSystem: 'Linux',
+        offers: {
+          '@type': 'AggregateOffer',
+          lowPrice: '0',
+          priceCurrency: 'USD',
+          availability: 'https://schema.org/InStock',
+          offerCount: customData.offerCount || '4'
+        },
+        publisher: {
+          '@type': 'Organization',
+          name: 'Rediacc',
+          url: baseUrl
+        },
+        ...customData
       };
 
     default:

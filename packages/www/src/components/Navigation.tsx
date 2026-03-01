@@ -106,6 +106,7 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
               className="logo-icon"
               loading="eager"
               decoding="async"
+              fetchPriority="high"
               width="36"
               height="36"
             />
@@ -115,6 +116,23 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
               rediacc
             </span>
           </a>
+          <div className="nav-links">
+            <a href={`/${currentLang}/#solutions`} className="nav-link">
+              {t('navigation.solutions')}
+            </a>
+            <a href={`/${currentLang}/#pricing`} className="nav-link">
+              {t('navigation.pricing')}
+            </a>
+            <a href={`/${currentLang}/docs/quick-start`} className="nav-link">
+              {t('navigation.docs')}
+            </a>
+            <a href={`/${currentLang}/install`} className="nav-link">
+              {t('navigation.install')}
+            </a>
+            <a href={`/${currentLang}/contact`} className="nav-link">
+              {t('navigation.contact')}
+            </a>
+          </div>
           <div className="nav-right">
             <button
               type="button"

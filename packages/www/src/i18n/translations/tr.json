@@ -25,8 +25,8 @@
       "contactSupport": "Destek Ekibiyle İletişime Geçin",
       "goToHomepage": "Ana Sayfaya Git",
       "learnMore": "Daha Fazla Bilgi",
-      "requestEarlyAccess": "Başvur",
-      "sendMessage": "Gönder"
+      "getStarted": "Başlayın",
+      "sendMessage": "Mesaj Gönder"
     },
     "contentNotAvailable": "Bu içerik {{language}} dilinde mevcut değil. İngilizce sürüm gösteriliyor.",
     "copied": "Kopyalandı!",
@@ -60,12 +60,12 @@
     },
     "theProblem": "Sorun"
   },
-  "earlyAccess": {
+  "getStarted": {
     "benefits": [
       "Ekibimizle doğrudan çalışın",
-      "Ürünü şekillendirin",
+      "Tam özellikli platform",
       "Öncelikli destek",
-      "Yeni özelliklere erken erişim"
+      "Düzenli özellik güncellemeleri"
     ],
     "form": {
       "fields": {
@@ -108,8 +108,8 @@
       "emailLabel": "contact@rediacc.com",
       "title": "Nasıl Gönderilir"
     },
-    "subtitle": "Bir daha asla veri kaybetmeyen ilk kişilerden biri olun.",
-    "title": "Erken Erişim Alın"
+    "subtitle": "Verilerinizi bir daha asla kaybetmeyin.",
+    "title": "Başlayın"
   },
   "footer": {
     "columns": {
@@ -187,7 +187,7 @@
   "layout": {
     "meta": {
       "author": "Rediacc",
-      "defaultDescription": "Hızlandırılmış geliştirme operasyonları için tasarlanmış Altyapı Otomasyon Platformu. Anında geliştirme ortamlarına ve yeni nesil olağanüstü durum kurtarmaya erken erişim elde edin.",
+      "defaultDescription": "Hızlandırılmış geliştirme operasyonları için tasarlanmış Altyapı Otomasyon Platformu. Anında geliştirme ortamları ve yeni nesil olağanüstü durum kurtarma.",
       "defaultKeywords": "altyapı otomasyonu, yapay zeka işlemleri, felaket kurtarma, geliştirme ortamları, Model Bağlam Protokolü, DevOps, CI/CD",
       "locale": "tr_TR",
       "siteName": "Rediacc",
@@ -337,7 +337,7 @@
     },
     "contact": {
       "breadcrumb": {
-        "contact": "Başvuru",
+        "contact": "İletişim",
         "home": "Ana Sayfa"
       },
       "form": {
@@ -356,7 +356,7 @@
           "subject": {
             "label": "İlgileniyorum *",
             "options": {
-              "earlyAccess": "Felaket Kurtarma",
+              "disasterRecovery": "Felaket Kurtarma",
               "general": "Genel",
               "other": "Diğer",
               "partnership": "İş Ortaklığı",
@@ -370,15 +370,15 @@
       },
       "hero": {
         "subtitle": "Formu doldurun, 48 saat içinde sizinle iletişime geçeceğiz.",
-        "title": "Aşağıdan Başvurun"
+        "title": "Bize Ulaşın"
       },
       "info": {
         "description": "Doğrudan ekibimizle çalışın. Yedeklemelerinizin çalıştığını bilin.",
         "methods": {
-          "earlyAccess": {
-            "description": "Sınırlı noktalar. Öncelikli destek.",
+          "getStarted": {
+            "description": "Ücretsiz topluluk katmanı. Öncelikli destek.",
             "link": "Daha fazla bilgi edin",
-            "title": "Erken Erişim"
+            "title": "Başlayın"
           },
           "general": {
             "email": "contact@rediacc.com",
@@ -392,9 +392,9 @@
         "title": "Ne Alırsınız"
       },
       "meta": {
-        "description": "Sınırlı sayıda yer mevcuttur.",
-        "keywords": "Rediacc erken erişim, felaket kurtarma platformu, doğrulanmış yedeklemeler",
-        "title": "Başvuru | Rediacc"
+        "description": "Rediacc ekibiyle iletişime geçin.",
+        "keywords": "Rediacc iletişim, felaket kurtarma platformu, doğrulanmış yedeklemeler",
+        "title": "İletişim | Rediacc"
       },
       "notice": {
         "description": "E-postanızı açmak için gönder'i tıklayın. Sorunuz mu var? E-posta",
@@ -1186,11 +1186,11 @@
           "Ana sayfaya geri dön",
           "Altyapı otomasyon çözümlerimiz hakkında bilgi edinin",
           "İletişim sayfamızdan iletişime geçin",
-          "Platformumuza erken erişim talebinde bulunun"
+          "Bugün Rediacc kullanmaya başlayın"
         ],
         "links": {
           "contact": "iletişim sayfası",
-          "earlyAccess": "erken erişim",
+          "getStarted": "Rediacc",
           "homepage": "ana sayfa",
           "solutions": "altyapı otomasyon çözümleri"
         },

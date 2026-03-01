@@ -23,4 +23,4 @@ Willkommen in unserem offiziellen Blog! Hier finden Sie Tutorials, Ankündigunge
 - **Fallstudien**: Praxisbeispiele von Rediacc im Einsatz
 - **Best Practices**: Tipps und Tricks von unserem Team
 
-Bleiben Sie dran für weitere Inhalte!
+Schauen Sie regelmäßig vorbei für neue Inhalte!

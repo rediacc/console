@@ -25,8 +25,8 @@
       "contactSupport": "联系支持人员",
       "goToHomepage": "前往主页",
       "learnMore": "了解更多",
-      "requestEarlyAccess": "申请",
-      "sendMessage": "申请"
+      "getStarted": "立即开始",
+      "sendMessage": "发送消息"
     },
     "contentNotAvailable": "此内容暂无{{language}}版本，正在显示英文版。",
     "copied": "已复制！",
@@ -60,8 +60,8 @@
     },
     "theProblem": "问题所在"
   },
-  "earlyAccess": {
-    "benefits": ["直接与我们的团队合作", "塑造产品", "优先支持", "抢先体验新功能"],
+  "getStarted": {
+    "benefits": ["直接与我们的团队合作", "全功能平台", "优先支持", "定期功能更新"],
     "form": {
       "fields": {
         "email": {
@@ -103,8 +103,8 @@
       "emailLabel": "contact@rediacc.com",
       "title": "如何提交"
     },
-    "subtitle": "成为首批不再丢失数据的人之一。",
-    "title": "抢先体验"
+    "subtitle": "永远不再丢失数据。",
+    "title": "立即开始"
   },
   "footer": {
     "columns": {
@@ -182,7 +182,7 @@
   "layout": {
     "meta": {
       "author": "Rediacc",
-      "defaultDescription": "基础设施自动化平台专为加速开发运营而设计。 尽早访问即时开发环境和下一代灾难恢复。",
+      "defaultDescription": "基础设施自动化平台专为加速开发运营而设计。即时开发环境和下一代灾难恢复。",
       "defaultKeywords": "基础设施自动化、AI 运营、灾难恢复、开发环境、模型上下文协议、DevOps、CI/CD",
       "locale": "zh_CN",
       "siteName": "Rediacc",
@@ -324,7 +324,7 @@
     },
     "contact": {
       "breadcrumb": {
-        "contact": "申请",
+        "contact": "联系我们",
         "home": "首页"
       },
       "form": {
@@ -343,7 +343,7 @@
           "subject": {
             "label": "我感兴趣 *",
             "options": {
-              "earlyAccess": "灾难恢复",
+              "disasterRecovery": "灾难恢复",
               "general": "一般的",
               "other": "其他",
               "partnership": "合伙",
@@ -357,15 +357,15 @@
       },
       "hero": {
         "subtitle": "填写表格，我们将在 48 小时内与您联系。",
-        "title": "在下面申请"
+        "title": "联系我们"
       },
       "info": {
         "description": "直接与我们的团队合作。 了解您的备份工作。",
         "methods": {
-          "earlyAccess": {
-            "description": "名额有限。 优先支持。",
+          "getStarted": {
+            "description": "免费社区版。优先支持。",
             "link": "了解更多",
-            "title": "抢先体验"
+            "title": "立即开始"
           },
           "general": {
             "email": "contact@rediacc.com",
@@ -379,9 +379,9 @@
         "title": "你得到什么"
       },
       "meta": {
-        "description": "名额有限。",
-        "keywords": "Rediacc 早期访问、灾难恢复平台、经过验证的备份",
-        "title": "申请 | Rediacc"
+        "description": "与 Rediacc 团队取得联系。",
+        "keywords": "Rediacc 联系我们、灾难恢复平台、经过验证的备份",
+        "title": "联系我们 | Rediacc"
       },
       "notice": {
         "description": "单击提交以打开您的电子邮件。 问题？ 电子邮件",
@@ -1155,11 +1155,11 @@
           "返回首页",
           "了解我们的基础设施自动化解决方案",
           "通过我们的联系页面取得联系",
-          "请求尽早访问我们的平台"
+          "立即开始使用 Rediacc"
         ],
         "links": {
           "contact": "联系页面",
-          "earlyAccess": "抢先体验",
+          "getStarted": "Rediacc",
           "homepage": "主页",
           "solutions": "基础设施自动化解决方案"
         },

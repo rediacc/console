@@ -5,10 +5,10 @@
     "buttons": {
       "close": "Close",
       "learnMore": "Learn More",
-      "requestEarlyAccess": "Apply",
+      "getStarted": "Get Started",
       "goToHomepage": "Go to Homepage",
       "contactSupport": "Contact Support",
-      "sendMessage": "Apply"
+      "sendMessage": "Send Message"
     },
     "search": {
       "placeholder": "Search documentation, solutions, features...",
@@ -217,14 +217,14 @@
       }
     ]
   },
-  "earlyAccess": {
-    "title": "Get Early Access",
-    "subtitle": "Be among the first to never lose data again.",
+  "getStarted": {
+    "title": "Get Started",
+    "subtitle": "Never lose data again.",
     "benefits": [
       "Work directly with our team",
-      "Shape the product",
+      "Full-featured platform",
       "Priority support",
-      "Early access to new features"
+      "Regular feature updates"
     ],
     "notice": {
       "title": "How to Submit",
@@ -281,16 +281,16 @@
     },
     "contact": {
       "meta": {
-        "title": "Apply | Rediacc",
-        "description": "Limited spots available.",
-        "keywords": "Rediacc early access, disaster recovery platform, verified backups"
+        "title": "Contact | Rediacc",
+        "description": "Get in touch with the Rediacc team.",
+        "keywords": "Rediacc contact, disaster recovery platform, verified backups"
       },
       "breadcrumb": {
         "home": "Home",
-        "contact": "Apply"
+        "contact": "Contact"
       },
       "hero": {
-        "title": "Apply Below",
+        "title": "Contact Us",
         "subtitle": "Fill out the form and we'll be in touch within 48 hours."
       },
       "info": {
@@ -301,9 +301,9 @@
             "title": "Questions?",
             "email": "contact@rediacc.com"
           },
-          "earlyAccess": {
-            "title": "Early Access",
-            "description": "Limited spots. Priority support.",
+          "getStarted": {
+            "title": "Get Started",
+            "description": "Free community tier. Priority support.",
             "link": "Learn more"
           },
           "technicalSupport": {
@@ -329,7 +329,7 @@
             "label": "I'm interested in *",
             "options": {
               "placeholder": "Select one",
-              "earlyAccess": "Disaster Recovery",
+              "disasterRecovery": "Disaster Recovery",
               "partnership": "Partnership",
               "technical": "Technical Question",
               "general": "General",
@@ -1090,13 +1090,13 @@
           "Go back to the homepage",
           "Learn about our infrastructure automation solutions",
           "Get in touch through our contact page",
-          "Request early access to our platform"
+          "Start using Rediacc today"
         ],
         "links": {
           "homepage": "homepage",
           "solutions": "infrastructure automation solutions",
           "contact": "contact page",
-          "earlyAccess": "early access"
+          "getStarted": "Rediacc"
         }
       },
       "actions": {
@@ -10711,7 +10711,7 @@
   },
   "layout": {
     "meta": {
-      "defaultDescription": "Infrastructure Automation Platform designed for accelerated development operations. Get early access to instant development environments and next-generation disaster recovery.",
+      "defaultDescription": "Infrastructure Automation Platform designed for accelerated development operations. Instant development environments and next-generation disaster recovery.",
       "defaultKeywords": "infrastructure automation, AI operations, disaster recovery, development environments, Model Context Protocol, DevOps, CI/CD",
       "author": "Rediacc",
       "siteName": "Rediacc",

@@ -1314,6 +1314,18 @@
   line-height: var(--leading-relaxed);
 }
 
+/* FAQ accordion animation using interpolate-size */
+@supports (interpolate-size: allow-keywords) {
+  .faq-item {
+    interpolate-size: allow-keywords;
+  }
+
+  .faq-item p {
+    overflow: hidden;
+    transition: margin-top 0.2s ease, opacity 0.2s ease;
+  }
+}
+
 /* Final CTA Section - Dark Gradient */
 .pricing-cta {
   padding: var(--section-padding);

@@ -25,7 +25,7 @@
       "contactSupport": "Kontaktieren Sie den Support",
       "goToHomepage": "Gehen Sie zur Startseite",
       "learnMore": "Mehr erfahren",
-      "requestEarlyAccess": "Bewerben",
+      "getStarted": "Jetzt starten",
       "sendMessage": "Nachricht senden"
     },
     "contentNotAvailable": "Dieser Inhalt ist nicht auf {{language}} verfügbar. Es wird die englische Version angezeigt.",
@@ -60,12 +60,12 @@
     },
     "theProblem": "Das Problem"
   },
-  "earlyAccess": {
+  "getStarted": {
     "benefits": [
       "Arbeiten Sie direkt mit unserem Team zusammen",
-      "Formen Sie das Produkt",
+      "Voll ausgestattete Plattform",
       "Vorrangiger Support",
-      "Frühzeitiger Zugriff auf neue Funktionen"
+      "Regelmäßige Feature-Updates"
     ],
     "form": {
       "fields": {
@@ -108,8 +108,8 @@
       "emailLabel": "contact@rediacc.com",
       "title": "So reichen Sie ein"
     },
-    "subtitle": "Gehören Sie zu den Ersten, die nie wieder Daten verlieren.",
-    "title": "Erhalten Sie Early Access"
+    "subtitle": "Verlieren Sie nie wieder Daten.",
+    "title": "Jetzt starten"
   },
   "footer": {
     "columns": {
@@ -187,7 +187,7 @@
   "layout": {
     "meta": {
       "author": "Rediacc",
-      "defaultDescription": "Infrastrukturautomatisierungsplattform für beschleunigte Entwicklungsvorgänge. Erhalten Sie frühzeitig Zugriff auf sofortige Entwicklungsumgebungen und Disaster Recovery der nächsten Generation.",
+      "defaultDescription": "Infrastrukturautomatisierungsplattform für beschleunigte Entwicklungsvorgänge. Sofortige Entwicklungsumgebungen und Disaster Recovery der nächsten Generation.",
       "defaultKeywords": "Infrastrukturautomatisierung, KI-Betrieb, Disaster Recovery, Entwicklungsumgebungen, Model Context Protocol, DevOps, CI/CD",
       "locale": "de_DE",
       "siteName": "Rediacc",
@@ -356,7 +356,7 @@
           "subject": {
             "label": "Ich interessiere mich für *",
             "options": {
-              "earlyAccess": "Notfallwiederherstellung",
+              "disasterRecovery": "Notfallwiederherstellung",
               "general": "Allgemein",
               "other": "Andere",
               "partnership": "Partnerschaft",
@@ -370,15 +370,15 @@
       },
       "hero": {
         "subtitle": "Füllen Sie das Formular aus und wir werden uns innerhalb von 48 Stunden bei Ihnen melden.",
-        "title": "Bewerben Sie sich unten"
+        "title": "Kontaktieren Sie uns"
       },
       "info": {
         "description": "Arbeiten Sie direkt mit unserem Team zusammen. Wissen Sie, dass Ihre Backups funktionieren.",
         "methods": {
-          "earlyAccess": {
-            "description": "Begrenzte Plätze. Vorrangiger Support.",
+          "getStarted": {
+            "description": "Kostenlose Community-Stufe. Vorrangiger Support.",
             "link": "Erfahren Sie mehr",
-            "title": "Früher Zugriff"
+            "title": "Jetzt starten"
           },
           "general": {
             "email": "contact@rediacc.com",
@@ -392,9 +392,9 @@
         "title": "Was Sie bekommen"
       },
       "meta": {
-        "description": "Begrenzte Plätze verfügbar.",
-        "keywords": "Früher Rediacc-Zugriff, Disaster-Recovery-Plattform, verifizierte Backups",
-        "title": "Bewerben | Rediacc"
+        "description": "Kontaktieren Sie das Rediacc-Team.",
+        "keywords": "Rediacc Kontakt, Disaster-Recovery-Plattform, verifizierte Backups",
+        "title": "Kontakt | Rediacc"
       },
       "notice": {
         "description": "Klicken Sie auf „Senden“, um Ihre E-Mail zu öffnen. Fragen? E-Mail",
@@ -1188,11 +1188,11 @@
           "Gehen Sie zurück zur Homepage",
           "Erfahren Sie mehr über unsere Lösungen zur Infrastrukturautomatisierung",
           "Kontaktieren Sie uns über unsere Kontaktseite",
-          "Fordern Sie frühzeitig Zugang zu unserer Plattform an"
+          "Beginnen Sie noch heute mit Rediacc"
         ],
         "links": {
           "contact": "Kontaktseite",
-          "earlyAccess": "früher Zugang",
+          "getStarted": "Rediacc",
           "homepage": "Homepage",
           "solutions": "Lösungen zur Infrastrukturautomatisierung"
         },
