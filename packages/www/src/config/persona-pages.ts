@@ -4,11 +4,11 @@
  * but with persona-specific config and translation namespace.
  */
 
-import type { ImageMetadata } from 'astro';
 import illustrationEnvironmentCloning from '../assets/images/illustrations/environment-cloning.svg';
 import illustrationInfrastructureCosts from '../assets/images/illustrations/infrastructure-costs.svg';
 import illustrationRapidRecovery from '../assets/images/illustrations/rapid-recovery.svg';
 import type { SectionType, TechItem } from './solution-pages';
+import type { ImageMetadata } from 'astro';
 
 /** Persona-specific section types (extends base SectionType) */
 export type PersonaSectionType = SectionType | 'relatedSolutions' | 'shareWithTeam';

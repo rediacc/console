@@ -1,7 +1,7 @@
 import { getCollection } from 'astro:content';
-import type { APIRoute } from 'astro';
 import { SITE_URL } from '../config/constants';
 import { getBaseSlug } from '../utils/slug';
+import type { APIRoute } from 'astro';
 
 // Docs excluded from the LLM index (auto-generated references)
 const EXCLUDED_SLUGS = [

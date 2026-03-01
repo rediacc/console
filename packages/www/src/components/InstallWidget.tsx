@@ -1,11 +1,11 @@
 import React, { useRef, useState } from 'react';
-import type { Platform } from '../config/install';
 import { detectPlatform, PLATFORMS, QUICK_INSTALL_COMMANDS } from '../config/install';
 import { useTranslation } from '../i18n/react';
-import type { Language } from '../i18n/types';
 import { copyToClipboard } from '../utils/clipboard';
 import { CheckIcon, CopyIcon } from './icons/ClipboardIcons';
 import { PLATFORM_ICON_MAP } from './icons/PlatformIcons';
+import type { Platform } from '../config/install';
+import type { Language } from '../i18n/types';
 
 interface InstallWidgetProps {
   lang?: Language;

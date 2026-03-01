@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import type { SolutionCategory } from '../config/solution-pages';
+import { CATEGORY_ICONS } from './CategoryIcons';
 import { CATEGORY_ORDER, SOLUTION_PAGES } from '../config/solution-pages';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
-import { CATEGORY_ICONS } from './CategoryIcons';
+import type { SolutionCategory } from '../config/solution-pages';
 
 interface SidebarProps {
   isOpen: boolean;

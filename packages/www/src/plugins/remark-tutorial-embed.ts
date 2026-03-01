@@ -11,10 +11,10 @@
  */
 
 import path from 'node:path';
+import { SKIP, visit } from 'unist-util-visit';
 import { DEFAULTS_EXTENDED } from '@rediacc/shared/config/defaults';
 import type { Image, Paragraph, Root } from 'mdast';
 import type { Node, Parent } from 'unist';
-import { SKIP, visit } from 'unist-util-visit';
 
 function isCastUrl(url: string): boolean {
   return path.extname(url).toLowerCase() === '.cast';

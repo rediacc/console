@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { getConsoleUrl } from '../config/constants';
-import { useLanguage } from '../hooks/useLanguage';
-import { SUPPORTED_LANGUAGES } from '../i18n/language-utils';
-import { useTranslation } from '../i18n/react';
 import LanguageMenu from './LanguageMenu';
 import MegaMenu from './MegaMenu';
 import PersonaMegaMenu from './PersonaMegaMenu';
 import SearchModal from './SearchModal';
 import Sidebar from './Sidebar';
 import ThemeToggle from './ThemeToggle';
+import { getConsoleUrl } from '../config/constants';
+import { useLanguage } from '../hooks/useLanguage';
+import { SUPPORTED_LANGUAGES } from '../i18n/language-utils';
+import { useTranslation } from '../i18n/react';
 
 interface NavigationProps {
   origin?: string;

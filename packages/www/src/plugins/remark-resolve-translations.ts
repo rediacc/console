@@ -15,8 +15,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { Root, Strong, Text } from 'mdast';
 import { visit } from 'unist-util-visit';
+import type { Root, Strong, Text } from 'mdast';
 
 interface RemarkFile {
   data: Record<string, unknown>;

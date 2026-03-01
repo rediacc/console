@@ -1,5 +1,4 @@
 import React, { useCallback, useRef, useState } from 'react';
-import type { InstallMethod, Platform } from '../config/install';
 import {
   APK_COMMANDS,
   APT_COMMANDS,
@@ -15,11 +14,12 @@ import {
   QUICK_INSTALL_WIN,
 } from '../config/install';
 import { useTranslation } from '../i18n/react';
-import type { Language } from '../i18n/types';
 import { copyToClipboard } from '../utils/clipboard';
 import { CheckIcon, CopyIcon } from './icons/ClipboardIcons';
 import { PLATFORM_ICON_MAP } from './icons/PlatformIcons';
 import PlatformTabs from './PlatformTabs';
+import type { InstallMethod, Platform } from '../config/install';
+import type { Language } from '../i18n/types';
 
 interface InstallMethodsProps {
   lang: Language;
