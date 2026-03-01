@@ -283,7 +283,7 @@ account_stripe_auto() {
     local webhook_secret=""
     local elapsed=0
     while [[ $elapsed -lt 30 ]]; do
-        webhook_secret=$(grep -oP 'whsec_\S+' "$stripe_log" 2>/dev/null || true)
+        webhook_secret=$(grep -oE 'whsec_[^[:space:]]+' "$stripe_log" 2>/dev/null || true)
         if [[ -n "$webhook_secret" ]]; then
             break
         fi

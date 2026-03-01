@@ -294,9 +294,9 @@ async function displayMachineLicense(machineName: string): Promise<void> {
 
 async function tryOpenBrowser(url: string): Promise<void> {
   try {
-    const { exec } = await import('node:child_process');
+    const { execFile } = await import('node:child_process');
     const cmd = process.platform === 'darwin' ? 'open' : 'xdg-open';
-    exec(`${cmd} "${url}"`);
+    execFile(cmd, [url]);
   } catch {
     outputService.info(t('commands.subscription.login.browserFailed'));
   }
