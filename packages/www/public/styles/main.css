@@ -1,3 +1,52 @@
+/* ===== WEB FONTS ===== */
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/inter/Inter-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/inter/Inter-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/inter/Inter-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/inter/Inter-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/fonts/jetbrains-mono/JetBrainsMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/fonts/jetbrains-mono/JetBrainsMono-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Reset and Base Styles */
 *,
 *::before,
@@ -28,9 +77,9 @@
 
   /* Typography */
   --font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-family-mono:
-    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+    'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
   --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
   --font-size-lg: 1.125rem;
@@ -209,6 +258,92 @@
   --gradient-dark: linear-gradient(135deg, var(--color-bg-dark) 0%, var(--color-bg-darker) 100%);
   --gradient-dark-alt: linear-gradient(135deg, var(--color-bg-darker) 0%, #1f1f1f 100%);
   --gradient-dark-green: linear-gradient(135deg, var(--color-bg-darker) 0%, #232823 100%);
+
+  /* Interactive state colors — semantic overlays that flip in dark mode */
+  --color-interactive-hover: rgba(0, 0, 0, 0.05);
+  --color-interactive-active: rgba(0, 0, 0, 0.1);
+  --color-border-subtle: rgba(0, 0, 0, 0.08);
+}
+
+/* ===== DARK THEME ===== */
+/* JS-driven: inline script in <head> sets data-theme from localStorage / OS preference */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Core palette */
+  --color-bg: #0f0f10;
+  --color-bg-alt: #1a1a1b;
+  --color-text: #e4e4e7;
+  --color-text-secondary: #a1a1aa;
+  --color-border: #2e2e32;
+  --color-hover: #1f1f23;
+
+  /* Extended backgrounds */
+  --color-bg-light: #141416;
+  --color-bg-lighter: #18181b;
+  --color-bg-dark: #0a0a0b;
+  --color-bg-darker: #111113;
+
+  /* Interactive overlays — light on dark */
+  --color-interactive-hover: rgba(255, 255, 255, 0.08);
+  --color-interactive-active: rgba(255, 255, 255, 0.12);
+  --color-border-subtle: rgba(255, 255, 255, 0.1);
+
+  /* Status colors — transparent tints for dark context */
+  --color-info-bg: rgba(96, 165, 250, 0.1);
+  --color-info-border: rgba(96, 165, 250, 0.2);
+  --color-warning-bg: rgba(255, 193, 7, 0.1);
+  --color-warning-border: rgba(255, 193, 7, 0.2);
+  --color-warning-text: #ffc107;
+  --color-error-light: rgba(248, 113, 113, 0.1);
+  --color-success-light: rgba(40, 167, 69, 0.15);
+
+  /* Shadows — stronger on dark backgrounds */
+  --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.5);
+
+  /* Gradients — use updated bg tokens */
+  --gradient-dark: linear-gradient(135deg, #0a0a0b 0%, #111113 100%);
+  --gradient-dark-alt: linear-gradient(135deg, #111113 0%, #0f0f11 100%);
+  --gradient-dark-green: linear-gradient(135deg, #111113 0%, #131613 100%);
+}
+
+/* CSS-only fallback: respect OS dark preference when JS hasn't set data-theme */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --color-bg: #0f0f10;
+    --color-bg-alt: #1a1a1b;
+    --color-text: #e4e4e7;
+    --color-text-secondary: #a1a1aa;
+    --color-border: #2e2e32;
+    --color-hover: #1f1f23;
+    --color-bg-light: #141416;
+    --color-bg-lighter: #18181b;
+    --color-bg-dark: #0a0a0b;
+    --color-bg-darker: #111113;
+    --color-interactive-hover: rgba(255, 255, 255, 0.08);
+    --color-interactive-active: rgba(255, 255, 255, 0.12);
+    --color-border-subtle: rgba(255, 255, 255, 0.1);
+    --color-info-bg: rgba(96, 165, 250, 0.1);
+    --color-info-border: rgba(96, 165, 250, 0.2);
+    --color-warning-bg: rgba(255, 193, 7, 0.1);
+    --color-warning-border: rgba(255, 193, 7, 0.2);
+    --color-warning-text: #ffc107;
+    --color-error-light: rgba(248, 113, 113, 0.1);
+    --color-success-light: rgba(40, 167, 69, 0.15);
+    --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4);
+    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.5);
+    --gradient-dark: linear-gradient(135deg, #0a0a0b 0%, #111113 100%);
+    --gradient-dark-alt: linear-gradient(135deg, #111113 0%, #0f0f11 100%);
+    --gradient-dark-green: linear-gradient(135deg, #111113 0%, #131613 100%);
+  }
 }
 
 /* Fallback for browsers without dvh support */
@@ -602,11 +737,11 @@ a[target='_blank']::after {
 }
 
 .hamburger-btn:hover {
-  background-color: rgba(0, 0, 0, var(--opacity-05));
+  background-color: var(--color-interactive-hover);
 }
 
 .hamburger-btn:active {
-  background-color: rgba(0, 0, 0, var(--opacity-10));
+  background-color: var(--color-interactive-active);
   transform: scale(0.95);
 }
 
@@ -668,7 +803,7 @@ a[target='_blank']::after {
   line-height: 1;
   font-weight: 700;
   letter-spacing: 0.01em;
-  color: #000;
+  color: var(--color-text);
   text-transform: lowercase;
   transform: translateY(0);
 }
@@ -709,12 +844,12 @@ a[target='_blank']::after {
 }
 
 .search-btn:hover {
-  background-color: rgba(0, 0, 0, var(--opacity-05));
+  background-color: var(--color-interactive-hover);
   opacity: 1;
 }
 
 .search-btn:active {
-  background-color: rgba(0, 0, 0, var(--opacity-10));
+  background-color: var(--color-interactive-active);
   transform: scale(0.95);
 }
 
@@ -745,17 +880,48 @@ a[target='_blank']::after {
 }
 
 .language-trigger-icon:hover {
-  background-color: rgba(0, 0, 0, var(--opacity-05));
+  background-color: var(--color-interactive-hover);
   opacity: 1;
   border-radius: var(--radius-sm);
 }
 
 .language-trigger-icon:active {
-  background-color: rgba(0, 0, 0, var(--opacity-10));
+  background-color: var(--color-interactive-active);
   transform: scale(0.95);
 }
 
 .language-trigger-icon:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Theme toggle button */
+.theme-toggle-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: var(--space-3);
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-preferred);
+  height: var(--touch-target-preferred);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-duration-base) ease;
+}
+
+.theme-toggle-btn:hover {
+  background-color: var(--color-interactive-hover);
+}
+
+.theme-toggle-btn:active {
+  background-color: var(--color-interactive-active);
+  transform: scale(0.95);
+}
+
+.theme-toggle-btn:focus-visible {
   outline: 2px solid var(--color-brand-primary);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
@@ -783,13 +949,13 @@ a[target='_blank']::after {
 
 .login-btn:hover {
   opacity: var(--opacity-70);
-  background-color: rgba(0, 0, 0, var(--opacity-05));
+  background-color: var(--color-interactive-hover);
 }
 
 .login-btn:active {
   opacity: var(--opacity-60);
   transform: scale(0.98);
-  background-color: rgba(0, 0, 0, var(--opacity-10));
+  background-color: var(--color-interactive-active);
 }
 
 .login-btn:focus-visible {
@@ -1303,6 +1469,48 @@ a[target='_blank']::after {
   }
 }
 
+/* ===== LOGO WALL ===== */
+.logo-wall {
+  padding: var(--space-8) 0;
+  text-align: center;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.logo-wall .container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.logo-wall-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.logo-wall-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.logo-wall-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  white-space: nowrap;
+}
+
 /* ===== BUTTONS ===== */
 .btn {
   display: inline-flex;
@@ -1315,7 +1523,7 @@ a[target='_blank']::after {
   text-decoration: none;
   cursor: pointer;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-full);
   background-color: var(--color-text);
   color: var(--color-bg-alt);
   transition:
@@ -1331,7 +1539,7 @@ a[target='_blank']::after {
 .btn:focus-visible {
   outline: 2px solid var(--color-brand-primary);
   outline-offset: 2px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-full);
 }
 
 .btn:active,
@@ -1386,7 +1594,7 @@ a[target='_blank']::after {
 .btn-secondary:active,
 .btn-secondary[aria-pressed='true'] {
   transform: scale(0.98);
-  background-color: rgba(0, 0, 0, var(--opacity-05));
+  background-color: var(--color-interactive-hover);
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, var(--opacity-15));
 }
 
@@ -1566,7 +1774,7 @@ a[target='_blank']::after {
   padding: var(--space-6);
   background-color: var(--color-bg-alt);
   border-radius: var(--radius-lg);
-  border: 1px solid rgba(0, 0, 0, var(--opacity-08));
+  border: 1px solid var(--color-border-subtle);
   transition:
     transform var(--transition-duration-slow) ease,
     box-shadow var(--transition-duration-slow) ease;
@@ -1665,7 +1873,7 @@ a[target='_blank']::after {
   padding: var(--space-6);
   background-color: var(--color-bg-alt);
   border-radius: var(--radius-lg);
-  border: 1px solid rgba(0, 0, 0, var(--opacity-08));
+  border: 1px solid var(--color-border-subtle);
   border-left: 4px solid var(--color-brand-primary);
 }
 
@@ -2027,12 +2235,12 @@ a[target='_blank']::after {
 
 .footer-social-link:hover {
   opacity: var(--opacity-70);
-  background-color: rgba(0, 0, 0, var(--opacity-05));
+  background-color: var(--color-interactive-hover);
 }
 
 .footer-social-link:active {
   transform: scale(0.95);
-  background-color: rgba(0, 0, 0, var(--opacity-10));
+  background-color: var(--color-interactive-active);
 }
 
 .footer-copyright {
@@ -2377,6 +2585,34 @@ a[target='_blank']::after {
 
   .testimonials-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ===== SCROLL REVEAL ANIMATIONS ===== */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger children in grids */
+.reveal-stagger > .reveal:nth-child(1) { transition-delay: 0s; }
+.reveal-stagger > .reveal:nth-child(2) { transition-delay: 0.1s; }
+.reveal-stagger > .reveal:nth-child(3) { transition-delay: 0.15s; }
+.reveal-stagger > .reveal:nth-child(4) { transition-delay: 0.2s; }
+.reveal-stagger > .reveal:nth-child(5) { transition-delay: 0.25s; }
+.reveal-stagger > .reveal:nth-child(6) { transition-delay: 0.3s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }
 

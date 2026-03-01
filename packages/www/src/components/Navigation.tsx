@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import LanguageMenu from './LanguageMenu';
 import SearchModal from './SearchModal';
 import Sidebar from './Sidebar';
+import ThemeToggle from './ThemeToggle';
 import { getConsoleUrl } from '../config/constants';
 import { useLanguage } from '../hooks/useLanguage';
 import { SUPPORTED_LANGUAGES } from '../i18n/language-utils';
@@ -139,6 +140,7 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
                 />
               </svg>
             </button>
+            <ThemeToggle label={t('navigation.toggleTheme')} />
             <LanguageMenu
               variant="icon-only"
               currentLang={currentLang}

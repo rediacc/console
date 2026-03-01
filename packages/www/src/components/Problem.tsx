@@ -24,11 +24,11 @@ const Problem: React.FC<ProblemProps> = ({ lang = 'en' }) => {
   return (
     <section className="problem" id="problem">
       <div className="container">
-        <div className="section-header">
+        <div className="section-header reveal">
           <h2 className="section-title">{t('problem.title')}</h2>
           <p className="section-subtitle">{t('problem.subtitle')}</p>
         </div>
-        <div className="problem-content">
+        <div className="problem-content reveal">
           <div className="problem-illustration">
             <button
               type="button"

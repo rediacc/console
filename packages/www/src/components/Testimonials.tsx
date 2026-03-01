@@ -15,13 +15,13 @@ const Testimonials: React.FC<TestimonialsProps> = ({ lang = 'en' }) => {
   return (
     <section className="testimonials" id="testimonials">
       <div className="container">
-        <div className="section-header">
+        <div className="section-header reveal">
           <h2 className="section-title">{t('testimonials.title')}</h2>
           <p className="section-subtitle">{t('testimonials.subtitle')}</p>
         </div>
-        <div className="testimonials-grid">
+        <div className="testimonials-grid reveal-stagger">
           {items.map((item, index) => (
-            <div key={`testimonial-${index}`} className="testimonial-card">
+            <div key={`testimonial-${index}`} className="testimonial-card reveal">
               <blockquote className="testimonial-quote">&ldquo;{item.quote}&rdquo;</blockquote>
               <div className="testimonial-author">
                 <div className="testimonial-avatar" aria-hidden="true">
