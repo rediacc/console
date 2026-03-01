@@ -30,7 +30,8 @@ ci_warn() { [[ "${CI:-}" == "true" ]] && echo "::warning::$1" || log_warn "$1"; 
 # Run npm audit and validate output. Sets $audit_file to the output path.
 # Usage: run_audit <output_file> [extra_flags...]
 run_audit() {
-    local output="$1"; shift
+    local output="$1"
+    shift
     local audit_exit=0
     npm audit --json "$@" >"$output" || audit_exit=$?
 
@@ -105,7 +106,7 @@ main() {
 
     # Check dev-only advisories against allowlist
     local allowed_list
-    read -ra ALLOWED_ADVISORIES <<< "$(load_allowlist)"
+    read -ra ALLOWED_ADVISORIES <<<"$(load_allowlist)"
 
     local unallowed=""
     for advisory in $dev_only_advisories; do
