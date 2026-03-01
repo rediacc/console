@@ -44,13 +44,11 @@ const Testimonials: React.FC<TestimonialsProps> = ({ lang = 'en' }) => {
                   />
                 ) : (
                   <div className="testimonial-avatar" aria-hidden="true">
-                    {(item.name || item.role).charAt(0)}
+                    {(item.name ?? item.role).charAt(0)}
                   </div>
                 )}
                 <div className="testimonial-meta">
-                  {item.name && (
-                    <span className="testimonial-name">{item.name}</span>
-                  )}
+                  {item.name && <span className="testimonial-name">{item.name}</span>}
                   <span className="testimonial-role">
                     {item.role}
                     {item.company && <>, {item.company}</>}

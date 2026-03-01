@@ -9,7 +9,7 @@ tags:
   - welcome
 featured: true
 language: ru
-sourceHash: "1a84feb14d8b2654"
+sourceHash: "a292e24968f4bc9b"
 ---
 
 # Добро пожаловать в блог Rediacc

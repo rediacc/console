@@ -1322,7 +1322,9 @@
 
   .faq-item p {
     overflow: hidden;
-    transition: margin-top 0.2s ease, opacity 0.2s ease;
+    transition:
+      margin-top 0.2s ease,
+      opacity 0.2s ease;
   }
 }
 
