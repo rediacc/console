@@ -293,12 +293,11 @@ account_stop() {
     (cd "$ACCOUNT_DIR" && docker compose down --remove-orphans) 2>/dev/null || true
 
     # Force remove if still around
-    for container in account-server; do
-        if docker ps -a --format "{{.Names}}" 2>/dev/null | grep -q "^${container}$"; then
-            docker stop "$container" 2>/dev/null || true
-            docker rm "$container" 2>/dev/null || true
-        fi
-    done
+    local container="account-server"
+    if docker ps -a --format "{{.Names}}" 2>/dev/null | grep -q "^${container}$"; then
+        docker stop "$container" 2>/dev/null || true
+        docker rm "$container" 2>/dev/null || true
+    fi
 
     rm -f "$ACCOUNT_STATE_FILE"
     log_info "Account containers stopped"
