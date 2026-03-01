@@ -66,3 +66,21 @@
 1113459
 1113461
 1113465
+
+# minimatch ReDoS: matchOne() combinatorial backtracking via multiple non-adjacent GLOBSTAR segments
+# Same transitive eslint/electron-builder chains; upstreams still pin legacy majors
+1113538
+1113540
+1113544
+1113545
+
+# minimatch ReDoS: nested *() extglobs generate catastrophically backtracking regexes
+# Same transitive eslint/electron-builder chains; upstreams still pin legacy majors
+1113546
+1113548
+1113552
+1113553
+
+# fast-xml-parser stack overflow in XMLBuilder with preserveOrder
+# In @aws-sdk/xml-builder dependency chain, can't upgrade (semver-major)
+1113565
