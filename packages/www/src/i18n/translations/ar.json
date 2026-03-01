@@ -201,9 +201,31 @@
     "blog": "مدونة",
     "contact": "اتصل بنا",
     "disasterRecovery": "استعادة الكوارث",
+    "viewAllSolutions": "عرض جميع الحلول",
+    "solutionsMegaMenu": "قائمة الحلول",
+    "builtForYourRole": "مصمم لدورك",
+    "builtForYou": "مصمم لك",
+    "forDevops": "لمهندسي DevOps",
+    "forCtos": "للمدراء التقنيين",
+    "forCeos": "للرؤساء التنفيذيين والمؤسسين",
+    "personas": {
+      "devops": {
+        "tagline": "شحن أسرع. استعادة فورية. نوم أفضل.",
+        "cta": "ابدأ مجاناً"
+      },
+      "cto": {
+        "tagline": "خفض التكلفة الإجمالية بنسبة 60%. التوسع على أجهزتك.",
+        "cta": "جدولة عرض توضيحي"
+      },
+      "ceo": {
+        "tagline": "تكاليف يمكن التنبؤ بها. بدون تقييد بمورد.",
+        "cta": "عرض الأسعار"
+      }
+    },
     "docs": "المستندات",
     "downloads": "التنزيلات",
     "footerNavigation": "التنقل في الموقع",
+    "roiCalculator": "ROI Calculator",
     "home": "الرئيسية",
     "install": "تثبيت",
     "languageSelectionMenu": "قائمة اختيار اللغة",
@@ -1554,12 +1576,12 @@
             "label": "الحد الأقصى لحجم المستودع"
           },
           {
-            "key": "repositories",
-            "label": "المستودعات"
-          },
-          {
             "key": "floatingLicenses",
             "label": "التراخيص المتنقلة"
+          },
+          {
+            "key": "repositories",
+            "label": "المستودعات"
           },
           {
             "key": "usersTeams",
@@ -10596,6 +10618,767 @@
           ],
           "disclaimer": "تستند ادعاءات أداء المنتج إلى بنية btrfs copy-on-write الخاصة بـ Rediacc. تستخدم تقديرات الحاسبة نماذج تكلفة معيارية في الصناعة؛ التكاليف الفعلية تختلف حسب المنظمة."
         }
+      }
+    },
+    "personaPages": {
+      "forDevops": {
+        "meta": {
+          "title": "لمهندسي DevOps — انشر أسرع، استعد فوراً | Rediacc",
+          "description": "بنية تحتية تعتمد على CLI أولاً تستنسخ الإنتاج في 60 ثانية، وتتراجع في أقل من خمس دقائق، وتعمل على أجهزتك الخاصة. مصممة للمهندسين الذين يؤتمتون كل شيء.",
+          "keywords": "devops, أتمتة البنية التحتية, CLI, لقطات btrfs, استضافة ذاتية, استنساخ البيئات, تراجع فوري, تطابق الإنتاج"
+        },
+        "hero": {
+          "badge": "لمهندسي DEVOPS",
+          "title": "انشر أسرع. استعد فوراً. نم بهدوء.",
+          "subtitle": "بنية تحتية تعتمد على CLI أولاً تستنسخ الإنتاج في 60 ثانية، وتتراجع في أقل من خمس دقائق، وتعمل على أجهزتك الخاصة. بدون تذاكر. بدون انتظار. بدون تقييد بمورد.",
+          "primaryCta": "ابدأ مجاناً",
+          "secondaryCta": "اقرأ المستندات"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "prompt": "$",
+              "cmd": "rdc clone production",
+              "flag": "--name",
+              "value": "feature-auth-v2"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "check",
+              "text": "أخذ لقطة من الإنتاج (btrfs CoW)",
+              "result": "تم"
+            },
+            {
+              "type": "check",
+              "text": "نسخ 8 حاويات + قواعد بيانات",
+              "result": "تم"
+            },
+            {
+              "type": "check",
+              "text": "تركيب التخزين المشفر (380 GB)",
+              "result": "تم"
+            },
+            {
+              "type": "check",
+              "text": "تشغيل فحوصات السلامة",
+              "result": "8/8 نجحت"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "success",
+              "text": "النسخة جاهزة: feature-auth-v2.internal"
+            },
+            {
+              "type": "summary",
+              "pairs": [
+                { "label": "الوقت", "value": "52s" },
+                { "label": "الحاويات", "value": "8" },
+                { "label": "الحجم", "value": "380 GB" },
+                { "label": "القرص المستخدم", "value": "1.8 GB (CoW)" }
+              ]
+            }
+          ]
+        },
+        "stats": [
+          { "number": "60s", "label": "وقت إنشاء النسخة", "icon": "clock" },
+          { "number": "<5 min", "label": "استعادة كاملة من الكوارث", "icon": "zap" },
+          { "number": "0", "label": "تذاكر عمليات مطلوبة", "icon": "ticket-x" }
+        ],
+        "problem": {
+          "overline": "المشكلة",
+          "title": "تؤتمت كل شيء — إلا الحصول على بيئة",
+          "description": "خط أنابيب CI/CD الخاص بك ينشر في دقائق. البنية التحتية ككود تجهز في ثوانٍ. لكن عندما تحتاج بيئة اختبار ببيانات حقيقية، تقدم تذكرة وتنتظر ثلاثة أيام. في هذه الأثناء، بيئة staging مشتركة، غير مستقرة، ولا تشبه الإنتاج.",
+          "statCallouts": [
+            {
+              "number": "69%",
+              "text": "من المطورين يخسرون أكثر من 8 ساعات أسبوعياً بسبب عدم كفاءة الأدوات",
+              "source": "Atlassian 2024",
+              "ref": 1
+            },
+            {
+              "number": "3 أيام",
+              "text": "متوسط وقت الانتظار لبيئة جديدة في فرق المؤسسات",
+              "source": "Industry survey",
+              "ref": 2
+            },
+            {
+              "number": "$50K/سنة",
+              "text": "خسارة لكل مطور بسبب تبديل السياق",
+              "source": "Industry composite",
+              "ref": 3
+            }
+          ],
+          "timeline": {
+            "oldLabel": "الطريقة القديمة",
+            "oldSteps": [
+              { "day": "الإثنين", "text": "تقديم تذكرة" },
+              { "day": "الثلاثاء", "text": "مراجعة العمليات" },
+              { "day": "الأربعاء", "text": "تجهيز الخادم" },
+              { "day": "الخميس", "text": "تهيئة البيئة" },
+              { "day": "الجمعة", "text": "لا تطابق الإنتاج" }
+            ],
+            "newLabel": "مع Rediacc",
+            "newSteps": ["rdc clone", "52s", "تم"]
+          }
+        },
+        "howItWorks": {
+          "overline": "كيف يعمل",
+          "title": "أمر واحد. نسخة إنتاج كاملة.",
+          "steps": [
+            {
+              "title": "استنساخ",
+              "description": "شغّل rdc clone production. تقنية btrfs CoW تنشئ لقطة فورية — التطبيق وقاعدة البيانات والإعدادات، كل شيء.",
+              "icon": "terminal"
+            },
+            {
+              "title": "العمل",
+              "description": "ابدأ البرمجة فوراً مع بيانات مطابقة للإنتاج. ادفع فرعاً، واحصل على نسخة جديدة.",
+              "icon": "code"
+            },
+            {
+              "title": "الاستعادة",
+              "description": "حدث خطأ؟ تراجع في ثوانٍ. اللقطات غير القابلة للتغيير تعني أنك لن تفقد أي بيانات.",
+              "icon": "shield"
+            }
+          ],
+          "cloneVisual": {
+            "production": {
+              "title": "الإنتاج",
+              "status": "يعمل",
+              "services": [
+                { "name": "nginx", "port": ":443" },
+                { "name": "api-server", "port": ":8080" },
+                { "name": "postgres", "port": ":5432" },
+                { "name": "redis", "port": ":6379" }
+              ],
+              "containerCount": "4 حاويات",
+              "size": "380 GB"
+            },
+            "clone": {
+              "title": "feature-auth-v2",
+              "status": "مُستنسخ",
+              "services": [
+                { "name": "nginx", "port": ":443" },
+                { "name": "api-server", "port": ":8080" },
+                { "name": "postgres", "port": ":5432" },
+                { "name": "redis", "port": ":6379" }
+              ],
+              "containerCount": "4 حاويات",
+              "size": "380 GB"
+            },
+            "arrow": { "label": "استنساخ", "time": "52s" }
+          }
+        },
+        "techDiff": {
+          "overline": "تحت الغطاء",
+          "title": "لماذا الاستنساخ في 60 ثانية ممكن",
+          "description": "يستخدم Rediacc لقطات btrfs copy-on-write على مستوى نظام الملفات. لقطة بيئة إنتاج بحجم 380 GB تكتمل في أقل من ثانية ولا تستهلك أي مساحة تخزين إضافية في البداية. مع تغير النسخة، فقط الكتل المتغيرة تستخدم مساحة جديدة.",
+          "traditionalLabel": "النهج التقليدي",
+          "rediaccLabel": "Rediacc (btrfs CoW)",
+          "rows": [
+            {
+              "traditional": "نسخ حجم Docker: نسخ كامل للبيانات، دقائق إلى ساعات",
+              "rediacc": "لقطة بيانات وصفية فقط: أقل من ثانية، أي حجم"
+            },
+            {
+              "traditional": "pg_dump بحجم 380 GB: 12-36 ساعة، محرك قاعدة بيانات واحد في كل مرة",
+              "rediacc": "أي قاعدة بيانات تُستنسخ في عملية ذرية واحدة"
+            },
+            {
+              "traditional": "10 نسخ = 10 أضعاف التخزين (3.8 TB)",
+              "rediacc": "10 نسخ تشارك الكتل عبر CoW (~15 GB فرق)"
+            },
+            {
+              "traditional": "التراجع: استعادة من النسخة الاحتياطية (30+ دقيقة)",
+              "rediacc": "التراجع: تبديل لقطة btrfs (أقل من 5 دقائق)"
+            }
+          ]
+        },
+        "benefits": {
+          "overline": "لماذا يهم",
+          "title": "مصمم للمهندسين الذين يؤتمتون كل شيء",
+          "items": [
+            {
+              "title": "بيئات في 60 ثانية",
+              "description": "من الطلب إلى بيئة عاملة في أقل من دقيقة. المجموعة الكاملة: نظام التشغيل والحاويات وقواعد البيانات والإعدادات.",
+              "icon": "zap"
+            },
+            {
+              "title": "CLI أولاً، قابل للبرمجة",
+              "description": "كل شيء عبارة عن أمر. ادمجه مع CI/CD أو Git hooks أو أتمتتك الخاصة. بدون واجهة رسومية.",
+              "icon": "terminal"
+            },
+            {
+              "title": "تراجع فوري",
+              "description": "لقطات btrfs غير القابلة للتغيير تعني أنك تستطيع التراجع عن أي بيئة في ثوانٍ. بدون فقدان بيانات. بدون توقف.",
+              "icon": "shield"
+            }
+          ]
+        },
+        "socialProof": {
+          "quote": "انتقلنا من دورة تجهيز بيئة مدتها 3 أيام إلى أقل من دقيقة. توقف مطورونا عن تقديم التذاكر وبدأوا في الشحن. لقطات btrfs تعمل ببساطة — 380 GB مستنسخة في 52 ثانية مع مساحة تخزين إضافية شبه معدومة.",
+          "author": "مهندس DevOps أول",
+          "company": "تكنولوجيا مالية، 80 مطور",
+          "impact": {
+            "beforeLabel": "قبل",
+            "beforeValue": "3 أيام",
+            "afterLabel": "بعد",
+            "afterValue": "52 ثانية",
+            "improvement": "تجهيز البيئة أسرع بـ 5,000 مرة"
+          }
+        },
+        "relatedSolutions": {
+          "title": "استكشف الحلول ذات الصلة"
+        },
+        "bottomCta": {
+          "title": "جربها بنفسك",
+          "description": "ثبّت CLI. استنسخ بيئتك الأولى. بدون بطاقة ائتمان. بدون مكالمة مبيعات.",
+          "primaryCta": "ابدأ مجاناً",
+          "command": "curl -fsSL https://get.rediacc.com | sh"
+        }
+      },
+      "forCtos": {
+        "meta": {
+          "title": "للمدراء التقنيين — خفض التكلفة الإجمالية للبنية التحتية بنسبة 60% | Rediacc",
+          "description": "حماية بنية تحتية ذاتية الاستضافة تتوسع على أجهزتك. خفض التكلفة الإجمالية للملكية، والقضاء على تقييد المورد، والاستعادة من أي كارثة في دقائق.",
+          "keywords": "CTO, التكلفة الإجمالية للبنية التحتية, استضافة ذاتية, استعادة الكوارث, تقييد المورد, لقطات btrfs, الامتثال, قابلية التوسع"
+        },
+        "hero": {
+          "badge": "للمدراء التقنيين",
+          "title": "خفض التكلفة الإجمالية للبنية التحتية بنسبة 60%. التوسع على أجهزتك.",
+          "subtitle": "حماية بنية تحتية ذاتية الاستضافة تقضي على هوامش السحابة، وتتوسع بدون تسعير لكل مقعد، وتستعيد من أي كارثة في دقائق — وليس ساعات.",
+          "primaryCta": "جدولة عرض توضيحي",
+          "secondaryCta": "احسب العائد على الاستثمار"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "prompt": "$",
+              "cmd": "rdc snapshot",
+              "flag": "--all-repos",
+              "value": "--schedule daily"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "check",
+              "text": "فحص 47 مستودعاً عبر 3 أجهزة",
+              "result": "تم"
+            },
+            {
+              "type": "check",
+              "text": "إنشاء لقطات btrfs غير قابلة للتغيير",
+              "result": "47/47"
+            },
+            {
+              "type": "check",
+              "text": "التحقق من سلامة النسخة الاحتياطية (اختبار استعادة)",
+              "result": "نجح"
+            },
+            {
+              "type": "check",
+              "text": "النسخ إلى العقدة الاحتياطية",
+              "result": "متزامن"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "success",
+              "text": "جميع المستودعات محمية. التشغيل التالي: غداً 02:00 UTC"
+            },
+            {
+              "type": "summary",
+              "pairs": [
+                { "label": "المستودعات", "value": "47" },
+                { "label": "الحجم الإجمالي", "value": "2.4 TB" },
+                { "label": "وقت اللقطة", "value": "3.2s" },
+                { "label": "فرق التخزين", "value": "+12 GB" }
+              ]
+            }
+          ]
+        },
+        "stats": [
+          { "number": "60%", "label": "تكلفة أقل مقارنة بالسحابة", "icon": "trend-up" },
+          { "number": "<5 min", "label": "استعادة كاملة من الكوارث", "icon": "clock" },
+          { "number": "0", "label": "تقييد بمورد", "icon": "lock" }
+        ],
+        "problem": {
+          "overline": "المشكلة",
+          "title": "تكاليف السحابة تتزايد. الاستعادة تفشل باستمرار.",
+          "description": "فاتورة السحابة تنمو بنسبة 15-20% سنوياً. التسعير لكل مقعد يعاقب نمو الفريق. عند وقوع كارثة، 'الاستعادة الفورية' تستغرق ساعات — لأن أداة النسخ الاحتياطي التي وعدت بـ RPO بالدقائق تقدم فعلياً RPO بالأيام. في هذه الأثناء، أنت مقيد بنظام مورد يزداد تكلفة مع كل تجديد.",
+          "statCallouts": [
+            {
+              "number": "17%",
+              "text": "متوسط تجاوز ميزانية السحابة عبر المؤسسات",
+              "source": "Flexera 2025",
+              "ref": 1
+            },
+            {
+              "number": "76%",
+              "text": "من المؤسسات تعرضت لحدث توقف شديد في العام الماضي",
+              "source": "Veeam 2024",
+              "ref": 2
+            },
+            {
+              "number": "$9.36M",
+              "text": "متوسط تكلفة اختراق البيانات في 2024",
+              "source": "IBM 2024",
+              "ref": 3
+            }
+          ],
+          "timeline": {
+            "oldLabel": "استعادة الكوارث التقليدية",
+            "oldSteps": [
+              { "day": "0:00", "text": "اكتشاف الحادثة" },
+              { "day": "0:30", "text": "تجميع الفريق" },
+              { "day": "2:00", "text": "البحث عن النسخة الاحتياطية" },
+              { "day": "6:00", "text": "بدء الاستعادة" },
+              { "day": "24h+", "text": "استعادة جزئية" }
+            ],
+            "newLabel": "مع Rediacc",
+            "newSteps": ["اكتشاف", "تراجع", "<5 min"]
+          }
+        },
+        "calculator": {
+          "overline": "التكلفة الحقيقية",
+          "title": "ما التكلفة الحقيقية لبنيتك التحتية؟",
+          "description": "اسحب المنزلقات لتتناسب مع مؤسستك. شاهد كيف يقارن Rediacc بإنفاقك الحالي.",
+          "headerTitle": "احسب وفورات بنيتك التحتية",
+          "sliders": {
+            "devs": "الخوادم / أعباء العمل المُدارة",
+            "reqs": "متوسط الإنفاق السحابي الشهري ($)",
+            "wait": "ساعات التوقف في السنة"
+          },
+          "withoutTag": "الإنفاق الحالي",
+          "withTag": "مع Rediacc",
+          "results": {
+            "blockedTime": "تكلفة البنية التحتية السنوية",
+            "sprintCapacity": "تكلفة التوقف السنوية",
+            "contextSwitching": "وقت الاستعادة (MTTR)",
+            "quarterlySlip": "مخاطر تقييد المورد"
+          },
+          "annualLabel": "التكلفة السنوية الإجمالية",
+          "withResults": {
+            "blockedTime": "أقل بنسبة 60%",
+            "sprintCapacity": "شبه معدومة",
+            "contextSwitching": "أقل من 5 دقائق",
+            "quarterlySlip": "لا يوجد"
+          },
+          "withAnnual": "احسب →",
+          "footnote": "تستند التقديرات إلى نماذج التكلفة الإجمالية للملكية في الصناعة لمقارنة البنية التحتية ذاتية الاستضافة مع الخدمات السحابية المعادلة. تختلف الوفورات الفعلية حسب عبء العمل والتكوين والحجم."
+        },
+        "techDiff": {
+          "overline": "البنية",
+          "title": "كيف يحمي Rediacc بنيتك التحتية",
+          "description": "يعمل Rediacc على أجهزتك، باستخدام لقطات btrfs copy-on-write للنسخ الاحتياطي والاستعادة الفورية. كل لقطة غير قابلة للتغيير على مستوى نظام الملفات — برامج الفدية لا تستطيع تشفير ما يحميه النواة. الاستعادة تعني تبديل مؤشر، وليس استعادة تيرابايتات.",
+          "traditionalLabel": "السحابة / DR التقليدية",
+          "rediaccLabel": "Rediacc (استضافة ذاتية)",
+          "rows": [
+            {
+              "traditional": "ترخيص لكل مقعد: التكاليف تتناسب مع الفريق",
+              "rediacc": "ترخيص لكل جهاز: التكاليف تتناسب مع الأجهزة"
+            },
+            {
+              "traditional": "الاستعادة: ساعات للاستعادة من نسخة سحابية احتياطية",
+              "rediacc": "الاستعادة: ثوانٍ لتبديل لقطة btrfs"
+            },
+            {
+              "traditional": "تقييد المورد: البيانات بتنسيق خاص",
+              "rediacc": "تنسيق مفتوح: بياناتك على نظام ملفاتك"
+            },
+            {
+              "traditional": "الامتثال: الوثوق بشهادة المورد",
+              "rediacc": "الامتثال: التحقق على بنيتك التحتية الخاصة"
+            }
+          ]
+        },
+        "benefits": {
+          "overline": "القيمة الاستراتيجية",
+          "title": "ماذا يعني Rediacc لمؤسستك",
+          "items": [
+            {
+              "title": "تكلفة إجمالية أقل بنسبة 60%",
+              "description": "القضاء على هوامش السحابة والترخيص لكل مقعد ورسوم الخروج. شغّل على أجهزة تملكها بالفعل.",
+              "icon": "trend-up"
+            },
+            {
+              "title": "دقائق، وليس ساعات",
+              "description": "استعادة كاملة من الكوارث في أقل من 5 دقائق. لقطات btrfs تعني أن الاستعادة هي تبديل مؤشر، وليس مهمة استعادة.",
+              "icon": "zap"
+            },
+            {
+              "title": "صفر تقييد بمورد",
+              "description": "بياناتك تبقى على بنيتك التحتية بتنسيقات مفتوحة. بدّل المزودين أو أدرها بنفسك — خيارك، دائماً.",
+              "icon": "lock"
+            }
+          ]
+        },
+        "comparison": {
+          "overline": "المشهد التنافسي",
+          "title": "كيف يقارن Rediacc",
+          "description": "أدوات النسخ الاحتياطي للمؤسسات تفرض رسوماً لكل مقبس أو لكل VM أو لكل TB. Rediacc يفرض رسوماً لكل جهاز — ويعمل على أجهزتك.",
+          "capabilityLabel": "القدرة",
+          "features": [
+            {
+              "name": "استضافة ذاتية / داخل المؤسسة",
+              "values": ["check", "cross", "check", "cross", "rediacc"]
+            },
+            {
+              "name": "عدم قابلية التغيير على مستوى نظام الملفات",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "استعادة فورية (أقل من 5 دقائق)",
+              "values": ["cross", "cross", "cross", "check", "rediacc"]
+            },
+            {
+              "name": "لقطات بدون نسخ (CoW)",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "تسعير لكل جهاز (بدون رسوم لكل مقعد)",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "التحقق التلقائي من الاستعادة",
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "بدون تقييد بمورد",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            }
+          ]
+        },
+        "socialProof": {
+          "quote": "نقلنا 47 عبء عمل إنتاجي من مزود سحابي كبير إلى Rediacc على أجهزتنا الخاصة. انخفضت تكاليف البنية التحتية بنسبة 62% في الربع الأول. عندما وقعت أول حادثة، استغرقت الاستعادة 3 دقائق بدلاً من 4 ساعات التي ذكرتها أداتنا السابقة.",
+          "author": "المدير التقني",
+          "company": "شركة SaaS، 200 موظف",
+          "impact": {
+            "beforeLabel": "الإنفاق السحابي",
+            "beforeValue": "$18K/شهر",
+            "afterLabel": "مع Rediacc",
+            "afterValue": "$6.8K/شهر",
+            "improvement": "خفض تكلفة البنية التحتية بنسبة 62%"
+          }
+        },
+        "shareWithTeam": {
+          "overline": "شارك مع فريقك",
+          "title": "ابدأ مع فريق DevOps الخاص بك",
+          "description": "مهندسوك سيحبون سير عمل CLI أولاً والبيئات الفورية. شارك التعمق التقني مع فريق DevOps الخاص بك.",
+          "ctaText": "شارك تعمق DevOps",
+          "ctaSlug": "for-devops"
+        },
+        "relatedSolutions": {
+          "title": "استكشف المنصة"
+        },
+        "bottomCta": {
+          "title": "شاهدها عملياً",
+          "description": "جدول مراجعة بنية مدتها 30 دقيقة مع فريقنا. سنعرض لك توقعات التكلفة الإجمالية للملكية لبنيتك التحتية المحددة.",
+          "primaryCta": "جدولة عرض توضيحي"
+        }
+      },
+      "forCeos": {
+        "meta": {
+          "title": "للرؤساء التنفيذيين والمؤسسين — تكاليف متوقعة، صفر تقييد | Rediacc",
+          "description": "حماية بنية تحتية ذاتية الاستضافة بتسعير متوقع وصفر تقييد بمورد وملكية كاملة للبيانات. احمِ عملك بدون فاتورة سحابية.",
+          "keywords": "CEO, تكاليف البنية التحتية, استضافة ذاتية, حماية البيانات, تقييد المورد, تسعير متوقع, استمرارية الأعمال, SMB"
+        },
+        "hero": {
+          "badge": "للرؤساء التنفيذيين والمؤسسين",
+          "title": "تكاليف بنية تحتية متوقعة. صفر تقييد بمورد.",
+          "subtitle": "احمِ بيانات عملك على أجهزة تملكها. سعر ثابت واحد لكل جهاز — بدون رسوم لكل مقعد، بدون فواتير سحابية مفاجئة، بدون مورد يحتجز بياناتك.",
+          "primaryCta": "عرض الأسعار",
+          "secondaryCta": "تحدث مع المبيعات"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "prompt": "$",
+              "cmd": "rdc status",
+              "flag": "--summary",
+              "value": ""
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "check",
+              "text": "3 أجهزة تحت المراقبة",
+              "result": "سليمة"
+            },
+            {
+              "type": "check",
+              "text": "47 مستودعاً محمياً",
+              "result": "نسخ احتياطي كامل"
+            },
+            {
+              "type": "check",
+              "text": "آخر نسخة احتياطية تم التحقق منها",
+              "result": "منذ ساعتين"
+            },
+            {
+              "type": "check",
+              "text": "جاهزية الاستعادة",
+              "result": "< 5 min"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "success",
+              "text": "جميع الأنظمة محمية. صفر حوادث هذا الربع."
+            },
+            {
+              "type": "summary",
+              "pairs": [
+                { "label": "وقت التشغيل", "value": "99.99%" },
+                { "label": "محمي", "value": "2.4 TB" },
+                { "label": "التكلفة الشهرية", "value": "$204" },
+                { "label": "مقابل السحابة", "value": "−62%" }
+              ]
+            }
+          ]
+        },
+        "stats": [
+          { "number": "$204/شهر", "label": "سعر شامل", "icon": "tag" },
+          { "number": "99.99%", "label": "ضمان وقت التشغيل", "icon": "check-circle" },
+          { "number": "0", "label": "رسوم لكل مقعد", "icon": "users" }
+        ],
+        "problem": {
+          "overline": "المشكلة",
+          "title": "فواتير السحابة تتزايد. بياناتك ليست ملكك حقاً.",
+          "description": "بدأ فريقك بفاتورة سحابية صغيرة. الآن هي ثالث أكبر نفقاتك وتنمو بنسبة 20% سنوياً. التسعير لكل مقعد يعاقبك على التوظيف. بياناتك في مركز بيانات شخص آخر، بتنسيقهم الخاص. إذا أردت المغادرة، يفرضون عليك رسوم خروج للوصول إلى بياناتك الخاصة.",
+          "statCallouts": [
+            {
+              "number": "20%",
+              "text": "زيادة سنوية في متوسط الإنفاق السحابي",
+              "source": "Flexera 2025",
+              "ref": 1
+            },
+            {
+              "number": "98%",
+              "text": "من قرارات التكنولوجيا في الشركات الصغيرة والمتوسطة تأتي مباشرة من كبار المسؤولين",
+              "source": "TrustRadius 2024",
+              "ref": 2
+            },
+            {
+              "number": "$9.36M",
+              "text": "متوسط تكلفة اختراق البيانات",
+              "source": "IBM 2024",
+              "ref": 3
+            }
+          ],
+          "timeline": {
+            "oldLabel": "البنية التحتية السحابية",
+            "oldSteps": [
+              { "day": "Y1", "text": "$5K/شهر" },
+              { "day": "Y2", "text": "$8K/شهر" },
+              { "day": "Y3", "text": "$14K/شهر" },
+              { "day": "Y4", "text": "$22K/شهر" },
+              { "day": "Y5", "text": "مقيد" }
+            ],
+            "newLabel": "مع Rediacc",
+            "newSteps": ["$204/شهر", "ثابت", "ملكك"]
+          }
+        },
+        "calculator": {
+          "overline": "الأرقام",
+          "title": "كم يمكنك أن توفر؟",
+          "description": "اضبط المنزلقات لتتناسب مع عملك. شاهد التكلفة الحقيقية للسحابة مقابل الاستضافة الذاتية.",
+          "headerTitle": "احسب وفوراتك",
+          "sliders": {
+            "devs": "أعضاء الفريق",
+            "reqs": "الإنفاق السحابي الشهري الحالي ($)",
+            "wait": "ساعات التوقف في السنة"
+          },
+          "withoutTag": "تكاليف السحابة الحالية",
+          "withTag": "مع Rediacc",
+          "results": {
+            "blockedTime": "تكلفة البنية التحتية السنوية",
+            "sprintCapacity": "تكلفة مخاطر التوقف",
+            "contextSwitching": "وقت الاستعادة",
+            "quarterlySlip": "ملكية البيانات"
+          },
+          "annualLabel": "التكلفة السنوية الإجمالية",
+          "withResults": {
+            "blockedTime": "أقل بنسبة 60%",
+            "sprintCapacity": "مُقلّلة",
+            "contextSwitching": "أقل من 5 دقائق",
+            "quarterlySlip": "ملكك 100%"
+          },
+          "withAnnual": "احسب →",
+          "footnote": "تستند التقديرات إلى نماذج التكلفة الإجمالية للملكية في الصناعة. تعتمد الوفورات الفعلية على بنيتك التحتية الحالية وحجمك."
+        },
+        "benefits": {
+          "overline": "قيمة الأعمال",
+          "title": "ماذا يعني هذا لعملك",
+          "items": [
+            {
+              "title": "تكاليف متوقعة",
+              "description": "سعر ثابت واحد لكل جهاز. بدون رسوم لكل مقعد، بدون فواتير مفاجئة، بدون رسوم خروج. ميزانيتك تبقى متوقعة مع نموك.",
+              "icon": "tag"
+            },
+            {
+              "title": "بياناتك، تحكمك",
+              "description": "البيانات تبقى على أجهزة تملكها، بتنسيقات مفتوحة. لا يمكن لأي مورد احتجاز بياناتك أو فرض رسوم للوصول إليها.",
+              "icon": "lock"
+            },
+            {
+              "title": "استمرارية الأعمال",
+              "description": "استعادة كاملة من الكوارث في أقل من 5 دقائق. نسخ احتياطية غير قابلة للتغيير لا يمكن لبرامج الفدية لمسها. عملك يستمر في العمل.",
+              "icon": "shield"
+            }
+          ]
+        },
+        "socialProof": {
+          "quote": "كنا ننفق 18,000 دولار شهرياً على البنية التحتية السحابية لـ 47 عبء عمل. بعد الانتقال إلى Rediacc على خوادمنا الخاصة، انخفضت فاتورتنا إلى 6,800 دولار — ووقت الاستعادة انخفض من 4 ساعات إلى 3 دقائق. العائد على الاستثمار كان واضحاً في الشهر الأول.",
+          "author": "الرئيس التنفيذي والمؤسس",
+          "company": "شركة SaaS ناشئة، 45 موظف",
+          "impact": {
+            "beforeLabel": "التكلفة الشهرية",
+            "beforeValue": "$18,000",
+            "afterLabel": "مع Rediacc",
+            "afterValue": "$6,800",
+            "improvement": "خفض التكلفة بنسبة 62%، استعادة فورية"
+          }
+        },
+        "shareWithTeam": {
+          "overline": "الخطوة التالية",
+          "title": "شارك مع المدير التقني",
+          "description": "فريقك التقني يحتاج إلى تقييم البنية والتكامل. شارك التعمق التقني مع التفاصيل الفنية التي يحتاجونها.",
+          "ctaText": "شارك تعمق المدير التقني",
+          "ctaSlug": "for-ctos"
+        },
+        "relatedSolutions": {
+          "title": "كيف يعمل"
+        },
+        "bottomCta": {
+          "title": "عرض الأسعار",
+          "description": "سعر ثابت واحد لكل جهاز. بدون رسوم لكل مقعد. بدون مفاجآت. ابدأ مع إصدار المجتمع المجاني.",
+          "primaryCta": "عرض الأسعار"
+        }
+      }
+    },
+    "roiCalculator": {
+      "meta": {
+        "title": "ROI Calculator — Quantify Your Infrastructure Savings | Rediacc",
+        "description": "Calculate total cost of ownership savings, payback period, and ROI of switching to Rediacc self-hosted infrastructure.",
+        "keywords": "ROI calculator, TCO comparison, infrastructure savings, self-hosted ROI, payback period, backup cost reduction"
+      },
+      "overline": "CALCULATE YOUR ROI",
+      "title": "How much can Rediacc save your organization?",
+      "description": "Select your company size and adjust the inputs to see real-time TCO comparison, developer productivity gains, and payback period.",
+      "sizeSelect": {
+        "label": "Company size",
+        "smb": "SMB",
+        "smbDesc": "< 25 employees",
+        "mid": "Mid-Market",
+        "midDesc": "25–200 employees",
+        "enterprise": "Enterprise",
+        "enterpriseDesc": "200–1,000 employees",
+        "large": "Large Enterprise",
+        "largeDesc": "1,000+ employees"
+      },
+      "sliders": {
+        "servers": "Servers / workloads",
+        "developers": "Developers on team",
+        "dataTB": "Data volume (TB)",
+        "downtimeCostPerHour": "Downtime cost ($/hour)",
+        "incidentsPerYear": "Incidents per year",
+        "currentRtoHours": "Current RTO (hours)"
+      },
+      "advancedLabel": "Advanced assumptions",
+      "advancedSliders": {
+        "adminHourlyRate": "Admin hourly rate",
+        "devHourlyRate": "Developer hourly rate",
+        "adminFte": "Admin FTE for backup/DR",
+        "currentBackupSpendMonth": "Current backup spend ($/mo)",
+        "dataGrowthRate": "Annual data growth",
+        "envRequestsPerDevMonth": "Env requests / dev / month",
+        "currentProvisioningHours": "Current provisioning time (hrs)"
+      },
+      "summary": {
+        "annualSavings": "Annual savings",
+        "paybackPeriod": "Payback period",
+        "paybackUnit": "months",
+        "threeYearRoi": "3-Year ROI"
+      },
+      "categories": {
+        "tco": {
+          "title": "TCO Savings",
+          "currentTco": "Current annual TCO",
+          "rediaccTco": "Rediacc annual TCO",
+          "savings": "Annual TCO savings"
+        },
+        "devProductivity": {
+          "title": "Developer Productivity",
+          "hoursSaved": "Hours saved per year",
+          "dollarValue": "Dollar value",
+          "provisioningReduction": "Provisioning time"
+        },
+        "drAvailability": {
+          "title": "DR & Availability",
+          "currentRisk": "Current downtime risk",
+          "rediaccRisk": "With Rediacc",
+          "savings": "Annual DR savings",
+          "rtoImprovement": "RTO improvement"
+        },
+        "compliance": {
+          "title": "Storage, Compliance & Insurance",
+          "storageSavings": "Storage savings",
+          "bandwidthSavings": "Bandwidth savings",
+          "complianceSavings": "Compliance cost reduction",
+          "insuranceSavings": "Insurance premium reduction",
+          "auditTimeSaved": "Audit prep time saved"
+        }
+      },
+      "footnote": "Estimates based on industry benchmarks from ITIC, IBM/Ponemon, Sophos, Cortex, and KPMG research (2024). TCO includes infrastructure, administration, DR testing, and maintenance. Developer productivity uses a conservative 40% realization rate. DR savings based on RTO improvement using btrfs copy-on-write snapshots. Storage savings assume CoW efficiency vs. traditional backup chains. Actual results vary by workload and configuration.",
+      "references": {
+        "label": "Sources & References",
+        "items": [
+          {
+            "text": "ITIC, \"2024 Hourly Cost of Downtime Report.\" Over 90% of mid-large enterprises report downtime costs exceeding $300,000/hour. 41% of enterprises report $1M–$5M+ per hour.",
+            "url": "https://itic-corp.com/itic-2024-hourly-cost-of-downtime-report/"
+          },
+          {
+            "text": "IBM Security / Ponemon Institute, \"Cost of a Data Breach Report 2024.\" Average data breach cost: $4.88M (10% YoY increase). Organizations with IR teams that regularly tested their plans had 58% lower breach costs.",
+            "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
+          },
+          {
+            "text": "Sophos, \"The State of Ransomware 2024.\" Average recovery cost (excl. ransom): $2.73M, a 50% increase from $1.82M in 2023. 59% of organizations were hit by ransomware in the past year.",
+            "url": "https://www.sophos.com/en-us/content/state-of-ransomware"
+          },
+          {
+            "text": "Cortex, \"The 2024 State of Developer Productivity.\" 72% of new hires take 1+ month to submit first 3 meaningful PRs. 58% of engineering leaders report developers lose 5+ hours/week to inefficiencies.",
+            "url": "https://www.cortex.io/report/the-2024-state-of-developer-productivity"
+          },
+          {
+            "text": "KPMG, \"The 2023 KPMG SOX Report.\" Companies spend an average of 11,800 hours and $1.6M annually on SOX compliance programs.",
+            "url": "https://kpmg.com/us/en/articles/2023/kpmg-sox-report.html"
+          },
+          {
+            "text": "Veeam, \"2024 Ransomware Trends Report.\" Only 57% of compromised data is recoverable after a ransomware attack, leaving 43% unrecoverable.",
+            "url": "https://www.veeam.com/company/press-release/ransomware-continues-to-cause-mayhem-as-victims-are-unable-to-recover-43-percent-of-affected-data.html"
+          },
+          {
+            "text": "IDC, \"Worldwide Global DataSphere Forecast, 2024–2028.\" Data creation projected from 132.4 ZB (2023) to 393.9 ZB (2028), ~24% CAGR.",
+            "url": "https://www.marketresearch.com/IDC-v2477/Worldwide-IDC-Global-DataSphere-Forecast-36971010/"
+          },
+          {
+            "text": "Veeam R&D Forums, 2020–2024. Socket-to-VUL migration threads report 2x–3x cost multipliers for existing customers, with some high-density environments reaching up to 6x.",
+            "url": "https://forums.veeam.com/veeam-backup-replication-f2/phasing-out-our-socket-based-licensing-t74168.html"
+          }
+        ],
+        "disclaimer": "All figures are based on published industry research and public vendor documentation. TCO comparisons use illustrative Rediacc pricing for modeling purposes. Actual pricing and savings may differ based on specific deployment configurations, negotiated rates, and organizational requirements."
       }
     }
   },

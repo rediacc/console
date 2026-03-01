@@ -4,7 +4,7 @@
 # Handles both production and preview deployments.
 # Both use the same index.ts entry point which embeds the account server directly.
 # - Production: uses wrangler.toml as-is
-# - Preview: generates wrangler.preview.toml with different name and preview S3 bucket
+# - Preview: generates wrangler.preview.toml with different name and preview D1 database
 #
 # Usage:
 #   deploy-www.sh                  # production
@@ -45,9 +45,11 @@ directory = "./dist"
 not_found_handling = "404-page"
 run_worker_first = ["/account", "/account/*"]
 
-[vars]
-S3_BUCKET = "subscriptions-preview"
-S3_REGION = "auto"
+[[d1_databases]]
+binding = "DB"
+database_name = "account-db-preview"
+database_id = "placeholder"
+migrations_dir = "../../private/account/drizzle"
 TOML
 
     npx wrangler deploy --config wrangler.preview.toml

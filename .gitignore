@@ -103,3 +103,8 @@ reports/
 
 # Git worktrees
 .worktrees/
+
+# SQLite databases (account E2E artifacts)
+*.db
+*.db-shm
+*.db-wal

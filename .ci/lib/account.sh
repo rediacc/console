@@ -28,27 +28,26 @@ account_cleanup() {
     exit "$exit_code"
 }
 
-# Find 4 consecutive free ports starting from preferred base
+# Find 3 consecutive free ports starting from preferred base
 account_allocate_ports() {
     local base
     base=$(find_preferred_port "$ACCOUNT_DEV_PORT_PREFERRED" \
         "$ACCOUNT_DEV_PORT_PREFERRED" "$ACCOUNT_DEV_PORT_RANGE_END")
 
-    # Verify next 3 ports are also free; if not, scan for 4 consecutive
-    if is_port_in_use $((base + 1)) || is_port_in_use $((base + 2)) || is_port_in_use $((base + 3)); then
+    # Verify next 2 ports are also free; if not, scan for 3 consecutive
+    if is_port_in_use $((base + 1)) || is_port_in_use $((base + 2)); then
         local found=false
         for candidate in $(seq "$ACCOUNT_DEV_PORT_PREFERRED" "$ACCOUNT_DEV_PORT_RANGE_END"); do
             if ! is_port_in_use "$candidate" &&
                 ! is_port_in_use $((candidate + 1)) &&
-                ! is_port_in_use $((candidate + 2)) &&
-                ! is_port_in_use $((candidate + 3)); then
+                ! is_port_in_use $((candidate + 2)); then
                 base=$candidate
                 found=true
                 break
             fi
         done
         if [[ "$found" != "true" ]]; then
-            log_error "Cannot find 4 consecutive free ports in range ${ACCOUNT_DEV_PORT_PREFERRED}-${ACCOUNT_DEV_PORT_RANGE_END}"
+            log_error "Cannot find 3 consecutive free ports in range ${ACCOUNT_DEV_PORT_PREFERRED}-${ACCOUNT_DEV_PORT_RANGE_END}"
             exit 1
         fi
     fi
@@ -56,8 +55,7 @@ account_allocate_ports() {
     GATEWAY_PORT=$base
     VITE_PORT=$((base + 1))
     ASTRO_PORT=$((base + 2))
-    S3_BROWSER_PORT=$((base + 3))
-    export GATEWAY_PORT VITE_PORT ASTRO_PORT S3_BROWSER_PORT
+    export GATEWAY_PORT VITE_PORT ASTRO_PORT
 }
 
 # Wait for a port to become active (max timeout seconds)
@@ -119,12 +117,8 @@ account_ensure_env() {
 # Updated automatically by dev-gateway on startup with the actual port
 REDIACC_ACCOUNT_SERVER=http://localhost:4800
 
-# S3-compatible storage (RustFS)
-S3_ENDPOINT=http://localhost:9000
-S3_BUCKET=subscriptions
-S3_ACCESS_KEY_ID=rustfsadmin
-S3_SECRET_ACCESS_KEY=rustfsadmin
-S3_REGION=us-east-1
+# SQLite database path
+DATABASE_PATH=account.db
 
 # Ed25519 key pair (for subscription/license signing)
 ED25519_PRIVATE_KEY=${private_key}
@@ -151,87 +145,6 @@ PORT=3000
 EOF
 
     log_info "Generated private/account/.env with fresh keys"
-}
-
-# =============================================================================
-# ENSURE RUSTFS
-# =============================================================================
-
-account_ensure_rustfs() {
-    # Check if S3 storage is already reachable on port 9000 (from any source)
-    if curl -sf --connect-timeout 2 --max-time 3 http://localhost:9000/health &>/dev/null; then
-        log_info "S3 storage already available on port 9000"
-        return 0
-    fi
-
-    log_step "Starting RustFS (S3-compatible storage)..."
-
-    # Start RustFS and its init containers. Use --wait only on rustfs itself
-    # (init containers are one-shot and exit after completing).
-    (cd "$ACCOUNT_DIR" && docker compose up -d rustfs rustfs-volume-init rustfs-init) || {
-        log_error "Failed to start RustFS containers"
-        return 1
-    }
-
-    # Wait for RustFS to become healthy
-    local elapsed=0
-    while [[ $elapsed -lt 60 ]]; do
-        if curl -sf --connect-timeout 2 --max-time 3 http://localhost:9000/health &>/dev/null; then
-            log_info "RustFS started on port 9000"
-
-            # Wait briefly for bucket init to complete
-            sleep 2
-            return 0
-        fi
-        sleep 2
-        elapsed=$((elapsed + 2))
-    done
-
-    log_error "RustFS failed to become healthy within 60s"
-    return 1
-}
-
-# =============================================================================
-# ENSURE S3 BROWSER
-# =============================================================================
-
-account_ensure_s3_browser() {
-    log_step "Starting S3 browser on :${S3_BROWSER_PORT}..."
-    (cd "$ACCOUNT_DIR" && S3_BROWSER_PORT="$S3_BROWSER_PORT" docker compose up -d s3-browser) 2>&1 | tail -1 || {
-        log_warn "S3 browser failed to start (non-critical, continuing)"
-        return 0
-    }
-
-    log_info "S3 browser available at http://localhost:${S3_BROWSER_PORT}"
-}
-
-# =============================================================================
-# RESET S3 DATA
-# =============================================================================
-
-account_reset_data() {
-    local endpoint="http://localhost:9000"
-    local bucket="subscriptions"
-
-    # Check if S3 is reachable
-    if ! curl -sf --connect-timeout 2 --max-time 3 "$endpoint/health" &>/dev/null; then
-        log_debug "S3 not reachable, nothing to reset" 2>/dev/null || true
-        return 0
-    fi
-
-    log_step "Resetting S3 data (bucket: $bucket)..."
-
-    # List and delete all objects using aws CLI from docker
-    # This is faster than listing+deleting individually and handles pagination
-    docker run --rm --network host \
-        -e AWS_ACCESS_KEY_ID=rustfsadmin \
-        -e AWS_SECRET_ACCESS_KEY=rustfsadmin \
-        amazon/aws-cli:latest \
-        s3 rm "s3://$bucket" --recursive \
-        --endpoint-url "$endpoint" \
-        --region us-east-1 2>&1 | tail -1 || true
-
-    log_info "S3 data cleared"
 }
 
 # =============================================================================
@@ -308,18 +221,14 @@ account_stripe_auto() {
 
 account_dev() {
     check_node_version
-    check_docker
 
     log_step "Starting account development environment"
 
     # Allocate dynamic ports
     account_allocate_ports
-    log_info "Ports: gateway=$GATEWAY_PORT vite=$VITE_PORT astro=$ASTRO_PORT s3-browser=$S3_BROWSER_PORT"
+    log_info "Ports: gateway=$GATEWAY_PORT vite=$VITE_PORT astro=$ASTRO_PORT"
 
-    # Infrastructure
-    account_ensure_rustfs
-    account_ensure_s3_browser
-    account_reset_data
+    # Generate .env if needed
     account_ensure_env
 
     # Load environment
@@ -376,7 +285,6 @@ account_dev() {
     GATEWAY_PORT=$GATEWAY_PORT \
         VITE_PORT=$VITE_PORT \
         ASTRO_PORT=$ASTRO_PORT \
-        S3_BROWSER_PORT="${S3_BROWSER_PORT:-9090}" \
         npx tsx "$ACCOUNT_DIR/src/entry/dev-gateway.ts"
 }
 
@@ -385,17 +293,11 @@ account_stop() {
     (cd "$ACCOUNT_DIR" && docker compose down --remove-orphans) 2>/dev/null || true
 
     # Force remove if still around
-    for container in account-server account-rustfs account-rustfs-init account-rustfs-volume-init; do
+    for container in account-server; do
         if docker ps -a --format "{{.Names}}" 2>/dev/null | grep -q "^${container}$"; then
             docker stop "$container" 2>/dev/null || true
             docker rm "$container" 2>/dev/null || true
         fi
-    done
-
-    # Stop any dynamically-named S3 browser containers
-    for container in $(docker ps -a --format "{{.Names}}" 2>/dev/null | grep "^account-s3-browser-"); do
-        docker stop "$container" 2>/dev/null || true
-        docker rm "$container" 2>/dev/null || true
     done
 
     rm -f "$ACCOUNT_STATE_FILE"
@@ -404,17 +306,6 @@ account_stop() {
 
 account_test() {
     check_node_version
-
-    # Use the test docker-compose (port 9100)
-    local test_compose="$ACCOUNT_DIR/tests/integration/setup/docker-compose.test.yml"
-
-    if ! docker ps --format "{{.Names}}" 2>/dev/null | grep -q "^license-test-rustfs$"; then
-        log_step "Starting test RustFS..."
-        docker compose -f "$test_compose" up -d --wait || {
-            log_error "Failed to start test RustFS"
-            exit 1
-        }
-    fi
 
     ensure_packages_built
 
@@ -492,12 +383,10 @@ account_test_e2e() {
 
 account_setup() {
     check_node_version
-    check_docker
 
     log_step "Account development setup"
 
     account_ensure_env
-    account_ensure_rustfs
 
     echo ""
     log_info "Account setup complete!"

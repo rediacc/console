@@ -7,16 +7,17 @@ interface Props {
     tierBadge?: string;
     command?: string;
   };
+  ctaHref: string;
 }
 
-const { bottomCta } = Astro.props;
+const { bottomCta, ctaHref } = Astro.props;
 ---
 
 <section class="sp-bottom-cta">
   <div class="sp-bottom-cta-inner">
     <h2>{bottomCta.title}</h2>
     <p>{bottomCta.description}</p>
-    <a href="#" class="sp-btn-primary">
+    <a href={ctaHref} class="sp-btn-primary">
       {bottomCta.primaryCta}
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>

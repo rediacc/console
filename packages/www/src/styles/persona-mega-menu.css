@@ -1,0 +1,172 @@
+/* Persona Mega Menu — Apollo-style card dropdown (desktop only) */
+
+.persona-menu-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Trigger — same style as .mega-menu-trigger */
+.persona-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  transition: color 0.2s ease;
+  padding: 0;
+}
+
+.persona-menu-trigger:hover {
+  color: var(--color-text);
+}
+
+.persona-menu-trigger:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.persona-menu-chevron {
+  transition: transform var(--transition-duration-base) ease;
+  flex-shrink: 0;
+}
+
+.persona-menu-chevron.open {
+  transform: rotate(180deg);
+}
+
+/* Panel */
+.persona-menu-panel {
+  position: fixed;
+  top: var(--nav-height);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(calc(100vw - var(--space-8) * 2), 780px);
+  background-color: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-popover);
+  padding: var(--space-6);
+  animation: personaMenuFadeIn var(--transition-duration-fast) ease forwards;
+}
+
+@keyframes personaMenuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Card grid */
+.persona-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+}
+
+/* Individual card */
+.persona-card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-6);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
+  background-color: var(--color-bg);
+  text-decoration: none;
+  color: var(--color-text);
+  transition:
+    border-color var(--transition-duration-fast) ease,
+    box-shadow var(--transition-duration-fast) ease,
+    transform var(--transition-duration-fast) ease;
+}
+
+.persona-card:hover {
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 4px 16px rgba(74, 124, 63, 0.12);
+  transform: translateY(-2px);
+}
+
+.persona-card:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: -2px;
+  border-radius: var(--radius-md);
+}
+
+/* Card icon */
+.persona-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-hover);
+  color: var(--color-brand-primary);
+  margin-bottom: var(--space-4);
+}
+
+/* Card title */
+.persona-card-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--space-2);
+  line-height: 1.3;
+}
+
+/* Card tagline */
+.persona-card-tagline {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-4);
+  line-height: 1.5;
+  flex: 1;
+}
+
+/* Card CTA */
+.persona-card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-brand-primary);
+  margin-top: auto;
+}
+
+.persona-card:hover .persona-card-cta svg {
+  transform: translateX(2px);
+  transition: transform var(--transition-duration-fast) ease;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .persona-menu-panel {
+    animation: none;
+  }
+
+  .persona-menu-chevron {
+    transition: none;
+  }
+
+  .persona-card {
+    transition: none;
+  }
+
+  .persona-card:hover .persona-card-cta svg {
+    transform: none;
+    transition: none;
+  }
+}

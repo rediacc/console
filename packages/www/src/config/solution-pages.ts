@@ -53,6 +53,15 @@ export interface TechItem {
   kind: string;
 }
 
+export const CATEGORY_ORDER = [
+  'ransomware',
+  'multi-cloud',
+  'backups',
+  'encryption',
+  'dev-env',
+  'defense',
+] as const satisfies readonly SolutionCategory[];
+
 export interface SolutionPageConfig {
   /** Translation content key: pages.solutionPages.<contentKey> */
   contentKey: string;
@@ -68,7 +77,19 @@ export interface SolutionPageConfig {
   techStrip?: TechItem[];
   /** Problem section illustration */
   illustration?: ImageMetadata;
+  /** Primary CTA destination (overrides category default). Relative to /{lang}. */
+  ctaHref?: string;
 }
+
+/** Default CTA destinations by category. Relative paths are prefixed with /{lang} at render time. */
+export const CATEGORY_CTA_MAP: Record<SolutionCategory, string> = {
+  'dev-env': '/install',
+  ransomware: '/contact?interest=threat-response',
+  'multi-cloud': '/contact?interest=disaster-recovery',
+  backups: '/contact?interest=disaster-recovery',
+  encryption: '/contact?interest=data-security',
+  defense: '/contact?interest=data-security',
+};
 
 const ALL_SECTIONS = [
   'hero',

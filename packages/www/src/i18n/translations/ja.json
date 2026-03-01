@@ -201,9 +201,31 @@
     "blog": "ブログ",
     "contact": "お問い合わせ",
     "disasterRecovery": "災害復旧",
+    "viewAllSolutions": "すべてのソリューションを表示",
+    "solutionsMegaMenu": "ソリューションメニュー",
+    "builtForYourRole": "あなたの役割に合わせて",
+    "builtForYou": "あなたに合わせて",
+    "forDevops": "DevOpsエンジニア向け",
+    "forCtos": "CTO向け",
+    "forCeos": "CEO・創業者向け",
+    "personas": {
+      "devops": {
+        "tagline": "より速く。即座に復旧。安心して眠れる。",
+        "cta": "無料で始める"
+      },
+      "cto": {
+        "tagline": "TCOを60%削減。自社ハードウェアでスケール。",
+        "cta": "デモを予約"
+      },
+      "ceo": {
+        "tagline": "予測可能なコスト。ベンダーロックインなし。",
+        "cta": "料金を見る"
+      }
+    },
     "docs": "ドキュメント",
     "downloads": "ダウンロード",
     "footerNavigation": "サイトナビゲーション",
+    "roiCalculator": "ROI Calculator",
     "home": "ホーム",
     "install": "インストール",
     "languageSelectionMenu": "言語選択メニュー",
@@ -1556,12 +1578,12 @@
             "label": "リポジトリサイズ上限"
           },
           {
-            "key": "repositories",
-            "label": "リポジトリ"
-          },
-          {
             "key": "floatingLicenses",
             "label": "フローティングライセンス"
+          },
+          {
+            "key": "repositories",
+            "label": "リポジトリ"
           },
           {
             "key": "usersTeams",
@@ -10606,6 +10628,767 @@
           ],
           "disclaimer": "製品パフォーマンスの主張は、Rediaccのbtrfsコピーオンライトアーキテクチャに基づいています。計算機の見積もりは業界標準のコストモデルを使用しています。実際のコストは組織によって異なります。"
         }
+      }
+    },
+    "personaPages": {
+      "forDevops": {
+        "meta": {
+          "title": "DevOpsエンジニア向け — より速くデプロイ、瞬時に復旧 | Rediacc",
+          "description": "60秒で本番環境をクローンし、5分以内にロールバックし、自社ハードウェアで稼働するCLIファーストのインフラストラクチャ。すべてを自動化するエンジニアのために。",
+          "keywords": "devops, インフラストラクチャ自動化, CLI, btrfsスナップショット, セルフホスト, 環境クローン, 瞬時ロールバック, 本番環境一致"
+        },
+        "hero": {
+          "badge": "DEVOPSエンジニア向け",
+          "title": "より速くデプロイ。瞬時に復旧。安心して眠れる。",
+          "subtitle": "60秒で本番環境をクローンし、5分以内にロールバックし、自社ハードウェアで稼働するCLIファーストのインフラストラクチャ。チケット不要。待ち時間なし。ベンダーロックインなし。",
+          "primaryCta": "無料で始める",
+          "secondaryCta": "ドキュメントを読む"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "prompt": "$",
+              "cmd": "rdc clone production",
+              "flag": "--name",
+              "value": "feature-auth-v2"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "check",
+              "text": "本番環境をスナップショット中（btrfs CoW）",
+              "result": "完了"
+            },
+            {
+              "type": "check",
+              "text": "8つのコンテナとデータベースを複製中",
+              "result": "完了"
+            },
+            {
+              "type": "check",
+              "text": "暗号化ストレージをマウント中（380 GB）",
+              "result": "完了"
+            },
+            {
+              "type": "check",
+              "text": "ヘルスチェックを実行中",
+              "result": "8/8 合格"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "success",
+              "text": "クローン準備完了: feature-auth-v2.internal"
+            },
+            {
+              "type": "summary",
+              "pairs": [
+                { "label": "時間", "value": "52s" },
+                { "label": "コンテナ", "value": "8" },
+                { "label": "サイズ", "value": "380 GB" },
+                { "label": "ディスク使用量", "value": "1.8 GB (CoW)" }
+              ]
+            }
+          ]
+        },
+        "stats": [
+          { "number": "60s", "label": "クローン作成時間", "icon": "clock" },
+          { "number": "<5 min", "label": "完全な災害復旧", "icon": "zap" },
+          { "number": "0", "label": "必要な運用チケット", "icon": "ticket-x" }
+        ],
+        "problem": {
+          "overline": "問題点",
+          "title": "すべてを自動化している — 環境の取得以外は",
+          "description": "CI/CDパイプラインは数分でデプロイします。IaCは数秒でプロビジョニングします。しかし実データを使ったテスト環境が必要なとき、チケットを提出して3日待ちます。その間、ステージング環境は共有で不安定で、本番環境とはまったく異なります。",
+          "statCallouts": [
+            {
+              "number": "69%",
+              "text": "の開発者がツールの非効率性により週8時間以上を失っている",
+              "source": "Atlassian 2024",
+              "ref": 1
+            },
+            {
+              "number": "3日",
+              "text": "エンタープライズチームでの新環境の平均待ち時間",
+              "source": "業界調査",
+              "ref": 2
+            },
+            {
+              "number": "$50K/年",
+              "text": "コンテキストスイッチングによる開発者あたりの損失",
+              "source": "業界総合",
+              "ref": 3
+            }
+          ],
+          "timeline": {
+            "oldLabel": "従来の方法",
+            "oldSteps": [
+              { "day": "月曜", "text": "チケット提出" },
+              { "day": "火曜", "text": "運用チームレビュー" },
+              { "day": "水曜", "text": "サーバープロビジョニング" },
+              { "day": "木曜", "text": "環境設定" },
+              { "day": "金曜", "text": "本番環境と一致しない" }
+            ],
+            "newLabel": "Rediaccなら",
+            "newSteps": ["rdc clone", "52s", "完了"]
+          }
+        },
+        "howItWorks": {
+          "overline": "仕組み",
+          "title": "1コマンド。完全な本番クローン。",
+          "steps": [
+            {
+              "title": "クローン",
+              "description": "rdc clone productionを実行。btrfs CoWが瞬時にスナップショットを作成 — アプリ、データベース、設定、すべて。",
+              "icon": "terminal"
+            },
+            {
+              "title": "作業",
+              "description": "本番環境と同一のデータですぐにコーディング開始。ブランチをプッシュすれば新しいクローンを取得。",
+              "icon": "code"
+            },
+            {
+              "title": "復旧",
+              "description": "何か壊れた？数秒でロールバック。不変スナップショットによりデータを失うことはありません。",
+              "icon": "shield"
+            }
+          ],
+          "cloneVisual": {
+            "production": {
+              "title": "本番環境",
+              "status": "稼働中",
+              "services": [
+                { "name": "nginx", "port": ":443" },
+                { "name": "api-server", "port": ":8080" },
+                { "name": "postgres", "port": ":5432" },
+                { "name": "redis", "port": ":6379" }
+              ],
+              "containerCount": "4コンテナ",
+              "size": "380 GB"
+            },
+            "clone": {
+              "title": "feature-auth-v2",
+              "status": "クローン済み",
+              "services": [
+                { "name": "nginx", "port": ":443" },
+                { "name": "api-server", "port": ":8080" },
+                { "name": "postgres", "port": ":5432" },
+                { "name": "redis", "port": ":6379" }
+              ],
+              "containerCount": "4コンテナ",
+              "size": "380 GB"
+            },
+            "arrow": { "label": "クローン", "time": "52s" }
+          }
+        },
+        "techDiff": {
+          "overline": "技術詳細",
+          "title": "60秒クローンが可能な理由",
+          "description": "Rediaccはファイルシステムレベルでbtrfsコピーオンライトスナップショットを使用します。380 GBの本番環境のスナップショットはサブ秒で完了し、初期段階では追加ストレージをゼロで消費します。クローンが分岐するにつれて、変更されたブロックのみが新しいスペースを使用します。",
+          "traditionalLabel": "従来のアプローチ",
+          "rediaccLabel": "Rediacc（btrfs CoW）",
+          "rows": [
+            {
+              "traditional": "Dockerボリュームコピー：完全なデータコピー、数分から数時間",
+              "rediacc": "メタデータのみのスナップショット：サブ秒、任意のサイズ"
+            },
+            {
+              "traditional": "pg_dump 380 GB：12〜36時間、一度に1つのDBエンジン",
+              "rediacc": "任意のデータベースを1つのアトミック操作でクローン"
+            },
+            {
+              "traditional": "10クローン = 10倍のストレージ（3.8 TB）",
+              "rediacc": "10クローンがCoWでブロックを共有（約15 GBのデルタ）"
+            },
+            {
+              "traditional": "ロールバック：バックアップから復元（30分以上）",
+              "rediacc": "ロールバック：btrfsスナップショット切り替え（5分未満）"
+            }
+          ]
+        },
+        "benefits": {
+          "overline": "なぜ重要か",
+          "title": "すべてを自動化するエンジニアのために構築",
+          "items": [
+            {
+              "title": "60秒で環境構築",
+              "description": "リクエストから稼働環境まで1分以内。フルスタック：OS、コンテナ、データベース、設定。",
+              "icon": "zap"
+            },
+            {
+              "title": "CLIファースト、スクリプト化可能",
+              "description": "すべてがコマンド。CI/CD、Gitフック、または独自の自動化と統合。GUIは不要。",
+              "icon": "terminal"
+            },
+            {
+              "title": "瞬時ロールバック",
+              "description": "btrfs不変スナップショットにより、任意の環境を数秒でロールバック可能。データ損失なし。ダウンタイムなし。",
+              "icon": "shield"
+            }
+          ]
+        },
+        "socialProof": {
+          "quote": "環境プロビジョニングサイクルが3日から1分以内になりました。開発者はチケットの提出をやめ、デプロイに集中し始めました。btrfsスナップショットはそのまま動きます — 380 GBが52秒でクローンされ、追加ストレージはほぼゼロです。",
+          "author": "シニアDevOpsエンジニア",
+          "company": "フィンテック、開発者80名",
+          "impact": {
+            "beforeLabel": "導入前",
+            "beforeValue": "3日",
+            "afterLabel": "導入後",
+            "afterValue": "52秒",
+            "improvement": "環境プロビジョニングが5,000倍高速化"
+          }
+        },
+        "relatedSolutions": {
+          "title": "関連ソリューションを探す"
+        },
+        "bottomCta": {
+          "title": "自分で試してみる",
+          "description": "CLIをインストール。最初の環境をクローン。クレジットカード不要。営業電話なし。",
+          "primaryCta": "無料で始める",
+          "command": "curl -fsSL https://get.rediacc.com | sh"
+        }
+      },
+      "forCtos": {
+        "meta": {
+          "title": "CTO向け — インフラTCOを60%削減 | Rediacc",
+          "description": "自社ハードウェアでスケールするセルフホスト型インフラ保護。TCOを削減し、ベンダーロックインを排除し、あらゆる障害から数分で復旧。",
+          "keywords": "CTO, インフラTCO, セルフホスト, 災害復旧, ベンダーロックイン, btrfsスナップショット, コンプライアンス, スケーラビリティ"
+        },
+        "hero": {
+          "badge": "CTO向け",
+          "title": "インフラTCOを60%削減。自社ハードウェアでスケール。",
+          "subtitle": "クラウドマークアップを排除し、シート単価なしでスケールし、あらゆる障害から数分で復旧するセルフホスト型インフラ保護 — 数時間ではなく。",
+          "primaryCta": "デモを予約",
+          "secondaryCta": "ROIを計算"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "prompt": "$",
+              "cmd": "rdc snapshot",
+              "flag": "--all-repos",
+              "value": "--schedule daily"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "check",
+              "text": "3台のマシンにわたる47リポジトリをスキャン中",
+              "result": "完了"
+            },
+            {
+              "type": "check",
+              "text": "不変btrfsスナップショットを作成中",
+              "result": "47/47"
+            },
+            {
+              "type": "check",
+              "text": "バックアップ整合性を検証中（復元テスト）",
+              "result": "合格"
+            },
+            {
+              "type": "check",
+              "text": "スタンバイノードへ複製中",
+              "result": "同期完了"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "success",
+              "text": "全リポジトリ保護完了。次回実行: 明日 02:00 UTC"
+            },
+            {
+              "type": "summary",
+              "pairs": [
+                { "label": "リポジトリ", "value": "47" },
+                { "label": "合計サイズ", "value": "2.4 TB" },
+                { "label": "スナップショット時間", "value": "3.2s" },
+                { "label": "ストレージ増分", "value": "+12 GB" }
+              ]
+            }
+          ]
+        },
+        "stats": [
+          { "number": "60%", "label": "クラウド比TCO削減", "icon": "trend-up" },
+          { "number": "<5 min", "label": "完全な災害復旧", "icon": "clock" },
+          { "number": "0", "label": "ベンダーロックイン", "icon": "lock" }
+        ],
+        "problem": {
+          "overline": "問題点",
+          "title": "クラウドコストは上がり続ける。復旧は失敗し続ける。",
+          "description": "クラウド請求額は年間15〜20%増加しています。シート単価のライセンスはチーム拡大を罰します。災害発生時、「即座の復旧」を謳うツールが実際に提供するのは数時間 — RPO数分を約束したバックアップツールが実際にはRPO数日だったからです。その間、更新のたびに高くなるベンダーエコシステムにロックインされています。",
+          "statCallouts": [
+            {
+              "number": "17%",
+              "text": "エンタープライズ全体の平均クラウド予算超過",
+              "source": "Flexera 2025",
+              "ref": 1
+            },
+            {
+              "number": "76%",
+              "text": "の組織が過去1年間に深刻なダウンタイムイベントを経験",
+              "source": "Veeam 2024",
+              "ref": 2
+            },
+            {
+              "number": "$9.36M",
+              "text": "2024年のデータ侵害の平均コスト",
+              "source": "IBM 2024",
+              "ref": 3
+            }
+          ],
+          "timeline": {
+            "oldLabel": "従来の災害復旧",
+            "oldSteps": [
+              { "day": "0:00", "text": "インシデント検知" },
+              { "day": "0:30", "text": "チーム招集" },
+              { "day": "2:00", "text": "バックアップ検索" },
+              { "day": "6:00", "text": "復元開始" },
+              { "day": "24h+", "text": "部分的に復旧" }
+            ],
+            "newLabel": "Rediaccなら",
+            "newSteps": ["検知", "ロールバック", "<5 min"]
+          }
+        },
+        "calculator": {
+          "overline": "実際のコスト",
+          "title": "インフラの本当のコストは？",
+          "description": "スライダーを組織に合わせて調整してください。Rediaccと現在の支出を比較できます。",
+          "headerTitle": "インフラ削減額を計算",
+          "sliders": {
+            "devs": "管理するサーバー/ワークロード",
+            "reqs": "月間平均クラウド支出（$）",
+            "wait": "年間ダウンタイム時間"
+          },
+          "withoutTag": "現在の支出",
+          "withTag": "Rediaccの場合",
+          "results": {
+            "blockedTime": "年間インフラコスト",
+            "sprintCapacity": "年間ダウンタイムコスト",
+            "contextSwitching": "復旧時間（MTTR）",
+            "quarterlySlip": "ベンダーロックインリスク"
+          },
+          "annualLabel": "年間総コスト",
+          "withResults": {
+            "blockedTime": "60%削減",
+            "sprintCapacity": "ほぼゼロ",
+            "contextSwitching": "5分未満",
+            "quarterlySlip": "なし"
+          },
+          "withAnnual": "計算する →",
+          "footnote": "業界のTCOモデルに基づくセルフホスト型インフラと同等のクラウドサービスの比較による見積もり。実際の節約額はワークロード、構成、規模によって異なります。"
+        },
+        "techDiff": {
+          "overline": "アーキテクチャ",
+          "title": "Rediaccがインフラを保護する仕組み",
+          "description": "Rediaccは自社ハードウェア上で稼働し、btrfsコピーオンライトスナップショットで瞬時のバックアップと復旧を実現します。すべてのスナップショットはファイルシステムレベルで不変です — カーネルが保護するものはランサムウェアで暗号化できません。復旧はテラバイトの復元ではなく、ポインタの切り替えです。",
+          "traditionalLabel": "クラウド/レガシーDR",
+          "rediaccLabel": "Rediacc（セルフホスト）",
+          "rows": [
+            {
+              "traditional": "シート単価ライセンス：チーム拡大に伴いコスト増加",
+              "rediacc": "マシン単価ライセンス：ハードウェアに伴いコスト増加"
+            },
+            {
+              "traditional": "復旧：クラウドバックアップからの復元に数時間",
+              "rediacc": "復旧：btrfsスナップショットの切り替えに数秒"
+            },
+            {
+              "traditional": "ベンダーロックイン：プロプライエタリ形式のデータ",
+              "rediacc": "オープン形式：自社ファイルシステム上のデータ"
+            },
+            {
+              "traditional": "コンプライアンス：ベンダーの認証を信頼",
+              "rediacc": "コンプライアンス：自社インフラで検証"
+            }
+          ]
+        },
+        "benefits": {
+          "overline": "戦略的価値",
+          "title": "Rediaccが組織にもたらすもの",
+          "items": [
+            {
+              "title": "TCO 60%削減",
+              "description": "クラウドマークアップ、シート単価ライセンス、エグレス料金を排除。すでに所有するハードウェアで稼働。",
+              "icon": "trend-up"
+            },
+            {
+              "title": "数時間ではなく数分",
+              "description": "完全な災害復旧を5分以内に。btrfsスナップショットにより復旧は復元ジョブではなくポインタの切り替え。",
+              "icon": "zap"
+            },
+            {
+              "title": "ベンダーロックインゼロ",
+              "description": "データはオープン形式で自社インフラに保存。プロバイダーの切り替えもセルフ管理も — 常にあなたの選択。",
+              "icon": "lock"
+            }
+          ]
+        },
+        "comparison": {
+          "overline": "競合比較",
+          "title": "Rediaccとの比較",
+          "description": "エンタープライズバックアップツールはソケット単位、VM単位、またはTB単位で課金します。Rediaccはマシン単位で課金 — しかも自社ハードウェアで稼働します。",
+          "capabilityLabel": "機能",
+          "features": [
+            {
+              "name": "セルフホスト/オンプレミス",
+              "values": ["check", "cross", "check", "cross", "rediacc"]
+            },
+            {
+              "name": "ファイルシステムレベルの不変性",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "瞬時復旧（5分未満）",
+              "values": ["cross", "cross", "cross", "check", "rediacc"]
+            },
+            {
+              "name": "ゼロコピースナップショット（CoW）",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "マシン単価（シート単価なし）",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "自動復元検証",
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "ベンダーロックインなし",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            }
+          ]
+        },
+        "socialProof": {
+          "quote": "47の本番ワークロードを大手クラウドプロバイダーから自社ハードウェア上のRediaccに移行しました。最初の四半期でインフラコストが62%削減されました。最初のインシデントが発生した際、以前のツールが見積もった4時間ではなく3分で復旧しました。",
+          "author": "CTO",
+          "company": "SaaS企業、従業員200名",
+          "impact": {
+            "beforeLabel": "クラウド支出",
+            "beforeValue": "$18K/月",
+            "afterLabel": "Rediaccの場合",
+            "afterValue": "$6.8K/月",
+            "improvement": "インフラコスト62%削減"
+          }
+        },
+        "shareWithTeam": {
+          "overline": "チームと共有",
+          "title": "DevOpsチームに始めてもらう",
+          "description": "エンジニアはCLIファーストのワークフローと瞬時の環境を気に入るでしょう。DevOpsチームに技術詳細を共有してください。",
+          "ctaText": "DevOps向け詳細を共有",
+          "ctaSlug": "for-devops"
+        },
+        "relatedSolutions": {
+          "title": "プラットフォームを探索"
+        },
+        "bottomCta": {
+          "title": "実際に見てみる",
+          "description": "30分のアーキテクチャレビューをチームと予約してください。お客様のインフラに特化したTCO予測をお見せします。",
+          "primaryCta": "デモを予約"
+        }
+      },
+      "forCeos": {
+        "meta": {
+          "title": "CEO・創業者向け — 予測可能なコスト、ロックインゼロ | Rediacc",
+          "description": "予測可能な価格設定、ベンダーロックインゼロ、完全なデータ所有権を備えたセルフホスト型インフラ保護。クラウド請求なしでビジネスを守る。",
+          "keywords": "CEO, インフラコスト, セルフホスト, データ保護, ベンダーロックイン, 予測可能な価格設定, 事業継続性, SMB"
+        },
+        "hero": {
+          "badge": "CEO・創業者向け",
+          "title": "予測可能なインフラコスト。ベンダーロックインゼロ。",
+          "subtitle": "自社所有のハードウェアでビジネスデータを保護。マシンあたり定額制 — シート単価なし、予想外のクラウド請求なし、ベンダーによるデータ人質なし。",
+          "primaryCta": "料金を見る",
+          "secondaryCta": "営業に相談"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "prompt": "$",
+              "cmd": "rdc status",
+              "flag": "--summary",
+              "value": ""
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "check",
+              "text": "3台のマシンを監視中",
+              "result": "正常"
+            },
+            {
+              "type": "check",
+              "text": "47リポジトリを保護中",
+              "result": "全バックアップ済み"
+            },
+            {
+              "type": "check",
+              "text": "最終バックアップ検証",
+              "result": "2時間前"
+            },
+            {
+              "type": "check",
+              "text": "復旧準備状況",
+              "result": "5分未満"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "success",
+              "text": "全システム保護済み。今四半期のインシデントゼロ。"
+            },
+            {
+              "type": "summary",
+              "pairs": [
+                { "label": "稼働率", "value": "99.99%" },
+                { "label": "保護済み", "value": "2.4 TB" },
+                { "label": "月額コスト", "value": "$204" },
+                { "label": "クラウド比", "value": "−62%" }
+              ]
+            }
+          ]
+        },
+        "stats": [
+          { "number": "$204/月", "label": "オールインクルーシブ価格", "icon": "tag" },
+          { "number": "99.99%", "label": "稼働率保証", "icon": "check-circle" },
+          { "number": "0", "label": "シート単価", "icon": "users" }
+        ],
+        "problem": {
+          "overline": "問題点",
+          "title": "クラウド請求は増え続ける。データは本当にあなたのものではない。",
+          "description": "チームは小さなクラウド請求から始めました。今では3番目に大きな支出で年間20%増加しています。シート単価は採用を罰します。データは他社のデータセンターに、そのプロプライエタリ形式で保管されています。離脱したければ、自分のデータにアクセスするためにエグレス料金を請求されます。",
+          "statCallouts": [
+            {
+              "number": "20%",
+              "text": "平均クラウド支出の年間増加率",
+              "source": "Flexera 2025",
+              "ref": 1
+            },
+            {
+              "number": "98%",
+              "text": "のSMB技術決定がトップエグゼクティブから直接行われている",
+              "source": "TrustRadius 2024",
+              "ref": 2
+            },
+            {
+              "number": "$9.36M",
+              "text": "データ侵害の平均コスト",
+              "source": "IBM 2024",
+              "ref": 3
+            }
+          ],
+          "timeline": {
+            "oldLabel": "クラウドインフラ",
+            "oldSteps": [
+              { "day": "1年目", "text": "$5K/月" },
+              { "day": "2年目", "text": "$8K/月" },
+              { "day": "3年目", "text": "$14K/月" },
+              { "day": "4年目", "text": "$22K/月" },
+              { "day": "5年目", "text": "ロックイン" }
+            ],
+            "newLabel": "Rediaccなら",
+            "newSteps": ["$204/月", "定額", "あなたのもの"]
+          }
+        },
+        "calculator": {
+          "overline": "数字で見る",
+          "title": "どれくらい節約できる？",
+          "description": "スライダーをビジネスに合わせて調整してください。クラウドとセルフホストの実際のコストを比較できます。",
+          "headerTitle": "節約額を計算",
+          "sliders": {
+            "devs": "チームメンバー",
+            "reqs": "現在の月間クラウド支出（$）",
+            "wait": "年間ダウンタイム時間"
+          },
+          "withoutTag": "現在のクラウドコスト",
+          "withTag": "Rediaccの場合",
+          "results": {
+            "blockedTime": "年間インフラコスト",
+            "sprintCapacity": "ダウンタイムリスクコスト",
+            "contextSwitching": "復旧時間",
+            "quarterlySlip": "データ所有権"
+          },
+          "annualLabel": "年間総コスト",
+          "withResults": {
+            "blockedTime": "60%削減",
+            "sprintCapacity": "最小化",
+            "contextSwitching": "5分未満",
+            "quarterlySlip": "100%あなたのもの"
+          },
+          "withAnnual": "計算する →",
+          "footnote": "業界のTCOモデルに基づく見積もり。実際の節約額は現在のインフラと規模によって異なります。"
+        },
+        "benefits": {
+          "overline": "ビジネス価値",
+          "title": "ビジネスにとっての意味",
+          "items": [
+            {
+              "title": "予測可能なコスト",
+              "description": "マシンあたり定額制。シート単価なし、予想外の請求なし、エグレス料金なし。成長してもコストは予測可能。",
+              "icon": "tag"
+            },
+            {
+              "title": "あなたのデータ、あなたの管理",
+              "description": "データはオープン形式で自社所有のハードウェアに保存。ベンダーがデータを人質にしたり、アクセスに料金を請求することはありません。",
+              "icon": "lock"
+            },
+            {
+              "title": "事業継続性",
+              "description": "5分以内の完全な災害復旧。ランサムウェアが触れない不変バックアップ。ビジネスは稼働し続けます。",
+              "icon": "shield"
+            }
+          ]
+        },
+        "socialProof": {
+          "quote": "47のワークロードに月額$18,000のクラウドインフラ費用をかけていました。自社サーバー上のRediaccに移行後、請求額は$6,800に下がり、復旧時間は4時間から3分になりました。ROIは最初の月から明らかでした。",
+          "author": "CEO兼創業者",
+          "company": "SaaSスタートアップ、従業員45名",
+          "impact": {
+            "beforeLabel": "月額コスト",
+            "beforeValue": "$18,000",
+            "afterLabel": "Rediaccの場合",
+            "afterValue": "$6,800",
+            "improvement": "62%コスト削減、瞬時復旧"
+          }
+        },
+        "shareWithTeam": {
+          "overline": "次のステップ",
+          "title": "CTOと共有",
+          "description": "技術チームがアーキテクチャと統合を評価する必要があります。必要な技術詳細を含むCTO向け資料を共有してください。",
+          "ctaText": "CTO向け詳細を共有",
+          "ctaSlug": "for-ctos"
+        },
+        "relatedSolutions": {
+          "title": "仕組みを見る"
+        },
+        "bottomCta": {
+          "title": "料金を見る",
+          "description": "マシンあたり定額制。シート単価なし。サプライズなし。無料のCommunityエディションから始めましょう。",
+          "primaryCta": "料金を見る"
+        }
+      }
+    },
+    "roiCalculator": {
+      "meta": {
+        "title": "ROI Calculator — Quantify Your Infrastructure Savings | Rediacc",
+        "description": "Calculate total cost of ownership savings, payback period, and ROI of switching to Rediacc self-hosted infrastructure.",
+        "keywords": "ROI calculator, TCO comparison, infrastructure savings, self-hosted ROI, payback period, backup cost reduction"
+      },
+      "overline": "CALCULATE YOUR ROI",
+      "title": "How much can Rediacc save your organization?",
+      "description": "Select your company size and adjust the inputs to see real-time TCO comparison, developer productivity gains, and payback period.",
+      "sizeSelect": {
+        "label": "Company size",
+        "smb": "SMB",
+        "smbDesc": "< 25 employees",
+        "mid": "Mid-Market",
+        "midDesc": "25–200 employees",
+        "enterprise": "Enterprise",
+        "enterpriseDesc": "200–1,000 employees",
+        "large": "Large Enterprise",
+        "largeDesc": "1,000+ employees"
+      },
+      "sliders": {
+        "servers": "Servers / workloads",
+        "developers": "Developers on team",
+        "dataTB": "Data volume (TB)",
+        "downtimeCostPerHour": "Downtime cost ($/hour)",
+        "incidentsPerYear": "Incidents per year",
+        "currentRtoHours": "Current RTO (hours)"
+      },
+      "advancedLabel": "Advanced assumptions",
+      "advancedSliders": {
+        "adminHourlyRate": "Admin hourly rate",
+        "devHourlyRate": "Developer hourly rate",
+        "adminFte": "Admin FTE for backup/DR",
+        "currentBackupSpendMonth": "Current backup spend ($/mo)",
+        "dataGrowthRate": "Annual data growth",
+        "envRequestsPerDevMonth": "Env requests / dev / month",
+        "currentProvisioningHours": "Current provisioning time (hrs)"
+      },
+      "summary": {
+        "annualSavings": "Annual savings",
+        "paybackPeriod": "Payback period",
+        "paybackUnit": "months",
+        "threeYearRoi": "3-Year ROI"
+      },
+      "categories": {
+        "tco": {
+          "title": "TCO Savings",
+          "currentTco": "Current annual TCO",
+          "rediaccTco": "Rediacc annual TCO",
+          "savings": "Annual TCO savings"
+        },
+        "devProductivity": {
+          "title": "Developer Productivity",
+          "hoursSaved": "Hours saved per year",
+          "dollarValue": "Dollar value",
+          "provisioningReduction": "Provisioning time"
+        },
+        "drAvailability": {
+          "title": "DR & Availability",
+          "currentRisk": "Current downtime risk",
+          "rediaccRisk": "With Rediacc",
+          "savings": "Annual DR savings",
+          "rtoImprovement": "RTO improvement"
+        },
+        "compliance": {
+          "title": "Storage, Compliance & Insurance",
+          "storageSavings": "Storage savings",
+          "bandwidthSavings": "Bandwidth savings",
+          "complianceSavings": "Compliance cost reduction",
+          "insuranceSavings": "Insurance premium reduction",
+          "auditTimeSaved": "Audit prep time saved"
+        }
+      },
+      "footnote": "Estimates based on industry benchmarks from ITIC, IBM/Ponemon, Sophos, Cortex, and KPMG research (2024). TCO includes infrastructure, administration, DR testing, and maintenance. Developer productivity uses a conservative 40% realization rate. DR savings based on RTO improvement using btrfs copy-on-write snapshots. Storage savings assume CoW efficiency vs. traditional backup chains. Actual results vary by workload and configuration.",
+      "references": {
+        "label": "Sources & References",
+        "items": [
+          {
+            "text": "ITIC, \"2024 Hourly Cost of Downtime Report.\" Over 90% of mid-large enterprises report downtime costs exceeding $300,000/hour. 41% of enterprises report $1M–$5M+ per hour.",
+            "url": "https://itic-corp.com/itic-2024-hourly-cost-of-downtime-report/"
+          },
+          {
+            "text": "IBM Security / Ponemon Institute, \"Cost of a Data Breach Report 2024.\" Average data breach cost: $4.88M (10% YoY increase). Organizations with IR teams that regularly tested their plans had 58% lower breach costs.",
+            "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
+          },
+          {
+            "text": "Sophos, \"The State of Ransomware 2024.\" Average recovery cost (excl. ransom): $2.73M, a 50% increase from $1.82M in 2023. 59% of organizations were hit by ransomware in the past year.",
+            "url": "https://www.sophos.com/en-us/content/state-of-ransomware"
+          },
+          {
+            "text": "Cortex, \"The 2024 State of Developer Productivity.\" 72% of new hires take 1+ month to submit first 3 meaningful PRs. 58% of engineering leaders report developers lose 5+ hours/week to inefficiencies.",
+            "url": "https://www.cortex.io/report/the-2024-state-of-developer-productivity"
+          },
+          {
+            "text": "KPMG, \"The 2023 KPMG SOX Report.\" Companies spend an average of 11,800 hours and $1.6M annually on SOX compliance programs.",
+            "url": "https://kpmg.com/us/en/articles/2023/kpmg-sox-report.html"
+          },
+          {
+            "text": "Veeam, \"2024 Ransomware Trends Report.\" Only 57% of compromised data is recoverable after a ransomware attack, leaving 43% unrecoverable.",
+            "url": "https://www.veeam.com/company/press-release/ransomware-continues-to-cause-mayhem-as-victims-are-unable-to-recover-43-percent-of-affected-data.html"
+          },
+          {
+            "text": "IDC, \"Worldwide Global DataSphere Forecast, 2024–2028.\" Data creation projected from 132.4 ZB (2023) to 393.9 ZB (2028), ~24% CAGR.",
+            "url": "https://www.marketresearch.com/IDC-v2477/Worldwide-IDC-Global-DataSphere-Forecast-36971010/"
+          },
+          {
+            "text": "Veeam R&D Forums, 2020–2024. Socket-to-VUL migration threads report 2x–3x cost multipliers for existing customers, with some high-density environments reaching up to 6x.",
+            "url": "https://forums.veeam.com/veeam-backup-replication-f2/phasing-out-our-socket-based-licensing-t74168.html"
+          }
+        ],
+        "disclaimer": "All figures are based on published industry research and public vendor documentation. TCO comparisons use illustrative Rediacc pricing for modeling purposes. Actual pricing and savings may differ based on specific deployment configurations, negotiated rates, and organizational requirements."
       }
     }
   },

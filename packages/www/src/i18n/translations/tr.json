@@ -201,9 +201,31 @@
     "blog": "Blog",
     "contact": "İletişim",
     "disasterRecovery": "Felaket Kurtarma",
+    "viewAllSolutions": "Tüm Çözümleri Görüntüle",
+    "solutionsMegaMenu": "Çözümler menüsü",
+    "builtForYourRole": "Rolünüze özel",
+    "builtForYou": "Size özel",
+    "forDevops": "DevOps mühendisleri için",
+    "forCtos": "CTO'lar için",
+    "forCeos": "CEO'lar ve kurucular için",
+    "personas": {
+      "devops": {
+        "tagline": "Daha hızlı gönderin. Anında kurtarın. Rahat uyuyun.",
+        "cta": "Ücretsiz başlayın"
+      },
+      "cto": {
+        "tagline": "TCO'yu %60 azaltın. Kendi donanımınızda ölçeklendirin.",
+        "cta": "Demo planlayın"
+      },
+      "ceo": {
+        "tagline": "Öngörülebilir maliyetler. Sıfır tedarikçi bağımlılığı.",
+        "cta": "Fiyatları görün"
+      }
+    },
     "docs": "Dokümanlar",
     "downloads": "İndirmeler",
     "footerNavigation": "Site gezintisi",
+    "roiCalculator": "ROI Calculator",
     "home": "Ana Sayfa",
     "install": "Yükle",
     "languageSelectionMenu": "Dil seçim menüsü",
@@ -1552,12 +1574,12 @@
             "label": "Depo boyutu sınırı"
           },
           {
-            "key": "repositories",
-            "label": "Depolar"
-          },
-          {
             "key": "floatingLicenses",
             "label": "Yüzen Lisanslar"
+          },
+          {
+            "key": "repositories",
+            "label": "Depolar"
           },
           {
             "key": "usersTeams",
@@ -10608,6 +10630,767 @@
           ],
           "disclaimer": "Ürün performans iddiaları Rediacc'ın btrfs copy-on-write mimarisine dayanmaktadır. Hesaplayıcı tahminleri endüstri standartı maliyet modellerini kullanır; gerçek maliyetler kuruluşa göre değişir."
         }
+      }
+    },
+    "personaPages": {
+      "forDevops": {
+        "meta": {
+          "title": "DevOps Mühendisleri İçin — Daha Hızlı Dağıtın, Anında Kurtarın | Rediacc",
+          "description": "Üretimi 60 saniyede klonlayan, beş dakikadan kısa sürede geri alan ve kendi donanımınızda çalışan CLI-öncelikli altyapı. Her şeyi otomatikleştiren mühendisler için tasarlandı.",
+          "keywords": "devops, altyapı otomasyonu, CLI, btrfs anlık görüntüler, kendi barındırma, ortam klonlama, anında geri alma, üretim eşdeğerliği"
+        },
+        "hero": {
+          "badge": "DEVOPS MÜHENDİSLERİ İÇİN",
+          "title": "Daha hızlı dağıtın. Anında kurtarın. Rahat uyuyun.",
+          "subtitle": "Üretimi 60 saniyede klonlayan, beş dakikadan kısa sürede geri alan ve kendi donanımınızda çalışan CLI-öncelikli altyapı. Talep yok. Bekleme yok. Satıcı bağımlılığı yok.",
+          "primaryCta": "Ücretsiz Başlayın",
+          "secondaryCta": "Belgeleri Okuyun"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "prompt": "$",
+              "cmd": "rdc clone production",
+              "flag": "--name",
+              "value": "feature-auth-v2"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "check",
+              "text": "Üretim anlık görüntüsü alınıyor (btrfs CoW)",
+              "result": "done"
+            },
+            {
+              "type": "check",
+              "text": "8 konteyner + veritabanı çoğaltılıyor",
+              "result": "done"
+            },
+            {
+              "type": "check",
+              "text": "Şifreli depolama bağlanıyor (380 GB)",
+              "result": "done"
+            },
+            {
+              "type": "check",
+              "text": "Sağlık kontrolleri çalıştırılıyor",
+              "result": "8/8 passed"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "success",
+              "text": "Klon hazır: feature-auth-v2.internal"
+            },
+            {
+              "type": "summary",
+              "pairs": [
+                { "label": "Süre", "value": "52s" },
+                { "label": "Konteynerler", "value": "8" },
+                { "label": "Boyut", "value": "380 GB" },
+                { "label": "Kullanılan disk", "value": "1.8 GB (CoW)" }
+              ]
+            }
+          ]
+        },
+        "stats": [
+          { "number": "60s", "label": "Klon oluşturma süresi", "icon": "clock" },
+          { "number": "<5 min", "label": "Tam felaket kurtarma", "icon": "zap" },
+          { "number": "0", "label": "Gerekli ops talebi", "icon": "ticket-x" }
+        ],
+        "problem": {
+          "overline": "SORUN",
+          "title": "Her şeyi otomatikleştiriyorsunuz — ortam alma hariç",
+          "description": "CI/CD hattınız dakikalar içinde dağıtım yapıyor. IaC'niz saniyeler içinde tedarik ediyor. Ancak gerçek verilerle bir test ortamına ihtiyacınız olduğunda, talep açıp üç gün bekliyorsunuz. Bu sırada paylaşılan hazırlık ortamı kararsız ve üretime hiç benzemiyor.",
+          "statCallouts": [
+            {
+              "number": "69%",
+              "text": "geliştiriciler araç verimsizlikleri nedeniyle haftada 8+ saat kaybediyor",
+              "source": "Atlassian 2024",
+              "ref": 1
+            },
+            {
+              "number": "3 gün",
+              "text": "kurumsal ekiplerde yeni bir ortam için ortalama bekleme süresi",
+              "source": "Industry survey",
+              "ref": 2
+            },
+            {
+              "number": "$50K/yıl",
+              "text": "bağlam değiştirme nedeniyle geliştirici başına kayıp",
+              "source": "Industry composite",
+              "ref": 3
+            }
+          ],
+          "timeline": {
+            "oldLabel": "Eski yöntem",
+            "oldSteps": [
+              { "day": "Pzt", "text": "Talep aç" },
+              { "day": "Sal", "text": "Ops inceler" },
+              { "day": "Çar", "text": "Sunucu tedarik et" },
+              { "day": "Per", "text": "Ortamı yapılandır" },
+              { "day": "Cum", "text": "Üretime benzemiyor" }
+            ],
+            "newLabel": "Rediacc ile",
+            "newSteps": ["rdc clone", "52s", "Tamam"]
+          }
+        },
+        "howItWorks": {
+          "overline": "NASIL ÇALIŞIR",
+          "title": "Tek komut. Tam üretim klonu.",
+          "steps": [
+            {
+              "title": "Klonla",
+              "description": "rdc clone production komutunu çalıştırın. Btrfs CoW anında bir anlık görüntü oluşturur — uygulama, veritabanı, yapılandırma, her şey.",
+              "icon": "terminal"
+            },
+            {
+              "title": "Çalış",
+              "description": "Üretimle birebir aynı veriler üzerinde hemen kodlamaya başlayın. Bir dal gönderin, yeni bir klon alın.",
+              "icon": "code"
+            },
+            {
+              "title": "Kurtar",
+              "description": "Bir şey bozuldu mu? Saniyeler içinde geri alın. Değiştirilemez anlık görüntüler sayesinde asla veri kaybetmezsiniz.",
+              "icon": "shield"
+            }
+          ],
+          "cloneVisual": {
+            "production": {
+              "title": "Üretim",
+              "status": "Çalışıyor",
+              "services": [
+                { "name": "nginx", "port": ":443" },
+                { "name": "api-server", "port": ":8080" },
+                { "name": "postgres", "port": ":5432" },
+                { "name": "redis", "port": ":6379" }
+              ],
+              "containerCount": "4 konteyner",
+              "size": "380 GB"
+            },
+            "clone": {
+              "title": "feature-auth-v2",
+              "status": "Klonlandı",
+              "services": [
+                { "name": "nginx", "port": ":443" },
+                { "name": "api-server", "port": ":8080" },
+                { "name": "postgres", "port": ":5432" },
+                { "name": "redis", "port": ":6379" }
+              ],
+              "containerCount": "4 konteyner",
+              "size": "380 GB"
+            },
+            "arrow": { "label": "Klonla", "time": "52s" }
+          }
+        },
+        "techDiff": {
+          "overline": "KAPUTUN ALTINDA",
+          "title": "60 saniyelik klonlar neden mümkün",
+          "description": "Rediacc, dosya sistemi düzeyinde btrfs copy-on-write anlık görüntülerini kullanır. 380 GB'lık bir üretim ortamının anlık görüntüsü milisaniyeler içinde tamamlanır ve başlangıçta sıfır ek depolama tüketir. Klon farklılaştıkça, yalnızca değişen bloklar yeni alan kullanır.",
+          "traditionalLabel": "Geleneksel yaklaşım",
+          "rediaccLabel": "Rediacc (btrfs CoW)",
+          "rows": [
+            {
+              "traditional": "Docker volume kopyası: tam veri kopyası, dakikalardan saatlere",
+              "rediacc": "Yalnızca meta veri anlık görüntüsü: milisaniyeler, herhangi bir boyut"
+            },
+            {
+              "traditional": "pg_dump 380 GB: 12-36 saat, bir seferde tek DB motoru",
+              "rediacc": "Herhangi bir veritabanı tek atomik işlemde klonlanır"
+            },
+            {
+              "traditional": "10 klon = 10x depolama (3,8 TB)",
+              "rediacc": "10 klon CoW ile blokları paylaşır (~15 GB delta)"
+            },
+            {
+              "traditional": "Geri alma: yedekten geri yükleme (30+ dk)",
+              "rediacc": "Geri alma: btrfs anlık görüntü geçişi (<5 dk)"
+            }
+          ]
+        },
+        "benefits": {
+          "overline": "NEDEN ÖNEMLİ",
+          "title": "Her şeyi otomatikleştiren mühendisler için tasarlandı",
+          "items": [
+            {
+              "title": "60 saniyelik ortamlar",
+              "description": "Talepten çalışan ortama bir dakikadan kısa sürede. Tam yığın: işletim sistemi, konteynerler, veritabanları, yapılandırma.",
+              "icon": "zap"
+            },
+            {
+              "title": "CLI-öncelikli, betiklenebilir",
+              "description": "Her şey bir komut. CI/CD, Git hook'ları veya kendi otomasyonunuzla entegre edin. GUI gerekmez.",
+              "icon": "terminal"
+            },
+            {
+              "title": "Anında geri alma",
+              "description": "Btrfs değiştirilemez anlık görüntüler sayesinde herhangi bir ortamı saniyeler içinde geri alabilirsiniz. Veri kaybı yok. Kesinti yok.",
+              "icon": "shield"
+            }
+          ]
+        },
+        "socialProof": {
+          "quote": "3 günlük ortam tedarik sürecinden bir dakikanın altına indik. Geliştiricilerimiz talep açmayı bırakıp kod yazmaya başladı. Btrfs anlık görüntüleri harika çalışıyor — 380 GB neredeyse sıfır ek depolamayla 52 saniyede klonlandı.",
+          "author": "Kıdemli DevOps Mühendisi",
+          "company": "Fintech, 80 geliştirici",
+          "impact": {
+            "beforeLabel": "Önce",
+            "beforeValue": "3 gün",
+            "afterLabel": "Sonra",
+            "afterValue": "52 sn",
+            "improvement": "Ortam tedariki 5.000 kat daha hızlı"
+          }
+        },
+        "relatedSolutions": {
+          "title": "İlgili çözümleri keşfedin"
+        },
+        "bottomCta": {
+          "title": "Kendiniz deneyin",
+          "description": "CLI'yi kurun. İlk ortamınızı klonlayın. Kredi kartı yok. Satış görüşmesi yok.",
+          "primaryCta": "Ücretsiz Başlayın",
+          "command": "curl -fsSL https://get.rediacc.com | sh"
+        }
+      },
+      "forCtos": {
+        "meta": {
+          "title": "CTO'lar İçin — Altyapı TCO'sunu %60 Azaltın | Rediacc",
+          "description": "Kendi donanımınızda ölçeklenen, kendi barındırmalı altyapı koruması. TCO'yu azaltın, satıcı bağımlılığını ortadan kaldırın ve herhangi bir felaketten dakikalar içinde kurtulun.",
+          "keywords": "CTO, altyapı TCO, kendi barındırma, felaket kurtarma, satıcı bağımlılığı, btrfs anlık görüntüler, uyumluluk, ölçeklenebilirlik"
+        },
+        "hero": {
+          "badge": "CTO'LAR İÇİN",
+          "title": "Altyapı TCO'sunu %60 azaltın. Kendi donanımınızda ölçekleyin.",
+          "subtitle": "Bulut artırımını ortadan kaldıran, koltuk başı fiyatlandırma olmadan ölçeklenen ve herhangi bir felaketten saatler yerine dakikalar içinde kurtaran kendi barındırmalı altyapı koruması.",
+          "primaryCta": "Demo Planlayın",
+          "secondaryCta": "ROI'nizi Hesaplayın"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "prompt": "$",
+              "cmd": "rdc snapshot",
+              "flag": "--all-repos",
+              "value": "--schedule daily"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "check",
+              "text": "3 makinede 47 depo taranıyor",
+              "result": "done"
+            },
+            {
+              "type": "check",
+              "text": "Değiştirilemez btrfs anlık görüntüleri oluşturuluyor",
+              "result": "47/47"
+            },
+            {
+              "type": "check",
+              "text": "Yedek bütünlüğü doğrulanıyor (geri yükleme testi)",
+              "result": "passed"
+            },
+            {
+              "type": "check",
+              "text": "Bekleme düğümüne çoğaltılıyor",
+              "result": "synced"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "success",
+              "text": "Tüm depolar korunuyor. Sonraki çalıştırma: yarın 02:00 UTC"
+            },
+            {
+              "type": "summary",
+              "pairs": [
+                { "label": "Depolar", "value": "47" },
+                { "label": "Toplam boyut", "value": "2.4 TB" },
+                { "label": "Anlık görüntü süresi", "value": "3.2s" },
+                { "label": "Depolama deltası", "value": "+12 GB" }
+              ]
+            }
+          ]
+        },
+        "stats": [
+          { "number": "60%", "label": "Buluta göre daha düşük TCO", "icon": "trend-up" },
+          { "number": "<5 dk", "label": "Tam felaket kurtarma", "icon": "clock" },
+          { "number": "0", "label": "Satıcı bağımlılığı", "icon": "lock" }
+        ],
+        "problem": {
+          "overline": "SORUN",
+          "title": "Bulut maliyetleri artmaya devam ediyor. Kurtarma başarısız olmaya devam ediyor.",
+          "description": "Bulut faturanız yıllık %15-20 büyüyor. Koltuk başı lisanslama ekip büyümesini cezalandırıyor. Felaket geldiğinde, 'anında kurtarma'nız saatler sürüyor — çünkü dakikalarca RPO vaat eden yedekleme aracı aslında günlerce RPO sunuyor. Bu arada, her yenileme döneminde daha pahalı olan bir satıcı ekosistemine kilitlenmiş durumdasınız.",
+          "statCallouts": [
+            {
+              "number": "17%",
+              "text": "kurumlar genelinde ortalama bulut bütçesi aşımı",
+              "source": "Flexera 2025",
+              "ref": 1
+            },
+            {
+              "number": "76%",
+              "text": "kuruluşların geçen yıl ciddi bir kesinti olayı yaşadı",
+              "source": "Veeam 2024",
+              "ref": 2
+            },
+            {
+              "number": "$9,36M",
+              "text": "2024'te ortalama veri ihlali maliyeti",
+              "source": "IBM 2024",
+              "ref": 3
+            }
+          ],
+          "timeline": {
+            "oldLabel": "Geleneksel felaket kurtarma",
+            "oldSteps": [
+              { "day": "0:00", "text": "Olay tespit edildi" },
+              { "day": "0:30", "text": "Ekip toplanıyor" },
+              { "day": "2:00", "text": "Yedeği bul" },
+              { "day": "6:00", "text": "Geri yüklemeye başla" },
+              { "day": "24s+", "text": "Kısmen kurtarıldı" }
+            ],
+            "newLabel": "Rediacc ile",
+            "newSteps": ["Tespit", "Geri al", "<5 dk"]
+          }
+        },
+        "calculator": {
+          "overline": "GERÇEK MALİYET",
+          "title": "Altyapınız gerçekte size ne kadara mal oluyor?",
+          "description": "Kaydırıcıları kuruluşunuza uyacak şekilde ayarlayın. Rediacc'ın mevcut harcamanızla nasıl karşılaştırıldığını görün.",
+          "headerTitle": "Altyapı tasarrufunuzu hesaplayın",
+          "sliders": {
+            "devs": "Yönetilen sunucular / iş yükleri",
+            "reqs": "Aylık ortalama bulut harcaması ($)",
+            "wait": "Yıllık kesinti saatleri"
+          },
+          "withoutTag": "Mevcut harcama",
+          "withTag": "Rediacc ile",
+          "results": {
+            "blockedTime": "Yıllık altyapı maliyeti",
+            "sprintCapacity": "Yıllık kesinti maliyeti",
+            "contextSwitching": "Kurtarma süresi (MTTR)",
+            "quarterlySlip": "Satıcı bağımlılığı riski"
+          },
+          "annualLabel": "Toplam yıllık maliyet",
+          "withResults": {
+            "blockedTime": "%60 daha az",
+            "sprintCapacity": "Neredeyse sıfır",
+            "contextSwitching": "<5 dakika",
+            "quarterlySlip": "Yok"
+          },
+          "withAnnual": "Hesapla →",
+          "footnote": "Tahminler, kendi barındırmalı altyapıyı eşdeğer bulut hizmetleriyle karşılaştıran endüstri TCO modellerine dayanmaktadır. Gerçek tasarruflar iş yüküne, yapılandırmaya ve ölçeğe göre değişir."
+        },
+        "techDiff": {
+          "overline": "MİMARİ",
+          "title": "Rediacc altyapınızı nasıl koruyor",
+          "description": "Rediacc donanımınızda çalışır ve anında yedekleme ile kurtarma için btrfs copy-on-write anlık görüntülerini kullanır. Her anlık görüntü dosya sistemi düzeyinde değiştirilemezdir — fidye yazılımı çekirdeğin koruduğunu şifreleyemez. Kurtarma, terabaytları geri yüklemek değil, bir işaretçi değiştirmek demektir.",
+          "traditionalLabel": "Bulut / eski nesil DR",
+          "rediaccLabel": "Rediacc (kendi barındırma)",
+          "rows": [
+            {
+              "traditional": "Koltuk başı lisanslama: maliyetler ekiple birlikte ölçeklenir",
+              "rediacc": "Makine başı lisanslama: maliyetler donanımla birlikte ölçeklenir"
+            },
+            {
+              "traditional": "Kurtarma: bulut yedeğinden geri yükleme saatler sürer",
+              "rediacc": "Kurtarma: btrfs anlık görüntü geçişi saniyeler"
+            },
+            {
+              "traditional": "Satıcı bağımlılığı: veri tescilli formatta",
+              "rediacc": "Açık format: verileriniz kendi dosya sisteminizde"
+            },
+            {
+              "traditional": "Uyumluluk: satıcının beyanına güvenin",
+              "rediacc": "Uyumluluk: kendi altyapınızda doğrulayın"
+            }
+          ]
+        },
+        "benefits": {
+          "overline": "STRATEJİK DEĞER",
+          "title": "Rediacc kuruluşunuz için ne anlama geliyor",
+          "items": [
+            {
+              "title": "%60 daha düşük TCO",
+              "description": "Bulut artırımını, koltuk başı lisanslamayı ve çıkış ücretlerini ortadan kaldırın. Zaten sahip olduğunuz donanımda çalıştırın.",
+              "icon": "trend-up"
+            },
+            {
+              "title": "Saatler değil, dakikalar",
+              "description": "5 dakikadan kısa sürede tam felaket kurtarma. Btrfs anlık görüntüleri sayesinde kurtarma bir işaretçi değişimidir, geri yükleme işi değil.",
+              "icon": "zap"
+            },
+            {
+              "title": "Sıfır satıcı bağımlılığı",
+              "description": "Verileriniz açık formatlarda kendi altyapınızda kalır. Sağlayıcı değiştirin veya kendiniz yönetin — seçim her zaman sizin.",
+              "icon": "lock"
+            }
+          ]
+        },
+        "comparison": {
+          "overline": "REKABET ORTAMI",
+          "title": "Rediacc nasıl karşılaştırılır",
+          "description": "Kurumsal yedekleme araçları soket başı, VM başı veya TB başı ücret alır. Rediacc makine başı ücret alır — ve donanımınızda çalışır.",
+          "capabilityLabel": "Özellik",
+          "features": [
+            {
+              "name": "Kendi barındırma / yerinde",
+              "values": ["check", "cross", "check", "cross", "rediacc"]
+            },
+            {
+              "name": "Dosya sistemi düzeyinde değiştirilemezlik",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "Anında kurtarma (<5 dk)",
+              "values": ["cross", "cross", "cross", "check", "rediacc"]
+            },
+            {
+              "name": "Sıfır kopyalama anlık görüntüleri (CoW)",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "Makine başı fiyatlandırma (koltuk başı yok)",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "Otomatik geri yükleme doğrulaması",
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "Satıcı bağımlılığı yok",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            }
+          ]
+        },
+        "socialProof": {
+          "quote": "47 üretim iş yükünü büyük bir bulut sağlayıcısından kendi donanımımızda Rediacc'a taşıdık. Altyapı maliyetleri ilk çeyrekte %62 düştü. İlk olayımızda kurtarma, önceki aracımızın belirttiği 4 saat yerine 3 dakika sürdü.",
+          "author": "CTO",
+          "company": "SaaS şirketi, 200 çalışan",
+          "impact": {
+            "beforeLabel": "Bulut harcaması",
+            "beforeValue": "$18K/ay",
+            "afterLabel": "Rediacc ile",
+            "afterValue": "$6,8K/ay",
+            "improvement": "%62 altyapı maliyeti azalması"
+          }
+        },
+        "shareWithTeam": {
+          "overline": "EKİBİNİZLE PAYLAŞIN",
+          "title": "DevOps ekibinizi başlatın",
+          "description": "Mühendisleriniz CLI-öncelikli iş akışını ve anında ortamları sevecek. Teknik derinlemeyi DevOps ekibinizle paylaşın.",
+          "ctaText": "DevOps derinlemesini paylaşın",
+          "ctaSlug": "for-devops"
+        },
+        "relatedSolutions": {
+          "title": "Platformu keşfedin"
+        },
+        "bottomCta": {
+          "title": "Uygulamada görün",
+          "description": "Ekibimizle 30 dakikalık bir mimari incelemesi planlayın. Altyapınıza özel TCO projeksiyonlarını göstereceğiz.",
+          "primaryCta": "Demo Planlayın"
+        }
+      },
+      "forCeos": {
+        "meta": {
+          "title": "CEO'lar ve Kurucular İçin — Öngörülebilir Maliyetler, Sıfır Bağımlılık | Rediacc",
+          "description": "Öngörülebilir fiyatlandırma, sıfır satıcı bağımlılığı ve tam veri sahipliği ile kendi barındırmalı altyapı koruması. İşletmenizi bulut faturası olmadan koruyun.",
+          "keywords": "CEO, altyapı maliyetleri, kendi barındırma, veri koruma, satıcı bağımlılığı, öngörülebilir fiyatlandırma, iş sürekliliği, KOBİ"
+        },
+        "hero": {
+          "badge": "CEO'LAR VE KURUCULAR İÇİN",
+          "title": "Öngörülebilir altyapı maliyetleri. Sıfır satıcı bağımlılığı.",
+          "subtitle": "İşletme verilerinizi sahip olduğunuz donanımda koruyun. Makine başına tek sabit fiyat — koltuk başı ücret yok, sürpriz bulut faturaları yok, verilerinizi rehin tutan satıcı yok.",
+          "primaryCta": "Fiyatlandırmayı Görün",
+          "secondaryCta": "Satışla Konuşun"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "prompt": "$",
+              "cmd": "rdc status",
+              "flag": "--summary",
+              "value": ""
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "check",
+              "text": "3 makine izleniyor",
+              "result": "healthy"
+            },
+            {
+              "type": "check",
+              "text": "47 depo korunuyor",
+              "result": "all backed up"
+            },
+            {
+              "type": "check",
+              "text": "Son yedek doğrulandı",
+              "result": "2 saat önce"
+            },
+            {
+              "type": "check",
+              "text": "Kurtarma hazırlığı",
+              "result": "< 5 dk"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "success",
+              "text": "Tüm sistemler korunuyor. Bu çeyrekte sıfır olay."
+            },
+            {
+              "type": "summary",
+              "pairs": [
+                { "label": "Çalışma süresi", "value": "99.99%" },
+                { "label": "Korunan", "value": "2.4 TB" },
+                { "label": "Aylık maliyet", "value": "$204" },
+                { "label": "Buluta karşı", "value": "−62%" }
+              ]
+            }
+          ]
+        },
+        "stats": [
+          { "number": "$204/ay", "label": "Her şey dahil fiyat", "icon": "tag" },
+          { "number": "99.99%", "label": "Çalışma süresi garantisi", "icon": "check-circle" },
+          { "number": "0", "label": "Koltuk başı ücret", "icon": "users" }
+        ],
+        "problem": {
+          "overline": "SORUN",
+          "title": "Bulut faturaları artmaya devam ediyor. Verileriniz gerçekten size ait değil.",
+          "description": "Ekibiniz küçük bir bulut faturasıyla başladı. Şimdi en büyük üçüncü gideriniz ve yıllık %20 büyüyor. Koltuk başı fiyatlandırma işe alım yaptığınızda sizi cezalandırıyor. Verileriniz başka birinin veri merkezinde, onların tescilli formatında duruyor. Ayrılmak isterseniz, kendi verilerinize erişmek için çıkış ücreti alıyorlar.",
+          "statCallouts": [
+            {
+              "number": "20%",
+              "text": "ortalama bulut harcamasında yıllık artış",
+              "source": "Flexera 2025",
+              "ref": 1
+            },
+            {
+              "number": "98%",
+              "text": "KOBİ teknoloji kararları doğrudan üst düzey yöneticilerden gelir",
+              "source": "TrustRadius 2024",
+              "ref": 2
+            },
+            {
+              "number": "$9,36M",
+              "text": "ortalama veri ihlali maliyeti",
+              "source": "IBM 2024",
+              "ref": 3
+            }
+          ],
+          "timeline": {
+            "oldLabel": "Bulut altyapısı",
+            "oldSteps": [
+              { "day": "Y1", "text": "$5K/ay" },
+              { "day": "Y2", "text": "$8K/ay" },
+              { "day": "Y3", "text": "$14K/ay" },
+              { "day": "Y4", "text": "$22K/ay" },
+              { "day": "Y5", "text": "Kilitlendiniz" }
+            ],
+            "newLabel": "Rediacc ile",
+            "newSteps": ["$204/ay", "Sabit", "Sizin"]
+          }
+        },
+        "calculator": {
+          "overline": "RAKAMLAR",
+          "title": "Ne kadar tasarruf edebilirsiniz?",
+          "description": "Kaydırıcıları işletmenize uyacak şekilde ayarlayın. Bulut ile kendi barındırmanın gerçek maliyetini görün.",
+          "headerTitle": "Tasarrufunuzu hesaplayın",
+          "sliders": {
+            "devs": "Ekip üyeleri",
+            "reqs": "Mevcut aylık bulut harcaması ($)",
+            "wait": "Yıllık kesinti saatleri"
+          },
+          "withoutTag": "Mevcut bulut maliyetleri",
+          "withTag": "Rediacc ile",
+          "results": {
+            "blockedTime": "Yıllık altyapı maliyeti",
+            "sprintCapacity": "Kesinti risk maliyeti",
+            "contextSwitching": "Kurtarma süresi",
+            "quarterlySlip": "Veri sahipliği"
+          },
+          "annualLabel": "Toplam yıllık maliyet",
+          "withResults": {
+            "blockedTime": "%60 daha az",
+            "sprintCapacity": "Minimize edildi",
+            "contextSwitching": "<5 dakika",
+            "quarterlySlip": "%100 sizin"
+          },
+          "withAnnual": "Hesapla →",
+          "footnote": "Tahminler endüstri TCO modellerine dayanmaktadır. Gerçek tasarruflar mevcut altyapınıza ve ölçeğinize bağlıdır."
+        },
+        "benefits": {
+          "overline": "İŞ DEĞERİ",
+          "title": "Bu işletmeniz için ne anlama geliyor",
+          "items": [
+            {
+              "title": "Öngörülebilir maliyetler",
+              "description": "Makine başına tek sabit fiyat. Koltuk başı ücret yok, sürpriz faturalar yok, çıkış ücretleri yok. Büyüdükçe bütçeniz öngörülebilir kalır.",
+              "icon": "tag"
+            },
+            {
+              "title": "Verileriniz, kontrolünüz",
+              "description": "Veriler açık formatlarda sahip olduğunuz donanımda kalır. Hiçbir satıcı verilerinizi rehin tutamaz veya erişim için ücret alamaz.",
+              "icon": "lock"
+            },
+            {
+              "title": "İş sürekliliği",
+              "description": "5 dakikadan kısa sürede tam felaket kurtarma. Fidye yazılımının dokunamayacağı değiştirilemez yedekler. İşletmeniz çalışmaya devam eder.",
+              "icon": "shield"
+            }
+          ]
+        },
+        "socialProof": {
+          "quote": "47 iş yükü için ayda 18.000 dolar bulut altyapısına harcıyorduk. Kendi sunucularımızda Rediacc'a geçtikten sonra faturamız 6.800 dolara düştü — ve kurtarma süresi 4 saatten 3 dakikaya indi. ROI ilk ayda açıkça ortadaydı.",
+          "author": "CEO ve Kurucu",
+          "company": "SaaS girişimi, 45 çalışan",
+          "impact": {
+            "beforeLabel": "Aylık maliyet",
+            "beforeValue": "$18.000",
+            "afterLabel": "Rediacc ile",
+            "afterValue": "$6.800",
+            "improvement": "%62 maliyet azalması, anında kurtarma"
+          }
+        },
+        "shareWithTeam": {
+          "overline": "SONRAKİ ADIM",
+          "title": "CTO'nuzla paylaşın",
+          "description": "Teknik ekibinizin mimariyi ve entegrasyonu değerlendirmesi gerekiyor. İhtiyaç duydukları teknik detaylarla CTO derinlemesini paylaşın.",
+          "ctaText": "CTO derinlemesini paylaşın",
+          "ctaSlug": "for-ctos"
+        },
+        "relatedSolutions": {
+          "title": "Nasıl çalışır"
+        },
+        "bottomCta": {
+          "title": "Fiyatlandırmayı görün",
+          "description": "Makine başına tek sabit fiyat. Koltuk başı ücret yok. Sürpriz yok. Ücretsiz Community sürümüyle başlayın.",
+          "primaryCta": "Fiyatlandırmayı Görün"
+        }
+      }
+    },
+    "roiCalculator": {
+      "meta": {
+        "title": "ROI Calculator — Quantify Your Infrastructure Savings | Rediacc",
+        "description": "Calculate total cost of ownership savings, payback period, and ROI of switching to Rediacc self-hosted infrastructure.",
+        "keywords": "ROI calculator, TCO comparison, infrastructure savings, self-hosted ROI, payback period, backup cost reduction"
+      },
+      "overline": "CALCULATE YOUR ROI",
+      "title": "How much can Rediacc save your organization?",
+      "description": "Select your company size and adjust the inputs to see real-time TCO comparison, developer productivity gains, and payback period.",
+      "sizeSelect": {
+        "label": "Company size",
+        "smb": "SMB",
+        "smbDesc": "< 25 employees",
+        "mid": "Mid-Market",
+        "midDesc": "25–200 employees",
+        "enterprise": "Enterprise",
+        "enterpriseDesc": "200–1,000 employees",
+        "large": "Large Enterprise",
+        "largeDesc": "1,000+ employees"
+      },
+      "sliders": {
+        "servers": "Servers / workloads",
+        "developers": "Developers on team",
+        "dataTB": "Data volume (TB)",
+        "downtimeCostPerHour": "Downtime cost ($/hour)",
+        "incidentsPerYear": "Incidents per year",
+        "currentRtoHours": "Current RTO (hours)"
+      },
+      "advancedLabel": "Advanced assumptions",
+      "advancedSliders": {
+        "adminHourlyRate": "Admin hourly rate",
+        "devHourlyRate": "Developer hourly rate",
+        "adminFte": "Admin FTE for backup/DR",
+        "currentBackupSpendMonth": "Current backup spend ($/mo)",
+        "dataGrowthRate": "Annual data growth",
+        "envRequestsPerDevMonth": "Env requests / dev / month",
+        "currentProvisioningHours": "Current provisioning time (hrs)"
+      },
+      "summary": {
+        "annualSavings": "Annual savings",
+        "paybackPeriod": "Payback period",
+        "paybackUnit": "months",
+        "threeYearRoi": "3-Year ROI"
+      },
+      "categories": {
+        "tco": {
+          "title": "TCO Savings",
+          "currentTco": "Current annual TCO",
+          "rediaccTco": "Rediacc annual TCO",
+          "savings": "Annual TCO savings"
+        },
+        "devProductivity": {
+          "title": "Developer Productivity",
+          "hoursSaved": "Hours saved per year",
+          "dollarValue": "Dollar value",
+          "provisioningReduction": "Provisioning time"
+        },
+        "drAvailability": {
+          "title": "DR & Availability",
+          "currentRisk": "Current downtime risk",
+          "rediaccRisk": "With Rediacc",
+          "savings": "Annual DR savings",
+          "rtoImprovement": "RTO improvement"
+        },
+        "compliance": {
+          "title": "Storage, Compliance & Insurance",
+          "storageSavings": "Storage savings",
+          "bandwidthSavings": "Bandwidth savings",
+          "complianceSavings": "Compliance cost reduction",
+          "insuranceSavings": "Insurance premium reduction",
+          "auditTimeSaved": "Audit prep time saved"
+        }
+      },
+      "footnote": "Estimates based on industry benchmarks from ITIC, IBM/Ponemon, Sophos, Cortex, and KPMG research (2024). TCO includes infrastructure, administration, DR testing, and maintenance. Developer productivity uses a conservative 40% realization rate. DR savings based on RTO improvement using btrfs copy-on-write snapshots. Storage savings assume CoW efficiency vs. traditional backup chains. Actual results vary by workload and configuration.",
+      "references": {
+        "label": "Sources & References",
+        "items": [
+          {
+            "text": "ITIC, \"2024 Hourly Cost of Downtime Report.\" Over 90% of mid-large enterprises report downtime costs exceeding $300,000/hour. 41% of enterprises report $1M–$5M+ per hour.",
+            "url": "https://itic-corp.com/itic-2024-hourly-cost-of-downtime-report/"
+          },
+          {
+            "text": "IBM Security / Ponemon Institute, \"Cost of a Data Breach Report 2024.\" Average data breach cost: $4.88M (10% YoY increase). Organizations with IR teams that regularly tested their plans had 58% lower breach costs.",
+            "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
+          },
+          {
+            "text": "Sophos, \"The State of Ransomware 2024.\" Average recovery cost (excl. ransom): $2.73M, a 50% increase from $1.82M in 2023. 59% of organizations were hit by ransomware in the past year.",
+            "url": "https://www.sophos.com/en-us/content/state-of-ransomware"
+          },
+          {
+            "text": "Cortex, \"The 2024 State of Developer Productivity.\" 72% of new hires take 1+ month to submit first 3 meaningful PRs. 58% of engineering leaders report developers lose 5+ hours/week to inefficiencies.",
+            "url": "https://www.cortex.io/report/the-2024-state-of-developer-productivity"
+          },
+          {
+            "text": "KPMG, \"The 2023 KPMG SOX Report.\" Companies spend an average of 11,800 hours and $1.6M annually on SOX compliance programs.",
+            "url": "https://kpmg.com/us/en/articles/2023/kpmg-sox-report.html"
+          },
+          {
+            "text": "Veeam, \"2024 Ransomware Trends Report.\" Only 57% of compromised data is recoverable after a ransomware attack, leaving 43% unrecoverable.",
+            "url": "https://www.veeam.com/company/press-release/ransomware-continues-to-cause-mayhem-as-victims-are-unable-to-recover-43-percent-of-affected-data.html"
+          },
+          {
+            "text": "IDC, \"Worldwide Global DataSphere Forecast, 2024–2028.\" Data creation projected from 132.4 ZB (2023) to 393.9 ZB (2028), ~24% CAGR.",
+            "url": "https://www.marketresearch.com/IDC-v2477/Worldwide-IDC-Global-DataSphere-Forecast-36971010/"
+          },
+          {
+            "text": "Veeam R&D Forums, 2020–2024. Socket-to-VUL migration threads report 2x–3x cost multipliers for existing customers, with some high-density environments reaching up to 6x.",
+            "url": "https://forums.veeam.com/veeam-backup-replication-f2/phasing-out-our-socket-based-licensing-t74168.html"
+          }
+        ],
+        "disclaimer": "All figures are based on published industry research and public vendor documentation. TCO comparisons use illustrative Rediacc pricing for modeling purposes. Actual pricing and savings may differ based on specific deployment configurations, negotiated rates, and organizational requirements."
       }
     }
   },

@@ -1,21 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { SOLUTION_PAGES, type SolutionCategory } from '../config/solution-pages';
+import { CATEGORY_ORDER, SOLUTION_PAGES } from '../config/solution-pages';
+import type { SolutionCategory } from '../config/solution-pages';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
+import { CATEGORY_ICONS } from './CategoryIcons';
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-const CATEGORY_ORDER = [
-  'ransomware',
-  'multi-cloud',
-  'backups',
-  'encryption',
-  'dev-env',
-  'defense',
-] as const satisfies readonly SolutionCategory[];
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const currentLang = useLanguage();
@@ -30,6 +23,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const solutionCategories = React.useMemo(() => {
     const slugs = Object.keys(SOLUTION_PAGES);
     return CATEGORY_ORDER.map((cat) => ({
+      category: cat,
       label: categories[cat] ?? cat,
       items: slugs
         .filter((slug) => SOLUTION_PAGES[slug].category === cat)
@@ -54,6 +48,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { href: `/${currentLang}/install`, label: t('navigation.install') },
     { href: `/${currentLang}/blog`, label: t('navigation.blog') },
     { href: `/${currentLang}/docs/quick-start`, label: t('navigation.docs') },
+    { href: `/${currentLang}/roi-calculator`, label: t('navigation.roiCalculator') },
     { href: `/${currentLang}/contact`, label: t('navigation.contact') },
   ];
 
@@ -238,7 +233,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             >
               {solutionCategories.map((group) => (
                 <li key={group.label} className="sidebar-category-group">
-                  <span className="sidebar-category-label">{group.label}</span>
+                  <span className="sidebar-category-label">
+                    {React.createElement(CATEGORY_ICONS[group.category as SolutionCategory], {
+                      size: 16,
+                      className: 'sidebar-category-icon',
+                    })}
+                    {group.label}
+                  </span>
                   <ul role="list">
                     {group.items.map((item) => {
                       const active = isActive(item.href);
@@ -260,6 +261,35 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 </li>
               ))}
             </ul>
+          </div>
+
+          {/* Persona links */}
+          <div className="sidebar-personas-group">
+            <span className="sidebar-personas-label">{t('navigation.builtForYourRole')}</span>
+            <a
+              href={`/${currentLang}/for-devops`}
+              className={`sidebar-link sidebar-persona-link${isActive(`/${currentLang}/for-devops`) ? ' active' : ''}`}
+              onClick={handleLinkClick}
+              tabIndex={isOpen ? 0 : -1}
+            >
+              {t('navigation.forDevops')}
+            </a>
+            <a
+              href={`/${currentLang}/for-ctos`}
+              className={`sidebar-link sidebar-persona-link${isActive(`/${currentLang}/for-ctos`) ? ' active' : ''}`}
+              onClick={handleLinkClick}
+              tabIndex={isOpen ? 0 : -1}
+            >
+              {t('navigation.forCtos')}
+            </a>
+            <a
+              href={`/${currentLang}/for-ceos`}
+              className={`sidebar-link sidebar-persona-link${isActive(`/${currentLang}/for-ceos`) ? ' active' : ''}`}
+              onClick={handleLinkClick}
+              tabIndex={isOpen ? 0 : -1}
+            >
+              {t('navigation.forCeos')}
+            </a>
           </div>
 
           {/* Blog, Docs, Contact */}

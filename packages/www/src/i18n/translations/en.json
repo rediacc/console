@@ -68,8 +68,30 @@
     "languageSelectionMenu": "Language selection menu",
     "login": "Log in",
     "footerNavigation": "Site navigation",
+    "roiCalculator": "ROI Calculator",
     "solutions": "Solutions",
-    "disasterRecovery": "Disaster Recovery"
+    "disasterRecovery": "Disaster Recovery",
+    "viewAllSolutions": "View All Solutions",
+    "solutionsMegaMenu": "Solutions menu",
+    "builtForYourRole": "Built for your role",
+    "builtForYou": "Built for you",
+    "forDevops": "For DevOps Engineers",
+    "forCtos": "For CTOs",
+    "forCeos": "For CEOs & Founders",
+    "personas": {
+      "devops": {
+        "tagline": "Ship faster. Recover instantly. Sleep better.",
+        "cta": "Get Started Free"
+      },
+      "cto": {
+        "tagline": "Reduce TCO by 60%. Scale on your hardware.",
+        "cta": "Schedule a Demo"
+      },
+      "ceo": {
+        "tagline": "Predictable costs. Zero vendor lock-in.",
+        "cta": "See Pricing"
+      }
+    }
   },
   "footer": {
     "tagline": "Infrastructure Automation Platform for AI-Driven Operations",
@@ -860,12 +882,12 @@
             "label": "Repository size limit"
           },
           {
-            "key": "repositories",
-            "label": "Repositories"
-          },
-          {
             "key": "floatingLicenses",
             "label": "Floating Licenses"
+          },
+          {
+            "key": "repositories",
+            "label": "Repositories"
           },
           {
             "key": "usersTeams",
@@ -10706,6 +10728,767 @@
           ],
           "disclaimer": "Product performance claims are based on Rediacc's btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
         }
+      }
+    },
+    "personaPages": {
+      "forDevops": {
+        "meta": {
+          "title": "For DevOps Engineers — Ship Faster, Recover Instantly | Rediacc",
+          "description": "CLI-first infrastructure that clones production in 60 seconds, rolls back in under five, and runs on your own hardware. Built for engineers who automate everything.",
+          "keywords": "devops, infrastructure automation, CLI, btrfs snapshots, self-hosted, environment cloning, instant rollback, production parity"
+        },
+        "hero": {
+          "badge": "FOR DEVOPS ENGINEERS",
+          "title": "Ship faster. Recover instantly. Sleep better.",
+          "subtitle": "CLI-first infrastructure that clones production in 60 seconds, rolls back in under five, and runs on your own hardware. No tickets. No waiting. No vendor lock-in.",
+          "primaryCta": "Get Started Free",
+          "secondaryCta": "Read the Docs"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "prompt": "$",
+              "cmd": "rdc clone production",
+              "flag": "--name",
+              "value": "feature-auth-v2"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "check",
+              "text": "Snapshotting production (btrfs CoW)",
+              "result": "done"
+            },
+            {
+              "type": "check",
+              "text": "Replicating 8 containers + databases",
+              "result": "done"
+            },
+            {
+              "type": "check",
+              "text": "Mounting encrypted storage (380 GB)",
+              "result": "done"
+            },
+            {
+              "type": "check",
+              "text": "Running health checks",
+              "result": "8/8 passed"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "success",
+              "text": "Clone ready: feature-auth-v2.internal"
+            },
+            {
+              "type": "summary",
+              "pairs": [
+                { "label": "Time", "value": "52s" },
+                { "label": "Containers", "value": "8" },
+                { "label": "Size", "value": "380 GB" },
+                { "label": "Disk used", "value": "1.8 GB (CoW)" }
+              ]
+            }
+          ]
+        },
+        "stats": [
+          { "number": "60s", "label": "Clone creation time", "icon": "clock" },
+          { "number": "<5 min", "label": "Full disaster recovery", "icon": "zap" },
+          { "number": "0", "label": "Ops tickets needed", "icon": "ticket-x" }
+        ],
+        "problem": {
+          "overline": "THE PROBLEM",
+          "title": "You automate everything — except getting an environment",
+          "description": "Your CI/CD pipeline deploys in minutes. Your IaC provisions in seconds. But when you need a test environment with real data, you file a ticket and wait three days. Meanwhile, staging is shared, flaky, and nothing like production.",
+          "statCallouts": [
+            {
+              "number": "69%",
+              "text": "of developers lose 8+ hours weekly to tooling inefficiencies",
+              "source": "Atlassian 2024",
+              "ref": 1
+            },
+            {
+              "number": "3 days",
+              "text": "average wait time for a new environment in enterprise teams",
+              "source": "Industry survey",
+              "ref": 2
+            },
+            {
+              "number": "$50K/yr",
+              "text": "lost per developer to context switching",
+              "source": "Industry composite",
+              "ref": 3
+            }
+          ],
+          "timeline": {
+            "oldLabel": "The old way",
+            "oldSteps": [
+              { "day": "Mon", "text": "File ticket" },
+              { "day": "Tue", "text": "Ops reviews" },
+              { "day": "Wed", "text": "Provision server" },
+              { "day": "Thu", "text": "Configure env" },
+              { "day": "Fri", "text": "Doesn't match prod" }
+            ],
+            "newLabel": "With Rediacc",
+            "newSteps": ["rdc clone", "52s", "Done"]
+          }
+        },
+        "howItWorks": {
+          "overline": "HOW IT WORKS",
+          "title": "One command. Full production clone.",
+          "steps": [
+            {
+              "title": "Clone",
+              "description": "Run rdc clone production. Btrfs CoW creates an instant snapshot — app, database, config, everything.",
+              "icon": "terminal"
+            },
+            {
+              "title": "Work",
+              "description": "Start coding immediately against production-identical data. Push a branch, get a fresh clone.",
+              "icon": "code"
+            },
+            {
+              "title": "Recover",
+              "description": "Something breaks? Roll back in seconds. Immutable snapshots mean you never lose data.",
+              "icon": "shield"
+            }
+          ],
+          "cloneVisual": {
+            "production": {
+              "title": "Production",
+              "status": "Running",
+              "services": [
+                { "name": "nginx", "port": ":443" },
+                { "name": "api-server", "port": ":8080" },
+                { "name": "postgres", "port": ":5432" },
+                { "name": "redis", "port": ":6379" }
+              ],
+              "containerCount": "4 containers",
+              "size": "380 GB"
+            },
+            "clone": {
+              "title": "feature-auth-v2",
+              "status": "Cloned",
+              "services": [
+                { "name": "nginx", "port": ":443" },
+                { "name": "api-server", "port": ":8080" },
+                { "name": "postgres", "port": ":5432" },
+                { "name": "redis", "port": ":6379" }
+              ],
+              "containerCount": "4 containers",
+              "size": "380 GB"
+            },
+            "arrow": { "label": "Clone", "time": "52s" }
+          }
+        },
+        "techDiff": {
+          "overline": "UNDER THE HOOD",
+          "title": "Why 60-second clones are possible",
+          "description": "Rediacc uses btrfs copy-on-write snapshots at the filesystem level. A snapshot of a 380 GB production environment completes in sub-seconds and consumes zero additional storage initially. As the clone diverges, only changed blocks use new space.",
+          "traditionalLabel": "Traditional approach",
+          "rediaccLabel": "Rediacc (btrfs CoW)",
+          "rows": [
+            {
+              "traditional": "Docker volume copy: full data copy, minutes to hours",
+              "rediacc": "Metadata-only snapshot: sub-second, any size"
+            },
+            {
+              "traditional": "pg_dump 380 GB: 12-36 hours, one DB engine at a time",
+              "rediacc": "Any database cloned in one atomic operation"
+            },
+            {
+              "traditional": "10 clones = 10x storage (3.8 TB)",
+              "rediacc": "10 clones share blocks via CoW (~15 GB delta)"
+            },
+            {
+              "traditional": "Rollback: restore from backup (30+ min)",
+              "rediacc": "Rollback: btrfs snapshot switch (<5 min)"
+            }
+          ]
+        },
+        "benefits": {
+          "overline": "WHY IT MATTERS",
+          "title": "Built for engineers who automate everything",
+          "items": [
+            {
+              "title": "60-second environments",
+              "description": "From request to working environment in under a minute. Full stack: OS, containers, databases, configuration.",
+              "icon": "zap"
+            },
+            {
+              "title": "CLI-first, scriptable",
+              "description": "Everything is a command. Integrate with CI/CD, Git hooks, or your own automation. No GUI required.",
+              "icon": "terminal"
+            },
+            {
+              "title": "Instant rollback",
+              "description": "Btrfs immutable snapshots mean you can roll back any environment in seconds. No data loss. No downtime.",
+              "icon": "shield"
+            }
+          ]
+        },
+        "socialProof": {
+          "quote": "We went from a 3-day environment provisioning cycle to under a minute. Our developers stopped filing tickets and started shipping. The btrfs snapshots just work — 380 GB cloned in 52 seconds with near-zero additional storage.",
+          "author": "Senior DevOps Engineer",
+          "company": "Fintech, 80 developers",
+          "impact": {
+            "beforeLabel": "Before",
+            "beforeValue": "3 days",
+            "afterLabel": "After",
+            "afterValue": "52 sec",
+            "improvement": "Environment provisioning 5,000x faster"
+          }
+        },
+        "relatedSolutions": {
+          "title": "Explore related solutions"
+        },
+        "bottomCta": {
+          "title": "Try it yourself",
+          "description": "Install the CLI. Clone your first environment. No credit card. No sales call.",
+          "primaryCta": "Get Started Free",
+          "command": "curl -fsSL https://get.rediacc.com | sh"
+        }
+      },
+      "forCtos": {
+        "meta": {
+          "title": "For CTOs — Reduce Infrastructure TCO by 60% | Rediacc",
+          "description": "Self-hosted infrastructure protection that scales on your hardware. Reduce TCO, eliminate vendor lock-in, and recover from any disaster in minutes.",
+          "keywords": "CTO, infrastructure TCO, self-hosted, disaster recovery, vendor lock-in, btrfs snapshots, compliance, scalability"
+        },
+        "hero": {
+          "badge": "FOR CTOs",
+          "title": "Reduce infrastructure TCO by 60%. Scale on your hardware.",
+          "subtitle": "Self-hosted infrastructure protection that eliminates cloud markup, scales without per-seat pricing, and recovers from any disaster in minutes — not hours.",
+          "primaryCta": "Schedule a Demo",
+          "secondaryCta": "Calculate Your ROI"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "prompt": "$",
+              "cmd": "rdc snapshot",
+              "flag": "--all-repos",
+              "value": "--schedule daily"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "check",
+              "text": "Scanning 47 repositories across 3 machines",
+              "result": "done"
+            },
+            {
+              "type": "check",
+              "text": "Creating immutable btrfs snapshots",
+              "result": "47/47"
+            },
+            {
+              "type": "check",
+              "text": "Verifying backup integrity (restore test)",
+              "result": "passed"
+            },
+            {
+              "type": "check",
+              "text": "Replicating to standby node",
+              "result": "synced"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "success",
+              "text": "All repositories protected. Next run: tomorrow 02:00 UTC"
+            },
+            {
+              "type": "summary",
+              "pairs": [
+                { "label": "Repos", "value": "47" },
+                { "label": "Total size", "value": "2.4 TB" },
+                { "label": "Snapshot time", "value": "3.2s" },
+                { "label": "Storage delta", "value": "+12 GB" }
+              ]
+            }
+          ]
+        },
+        "stats": [
+          { "number": "60%", "label": "Lower TCO vs cloud", "icon": "trend-up" },
+          { "number": "<5 min", "label": "Full disaster recovery", "icon": "clock" },
+          { "number": "0", "label": "Vendor lock-in", "icon": "lock" }
+        ],
+        "problem": {
+          "overline": "THE PROBLEM",
+          "title": "Cloud costs keep rising. Recovery keeps failing.",
+          "description": "Your cloud bill grows 15-20% annually. Per-seat licensing punishes team growth. When disaster strikes, your 'instant recovery' takes hours — because the backup tool that promised RPO of minutes actually delivers RPO of days. Meanwhile, you're locked into a vendor ecosystem that gets more expensive every renewal.",
+          "statCallouts": [
+            {
+              "number": "17%",
+              "text": "average cloud budget overrun across enterprises",
+              "source": "Flexera 2025",
+              "ref": 1
+            },
+            {
+              "number": "76%",
+              "text": "of organizations experienced a severe downtime event in the past year",
+              "source": "Veeam 2024",
+              "ref": 2
+            },
+            {
+              "number": "$9.36M",
+              "text": "average cost of a data breach in 2024",
+              "source": "IBM 2024",
+              "ref": 3
+            }
+          ],
+          "timeline": {
+            "oldLabel": "Traditional disaster recovery",
+            "oldSteps": [
+              { "day": "0:00", "text": "Incident detected" },
+              { "day": "0:30", "text": "Team assembles" },
+              { "day": "2:00", "text": "Find backup" },
+              { "day": "6:00", "text": "Begin restore" },
+              { "day": "24h+", "text": "Partially recovered" }
+            ],
+            "newLabel": "With Rediacc",
+            "newSteps": ["Detect", "Rollback", "<5 min"]
+          }
+        },
+        "calculator": {
+          "overline": "THE REAL COST",
+          "title": "What's your infrastructure really costing you?",
+          "description": "Drag the sliders to match your organization. See how Rediacc compares to your current spend.",
+          "headerTitle": "Calculate your infrastructure savings",
+          "sliders": {
+            "devs": "Servers / workloads managed",
+            "reqs": "Average cloud spend per month ($)",
+            "wait": "Hours of downtime per year"
+          },
+          "withoutTag": "Current spend",
+          "withTag": "With Rediacc",
+          "results": {
+            "blockedTime": "Annual infrastructure cost",
+            "sprintCapacity": "Downtime cost per year",
+            "contextSwitching": "Recovery time (MTTR)",
+            "quarterlySlip": "Vendor lock-in risk"
+          },
+          "annualLabel": "Total annual cost",
+          "withResults": {
+            "blockedTime": "60% less",
+            "sprintCapacity": "Near zero",
+            "contextSwitching": "<5 minutes",
+            "quarterlySlip": "None"
+          },
+          "withAnnual": "Calculate →",
+          "footnote": "Estimates based on industry TCO models comparing self-hosted infrastructure with equivalent cloud services. Actual savings vary by workload, configuration, and scale."
+        },
+        "techDiff": {
+          "overline": "ARCHITECTURE",
+          "title": "How Rediacc protects your infrastructure",
+          "description": "Rediacc runs on your hardware, using btrfs copy-on-write snapshots for instant backups and recovery. Every snapshot is immutable at the filesystem level — ransomware can't encrypt what the kernel protects. Recovery means switching a pointer, not restoring terabytes.",
+          "traditionalLabel": "Cloud / legacy DR",
+          "rediaccLabel": "Rediacc (self-hosted)",
+          "rows": [
+            {
+              "traditional": "Per-seat licensing: costs scale with team",
+              "rediacc": "Per-machine licensing: costs scale with hardware"
+            },
+            {
+              "traditional": "Recovery: hours to restore from cloud backup",
+              "rediacc": "Recovery: seconds to switch btrfs snapshot"
+            },
+            {
+              "traditional": "Vendor lock-in: data in proprietary format",
+              "rediacc": "Open format: your data on your filesystem"
+            },
+            {
+              "traditional": "Compliance: trust the vendor's attestation",
+              "rediacc": "Compliance: verify on your own infrastructure"
+            }
+          ]
+        },
+        "benefits": {
+          "overline": "STRATEGIC VALUE",
+          "title": "What Rediacc means for your organization",
+          "items": [
+            {
+              "title": "60% lower TCO",
+              "description": "Eliminate cloud markup, per-seat licensing, and egress fees. Run on hardware you already own.",
+              "icon": "trend-up"
+            },
+            {
+              "title": "Minutes, not hours",
+              "description": "Full disaster recovery in under 5 minutes. Btrfs snapshots mean recovery is a pointer switch, not a restore job.",
+              "icon": "zap"
+            },
+            {
+              "title": "Zero vendor lock-in",
+              "description": "Your data stays on your infrastructure in open formats. Switch providers or self-manage — your choice, always.",
+              "icon": "lock"
+            }
+          ]
+        },
+        "comparison": {
+          "overline": "COMPETITIVE LANDSCAPE",
+          "title": "How Rediacc compares",
+          "description": "Enterprise backup tools charge per-socket, per-VM, or per-TB. Rediacc charges per machine — and runs on your hardware.",
+          "capabilityLabel": "Capability",
+          "features": [
+            {
+              "name": "Self-hosted / on-premises",
+              "values": ["check", "cross", "check", "cross", "rediacc"]
+            },
+            {
+              "name": "Filesystem-level immutability",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "Instant recovery (<5 min)",
+              "values": ["cross", "cross", "cross", "check", "rediacc"]
+            },
+            {
+              "name": "Zero-copy snapshots (CoW)",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "Per-machine pricing (no per-seat)",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "Automated restore verification",
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "No vendor lock-in",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            }
+          ]
+        },
+        "socialProof": {
+          "quote": "We moved 47 production workloads from a major cloud provider to Rediacc on our own hardware. Infrastructure costs dropped 62% in the first quarter. When we had our first incident, recovery took 3 minutes instead of the 4 hours our previous tool quoted.",
+          "author": "CTO",
+          "company": "SaaS company, 200 employees",
+          "impact": {
+            "beforeLabel": "Cloud spend",
+            "beforeValue": "$18K/mo",
+            "afterLabel": "With Rediacc",
+            "afterValue": "$6.8K/mo",
+            "improvement": "62% infrastructure cost reduction"
+          }
+        },
+        "shareWithTeam": {
+          "overline": "SHARE WITH YOUR TEAM",
+          "title": "Get your DevOps team started",
+          "description": "Your engineers will love the CLI-first workflow and instant environments. Share the technical deep-dive with your DevOps team.",
+          "ctaText": "Share the DevOps deep-dive",
+          "ctaSlug": "for-devops"
+        },
+        "relatedSolutions": {
+          "title": "Explore the platform"
+        },
+        "bottomCta": {
+          "title": "See it in action",
+          "description": "Schedule a 30-minute architecture review with our team. We'll show you TCO projections for your specific infrastructure.",
+          "primaryCta": "Schedule a Demo"
+        }
+      },
+      "forCeos": {
+        "meta": {
+          "title": "For CEOs & Founders — Predictable Costs, Zero Lock-In | Rediacc",
+          "description": "Self-hosted infrastructure protection with predictable pricing, zero vendor lock-in, and full data ownership. Protect your business without the cloud bill.",
+          "keywords": "CEO, infrastructure costs, self-hosted, data protection, vendor lock-in, predictable pricing, business continuity, SMB"
+        },
+        "hero": {
+          "badge": "FOR CEOs & FOUNDERS",
+          "title": "Predictable infrastructure costs. Zero vendor lock-in.",
+          "subtitle": "Protect your business data on hardware you own. One flat price per machine — no per-seat fees, no surprise cloud bills, no vendor holding your data hostage.",
+          "primaryCta": "See Pricing",
+          "secondaryCta": "Talk to Sales"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "prompt": "$",
+              "cmd": "rdc status",
+              "flag": "--summary",
+              "value": ""
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "check",
+              "text": "3 machines monitored",
+              "result": "healthy"
+            },
+            {
+              "type": "check",
+              "text": "47 repositories protected",
+              "result": "all backed up"
+            },
+            {
+              "type": "check",
+              "text": "Last backup verified",
+              "result": "2 hours ago"
+            },
+            {
+              "type": "check",
+              "text": "Recovery readiness",
+              "result": "< 5 min"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "success",
+              "text": "All systems protected. Zero incidents this quarter."
+            },
+            {
+              "type": "summary",
+              "pairs": [
+                { "label": "Uptime", "value": "99.99%" },
+                { "label": "Protected", "value": "2.4 TB" },
+                { "label": "Monthly cost", "value": "$204" },
+                { "label": "vs Cloud", "value": "−62%" }
+              ]
+            }
+          ]
+        },
+        "stats": [
+          { "number": "$204/mo", "label": "All-inclusive price", "icon": "tag" },
+          { "number": "99.99%", "label": "Uptime guarantee", "icon": "check-circle" },
+          { "number": "0", "label": "Per-seat fees", "icon": "users" }
+        ],
+        "problem": {
+          "overline": "THE PROBLEM",
+          "title": "Cloud bills keep growing. Your data isn't really yours.",
+          "description": "Your team started with a small cloud bill. Now it's your third-largest expense and growing 20% annually. Per-seat pricing punishes you for hiring. Your data sits in someone else's data center, in their proprietary format. If you want to leave, they charge you egress fees to access your own data.",
+          "statCallouts": [
+            {
+              "number": "20%",
+              "text": "annual increase in average cloud spending",
+              "source": "Flexera 2025",
+              "ref": 1
+            },
+            {
+              "number": "98%",
+              "text": "of SMB tech decisions come directly from top executives",
+              "source": "TrustRadius 2024",
+              "ref": 2
+            },
+            {
+              "number": "$9.36M",
+              "text": "average cost of a data breach",
+              "source": "IBM 2024",
+              "ref": 3
+            }
+          ],
+          "timeline": {
+            "oldLabel": "Cloud infrastructure",
+            "oldSteps": [
+              { "day": "Y1", "text": "$5K/mo" },
+              { "day": "Y2", "text": "$8K/mo" },
+              { "day": "Y3", "text": "$14K/mo" },
+              { "day": "Y4", "text": "$22K/mo" },
+              { "day": "Y5", "text": "Locked in" }
+            ],
+            "newLabel": "With Rediacc",
+            "newSteps": ["$204/mo", "Flat", "Yours"]
+          }
+        },
+        "calculator": {
+          "overline": "THE NUMBERS",
+          "title": "How much could you save?",
+          "description": "Adjust the sliders to match your business. See the real cost of cloud vs self-hosted.",
+          "headerTitle": "Calculate your savings",
+          "sliders": {
+            "devs": "Team members",
+            "reqs": "Current monthly cloud spend ($)",
+            "wait": "Hours of downtime per year"
+          },
+          "withoutTag": "Current cloud costs",
+          "withTag": "With Rediacc",
+          "results": {
+            "blockedTime": "Annual infrastructure cost",
+            "sprintCapacity": "Downtime risk cost",
+            "contextSwitching": "Recovery time",
+            "quarterlySlip": "Data ownership"
+          },
+          "annualLabel": "Total annual cost",
+          "withResults": {
+            "blockedTime": "60% less",
+            "sprintCapacity": "Minimized",
+            "contextSwitching": "<5 minutes",
+            "quarterlySlip": "100% yours"
+          },
+          "withAnnual": "Calculate →",
+          "footnote": "Estimates based on industry TCO models. Actual savings depend on your current infrastructure and scale."
+        },
+        "benefits": {
+          "overline": "BUSINESS VALUE",
+          "title": "What this means for your business",
+          "items": [
+            {
+              "title": "Predictable costs",
+              "description": "One flat price per machine. No per-seat fees, no surprise bills, no egress charges. Your budget stays predictable as you grow.",
+              "icon": "tag"
+            },
+            {
+              "title": "Your data, your control",
+              "description": "Data stays on hardware you own, in open formats. No vendor can hold your data hostage or charge you to access it.",
+              "icon": "lock"
+            },
+            {
+              "title": "Business continuity",
+              "description": "Full disaster recovery in under 5 minutes. Immutable backups that ransomware can't touch. Your business keeps running.",
+              "icon": "shield"
+            }
+          ]
+        },
+        "socialProof": {
+          "quote": "We were spending $18,000 a month on cloud infrastructure for 47 workloads. After migrating to Rediacc on our own servers, our bill dropped to $6,800 — and recovery time went from 4 hours to 3 minutes. The ROI was obvious in the first month.",
+          "author": "CEO & Founder",
+          "company": "SaaS startup, 45 employees",
+          "impact": {
+            "beforeLabel": "Monthly cost",
+            "beforeValue": "$18,000",
+            "afterLabel": "With Rediacc",
+            "afterValue": "$6,800",
+            "improvement": "62% cost reduction, instant recovery"
+          }
+        },
+        "shareWithTeam": {
+          "overline": "NEXT STEP",
+          "title": "Share with your CTO",
+          "description": "Your technical team needs to evaluate the architecture and integration. Share the CTO deep-dive with the technical details they need.",
+          "ctaText": "Share the CTO deep-dive",
+          "ctaSlug": "for-ctos"
+        },
+        "relatedSolutions": {
+          "title": "How it works"
+        },
+        "bottomCta": {
+          "title": "See the pricing",
+          "description": "One flat price per machine. No per-seat fees. No surprises. Start with the free Community edition.",
+          "primaryCta": "See Pricing"
+        }
+      }
+    },
+    "roiCalculator": {
+      "meta": {
+        "title": "ROI Calculator — Quantify Your Infrastructure Savings | Rediacc",
+        "description": "Calculate total cost of ownership savings, payback period, and ROI of switching to Rediacc self-hosted infrastructure.",
+        "keywords": "ROI calculator, TCO comparison, infrastructure savings, self-hosted ROI, payback period, backup cost reduction"
+      },
+      "overline": "CALCULATE YOUR ROI",
+      "title": "How much can Rediacc save your organization?",
+      "description": "Select your company size and adjust the inputs to see real-time TCO comparison, developer productivity gains, and payback period.",
+      "sizeSelect": {
+        "label": "Company size",
+        "smb": "SMB",
+        "smbDesc": "< 25 employees",
+        "mid": "Mid-Market",
+        "midDesc": "25–200 employees",
+        "enterprise": "Enterprise",
+        "enterpriseDesc": "200–1,000 employees",
+        "large": "Large Enterprise",
+        "largeDesc": "1,000+ employees"
+      },
+      "sliders": {
+        "servers": "Servers / workloads",
+        "developers": "Developers on team",
+        "dataTB": "Data volume (TB)",
+        "downtimeCostPerHour": "Downtime cost ($/hour)",
+        "incidentsPerYear": "Incidents per year",
+        "currentRtoHours": "Current RTO (hours)"
+      },
+      "advancedLabel": "Advanced assumptions",
+      "advancedSliders": {
+        "adminHourlyRate": "Admin hourly rate",
+        "devHourlyRate": "Developer hourly rate",
+        "adminFte": "Admin FTE for backup/DR",
+        "currentBackupSpendMonth": "Current backup spend ($/mo)",
+        "dataGrowthRate": "Annual data growth",
+        "envRequestsPerDevMonth": "Env requests / dev / month",
+        "currentProvisioningHours": "Current provisioning time (hrs)"
+      },
+      "summary": {
+        "annualSavings": "Annual savings",
+        "paybackPeriod": "Payback period",
+        "paybackUnit": "months",
+        "threeYearRoi": "3-Year ROI"
+      },
+      "categories": {
+        "tco": {
+          "title": "TCO Savings",
+          "currentTco": "Current annual TCO",
+          "rediaccTco": "Rediacc annual TCO",
+          "savings": "Annual TCO savings"
+        },
+        "devProductivity": {
+          "title": "Developer Productivity",
+          "hoursSaved": "Hours saved per year",
+          "dollarValue": "Dollar value",
+          "provisioningReduction": "Provisioning time"
+        },
+        "drAvailability": {
+          "title": "DR & Availability",
+          "currentRisk": "Current downtime risk",
+          "rediaccRisk": "With Rediacc",
+          "savings": "Annual DR savings",
+          "rtoImprovement": "RTO improvement"
+        },
+        "compliance": {
+          "title": "Storage, Compliance & Insurance",
+          "storageSavings": "Storage savings",
+          "bandwidthSavings": "Bandwidth savings",
+          "complianceSavings": "Compliance cost reduction",
+          "insuranceSavings": "Insurance premium reduction",
+          "auditTimeSaved": "Audit prep time saved"
+        }
+      },
+      "footnote": "Estimates based on industry benchmarks from ITIC, IBM/Ponemon, Sophos, Cortex, and KPMG research (2024). TCO includes infrastructure, administration, DR testing, and maintenance. Developer productivity uses a conservative 40% realization rate. DR savings based on RTO improvement using btrfs copy-on-write snapshots. Storage savings assume CoW efficiency vs. traditional backup chains. Actual results vary by workload and configuration.",
+      "references": {
+        "label": "Sources & References",
+        "items": [
+          {
+            "text": "ITIC, \"2024 Hourly Cost of Downtime Report.\" Over 90% of mid-large enterprises report downtime costs exceeding $300,000/hour. 41% of enterprises report $1M–$5M+ per hour.",
+            "url": "https://itic-corp.com/itic-2024-hourly-cost-of-downtime-report/"
+          },
+          {
+            "text": "IBM Security / Ponemon Institute, \"Cost of a Data Breach Report 2024.\" Average data breach cost: $4.88M (10% YoY increase). Organizations with IR teams that regularly tested their plans had 58% lower breach costs.",
+            "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
+          },
+          {
+            "text": "Sophos, \"The State of Ransomware 2024.\" Average recovery cost (excl. ransom): $2.73M, a 50% increase from $1.82M in 2023. 59% of organizations were hit by ransomware in the past year.",
+            "url": "https://www.sophos.com/en-us/content/state-of-ransomware"
+          },
+          {
+            "text": "Cortex, \"The 2024 State of Developer Productivity.\" 72% of new hires take 1+ month to submit first 3 meaningful PRs. 58% of engineering leaders report developers lose 5+ hours/week to inefficiencies.",
+            "url": "https://www.cortex.io/report/the-2024-state-of-developer-productivity"
+          },
+          {
+            "text": "KPMG, \"The 2023 KPMG SOX Report.\" Companies spend an average of 11,800 hours and $1.6M annually on SOX compliance programs.",
+            "url": "https://kpmg.com/us/en/articles/2023/kpmg-sox-report.html"
+          },
+          {
+            "text": "Veeam, \"2024 Ransomware Trends Report.\" Only 57% of compromised data is recoverable after a ransomware attack, leaving 43% unrecoverable.",
+            "url": "https://www.veeam.com/company/press-release/ransomware-continues-to-cause-mayhem-as-victims-are-unable-to-recover-43-percent-of-affected-data.html"
+          },
+          {
+            "text": "IDC, \"Worldwide Global DataSphere Forecast, 2024–2028.\" Data creation projected from 132.4 ZB (2023) to 393.9 ZB (2028), ~24% CAGR.",
+            "url": "https://www.marketresearch.com/IDC-v2477/Worldwide-IDC-Global-DataSphere-Forecast-36971010/"
+          },
+          {
+            "text": "Veeam R&D Forums, 2020–2024. Socket-to-VUL migration threads report 2x–3x cost multipliers for existing customers, with some high-density environments reaching up to 6x.",
+            "url": "https://forums.veeam.com/veeam-backup-replication-f2/phasing-out-our-socket-based-licensing-t74168.html"
+          }
+        ],
+        "disclaimer": "All figures are based on published industry research and public vendor documentation. TCO comparisons use illustrative Rediacc pricing for modeling purposes. Actual pricing and savings may differ based on specific deployment configurations, negotiated rates, and organizational requirements."
       }
     }
   },

@@ -1,0 +1,35 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SPRoiCalculator from '../../components/solution-pages/SPRoiCalculator';
+import SPReferences from '../../components/solution-pages/SPReferences.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import { createTranslator } from '../../i18n/utils';
+import { getLanguagePaths } from '../../i18n/language-utils';
+import type { Language } from '../../i18n/types';
+import '../../styles/solution-pages.css';
+
+export const getStaticPaths = getLanguagePaths;
+
+const { lang } = Astro.params as { lang: Language };
+const { t, to } = createTranslator(lang);
+const content = to('pages.roiCalculator' as any);
+
+const breadcrumbItems = [
+  { name: t('navigation.home'), url: `/${lang}/` },
+  { name: t('navigation.roiCalculator'), url: `/${lang}/roi-calculator` },
+];
+---
+
+<BaseLayout
+  lang={lang}
+  title={t('pages.roiCalculator.meta.title')}
+  description={t('pages.roiCalculator.meta.description')}
+  keywords={t('pages.roiCalculator.meta.keywords')}
+  ogType="website"
+>
+  <div class="sp-page">
+    <Breadcrumb items={breadcrumbItems} class="sp-breadcrumb" />
+    <SPRoiCalculator client:visible content={content} />
+    <SPReferences references={(content as any).references} />
+  </div>
+</BaseLayout>

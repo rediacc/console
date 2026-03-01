@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2166
+    "keyCount": 2168
   },
   "hashes": {
     "bridge.text": "76620bbb",
@@ -140,8 +140,10 @@
     "navigation.search": "b35cde91",
     "navigation.selectLanguage": "616dedf1",
     "navigation.solutions": "886175dd",
+    "navigation.solutionsMegaMenu": "cc696584",
     "navigation.toggleMenu": "e88f778b",
     "navigation.toggleTheme": "848cf513",
+    "navigation.viewAllSolutions": "ca837e67",
     "pages.acceptableUsePolicy.contact.description": "8f2866f3",
     "pages.acceptableUsePolicy.contact.title": "dd0a3b6f",
     "pages.acceptableUsePolicy.hero.effectiveDate": "e732e01a",

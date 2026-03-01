@@ -1,0 +1,59 @@
+/**
+ * Persona Pages — thin CSS layer on top of solution-pages.css.
+ * Only styles for persona-specific sections (relatedSolutions, shareWithTeam).
+ */
+
+/* ========== SHARE WITH TEAM ========== */
+.sp-share-with-team {
+  background: var(--sp-bg-light);
+  padding: 80px 48px;
+  text-align: center;
+}
+
+.sp-share-with-team-inner {
+  max-width: var(--sp-content-max);
+  margin: 0 auto;
+}
+
+.sp-share-overline {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sp-brand-primary);
+  margin-bottom: 16px;
+}
+
+.sp-share-with-team h2 {
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 700;
+  color: var(--sp-text-primary);
+  margin: 0 0 16px;
+  line-height: 1.2;
+}
+
+.sp-share-with-team p {
+  font-size: 1.1rem;
+  color: var(--sp-text-body);
+  margin: 0 0 32px;
+  line-height: 1.6;
+}
+
+.sp-share-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ========== RELATED SOLUTIONS (reuses sp-explore classes) ========== */
+.sp-related-solutions {
+  background: var(--sp-bg-white);
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+  .sp-share-with-team {
+    padding: 56px 24px;
+  }
+}

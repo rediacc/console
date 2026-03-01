@@ -1030,28 +1030,26 @@ a[target='_blank']::after {
   top: 0;
   inset-inline-start: 0;
   bottom: 0;
-  width: 280px;
+  width: 100%;
   background-color: var(--color-bg-alt);
   z-index: var(--z-modal); /* Overlay layer - same as modals */
   transform: translateX(-100%);
   transition: transform var(--transition-duration-slow) ease;
-  padding: var(--space-8);
+  padding: var(--space-8) var(--space-10);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: safe center;
 }
 
 /* Mobile sidebar adjustment */
 @media (max-width: 30rem) {
   /* 480px - smartphones */
   .sidebar {
-    width: 85%;
-    max-width: 320px;
-    padding: var(--space-6);
+    padding: var(--space-6) var(--space-8);
   }
 }
 
@@ -1195,7 +1193,7 @@ a[target='_blank']::after {
 }
 
 .sidebar-solutions-list.expanded {
-  max-height: 500px;
+  max-height: 2000px;
   opacity: 1;
 }
 
@@ -1216,7 +1214,9 @@ a[target='_blank']::after {
 }
 
 .sidebar-category-label {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   margin-inline-start: var(--space-4);
   margin-top: var(--space-4);
   margin-bottom: var(--space-1);
@@ -1227,12 +1227,38 @@ a[target='_blank']::after {
   letter-spacing: 0.05em;
 }
 
+.sidebar-category-icon {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
 .sidebar-category-group:first-child .sidebar-category-label {
   margin-top: var(--space-4);
 }
 
 .sidebar-category-group + .sidebar-category-group .sidebar-category-label {
   margin-top: var(--space-4);
+}
+
+/* Persona links group */
+.sidebar-personas-group {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.sidebar-personas-label {
+  display: block;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-2);
+}
+
+.sidebar-persona-link {
+  font-size: var(--font-size-sm);
 }
 
 @media (prefers-reduced-motion: reduce) {

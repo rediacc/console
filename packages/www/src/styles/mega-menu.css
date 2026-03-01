@@ -1,0 +1,178 @@
+/* Mega-Menu — Solutions dropdown (desktop only) */
+
+.mega-menu-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Trigger button — inherits .nav-link appearance */
+.mega-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  transition: color 0.2s ease;
+  padding: 0;
+}
+
+.mega-menu-trigger:hover {
+  color: var(--color-text);
+}
+
+.mega-menu-trigger:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.mega-menu-chevron {
+  transition: transform var(--transition-duration-base) ease;
+  flex-shrink: 0;
+}
+
+.mega-menu-chevron.open {
+  transform: rotate(180deg);
+}
+
+/* Panel — use fixed positioning to center on viewport */
+.mega-menu-panel {
+  position: fixed;
+  top: var(--nav-height);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(calc(100vw - var(--space-8) * 2), var(--container-xl));
+  background-color: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-popover);
+  padding: var(--space-8) var(--space-8) var(--space-4);
+  animation: megaMenuFadeIn var(--transition-duration-fast) ease forwards;
+}
+
+@keyframes megaMenuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* 3-column × 2-row grid for 6 categories */
+.mega-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-6) var(--space-8);
+}
+
+/* Category group */
+.mega-menu-category {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.mega-menu-category-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.mega-menu-category-icon {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* Item list */
+.mega-menu-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* Individual solution link */
+.mega-menu-item {
+  display: block;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  transition: background-color var(--transition-duration-fast) ease;
+  white-space: nowrap;
+}
+
+.mega-menu-item:hover {
+  background-color: var(--color-hover);
+  color: var(--color-text);
+}
+
+.mega-menu-item:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Footer */
+.mega-menu-footer {
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border-subtle);
+  display: flex;
+  justify-content: center;
+}
+
+.mega-menu-view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-brand-primary);
+  text-decoration: none;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-duration-fast) ease;
+}
+
+.mega-menu-view-all:hover {
+  background-color: var(--color-hover);
+}
+
+.mega-menu-view-all:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .mega-menu-panel {
+    animation: none;
+  }
+
+  .mega-menu-chevron {
+    transition: none;
+  }
+}

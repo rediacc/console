@@ -196,9 +196,31 @@
     "blog": "博客",
     "contact": "联系我们",
     "disasterRecovery": "灾难恢复",
+    "viewAllSolutions": "查看所有解决方案",
+    "solutionsMegaMenu": "解决方案菜单",
+    "builtForYourRole": "为您的角色打造",
+    "builtForYou": "为您打造",
+    "forDevops": "面向DevOps工程师",
+    "forCtos": "面向CTO",
+    "forCeos": "面向CEO和创始人",
+    "personas": {
+      "devops": {
+        "tagline": "更快交付。即时恢复。安心入眠。",
+        "cta": "免费开始"
+      },
+      "cto": {
+        "tagline": "TCO降低60%。在自有硬件上扩展。",
+        "cta": "预约演示"
+      },
+      "ceo": {
+        "tagline": "可预测的成本。零供应商锁定。",
+        "cta": "查看定价"
+      }
+    },
     "docs": "文档",
     "downloads": "下载",
     "footerNavigation": "站点导航",
+    "roiCalculator": "ROI Calculator",
     "home": "首页",
     "install": "安装",
     "languageSelectionMenu": "语言选择菜单",
@@ -1510,12 +1532,12 @@
             "label": "仓库大小限制"
           },
           {
-            "key": "repositories",
-            "label": "仓库"
-          },
-          {
             "key": "floatingLicenses",
             "label": "浮动许可证"
+          },
+          {
+            "key": "repositories",
+            "label": "仓库"
           },
           {
             "key": "usersTeams",
@@ -10532,6 +10554,767 @@
           ],
           "disclaimer": "产品性能声明基于 Rediacc 的 btrfs 写时复制架构。计算器估算使用行业标准成本模型；实际成本因组织而异。"
         }
+      }
+    },
+    "personaPages": {
+      "forDevops": {
+        "meta": {
+          "title": "面向DevOps工程师 — 更快交付，即时恢复 | Rediacc",
+          "description": "CLI优先的基础设施，60秒克隆生产环境，5分钟内回滚，运行在您自己的硬件上。专为自动化一切的工程师打造。",
+          "keywords": "devops, 基础设施自动化, CLI, btrfs快照, 自托管, 环境克隆, 即时回滚, 生产一致性"
+        },
+        "hero": {
+          "badge": "面向DEVOPS工程师",
+          "title": "更快交付。即时恢复。安心入睡。",
+          "subtitle": "CLI优先的基础设施，60秒克隆生产环境，5分钟内回滚，运行在您自己的硬件上。无需工单。无需等待。无厂商锁定。",
+          "primaryCta": "免费开始",
+          "secondaryCta": "阅读文档"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "prompt": "$",
+              "cmd": "rdc clone production",
+              "flag": "--name",
+              "value": "feature-auth-v2"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "check",
+              "text": "正在快照生产环境 (btrfs CoW)",
+              "result": "done"
+            },
+            {
+              "type": "check",
+              "text": "正在复制 8 个容器 + 数据库",
+              "result": "done"
+            },
+            {
+              "type": "check",
+              "text": "正在挂载加密存储 (380 GB)",
+              "result": "done"
+            },
+            {
+              "type": "check",
+              "text": "正在运行健康检查",
+              "result": "8/8 passed"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "success",
+              "text": "克隆就绪: feature-auth-v2.internal"
+            },
+            {
+              "type": "summary",
+              "pairs": [
+                { "label": "耗时", "value": "52s" },
+                { "label": "容器", "value": "8" },
+                { "label": "大小", "value": "380 GB" },
+                { "label": "磁盘占用", "value": "1.8 GB (CoW)" }
+              ]
+            }
+          ]
+        },
+        "stats": [
+          { "number": "60s", "label": "克隆创建时间", "icon": "clock" },
+          { "number": "<5 min", "label": "完整灾难恢复", "icon": "zap" },
+          { "number": "0", "label": "所需运维工单", "icon": "ticket-x" }
+        ],
+        "problem": {
+          "overline": "问题所在",
+          "title": "您自动化了一切 — 除了获取环境",
+          "description": "您的CI/CD流水线几分钟内完成部署。您的IaC几秒钟内完成配置。但当您需要一个包含真实数据的测试环境时，您提交工单然后等三天。与此同时，预发布环境是共享的、不稳定的，和生产环境完全不一样。",
+          "statCallouts": [
+            {
+              "number": "69%",
+              "text": "的开发者每周因工具低效损失超过8小时",
+              "source": "Atlassian 2024",
+              "ref": 1
+            },
+            {
+              "number": "3天",
+              "text": "企业团队获取新环境的平均等待时间",
+              "source": "行业调查",
+              "ref": 2
+            },
+            {
+              "number": "$50K/年",
+              "text": "每位开发者因上下文切换造成的损失",
+              "source": "行业综合数据",
+              "ref": 3
+            }
+          ],
+          "timeline": {
+            "oldLabel": "传统方式",
+            "oldSteps": [
+              { "day": "周一", "text": "提交工单" },
+              { "day": "周二", "text": "运维审核" },
+              { "day": "周三", "text": "配置服务器" },
+              { "day": "周四", "text": "配置环境" },
+              { "day": "周五", "text": "和生产不一致" }
+            ],
+            "newLabel": "使用 Rediacc",
+            "newSteps": ["rdc clone", "52s", "完成"]
+          }
+        },
+        "howItWorks": {
+          "overline": "工作原理",
+          "title": "一条命令。完整的生产克隆。",
+          "steps": [
+            {
+              "title": "克隆",
+              "description": "运行 rdc clone production。Btrfs CoW 创建即时快照 — 应用、数据库、配置，一切就绪。",
+              "icon": "terminal"
+            },
+            {
+              "title": "开发",
+              "description": "立即在与生产环境完全一致的数据上开始编码。推送分支，获取全新克隆。",
+              "icon": "code"
+            },
+            {
+              "title": "恢复",
+              "description": "出了问题？几秒内回滚。不可变快照意味着您永远不会丢失数据。",
+              "icon": "shield"
+            }
+          ],
+          "cloneVisual": {
+            "production": {
+              "title": "生产环境",
+              "status": "运行中",
+              "services": [
+                { "name": "nginx", "port": ":443" },
+                { "name": "api-server", "port": ":8080" },
+                { "name": "postgres", "port": ":5432" },
+                { "name": "redis", "port": ":6379" }
+              ],
+              "containerCount": "4 个容器",
+              "size": "380 GB"
+            },
+            "clone": {
+              "title": "feature-auth-v2",
+              "status": "已克隆",
+              "services": [
+                { "name": "nginx", "port": ":443" },
+                { "name": "api-server", "port": ":8080" },
+                { "name": "postgres", "port": ":5432" },
+                { "name": "redis", "port": ":6379" }
+              ],
+              "containerCount": "4 个容器",
+              "size": "380 GB"
+            },
+            "arrow": { "label": "克隆", "time": "52s" }
+          }
+        },
+        "techDiff": {
+          "overline": "底层原理",
+          "title": "为什么60秒克隆成为可能",
+          "description": "Rediacc 在文件系统层使用 btrfs 写时复制快照。一个 380 GB 生产环境的快照在亚秒级完成，初始不占用任何额外存储。随着克隆的变化，只有改变的块使用新空间。",
+          "traditionalLabel": "传统方式",
+          "rediaccLabel": "Rediacc (btrfs CoW)",
+          "rows": [
+            {
+              "traditional": "Docker卷复制：完整数据复制，需要几分钟到几小时",
+              "rediacc": "仅元数据快照：亚秒级，任意大小"
+            },
+            {
+              "traditional": "pg_dump 380 GB：12-36小时，一次只能一个数据库引擎",
+              "rediacc": "任何数据库通过一次原子操作克隆"
+            },
+            {
+              "traditional": "10个克隆 = 10倍存储 (3.8 TB)",
+              "rediacc": "10个克隆通过CoW共享块（约15 GB增量）"
+            },
+            {
+              "traditional": "回滚：从备份恢复（30分钟以上）",
+              "rediacc": "回滚：btrfs快照切换（<5分钟）"
+            }
+          ]
+        },
+        "benefits": {
+          "overline": "为什么重要",
+          "title": "专为自动化一切的工程师打造",
+          "items": [
+            {
+              "title": "60秒环境",
+              "description": "从请求到可用环境不到一分钟。完整栈：操作系统、容器、数据库、配置。",
+              "icon": "zap"
+            },
+            {
+              "title": "CLI优先，可脚本化",
+              "description": "一切都是命令。与CI/CD、Git hooks或您自己的自动化集成。无需GUI。",
+              "icon": "terminal"
+            },
+            {
+              "title": "即时回滚",
+              "description": "Btrfs不可变快照意味着您可以在几秒内回滚任何环境。零数据丢失。零停机。",
+              "icon": "shield"
+            }
+          ]
+        },
+        "socialProof": {
+          "quote": "我们从3天的环境配置周期缩短到了不到一分钟。我们的开发者不再提工单，而是开始交付。btrfs快照就是好用 — 380 GB在52秒内克隆，几乎不占用额外存储。",
+          "author": "高级DevOps工程师",
+          "company": "金融科技公司，80名开发者",
+          "impact": {
+            "beforeLabel": "之前",
+            "beforeValue": "3天",
+            "afterLabel": "之后",
+            "afterValue": "52秒",
+            "improvement": "环境配置速度提升5,000倍"
+          }
+        },
+        "relatedSolutions": {
+          "title": "探索相关解决方案"
+        },
+        "bottomCta": {
+          "title": "亲自体验",
+          "description": "安装CLI。克隆您的第一个环境。无需信用卡。无需销售电话。",
+          "primaryCta": "免费开始",
+          "command": "curl -fsSL https://get.rediacc.com | sh"
+        }
+      },
+      "forCtos": {
+        "meta": {
+          "title": "面向CTO — 降低基础设施TCO 60% | Rediacc",
+          "description": "自托管基础设施保护，在您的硬件上扩展。降低TCO，消除厂商锁定，几分钟内从任何灾难中恢复。",
+          "keywords": "CTO, 基础设施TCO, 自托管, 灾难恢复, 厂商锁定, btrfs快照, 合规, 可扩展性"
+        },
+        "hero": {
+          "badge": "面向CTO",
+          "title": "降低基础设施TCO 60%。在您的硬件上扩展。",
+          "subtitle": "自托管基础设施保护，消除云端加价，无按席位定价即可扩展，几分钟内从任何灾难中恢复 — 而非数小时。",
+          "primaryCta": "预约演示",
+          "secondaryCta": "计算您的ROI"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "prompt": "$",
+              "cmd": "rdc snapshot",
+              "flag": "--all-repos",
+              "value": "--schedule daily"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "check",
+              "text": "正在扫描3台机器上的47个仓库",
+              "result": "done"
+            },
+            {
+              "type": "check",
+              "text": "正在创建不可变btrfs快照",
+              "result": "47/47"
+            },
+            {
+              "type": "check",
+              "text": "正在验证备份完整性（恢复测试）",
+              "result": "passed"
+            },
+            {
+              "type": "check",
+              "text": "正在复制到备用节点",
+              "result": "synced"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "success",
+              "text": "所有仓库已保护。下次运行：明天 02:00 UTC"
+            },
+            {
+              "type": "summary",
+              "pairs": [
+                { "label": "仓库", "value": "47" },
+                { "label": "总大小", "value": "2.4 TB" },
+                { "label": "快照耗时", "value": "3.2s" },
+                { "label": "存储增量", "value": "+12 GB" }
+              ]
+            }
+          ]
+        },
+        "stats": [
+          { "number": "60%", "label": "相比云端更低的TCO", "icon": "trend-up" },
+          { "number": "<5 min", "label": "完整灾难恢复", "icon": "clock" },
+          { "number": "0", "label": "厂商锁定", "icon": "lock" }
+        ],
+        "problem": {
+          "overline": "问题所在",
+          "title": "云成本持续上升。恢复不断失败。",
+          "description": "您的云账单每年增长15-20%。按席位许可惩罚团队增长。当灾难发生时，您的「即时恢复」需要数小时 — 因为承诺RPO为分钟级的备份工具实际交付的是天级RPO。与此同时，您被锁定在一个每次续费都更贵的厂商生态系统中。",
+          "statCallouts": [
+            {
+              "number": "17%",
+              "text": "企业平均云预算超支比例",
+              "source": "Flexera 2025",
+              "ref": 1
+            },
+            {
+              "number": "76%",
+              "text": "的组织在过去一年经历了严重的停机事件",
+              "source": "Veeam 2024",
+              "ref": 2
+            },
+            {
+              "number": "$9.36M",
+              "text": "2024年数据泄露的平均成本",
+              "source": "IBM 2024",
+              "ref": 3
+            }
+          ],
+          "timeline": {
+            "oldLabel": "传统灾难恢复",
+            "oldSteps": [
+              { "day": "0:00", "text": "检测到事件" },
+              { "day": "0:30", "text": "团队集合" },
+              { "day": "2:00", "text": "查找备份" },
+              { "day": "6:00", "text": "开始恢复" },
+              { "day": "24h+", "text": "部分恢复" }
+            ],
+            "newLabel": "使用 Rediacc",
+            "newSteps": ["检测", "回滚", "<5 min"]
+          }
+        },
+        "calculator": {
+          "overline": "真实成本",
+          "title": "您的基础设施真正花费了多少？",
+          "description": "拖动滑块以匹配您的组织。看看Rediacc与您当前支出的对比。",
+          "headerTitle": "计算您的基础设施节省",
+          "sliders": {
+            "devs": "管理的服务器/工作负载",
+            "reqs": "每月平均云支出 ($)",
+            "wait": "每年停机小时数"
+          },
+          "withoutTag": "当前支出",
+          "withTag": "使用 Rediacc",
+          "results": {
+            "blockedTime": "年度基础设施成本",
+            "sprintCapacity": "每年停机成本",
+            "contextSwitching": "恢复时间 (MTTR)",
+            "quarterlySlip": "厂商锁定风险"
+          },
+          "annualLabel": "年度总成本",
+          "withResults": {
+            "blockedTime": "降低60%",
+            "sprintCapacity": "接近零",
+            "contextSwitching": "<5分钟",
+            "quarterlySlip": "无"
+          },
+          "withAnnual": "计算 →",
+          "footnote": "估算基于行业TCO模型，对比自托管基础设施与同等云服务。实际节省因工作负载、配置和规模而异。"
+        },
+        "techDiff": {
+          "overline": "架构",
+          "title": "Rediacc如何保护您的基础设施",
+          "description": "Rediacc运行在您的硬件上，使用btrfs写时复制快照实现即时备份和恢复。每个快照在文件系统层面是不可变的 — 勒索软件无法加密内核保护的内容。恢复意味着切换指针，而非恢复数TB数据。",
+          "traditionalLabel": "云/传统灾备",
+          "rediaccLabel": "Rediacc（自托管）",
+          "rows": [
+            {
+              "traditional": "按席位许可：成本随团队增长",
+              "rediacc": "按机器许可：成本随硬件增长"
+            },
+            {
+              "traditional": "恢复：从云备份恢复需要数小时",
+              "rediacc": "恢复：切换btrfs快照只需数秒"
+            },
+            {
+              "traditional": "厂商锁定：数据以专有格式存储",
+              "rediacc": "开放格式：数据在您自己的文件系统上"
+            },
+            {
+              "traditional": "合规：信任厂商的证明",
+              "rediacc": "合规：在您自己的基础设施上验证"
+            }
+          ]
+        },
+        "benefits": {
+          "overline": "战略价值",
+          "title": "Rediacc对您的组织意味着什么",
+          "items": [
+            {
+              "title": "TCO降低60%",
+              "description": "消除云端加价、按席位许可和出站费用。在您已有的硬件上运行。",
+              "icon": "trend-up"
+            },
+            {
+              "title": "分钟级，而非小时级",
+              "description": "5分钟内完成完整灾难恢复。Btrfs快照意味着恢复是指针切换，而非恢复作业。",
+              "icon": "zap"
+            },
+            {
+              "title": "零厂商锁定",
+              "description": "您的数据保留在您的基础设施上，使用开放格式。切换提供商或自行管理 — 始终由您选择。",
+              "icon": "lock"
+            }
+          ]
+        },
+        "comparison": {
+          "overline": "竞争格局",
+          "title": "Rediacc的对比优势",
+          "description": "企业备份工具按插槽、按虚拟机或按TB收费。Rediacc按机器收费 — 并运行在您的硬件上。",
+          "capabilityLabel": "功能",
+          "features": [
+            {
+              "name": "自托管/本地部署",
+              "values": ["check", "cross", "check", "cross", "rediacc"]
+            },
+            {
+              "name": "文件系统级不可变性",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "即时恢复（<5分钟）",
+              "values": ["cross", "cross", "cross", "check", "rediacc"]
+            },
+            {
+              "name": "零拷贝快照 (CoW)",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "按机器定价（无按席位收费）",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "自动化恢复验证",
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "无厂商锁定",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            }
+          ]
+        },
+        "socialProof": {
+          "quote": "我们将47个生产工作负载从一家大型云提供商迁移到了自有硬件上的Rediacc。基础设施成本在第一个季度下降了62%。当我们遇到第一次事故时，恢复用了3分钟，而我们之前的工具报价是4小时。",
+          "author": "CTO",
+          "company": "SaaS公司，200名员工",
+          "impact": {
+            "beforeLabel": "云支出",
+            "beforeValue": "$18K/月",
+            "afterLabel": "使用 Rediacc",
+            "afterValue": "$6.8K/月",
+            "improvement": "基础设施成本降低62%"
+          }
+        },
+        "shareWithTeam": {
+          "overline": "分享给团队",
+          "title": "让您的DevOps团队开始使用",
+          "description": "您的工程师会喜欢CLI优先的工作流和即时环境。将技术深度分析分享给您的DevOps团队。",
+          "ctaText": "分享DevOps深度分析",
+          "ctaSlug": "for-devops"
+        },
+        "relatedSolutions": {
+          "title": "探索平台"
+        },
+        "bottomCta": {
+          "title": "查看实际演示",
+          "description": "预约30分钟的架构评审。我们将为您展示针对您特定基础设施的TCO预测。",
+          "primaryCta": "预约演示"
+        }
+      },
+      "forCeos": {
+        "meta": {
+          "title": "面向CEO和创始人 — 可预测成本，零锁定 | Rediacc",
+          "description": "自托管基础设施保护，具有可预测定价、零厂商锁定和完全数据所有权。无需高昂云账单即可保护您的业务。",
+          "keywords": "CEO, 基础设施成本, 自托管, 数据保护, 厂商锁定, 可预测定价, 业务连续性, 中小企业"
+        },
+        "hero": {
+          "badge": "面向CEO和创始人",
+          "title": "可预测的基础设施成本。零厂商锁定。",
+          "subtitle": "在您自有硬件上保护业务数据。每台机器一个固定价格 — 无按席位费用，无意外云账单，无厂商挟持您的数据。",
+          "primaryCta": "查看定价",
+          "secondaryCta": "联系销售"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "prompt": "$",
+              "cmd": "rdc status",
+              "flag": "--summary",
+              "value": ""
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "check",
+              "text": "3台机器监控中",
+              "result": "healthy"
+            },
+            {
+              "type": "check",
+              "text": "47个仓库已保护",
+              "result": "all backed up"
+            },
+            {
+              "type": "check",
+              "text": "最近备份已验证",
+              "result": "2小时前"
+            },
+            {
+              "type": "check",
+              "text": "恢复就绪状态",
+              "result": "< 5 min"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "success",
+              "text": "所有系统已保护。本季度零事故。"
+            },
+            {
+              "type": "summary",
+              "pairs": [
+                { "label": "运行时间", "value": "99.99%" },
+                { "label": "已保护", "value": "2.4 TB" },
+                { "label": "月度成本", "value": "$204" },
+                { "label": "相比云端", "value": "−62%" }
+              ]
+            }
+          ]
+        },
+        "stats": [
+          { "number": "$204/月", "label": "全包价格", "icon": "tag" },
+          { "number": "99.99%", "label": "运行时间保证", "icon": "check-circle" },
+          { "number": "0", "label": "按席位费用", "icon": "users" }
+        ],
+        "problem": {
+          "overline": "问题所在",
+          "title": "云账单持续增长。您的数据并不真正属于您。",
+          "description": "您的团队从一个小额云账单开始。现在它已成为您第三大开支，并且每年增长20%。按席位定价因招聘而惩罚您。您的数据存放在别人的数据中心，以专有格式保存。如果您想离开，他们会向您收取出站费用来访问您自己的数据。",
+          "statCallouts": [
+            {
+              "number": "20%",
+              "text": "平均云支出年增长率",
+              "source": "Flexera 2025",
+              "ref": 1
+            },
+            {
+              "number": "98%",
+              "text": "的中小企业技术决策直接来自高管",
+              "source": "TrustRadius 2024",
+              "ref": 2
+            },
+            {
+              "number": "$9.36M",
+              "text": "数据泄露的平均成本",
+              "source": "IBM 2024",
+              "ref": 3
+            }
+          ],
+          "timeline": {
+            "oldLabel": "云基础设施",
+            "oldSteps": [
+              { "day": "第1年", "text": "$5K/月" },
+              { "day": "第2年", "text": "$8K/月" },
+              { "day": "第3年", "text": "$14K/月" },
+              { "day": "第4年", "text": "$22K/月" },
+              { "day": "第5年", "text": "已锁定" }
+            ],
+            "newLabel": "使用 Rediacc",
+            "newSteps": ["$204/月", "固定", "您的"]
+          }
+        },
+        "calculator": {
+          "overline": "数字说话",
+          "title": "您能节省多少？",
+          "description": "调整滑块以匹配您的业务。了解云与自托管的真实成本对比。",
+          "headerTitle": "计算您的节省",
+          "sliders": {
+            "devs": "团队成员",
+            "reqs": "当前每月云支出 ($)",
+            "wait": "每年停机小时数"
+          },
+          "withoutTag": "当前云成本",
+          "withTag": "使用 Rediacc",
+          "results": {
+            "blockedTime": "年度基础设施成本",
+            "sprintCapacity": "停机风险成本",
+            "contextSwitching": "恢复时间",
+            "quarterlySlip": "数据所有权"
+          },
+          "annualLabel": "年度总成本",
+          "withResults": {
+            "blockedTime": "降低60%",
+            "sprintCapacity": "最小化",
+            "contextSwitching": "<5分钟",
+            "quarterlySlip": "100%归您"
+          },
+          "withAnnual": "计算 →",
+          "footnote": "估算基于行业TCO模型。实际节省取决于您当前的基础设施和规模。"
+        },
+        "benefits": {
+          "overline": "商业价值",
+          "title": "这对您的业务意味着什么",
+          "items": [
+            {
+              "title": "可预测的成本",
+              "description": "每台机器一个固定价格。无按席位费用，无意外账单，无出站费用。随着增长，预算保持可预测。",
+              "icon": "tag"
+            },
+            {
+              "title": "您的数据，您掌控",
+              "description": "数据保留在您自有硬件上，使用开放格式。没有厂商可以挟持您的数据或向您收费访问。",
+              "icon": "lock"
+            },
+            {
+              "title": "业务连续性",
+              "description": "5分钟内完成完整灾难恢复。勒索软件无法触及的不可变备份。您的业务持续运转。",
+              "icon": "shield"
+            }
+          ]
+        },
+        "socialProof": {
+          "quote": "我们每月在47个工作负载的云基础设施上花费$18,000。迁移到自有服务器上的Rediacc后，账单降至$6,800 — 恢复时间从4小时缩短到3分钟。ROI在第一个月就很明显了。",
+          "author": "CEO兼创始人",
+          "company": "SaaS初创公司，45名员工",
+          "impact": {
+            "beforeLabel": "月度成本",
+            "beforeValue": "$18,000",
+            "afterLabel": "使用 Rediacc",
+            "afterValue": "$6,800",
+            "improvement": "成本降低62%，即时恢复"
+          }
+        },
+        "shareWithTeam": {
+          "overline": "下一步",
+          "title": "分享给您的CTO",
+          "description": "您的技术团队需要评估架构和集成方案。将CTO深度分析分享给他们，提供所需的技术细节。",
+          "ctaText": "分享CTO深度分析",
+          "ctaSlug": "for-ctos"
+        },
+        "relatedSolutions": {
+          "title": "工作原理"
+        },
+        "bottomCta": {
+          "title": "查看定价",
+          "description": "每台机器一个固定价格。无按席位费用。无意外。从免费社区版开始。",
+          "primaryCta": "查看定价"
+        }
+      }
+    },
+    "roiCalculator": {
+      "meta": {
+        "title": "ROI Calculator — Quantify Your Infrastructure Savings | Rediacc",
+        "description": "Calculate total cost of ownership savings, payback period, and ROI of switching to Rediacc self-hosted infrastructure.",
+        "keywords": "ROI calculator, TCO comparison, infrastructure savings, self-hosted ROI, payback period, backup cost reduction"
+      },
+      "overline": "CALCULATE YOUR ROI",
+      "title": "How much can Rediacc save your organization?",
+      "description": "Select your company size and adjust the inputs to see real-time TCO comparison, developer productivity gains, and payback period.",
+      "sizeSelect": {
+        "label": "Company size",
+        "smb": "SMB",
+        "smbDesc": "< 25 employees",
+        "mid": "Mid-Market",
+        "midDesc": "25–200 employees",
+        "enterprise": "Enterprise",
+        "enterpriseDesc": "200–1,000 employees",
+        "large": "Large Enterprise",
+        "largeDesc": "1,000+ employees"
+      },
+      "sliders": {
+        "servers": "Servers / workloads",
+        "developers": "Developers on team",
+        "dataTB": "Data volume (TB)",
+        "downtimeCostPerHour": "Downtime cost ($/hour)",
+        "incidentsPerYear": "Incidents per year",
+        "currentRtoHours": "Current RTO (hours)"
+      },
+      "advancedLabel": "Advanced assumptions",
+      "advancedSliders": {
+        "adminHourlyRate": "Admin hourly rate",
+        "devHourlyRate": "Developer hourly rate",
+        "adminFte": "Admin FTE for backup/DR",
+        "currentBackupSpendMonth": "Current backup spend ($/mo)",
+        "dataGrowthRate": "Annual data growth",
+        "envRequestsPerDevMonth": "Env requests / dev / month",
+        "currentProvisioningHours": "Current provisioning time (hrs)"
+      },
+      "summary": {
+        "annualSavings": "Annual savings",
+        "paybackPeriod": "Payback period",
+        "paybackUnit": "months",
+        "threeYearRoi": "3-Year ROI"
+      },
+      "categories": {
+        "tco": {
+          "title": "TCO Savings",
+          "currentTco": "Current annual TCO",
+          "rediaccTco": "Rediacc annual TCO",
+          "savings": "Annual TCO savings"
+        },
+        "devProductivity": {
+          "title": "Developer Productivity",
+          "hoursSaved": "Hours saved per year",
+          "dollarValue": "Dollar value",
+          "provisioningReduction": "Provisioning time"
+        },
+        "drAvailability": {
+          "title": "DR & Availability",
+          "currentRisk": "Current downtime risk",
+          "rediaccRisk": "With Rediacc",
+          "savings": "Annual DR savings",
+          "rtoImprovement": "RTO improvement"
+        },
+        "compliance": {
+          "title": "Storage, Compliance & Insurance",
+          "storageSavings": "Storage savings",
+          "bandwidthSavings": "Bandwidth savings",
+          "complianceSavings": "Compliance cost reduction",
+          "insuranceSavings": "Insurance premium reduction",
+          "auditTimeSaved": "Audit prep time saved"
+        }
+      },
+      "footnote": "Estimates based on industry benchmarks from ITIC, IBM/Ponemon, Sophos, Cortex, and KPMG research (2024). TCO includes infrastructure, administration, DR testing, and maintenance. Developer productivity uses a conservative 40% realization rate. DR savings based on RTO improvement using btrfs copy-on-write snapshots. Storage savings assume CoW efficiency vs. traditional backup chains. Actual results vary by workload and configuration.",
+      "references": {
+        "label": "Sources & References",
+        "items": [
+          {
+            "text": "ITIC, \"2024 Hourly Cost of Downtime Report.\" Over 90% of mid-large enterprises report downtime costs exceeding $300,000/hour. 41% of enterprises report $1M–$5M+ per hour.",
+            "url": "https://itic-corp.com/itic-2024-hourly-cost-of-downtime-report/"
+          },
+          {
+            "text": "IBM Security / Ponemon Institute, \"Cost of a Data Breach Report 2024.\" Average data breach cost: $4.88M (10% YoY increase). Organizations with IR teams that regularly tested their plans had 58% lower breach costs.",
+            "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
+          },
+          {
+            "text": "Sophos, \"The State of Ransomware 2024.\" Average recovery cost (excl. ransom): $2.73M, a 50% increase from $1.82M in 2023. 59% of organizations were hit by ransomware in the past year.",
+            "url": "https://www.sophos.com/en-us/content/state-of-ransomware"
+          },
+          {
+            "text": "Cortex, \"The 2024 State of Developer Productivity.\" 72% of new hires take 1+ month to submit first 3 meaningful PRs. 58% of engineering leaders report developers lose 5+ hours/week to inefficiencies.",
+            "url": "https://www.cortex.io/report/the-2024-state-of-developer-productivity"
+          },
+          {
+            "text": "KPMG, \"The 2023 KPMG SOX Report.\" Companies spend an average of 11,800 hours and $1.6M annually on SOX compliance programs.",
+            "url": "https://kpmg.com/us/en/articles/2023/kpmg-sox-report.html"
+          },
+          {
+            "text": "Veeam, \"2024 Ransomware Trends Report.\" Only 57% of compromised data is recoverable after a ransomware attack, leaving 43% unrecoverable.",
+            "url": "https://www.veeam.com/company/press-release/ransomware-continues-to-cause-mayhem-as-victims-are-unable-to-recover-43-percent-of-affected-data.html"
+          },
+          {
+            "text": "IDC, \"Worldwide Global DataSphere Forecast, 2024–2028.\" Data creation projected from 132.4 ZB (2023) to 393.9 ZB (2028), ~24% CAGR.",
+            "url": "https://www.marketresearch.com/IDC-v2477/Worldwide-IDC-Global-DataSphere-Forecast-36971010/"
+          },
+          {
+            "text": "Veeam R&D Forums, 2020–2024. Socket-to-VUL migration threads report 2x–3x cost multipliers for existing customers, with some high-density environments reaching up to 6x.",
+            "url": "https://forums.veeam.com/veeam-backup-replication-f2/phasing-out-our-socket-based-licensing-t74168.html"
+          }
+        ],
+        "disclaimer": "All figures are based on published industry research and public vendor documentation. TCO comparisons use illustrative Rediacc pricing for modeling purposes. Actual pricing and savings may differ based on specific deployment configurations, negotiated rates, and organizational requirements."
       }
     }
   },

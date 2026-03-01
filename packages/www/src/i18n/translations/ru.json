@@ -201,9 +201,31 @@
     "blog": "Блог",
     "contact": "Контакты",
     "disasterRecovery": "Аварийное восстановление",
+    "viewAllSolutions": "Все решения",
+    "solutionsMegaMenu": "Меню решений",
+    "builtForYourRole": "Для вашей роли",
+    "builtForYou": "Для вас",
+    "forDevops": "Для DevOps-инженеров",
+    "forCtos": "Для технических директоров",
+    "forCeos": "Для CEO и основателей",
+    "personas": {
+      "devops": {
+        "tagline": "Быстрая доставка. Мгновенное восстановление. Спокойный сон.",
+        "cta": "Начать бесплатно"
+      },
+      "cto": {
+        "tagline": "Снизьте TCO на 60 %. Масштабируйтесь на своём оборудовании.",
+        "cta": "Запланировать демо"
+      },
+      "ceo": {
+        "tagline": "Предсказуемые затраты. Без привязки к поставщику.",
+        "cta": "Посмотреть цены"
+      }
+    },
     "docs": "Документы",
     "downloads": "Загрузки",
     "footerNavigation": "Навигация по сайту",
+    "roiCalculator": "ROI Calculator",
     "home": "Главная",
     "install": "Установить",
     "languageSelectionMenu": "Меню выбора языка",
@@ -1555,12 +1577,12 @@
             "label": "Ограничение размера репозитория"
           },
           {
-            "key": "repositories",
-            "label": "Репозитории"
-          },
-          {
             "key": "floatingLicenses",
             "label": "Плавающие лицензии"
+          },
+          {
+            "key": "repositories",
+            "label": "Репозитории"
           },
           {
             "key": "usersTeams",
@@ -10609,6 +10631,767 @@
           ],
           "disclaimer": "Заявления о производительности продукта основаны на архитектуре btrfs copy-on-write от Rediacc. Оценки калькулятора используют стандартные отраслевые модели затрат; фактические затраты зависят от организации."
         }
+      }
+    },
+    "personaPages": {
+      "forDevops": {
+        "meta": {
+          "title": "Для DevOps-инженеров — Быстрее доставка, мгновенное восстановление | Rediacc",
+          "description": "CLI-ориентированная инфраструктура, которая клонирует продакшен за 60 секунд, откатывает за пять минут и работает на вашем оборудовании. Создано для инженеров, которые автоматизируют всё.",
+          "keywords": "devops, автоматизация инфраструктуры, CLI, снапшоты btrfs, self-hosted, клонирование сред, мгновенный откат, идентичность продакшену"
+        },
+        "hero": {
+          "badge": "ДЛЯ DEVOPS-ИНЖЕНЕРОВ",
+          "title": "Деплойте быстрее. Восстанавливайте мгновенно. Спите спокойно.",
+          "subtitle": "CLI-ориентированная инфраструктура, которая клонирует продакшен за 60 секунд, откатывает за пять минут и работает на вашем оборудовании. Без тикетов. Без ожидания. Без привязки к вендору.",
+          "primaryCta": "Начать бесплатно",
+          "secondaryCta": "Читать документацию"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "prompt": "$",
+              "cmd": "rdc clone production",
+              "flag": "--name",
+              "value": "feature-auth-v2"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "check",
+              "text": "Создание снапшота продакшена (btrfs CoW)",
+              "result": "done"
+            },
+            {
+              "type": "check",
+              "text": "Репликация 8 контейнеров + баз данных",
+              "result": "done"
+            },
+            {
+              "type": "check",
+              "text": "Монтирование зашифрованного хранилища (380 ГБ)",
+              "result": "done"
+            },
+            {
+              "type": "check",
+              "text": "Проверка работоспособности",
+              "result": "8/8 passed"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "success",
+              "text": "Клон готов: feature-auth-v2.internal"
+            },
+            {
+              "type": "summary",
+              "pairs": [
+                { "label": "Время", "value": "52s" },
+                { "label": "Контейнеры", "value": "8" },
+                { "label": "Размер", "value": "380 GB" },
+                { "label": "Занято на диске", "value": "1.8 GB (CoW)" }
+              ]
+            }
+          ]
+        },
+        "stats": [
+          { "number": "60s", "label": "Время создания клона", "icon": "clock" },
+          { "number": "<5 min", "label": "Полное аварийное восстановление", "icon": "zap" },
+          { "number": "0", "label": "Необходимых тикетов в Ops", "icon": "ticket-x" }
+        ],
+        "problem": {
+          "overline": "ПРОБЛЕМА",
+          "title": "Вы автоматизируете всё — кроме получения среды",
+          "description": "Ваш CI/CD-пайплайн деплоит за минуты. IaC провижионит за секунды. Но когда нужна тестовая среда с реальными данными, вы создаёте тикет и ждёте три дня. А стейджинг — общий, нестабильный и совсем не похож на продакшен.",
+          "statCallouts": [
+            {
+              "number": "69%",
+              "text": "разработчиков теряют 8+ часов в неделю из-за неэффективности инструментов",
+              "source": "Atlassian 2024",
+              "ref": 1
+            },
+            {
+              "number": "3 дня",
+              "text": "среднее время ожидания новой среды в корпоративных командах",
+              "source": "Industry survey",
+              "ref": 2
+            },
+            {
+              "number": "$50K/год",
+              "text": "потери на одного разработчика из-за переключения контекста",
+              "source": "Industry composite",
+              "ref": 3
+            }
+          ],
+          "timeline": {
+            "oldLabel": "Старый способ",
+            "oldSteps": [
+              { "day": "Пн", "text": "Создать тикет" },
+              { "day": "Вт", "text": "Ops рассматривает" },
+              { "day": "Ср", "text": "Подготовка сервера" },
+              { "day": "Чт", "text": "Настройка среды" },
+              { "day": "Пт", "text": "Не совпадает с прод" }
+            ],
+            "newLabel": "С Rediacc",
+            "newSteps": ["rdc clone", "52s", "Готово"]
+          }
+        },
+        "howItWorks": {
+          "overline": "КАК ЭТО РАБОТАЕТ",
+          "title": "Одна команда. Полный клон продакшена.",
+          "steps": [
+            {
+              "title": "Клонировать",
+              "description": "Запустите rdc clone production. Btrfs CoW создаёт мгновенный снапшот — приложение, база данных, конфигурация, всё.",
+              "icon": "terminal"
+            },
+            {
+              "title": "Работать",
+              "description": "Сразу начинайте писать код с данными, идентичными продакшену. Пушите ветку — получайте свежий клон.",
+              "icon": "code"
+            },
+            {
+              "title": "Восстановить",
+              "description": "Что-то сломалось? Откатитесь за секунды. Иммутабельные снапшоты гарантируют, что данные не потеряются.",
+              "icon": "shield"
+            }
+          ],
+          "cloneVisual": {
+            "production": {
+              "title": "Production",
+              "status": "Работает",
+              "services": [
+                { "name": "nginx", "port": ":443" },
+                { "name": "api-server", "port": ":8080" },
+                { "name": "postgres", "port": ":5432" },
+                { "name": "redis", "port": ":6379" }
+              ],
+              "containerCount": "4 контейнера",
+              "size": "380 GB"
+            },
+            "clone": {
+              "title": "feature-auth-v2",
+              "status": "Клонирован",
+              "services": [
+                { "name": "nginx", "port": ":443" },
+                { "name": "api-server", "port": ":8080" },
+                { "name": "postgres", "port": ":5432" },
+                { "name": "redis", "port": ":6379" }
+              ],
+              "containerCount": "4 контейнера",
+              "size": "380 GB"
+            },
+            "arrow": { "label": "Клон", "time": "52s" }
+          }
+        },
+        "techDiff": {
+          "overline": "ПОД КАПОТОМ",
+          "title": "Почему клоны за 60 секунд возможны",
+          "description": "Rediacc использует снапшоты btrfs copy-on-write на уровне файловой системы. Снапшот продакшен-среды объёмом 380 ГБ выполняется за доли секунды и изначально не занимает дополнительного места. По мере расхождения клона новое пространство используется только для изменённых блоков.",
+          "traditionalLabel": "Традиционный подход",
+          "rediaccLabel": "Rediacc (btrfs CoW)",
+          "rows": [
+            {
+              "traditional": "Копирование Docker-томов: полное копирование данных, минуты или часы",
+              "rediacc": "Снапшот метаданных: доли секунды, любой объём"
+            },
+            {
+              "traditional": "pg_dump 380 ГБ: 12–36 часов, одна СУБД за раз",
+              "rediacc": "Любая база данных клонируется одной атомарной операцией"
+            },
+            {
+              "traditional": "10 клонов = 10x хранилище (3,8 ТБ)",
+              "rediacc": "10 клонов разделяют блоки через CoW (~15 ГБ дельта)"
+            },
+            {
+              "traditional": "Откат: восстановление из бэкапа (30+ мин)",
+              "rediacc": "Откат: переключение снапшота btrfs (<5 мин)"
+            }
+          ]
+        },
+        "benefits": {
+          "overline": "ПОЧЕМУ ЭТО ВАЖНО",
+          "title": "Создано для инженеров, которые автоматизируют всё",
+          "items": [
+            {
+              "title": "Среды за 60 секунд",
+              "description": "От запроса до рабочей среды менее чем за минуту. Полный стек: ОС, контейнеры, базы данных, конфигурация.",
+              "icon": "zap"
+            },
+            {
+              "title": "CLI-ориентированный, скриптуемый",
+              "description": "Всё — это команда. Интегрируйте с CI/CD, Git-хуками или собственной автоматизацией. GUI не нужен.",
+              "icon": "terminal"
+            },
+            {
+              "title": "Мгновенный откат",
+              "description": "Иммутабельные снапшоты btrfs позволяют откатить любую среду за секунды. Без потери данных. Без простоев.",
+              "icon": "shield"
+            }
+          ]
+        },
+        "socialProof": {
+          "quote": "Мы сократили цикл подготовки среды с 3 дней до менее чем минуты. Разработчики перестали создавать тикеты и начали выпускать код. Снапшоты btrfs просто работают — 380 ГБ клонируется за 52 секунды с почти нулевым дополнительным хранилищем.",
+          "author": "Старший DevOps-инженер",
+          "company": "Финтех, 80 разработчиков",
+          "impact": {
+            "beforeLabel": "До",
+            "beforeValue": "3 дня",
+            "afterLabel": "После",
+            "afterValue": "52 сек",
+            "improvement": "Подготовка среды в 5 000 раз быстрее"
+          }
+        },
+        "relatedSolutions": {
+          "title": "Смотрите связанные решения"
+        },
+        "bottomCta": {
+          "title": "Попробуйте сами",
+          "description": "Установите CLI. Клонируйте свою первую среду. Без кредитной карты. Без звонка продавцу.",
+          "primaryCta": "Начать бесплатно",
+          "command": "curl -fsSL https://get.rediacc.com | sh"
+        }
+      },
+      "forCtos": {
+        "meta": {
+          "title": "Для технических директоров — Снижение TCO инфраструктуры на 60% | Rediacc",
+          "description": "Self-hosted защита инфраструктуры, которая масштабируется на вашем оборудовании. Снижайте TCO, устраняйте привязку к вендору и восстанавливайтесь после любой аварии за минуты.",
+          "keywords": "CTO, TCO инфраструктуры, self-hosted, аварийное восстановление, привязка к вендору, снапшоты btrfs, комплаенс, масштабируемость"
+        },
+        "hero": {
+          "badge": "ДЛЯ ТЕХНИЧЕСКИХ ДИРЕКТОРОВ",
+          "title": "Снизьте TCO инфраструктуры на 60%. Масштабируйтесь на своём оборудовании.",
+          "subtitle": "Self-hosted защита инфраструктуры, которая устраняет облачную наценку, масштабируется без поюзерной тарификации и восстанавливается после любой аварии за минуты, а не за часы.",
+          "primaryCta": "Запросить демо",
+          "secondaryCta": "Рассчитать ROI"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "prompt": "$",
+              "cmd": "rdc snapshot",
+              "flag": "--all-repos",
+              "value": "--schedule daily"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "check",
+              "text": "Сканирование 47 репозиториев на 3 машинах",
+              "result": "done"
+            },
+            {
+              "type": "check",
+              "text": "Создание иммутабельных снапшотов btrfs",
+              "result": "47/47"
+            },
+            {
+              "type": "check",
+              "text": "Проверка целостности бэкапов (тест восстановления)",
+              "result": "passed"
+            },
+            {
+              "type": "check",
+              "text": "Репликация на резервный узел",
+              "result": "synced"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "success",
+              "text": "Все репозитории защищены. Следующий запуск: завтра 02:00 UTC"
+            },
+            {
+              "type": "summary",
+              "pairs": [
+                { "label": "Репозитории", "value": "47" },
+                { "label": "Общий объём", "value": "2.4 TB" },
+                { "label": "Время снапшота", "value": "3.2s" },
+                { "label": "Дельта хранилища", "value": "+12 GB" }
+              ]
+            }
+          ]
+        },
+        "stats": [
+          { "number": "60%", "label": "Ниже TCO по сравнению с облаком", "icon": "trend-up" },
+          { "number": "<5 min", "label": "Полное аварийное восстановление", "icon": "clock" },
+          { "number": "0", "label": "Привязка к вендору", "icon": "lock" }
+        ],
+        "problem": {
+          "overline": "ПРОБЛЕМА",
+          "title": "Облачные расходы растут. Восстановление не работает.",
+          "description": "Ваш облачный счёт увеличивается на 15–20% ежегодно. Поюзерное лицензирование наказывает за рост команды. Когда случается авария, ваше «мгновенное восстановление» занимает часы — потому что инструмент резервного копирования, обещавший RPO в минутах, на деле обеспечивает RPO в днях. А тем временем вы привязаны к экосистеме вендора, которая дорожает с каждым продлением.",
+          "statCallouts": [
+            {
+              "number": "17%",
+              "text": "среднее превышение облачного бюджета среди предприятий",
+              "source": "Flexera 2025",
+              "ref": 1
+            },
+            {
+              "number": "76%",
+              "text": "организаций столкнулись с серьёзным инцидентом простоя за последний год",
+              "source": "Veeam 2024",
+              "ref": 2
+            },
+            {
+              "number": "$9.36M",
+              "text": "средняя стоимость утечки данных в 2024 году",
+              "source": "IBM 2024",
+              "ref": 3
+            }
+          ],
+          "timeline": {
+            "oldLabel": "Традиционное аварийное восстановление",
+            "oldSteps": [
+              { "day": "0:00", "text": "Обнаружен инцидент" },
+              { "day": "0:30", "text": "Команда собрана" },
+              { "day": "2:00", "text": "Поиск бэкапа" },
+              { "day": "6:00", "text": "Начало восстановления" },
+              { "day": "24h+", "text": "Частично восстановлено" }
+            ],
+            "newLabel": "С Rediacc",
+            "newSteps": ["Обнаружение", "Откат", "<5 мин"]
+          }
+        },
+        "calculator": {
+          "overline": "РЕАЛЬНАЯ СТОИМОСТЬ",
+          "title": "Сколько на самом деле стоит ваша инфраструктура?",
+          "description": "Переместите ползунки в соответствии с вашей организацией. Посмотрите, как Rediacc соотносится с вашими текущими расходами.",
+          "headerTitle": "Рассчитайте экономию на инфраструктуре",
+          "sliders": {
+            "devs": "Управляемые серверы / рабочие нагрузки",
+            "reqs": "Средние облачные расходы в месяц ($)",
+            "wait": "Часы простоя в год"
+          },
+          "withoutTag": "Текущие расходы",
+          "withTag": "С Rediacc",
+          "results": {
+            "blockedTime": "Годовая стоимость инфраструктуры",
+            "sprintCapacity": "Стоимость простоя в год",
+            "contextSwitching": "Время восстановления (MTTR)",
+            "quarterlySlip": "Риск привязки к вендору"
+          },
+          "annualLabel": "Общая годовая стоимость",
+          "withResults": {
+            "blockedTime": "На 60% меньше",
+            "sprintCapacity": "Почти ноль",
+            "contextSwitching": "<5 минут",
+            "quarterlySlip": "Отсутствует"
+          },
+          "withAnnual": "Рассчитать →",
+          "footnote": "Оценки основаны на отраслевых моделях TCO, сравнивающих self-hosted инфраструктуру с эквивалентными облачными сервисами. Фактическая экономия зависит от рабочей нагрузки, конфигурации и масштаба."
+        },
+        "techDiff": {
+          "overline": "АРХИТЕКТУРА",
+          "title": "Как Rediacc защищает вашу инфраструктуру",
+          "description": "Rediacc работает на вашем оборудовании, используя снапшоты btrfs copy-on-write для мгновенного резервного копирования и восстановления. Каждый снапшот иммутабелен на уровне файловой системы — программы-вымогатели не могут зашифровать то, что защищает ядро. Восстановление означает переключение указателя, а не восстановление терабайтов.",
+          "traditionalLabel": "Облако / устаревшее DR",
+          "rediaccLabel": "Rediacc (self-hosted)",
+          "rows": [
+            {
+              "traditional": "Поюзерное лицензирование: расходы растут с командой",
+              "rediacc": "Лицензирование по машинам: расходы масштабируются с оборудованием"
+            },
+            {
+              "traditional": "Восстановление: часы на восстановление из облачного бэкапа",
+              "rediacc": "Восстановление: секунды на переключение снапшота btrfs"
+            },
+            {
+              "traditional": "Привязка к вендору: данные в проприетарном формате",
+              "rediacc": "Открытый формат: ваши данные в вашей файловой системе"
+            },
+            {
+              "traditional": "Комплаенс: доверяй аттестации вендора",
+              "rediacc": "Комплаенс: проверяй на собственной инфраструктуре"
+            }
+          ]
+        },
+        "benefits": {
+          "overline": "СТРАТЕГИЧЕСКАЯ ЦЕННОСТЬ",
+          "title": "Что Rediacc значит для вашей организации",
+          "items": [
+            {
+              "title": "TCO ниже на 60%",
+              "description": "Устраните облачную наценку, поюзерное лицензирование и плату за исходящий трафик. Работайте на оборудовании, которое уже у вас есть.",
+              "icon": "trend-up"
+            },
+            {
+              "title": "Минуты, а не часы",
+              "description": "Полное аварийное восстановление менее чем за 5 минут. Снапшоты btrfs означают, что восстановление — это переключение указателя, а не задание на восстановление.",
+              "icon": "zap"
+            },
+            {
+              "title": "Нулевая привязка к вендору",
+              "description": "Ваши данные остаются на вашей инфраструктуре в открытых форматах. Смените провайдера или управляйте сами — выбор всегда за вами.",
+              "icon": "lock"
+            }
+          ]
+        },
+        "comparison": {
+          "overline": "КОНКУРЕНТНЫЙ ЛАНДШАФТ",
+          "title": "Как Rediacc выглядит на фоне конкурентов",
+          "description": "Корпоративные инструменты резервного копирования берут плату за сокет, за ВМ или за ТБ. Rediacc берёт плату за машину — и работает на вашем оборудовании.",
+          "capabilityLabel": "Возможность",
+          "features": [
+            {
+              "name": "Self-hosted / on-premises",
+              "values": ["check", "cross", "check", "cross", "rediacc"]
+            },
+            {
+              "name": "Иммутабельность на уровне файловой системы",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "Мгновенное восстановление (<5 мин)",
+              "values": ["cross", "cross", "cross", "check", "rediacc"]
+            },
+            {
+              "name": "Снапшоты без копирования (CoW)",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "Тарификация по машинам (без поюзерной)",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "Автоматическая верификация восстановления",
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "Без привязки к вендору",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            }
+          ]
+        },
+        "socialProof": {
+          "quote": "Мы перенесли 47 продакшен-нагрузок от крупного облачного провайдера на Rediacc на собственном оборудовании. Расходы на инфраструктуру снизились на 62% в первом квартале. Когда произошёл первый инцидент, восстановление заняло 3 минуты вместо 4 часов, которые обещал предыдущий инструмент.",
+          "author": "Технический директор",
+          "company": "SaaS-компания, 200 сотрудников",
+          "impact": {
+            "beforeLabel": "Облачные расходы",
+            "beforeValue": "$18K/мес",
+            "afterLabel": "С Rediacc",
+            "afterValue": "$6.8K/мес",
+            "improvement": "Снижение расходов на инфраструктуру на 62%"
+          }
+        },
+        "shareWithTeam": {
+          "overline": "ПОДЕЛИТЕСЬ С КОМАНДОЙ",
+          "title": "Начните с вашей DevOps-команды",
+          "description": "Вашим инженерам понравится CLI-ориентированный рабочий процесс и мгновенные среды. Поделитесь техническим обзором с вашей DevOps-командой.",
+          "ctaText": "Поделиться обзором для DevOps",
+          "ctaSlug": "for-devops"
+        },
+        "relatedSolutions": {
+          "title": "Изучите платформу"
+        },
+        "bottomCta": {
+          "title": "Посмотрите в действии",
+          "description": "Запланируйте 30-минутный обзор архитектуры с нашей командой. Мы покажем проекции TCO для вашей конкретной инфраструктуры.",
+          "primaryCta": "Запросить демо"
+        }
+      },
+      "forCeos": {
+        "meta": {
+          "title": "Для CEO и основателей — Предсказуемые расходы, нулевая привязка к вендору | Rediacc",
+          "description": "Self-hosted защита инфраструктуры с предсказуемыми ценами, нулевой привязкой к вендору и полным контролем над данными. Защитите бизнес без облачных счетов.",
+          "keywords": "CEO, расходы на инфраструктуру, self-hosted, защита данных, привязка к вендору, предсказуемое ценообразование, непрерывность бизнеса, малый и средний бизнес"
+        },
+        "hero": {
+          "badge": "ДЛЯ CEO И ОСНОВАТЕЛЕЙ",
+          "title": "Предсказуемые расходы на инфраструктуру. Нулевая привязка к вендору.",
+          "subtitle": "Защитите данные бизнеса на оборудовании, которым вы владеете. Единая фиксированная цена за машину — без поюзерных тарифов, без неожиданных облачных счетов, без вендора, удерживающего ваши данные в заложниках.",
+          "primaryCta": "Посмотреть цены",
+          "secondaryCta": "Связаться с отделом продаж"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "prompt": "$",
+              "cmd": "rdc status",
+              "flag": "--summary",
+              "value": ""
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "check",
+              "text": "3 машины под мониторингом",
+              "result": "healthy"
+            },
+            {
+              "type": "check",
+              "text": "47 репозиториев защищено",
+              "result": "all backed up"
+            },
+            {
+              "type": "check",
+              "text": "Последний бэкап проверен",
+              "result": "2 hours ago"
+            },
+            {
+              "type": "check",
+              "text": "Готовность к восстановлению",
+              "result": "< 5 min"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "success",
+              "text": "Все системы защищены. Ноль инцидентов в этом квартале."
+            },
+            {
+              "type": "summary",
+              "pairs": [
+                { "label": "Аптайм", "value": "99.99%" },
+                { "label": "Защищено", "value": "2.4 TB" },
+                { "label": "Ежемесячная стоимость", "value": "$204" },
+                { "label": "vs Облако", "value": "−62%" }
+              ]
+            }
+          ]
+        },
+        "stats": [
+          { "number": "$204/мес", "label": "Всё включено", "icon": "tag" },
+          { "number": "99.99%", "label": "Гарантия аптайма", "icon": "check-circle" },
+          { "number": "0", "label": "Поюзерных тарифов", "icon": "users" }
+        ],
+        "problem": {
+          "overline": "ПРОБЛЕМА",
+          "title": "Облачные счета растут. Ваши данные на самом деле не ваши.",
+          "description": "Ваша команда начинала с небольшого облачного счёта. Теперь это третья по величине статья расходов, растущая на 20% ежегодно. Поюзерная тарификация наказывает за найм. Ваши данные хранятся в чужом дата-центре, в проприетарном формате. Если вы хотите уйти — с вас берут плату за исходящий трафик для доступа к собственным данным.",
+          "statCallouts": [
+            {
+              "number": "20%",
+              "text": "ежегодный рост средних расходов на облако",
+              "source": "Flexera 2025",
+              "ref": 1
+            },
+            {
+              "number": "98%",
+              "text": "технологических решений в СМБ принимаются непосредственно топ-менеджерами",
+              "source": "TrustRadius 2024",
+              "ref": 2
+            },
+            {
+              "number": "$9.36M",
+              "text": "средняя стоимость утечки данных",
+              "source": "IBM 2024",
+              "ref": 3
+            }
+          ],
+          "timeline": {
+            "oldLabel": "Облачная инфраструктура",
+            "oldSteps": [
+              { "day": "Г1", "text": "$5K/мес" },
+              { "day": "Г2", "text": "$8K/мес" },
+              { "day": "Г3", "text": "$14K/мес" },
+              { "day": "Г4", "text": "$22K/мес" },
+              { "day": "Г5", "text": "Привязаны" }
+            ],
+            "newLabel": "С Rediacc",
+            "newSteps": ["$204/мес", "Фикс.", "Ваше"]
+          }
+        },
+        "calculator": {
+          "overline": "ЦИФРЫ",
+          "title": "Сколько вы можете сэкономить?",
+          "description": "Подвиньте ползунки под ваш бизнес. Увидьте реальную стоимость облака по сравнению с self-hosted.",
+          "headerTitle": "Рассчитайте вашу экономию",
+          "sliders": {
+            "devs": "Количество сотрудников",
+            "reqs": "Текущие ежемесячные расходы на облако ($)",
+            "wait": "Часы простоя в год"
+          },
+          "withoutTag": "Текущие облачные расходы",
+          "withTag": "С Rediacc",
+          "results": {
+            "blockedTime": "Годовая стоимость инфраструктуры",
+            "sprintCapacity": "Стоимость рисков простоя",
+            "contextSwitching": "Время восстановления",
+            "quarterlySlip": "Владение данными"
+          },
+          "annualLabel": "Общая годовая стоимость",
+          "withResults": {
+            "blockedTime": "На 60% меньше",
+            "sprintCapacity": "Минимизировано",
+            "contextSwitching": "<5 минут",
+            "quarterlySlip": "100% ваше"
+          },
+          "withAnnual": "Рассчитать →",
+          "footnote": "Оценки основаны на отраслевых моделях TCO. Фактическая экономия зависит от вашей текущей инфраструктуры и масштаба."
+        },
+        "benefits": {
+          "overline": "ЦЕННОСТЬ ДЛЯ БИЗНЕСА",
+          "title": "Что это значит для вашего бизнеса",
+          "items": [
+            {
+              "title": "Предсказуемые расходы",
+              "description": "Единая фиксированная цена за машину. Без поюзерных тарифов, без неожиданных счетов, без платы за исходящий трафик. Ваш бюджет остаётся предсказуемым по мере роста.",
+              "icon": "tag"
+            },
+            {
+              "title": "Ваши данные, ваш контроль",
+              "description": "Данные остаются на оборудовании, которым вы владеете, в открытых форматах. Ни один вендор не сможет удерживать ваши данные в заложниках или брать плату за доступ к ним.",
+              "icon": "lock"
+            },
+            {
+              "title": "Непрерывность бизнеса",
+              "description": "Полное аварийное восстановление менее чем за 5 минут. Иммутабельные бэкапы, которые недоступны для программ-вымогателей. Ваш бизнес продолжает работать.",
+              "icon": "shield"
+            }
+          ]
+        },
+        "socialProof": {
+          "quote": "Мы тратили $18 000 в месяц на облачную инфраструктуру для 47 рабочих нагрузок. После миграции на Rediacc на собственных серверах наш счёт снизился до $6 800 — а время восстановления сократилось с 4 часов до 3 минут. Окупаемость была очевидна в первый же месяц.",
+          "author": "CEO и основатель",
+          "company": "SaaS-стартап, 45 сотрудников",
+          "impact": {
+            "beforeLabel": "Ежемесячные расходы",
+            "beforeValue": "$18,000",
+            "afterLabel": "С Rediacc",
+            "afterValue": "$6,800",
+            "improvement": "Снижение расходов на 62%, мгновенное восстановление"
+          }
+        },
+        "shareWithTeam": {
+          "overline": "СЛЕДУЮЩИЙ ШАГ",
+          "title": "Поделитесь с вашим CTO",
+          "description": "Вашей технической команде нужно оценить архитектуру и интеграцию. Поделитесь обзором для CTO с техническими деталями, которые им нужны.",
+          "ctaText": "Поделиться обзором для CTO",
+          "ctaSlug": "for-ctos"
+        },
+        "relatedSolutions": {
+          "title": "Как это работает"
+        },
+        "bottomCta": {
+          "title": "Посмотрите цены",
+          "description": "Единая фиксированная цена за машину. Без поюзерных тарифов. Без сюрпризов. Начните с бесплатной Community-версии.",
+          "primaryCta": "Посмотреть цены"
+        }
+      }
+    },
+    "roiCalculator": {
+      "meta": {
+        "title": "ROI Calculator — Quantify Your Infrastructure Savings | Rediacc",
+        "description": "Calculate total cost of ownership savings, payback period, and ROI of switching to Rediacc self-hosted infrastructure.",
+        "keywords": "ROI calculator, TCO comparison, infrastructure savings, self-hosted ROI, payback period, backup cost reduction"
+      },
+      "overline": "CALCULATE YOUR ROI",
+      "title": "How much can Rediacc save your organization?",
+      "description": "Select your company size and adjust the inputs to see real-time TCO comparison, developer productivity gains, and payback period.",
+      "sizeSelect": {
+        "label": "Company size",
+        "smb": "SMB",
+        "smbDesc": "< 25 employees",
+        "mid": "Mid-Market",
+        "midDesc": "25–200 employees",
+        "enterprise": "Enterprise",
+        "enterpriseDesc": "200–1,000 employees",
+        "large": "Large Enterprise",
+        "largeDesc": "1,000+ employees"
+      },
+      "sliders": {
+        "servers": "Servers / workloads",
+        "developers": "Developers on team",
+        "dataTB": "Data volume (TB)",
+        "downtimeCostPerHour": "Downtime cost ($/hour)",
+        "incidentsPerYear": "Incidents per year",
+        "currentRtoHours": "Current RTO (hours)"
+      },
+      "advancedLabel": "Advanced assumptions",
+      "advancedSliders": {
+        "adminHourlyRate": "Admin hourly rate",
+        "devHourlyRate": "Developer hourly rate",
+        "adminFte": "Admin FTE for backup/DR",
+        "currentBackupSpendMonth": "Current backup spend ($/mo)",
+        "dataGrowthRate": "Annual data growth",
+        "envRequestsPerDevMonth": "Env requests / dev / month",
+        "currentProvisioningHours": "Current provisioning time (hrs)"
+      },
+      "summary": {
+        "annualSavings": "Annual savings",
+        "paybackPeriod": "Payback period",
+        "paybackUnit": "months",
+        "threeYearRoi": "3-Year ROI"
+      },
+      "categories": {
+        "tco": {
+          "title": "TCO Savings",
+          "currentTco": "Current annual TCO",
+          "rediaccTco": "Rediacc annual TCO",
+          "savings": "Annual TCO savings"
+        },
+        "devProductivity": {
+          "title": "Developer Productivity",
+          "hoursSaved": "Hours saved per year",
+          "dollarValue": "Dollar value",
+          "provisioningReduction": "Provisioning time"
+        },
+        "drAvailability": {
+          "title": "DR & Availability",
+          "currentRisk": "Current downtime risk",
+          "rediaccRisk": "With Rediacc",
+          "savings": "Annual DR savings",
+          "rtoImprovement": "RTO improvement"
+        },
+        "compliance": {
+          "title": "Storage, Compliance & Insurance",
+          "storageSavings": "Storage savings",
+          "bandwidthSavings": "Bandwidth savings",
+          "complianceSavings": "Compliance cost reduction",
+          "insuranceSavings": "Insurance premium reduction",
+          "auditTimeSaved": "Audit prep time saved"
+        }
+      },
+      "footnote": "Estimates based on industry benchmarks from ITIC, IBM/Ponemon, Sophos, Cortex, and KPMG research (2024). TCO includes infrastructure, administration, DR testing, and maintenance. Developer productivity uses a conservative 40% realization rate. DR savings based on RTO improvement using btrfs copy-on-write snapshots. Storage savings assume CoW efficiency vs. traditional backup chains. Actual results vary by workload and configuration.",
+      "references": {
+        "label": "Sources & References",
+        "items": [
+          {
+            "text": "ITIC, \"2024 Hourly Cost of Downtime Report.\" Over 90% of mid-large enterprises report downtime costs exceeding $300,000/hour. 41% of enterprises report $1M–$5M+ per hour.",
+            "url": "https://itic-corp.com/itic-2024-hourly-cost-of-downtime-report/"
+          },
+          {
+            "text": "IBM Security / Ponemon Institute, \"Cost of a Data Breach Report 2024.\" Average data breach cost: $4.88M (10% YoY increase). Organizations with IR teams that regularly tested their plans had 58% lower breach costs.",
+            "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
+          },
+          {
+            "text": "Sophos, \"The State of Ransomware 2024.\" Average recovery cost (excl. ransom): $2.73M, a 50% increase from $1.82M in 2023. 59% of organizations were hit by ransomware in the past year.",
+            "url": "https://www.sophos.com/en-us/content/state-of-ransomware"
+          },
+          {
+            "text": "Cortex, \"The 2024 State of Developer Productivity.\" 72% of new hires take 1+ month to submit first 3 meaningful PRs. 58% of engineering leaders report developers lose 5+ hours/week to inefficiencies.",
+            "url": "https://www.cortex.io/report/the-2024-state-of-developer-productivity"
+          },
+          {
+            "text": "KPMG, \"The 2023 KPMG SOX Report.\" Companies spend an average of 11,800 hours and $1.6M annually on SOX compliance programs.",
+            "url": "https://kpmg.com/us/en/articles/2023/kpmg-sox-report.html"
+          },
+          {
+            "text": "Veeam, \"2024 Ransomware Trends Report.\" Only 57% of compromised data is recoverable after a ransomware attack, leaving 43% unrecoverable.",
+            "url": "https://www.veeam.com/company/press-release/ransomware-continues-to-cause-mayhem-as-victims-are-unable-to-recover-43-percent-of-affected-data.html"
+          },
+          {
+            "text": "IDC, \"Worldwide Global DataSphere Forecast, 2024–2028.\" Data creation projected from 132.4 ZB (2023) to 393.9 ZB (2028), ~24% CAGR.",
+            "url": "https://www.marketresearch.com/IDC-v2477/Worldwide-IDC-Global-DataSphere-Forecast-36971010/"
+          },
+          {
+            "text": "Veeam R&D Forums, 2020–2024. Socket-to-VUL migration threads report 2x–3x cost multipliers for existing customers, with some high-density environments reaching up to 6x.",
+            "url": "https://forums.veeam.com/veeam-backup-replication-f2/phasing-out-our-socket-based-licensing-t74168.html"
+          }
+        ],
+        "disclaimer": "All figures are based on published industry research and public vendor documentation. TCO comparisons use illustrative Rediacc pricing for modeling purposes. Actual pricing and savings may differ based on specific deployment configurations, negotiated rates, and organizational requirements."
       }
     }
   },

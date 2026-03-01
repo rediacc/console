@@ -1,7 +1,7 @@
 #!/bin/bash
 # Run Account Portal E2E tests with Playwright
 #
-# Starts infrastructure (RustFS + backend API), installs Playwright browsers,
+# Starts infrastructure (backend API with SQLite), installs Playwright browsers,
 # runs E2E tests, and cleans up. Portable across CI platforms.
 #
 # Usage: run-account-e2e.sh [options]
@@ -66,9 +66,9 @@ cleanup() {
         kill "$BACKEND_PID" 2>/dev/null || true
         wait "$BACKEND_PID" 2>/dev/null || true
     fi
-    if [[ "$SKIP_SETUP" != "true" ]]; then
-        log_info "Stopping RustFS..."
-        cd "$ACCOUNT_DIR" && npm run test:teardown 2>/dev/null || true
+    if [[ "$SKIP_SETUP" != "true" ]] && [[ -f "$ACCOUNT_DIR/e2e-account.db" ]]; then
+        log_info "Removing E2E database..."
+        rm -f "$ACCOUNT_DIR/e2e-account.db" "$ACCOUNT_DIR/e2e-account.db-wal" "$ACCOUNT_DIR/e2e-account.db-shm" 2>/dev/null || true
     fi
     log_info "Cleanup complete"
 }
@@ -93,28 +93,6 @@ fi
 
 # Phase 2: Start infrastructure (unless --skip-setup)
 if [[ "$SKIP_SETUP" != "true" ]]; then
-    log_step "Starting RustFS (S3-compatible storage)..."
-    cd "$ACCOUNT_DIR"
-    if ! timeout 120 npm run test:setup; then
-        log_error "RustFS failed to start within 120 seconds"
-        exit 1
-    fi
-    cd "$REPO_ROOT"
-
-    log_step "Creating S3 bucket 'e2e-account'..."
-    cd "$ACCOUNT_DIR"
-    node --input-type=module -e "
-import { S3Client, CreateBucketCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
-const s3 = new S3Client({
-  endpoint: 'http://localhost:9100', region: 'us-east-1', forcePathStyle: true,
-  credentials: { accessKeyId: 'testadmin', secretAccessKey: 'testadmin' }
-});
-try { await s3.send(new HeadBucketCommand({ Bucket: 'e2e-account' })); }
-catch { await s3.send(new CreateBucketCommand({ Bucket: 'e2e-account' })); }
-console.log('Bucket e2e-account ready');
-"
-    cd "$REPO_ROOT"
-
     # Phase 2.5: Start stripe listen for real Stripe e2e tests (optional)
     STRIPE_LISTEN_WEBHOOK_SECRET=""
     if [[ -n "${STRIPE_SANDBOX_SECRET_KEY:-}" ]] && command -v stripe &>/dev/null; then
@@ -157,10 +135,7 @@ console.log('Bucket e2e-account ready');
         API_KEY="${API_KEY:?API_KEY must be set}" \
         JWT_SECRET="${JWT_SECRET:?JWT_SECRET must be set}" \
         ADMIN_EMAIL="${ADMIN_EMAIL:?ADMIN_EMAIL must be set}" \
-        S3_ENDPOINT="http://localhost:9100" \
-        S3_BUCKET="e2e-account" \
-        S3_ACCESS_KEY_ID="testadmin" \
-        S3_SECRET_ACCESS_KEY="testadmin" \
+        DATABASE_PATH="e2e-account.db" \
         STRIPE_WEBHOOK_SECRET="${STRIPE_LISTEN_WEBHOOK_SECRET:-}" \
         STRIPE_SANDBOX_WEBHOOK_SECRET="${STRIPE_SANDBOX_WEBHOOK_SECRET:-}" \
         STRIPE_SANDBOX_SECRET_KEY="${STRIPE_SANDBOX_SECRET_KEY:-}" \

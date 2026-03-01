@@ -12,14 +12,15 @@ import SPComparisonTable from './SPComparisonTable.astro';
 import SPSocialProof from './SPSocialProof.astro';
 import SPBottomCta from './SPBottomCta.astro';
 import SPTechStrip from './SPTechStrip.astro';
-import SPExploreSolutions from './SPExploreSolutions.astro';
-import SPReferences from './SPReferences.astro';
+import SPRelatedSolutions from './SPRelatedSolutions.astro';
+import SPShareWithTeam from './SPShareWithTeam.astro';
 import { createTranslator } from '../../i18n/utils';
 import type { Language } from '../../i18n/types';
-import { SOLUTION_PAGES, CATEGORY_CTA_MAP } from '../../config/solution-pages';
+import { PERSONA_PAGES, PERSONA_CTA_MAP } from '../../config/persona-pages';
 import { SITE_URL, EXTERNAL_LINKS } from '../../config/constants';
 import Breadcrumb from '../Breadcrumb.astro';
 import '../../styles/solution-pages.css';
+import '../../styles/persona-pages.css';
 
 interface Props {
   lang: Language;
@@ -27,20 +28,20 @@ interface Props {
 }
 
 const { lang, slug } = Astro.props;
-const config = SOLUTION_PAGES[slug];
+const config = PERSONA_PAGES[slug];
 
 if (!config) {
   return Astro.redirect(`/${lang}/`);
 }
 
 const { t, to } = createTranslator(lang);
-const content = to(`pages.solutionPages.${config.contentKey}` as any);
-const metaPath = `pages.solutionPages.${config.contentKey}.meta`;
+const content = to(`pages.personaPages.${config.contentKey}` as any);
+const metaPath = `pages.personaPages.${config.contentKey}.meta`;
 
 const has = (section: string) => config.sections.includes(section as any);
 
-// Resolve CTA href: per-page override → category default
-const rawCtaHref = config.ctaHref ?? CATEGORY_CTA_MAP[config.category];
+// Resolve CTA href: per-page override → persona default
+const rawCtaHref = config.ctaHref ?? PERSONA_CTA_MAP[config.personaType];
 const ctaHref = rawCtaHref === 'CONSULTATION'
   ? EXTERNAL_LINKS.SCHEDULE_CONSULTATION
   : `/${lang}${rawCtaHref}`;
@@ -49,8 +50,7 @@ const ctaHref = rawCtaHref === 'CONSULTATION'
 const pageTitle = (content as any).hero?.title ?? slug;
 const breadcrumbItems = [
   { name: t('navigation.home'), url: `/${lang}/` },
-  { name: t('navigation.solutions'), url: `/${lang}/#solutions` },
-  { name: pageTitle, url: `/${lang}/solutions/${slug}` },
+  { name: pageTitle, url: `/${lang}/${slug}` },
 ];
 ---
 
@@ -61,7 +61,7 @@ const breadcrumbItems = [
   keywords={t(`${metaPath}.keywords`)}
   ogType="website"
 >
-  <div class="sp-page">
+  <div class="sp-page" data-persona={config.personaType}>
     <Breadcrumb items={breadcrumbItems} class="sp-breadcrumb" />
     {has('hero') && (
       <SPHero hero={(content as any).hero} ctaHref={ctaHref} terminal={(content as any).terminal} />
@@ -106,24 +106,28 @@ const breadcrumbItems = [
       <SPSocialProof socialProof={(content as any).socialProof} />
     )}
 
-    {has('bottomCta') && (
-      <SPBottomCta bottomCta={(content as any).bottomCta} ctaHref={ctaHref} />
-    )}
-
     {has('techStrip') && config.techStrip && (
       <SPTechStrip techStrip={(content as any).techStrip} items={config.techStrip} />
     )}
 
-    {has('exploreSolutions') && (
-      <SPExploreSolutions
-        explore={(content as any).explore}
-        currentSlug={slug}
+    {has('relatedSolutions') && config.relatedSolutions && (
+      <SPRelatedSolutions
+        solutions={config.relatedSolutions}
+        content={(content as any).relatedSolutions}
         lang={lang}
       />
     )}
 
-    {has('references') && (
-      <SPReferences references={(content as any).references} />
+    {has('shareWithTeam') && (
+      <SPShareWithTeam
+        content={(content as any).shareWithTeam}
+        personaType={config.personaType}
+        lang={lang}
+      />
+    )}
+
+    {has('bottomCta') && (
+      <SPBottomCta bottomCta={(content as any).bottomCta} ctaHref={ctaHref} />
     )}
   </div>
 
@@ -133,7 +137,7 @@ const breadcrumbItems = [
       name: (content as any).hero?.title ?? '',
       description: t(`${metaPath}.description`),
       serviceType: (content as any).hero?.badge ?? '',
-      url: `${SITE_URL}/${lang}/solutions/${slug}`,
+      url: `${SITE_URL}/${lang}/${slug}`,
     }}
   />
 </BaseLayout>

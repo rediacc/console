@@ -10,12 +10,13 @@ interface Props {
     primaryCta: string;
     secondaryCta?: string;
   };
+  ctaHref: string;
   terminal?: {
     lines: any[];
   };
 }
 
-const { hero, terminal } = Astro.props;
+const { hero, ctaHref, terminal } = Astro.props;
 ---
 
 <section class="sp-hero">
@@ -30,7 +31,7 @@ const { hero, terminal } = Astro.props;
       <p class="sp-hero-differentiator">{hero.differentiator}</p>
     )}
     <div class="sp-hero-ctas">
-      <a href="#" class="sp-btn-primary">
+      <a href={ctaHref} class="sp-btn-primary">
         {hero.primaryCta}
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </a>

@@ -1,16 +1,7 @@
 import React from 'react';
-import { SOLUTION_PAGES, type SolutionCategory } from '../config/solution-pages';
+import { CATEGORY_ORDER, SOLUTION_PAGES } from '../config/solution-pages';
 import { useTranslation } from '../i18n/react';
 import type { Language } from '../i18n/types';
-
-const CATEGORY_ORDER = [
-  'ransomware',
-  'multi-cloud',
-  'backups',
-  'encryption',
-  'dev-env',
-  'defense',
-] as const satisfies readonly SolutionCategory[];
 
 interface WindowWithImageModal extends Window {
   openImageModal?: (src: string, alt: string) => void;
