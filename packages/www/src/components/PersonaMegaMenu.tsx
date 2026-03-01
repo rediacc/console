@@ -10,14 +10,34 @@ interface PersonaMegaMenuProps {
 }
 
 const TerminalIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    width="28"
+    height="28"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <polyline points="4 17 10 11 4 5" />
     <line x1="12" y1="19" x2="20" y2="19" />
   </svg>
 );
 
 const BuildingIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    width="28"
+    height="28"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <rect x="4" y="2" width="16" height="20" rx="2" />
     <path d="M9 22V12h6v10" />
     <path d="M8 6h.01M16 6h.01M12 6h.01M8 10h.01M16 10h.01M12 10h.01" />
@@ -25,7 +45,17 @@ const BuildingIcon = () => (
 );
 
 const BriefcaseIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    width="28"
+    height="28"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <rect x="2" y="7" width="20" height="14" rx="2" />
     <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
     <path d="M2 13h20" />
@@ -46,7 +76,9 @@ const PersonaMegaMenu: React.FC<PersonaMegaMenuProps> = ({ isOpen, onToggle, onC
   const cardRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const personas = to('navigation.personas') as Record<string, { tagline: string; cta: string }> | undefined;
+  const personas = to('navigation.personas') as
+    | Record<string, { tagline: string; cta: string }>
+    | undefined;
 
   // Click-outside
   const handleClickOutside = useCallback(
@@ -59,7 +91,7 @@ const PersonaMegaMenu: React.FC<PersonaMegaMenuProps> = ({ isOpen, onToggle, onC
         onClose();
       }
     },
-    [onClose],
+    [onClose]
   );
 
   useEffect(() => {
@@ -106,7 +138,7 @@ const PersonaMegaMenu: React.FC<PersonaMegaMenuProps> = ({ isOpen, onToggle, onC
           break;
       }
     },
-    [isOpen, onClose],
+    [isOpen, onClose]
   );
 
   useEffect(() => {
@@ -188,7 +220,9 @@ const PersonaMegaMenu: React.FC<PersonaMegaMenuProps> = ({ isOpen, onToggle, onC
               return (
                 <a
                   key={slug}
-                  ref={(el) => { cardRefs.current[idx] = el; }}
+                  ref={(el) => {
+                    cardRefs.current[idx] = el;
+                  }}
                   href={`/${currentLang}/${slug}`}
                   className="persona-card"
                   role="menuitem"
@@ -203,7 +237,13 @@ const PersonaMegaMenu: React.FC<PersonaMegaMenuProps> = ({ isOpen, onToggle, onC
                   <span className="persona-card-cta">
                     {persona?.cta ?? ''}
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                      <path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path
+                        d="M3 8h10m0 0L9 4m4 4L9 12"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                   </span>
                 </a>

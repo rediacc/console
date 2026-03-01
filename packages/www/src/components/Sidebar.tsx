@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { CATEGORY_ORDER, SOLUTION_PAGES } from '../config/solution-pages';
 import type { SolutionCategory } from '../config/solution-pages';
+import { CATEGORY_ORDER, SOLUTION_PAGES } from '../config/solution-pages';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
 import { CATEGORY_ICONS } from './CategoryIcons';
@@ -41,6 +41,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   }, [categories, currentLang, to]);
 
   const allSolutionItems = solutionCategories.flatMap((cat) => cat.items);
+
+  const personaItems = [
+    { href: `/${currentLang}/for-devops`, label: t('navigation.forDevops') },
+    { href: `/${currentLang}/for-ctos`, label: t('navigation.forCtos') },
+    { href: `/${currentLang}/for-ceos`, label: t('navigation.forCeos') },
+  ];
 
   const bottomNavItems = [
     { href: `/${currentLang}/#pricing`, label: t('navigation.pricing') },
@@ -266,30 +272,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           {/* Persona links */}
           <div className="sidebar-personas-group">
             <span className="sidebar-personas-label">{t('navigation.builtForYourRole')}</span>
-            <a
-              href={`/${currentLang}/for-devops`}
-              className={`sidebar-link sidebar-persona-link${isActive(`/${currentLang}/for-devops`) ? ' active' : ''}`}
-              onClick={handleLinkClick}
-              tabIndex={isOpen ? 0 : -1}
-            >
-              {t('navigation.forDevops')}
-            </a>
-            <a
-              href={`/${currentLang}/for-ctos`}
-              className={`sidebar-link sidebar-persona-link${isActive(`/${currentLang}/for-ctos`) ? ' active' : ''}`}
-              onClick={handleLinkClick}
-              tabIndex={isOpen ? 0 : -1}
-            >
-              {t('navigation.forCtos')}
-            </a>
-            <a
-              href={`/${currentLang}/for-ceos`}
-              className={`sidebar-link sidebar-persona-link${isActive(`/${currentLang}/for-ceos`) ? ' active' : ''}`}
-              onClick={handleLinkClick}
-              tabIndex={isOpen ? 0 : -1}
-            >
-              {t('navigation.forCeos')}
-            </a>
+            {personaItems.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className={`sidebar-link sidebar-persona-link${isActive(item.href) ? ' active' : ''}`}
+                onClick={handleLinkClick}
+                tabIndex={isOpen ? 0 : -1}
+              >
+                {item.label}
+              </a>
+            ))}
           </div>
 
           {/* Blog, Docs, Contact */}

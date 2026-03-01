@@ -178,6 +178,32 @@ const ALLOWED_IDENTICAL = new Set([
   'Enterprise',
   'Multi-Cloud',
   'MULTI-CLOUD',
+  // Solution page technical terms
+  'BTRFS COW',
+  'AES-256-GCM',
+  'SHA-256',
+  'AES-256',
+  'Live',
+  'Down',
+  // ROI calculator
+  'SMB',
+  'ROI Calculator',
+  'Mid-Market',
+  'Large Enterprise',
+  // Persona page identifiers
+  'CTO',
+  'ARCHITECTURE',
+  // Architecture / download labels (technical, not translated)
+  'Intel (x64)',
+  'ARM64',
+  'ARMv7',
+  'Apple Silicon (ARM64)',
+  'Rediacc Desktop & CLI',
+  // Package manager labels (brand names + OS names)
+  'Debian/Ubuntu (.deb)',
+  'APT (Debian / Ubuntu)',
+  'DNF (Fedora / RHEL)',
+  'Homebrew (macOS / Linux)',
 ]);
 
 // Patterns for strings that should not be translated (placeholders, format strings)
@@ -191,6 +217,24 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
   /^\/[a-z]+\//, // Paths
   /\.(json|yaml|xml|txt|log|conf)$/i, // File extensions
   /^(docker|npm|git|ssh|curl|wget|sudo|rclone|rdc)\s/, // Commands
+  /\.id$/, // Section anchor IDs (e.g. sections.introduction.id = "introduction")
+  /\.cardClass$/, // CSS class names in solution pages
+  /\.icon$/, // Icon identifiers
+  /\.command$/, // CLI command strings in bottomCta/hero sections
+  /\.ctaSlug$/, // CTA slug identifiers for persona pages
+  /^~?\$[\d,.]+$/, // Dollar amounts ($0, $990, ~$200, $18,000)
+  /^@\w+$/, // Social handles (@rediacc)
+  /\.cloneVisual\.\w+\.title$/, // Visual diagram labels (dev-sarah, feature-auth-v2, etc.)
+  /\.cloneVisual\.\w+\.status$/, // Visual diagram status labels
+  /\.cloneVisual\.arrow\.(label|time)$/, // Visual arrow annotations
+  /\.cloneVisual\.\w+\.patchInfo$/, // Patch info strings in visual diagrams
+  /\.cloneVisual\.\w+\.size$/, // Size labels in visual diagrams
+  /\.calculator\.withResults\.\w+$/, // Calculator result values
+  /\.calculator\.withAnnual$/, // Annual calculator values
+  /\.techDiff\.rediaccLabel$/, // Rediacc label with technical suffix (brand + tech term)
+  /\.imageModal\.indicator$/, // Template format string {{current}} / {{total}}
+  /^[\d,]+$/, // Comma-separated numbers (5,000 etc.)
+  /\bRediacc\b.*\b(btrfs|CoW|Copy-on-Write|send\/receive)\b/, // Rediacc + technical term combos
   /^\{\{[^}]+\}\}$/, // Template-only strings
   /^[A-Z]\{\{/, // Format strings starting with letter + template
   /^v\{\{version\}\}$/, // Version format

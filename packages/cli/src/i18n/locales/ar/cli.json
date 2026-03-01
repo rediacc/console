@@ -341,13 +341,6 @@
         "description": "مسح القيم الافتراضية (الكل أو مفتاح معين)",
         "keyCleared": "تم مسح \"{{key}}\""
       },
-      "recover": {
-        "description": "استعادة الإعدادات من ملف النسخة الاحتياطية (.bak)",
-        "noBackup": "لم يتم العثور على نسخة احتياطية للإعدادات \"{{name}}\"",
-        "confirm": "استعادة الإعدادات \"{{name}}\" من النسخة الاحتياطية؟",
-        "success": "تمت استعادة الإعدادات \"{{name}}\" من النسخة الاحتياطية (الإصدار {{version}})",
-        "failed": "فشلت استعادة الإعدادات \"{{name}}\" من النسخة الاحتياطية"
-      },
       "delete": {
         "description": "حذف ملف إعدادات",
         "success": "تم حذف الإعدادات \"{{name}}\""
@@ -392,6 +385,13 @@
         "installingProxy": "جاري تثبيت وتشغيل البروكسي...",
         "proxyInstallWarning": "فشل تثبيت البروكسي (الرمز {{code}}). قم بالتشغيل يدوياً: sudo renet proxy install",
         "success": "تم دفع إعدادات البنية التحتية إلى \"{{name}}\""
+      },
+      "recover": {
+        "confirm": "استعادة الإعدادات \"{{name}}\" من النسخة الاحتياطية؟",
+        "description": "استعادة الإعدادات من ملف النسخة الاحتياطية (.bak)",
+        "failed": "فشلت استعادة الإعدادات \"{{name}}\" من النسخة الاحتياطية",
+        "noBackup": "لم يتم العثور على نسخة احتياطية للإعدادات \"{{name}}\"",
+        "success": "تمت استعادة الإعدادات \"{{name}}\" من النسخة الاحتياطية (الإصدار {{version}})"
       },
       "removeMachine": {
         "description": "إزالة آلة من الإعدادات الحالية",
@@ -1198,6 +1198,50 @@
         "pushed": "تم الدفع إلى المتجر \"{{store}}\""
       }
     },
+    "subscription": {
+      "description": "إدارة تراخيص الجهاز والاشتراك",
+      "login": {
+        "browserFailed": "تعذر فتح المتصفح تلقائياً. يرجى زيارة الرابط أعلاه.",
+        "description": "المصادقة باستخدام رمز API من بوابة الويب",
+        "expired": "انتهت مهلة التفويض. يرجى المحاولة مرة أخرى.",
+        "initFailed": "فشل بدء تسجيل الدخول. هل الخادم يعمل؟",
+        "machines": "الأجهزة: {{active}}/{{max}}",
+        "openBrowser": "قم بزيارة هذا الرابط للتفويض:",
+        "plan": "الخطة: {{plan}}",
+        "polling": "في انتظار الموافقة (اضغط Ctrl+C للإلغاء)...",
+        "success": "تم تسجيل الدخول بنجاح",
+        "tokenInvalid": "يجب أن يبدأ الرمز بـ rdt_",
+        "tokenPrompt": "أدخل رمز API الخاص بك (من بوابة الويب):",
+        "validated": "تم التحقق من الرمز",
+        "validating": "جارٍ التحقق من الرمز...",
+        "waitingApproval": "في انتظار التفويض من المتصفح..."
+      },
+      "refresh": {
+        "description": "تحديث ترخيص الجهاز",
+        "refreshed": "تم تحديث الترخيص",
+        "refreshing": "جارٍ تحديث الترخيص...",
+        "success": "تم تحديث وتثبيت الترخيص"
+      },
+      "status": {
+        "description": "عرض حالة الاشتراك والترخيص",
+        "expired": "  انتهت صلاحية الترخيص — شغّل `rdc subscription refresh`",
+        "expires": "  الانتهاء:  {{expiresAt}}",
+        "issued": "  الإصدار:   {{issuedAt}}",
+        "localLicense": "الترخيص المحلي:",
+        "machine": "  الجهاز:   {{machineId}}",
+        "noLicense": "لا يوجد ترخيص محلي مثبت.",
+        "parseFailed": "  تعذر تحليل ملف الترخيص",
+        "plan": "  الخطة:    {{plan}}",
+        "remote": "\nالاشتراك البعيد:",
+        "remoteMachine": "    - {{id}}... (آخر ظهور: {{lastSeen}})",
+        "remoteMachines": "  الأجهزة: {{active}}/{{max}}",
+        "remotePlan": "  الخطة:    {{plan}}",
+        "remoteStatus": "  الحالة:   {{status}}",
+        "sequence": "  التسلسل:  {{sequenceNumber}}",
+        "statusLabel": "  الحالة:   {{status}}",
+        "valid": "  صالح (ينتهي خلال {{mins}} دقيقة)"
+      }
+    },
     "sync": {
       "cancelled": "تم إلغاء المزامنة.",
       "description": "نقل الملفات بين المستودعات المحلية والبعيدة عبر rsync",
@@ -1413,50 +1457,6 @@
         "noConnections": "لا توجد اتصالات VS Code SSH مكونة.",
         "total": "\nالإجمالي: {{count}} اتصال(اتصالات)"
       }
-    },
-    "subscription": {
-      "description": "إدارة تراخيص الجهاز والاشتراك",
-      "login": {
-        "description": "المصادقة باستخدام رمز API من بوابة الويب",
-        "tokenPrompt": "أدخل رمز API الخاص بك (من بوابة الويب):",
-        "tokenInvalid": "يجب أن يبدأ الرمز بـ rdt_",
-        "validating": "جارٍ التحقق من الرمز...",
-        "validated": "تم التحقق من الرمز",
-        "success": "تم تسجيل الدخول بنجاح",
-        "plan": "الخطة: {{plan}}",
-        "machines": "الأجهزة: {{active}}/{{max}}",
-        "openBrowser": "قم بزيارة هذا الرابط للتفويض:",
-        "waitingApproval": "في انتظار التفويض من المتصفح...",
-        "polling": "في انتظار الموافقة (اضغط Ctrl+C للإلغاء)...",
-        "expired": "انتهت مهلة التفويض. يرجى المحاولة مرة أخرى.",
-        "browserFailed": "تعذر فتح المتصفح تلقائياً. يرجى زيارة الرابط أعلاه.",
-        "initFailed": "فشل بدء تسجيل الدخول. هل الخادم يعمل؟"
-      },
-      "status": {
-        "description": "عرض حالة الاشتراك والترخيص",
-        "localLicense": "الترخيص المحلي:",
-        "plan": "  الخطة:    {{plan}}",
-        "statusLabel": "  الحالة:   {{status}}",
-        "machine": "  الجهاز:   {{machineId}}",
-        "issued": "  الإصدار:   {{issuedAt}}",
-        "expires": "  الانتهاء:  {{expiresAt}}",
-        "sequence": "  التسلسل:  {{sequenceNumber}}",
-        "expired": "  انتهت صلاحية الترخيص — شغّل `rdc subscription refresh`",
-        "valid": "  صالح (ينتهي خلال {{mins}} دقيقة)",
-        "parseFailed": "  تعذر تحليل ملف الترخيص",
-        "noLicense": "لا يوجد ترخيص محلي مثبت.",
-        "remote": "\nالاشتراك البعيد:",
-        "remotePlan": "  الخطة:    {{plan}}",
-        "remoteStatus": "  الحالة:   {{status}}",
-        "remoteMachines": "  الأجهزة: {{active}}/{{max}}",
-        "remoteMachine": "    - {{id}}... (آخر ظهور: {{lastSeen}})"
-      },
-      "refresh": {
-        "description": "تحديث ترخيص الجهاز",
-        "refreshing": "جارٍ تحديث الترخيص...",
-        "refreshed": "تم تحديث الترخيص",
-        "success": "تم تحديث وتثبيت الترخيص"
-      }
     }
   },
   "common": {
@@ -1604,56 +1604,6 @@
       "required": "مطلوب"
     }
   },
-  "help": {
-    "examples": "أمثلة:",
-    "cli": {
-      "machineInfo": "عرض حالة الجهاز",
-      "termRepo": "SSH إلى المستودع",
-      "repoUp": "نشر خدمات المستودع",
-      "syncUpload": "رفع الملفات إلى المستودع"
-    },
-    "machine": {
-      "info": "عرض حالة الجهاز الكاملة",
-      "containers": "عرض الحاويات قيد التشغيل",
-      "health": "فحص صحة الجهاز لـ CI/CD"
-    },
-    "repo": {
-      "create": "إنشاء مستودع مشفر",
-      "up": "نشر مع التحميل التلقائي",
-      "down": "إيقاف الخدمات",
-      "fork": "نسخ CoW للاختبار"
-    },
-    "term": {
-      "machine": "SSH إلى الجهاز",
-      "repo": "SSH إلى المستودع (DOCKER_HOST تلقائي)",
-      "command": "تنفيذ أمر بدون shell تفاعلي"
-    },
-    "vscode": {
-      "machine": "فتح الجهاز في VS Code",
-      "repo": "فتح المستودع في VS Code"
-    },
-    "config": {
-      "init": "إنشاء تكوين مسمى مع مفتاح SSH",
-      "addMachine": "إضافة جهاز إلى التكوين",
-      "setupMachine": "تشغيل الإعداد على جهاز بعيد",
-      "setMachine": "تعيين الجهاز الافتراضي"
-    },
-    "store": {
-      "add": "إضافة واجهة تخزين S3",
-      "push": "دفع التكوين إلى جميع المتاجر",
-      "pull": "سحب التكوين من متجر"
-    },
-    "sync": {
-      "upload": "رفع الملفات المحلية إلى المستودع",
-      "download": "تنزيل ملفات المستودع محلياً",
-      "status": "عرض حالة المزامنة"
-    },
-    "backup": {
-      "push": "دفع نسخة احتياطية إلى التخزين",
-      "pull": "سحب نسخة احتياطية من التخزين",
-      "list": "عرض النسخ الاحتياطية على التخزين"
-    }
-  },
   "errors": {
     "activationFailed": "فشل التفعيل",
     "affectedChildClones": ". النسخ المتأثرة: {{clones}}. احذف أو ارقِ النسخ الفرعية أولاً.",
@@ -1703,6 +1653,9 @@
     "repositoryRequired": "اسم المستودع مطلوب. استخدم --repository <name>.",
     "resourceNotFound": "{{resource}} غير موجود",
     "sshKeyNotFound": "لم يتم العثور على مفتاح SSH: {{path}}",
+    "subscription": {
+      "notLoggedIn": "لم يتم تسجيل الدخول. شغّل `rdc subscription login` أولاً."
+    },
     "sync": {
       "localPathNotFound": "المسار المحلي غير موجود: {{path}}",
       "noHostKey": "الآلة '{{machine}}' لا تحتوي على مفتاح مضيف مكون في الخزينة",
@@ -1738,13 +1691,61 @@
       "noIpAddress": "الآلة '{{machine}}' لا تحتوي على عنوان IP مكون",
       "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون",
       "notFound": "لم يتم العثور على VS Code.\n\nالرجاء التثبيت من: https://code.visualstudio.com/\nأو قم بتعيين متغير البيئة REDIACC_VSCODE_PATH."
+    }
+  },
+  "help": {
+    "backup": {
+      "list": "عرض النسخ الاحتياطية على التخزين",
+      "pull": "سحب نسخة احتياطية من التخزين",
+      "push": "دفع نسخة احتياطية إلى التخزين"
     },
-    "subscription": {
-      "notLoggedIn": "لم يتم تسجيل الدخول. شغّل `rdc subscription login` أولاً."
+    "cli": {
+      "machineInfo": "عرض حالة الجهاز",
+      "repoUp": "نشر خدمات المستودع",
+      "syncUpload": "رفع الملفات إلى المستودع",
+      "termRepo": "SSH إلى المستودع"
+    },
+    "config": {
+      "addMachine": "إضافة جهاز إلى التكوين",
+      "init": "إنشاء تكوين مسمى مع مفتاح SSH",
+      "setMachine": "تعيين الجهاز الافتراضي",
+      "setupMachine": "تشغيل الإعداد على جهاز بعيد"
+    },
+    "examples": "أمثلة:",
+    "machine": {
+      "containers": "عرض الحاويات قيد التشغيل",
+      "health": "فحص صحة الجهاز لـ CI/CD",
+      "info": "عرض حالة الجهاز الكاملة"
+    },
+    "repo": {
+      "create": "إنشاء مستودع مشفر",
+      "down": "إيقاف الخدمات",
+      "fork": "نسخ CoW للاختبار",
+      "up": "نشر مع التحميل التلقائي"
+    },
+    "store": {
+      "add": "إضافة واجهة تخزين S3",
+      "pull": "سحب التكوين من متجر",
+      "push": "دفع التكوين إلى جميع المتاجر"
+    },
+    "sync": {
+      "download": "تنزيل ملفات المستودع محلياً",
+      "status": "عرض حالة المزامنة",
+      "upload": "رفع الملفات المحلية إلى المستودع"
+    },
+    "term": {
+      "command": "تنفيذ أمر بدون shell تفاعلي",
+      "machine": "SSH إلى الجهاز",
+      "repo": "SSH إلى المستودع (DOCKER_HOST تلقائي)"
+    },
+    "vscode": {
+      "machine": "فتح الجهاز في VS Code",
+      "repo": "فتح المستودع في VS Code"
     }
   },
   "options": {
     "activationCode": "رمز التفعيل من البريد الإلكتروني",
+    "apiToken": "رمز API (rdt_...)",
     "apiUrl": "عنوان URL للـ API",
     "bridge": "اسم الجسر",
     "cleanupAll": "إزالة جميع إعدادات SSH الخاصة بـ rediacc",
@@ -1827,6 +1828,7 @@
     "searchInField": "البحث في {{field}}",
     "searchQueue": "البحث في معرف المهمة والفريق والآلة والجسر",
     "searchRepos": "تصفية المستودعات حسب الاسم",
+    "serverUrl": "عنوان خادم الحساب",
     "sessionName": "اسم الجلسة",
     "skipEnvSetup": "تخطي إعداد البيئة البعيدة",
     "skipRouterRestart": "تخطي إعادة تشغيل خادم التوجيه بعد تحديث الملف التنفيذي",
@@ -1855,9 +1857,7 @@
     "verifyChecksum": "التحقق من الملفات باستخدام المجاميع الاختبارية بعد المزامنة",
     "watch": "الانتظار للتغييرات",
     "watchUpdates": "الانتظار للتحديثات",
-    "yes": "تخطي نافذة التأكيد",
-    "apiToken": "رمز API (rdt_...)",
-    "serverUrl": "عنوان خادم الحساب"
+    "yes": "تخطي نافذة التأكيد"
   },
   "prompts": {
     "apiUrl": "عنوان URL للـ API:",

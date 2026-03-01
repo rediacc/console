@@ -1,10 +1,10 @@
-import rss from '@astrojs/rss';
 import { getCollection } from 'astro:content';
-import { SITE_URL } from '../../config/constants';
-import { SUPPORTED_LANGUAGES, getLanguageName } from '../../i18n/language-utils';
-import { getBaseSlug } from '../../utils/slug';
-import type { Language } from '../../i18n/types';
+import rss from '@astrojs/rss';
 import type { APIContext } from 'astro';
+import { SITE_URL } from '../../config/constants';
+import { getLanguageName, SUPPORTED_LANGUAGES } from '../../i18n/language-utils';
+import type { Language } from '../../i18n/types';
+import { getBaseSlug } from '../../utils/slug';
 
 export function getStaticPaths() {
   return SUPPORTED_LANGUAGES.map((lang) => ({ params: { lang } }));

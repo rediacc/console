@@ -1,13 +1,13 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
-  type CompanySize,
-  type RoiInputs,
-  HERO_SLIDERS,
   ADVANCED_SLIDERS,
-  ROI_DEFAULTS,
+  type CompanySize,
   computeRoi,
   formatCurrency,
   formatSliderValue,
+  HERO_SLIDERS,
+  ROI_DEFAULTS,
+  type RoiInputs,
 } from './roi-compute';
 
 interface RoiCalculatorContent {
@@ -36,9 +36,27 @@ interface RoiCalculatorContent {
   };
   categories: {
     tco: { title: string; currentTco: string; rediaccTco: string; savings: string };
-    devProductivity: { title: string; hoursSaved: string; dollarValue: string; provisioningReduction: string };
-    drAvailability: { title: string; currentRisk: string; rediaccRisk: string; savings: string; rtoImprovement: string };
-    compliance: { title: string; storageSavings: string; bandwidthSavings: string; complianceSavings: string; insuranceSavings: string; auditTimeSaved: string };
+    devProductivity: {
+      title: string;
+      hoursSaved: string;
+      dollarValue: string;
+      provisioningReduction: string;
+    };
+    drAvailability: {
+      title: string;
+      currentRisk: string;
+      rediaccRisk: string;
+      savings: string;
+      rtoImprovement: string;
+    };
+    compliance: {
+      title: string;
+      storageSavings: string;
+      bandwidthSavings: string;
+      complianceSavings: string;
+      insuranceSavings: string;
+      auditTimeSaved: string;
+    };
   };
   footnote: string;
 }
@@ -47,7 +65,7 @@ interface Props {
   content: RoiCalculatorContent;
 }
 
-const SIZE_KEYS: CompanySize[] = ['smb', 'mid', 'enterprise', 'large'];
+const SIZE_KEYS: CompanySize[] = ['smb', 'mid', 'enterprise', 'large'] as const;
 
 const SPRoiCalculator: React.FC<Props> = ({ content }) => {
   const [activeSize, setActiveSize] = useState<CompanySize | null>('mid');
@@ -74,16 +92,14 @@ const SPRoiCalculator: React.FC<Props> = ({ content }) => {
 
   const renderSlider = (
     slider: { id: string; min: number; max: number; step: number; format?: string },
-    label: string,
+    label: string
   ) => {
-    const val = values[slider.id as keyof RoiInputs] as number;
+    const val = values[slider.id as keyof RoiInputs];
     return (
       <div className="sp-roi-slider" key={slider.id}>
         <label>
           {label}
-          <span className="sp-roi-slider-value">
-            {formatSliderValue(val, slider.format)}
-          </span>
+          <span className="sp-roi-slider-value">{formatSliderValue(val, slider.format)}</span>
         </label>
         <input
           type="range"
@@ -188,7 +204,9 @@ const SPRoiCalculator: React.FC<Props> = ({ content }) => {
               </div>
               <div className="sp-roi-card-row">
                 <span>{content.categories.devProductivity.dollarValue}</span>
-                <span className="sp-roi-green">{formatCurrency(output.devProductivityDollars)}</span>
+                <span className="sp-roi-green">
+                  {formatCurrency(output.devProductivityDollars)}
+                </span>
               </div>
               <div className="sp-roi-card-row">
                 <span>{content.categories.devProductivity.provisioningReduction}</span>

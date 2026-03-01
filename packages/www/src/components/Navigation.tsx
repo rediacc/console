@@ -76,14 +76,23 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
     setIsSearchOpen(false);
   };
 
-  const toggleMegaMenu = () => { setIsMegaMenuOpen((prev) => !prev); setIsPersonaMenuOpen(false); };
+  const toggleMegaMenu = () => {
+    setIsMegaMenuOpen((prev) => !prev);
+    setIsPersonaMenuOpen(false);
+  };
   const closeMegaMenu = () => setIsMegaMenuOpen(false);
-  const togglePersonaMenu = () => { setIsPersonaMenuOpen((prev) => !prev); setIsMegaMenuOpen(false); };
+  const togglePersonaMenu = () => {
+    setIsPersonaMenuOpen((prev) => !prev);
+    setIsMegaMenuOpen(false);
+  };
   const closePersonaMenu = () => setIsPersonaMenuOpen(false);
 
   // Close menus on Astro page navigation
   useEffect(() => {
-    const handleNavigation = () => { setIsMegaMenuOpen(false); setIsPersonaMenuOpen(false); };
+    const handleNavigation = () => {
+      setIsMegaMenuOpen(false);
+      setIsPersonaMenuOpen(false);
+    };
     document.addEventListener('astro:after-swap', handleNavigation);
     return () => document.removeEventListener('astro:after-swap', handleNavigation);
   }, []);
@@ -140,7 +149,11 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
           </a>
           <div className="nav-links">
             <MegaMenu isOpen={isMegaMenuOpen} onToggle={toggleMegaMenu} onClose={closeMegaMenu} />
-            <PersonaMegaMenu isOpen={isPersonaMenuOpen} onToggle={togglePersonaMenu} onClose={closePersonaMenu} />
+            <PersonaMegaMenu
+              isOpen={isPersonaMenuOpen}
+              onToggle={togglePersonaMenu}
+              onClose={closePersonaMenu}
+            />
             <a href={`/${currentLang}/#pricing`} className="nav-link">
               {t('navigation.pricing')}
             </a>

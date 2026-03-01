@@ -341,13 +341,6 @@
         "description": "Effacer les valeurs par défaut (toutes ou une clé spécifique)",
         "keyCleared": "\"{{key}}\" effacé"
       },
-      "recover": {
-        "description": "Restaurer la configuration depuis le fichier de sauvegarde (.bak)",
-        "noBackup": "Aucune sauvegarde trouvée pour la configuration \"{{name}}\"",
-        "confirm": "Restaurer la configuration \"{{name}}\" depuis la sauvegarde ?",
-        "success": "Configuration \"{{name}}\" restaurée depuis la sauvegarde (version {{version}})",
-        "failed": "Échec de la restauration de la configuration \"{{name}}\" depuis la sauvegarde"
-      },
       "delete": {
         "description": "Supprimer un fichier de configuration",
         "success": "Configuration \"{{name}}\" supprimée"
@@ -392,6 +385,13 @@
         "installingProxy": "Installation et démarrage du proxy...",
         "proxyInstallWarning": "L'installation du proxy a échoué (code {{code}}). Exécutez manuellement : sudo renet proxy install",
         "success": "Configuration d'infrastructure poussée vers \"{{name}}\""
+      },
+      "recover": {
+        "confirm": "Restaurer la configuration \"{{name}}\" depuis la sauvegarde ?",
+        "description": "Restaurer la configuration depuis le fichier de sauvegarde (.bak)",
+        "failed": "Échec de la restauration de la configuration \"{{name}}\" depuis la sauvegarde",
+        "noBackup": "Aucune sauvegarde trouvée pour la configuration \"{{name}}\"",
+        "success": "Configuration \"{{name}}\" restaurée depuis la sauvegarde (version {{version}})"
       },
       "removeMachine": {
         "description": "Retirer une machine de la configuration actuelle",
@@ -1198,6 +1198,50 @@
         "pushed": "Poussé vers le store \"{{store}}\""
       }
     },
+    "subscription": {
+      "description": "Gérer les licences machine et l’abonnement",
+      "login": {
+        "browserFailed": "Impossible d’ouvrir le navigateur automatiquement. Veuillez visiter l’URL ci-dessus.",
+        "description": "S’authentifier avec un jeton API du portail web",
+        "expired": "L’autorisation a expiré. Veuillez réessayer.",
+        "initFailed": "Échec de l’initialisation de la connexion. Le serveur est-il en cours d’exécution ?",
+        "machines": "Machines : {{active}}/{{max}}",
+        "openBrowser": "Visitez cette URL pour autoriser :",
+        "plan": "Forfait : {{plan}}",
+        "polling": "En attente de l’approbation (appuyez sur Ctrl+C pour annuler)...",
+        "success": "Connexion réussie",
+        "tokenInvalid": "Le jeton doit commencer par rdt_",
+        "tokenPrompt": "Entrez votre jeton API (depuis le portail web) :",
+        "validated": "Jeton validé",
+        "validating": "Validation du jeton...",
+        "waitingApproval": "En attente de l’autorisation du navigateur..."
+      },
+      "refresh": {
+        "description": "Renouveler la licence de la machine",
+        "refreshed": "Licence renouvelée",
+        "refreshing": "Renouvellement de la licence...",
+        "success": "Licence renouvelée et installée"
+      },
+      "status": {
+        "description": "Afficher l’état de l’abonnement et de la licence",
+        "expired": "  La licence a EXPIRÉ — exécutez `rdc subscription refresh`",
+        "expires": "  Expire le :  {{expiresAt}}",
+        "issued": "  Émis le :    {{issuedAt}}",
+        "localLicense": "Licence locale :",
+        "machine": "  Machine :    {{machineId}}",
+        "noLicense": "Aucune licence locale installée.",
+        "parseFailed": "  Impossible d’analyser le fichier de licence",
+        "plan": "  Forfait :     {{plan}}",
+        "remote": "\nAbonnement distant :",
+        "remoteMachine": "    - {{id}}... (vu pour la dernière fois : {{lastSeen}})",
+        "remoteMachines": "  Machines : {{active}}/{{max}}",
+        "remotePlan": "  Forfait :     {{plan}}",
+        "remoteStatus": "  État :       {{status}}",
+        "sequence": "  Séquence :   {{sequenceNumber}}",
+        "statusLabel": "  État :       {{status}}",
+        "valid": "  Valide (expire dans {{mins}} minutes)"
+      }
+    },
     "sync": {
       "cancelled": "Synchronisation annulée.",
       "description": "Transférer des fichiers entre dépôts locaux et distants via rsync",
@@ -1413,50 +1457,6 @@
         "noConnections": "Aucune connexion SSH VS Code configurée.",
         "total": "\nTotal : {{count}} connexion(s)"
       }
-    },
-    "subscription": {
-      "description": "Gérer les licences machine et l’abonnement",
-      "login": {
-        "description": "S’authentifier avec un jeton API du portail web",
-        "tokenPrompt": "Entrez votre jeton API (depuis le portail web) :",
-        "tokenInvalid": "Le jeton doit commencer par rdt_",
-        "validating": "Validation du jeton...",
-        "validated": "Jeton validé",
-        "success": "Connexion réussie",
-        "plan": "Forfait : {{plan}}",
-        "machines": "Machines : {{active}}/{{max}}",
-        "openBrowser": "Visitez cette URL pour autoriser :",
-        "waitingApproval": "En attente de l’autorisation du navigateur...",
-        "polling": "En attente de l’approbation (appuyez sur Ctrl+C pour annuler)...",
-        "expired": "L’autorisation a expiré. Veuillez réessayer.",
-        "browserFailed": "Impossible d’ouvrir le navigateur automatiquement. Veuillez visiter l’URL ci-dessus.",
-        "initFailed": "Échec de l’initialisation de la connexion. Le serveur est-il en cours d’exécution ?"
-      },
-      "status": {
-        "description": "Afficher l’état de l’abonnement et de la licence",
-        "localLicense": "Licence locale :",
-        "plan": "  Forfait :     {{plan}}",
-        "statusLabel": "  État :       {{status}}",
-        "machine": "  Machine :    {{machineId}}",
-        "issued": "  Émis le :    {{issuedAt}}",
-        "expires": "  Expire le :  {{expiresAt}}",
-        "sequence": "  Séquence :   {{sequenceNumber}}",
-        "expired": "  La licence a EXPIRÉ — exécutez `rdc subscription refresh`",
-        "valid": "  Valide (expire dans {{mins}} minutes)",
-        "parseFailed": "  Impossible d’analyser le fichier de licence",
-        "noLicense": "Aucune licence locale installée.",
-        "remote": "\nAbonnement distant :",
-        "remotePlan": "  Forfait :     {{plan}}",
-        "remoteStatus": "  État :       {{status}}",
-        "remoteMachines": "  Machines : {{active}}/{{max}}",
-        "remoteMachine": "    - {{id}}... (vu pour la dernière fois : {{lastSeen}})"
-      },
-      "refresh": {
-        "description": "Renouveler la licence de la machine",
-        "refreshing": "Renouvellement de la licence...",
-        "refreshed": "Licence renouvelée",
-        "success": "Licence renouvelée et installée"
-      }
     }
   },
   "common": {
@@ -1604,56 +1604,6 @@
       "required": "Requis"
     }
   },
-  "help": {
-    "examples": "Exemples :",
-    "cli": {
-      "machineInfo": "Afficher l'état de la machine",
-      "termRepo": "SSH vers le dépôt",
-      "repoUp": "Déployer les services du dépôt",
-      "syncUpload": "Téléverser des fichiers vers le dépôt"
-    },
-    "machine": {
-      "info": "Afficher l'état complet de la machine",
-      "containers": "Lister les conteneurs en cours",
-      "health": "Vérification de santé pour CI/CD"
-    },
-    "repo": {
-      "create": "Créer un dépôt chiffré",
-      "up": "Déployer avec montage automatique",
-      "down": "Arrêter les services",
-      "fork": "Fork CoW pour les tests"
-    },
-    "term": {
-      "machine": "SSH vers la machine",
-      "repo": "SSH vers le dépôt (DOCKER_HOST automatique)",
-      "command": "Exécuter une commande sans shell interactif"
-    },
-    "vscode": {
-      "machine": "Ouvrir la machine dans VS Code",
-      "repo": "Ouvrir le dépôt dans VS Code"
-    },
-    "config": {
-      "init": "Créer un config nommé avec clé SSH",
-      "addMachine": "Ajouter une machine au config",
-      "setupMachine": "Exécuter le setup sur une machine distante",
-      "setMachine": "Définir la machine par défaut"
-    },
-    "store": {
-      "add": "Ajouter un backend de stockage S3",
-      "push": "Pousser le config vers tous les stores",
-      "pull": "Récupérer le config depuis un store"
-    },
-    "sync": {
-      "upload": "Téléverser les fichiers locaux vers le dépôt",
-      "download": "Télécharger les fichiers du dépôt",
-      "status": "Afficher l'état de synchronisation"
-    },
-    "backup": {
-      "push": "Pousser la sauvegarde vers le stockage",
-      "pull": "Récupérer la sauvegarde depuis le stockage",
-      "list": "Lister les sauvegardes sur le stockage"
-    }
-  },
   "errors": {
     "activationFailed": "L'activation a échoué",
     "affectedChildClones": ". Clones enfants affectés : {{clones}}. Supprimez ou promouvez d'abord les clones enfants.",
@@ -1703,6 +1653,9 @@
     "repositoryRequired": "Le nom du dépôt est requis. Utilisez --repository <name>.",
     "resourceNotFound": "{{resource}} non trouvé",
     "sshKeyNotFound": "Clé SSH non trouvée : {{path}}",
+    "subscription": {
+      "notLoggedIn": "Non connecté. Exécutez d’abord `rdc subscription login`."
+    },
     "sync": {
       "localPathNotFound": "Le chemin local n'existe pas : {{path}}",
       "noHostKey": "La machine '{{machine}}' n'a pas de clé d'hôte configurée dans le coffre",
@@ -1738,13 +1691,61 @@
       "noIpAddress": "La machine '{{machine}}' n'a pas d'adresse IP configurée",
       "noPrivateKey": "L'équipe '{{team}}' n'a pas de clé privée SSH configurée",
       "notFound": "VS Code non trouvé.\n\nVeuillez installer depuis : https://code.visualstudio.com/\nOu définir la variable d'environnement REDIACC_VSCODE_PATH."
+    }
+  },
+  "help": {
+    "backup": {
+      "list": "Lister les sauvegardes sur le stockage",
+      "pull": "Récupérer la sauvegarde depuis le stockage",
+      "push": "Pousser la sauvegarde vers le stockage"
     },
-    "subscription": {
-      "notLoggedIn": "Non connecté. Exécutez d’abord `rdc subscription login`."
+    "cli": {
+      "machineInfo": "Afficher l'état de la machine",
+      "repoUp": "Déployer les services du dépôt",
+      "syncUpload": "Téléverser des fichiers vers le dépôt",
+      "termRepo": "SSH vers le dépôt"
+    },
+    "config": {
+      "addMachine": "Ajouter une machine au config",
+      "init": "Créer un config nommé avec clé SSH",
+      "setMachine": "Définir la machine par défaut",
+      "setupMachine": "Exécuter le setup sur une machine distante"
+    },
+    "examples": "Exemples :",
+    "machine": {
+      "containers": "Lister les conteneurs en cours",
+      "health": "Vérification de santé pour CI/CD",
+      "info": "Afficher l'état complet de la machine"
+    },
+    "repo": {
+      "create": "Créer un dépôt chiffré",
+      "down": "Arrêter les services",
+      "fork": "Fork CoW pour les tests",
+      "up": "Déployer avec montage automatique"
+    },
+    "store": {
+      "add": "Ajouter un backend de stockage S3",
+      "pull": "Récupérer le config depuis un store",
+      "push": "Pousser le config vers tous les stores"
+    },
+    "sync": {
+      "download": "Télécharger les fichiers du dépôt",
+      "status": "Afficher l'état de synchronisation",
+      "upload": "Téléverser les fichiers locaux vers le dépôt"
+    },
+    "term": {
+      "command": "Exécuter une commande sans shell interactif",
+      "machine": "SSH vers la machine",
+      "repo": "SSH vers le dépôt (DOCKER_HOST automatique)"
+    },
+    "vscode": {
+      "machine": "Ouvrir la machine dans VS Code",
+      "repo": "Ouvrir le dépôt dans VS Code"
     }
   },
   "options": {
     "activationCode": "Code d'activation reçu par email",
+    "apiToken": "Jeton API (rdt_...)",
     "apiUrl": "URL de l'API",
     "bridge": "Nom du pont",
     "cleanupAll": "Supprimer toutes les configurations SSH rediacc",
@@ -1827,6 +1828,7 @@
     "searchInField": "Rechercher dans {{field}}",
     "searchQueue": "Rechercher dans l'ID de tâche, l'équipe, la machine, le pont",
     "searchRepos": "Filtrer les dépôts par nom",
+    "serverUrl": "URL du serveur de compte",
     "sessionName": "Nom de la session",
     "skipEnvSetup": "Ignorer la configuration de l'environnement distant",
     "skipRouterRestart": "Ne pas redémarrer le serveur de routes après la mise à jour du binaire",
@@ -1855,9 +1857,7 @@
     "verifyChecksum": "Vérifier les fichiers à l'aide de sommes de contrôle après synchronisation",
     "watch": "Surveiller les modifications",
     "watchUpdates": "Surveiller les mises à jour",
-    "yes": "Ignorer l'invite de confirmation",
-    "apiToken": "Jeton API (rdt_...)",
-    "serverUrl": "URL du serveur de compte"
+    "yes": "Ignorer l'invite de confirmation"
   },
   "prompts": {
     "apiUrl": "URL de l'API :",

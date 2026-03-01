@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { PRESETS, SLIDER_CONFIGS } from './cost-presets';
 
 interface CalculatorContent {

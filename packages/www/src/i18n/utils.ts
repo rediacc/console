@@ -7,7 +7,7 @@ import jaTranslations from './translations/ja.json';
 import ruTranslations from './translations/ru.json';
 import trTranslations from './translations/tr.json';
 import zhTranslations from './translations/zh.json';
-import type { Language, InterpolationParams, Translations, PathValue } from './types';
+import type { InterpolationParams, Language, PathValue, Translations } from './types';
 
 const translations = {
   en: enTranslations,

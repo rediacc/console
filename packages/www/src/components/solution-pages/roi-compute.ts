@@ -150,10 +150,17 @@ function inferCompanySize(servers: number): CompanySize {
 
 export function computeRoi(inputs: RoiInputs): RoiOutputs {
   const {
-    servers, developers, dataTB, downtimeCostPerHour,
-    incidentsPerYear, currentRtoHours,
-    adminHourlyRate, devHourlyRate, adminFte,
-    currentBackupSpendMonth, envRequestsPerDevMonth,
+    servers,
+    developers,
+    dataTB,
+    downtimeCostPerHour,
+    incidentsPerYear,
+    currentRtoHours,
+    adminHourlyRate,
+    devHourlyRate,
+    adminFte,
+    currentBackupSpendMonth,
+    envRequestsPerDevMonth,
     currentProvisioningHours,
   } = inputs;
 
@@ -164,7 +171,8 @@ export function computeRoi(inputs: RoiInputs): RoiOutputs {
   const currentDrTesting = 4 * Math.max(8, servers / 5) * adminHourlyRate * 3;
   const currentMaintenance = servers * 40 * adminHourlyRate;
   const currentLicense = currentBackupSpendMonth * 12;
-  const currentAnnualTco = currentLicense + currentAdminCost + currentDrTesting + currentMaintenance;
+  const currentAnnualTco =
+    currentLicense + currentAdminCost + currentDrTesting + currentMaintenance;
 
   const rediaccAdminCost = adminFte * 0.3 * adminHourlyRate * 2080;
   const rediaccMaintenance = servers * 8 * adminHourlyRate;
@@ -174,12 +182,11 @@ export function computeRoi(inputs: RoiInputs): RoiOutputs {
   const tcoSavings = currentAnnualTco - rediaccAnnualTco;
 
   // --- Dev Productivity (research Section 6.3) ---
-  const provisioningSavedHours = developers * envRequestsPerDevMonth * 12
-    * Math.max(0, currentProvisioningHours - 0.08);
+  const provisioningSavedHours =
+    developers * envRequestsPerDevMonth * 12 * Math.max(0, currentProvisioningHours - 0.08);
   const devProductivityDollars = provisioningSavedHours * devHourlyRate * 0.4;
-  const provisioningReduction = currentProvisioningHours > 0
-    ? `${currentProvisioningHours}h → <5 min`
-    : '—';
+  const provisioningReduction =
+    currentProvisioningHours > 0 ? `${currentProvisioningHours}h → <5 min` : '—';
 
   // --- DR & Availability (research Section 7.3) ---
   const rediaccRtoMin = REDIACC_RTO_MINUTES[size];
@@ -205,15 +212,19 @@ export function computeRoi(inputs: RoiInputs): RoiOutputs {
   const insuranceSavings = incidentsPerYear > 0 ? currentDowntimeRisk * 0.03 : 0;
 
   // --- Summary ---
-  const annualSavings = tcoSavings + devProductivityDollars + drSavings
-    + storageSavings + bandwidthSavings + complianceSavings + insuranceSavings;
+  const annualSavings =
+    tcoSavings +
+    devProductivityDollars +
+    drSavings +
+    storageSavings +
+    bandwidthSavings +
+    complianceSavings +
+    insuranceSavings;
   const investment = rediaccAnnualTco;
-  const paybackMonths = annualSavings > 0
-    ? Math.max(1, Math.round((investment / annualSavings) * 12))
-    : 0;
-  const threeYearRoiPct = investment > 0
-    ? Math.round(((annualSavings * 3 - investment) / investment) * 100)
-    : 0;
+  const paybackMonths =
+    annualSavings > 0 ? Math.max(1, Math.round((investment / annualSavings) * 12)) : 0;
+  const threeYearRoiPct =
+    investment > 0 ? Math.round(((annualSavings * 3 - investment) / investment) * 100) : 0;
 
   return {
     annualSavings,

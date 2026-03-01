@@ -6,8 +6,8 @@
  * so no sidebar is needed here.
  */
 
-import { useEffect, useRef, useState } from 'react';
 import type { FC } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface AsciinemaPlayerInstance {
   play(): void;

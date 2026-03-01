@@ -1,8 +1,8 @@
 import { drizzle } from 'drizzle-orm/d1';
 import { createApp } from '../../../private/account/src/app.js';
-import type { Database } from '../../../private/account/src/db/index.js';
 import * as schema from '../../../private/account/src/db/schema.js';
 import { envSchema } from '../../../private/account/src/types/env.js';
+import type { Database } from '../../../private/account/src/db/index.js';
 
 interface Env {
   ASSETS: Fetcher;

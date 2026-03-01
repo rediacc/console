@@ -1,25 +1,25 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
+import type { InstallMethod, Platform } from '../config/install';
 import {
-  PLATFORMS,
+  APK_COMMANDS,
+  APT_COMMANDS,
+  BINARY_COMMANDS,
+  DNF_COMMANDS,
+  DOCKER_COMMANDS,
+  detectPlatform,
+  HOMEBREW_COMMAND,
   METHOD_META,
+  PACMAN_COMMANDS,
+  PLATFORMS,
   QUICK_INSTALL_UNIX,
   QUICK_INSTALL_WIN,
-  BINARY_COMMANDS,
-  DOCKER_COMMANDS,
-  APT_COMMANDS,
-  DNF_COMMANDS,
-  APK_COMMANDS,
-  PACMAN_COMMANDS,
-  HOMEBREW_COMMAND,
-  detectPlatform,
 } from '../config/install';
 import { useTranslation } from '../i18n/react';
+import type { Language } from '../i18n/types';
 import { copyToClipboard } from '../utils/clipboard';
-import { CopyIcon, CheckIcon } from './icons/ClipboardIcons';
+import { CheckIcon, CopyIcon } from './icons/ClipboardIcons';
 import { PLATFORM_ICON_MAP } from './icons/PlatformIcons';
 import PlatformTabs from './PlatformTabs';
-import type { Platform, InstallMethod } from '../config/install';
-import type { Language } from '../i18n/types';
 
 interface InstallMethodsProps {
   lang: Language;

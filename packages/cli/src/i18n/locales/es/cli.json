@@ -341,13 +341,6 @@
         "description": "Borrar valores predeterminados (todos o uno específico)",
         "keyCleared": "\"{{key}}\" borrado"
       },
-      "recover": {
-        "description": "Restaurar configuración desde archivo de respaldo (.bak)",
-        "noBackup": "No se encontró respaldo para la configuración \"{{name}}\"",
-        "confirm": "¿Restaurar configuración \"{{name}}\" desde el respaldo?",
-        "success": "Configuración \"{{name}}\" restaurada desde el respaldo (versión {{version}})",
-        "failed": "Error al restaurar la configuración \"{{name}}\" desde el respaldo"
-      },
       "delete": {
         "description": "Eliminar un archivo de configuración",
         "success": "Configuración \"{{name}}\" eliminada"
@@ -392,6 +385,13 @@
         "installingProxy": "Instalando e iniciando proxy...",
         "proxyInstallWarning": "Falló la instalación del proxy (código {{code}}). Ejecute manualmente: sudo renet proxy install",
         "success": "Configuración de infraestructura enviada a \"{{name}}\""
+      },
+      "recover": {
+        "confirm": "¿Restaurar configuración \"{{name}}\" desde el respaldo?",
+        "description": "Restaurar configuración desde archivo de respaldo (.bak)",
+        "failed": "Error al restaurar la configuración \"{{name}}\" desde el respaldo",
+        "noBackup": "No se encontró respaldo para la configuración \"{{name}}\"",
+        "success": "Configuración \"{{name}}\" restaurada desde el respaldo (versión {{version}})"
       },
       "removeMachine": {
         "description": "Eliminar una máquina de la configuración actual",
@@ -1198,6 +1198,50 @@
         "pushed": "Enviado al store \"{{store}}\""
       }
     },
+    "subscription": {
+      "description": "Gestionar licencias de máquina y suscripción",
+      "login": {
+        "browserFailed": "No se pudo abrir el navegador automáticamente. Por favor, visite la URL anterior.",
+        "description": "Autenticarse con un token API del portal web",
+        "expired": "La autorización ha expirado. Por favor, inténtelo de nuevo.",
+        "initFailed": "No se pudo iniciar la sesión. ¿Está el servidor en ejecución?",
+        "machines": "Máquinas: {{active}}/{{max}}",
+        "openBrowser": "Visite esta URL para autorizar:",
+        "plan": "Suscripción: {{plan}}",
+        "polling": "Esperando aprobación (presione Ctrl+C para cancelar)...",
+        "success": "Inicio de sesión exitoso",
+        "tokenInvalid": "El token debe comenzar con rdt_",
+        "tokenPrompt": "Introduzca su token API (del portal web):",
+        "validated": "Token validado",
+        "validating": "Validando token...",
+        "waitingApproval": "Esperando la autorización del navegador..."
+      },
+      "refresh": {
+        "description": "Renovar la licencia de la máquina",
+        "refreshed": "Licencia renovada",
+        "refreshing": "Renovando licencia...",
+        "success": "Licencia renovada e instalada"
+      },
+      "status": {
+        "description": "Mostrar estado de suscripción y licencia",
+        "expired": "  La licencia ha EXPIRADO — ejecute `rdc subscription refresh`",
+        "expires": "  Expira:    {{expiresAt}}",
+        "issued": "  Emitida:   {{issuedAt}}",
+        "localLicense": "Licencia local:",
+        "machine": "  Máquina:  {{machineId}}",
+        "noLicense": "No hay licencia local instalada.",
+        "parseFailed": "  No se pudo analizar el archivo de licencia",
+        "plan": "  Plan:      {{plan}}",
+        "remote": "\nSuscripción remota:",
+        "remoteMachine": "    - {{id}}... (última vez visto: {{lastSeen}})",
+        "remoteMachines": "  Máquinas: {{active}}/{{max}}",
+        "remotePlan": "  Plan:      {{plan}}",
+        "remoteStatus": "  Estado:    {{status}}",
+        "sequence": "  Secuencia: {{sequenceNumber}}",
+        "statusLabel": "  Estado:    {{status}}",
+        "valid": "  Válida (expira en {{mins}} minutos)"
+      }
+    },
     "sync": {
       "cancelled": "Sincronización cancelada.",
       "description": "Transferir archivos entre repositorios locales y remotos vía rsync",
@@ -1413,50 +1457,6 @@
         "noConnections": "No hay conexiones SSH de VS Code configuradas.",
         "total": "\nTotal: {{count}} conexión(es)"
       }
-    },
-    "subscription": {
-      "description": "Gestionar licencias de máquina y suscripción",
-      "login": {
-        "description": "Autenticarse con un token API del portal web",
-        "tokenPrompt": "Introduzca su token API (del portal web):",
-        "tokenInvalid": "El token debe comenzar con rdt_",
-        "validating": "Validando token...",
-        "validated": "Token validado",
-        "success": "Inicio de sesión exitoso",
-        "plan": "Suscripción: {{plan}}",
-        "machines": "Máquinas: {{active}}/{{max}}",
-        "openBrowser": "Visite esta URL para autorizar:",
-        "waitingApproval": "Esperando la autorización del navegador...",
-        "polling": "Esperando aprobación (presione Ctrl+C para cancelar)...",
-        "expired": "La autorización ha expirado. Por favor, inténtelo de nuevo.",
-        "browserFailed": "No se pudo abrir el navegador automáticamente. Por favor, visite la URL anterior.",
-        "initFailed": "No se pudo iniciar la sesión. ¿Está el servidor en ejecución?"
-      },
-      "status": {
-        "description": "Mostrar estado de suscripción y licencia",
-        "localLicense": "Licencia local:",
-        "plan": "  Plan:      {{plan}}",
-        "statusLabel": "  Estado:    {{status}}",
-        "machine": "  Máquina:  {{machineId}}",
-        "issued": "  Emitida:   {{issuedAt}}",
-        "expires": "  Expira:    {{expiresAt}}",
-        "sequence": "  Secuencia: {{sequenceNumber}}",
-        "expired": "  La licencia ha EXPIRADO — ejecute `rdc subscription refresh`",
-        "valid": "  Válida (expira en {{mins}} minutos)",
-        "parseFailed": "  No se pudo analizar el archivo de licencia",
-        "noLicense": "No hay licencia local instalada.",
-        "remote": "\nSuscripción remota:",
-        "remotePlan": "  Plan:      {{plan}}",
-        "remoteStatus": "  Estado:    {{status}}",
-        "remoteMachines": "  Máquinas: {{active}}/{{max}}",
-        "remoteMachine": "    - {{id}}... (última vez visto: {{lastSeen}})"
-      },
-      "refresh": {
-        "description": "Renovar la licencia de la máquina",
-        "refreshing": "Renovando licencia...",
-        "refreshed": "Licencia renovada",
-        "success": "Licencia renovada e instalada"
-      }
     }
   },
   "common": {
@@ -1604,56 +1604,6 @@
       "required": "Obligatorio"
     }
   },
-  "help": {
-    "examples": "Ejemplos:",
-    "cli": {
-      "machineInfo": "Mostrar estado de la máquina",
-      "termRepo": "SSH al repositorio",
-      "repoUp": "Desplegar servicios del repositorio",
-      "syncUpload": "Subir archivos al repositorio"
-    },
-    "machine": {
-      "info": "Mostrar estado completo de la máquina",
-      "containers": "Listar contenedores en ejecución",
-      "health": "Verificación de salud para CI/CD"
-    },
-    "repo": {
-      "create": "Crear repositorio cifrado",
-      "up": "Desplegar con montaje automático",
-      "down": "Detener servicios",
-      "fork": "Fork CoW para pruebas"
-    },
-    "term": {
-      "machine": "SSH a la máquina",
-      "repo": "SSH al repositorio (DOCKER_HOST automático)",
-      "command": "Ejecutar comando sin shell interactivo"
-    },
-    "vscode": {
-      "machine": "Abrir máquina en VS Code",
-      "repo": "Abrir repositorio en VS Code"
-    },
-    "config": {
-      "init": "Crear config con clave SSH",
-      "addMachine": "Agregar máquina al config",
-      "setupMachine": "Ejecutar setup en máquina remota",
-      "setMachine": "Establecer máquina predeterminada"
-    },
-    "store": {
-      "add": "Agregar backend de almacenamiento S3",
-      "push": "Enviar config a todos los almacenes",
-      "pull": "Obtener config de un almacén"
-    },
-    "sync": {
-      "upload": "Subir archivos locales al repositorio",
-      "download": "Descargar archivos del repositorio",
-      "status": "Mostrar estado de sincronización"
-    },
-    "backup": {
-      "push": "Enviar respaldo al almacenamiento",
-      "pull": "Obtener respaldo del almacenamiento",
-      "list": "Listar respaldos en almacenamiento"
-    }
-  },
   "errors": {
     "activationFailed": "Falló la activación",
     "affectedChildClones": ". Clones secundarios afectados: {{clones}}. Primero elimine o promueva clones secundarios.",
@@ -1703,6 +1653,9 @@
     "repositoryRequired": "Nombre de repositorio requerido. Use --repository <name>.",
     "resourceNotFound": "{{resource}} no encontrado",
     "sshKeyNotFound": "Clave SSH no encontrada: {{path}}",
+    "subscription": {
+      "notLoggedIn": "No ha iniciado sesión. Ejecute primero `rdc subscription login`."
+    },
     "sync": {
       "localPathNotFound": "Ruta local no existe: {{path}}",
       "noHostKey": "Máquina '{{machine}}' no tiene clave de host configurada en la bóveda",
@@ -1738,13 +1691,61 @@
       "noIpAddress": "Máquina '{{machine}}' no tiene dirección IP configurada",
       "noPrivateKey": "Equipo '{{team}}' no tiene clave privada SSH configurada",
       "notFound": "VS Code no encontrado.\n\nInstale desde: https://code.visualstudio.com/\nO establezca la variable de entorno REDIACC_VSCODE_PATH."
+    }
+  },
+  "help": {
+    "backup": {
+      "list": "Listar respaldos en almacenamiento",
+      "pull": "Obtener respaldo del almacenamiento",
+      "push": "Enviar respaldo al almacenamiento"
     },
-    "subscription": {
-      "notLoggedIn": "No ha iniciado sesión. Ejecute primero `rdc subscription login`."
+    "cli": {
+      "machineInfo": "Mostrar estado de la máquina",
+      "repoUp": "Desplegar servicios del repositorio",
+      "syncUpload": "Subir archivos al repositorio",
+      "termRepo": "SSH al repositorio"
+    },
+    "config": {
+      "addMachine": "Agregar máquina al config",
+      "init": "Crear config con clave SSH",
+      "setMachine": "Establecer máquina predeterminada",
+      "setupMachine": "Ejecutar setup en máquina remota"
+    },
+    "examples": "Ejemplos:",
+    "machine": {
+      "containers": "Listar contenedores en ejecución",
+      "health": "Verificación de salud para CI/CD",
+      "info": "Mostrar estado completo de la máquina"
+    },
+    "repo": {
+      "create": "Crear repositorio cifrado",
+      "down": "Detener servicios",
+      "fork": "Fork CoW para pruebas",
+      "up": "Desplegar con montaje automático"
+    },
+    "store": {
+      "add": "Agregar backend de almacenamiento S3",
+      "pull": "Obtener config de un almacén",
+      "push": "Enviar config a todos los almacenes"
+    },
+    "sync": {
+      "download": "Descargar archivos del repositorio",
+      "status": "Mostrar estado de sincronización",
+      "upload": "Subir archivos locales al repositorio"
+    },
+    "term": {
+      "command": "Ejecutar comando sin shell interactivo",
+      "machine": "SSH a la máquina",
+      "repo": "SSH al repositorio (DOCKER_HOST automático)"
+    },
+    "vscode": {
+      "machine": "Abrir máquina en VS Code",
+      "repo": "Abrir repositorio en VS Code"
     }
   },
   "options": {
     "activationCode": "Código de activación del correo electrónico",
+    "apiToken": "Token API (rdt_...)",
     "apiUrl": "URL de API",
     "bridge": "Nombre de puente",
     "cleanupAll": "Eliminar todas las configuraciones SSH de rediacc",
@@ -1827,6 +1828,7 @@
     "searchInField": "Buscar en {{field}}",
     "searchQueue": "Buscar en ID de tarea, equipo, máquina, puente",
     "searchRepos": "Filtrar repositorios por nombre",
+    "serverUrl": "URL del servidor de cuenta",
     "sessionName": "Nombre de sesión",
     "skipEnvSetup": "Omitir configuración de entorno remoto",
     "skipRouterRestart": "Omitir reinicio del servidor de rutas tras actualización del binario",
@@ -1855,9 +1857,7 @@
     "verifyChecksum": "Verificar archivos usando sumas de control después de sincronización",
     "watch": "Observar cambios",
     "watchUpdates": "Observar actualizaciones",
-    "yes": "Omitir indicador de confirmación",
-    "apiToken": "Token API (rdt_...)",
-    "serverUrl": "URL del servidor de cuenta"
+    "yes": "Omitir indicador de confirmación"
   },
   "prompts": {
     "apiUrl": "URL de API:",

@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getLanguageFlag, getLanguageName, SUPPORTED_LANGUAGES } from '../i18n/language-utils';
-import { setLanguageCookie } from '../utils/language-cookie';
 import type { Language } from '../i18n/types';
+import { setLanguageCookie } from '../utils/language-cookie';
 import '../styles/language-switcher.css';
 
 interface LanguageMenuProps {

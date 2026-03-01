@@ -341,13 +341,6 @@
         "description": "清除默认值（全部或特定键）",
         "keyCleared": "已清除 \"{{key}}\""
       },
-      "recover": {
-        "description": "从备份文件 (.bak) 恢复配置",
-        "noBackup": "未找到配置 \"{{name}}\" 的备份",
-        "confirm": "从备份恢复配置 \"{{name}}\"？",
-        "success": "配置 \"{{name}}\" 已从备份恢复（版本 {{version}}）",
-        "failed": "从备份恢复配置 \"{{name}}\" 失败"
-      },
       "delete": {
         "description": "删除配置文件",
         "success": "配置 \"{{name}}\" 已删除"
@@ -392,6 +385,13 @@
         "installingProxy": "正在安装并启动代理...",
         "proxyInstallWarning": "代理安装失败（代码 {{code}}）。请手动运行：sudo renet proxy install",
         "success": "基础设施配置已推送到 \"{{name}}\""
+      },
+      "recover": {
+        "confirm": "从备份恢复配置 \"{{name}}\"？",
+        "description": "从备份文件 (.bak) 恢复配置",
+        "failed": "从备份恢复配置 \"{{name}}\" 失败",
+        "noBackup": "未找到配置 \"{{name}}\" 的备份",
+        "success": "配置 \"{{name}}\" 已从备份恢复（版本 {{version}}）"
       },
       "removeMachine": {
         "description": "从当前配置中移除机器",
@@ -1198,6 +1198,50 @@
         "pushed": "已推送到同步存储 \"{{store}}\""
       }
     },
+    "subscription": {
+      "description": "管理机器许可证和订阅",
+      "login": {
+        "browserFailed": "无法自动打开浏览器。请访问上方链接。",
+        "description": "使用Web门户的API令牌进行认证",
+        "expired": "授权已超时。请重试。",
+        "initFailed": "无法启动登录。服务器是否正在运行？",
+        "machines": "机器: {{active}}/{{max}}",
+        "openBrowser": "请访问此链接进行授权：",
+        "plan": "计划: {{plan}}",
+        "polling": "等待批准（按 Ctrl+C 取消）...",
+        "success": "登录成功",
+        "tokenInvalid": "令牌必须以 rdt_ 开头",
+        "tokenPrompt": "请输入您的API令牌（来自Web门户）:",
+        "validated": "令牌已验证",
+        "validating": "正在验证令牌...",
+        "waitingApproval": "等待浏览器授权..."
+      },
+      "refresh": {
+        "description": "刷新机器许可证",
+        "refreshed": "许可证已刷新",
+        "refreshing": "正在刷新许可证...",
+        "success": "许可证已刷新并安装"
+      },
+      "status": {
+        "description": "显示订阅和许可证状态",
+        "expired": "  许可证已过期 — 请运行 `rdc subscription refresh`",
+        "expires": "  过期日期: {{expiresAt}}",
+        "issued": "  颁发日期: {{issuedAt}}",
+        "localLicense": "本地许可证:",
+        "machine": "  机器:     {{machineId}}",
+        "noLicense": "未安装本地许可证。",
+        "parseFailed": "  无法解析许可证文件",
+        "plan": "  计划:     {{plan}}",
+        "remote": "\n远程订阅:",
+        "remoteMachine": "    - {{id}}...（最后上线: {{lastSeen}}）",
+        "remoteMachines": "  机器: {{active}}/{{max}}",
+        "remotePlan": "  计划:     {{plan}}",
+        "remoteStatus": "  状态:     {{status}}",
+        "sequence": "  序列号:   {{sequenceNumber}}",
+        "statusLabel": "  状态:     {{status}}",
+        "valid": "  有效（{{mins}} 分钟后过期）"
+      }
+    },
     "sync": {
       "cancelled": "同步已取消。",
       "description": "通过 rsync 在本地和远程仓库之间传输文件",
@@ -1413,50 +1457,6 @@
         "noConnections": "未配置任何 VS Code SSH 连接。",
         "total": "\n总计：{{count}} 个连接"
       }
-    },
-    "subscription": {
-      "description": "管理机器许可证和订阅",
-      "login": {
-        "description": "使用Web门户的API令牌进行认证",
-        "tokenPrompt": "请输入您的API令牌（来自Web门户）:",
-        "tokenInvalid": "令牌必须以 rdt_ 开头",
-        "validating": "正在验证令牌...",
-        "validated": "令牌已验证",
-        "success": "登录成功",
-        "plan": "计划: {{plan}}",
-        "machines": "机器: {{active}}/{{max}}",
-        "openBrowser": "请访问此链接进行授权：",
-        "waitingApproval": "等待浏览器授权...",
-        "polling": "等待批准（按 Ctrl+C 取消）...",
-        "expired": "授权已超时。请重试。",
-        "browserFailed": "无法自动打开浏览器。请访问上方链接。",
-        "initFailed": "无法启动登录。服务器是否正在运行？"
-      },
-      "status": {
-        "description": "显示订阅和许可证状态",
-        "localLicense": "本地许可证:",
-        "plan": "  计划:     {{plan}}",
-        "statusLabel": "  状态:     {{status}}",
-        "machine": "  机器:     {{machineId}}",
-        "issued": "  颁发日期: {{issuedAt}}",
-        "expires": "  过期日期: {{expiresAt}}",
-        "sequence": "  序列号:   {{sequenceNumber}}",
-        "expired": "  许可证已过期 — 请运行 `rdc subscription refresh`",
-        "valid": "  有效（{{mins}} 分钟后过期）",
-        "parseFailed": "  无法解析许可证文件",
-        "noLicense": "未安装本地许可证。",
-        "remote": "\n远程订阅:",
-        "remotePlan": "  计划:     {{plan}}",
-        "remoteStatus": "  状态:     {{status}}",
-        "remoteMachines": "  机器: {{active}}/{{max}}",
-        "remoteMachine": "    - {{id}}...（最后上线: {{lastSeen}}）"
-      },
-      "refresh": {
-        "description": "刷新机器许可证",
-        "refreshing": "正在刷新许可证...",
-        "refreshed": "许可证已刷新",
-        "success": "许可证已刷新并安装"
-      }
     }
   },
   "common": {
@@ -1604,56 +1604,6 @@
       "required": "必填"
     }
   },
-  "help": {
-    "examples": "示例:",
-    "cli": {
-      "machineInfo": "显示机器状态",
-      "termRepo": "SSH 连接到仓库",
-      "repoUp": "部署仓库服务",
-      "syncUpload": "上传文件到仓库"
-    },
-    "machine": {
-      "info": "显示完整机器状态",
-      "containers": "列出运行中的容器",
-      "health": "CI/CD 健康检查"
-    },
-    "repo": {
-      "create": "创建加密仓库",
-      "up": "自动挂载部署",
-      "down": "停止服务",
-      "fork": "创建 CoW 测试分支"
-    },
-    "term": {
-      "machine": "SSH 连接到机器",
-      "repo": "SSH 连接到仓库（自动设置 DOCKER_HOST）",
-      "command": "无交互式 shell 执行命令"
-    },
-    "vscode": {
-      "machine": "在 VS Code 中打开机器",
-      "repo": "在 VS Code 中打开仓库"
-    },
-    "config": {
-      "init": "使用 SSH 密钥创建命名配置",
-      "addMachine": "向配置添加机器",
-      "setupMachine": "在远程机器上运行安装",
-      "setMachine": "设置默认机器"
-    },
-    "store": {
-      "add": "添加 S3 存储后端",
-      "push": "推送配置到所有存储",
-      "pull": "从存储拉取配置"
-    },
-    "sync": {
-      "upload": "上传本地文件到仓库",
-      "download": "下载仓库文件到本地",
-      "status": "显示同步状态"
-    },
-    "backup": {
-      "push": "推送仓库备份到存储",
-      "pull": "从存储拉取仓库备份",
-      "list": "列出存储上的备份"
-    }
-  },
   "errors": {
     "activationFailed": "激活失败",
     "affectedChildClones": "。受影响的子克隆：{{clones}}。请先删除或提升子克隆。",
@@ -1703,6 +1653,9 @@
     "repositoryRequired": "需要仓库名称。使用 --repository <name>。",
     "resourceNotFound": "{{resource}} 未找到",
     "sshKeyNotFound": "SSH 密钥未找到：{{path}}",
+    "subscription": {
+      "notLoggedIn": "未登录。请先运行 `rdc subscription login`。"
+    },
     "sync": {
       "localPathNotFound": "本地路径不存在：{{path}}",
       "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
@@ -1738,13 +1691,61 @@
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
       "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
       "notFound": "未找到 VS Code。\n\n请从以下地址安装：https://code.visualstudio.com/\n或设置 REDIACC_VSCODE_PATH 环境变量。"
+    }
+  },
+  "help": {
+    "backup": {
+      "list": "列出存储上的备份",
+      "pull": "从存储拉取仓库备份",
+      "push": "推送仓库备份到存储"
     },
-    "subscription": {
-      "notLoggedIn": "未登录。请先运行 `rdc subscription login`。"
+    "cli": {
+      "machineInfo": "显示机器状态",
+      "repoUp": "部署仓库服务",
+      "syncUpload": "上传文件到仓库",
+      "termRepo": "SSH 连接到仓库"
+    },
+    "config": {
+      "addMachine": "向配置添加机器",
+      "init": "使用 SSH 密钥创建命名配置",
+      "setMachine": "设置默认机器",
+      "setupMachine": "在远程机器上运行安装"
+    },
+    "examples": "示例:",
+    "machine": {
+      "containers": "列出运行中的容器",
+      "health": "CI/CD 健康检查",
+      "info": "显示完整机器状态"
+    },
+    "repo": {
+      "create": "创建加密仓库",
+      "down": "停止服务",
+      "fork": "创建 CoW 测试分支",
+      "up": "自动挂载部署"
+    },
+    "store": {
+      "add": "添加 S3 存储后端",
+      "pull": "从存储拉取配置",
+      "push": "推送配置到所有存储"
+    },
+    "sync": {
+      "download": "下载仓库文件到本地",
+      "status": "显示同步状态",
+      "upload": "上传本地文件到仓库"
+    },
+    "term": {
+      "command": "无交互式 shell 执行命令",
+      "machine": "SSH 连接到机器",
+      "repo": "SSH 连接到仓库（自动设置 DOCKER_HOST）"
+    },
+    "vscode": {
+      "machine": "在 VS Code 中打开机器",
+      "repo": "在 VS Code 中打开仓库"
     }
   },
   "options": {
     "activationCode": "来自电子邮件的激活码",
+    "apiToken": "API令牌 (rdt_...)",
     "apiUrl": "API 网址",
     "bridge": "网桥名称",
     "cleanupAll": "移除所有 rediacc SSH 配置",
@@ -1827,6 +1828,7 @@
     "searchInField": "在 {{field}} 中搜索",
     "searchQueue": "在任务 ID、团队、机器、网桥中搜索",
     "searchRepos": "按名称过滤仓库",
+    "serverUrl": "账户服务器URL",
     "sessionName": "会话名称",
     "skipEnvSetup": "跳过远程环境设置",
     "skipRouterRestart": "二进制更新后跳过重启路由服务器",
@@ -1855,9 +1857,7 @@
     "verifyChecksum": "同步后使用校验和验证文件",
     "watch": "监视更改",
     "watchUpdates": "监视更新",
-    "yes": "跳过确认提示",
-    "apiToken": "API令牌 (rdt_...)",
-    "serverUrl": "账户服务器URL"
+    "yes": "跳过确认提示"
   },
   "prompts": {
     "apiUrl": "API URL：",

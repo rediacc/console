@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import { CATEGORY_ORDER, SOLUTION_PAGES } from '../config/solution-pages';
 import type { SolutionCategory } from '../config/solution-pages';
+import { CATEGORY_ORDER, SOLUTION_PAGES } from '../config/solution-pages';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
 import { CATEGORY_ICONS } from './CategoryIcons';
@@ -44,7 +44,7 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onToggle, onClose }) => {
 
   const allItems = useMemo(
     () => solutionCategories.flatMap((cat) => cat.items),
-    [solutionCategories],
+    [solutionCategories]
   );
 
   // Trim stale refs
@@ -63,7 +63,7 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onToggle, onClose }) => {
         onClose();
       }
     },
-    [onClose],
+    [onClose]
   );
 
   useEffect(() => {
@@ -108,7 +108,7 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onToggle, onClose }) => {
           break;
       }
     },
-    [isOpen, allItems.length, onClose],
+    [isOpen, allItems.length, onClose]
   );
 
   useEffect(() => {
@@ -229,13 +229,7 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onToggle, onClose }) => {
           <div className="mega-menu-footer">
             <a href={`/${currentLang}/#solutions`} className="mega-menu-view-all" onClick={onClose}>
               {t('navigation.viewAllSolutions')}
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                aria-hidden="true"
-              >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path
                   d="M6 12l4-4-4-4"
                   stroke="currentColor"

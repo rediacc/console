@@ -341,13 +341,6 @@
         "description": "Varsayılanları temizleyin (tümü veya belirli bir anahtar)",
         "keyCleared": "\"{{key}}\" temizlendi"
       },
-      "recover": {
-        "description": "Yapılandırmayı yedek dosyasından (.bak) geri yükle",
-        "noBackup": "\"{{name}}\" yapılandırması için yedek bulunamadı",
-        "confirm": "\"{{name}}\" yapılandırması yedekten geri yüklensin mi?",
-        "success": "\"{{name}}\" yapılandırması yedekten geri yüklendi (sürüm {{version}})",
-        "failed": "\"{{name}}\" yapılandırması yedekten geri yüklenemedi"
-      },
       "delete": {
         "description": "Bir yapılandırma dosyasını silin",
         "success": "\"{{name}}\" yapılandırması silindi"
@@ -392,6 +385,13 @@
         "installingProxy": "Proxy kuruluyor ve başlatılıyor...",
         "proxyInstallWarning": "Proxy kurulumu başarısız (kod {{code}}). Elle çalıştırın: sudo renet proxy install",
         "success": "Altyapı yapılandırması \"{{name}}\" makinesine gönderildi"
+      },
+      "recover": {
+        "confirm": "\"{{name}}\" yapılandırması yedekten geri yüklensin mi?",
+        "description": "Yapılandırmayı yedek dosyasından (.bak) geri yükle",
+        "failed": "\"{{name}}\" yapılandırması yedekten geri yüklenemedi",
+        "noBackup": "\"{{name}}\" yapılandırması için yedek bulunamadı",
+        "success": "\"{{name}}\" yapılandırması yedekten geri yüklendi (sürüm {{version}})"
       },
       "removeMachine": {
         "description": "Geçerli yapılandırmadan bir makine kaldırın",
@@ -1198,6 +1198,50 @@
         "pushed": "\"{{store}}\" deposuna gönderildi"
       }
     },
+    "subscription": {
+      "description": "Makine lisanslama ve abonelik yönetimi",
+      "login": {
+        "browserFailed": "Tarayıcı otomatik olarak açılamadı. Lütfen yukarıdaki URL'yi ziyaret edin.",
+        "description": "Web portaldan alınan API belirteci ile kimlik doğrulama",
+        "expired": "Yetkilendirme zaman aşımına uğradı. Lütfen tekrar deneyin.",
+        "initFailed": "Giriş başlatılamadı. Sunucu çalışıyor mu?",
+        "machines": "Makineler: {{active}}/{{max}}",
+        "openBrowser": "Yetkilendirmek için bu URL'yi ziyaret edin:",
+        "plan": "Abonelik: {{plan}}",
+        "polling": "Onay bekleniyor (iptal etmek için Ctrl+C'ye basın)...",
+        "success": "Giriş başarılı",
+        "tokenInvalid": "Belirteç rdt_ ile başlamalıdır",
+        "tokenPrompt": "API belirtecinizi girin (web portaldan):",
+        "validated": "Belirteç doğrulandı",
+        "validating": "Belirteç doğrulanıyor...",
+        "waitingApproval": "Tarayıcı yetkilendirmesi bekleniyor..."
+      },
+      "refresh": {
+        "description": "Makine lisansını yenile",
+        "refreshed": "Lisans yenilendi",
+        "refreshing": "Lisans yenileniyor...",
+        "success": "Lisans yenilendi ve yüklendi"
+      },
+      "status": {
+        "description": "Abonelik ve lisans durumunu göster",
+        "expired": "  Lisans SÜRESNİ GEÇMİŞ — `rdc subscription refresh` komutunu çalıştırın",
+        "expires": "  Bitiyor:   {{expiresAt}}",
+        "issued": "  Verildi:   {{issuedAt}}",
+        "localLicense": "Yerel lisans:",
+        "machine": "  Makine:    {{machineId}}",
+        "noLicense": "Yerel lisans yüklü değil.",
+        "parseFailed": "  Lisans dosyası ayrıştırılamadı",
+        "plan": "  Plan:      {{plan}}",
+        "remote": "\nUzak abonelik:",
+        "remoteMachine": "    - {{id}}... (son görülme: {{lastSeen}})",
+        "remoteMachines": "  Makineler: {{active}}/{{max}}",
+        "remotePlan": "  Plan:      {{plan}}",
+        "remoteStatus": "  Durum:     {{status}}",
+        "sequence": "  Sıra:      {{sequenceNumber}}",
+        "statusLabel": "  Durum:     {{status}}",
+        "valid": "  Geçerli ({{mins}} dakika sonra süresi doluyor)"
+      }
+    },
     "sync": {
       "cancelled": "Senkronizasyon iptal edildi.",
       "description": "rsync ile yerel ve uzak depolar arasında dosya aktarın",
@@ -1413,50 +1457,6 @@
         "noConnections": "Yapılandırılmış VS Code SSH bağlantısı yok.",
         "total": "\nToplam: {{count}} bağlantı(lar)"
       }
-    },
-    "subscription": {
-      "description": "Makine lisanslama ve abonelik yönetimi",
-      "login": {
-        "description": "Web portaldan alınan API belirteci ile kimlik doğrulama",
-        "tokenPrompt": "API belirtecinizi girin (web portaldan):",
-        "tokenInvalid": "Belirteç rdt_ ile başlamalıdır",
-        "validating": "Belirteç doğrulanıyor...",
-        "validated": "Belirteç doğrulandı",
-        "success": "Giriş başarılı",
-        "plan": "Abonelik: {{plan}}",
-        "machines": "Makineler: {{active}}/{{max}}",
-        "openBrowser": "Yetkilendirmek için bu URL'yi ziyaret edin:",
-        "waitingApproval": "Tarayıcı yetkilendirmesi bekleniyor...",
-        "polling": "Onay bekleniyor (iptal etmek için Ctrl+C'ye basın)...",
-        "expired": "Yetkilendirme zaman aşımına uğradı. Lütfen tekrar deneyin.",
-        "browserFailed": "Tarayıcı otomatik olarak açılamadı. Lütfen yukarıdaki URL'yi ziyaret edin.",
-        "initFailed": "Giriş başlatılamadı. Sunucu çalışıyor mu?"
-      },
-      "status": {
-        "description": "Abonelik ve lisans durumunu göster",
-        "localLicense": "Yerel lisans:",
-        "plan": "  Plan:      {{plan}}",
-        "statusLabel": "  Durum:     {{status}}",
-        "machine": "  Makine:    {{machineId}}",
-        "issued": "  Verildi:   {{issuedAt}}",
-        "expires": "  Bitiyor:   {{expiresAt}}",
-        "sequence": "  Sıra:      {{sequenceNumber}}",
-        "expired": "  Lisans SÜRESNİ GEÇMİŞ — `rdc subscription refresh` komutunu çalıştırın",
-        "valid": "  Geçerli ({{mins}} dakika sonra süresi doluyor)",
-        "parseFailed": "  Lisans dosyası ayrıştırılamadı",
-        "noLicense": "Yerel lisans yüklü değil.",
-        "remote": "\nUzak abonelik:",
-        "remotePlan": "  Plan:      {{plan}}",
-        "remoteStatus": "  Durum:     {{status}}",
-        "remoteMachines": "  Makineler: {{active}}/{{max}}",
-        "remoteMachine": "    - {{id}}... (son görülme: {{lastSeen}})"
-      },
-      "refresh": {
-        "description": "Makine lisansını yenile",
-        "refreshing": "Lisans yenileniyor...",
-        "refreshed": "Lisans yenilendi",
-        "success": "Lisans yenilendi ve yüklendi"
-      }
     }
   },
   "common": {
@@ -1604,56 +1604,6 @@
       "required": "Gerekli"
     }
   },
-  "help": {
-    "examples": "Örnekler:",
-    "cli": {
-      "machineInfo": "Makine durumunu göster",
-      "termRepo": "Depoya SSH bağlantısı",
-      "repoUp": "Depo servislerini dağıt",
-      "syncUpload": "Depoya dosya yükle"
-    },
-    "machine": {
-      "info": "Tam makine durumunu göster",
-      "containers": "Çalışan konteynerleri listele",
-      "health": "CI/CD için sağlık kontrolü"
-    },
-    "repo": {
-      "create": "Şifreli depo oluştur",
-      "up": "Otomatik bağlama ile dağıt",
-      "down": "Servisleri durdur",
-      "fork": "Test için CoW fork"
-    },
-    "term": {
-      "machine": "Makineye SSH bağlantısı",
-      "repo": "Depoya SSH bağlantısı (DOCKER_HOST otomatik)",
-      "command": "Etkileşimli kabuk olmadan komut çalıştır"
-    },
-    "vscode": {
-      "machine": "Makineyi VS Code'da aç",
-      "repo": "Depoyu VS Code'da aç"
-    },
-    "config": {
-      "init": "SSH anahtarıyla adlandırılmış Config oluştur",
-      "addMachine": "Config'e makine ekle",
-      "setupMachine": "Uzak makinede kurulum çalıştır",
-      "setMachine": "Varsayılan makineyi ayarla"
-    },
-    "store": {
-      "add": "S3 depo arka ucu ekle",
-      "push": "Config'i tüm depolara gönder",
-      "pull": "Depodan Config al"
-    },
-    "sync": {
-      "upload": "Yerel dosyaları depoya yükle",
-      "download": "Depo dosyalarını yerele indir",
-      "status": "Senkronizasyon durumunu göster"
-    },
-    "backup": {
-      "push": "Yedeklemeyi depolamaya gönder",
-      "pull": "Yedeklemeyi depolamadan al",
-      "list": "Depolamadaki yedeklemeleri listele"
-    }
-  },
   "errors": {
     "activationFailed": "Etkinleştirme başarısız",
     "affectedChildClones": ". Etkilenen alt klonlar: {{clones}}. Önce alt klonları silin veya yükseltin.",
@@ -1703,6 +1653,9 @@
     "repositoryRequired": "Depo adı gerekli. --repository <name> kullanın.",
     "resourceNotFound": "{{resource}} bulunamadı",
     "sshKeyNotFound": "SSH anahtarı bulunamadı: {{path}}",
+    "subscription": {
+      "notLoggedIn": "Giriş yapılmamış. Önce `rdc subscription login` komutunu çalıştırın."
+    },
     "sync": {
       "localPathNotFound": "Yerel yol bulunamadı: {{path}}",
       "noHostKey": "\"{{machine}}\" makinesinin kasada yapılandırılmış bir ana bilgisayar anahtarı yok",
@@ -1738,13 +1691,61 @@
       "noIpAddress": "\"{{machine}}\" makinesinin yapılandırılmış bir IP adresi yok",
       "noPrivateKey": "\"{{team}}\" takımının yapılandırılmış bir SSH özel anahtarı yok",
       "notFound": "VS Code bulunamadı.\n\nLütfen buradan yükleyin: https://code.visualstudio.com/\nVeya REDIACC_VSCODE_PATH ortam değişkenini ayarlayın."
+    }
+  },
+  "help": {
+    "backup": {
+      "list": "Depolamadaki yedeklemeleri listele",
+      "pull": "Yedeklemeyi depolamadan al",
+      "push": "Yedeklemeyi depolamaya gönder"
     },
-    "subscription": {
-      "notLoggedIn": "Giriş yapılmamış. Önce `rdc subscription login` komutunu çalıştırın."
+    "cli": {
+      "machineInfo": "Makine durumunu göster",
+      "repoUp": "Depo servislerini dağıt",
+      "syncUpload": "Depoya dosya yükle",
+      "termRepo": "Depoya SSH bağlantısı"
+    },
+    "config": {
+      "addMachine": "Config'e makine ekle",
+      "init": "SSH anahtarıyla adlandırılmış Config oluştur",
+      "setMachine": "Varsayılan makineyi ayarla",
+      "setupMachine": "Uzak makinede kurulum çalıştır"
+    },
+    "examples": "Örnekler:",
+    "machine": {
+      "containers": "Çalışan konteynerleri listele",
+      "health": "CI/CD için sağlık kontrolü",
+      "info": "Tam makine durumunu göster"
+    },
+    "repo": {
+      "create": "Şifreli depo oluştur",
+      "down": "Servisleri durdur",
+      "fork": "Test için CoW fork",
+      "up": "Otomatik bağlama ile dağıt"
+    },
+    "store": {
+      "add": "S3 depo arka ucu ekle",
+      "pull": "Depodan Config al",
+      "push": "Config'i tüm depolara gönder"
+    },
+    "sync": {
+      "download": "Depo dosyalarını yerele indir",
+      "status": "Senkronizasyon durumunu göster",
+      "upload": "Yerel dosyaları depoya yükle"
+    },
+    "term": {
+      "command": "Etkileşimli kabuk olmadan komut çalıştır",
+      "machine": "Makineye SSH bağlantısı",
+      "repo": "Depoya SSH bağlantısı (DOCKER_HOST otomatik)"
+    },
+    "vscode": {
+      "machine": "Makineyi VS Code'da aç",
+      "repo": "Depoyu VS Code'da aç"
     }
   },
   "options": {
     "activationCode": "E-postadan gelen etkinleştirme kodu",
+    "apiToken": "API belirteci (rdt_...)",
     "apiUrl": "API URL'si",
     "bridge": "Köprü adı",
     "cleanupAll": "Tüm rediacc SSH yapılandırmalarını kaldırın",
@@ -1827,6 +1828,7 @@
     "searchInField": "{{field}} içinde ara",
     "searchQueue": "Görev Kimliği, takım, makine, köprüde arayın",
     "searchRepos": "Depoları ada göre filtreleyin",
+    "serverUrl": "Hesap sunucusu URL'si",
     "sessionName": "Oturum adı",
     "skipEnvSetup": "Uzak ortam kurulumunu atla",
     "skipRouterRestart": "İkili güncelleme sonrası yönlendirme sunucusunu yeniden başlatmayı atla",
@@ -1855,9 +1857,7 @@
     "verifyChecksum": "Senkronizasyondan sonra dosyaları sağlama toplamı kullanarak doğrulayın",
     "watch": "Değişiklikleri izleyin",
     "watchUpdates": "Güncellemeleri izleyin",
-    "yes": "Onay istemini atla",
-    "apiToken": "API belirteci (rdt_...)",
-    "serverUrl": "Hesap sunucusu URL'si"
+    "yes": "Onay istemini atla"
   },
   "prompts": {
     "apiUrl": "API URL'si:",
