@@ -315,6 +315,15 @@ export const SUBSCRIPTION_DEFAULTS = {
 
   /** Fallback for unknown machine quota */
   UNKNOWN_QUOTA: '?',
+
+  /** Default account server URL */
+  ACCOUNT_SERVER_URL: 'https://account.rediacc.com',
+
+  /** Device code polling interval (seconds) */
+  DEVICE_CODE_POLL_INTERVAL: 5,
+
+  /** Device code expiry (seconds) */
+  DEVICE_CODE_EXPIRY: 600,
 } as const;
 
 /**

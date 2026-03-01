@@ -96,6 +96,8 @@ export const noHardcodedCliText = {
         'Error message should use t() translation function.',
       hardcodedOutput:
         'Output message should use t() translation function.',
+      hardcodedHelpText:
+        'Help text "{{text}}" in addHelpText() should use t() translation function.',
     },
   },
 
@@ -177,6 +179,61 @@ export const noHardcodedCliText = {
               messageId: 'hardcodedDescription',
               data: { text: value.slice(0, 50) },
             });
+          }
+        }
+
+        // Check .addHelpText('after', `...`) - template literal quasis
+        if (
+          callee.type === 'MemberExpression' &&
+          callee.property.type === 'Identifier' &&
+          callee.property.name === 'addHelpText'
+        ) {
+          const contentArg = node.arguments[1];
+          if (contentArg && contentArg.type === 'TemplateLiteral') {
+            for (const quasi of contentArg.quasis) {
+              const raw = quasi.value.cooked ?? '';
+              // Split into lines; check each line for user-facing text
+              for (const line of raw.split('\n')) {
+                const trimmed = line.trim();
+                if (!trimmed) continue;
+
+                // For command example lines ($ rdc ...), check for hardcoded
+                // descriptions trailing after 2+ spaces (e.g., "$ rdc foo  Description here")
+                if (/^\$\s+/.test(trimmed)) {
+                  const descMatch = trimmed.match(/\s{2,}([A-Z][a-zA-Z].*)$/);
+                  if (descMatch) {
+                    const desc = descMatch[1].trim();
+                    if (desc && /[a-zA-Z]{2,}/.test(desc) && !shouldIgnore(desc)) {
+                      context.report({
+                        node: quasi,
+                        messageId: 'hardcodedHelpText',
+                        data: { text: desc.slice(0, 50) },
+                      });
+                    }
+                  }
+                  continue;
+                }
+
+                // Flag any other user-facing text (including labels like "Examples:")
+                if (/[a-zA-Z]{2,}/.test(trimmed) && !shouldIgnore(trimmed)) {
+                  context.report({
+                    node: quasi,
+                    messageId: 'hardcodedHelpText',
+                    data: { text: trimmed.slice(0, 50) },
+                  });
+                }
+              }
+            }
+          } else if (contentArg) {
+            // Plain string literal in addHelpText — should use template with t()
+            const value = getStringValue(contentArg);
+            if (value && !shouldIgnore(value)) {
+              context.report({
+                node: contentArg,
+                messageId: 'hardcodedHelpText',
+                data: { text: value.slice(0, 50) },
+              });
+            }
           }
         }
 

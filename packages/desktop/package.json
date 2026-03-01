@@ -41,6 +41,7 @@
     "node-pty": "^1.1.0",
     "react-i18next": "^16.5.4",
     "ssh2": "^1.17.0",
+    "tiny-typed-emitter": "^2.1.0",
     "unist-util-visit": "^5.1.0",
     "zod": "^4.3.6"
   },

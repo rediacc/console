@@ -169,6 +169,16 @@ function buildMachinePushParams(
 export function registerBackupCommands(program: Command): void {
   const backup = program.command('backup').description(t('commands.backup.description'));
 
+  backup.addHelpText(
+    'after',
+    `
+${t('help.examples')}
+  $ rdc backup push my-app -m server-1 --to my-storage   ${t('help.backup.push')}
+  $ rdc backup pull my-app -m server-1 --from my-storage  ${t('help.backup.pull')}
+  $ rdc backup list --storage my-storage                   ${t('help.backup.list')}
+`
+  );
+
   // backup push <repo>
   backup
     .command('push <repo>')

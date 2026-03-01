@@ -80,7 +80,7 @@ jobs:
           echo "Built image: $IMAGE_NAME ($(du -h "$IMAGE_PATH" | cut -f1))"
 
       - name: Upload VM Image Artifact
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
           name: vm-disk-image
           path: ${{ runner.temp }}/vm-image/*.img
@@ -212,7 +212,7 @@ jobs:
       - name: Upload Cloudflare Tunnel URL
         if: steps.tunnel.outputs.tunnel-url != ''
         run: echo "${{ steps.tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/tunnel-url.txt
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: steps.tunnel.outputs.tunnel-url != ''
         with:
           name: tunnel-url-attempt-${{ github.run_attempt }}
@@ -225,7 +225,7 @@ jobs:
         run: |
           mkdir -p ${{ runner.temp }}/pinggy-artifact
           echo "${{ steps.pinggy-tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/pinggy-artifact/tunnel-url.txt
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: steps.pinggy-tunnel.outputs.tunnel-url != ''
         with:
           name: tunnel-url-pinggy-attempt-${{ github.run_attempt }}
@@ -260,7 +260,7 @@ jobs:
       # Download pre-built VM image (built in build-disk-image job)
       - name: Download VM Image Artifact
         if: inputs.provision_vms
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           name: vm-disk-image
           path: ${{ runner.temp }}/vm-image
@@ -301,7 +301,7 @@ jobs:
 
       - name: Upload Backend Logs
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         with:
           name: infra-backend-logs-${{ github.sha }}
           path: ${{ runner.temp }}/backend-logs/
@@ -336,7 +336,7 @@ jobs:
       - run: .ci/scripts/setup/install-deps.sh
       - run: .ci/scripts/setup/build-packages.sh
       - run: .ci/scripts/test/run-unit.sh --coverage
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: always()
         with:
           name: test-unit-coverage-${{ github.sha }}
@@ -369,7 +369,7 @@ jobs:
         run: npx playwright test --config tests/playwright.config.ts tests/tests/09-vscode/detection.test.ts
         env:
           PLAYWRIGHT_SKIP_GLOBAL_SETUP: 'true'
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: failure()
         with:
           name: test-vscode-${{ matrix.os }}-${{ github.sha }}
@@ -439,14 +439,14 @@ jobs:
       - if: always()
         run: .ci/scripts/signal/create-complete.sh --name "cli-${{ matrix.platform }}" --status ${{ job.status }}
         shell: bash
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: always()
         with:
           name: test-complete-cli-${{ matrix.platform }}-attempt-${{ github.run_attempt }}
           path: ${{ runner.temp }}/complete.txt
           retention-days: 3
           overwrite: true
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: always()
         with:
           name: test-cli-report-${{ matrix.platform }}-${{ github.sha }}
@@ -497,14 +497,14 @@ jobs:
       - name: Create Completion Signal
         if: always()
         run: .ci/scripts/signal/create-complete.sh --name "e2e-chromium" --status ${{ job.status }}
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: always()
         with:
           name: test-complete-e2e-chromium-attempt-${{ github.run_attempt }}
           path: ${{ runner.temp }}/complete.txt
           retention-days: 3
           overwrite: true
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: always()
         with:
           name: test-e2e-report-${{ github.sha }}
@@ -512,7 +512,7 @@ jobs:
           retention-days: 3
           if-no-files-found: ignore
       # Upload e2e test videos for documentation embedding
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: always()
         with:
           name: e2e-videos-${{ github.sha }}
@@ -605,7 +605,7 @@ jobs:
       - if: always()
         run: .ci/scripts/signal/create-complete.sh --name "e2e-${{ matrix.project }}" --status ${{ job.status }}
         shell: bash
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: always()
         with:
           name: test-complete-e2e-${{ matrix.project }}-attempt-${{ github.run_attempt }}
@@ -675,7 +675,7 @@ jobs:
       - if: always()
         run: .ci/scripts/signal/create-complete.sh --name "bridge-workers-${{ matrix.os-image }}" --status ${{ job.status }}
 
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: always()
         with:
           name: test-bridge-workers-${{ matrix.os-image }}-${{ github.sha }}
@@ -741,7 +741,7 @@ jobs:
       - if: always()
         run: .ci/scripts/signal/create-complete.sh --name "bridge-ceph" --status ${{ job.status }}
 
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: always()
         with:
           name: test-bridge-ceph-${{ github.sha }}
@@ -861,7 +861,7 @@ jobs:
         run: npx playwright test --config tests/playwright.config.ts --project=s3 --workers=1 --reporter=list
 
       # Artifacts
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: always()
         with:
           name: test-cli-local-${{ github.sha }}
@@ -965,7 +965,7 @@ jobs:
         run: .ci/scripts/test/run-cli-local.sh -- tests/tests/08-e2e/09-ceph-operations.test.ts
 
       # Artifacts
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: always()
         with:
           name: test-cli-local-ceph-${{ github.sha }}
@@ -1007,7 +1007,7 @@ jobs:
       - name: Run renet tests
         run: .ci/scripts/private/run-renet.sh test
 
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: always()
         with:
           name: test-renet-coverage-${{ github.sha }}
@@ -1015,7 +1015,7 @@ jobs:
           retention-days: 3
           if-no-files-found: ignore
 
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: always()
         with:
           name: test-renet-results-${{ github.sha }}
@@ -1027,7 +1027,7 @@ jobs:
       - name: Run integration tests
         run: sudo .ci/scripts/private/renet-integration.sh --no-cleanup
 
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: always()
         with:
           name: test-renet-integration-${{ github.sha }}

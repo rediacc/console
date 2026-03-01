@@ -234,6 +234,7 @@ export default tseslint.config(
           '',             // Empty string clearing
           'file-based',   // SSH connection method enum
           '-',            // Table cell placeholder for empty values
+          '\u2014',        // Em-dash placeholder for empty values
           'N/A',          // Not applicable placeholder
           'none',         // No value placeholder
           '!',            // Test reporter symbols

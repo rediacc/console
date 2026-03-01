@@ -1,293 +1,7 @@
 import React from 'react';
+import { CATEGORY_ORDER, SOLUTION_PAGES } from '../config/solution-pages';
 import { useTranslation } from '../i18n/react';
 import type { Language } from '../i18n/types';
-
-interface SolutionCardProps {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  benefits: string[];
-  href?: string;
-  number?: number;
-}
-
-const SolutionCard: React.FC<SolutionCardProps> = ({
-  icon,
-  title,
-  description,
-  benefits,
-  href,
-  number,
-}) => {
-  const { t } = useTranslation();
-  const CardContent = (
-    <>
-      {number && <div className="solution-card-number">{number}</div>}
-      <div className="solution-icon">{icon}</div>
-      <h3 className="solution-title">{title}</h3>
-      <p className="solution-description">{description}</p>
-      <ul className="solution-benefits">
-        {benefits.map((benefit, index) => (
-          <li key={`benefit-${index}-${benefit.substring(0, 20)}`}>{benefit}</li>
-        ))}
-      </ul>
-      {href && (
-        <div className="solution-card-footer">
-          <span className="learn-more-link">
-            {t('common.buttons.learnMore')}
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <path
-                d="M6 12l4-4-4-4"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </span>
-        </div>
-      )}
-    </>
-  );
-
-  if (href) {
-    return (
-      <a href={href} className="solution-card solution-card-link">
-        {CardContent}
-      </a>
-    );
-  }
-
-  return <div className="solution-card">{CardContent}</div>;
-};
-
-// Extracted SVG icons as module-level constants to prevent re-creation on every render
-const DisasterRecoveryIcon = (
-  <svg
-    width="48"
-    height="48"
-    viewBox="0 0 48 48"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-  >
-    <rect
-      x="8"
-      y="8"
-      width="32"
-      height="24"
-      rx="4"
-      stroke="currentColor"
-      strokeWidth="2"
-      fill="none"
-    />
-    <path d="M8 16h32" stroke="currentColor" strokeWidth="2" />
-    <circle cx="12" cy="12" r="1" fill="currentColor" />
-    <circle cx="16" cy="12" r="1" fill="currentColor" />
-    <circle cx="20" cy="12" r="1" fill="currentColor" />
-    <path
-      d="M16 20l4 4 8-8"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M8 36h32l-4 8H12l-4-8z"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinejoin="round"
-      fill="none"
-    />
-  </svg>
-);
-
-const SystemPortabilityIcon = (
-  <svg
-    width="48"
-    height="48"
-    viewBox="0 0 48 48"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-  >
-    <path
-      d="M24 4L6 16v20c0 2.2 1.8 4 4 4h28c2.2 0 4-1.8 4-4V16L24 4z"
-      stroke="currentColor"
-      strokeWidth="2"
-      fill="none"
-    />
-    <path d="M24 4v36" stroke="currentColor" strokeWidth="2" />
-    <path d="M16 20h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    <path d="M16 28h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-  </svg>
-);
-
-const NetworkIcon = (
-  <svg
-    width="48"
-    height="48"
-    viewBox="0 0 48 48"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-  >
-    <rect
-      x="6"
-      y="6"
-      width="36"
-      height="36"
-      rx="8"
-      stroke="currentColor"
-      strokeWidth="2"
-      fill="none"
-    />
-    <circle cx="16" cy="16" r="3" fill="currentColor" />
-    <circle cx="32" cy="16" r="3" fill="currentColor" />
-    <circle cx="24" cy="32" r="3" fill="currentColor" />
-    <path
-      d="M16 19l8 10 8-10"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const DataSecurityIcon = (
-  <svg
-    width="48"
-    height="48"
-    viewBox="0 0 48 48"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-  >
-    <path
-      d="M24 4C12.95 4 4 12.95 4 24s8.95 20 20 20 20-8.95 20-20S35.05 4 24 4z"
-      stroke="currentColor"
-      strokeWidth="2"
-      fill="none"
-    />
-    <path
-      d="M24 12v12l8 5"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const DevelopmentEnvironmentsIcon = (
-  <svg
-    width="48"
-    height="48"
-    viewBox="0 0 48 48"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-  >
-    <rect
-      x="6"
-      y="10"
-      width="36"
-      height="28"
-      rx="2"
-      stroke="currentColor"
-      strokeWidth="2"
-      fill="none"
-    />
-    <path d="M6 18h36" stroke="currentColor" strokeWidth="2" />
-    <circle cx="10" cy="14" r="1" fill="currentColor" />
-    <circle cx="14" cy="14" r="1" fill="currentColor" />
-    <circle cx="18" cy="14" r="1" fill="currentColor" />
-    <path d="M12 24h24M12 30h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    <path
-      d="M38 24l4 4-4 4"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const PreemptiveDefenseIcon = (
-  <svg
-    width="48"
-    height="48"
-    viewBox="0 0 48 48"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-  >
-    {/* Shield */}
-    <path
-      d="M24 4L8 12v12c0 11 16 20 16 20s16-9 16-20V12L24 4z"
-      stroke="currentColor"
-      strokeWidth="2"
-      fill="none"
-    />
-    {/* Clone servers inside shield */}
-    <rect
-      x="16"
-      y="16"
-      width="7"
-      height="10"
-      rx="1"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      fill="none"
-    />
-    <rect
-      x="25"
-      y="16"
-      width="7"
-      height="10"
-      rx="1"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      fill="none"
-    />
-    <path
-      d="M19.5 19h-1M19.5 21h-1M19.5 23h-1"
-      stroke="currentColor"
-      strokeWidth="1"
-      strokeLinecap="round"
-    />
-    <path
-      d="M28.5 19h-1M28.5 21h-1M28.5 23h-1"
-      stroke="currentColor"
-      strokeWidth="1"
-      strokeLinecap="round"
-    />
-    {/* Scanning beam */}
-    <path
-      d="M14 30l10 4 10-4"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M16 33l8 3 8-3"
-      stroke="currentColor"
-      strokeWidth="1"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      opacity="0.5"
-    />
-  </svg>
-);
 
 interface WindowWithImageModal extends Window {
   openImageModal?: (src: string, alt: string) => void;
@@ -299,7 +13,7 @@ interface SolutionsProps {
 
 const Solutions: React.FC<SolutionsProps> = ({ lang = 'en' }) => {
   const { t, to } = useTranslation(lang);
-  const solutionsData = to('solutions.items');
+  const categories = to('solutions.categories') as Record<string, string>;
 
   const openImageModal = (src: string, alt: string) => {
     const win = window as WindowWithImageModal;
@@ -308,79 +22,73 @@ const Solutions: React.FC<SolutionsProps> = ({ lang = 'en' }) => {
     }
   };
 
-  // Memoize solutions array to prevent re-creation on every render
-  const solutions = React.useMemo(
-    () => [
-      {
-        number: 1,
-        icon: DisasterRecoveryIcon,
-        title: solutionsData[0]?.title ?? '',
-        description: solutionsData[0]?.description ?? '',
-        benefits: solutionsData[0]?.benefits ?? [],
-        href: `/${lang}/solutions/disaster-recovery`,
-      },
-      {
-        number: 2,
-        icon: SystemPortabilityIcon,
-        title: solutionsData[1]?.title ?? '',
-        description: solutionsData[1]?.description ?? '',
-        benefits: solutionsData[1]?.benefits ?? [],
-        href: `/${lang}/solutions/system-portability`,
-      },
-      {
-        number: 3,
-        icon: NetworkIcon,
-        title: solutionsData[2]?.title ?? '',
-        description: solutionsData[2]?.description ?? '',
-        benefits: solutionsData[2]?.benefits ?? [],
-        href: `/${lang}/solutions/threat-response`,
-      },
-      {
-        number: 4,
-        icon: DataSecurityIcon,
-        title: solutionsData[3]?.title ?? '',
-        description: solutionsData[3]?.description ?? '',
-        benefits: solutionsData[3]?.benefits ?? [],
-        href: `/${lang}/solutions/data-security`,
-      },
-      {
-        number: 5,
-        icon: DevelopmentEnvironmentsIcon,
-        title: solutionsData[4]?.title ?? '',
-        description: solutionsData[4]?.description ?? '',
-        benefits: solutionsData[4]?.benefits ?? [],
-        href: `/${lang}/solutions/development-environments`,
-      },
-      {
-        number: 6,
-        icon: PreemptiveDefenseIcon,
-        title: solutionsData[5]?.title ?? '',
-        description: solutionsData[5]?.description ?? '',
-        benefits: solutionsData[5]?.benefits ?? [],
-        href: `/${lang}/solutions/preemptive-defense`,
-      },
-    ],
-    [solutionsData, lang]
-  );
+  const grouped = React.useMemo(() => {
+    const slugs = Object.keys(SOLUTION_PAGES);
+    return CATEGORY_ORDER.map((cat) => ({
+      category: cat,
+      label: categories[cat] ?? cat,
+      pages: slugs
+        .filter((slug) => SOLUTION_PAGES[slug].category === cat)
+        .map((slug) => {
+          const config = SOLUTION_PAGES[slug];
+          const content = to(`pages.solutionPages.${config.contentKey}`) as
+            | { hero?: { title?: string }; meta?: { description?: string } }
+            | undefined;
+          return {
+            slug,
+            title: content?.hero?.title ?? slug,
+            description: content?.meta?.description ?? '',
+            href: `/${lang}/solutions/${slug}`,
+          };
+        }),
+    }));
+  }, [categories, lang, to]);
 
   return (
     <section className="solutions" id="solutions">
       <div className="container">
-        <div className="section-header">
+        <div className="section-header reveal">
           <h2 className="section-title">{t('solutions.title')}</h2>
           <p className="section-subtitle">{t('solutions.subtitle')}</p>
         </div>
-        <div className="solutions-grid">
-          {solutions.map((solution) => (
-            <SolutionCard
-              key={solution.number}
-              icon={solution.icon}
-              title={solution.title}
-              description={solution.description}
-              benefits={solution.benefits}
-              href={solution.href}
-              number={solution.number}
-            />
+        <div className="solutions-categories reveal">
+          {grouped.map((group) => (
+            <div key={group.category} className="solutions-category">
+              <h3 className="solutions-category-title">{group.label}</h3>
+              <div className="solutions-category-grid reveal-stagger">
+                {group.pages.map((page) => (
+                  <a
+                    key={page.slug}
+                    href={page.href}
+                    className="solution-card solution-card-link reveal"
+                  >
+                    <h4 className="solution-title">{page.title}</h4>
+                    <p className="solution-description">{page.description}</p>
+                    <div className="solution-card-footer">
+                      <span className="learn-more-link">
+                        {t('common.buttons.learnMore')}
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 16 16"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M6 12l4-4-4-4"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </span>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
         <div className="solution-illustration">

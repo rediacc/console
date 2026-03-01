@@ -1,0 +1,60 @@
+---
+interface Feature {
+  name: string;
+  values: string[];
+}
+
+interface Props {
+  comparison: {
+    overline: string;
+    title: string;
+    description: string;
+    capabilityLabel: string;
+    features: Feature[];
+  };
+  competitors: string[];
+}
+
+const { comparison, competitors } = Astro.props;
+
+function renderValue(val: string) {
+  if (val === 'check') return '<span class="sp-comparison-check">&#10003;</span>';
+  if (val === 'cross') return '<span class="sp-comparison-cross">&#10007;</span>';
+  if (val === 'rediacc') return '<span class="sp-comparison-rediacc">&#10003;</span>';
+  // Text values like "Minutes", "<60s"
+  if (val.startsWith('<')) return `<span class="sp-comparison-rediacc">${val}</span>`;
+  return val;
+}
+---
+
+<section class="sp-comparison-section">
+  <div class="sp-comparison-section-inner">
+    <div class="sp-overline">{comparison.overline}</div>
+    <h2>{comparison.title}</h2>
+    <p>{comparison.description}</p>
+
+    <table class="sp-comparison-table">
+      <thead>
+        <tr>
+          <th>{comparison.capabilityLabel}</th>
+          {competitors.map((name) => (
+            <th>{name}</th>
+          ))}
+          <th>Rediacc</th>
+        </tr>
+      </thead>
+      <tbody>
+        {comparison.features.map((feature) => (
+          <tr>
+            <td>{feature.name}</td>
+            {feature.values.map((val) => (
+              <td>
+                <Fragment set:html={renderValue(val)} />
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</section>

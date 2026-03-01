@@ -1,8 +1,8 @@
-import React, { useState, useRef } from 'react';
-import { PLATFORMS, QUICK_INSTALL_COMMANDS, detectPlatform } from '../config/install';
+import React, { useRef, useState } from 'react';
+import { detectPlatform, PLATFORMS, QUICK_INSTALL_COMMANDS } from '../config/install';
 import { useTranslation } from '../i18n/react';
 import { copyToClipboard } from '../utils/clipboard';
-import { CopyIcon, CheckIcon } from './icons/ClipboardIcons';
+import { CheckIcon, CopyIcon } from './icons/ClipboardIcons';
 import { PLATFORM_ICON_MAP } from './icons/PlatformIcons';
 import type { Platform } from '../config/install';
 import type { Language } from '../i18n/types';

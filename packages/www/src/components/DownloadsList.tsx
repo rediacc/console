@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { PLATFORMS, detectPlatform } from '../config/install';
+import { detectPlatform, PLATFORMS } from '../config/install';
 import { useTranslation } from '../i18n/react';
 import { PLATFORM_ICON_MAP } from './icons/PlatformIcons';
 import PlatformTabs from './PlatformTabs';
 import type { Platform } from '../config/install';
 import type { Language } from '../i18n/types';
-import type { ReleaseData, DownloadFile, CLIFile } from '../utils/release-parser';
+import type { CLIFile, DownloadFile, ReleaseData } from '../utils/release-parser';
 
 interface DownloadsListProps {
   lang: Language;

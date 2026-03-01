@@ -1314,6 +1314,20 @@
   line-height: var(--leading-relaxed);
 }
 
+/* FAQ accordion animation using interpolate-size */
+@supports (interpolate-size: allow-keywords) {
+  .faq-item {
+    interpolate-size: allow-keywords;
+  }
+
+  .faq-item p {
+    overflow: hidden;
+    transition:
+      margin-top 0.2s ease,
+      opacity 0.2s ease;
+  }
+}
+
 /* Final CTA Section - Dark Gradient */
 .pricing-cta {
   padding: var(--section-padding);
@@ -1620,7 +1634,7 @@
   display: block;
   text-align: center;
   padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-full);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   text-decoration: none;
@@ -1673,7 +1687,7 @@
   padding: var(--space-1);
   background: var(--color-bg-alt);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-full);
   width: fit-content;
   margin-inline: auto;
 }
@@ -1681,7 +1695,7 @@
 .billing-toggle-btn {
   padding: var(--space-2) var(--space-5);
   border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-full);
   background: transparent;
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);

@@ -420,6 +420,16 @@ async function syncDownload(options: SyncDownloadOptions): Promise<void> {
 export function registerSyncCommands(program: Command): void {
   const sync = program.command('sync').description(t('commands.sync.description'));
 
+  sync.addHelpText(
+    'after',
+    `
+${t('help.examples')}
+  $ rdc sync upload -m server-1 -r my-app --local ./src    ${t('help.sync.upload')}
+  $ rdc sync download -m server-1 -r my-app --local ./data ${t('help.sync.download')}
+  $ rdc sync status -m server-1 -r my-app                  ${t('help.sync.status')}
+`
+  );
+
   sync
     .command('upload')
     .description(t('commands.sync.upload.description'))

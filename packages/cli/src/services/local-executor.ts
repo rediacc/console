@@ -17,6 +17,7 @@ import * as path from 'node:path';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { configService } from './config-resources.js';
+import { ensureMachineLicense } from './license.js';
 import { outputService } from './output.js';
 import {
   buildLocalVault,
@@ -152,6 +153,7 @@ class LocalExecutorService {
         repositoryConfigs,
       });
 
+      await ensureMachineLicense(machine, sshPrivateKey);
       await provisionRenetToRemote(config, machine, sshPrivateKey, options);
       await verifyMachineSetup(machine, sshPrivateKey, {
         ...options,

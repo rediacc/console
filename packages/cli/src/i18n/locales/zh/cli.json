@@ -1,6 +1,6 @@
 {
   "cli": {
-    "description": "Rediacc 控制台命令行界面 - 用于 Rediacc 操作的命令行接口"
+    "description": "通过 SSH 管理机器、仓库和部署"
   },
   "commands": {
     "audit": {
@@ -102,7 +102,7 @@
       }
     },
     "backup": {
-      "description": "备份和恢复仓库",
+      "description": "将仓库备份和恢复到外部存储",
       "list": {
         "description": "列出存储或机器上的可用备份",
         "listing": "正在列出备份...",
@@ -341,18 +341,11 @@
         "description": "清除默认值（全部或特定键）",
         "keyCleared": "已清除 \"{{key}}\""
       },
-      "recover": {
-        "description": "从备份文件 (.bak) 恢复配置",
-        "noBackup": "未找到配置 \"{{name}}\" 的备份",
-        "confirm": "从备份恢复配置 \"{{name}}\"？",
-        "success": "配置 \"{{name}}\" 已从备份恢复（版本 {{version}}）",
-        "failed": "从备份恢复配置 \"{{name}}\" 失败"
-      },
       "delete": {
         "description": "删除配置文件",
         "success": "配置 \"{{name}}\" 已删除"
       },
-      "description": "管理 CLI 配置文件",
+      "description": "管理配置文件、机器和 SSH 连接",
       "importStorage": {
         "description": "从 rclone 配置文件导入存储",
         "imported": "已导入存储 \"{{name}}\"（{{type}}）",
@@ -364,7 +357,7 @@
       },
       "init": {
         "alreadyExists": "配置 \"{{name}}\" 已存在",
-        "description": "初始化新配置文件",
+        "description": "创建新的命名配置文件",
         "optionMasterPassword": "使用主密码加密资源",
         "optionS3AccessKeyId": "S3 访问密钥 ID",
         "optionS3Bucket": "S3 存储桶名称",
@@ -392,6 +385,13 @@
         "installingProxy": "正在安装并启动代理...",
         "proxyInstallWarning": "代理安装失败（代码 {{code}}）。请手动运行：sudo renet proxy install",
         "success": "基础设施配置已推送到 \"{{name}}\""
+      },
+      "recover": {
+        "confirm": "从备份恢复配置 \"{{name}}\"？",
+        "description": "从备份文件 (.bak) 恢复配置",
+        "failed": "从备份恢复配置 \"{{name}}\" 失败",
+        "noBackup": "未找到配置 \"{{name}}\" 的备份",
+        "success": "配置 \"{{name}}\" 已从备份恢复（版本 {{version}}）"
       },
       "removeMachine": {
         "description": "从当前配置中移除机器",
@@ -508,7 +508,7 @@
     "machine": {
       "containers": {
         "allHealthy": "所有容器都健康",
-        "description": "列出机器上的 Docker 容器",
+        "description": "列出机器上正在运行的容器",
         "fetched": "容器已获取",
         "fetching": "正在获取容器...",
         "healthCheck": "健康检查模式 - 如果有不健康的容器，将以代码 2 退出",
@@ -526,7 +526,7 @@
         "description": "删除机器",
         "success": "机器 \"{{name}}\" 已删除"
       },
-      "description": "机器管理",
+      "description": "管理远程机器（状态、容器、服务、健康检查）",
       "health": {
         "containersSection": "\n容器：",
         "containersSummary": "  {{running}}/{{total}} 正在运行（{{healthy}} 健康，{{unhealthy}} 不健康）",
@@ -770,7 +770,7 @@
       "build": {
         "description": "从组件构建 {{scheme}}:// URL"
       },
-      "description": "管理 {{scheme}}:// 协议处理程序注册和 URL 处理",
+      "description": "注册和处理 {{scheme}}:// 协议 URL",
       "open": {
         "action": "操作：",
         "cliCommand": "\n等效的命令行界面命令：",
@@ -915,7 +915,7 @@
         "removed": "已从配置中移除 \"{{repository}}\"",
         "starting": "正在 \"{{machine}}\" 上删除 \"{{repository}}\"..."
       },
-      "description": "仓库生命周期管理 (本地模式)",
+      "description": "在机器上部署和管理加密仓库",
       "down": {
         "completed": "服务已停止",
         "description": "停止仓库服务",
@@ -994,7 +994,7 @@
       },
       "up": {
         "completed": "服务已启动",
-        "description": "启动仓库服务 (Rediaccfile 编排)",
+        "description": "部署或更新仓库（挂载、准备、启动服务）",
         "failed": "服务启动失败",
         "grandOption": "主仓库名称 (自动解析为 GUID)",
         "mountOption": "先挂载仓库",
@@ -1004,7 +1004,7 @@
       "upAll": {
         "completed": "所有仓库已启动",
         "concurrencyOption": "最大并发仓库数 (默认: 3)",
-        "description": "启动机器上的所有仓库服务",
+        "description": "部署机器上的所有仓库",
         "dryRunOption": "显示将要执行的操作而不实际执行",
         "failed": "全部启动操作失败",
         "includeForksOption": "同时挂载/启动分叉的仓库",
@@ -1114,7 +1114,7 @@
         "noFiles": "未找到文件",
         "pathOption": "要列出的子目录路径"
       },
-      "description": "存储管理",
+      "description": "管理存储提供商和浏览远程文件",
       "list": {
         "description": "列出存储提供商",
         "fetching": "正在获取存储提供商..."
@@ -1198,9 +1198,53 @@
         "pushed": "已推送到同步存储 \"{{store}}\""
       }
     },
+    "subscription": {
+      "description": "管理机器许可证和订阅",
+      "login": {
+        "browserFailed": "无法自动打开浏览器。请访问上方链接。",
+        "description": "使用Web门户的API令牌进行认证",
+        "expired": "授权已超时。请重试。",
+        "initFailed": "无法启动登录。服务器是否正在运行？",
+        "machines": "机器: {{active}}/{{max}}",
+        "openBrowser": "请访问此链接进行授权：",
+        "plan": "计划: {{plan}}",
+        "polling": "等待批准（按 Ctrl+C 取消）...",
+        "success": "登录成功",
+        "tokenInvalid": "令牌必须以 rdt_ 开头",
+        "tokenPrompt": "请输入您的API令牌（来自Web门户）:",
+        "validated": "令牌已验证",
+        "validating": "正在验证令牌...",
+        "waitingApproval": "等待浏览器授权..."
+      },
+      "refresh": {
+        "description": "刷新机器许可证",
+        "refreshed": "许可证已刷新",
+        "refreshing": "正在刷新许可证...",
+        "success": "许可证已刷新并安装"
+      },
+      "status": {
+        "description": "显示订阅和许可证状态",
+        "expired": "  许可证已过期 — 请运行 `rdc subscription refresh`",
+        "expires": "  过期日期: {{expiresAt}}",
+        "issued": "  颁发日期: {{issuedAt}}",
+        "localLicense": "本地许可证:",
+        "machine": "  机器:     {{machineId}}",
+        "noLicense": "未安装本地许可证。",
+        "parseFailed": "  无法解析许可证文件",
+        "plan": "  计划:     {{plan}}",
+        "remote": "\n远程订阅:",
+        "remoteMachine": "    - {{id}}...（最后上线: {{lastSeen}}）",
+        "remoteMachines": "  机器: {{active}}/{{max}}",
+        "remotePlan": "  计划:     {{plan}}",
+        "remoteStatus": "  状态:     {{status}}",
+        "sequence": "  序列号:   {{sequenceNumber}}",
+        "statusLabel": "  状态:     {{status}}",
+        "valid": "  有效（{{mins}} 分钟后过期）"
+      }
+    },
     "sync": {
       "cancelled": "同步已取消。",
-      "description": "使用 rsync 与仓库进行文件同步",
+      "description": "通过 rsync 在本地和远程仓库之间传输文件",
       "download": {
         "completed": "下载完成：{{count}} 个文件已传输",
         "description": "从仓库下载文件",
@@ -1404,7 +1448,7 @@
         "success": "VS Code 已成功启动。",
         "testingConnectivity": "正在测试与 {{host}}:{{port}} 的连接..."
       },
-      "description": "VS Code 远程 SSH 集成",
+      "description": "打开 VS Code Remote SSH 连接到机器或仓库",
       "list": {
         "configFile": "\n配置文件：{{path}}",
         "description": "列出已配置的 VS Code SSH 连接",
@@ -1412,51 +1456,6 @@
         "keyPersisted": "（密钥已保存）",
         "noConnections": "未配置任何 VS Code SSH 连接。",
         "total": "\n总计：{{count}} 个连接"
-      }
-    },
-    "subscription": {
-      "description": "管理机器许可证和订阅",
-      "login": {
-        "description": "使用Web门户的API令牌进行认证",
-        "tokenPrompt": "请输入您的API令牌（来自Web门户）:",
-        "tokenInvalid": "令牌必须以 rdt_ 开头",
-        "validating": "正在验证令牌...",
-        "validated": "令牌已验证",
-        "success": "登录成功",
-        "plan": "计划: {{plan}}",
-        "machines": "机器: {{active}}/{{max}}"
-      },
-      "activate": {
-        "description": "激活此机器并颁发许可证",
-        "activating": "正在激活机器...",
-        "activated": "机器已激活",
-        "installed": "许可证已安装",
-        "licenseFile": "许可证文件: {{path}}"
-      },
-      "status": {
-        "description": "显示订阅和许可证状态",
-        "localLicense": "本地许可证:",
-        "plan": "  计划:     {{plan}}",
-        "statusLabel": "  状态:     {{status}}",
-        "machine": "  机器:     {{machineId}}",
-        "issued": "  颁发日期: {{issuedAt}}",
-        "expires": "  过期日期: {{expiresAt}}",
-        "sequence": "  序列号:   {{sequenceNumber}}",
-        "expired": "  许可证已过期 — 请运行 `rdc subscription refresh`",
-        "valid": "  有效（{{mins}} 分钟后过期）",
-        "parseFailed": "  无法解析许可证文件",
-        "noLicense": "未安装本地许可证。",
-        "remote": "\n远程订阅:",
-        "remotePlan": "  计划:     {{plan}}",
-        "remoteStatus": "  状态:     {{status}}",
-        "remoteMachines": "  机器: {{active}}/{{max}}",
-        "remoteMachine": "    - {{id}}...（最后上线: {{lastSeen}}）"
-      },
-      "refresh": {
-        "description": "刷新机器许可证",
-        "refreshing": "正在刷新许可证...",
-        "refreshed": "许可证已刷新",
-        "success": "许可证已刷新并安装"
       }
     }
   },
@@ -1654,6 +1653,9 @@
     "repositoryRequired": "需要仓库名称。使用 --repository <name>。",
     "resourceNotFound": "{{resource}} 未找到",
     "sshKeyNotFound": "SSH 密钥未找到：{{path}}",
+    "subscription": {
+      "notLoggedIn": "未登录。请先运行 `rdc subscription login`。"
+    },
     "sync": {
       "localPathNotFound": "本地路径不存在：{{path}}",
       "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
@@ -1689,15 +1691,61 @@
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
       "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
       "notFound": "未找到 VS Code。\n\n请从以下地址安装：https://code.visualstudio.com/\n或设置 REDIACC_VSCODE_PATH 环境变量。"
+    }
+  },
+  "help": {
+    "backup": {
+      "list": "列出存储上的备份",
+      "pull": "从存储拉取仓库备份",
+      "push": "推送仓库备份到存储"
     },
-    "subscription": {
-      "notLoggedIn": "未登录。请先运行 `rdc subscription login`。",
-      "noMachineId": "无法确定机器ID。请确保renet已安装或/etc/machine-id存在。",
-      "writeFailed": "写入许可证文件失败。请使用sudo运行或确保 {{path}} 可写。"
+    "cli": {
+      "machineInfo": "显示机器状态",
+      "repoUp": "部署仓库服务",
+      "syncUpload": "上传文件到仓库",
+      "termRepo": "SSH 连接到仓库"
+    },
+    "config": {
+      "addMachine": "向配置添加机器",
+      "init": "使用 SSH 密钥创建命名配置",
+      "setMachine": "设置默认机器",
+      "setupMachine": "在远程机器上运行安装"
+    },
+    "examples": "示例:",
+    "machine": {
+      "containers": "列出运行中的容器",
+      "health": "CI/CD 健康检查",
+      "info": "显示完整机器状态"
+    },
+    "repo": {
+      "create": "创建加密仓库",
+      "down": "停止服务",
+      "fork": "创建 CoW 测试分支",
+      "up": "自动挂载部署"
+    },
+    "store": {
+      "add": "添加 S3 存储后端",
+      "pull": "从存储拉取配置",
+      "push": "推送配置到所有存储"
+    },
+    "sync": {
+      "download": "下载仓库文件到本地",
+      "status": "显示同步状态",
+      "upload": "上传本地文件到仓库"
+    },
+    "term": {
+      "command": "无交互式 shell 执行命令",
+      "machine": "SSH 连接到机器",
+      "repo": "SSH 连接到仓库（自动设置 DOCKER_HOST）"
+    },
+    "vscode": {
+      "machine": "在 VS Code 中打开机器",
+      "repo": "在 VS Code 中打开仓库"
     }
   },
   "options": {
     "activationCode": "来自电子邮件的激活码",
+    "apiToken": "API令牌 (rdt_...)",
     "apiUrl": "API 网址",
     "bridge": "网桥名称",
     "cleanupAll": "移除所有 rediacc SSH 配置",
@@ -1780,6 +1828,7 @@
     "searchInField": "在 {{field}} 中搜索",
     "searchQueue": "在任务 ID、团队、机器、网桥中搜索",
     "searchRepos": "按名称过滤仓库",
+    "serverUrl": "账户服务器URL",
     "sessionName": "会话名称",
     "skipEnvSetup": "跳过远程环境设置",
     "skipRouterRestart": "二进制更新后跳过重启路由服务器",
@@ -1808,9 +1857,7 @@
     "verifyChecksum": "同步后使用校验和验证文件",
     "watch": "监视更改",
     "watchUpdates": "监视更新",
-    "yes": "跳过确认提示",
-    "apiToken": "API令牌 (rdt_...)",
-    "serverUrl": "账户服务器URL"
+    "yes": "跳过确认提示"
   },
   "prompts": {
     "apiUrl": "API URL：",

@@ -56,6 +56,17 @@ async function executeRepoFunction(
 export function registerRepoCommands(program: Command): void {
   const repo = program.command('repo').description(t('commands.repo.description'));
 
+  repo.addHelpText(
+    'after',
+    `
+${t('help.examples')}
+  $ rdc repo create my-app -m server-1 --size 5G   ${t('help.repo.create')}
+  $ rdc repo up my-app -m server-1 --mount          ${t('help.repo.up')}
+  $ rdc repo down my-app -m server-1                ${t('help.repo.down')}
+  $ rdc repo fork my-app my-app-test -m server-1    ${t('help.repo.fork')}
+`
+  );
+
   // repo create <name>
   repo
     .command('create <name>')

@@ -231,6 +231,15 @@ cli() {
     export PATH="$renet_bin_dir:$PATH"
 
     log_info "Renet available at: $renet_bin_dir/renet"
+
+    # Load account env if available (provides REDIACC_ACCOUNT_SERVER for subscription commands)
+    local account_env="$ROOT_DIR/private/account/.env"
+    if [[ -f "$account_env" ]]; then
+        set -a
+        source "$account_env"
+        set +a
+    fi
+
     log_step "Starting CLI (dev mode)"
 
     # Run CLI via tsx, passing through all arguments
@@ -639,6 +648,13 @@ SERVICE COMMANDS:
   service status                  Show service status
   service logs [container]        Show logs (web, rustfs, all)
 
+ACCOUNT COMMANDS:
+  account dev              Start account dev gateway (API + portal + www on one port)
+  account test             Run account integration tests (vitest)
+  account test e2e [opts]  Run account E2E tests (playwright, with Stripe wiring)
+  account stop             Stop account Docker containers
+  account setup            Generate .env + start infrastructure
+
 PROVISION COMMANDS:
   provision start            Provision KVM VMs (bridge + workers)
   provision stop             Destroy all VMs
@@ -783,6 +799,35 @@ main() {
                     log_error "Unknown provision command: ${1:-}"
                     echo ""
                     echo "Usage: ./run.sh provision [start|stop|status|auto]"
+                    exit 1
+                    ;;
+            esac
+            ;;
+
+        # Account server
+        account)
+            shift
+            source "$ROOT_DIR/.ci/lib/account.sh"
+            case "${1:-}" in
+                dev) account_dev ;;
+                test)
+                    shift
+                    case "${1:-}" in
+                        e2e)
+                            shift
+                            account_test_e2e "$@"
+                            ;;
+                        *)
+                            account_test "$@"
+                            ;;
+                    esac
+                    ;;
+                stop) account_stop ;;
+                setup) account_setup ;;
+                *)
+                    log_error "Unknown account command: ${1:-}"
+                    echo ""
+                    echo "Usage: ./run.sh account [dev|test|stop|setup]"
                     exit 1
                     ;;
             esac

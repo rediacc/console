@@ -68,7 +68,7 @@ const lastIndex = items.length - 1;
 
 <style>
 .breadcrumb {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--breadcrumb-margin-bottom, var(--space-4));
   font-size: var(--font-size-sm);
 }
 
@@ -89,18 +89,18 @@ const lastIndex = items.length - 1;
 }
 
 .breadcrumb-link {
-  color: var(--color-text-secondary);
+  color: var(--breadcrumb-link-color, var(--color-text-secondary));
   text-decoration: none;
   transition: color var(--transition-duration-base) ease;
 }
 
 .breadcrumb-link:hover {
-  color: var(--color-brand-primary);
+  color: var(--breadcrumb-link-hover-color, var(--color-brand-primary));
   text-decoration: underline;
 }
 
 .breadcrumb-link:focus-visible {
-  color: var(--color-brand-primary);
+  color: var(--breadcrumb-link-hover-color, var(--color-brand-primary));
   text-decoration: underline;
   outline: 2px solid var(--color-brand-primary);
   outline-offset: 2px;
@@ -109,12 +109,12 @@ const lastIndex = items.length - 1;
 
 .breadcrumb-text,
 .breadcrumb-current .breadcrumb-text {
-  color: var(--color-text);
+  color: var(--breadcrumb-current-color, var(--color-text));
   font-weight: var(--font-weight-medium);
 }
 
 .breadcrumb-separator {
-  color: var(--color-text-secondary);
+  color: var(--breadcrumb-separator-color, var(--color-text-secondary));
   font-weight: normal;
   user-select: none;
 }

@@ -12,6 +12,11 @@ directory = "./dist"
 not_found_handling = "404-page"
 run_worker_first = ["/account", "/account/*"]
 
-[vars]
-S3_BUCKET = "subscriptions"
-S3_REGION = "auto"
+[[d1_databases]]
+binding = "DB"
+database_name = "account-db"
+database_id = "placeholder"
+migrations_dir = "../../private/account/drizzle"
+
+# All account service configuration set via `wrangler secret put` in CI.
+# See org secrets: ACCOUNT_*, AWS_SES_*, STRIPE_*

@@ -7,7 +7,7 @@ description: >-
 category: Use Cases
 order: 10
 language: es
-sourceHash: 6128ad0f1099ba85
+sourceHash: c13b017afc2c8371
 ---
 
 > **Ambientes efímeros. Paridad de producción. Cero tickets de DevOps.**
@@ -218,7 +218,7 @@ Basado en investigaciones de la industria en más de 100 fuentes y más de 65 00
 
 * [**Recuperación de viajes en el tiempo**](/en/docs/time-travel-recovery) - Restauración de infraestructura en un punto en el tiempo 
 * [**Actualizaciones sin riesgos**](/en/docs/risk-free-upgrades) - Pruebe las migraciones del sistema operativo sin riesgos 
-* [**Recuperación de desastres**](/en/solutions/disaster-recovery) - Copias de seguridad verificadas que realmente funcionan
+* [**Recuperación de desastres**](/en/solutions/backup-verification) - Copias de seguridad verificadas que realmente funcionan
 
 ---
 

@@ -1,6 +1,6 @@
 {
   "cli": {
-    "description": "Rediacc コンソール CLI - Rediacc 操作用コマンドラインインターフェース"
+    "description": "SSH 経由でマシン、リポジトリ、デプロイを管理する"
   },
   "commands": {
     "audit": {
@@ -102,7 +102,7 @@
       }
     },
     "backup": {
-      "description": "リポジトリのバックアップと復元",
+      "description": "リポジトリを外部ストレージにバックアップ・復元する",
       "list": {
         "description": "ストレージまたはマシン上の利用可能なバックアップを一覧表示する",
         "listing": "バックアップを一覧表示中...",
@@ -341,18 +341,11 @@
         "description": "デフォルト値をクリアする（すべてまたは特定のキー）",
         "keyCleared": "\"{{key}}\" をクリアしました"
       },
-      "recover": {
-        "description": "バックアップファイル (.bak) から設定を復元する",
-        "noBackup": "設定 \"{{name}}\" のバックアップが見つかりません",
-        "confirm": "設定 \"{{name}}\" をバックアップから復元しますか？",
-        "success": "設定 \"{{name}}\" をバックアップから復元しました（バージョン {{version}}）",
-        "failed": "設定 \"{{name}}\" のバックアップからの復元に失敗しました"
-      },
       "delete": {
         "description": "設定ファイルを削除する",
         "success": "設定 \"{{name}}\" が削除されました"
       },
-      "description": "CLI 設定ファイルを管理する",
+      "description": "設定ファイル、マシン、SSH 接続を管理する",
       "importStorage": {
         "description": "rclone 設定ファイルからストレージをインポートする",
         "imported": "ストレージ \"{{name}}\" をインポートしました ({{type}})",
@@ -364,7 +357,7 @@
       },
       "init": {
         "alreadyExists": "設定 \"{{name}}\" は既に存在します",
-        "description": "新しい設定ファイルを初期化する",
+        "description": "新しい名前付き設定ファイルを作成する",
         "optionMasterPassword": "マスターパスワードでリソースを暗号化する",
         "optionS3AccessKeyId": "S3 アクセスキー ID",
         "optionS3Bucket": "S3 バケット名",
@@ -392,6 +385,13 @@
         "installingProxy": "プロキシをインストールして起動中です...",
         "proxyInstallWarning": "プロキシのインストールに失敗しました (コード {{code}})。手動で実行してください: sudo renet proxy install",
         "success": "インフラ設定を \"{{name}}\" にプッシュしました"
+      },
+      "recover": {
+        "confirm": "設定 \"{{name}}\" をバックアップから復元しますか？",
+        "description": "バックアップファイル (.bak) から設定を復元する",
+        "failed": "設定 \"{{name}}\" のバックアップからの復元に失敗しました",
+        "noBackup": "設定 \"{{name}}\" のバックアップが見つかりません",
+        "success": "設定 \"{{name}}\" をバックアップから復元しました（バージョン {{version}}）"
       },
       "removeMachine": {
         "description": "現在の設定からマシンを削除する",
@@ -508,7 +508,7 @@
     "machine": {
       "containers": {
         "allHealthy": "すべてのコンテナが健全です",
-        "description": "マシン上のDockerコンテナをリスト表示する",
+        "description": "マシン上の実行中コンテナを一覧表示する",
         "fetched": "コンテナが取得されました",
         "fetching": "コンテナを取得中です...",
         "healthCheck": "健全性チェックモード - 不健全なものがある場合はコード2で終了します",
@@ -526,7 +526,7 @@
         "description": "マシンを削除する",
         "success": "マシン \"{{name}}\" が削除されました"
       },
-      "description": "マシン管理",
+      "description": "リモートマシンの管理 (ステータス、コンテナ、サービス、ヘルス)",
       "health": {
         "containersSection": "\nコンテナ:",
         "containersSummary": "  {{running}}/{{total}} 実行中 ({{healthy}} 健全, {{unhealthy}} 不健全)",
@@ -770,7 +770,7 @@
       "build": {
         "description": "コンポーネントから {{scheme}}:// URL をビルドする"
       },
-      "description": "{{scheme}}:// プロトコルハンドラーの登録と URL 処理を管理する",
+      "description": "{{scheme}}:// プロトコル URL の登録と処理",
       "open": {
         "action": "アクション:",
         "cliCommand": "\n同等の CLI コマンド:",
@@ -915,7 +915,7 @@
         "removed": "\"{{repository}}\" を設定から削除しました",
         "starting": "\"{{machine}}\" で \"{{repository}}\" を削除中..."
       },
-      "description": "リポジトリライフサイクル管理 (ローカルモード)",
+      "description": "マシン上の暗号化リポジトリをデプロイ・管理する",
       "down": {
         "completed": "サービスが停止されました",
         "description": "リポジトリサービスを停止する",
@@ -994,7 +994,7 @@
       },
       "up": {
         "completed": "サービスが開始されました",
-        "description": "リポジトリサービスを開始する (Rediaccfile オーケストレーション)",
+        "description": "リポジトリをデプロイまたは更新する (マウント、準備、サービス起動)",
         "failed": "サービスの開始に失敗しました",
         "grandOption": "グランドリポジトリ名 (自動的に GUID に解決)",
         "mountOption": "最初にリポジトリをマウントする",
@@ -1004,7 +1004,7 @@
       "upAll": {
         "completed": "すべてのリポジトリが開始されました",
         "concurrencyOption": "最大同時リポジトリ数 (デフォルト: 3)",
-        "description": "マシン上のすべてのリポジトリサービスを開始する",
+        "description": "マシン上のすべてのリポジトリをデプロイする",
         "dryRunOption": "実行せずに行われる内容を表示する",
         "failed": "全体開始操作に失敗しました",
         "includeForksOption": "フォークされたリポジトリもマウント/開始する",
@@ -1114,7 +1114,7 @@
         "noFiles": "ファイルが見つかりません",
         "pathOption": "リスト表示するサブディレクトリのパス"
       },
-      "description": "ストレージ管理",
+      "description": "ストレージプロバイダーの管理とリモートファイルの参照",
       "list": {
         "description": "ストレージプロバイダーをリスト表示する",
         "fetching": "ストレージプロバイダーを取得中です..."
@@ -1198,9 +1198,53 @@
         "pushed": "ストア \"{{store}}\" にプッシュしました"
       }
     },
+    "subscription": {
+      "description": "マシンライセンスとサブスクリプションの管理",
+      "login": {
+        "browserFailed": "ブラウザを自動的に開けませんでした。上記のURLにアクセスしてください。",
+        "description": "WebポータルのAPIトークンで認証",
+        "expired": "認証がタイムアウトしました。もう一度お試しください。",
+        "initFailed": "ログインの開始に失敗しました。サーバーは稼働していますか？",
+        "machines": "マシン: {{active}}/{{max}}",
+        "openBrowser": "このURLにアクセスして認証してください：",
+        "plan": "プラン: {{plan}}",
+        "polling": "承認を待っています（Ctrl+Cでキャンセル）...",
+        "success": "ログイン成功",
+        "tokenInvalid": "トークンは rdt_ で始まる必要があります",
+        "tokenPrompt": "APIトークンを入力してください（Webポータルから）:",
+        "validated": "トークン検証済み",
+        "validating": "トークンを検証中...",
+        "waitingApproval": "ブラウザでの認証を待っています..."
+      },
+      "refresh": {
+        "description": "マシンライセンスを更新",
+        "refreshed": "ライセンスが更新されました",
+        "refreshing": "ライセンスを更新中...",
+        "success": "ライセンスが更新・インストールされました"
+      },
+      "status": {
+        "description": "サブスクリプションとライセンスの状態を表示",
+        "expired": "  ライセンスが期限切れです — `rdc subscription refresh` を実行してください",
+        "expires": "  有効期限:   {{expiresAt}}",
+        "issued": "  発行日:     {{issuedAt}}",
+        "localLicense": "ローカルライセンス:",
+        "machine": "  マシン:     {{machineId}}",
+        "noLicense": "ローカルライセンスがインストールされていません。",
+        "parseFailed": "  ライセンスファイルを解析できませんでした",
+        "plan": "  プラン:     {{plan}}",
+        "remote": "\nリモートサブスクリプション:",
+        "remoteMachine": "    - {{id}}... (最終確認: {{lastSeen}})",
+        "remoteMachines": "  マシン: {{active}}/{{max}}",
+        "remotePlan": "  プラン:     {{plan}}",
+        "remoteStatus": "  ステータス: {{status}}",
+        "sequence": "  シーケンス: {{sequenceNumber}}",
+        "statusLabel": "  ステータス: {{status}}",
+        "valid": "  有効（残り {{mins}} 分で期限切れ）"
+      }
+    },
     "sync": {
       "cancelled": "同期がキャンセルされました。",
-      "description": "rsync を使用したリポジトリとのファイル同期",
+      "description": "rsync でローカルとリモートのリポジトリ間でファイルを転送する",
       "download": {
         "completed": "ダウンロード完了: {{count}} ファイルが転送されました",
         "description": "リポジトリからファイルをダウンロードする",
@@ -1404,7 +1448,7 @@
         "success": "VS Code が正常に起動されました。",
         "testingConnectivity": "{{host}}:{{port}} への接続をテスト中です..."
       },
-      "description": "VS Code リモート SSH 統合",
+      "description": "マシンまたはリポジトリへの VS Code Remote SSH を開く",
       "list": {
         "configFile": "\n設定ファイル: {{path}}",
         "description": "設定済みの VS Code SSH 接続をリスト表示する",
@@ -1412,51 +1456,6 @@
         "keyPersisted": " (キー永続化済み)",
         "noConnections": "VS Code SSH 接続が設定されていません。",
         "total": "\n合計: {{count}} 個の接続"
-      }
-    },
-    "subscription": {
-      "description": "マシンライセンスとサブスクリプションの管理",
-      "login": {
-        "description": "WebポータルのAPIトークンで認証",
-        "tokenPrompt": "APIトークンを入力してください（Webポータルから）:",
-        "tokenInvalid": "トークンは rdt_ で始まる必要があります",
-        "validating": "トークンを検証中...",
-        "validated": "トークン検証済み",
-        "success": "ログイン成功",
-        "plan": "プラン: {{plan}}",
-        "machines": "マシン: {{active}}/{{max}}"
-      },
-      "activate": {
-        "description": "このマシンをアクティベートしてライセンスを発行",
-        "activating": "マシンをアクティベート中...",
-        "activated": "マシンがアクティベートされました",
-        "installed": "ライセンスがインストールされました",
-        "licenseFile": "ライセンスファイル: {{path}}"
-      },
-      "status": {
-        "description": "サブスクリプションとライセンスの状態を表示",
-        "localLicense": "ローカルライセンス:",
-        "plan": "  プラン:     {{plan}}",
-        "statusLabel": "  ステータス: {{status}}",
-        "machine": "  マシン:     {{machineId}}",
-        "issued": "  発行日:     {{issuedAt}}",
-        "expires": "  有効期限:   {{expiresAt}}",
-        "sequence": "  シーケンス: {{sequenceNumber}}",
-        "expired": "  ライセンスが期限切れです — `rdc subscription refresh` を実行してください",
-        "valid": "  有効（残り {{mins}} 分で期限切れ）",
-        "parseFailed": "  ライセンスファイルを解析できませんでした",
-        "noLicense": "ローカルライセンスがインストールされていません。",
-        "remote": "\nリモートサブスクリプション:",
-        "remotePlan": "  プラン:     {{plan}}",
-        "remoteStatus": "  ステータス: {{status}}",
-        "remoteMachines": "  マシン: {{active}}/{{max}}",
-        "remoteMachine": "    - {{id}}... (最終確認: {{lastSeen}})"
-      },
-      "refresh": {
-        "description": "マシンライセンスを更新",
-        "refreshing": "ライセンスを更新中...",
-        "refreshed": "ライセンスが更新されました",
-        "success": "ライセンスが更新・インストールされました"
       }
     }
   },
@@ -1654,6 +1653,9 @@
     "repositoryRequired": "リポジトリ名が必要です。--repository <name> を使用してください。",
     "resourceNotFound": "{{resource}} が見つかりません",
     "sshKeyNotFound": "SSH キーが見つかりません: {{path}}",
+    "subscription": {
+      "notLoggedIn": "ログインしていません。先に `rdc subscription login` を実行してください。"
+    },
     "sync": {
       "localPathNotFound": "ローカルパスが存在しません: {{path}}",
       "noHostKey": "マシン '{{machine}}' のボルトにホストキーが設定されていません",
@@ -1689,15 +1691,61 @@
       "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
       "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません",
       "notFound": "VS Code が見つかりません。\n\nhttps://code.visualstudio.com/ からインストールしてください\nまたは REDIACC_VSCODE_PATH 環境変数を設定してください。"
+    }
+  },
+  "help": {
+    "backup": {
+      "list": "ストレージ上のバックアップを一覧表示",
+      "pull": "ストレージからバックアップをプル",
+      "push": "バックアップをストレージにプッシュ"
     },
-    "subscription": {
-      "notLoggedIn": "ログインしていません。先に `rdc subscription login` を実行してください。",
-      "noMachineId": "マシンIDを特定できませんでした。renetがインストールされているか、/etc/machine-idが存在することを確認してください。",
-      "writeFailed": "ライセンスファイルの書き込みに失敗しました。sudoで実行するか、{{path}} が書き込み可能であることを確認してください。"
+    "cli": {
+      "machineInfo": "マシンの状態を表示",
+      "repoUp": "リポジトリサービスをデプロイ",
+      "syncUpload": "リポジトリにファイルをアップロード",
+      "termRepo": "リポジトリにSSH接続"
+    },
+    "config": {
+      "addMachine": "Configにマシンを追加",
+      "init": "SSH鍵付き名前付きConfigを作成",
+      "setMachine": "デフォルトマシンを設定",
+      "setupMachine": "リモートマシンでセットアップを実行"
+    },
+    "examples": "例:",
+    "machine": {
+      "containers": "実行中のコンテナを一覧表示",
+      "health": "CI/CD用ヘルスチェック",
+      "info": "マシンの完全な状態を表示"
+    },
+    "repo": {
+      "create": "暗号化リポジトリを作成",
+      "down": "サービスを停止",
+      "fork": "テスト用CoWフォーク",
+      "up": "自動マウントでデプロイ"
+    },
+    "store": {
+      "add": "S3ストアバックエンドを追加",
+      "pull": "ストアからConfigをプル",
+      "push": "全ストアにConfigをプッシュ"
+    },
+    "sync": {
+      "download": "リポジトリファイルをローカルにダウンロード",
+      "status": "同期状態を表示",
+      "upload": "ローカルファイルをリポジトリにアップロード"
+    },
+    "term": {
+      "command": "対話シェルなしでコマンドを実行",
+      "machine": "マシンにSSH接続",
+      "repo": "リポジトリにSSH接続（DOCKER_HOST自動設定）"
+    },
+    "vscode": {
+      "machine": "VS Codeでマシンを開く",
+      "repo": "VS Codeでリポジトリを開く"
     }
   },
   "options": {
     "activationCode": "メールからの認証コード",
+    "apiToken": "APIトークン (rdt_...)",
     "apiUrl": "API の URL",
     "bridge": "ブリッジ名",
     "cleanupAll": "すべての rediacc SSH 設定を削除する",
@@ -1780,6 +1828,7 @@
     "searchInField": "{{field}}で検索",
     "searchQueue": "タスク ID、チーム、マシン、ブリッジで検索",
     "searchRepos": "リポジトリ名でフィルター",
+    "serverUrl": "アカウントサーバーURL",
     "sessionName": "セッション名",
     "skipEnvSetup": "リモート環境セットアップをスキップする",
     "skipRouterRestart": "バイナリ更新後のルートサーバーの再起動をスキップする",
@@ -1808,9 +1857,7 @@
     "verifyChecksum": "同期後にチェックサムを使用してファイルを検証する",
     "watch": "変更を監視する",
     "watchUpdates": "更新を監視する",
-    "yes": "確認プロンプトをスキップする",
-    "apiToken": "APIトークン (rdt_...)",
-    "serverUrl": "アカウントサーバーURL"
+    "yes": "確認プロンプトをスキップする"
   },
   "prompts": {
     "apiUrl": "API URL (エンドポイント):",

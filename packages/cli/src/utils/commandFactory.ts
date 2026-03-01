@@ -408,7 +408,7 @@ export function createResourceCommands(program: Command, config: ResourceCommand
 
   const resource = program
     .command(resourceName)
-    .description(`${capitalizeFirst(resourceName)} management commands`);
+    .description(t(`commands.${resourceName}.description`));
 
   setupListCommand(resource, program, ctx, operations);
   setupCreateCommand(resource, ctx, operations, createOptions, transformCreatePayload);

@@ -11,9 +11,9 @@
  */
 
 import path from 'node:path';
-import { visit, SKIP } from 'unist-util-visit';
+import { SKIP, visit } from 'unist-util-visit';
 import { DEFAULTS_EXTENDED } from '@rediacc/shared/config/defaults';
-import type { Root, Paragraph, Image } from 'mdast';
+import type { Image, Paragraph, Root } from 'mdast';
 import type { Node, Parent } from 'unist';
 
 function isCastUrl(url: string): boolean {

@@ -203,30 +203,6 @@ export function validateTranslationFreshness({
     const enAbs = path.join(path.resolve(repoRoot, '..', '..'), enRel);
     const enParsed = parseMarkdown(enAbs);
 
-    const pending = enParsed.data.translationPending === true;
-    const pendingReason = String(enParsed.data.translationPendingReason ?? '').trim();
-
-    if (pending && pendingReason.length === 0) {
-      errors.push({
-        rule: 'translation-pending-reason',
-        file: enRel,
-        message:
-          'translationPending=true requires translationPendingReason to explain why updates are deferred',
-        suggestion:
-          'Add translationPendingReason with a concrete justification and expected follow-up',
-      });
-      continue;
-    }
-
-    if (pending) {
-      warnings.push({
-        rule: 'translation-pending',
-        file: enRel,
-        message: `Translations deferred: ${pendingReason}`,
-      });
-      continue;
-    }
-
     const expectedHash = computeSourceHash(enParsed.data, enParsed.content);
     const enLineCount = countBodyLines(enParsed.content);
 
@@ -240,7 +216,7 @@ export function validateTranslationFreshness({
           rule: 'translation-missing',
           file: langRel,
           message: `Missing translation for changed English source ${enRel}`,
-          suggestion: `Create ${langRel} or mark ${enRel} with translationPending + translationPendingReason`,
+          suggestion: `Create ${langRel} with the translated content`,
         });
         continue;
       }

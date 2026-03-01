@@ -1,0 +1,82 @@
+---
+interface TerminalLine {
+  type: 'command' | 'check' | 'spacer' | 'success' | 'summary' | 'comment' | 'warn' | 'table-header' | 'table-row';
+  prompt?: string;
+  cmd?: string;
+  flag?: string;
+  value?: string;
+  text?: string;
+  result?: string;
+  pairs?: { label: string; value: string }[];
+}
+
+interface Props {
+  lines: TerminalLine[];
+}
+
+const { lines } = Astro.props;
+---
+
+<div class="sp-hero-visual">
+  <div class="sp-hero-visual-titlebar">
+    <div class="sp-hero-visual-dot red"></div>
+    <div class="sp-hero-visual-dot yellow"></div>
+    <div class="sp-hero-visual-dot green"></div>
+  </div>
+  <div class="sp-terminal-body">
+    {lines.map((line) => {
+      if (line.type === 'comment') {
+        return <div class="sp-terminal-comment">{line.text}</div>;
+      }
+      if (line.type === 'command') {
+        return (
+          <div>
+            <span class="sp-terminal-prompt">{line.prompt}</span>{' '}
+            <span class="sp-terminal-cmd">{line.cmd}</span>{' '}
+            {line.flag && <span class="sp-terminal-flag">{line.flag}</span>}{' '}
+            {line.value && <span class="sp-terminal-value">{line.value}</span>}
+          </div>
+        );
+      }
+      if (line.type === 'spacer') {
+        return <div class="sp-terminal-spacer" />;
+      }
+      if (line.type === 'check') {
+        return (
+          <div class="sp-terminal-line">
+            <span class="sp-terminal-check">&#10003;</span>
+            {line.text}
+            <span class="sp-terminal-dots">{'.'  .repeat(20).substring(0, Math.max(2, 30 - (line.text?.length ?? 0)))}</span>
+            <span class="sp-terminal-done">{line.result}</span>
+          </div>
+        );
+      }
+      if (line.type === 'success') {
+        return <div class="sp-terminal-success">&#10003; {line.text}</div>;
+      }
+      if (line.type === 'summary' && line.pairs) {
+        return (
+          <div class="sp-terminal-summary">
+            {line.pairs.map((pair, i) => (
+              <Fragment>
+                {i > 0 && <Fragment>&nbsp;&nbsp; </Fragment>}
+                {pair.label}: <span class="sp-terminal-summary-value">{pair.value}</span>
+              </Fragment>
+            ))}
+            <span class="sp-terminal-cursor" />
+          </div>
+        );
+      }
+      if (line.type === 'warn') {
+        return <div class="sp-terminal-warn">&#9888; {line.text}</div>;
+      }
+      if (line.type === 'table-header') {
+        return <div class="sp-terminal-table-header">{line.text}</div>;
+      }
+      if (line.type === 'table-row') {
+        return <div class="sp-terminal-table-row">{line.text}</div>;
+      }
+      return null;
+    })}
+  </div>
+</div>

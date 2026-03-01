@@ -130,20 +130,14 @@ services:
       - "3000:3000"
     environment:
       - PORT=3000
-      - S3_ENDPOINT=http://account-rustfs:9000
-      - S3_BUCKET=subscriptions
-      - S3_ACCESS_KEY_ID=${RUSTFS_ACCESS_KEY:-rustfsadmin}
-      - S3_SECRET_ACCESS_KEY=${RUSTFS_SECRET_KEY:-rustfsadmin}
+      - DATABASE_PATH=/data/account.db
       - ED25519_PRIVATE_KEY=${ED25519_PRIVATE_KEY}
       - ED25519_PUBLIC_KEY=${ED25519_PUBLIC_KEY}
       - API_KEY=${ACCOUNT_SERVER_API_KEY}
       - JWT_SECRET=${JWT_SECRET}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
-    depends_on:
-      account-rustfs:
-        condition: service_healthy
-      account-rustfs-init:
-        condition: service_completed_successfully
+    volumes:
+      - account_data:/data
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>{if(!r.ok)process.exit(1)})"]
       interval: 10s
@@ -156,60 +150,6 @@ services:
           - account-server
     restart: unless-stopped
 
-  account-rustfs:
-    image: rustfs/rustfs:latest
-    container_name: rediacc-account-rustfs
-    hostname: rediacc-account-rustfs
-    environment:
-      - RUSTFS_VOLUMES=/data/rustfs{0...3}
-      - RUSTFS_ADDRESS=0.0.0.0:9000
-      - RUSTFS_ACCESS_KEY=${RUSTFS_ACCESS_KEY:-rustfsadmin}
-      - RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY:-rustfsadmin}
-    volumes:
-      - rustfs_data_0:/data/rustfs0
-      - rustfs_data_1:/data/rustfs1
-      - rustfs_data_2:/data/rustfs2
-      - rustfs_data_3:/data/rustfs3
-    depends_on:
-      account-rustfs-volume-init:
-        condition: service_completed_successfully
-    healthcheck:
-      test: ["CMD", "sh", "-c", "curl -f http://127.0.0.1:9000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 6
-      start_period: 15s
-    networks:
-      intranet:
-        aliases:
-          - account-rustfs
-    restart: unless-stopped
-
-  # Fix volume permissions (RustFS runs as UID 10001)
-  account-rustfs-volume-init:
-    image: alpine
-    container_name: rediacc-account-rustfs-volume-init
-    volumes:
-      - rustfs_data_0:/data0
-      - rustfs_data_1:/data1
-      - rustfs_data_2:/data2
-      - rustfs_data_3:/data3
-    command: sh -c "chown -R 10001:10001 /data0 /data1 /data2 /data3"
-    restart: "no"
-
-  account-rustfs-init:
-    image: amazon/aws-cli:latest
-    container_name: rediacc-account-rustfs-init
-    depends_on:
-      account-rustfs:
-        condition: service_healthy
-    environment:
-      - AWS_ACCESS_KEY_ID=${RUSTFS_ACCESS_KEY:-rustfsadmin}
-      - AWS_SECRET_ACCESS_KEY=${RUSTFS_SECRET_KEY:-rustfsadmin}
-    entrypoint: /bin/sh -c "aws --endpoint-url http://account-rustfs:9000 s3 mb s3://subscriptions 2>/dev/null || true"
-    networks:
-      - intranet
-
 # Networks created by compose (not external) for standalone CI mode
 networks:
   internet:
@@ -218,7 +158,4 @@ networks:
     name: rediacc_intranet
 
 volumes:
-  rustfs_data_0:
-  rustfs_data_1:
-  rustfs_data_2:
-  rustfs_data_3:
+  account_data:

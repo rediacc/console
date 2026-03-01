@@ -85,7 +85,11 @@
       "linter": {
         "enabled": true,
         "rules": {
-          "recommended": true
+          "recommended": true,
+          "a11y": {
+            "noAutofocus": "warn",
+            "noStaticElementInteractions": "warn"
+          }
         }
       },
       "assist": {

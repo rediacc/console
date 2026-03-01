@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import LanguageMenu from './LanguageMenu';
+import MegaMenu from './MegaMenu';
+import PersonaMegaMenu from './PersonaMegaMenu';
 import SearchModal from './SearchModal';
 import Sidebar from './Sidebar';
+import ThemeToggle from './ThemeToggle';
 import { getConsoleUrl } from '../config/constants';
 import { useLanguage } from '../hooks/useLanguage';
 import { SUPPORTED_LANGUAGES } from '../i18n/language-utils';
@@ -14,6 +17,8 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = ({ origin }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
+  const [isPersonaMenuOpen, setIsPersonaMenuOpen] = useState(false);
   const currentLang = useLanguage();
   const [isVisible, setIsVisible] = useState(true);
   const { t } = useTranslation(currentLang);
@@ -37,6 +42,8 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
         document.documentElement.style.setProperty('--nav-offset', 'var(--nav-height)');
       } else if (scrollTop > lastScrollTop) {
         setIsVisible(false);
+        setIsMegaMenuOpen(false);
+        setIsPersonaMenuOpen(false);
         document.documentElement.style.setProperty('--nav-offset', '0px');
       } else {
         setIsVisible(true);
@@ -51,6 +58,8 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
+    setIsMegaMenuOpen(false);
+    setIsPersonaMenuOpen(false);
   };
 
   const closeSidebar = () => {
@@ -59,11 +68,34 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
 
   const openSearch = () => {
     setIsSearchOpen(true);
+    setIsMegaMenuOpen(false);
+    setIsPersonaMenuOpen(false);
   };
 
   const closeSearch = () => {
     setIsSearchOpen(false);
   };
+
+  const toggleMegaMenu = () => {
+    setIsMegaMenuOpen((prev) => !prev);
+    setIsPersonaMenuOpen(false);
+  };
+  const closeMegaMenu = () => setIsMegaMenuOpen(false);
+  const togglePersonaMenu = () => {
+    setIsPersonaMenuOpen((prev) => !prev);
+    setIsMegaMenuOpen(false);
+  };
+  const closePersonaMenu = () => setIsPersonaMenuOpen(false);
+
+  // Close menus on Astro page navigation
+  useEffect(() => {
+    const handleNavigation = () => {
+      setIsMegaMenuOpen(false);
+      setIsPersonaMenuOpen(false);
+    };
+    document.addEventListener('astro:after-swap', handleNavigation);
+    return () => document.removeEventListener('astro:after-swap', handleNavigation);
+  }, []);
 
   // Listen for global search hotkey event
   useEffect(() => {
@@ -105,6 +137,7 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
               className="logo-icon"
               loading="eager"
               decoding="async"
+              fetchPriority="high"
               width="36"
               height="36"
             />
@@ -114,6 +147,26 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
               rediacc
             </span>
           </a>
+          <div className="nav-links">
+            <MegaMenu isOpen={isMegaMenuOpen} onToggle={toggleMegaMenu} onClose={closeMegaMenu} />
+            <PersonaMegaMenu
+              isOpen={isPersonaMenuOpen}
+              onToggle={togglePersonaMenu}
+              onClose={closePersonaMenu}
+            />
+            <a href={`/${currentLang}/#pricing`} className="nav-link">
+              {t('navigation.pricing')}
+            </a>
+            <a href={`/${currentLang}/docs/quick-start`} className="nav-link">
+              {t('navigation.docs')}
+            </a>
+            <a href={`/${currentLang}/install`} className="nav-link">
+              {t('navigation.install')}
+            </a>
+            <a href={`/${currentLang}/contact`} className="nav-link">
+              {t('navigation.contact')}
+            </a>
+          </div>
           <div className="nav-right">
             <button
               type="button"
@@ -139,6 +192,7 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
                 />
               </svg>
             </button>
+            <ThemeToggle label={t('navigation.toggleTheme')} />
             <LanguageMenu
               variant="icon-only"
               currentLang={currentLang}

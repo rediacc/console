@@ -53,6 +53,8 @@ Thumbs.db
 .backend-state
 .provision-state
 .service-state
+.account-state
+.account-logs/
 .vm-info
 
 # Generated SEA config (platform-specific, created during CI build)
@@ -101,3 +103,8 @@ reports/
 
 # Git worktrees
 .worktrees/
+
+# SQLite databases (account E2E artifacts)
+*.db
+*.db-shm
+*.db-wal

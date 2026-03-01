@@ -1,68 +1,21 @@
-# Security audit allowlist - advisories that cannot be fixed
-# Format: ADVISORY_ID # Comment explaining why it's allowed
+# Security audit allowlist for dev-only dependencies.
+# Enforced by .ci/scripts/security/audit.sh (two-pass strategy):
 #
-# Both ./go quality audit and CI use this file.
-# Only add advisories here after confirming they cannot be fixed.
+#   Pass 1 — production deps (--omit=dev): ZERO TOLERANCE, no allowlist.
+#            Any severity → hard fail.
+#   Pass 2 — dev deps: this allowlist applies.
+#
+# Rules:
+#   - NEVER add production dependency advisories here; they cannot be allowlisted.
+#   - Only add dev-dependency advisories after confirming no upgrade path exists.
+#   - Format: ADVISORY_ID   # short description (GHSA-xxx)
 
-# tar <=7.5.2 path traversal (GHSA-8qq5-rm4j-mr97)
-# In electron-builder dependency chain, can't upgrade - tar@7.5.3 has breaking ESM changes
-1112255
+# tar — electron-builder dependency chain, tar@8+ has breaking ESM changes
+1112329   # race condition with Unicode ligatures (GHSA-r6q2-hw4h-h46w)
+1112659   # hardlink path traversal (GHSA-34x7-hfp2-rc4v)
+1113300   # arbitrary overwrite/symlink poisoning (GHSA-8qq5-rm4j-mr97)
+1113375   # hardlink target escape through symlink chain (GHSA-83g3-92jg-28cx)
 
-# tar <=7.5.3 race condition with Unicode ligatures (GHSA-r6q2-hw4h-h46w)
-# Same electron-builder dependency chain, tar@8+ has breaking ESM changes
-1112329
-
-# tar <=7.5.3 hardlink path traversal (GHSA-34x7-hfp2-rc4v)
-# Same electron-builder dependency chain, tar@8+ has breaking ESM changes
-1112659
-
-# lodash <=4.17.21 prototype pollution in _.unset and _.omit (GHSA-xxjr-mmjv-4gpg)
-# In yaml-language-server dependency chain via vscode extensions, can't upgrade
-1112453
-1112455
-
-# fast-xml-parser <=5.3.3 RangeError DoS Numeric Entities (GHSA-37qj-frw5-hhjh)
-# In @aws-sdk/xml-builder and @astrojs/rss dependency chains, can't upgrade
-1112708
-
-# tar <=7.5.6 vulnerability
-# Same electron-builder dependency chain, tar@8+ has breaking ESM changes
-1112954
-
-# ajv ReDoS with $data option (GHSA-2g4f-4pwh-qvx6)
-# In @develar/schema-utils via electron-builder dependency chain, can't upgrade
-1113205
-1113214
-1113398
-1113428
-
-# fast-xml-parser DoS through entity expansion in DOCTYPE
-# In @aws-sdk/xml-builder dependency chain, can't upgrade
-1113240
-
-# tar hardlink target escape through symlink chain
-# Same electron-builder dependency chain, tar@8+ has breaking ESM changes
-1113249
-
-# minimatch ReDoS via repeated wildcards (GHSA-3ppc-4f35-3m26)
-# Transitive across eslint/electron-builder chains; upstreams still pin legacy majors
-1113296
-
-# tar arbitrary overwrite/symlink poisoning (GHSA-8qq5-rm4j-mr97)
-# Same electron-builder/node-gyp dependency chains as other tar advisories
-1113300
-
-# minimatch ReDoS via repeated wildcards with non-matching literal (GHSA-3ppc-4f35-3m26)
-# Transitive across eslint/electron-builder chains; upstreams still pin legacy majors
-1113371
-
-# tar hardlink target escape through symlink chain (GHSA-83g3-92jg-28cx)
-# Same electron-builder dependency chain, tar@8+ has breaking ESM changes
-1113375
-
-# minimatch ReDoS via repeated wildcards with non-matching literal (GHSA-3ppc-4f35-3m26)
-# Same root cause as 1113296/1113371, new advisories for additional version ranges
-# <3.1.3, >=5.0.0 <5.1.7, >=9.0.0 <9.0.6
-1113459
-1113461
-1113465
+# minimatch ReDoS — transitive across eslint/electron-builder chains
+1113545   # matchOne() combinatorial backtracking via GLOBSTAR (GHSA-7r86-cg39-jmmj)
+1113553   # nested *() extglobs catastrophic backtracking (GHSA-23c5-xmqv-rm74)

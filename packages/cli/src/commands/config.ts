@@ -174,6 +174,17 @@ async function handleS3Setup(options: {
 export function registerConfigCommands(program: Command): void {
   const config = program.command('config').description(t('commands.config.description'));
 
+  config.addHelpText(
+    'after',
+    `
+${t('help.examples')}
+  $ rdc config init production --ssh-key ~/.ssh/id_ed25519   ${t('help.config.init')}
+  $ rdc config add-machine server-1 --ip 10.0.0.1           ${t('help.config.addMachine')}
+  $ rdc config setup-machine server-1                        ${t('help.config.setupMachine')}
+  $ rdc config set machine server-1                          ${t('help.config.setMachine')}
+`
+  );
+
   // config init [name] - Initialize a new config file
   config
     .command('init [name]')

@@ -203,7 +203,7 @@ jobs:
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
       - run: .ci/scripts/security/audit.sh
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: always()
         with:
           name: quality-security-${{ github.sha }}
@@ -350,7 +350,7 @@ jobs:
 
   quality-account:
     name: Account Server
-    runs-on: ubuntu-latest  # Requires Docker for integration tests
+    runs-on: ubuntu-latest
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
@@ -378,11 +378,9 @@ jobs:
           npm ci --workspace=@rediacc/shared
           npm run build --workspace=@rediacc/shared
 
-      - name: Start RustFS for integration tests
+      - name: Install account dependencies
         working-directory: private/account
-        run: |
-          npm ci
-          npm run test:setup
+        run: npm ci
 
       - name: Run account integration tests
         run: .ci/scripts/private/run-account.sh test
@@ -390,11 +388,6 @@ jobs:
       - name: Run Go cross-language signature tests
         working-directory: private/renet
         run: go test -v ./pkg/subscription/... -run TestCrossLanguage
-
-      - name: Stop RustFS
-        if: always()
-        working-directory: private/account
-        run: npm run test:teardown
 
   quality-account-portal:
     name: Account Portal
@@ -466,7 +459,7 @@ jobs:
           STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
           STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
       - name: Upload E2E report
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: failure()
         with:
           name: account-e2e-report-${{ github.sha }}

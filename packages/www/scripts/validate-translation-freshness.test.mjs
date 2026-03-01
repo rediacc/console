@@ -52,59 +52,6 @@ test('fails when english changed but locales are not updated', () => {
   assert.ok(result.errors.some((e) => e.rule === 'translation-source-hash-mismatch'));
 });
 
-test('passes when translationPending has a reason', () => {
-  const { repoRoot } = setupFixture();
-
-  writeDoc(
-    repoRoot,
-    'en',
-    'pending-doc',
-    {
-      title: 'Pending',
-      description: 'desc',
-      category: 'Guides',
-      language: 'en',
-      translationPending: true,
-      translationPendingReason: 'Awaiting legal review across locales',
-    },
-    'Pending body'
-  );
-
-  const result = validateTranslationFreshness({
-    repoRoot,
-    changedFiles: ['packages/www/src/content/docs/en/pending-doc.md'],
-    languages: LANGS,
-  });
-
-  assert.equal(result.errors.length, 0);
-});
-
-test('fails when translationPending is true but reason is missing', () => {
-  const { repoRoot } = setupFixture();
-
-  writeDoc(
-    repoRoot,
-    'en',
-    'pending-without-reason',
-    {
-      title: 'Pending',
-      description: 'desc',
-      category: 'Guides',
-      language: 'en',
-      translationPending: true,
-    },
-    'Pending body'
-  );
-
-  const result = validateTranslationFreshness({
-    repoRoot,
-    changedFiles: ['packages/www/src/content/docs/en/pending-without-reason.md'],
-    languages: LANGS,
-  });
-
-  assert.ok(result.errors.some((e) => e.rule === 'translation-pending-reason'));
-});
-
 test('passes when locale files are updated with matching sourceHash', () => {
   const { repoRoot } = setupFixture();
 

@@ -144,6 +144,21 @@
   }
 }
 
+/* Safe area insets for modern phones with notches/home indicators */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .nav {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .sidebar {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .footer {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
 /* Print Styles */
 @media print {
   /* !important is intentionally used here to ensure these elements are hidden when printing,

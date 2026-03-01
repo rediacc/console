@@ -126,6 +126,16 @@ async function syncSingleStore(
 export function registerStoreCommands(program: Command): void {
   const store = program.command('store').description(t('commands.store.description'));
 
+  store.addHelpText(
+    'after',
+    `
+${t('help.examples')}
+  $ rdc store add my-backup --type s3 --s3-bucket my-backups  ${t('help.store.add')}
+  $ rdc store push                                            ${t('help.store.push')}
+  $ rdc store pull                                            ${t('help.store.pull')}
+`
+  );
+
   // store add <name>
   store
     .command('add <name>')

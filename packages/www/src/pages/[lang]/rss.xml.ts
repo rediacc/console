@@ -1,7 +1,7 @@
 import rss from '@astrojs/rss';
 import { getCollection } from 'astro:content';
 import { SITE_URL } from '../../config/constants';
-import { SUPPORTED_LANGUAGES, getLanguageName } from '../../i18n/language-utils';
+import { getLanguageName, SUPPORTED_LANGUAGES } from '../../i18n/language-utils';
 import { getBaseSlug } from '../../utils/slug';
 import type { Language } from '../../i18n/types';
 import type { APIContext } from 'astro';
