@@ -115,6 +115,7 @@ export class LoginPage extends BasePage {
     await this.waitForAnyVisible([primary, fallbackToggle, fallbackContent], 15000);
   }
 
+
   private async waitForAnyVisible(locators: Locator[], timeout: number): Promise<void> {
     // Wait for any post-login element to become visible.
     const waits = locators.map((locator) => locator.waitFor({ state: 'visible', timeout }));
