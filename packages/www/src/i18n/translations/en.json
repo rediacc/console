@@ -126,7 +126,6 @@
       "termsOfService": "Terms of Service",
       "privacyPolicy": "Privacy Policy",
       "cookiePolicy": "Cookie Policy",
-      "acceptableUsePolicy": "Acceptable Use Policy",
       "refundPolicy": "Refund Policy",
       "telemetryPolicy": "Telemetry Policy",
       "legalInformation": "Legal Information"
@@ -137,14 +136,17 @@
     }
   },
   "hero": {
+    "eyebrow": "INFRASTRUCTURE AUTOMATION PLATFORM",
     "title": "Clone Production.",
     "titleHighlight": " Break Nothing.",
-    "subtitle": "Your entire production stack, cloned instantly. Databases included.",
+    "subtitle": "The self-hosted platform that creates instant, isolated copies of your entire production stack — databases, Docker services, and all.",
     "cta": {
+      "getStarted": "Get Started Free",
+      "readDocs": "Read the Docs",
       "contactUs": "View All Install Options",
       "learnMore": "Learn More",
       "bookDemo": "Book Demo",
-      "freeBadge": "FREE FOREVER • No credit card",
+      "freeBadge": "FREE FOREVER · No credit card",
       "benefits": "Unlimited teams • $0",
       "seeDetails": "See full details"
     },
@@ -178,12 +180,16 @@
       "imageAlt": "Rediacc platform solution diagram: automated infrastructure provisioning, instant production-like environment clones, streamlined developer workflows, and AI-safe operations with Model Context Protocol integration"
     }
   },
-  "bridge": {
-    "text": "That's why we built Rediacc"
-  },
   "logoWall": {
     "title": "Works with your infrastructure",
-    "categories": ["Git", "CI/CD", "Containers", "Databases", "Monitoring", "Storage"]
+    "categories": [
+      "Git",
+      "CI/CD",
+      "Containers",
+      "Databases",
+      "Monitoring",
+      "Storage"
+    ]
   },
   "solutions": {
     "title": "How We Ensure Business Continuity",
@@ -197,51 +203,121 @@
       "defense": "Preemptive Defense"
     }
   },
+  "featureShowcase": {
+    "title": "What You Can Do with Rediacc",
+    "subtitle": "19 solutions across six focus areas — from ransomware survival to preemptive defense.",
+    "categoryDescriptions": {
+      "ransomware": "Tamper-proof, cryptographically verified backups that ransomware cannot touch. Recover your entire stack in under 60 seconds.",
+      "multi-cloud": "Move your infrastructure between providers with zero vendor lock-in. Instant failover, tested disaster recovery, cloud-agnostic portability.",
+      "backups": "Verified, instantly recoverable backups with full retention compliance. Every backup is tested — not just stored.",
+      "encryption": "Every repository encrypted at rest with LUKS and in transit. Full audit trails and safe migration between environments.",
+      "dev-env": "Clone your entire production stack in seconds. Zero additional storage, perfect parity, instant developer environments.",
+      "defense": "Continuous security testing with AI-powered penetration testing on isolated clones. Find vulnerabilities before attackers do."
+    }
+  },
+  "beforeAfter": {
+    "title": "The Difference",
+    "before": {
+      "label": "Without Rediacc",
+      "points": [
+        "Environments drift from production within days",
+        "Backups take weeks, fill storage, and often fail silently",
+        "Recovery plans say 4 hours — reality is 4 days",
+        "Developers code on production because sandbox is stale"
+      ]
+    },
+    "after": {
+      "label": "With Rediacc",
+      "points": [
+        "Production-exact clones in under 60 seconds",
+        "Hourly backups with zero extra disk space",
+        "Verified failover in under 60 seconds",
+        "Every developer gets their own fresh production clone"
+      ]
+    }
+  },
+  "metrics": {
+    "items": [
+      {
+        "number": "< 60s",
+        "label": "Clone Time"
+      },
+      {
+        "number": "0 bytes",
+        "label": "Extra Storage"
+      },
+      {
+        "number": "< 1 min",
+        "label": "Recovery Time"
+      },
+      {
+        "number": "9",
+        "label": "Languages"
+      }
+    ]
+  },
+  "integrations": {
+    "title": "Works with your stack",
+    "items": [
+      "Docker",
+      "PostgreSQL",
+      "MySQL",
+      "MariaDB",
+      "Git",
+      "GitLab",
+      "Jenkins",
+      "Prometheus",
+      "S3",
+      "btrfs",
+      "LUKS",
+      "systemd"
+    ]
+  },
+  "pricingPreview": {
+    "title": "Simple, Transparent Pricing",
+    "subtitle": "Free to start. Scale when you're ready.",
+    "compareAll": "Compare all plans and features"
+  },
+  "announcement": {
+    "enabled": true,
+    "text": "v0.6 released — Alpine musl support, subscription system, and more",
+    "link": "/en/blog"
+  },
   "testimonials": {
     "title": "What Teams Say",
     "subtitle": "How different roles experience Rediacc",
     "items": [
       {
+        "role": "Disaster Recovery Manager",
+        "name": "Marcus R.",
+        "company": "Financial Services",
+        "quote": "Our recovery plan said four hours. Reality was four days. Now we failover to a clone in under a minute."
+      },
+      {
         "role": "Developer",
+        "name": "Sarah K.",
         "quote": "I used to code on production because the sandbox was weeks behind. Now I get a fresh clone in 60 seconds."
       },
       {
         "role": "CTO",
+        "name": "James L.",
+        "company": "SaaS Platform",
         "quote": "We scaled from one database to twelve without buying new hardware. Rediacc clones share storage — we only pay for what changes."
       },
       {
         "role": "DevOps Engineer",
+        "name": "Ayumi T.",
         "quote": "We couldn't run CI against real data. Now every pipeline gets its own production clone, automatically."
-      },
-      {
-        "role": "System Engineer",
-        "quote": "Upgrades crashed our systems. Now we test every change on an exact copy first. No surprises."
-      },
-      {
-        "role": "Database Admin",
-        "quote": "Optimizing queries on a stale copy was pointless. Now I work on a live-synced clone — same data, zero risk."
-      },
-      {
-        "role": "IT Manager",
-        "quote": "Backups took two weeks and filled our storage. Now we backup hourly with no extra disk space."
-      },
-      {
-        "role": "Security Engineer",
-        "quote": "We couldn't test encryption on real data. Now every clone is encrypted by default. Audit passed."
-      },
-      {
-        "role": "Disaster Recovery Manager",
-        "quote": "Our recovery plan said four hours. Reality was four days. Now we failover to a clone in under a minute."
-      },
-      {
-        "role": "AI Agent Operator",
-        "quote": "Our AI agent accidentally deleted a database. Now it can only touch clones — production stays safe."
       }
     ]
   },
   "getStarted": {
-    "title": "Get Started",
-    "subtitle": "Never lose data again.",
+    "title": "Ready to Clone Your First Stack?",
+    "subtitle": "Join teams who test with real production data — without the risk.",
+    "cta": {
+      "primary": "Install Rediacc Free",
+      "secondary": "Talk to Sales"
+    },
     "benefits": [
       "Work directly with our team",
       "Full-featured platform",
@@ -289,6 +365,56 @@
       },
       "submit": "Get Started"
     }
+  },
+  "newsletter": {
+    "title": "Newsletter",
+    "description": "Monthly product updates and self-hosting tips.",
+    "pageTitle": "Stay in the Loop",
+    "pageDescription": "Get monthly updates on new features, self-hosting guides, and infrastructure tips.",
+    "placeholder": "Your email address",
+    "subscribe": "Subscribe",
+    "successMessage": "Check your inbox to confirm your subscription.",
+    "errorGeneric": "Something went wrong. Please try again.",
+    "confirmed": "Your subscription is confirmed! Welcome aboard.",
+    "unsubscribed": "You've been unsubscribed. Sorry to see you go.",
+    "blogCta": {
+      "title": "Enjoyed this article?",
+      "description": "Get more self-hosting guides and product updates delivered to your inbox."
+    },
+    "stickyBar": {
+      "text": "Get self-hosting tips in your inbox"
+    },
+    "roiGate": {
+      "title": "Get your detailed ROI report",
+      "description": "Enter your email to unlock the full cost breakdown and savings analysis.",
+      "unlock": "Unlock Report"
+    }
+  },
+  "contactModal": {
+    "title": "Get in Touch",
+    "description": "Have a question or want to discuss a project? Send us a message.",
+    "fields": {
+      "name": "Name",
+      "namePlaceholder": "Your name",
+      "email": "Email",
+      "emailPlaceholder": "you@company.com",
+      "subject": "Subject",
+      "subjectPlaceholder": "Select a subject",
+      "message": "Message",
+      "messagePlaceholder": "Tell us about your project or question..."
+    },
+    "subjects": {
+      "general": "General Inquiry",
+      "technical": "Technical Support",
+      "partnership": "Partnership",
+      "disasterRecovery": "Disaster Recovery",
+      "other": "Other"
+    },
+    "submit": "Send Message",
+    "sending": "Sending...",
+    "success": "Message sent! We'll get back to you within 48 hours.",
+    "error": "Something went wrong. Please try again.",
+    "close": "Close"
   },
   "pages": {
     "home": {
@@ -711,7 +837,9 @@
           "tiers": [
             {
               "planId": "community",
-              "included": ["Self-service documentation, video tutorials, and community forum"],
+              "included": [
+                "Self-service documentation, video tutorials, and community forum"
+              ],
               "available": [
                 "Standard Implementation ($9,999) or tiered packages (Small $7,499 · Medium $14,999 · Large $29,999 · Enterprise custom)",
                 "Emergency Response engagement ($29,999 on-demand)"
@@ -784,30 +912,50 @@
         "heading": "Frequently Asked Questions",
         "items": [
           {
+            "question": "Is there a free plan?",
+            "answer": "Yes. The Community plan is free forever with up to 2 machines, 500 jobs per month, and full snapshot restore capabilities. No credit card required."
+          },
+          {
             "question": "Can I upgrade or downgrade my plan?",
-            "answer": "Yes, you can change your plan at any time. Upgrades take effect immediately, and downgrades will apply at the start of your next billing cycle."
+            "answer": "Yes, you can change your plan at any time. Upgrades take effect immediately, and downgrades will apply at the start of your next billing cycle. No penalties or fees."
+          },
+          {
+            "question": "Do you offer annual billing?",
+            "answer": "Yes. Annual billing saves 17% — equivalent to 2 months free. All paid plans are available with monthly or annual billing."
           },
           {
             "question": "What payment methods do you accept?",
             "answer": "We accept all major credit cards (Visa, MasterCard, American Express) and support invoice-based billing for annual Enterprise plans."
           },
           {
-            "question": "Is there a free trial available?",
-            "answer": "Our Community plan is free forever. For business plans, contact our sales team to discuss trial options."
+            "question": "How are machines counted?",
+            "answer": "Each physical or virtual server where Rediacc is installed counts as one machine (floating license). Clones created on those machines do not count separately — only the host machines are counted."
           },
           {
-            "question": "What's included in support?",
-            "answer": "The Community plan includes community support and self-service documentation. Professional includes email and chat support. Business adds phone support and a dedicated customer success manager. Enterprise includes 24/7/365 white-glove support with executive escalation."
+            "question": "Can I self-host on any infrastructure?",
+            "answer": "Yes. Rediacc runs on any Linux server with btrfs filesystem support. Bare metal, VMs, and cloud instances (AWS, Azure, GCP, Hetzner, OVH, etc.) are all supported."
           },
           {
-            "question": "How does annual billing work?",
-            "answer": "Annual billing is priced at 10 months for 12 months of service, giving you a meaningful discount. You can switch between monthly and annual billing at any time."
+            "question": "What's included in Community vs Professional?",
+            "answer": "Community includes core cloning, snapshot restores, and community support for up to 2 machines. Professional adds automated scheduling, 24-hour point-in-time restore, priority support, integrations API, and supports up to 5 machines."
           },
           {
-            "question": "Do you offer refunds?",
-            "answer": "Yes, we offer a 14-day money-back guarantee on all paid plans. If you're not satisfied, contact our support team for a full refund."
+            "question": "What does Enterprise pricing include?",
+            "answer": "Enterprise plans are customized based on your infrastructure scale, compliance requirements, and support needs. They include dedicated infrastructure, custom SLAs, 24/7/365 support, security reviews, and quarterly readiness exercises."
+          },
+          {
+            "question": "Do you offer discounts for education or nonprofits?",
+            "answer": "Yes. Contact us to discuss special pricing for educational institutions and nonprofit organizations."
+          },
+          {
+            "question": "Is there a money-back guarantee?",
+            "answer": "Yes. All paid plans include a 14-day money-back guarantee. If Rediacc doesn't meet your needs, we'll issue a full refund — no questions asked."
           }
         ]
+      },
+      "roiCta": {
+        "heading": "Not sure which plan fits?",
+        "description": "Use our interactive ROI calculator to see how much you can save with Rediacc."
       },
       "finalCta": {
         "heading": "Ready to Get Started?",
@@ -819,7 +967,10 @@
       },
       "trust": {
         "heading": "Enterprise-Grade Security & Reliability",
-        "items": ["AES-256 encryption standard", "99.99% uptime SLA"]
+        "items": [
+          "AES-256 encryption standard",
+          "99.99% uptime SLA"
+        ]
       },
       "ui": {
         "popular": "Most popular",
@@ -922,6 +1073,266 @@
             "repositories": "Unlimited",
             "floatingLicenses": "50",
             "usersTeams": "Unlimited"
+          }
+        }
+      },
+      "comparison": {
+        "heading": "Compare Plans in Detail",
+        "allPlansInclude": "All plans include: Unlimited users & teams, unlimited repositories, snapshot restores, dark mode, 9 languages",
+        "categories": {
+          "infrastructure": {
+            "label": "Infrastructure",
+            "rows": [
+              {
+                "label": "Floating Licenses (Machines)",
+                "community": "2",
+                "professional": "5",
+                "business": "20",
+                "enterprise": "50"
+              },
+              {
+                "label": "Jobs per Month",
+                "community": "500",
+                "professional": "5,000",
+                "business": "20,000",
+                "enterprise": "100,000"
+              },
+              {
+                "label": "Storage per Repository",
+                "community": "10 GB",
+                "professional": "100 GB",
+                "business": "500 GB",
+                "enterprise": "2 TB+"
+              },
+              {
+                "label": "Bridges",
+                "community": "—",
+                "professional": "1",
+                "business": "2",
+                "enterprise": "10"
+              },
+              {
+                "label": "Job Timeout",
+                "community": "2 hours",
+                "professional": "24 hours",
+                "business": "72 hours",
+                "enterprise": "96 hours"
+              },
+              {
+                "label": "Reserved Jobs",
+                "community": "1",
+                "professional": "2",
+                "business": "3",
+                "enterprise": "5"
+              },
+              {
+                "label": "Tasks per Machine",
+                "community": "1",
+                "professional": "2",
+                "business": "3",
+                "enterprise": "5"
+              }
+            ]
+          },
+          "dataProtection": {
+            "label": "Data Protection",
+            "rows": [
+              {
+                "label": "Snapshot Restores",
+                "community": "✓",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "Point-in-Time Restore",
+                "community": "—",
+                "professional": "24 hours",
+                "business": "72 hours",
+                "enterprise": "Custom"
+              },
+              {
+                "label": "Continuous Data Protection",
+                "community": "—",
+                "professional": "—",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "Geo-Redundant Storage",
+                "community": "—",
+                "professional": "—",
+                "business": "3 regions",
+                "enterprise": "Custom"
+              },
+              {
+                "label": "Restore SLA",
+                "community": "—",
+                "professional": "—",
+                "business": "4 hours",
+                "enterprise": "Custom"
+              }
+            ]
+          },
+          "security": {
+            "label": "Security & Compliance",
+            "rows": [
+              {
+                "label": "RBAC & Permission Groups",
+                "community": "—",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "Audit Logs",
+                "community": "—",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "Compliance Reporting",
+                "community": "—",
+                "professional": "—",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "LUKS Encryption",
+                "community": "✓",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "Security Reviews",
+                "community": "—",
+                "professional": "—",
+                "business": "—",
+                "enterprise": "✓"
+              }
+            ]
+          },
+          "automation": {
+            "label": "Scheduling & Automation",
+            "rows": [
+              {
+                "label": "Manual Scheduling",
+                "community": "✓",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "Automated Scheduling",
+                "community": "—",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "Queue Priority",
+                "community": "—",
+                "professional": "—",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "Integrations API",
+                "community": "—",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "Custom Workflows",
+                "community": "—",
+                "professional": "—",
+                "business": "—",
+                "enterprise": "✓"
+              }
+            ]
+          },
+          "support": {
+            "label": "Support",
+            "rows": [
+              {
+                "label": "Community Slack",
+                "community": "✓",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "Email + Chat Support",
+                "community": "—",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "Dedicated CSM",
+                "community": "—",
+                "professional": "—",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "Phone Support",
+                "community": "—",
+                "professional": "—",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "24/7/365 Support",
+                "community": "—",
+                "professional": "—",
+                "business": "—",
+                "enterprise": "✓"
+              },
+              {
+                "label": "Executive Escalation",
+                "community": "—",
+                "professional": "—",
+                "business": "—",
+                "enterprise": "✓"
+              }
+            ]
+          },
+          "platform": {
+            "label": "Platform",
+            "rows": [
+              {
+                "label": "Custom Branding",
+                "community": "—",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "Ceph Storage Pools",
+                "community": "—",
+                "professional": "—",
+                "business": "1",
+                "enterprise": "Unlimited"
+              },
+              {
+                "label": "Advanced Analytics",
+                "community": "—",
+                "professional": "—",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "Dedicated Infrastructure",
+                "community": "—",
+                "professional": "—",
+                "business": "—",
+                "enterprise": "✓"
+              }
+            ]
           }
         }
       }
@@ -1196,7 +1607,9 @@
         "howWeUseInformation": {
           "id": "how-we-use-information",
           "title": "3. How We Use Your Information",
-          "content": ["We use the information we collect for the following purposes:"],
+          "content": [
+            "We use the information we collect for the following purposes:"
+          ],
           "items": [
             "To respond to your inquiries submitted through the contact form",
             "To provide, operate, and maintain the Rediacc platform",
@@ -1330,13 +1743,6 @@
             "We reserve the right to change our pricing with 30 days' notice. Price changes will not affect your current billing cycle. If you do not agree to a price change, you may cancel your subscription before the next billing cycle."
           ]
         },
-        "acceptableUse": {
-          "id": "acceptable-use",
-          "title": "5. Acceptable Use",
-          "content": [
-            "You agree to use the Services only for lawful purposes and in compliance with our <a href=\"acceptable-use-policy\">Acceptable Use Policy</a>. You must not use the Services in any way that could damage, disable, or impair the Services or interfere with other users' access."
-          ]
-        },
         "telemetry": {
           "id": "telemetry",
           "title": "6. Telemetry and Data Collection",
@@ -1386,7 +1792,7 @@
           "id": "termination",
           "title": "12. Termination",
           "content": [
-            "You may terminate your account at any time by contacting us. We may suspend or terminate your access to the Services if you violate these Terms or the <a href=\"acceptable-use-policy\">Acceptable Use Policy</a>, with or without notice depending on the severity of the violation.",
+            "You may terminate your account at any time by contacting us. We may suspend or terminate your access to the Services if you violate these Terms, with or without notice depending on the severity of the violation.",
             "Upon termination, your right to use the Services ceases immediately. Sections relating to intellectual property, limitation of liability, indemnification, and governing law survive termination."
           ]
         },
@@ -1444,7 +1850,9 @@
         "cookiesWeUse": {
           "id": "cookies-we-use",
           "title": "3. Cookies We Use",
-          "content": ["We use a minimal number of cookies. In fact, we use only one:"],
+          "content": [
+            "We use a minimal number of cookies. In fact, we use only one:"
+          ],
           "subsections": {
             "languageCookie": {
               "title": "3.1 Language Preference Cookie",
@@ -1514,115 +1922,6 @@
       "contact": {
         "title": "Questions?",
         "description": "If you have questions about our use of cookies, contact us at <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>."
-      },
-      "related": {
-        "title": "Related Policies"
-      }
-    },
-    "acceptableUsePolicy": {
-      "meta": {
-        "title": "Acceptable Use Policy — Rediacc",
-        "description": "Rediacc's acceptable use policy defines prohibited activities on our infrastructure automation platform, including abuse, unauthorized access, and resource misuse.",
-        "keywords": "acceptable use policy, AUP, prohibited uses, infrastructure platform, Rediacc"
-      },
-      "hero": {
-        "title": "Acceptable Use Policy",
-        "effectiveDate": "Effective Date: February 1, 2025"
-      },
-      "toc": {
-        "title": "Table of Contents"
-      },
-      "sections": {
-        "introduction": {
-          "id": "introduction",
-          "title": "1. Introduction",
-          "content": [
-            "This Acceptable Use Policy (\"AUP\") governs your use of the Rediacc infrastructure automation platform and related services. This AUP is incorporated into and forms part of our <a href=\"terms-of-service\">Terms of Service</a>. By using our Services, you agree to comply with this policy."
-          ]
-        },
-        "prohibitedActivities": {
-          "id": "prohibited-activities",
-          "title": "2. Prohibited Activities",
-          "content": ["You may not use the Rediacc platform to:"],
-          "items": [
-            "Engage in cryptocurrency mining, blockchain validation, or similar computationally intensive activities unrelated to your legitimate use of the platform",
-            "Send unsolicited bulk communications (spam), phishing emails, or malicious content",
-            "Host, distribute, or link to malware, viruses, ransomware, or other malicious software",
-            "Conduct network attacks, including denial-of-service (DoS/DDoS) attacks, port scanning, or traffic flooding, against any target",
-            "Access or attempt to access accounts, systems, or data that do not belong to you without explicit authorization",
-            "Circumvent, disable, or interfere with security features, rate limits, or access controls of the platform",
-            "Store, process, or transmit content that violates applicable laws, including but not limited to child exploitation material, content promoting terrorism, or content that infringes intellectual property rights",
-            "Resell, sublicense, or redistribute access to the platform without written authorization from Rediacc",
-            "Use the platform to build a competing product or service, or to benchmark the platform for competitive purposes without written consent"
-          ]
-        },
-        "resourceUsage": {
-          "id": "resource-usage",
-          "title": "3. Resource Usage",
-          "content": [
-            "The Rediacc platform operates on shared and dedicated infrastructure. To ensure fair access for all users:"
-          ],
-          "items": [
-            "You must use platform resources (CPU, memory, storage, network) in accordance with your subscription tier limits",
-            "Automated processes (scripts, bots, CI/CD pipelines) must not create excessive load that degrades service for other users",
-            "Storage usage must reflect legitimate platform use; using the platform solely for bulk data storage unrelated to your environments is prohibited",
-            "You must promptly address any resource usage issues identified and communicated by Rediacc"
-          ]
-        },
-        "securityRequirements": {
-          "id": "security-requirements",
-          "title": "4. Security Requirements",
-          "content": ["You are responsible for the security of your account and environments:"],
-          "items": [
-            "Use strong, unique passwords and enable multi-factor authentication when available",
-            "Do not share account credentials between individuals; use team features for multi-user access",
-            "Report any security vulnerabilities you discover to <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> promptly",
-            "Do not attempt to probe, scan, or test the vulnerability of the platform or breach security measures without explicit written authorization from Rediacc",
-            "Maintain up-to-date software and configurations in your environments to prevent security risks"
-          ]
-        },
-        "contentStandards": {
-          "id": "content-standards",
-          "title": "5. Content Standards",
-          "content": [
-            "Content stored, processed, or transmitted through the platform must comply with applicable laws and regulations. You are solely responsible for the content in your environments. Rediacc does not actively monitor content but reserves the right to review content when we have reason to believe a violation has occurred."
-          ]
-        },
-        "enforcement": {
-          "id": "enforcement",
-          "title": "6. Enforcement",
-          "content": [
-            "Violation of this AUP may result in one or more of the following actions, at our sole discretion:"
-          ],
-          "items": [
-            "A written warning identifying the violation and requesting remediation",
-            "Temporary suspension of your access to the platform",
-            "Throttling or restricting specific platform features or resources",
-            "Permanent termination of your account",
-            "Reporting to appropriate law enforcement authorities"
-          ],
-          "content2": [
-            "We will make reasonable efforts to notify you before taking action, except where immediate action is necessary to protect the platform, other users, or comply with legal requirements."
-          ]
-        },
-        "reporting": {
-          "id": "reporting",
-          "title": "7. Reporting Violations",
-          "content": [
-            "If you believe a Rediacc user is violating this AUP, please report it to <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> with as much detail as possible. We take all reports seriously and will investigate promptly."
-          ]
-        },
-        "changes": {
-          "id": "changes",
-          "title": "8. Changes to This Policy",
-          "content": [
-            "We may update this AUP from time to time to address new threats, technologies, or platform features. Changes will be posted on this page with an updated effective date. Continued use of the Services after changes constitutes acceptance of the updated policy."
-          ]
-        }
-      },
-      "contact": {
-        "title": "Questions?",
-        "description": "If you have questions about this Acceptable Use Policy, contact us at <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>."
       },
       "related": {
         "title": "Related Policies"
@@ -1707,7 +2006,9 @@
             "The reason for your refund request",
             "Any relevant order or invoice numbers"
           ],
-          "content2": ["We aim to respond to all refund requests within 5 business days."]
+          "content2": [
+            "We aim to respond to all refund requests within 5 business days."
+          ]
         },
         "refundProcessing": {
           "id": "refund-processing",
@@ -1720,13 +2021,15 @@
         "nonRefundable": {
           "id": "non-refundable",
           "title": "6. Non-Refundable Items",
-          "content": ["The following are not eligible for refunds:"],
+          "content": [
+            "The following are not eligible for refunds:"
+          ],
           "items": [
             "Subscriptions cancelled after the 14-day new subscriber window",
             "Usage-based charges (e.g., overage fees) for resources already consumed",
             "Professional services hours that have already been delivered and accepted",
             "Account reactivation fees",
-            "Charges resulting from your violation of the <a href=\"terms-of-service\">Terms of Service</a> or <a href=\"acceptable-use-policy\">Acceptable Use Policy</a>"
+            "Charges resulting from your violation of the <a href=\"terms-of-service\">Terms of Service</a>"
           ]
         },
         "changes": {
@@ -1770,7 +2073,9 @@
         "principles": {
           "id": "principles",
           "title": "2. Our Telemetry Principles",
-          "content": ["All telemetry collection at Rediacc follows these principles:"],
+          "content": [
+            "All telemetry collection at Rediacc follows these principles:"
+          ],
           "items": [
             "<strong>Privacy by design:</strong> Personal identifiers are anonymized before transmission. Email addresses are reduced to domain only, user IDs are hashed (SHA-256) and truncated, passwords and secrets are never collected.",
             "<strong>Minimal collection:</strong> We collect only what is necessary to improve product quality and diagnose issues. We do not collect file contents, database contents, query results, or business data.",
@@ -1798,7 +2103,9 @@
           "subsections": {
             "webDataCollected": {
               "title": "4.1 Data Collected",
-              "content": ["The Web Application collects the following categories of data:"],
+              "content": [
+                "The Web Application collects the following categories of data:"
+              ],
               "items": [
                 "<strong>Browser information:</strong> browser name and version, preferred language, platform (e.g., Windows, macOS, Linux), screen resolution, color depth, user agent string, device memory (if available), network connection type",
                 "<strong>User context:</strong> session ID (randomly generated per session), email domain only (local part is redacted, e.g., <code>***@example.com</code>), organization name, team name",
@@ -1812,7 +2119,9 @@
             },
             "webNotCollected": {
               "title": "4.2 Data NOT Collected",
-              "content": ["The Web Application does not collect:"],
+              "content": [
+                "The Web Application does not collect:"
+              ],
               "items": [
                 "Full email addresses (local part is always redacted)",
                 "Passwords, tokens, or authentication credentials",
@@ -1840,7 +2149,9 @@
           "subsections": {
             "cliDataCollected": {
               "title": "5.1 Data Collected",
-              "content": ["The CLI collects the following categories of data:"],
+              "content": [
+                "The CLI collects the following categories of data:"
+              ],
               "items": [
                 "<strong>Command usage:</strong> command name, CLI version, exit code, success or failure status",
                 "<strong>Anonymized arguments:</strong> command options with sensitive values redacted — passwords, tokens, secrets, API keys, and credentials are replaced with <code>[REDACTED]</code>",
@@ -1852,7 +2163,9 @@
             },
             "cliOptOut": {
               "title": "5.2 How to Opt Out",
-              "content": ["You can disable CLI telemetry using any of these methods:"],
+              "content": [
+                "You can disable CLI telemetry using any of these methods:"
+              ],
               "items": [
                 "Set the environment variable <code>REDIACC_TELEMETRY=off</code> (also accepts <code>false</code> or <code>0</code>)",
                 "Set <code>telemetryEnabled: false</code> in your CLI configuration file",
@@ -1870,7 +2183,9 @@
           "subsections": {
             "middlewareDataCollected": {
               "title": "6.1 Data Collected",
-              "content": ["The Middleware collects the following categories of data:"],
+              "content": [
+                "The Middleware collects the following categories of data:"
+              ],
               "items": [
                 "<strong>System information:</strong> hostname, operating system version, .NET runtime version",
                 "<strong>API calls:</strong> HTTP method, endpoint path, response status code, request duration",
@@ -1898,7 +2213,9 @@
           "subsections": {
             "bridgeDataCollected": {
               "title": "7.1 Data Collected",
-              "content": ["The Bridge collects the following categories of data:"],
+              "content": [
+                "The Bridge collects the following categories of data:"
+              ],
               "items": [
                 "<strong>Queue operations:</strong> task ID, priority level, operation type, execution duration, success or failure status",
                 "<strong>SSH operations:</strong> target host, username, port number, exit code, execution duration (no command content or output is collected)",
@@ -1909,7 +2226,9 @@
             },
             "bridgeOptOut": {
               "title": "7.2 How to Opt Out",
-              "content": ["You can disable Bridge telemetry using either method:"],
+              "content": [
+                "You can disable Bridge telemetry using either method:"
+              ],
               "items": [
                 "Set the environment variable <code>REDIACC_TELEMETRY_DISABLED=1</code>",
                 "Set the environment variable <code>DO_NOT_TRACK=1</code> (respects the <a href=\"https://consult.dntrack.dev/\" target=\"_blank\" rel=\"noopener noreferrer\">Do Not Track</a> standard)"
@@ -2254,7 +2573,9 @@
           "tiers": [
             {
               "planId": "community",
-              "included": ["Self-service documentation, video tutorials, and community forum"],
+              "included": [
+                "Self-service documentation, video tutorials, and community forum"
+              ],
               "available": [
                 "Standard Implementation ($9,999) or tiered packages (Small $7,499 · Medium $14,999 · Large $29,999 · Enterprise custom)",
                 "Emergency Response engagement ($29,999 on-demand)"
@@ -2366,7 +2687,10 @@
       },
       "trust": {
         "heading": "Enterprise-Grade Security & Reliability",
-        "items": ["AES-256 encryption standard", "99.99% uptime SLA"]
+        "items": [
+          "AES-256 encryption standard",
+          "99.99% uptime SLA"
+        ]
       },
       "ui": {
         "popular": "Most popular",
@@ -2636,7 +2960,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Run", "60s", "Done"]
+            "newSteps": [
+              "Run",
+              "60s",
+              "Done"
+            ]
           }
         },
         "calculator": {
@@ -2804,27 +3132,69 @@
           "features": [
             {
               "name": "Application cloning",
-              "values": ["check", "check", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Database cloning",
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Combined app + DB clone",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Any database engine",
-              "values": ["cross", "cross", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Provisioning time",
-              "values": ["Minutes", "Minutes", "Minutes", "Minutes", "Seconds", "<60s"]
+              "values": [
+                "Minutes",
+                "Minutes",
+                "Minutes",
+                "Minutes",
+                "Seconds",
+                "<60s"
+              ]
             },
             {
               "name": "Production-identical data",
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ]
         },
@@ -3073,7 +3443,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Spin up", "$0 idle", "Auto-cleanup"]
+            "newSteps": [
+              "Spin up",
+              "$0 idle",
+              "Auto-cleanup"
+            ]
           }
         },
         "calculator": {
@@ -3235,27 +3609,63 @@
           "features": [
             {
               "name": "Zero-copy clone storage (CoW)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Configurable TTL auto-destroy",
-              "values": ["check", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Full production data in clone",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Multi-service environments",
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted / no per-seat pricing",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Sub-60-second provisioning",
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ]
         },
@@ -3517,7 +3927,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Run clone", "47s", "100% match"]
+            "newSteps": [
+              "Run clone",
+              "47s",
+              "100% match"
+            ]
           }
         },
         "calculator": {
@@ -3675,31 +4089,73 @@
           "features": [
             {
               "name": "Full production data clone",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "OS + library parity verification",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Any database engine (MariaDB, Postgres, Mongo)",
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Multi-service clone (app + DB + mail + storage)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero-copy storage (CoW)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted / no vendor lock-in",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Sub-60-second provisioning",
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ]
         },
@@ -3958,7 +4414,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["git push", "Auto", "Real data"]
+            "newSteps": [
+              "git push",
+              "Auto",
+              "Real data"
+            ]
           }
         },
         "calculator": {
@@ -4012,19 +4472,31 @@
               {
                 "title": "Git Push",
                 "status": "Trigger",
-                "items": ["branch: feature/auth-v2", "commit: a3f7b2c", "author: sarah"],
+                "items": [
+                  "branch: feature/auth-v2",
+                  "commit: a3f7b2c",
+                  "author: sarah"
+                ],
                 "footer": "webhook → rdc"
               },
               {
                 "title": "Clone",
                 "status": "CoW",
-                "items": ["gitlab · nextcloud", "mariadb · mailcow", "380 GB → 2.1 GB"],
+                "items": [
+                  "gitlab · nextcloud",
+                  "mariadb · mailcow",
+                  "380 GB → 2.1 GB"
+                ],
                 "footer": "ci-auth-v2"
               },
               {
                 "title": "Tests",
                 "status": "Passed",
-                "items": ["247 unit tests ✓", "38 integration ✓", "auto-cleanup ✓"],
+                "items": [
+                  "247 unit tests ✓",
+                  "38 integration ✓",
+                  "auto-cleanup ✓"
+                ],
                 "footer": "285 passed"
               }
             ],
@@ -4094,27 +4566,63 @@
           "features": [
             {
               "name": "Production data in CI clones",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "One-line webhook integration",
-              "values": ["check", "cross", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Multi-service CI environment",
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Auto-destroy after pipeline",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero custom provisioning scripts",
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted / no vendor lock-in",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ]
         },
@@ -4357,7 +4865,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Backup", "Sealed", "Verified"]
+            "newSteps": [
+              "Backup",
+              "Sealed",
+              "Verified"
+            ]
           }
         },
         "calculator": {
@@ -4519,31 +5031,80 @@
           "features": [
             {
               "name": "Immutable backups",
-              "values": ["check", "check", "check", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Filesystem-level enforcement",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Automated daily restore verification",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero-copy storage (CoW)",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Instant clone for testing",
-              "values": ["cross", "check", "cross", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Recovery time",
-              "values": ["Minutes", "Minutes", "Hours", "Hours", "Seconds", "<5 min"]
+              "values": [
+                "Minutes",
+                "Minutes",
+                "Hours",
+                "Hours",
+                "Seconds",
+                "<5 min"
+              ]
             },
             {
               "name": "Self-hosted / no cloud dependency",
-              "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ]
         },
@@ -4818,7 +5379,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Run migrate", "0 exposure", "Verified"]
+            "newSteps": [
+              "Run migrate",
+              "0 exposure",
+              "Verified"
+            ]
           }
         },
         "calculator": {
@@ -4978,31 +5543,73 @@
           "features": [
             {
               "name": "Zero-decryption migration",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Customer-held keys during transfer",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Config + data atomic migration",
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Post-transfer integrity verification",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Single-command migration",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Any-to-any destination",
-              "values": ["check", "check", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Automatic rollback on failure",
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ]
         },
@@ -5274,7 +5881,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Run restore", "3m 47s", "Running"]
+            "newSteps": [
+              "Run restore",
+              "3m 47s",
+              "Running"
+            ]
           }
         },
         "calculator": {
@@ -5438,31 +6049,73 @@
           "features": [
             {
               "name": "Full environment restore (not just files)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Sub-5-minute recovery time",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Automated post-restore health checks",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Point-in-time snapshot granularity",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero-overhead clone (no extra storage)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Single-command recovery",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ]
         },
@@ -5736,7 +6389,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Clone", "60s", "Patch & verify"]
+            "newSteps": [
+              "Clone",
+              "60s",
+              "Patch & verify"
+            ]
           }
         },
         "calculator": {
@@ -5898,31 +6555,73 @@
           "features": [
             {
               "name": "Full-stack clone for testing",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Clone creation under 60s",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Isolated network per clone",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero additional storage (CoW)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Auto health check after patch",
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted, no cloud dependency",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "One-command workflow",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ]
         },
@@ -6196,7 +6895,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Set policy", "Auto", "Audit-ready"]
+            "newSteps": [
+              "Set policy",
+              "Auto",
+              "Audit-ready"
+            ]
           }
         },
         "calculator": {
@@ -6359,31 +7062,73 @@
           "features": [
             {
               "name": "Configurable retention policies",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Automated lifecycle cleanup",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Retained backup verification",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Instant audit-ready reports",
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Multi-framework support",
-              "values": ["cross", "check", "check", "check", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "CLI / automation-first",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ]
         },
@@ -6654,7 +7399,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Detect", "<30s", "Online"]
+            "newSteps": [
+              "Detect",
+              "<30s",
+              "Online"
+            ]
           }
         },
         "calculator": {
@@ -6817,31 +7566,73 @@
           "features": [
             {
               "name": "Cross-cloud replication",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Failover under 30 seconds",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Incremental-only transfer (98% savings)",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Any-to-any provider failover",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted, no cloud agent",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Automatic DNS failover",
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Full-stack replication (app + DB)",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ]
         },
@@ -7105,7 +7896,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Run test", "4 min", "Report"]
+            "newSteps": [
+              "Run test",
+              "4 min",
+              "Report"
+            ]
           }
         },
         "calculator": {
@@ -7267,31 +8062,73 @@
           "features": [
             {
               "name": "Full-stack failover test",
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero production impact",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Under 5 minutes",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Automated pass/fail report",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "CI/CD integration",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Cross-cloud testing",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ]
         },
@@ -7550,7 +8387,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Backup", "47s", "Verified"]
+            "newSteps": [
+              "Backup",
+              "47s",
+              "Verified"
+            ]
           }
         },
         "calculator": {
@@ -7712,31 +8553,73 @@
           "features": [
             {
               "name": "Automated restore verification",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Full service health check",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Daily automated testing",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero-storage clone for testing",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Checksum / file integrity",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Alerting integration",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ]
         },
@@ -8013,7 +8896,12 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Clone + patch", "<4 min", "Verified", "Deploy"]
+            "newSteps": [
+              "Clone + patch",
+              "<4 min",
+              "Verified",
+              "Deploy"
+            ]
           }
         },
         "calculator": {
@@ -8415,7 +9303,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Run pentest", "47s", "7 vulns found"]
+            "newSteps": [
+              "Run pentest",
+              "47s",
+              "7 vulns found"
+            ]
           }
         },
         "calculator": {
@@ -8799,7 +9691,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Your key", "AES-256", "Zero-knowledge"]
+            "newSteps": [
+              "Your key",
+              "AES-256",
+              "Zero-knowledge"
+            ]
           }
         },
         "calculator": {
@@ -8959,31 +9855,73 @@
           "features": [
             {
               "name": "Customer-held encryption keys",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero-knowledge architecture",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-service key rotation",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "AES-256 encryption at rest",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Per-repository key isolation",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Encryption in transit",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ]
         },
@@ -9228,7 +10166,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Daily scans", "0 days", "Zero blind spots"]
+            "newSteps": [
+              "Daily scans",
+              "0 days",
+              "Zero blind spots"
+            ]
           }
         },
         "calculator": {
@@ -9304,7 +10246,12 @@
               {
                 "title": "4-Week Trend",
                 "status": "-87%",
-                "items": ["W1: ████████ 23", "W2: ████ 12", "W3: ██ 7", "W4: █ 3"],
+                "items": [
+                  "W1: ████████ 23",
+                  "W2: ████ 12",
+                  "W3: ██ 7",
+                  "W4: █ 3"
+                ],
                 "footer": "Continuous improvement · automated"
               }
             ],
@@ -9603,7 +10550,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Run audit", "Instant", "Complete report"]
+            "newSteps": [
+              "Run audit",
+              "Instant",
+              "Complete report"
+            ]
           }
         },
         "calculator": {
@@ -9763,31 +10714,73 @@
           "features": [
             {
               "name": "Tamper-proof audit logs",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Cryptographic signing (SHA-256)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Instant report generation (CLI)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Basic operation logging",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "User attribution per action",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Key rotation tracking",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ]
         },
@@ -10014,7 +11007,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Detect", "<5 min", "Online"]
+            "newSteps": [
+              "Detect",
+              "<5 min",
+              "Online"
+            ]
           }
         },
         "calculator": {
@@ -10175,27 +11172,69 @@
           "features": [
             {
               "name": "Full-environment recovery",
-              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Recovery under 5 minutes",
-              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Point-in-time (minute-level)",
-              "values": ["check", "check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Automated restore verification",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "No data transfer required",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted / no cloud dependency",
-              "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ]
         },
@@ -10434,7 +11473,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Snapshot", "<1hr", "Live"]
+            "newSteps": [
+              "Snapshot",
+              "<1hr",
+              "Live"
+            ]
           }
         },
         "calculator": {
@@ -10595,31 +11638,73 @@
           "features": [
             {
               "name": "Cross-provider migration",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Migration under 1 hour",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero proprietary formats",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Incremental-only transfer",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "No vendor agent required",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Full-stack migration (app + DB)",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero-downtime migration",
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ]
         },
@@ -10786,18 +11871,42 @@
             {
               "type": "summary",
               "pairs": [
-                { "label": "Time", "value": "52s" },
-                { "label": "Containers", "value": "8" },
-                { "label": "Size", "value": "380 GB" },
-                { "label": "Disk used", "value": "1.8 GB (CoW)" }
+                {
+                  "label": "Time",
+                  "value": "52s"
+                },
+                {
+                  "label": "Containers",
+                  "value": "8"
+                },
+                {
+                  "label": "Size",
+                  "value": "380 GB"
+                },
+                {
+                  "label": "Disk used",
+                  "value": "1.8 GB (CoW)"
+                }
               ]
             }
           ]
         },
         "stats": [
-          { "number": "60s", "label": "Clone creation time", "icon": "clock" },
-          { "number": "<5 min", "label": "Full disaster recovery", "icon": "zap" },
-          { "number": "0", "label": "Ops tickets needed", "icon": "ticket-x" }
+          {
+            "number": "60s",
+            "label": "Clone creation time",
+            "icon": "clock"
+          },
+          {
+            "number": "<5 min",
+            "label": "Full disaster recovery",
+            "icon": "zap"
+          },
+          {
+            "number": "0",
+            "label": "Ops tickets needed",
+            "icon": "ticket-x"
+          }
         ],
         "problem": {
           "overline": "THE PROBLEM",
@@ -10826,14 +11935,33 @@
           "timeline": {
             "oldLabel": "The old way",
             "oldSteps": [
-              { "day": "Mon", "text": "File ticket" },
-              { "day": "Tue", "text": "Ops reviews" },
-              { "day": "Wed", "text": "Provision server" },
-              { "day": "Thu", "text": "Configure env" },
-              { "day": "Fri", "text": "Doesn't match prod" }
+              {
+                "day": "Mon",
+                "text": "File ticket"
+              },
+              {
+                "day": "Tue",
+                "text": "Ops reviews"
+              },
+              {
+                "day": "Wed",
+                "text": "Provision server"
+              },
+              {
+                "day": "Thu",
+                "text": "Configure env"
+              },
+              {
+                "day": "Fri",
+                "text": "Doesn't match prod"
+              }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["rdc clone", "52s", "Done"]
+            "newSteps": [
+              "rdc clone",
+              "52s",
+              "Done"
+            ]
           }
         },
         "howItWorks": {
@@ -10861,10 +11989,22 @@
               "title": "Production",
               "status": "Running",
               "services": [
-                { "name": "nginx", "port": ":443" },
-                { "name": "api-server", "port": ":8080" },
-                { "name": "postgres", "port": ":5432" },
-                { "name": "redis", "port": ":6379" }
+                {
+                  "name": "nginx",
+                  "port": ":443"
+                },
+                {
+                  "name": "api-server",
+                  "port": ":8080"
+                },
+                {
+                  "name": "postgres",
+                  "port": ":5432"
+                },
+                {
+                  "name": "redis",
+                  "port": ":6379"
+                }
               ],
               "containerCount": "4 containers",
               "size": "380 GB"
@@ -10873,15 +12013,30 @@
               "title": "feature-auth-v2",
               "status": "Cloned",
               "services": [
-                { "name": "nginx", "port": ":443" },
-                { "name": "api-server", "port": ":8080" },
-                { "name": "postgres", "port": ":5432" },
-                { "name": "redis", "port": ":6379" }
+                {
+                  "name": "nginx",
+                  "port": ":443"
+                },
+                {
+                  "name": "api-server",
+                  "port": ":8080"
+                },
+                {
+                  "name": "postgres",
+                  "port": ":5432"
+                },
+                {
+                  "name": "redis",
+                  "port": ":6379"
+                }
               ],
               "containerCount": "4 containers",
               "size": "380 GB"
             },
-            "arrow": { "label": "Clone", "time": "52s" }
+            "arrow": {
+              "label": "Clone",
+              "time": "52s"
+            }
           }
         },
         "techDiff": {
@@ -11007,18 +12162,42 @@
             {
               "type": "summary",
               "pairs": [
-                { "label": "Repos", "value": "47" },
-                { "label": "Total size", "value": "2.4 TB" },
-                { "label": "Snapshot time", "value": "3.2s" },
-                { "label": "Storage delta", "value": "+12 GB" }
+                {
+                  "label": "Repos",
+                  "value": "47"
+                },
+                {
+                  "label": "Total size",
+                  "value": "2.4 TB"
+                },
+                {
+                  "label": "Snapshot time",
+                  "value": "3.2s"
+                },
+                {
+                  "label": "Storage delta",
+                  "value": "+12 GB"
+                }
               ]
             }
           ]
         },
         "stats": [
-          { "number": "60%", "label": "Lower TCO vs cloud", "icon": "trend-up" },
-          { "number": "<5 min", "label": "Full disaster recovery", "icon": "clock" },
-          { "number": "0", "label": "Vendor lock-in", "icon": "lock" }
+          {
+            "number": "60%",
+            "label": "Lower TCO vs cloud",
+            "icon": "trend-up"
+          },
+          {
+            "number": "<5 min",
+            "label": "Full disaster recovery",
+            "icon": "clock"
+          },
+          {
+            "number": "0",
+            "label": "Vendor lock-in",
+            "icon": "lock"
+          }
         ],
         "problem": {
           "overline": "THE PROBLEM",
@@ -11047,14 +12226,33 @@
           "timeline": {
             "oldLabel": "Traditional disaster recovery",
             "oldSteps": [
-              { "day": "0:00", "text": "Incident detected" },
-              { "day": "0:30", "text": "Team assembles" },
-              { "day": "2:00", "text": "Find backup" },
-              { "day": "6:00", "text": "Begin restore" },
-              { "day": "24h+", "text": "Partially recovered" }
+              {
+                "day": "0:00",
+                "text": "Incident detected"
+              },
+              {
+                "day": "0:30",
+                "text": "Team assembles"
+              },
+              {
+                "day": "2:00",
+                "text": "Find backup"
+              },
+              {
+                "day": "6:00",
+                "text": "Begin restore"
+              },
+              {
+                "day": "24h+",
+                "text": "Partially recovered"
+              }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Detect", "Rollback", "<5 min"]
+            "newSteps": [
+              "Detect",
+              "Rollback",
+              "<5 min"
+            ]
           }
         },
         "calculator": {
@@ -11139,31 +12337,73 @@
           "features": [
             {
               "name": "Self-hosted / on-premises",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Filesystem-level immutability",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Instant recovery (<5 min)",
-              "values": ["cross", "cross", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero-copy snapshots (CoW)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Per-machine pricing (no per-seat)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Automated restore verification",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "No vendor lock-in",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ]
         },
@@ -11250,18 +12490,42 @@
             {
               "type": "summary",
               "pairs": [
-                { "label": "Uptime", "value": "99.99%" },
-                { "label": "Protected", "value": "2.4 TB" },
-                { "label": "Monthly cost", "value": "$204" },
-                { "label": "vs Cloud", "value": "−62%" }
+                {
+                  "label": "Uptime",
+                  "value": "99.99%"
+                },
+                {
+                  "label": "Protected",
+                  "value": "2.4 TB"
+                },
+                {
+                  "label": "Monthly cost",
+                  "value": "$204"
+                },
+                {
+                  "label": "vs Cloud",
+                  "value": "−62%"
+                }
               ]
             }
           ]
         },
         "stats": [
-          { "number": "$204/mo", "label": "All-inclusive price", "icon": "tag" },
-          { "number": "99.99%", "label": "Uptime guarantee", "icon": "check-circle" },
-          { "number": "0", "label": "Per-seat fees", "icon": "users" }
+          {
+            "number": "$204/mo",
+            "label": "All-inclusive price",
+            "icon": "tag"
+          },
+          {
+            "number": "99.99%",
+            "label": "Uptime guarantee",
+            "icon": "check-circle"
+          },
+          {
+            "number": "0",
+            "label": "Per-seat fees",
+            "icon": "users"
+          }
         ],
         "problem": {
           "overline": "THE PROBLEM",
@@ -11290,14 +12554,33 @@
           "timeline": {
             "oldLabel": "Cloud infrastructure",
             "oldSteps": [
-              { "day": "Y1", "text": "$5K/mo" },
-              { "day": "Y2", "text": "$8K/mo" },
-              { "day": "Y3", "text": "$14K/mo" },
-              { "day": "Y4", "text": "$22K/mo" },
-              { "day": "Y5", "text": "Locked in" }
+              {
+                "day": "Y1",
+                "text": "$5K/mo"
+              },
+              {
+                "day": "Y2",
+                "text": "$8K/mo"
+              },
+              {
+                "day": "Y3",
+                "text": "$14K/mo"
+              },
+              {
+                "day": "Y4",
+                "text": "$22K/mo"
+              },
+              {
+                "day": "Y5",
+                "text": "Locked in"
+              }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["$204/mo", "Flat", "Yours"]
+            "newSteps": [
+              "$204/mo",
+              "Flat",
+              "Yours"
+            ]
           }
         },
         "calculator": {
@@ -11490,6 +12773,43 @@
         ],
         "disclaimer": "All figures are based on published industry research and public vendor documentation. TCO comparisons use illustrative Rediacc pricing for modeling purposes. Actual pricing and savings may differ based on specific deployment configurations, negotiated rates, and organizational requirements."
       }
+    },
+    "newsletter": {
+      "meta": {
+        "title": "Newsletter | Rediacc",
+        "description": "Subscribe to the Rediacc newsletter for monthly product updates, self-hosting guides, and infrastructure tips.",
+        "keywords": "Rediacc newsletter, self-hosting updates, infrastructure tips, DevOps newsletter"
+      },
+      "breadcrumb": {
+        "home": "Home",
+        "newsletter": "Newsletter"
+      },
+      "expectations": {
+        "title": "What to expect",
+        "items": [
+          "Monthly product updates and new features",
+          "Self-hosting guides and best practices",
+          "Infrastructure tips and DevOps insights",
+          "Early access to new features"
+        ]
+      },
+      "frequency": "Once a month.",
+      "privacy": "We use Plausible Analytics and never share your email with third parties."
+    },
+    "changelog": {
+      "meta": {
+        "title": "Changelog | Rediacc",
+        "description": "Follow the latest Rediacc releases, improvements, and bug fixes.",
+        "keywords": "Rediacc changelog, release notes, updates, new features"
+      },
+      "breadcrumb": {
+        "home": "Home",
+        "changelog": "Changelog"
+      },
+      "title": "Changelog",
+      "subtitle": "Follow the latest updates, improvements, and fixes.",
+      "subscribeTitle": "Get notified of new releases",
+      "subscribeDescription": "Receive a short update whenever we ship something new."
     }
   },
   "layout": {

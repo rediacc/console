@@ -25,7 +25,7 @@ export async function GET(context: APIContext) {
     items: languagePosts.map((post) => ({
       title: post.data.title,
       description: post.data.description,
-      link: `/${lang}/blog/${getBaseSlug(post.slug)}`,
+      link: `/${lang}/blog/${getBaseSlug(post.slug)}?utm_source=rss&utm_medium=feed&utm_campaign=blog`,
       pubDate: post.data.publishedDate,
       author: post.data.author,
       categories: [...post.data.tags, post.data.category],

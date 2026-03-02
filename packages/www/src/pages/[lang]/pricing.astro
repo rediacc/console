@@ -1,20 +1,291 @@
 ---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PricingCard from '../../components/PricingCard.astro';
+import PricingComparison from '../../components/PricingComparison.astro';
+import FAQSection from '../../components/FAQSection.astro';
+import { createTranslator } from '../../i18n/utils';
 import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
+import { PLAN_ORDER, PLAN_PRICING } from '@rediacc/shared/subscription';
+import { EXTERNAL_LINKS } from '../../config/constants';
+import '../../styles/pricing-page.css';
 
 export const getStaticPaths = getLanguagePaths;
 
 const { lang } = Astro.params as { lang: Language };
+const { t, ta, to } = createTranslator(lang);
+
+const ns = 'pages.pricing';
+
+const priceFormatter = new Intl.NumberFormat(lang === 'en' ? 'en-US' : lang, {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0,
+});
+
+const formatPrice = (amount: number) => priceFormatter.format(amount);
+
+const buildPlan = ({
+  id,
+  monthlyPrice,
+  isPopular = false,
+  badgeLabel,
+  badgeVariant,
+  priceNote,
+}: {
+  id: string;
+  monthlyPrice: number;
+  isPopular?: boolean;
+  badgeLabel?: string;
+  badgeVariant?: string;
+  priceNote?: string | null;
+}) => {
+  const yearlyPrice = monthlyPrice * 10;
+  const price = formatPrice(monthlyPrice);
+  const yearlyPriceFormatted = formatPrice(yearlyPrice);
+
+  let period = monthlyPrice > 0
+    ? t(`${ns}.ui.monthOrYear`, { price: yearlyPriceFormatted })
+    : t(`${ns}.ui.foreverFree`);
+
+  if (id === 'enterprise' && monthlyPrice > 0) {
+    period = period.replace(yearlyPriceFormatted, `${yearlyPriceFormatted}*`);
+  }
+
+  return {
+    id,
+    name: t(`${ns}.plans.${id}.name`),
+    price,
+    priceNote: priceNote ?? (id === 'enterprise' ? t(`${ns}.plans.enterprise.priceNote`) : undefined),
+    period,
+    description: t(`${ns}.plans.${id}.description`),
+    isPopular,
+    badgeLabel,
+    badgeVariant,
+    features: ta(`${ns}.plans.${id}.features`),
+  };
+};
+
+const allPlans = PLAN_ORDER.map((code) => {
+  const id = code.toLowerCase();
+  const monthlyPrice = PLAN_PRICING[code].monthlyPriceCents / 100;
+
+  const config: Record<string, { isPopular?: boolean; badgeLabel?: string; badgeVariant?: string }> = {
+    professional: {
+      isPopular: true,
+      badgeLabel: t(`${ns}.ui.popular`),
+      badgeVariant: 'popular',
+    },
+    business: {
+      badgeLabel: `${t(`${ns}.ui.bestValue`)} · ${t(`${ns}.ui.limitedOffer`)}`,
+      badgeVariant: 'best-value',
+    },
+  };
+
+  return buildPlan({
+    id,
+    monthlyPrice,
+    ...(config[id] ?? {}),
+  });
+});
+
+const comparison = to(`${ns}.comparison`);
+
+// FAQ schema markup for SEO
+const faqItems = to(`${ns}.faq.items`) as Array<{ question: string; answer: string }> | undefined;
+const faqSchema = faqItems ? {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqItems.map((item) => ({
+    '@type': 'Question',
+    name: item.question,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: item.answer,
+    },
+  })),
+} : null;
 ---
-<!DOCTYPE html>
-<html lang={lang}>
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="refresh" content={`0;url=/${lang}/#pricing`}>
-  <link rel="canonical" href={`/${lang}/`}>
-  <title>Redirecting to pricing...</title>
-</head>
-<body>
-  <p>Redirecting to <a href={`/${lang}/#pricing`}>pricing</a>...</p>
-</body>
-</html>
+
+<BaseLayout
+  lang={lang}
+  title={t(`${ns}.meta.title`)}
+  description={t(`${ns}.meta.description`)}
+  keywords={t(`${ns}.meta.keywords`)}
+  ogType="website"
+  structuredDataType="organization"
+>
+  {faqSchema && (
+    <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} slot="head" />
+  )}
+
+  <article class="pricing-page">
+    <!-- Hero Section -->
+    <section id="pricing-hero" class="pricing-hero section-dark">
+      <div class="pricing-hero-content">
+        <h1>{t(`${ns}.hero.title`)}</h1>
+        <p class="hero-subtitle">{t(`${ns}.hero.subtitle`)}</p>
+      </div>
+    </section>
+
+    <!-- Billing Toggle & Pricing Cards -->
+    <section id="plans" class="pricing-content section-light">
+      <div class="container">
+        <!-- Billing Toggle -->
+        <div class="billing-toggle-wrapper">
+          <div class="billing-toggle" role="radiogroup" aria-label="Billing period">
+            <button
+              type="button"
+              role="radio"
+              class="billing-toggle-btn"
+              data-period="monthly"
+              aria-checked="false"
+            >
+              {t(`${ns}.ui.billingToggle.monthly`)}
+            </button>
+            <button
+              type="button"
+              role="radio"
+              class="billing-toggle-btn active"
+              data-period="annual"
+              aria-checked="true"
+            >
+              {t(`${ns}.ui.billingToggle.annual`)}
+            </button>
+          </div>
+          <span class="billing-toggle-savings visible">Save 17% — 2 months free</span>
+        </div>
+
+        <!-- Pricing Cards -->
+        <div class="pricing-grid active four-up">
+          {allPlans.map((plan) => (
+            <PricingCard plan={plan} lang={lang} />
+          ))}
+        </div>
+
+        <!-- All Plans Include Strip -->
+        <p class="all-plans-strip">{comparison?.allPlansInclude}</p>
+
+        <!-- Trust Section -->
+        <div class="trust-section">
+          <div class="trust-badges">
+            <div class="trust-item">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+              </svg>
+              <span>{t(`${ns}.trust.items.0`)}</span>
+            </div>
+            <div class="trust-item">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+              <span>{t(`${ns}.trust.items.1`)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ROI Calculator CTA -->
+    <section class="roi-cta-section section-light">
+      <div class="container">
+        <div class="roi-cta-banner">
+          <div class="roi-cta-text">
+            <h3>{t(`${ns}.roiCta.heading`)}</h3>
+            <p>{t(`${ns}.roiCta.description`)}</p>
+          </div>
+          <a href={`/${lang}/roi-calculator`} class="btn btn-primary">
+            {t('navigation.roiCalculator')} &rarr;
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Feature Comparison Table -->
+    <PricingComparison lang={lang} />
+
+    <!-- FAQ Section -->
+    <FAQSection lang={lang} />
+
+    <!-- Professional Services Teaser -->
+    <section class="ps-teaser-section section-dark">
+      <div class="container">
+        <div class="ps-teaser-content">
+          <h2>{t(`${ns}.professionalServices.cta.heading`)}</h2>
+          <p class="ps-teaser-subtitle">{t(`${ns}.professionalServices.cta.description`)}</p>
+
+          <div class="ps-teaser-packages">
+            <div class="ps-teaser-card">
+              <h3>{t(`${ns}.professionalServices.packages.standard.name`)}</h3>
+              <p class="teaser-price">{t(`${ns}.professionalServices.packages.standard.price`)}</p>
+            </div>
+            <div class="ps-teaser-card popular">
+              <div class="popular-badge">{t(`${ns}.ui.popular`)}</div>
+              <h3>{t(`${ns}.professionalServices.packages.priority.name`)}</h3>
+              <p class="teaser-price">{t(`${ns}.professionalServices.packages.priority.price`)}</p>
+            </div>
+            <div class="ps-teaser-card">
+              <h3>{t(`${ns}.professionalServices.packages.emergency.name`)}</h3>
+              <p class="teaser-price">{t(`${ns}.professionalServices.packages.emergency.price`)}</p>
+            </div>
+          </div>
+
+          <a href={`/${lang}/professional-services`} class="btn btn-primary btn-large">
+            {t(`${ns}.professionalServices.header.title`)} &rarr;
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section id="get-started" class="pricing-cta section-dark">
+      <div class="container">
+        <h2>{t(`${ns}.finalCta.heading`)}</h2>
+        <p>{t(`${ns}.finalCta.description`)}</p>
+        <div class="cta-actions">
+          <a href={`/${lang}/install`} class="btn btn-primary btn-large">
+            {t(`${ns}.finalCta.buttons.startFree`)}
+          </a>
+          <a
+            href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn btn-secondary btn-large"
+            aria-label={`${t(`${ns}.finalCta.buttons.talkToSales`)} (${t('common.aria.opensInNewTab')})`}
+          >
+            {t(`${ns}.finalCta.buttons.talkToSales`)}
+          </a>
+        </div>
+      </div>
+    </section>
+  </article>
+</BaseLayout>
+
+<script>
+  // Billing toggle: swap between monthly and annual display
+  document.addEventListener('DOMContentLoaded', () => {
+    const toggleBtns = document.querySelectorAll<HTMLButtonElement>('.billing-toggle .billing-toggle-btn');
+    const savingsLabel = document.querySelector<HTMLElement>('.billing-toggle-savings');
+
+    if (!toggleBtns.length) return;
+
+    toggleBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const period = btn.dataset.period;
+        if (!period) return;
+
+        // Update toggle state
+        toggleBtns.forEach((b) => {
+          const isActive = b === btn;
+          b.classList.toggle('active', isActive);
+          b.setAttribute('aria-checked', isActive ? 'true' : 'false');
+        });
+
+        // Show/hide savings label
+        if (savingsLabel) {
+          savingsLabel.classList.toggle('visible', period === 'annual');
+        }
+      });
+    });
+  });
+</script>

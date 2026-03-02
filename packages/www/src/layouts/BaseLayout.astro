@@ -1,5 +1,6 @@
 ---
 import Navigation from '../components/Navigation';
+import ContactModal from '../components/ContactModal';
 import Footer from '../components/Footer';
 import StructuredData from '../components/StructuredData.astro';
 import { createTranslator } from '../i18n/utils';
@@ -188,9 +189,41 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
 
     <!-- Privacy-friendly analytics by Plausible -->
     <script is:inline async src="https://plausible.rediacc.com/js/pa-QD2nMPajNQtoHBoHdMBpP.js"></script>
-    <script is:inline type="module">
+    <script is:inline>
       window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
-      plausible.init()
+      plausible.init({ outboundLinks: true, fileDownloads: true, formSubmissions: true })
+    </script>
+
+    <!-- Core Web Vitals: LCP + CLS -->
+    <script is:inline>
+      (function(){
+        var p=window.plausible;if(!p)return;
+        function rate(m,v){
+          if(m==='LCP')return v<=2500?'good':v<=4000?'needs-improvement':'poor';
+          return v<=0.1?'good':v<=0.25?'needs-improvement':'poor';
+        }
+        try{
+          new PerformanceObserver(function(l){
+            var e=l.getEntries();if(!e.length)return;
+            var lcp=e[e.length-1];
+            var v=Math.round(lcp.startTime);
+            p('web_vitals',{props:{metric:'LCP',value:String(v),rating:rate('LCP',v)},interactive:false});
+          }).observe({type:'largest-contentful-paint',buffered:true});
+        }catch(_){}
+        try{
+          var cls=0;
+          new PerformanceObserver(function(l){
+            var e=l.getEntries();
+            for(var i=0;i<e.length;i++){if(!e[i].hadRecentInput)cls+=e[i].value;}
+          }).observe({type:'layout-shift',buffered:true});
+          document.addEventListener('visibilitychange',function(){
+            if(document.visibilityState==='hidden'){
+              var v=Math.round(cls*1000)/1000;
+              p('web_vitals',{props:{metric:'CLS',value:String(v),rating:rate('CLS',v)},interactive:false});
+            }
+          });
+        }catch(_){}
+      })();
     </script>
 
     <!-- Critical CSS loaded first -->
@@ -198,6 +231,7 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
     <link rel="stylesheet" href="/styles/responsive.css">
     <!-- Non-critical CSS loaded with lower priority -->
     <link rel="stylesheet" href="/styles/search-modal.css" media="print" onload="this.media='all'; this.onload=null;">
+    <link rel="stylesheet" href="/styles/contact-modal.css" media="print" onload="this.media='all'; this.onload=null;">
 
     <!-- Skip Navigation Styles -->
     <style>
@@ -386,10 +420,13 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
     <main id="main-content">
         <slot />
     </main>
+    <ContactModal client:load />
     <Footer client:visible />
     <script src="/scripts/main.js" is:inline></script>
+    <script src="/scripts/contact-interceptor.js" is:inline></script>
     <script src="/scripts/image-modal.js" is:inline></script>
     <script src="/scripts/search-hotkey.js" is:inline></script>
     <script src="/scripts/scroll-reveal.js" is:inline></script>
+    <script src="/scripts/tracker.js" is:inline></script>
 </body>
 </html>

@@ -37,6 +37,9 @@ const Problem: React.FC<ProblemProps> = ({ lang = 'en' }) => {
                 openImageModal('/assets/images/problem.svg', t('problem.reality.imageAlt'))
               }
               aria-label={t('common.aria.clickToEnlarge')}
+              data-track="cta_click"
+              data-track-label="problem-image"
+              data-track-dest="modal"
             >
               <img
                 src="/assets/images/problem.svg"

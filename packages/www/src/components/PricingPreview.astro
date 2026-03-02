@@ -1,0 +1,105 @@
+---
+import { createTranslator } from '../i18n/utils';
+import type { Language } from '../i18n/types';
+import { PLAN_ORDER, PLAN_PRICING, PLAN_METADATA } from '@rediacc/shared/subscription';
+import { EXTERNAL_LINKS } from '../config/constants';
+import '../styles/pricing-page.css';
+
+interface Props {
+  lang?: Language;
+}
+
+const { lang = 'en' } = Astro.props;
+const { t, ta, to } = createTranslator(lang);
+
+const priceFormatter = new Intl.NumberFormat(lang === 'en' ? 'en-US' : lang, {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0,
+});
+const formatPrice = (amount: number) => priceFormatter.format(amount);
+
+const technicalMetrics = ta('pages.pricing.technicalSummary.metrics');
+const technicalValues = to('pages.pricing.technicalSummary.values');
+
+const plans = PLAN_ORDER.map((code) => ({
+  id: code.toLowerCase(),
+  monthly: PLAN_PRICING[code].monthlyPriceCents / 100,
+  featured: PLAN_METADATA[code].featured,
+}));
+---
+
+<section class="cf-pricing-section" id="pricing">
+  <div class="cf-pricing-container">
+    <div class="section-header reveal">
+      <h2 class="section-title">{t('pricingPreview.title')}</h2>
+      <p class="section-subtitle">{t('pricingPreview.subtitle')}</p>
+    </div>
+    <div class="cf-pricing-grid reveal">
+      {plans.map(plan => (
+        <div class:list={['cf-pricing-card', { 'cf-featured': plan.featured }]}>
+          <h3 class="cf-plan-name">{t(`pages.pricing.plans.${plan.id}.name`)}</h3>
+          <div class="cf-price-block">
+            {plan.monthly === 0 ? (
+              <>
+                <span class="cf-price">{formatPrice(0)}</span>
+                <div class="cf-price-subtitle">{t('pages.pricing.ui.foreverFree')}</div>
+              </>
+            ) : (
+              <div class="cf-price-line">
+                <span class="cf-price">{formatPrice(plan.monthly)}</span>
+                <span class="cf-price-period">/mo</span>
+              </div>
+            )}
+          </div>
+          <ul class="cf-features">
+            {technicalMetrics.map((metric: any) => (
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                </svg>
+                <span><strong>{technicalValues?.[plan.id]?.[metric.key] ?? '—'}</strong> {metric.label}</span>
+              </li>
+            ))}
+          </ul>
+          {plan.monthly === 0 ? (
+            <a
+              href={`/${lang}/install`}
+              class:list={['cf-cta-btn', { 'cf-cta-featured': plan.featured }]}
+              data-track="cta_click"
+              data-track-label="pricing-cta"
+              data-track-dest={plan.id}
+            >
+              {t('pages.pricing.ui.cta.community.primary')}
+            </a>
+          ) : plan.id === 'enterprise' ? (
+            <a
+              href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="cf-cta-btn"
+              data-track="cta_click"
+              data-track-label="pricing-cta"
+              data-track-dest={plan.id}
+            >
+              {t('pages.pricing.ui.cta.enterprise.primary')}
+            </a>
+          ) : (
+            <a
+              href={`/${lang}/install`}
+              class="cf-cta-btn"
+              data-track="cta_click"
+              data-track-label="pricing-cta"
+              data-track-dest={plan.id}
+            >
+              {t(`pages.pricing.ui.cta.${plan.id}.primary`)}
+            </a>
+          )}
+        </div>
+      ))}
+    </div>
+    <a href={`/${lang}/pricing`} class="pricing-preview-compare" data-track="cta_click" data-track-label="pricing-compare">
+      {t('pricingPreview.compareAll')} &rarr;
+    </a>
+  </div>
+</section>

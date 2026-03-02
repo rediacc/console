@@ -61,6 +61,9 @@ const Solutions: React.FC<SolutionsProps> = ({ lang = 'en' }) => {
                     key={page.slug}
                     href={page.href}
                     className="solution-card solution-card-link reveal"
+                    data-track="cta_click"
+                    data-track-label="solution-card"
+                    data-track-dest={page.slug}
                   >
                     <h4 className="solution-title">{page.title}</h4>
                     <p className="solution-description">{page.description}</p>
@@ -99,6 +102,9 @@ const Solutions: React.FC<SolutionsProps> = ({ lang = 'en' }) => {
               openImageModal('/assets/images/solution.svg', t('problem.solution.imageAlt'))
             }
             aria-label={t('common.aria.clickToEnlarge')}
+            data-track="cta_click"
+            data-track-label="solution-image"
+            data-track-dest="modal"
           >
             <img
               src="/assets/images/solution.svg"

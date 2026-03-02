@@ -81,6 +81,12 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
           .slice(0, 50) // Limit to 50 results
           .map((result) => result.item);
         setResults(searchResults);
+        if (value.trim().length >= 2) {
+          window.plausible?.('search_query', { props: { query: value.trim(), results: String(searchResults.length) } });
+          if (searchResults.length === 0) {
+            window.plausible?.('search_no_results', { props: { query: value.trim() } });
+          }
+        }
       } finally {
         setIsLoading(false);
       }
@@ -107,9 +113,19 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
 
   // Navigate to result
   const navigateToResult = (result: SearchItem) => {
+    window.plausible?.('search_result_click', {
+      props: { query: query.trim(), result_path: result.path, category: result.category },
+    });
     window.location.href = result.page;
     onClose();
   };
+
+  // Track search open
+  useEffect(() => {
+    if (isOpen) {
+      window.plausible?.('search_open', { props: { source: 'click' } });
+    }
+  }, [isOpen]);
 
   // Focus input and lock body scroll when modal opens
   useEffect(() => {
@@ -246,6 +262,8 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
               onClick={onClose}
               aria-label="Close search"
               type="button"
+              data-track="cta_click"
+              data-track-label="search-close"
             >
               <kbd>Esc</kbd>
             </button>

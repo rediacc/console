@@ -2262,6 +2262,61 @@
   font-weight: 600;
 }
 
+/* Email gate wrapper */
+.sp-roi-details-wrapper {
+  position: relative;
+}
+
+.sp-roi-details-wrapper.sp-roi-gated .sp-roi-details {
+  filter: blur(6px);
+  pointer-events: none;
+  user-select: none;
+}
+
+.sp-roi-gate-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(2px);
+  border-radius: 12px;
+}
+
+:root[data-theme='dark'] .sp-roi-gate-overlay {
+  background: rgba(15, 15, 16, 0.6);
+}
+
+.sp-roi-gate-content {
+  text-align: center;
+  max-width: 380px;
+  padding: 24px;
+}
+
+.sp-roi-gate-content h4 {
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+  color: var(--color-text);
+}
+
+.sp-roi-gate-content p {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 12px;
+}
+
+.sp-roi-gate-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sp-roi-gate-form .newsletter-input {
+  flex: 1;
+}
+
 /* Footnote */
 .sp-roi-footnote {
   font-size: 0.75rem;

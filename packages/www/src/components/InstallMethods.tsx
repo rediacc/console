@@ -60,7 +60,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, label, code, copyText, copied
     <div className="code-block">
       <div className="code-header">
         <span>{label}</span>
-        <button type="button" className={`copy-btn${copied ? ' copied' : ''}`} onClick={handleCopy}>
+        <button type="button" className={`copy-btn${copied ? ' copied' : ''}`} onClick={handleCopy} data-track="cta_click" data-track-label="copy-code" data-track-dest={id}>
           <span className="copy-btn-icon">{copied ? <CheckIcon /> : <CopyIcon />}</span>
           <span>{copied ? copiedText : copyText}</span>
         </button>

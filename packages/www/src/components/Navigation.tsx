@@ -127,10 +127,12 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
             aria-label={t('navigation.toggleMenu')}
             aria-expanded={isSidebarOpen}
             aria-controls="navigation-sidebar"
+            data-track="cta_click"
+            data-track-label="nav-hamburger"
           >
             <span className="hamburger-icon" />
           </button>
-          <a href={`/${currentLang}/`} className="nav-icon-link" aria-label={t('common.logoAlt')}>
+          <a href={`/${currentLang}/`} className="nav-icon-link" aria-label={t('common.logoAlt')} data-track="cta_click" data-track-label="nav-logo">
             <img
               src="/assets/images/icon-rediacc.svg"
               alt=""
@@ -142,7 +144,7 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
               height="36"
             />
           </a>
-          <a href={`/${currentLang}/`} className="nav-brand">
+          <a href={`/${currentLang}/`} className="nav-brand" data-track="cta_click" data-track-label="nav-brand">
             <span className="nav-wordmark" aria-label={t('common.logoAlt')}>
               rediacc
             </span>
@@ -154,17 +156,14 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
               onToggle={togglePersonaMenu}
               onClose={closePersonaMenu}
             />
-            <a href={`/${currentLang}/#pricing`} className="nav-link">
+            <a href={`/${currentLang}/#pricing`} className="nav-link" data-track="cta_click" data-track-label="nav-link" data-track-dest="pricing">
               {t('navigation.pricing')}
             </a>
-            <a href={`/${currentLang}/docs/quick-start`} className="nav-link">
+            <a href={`/${currentLang}/docs/quick-start`} className="nav-link" data-track="cta_click" data-track-label="nav-link" data-track-dest="docs">
               {t('navigation.docs')}
             </a>
-            <a href={`/${currentLang}/install`} className="nav-link">
-              {t('navigation.install')}
-            </a>
-            <a href={`/${currentLang}/contact`} className="nav-link">
-              {t('navigation.contact')}
+            <a href={`/${currentLang}/blog`} className="nav-link" data-track="cta_click" data-track-label="nav-link" data-track-dest="blog">
+              {t('navigation.blog')}
             </a>
           </div>
           <div className="nav-right">
@@ -175,6 +174,8 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
               aria-label={t('navigation.search')}
               aria-expanded={isSearchOpen}
               aria-controls="search-modal"
+              data-track="cta_click"
+              data-track-label="nav-search"
             >
               <svg
                 width="20"
@@ -201,14 +202,24 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
               navigationMode="button"
               ariaLabel={t('navigation.selectLanguage')}
             />
+            <a href={`/${currentLang}/install`} className="nav-cta-btn" data-track="cta_click" data-track-label="nav-install" data-track-dest="install">
+              {t('navigation.install')}
+            </a>
             <a
               href={consoleUrl}
               className="login-btn"
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`${t('navigation.login')} (${t('common.aria.opensInNewTab')})`}
+              data-track="cta_click"
+              data-track-label="nav-login"
+              data-track-dest="console"
             >
-              {t('navigation.login')}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                <polyline points="10 17 15 12 10 7" />
+                <line x1="15" y1="12" x2="3" y2="12" />
+              </svg>
             </a>
           </div>
         </div>

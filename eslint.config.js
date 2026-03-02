@@ -18,6 +18,7 @@ import { noDuplicateTranslationProps } from './eslint-rules/no-duplicate-transla
 import { preferConstArrays } from './eslint-rules/prefer-const-arrays.js';
 import { noHardcodedNullishDefaults } from './eslint-rules/no-hardcoded-nullish-defaults.js';
 import { e2eTestNamingConvention } from './eslint-rules/e2e-test-naming-convention.js';
+import { requireDataTrack } from './eslint-rules/require-data-track.js';
 import { i18nJsonPlugin, i18nSourcePlugin } from './eslint-rules/i18n/index.js';
 
 export default tseslint.config(
@@ -122,6 +123,7 @@ export default tseslint.config(
           'prefer-const-arrays': preferConstArrays,
           'no-hardcoded-nullish-defaults': noHardcodedNullishDefaults,
           'e2e-test-naming-convention': e2eTestNamingConvention,
+          'require-data-track': requireDataTrack,
         },
       },
     },
@@ -893,6 +895,21 @@ export default tseslint.config(
       // Disable Ant Design restrictions (www uses native HTML)
       'react/forbid-elements': 'off',
       'no-restricted-imports': 'off',
+    },
+  },
+
+  // WWW analytics tracking enforcement
+  {
+    files: ['packages/www/src/**/*.{ts,tsx}'],
+    rules: {
+      'custom/require-data-track': ['error', {
+        elements: ['a', 'button'],
+        exemptParents: [
+          'SearchModal',      // React events handle search tracking
+          'LanguageMenu',     // React event handles language_change
+          'Sidebar',          // Links tracked by pageview, toggle tracked by React
+        ],
+      }],
     },
   },
 

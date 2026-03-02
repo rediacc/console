@@ -50,11 +50,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   const bottomNavItems = [
     { href: `/${currentLang}/#pricing`, label: t('navigation.pricing') },
+    { href: `/${currentLang}/roi-calculator`, label: t('navigation.roiCalculator') },
     { href: `/${currentLang}/disaster-recovery`, label: t('navigation.disasterRecovery') },
     { href: `/${currentLang}/install`, label: t('navigation.install') },
     { href: `/${currentLang}/blog`, label: t('navigation.blog') },
     { href: `/${currentLang}/docs/quick-start`, label: t('navigation.docs') },
-    { href: `/${currentLang}/roi-calculator`, label: t('navigation.roiCalculator') },
     { href: `/${currentLang}/contact`, label: t('navigation.contact') },
   ];
 
@@ -102,6 +102,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     if (isOpen) {
       document.body.classList.add('sidebar-active');
       document.body.style.overflow = 'hidden';
+      window.plausible?.('sidebar_toggle', { props: { action: 'open' } });
       // Focus the first link when sidebar opens
       const firstLink = sidebarRef.current?.querySelector<HTMLAnchorElement>('.sidebar-link');
       firstLink?.focus();
@@ -176,6 +177,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             onClick={onClose}
             tabIndex={isOpen ? 0 : -1}
             aria-label={t('common.buttons.close')}
+            data-track="cta_click"
+            data-track-label="sidebar-close"
           >
             <svg
               width="20"
@@ -203,6 +206,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               onClick={handleLinkClick}
               tabIndex={isOpen ? 0 : -1}
               aria-current={isActive(item.href) ? 'page' : undefined}
+              data-track="cta_click"
+              data-track-label="sidebar-nav"
             >
               {item.label}
             </a>
@@ -217,6 +222,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               aria-expanded={isSolutionsExpanded}
               aria-controls="sidebar-solutions-list"
               tabIndex={isOpen ? 0 : -1}
+              data-track="cta_click"
+              data-track-label="sidebar-solutions-toggle"
             >
               <span>{t('navigation.solutions')}</span>
               <svg
@@ -257,6 +264,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                             onClick={handleLinkClick}
                             tabIndex={isOpen && isSolutionsExpanded ? 0 : -1}
                             aria-current={active ? 'page' : undefined}
+                            data-track="cta_click"
+                            data-track-label="sidebar-solution"
                           >
                             {item.label}
                           </a>
@@ -279,6 +288,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 className={`sidebar-link sidebar-persona-link${isActive(item.href) ? ' active' : ''}`}
                 onClick={handleLinkClick}
                 tabIndex={isOpen ? 0 : -1}
+                data-track="cta_click"
+                data-track-label="sidebar-persona"
               >
                 {item.label}
               </a>
@@ -294,6 +305,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               onClick={handleLinkClick}
               tabIndex={isOpen ? 0 : -1}
               aria-current={isActive(item.href) ? 'page' : undefined}
+              data-track="cta_click"
+              data-track-label="sidebar-nav"
             >
               {item.label}
             </a>

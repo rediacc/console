@@ -28,6 +28,8 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({ label = 'Toggle theme' }) => 
     if (meta) {
       meta.content = next === 'dark' ? '#0f0f10' : '#556b2f';
     }
+
+    window.plausible?.('theme_toggle', { props: { theme: next } });
   };
 
   return (
@@ -37,6 +39,8 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({ label = 'Toggle theme' }) => 
       onClick={toggle}
       aria-label={label}
       title={label}
+      data-track="cta_click"
+      data-track-label="theme-toggle"
     >
       {theme === 'dark' ? (
         // Sun icon — switch to light

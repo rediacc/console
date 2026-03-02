@@ -136,6 +136,9 @@ const savings = showSavings && monthlyPrice > 0 ? calculateSavings(monthlyPrice)
         type="button"
         class="btn btn-primary btn-large"
         data-checkout={plan.id}
+        data-track="cta_click"
+        data-track-label="pricing-checkout"
+        data-track-dest={plan.id}
       >
         {primaryCta.label}
       </button>
@@ -146,6 +149,9 @@ const savings = showSavings && monthlyPrice > 0 ? calculateSavings(monthlyPrice)
         rel="noopener noreferrer"
         class="btn btn-primary btn-large"
         aria-label={`${primaryCta.label} (${t('common.aria.opensInNewTab')})`}
+        data-track="cta_click"
+        data-track-label="pricing-primary"
+        data-track-dest={plan.id}
       >
         {primaryCta.label}
       </a>
@@ -155,6 +161,9 @@ const savings = showSavings && monthlyPrice > 0 ? calculateSavings(monthlyPrice)
       class="btn btn-secondary btn-large"
       target={secondaryCta.target}
       rel={secondaryCta.rel}
+      data-track="cta_click"
+      data-track-label="pricing-secondary"
+      data-track-dest={plan.id}
     >
       {secondaryCta.label}
     </a>
@@ -213,6 +222,8 @@ const savings = showSavings && monthlyPrice > 0 ? calculateSavings(monthlyPrice)
         btn.disabled = true;
         btn.textContent = '...';
 
+        window.plausible?.('checkout_start', { props: { plan: planId, period: billingPeriod } });
+
         try {
           const response = await fetch(`${accountServerUrl}/api/v1/checkout`, {
             method: 'POST',
@@ -220,7 +231,7 @@ const savings = showSavings && monthlyPrice > 0 ? calculateSavings(monthlyPrice)
             body: JSON.stringify({
               planCode: planId.toUpperCase(),
               billingPeriod,
-              successUrl: `${window.location.origin}/${document.documentElement.lang}/checkout/success`,
+              successUrl: `${window.location.origin}/${document.documentElement.lang}/checkout/success?plan=${planId}`,
               cancelUrl: window.location.href,
             }),
           });

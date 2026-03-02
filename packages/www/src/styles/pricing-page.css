@@ -1328,6 +1328,42 @@
   }
 }
 
+/* ROI Calculator CTA Banner */
+.roi-cta-section {
+  padding: var(--space-8) 0;
+}
+
+.roi-cta-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  padding: var(--space-6) var(--space-8);
+  border-radius: var(--radius-lg, 12px);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-alt, var(--color-bg-secondary));
+}
+
+.roi-cta-text h3 {
+  font-size: var(--font-size-xl);
+  margin: 0 0 var(--space-2) 0;
+  color: var(--color-text-primary);
+}
+
+.roi-cta-text p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+}
+
+@media (max-width: 48rem) {
+  .roi-cta-banner {
+    flex-direction: column;
+    text-align: center;
+    padding: var(--space-6) var(--space-4);
+  }
+}
+
 /* Final CTA Section - Dark Gradient */
 .pricing-cta {
   padding: var(--section-padding);
@@ -1634,7 +1670,7 @@
   display: block;
   text-align: center;
   padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   text-decoration: none;
@@ -1737,6 +1773,247 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   margin-top: var(--space-1);
+}
+
+/* ── Expandable Feature Comparison ── */
+.comparison-expandable {
+  max-width: 72rem;
+  margin: 0 auto;
+}
+
+.comparison-category {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-3);
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+.comparison-category summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: background var(--transition-duration-base);
+}
+
+.comparison-category summary::-webkit-details-marker {
+  display: none;
+}
+
+.comparison-category summary::before {
+  content: '+';
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-alt);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  transition: transform var(--transition-duration-base);
+}
+
+.comparison-category[open] summary::before {
+  content: '−';
+}
+
+.comparison-category summary:hover {
+  background: var(--color-bg-alt);
+}
+
+.comparison-category-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.comparison-category-table thead {
+  border-top: 1px solid var(--color-border);
+}
+
+.comparison-category-table th,
+.comparison-category-table td {
+  padding: var(--space-3) var(--space-4);
+  text-align: center;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.comparison-category-table th {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--color-bg-alt);
+}
+
+.comparison-category-table th:first-child,
+.comparison-category-table td:first-child {
+  text-align: left;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  padding-left: var(--space-5);
+  white-space: nowrap;
+}
+
+.comparison-category-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.comparison-category-table tbody tr:hover {
+  background: var(--color-bg-alt);
+}
+
+/* Highlight professional column */
+.comparison-category-table .col-popular {
+  background: rgba(127, 160, 63, 0.04);
+}
+
+.comparison-category-table thead .col-popular {
+  background: rgba(127, 160, 63, 0.08);
+  color: var(--color-brand-primary);
+}
+
+/* "All plans include" strip */
+.all-plans-strip {
+  text-align: center;
+  padding: var(--space-4) var(--space-6);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  max-width: var(--container-lg);
+  margin: var(--space-6) auto 0;
+}
+
+/* Social proof on pricing page */
+.pricing-social-proof {
+  text-align: center;
+  padding: var(--space-12) 0;
+}
+
+.pricing-social-proof-heading {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--space-6);
+}
+
+/* Billing toggle savings label */
+.billing-toggle-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-8);
+}
+
+.billing-toggle-savings {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-success, #16a34a);
+  opacity: 0;
+  transition: opacity var(--transition-duration-base);
+}
+
+.billing-toggle-savings.visible {
+  opacity: 1;
+}
+
+/* Mobile plan toggle for comparison */
+.comparison-plan-toggle {
+  display: none;
+}
+
+@media (max-width: 48rem) {
+  /* Show mobile plan toggle, hide desktop table headers & columns */
+  .comparison-plan-toggle {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-1);
+    padding: var(--space-1);
+    margin: 0 auto var(--space-6);
+    background: var(--color-bg-alt);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    width: fit-content;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .comparison-plan-toggle-btn {
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid transparent;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+      background var(--transition-duration-base),
+      color var(--transition-duration-base);
+  }
+
+  .comparison-plan-toggle-btn.active {
+    background: var(--color-bg);
+    color: var(--color-brand-primary);
+    border-color: var(--color-brand-primary);
+  }
+
+  /* Hide table header row on mobile */
+  .comparison-category-table thead {
+    display: none;
+  }
+
+  /* Convert table to 2-column layout: label + value */
+  .comparison-category-table,
+  .comparison-category-table tbody,
+  .comparison-category-table tr {
+    display: block;
+  }
+
+  .comparison-category-table tr {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-2) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .comparison-category-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .comparison-category-table td {
+    border: none;
+    padding: 0;
+  }
+
+  .comparison-category-table td:first-child {
+    padding-left: 0;
+    white-space: normal;
+  }
+
+  /* Hide all value columns except the active one */
+  .comparison-category-table td[data-plan] {
+    display: none;
+  }
+
+  .comparison-category-table td[data-plan].mobile-visible {
+    display: block;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+  }
 }
 
 /* Reduced motion: remove hover transforms */

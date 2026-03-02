@@ -39,6 +39,7 @@ const SPCostCalculator: React.FC<Props> = ({ content, preset }) => {
 
   const handleChange = useCallback((id: string, val: number) => {
     setValues((prev) => ({ ...prev, [id]: val }));
+    window.plausible?.('calculator_interact', { props: { field: id } });
   }, []);
 
   const computed = computeFn(values);

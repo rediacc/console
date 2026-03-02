@@ -142,6 +142,7 @@
   border-top: 1px solid var(--color-border-subtle);
   display: flex;
   justify-content: center;
+  gap: var(--space-4);
 }
 
 .mega-menu-view-all {

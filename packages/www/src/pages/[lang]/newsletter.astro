@@ -1,0 +1,170 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import NewsletterSignup from '../../components/NewsletterSignup';
+import { createTranslator } from '../../i18n/utils';
+import { getLanguagePaths } from '../../i18n/language-utils';
+import type { Language } from '../../i18n/types';
+
+export const getStaticPaths = getLanguagePaths;
+
+const { lang } = Astro.params as { lang: Language };
+const { t, ta } = createTranslator(lang);
+
+const confirmed = Astro.url.searchParams.get('confirmed') === 'true';
+const unsubscribed = Astro.url.searchParams.get('unsubscribed') === 'true';
+
+const breadcrumbItems = [
+  { name: t('pages.newsletter.breadcrumb.home'), url: `/${lang}/` },
+  { name: t('pages.newsletter.breadcrumb.newsletter'), url: `/${lang}/newsletter` },
+];
+---
+
+<BaseLayout
+  lang={lang}
+  title={t('pages.newsletter.meta.title')}
+  description={t('pages.newsletter.meta.description')}
+  keywords={t('pages.newsletter.meta.keywords')}
+  ogType="website"
+>
+  <section class="newsletter-page-section">
+    <div class="newsletter-page-container">
+      <Breadcrumb items={breadcrumbItems} />
+
+      {confirmed && (
+        <div class="newsletter-banner newsletter-banner-success" role="status">
+          <svg class="newsletter-banner-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+          </svg>
+          <p>{t('newsletter.confirmed')}</p>
+        </div>
+      )}
+
+      {unsubscribed && (
+        <div class="newsletter-banner newsletter-banner-info" role="status">
+          <p>{t('newsletter.unsubscribed')}</p>
+        </div>
+      )}
+
+      {!confirmed && !unsubscribed && (
+        <div class="newsletter-page-content">
+          <NewsletterSignup client:load variant="page" source="newsletter-page" />
+
+          <div class="newsletter-expectations">
+            <h3 class="newsletter-expectations-title">{t('pages.newsletter.expectations.title')}</h3>
+            <ul class="newsletter-expectations-list">
+              {(ta('pages.newsletter.expectations.items') as string[]).map((item: string) => (
+                <li>{item}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div class="newsletter-guarantees">
+            <p>{t('pages.newsletter.frequency')}</p>
+            <p>{t('pages.newsletter.privacy')}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  </section>
+
+  {confirmed && (
+    <script is:inline>
+      if (window.plausible) {
+        window.plausible('newsletter_confirm');
+      }
+    </script>
+  )}
+</BaseLayout>
+
+<style>
+  .newsletter-page-section {
+    padding: calc(var(--nav-height) + var(--space-12)) var(--space-4) var(--space-20);
+    min-height: 60vh;
+  }
+
+  .newsletter-page-container {
+    max-width: var(--container-sm);
+    margin: 0 auto;
+  }
+
+  .newsletter-banner {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-6);
+    border-radius: var(--radius-lg);
+    margin: var(--space-8) 0;
+    font-size: var(--font-size-base);
+  }
+
+  .newsletter-banner-success {
+    background: rgba(40, 167, 69, 0.1);
+    color: var(--color-success);
+    border: 1px solid rgba(40, 167, 69, 0.2);
+  }
+
+  .newsletter-banner-info {
+    background: var(--color-bg);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+  }
+
+  .newsletter-banner-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+
+  .newsletter-page-content {
+    margin-top: var(--space-12);
+  }
+
+  .newsletter-expectations {
+    margin-top: var(--space-12);
+    padding: var(--space-6);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+  }
+
+  .newsletter-expectations-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+    margin-bottom: var(--space-4);
+  }
+
+  .newsletter-expectations-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    color: var(--color-text-secondary);
+  }
+
+  .newsletter-expectations-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    line-height: var(--leading-relaxed);
+  }
+
+  .newsletter-expectations-list li::before {
+    content: '✓';
+    color: var(--color-brand-primary);
+    font-weight: var(--font-weight-semibold);
+    flex-shrink: 0;
+  }
+
+  .newsletter-guarantees {
+    margin-top: var(--space-8);
+    text-align: center;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+</style>

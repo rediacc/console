@@ -89,4 +89,9 @@ const { t } = createTranslator(lang);
       border: 1px solid var(--color-border, #e5e7eb);
     }
   </style>
+
+  <script is:inline>
+    var p = new URLSearchParams(location.search);
+    if (window.plausible) window.plausible('purchase', { props: { plan: p.get('plan') || 'unknown' } });
+  </script>
 </BaseLayout>

@@ -188,6 +188,8 @@ const PersonaMegaMenu: React.FC<PersonaMegaMenuProps> = ({ isOpen, onToggle, onC
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-controls="persona-menu-panel"
+        data-track="cta_click"
+        data-track-label="persona-trigger"
       >
         {t('navigation.builtForYou')}
         <svg
@@ -228,6 +230,9 @@ const PersonaMegaMenu: React.FC<PersonaMegaMenuProps> = ({ isOpen, onToggle, onC
                   role="menuitem"
                   tabIndex={0}
                   onClick={onClose}
+                  data-track="cta_click"
+                  data-track-label="persona-card"
+                  data-track-dest={slug}
                 >
                   <div className="persona-card-icon">
                     <Icon />

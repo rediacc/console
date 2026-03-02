@@ -1,0 +1,237 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import NewsletterSignup from '../../components/NewsletterSignup';
+import { createTranslator } from '../../i18n/utils';
+import { getLanguagePaths } from '../../i18n/language-utils';
+import type { Language } from '../../i18n/types';
+
+export const getStaticPaths = getLanguagePaths;
+
+const { lang } = Astro.params as { lang: Language };
+const { t } = createTranslator(lang);
+
+const breadcrumbItems = [
+  { name: t('pages.changelog.breadcrumb.home'), url: `/${lang}/` },
+  { name: t('pages.changelog.breadcrumb.changelog'), url: `/${lang}/changelog` },
+];
+
+// Changelog entries — will be sourced from GitHub releases later
+const releases = [
+  {
+    version: '0.4.0',
+    date: '2026-02-28',
+    highlights: [
+      'Newsletter subscription and lead capture system',
+      'Dedicated pricing page with detailed comparison',
+      'ROI calculator with cost breakdown',
+      'Changelog page for release tracking',
+    ],
+  },
+  {
+    version: '0.3.0',
+    date: '2026-02-15',
+    highlights: [
+      'Homepage redesign with feature showcase tabs',
+      'Logo wall with trusted brands',
+      'Dark mode support across all pages',
+      'Blog sticky navigation bar',
+    ],
+  },
+  {
+    version: '0.2.0',
+    date: '2026-01-20',
+    highlights: [
+      'Solution pages for all use cases',
+      'Multi-language support (9 languages)',
+      'Professional services page',
+      'Disaster recovery landing page',
+    ],
+  },
+  {
+    version: '0.1.0',
+    date: '2025-12-01',
+    highlights: [
+      'Initial release of Rediacc Console',
+      'CLI tool for infrastructure management',
+      'Desktop application (Electron)',
+      'Documentation site with guides',
+    ],
+  },
+];
+---
+
+<BaseLayout
+  lang={lang}
+  title={t('pages.changelog.meta.title')}
+  description={t('pages.changelog.meta.description')}
+  keywords={t('pages.changelog.meta.keywords')}
+  ogType="website"
+>
+  <section class="changelog-section">
+    <div class="changelog-container">
+      <Breadcrumb items={breadcrumbItems} />
+
+      <header class="changelog-header">
+        <h1 class="changelog-title">{t('pages.changelog.title')}</h1>
+        <p class="changelog-subtitle">{t('pages.changelog.subtitle')}</p>
+      </header>
+
+      <div class="changelog-subscribe">
+        <NewsletterSignup
+          client:visible
+          variant="inline"
+          source="changelog"
+          title={t('pages.changelog.subscribeTitle')}
+          description={t('pages.changelog.subscribeDescription')}
+        />
+      </div>
+
+      <div class="changelog-timeline">
+        {releases.map((release) => (
+          <article class="changelog-entry" id={`v${release.version}`}>
+            <div class="changelog-entry-marker" />
+            <div class="changelog-entry-content">
+              <div class="changelog-entry-header">
+                <h2 class="changelog-version">v{release.version}</h2>
+                <time class="changelog-date" datetime={release.date}>
+                  {new Date(release.date).toLocaleDateString(lang === 'en' ? 'en-US' : lang, {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </time>
+              </div>
+              <ul class="changelog-highlights">
+                {release.highlights.map((item) => (
+                  <li>{item}</li>
+                ))}
+              </ul>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .changelog-section {
+    padding: calc(var(--nav-height) + var(--space-12)) var(--space-4) var(--space-20);
+  }
+
+  .changelog-container {
+    max-width: var(--container-md);
+    margin: 0 auto;
+  }
+
+  .changelog-header {
+    margin: var(--space-8) 0 var(--space-4);
+  }
+
+  .changelog-title {
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text);
+    line-height: var(--leading-tight);
+  }
+
+  .changelog-subtitle {
+    margin-top: var(--space-2);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-lg);
+  }
+
+  .changelog-subscribe {
+    margin: var(--space-8) 0 var(--space-12);
+  }
+
+  /* Timeline */
+  .changelog-timeline {
+    position: relative;
+    padding-left: var(--space-8);
+    border-left: 2px solid var(--color-border);
+  }
+
+  .changelog-entry {
+    position: relative;
+    padding-bottom: var(--space-10);
+  }
+
+  .changelog-entry:last-child {
+    padding-bottom: 0;
+  }
+
+  .changelog-entry-marker {
+    position: absolute;
+    left: calc(-1 * var(--space-8) - 5px);
+    top: 4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--color-brand-primary);
+    border: 2px solid var(--color-bg-alt);
+  }
+
+  .changelog-entry-content {
+    padding-left: var(--space-4);
+  }
+
+  .changelog-entry-header {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-4);
+    margin-bottom: var(--space-3);
+    flex-wrap: wrap;
+  }
+
+  .changelog-version {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+    font-family: var(--font-family-mono);
+  }
+
+  .changelog-date {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+  }
+
+  .changelog-highlights {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .changelog-highlights li {
+    position: relative;
+    padding-left: var(--space-5);
+    color: var(--color-text-secondary);
+    line-height: var(--leading-relaxed);
+  }
+
+  .changelog-highlights li::before {
+    content: '•';
+    position: absolute;
+    left: var(--space-2);
+    color: var(--color-brand-primary);
+    font-weight: var(--font-weight-bold);
+  }
+
+  @media (max-width: 47.99rem) {
+    .changelog-timeline {
+      padding-left: var(--space-6);
+    }
+
+    .changelog-entry-marker {
+      left: calc(-1 * var(--space-6) - 5px);
+    }
+
+    .changelog-entry-header {
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+  }
+</style>

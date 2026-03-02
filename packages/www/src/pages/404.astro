@@ -88,6 +88,10 @@ const structuredData = {
   </section>
 </BaseLayout>
 
+<script is:inline>
+  if (window.plausible) window.plausible('404', { props: { path: location.pathname } });
+</script>
+
 <style>
 .error-page {
   padding: var(--space-20) 0;
