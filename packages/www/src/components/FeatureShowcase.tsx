@@ -1,9 +1,9 @@
-import React, { useRef, useState, useMemo } from 'react';
-import { useTranslation } from '../i18n/react';
-import { SOLUTION_PAGES, CATEGORY_ORDER } from '../config/solution-pages';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { CATEGORY_ICONS } from './CategoryIcons';
-import type { Language } from '../i18n/types';
+import { SOLUTION_PAGES, CATEGORY_ORDER } from '../config/solution-pages';
+import { useTranslation } from '../i18n/react';
 import type { SolutionCategory } from '../config/solution-pages';
+import type { Language } from '../i18n/types';
 
 interface FeatureShowcaseProps {
   lang?: Language;
@@ -12,7 +12,11 @@ interface FeatureShowcaseProps {
 const FeatureShowcase: React.FC<FeatureShowcaseProps> = ({ lang = 'en' }) => {
   const { t, to } = useTranslation(lang);
   const [activeIndex, setActiveIndex] = useState(0);
-  const tabStartRef = useRef(Date.now());
+  const tabStartRef = useRef(0);
+
+  useEffect(() => {
+    tabStartRef.current = Date.now();
+  }, []);
 
   const categories = useMemo(
     () =>
@@ -33,11 +37,10 @@ const FeatureShowcase: React.FC<FeatureShowcaseProps> = ({ lang = 'en' }) => {
           Icon: CATEGORY_ICONS[cat as SolutionCategory],
         };
       }),
-    [t, to],
+    [t, to]
   );
 
   const active = categories[activeIndex];
-  if (!active) return null;
 
   return (
     <section className="feature-showcase" id="features">
@@ -58,13 +61,15 @@ const FeatureShowcase: React.FC<FeatureShowcaseProps> = ({ lang = 'en' }) => {
                 aria-controls={`feature-panel-${cat.key}`}
                 onClick={() => {
                   const elapsed = Math.round((Date.now() - tabStartRef.current) / 1000);
-                  const prevTab = categories[activeIndex]?.key;
-                  if (elapsed >= 2 && prevTab) {
-                    window.plausible?.('feature_tab_dwell', { props: { tab: prevTab, seconds: String(elapsed) } });
+                  const prevTab = categories[activeIndex];
+                  if (elapsed >= 2) {
+                    window.plausible('feature_tab_dwell', {
+                      props: { tab: prevTab.key, seconds: String(elapsed) },
+                    });
                   }
                   tabStartRef.current = Date.now();
                   setActiveIndex(index);
-                  window.plausible?.('feature_tab_click', { props: { tab: cat.key } });
+                  window.plausible('feature_tab_click', { props: { tab: cat.key } });
                 }}
                 data-track="cta_click"
                 data-track-label="feature-tab"
@@ -75,11 +80,7 @@ const FeatureShowcase: React.FC<FeatureShowcaseProps> = ({ lang = 'en' }) => {
               </button>
             ))}
           </div>
-          <div
-            className="feature-tab-panel"
-            role="tabpanel"
-            id={`feature-panel-${active.key}`}
-          >
+          <div className="feature-tab-panel" role="tabpanel" id={`feature-panel-${active.key}`}>
             <p className="feature-tab-description">{active.description}</p>
             <ul className="feature-tab-solutions">
               {active.solutions.map((s) => (

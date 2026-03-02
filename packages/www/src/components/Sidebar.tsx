@@ -102,7 +102,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     if (isOpen) {
       document.body.classList.add('sidebar-active');
       document.body.style.overflow = 'hidden';
-      window.plausible?.('sidebar_toggle', { props: { action: 'open' } });
+      window.plausible('sidebar_toggle', { props: { action: 'open' } });
       // Focus the first link when sidebar opens
       const firstLink = sidebarRef.current?.querySelector<HTMLAnchorElement>('.sidebar-link');
       firstLink?.focus();

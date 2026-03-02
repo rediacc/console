@@ -21,10 +21,22 @@ const Hero: React.FC<HeroProps> = ({ lang = 'en' }) => {
           </h1>
           <p className="hero-subtitle">{t('hero.subtitle')}</p>
           <div className="hero-cta-group">
-            <a href={`/${lang}/install`} className="btn btn-primary" data-track="cta_click" data-track-label="hero-primary" data-track-dest="install">
+            <a
+              href={`/${lang}/install`}
+              className="btn btn-primary"
+              data-track="cta_click"
+              data-track-label="hero-primary"
+              data-track-dest="install"
+            >
               {t('hero.cta.getStarted')}
             </a>
-            <a href={`/${lang}/docs/quick-start`} className="btn btn-ghost" data-track="cta_click" data-track-label="hero-secondary" data-track-dest="docs">
+            <a
+              href={`/${lang}/docs/quick-start`}
+              className="btn btn-ghost"
+              data-track="cta_click"
+              data-track-label="hero-secondary"
+              data-track-dest="docs"
+            >
               {t('hero.cta.readDocs')}
             </a>
           </div>

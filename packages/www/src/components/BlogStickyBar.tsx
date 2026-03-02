@@ -9,15 +9,10 @@ const DISMISSED_KEY = 'stickyBarDismissed';
 
 const BlogStickyBar: React.FC<Props> = ({ source = 'blog-sticky' }) => {
   const [visible, setVisible] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() => sessionStorage.getItem(DISMISSED_KEY) !== null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (sessionStorage.getItem(DISMISSED_KEY)) {
-      setDismissed(true);
-      return;
-    }
-
     // Create a sentinel element at ~30% of viewport height from top
     const sentinel = document.createElement('div');
     sentinel.style.position = 'absolute';

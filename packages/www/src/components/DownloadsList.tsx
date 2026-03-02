@@ -76,7 +76,13 @@ const DownloadsList: React.FC<DownloadsListProps> = ({ lang, releaseData }) => {
                           <span className="download-arch">{archLabel(t, file)}</span>
                           <span className="download-size">{file.size}</span>
                         </div>
-                        <a href={file.url} className="btn btn-primary download-button" data-track="cta_click" data-track-label="download-appimage" data-track-dest={file.name}>
+                        <a
+                          href={file.url}
+                          className="btn btn-primary download-button"
+                          data-track="cta_click"
+                          data-track-label="download-appimage"
+                          data-track-dest={file.name}
+                        >
                           {t('pages.downloads.actions.download')}
                         </a>
                       </div>
@@ -94,7 +100,13 @@ const DownloadsList: React.FC<DownloadsListProps> = ({ lang, releaseData }) => {
                           <span className="download-arch">{archLabel(t, file)}</span>
                           <span className="download-size">{file.size}</span>
                         </div>
-                        <a href={file.url} className="btn btn-primary download-button" data-track="cta_click" data-track-label="download-deb" data-track-dest={file.name}>
+                        <a
+                          href={file.url}
+                          className="btn btn-primary download-button"
+                          data-track="cta_click"
+                          data-track-label="download-deb"
+                          data-track-dest={file.name}
+                        >
                           {t('pages.downloads.actions.download')}
                         </a>
                       </div>
@@ -111,7 +123,13 @@ const DownloadsList: React.FC<DownloadsListProps> = ({ lang, releaseData }) => {
                     <span className="download-arch">{archLabel(t, file)}</span>
                     <span className="download-size">{file.size}</span>
                   </div>
-                  <a href={file.url} className="btn btn-primary download-button" data-track="cta_click" data-track-label="download-desktop" data-track-dest={file.name}>
+                  <a
+                    href={file.url}
+                    className="btn btn-primary download-button"
+                    data-track="cta_click"
+                    data-track-label="download-desktop"
+                    data-track-dest={file.name}
+                  >
                     {t('pages.downloads.actions.download')} .{file.type}
                   </a>
                 </div>
@@ -144,7 +162,13 @@ const DownloadsList: React.FC<DownloadsListProps> = ({ lang, releaseData }) => {
                     <span className="download-arch">{archLabel(t, file)}</span>
                     <span className="download-size">{file.size}</span>
                   </div>
-                  <a href={file.url} className="btn btn-primary download-button" data-track="cta_click" data-track-label="download-cli" data-track-dest={file.name}>
+                  <a
+                    href={file.url}
+                    className="btn btn-primary download-button"
+                    data-track="cta_click"
+                    data-track-label="download-cli"
+                    data-track-dest={file.name}
+                  >
                     {t('pages.downloads.actions.download')} {file.name}
                   </a>
                 </div>

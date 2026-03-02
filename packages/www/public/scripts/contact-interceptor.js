@@ -6,32 +6,32 @@
  * View Transitions since it listens on document (no re-init needed).
  */
 (function () {
-  var CONTACT_RE = /^\/(?:[a-z]{2}\/)?contact(?:\?|$)/;
+  const CONTACT_RE = /^\/(?:[a-z]{2}\/)?contact(?:\?|$)/;
 
-  document.addEventListener('click', function (e) {
+  document.addEventListener('click', (e) => {
     if (!window.openContactModal) return;
 
-    var target = e.target;
+    let target = e.target;
     while (target && target !== document && target.tagName !== 'A') {
       target = target.parentElement;
     }
-    if (!target || target.tagName !== 'A') return;
+    if (target?.tagName !== 'A') return;
 
-    var href = target.getAttribute('href');
+    const href = target.getAttribute('href');
     if (!href || !CONTACT_RE.test(href)) return;
 
     e.preventDefault();
 
     // Extract ?interest= parameter if present
-    var interest;
+    let interest;
     try {
-      var url = new URL(href, window.location.origin);
+      const url = new URL(href, window.location.origin);
       interest = url.searchParams.get('interest');
-    } catch (_) {
+    } catch {
       // If URL parsing fails, just open without interest
     }
 
-    window.openContactModal(interest || undefined);
-    if (window.plausible) window.plausible('contact_modal_open', { props: { source: 'interceptor' } });
+    window.openContactModal(interest ?? undefined);
+    window.plausible?.('contact_modal_open', { props: { source: 'interceptor' } });
   });
 })();

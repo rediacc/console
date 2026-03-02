@@ -162,7 +162,7 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
   // Handle language selection
   const handleLanguageSelect = (lang: Language) => {
     setLanguageCookie(lang);
-    window.plausible?.('language_change', { props: { from: currentLang, to: lang } });
+    window.plausible('language_change', { props: { from: currentLang, to: lang } });
 
     if (onLanguageChange) {
       onLanguageChange(lang);

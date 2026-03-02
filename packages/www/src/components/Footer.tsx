@@ -20,7 +20,13 @@ const Footer: React.FC = () => {
         <div className="footer-columns">
           {/* Logo Column */}
           <div className="footer-column footer-logo-column">
-            <a href={`/${currentLang}/`} className="footer-logo-link" aria-label="Rediacc home" data-track="cta_click" data-track-label="footer-logo">
+            <a
+              href={`/${currentLang}/`}
+              className="footer-logo-link"
+              aria-label="Rediacc home"
+              data-track="cta_click"
+              data-track-label="footer-logo"
+            >
               <img
                 src="/assets/icon-rediacc.svg"
                 alt="Rediacc"
@@ -35,22 +41,46 @@ const Footer: React.FC = () => {
           <nav className="footer-column footer-nav" aria-label={t('navigation.footerNavigation')}>
             <ul className="footer-list">
               <li>
-                <a href={`/${currentLang}/`} className="footer-link" data-track="cta_click" data-track-label="footer-nav" data-track-dest="home">
+                <a
+                  href={`/${currentLang}/`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-nav"
+                  data-track-dest="home"
+                >
                   {t('navigation.home')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/blog`} className="footer-link" data-track="cta_click" data-track-label="footer-nav" data-track-dest="blog">
+                <a
+                  href={`/${currentLang}/blog`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-nav"
+                  data-track-dest="blog"
+                >
                   {t('navigation.blog')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/docs/quick-start`} className="footer-link" data-track="cta_click" data-track-label="footer-nav" data-track-dest="docs">
+                <a
+                  href={`/${currentLang}/docs/quick-start`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-nav"
+                  data-track-dest="docs"
+                >
                   {t('navigation.docs')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/contact`} className="footer-link" data-track="cta_click" data-track-label="footer-nav" data-track-dest="contact">
+                <a
+                  href={`/${currentLang}/contact`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-nav"
+                  data-track-dest="contact"
+                >
                   {t('navigation.contact')}
                 </a>
               </li>
@@ -64,27 +94,57 @@ const Footer: React.FC = () => {
             </h4>
             <ul className="footer-list">
               <li>
-                <a href={`/${currentLang}/#solutions`} className="footer-link" data-track="cta_click" data-track-label="footer-product" data-track-dest="solutions">
+                <a
+                  href={`/${currentLang}/#solutions`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-product"
+                  data-track-dest="solutions"
+                >
                   {t('footer.productLinks.solutions')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/#problem`} className="footer-link" data-track="cta_click" data-track-label="footer-product" data-track-dest="overview">
+                <a
+                  href={`/${currentLang}/#problem`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-product"
+                  data-track-dest="overview"
+                >
                   {t('footer.productLinks.overview')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/#pricing`} className="footer-link" data-track="cta_click" data-track-label="footer-product" data-track-dest="pricing">
+                <a
+                  href={`/${currentLang}/#pricing`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-product"
+                  data-track-dest="pricing"
+                >
                   {t('footer.productLinks.pricing')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/disaster-recovery`} className="footer-link" data-track="cta_click" data-track-label="footer-product" data-track-dest="disaster-recovery">
+                <a
+                  href={`/${currentLang}/disaster-recovery`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-product"
+                  data-track-dest="disaster-recovery"
+                >
                   {t('footer.productLinks.disasterRecovery')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/professional-services`} className="footer-link" data-track="cta_click" data-track-label="footer-product" data-track-dest="pro-services">
+                <a
+                  href={`/${currentLang}/professional-services`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-product"
+                  data-track-dest="pro-services"
+                >
                   {t('footer.productLinks.professionalServices')}
                 </a>
               </li>
@@ -98,17 +158,35 @@ const Footer: React.FC = () => {
             </h4>
             <ul className="footer-list">
               <li>
-                <a href={`/${currentLang}/contact`} className="footer-link" data-track="cta_click" data-track-label="footer-org" data-track-dest="about">
+                <a
+                  href={`/${currentLang}/contact`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-org"
+                  data-track-dest="about"
+                >
                   {t('footer.organizationLinks.aboutUs')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/team`} className="footer-link" data-track="cta_click" data-track-label="footer-org" data-track-dest="team">
+                <a
+                  href={`/${currentLang}/team`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-org"
+                  data-track-dest="team"
+                >
                   {t('footer.organizationLinks.team')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/contact`} className="footer-link" data-track="cta_click" data-track-label="footer-org" data-track-dest="contact">
+                <a
+                  href={`/${currentLang}/contact`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-org"
+                  data-track-dest="contact"
+                >
                   {t('footer.organizationLinks.contact')}
                 </a>
               </li>
@@ -127,32 +205,68 @@ const Footer: React.FC = () => {
             </h4>
             <ul className="footer-list">
               <li>
-                <a href={`/${currentLang}/terms-of-service`} className="footer-link" data-track="cta_click" data-track-label="footer-legal" data-track-dest="tos">
+                <a
+                  href={`/${currentLang}/terms-of-service`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-legal"
+                  data-track-dest="tos"
+                >
                   {t('footer.legalLinks.termsOfService')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/privacy-policy`} className="footer-link" data-track="cta_click" data-track-label="footer-legal" data-track-dest="privacy">
+                <a
+                  href={`/${currentLang}/privacy-policy`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-legal"
+                  data-track-dest="privacy"
+                >
                   {t('footer.legalLinks.privacyPolicy')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/cookie-policy`} className="footer-link" data-track="cta_click" data-track-label="footer-legal" data-track-dest="cookie">
+                <a
+                  href={`/${currentLang}/cookie-policy`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-legal"
+                  data-track-dest="cookie"
+                >
                   {t('footer.legalLinks.cookiePolicy')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/refund-policy`} className="footer-link" data-track="cta_click" data-track-label="footer-legal" data-track-dest="refund">
+                <a
+                  href={`/${currentLang}/refund-policy`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-legal"
+                  data-track-dest="refund"
+                >
                   {t('footer.legalLinks.refundPolicy')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/telemetry-policy`} className="footer-link" data-track="cta_click" data-track-label="footer-legal" data-track-dest="telemetry">
+                <a
+                  href={`/${currentLang}/telemetry-policy`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-legal"
+                  data-track-dest="telemetry"
+                >
                   {t('footer.legalLinks.telemetryPolicy')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/legal-information`} className="footer-link" data-track="cta_click" data-track-label="footer-legal" data-track-dest="legal-info">
+                <a
+                  href={`/${currentLang}/legal-information`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-legal"
+                  data-track-dest="legal-info"
+                >
                   {t('footer.legalLinks.legalInformation')}
                 </a>
               </li>
@@ -227,7 +341,13 @@ const Footer: React.FC = () => {
               registryCode: COMPANY_REGISTRY_CODE,
               vatNumber: COMPANY_VAT_NUMBER,
             })}{' '}
-            <a href={`/${currentLang}/legal-information`} className="footer-link" data-track="cta_click" data-track-label="footer-legal" data-track-dest="legal-disclosure">
+            <a
+              href={`/${currentLang}/legal-information`}
+              className="footer-link"
+              data-track="cta_click"
+              data-track-label="footer-legal"
+              data-track-dest="legal-disclosure"
+            >
               {t('footer.legalDisclosure.fullLegalInformation')}
             </a>
           </p>

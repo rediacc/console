@@ -70,13 +70,41 @@ const InstallWidget: React.FC<InstallWidgetProps> = ({ lang = 'en' }) => {
         </button>
       </div>
       <div className="install-alt-methods">
-        <a href={`/${lang}/install#homebrew`} data-track="cta_click" data-track-label="install-alt" data-track-dest="homebrew">{t('hero.install.alt.brew')}</a>
+        <a
+          href={`/${lang}/install#homebrew`}
+          data-track="cta_click"
+          data-track-label="install-alt"
+          data-track-dest="homebrew"
+        >
+          {t('hero.install.alt.brew')}
+        </a>
         <span className="install-alt-sep">&middot;</span>
-        <a href={`/${lang}/install#apt`} data-track="cta_click" data-track-label="install-alt" data-track-dest="apt">{t('hero.install.alt.apt')}</a>
+        <a
+          href={`/${lang}/install#apt`}
+          data-track="cta_click"
+          data-track-label="install-alt"
+          data-track-dest="apt"
+        >
+          {t('hero.install.alt.apt')}
+        </a>
         <span className="install-alt-sep">&middot;</span>
-        <a href={`/${lang}/install#docker`} data-track="cta_click" data-track-label="install-alt" data-track-dest="docker">{t('hero.install.alt.docker')}</a>
+        <a
+          href={`/${lang}/install#docker`}
+          data-track="cta_click"
+          data-track-label="install-alt"
+          data-track-dest="docker"
+        >
+          {t('hero.install.alt.docker')}
+        </a>
         <span className="install-alt-sep">&middot;</span>
-        <a href={`/${lang}/install`} data-track="cta_click" data-track-label="install-alt" data-track-dest="all">{t('hero.install.alt.more')}</a>
+        <a
+          href={`/${lang}/install`}
+          data-track="cta_click"
+          data-track-label="install-alt"
+          data-track-dest="all"
+        >
+          {t('hero.install.alt.more')}
+        </a>
       </div>
     </div>
   );

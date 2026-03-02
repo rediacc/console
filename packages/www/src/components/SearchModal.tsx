@@ -82,9 +82,11 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
           .map((result) => result.item);
         setResults(searchResults);
         if (value.trim().length >= 2) {
-          window.plausible?.('search_query', { props: { query: value.trim(), results: String(searchResults.length) } });
+          window.plausible('search_query', {
+            props: { query: value.trim(), results: String(searchResults.length) },
+          });
           if (searchResults.length === 0) {
-            window.plausible?.('search_no_results', { props: { query: value.trim() } });
+            window.plausible('search_no_results', { props: { query: value.trim() } });
           }
         }
       } finally {
@@ -113,7 +115,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
 
   // Navigate to result
   const navigateToResult = (result: SearchItem) => {
-    window.plausible?.('search_result_click', {
+    window.plausible('search_result_click', {
       props: { query: query.trim(), result_path: result.path, category: result.category },
     });
     window.location.href = result.page;
@@ -123,7 +125,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
   // Track search open
   useEffect(() => {
     if (isOpen) {
-      window.plausible?.('search_open', { props: { source: 'click' } });
+      window.plausible('search_open', { props: { source: 'click' } });
     }
   }, [isOpen]);
 

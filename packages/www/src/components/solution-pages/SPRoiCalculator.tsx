@@ -92,38 +92,46 @@ const SPRoiCalculator: React.FC<Props> = ({ content }) => {
     setValues((prev) => ({ ...prev, [id]: val }));
   }, []);
 
-  const handleGateSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    const email = gateInputRef.current?.value.trim() || gateEmail.trim();
-    if (!email) return;
+  const handleGateSubmit = useCallback(
+    async (e: React.SyntheticEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const email = gateEmail.trim();
+      if (!email) return;
 
-    setGateLoading(true);
-    setGateError('');
-    try {
-      const res = await fetch(
-        `${window.location.origin}/account/api/v1/newsletter/lead-magnet`,
-        {
+      setGateLoading(true);
+      setGateError('');
+      try {
+        const res = await fetch(`${window.location.origin}/account/api/v1/newsletter/lead-magnet`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, magnetName: 'roi-report', source: 'roi-calculator' }),
-        }
-      );
-      if (!res.ok) throw new Error(t('newsletter.errorGeneric'));
-      setDetailsUnlocked(true);
-      const utm = (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ?? {};
-      const lastSolution = sessionStorage.getItem('__pa_last_solution') ?? undefined;
-      window.plausible?.('calculator_email_submit', { props: { source: 'roi-calculator', ...utm, ...(lastSolution && { last_solution: lastSolution }) } });
-    } catch {
-      setGateError(t('newsletter.errorGeneric'));
-    } finally {
-      setGateLoading(false);
-    }
-  }, [gateEmail, t]);
+        });
+        if (!res.ok) throw new Error(t('newsletter.errorGeneric'));
+        setDetailsUnlocked(true);
+        const utm =
+          (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ??
+          {};
+        const lastSolution = sessionStorage.getItem('__pa_last_solution') ?? undefined;
+        window.plausible('calculator_email_submit', {
+          props: {
+            source: 'roi-calculator',
+            ...utm,
+            ...(lastSolution && { last_solution: lastSolution }),
+          },
+        });
+      } catch {
+        setGateError(t('newsletter.errorGeneric'));
+      } finally {
+        setGateLoading(false);
+      }
+    },
+    [gateEmail, t]
+  );
 
   useEffect(() => {
     if (!detailsUnlocked && !gateViewedRef.current) {
       gateViewedRef.current = true;
-      window.plausible?.('roi_gate_viewed', { props: { source: 'roi-calculator' } });
+      window.plausible('roi_gate_viewed', { props: { source: 'roi-calculator' } });
     }
   }, [detailsUnlocked]);
 
@@ -193,11 +201,16 @@ const SPRoiCalculator: React.FC<Props> = ({ content }) => {
           </div>
 
           {/* Advanced accordion */}
-          <details className="sp-roi-advanced" onToggle={(e) => {
-            if ((e.target as HTMLDetailsElement).open) {
-              window.plausible?.('calculator_advanced_open', { props: { source: 'roi-calculator' } });
-            }
-          }}>
+          <details
+            className="sp-roi-advanced"
+            onToggle={(e) => {
+              if ((e.target as HTMLDetailsElement).open) {
+                window.plausible('calculator_advanced_open', {
+                  props: { source: 'roi-calculator' },
+                });
+              }
+            }}
+          >
             <summary>{content.advancedLabel}</summary>
             <div className="sp-roi-inputs">
               {ADVANCED_SLIDERS.map((s) => renderSlider(s, content.advancedSliders[s.id]))}
@@ -245,11 +258,7 @@ const SPRoiCalculator: React.FC<Props> = ({ content }) => {
                       onChange={(e) => setGateEmail(e.target.value)}
                       required
                     />
-                    <button
-                      type="submit"
-                      className="newsletter-button"
-                      disabled={gateLoading}
-                    >
+                    <button type="submit" className="newsletter-button" disabled={gateLoading}>
                       {gateLoading ? t('newsletter.subscribe') : t('newsletter.roiGate.unlock')}
                     </button>
                   </form>

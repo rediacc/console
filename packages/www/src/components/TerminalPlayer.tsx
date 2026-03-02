@@ -118,7 +118,13 @@ const TerminalPlayer: FC<TerminalPlayerProps> = ({ src, title }) => {
           <div ref={containerRef} className="terminal-tutorial-player-inner" />
           {loaded && (
             <div className="terminal-tutorial-controls">
-              <button type="button" className="terminal-tutorial-play-btn" onClick={togglePlayback} data-track="cta_click" data-track-label="terminal-play">
+              <button
+                type="button"
+                className="terminal-tutorial-play-btn"
+                onClick={togglePlayback}
+                data-track="cta_click"
+                data-track-label="terminal-play"
+              >
                 {isPlaying ? 'Pause' : 'Play Tutorial'}
               </button>
             </div>

@@ -24,7 +24,12 @@ const BeforeAfter: React.FC<BeforeAfterProps> = ({ lang = 'en' }) => {
               {beforePoints.map((point, index) => (
                 <li key={`before-${index}`}>
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    <path
+                      d="M4 4l8 8M12 4l-8 8"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
                   </svg>
                   {point}
                 </li>
@@ -37,7 +42,13 @@ const BeforeAfter: React.FC<BeforeAfterProps> = ({ lang = 'en' }) => {
               {afterPoints.map((point, index) => (
                 <li key={`after-${index}`}>
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path d="M3 8l4 4 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path
+                      d="M3 8l4 4 6-6"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                   {point}
                 </li>

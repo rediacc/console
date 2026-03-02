@@ -29,7 +29,10 @@ const Testimonials: React.FC<TestimonialsProps> = ({ lang = 'en' }) => {
         </div>
         <div className="testimonials-grid reveal-stagger">
           {items.map((item, index) => (
-            <div key={`testimonial-${index}`} className={`testimonial-card reveal${index === 0 ? ' testimonial-card--featured' : ''}`}>
+            <div
+              key={`testimonial-${index}`}
+              className={`testimonial-card reveal${index === 0 ? ' testimonial-card--featured' : ''}`}
+            >
               <blockquote className="testimonial-quote">&ldquo;{item.quote}&rdquo;</blockquote>
               <div className="testimonial-author">
                 {item.avatar ? (

@@ -1,4 +1,30 @@
 {
+  "announcement": {
+    "enabled": true,
+    "link": "/ja/blog",
+    "text": "v0.6リリース — Alpine musl対応、サブスクリプションシステムなど"
+  },
+  "beforeAfter": {
+    "after": {
+      "label": "Rediaccあり",
+      "points": [
+        "60秒以内に本番環境と完全に同一のクローン",
+        "追加ディスクスペースなしで毎時バックアップ",
+        "60秒以内に検証済みフェイルオーバー",
+        "すべての開発者が自分専用のフレッシュな本番クローンを取得"
+      ]
+    },
+    "before": {
+      "label": "Rediaccなし",
+      "points": [
+        "環境は数日以内に本番環境からずれていく",
+        "バックアップに数週間かかり、ストレージを圧迫し、しばしば静かに失敗する",
+        "復旧計画は4時間と言うが、現実は4日",
+        "サンドボックスが古いため、開発者は本番環境でコーディングする"
+      ]
+    },
+    "title": "その違い"
+  },
   "common": {
     "aria": {
       "clickToEnlarge": "クリックして画像を拡大",
@@ -53,45 +79,43 @@
     },
     "theProblem": "問題点"
   },
-  "navigation": {
-    "blog": "ブログ",
-    "builtForYou": "あなたに合わせて",
-    "builtForYourRole": "あなたの役割に合わせて",
-    "contact": "お問い合わせ",
-    "disasterRecovery": "災害復旧",
-    "docs": "ドキュメント",
-    "downloads": "ダウンロード",
-    "footerNavigation": "サイトナビゲーション",
-    "forCeos": "CEO・創業者向け",
-    "forCtos": "CTO向け",
-    "forDevops": "DevOpsエンジニア向け",
-    "home": "ホーム",
-    "install": "インストール",
-    "languageSelectionMenu": "言語選択メニュー",
-    "login": "ログイン",
-    "personas": {
-      "ceo": {
-        "cta": "料金を見る",
-        "tagline": "予測可能なコスト。ベンダーロックインなし。"
-      },
-      "cto": {
-        "cta": "デモを予約",
-        "tagline": "TCOを60%削減。自社ハードウェアでスケール。"
-      },
-      "devops": {
-        "cta": "無料で始める",
-        "tagline": "より速く。即座に復旧。安心して眠れる。"
-      }
+  "contactModal": {
+    "close": "閉じる",
+    "description": "ご質問やプロジェクトのご相談がございましたら、メッセージをお送りください。",
+    "error": "エラーが発生しました。もう一度お試しください。",
+    "fields": {
+      "email": "メールアドレス",
+      "emailPlaceholder": "you@company.com",
+      "message": "メッセージ",
+      "messagePlaceholder": "プロジェクトやご質問についてお聞かせください...",
+      "name": "お名前",
+      "namePlaceholder": "お名前を入力",
+      "subject": "件名",
+      "subjectPlaceholder": "件名を選択"
     },
-    "pricing": "料金",
-    "roiCalculator": "ROI計算ツール",
-    "search": "検索",
-    "selectLanguage": "言語を選択してください",
-    "solutions": "ソリューション",
-    "solutionsMegaMenu": "ソリューションメニュー",
-    "toggleMenu": "メニューの切り替え",
-    "toggleTheme": "テーマを切り替える",
-    "viewAllSolutions": "すべてのソリューションを表示"
+    "sending": "送信中...",
+    "subjects": {
+      "disasterRecovery": "災害復旧",
+      "general": "一般的なお問い合わせ",
+      "other": "その他",
+      "partnership": "パートナーシップ",
+      "technical": "技術サポート"
+    },
+    "submit": "メッセージを送信",
+    "success": "メッセージが送信されました！48時間以内にご返信いたします。",
+    "title": "お問い合わせ"
+  },
+  "featureShowcase": {
+    "categoryDescriptions": {
+      "backups": "完全な保持コンプライアンスを備えた、検証済みで即座に復元可能なバックアップ。すべてのバックアップはテスト済み — 保存されるだけではありません。",
+      "defense": "分離されたクローン上でのAI駆動ペネトレーションテストによる継続的なセキュリティテスト。攻撃者より先に脆弱性を発見。",
+      "dev-env": "本番スタック全体を数秒でクローン。追加ストレージゼロ、完全な同一性、即時の開発環境。",
+      "encryption": "すべてのリポジトリがLUKSで保存時に、転送中も暗号化。完全な監査証跡と環境間の安全な移行。",
+      "multi-cloud": "ベンダーロックインなしでプロバイダー間でインフラを移動。即時フェイルオーバー、テスト済みの災害復旧、クラウドに依存しないポータビリティ。",
+      "ransomware": "ランサムウェアが触れることのできない、改ざん防止・暗号学的に検証されたバックアップ。スタック全体を60秒以内に復旧。"
+    },
+    "subtitle": "6つの重点分野にわたる19のソリューション — ランサムウェア対策から予防的防御まで。",
+    "title": "Rediaccでできること"
   },
   "footer": {
     "columns": {
@@ -135,182 +159,6 @@
     },
     "tagline": "AI主導の運用のためのインフラストラクチャ自動化プラットフォーム"
   },
-  "hero": {
-    "cta": {
-      "benefits": "無制限のチーム • $0",
-      "bookDemo": "デモを予約する",
-      "contactUs": "アカウント作成",
-      "freeBadge": "永久無料 • クレジットカード不要",
-      "learnMore": "もっと詳しく知る",
-      "seeDetails": "詳細を見る",
-      "getStarted": "無料で始める",
-      "readDocs": "ドキュメントを読む"
-    },
-    "install": {
-      "alt": {
-        "apt": "apt",
-        "brew": "brew",
-        "docker": "docker",
-        "more": "その他 →"
-      },
-      "ariaLabel": "インストールコマンド",
-      "copied": "コピーしました！",
-      "copy": "クリップボードにコピー",
-      "tabs": {
-        "linux": "Linux",
-        "macos": "macOS",
-        "windows": "Windows"
-      },
-      "tabsLabel": "オペレーティングシステムを選択"
-    },
-    "subtitle": "本番スタック全体（データベース、Dockerサービスなど）の即座に分離されたコピーを作成するセルフホスト型プラットフォーム。",
-    "title": "本番環境をクローン。",
-    "titleHighlight": " 何も壊さない。",
-    "eyebrow": "インフラ自動化プラットフォーム"
-  },
-  "problem": {
-    "reality": {
-      "imageAlt": "従来のインフラストラクチャ ワークフローの課題を示す図: 環境のプロビジョニングを待ってイライラする開発者、より迅速な展開を要求する関係者、サンドボックスの更新が遅いためにチームが危険な実稼働テストに頼っている",
-      "title": "現実: 不満を抱えるチーム、危険な回避策"
-    },
-    "solution": {
-      "imageAlt": "Rediacc プラットフォーム ソリューションの図: 自動化されたインフラストラクチャ プロビジョニング、即時本番環境のような環境クローン、合理化された開発者ワークフロー、モデル コンテキスト プロトコル統合による AI 安全な運用",
-      "title": "ソリューション: Rediacc プラットフォーム"
-    },
-    "subtitle": "実稼働環境にはテラバイト規模のデータがあるが、サンドボックス環境では毎月しか同期しない場合、チームは危険な回避策につながる不可能な選択に直面します。",
-    "title": "スピードミスマッチの危機"
-  },
-  "logoWall": {
-    "categories": [
-      "Git",
-      "CI/CD",
-      "コンテナ",
-      "データベース",
-      "監視",
-      "ストレージ"
-    ],
-    "title": "既存のインフラと連携"
-  },
-  "solutions": {
-    "categories": {
-      "backups": "検証済みバックアップ",
-      "defense": "予防的防御",
-      "dev-env": "開発環境",
-      "encryption": "暗号化制御",
-      "multi-cloud": "マルチクラウド",
-      "ransomware": "ランサムウェア対策"
-    },
-    "subtitle": "ランサムウェア対策から予防的防御まで、6つの重点分野にわたる19のソリューション。",
-    "title": "事業継続性をどう確保するか"
-  },
-  "featureShowcase": {
-    "title": "Rediaccでできること",
-    "subtitle": "6つの重点分野にわたる19のソリューション — ランサムウェア対策から予防的防御まで。",
-    "categoryDescriptions": {
-      "ransomware": "ランサムウェアが触れることのできない、改ざん防止・暗号学的に検証されたバックアップ。スタック全体を60秒以内に復旧。",
-      "multi-cloud": "ベンダーロックインなしでプロバイダー間でインフラを移動。即時フェイルオーバー、テスト済みの災害復旧、クラウドに依存しないポータビリティ。",
-      "backups": "完全な保持コンプライアンスを備えた、検証済みで即座に復元可能なバックアップ。すべてのバックアップはテスト済み — 保存されるだけではありません。",
-      "encryption": "すべてのリポジトリがLUKSで保存時に、転送中も暗号化。完全な監査証跡と環境間の安全な移行。",
-      "dev-env": "本番スタック全体を数秒でクローン。追加ストレージゼロ、完全な同一性、即時の開発環境。",
-      "defense": "分離されたクローン上でのAI駆動ペネトレーションテストによる継続的なセキュリティテスト。攻撃者より先に脆弱性を発見。"
-    }
-  },
-  "beforeAfter": {
-    "title": "その違い",
-    "before": {
-      "label": "Rediaccなし",
-      "points": [
-        "環境は数日以内に本番環境からずれていく",
-        "バックアップに数週間かかり、ストレージを圧迫し、しばしば静かに失敗する",
-        "復旧計画は4時間と言うが、現実は4日",
-        "サンドボックスが古いため、開発者は本番環境でコーディングする"
-      ]
-    },
-    "after": {
-      "label": "Rediaccあり",
-      "points": [
-        "60秒以内に本番環境と完全に同一のクローン",
-        "追加ディスクスペースなしで毎時バックアップ",
-        "60秒以内に検証済みフェイルオーバー",
-        "すべての開発者が自分専用のフレッシュな本番クローンを取得"
-      ]
-    }
-  },
-  "metrics": {
-    "items": [
-      {
-        "number": "< 60s",
-        "label": "クローン時間"
-      },
-      {
-        "number": "0 bytes",
-        "label": "追加ストレージ"
-      },
-      {
-        "number": "< 1 min",
-        "label": "復旧時間"
-      },
-      {
-        "number": "9",
-        "label": "言語"
-      }
-    ]
-  },
-  "integrations": {
-    "title": "あなたのスタックと連携",
-    "items": [
-      "Docker",
-      "PostgreSQL",
-      "MySQL",
-      "MariaDB",
-      "Git",
-      "GitLab",
-      "Jenkins",
-      "Prometheus",
-      "S3",
-      "btrfs",
-      "LUKS",
-      "systemd"
-    ]
-  },
-  "pricingPreview": {
-    "title": "シンプルで透明な料金体系",
-    "subtitle": "無料で開始。準備ができたらスケール。",
-    "compareAll": "すべてのプランと機能を比較"
-  },
-  "announcement": {
-    "enabled": true,
-    "text": "v0.6リリース — Alpine musl対応、サブスクリプションシステムなど",
-    "link": "/ja/blog"
-  },
-  "testimonials": {
-    "title": "チームの声",
-    "subtitle": "さまざまな役割がRediaccをどう体験しているか",
-    "items": [
-      {
-        "role": "災害復旧マネージャー",
-        "name": "Marcus R.",
-        "company": "金融サービス",
-        "quote": "私たちの復旧計画は4時間と言っていました。現実は4日でした。今ではクローンへのフェイルオーバーが1分以内です。"
-      },
-      {
-        "role": "開発者",
-        "name": "Sarah K.",
-        "quote": "サンドボックスが何週間も遅れていたので、本番環境でコーディングしていました。今では60秒でフレッシュなクローンが手に入ります。"
-      },
-      {
-        "role": "CTO",
-        "name": "James L.",
-        "company": "SaaSプラットフォーム",
-        "quote": "新しいハードウェアを購入せずにデータベースを1つから12に拡張しました。Rediaccのクローンはストレージを共有し、変更分だけ支払います。"
-      },
-      {
-        "role": "DevOpsエンジニア",
-        "name": "Ayumi T.",
-        "quote": "実データに対してCIを実行できませんでした。今では各パイプラインが自動的に独自の本番クローンを取得します。"
-      }
-    ]
-  },
   "getStarted": {
     "benefits": [
       "私たちのチームと直接協力しましょう",
@@ -318,6 +166,10 @@
       "優先サポート",
       "定期的な機能アップデート"
     ],
+    "cta": {
+      "primary": "Rediaccを無料でインストール",
+      "secondary": "営業に相談"
+    },
     "form": {
       "fields": {
         "email": {
@@ -360,61 +212,158 @@
       "title": "提出方法"
     },
     "subtitle": "リスクなしで本番データを使ってテストするチームに参加しましょう。",
-    "title": "最初のスタックをクローンする準備はできましたか？",
+    "title": "最初のスタックをクローンする準備はできましたか？"
+  },
+  "hero": {
     "cta": {
-      "primary": "Rediaccを無料でインストール",
-      "secondary": "営業に相談"
+      "benefits": "無制限のチーム • $0",
+      "bookDemo": "デモを予約する",
+      "contactUs": "アカウント作成",
+      "freeBadge": "永久無料 • クレジットカード不要",
+      "getStarted": "無料で始める",
+      "learnMore": "もっと詳しく知る",
+      "readDocs": "ドキュメントを読む",
+      "seeDetails": "詳細を見る"
+    },
+    "eyebrow": "インフラ自動化プラットフォーム",
+    "install": {
+      "alt": {
+        "apt": "apt",
+        "brew": "brew",
+        "docker": "docker",
+        "more": "その他 →"
+      },
+      "ariaLabel": "インストールコマンド",
+      "copied": "コピーしました！",
+      "copy": "クリップボードにコピー",
+      "tabs": {
+        "linux": "Linux",
+        "macos": "macOS",
+        "windows": "Windows"
+      },
+      "tabsLabel": "オペレーティングシステムを選択"
+    },
+    "subtitle": "本番スタック全体（データベース、Dockerサービスなど）の即座に分離されたコピーを作成するセルフホスト型プラットフォーム。",
+    "title": "本番環境をクローン。",
+    "titleHighlight": " 何も壊さない。"
+  },
+  "integrations": {
+    "items": [
+      "Docker",
+      "PostgreSQL",
+      "MySQL",
+      "MariaDB",
+      "Git",
+      "GitLab",
+      "Jenkins",
+      "Prometheus",
+      "S3",
+      "btrfs",
+      "LUKS",
+      "systemd"
+    ],
+    "title": "あなたのスタックと連携"
+  },
+  "layout": {
+    "meta": {
+      "author": "Rediacc",
+      "defaultDescription": "開発運用を加速するために設計されたインフラストラクチャ自動化プラットフォーム。 インスタント開発環境と次世代の災害復旧。",
+      "defaultKeywords": "インフラストラクチャの自動化、AI 運用、災害復旧、開発環境、モデル コンテキスト プロトコル、DevOps、CI/CD",
+      "locale": "ja_JP",
+      "siteName": "Rediacc",
+      "twitter": {
+        "creator": "@rediacc",
+        "site": "@rediacc"
+      }
     }
   },
+  "logoWall": {
+    "categories": ["Git", "CI/CD", "コンテナ", "データベース", "監視", "ストレージ"],
+    "title": "既存のインフラと連携"
+  },
+  "metrics": {
+    "items": [
+      {
+        "number": "< 60s",
+        "label": "クローン時間"
+      },
+      {
+        "number": "0 bytes",
+        "label": "追加ストレージ"
+      },
+      {
+        "number": "< 1 min",
+        "label": "復旧時間"
+      },
+      {
+        "number": "9",
+        "label": "言語"
+      }
+    ]
+  },
+  "navigation": {
+    "blog": "ブログ",
+    "builtForYou": "あなたに合わせて",
+    "builtForYourRole": "あなたの役割に合わせて",
+    "contact": "お問い合わせ",
+    "disasterRecovery": "災害復旧",
+    "docs": "ドキュメント",
+    "downloads": "ダウンロード",
+    "footerNavigation": "サイトナビゲーション",
+    "forCeos": "CEO・創業者向け",
+    "forCtos": "CTO向け",
+    "forDevops": "DevOpsエンジニア向け",
+    "home": "ホーム",
+    "install": "インストール",
+    "languageSelectionMenu": "言語選択メニュー",
+    "login": "ログイン",
+    "personas": {
+      "ceo": {
+        "cta": "料金を見る",
+        "tagline": "予測可能なコスト。ベンダーロックインなし。"
+      },
+      "cto": {
+        "cta": "デモを予約",
+        "tagline": "TCOを60%削減。自社ハードウェアでスケール。"
+      },
+      "devops": {
+        "cta": "無料で始める",
+        "tagline": "より速く。即座に復旧。安心して眠れる。"
+      }
+    },
+    "pricing": "料金",
+    "roiCalculator": "ROI計算ツール",
+    "search": "検索",
+    "selectLanguage": "言語を選択してください",
+    "solutions": "ソリューション",
+    "solutionsMegaMenu": "ソリューションメニュー",
+    "toggleMenu": "メニューの切り替え",
+    "toggleTheme": "テーマを切り替える",
+    "viewAllSolutions": "すべてのソリューションを表示"
+  },
   "newsletter": {
-    "title": "ニュースレター",
-    "description": "毎月の製品アップデートとセルフホスティングのヒント。",
-    "pageTitle": "最新情報をお届け",
-    "pageDescription": "新機能、セルフホスティングガイド、インフラのヒントに関する月次アップデートをお届けします。",
-    "placeholder": "メールアドレス",
-    "subscribe": "購読する",
-    "successMessage": "受信トレイを確認して、購読を確定してください。",
-    "errorGeneric": "エラーが発生しました。もう一度お試しください。",
-    "confirmed": "購読が確定されました！ようこそ。",
-    "unsubscribed": "購読が解除されました。ご利用ありがとうございました。",
     "blogCta": {
-      "title": "この記事はいかがでしたか？",
-      "description": "セルフホスティングガイドや製品アップデートをメールでお届けします。"
+      "description": "セルフホスティングガイドや製品アップデートをメールでお届けします。",
+      "title": "この記事はいかがでしたか？"
+    },
+    "confirmed": "購読が確定されました！ようこそ。",
+    "description": "毎月の製品アップデートとセルフホスティングのヒント。",
+    "errorGeneric": "エラーが発生しました。もう一度お試しください。",
+    "pageDescription": "新機能、セルフホスティングガイド、インフラのヒントに関する月次アップデートをお届けします。",
+    "pageTitle": "最新情報をお届け",
+    "placeholder": "メールアドレス",
+    "roiGate": {
+      "description": "メールアドレスを入力して、詳細なコスト内訳と節約分析をご覧ください。",
+      "title": "詳細なROIレポートを取得",
+      "unlock": "レポートを表示"
     },
     "stickyBar": {
       "text": "セルフホスティングのヒントをメールで受け取る"
     },
-    "roiGate": {
-      "title": "詳細なROIレポートを取得",
-      "description": "メールアドレスを入力して、詳細なコスト内訳と節約分析をご覧ください。",
-      "unlock": "レポートを表示"
-    }
-  },
-  "contactModal": {
-    "title": "お問い合わせ",
-    "description": "ご質問やプロジェクトのご相談がございましたら、メッセージをお送りください。",
-    "fields": {
-      "name": "お名前",
-      "namePlaceholder": "お名前を入力",
-      "email": "メールアドレス",
-      "emailPlaceholder": "you@company.com",
-      "subject": "件名",
-      "subjectPlaceholder": "件名を選択",
-      "message": "メッセージ",
-      "messagePlaceholder": "プロジェクトやご質問についてお聞かせください..."
-    },
-    "subjects": {
-      "general": "一般的なお問い合わせ",
-      "technical": "技術サポート",
-      "partnership": "パートナーシップ",
-      "disasterRecovery": "災害復旧",
-      "other": "その他"
-    },
-    "submit": "メッセージを送信",
-    "sending": "送信中...",
-    "success": "メッセージが送信されました！48時間以内にご返信いたします。",
-    "error": "エラーが発生しました。もう一度お試しください。",
-    "close": "閉じる"
+    "subscribe": "購読する",
+    "successMessage": "受信トレイを確認して、購読を確定してください。",
+    "title": "ニュースレター",
+    "unsubscribed": "購読が解除されました。ご利用ありがとうございました。"
   },
   "pages": {
     "blog": {
@@ -434,6 +383,21 @@
       "sharingIs": "共有することは思いやりです",
       "subtitle": "分散タスクの実行に関する洞察、ガイド、最新情報",
       "title": "ブログ"
+    },
+    "changelog": {
+      "breadcrumb": {
+        "changelog": "変更履歴",
+        "home": "ホーム"
+      },
+      "meta": {
+        "description": "Rediaccの最新リリース、改善、バグ修正をご確認ください。",
+        "keywords": "Rediacc変更履歴, リリースノート, アップデート, 新機能",
+        "title": "変更履歴 | Rediacc"
+      },
+      "subscribeDescription": "新しいリリースがあるたびに、短いアップデートをお届けします。",
+      "subscribeTitle": "新しいリリースの通知を受け取る",
+      "subtitle": "最新のアップデート、改善、修正をご確認ください。",
+      "title": "変更履歴"
     },
     "contact": {
       "breadcrumb": {
@@ -538,16 +502,12 @@
           "title": "5. 当社の分析アプローチ"
         },
         "changes": {
-          "content": [
-            "追加のCookieを導入する場合、このポリシーを更新します。"
-          ],
+          "content": ["追加のCookieを導入する場合、このポリシーを更新します。"],
           "id": "changes",
           "title": "7. ポリシーの変更"
         },
         "cookiesWeUse": {
-          "content": [
-            "当社が使用するCookieは1つだけです："
-          ],
+          "content": ["当社が使用するCookieは1つだけです："],
           "id": "cookies-we-use",
           "subsections": {
             "languageCookie": {
@@ -567,9 +527,7 @@
           "title": "1. はじめに"
         },
         "managingCookies": {
-          "content": [
-            "ブラウザの設定でCookieを管理できます："
-          ],
+          "content": ["ブラウザの設定でCookieを管理できます："],
           "id": "managing-cookies",
           "items": [
             "<strong>Chrome：</strong>設定 → プライバシーとセキュリティ → Cookie",
@@ -587,9 +545,7 @@
           "title": "2. Cookieとは"
         },
         "whatWeDontUse": {
-          "content": [
-            "以下の技術は当社ウェブサイトでは使用して<strong>いません</strong>："
-          ],
+          "content": ["以下の技術は当社ウェブサイトでは使用して<strong>いません</strong>："],
           "content2": [
             "注：このCookieポリシーはRediaccマーケティングウェブサイトに適用されます。当社のソフトウェア製品（Webアプリケーション、CLI、ミドルウェア、Bridge）は、Cookieを使用しない個別の使用テレメトリを収集します。製品テレメトリの詳細については、<a href=\"telemetry-policy\">テレメトリポリシー</a>をご覧ください。"
           ],
@@ -645,10 +601,6 @@
             "question": "サービスがダウンした場合、データはどうなりますか?"
           }
         ]
-      },
-      "roiCta": {
-        "heading": "どのプランが最適かわからない？",
-        "description": "インタラクティブなROI計算ツールで、Rediaccでどれだけ節約できるかご確認ください。"
       },
       "finalCta": {
         "buttons": {
@@ -1037,10 +989,7 @@
       },
       "trust": {
         "heading": "エンタープライズグレードのセキュリティと信頼性",
-        "items": [
-          "銀行レベルの暗号化",
-          "99.9% の稼働率を約束"
-        ]
+        "items": ["銀行レベルの暗号化", "99.9% の稼働率を約束"]
       },
       "ui": {
         "anchor": "戦略的アンカー",
@@ -1277,6 +1226,28 @@
         }
       }
     },
+    "newsletter": {
+      "breadcrumb": {
+        "home": "ホーム",
+        "newsletter": "ニュースレター"
+      },
+      "expectations": {
+        "items": [
+          "毎月の製品アップデートと新機能",
+          "セルフホスティングガイドとベストプラクティス",
+          "インフラのヒントとDevOpsの知見",
+          "新機能への早期アクセス"
+        ],
+        "title": "届く内容"
+      },
+      "frequency": "月に一度。",
+      "meta": {
+        "description": "Rediaccニュースレターを購読して、毎月の製品アップデート、セルフホスティングガイド、インフラのヒントを受け取りましょう。",
+        "keywords": "Rediaccニュースレター, セルフホスティング更新, インフラヒント, DevOpsニュースレター",
+        "title": "ニュースレター | Rediacc"
+      },
+      "privacy": "Plausible Analyticsを使用しており、メールアドレスを第三者と共有することはありません。"
+    },
     "notFound": {
       "actions": {
         "contactSupport": "サポートに連絡する",
@@ -1408,11 +1379,7 @@
           ],
           "timeline": {
             "newLabel": "Rediaccなら",
-            "newSteps": [
-              "$204/月",
-              "定額",
-              "あなたのもの"
-            ],
+            "newSteps": ["$204/月", "定額", "あなたのもの"],
             "oldLabel": "クラウドインフラ",
             "oldSteps": [
               {
@@ -1602,73 +1569,31 @@
           "features": [
             {
               "name": "セルフホスト/オンプレミス",
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["check", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "ファイルシステムレベルの不変性",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "瞬時復旧（5分未満）",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "check", "rediacc"]
             },
             {
               "name": "ゼロコピースナップショット（CoW）",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "マシン単価（シート単価なし）",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "自動復元検証",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             },
             {
               "name": "ベンダーロックインなし",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
           "overline": "競合比較",
@@ -1711,11 +1636,7 @@
           ],
           "timeline": {
             "newLabel": "Rediaccなら",
-            "newSteps": [
-              "検知",
-              "ロールバック",
-              "<5 min"
-            ],
+            "newSteps": ["検知", "ロールバック", "<5 min"],
             "oldLabel": "従来の災害復旧",
             "oldSteps": [
               {
@@ -2009,11 +1930,7 @@
           ],
           "timeline": {
             "newLabel": "Rediaccなら",
-            "newSteps": [
-              "rdc clone",
-              "52s",
-              "完了"
-            ],
+            "newSteps": ["rdc clone", "52s", "完了"],
             "oldLabel": "従来の方法",
             "oldSteps": [
               {
@@ -2162,6 +2079,266 @@
       }
     },
     "pricing": {
+      "comparison": {
+        "allPlansInclude": "すべてのプランに含まれるもの：無制限のユーザーとチーム、無制限のリポジトリ、スナップショット復元、ダークモード、9言語",
+        "categories": {
+          "automation": {
+            "label": "スケジューリングと自動化",
+            "rows": [
+              {
+                "label": "手動スケジューリング",
+                "community": "✓",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "自動スケジューリング",
+                "community": "—",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "キュー優先度",
+                "community": "—",
+                "professional": "—",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "インテグレーションAPI",
+                "community": "—",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "カスタムワークフロー",
+                "community": "—",
+                "professional": "—",
+                "business": "—",
+                "enterprise": "✓"
+              }
+            ]
+          },
+          "dataProtection": {
+            "label": "データ保護",
+            "rows": [
+              {
+                "label": "スナップショット復元",
+                "community": "✓",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "ポイントインタイムリストア",
+                "community": "—",
+                "professional": "24 hours",
+                "business": "72 hours",
+                "enterprise": "Custom"
+              },
+              {
+                "label": "継続的データ保護",
+                "community": "—",
+                "professional": "—",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "地理的冗長ストレージ",
+                "community": "—",
+                "professional": "—",
+                "business": "3 regions",
+                "enterprise": "Custom"
+              },
+              {
+                "label": "復元SLA",
+                "community": "—",
+                "professional": "—",
+                "business": "4 hours",
+                "enterprise": "Custom"
+              }
+            ]
+          },
+          "infrastructure": {
+            "label": "インフラストラクチャ",
+            "rows": [
+              {
+                "label": "フローティングライセンス（マシン）",
+                "community": "2",
+                "professional": "5",
+                "business": "20",
+                "enterprise": "50"
+              },
+              {
+                "label": "月間ジョブ数",
+                "community": "500",
+                "professional": "5,000",
+                "business": "20,000",
+                "enterprise": "100,000"
+              },
+              {
+                "label": "リポジトリあたりのストレージ",
+                "community": "10 GB",
+                "professional": "100 GB",
+                "business": "500 GB",
+                "enterprise": "2 TB+"
+              },
+              {
+                "label": "Bridges",
+                "community": "—",
+                "professional": "1",
+                "business": "2",
+                "enterprise": "10"
+              },
+              {
+                "label": "ジョブタイムアウト",
+                "community": "2 hours",
+                "professional": "24 hours",
+                "business": "72 hours",
+                "enterprise": "96 hours"
+              },
+              {
+                "label": "予約ジョブ",
+                "community": "1",
+                "professional": "2",
+                "business": "3",
+                "enterprise": "5"
+              },
+              {
+                "label": "マシンあたりのタスク",
+                "community": "1",
+                "professional": "2",
+                "business": "3",
+                "enterprise": "5"
+              }
+            ]
+          },
+          "platform": {
+            "label": "プラットフォーム",
+            "rows": [
+              {
+                "label": "カスタムブランディング",
+                "community": "—",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "Cephストレージプール",
+                "community": "—",
+                "professional": "—",
+                "business": "1",
+                "enterprise": "Unlimited"
+              },
+              {
+                "label": "高度な分析",
+                "community": "—",
+                "professional": "—",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "専用インフラストラクチャ",
+                "community": "—",
+                "professional": "—",
+                "business": "—",
+                "enterprise": "✓"
+              }
+            ]
+          },
+          "security": {
+            "label": "セキュリティとコンプライアンス",
+            "rows": [
+              {
+                "label": "RBACと権限グループ",
+                "community": "—",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "監査ログ",
+                "community": "—",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "コンプライアンスレポート",
+                "community": "—",
+                "professional": "—",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "LUKS暗号化",
+                "community": "✓",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "セキュリティレビュー",
+                "community": "—",
+                "professional": "—",
+                "business": "—",
+                "enterprise": "✓"
+              }
+            ]
+          },
+          "support": {
+            "label": "サポート",
+            "rows": [
+              {
+                "label": "Community Slack",
+                "community": "✓",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "メールとチャットサポート",
+                "community": "—",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "専任CSM",
+                "community": "—",
+                "professional": "—",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "電話サポート",
+                "community": "—",
+                "professional": "—",
+                "business": "✓",
+                "enterprise": "✓"
+              },
+              {
+                "label": "24時間年中無休サポート",
+                "community": "—",
+                "professional": "—",
+                "business": "—",
+                "enterprise": "✓"
+              },
+              {
+                "label": "エグゼクティブエスカレーション",
+                "community": "—",
+                "professional": "—",
+                "business": "—",
+                "enterprise": "✓"
+              }
+            ]
+          }
+        },
+        "heading": "プランを詳しく比較"
+      },
       "faq": {
         "heading": "よくある質問",
         "items": [
@@ -2520,6 +2697,10 @@
           ]
         }
       },
+      "roiCta": {
+        "description": "インタラクティブなROI計算ツールを使って、Rediaccでどれだけ節約できるかを確認してください。",
+        "heading": "どのプランが合うか分からない場合は？"
+      },
       "technicalSummary": {
         "description": "すべてのプランの主要なインフラ制限の比較。",
         "heading": "プラン比較",
@@ -2576,272 +2757,9 @@
           }
         }
       },
-      "comparison": {
-        "heading": "プランを詳しく比較",
-        "allPlansInclude": "すべてのプランに含まれるもの：無制限のユーザーとチーム、無制限のリポジトリ、スナップショット復元、ダークモード、9言語",
-        "categories": {
-          "infrastructure": {
-            "label": "インフラストラクチャ",
-            "rows": [
-              {
-                "label": "フローティングライセンス（マシン）",
-                "community": "2",
-                "professional": "5",
-                "business": "20",
-                "enterprise": "50"
-              },
-              {
-                "label": "月間ジョブ数",
-                "community": "500",
-                "professional": "5,000",
-                "business": "20,000",
-                "enterprise": "100,000"
-              },
-              {
-                "label": "リポジトリあたりのストレージ",
-                "community": "10 GB",
-                "professional": "100 GB",
-                "business": "500 GB",
-                "enterprise": "2 TB+"
-              },
-              {
-                "label": "Bridges",
-                "community": "—",
-                "professional": "1",
-                "business": "2",
-                "enterprise": "10"
-              },
-              {
-                "label": "ジョブタイムアウト",
-                "community": "2 hours",
-                "professional": "24 hours",
-                "business": "72 hours",
-                "enterprise": "96 hours"
-              },
-              {
-                "label": "予約ジョブ",
-                "community": "1",
-                "professional": "2",
-                "business": "3",
-                "enterprise": "5"
-              },
-              {
-                "label": "マシンあたりのタスク",
-                "community": "1",
-                "professional": "2",
-                "business": "3",
-                "enterprise": "5"
-              }
-            ]
-          },
-          "dataProtection": {
-            "label": "データ保護",
-            "rows": [
-              {
-                "label": "スナップショット復元",
-                "community": "✓",
-                "professional": "✓",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "ポイントインタイムリストア",
-                "community": "—",
-                "professional": "24 hours",
-                "business": "72 hours",
-                "enterprise": "Custom"
-              },
-              {
-                "label": "継続的データ保護",
-                "community": "—",
-                "professional": "—",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "地理的冗長ストレージ",
-                "community": "—",
-                "professional": "—",
-                "business": "3 regions",
-                "enterprise": "Custom"
-              },
-              {
-                "label": "復元SLA",
-                "community": "—",
-                "professional": "—",
-                "business": "4 hours",
-                "enterprise": "Custom"
-              }
-            ]
-          },
-          "security": {
-            "label": "セキュリティとコンプライアンス",
-            "rows": [
-              {
-                "label": "RBACと権限グループ",
-                "community": "—",
-                "professional": "✓",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "監査ログ",
-                "community": "—",
-                "professional": "✓",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "コンプライアンスレポート",
-                "community": "—",
-                "professional": "—",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "LUKS暗号化",
-                "community": "✓",
-                "professional": "✓",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "セキュリティレビュー",
-                "community": "—",
-                "professional": "—",
-                "business": "—",
-                "enterprise": "✓"
-              }
-            ]
-          },
-          "automation": {
-            "label": "スケジューリングと自動化",
-            "rows": [
-              {
-                "label": "手動スケジューリング",
-                "community": "✓",
-                "professional": "✓",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "自動スケジューリング",
-                "community": "—",
-                "professional": "✓",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "キュー優先度",
-                "community": "—",
-                "professional": "—",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "インテグレーションAPI",
-                "community": "—",
-                "professional": "✓",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "カスタムワークフロー",
-                "community": "—",
-                "professional": "—",
-                "business": "—",
-                "enterprise": "✓"
-              }
-            ]
-          },
-          "support": {
-            "label": "サポート",
-            "rows": [
-              {
-                "label": "Community Slack",
-                "community": "✓",
-                "professional": "✓",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "メールとチャットサポート",
-                "community": "—",
-                "professional": "✓",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "専任CSM",
-                "community": "—",
-                "professional": "—",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "電話サポート",
-                "community": "—",
-                "professional": "—",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "24時間年中無休サポート",
-                "community": "—",
-                "professional": "—",
-                "business": "—",
-                "enterprise": "✓"
-              },
-              {
-                "label": "エグゼクティブエスカレーション",
-                "community": "—",
-                "professional": "—",
-                "business": "—",
-                "enterprise": "✓"
-              }
-            ]
-          },
-          "platform": {
-            "label": "プラットフォーム",
-            "rows": [
-              {
-                "label": "カスタムブランディング",
-                "community": "—",
-                "professional": "✓",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "Cephストレージプール",
-                "community": "—",
-                "professional": "—",
-                "business": "1",
-                "enterprise": "Unlimited"
-              },
-              {
-                "label": "高度な分析",
-                "community": "—",
-                "professional": "—",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "専用インフラストラクチャ",
-                "community": "—",
-                "professional": "—",
-                "business": "—",
-                "enterprise": "✓"
-              }
-            ]
-          }
-        }
-      },
       "trust": {
         "heading": "エンタープライズグレードのセキュリティと信頼性",
-        "items": [
-          "銀行レベルの暗号化",
-          "99.9% の稼働率を約束"
-        ]
+        "items": ["銀行レベルの暗号化", "99.9% の稼働率を約束"]
       },
       "ui": {
         "anchor": "戦略的アンカー",
@@ -2918,9 +2836,7 @@
           "title": "10. ポリシーの変更"
         },
         "childrenPrivacy": {
-          "content": [
-            "当社のサービスは16歳未満の方を対象としていません。"
-          ],
+          "content": ["当社のサービスは16歳未満の方を対象としていません。"],
           "id": "children-privacy",
           "title": "9. 児童のプライバシー"
         },
@@ -2941,9 +2857,7 @@
           "title": "7. データセキュリティ"
         },
         "dataSharing": {
-          "content": [
-            "当社はお客様の個人データを第三者に販売・貸与しません。"
-          ],
+          "content": ["当社はお客様の個人データを第三者に販売・貸与しません。"],
           "id": "data-sharing",
           "items": [
             "プラットフォーム運営を支援する<strong>サービスプロバイダー</strong>",
@@ -2954,9 +2868,7 @@
           "title": "4. データ共有と第三者"
         },
         "howWeUseInformation": {
-          "content": [
-            "収集した情報は以下の目的で使用します："
-          ],
+          "content": ["収集した情報は以下の目的で使用します："],
           "id": "how-we-use-information",
           "items": [
             "お問い合わせへの対応",
@@ -2970,9 +2882,7 @@
           "title": "3. 情報の利用方法"
         },
         "informationWeCollect": {
-          "content": [
-            "当社はサービス提供に必要な最小限の情報を収集します。"
-          ],
+          "content": ["当社はサービス提供に必要な最小限の情報を収集します。"],
           "id": "information-we-collect",
           "subsections": {
             "accountData": {
@@ -3025,9 +2935,7 @@
           "title": "1. はじめに"
         },
         "yourRights": {
-          "content": [
-            "管轄地域に応じて、以下の権利を有する場合があります："
-          ],
+          "content": ["管轄地域に応じて、以下の権利を有する場合があります："],
           "content2": [
             "権利行使については<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までご連絡ください。"
           ],
@@ -3098,9 +3006,7 @@
       },
       "sections": {
         "changes": {
-          "content": [
-            "この返金ポリシーは随時更新される場合があります。"
-          ],
+          "content": ["この返金ポリシーは随時更新される場合があります。"],
           "id": "changes",
           "title": "7. ポリシーの変更"
         },
@@ -3108,9 +3014,7 @@
           "content": [
             "<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>に以下の情報をお送りください："
           ],
-          "content2": [
-            "5営業日以内にご返答いたします。"
-          ],
+          "content2": ["5営業日以内にご返答いたします。"],
           "id": "how-to-request",
           "items": [
             "アカウントのメールアドレス",
@@ -3121,9 +3025,7 @@
           "title": "4. 返金の申請方法"
         },
         "nonRefundable": {
-          "content": [
-            "以下は返金の対象外です："
-          ],
+          "content": ["以下は返金の対象外です："],
           "id": "non-refundable",
           "items": [
             "14日間の期間後にキャンセルされたサブスクリプション",
@@ -3142,9 +3044,7 @@
           "title": "1. 概要"
         },
         "platformSubscriptions": {
-          "content": [
-            "Rediaccは複数のサブスクリプションティアを提供しています："
-          ],
+          "content": ["Rediaccは複数のサブスクリプションティアを提供しています："],
           "id": "platform-subscriptions",
           "subsections": {
             "annualSubscriptions": {
@@ -3154,15 +3054,11 @@
               "title": "2.3 年間サブスクリプション"
             },
             "freeTier": {
-              "content": [
-                "Communityティアは永久無料です。"
-              ],
+              "content": ["Communityティアは永久無料です。"],
               "title": "2.1 無料ティア"
             },
             "paidTiers": {
-              "content": [
-                "有料サブスクリプションは原則として返金不可です。例外："
-              ],
+              "content": ["有料サブスクリプションは原則として返金不可です。例外："],
               "items": [
                 "<strong>最初の14日間：</strong>新規加入者への全額返金",
                 "<strong>サービス障害：</strong>長時間の障害（48時間以上）に対する按分クレジット",
@@ -3174,9 +3070,7 @@
           "title": "2. プラットフォームサブスクリプション"
         },
         "professionalServices": {
-          "content": [
-            "プロフェッショナルサービスは時間単位で請求されます（$400–$1,200/時間）："
-          ],
+          "content": ["プロフェッショナルサービスは時間単位で請求されます（$400–$1,200/時間）："],
           "id": "professional-services",
           "items": [
             "<strong>作業開始前：</strong>全額返金",
@@ -3187,9 +3081,7 @@
           "title": "3. プロフェッショナルサービス"
         },
         "refundProcessing": {
-          "content": [
-            "承認された返金は10営業日以内に元の支払方法に処理されます。"
-          ],
+          "content": ["承認された返金は10営業日以内に元の支払方法に処理されます。"],
           "id": "refund-processing",
           "title": "5. 返金処理"
         }
@@ -3533,11 +3425,7 @@
           ],
           "timeline": {
             "newLabel": "REDIACCを使えば",
-            "newSteps": [
-              "Run pentest",
-              "47s",
-              "7 vulns found"
-            ],
+            "newSteps": ["Run pentest", "47s", "7 vulns found"],
             "oldLabel": "従来のペネトレーションテスト",
             "oldSteps": [
               {
@@ -3785,73 +3673,31 @@
           "features": [
             {
               "name": "Tamper-proof audit logs",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Cryptographic signing (SHA-256)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Instant report generation (CLI)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Basic operation logging",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "User attribution per action",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Key rotation tracking",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["check", "cross", "check", "cross", "rediacc"]
             }
           ],
           "overline": "差別化",
@@ -4033,11 +3879,7 @@
           ],
           "timeline": {
             "newLabel": "REDIACCを使えば",
-            "newSteps": [
-              "Run audit",
-              "Instant",
-              "Complete report"
-            ],
+            "newSteps": ["Run audit", "Instant", "Complete report"],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -4247,73 +4089,31 @@
           "features": [
             {
               "name": "Automated restore verification",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Full service health check",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Daily automated testing",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Zero-storage clone for testing",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Checksum / file integrity",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Alerting integration",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["check", "cross", "check", "cross", "rediacc"]
             }
           ],
           "overline": "差別化",
@@ -4493,11 +4293,7 @@
           ],
           "timeline": {
             "newLabel": "Rediaccを使えば",
-            "newSteps": [
-              "Backup",
-              "47s",
-              "Verified"
-            ],
+            "newSteps": ["Backup", "47s", "Verified"],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -4746,73 +4542,31 @@
           "features": [
             {
               "name": "Cross-cloud replication",
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Failover under 30 seconds",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Incremental-only transfer (98% savings)",
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Any-to-any provider failover",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Self-hosted, no cloud agent",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             },
             {
               "name": "Automatic DNS failover",
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Full-stack replication (app + DB)",
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             }
           ],
           "overline": "差別化",
@@ -4993,11 +4747,7 @@
           ],
           "timeline": {
             "newLabel": "Rediaccを使えば",
-            "newSteps": [
-              "Detect",
-              "<30s",
-              "Online"
-            ],
+            "newSteps": ["Detect", "<30s", "Online"],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -5349,12 +5099,7 @@
               {
                 "title": "4-Week Trend",
                 "status": "-87%",
-                "items": [
-                  "W1: ████████ 23",
-                  "W2: ████ 12",
-                  "W3: ██ 7",
-                  "W4: █ 3"
-                ],
+                "items": ["W1: ████████ 23", "W2: ████ 12", "W3: ██ 7", "W4: █ 3"],
                 "footer": "Continuous improvement · automated"
               }
             ]
@@ -5408,11 +5153,7 @@
           ],
           "timeline": {
             "newLabel": "REDIACCを使えば",
-            "newSteps": [
-              "Daily scans",
-              "0 days",
-              "Zero blind spots"
-            ],
+            "newSteps": ["Daily scans", "0 days", "Zero blind spots"],
             "oldLabel": "年次ペンテスト",
             "oldSteps": [
               {
@@ -5643,73 +5384,31 @@
           "features": [
             {
               "name": "Customer-held encryption keys",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Zero-knowledge architecture",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Self-service key rotation",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "AES-256 encryption at rest",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Per-repository key isolation",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Encryption in transit",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["check", "cross", "check", "cross", "rediacc"]
             }
           ],
           "overline": "差別化",
@@ -5891,11 +5590,7 @@
           ],
           "timeline": {
             "newLabel": "REDIACCを使えば",
-            "newSteps": [
-              "Your key",
-              "AES-256",
-              "Zero-knowledge"
-            ],
+            "newSteps": ["Your key", "AES-256", "Zero-knowledge"],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -6113,69 +5808,27 @@
           "features": [
             {
               "name": "Application cloning",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["check", "check", "check", "cross", "cross", "rediacc"]
             },
             {
               "name": "Database cloning",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
             },
             {
               "name": "Combined app + DB clone",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Any database engine",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Provisioning time",
-              "values": [
-                "Minutes",
-                "Minutes",
-                "Minutes",
-                "Minutes",
-                "Seconds",
-                "<60s"
-              ]
+              "values": ["Minutes", "Minutes", "Minutes", "Minutes", "Seconds", "<60s"]
             },
             {
               "name": "Production-identical data",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
             }
           ],
           "overline": "差別化",
@@ -6362,11 +6015,7 @@
           ],
           "timeline": {
             "newLabel": "Rediaccを使えば",
-            "newSteps": [
-              "Run",
-              "60s",
-              "Done"
-            ],
+            "newSteps": ["Run", "60s", "Done"],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -6599,73 +6248,31 @@
           "features": [
             {
               "name": "Full-stack failover test",
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Zero production impact",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Under 5 minutes",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Automated pass/fail report",
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "CI/CD integration",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Cross-cloud testing",
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             }
           ],
           "overline": "差別化",
@@ -6845,11 +6452,7 @@
           ],
           "timeline": {
             "newLabel": "Rediaccを使えば",
-            "newSteps": [
-              "Run test",
-              "4 min",
-              "Report"
-            ],
+            "newSteps": ["Run test", "4 min", "Report"],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -7087,80 +6690,31 @@
           "features": [
             {
               "name": "Immutable backups",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["check", "check", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Filesystem-level enforcement",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Automated daily restore verification",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Zero-copy storage (CoW)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Instant clone for testing",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "cross", "cross", "check", "rediacc"]
             },
             {
               "name": "Recovery time",
-              "values": [
-                "Minutes",
-                "Minutes",
-                "Hours",
-                "Hours",
-                "Seconds",
-                "<5 min"
-              ]
+              "values": ["Minutes", "Minutes", "Hours", "Hours", "Seconds", "<5 min"]
             },
             {
               "name": "Self-hosted / no cloud dependency",
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
             }
           ],
           "overline": "差別化",
@@ -7340,11 +6894,7 @@
           ],
           "timeline": {
             "newLabel": "Rediaccを使えば",
-            "newSteps": [
-              "Backup",
-              "Sealed",
-              "Verified"
-            ],
+            "newSteps": ["Backup", "Sealed", "Verified"],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -7591,63 +7141,27 @@
           "features": [
             {
               "name": "Zero-copy clone storage (CoW)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Configurable TTL auto-destroy",
-              "values": [
-                "check",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["check", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Full production data in clone",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Multi-service environments",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "cross", "check", "rediacc"]
             },
             {
               "name": "Self-hosted / no per-seat pricing",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             },
             {
               "name": "Sub-60-second provisioning",
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "check", "check", "rediacc"]
             }
           ],
           "overline": "差別化",
@@ -7820,11 +7334,7 @@
           ],
           "timeline": {
             "newLabel": "REDIACCを使えば",
-            "newSteps": [
-              "Spin up",
-              "$0 idle",
-              "Auto-cleanup"
-            ],
+            "newSteps": ["Spin up", "$0 idle", "Auto-cleanup"],
             "oldLabel": "常時稼働環境",
             "oldSteps": [
               {
@@ -8060,73 +7570,31 @@
           "features": [
             {
               "name": "Full environment restore (not just files)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Sub-5-minute recovery time",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Automated post-restore health checks",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Point-in-time snapshot granularity",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Zero-overhead clone (no extra storage)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Single-command recovery",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["check", "cross", "check", "cross", "rediacc"]
             }
           ],
           "overline": "差別化",
@@ -8306,11 +7774,7 @@
           ],
           "timeline": {
             "newLabel": "Rediaccを使えば",
-            "newSteps": [
-              "Run restore",
-              "3m 47s",
-              "Running"
-            ],
+            "newSteps": ["Run restore", "3m 47s", "Running"],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -8558,63 +8022,27 @@
           "features": [
             {
               "name": "Production data in CI clones",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "One-line webhook integration",
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "values": ["check", "cross", "check", "check", "rediacc"]
             },
             {
               "name": "Multi-service CI environment",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "cross", "check", "rediacc"]
             },
             {
               "name": "Auto-destroy after pipeline",
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["check", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Zero custom provisioning scripts",
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "check", "check", "rediacc"]
             },
             {
               "name": "Self-hosted / no vendor lock-in",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             }
           ],
           "overline": "差別化",
@@ -8699,31 +8127,19 @@
               {
                 "title": "Git Push",
                 "status": "Trigger",
-                "items": [
-                  "branch: feature/auth-v2",
-                  "commit: a3f7b2c",
-                  "author: sarah"
-                ],
+                "items": ["branch: feature/auth-v2", "commit: a3f7b2c", "author: sarah"],
                 "footer": "webhook → rdc"
               },
               {
                 "title": "Clone",
                 "status": "CoW",
-                "items": [
-                  "gitlab · nextcloud",
-                  "mariadb · mailcow",
-                  "380 GB → 2.1 GB"
-                ],
+                "items": ["gitlab · nextcloud", "mariadb · mailcow", "380 GB → 2.1 GB"],
                 "footer": "ci-auth-v2"
               },
               {
                 "title": "Tests",
                 "status": "Passed",
-                "items": [
-                  "247 unit tests ✓",
-                  "38 integration ✓",
-                  "auto-cleanup ✓"
-                ],
+                "items": ["247 unit tests ✓", "38 integration ✓", "auto-cleanup ✓"],
                 "footer": "285 passed"
               }
             ]
@@ -8777,11 +8193,7 @@
           ],
           "timeline": {
             "newLabel": "REDIACCを使えば",
-            "newSteps": [
-              "git push",
-              "Auto",
-              "Real data"
-            ],
+            "newSteps": ["git push", "Auto", "Real data"],
             "oldLabel": "カスタムCIスクリプト",
             "oldSteps": [
               {
@@ -9021,73 +8433,31 @@
           "features": [
             {
               "name": "Zero-decryption migration",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Customer-held keys during transfer",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Config + data atomic migration",
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Post-transfer integrity verification",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Single-command migration",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Any-to-any destination",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["check", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Automatic rollback on failure",
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "check", "cross", "rediacc"]
             }
           ],
           "overline": "差別化",
@@ -9267,11 +8637,7 @@
           ],
           "timeline": {
             "newLabel": "Rediaccを使えば",
-            "newSteps": [
-              "Run migrate",
-              "0 exposure",
-              "Verified"
-            ],
+            "newSteps": ["Run migrate", "0 exposure", "Verified"],
             "oldLabel": "従来の移行",
             "oldSteps": [
               {
@@ -9526,73 +8892,31 @@
           "features": [
             {
               "name": "Full production data clone",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "OS + library parity verification",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Any database engine (MariaDB, Postgres, Mongo)",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "cross", "check", "rediacc"]
             },
             {
               "name": "Multi-service clone (app + DB + mail + storage)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Zero-copy storage (CoW)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Self-hosted / no vendor lock-in",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             },
             {
               "name": "Sub-60-second provisioning",
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "check", "check", "rediacc"]
             }
           ],
           "overline": "差別化",
@@ -9765,11 +9089,7 @@
           ],
           "timeline": {
             "newLabel": "REDIACCを使えば",
-            "newSteps": [
-              "Run clone",
-              "47s",
-              "100% match"
-            ],
+            "newSteps": ["Run clone", "47s", "100% match"],
             "oldLabel": "従来の開発環境",
             "oldSteps": [
               {
@@ -10017,69 +9337,27 @@
           "features": [
             {
               "name": "Full-environment recovery",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
             },
             {
               "name": "Recovery under 5 minutes",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
             },
             {
               "name": "Point-in-time (minute-level)",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "values": ["check", "check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Automated restore verification",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "No data transfer required",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Self-hosted / no cloud dependency",
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
             }
           ],
           "overline": "差別化",
@@ -10262,11 +9540,7 @@
           ],
           "timeline": {
             "newLabel": "REDIACCを使えば",
-            "newSteps": [
-              "Detect",
-              "<5 min",
-              "Online"
-            ],
+            "newSteps": ["Detect", "<5 min", "Online"],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -10480,73 +9754,31 @@
           "features": [
             {
               "name": "Configurable retention policies",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Automated lifecycle cleanup",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Retained backup verification",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Instant audit-ready reports",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "cross", "check", "rediacc"]
             },
             {
               "name": "Multi-framework support",
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["check", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "CLI / automation-first",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
           "overline": "差別化",
@@ -10727,11 +9959,7 @@
           ],
           "timeline": {
             "newLabel": "Rediaccを使えば",
-            "newSteps": [
-              "Set policy",
-              "Auto",
-              "Audit-ready"
-            ],
+            "newSteps": ["Set policy", "Auto", "Audit-ready"],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -10983,73 +10211,31 @@
           "features": [
             {
               "name": "Full-stack clone for testing",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Clone creation under 60s",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Isolated network per clone",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Zero additional storage (CoW)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Auto health check after patch",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "cross", "check", "rediacc"]
             },
             {
               "name": "Self-hosted, no cloud dependency",
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["check", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "One-command workflow",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
           "overline": "差別化",
@@ -11229,11 +10415,7 @@
           ],
           "timeline": {
             "newLabel": "Rediaccを使えば",
-            "newSteps": [
-              "Clone",
-              "60s",
-              "Patch & verify"
-            ],
+            "newSteps": ["Clone", "60s", "Patch & verify"],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -11492,73 +10674,31 @@
           "features": [
             {
               "name": "Cross-provider migration",
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Migration under 1 hour",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Zero proprietary formats",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Incremental-only transfer",
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "No vendor agent required",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Full-stack migration (app + DB)",
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Zero-downtime migration",
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "check", "cross", "rediacc"]
             }
           ],
           "overline": "差別化",
@@ -11741,11 +10881,7 @@
           ],
           "timeline": {
             "newLabel": "REDIACCを使えば",
-            "newSteps": [
-              "Snapshot",
-              "<1hr",
-              "Live"
-            ],
+            "newSteps": ["Snapshot", "<1hr", "Live"],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -12115,12 +11251,7 @@
           ],
           "timeline": {
             "newLabel": "Rediaccを使えば",
-            "newSteps": [
-              "Clone + patch",
-              "<4 min",
-              "Verified",
-              "Deploy"
-            ],
+            "newSteps": ["Clone + patch", "<4 min", "Verified", "Deploy"],
             "oldLabel": "従来のパッチ適用",
             "oldSteps": [
               {
@@ -12419,9 +11550,7 @@
           "id": "bridge",
           "subsections": {
             "bridgeDataCollected": {
-              "content": [
-                "Bridgeは以下のカテゴリのデータを収集します："
-              ],
+              "content": ["Bridgeは以下のカテゴリのデータを収集します："],
               "items": [
                 "<strong>キュー操作：</strong>タスクID、優先度レベル、操作タイプ、実行所要時間、成功または失敗ステータス",
                 "<strong>SSH操作：</strong>ターゲットホスト、ユーザー名、ポート番号、終了コード、実行所要時間（コマンド内容や出力は収集されません）",
@@ -12432,9 +11561,7 @@
               "title": "7.1 収集データ"
             },
             "bridgeOptOut": {
-              "content": [
-                "以下のいずれかの方法でBridgeテレメトリを無効にできます："
-              ],
+              "content": ["以下のいずれかの方法でBridgeテレメトリを無効にできます："],
               "items": [
                 "環境変数<code>REDIACC_TELEMETRY_DISABLED=1</code>を設定",
                 "環境変数<code>DO_NOT_TRACK=1</code>を設定（<a href=\"https://consult.dntrack.dev/\" target=\"_blank\" rel=\"noopener noreferrer\">Do Not Track</a>標準に準拠）"
@@ -12471,9 +11598,7 @@
           "id": "cli",
           "subsections": {
             "cliDataCollected": {
-              "content": [
-                "CLIは以下のカテゴリのデータを収集します："
-              ],
+              "content": ["CLIは以下のカテゴリのデータを収集します："],
               "items": [
                 "<strong>コマンド使用状況：</strong>コマンド名、CLIバージョン、終了コード、成功または失敗ステータス",
                 "<strong>匿名化された引数：</strong>機密値が除去されたコマンドオプション — パスワード、トークン、シークレット、APIキー、および資格情報は<code>[REDACTED]</code>に置換されます",
@@ -12485,9 +11610,7 @@
               "title": "5.1 収集データ"
             },
             "cliOptOut": {
-              "content": [
-                "以下のいずれかの方法でCLIテレメトリを無効にできます："
-              ],
+              "content": ["以下のいずれかの方法でCLIテレメトリを無効にできます："],
               "items": [
                 "環境変数<code>REDIACC_TELEMETRY=off</code>を設定（<code>false</code>または<code>0</code>も使用可能）",
                 "CLI設定ファイルで<code>telemetryEnabled: false</code>を設定",
@@ -12544,9 +11667,7 @@
           "id": "middleware",
           "subsections": {
             "middlewareDataCollected": {
-              "content": [
-                "ミドルウェアは以下のカテゴリのデータを収集します："
-              ],
+              "content": ["ミドルウェアは以下のカテゴリのデータを収集します："],
               "items": [
                 "<strong>システム情報：</strong>ホスト名、オペレーティングシステムバージョン、.NETランタイムバージョン",
                 "<strong>API呼び出し：</strong>HTTPメソッド、エンドポイントパス、レスポンスステータスコード、リクエスト所要時間",
@@ -12568,9 +11689,7 @@
           "title": "6. ミドルウェア テレメトリ"
         },
         "principles": {
-          "content": [
-            "Rediaccにおけるすべてのテレメトリ収集は以下の原則に従います："
-          ],
+          "content": ["Rediaccにおけるすべてのテレメトリ収集は以下の原則に従います："],
           "id": "principles",
           "items": [
             "<strong>プライバシー・バイ・デザイン：</strong>個人識別子は送信前に匿名化されます。メールアドレスはドメインのみに短縮され、ユーザーIDはハッシュ化（SHA-256）および切り詰められ、パスワードやシークレットは一切収集されません。",
@@ -12588,9 +11707,7 @@
           "id": "web-app",
           "subsections": {
             "webDataCollected": {
-              "content": [
-                "Webアプリケーションは以下のカテゴリのデータを収集します："
-              ],
+              "content": ["Webアプリケーションは以下のカテゴリのデータを収集します："],
               "items": [
                 "<strong>ブラウザ情報：</strong>ブラウザ名とバージョン、優先言語、プラットフォーム（例：Windows、macOS、Linux）、画面解像度、色深度、ユーザーエージェント文字列、デバイスメモリ（利用可能な場合）、ネットワーク接続タイプ",
                 "<strong>ユーザーコンテキスト：</strong>セッションID（セッションごとにランダム生成）、メールドメインのみ（ローカル部分は除去、例：<code>***@example.com</code>）、組織名、チーム名",
@@ -12604,9 +11721,7 @@
               "title": "4.1 収集データ"
             },
             "webNotCollected": {
-              "content": [
-                "Webアプリケーションは以下を収集しません："
-              ],
+              "content": ["Webアプリケーションは以下を収集しません："],
               "items": [
                 "完全なメールアドレス（ローカル部分は常に除去）",
                 "パスワード、トークン、または認証資格情報",
@@ -12681,9 +11796,7 @@
           "title": "3. アカウントと登録"
         },
         "changes": {
-          "content": [
-            "本規約は随時更新される場合があります。"
-          ],
+          "content": ["本規約は随時更新される場合があります。"],
           "id": "changes",
           "title": "14. 規約の変更"
         },
@@ -12695,9 +11808,7 @@
           "title": "8. お客様のデータ"
         },
         "governingLaw": {
-          "content": [
-            "本規約はエストニア共和国の法律に準拠します。"
-          ],
+          "content": ["本規約はエストニア共和国の法律に準拠します。"],
           "id": "governing-law",
           "title": "13. 準拠法"
         },
@@ -12709,9 +11820,7 @@
           "title": "11. 補償"
         },
         "intellectualProperty": {
-          "content": [
-            "サービスはRediaccの所有物であり、知的財産法により保護されています。"
-          ],
+          "content": ["サービスはRediaccの所有物であり、知的財産法により保護されています。"],
           "id": "intellectual-property",
           "title": "7. 知的財産"
         },
@@ -12762,56 +11871,63 @@
       "toc": {
         "title": "目次"
       }
-    },
-    "newsletter": {
-      "meta": {
-        "title": "ニュースレター | Rediacc",
-        "description": "Rediaccニュースレターを購読して、毎月の製品アップデート、セルフホスティングガイド、インフラのヒントを受け取りましょう。",
-        "keywords": "Rediaccニュースレター, セルフホスティング更新, インフラヒント, DevOpsニュースレター"
-      },
-      "breadcrumb": {
-        "home": "ホーム",
-        "newsletter": "ニュースレター"
-      },
-      "expectations": {
-        "title": "届く内容",
-        "items": [
-          "毎月の製品アップデートと新機能",
-          "セルフホスティングガイドとベストプラクティス",
-          "インフラのヒントとDevOpsの知見",
-          "新機能への早期アクセス"
-        ]
-      },
-      "frequency": "月に一度。",
-      "privacy": "Plausible Analyticsを使用しており、メールアドレスを第三者と共有することはありません。"
-    },
-    "changelog": {
-      "meta": {
-        "title": "変更履歴 | Rediacc",
-        "description": "Rediaccの最新リリース、改善、バグ修正をご確認ください。",
-        "keywords": "Rediacc変更履歴, リリースノート, アップデート, 新機能"
-      },
-      "breadcrumb": {
-        "home": "ホーム",
-        "changelog": "変更履歴"
-      },
-      "title": "変更履歴",
-      "subtitle": "最新のアップデート、改善、修正をご確認ください。",
-      "subscribeTitle": "新しいリリースの通知を受け取る",
-      "subscribeDescription": "新しいリリースがあるたびに、短いアップデートをお届けします。"
     }
   },
-  "layout": {
-    "meta": {
-      "author": "Rediacc",
-      "defaultDescription": "開発運用を加速するために設計されたインフラストラクチャ自動化プラットフォーム。 インスタント開発環境と次世代の災害復旧。",
-      "defaultKeywords": "インフラストラクチャの自動化、AI 運用、災害復旧、開発環境、モデル コンテキスト プロトコル、DevOps、CI/CD",
-      "locale": "ja_JP",
-      "siteName": "Rediacc",
-      "twitter": {
-        "creator": "@rediacc",
-        "site": "@rediacc"
+  "pricingPreview": {
+    "compareAll": "すべてのプランと機能を比較",
+    "subtitle": "無料で開始。準備ができたらスケール。",
+    "title": "シンプルで透明な料金体系"
+  },
+  "problem": {
+    "reality": {
+      "imageAlt": "従来のインフラストラクチャ ワークフローの課題を示す図: 環境のプロビジョニングを待ってイライラする開発者、より迅速な展開を要求する関係者、サンドボックスの更新が遅いためにチームが危険な実稼働テストに頼っている",
+      "title": "現実: 不満を抱えるチーム、危険な回避策"
+    },
+    "solution": {
+      "imageAlt": "Rediacc プラットフォーム ソリューションの図: 自動化されたインフラストラクチャ プロビジョニング、即時本番環境のような環境クローン、合理化された開発者ワークフロー、モデル コンテキスト プロトコル統合による AI 安全な運用",
+      "title": "ソリューション: Rediacc プラットフォーム"
+    },
+    "subtitle": "実稼働環境にはテラバイト規模のデータがあるが、サンドボックス環境では毎月しか同期しない場合、チームは危険な回避策につながる不可能な選択に直面します。",
+    "title": "スピードミスマッチの危機"
+  },
+  "solutions": {
+    "categories": {
+      "backups": "検証済みバックアップ",
+      "defense": "予防的防御",
+      "dev-env": "開発環境",
+      "encryption": "暗号化制御",
+      "multi-cloud": "マルチクラウド",
+      "ransomware": "ランサムウェア対策"
+    },
+    "subtitle": "ランサムウェア対策から予防的防御まで、6つの重点分野にわたる19のソリューション。",
+    "title": "事業継続性をどう確保するか"
+  },
+  "testimonials": {
+    "items": [
+      {
+        "role": "災害復旧マネージャー",
+        "name": "Marcus R.",
+        "company": "金融サービス",
+        "quote": "私たちの復旧計画は4時間と言っていました。現実は4日でした。今ではクローンへのフェイルオーバーが1分以内です。"
+      },
+      {
+        "role": "開発者",
+        "name": "Sarah K.",
+        "quote": "サンドボックスが何週間も遅れていたので、本番環境でコーディングしていました。今では60秒でフレッシュなクローンが手に入ります。"
+      },
+      {
+        "role": "CTO",
+        "name": "James L.",
+        "company": "SaaSプラットフォーム",
+        "quote": "新しいハードウェアを購入せずにデータベースを1つから12に拡張しました。Rediaccのクローンはストレージを共有し、変更分だけ支払います。"
+      },
+      {
+        "role": "DevOpsエンジニア",
+        "name": "Ayumi T.",
+        "quote": "実データに対してCIを実行できませんでした。今では各パイプラインが自動的に独自の本番クローンを取得します。"
       }
-    }
+    ],
+    "subtitle": "さまざまな役割がRediaccをどう体験しているか",
+    "title": "チームの声"
   }
 }

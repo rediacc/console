@@ -4,7 +4,7 @@ import { useTranslation } from '../i18n/react';
 
 declare global {
   interface Window {
-    openContactModal: (interest?: string) => void;
+    openContactModal?: (interest?: string) => void;
   }
 }
 
@@ -12,13 +12,35 @@ type FormState = 'idle' | 'loading' | 'success' | 'error';
 
 const INTEREST_TO_SUBJECT: Record<string, string> = {
   'disaster-recovery': 'disasterRecovery',
-  'partnership': 'partnership',
+  partnership: 'partnership',
   'threat-response': 'technical',
-  'technical': 'technical',
-  'general': 'general',
+  technical: 'technical',
+  general: 'general',
 };
 
 const SUBJECTS = ['general', 'technical', 'partnership', 'disasterRecovery', 'other'] as const;
+
+function handleFocusTrap(e: KeyboardEvent, modal: HTMLDivElement, close: () => void): void {
+  if (e.key === 'Escape') {
+    close();
+    return;
+  }
+  if (e.key !== 'Tab') return;
+
+  const focusable = modal.querySelectorAll<HTMLElement>(
+    'input, select, textarea, button, [tabindex]:not([tabindex="-1"])'
+  );
+  if (focusable.length === 0) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault();
+    first.focus();
+  }
+}
 
 const ContactModal: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -46,7 +68,7 @@ const ContactModal: React.FC = () => {
     setState('idle');
     setErrorMsg('');
     hasFiredStart.current = false;
-    window.plausible?.('contact_modal_open', { props: { source: interest ? 'cta' : 'nav' } });
+    window.plausible('contact_modal_open', { props: { source: interest ? 'cta' : 'nav' } });
   }, []);
 
   const close = useCallback(() => {
@@ -58,7 +80,7 @@ const ContactModal: React.FC = () => {
   useEffect(() => {
     window.openContactModal = open;
     return () => {
-      delete (window as any).openContactModal;
+      delete window.openContactModal;
     };
   }, [open]);
 
@@ -69,70 +91,56 @@ const ContactModal: React.FC = () => {
     document.body.style.overflow = 'hidden';
     requestAnimationFrame(() => firstFocusRef.current?.focus());
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        close();
-        return;
-      }
-      if (e.key === 'Tab') {
-        const modal = modalRef.current;
-        if (!modal) return;
-        const focusable = modal.querySelectorAll<HTMLElement>(
-          'input, select, textarea, button, [tabindex]:not([tabindex="-1"])'
-        );
-        if (focusable.length === 0) return;
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
+    const onKeyDown = (e: KeyboardEvent) => {
+      const modal = modalRef.current;
+      if (!modal) return;
+      handleFocusTrap(e, modal, close);
     };
 
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', onKeyDown);
     return () => {
       document.body.style.overflow = '';
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keydown', onKeyDown);
     };
   }, [isOpen, close]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setState('loading');
     setErrorMsg('');
 
     try {
-      const res = await fetch(
-        `${window.location.origin}/account/api/v1/contact/submit`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: nameRef.current?.value.trim(),
-            email: emailRef.current?.value.trim(),
-            subject: selectedSubject,
-            message: messageRef.current?.value.trim(),
-            source: 'contact-modal',
-            lang: currentLang,
-            company_url: honeypotRef.current?.value || undefined,
-          }),
-        }
-      );
+      const res = await fetch(`${window.location.origin}/account/api/v1/contact/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: nameRef.current?.value.trim(),
+          email: emailRef.current?.value.trim(),
+          subject: selectedSubject,
+          message: messageRef.current?.value.trim(),
+          source: 'contact-modal',
+          lang: currentLang,
+          company_url: honeypotRef.current?.value === '' ? undefined : honeypotRef.current?.value,
+        }),
+      });
 
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        throw new Error(body?.error || t('contactModal.error'));
+        throw new Error(body?.error ?? t('contactModal.error'));
       }
 
       setState('success');
-      const utm = (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ?? {};
+      const utm =
+        (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ??
+        {};
       const lastSolution = sessionStorage.getItem('__pa_last_solution') ?? undefined;
-      window.plausible?.('contact_submit', {
-        props: { subject: selectedSubject, source: 'contact-modal', ...utm, ...(lastSolution && { last_solution: lastSolution }) },
+      window.plausible('contact_submit', {
+        props: {
+          subject: selectedSubject,
+          source: 'contact-modal',
+          ...utm,
+          ...(lastSolution && { last_solution: lastSolution }),
+        },
       });
     } catch (err) {
       setState('error');
@@ -145,7 +153,9 @@ const ContactModal: React.FC = () => {
   return (
     <div
       className="contact-modal-backdrop"
-      onClick={(e) => { if (e.target === e.currentTarget) close(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) close();
+      }}
       role="dialog"
       aria-modal="true"
       aria-label={t('contactModal.title')}
@@ -157,13 +167,22 @@ const ContactModal: React.FC = () => {
             <p className="contact-modal-description">{t('contactModal.description')}</p>
           </div>
           <button
+            type="button"
             className="contact-modal-close"
             onClick={close}
             aria-label={t('contactModal.close')}
             data-track="cta_click"
             data-track-label="contact-close"
           >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
               <path d="M5 5l10 10M15 5L5 15" />
             </svg>
           </button>
@@ -171,24 +190,41 @@ const ContactModal: React.FC = () => {
 
         {state === 'success' ? (
           <div className="contact-modal-success">
-            <svg className="contact-modal-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              className="contact-modal-check"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <circle cx="12" cy="12" r="10" />
               <path d="M8 12l3 3 5-5" />
             </svg>
             <p>{t('contactModal.success')}</p>
-            <button className="contact-modal-done-btn" onClick={close} data-track="cta_click" data-track-label="contact-done">
+            <button
+              type="button"
+              className="contact-modal-done-btn"
+              onClick={close}
+              data-track="cta_click"
+              data-track-label="contact-done"
+            >
               {t('contactModal.close')}
             </button>
           </div>
         ) : (
-          <form className="contact-modal-form" onSubmit={handleSubmit} noValidate onFocus={() => {
-            if (!hasFiredStart.current) {
-              hasFiredStart.current = true;
-              window.plausible?.('contact_form_start', { props: { source: 'contact-modal' } });
-            }
-          }}>
+          <form
+            className="contact-modal-form"
+            onSubmit={handleSubmit}
+            noValidate
+            onFocus={() => {
+              if (!hasFiredStart.current) {
+                hasFiredStart.current = true;
+                window.plausible('contact_form_start', { props: { source: 'contact-modal' } });
+              }
+            }}
+          >
             {/* Honeypot */}
-            <div style={{ position: 'absolute', left: '-9999px' }} aria-hidden="true">
+            <div className="contact-honeypot" aria-hidden="true">
               <input
                 type="text"
                 name="company_url"
@@ -202,7 +238,10 @@ const ContactModal: React.FC = () => {
               <label htmlFor="contact-name">{t('contactModal.fields.name')}</label>
               <input
                 id="contact-name"
-                ref={(el) => { nameRef.current = el; firstFocusRef.current = el; }}
+                ref={(el) => {
+                  nameRef.current = el;
+                  firstFocusRef.current = el;
+                }}
                 type="text"
                 placeholder={t('contactModal.fields.namePlaceholder')}
                 required
@@ -254,14 +293,12 @@ const ContactModal: React.FC = () => {
             </div>
 
             {state === 'error' && (
-              <p className="contact-modal-error" role="alert">{errorMsg}</p>
+              <p className="contact-modal-error" role="alert">
+                {errorMsg}
+              </p>
             )}
 
-            <button
-              type="submit"
-              className="contact-modal-submit"
-              disabled={state === 'loading'}
-            >
+            <button type="submit" className="contact-modal-submit" disabled={state === 'loading'}>
               {state === 'loading' ? t('contactModal.sending') : t('contactModal.submit')}
             </button>
           </form>

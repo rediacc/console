@@ -231,7 +231,13 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onToggle, onClose }) => {
             ))}
           </div>
           <div className="mega-menu-footer">
-            <a href={`/${currentLang}/#solutions`} className="mega-menu-view-all" onClick={onClose} data-track="cta_click" data-track-label="megamenu-view-all">
+            <a
+              href={`/${currentLang}/#solutions`}
+              className="mega-menu-view-all"
+              onClick={onClose}
+              data-track="cta_click"
+              data-track-label="megamenu-view-all"
+            >
               {t('navigation.viewAllSolutions')}
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path
@@ -243,7 +249,13 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onToggle, onClose }) => {
                 />
               </svg>
             </a>
-            <a href={`/${currentLang}/roi-calculator`} className="mega-menu-view-all mega-menu-roi-link" onClick={onClose} data-track="cta_click" data-track-label="megamenu-roi">
+            <a
+              href={`/${currentLang}/roi-calculator`}
+              className="mega-menu-view-all mega-menu-roi-link"
+              onClick={onClose}
+              data-track="cta_click"
+              data-track-label="megamenu-roi"
+            >
               {t('navigation.roiCalculator')}
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path

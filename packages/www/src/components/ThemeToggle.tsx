@@ -29,7 +29,7 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({ label = 'Toggle theme' }) => 
       meta.content = next === 'dark' ? '#0f0f10' : '#556b2f';
     }
 
-    window.plausible?.('theme_toggle', { props: { theme: next } });
+    window.plausible('theme_toggle', { props: { theme: next } });
   };
 
   return (

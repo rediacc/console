@@ -14,8 +14,12 @@
 }
 
 @keyframes contactFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .contact-modal-content {
@@ -34,8 +38,14 @@
 }
 
 @keyframes contactSlideUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .contact-modal-header {
@@ -153,7 +163,7 @@
   padding-right: var(--space-8);
 }
 
-[dir="rtl"] .contact-modal-field select {
+[dir='rtl'] .contact-modal-field select {
   background-position: left var(--space-3) center;
   padding-right: var(--space-3);
   padding-left: var(--space-8);
@@ -272,6 +282,15 @@
   }
 }
 
+/* Honeypot spam trap — visually hidden from real users */
+.contact-honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
 /* ─── Inline Contact Form (contact page) ──────────────────────────── */
 
 .contact-inline-form {
@@ -343,7 +362,7 @@
   padding-right: var(--space-8);
 }
 
-[dir="rtl"] .contact-inline-field select {
+[dir='rtl'] .contact-inline-field select {
   background-position: left var(--space-3) center;
   padding-right: var(--space-3);
   padding-left: var(--space-8);
@@ -400,9 +419,17 @@
   margin: 0;
 }
 
+.contact-inline-success-icon {
+  color: var(--color-success);
+}
+
 /* Reduced motion */
 
 @media (prefers-reduced-motion: reduce) {
-  .contact-modal-backdrop { animation: none; }
-  .contact-modal-content { animation: none; }
+  .contact-modal-backdrop {
+    animation: none;
+  }
+  .contact-modal-content {
+    animation: none;
+  }
 }
