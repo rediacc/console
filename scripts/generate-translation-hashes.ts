@@ -63,6 +63,18 @@ const LOCALE_CONFIGS: LocaleConfig[] = [
     multipleNamespaces: false,
     flatFiles: true,
   },
+  {
+    name: 'account-web',
+    dir: path.join(__dirname, '../private/account/web/src/i18n/locales'),
+    // Account web has multiple namespace files (common.json, auth.json, etc.)
+    multipleNamespaces: true,
+  },
+  {
+    name: 'account-emails',
+    dir: path.join(__dirname, '../private/account/src/i18n/locales'),
+    // Account emails: single file per language (emails.json)
+    multipleNamespaces: false,
+  },
 ];
 
 const HASH_FILENAME = '.translation-hashes.json';
