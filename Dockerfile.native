@@ -27,7 +27,7 @@
 # Stage 1: Renet Builder (Go)
 # Cross-compile lightweight renet for linux/amd64 and linux/arm64
 # =============================================================================
-ARG GO_IMAGE=golang:1.24-alpine
+ARG GO_IMAGE=golang:1.25-alpine
 ARG NODE_IMAGE=node:22-alpine
 FROM ${GO_IMAGE} AS renet-builder
 
