@@ -14,30 +14,30 @@ on:
   workflow_call:
     inputs:
       dry_run:
-        required: false
         type: boolean
-        default: true
+        required: false
+        default: false
       next_version:
-        required: true
         type: string
+        required: false
       staging_tag:
-        required: true
         type: string
+        required: false
       api_tag:
-        required: true
         type: string
+        required: false
       bridge_tag:
-        required: true
         type: string
+        required: false
       plugins_tag:
-        required: true
         type: string
+        required: false
       web_tag:
-        required: true
         type: string
+        required: false
       cli_tag:
-        required: true
         type: string
+        required: false
       upload_pages:
         required: false
         type: boolean

@@ -4,38 +4,38 @@ on:
   workflow_call:
     inputs:
       next_version:
-        required: true
         type: string
+        required: false
       api_tag:
-        required: true
         type: string
+        required: false
       api_exists:
-        required: true
         type: string
+        required: false
       bridge_tag:
-        required: true
         type: string
+        required: false
       bridge_exists:
-        required: true
         type: string
+        required: false
       plugins_tag:
-        required: true
         type: string
+        required: false
       plugins_exists:
-        required: true
         type: string
+        required: false
       web_tag:
-        required: true
         type: string
+        required: false
       web_exists:
-        required: true
         type: string
+        required: false
       cli_tag:
-        required: true
         type: string
+        required: false
       cli_exists:
-        required: true
         type: string
+        required: false
     secrets:
       APP_PRIVATE_KEY:
         required: false

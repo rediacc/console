@@ -4,11 +4,12 @@ on:
   workflow_call:
     inputs:
       is_bot:
-        required: true
         type: string
+        required: false
+        default: 'false'
       next_version:
-        required: true
         type: string
+        required: false
     secrets:
       APP_PRIVATE_KEY:
         required: false

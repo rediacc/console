@@ -4,21 +4,22 @@ on:
   workflow_call:
     inputs:
       api_tag:
-        required: true
         type: string
-      bridge_tag:
-        required: true
-        type: string
-      web_tag:
-        required: true
-        type: string
-      e2e_browsers:
-        required: true
-        type: string
-      provision_vms:
         required: false
+      bridge_tag:
+        type: string
+        required: false
+      web_tag:
+        type: string
+        required: false
+      e2e_browsers:
+        type: string
+        required: false
+        default: 'chromium'
+      provision_vms:
         type: boolean
-        default: false
+        required: false
+        default: true
     secrets:
       APP_PRIVATE_KEY:
         required: false
