@@ -357,7 +357,7 @@ jobs:
     needs: [initialize, quality, review-gate]
     runs-on: ubuntu-slim
     # Skip queue for merge_group - GitHub's merge queue already serializes
-    if: always() && github.event_name == 'pull_request' && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    if: always() && github.event_name == 'pull_request' && needs.initialize.result == 'success' && needs.quality.result == 'success' && (needs['review-gate'].result == 'success' || needs['review-gate'].result == 'skipped')
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
@@ -419,7 +419,7 @@ jobs:
   deploy-dryrun:
     name: Deploy Dry-Run
     needs: [initialize, build-docker, build-desktop, build-cli]
-    if: always() && needs.initialize.outputs.is_bot != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success' && needs.build-desktop.result == 'success' && needs.build-cli.result == 'success'
+    if: always() && needs.initialize.outputs.is_bot != 'true' && needs.initialize.result == 'success' && needs['build-docker'].result == 'success' && needs['build-desktop'].result == 'success' && needs['build-cli'].result == 'success'
     uses: ./.github/workflows/cd-dryrun.yml
     with:
       dry_run: true
@@ -440,7 +440,7 @@ jobs:
   tests:
     name: Tests + Infra
     needs: [initialize, build-docker]
-    if: always() && needs.initialize.result == 'success' && needs.build-docker.result == 'success'
+    if: always() && needs.initialize.result == 'success' && needs['build-docker'].result == 'success'
     uses: ./.github/workflows/ct-tests.yml
     with:
       api_tag: ${{ needs.initialize.outputs.api_tag }}
@@ -503,7 +503,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [cancel-watchdog, queue]
     # Only start after Queue passes - no point monitoring if quality checks failed
-    if: always() && needs.cancel-watchdog.result == 'success' && needs.queue.result == 'success' && fromJSON(github.run_attempt) < 3
+    if: always() && needs['cancel-watchdog'].result == 'success' && needs.queue.result == 'success' && fromJSON(github.run_attempt) < 3
     steps:
       - name: Wait for all jobs and trigger rerun on failures
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8

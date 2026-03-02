@@ -96,7 +96,7 @@ jobs:
   wait-for-tunnel:
     name: Wait for Tunnel
     needs: [build-disk-image]
-    if: always() && (needs.build-disk-image.result == 'success' || needs.build-disk-image.result == 'skipped')
+    if: always() && (needs['build-disk-image'].result == 'success' || needs['build-disk-image'].result == 'skipped')
     runs-on: ubuntu-slim
     timeout-minutes: 25
     steps:
@@ -113,7 +113,7 @@ jobs:
     name: Infra - Backend
     needs: [build-disk-image]
     # Run if: (a) build succeeded when provision_vms=true, or (b) provision_vms=false (skipped build)
-    if: always() && (needs.build-disk-image.result == 'success' || needs.build-disk-image.result == 'skipped')
+    if: always() && (needs['build-disk-image'].result == 'success' || needs['build-disk-image'].result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
