@@ -32,7 +32,7 @@ permissions:
 # Note: Cross-PR queueing is handled by the 'queue' job below
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ !contains(github.event.pull_request.labels.*.name, 'no-cancel-push') }}
+  cancel-in-progress: true
 
 # E2E Browser Configuration
 # Default: chromium only. Use workflow_dispatch with "all-browsers" to test all.
@@ -148,7 +148,7 @@ jobs:
 
       # Login to GHCR for registry cache check
       - name: Login to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
