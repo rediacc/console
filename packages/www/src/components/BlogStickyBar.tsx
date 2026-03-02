@@ -9,8 +9,8 @@ const DISMISSED_KEY = 'stickyBarDismissed';
 
 const BlogStickyBar: React.FC<Props> = ({ source = 'blog-sticky' }) => {
   const [visible, setVisible] = useState(false);
-  const [dismissed, setDismissed] = useState(() =>
-    typeof window !== 'undefined' && sessionStorage.getItem(DISMISSED_KEY) !== null
+  const [dismissed, setDismissed] = useState(
+    () => typeof window !== 'undefined' && sessionStorage.getItem(DISMISSED_KEY) !== null
   );
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
