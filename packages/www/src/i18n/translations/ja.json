@@ -77,6 +77,7 @@
       "skipToMainContent": "メインコンテンツにスキップ",
       "skipToNavigation": "ナビゲーションにスキップ"
     },
+    "terminalSimulationDisclaimer": "コマンド出力は説明用に要約・省略しています。実際の実行では追加のログが出力される場合があります。",
     "theProblem": "問題点"
   },
   "contactModal": {
@@ -352,6 +353,13 @@
     "pageDescription": "新機能、セルフホスティングガイド、インフラのヒントに関する月次アップデートをお届けします。",
     "pageTitle": "最新情報をお届け",
     "placeholder": "メールアドレス",
+    "returnPopup": {
+      "close": "ポップアップを閉じる",
+      "cta": "購読して予約する",
+      "description": "製品アップデートを購読し、チームとのライブセットアップ予約を行えます。",
+      "note": "製品アップデートの配信にメールアドレスを使用します。いつでも配信停止できます。",
+      "title": "ガイド付きのご案内をご希望ですか？"
+    },
     "roiGate": {
       "description": "メールアドレスを入力して、詳細なコスト内訳と節約分析をご覧ください。",
       "title": "詳細なROIレポートを取得",
@@ -11545,7 +11553,7 @@
       "sections": {
         "bridge": {
           "content": [
-            "Rediacc Bridge（Renet）はgzip圧縮OTLPエクスポート付きのOpenTelemetryを使用しています。テレメトリは<code>www.rediacc.com/otlp/v1/traces</code>にバッチで送信されます（最大10スパン、5秒ごとにフラッシュ）。"
+            "Rediacc Bridge（Renet）はgzip圧縮OTLPエクスポート付きのOpenTelemetryを使用しています。テレメトリは<code>rediacc.com</code>にバッチで送信されます（最大10スパン、5秒ごとにフラッシュ）。"
           ],
           "id": "bridge",
           "subsections": {
@@ -11662,7 +11670,7 @@
         },
         "middleware": {
           "content": [
-            "Rediaccミドルウェアは運用テレメトリを収集します。テレメトリは<code>https://www.rediacc.com/otlp/v1/traces</code>に送信されます。"
+            "Rediaccミドルウェアは運用テレメトリを収集します。テレメトリは<code>rediacc.com</code>に送信されます。"
           ],
           "id": "middleware",
           "subsections": {

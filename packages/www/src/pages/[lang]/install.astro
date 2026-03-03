@@ -35,6 +35,25 @@ const { t } = createTranslator(lang);
       </div>
     </section>
 
+    <!-- Next Steps -->
+    <section class="install-next-steps section-light">
+      <div class="container">
+        <div class="install-next-steps-card">
+          <h2>{t('pages.docs.gettingStarted')}</h2>
+          <p>{t('pages.docs.gettingStartedDesc')}</p>
+          <a
+            href={`/${lang}/docs/quick-start`}
+            class="btn btn-primary"
+            data-track="cta_click"
+            data-track-label="install-quick-start"
+            data-track-dest="docs-quick-start"
+          >
+            Open Docs Quick Start
+          </a>
+        </div>
+      </div>
+    </section>
+
     <!-- Installation Methods (React island) -->
     <InstallMethods client:visible lang={lang} />
 

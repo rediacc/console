@@ -77,6 +77,7 @@
       "skipToMainContent": "跳至主要内容",
       "skipToNavigation": "跳至导航"
     },
+    "terminalSimulationDisclaimer": "命令输出仅用于说明，并为便于阅读做了精简。实际执行命令时可能会产生更多日志。",
     "theProblem": "问题所在"
   },
   "contactModal": {
@@ -347,6 +348,13 @@
     "pageDescription": "获取关于新功能、自托管指南和基础设施技巧的每月更新。",
     "pageTitle": "保持关注",
     "placeholder": "您的电子邮件地址",
+    "returnPopup": {
+      "close": "关闭弹窗",
+      "cta": "订阅并预约",
+      "description": "订阅产品更新，并预约与我们团队的实时部署指导。",
+      "note": "我们会使用您的邮箱发送产品更新。您可随时取消订阅。",
+      "title": "想要一次引导式演示吗？"
+    },
     "roiGate": {
       "description": "输入您的电子邮件以解锁完整的成本分析和节省报告。",
       "title": "获取详细的投资回报率报告",
@@ -11493,7 +11501,7 @@
       "sections": {
         "bridge": {
           "content": [
-            "Rediacc Bridge (Renet) 使用带有gzip压缩OTLP导出的OpenTelemetry。遥测数据以批次（最多10个span，每5秒刷新）传输至<code>www.rediacc.com/otlp/v1/traces</code>。"
+            "Rediacc Bridge (Renet) 使用带有gzip压缩OTLP导出的OpenTelemetry。遥测数据以批次（最多10个span，每5秒刷新）传输至<code>rediacc.com</code>。"
           ],
           "id": "bridge",
           "subsections": {
@@ -11609,9 +11617,7 @@
           "title": "3. 收集的法律依据"
         },
         "middleware": {
-          "content": [
-            "Rediacc中间件收集运营遥测数据。遥测数据传输至<code>https://www.rediacc.com/otlp/v1/traces</code>。"
-          ],
+          "content": ["Rediacc中间件收集运营遥测数据。遥测数据传输至<code>rediacc.com</code>。"],
           "id": "middleware",
           "subsections": {
             "middlewareDataCollected": {

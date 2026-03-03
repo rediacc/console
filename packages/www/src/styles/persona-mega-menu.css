@@ -16,8 +16,8 @@
   cursor: pointer;
   font-family: inherit;
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   white-space: nowrap;
   transition: color 0.2s ease;
   padding: 0;

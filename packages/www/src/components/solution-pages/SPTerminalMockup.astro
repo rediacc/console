@@ -1,4 +1,7 @@
 ---
+import { createTranslator } from '../../i18n/utils';
+import type { Language } from '../../i18n/types';
+
 interface TerminalLine {
   type: 'command' | 'check' | 'spacer' | 'success' | 'summary' | 'comment' | 'warn' | 'table-header' | 'table-row';
   prompt?: string;
@@ -12,12 +15,15 @@ interface TerminalLine {
 
 interface Props {
   lines: TerminalLine[];
+  lang?: Language;
 }
 
-const { lines } = Astro.props;
+const { lines, lang = 'en' } = Astro.props;
+const { t } = createTranslator(lang);
 ---
 
-<div class="sp-hero-visual">
+<div class="sp-terminal-wrapper">
+  <div class="sp-hero-visual">
   <div class="sp-hero-visual-titlebar">
     <div class="sp-hero-visual-dot red"></div>
     <div class="sp-hero-visual-dot yellow"></div>
@@ -79,4 +85,8 @@ const { lines } = Astro.props;
       return null;
     })}
   </div>
+  </div>
+  <p class="sp-terminal-disclaimer">
+    <span aria-hidden="true">*</span> {t('common.terminalSimulationDisclaimer')}
+  </p>
 </div>

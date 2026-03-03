@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { CATEGORY_ICONS } from './CategoryIcons';
+import TerminalPlayer from './TerminalPlayer';
 import { SOLUTION_PAGES, CATEGORY_ORDER } from '../config/solution-pages';
 import { useTranslation } from '../i18n/react';
 import type { SolutionCategory } from '../config/solution-pages';
@@ -29,10 +30,19 @@ const FeatureShowcase: React.FC<FeatureShowcaseProps> = ({ lang = 'en' }) => {
               | undefined;
             return { slug, title: content?.hero?.title ?? slug };
           });
+        const tutorialByCategory: Record<string, string> = {
+          ransomware: '/assets/tutorials/backup-tutorial.cast',
+          'multi-cloud': '/assets/tutorials/ops-tutorial.cast',
+          backups: '/assets/tutorials/monitoring-tutorial.cast',
+          encryption: '/assets/tutorials/tools-tutorial.cast',
+          'dev-env': '/assets/tutorials/setup-tutorial.cast',
+          defense: '/assets/tutorials/repos-tutorial.cast',
+        };
         return {
           key: cat,
           label: t(`solutions.categories.${cat}`),
           description: t(`featureShowcase.categoryDescriptions.${cat}`),
+          tutorialSrc: tutorialByCategory[cat],
           solutions,
           Icon: CATEGORY_ICONS[cat as SolutionCategory],
         };
@@ -82,6 +92,9 @@ const FeatureShowcase: React.FC<FeatureShowcaseProps> = ({ lang = 'en' }) => {
           </div>
           <div className="feature-tab-panel" role="tabpanel" id={`feature-panel-${active.key}`}>
             <p className="feature-tab-description">{active.description}</p>
+            <div className="feature-tab-media">
+              <TerminalPlayer src={active.tutorialSrc} />
+            </div>
             <ul className="feature-tab-solutions">
               {active.solutions.map((s) => (
                 <li key={s.slug}>

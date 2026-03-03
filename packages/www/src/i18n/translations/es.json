@@ -77,6 +77,7 @@
       "skipToMainContent": "Saltar al contenido principal",
       "skipToNavigation": "Saltar a navegación"
     },
+    "terminalSimulationDisclaimer": "La salida de comandos es ilustrativa y está abreviada para facilitar la lectura. La ejecución real puede generar registros adicionales.",
     "theProblem": "El problema"
   },
   "contactModal": {
@@ -352,6 +353,13 @@
     "pageDescription": "Recibe actualizaciones mensuales sobre nuevas funciones, guías de autoalojamiento y consejos de infraestructura.",
     "pageTitle": "Mantente al día",
     "placeholder": "Tu dirección de correo electrónico",
+    "returnPopup": {
+      "close": "Cerrar ventana",
+      "cta": "Suscribirme y reservar cita",
+      "description": "Suscríbete para recibir novedades del producto y reserva una cita de configuración en vivo con nuestro equipo.",
+      "note": "Usamos tu correo para enviar actualizaciones del producto. Puedes darte de baja en cualquier momento.",
+      "title": "¿Quieres una guía guiada?"
+    },
     "roiGate": {
       "description": "Ingresa tu correo electrónico para desbloquear el desglose completo de costos y el análisis de ahorro.",
       "title": "Obtén tu informe detallado de ROI",
@@ -11549,7 +11557,7 @@
       "sections": {
         "bridge": {
           "content": [
-            "El Bridge de Rediacc (Renet) utiliza OpenTelemetry con exportación OTLP comprimida con gzip. La telemetría se transmite a <code>www.rediacc.com/otlp/v1/traces</code> en lotes (máximo 10 spans, vaciados cada 5 segundos)."
+            "El Bridge de Rediacc (Renet) utiliza OpenTelemetry con exportación OTLP comprimida con gzip. La telemetría se transmite a <code>rediacc.com</code> en lotes (máximo 10 spans, vaciados cada 5 segundos)."
           ],
           "id": "bridge",
           "subsections": {
@@ -11670,7 +11678,7 @@
         },
         "middleware": {
           "content": [
-            "El Middleware de Rediacc recopila telemetría operativa. La telemetría se transmite a <code>https://www.rediacc.com/otlp/v1/traces</code>."
+            "El Middleware de Rediacc recopila telemetría operativa. La telemetría se transmite a <code>rediacc.com</code>."
           ],
           "id": "middleware",
           "subsections": {

@@ -55,9 +55,9 @@ const plans = PLAN_ORDER.map((code) => ({
           <ul class="cf-features">
             {technicalMetrics.map((metric: any) => (
               <li>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-                </svg>
+                <span class="cf-feature-info" data-tooltip={metric.label} aria-label={metric.label} tabindex="0">
+                  i
+                </span>
                 <span><strong>{technicalValues?.[plan.id]?.[metric.key] ?? '—'}</strong> {metric.label}</span>
               </li>
             ))}
@@ -72,21 +72,11 @@ const plans = PLAN_ORDER.map((code) => ({
             >
               {t('pages.pricing.ui.cta.community.primary')}
             </a>
-          ) : plan.id === 'enterprise' ? (
+          ) : (
             <a
               href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION}
               target="_blank"
               rel="noopener noreferrer"
-              class="cf-cta-btn"
-              data-track="cta_click"
-              data-track-label="pricing-cta"
-              data-track-dest={plan.id}
-            >
-              {t('pages.pricing.ui.cta.enterprise.primary')}
-            </a>
-          ) : (
-            <a
-              href={`/${lang}/install`}
               class="cf-cta-btn"
               data-track="cta_click"
               data-track-label="pricing-cta"

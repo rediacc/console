@@ -2,6 +2,7 @@
 import Navigation from '../components/Navigation';
 import ContactModal from '../components/ContactModal';
 import Footer from '../components/Footer';
+import NewsletterReturnPopup from '../components/NewsletterReturnPopup';
 import StructuredData from '../components/StructuredData.astro';
 import { createTranslator } from '../i18n/utils';
 import { getLanguageFromPath, getPathWithoutLanguage, SUPPORTED_LANGUAGES, getLocale } from '../i18n/language-utils';
@@ -177,9 +178,10 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
         if (cookieLang && cookieLang !== currentLang && SUPPORTED_LANGUAGES.includes(cookieLang)) {
           // Build new URL with cookie language
           const newPath = cookieLang === 'en' ? pathWithoutLang : `/${cookieLang}${pathWithoutLang}`;
+          const newUrl = `${newPath}${window.location.search}${window.location.hash}`;
 
           // Redirect to the preferred language
-          window.location.href = newPath;
+          window.location.replace(newUrl);
         }
       })();
     </script>
@@ -421,6 +423,7 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
         <slot />
     </main>
     <ContactModal client:load />
+    <NewsletterReturnPopup client:load />
     <Footer client:visible />
     <script src="/scripts/main.js" is:inline></script>
     <script src="/scripts/contact-interceptor.js" is:inline></script>

@@ -191,6 +191,25 @@
   margin-bottom: var(--space-4);
 }
 
+/* ─── Variant: Modal ─────────────────────────────────────────────── */
+
+.newsletter-modal .newsletter-heading {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  line-height: 1.2;
+}
+
+.newsletter-modal .newsletter-description {
+  margin-bottom: var(--space-4);
+}
+
+.newsletter-modal .newsletter-input-group {
+  flex-direction: column;
+}
+
+.newsletter-modal .newsletter-button {
+  width: 100%;
+}
+
 /* ─── Variant: Sticky bar ────────────────────────────────────────── */
 
 .newsletter-sticky-bar {
@@ -292,5 +311,68 @@
 
   .newsletter-sticky-bar .newsletter-form {
     flex-direction: column;
+  }
+}
+
+/* ─── Return Popup ────────────────────────────────────────────────── */
+
+.newsletter-return-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal, 1000);
+  background: color-mix(in srgb, var(--color-text) 35%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+}
+
+.newsletter-return-popup-card {
+  width: min(100%, 36rem);
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl, 1rem);
+  padding: var(--space-8);
+  box-shadow:
+    0 12px 36px rgba(0, 0, 0, 0.22),
+    0 2px 10px rgba(0, 0, 0, 0.12);
+  position: relative;
+}
+
+.newsletter-return-popup-close {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: 9999px;
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.newsletter-return-popup-close:hover {
+  color: var(--color-text);
+}
+
+.newsletter-return-popup-close:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
+.newsletter-return-popup-note {
+  margin-top: var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--leading-relaxed);
+}
+
+@media (max-width: 47.99rem) {
+  .newsletter-return-popup-card {
+    padding: var(--space-6);
   }
 }

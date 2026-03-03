@@ -77,6 +77,7 @@
       "skipToMainContent": "Ana içeriğe atla",
       "skipToNavigation": "Navigasyona atla"
     },
+    "terminalSimulationDisclaimer": "Komut çıktısı yalnızca bilgilendirme amaçlıdır ve okunabilirlik için kısaltılmıştır. Gerçek komut çalıştırmasında ek günlükler üretilebilir.",
     "theProblem": "Sorun"
   },
   "contactModal": {
@@ -352,6 +353,13 @@
     "pageDescription": "Yeni özellikler, kendi sunucunuzda barındırma kılavuzları ve altyapı ipuçları hakkında aylık güncellemeler alın.",
     "pageTitle": "Güncel Kalın",
     "placeholder": "E-posta adresiniz",
+    "returnPopup": {
+      "close": "Pencereyi kapat",
+      "cta": "Abone Ol ve Randevu Al",
+      "description": "Ürün güncellemelerine abone olun ve ekibimizle canlı kurulum randevusu alın.",
+      "note": "E-posta adresinizi ürün güncellemeleri göndermek için kullanırız. İstediğiniz zaman abonelikten çıkabilirsiniz.",
+      "title": "Yönlendirmeli bir tanıtım ister misiniz?"
+    },
     "roiGate": {
       "description": "Tam maliyet dökümü ve tasarruf analizini açmak için e-posta adresinizi girin.",
       "title": "Ayrıntılı ROI raporunuzu alın",
@@ -11543,7 +11551,7 @@
       "sections": {
         "bridge": {
           "content": [
-            "Rediacc Bridge (Renet), gzip sıkıştırmalı OTLP dışa aktarımı ile OpenTelemetry kullanır. Telemetri, toplu halde (maksimum 10 span, her 5 saniyede temizlenir) <code>www.rediacc.com/otlp/v1/traces</code> adresine iletilir."
+            "Rediacc Bridge (Renet), gzip sıkıştırmalı OTLP dışa aktarımı ile OpenTelemetry kullanır. Telemetri, toplu halde (maksimum 10 span, her 5 saniyede temizlenir) <code>rediacc.com</code> adresine iletilir."
           ],
           "id": "bridge",
           "subsections": {
@@ -11664,7 +11672,7 @@
         },
         "middleware": {
           "content": [
-            "Rediacc Middleware, operasyonel telemetri toplar. Telemetri <code>https://www.rediacc.com/otlp/v1/traces</code> adresine iletilir."
+            "Rediacc Middleware, operasyonel telemetri toplar. Telemetri <code>rediacc.com</code> adresine iletilir."
           ],
           "id": "middleware",
           "subsections": {

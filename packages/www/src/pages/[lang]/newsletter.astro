@@ -31,50 +31,64 @@ const breadcrumbItems = [
     <div class="newsletter-page-container">
       <Breadcrumb items={breadcrumbItems} />
 
-      {confirmed && (
-        <div class="newsletter-banner newsletter-banner-success" role="status">
-          <svg class="newsletter-banner-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-          </svg>
-          <p>{t('newsletter.confirmed')}</p>
+      <div
+        id="newsletter-confirmed-banner"
+        class="newsletter-banner newsletter-banner-success"
+        role="status"
+        hidden={!confirmed}
+      >
+        <svg class="newsletter-banner-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+        </svg>
+        <p>{t('newsletter.confirmed')}</p>
+      </div>
+
+      <div
+        id="newsletter-unsubscribed-banner"
+        class="newsletter-banner newsletter-banner-info"
+        role="status"
+        hidden={!unsubscribed}
+      >
+        <p>{t('newsletter.unsubscribed')}</p>
+      </div>
+
+      <div id="newsletter-page-content" class="newsletter-page-content" hidden={confirmed || unsubscribed}>
+        <NewsletterSignup client:load variant="page" source="newsletter-page" />
+
+        <div class="newsletter-expectations">
+          <h3 class="newsletter-expectations-title">{t('pages.newsletter.expectations.title')}</h3>
+          <ul class="newsletter-expectations-list">
+            {(ta('pages.newsletter.expectations.items') as string[]).map((item: string) => (
+              <li>{item}</li>
+            ))}
+          </ul>
         </div>
-      )}
 
-      {unsubscribed && (
-        <div class="newsletter-banner newsletter-banner-info" role="status">
-          <p>{t('newsletter.unsubscribed')}</p>
+        <div class="newsletter-guarantees">
+          <p>{t('pages.newsletter.frequency')}</p>
+          <p>{t('pages.newsletter.privacy')}</p>
         </div>
-      )}
-
-      {!confirmed && !unsubscribed && (
-        <div class="newsletter-page-content">
-          <NewsletterSignup client:load variant="page" source="newsletter-page" />
-
-          <div class="newsletter-expectations">
-            <h3 class="newsletter-expectations-title">{t('pages.newsletter.expectations.title')}</h3>
-            <ul class="newsletter-expectations-list">
-              {(ta('pages.newsletter.expectations.items') as string[]).map((item: string) => (
-                <li>{item}</li>
-              ))}
-            </ul>
-          </div>
-
-          <div class="newsletter-guarantees">
-            <p>{t('pages.newsletter.frequency')}</p>
-            <p>{t('pages.newsletter.privacy')}</p>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   </section>
 
-  {confirmed && (
-    <script is:inline>
-      if (window.plausible) {
-        window.plausible('newsletter_confirm');
-      }
-    </script>
-  )}
+  <script is:inline>
+    const params = new URLSearchParams(window.location.search);
+    const isConfirmed = params.get('confirmed') === 'true';
+    const isUnsubscribed = params.get('unsubscribed') === 'true';
+
+    const confirmedBanner = document.getElementById('newsletter-confirmed-banner');
+    const unsubscribedBanner = document.getElementById('newsletter-unsubscribed-banner');
+    const content = document.getElementById('newsletter-page-content');
+
+    if (confirmedBanner) confirmedBanner.hidden = !isConfirmed;
+    if (unsubscribedBanner) unsubscribedBanner.hidden = !isUnsubscribed;
+    if (content) content.hidden = isConfirmed || isUnsubscribed;
+
+    if (isConfirmed && window.plausible) {
+      window.plausible('newsletter_confirm');
+    }
+  </script>
 </BaseLayout>
 
 <style>

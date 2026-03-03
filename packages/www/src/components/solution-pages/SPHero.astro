@@ -1,7 +1,9 @@
 ---
+import type { Language } from '../../i18n/types';
 import SPTerminalMockup from './SPTerminalMockup.astro';
 
 interface Props {
+  lang: Language;
   hero: {
     badge: string;
     title: string;
@@ -16,7 +18,7 @@ interface Props {
   };
 }
 
-const { hero, ctaHref, terminal } = Astro.props;
+const { lang, hero, ctaHref, terminal } = Astro.props;
 ---
 
 <section class="sp-hero">
@@ -39,6 +41,6 @@ const { hero, ctaHref, terminal } = Astro.props;
         <a href="#problem" class="sp-btn-secondary-dark">{hero.secondaryCta} &rarr;</a>
       )}
     </div>
-    {terminal && <SPTerminalMockup lines={terminal.lines} />}
+    {terminal && <SPTerminalMockup lines={terminal.lines} lang={lang} />}
   </div>
 </section>

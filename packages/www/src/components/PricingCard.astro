@@ -35,7 +35,7 @@ const priceDisplay = plan.id === 'enterprise'
   : plan.price;
 
 // Plans that use Stripe Checkout instead of consultation links
-const checkoutPlans = new Set(['professional', 'business']);
+const checkoutPlans = new Set(['professional']);
 
 // Tier-specific CTAs
 const getPrimaryCta = (planId: string) => {

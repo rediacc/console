@@ -290,6 +290,17 @@
   white-space: pre;
   font-size: 13px;
 }
+.sp-terminal-wrapper {
+  max-width: 900px;
+  margin: 0 auto;
+}
+.sp-terminal-disclaimer {
+  margin: 8px 0 0;
+  color: #8f9399;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: left;
+}
 .sp-terminal-cursor {
   display: inline-block;
   width: 8px;

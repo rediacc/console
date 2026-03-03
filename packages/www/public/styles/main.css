@@ -724,8 +724,8 @@ a[target='_blank']::after {
 
 .nav-link {
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   text-decoration: none;
   white-space: nowrap;
   transition: color var(--transition-duration-base) ease;
@@ -957,10 +957,10 @@ a[target='_blank']::after {
 .nav-cta-btn {
   display: none;
   text-decoration: none;
-  color: var(--color-white);
+  color: #fff;
   background: var(--color-brand-primary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-md);
   white-space: nowrap;

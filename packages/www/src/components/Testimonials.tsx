@@ -5,9 +5,6 @@ import type { Language } from '../i18n/types';
 interface TestimonialItem {
   role: string;
   quote: string;
-  name?: string;
-  company?: string;
-  avatar?: string;
 }
 
 interface TestimonialsProps {
@@ -35,27 +32,8 @@ const Testimonials: React.FC<TestimonialsProps> = ({ lang = 'en' }) => {
             >
               <blockquote className="testimonial-quote">&ldquo;{item.quote}&rdquo;</blockquote>
               <div className="testimonial-author">
-                {item.avatar ? (
-                  <img
-                    src={item.avatar}
-                    alt=""
-                    className="testimonial-avatar-img"
-                    width="40"
-                    height="40"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : (
-                  <div className="testimonial-avatar" aria-hidden="true">
-                    {(item.name ?? item.role).charAt(0)}
-                  </div>
-                )}
                 <div className="testimonial-meta">
-                  {item.name && <span className="testimonial-name">{item.name}</span>}
-                  <span className="testimonial-role">
-                    {item.role}
-                    {item.company && <>, {item.company}</>}
-                  </span>
+                  <span className="testimonial-role">{item.role}</span>
                 </div>
               </div>
             </div>

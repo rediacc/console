@@ -3,18 +3,29 @@ import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
 import '../styles/newsletter.css';
 
-type Variant = 'inline' | 'footer' | 'sticky-bar' | 'page';
+type Variant = 'inline' | 'footer' | 'sticky-bar' | 'page' | 'modal';
 
 interface Props {
   variant: Variant;
   source: string;
   title?: string;
   description?: string;
+  onSuccess?: () => void;
+  ctaLabel?: string;
+  openOnSuccessUrl?: string;
 }
 
 type FormState = 'idle' | 'loading' | 'success' | 'error';
 
-const NewsletterSignup: React.FC<Props> = ({ variant, source, title, description }) => {
+const NewsletterSignup: React.FC<Props> = ({
+  variant,
+  source,
+  title,
+  description,
+  onSuccess,
+  ctaLabel,
+  openOnSuccessUrl,
+}) => {
   const [state, setState] = useState<FormState>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -28,6 +39,9 @@ const NewsletterSignup: React.FC<Props> = ({ variant, source, title, description
 
     setState('loading');
     setErrorMsg('');
+    if (openOnSuccessUrl) {
+      window.open(openOnSuccessUrl, '_blank', 'noopener,noreferrer');
+    }
 
     try {
       const res = await fetch(`${window.location.origin}/account/api/v1/newsletter/subscribe`, {
@@ -42,6 +56,7 @@ const NewsletterSignup: React.FC<Props> = ({ variant, source, title, description
       }
 
       setState('success');
+      onSuccess?.();
       const utm =
         (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ??
         {};
@@ -81,7 +96,7 @@ const NewsletterSignup: React.FC<Props> = ({ variant, source, title, description
 
   return (
     <div className={`newsletter-signup newsletter-${variant}`}>
-      {(variant === 'inline' || variant === 'page') && (
+      {(variant === 'inline' || variant === 'page' || variant === 'modal') && (
         <div className="newsletter-header">
           <h3 className="newsletter-heading">{heading}</h3>
           <p className="newsletter-description">{desc}</p>
@@ -110,7 +125,7 @@ const NewsletterSignup: React.FC<Props> = ({ variant, source, title, description
             {state === 'loading' ? (
               <span className="newsletter-spinner" aria-hidden="true" />
             ) : (
-              t('newsletter.subscribe')
+              (ctaLabel ?? t('newsletter.subscribe'))
             )}
           </button>
         </div>

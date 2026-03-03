@@ -51,7 +51,8 @@
     "theProblem": "The Problem",
     "contentNotAvailable": "This content is not available in {{language}}. Showing English version.",
     "exploreSolutions": "Explore Other Solutions",
-    "platformPreview": "Platform Preview"
+    "platformPreview": "Platform Preview",
+    "terminalSimulationDisclaimer": "Command output is illustrative and abbreviated for readability. Actual command execution may produce additional logs."
   },
   "navigation": {
     "home": "Home",
@@ -186,7 +187,7 @@
   },
   "solutions": {
     "title": "How We Ensure Business Continuity",
-    "subtitle": "19 solutions across six focus areas — from ransomware survival to preemptive defense.",
+    "subtitle": "Solutions across six focus areas — from ransomware survival to preemptive defense.",
     "categories": {
       "ransomware": "Ransomware Survival",
       "multi-cloud": "Multi-Cloud",
@@ -198,7 +199,7 @@
   },
   "featureShowcase": {
     "title": "What You Can Do with Rediacc",
-    "subtitle": "19 solutions across six focus areas — from ransomware survival to preemptive defense.",
+    "subtitle": "Solutions across six focus areas — from ransomware survival to preemptive defense.",
     "categoryDescriptions": {
       "ransomware": "Tamper-proof, cryptographically verified backups that ransomware cannot touch. Recover your entire stack in under 60 seconds.",
       "multi-cloud": "Move your infrastructure between providers with zero vendor lock-in. Instant failover, tested disaster recovery, cloud-agnostic portability.",
@@ -242,15 +243,11 @@
       {
         "number": "< 1 min",
         "label": "Recovery Time"
-      },
-      {
-        "number": "9",
-        "label": "Languages"
       }
     ]
   },
   "integrations": {
-    "title": "Works with your stack",
+    "title": "Works with your stack and beyond",
     "items": [
       "Docker",
       "PostgreSQL",
@@ -267,7 +264,7 @@
     ]
   },
   "pricingPreview": {
-    "title": "Simple, Transparent Pricing",
+    "title": "Pricing You Can Defend in a Postmortem",
     "subtitle": "Free to start. Scale when you're ready.",
     "compareAll": "Compare all plans and features"
   },
@@ -381,6 +378,13 @@
       "title": "Get your detailed ROI report",
       "description": "Enter your email to unlock the full cost breakdown and savings analysis.",
       "unlock": "Unlock Report"
+    },
+    "returnPopup": {
+      "title": "Want a guided walkthrough?",
+      "description": "Subscribe for product updates and book a live setup appointment with our team.",
+      "cta": "Subscribe & Book Appointment",
+      "close": "Close popup",
+      "note": "We use your email to send product updates. You can unsubscribe at any time."
     }
   },
   "contactModal": {
@@ -597,12 +601,12 @@
     },
     "pricing": {
       "meta": {
-        "title": "Pricing | Simple, Transparent Plans",
+        "title": "Pricing | Built for Real Operations",
         "description": "Choose the right plan for your business. From free community access to enterprise-grade infrastructure. No hidden fees.",
         "keywords": "pricing, infrastructure automation, CI/CD pricing, DevOps plans, task execution"
       },
       "hero": {
-        "title": "Simple, Transparent Pricing",
+        "title": "Built for Real Operations",
         "subtitle": "Choose the plan that fits your team. Simple pricing, no hidden fees, cancel anytime."
       },
       "plans": {
@@ -837,7 +841,7 @@
               ]
             },
             {
-              "planId": "pro",
+              "planId": "professional",
               "included": [
                 "Email support",
                 "Standard onboarding session (setup call and configuration walkthrough)"
@@ -2076,7 +2080,7 @@
           "id": "web-app",
           "title": "4. Web Application Telemetry",
           "content": [
-            "The Rediacc Web Application uses OpenTelemetry-based distributed tracing. Telemetry is transmitted to <code>https://www.rediacc.com/otlp</code>. In production, only <strong>10% of sessions</strong> are sampled."
+            "The Rediacc Web Application uses OpenTelemetry-based distributed tracing. Telemetry is transmitted to <code>rediacc.com</code>. In production, only <strong>10% of sessions</strong> are sampled."
           ],
           "subsections": {
             "webDataCollected": {
@@ -2118,7 +2122,7 @@
           "id": "cli",
           "title": "5. CLI Telemetry",
           "content": [
-            "The Rediacc CLI uses the OpenTelemetry Node SDK. Telemetry is transmitted to <code>https://www.rediacc.com/otlp</code>."
+            "The Rediacc CLI uses the OpenTelemetry Node SDK. Telemetry is transmitted to <code>rediacc.com</code>."
           ],
           "subsections": {
             "cliDataCollected": {
@@ -2148,7 +2152,7 @@
           "id": "middleware",
           "title": "6. Middleware Telemetry",
           "content": [
-            "The Rediacc Middleware collects operational telemetry. Telemetry is transmitted to <code>https://www.rediacc.com/otlp/v1/traces</code>."
+            "The Rediacc Middleware collects operational telemetry. Telemetry is transmitted to <code>rediacc.com</code>."
           ],
           "subsections": {
             "middlewareDataCollected": {
@@ -2176,7 +2180,7 @@
           "id": "bridge",
           "title": "7. Bridge (Renet) Telemetry",
           "content": [
-            "The Rediacc Bridge (Renet) uses OpenTelemetry with gzip-compressed OTLP export. Telemetry is transmitted to <code>www.rediacc.com/otlp/v1/traces</code> in batches (maximum 10 spans, flushed every 5 seconds)."
+            "The Rediacc Bridge (Renet) uses OpenTelemetry with gzip-compressed OTLP export. Telemetry is transmitted to <code>rediacc.com</code> in batches (maximum 10 spans, flushed every 5 seconds)."
           ],
           "subsections": {
             "bridgeDataCollected": {
@@ -2273,7 +2277,7 @@
         "keywords": "disaster recovery pricing, backup pricing, business continuity plans, infrastructure protection, ransomware recovery"
       },
       "hero": {
-        "title": "Simple, Transparent Pricing",
+        "title": "Built for Real Recovery Operations",
         "subtitle": "Choose the disaster recovery tier that protects your infrastructure today and scales as you grow."
       },
       "plans": {
@@ -2544,7 +2548,7 @@
               ]
             },
             {
-              "planId": "pro",
+              "planId": "professional",
               "included": [
                 "Email support",
                 "Standard onboarding session (setup call and configuration walkthrough)"
