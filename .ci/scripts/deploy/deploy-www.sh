@@ -67,6 +67,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [assets]
 directory = "./dist"
+binding = "ASSETS"
 not_found_handling = "404-page"
 run_worker_first = ["/account", "/account/*"]
 
