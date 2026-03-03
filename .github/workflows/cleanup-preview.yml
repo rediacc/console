@@ -39,6 +39,16 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
+      - name: Cleanup preview D1 database
+        run: |
+          DB_NAME="account-db-pr-${{ github.event.pull_request.number }}"
+          npx wrangler d1 delete "$DB_NAME" --skip-confirmation 2>/dev/null \
+            && echo "Deleted D1 database: $DB_NAME" \
+            || echo "D1 database $DB_NAME not found (already deleted or never created)"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+
       - name: Cleanup Stripe sandbox
         run: npx tsx scripts/cleanup-sandbox.ts --pr-number ${{ github.event.pull_request.number }}
         working-directory: private/account

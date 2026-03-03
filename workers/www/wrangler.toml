@@ -15,7 +15,7 @@ run_worker_first = ["/account", "/account/*"]
 [[d1_databases]]
 binding = "DB"
 database_name = "account-db"
-database_id = "placeholder"
+database_id = "198e819d-8dfe-4304-a6be-3e1ca1f2c22b"
 migrations_dir = "../../private/account/drizzle"
 
 # All account service configuration set via `wrangler secret put` in CI.
