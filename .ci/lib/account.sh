@@ -282,11 +282,11 @@ account_dev() {
 
     # Start gateway (foreground — keeps terminal alive)
     log_step "Starting dev gateway on :${GATEWAY_PORT}..."
-    (cd "$ACCOUNT_DIR" && \
+    (cd "$ACCOUNT_DIR" &&
         GATEWAY_PORT=$GATEWAY_PORT \
-        VITE_PORT=$VITE_PORT \
-        ASTRO_PORT=$ASTRO_PORT \
-        npx tsx src/entry/dev-gateway.ts)
+            VITE_PORT=$VITE_PORT \
+            ASTRO_PORT=$ASTRO_PORT \
+            npx tsx src/entry/dev-gateway.ts)
 }
 
 account_stop() {
