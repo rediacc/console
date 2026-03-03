@@ -38,7 +38,8 @@ function initSmoothScrolling() {
         const cssNavHeight = Number.isNaN(parsedNavHeight) ? undefined : parsedNavHeight;
         let headerHeight = navEl?.getBoundingClientRect().height ?? cssNavHeight;
         headerHeight ??= FALLBACK_NAV_HEIGHT;
-        const targetPosition = targetElement.getBoundingClientRect().top + window.scrollY - headerHeight - 20;
+        const targetPosition =
+          targetElement.getBoundingClientRect().top + window.scrollY - headerHeight - 20;
 
         window.scrollTo({
           top: targetPosition,
