@@ -29,7 +29,7 @@ rdc subscription login
 | Option | Erforderlich | Standard | Beschreibung |
 |--------|----------|---------|-------------|
 | `-t, --token <token>` | Nein | - | API-Token (überspringt Browser-Flow) |
-| `--server <url>` | Nein | `https://account.rediacc.com` | Account-Server-URL |
+| `--server <url>` | Nein | `https://www.rediacc.com/account/` | Account-Server-URL |
 
 ## Status prüfen
 

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: cf186b18b0c50eba
+sourceHash: "4cc40d3db5384f5d"
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -139,7 +139,7 @@ rdc backup schedule show
 Bir depolama konumunun içeriğini tarayın:
 
 ```bash
-rdc storage browse my-storage -m server-1
+rdc storage browse my-storage
 ```
 
 ## En İyi Uygulamalar

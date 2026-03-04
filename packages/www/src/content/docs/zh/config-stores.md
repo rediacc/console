@@ -4,7 +4,7 @@ description: "管理 CLI 配置文件，并与 Git、Bitwarden、S3、HashiCorp 
 category: "Guides"
 order: 8
 language: zh
-sourceHash: "ed28acf48284b9dc"
+sourceHash: "3fbe3184cc4d799a"
 ---
 
 # 配置与存储
@@ -23,11 +23,11 @@ rdc config show
 rdc config init production
 
 # Use a specific config for a command
-rdc --config production machine info prod-1
+rdc --config production machine status prod-1
 
 # Or set via environment variable
 export REDIACC_CONFIG=production
-rdc machine info prod-1
+rdc machine status prod-1
 ```
 
 每个配置文件包含：

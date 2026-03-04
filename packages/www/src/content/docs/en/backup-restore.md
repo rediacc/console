@@ -4,6 +4,7 @@ description: "Back up encrypted repositories to external storage, restore from b
 category: "Guides"
 order: 7
 language: en
+sourceHash: "4cc40d3db5384f5d"
 ---
 
 # Backup & Restore
@@ -136,7 +137,7 @@ rdc backup schedule show
 Browse the contents of a storage location:
 
 ```bash
-rdc storage browse my-storage -m server-1
+rdc storage browse my-storage
 ```
 
 ## Best Practices

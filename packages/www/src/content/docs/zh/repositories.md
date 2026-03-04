@@ -4,7 +4,7 @@ description: 在远程机器上创建、管理和操作 LUKS 加密仓库。
 category: Guides
 order: 4
 language: zh
-sourceHash: 04fe287348176b64
+sourceHash: "8e778715b28247a9"
 ---
 
 # 仓库
@@ -102,16 +102,14 @@ rdc repo ownership my-app -m server-1
 | 选项 | 描述 |
 |------|------|
 | `--uid <uid>` | 设置自定义 UID，而非默认的 7111 |
-| `--force` | 跳过 Docker 卷检测，对所有文件执行 chown |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 强制对所有文件（包括容器数据）设置所有权：
 
 ```bash
-rdc repo ownership my-app -m server-1 --force
+rdc repo ownership my-app -m server-1
 ```
 
-> **警告：**对运行中的容器使用 `--force` 可能会导致容器损坏。如有需要，请先使用 `rdc repo down` 停止服务。
 
 有关迁移过程中何时以及如何使用所有权命令的完整说明，请参阅[迁移指南](/zh/docs/migration)。
 

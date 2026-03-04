@@ -4,7 +4,7 @@ description: "将现有项目迁移到加密的 Rediacc 仓库中。"
 category: "Guides"
 order: 11
 language: zh
-sourceHash: "5064d721c8cf32ff"
+sourceHash: "feb1fcafc824b4b2"
 ---
 
 # 迁移指南
@@ -83,7 +83,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 要跳过 Docker 卷检测并更改所有内容的所有权，包括容器数据目录：
 
 ```bash
-rdc repo ownership my-project -m server-1 --force
+rdc repo ownership my-project -m server-1
 ```
 
 > **警告：** 这可能会破坏正在运行的容器。如有需要，请先使用 `rdc repo down` 停止容器。
@@ -304,7 +304,7 @@ rdc term server-1 my-project -c "docker logs <container-name>"
 
 ### 所有权修复破坏了容器
 
-如果您运行了 `rdc repo ownership --force` 并且容器停止工作，则容器的数据文件已被更改。停止容器，删除其数据目录，然后重新启动 — 容器将重新创建它：
+如果您运行了 `rdc repo ownership` 并且容器停止工作，则容器的数据文件已被更改。停止容器，删除其数据目录，然后重新启动 — 容器将重新创建它：
 
 ```bash
 rdc repo down my-project -m server-1

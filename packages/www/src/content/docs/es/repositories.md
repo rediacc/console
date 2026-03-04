@@ -4,7 +4,7 @@ description: 'Cree, gestione y opere repositorios cifrados con LUKS en máquinas
 category: Guides
 order: 4
 language: es
-sourceHash: 04fe287348176b64
+sourceHash: "8e778715b28247a9"
 ---
 
 # Repositorios
@@ -102,16 +102,14 @@ El comando detecta automáticamente los directorios de datos de contenedores Doc
 | Opción | Descripción |
 |--------|-------------|
 | `--uid <uid>` | Establecer un UID personalizado en lugar de 7111 |
-| `--force` | Omitir la detección de volúmenes Docker y cambiar la propiedad de todo |
 | `--skip-router-restart` | Omitir el reinicio del servidor de rutas después de la operación |
 
 Para forzar la propiedad en todos los archivos, incluyendo datos de contenedores:
 
 ```bash
-rdc repo ownership my-app -m server-1 --force
+rdc repo ownership my-app -m server-1
 ```
 
-> **Advertencia:** Usar `--force` en contenedores en ejecución puede romperlos. Detenga los servicios primero con `rdc repo down` si es necesario.
 
 Consulte la [Guía de Migración](/es/docs/migration) para un recorrido completo de cuándo y cómo usar la propiedad durante la migración de proyectos.
 

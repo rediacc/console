@@ -4,7 +4,7 @@ description: "Bestehende Projekte in verschlüsselte Rediacc-Repositories migrie
 category: "Guides"
 order: 11
 language: de
-sourceHash: "5064d721c8cf32ff"
+sourceHash: "feb1fcafc824b4b2"
 ---
 
 # Migrationsleitfaden
@@ -83,7 +83,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 Um die Docker-Volume-Erkennung zu überspringen und alles zu ändern, einschließlich Container-Datenverzeichnissen:
 
 ```bash
-rdc repo ownership my-project -m server-1 --force
+rdc repo ownership my-project -m server-1
 ```
 
 > **Warnung:** Dies kann laufende Container beschädigen. Stoppen Sie sie vorher mit `rdc repo down`, falls nötig.
@@ -304,7 +304,7 @@ Jedes Repository erhält einzigartige Loopback-IPs. Wenn Port-Konflikte auftrete
 
 ### Eigentümerschaftskorrektur beschädigt Container
 
-Wenn Sie `rdc repo ownership --force` ausgeführt haben und ein Container nicht mehr funktioniert, wurden die Datendateien des Containers geändert. Stoppen Sie den Container, löschen Sie sein Datenverzeichnis und starten Sie ihn neu — der Container erstellt es neu:
+Wenn Sie `rdc repo ownership` ausgeführt haben und ein Container nicht mehr funktioniert, wurden die Datendateien des Containers geändert. Stoppen Sie den Container, löschen Sie sein Datenverzeichnis und starten Sie ihn neu — der Container erstellt es neu:
 
 ```bash
 rdc repo down my-project -m server-1

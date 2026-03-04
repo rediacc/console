@@ -29,7 +29,7 @@ rdc subscription login
 | الخيار | مطلوب | الافتراضي | الوصف |
 |--------|----------|---------|-------------|
 | `-t, --token <token>` | لا | - | رمز API (يتخطى تدفق المتصفح) |
-| `--server <url>` | لا | `https://account.rediacc.com` | عنوان خادم الحساب |
+| `--server <url>` | لا | `https://www.rediacc.com/account/` | عنوان خادم الحساب |
 
 ## التحقق من الحالة
 

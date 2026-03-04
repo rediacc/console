@@ -28,7 +28,7 @@ Opens a browser for authentication via the device code flow. After approval, the
 | Option | Required | Default | Description |
 |--------|----------|---------|-------------|
 | `-t, --token <token>` | No | - | API token (skips browser flow) |
-| `--server <url>` | No | `https://account.rediacc.com` | Account server URL |
+| `--server <url>` | No | `https://www.rediacc.com/account/` | Account server URL |
 
 ## Checking Status
 

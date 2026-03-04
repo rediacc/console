@@ -573,7 +573,7 @@ jobs:
           CI_MODE: 'true'
           ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
           ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
-          ACCOUNT_SERVER_URL: "https://account.rediacc.com"
+          ACCOUNT_SERVER_URL: "https://www.rediacc.com/account/"
         run: .ci/scripts/infra/ci-start-elite.sh
 
       - name: Run Health Check

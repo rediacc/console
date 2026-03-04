@@ -4,7 +4,7 @@ description: "Миграция существующих проектов в за
 category: "Guides"
 order: 11
 language: ru
-sourceHash: "5064d721c8cf32ff"
+sourceHash: "feb1fcafc824b4b2"
 ---
 
 # Руководство по миграции
@@ -83,7 +83,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 Чтобы пропустить обнаружение Docker-томов и изменить владельца всего, включая каталоги данных контейнеров:
 
 ```bash
-rdc repo ownership my-project -m server-1 --force
+rdc repo ownership my-project -m server-1
 ```
 
 > **Предупреждение:** Это может повредить работающие контейнеры. Сначала остановите их с помощью `rdc repo down`, если необходимо.
@@ -304,7 +304,7 @@ rdc term server-1 my-project -c "docker logs <container-name>"
 
 ### Исправление владения повредило контейнеры
 
-Если вы выполнили `rdc repo ownership --force` и контейнер перестал работать, файлы данных контейнера были изменены. Остановите контейнер, удалите его каталог данных и перезапустите — контейнер пересоздаст его:
+Если вы выполнили `rdc repo ownership` и контейнер перестал работать, файлы данных контейнера были изменены. Остановите контейнер, удалите его каталог данных и перезапустите — контейнер пересоздаст его:
 
 ```bash
 rdc repo down my-project -m server-1

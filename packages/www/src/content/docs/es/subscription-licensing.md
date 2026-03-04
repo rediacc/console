@@ -29,7 +29,7 @@ Abre un navegador para autenticación mediante el flujo de código de dispositiv
 | Opción | Requerido | Predeterminado | Descripción |
 |--------|----------|---------|-------------|
 | `-t, --token <token>` | No | - | Token de API (omite el flujo del navegador) |
-| `--server <url>` | No | `https://account.rediacc.com` | URL del servidor de cuentas |
+| `--server <url>` | No | `https://www.rediacc.com/account/` | URL del servidor de cuentas |
 
 ## Verificar el estado
 

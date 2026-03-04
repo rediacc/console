@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: ar
-sourceHash: cf186b18b0c50eba
+sourceHash: "4cc40d3db5384f5d"
 ---
 
 # النسخ الاحتياطي والاستعادة
@@ -139,7 +139,7 @@ rdc backup schedule show
 تصفح محتويات موقع تخزين:
 
 ```bash
-rdc storage browse my-storage -m server-1
+rdc storage browse my-storage
 ```
 
 ## أفضل الممارسات

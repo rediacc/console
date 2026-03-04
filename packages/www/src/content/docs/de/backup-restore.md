@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: de
-sourceHash: cf186b18b0c50eba
+sourceHash: "4cc40d3db5384f5d"
 ---
 
 # Backup & Wiederherstellung
@@ -139,7 +139,7 @@ rdc backup schedule show
 Den Inhalt eines Speicherorts durchsuchen:
 
 ```bash
-rdc storage browse my-storage -m server-1
+rdc storage browse my-storage
 ```
 
 ## Bewährte Methoden

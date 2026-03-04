@@ -7,7 +7,7 @@ description: >-
 category: Guides
 order: 7
 language: ru
-sourceHash: cf186b18b0c50eba
+sourceHash: "4cc40d3db5384f5d"
 ---
 
 # Резервное копирование и восстановление
@@ -140,7 +140,7 @@ rdc backup schedule show
 Просмотрите содержимое хранилища:
 
 ```bash
-rdc storage browse my-storage -m server-1
+rdc storage browse my-storage
 ```
 
 ## Лучшие практики

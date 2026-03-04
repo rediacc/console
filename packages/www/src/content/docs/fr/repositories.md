@@ -4,7 +4,7 @@ description: 'Créez, gérez et opérez des dépôts chiffrés LUKS sur des mach
 category: Guides
 order: 4
 language: fr
-sourceHash: 04fe287348176b64
+sourceHash: "8e778715b28247a9"
 ---
 
 # Dépôts
@@ -102,16 +102,14 @@ La commande détecte automatiquement les répertoires de données des conteneurs
 | Option | Description |
 |--------|-------------|
 | `--uid <uid>` | Définir un UID personnalisé au lieu de 7111 |
-| `--force` | Ignorer la détection des volumes Docker et changer la propriété de tout |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 Pour forcer la propriété sur tous les fichiers, y compris les données des conteneurs :
 
 ```bash
-rdc repo ownership my-app -m server-1 --force
+rdc repo ownership my-app -m server-1
 ```
 
-> **Attention :** L'utilisation de `--force` sur des conteneurs en cours d'exécution peut les casser. Arrêtez d'abord les services avec `rdc repo down` si nécessaire.
 
 Consultez le [Guide de migration](/fr/docs/migration) pour un guide complet sur quand et comment utiliser la propriété lors de la migration de projets.
 

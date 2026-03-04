@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 4
 language: ru
-sourceHash: 04fe287348176b64
+sourceHash: "8e778715b28247a9"
 ---
 
 # Репозитории
@@ -104,16 +104,14 @@ rdc repo ownership my-app -m server-1
 | Опция | Описание |
 |-------|----------|
 | `--uid <uid>` | Установить пользовательский UID вместо 7111 |
-| `--force` | Пропустить обнаружение Docker-томов и изменить владельца для всех файлов |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 Для принудительного изменения владельца всех файлов, включая данные контейнеров:
 
 ```bash
-rdc repo ownership my-app -m server-1 --force
+rdc repo ownership my-app -m server-1
 ```
 
-> **Предупреждение:** Использование `--force` на работающих контейнерах может их сломать. Сначала остановите сервисы с помощью `rdc repo down`, если необходимо.
 
 Подробное руководство по использованию ownership при миграции проектов см. в [Руководстве по миграции](/ru/docs/migration).
 

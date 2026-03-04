@@ -29,7 +29,7 @@ rdc subscription login
 | 选项 | 必需 | 默认值 | 描述 |
 |--------|----------|---------|-------------|
 | `-t, --token <token>` | No | - | API 令牌（跳过浏览器流程） |
-| `--server <url>` | No | `https://account.rediacc.com` | 账户服务器 URL |
+| `--server <url>` | No | `https://www.rediacc.com/account/` | 账户服务器 URL |
 
 ## 检查状态
 

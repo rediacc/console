@@ -26,6 +26,15 @@ fi
 
 cd "$WORKER_DIR"
 
+require_var CLOUDFLARE_API_TOKEN
+require_var CLOUDFLARE_ACCOUNT_ID
+require_cmd jq
+
+# Cloudflare API token must be a single-line raw token (no Bearer prefix/newlines).
+# GitHub secrets can accidentally include trailing newlines from copy/paste.
+CLOUDFLARE_API_TOKEN="$(printf '%s' "$CLOUDFLARE_API_TOKEN" | tr -d '\r\n')"
+export CLOUDFLARE_API_TOKEN
+
 # Install deps if not already installed
 if [[ ! -d "node_modules" ]]; then
     npm install
@@ -34,7 +43,21 @@ fi
 # Get D1 database UUID by name. Returns UUID or empty string if not found.
 get_d1_uuid() {
     local db_name="$1"
-    npx wrangler d1 info "$db_name" --json 2>/dev/null | jq -r '.uuid // empty' || true
+    local output
+    output="$(npx wrangler d1 info "$db_name" --json 2>/dev/null || true)"
+    if [[ -z "$output" ]]; then
+        return 0
+    fi
+
+    # Wrangler may print non-JSON banners/warnings before JSON.
+    # Parse from the first JSON object/array onward to keep this resilient.
+    local json_start
+    json_start="$(echo "$output" | sed -n '/^[[:space:]]*[{[]/,$p')"
+    if [[ -z "$json_start" ]]; then
+        return 0
+    fi
+
+    echo "$json_start" | jq -r '.uuid // empty' 2>/dev/null || true
 }
 
 if [[ -n "${ARG_NAME:-}" ]]; then

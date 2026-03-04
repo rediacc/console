@@ -4,7 +4,7 @@ description: "Mevcut projeleri şifrelenmiş Rediacc depolarına taşıyın."
 category: "Guides"
 order: 11
 language: tr
-sourceHash: "5064d721c8cf32ff"
+sourceHash: "feb1fcafc824b4b2"
 ---
 
 # Geçiş Rehberi
@@ -83,7 +83,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 Docker birim algılamasını atlayıp konteyner veri dizinleri dahil her şeyi değiştirmek için:
 
 ```bash
-rdc repo ownership my-project -m server-1 --force
+rdc repo ownership my-project -m server-1
 ```
 
 > **Uyarı:** Bu, çalışan konteynerleri bozabilir. Gerekirse önce `rdc repo down` ile durdurun.
@@ -304,7 +304,7 @@ Her depo benzersiz geri döngü IP'leri alır. Port çakışmaları görüyorsan
 
 ### Sahiplik Düzeltmesi Konteynerleri Bozuyor
 
-`rdc repo ownership --force` çalıştırdıysanız ve bir konteyner çalışmayı durdurduysa, konteynerin veri dosyaları değiştirilmiştir. Konteyneri durdurun, veri dizinini silin ve yeniden başlatın — konteyner onu yeniden oluşturacaktır:
+`rdc repo ownership` çalıştırdıysanız ve bir konteyner çalışmayı durdurduysa, konteynerin veri dosyaları değiştirilmiştir. Konteyneri durdurun, veri dizinini silin ve yeniden başlatın — konteyner onu yeniden oluşturacaktır:
 
 ```bash
 rdc repo down my-project -m server-1

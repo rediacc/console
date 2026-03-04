@@ -4,7 +4,7 @@ description: "Migrer des projets existants vers des dépôts chiffrés Rediacc."
 category: "Guides"
 order: 11
 language: fr
-sourceHash: "5064d721c8cf32ff"
+sourceHash: "feb1fcafc824b4b2"
 ---
 
 # Guide de migration
@@ -83,7 +83,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 Pour ignorer la détection des volumes Docker et modifier la propriété de tout, y compris les répertoires de données des conteneurs :
 
 ```bash
-rdc repo ownership my-project -m server-1 --force
+rdc repo ownership my-project -m server-1
 ```
 
 > **Avertissement :** Cela peut casser les conteneurs en cours d'exécution. Arrêtez-les d'abord avec `rdc repo down` si nécessaire.
@@ -304,7 +304,7 @@ Chaque dépôt reçoit des IPs de loopback uniques. Si vous rencontrez des confl
 
 ### La correction de propriété casse les conteneurs
 
-Si vous avez exécuté `rdc repo ownership --force` et qu'un conteneur a cessé de fonctionner, les fichiers de données du conteneur ont été modifiés. Arrêtez le conteneur, supprimez son répertoire de données et redémarrez — le conteneur le recréera :
+Si vous avez exécuté `rdc repo ownership` et qu'un conteneur a cessé de fonctionner, les fichiers de données du conteneur ont été modifiés. Arrêtez le conteneur, supprimez son répertoire de données et redémarrez — le conteneur le recréera :
 
 ```bash
 rdc repo down my-project -m server-1

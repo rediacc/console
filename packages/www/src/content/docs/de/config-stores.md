@@ -4,7 +4,7 @@ description: "CLI-Konfigurationsdateien verwalten und mit externen Backends wie 
 category: "Guides"
 order: 8
 language: de
-sourceHash: "ed28acf48284b9dc"
+sourceHash: "3fbe3184cc4d799a"
 ---
 
 # Konfiguration & Stores
@@ -23,11 +23,11 @@ rdc config show
 rdc config init production
 
 # Use a specific config for a command
-rdc --config production machine info prod-1
+rdc --config production machine status prod-1
 
 # Or set via environment variable
 export REDIACC_CONFIG=production
-rdc machine info prod-1
+rdc machine status prod-1
 ```
 
 Each config file contains:

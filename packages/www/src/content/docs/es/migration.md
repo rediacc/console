@@ -4,7 +4,7 @@ description: "Migrar proyectos existentes a repositorios cifrados de Rediacc."
 category: "Guides"
 order: 11
 language: es
-sourceHash: "5064d721c8cf32ff"
+sourceHash: "feb1fcafc824b4b2"
 ---
 
 # Guía de migración
@@ -83,7 +83,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 Para omitir la detección de volúmenes Docker y cambiar la propiedad de todo, incluidos los directorios de datos de contenedores:
 
 ```bash
-rdc repo ownership my-project -m server-1 --force
+rdc repo ownership my-project -m server-1
 ```
 
 > **Advertencia:** Esto puede romper contenedores en ejecución. Deténgalos primero con `rdc repo down` si es necesario.
@@ -304,7 +304,7 @@ Cada repositorio obtiene IPs de loopback únicas. Si ve conflictos de puertos, v
 
 ### La corrección de propiedad rompe contenedores
 
-Si ejecutó `rdc repo ownership --force` y un contenedor dejó de funcionar, los archivos de datos del contenedor fueron modificados. Detenga el contenedor, elimine su directorio de datos y reinícielo — el contenedor lo recreará:
+Si ejecutó `rdc repo ownership` y un contenedor dejó de funcionar, los archivos de datos del contenedor fueron modificados. Detenga el contenedor, elimine su directorio de datos y reinícielo — el contenedor lo recreará:
 
 ```bash
 rdc repo down my-project -m server-1

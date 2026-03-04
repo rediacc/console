@@ -317,7 +317,7 @@ export const SUBSCRIPTION_DEFAULTS = {
   UNKNOWN_QUOTA: '?',
 
   /** Default account server URL */
-  ACCOUNT_SERVER_URL: 'https://account.rediacc.com',
+  ACCOUNT_SERVER_URL: 'https://www.rediacc.com/account/',
 
   /** Device code polling interval (seconds) */
   DEVICE_CODE_POLL_INTERVAL: 5,

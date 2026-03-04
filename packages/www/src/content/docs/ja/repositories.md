@@ -4,7 +4,7 @@ description: リモートマシン上のLUKS暗号化リポジトリの作成、
 category: Guides
 order: 4
 language: ja
-sourceHash: 04fe287348176b64
+sourceHash: "8e778715b28247a9"
 ---
 
 # リポジトリ
@@ -102,16 +102,14 @@ rdc repo ownership my-app -m server-1
 | オプション | 説明 |
 |--------|-------------|
 | `--uid <uid>` | 7111の代わりにカスタムUIDを設定 |
-| `--force` | Dockerボリューム検出をスキップしてすべてをchown |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 すべてのファイル（コンテナデータを含む）に所有権を強制するには：
 
 ```bash
-rdc repo ownership my-app -m server-1 --force
+rdc repo ownership my-app -m server-1
 ```
 
-> **警告：** 実行中のコンテナに`--force`を使用すると壊れる可能性があります。必要に応じて先に`rdc repo down`でサービスを停止してください。
 
 所有権の使用方法の詳細なウォークスルーについては、[移行ガイド](/ja/docs/migration)を参照してください。
 

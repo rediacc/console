@@ -9,6 +9,7 @@ import sitemap, { ChangeFreqEnum } from '@astrojs/sitemap';
 import { remarkResolveTranslations } from './src/plugins/remark-resolve-translations.ts';
 import { remarkTutorialEmbed } from './src/plugins/remark-tutorial-embed.ts';
 import { remarkVideoEmbed } from './src/plugins/remark-video-embed.ts';
+import { remarkDocsCliLinks } from './src/plugins/remark-docs-cli-links.ts';
 import jsonGeneratorIntegration from './src/integrations/json-generator.ts';
 
 // Integration to generate search index before build
@@ -139,6 +140,7 @@ export default defineConfig({
     remarkPlugins: [
       remarkVideoEmbed,
       remarkTutorialEmbed,
+      remarkDocsCliLinks,
       remarkResolveTranslations
     ]
   }

@@ -4,7 +4,7 @@ description: "Gérez les fichiers de configuration CLI et synchronisez-les avec 
 category: "Guides"
 order: 8
 language: fr
-sourceHash: "ed28acf48284b9dc"
+sourceHash: "3fbe3184cc4d799a"
 ---
 
 # Configuration et stores
@@ -23,11 +23,11 @@ rdc config show
 rdc config init production
 
 # Use a specific config for a command
-rdc --config production machine info prod-1
+rdc --config production machine status prod-1
 
 # Or set via environment variable
 export REDIACC_CONFIG=production
-rdc machine info prod-1
+rdc machine status prod-1
 ```
 
 Each config file contains:

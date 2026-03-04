@@ -4,7 +4,7 @@ description: 'Uzak makinelerde LUKS ile şifrelenmiş depoları oluşturma, yön
 category: Guides
 order: 4
 language: tr
-sourceHash: 04fe287348176b64
+sourceHash: "8e778715b28247a9"
 ---
 
 # Depolar
@@ -102,16 +102,14 @@ Komut, Docker konteyner veri dizinlerini (yazılabilir bind bağlamaları) otoma
 | Seçenek | Açıklama |
 |---------|----------|
 | `--uid <uid>` | 7111 yerine özel bir UID ayarla |
-| `--force` | Docker birim algılamayı atla ve her şeyi sahiplendir |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 Tüm dosyalar üzerinde sahipliği zorlamak için (konteyner verileri dahil):
 
 ```bash
-rdc repo ownership my-app -m server-1 --force
+rdc repo ownership my-app -m server-1
 ```
 
-> **Uyarı:** Çalışan konteynerlerde `--force` kullanmak onları bozabilir. Gerekiyorsa önce `rdc repo down` ile servisleri durdurun.
 
 Sahipliğin ne zaman ve nasıl kullanılacağına dair eksiksiz bir yol haritası için [Taşıma Rehberi](/tr/docs/migration) sayfasına bakın.
 

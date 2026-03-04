@@ -252,7 +252,7 @@
     },
     {
       "name": "team",
-      "descriptionKey": null,
+      "descriptionKey": "commands.team.description",
       "options": [],
       "arguments": [],
       "subcommands": [
@@ -452,7 +452,7 @@
     },
     {
       "name": "machine",
-      "descriptionKey": null,
+      "descriptionKey": "commands.machine.description",
       "options": [],
       "arguments": [],
       "subcommands": [
@@ -1884,7 +1884,7 @@
     },
     {
       "name": "storage",
-      "descriptionKey": null,
+      "descriptionKey": "commands.storage.description",
       "options": [],
       "arguments": [],
       "subcommands": [
@@ -2311,7 +2311,7 @@
     },
     {
       "name": "region",
-      "descriptionKey": null,
+      "descriptionKey": "commands.region.description",
       "options": [],
       "arguments": [],
       "subcommands": [
@@ -2449,7 +2449,7 @@
     },
     {
       "name": "bridge",
-      "descriptionKey": null,
+      "descriptionKey": "commands.bridge.description",
       "options": [],
       "arguments": [],
       "subcommands": [

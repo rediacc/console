@@ -29,7 +29,7 @@ rdc subscription login
 | オプション | 必須 | デフォルト | 説明 |
 |--------|----------|---------|-------------|
 | `-t, --token <token>` | No | - | APIトークン（ブラウザフローをスキップ） |
-| `--server <url>` | No | `https://account.rediacc.com` | アカウントサーバーURL |
+| `--server <url>` | No | `https://www.rediacc.com/account/` | アカウントサーバーURL |
 
 ## ステータスの確認
 

@@ -4,6 +4,7 @@ description: "Create, manage, and operate LUKS-encrypted repositories on remote 
 category: "Guides"
 order: 4
 language: en
+sourceHash: "8e778715b28247a9"
 ---
 
 # Repositories
@@ -101,16 +102,14 @@ The command automatically detects Docker container data directories (writable bi
 | Option | Description |
 |--------|-------------|
 | `--uid <uid>` | Set a custom UID instead of 7111 |
-| `--force` | Skip Docker volume detection and chown everything |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 To force ownership on all files, including container data:
 
 ```bash
-rdc repo ownership my-app -m server-1 --force
+rdc repo ownership my-app -m server-1
 ```
 
-> **Warning:** Using `--force` on running containers may break them. Stop services first with `rdc repo down` if needed.
 
 See the [Migration Guide](/en/docs/migration) for a complete walkthrough of when and how to use ownership during project migration.
 

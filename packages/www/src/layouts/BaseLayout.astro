@@ -408,6 +408,24 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
       .hero-highlight {
         color: var(--color-text);
       }
+
+      :global(html.cli-ref-embed .skip-nav),
+      :global(html.cli-ref-embed #navigation),
+      :global(html.cli-ref-embed .nav),
+      :global(html.cli-ref-embed #footer),
+      :global(html.cli-ref-embed footer),
+      :global(html.cli-ref-embed .contact-modal-backdrop),
+      :global(html.cli-ref-embed .newsletter-return-popup-overlay) {
+        display: none !important;
+      }
+
+      :global(html.cli-ref-embed) {
+        scroll-behavior: auto;
+      }
+
+      :global(html.cli-ref-embed main) {
+        padding-top: 0 !important;
+      }
     </style>
 </head>
 <body>
@@ -431,5 +449,43 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
     <script src="/scripts/search-hotkey.js" is:inline></script>
     <script src="/scripts/scroll-reveal.js" is:inline></script>
     <script src="/scripts/tracker.js" is:inline></script>
+    <script is:inline>
+      (function() {
+        function hideEmbedChrome() {
+          try {
+            if (new URLSearchParams(window.location.search).get('embed') !== 'cli-ref') return;
+          } catch {
+            return;
+          }
+
+          document.documentElement.classList.add('cli-ref-embed');
+
+          const selectors = [
+            '.skip-nav',
+            '#navigation',
+            '.nav',
+            '#footer',
+            'footer',
+            '.contact-modal-backdrop',
+            '.newsletter-return-popup-overlay'
+          ];
+
+          selectors.forEach((selector) => {
+            document.querySelectorAll(selector).forEach((node) => {
+              if (node instanceof HTMLElement) {
+                node.style.display = 'none';
+              }
+            });
+          });
+        }
+
+        document.addEventListener('astro:page-load', hideEmbedChrome);
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', hideEmbedChrome);
+        } else {
+          hideEmbedChrome();
+        }
+      })();
+    </script>
 </body>
 </html>

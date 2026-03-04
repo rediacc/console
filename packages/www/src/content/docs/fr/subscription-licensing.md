@@ -29,7 +29,7 @@ Ouvre un navigateur pour l'authentification via le flux de code d'appareil. Apr�
 | Option | Requis | Par défaut | Description |
 |--------|----------|---------|-------------|
 | `-t, --token <token>` | Non | - | Jeton API (ignore le flux navigateur) |
-| `--server <url>` | Non | `https://account.rediacc.com` | URL du serveur de comptes |
+| `--server <url>` | Non | `https://www.rediacc.com/account/` | URL du serveur de comptes |
 
 ## Vérifier le statut
 

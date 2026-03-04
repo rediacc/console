@@ -29,7 +29,7 @@ rdc subscription login
 | Параметр | Обязательный | По умолчанию | Описание |
 |--------|----------|---------|-------------|
 | `-t, --token <token>` | No | - | API-токен (пропускает поток через браузер) |
-| `--server <url>` | No | `https://account.rediacc.com` | URL сервера аккаунта |
+| `--server <url>` | No | `https://www.rediacc.com/account/` | URL сервера аккаунта |
 
 ## Проверка статуса
 

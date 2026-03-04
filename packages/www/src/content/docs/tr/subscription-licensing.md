@@ -29,7 +29,7 @@ Cihaz kodu akışı ile kimlik doğrulama için tarayıcı açar. Onaydan sonra 
 | Seçenek | Gerekli | Varsayılan | Açıklama |
 |--------|----------|---------|-------------|
 | `-t, --token <token>` | No | - | API belirteci (tarayıcı akışını atlar) |
-| `--server <url>` | No | `https://account.rediacc.com` | Hesap sunucusu URL'si |
+| `--server <url>` | No | `https://www.rediacc.com/account/` | Hesap sunucusu URL'si |
 
 ## Durum Kontrolü
 

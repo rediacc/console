@@ -4,6 +4,7 @@ description: "Migrate existing projects into encrypted Rediacc repositories."
 category: "Guides"
 order: 11
 language: en
+sourceHash: "feb1fcafc824b4b2"
 ---
 
 # Migration Guide
@@ -82,7 +83,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 To skip Docker volume detection and chown everything, including container data directories:
 
 ```bash
-rdc repo ownership my-project -m server-1 --force
+rdc repo ownership my-project -m server-1
 ```
 
 > **Warning:** This may break running containers. Stop them first with `rdc repo down` if needed.
@@ -303,7 +304,7 @@ Each repository gets unique loopback IPs. If you see port conflicts, verify that
 
 ### Ownership Fix Breaks Containers
 
-If you ran `rdc repo ownership --force` and a container stopped working, the container's data files were chowned. Stop the container, delete its data directory, and restart — the container will recreate it:
+If you ran `rdc repo ownership` and a container stopped working, the container's data files were chowned. Stop the container, delete its data directory, and restart — the container will recreate it:
 
 ```bash
 rdc repo down my-project -m server-1
