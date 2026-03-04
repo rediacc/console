@@ -706,6 +706,7 @@ jobs:
           SECRET_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
           SECRET_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
           SECRET_SES_REGION: ${{ secrets.AWS_SES_REGION }}
+          VAR_SES_FROM: ${{ vars.AWS_SES_FROM }}
         run: |
           WORKER="pr-${PR_NUMBER}"
           echo "$SECRET_ED25519_PRIVATE_KEY" | npx wrangler secret put ED25519_PRIVATE_KEY --name "$WORKER"
@@ -718,6 +719,7 @@ jobs:
           echo "$SECRET_SES_ACCESS_KEY_ID" | npx wrangler secret put AWS_SES_ACCESS_KEY_ID --name "$WORKER"
           echo "$SECRET_SES_SECRET_ACCESS_KEY" | npx wrangler secret put AWS_SES_SECRET_ACCESS_KEY --name "$WORKER"
           echo "$SECRET_SES_REGION" | npx wrangler secret put AWS_SES_REGION --name "$WORKER"
+          echo "$VAR_SES_FROM" | npx wrangler secret put AWS_SES_FROM --name "$WORKER"
 
       - name: Deployment summary
         run: |

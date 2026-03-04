@@ -19,5 +19,6 @@ database_name = "account-db"
 database_id = "198e819d-8dfe-4304-a6be-3e1ca1f2c22b"
 migrations_dir = "../../private/account/drizzle"
 
-# All account service configuration set via `wrangler secret put` in CI.
+# All account env vars set via `wrangler secret put` in CI.
 # See org secrets: ACCOUNT_*, AWS_SES_*, STRIPE_*
+# See org variables: AWS_SES_FROM, CLOUDFLARE_ACCOUNT_ID
