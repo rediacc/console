@@ -10,41 +10,42 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  min-height: var(--touch-target-min);
-  background: transparent;
-  border: 1px solid rgba(0, 0, 0, var(--opacity-10));
-  border-radius: var(--radius-sm);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  padding: 0 var(--space-3);
+  min-height: 2rem;
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition:
     background-color var(--transition-duration-base) ease,
-    border-color var(--transition-duration-base) ease;
+    border-color var(--transition-duration-base) ease,
+    box-shadow var(--transition-duration-base) ease;
   font-family: inherit;
+  white-space: nowrap;
 }
 
 .language-trigger-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: var(--touch-target-min);
-  min-height: var(--touch-target-min);
-  padding: var(--space-2);
+  width: var(--touch-target-preferred);
+  height: var(--touch-target-preferred);
+  padding: var(--space-3);
   background: transparent;
-  border: 1px solid rgba(0, 0, 0, var(--opacity-10));
+  border: none;
   border-radius: var(--radius-sm);
-  color: var(--color-text-secondary);
+  color: var(--color-text);
   cursor: pointer;
   transition:
     background-color var(--transition-duration-base) ease,
-    border-color var(--transition-duration-base) ease;
+    box-shadow var(--transition-duration-base) ease;
 }
 
 .language-trigger-icon:hover {
   background-color: var(--color-hover);
-  border-color: rgba(0, 0, 0, var(--opacity-20));
   color: var(--color-text);
 }
 
@@ -55,13 +56,13 @@
 
 .language-trigger:hover {
   background-color: var(--color-hover);
-  border-color: rgba(0, 0, 0, var(--opacity-20));
+  border-color: var(--color-brand-primary);
   color: var(--color-text);
 }
 
 .language-trigger:active {
   background-color: rgba(0, 0, 0, var(--opacity-10));
-  transform: scale(0.98);
+  transform: translateY(1px);
 }
 
 .language-trigger:focus-visible {
@@ -85,12 +86,13 @@
 .language-menu {
   position: absolute;
   background-color: var(--color-bg-alt);
-  border: 1px solid rgba(0, 0, 0, var(--opacity-10));
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
   z-index: var(--z-popover);
-  min-width: 150px;
+  min-width: 180px;
+  padding: var(--space-1);
 }
 
 /* Top positioned menu (for navigation) */
@@ -111,15 +113,17 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  min-height: var(--touch-target-min);
+  padding: var(--space-2) var(--space-3);
+  min-height: 2rem;
   width: 100%;
   background: transparent;
   border: none;
-  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
   text-decoration: none;
   text-align: start;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition: background-color var(--transition-duration-fast) ease;
   font-family: inherit;
@@ -137,7 +141,7 @@
 
 .language-option:active {
   background-color: rgba(0, 0, 0, var(--opacity-10));
-  transform: scale(0.98);
+  transform: translateY(1px);
 }
 
 .language-option:focus-visible {
@@ -146,7 +150,7 @@
 }
 
 .language-option .flag {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   line-height: var(--leading-tight);
 }
 
@@ -160,17 +164,17 @@
 @media (max-width: 48rem) {
   /* 768px - respects user font size */
   .language-trigger {
-    padding: var(--space-2) var(--space-3);
+    padding: 0 var(--space-3);
     font-size: var(--font-size-xs);
   }
 
   .language-option {
-    padding: var(--space-3) var(--space-4);
+    padding: var(--space-2) var(--space-3);
     font-size: var(--font-size-xs);
   }
 
   .language-menu {
-    min-width: 140px;
+    min-width: 160px;
   }
 }
 
