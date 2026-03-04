@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import TurnstileWidget from './TurnstileWidget';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
 import '../styles/newsletter.css';
@@ -16,6 +17,11 @@ interface Props {
 }
 
 type FormState = 'idle' | 'loading' | 'success' | 'error';
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
+const ciMode =
+  String(import.meta.env.PUBLIC_CI_MODE ?? '').toLowerCase() === 'true' ||
+  String(import.meta.env.PUBLIC_CI_MODE ?? '') === '1';
+const captchaEnabled = !!turnstileSiteKey && !ciMode;
 
 const NewsletterSignup: React.FC<Props> = ({
   variant,
@@ -28,6 +34,7 @@ const NewsletterSignup: React.FC<Props> = ({
 }) => {
   const [state, setState] = useState<FormState>('idle');
   const [errorMsg, setErrorMsg] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const currentLang = useLanguage();
   const { t } = useTranslation(currentLang);
@@ -39,6 +46,11 @@ const NewsletterSignup: React.FC<Props> = ({
 
     setState('loading');
     setErrorMsg('');
+    if (captchaEnabled && !turnstileToken) {
+      setState('error');
+      setErrorMsg(t('captchaRequired') || 'Please complete captcha verification.');
+      return;
+    }
     if (openOnSuccessUrl) {
       window.open(openOnSuccessUrl, '_blank', 'noopener,noreferrer');
     }
@@ -47,7 +59,12 @@ const NewsletterSignup: React.FC<Props> = ({
       const res = await fetch(`${window.location.origin}/account/api/v1/newsletter/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, source, lang: currentLang }),
+        body: JSON.stringify({
+          email,
+          source,
+          lang: currentLang,
+          turnstileToken: turnstileToken ?? undefined,
+        }),
       });
 
       if (!res.ok) {
@@ -56,6 +73,7 @@ const NewsletterSignup: React.FC<Props> = ({
       }
 
       setState('success');
+      setTurnstileToken(null);
       onSuccess?.();
       const utm =
         (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ??
@@ -133,6 +151,14 @@ const NewsletterSignup: React.FC<Props> = ({
           <p className="newsletter-error" role="alert">
             {errorMsg}
           </p>
+        )}
+        {captchaEnabled && (
+          <TurnstileWidget
+            siteKey={turnstileSiteKey}
+            action="newsletter_subscribe"
+            onVerify={setTurnstileToken}
+            onExpire={() => setTurnstileToken(null)}
+          />
         )}
       </form>
     </div>

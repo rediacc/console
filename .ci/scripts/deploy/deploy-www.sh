@@ -64,6 +64,18 @@ name = "$ARG_NAME"
 main = "src/index.ts"
 compatibility_date = "2026-01-20"
 compatibility_flags = ["nodejs_compat"]
+upload_source_maps = true
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = false # Disabled to reduce high-volume per-request log noise/cost.
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 1
 
 [assets]
 directory = "./dist"

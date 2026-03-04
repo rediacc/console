@@ -664,6 +664,9 @@ jobs:
       - name: Build account portal
         run: npm install && npx vite build --outDir ../../../workers/www/dist/account
         working-directory: private/account/web
+        env:
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+          VITE_CI_MODE: 'false'
 
       # Inject e2e test videos into pages for documentation embedding
       - name: Inject E2E videos
@@ -706,6 +709,7 @@ jobs:
           SECRET_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
           SECRET_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
           SECRET_SES_REGION: ${{ secrets.AWS_SES_REGION }}
+          SECRET_TURNSTILE_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
           VAR_SES_FROM: ${{ vars.AWS_SES_FROM }}
         run: |
           WORKER="pr-${PR_NUMBER}"
@@ -720,6 +724,7 @@ jobs:
           echo "$SECRET_SES_SECRET_ACCESS_KEY" | npx wrangler secret put AWS_SES_SECRET_ACCESS_KEY --name "$WORKER"
           echo "$SECRET_SES_REGION" | npx wrangler secret put AWS_SES_REGION --name "$WORKER"
           echo "$VAR_SES_FROM" | npx wrangler secret put AWS_SES_FROM --name "$WORKER"
+          echo "$SECRET_TURNSTILE_KEY" | npx wrangler secret put TURNSTILE_SECRET_KEY --name "$WORKER"
 
       - name: Deployment summary
         run: |
@@ -828,5 +833,4 @@ jobs:
             exit 1
           fi
           echo "All CI jobs passed successfully!"
-
 

@@ -11,6 +11,7 @@ import {
 } from './roi-compute';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useTranslation } from '../../i18n/react';
+import TurnstileWidget from '../TurnstileWidget';
 import '../../styles/newsletter.css';
 
 interface RoiCalculatorContent {
@@ -68,6 +69,12 @@ interface Props {
   content: RoiCalculatorContent;
 }
 
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
+const ciMode =
+  String(import.meta.env.PUBLIC_CI_MODE ?? '').toLowerCase() === 'true' ||
+  String(import.meta.env.PUBLIC_CI_MODE ?? '') === '1';
+const captchaEnabled = !!turnstileSiteKey && !ciMode;
+
 const SIZE_KEYS: CompanySize[] = ['smb', 'mid', 'enterprise', 'large'] as const;
 
 const SPRoiCalculator: React.FC<Props> = ({ content }) => {
@@ -77,6 +84,7 @@ const SPRoiCalculator: React.FC<Props> = ({ content }) => {
   const [gateEmail, setGateEmail] = useState('');
   const [gateLoading, setGateLoading] = useState(false);
   const [gateError, setGateError] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const gateInputRef = useRef<HTMLInputElement>(null);
   const gateViewedRef = useRef(false);
   const currentLang = useLanguage();
@@ -97,6 +105,10 @@ const SPRoiCalculator: React.FC<Props> = ({ content }) => {
       e.preventDefault();
       const email = gateEmail.trim();
       if (!email) return;
+      if (captchaEnabled && !turnstileToken) {
+        setGateError(t('captchaRequired') || 'Please complete captcha verification.');
+        return;
+      }
 
       setGateLoading(true);
       setGateError('');
@@ -104,10 +116,16 @@ const SPRoiCalculator: React.FC<Props> = ({ content }) => {
         const res = await fetch(`${window.location.origin}/account/api/v1/newsletter/lead-magnet`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, magnetName: 'roi-report', source: 'roi-calculator' }),
+          body: JSON.stringify({
+            email,
+            magnetName: 'roi-report',
+            source: 'roi-calculator',
+            turnstileToken: turnstileToken ?? undefined,
+          }),
         });
         if (!res.ok) throw new Error(t('newsletter.errorGeneric'));
         setDetailsUnlocked(true);
+        setTurnstileToken(null);
         const utm =
           (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ??
           {};
@@ -125,7 +143,7 @@ const SPRoiCalculator: React.FC<Props> = ({ content }) => {
         setGateLoading(false);
       }
     },
-    [gateEmail, t]
+    [gateEmail, t, turnstileToken]
   );
 
   useEffect(() => {
@@ -262,6 +280,14 @@ const SPRoiCalculator: React.FC<Props> = ({ content }) => {
                       {gateLoading ? t('newsletter.subscribe') : t('newsletter.roiGate.unlock')}
                     </button>
                   </form>
+                  {captchaEnabled && (
+                    <TurnstileWidget
+                      siteKey={turnstileSiteKey}
+                      action="newsletter_lead_magnet"
+                      onVerify={setTurnstileToken}
+                      onExpire={() => setTurnstileToken(null)}
+                    />
+                  )}
                   {gateError && <p className="newsletter-error">{gateError}</p>}
                   <p className="newsletter-privacy">{t('newsletter.privacyNote')}</p>
                 </div>

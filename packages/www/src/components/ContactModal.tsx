@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import TurnstileWidget from './TurnstileWidget';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
 
@@ -19,6 +20,11 @@ const INTEREST_TO_SUBJECT: Record<string, string> = {
 };
 
 const SUBJECTS = ['general', 'technical', 'partnership', 'disasterRecovery', 'other'] as const;
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
+const ciMode =
+  String(import.meta.env.PUBLIC_CI_MODE ?? '').toLowerCase() === 'true' ||
+  String(import.meta.env.PUBLIC_CI_MODE ?? '') === '1';
+const captchaEnabled = !!turnstileSiteKey && !ciMode;
 
 function handleFocusTrap(e: KeyboardEvent, modal: HTMLDivElement, close: () => void): void {
   if (e.key === 'Escape') {
@@ -58,6 +64,7 @@ const ContactModal: React.FC = () => {
   const messageRef = useRef<HTMLTextAreaElement>(null);
   const honeypotRef = useRef<HTMLInputElement>(null);
   const hasFiredStart = useRef(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   const open = useCallback((interest?: string) => {
     if (interest && INTEREST_TO_SUBJECT[interest]) {
@@ -108,6 +115,11 @@ const ContactModal: React.FC = () => {
     e.preventDefault();
     setState('loading');
     setErrorMsg('');
+    if (captchaEnabled && !turnstileToken) {
+      setState('error');
+      setErrorMsg(t('captchaRequired') || 'Please complete captcha verification.');
+      return;
+    }
 
     try {
       const res = await fetch(`${window.location.origin}/account/api/v1/contact/submit`, {
@@ -121,6 +133,7 @@ const ContactModal: React.FC = () => {
           source: 'contact-modal',
           lang: currentLang,
           company_url: honeypotRef.current?.value === '' ? undefined : honeypotRef.current?.value,
+          turnstileToken: turnstileToken ?? undefined,
         }),
       });
 
@@ -130,6 +143,7 @@ const ContactModal: React.FC = () => {
       }
 
       setState('success');
+      setTurnstileToken(null);
       const utm =
         (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ??
         {};
@@ -296,6 +310,15 @@ const ContactModal: React.FC = () => {
               <p className="contact-modal-error" role="alert">
                 {errorMsg}
               </p>
+            )}
+
+            {captchaEnabled && (
+              <TurnstileWidget
+                siteKey={turnstileSiteKey}
+                action="contact_submit"
+                onVerify={setTurnstileToken}
+                onExpire={() => setTurnstileToken(null)}
+              />
             )}
 
             <button type="submit" className="contact-modal-submit" disabled={state === 'loading'}>

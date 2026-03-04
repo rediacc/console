@@ -2,6 +2,18 @@ name = "rediacc-www"
 main = "src/index.ts"
 compatibility_date = "2026-01-20"
 compatibility_flags = ["nodejs_compat"]
+upload_source_maps = true
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = false # Disabled to reduce high-volume per-request log noise/cost.
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 1
 
 routes = [
   { pattern = "www.rediacc.com", custom_domain = true }
@@ -22,3 +34,4 @@ migrations_dir = "../../private/account/drizzle"
 # All account env vars set via `wrangler secret put` in CI.
 # See org secrets: ACCOUNT_*, AWS_SES_*, STRIPE_*
 # See org variables: AWS_SES_FROM, CLOUDFLARE_ACCOUNT_ID
+# Turnstile: TURNSTILE_SECRET_KEY (secret) + TURNSTILE_* / CI_MODE (optional vars/secrets)

@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import TurnstileWidget from './TurnstileWidget';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
 
@@ -13,6 +14,11 @@ const INTEREST_TO_SUBJECT: Record<string, string> = {
 const SUBJECTS = ['general', 'technical', 'partnership', 'disasterRecovery', 'other'] as const;
 
 const DEFAULT_SUBJECT = SUBJECTS[0];
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
+const ciMode =
+  String(import.meta.env.PUBLIC_CI_MODE ?? '').toLowerCase() === 'true' ||
+  String(import.meta.env.PUBLIC_CI_MODE ?? '') === '1';
+const captchaEnabled = !!turnstileSiteKey && !ciMode;
 
 type FormState = 'idle' | 'loading' | 'success' | 'error';
 
@@ -33,11 +39,17 @@ const ContactForm: React.FC<Props> = ({ interest }) => {
   const hasFiredStart = useRef(false);
   const messageRef = useRef<HTMLTextAreaElement>(null);
   const honeypotRef = useRef<HTMLInputElement>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setState('loading');
     setErrorMsg('');
+    if (captchaEnabled && !turnstileToken) {
+      setState('error');
+      setErrorMsg(t('captchaRequired') || 'Please complete captcha verification.');
+      return;
+    }
 
     try {
       const honeypotValue = honeypotRef.current?.value;
@@ -52,6 +64,7 @@ const ContactForm: React.FC<Props> = ({ interest }) => {
           source: 'contact-page',
           lang: currentLang,
           company_url: honeypotValue === '' ? undefined : honeypotValue,
+          turnstileToken: turnstileToken ?? undefined,
         }),
       });
 
@@ -61,6 +74,7 @@ const ContactForm: React.FC<Props> = ({ interest }) => {
       }
 
       setState('success');
+      setTurnstileToken(null);
       const utm =
         (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ??
         {};
@@ -177,6 +191,15 @@ const ContactForm: React.FC<Props> = ({ interest }) => {
         <p className="contact-inline-error" role="alert">
           {errorMsg}
         </p>
+      )}
+
+      {captchaEnabled && (
+        <TurnstileWidget
+          siteKey={turnstileSiteKey}
+          action="contact_submit"
+          onVerify={setTurnstileToken}
+          onExpire={() => setTurnstileToken(null)}
+        />
       )}
 
       <button type="submit" className="contact-inline-submit" disabled={state === 'loading'}>

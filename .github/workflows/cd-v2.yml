@@ -457,6 +457,8 @@ jobs:
           SECRET_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
           SECRET_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
           SECRET_SES_REGION: ${{ secrets.AWS_SES_REGION }}
+          SECRET_TURNSTILE_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          VAR_SES_FROM: ${{ vars.AWS_SES_FROM }}
         run: |
           echo "$SECRET_ED25519_PRIVATE_KEY" | npx wrangler secret put ED25519_PRIVATE_KEY --name rediacc-www
           echo "$SECRET_ED25519_PUBLIC_KEY" | npx wrangler secret put ED25519_PUBLIC_KEY --name rediacc-www
@@ -468,6 +470,8 @@ jobs:
           echo "$SECRET_SES_ACCESS_KEY_ID" | npx wrangler secret put AWS_SES_ACCESS_KEY_ID --name rediacc-www
           echo "$SECRET_SES_SECRET_ACCESS_KEY" | npx wrangler secret put AWS_SES_SECRET_ACCESS_KEY --name rediacc-www
           echo "$SECRET_SES_REGION" | npx wrangler secret put AWS_SES_REGION --name rediacc-www
+          echo "$VAR_SES_FROM" | npx wrangler secret put AWS_SES_FROM --name rediacc-www
+          echo "$SECRET_TURNSTILE_KEY" | npx wrangler secret put TURNSTILE_SECRET_KEY --name rediacc-www
 
       # -----------------------------------------------------------------------
       # Step 7: Cleanup staging tags
