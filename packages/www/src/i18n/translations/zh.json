@@ -77,7 +77,7 @@
       "skipToMainContent": "跳至主要内容",
       "skipToNavigation": "跳至导航"
     },
-    "terminalSimulationDisclaimer": "命令输出仅用于说明，并为便于阅读做了精简。实际执行命令时可能会产生更多日志。",
+    "terminalSimulationDisclaimer": "输出仅作示例，实际运行可能有更多日志。",
     "theProblem": "问题所在"
   },
   "contactModal": {
@@ -1433,8 +1433,8 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc status",
-              "flag": "--summary",
+              "cmd": "rdc machine status production",
+              "flag": "",
               "value": ""
             },
             {
@@ -1715,9 +1715,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc snapshot",
-              "flag": "--all-repos",
-              "value": "--schedule daily"
+              "cmd": "rdc backup schedule set",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -2002,9 +2002,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc clone production",
-              "flag": "--name",
-              "value": "feature-auth-v2"
+              "cmd": "rdc repo fork production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -3183,7 +3183,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc pentest production --ai --scope full",
+          "command": "rdc audit log --level warn --limit 200",
           "ctaText": "免费开始",
           "description": "从免费的社区版开始。60 秒内运行你的第一次渗透测试。",
           "title": "在攻击者之前发现漏洞"
@@ -3494,7 +3494,9 @@
           "lines": [
             {
               "type": "command",
-              "text": "rdc pentest production --ai --scope full"
+              "cmd": "rdc term production security-scan",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -4005,7 +4007,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc backup verify --all",
+          "command": "rdc backup list --verify",
           "description": "从免费的社区版开始。一分钟内验证你的第一个备份。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "无需信用卡",
@@ -4361,8 +4363,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup verify",
-              "flag": "--all"
+              "cmd": "rdc backup list",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -4458,7 +4461,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc replicate production --target secondary-dc",
+          "command": "rdc backup sync --target secondary-dc",
           "description": "从免费的社区版开始。免费跨地域复制。无需信用卡。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "最多 10 个工作负载永久免费",
@@ -4815,9 +4818,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc replicate production",
-              "flag": "--target",
-              "value": "secondary-dc"
+              "cmd": "rdc backup sync",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -5222,7 +5225,9 @@
           "lines": [
             {
               "type": "command",
-              "text": "rdc pentest production --schedule daily --time 02:00 --notify slack"
+              "cmd": "rdc backup schedule set",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -5301,7 +5306,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc encrypt --key /etc/rediacc/keys/production.key --all",
+          "command": "rdc repo mount production --credential-file /etc/rediacc/keys/production.key",
           "ctaText": "免费开始使用社区版",
           "description": "从免费的社区版开始。一分钟内生成你的第一个密钥。",
           "title": "掌控你的加密"
@@ -5651,7 +5656,9 @@
           "lines": [
             {
               "type": "command",
-              "text": "rdc encrypt --key /etc/rediacc/keys/production.key --all"
+              "cmd": "rdc repo mount production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -6075,9 +6082,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc clone production",
-              "flag": "--name",
-              "value": "dev-sarah"
+              "cmd": "rdc repo fork production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -6512,9 +6519,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc failover test",
-              "flag": "--target secondary-dc",
-              "value": "--simulate"
+              "cmd": "rdc ops status",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -6606,7 +6613,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc backup production --immutable --verify",
+          "command": "rdc backup push production --verify",
           "description": "从免费的社区版开始。免费保护最多 10 个工作负载。无需信用卡。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "最多 10 个工作负载永久免费",
@@ -6966,9 +6973,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup production",
-              "flag": "--immutable",
-              "value": "--verify"
+              "cmd": "rdc backup push production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -7055,7 +7062,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc clone production --as dev-loadtest --ttl 4h",
+          "command": "rdc repo fork production --name dev-loadtest",
           "description": "从免费的社区版开始。包含按需克隆功能。",
           "primaryCta": "免费开始",
           "tierBadge": "最多 5 个仓库免费 · 无需信用卡",
@@ -7398,9 +7405,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc clone production",
-              "flag": "--as",
-              "value": "dev-loadtest --ttl 4h"
+              "cmd": "rdc repo fork production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -7484,7 +7491,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc restore production --from daily-2026-02-27",
+          "command": "rdc backup pull production --storage daily-2026-02-27",
           "description": "从免费的社区版开始。5 分钟内恢复你的第一个环境。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "无需信用卡",
@@ -7842,9 +7849,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc restore production",
-              "flag": "--from",
-              "value": "daily-2026-02-27"
+              "cmd": "rdc backup pull production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -8351,7 +8358,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc migrate production --to secondary --encrypted",
+          "command": "rdc backup sync --target secondary",
           "description": "从免费的社区版开始。包含加密迁移功能。",
           "primaryCta": "免费开始",
           "tierBadge": "最多 5 个仓库免费 · 无需信用卡",
@@ -8709,9 +8716,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc migrate production",
-              "flag": "--to secondary",
-              "value": "--encrypted"
+              "cmd": "rdc backup sync",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -8810,7 +8817,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc clone production --as dev-sarah --verify-parity",
+          "command": "rdc repo validate dev-sarah",
           "description": "从免费的社区版开始。包含生产一致性功能。",
           "primaryCta": "免费开始",
           "tierBadge": "最多 5 个仓库免费 · 无需信用卡",
@@ -9153,9 +9160,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc clone production",
-              "flag": "--as",
-              "value": "dev-sarah --verify-parity"
+              "cmd": "rdc repo validate dev-sarah",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -9605,7 +9612,9 @@
           "lines": [
             {
               "type": "command",
-              "text": "rdc restore production --point-in-time 2026-02-27T02:55"
+              "cmd": "rdc backup pull production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -9670,7 +9679,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc retention set --policy hipaa --keep 7y",
+          "command": "rdc backup schedule set --cron '0 2 * * *'",
           "description": "从免费的社区版开始。30 秒内设置你的第一个保留策略。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "无需信用卡",
@@ -9872,7 +9881,7 @@
           "steps": [
             {
               "title": "Set policies",
-              "description": "Run rdc retention set --policy hipaa --keep 7y. Define retention per framework or data type.",
+              "description": "Run rdc backup schedule set --cron '0 2 * * *'. Define retention per framework or data type.",
               "icon": "sliders"
             },
             {
@@ -10027,9 +10036,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc retention set",
-              "flag": "--policy hipaa",
-              "value": "--keep 7y"
+              "cmd": "rdc backup schedule set",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -10060,7 +10069,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc retention status"
+              "cmd": "rdc backup schedule show"
             },
             {
               "type": "spacer"
@@ -10487,9 +10496,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc clone production",
-              "flag": "--name",
-              "value": "patch-test-ubuntu-24"
+              "cmd": "rdc repo fork production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -10946,7 +10955,9 @@
           "lines": [
             {
               "type": "command",
-              "text": "rdc migrate production --from aws-east --to hetzner-fsn"
+              "cmd": "rdc backup sync",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -11015,7 +11026,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc vuln fix CVE-2026-1234 --clone production --verify",
+          "command": "rdc term production cve-2026-1234-fix",
           "description": "从免费的社区版开始。4 分钟内验证你的第一个补丁。",
           "primaryCta": "免费开始",
           "tierBadge": "无需信用卡",
@@ -11319,9 +11330,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc vuln fix CVE-2026-1234",
-              "flag": "--clone production",
-              "value": "--verify"
+              "cmd": "rdc term production cve-2026-1234-fix",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"

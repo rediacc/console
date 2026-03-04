@@ -1,15 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import AnnouncementBar from '../../components/AnnouncementBar.astro';
-import Hero from '../../components/Hero';
-import SPTerminalMockup from '../../components/solution-pages/SPTerminalMockup.astro';
-import LogoWall from '../../components/LogoWall';
-import FeatureShowcase from '../../components/FeatureShowcase';
-import BeforeAfter from '../../components/BeforeAfter';
-import MetricsBar from '../../components/MetricsBar.astro';
-import Testimonials from '../../components/Testimonials';
-import IntegrationsStrip from '../../components/IntegrationsStrip.astro';
-import PricingPreview from '../../components/PricingPreview.astro';
+import SPHomePage from '../../components/solution-pages/SPHomePage.astro';
 import { createTranslator } from '../../i18n/utils';
 import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
@@ -21,7 +13,7 @@ const { lang } = Astro.params as { lang: Language };
 const { t } = createTranslator(lang);
 
 const heroTerminalLines = [
-  { type: 'command' as const, prompt: '❯', cmd: 'rdc clone', flag: 'production', value: '--name staging' },
+  { type: 'command' as const, prompt: '❯', cmd: 'rdc repo fork production', flag: '', value: '' },
   { type: 'check' as const, text: 'Cloning production (3.2 TB)', result: 'done in 4.7s' },
   { type: 'check' as const, text: 'Mounting staging', result: 'ready' },
   { type: 'success' as const, text: 'Created: staging (0 bytes additional storage)' },
@@ -35,6 +27,7 @@ const heroTerminalLines = [
     ],
   },
 ];
+
 ---
 
 <BaseLayout
@@ -46,31 +39,5 @@ const heroTerminalLines = [
   structuredDataType="organization"
 >
   <AnnouncementBar lang={lang} />
-  <div class="hero-dark-zone">
-    <Hero client:idle lang={lang} origin={Astro.url.origin} />
-    <div class="hero-terminal-wrapper">
-      <SPTerminalMockup lines={heroTerminalLines} lang={lang} />
-    </div>
-  </div>
-  <LogoWall client:visible lang={lang} />
-  <FeatureShowcase client:visible lang={lang} />
-  <BeforeAfter client:visible lang={lang} />
-  <MetricsBar lang={lang} />
-  <Testimonials client:visible lang={lang} />
-  <IntegrationsStrip lang={lang} />
-  <PricingPreview lang={lang} />
-
-  <!-- Closing CTA -->
-  <section class="closing-cta">
-    <div class="container">
-      <div class="closing-cta-inner reveal">
-        <h2 class="closing-cta-title">{t('getStarted.title')}</h2>
-        <p class="closing-cta-subtitle">{t('getStarted.subtitle')}</p>
-        <div class="closing-cta-actions">
-          <a href={`/${lang}/install`} class="btn btn-primary">{t('getStarted.cta.primary')}</a>
-          <a href={`/${lang}/contact`} class="btn btn-secondary">{t('getStarted.cta.secondary')}</a>
-        </div>
-      </div>
-    </div>
-  </section>
+  <SPHomePage lang={lang} heroTerminalLines={heroTerminalLines} />
 </BaseLayout>

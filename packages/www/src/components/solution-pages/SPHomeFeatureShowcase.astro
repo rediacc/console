@@ -1,0 +1,12 @@
+---
+import FeatureShowcase from '../FeatureShowcase';
+import type { Language } from '../../i18n/types';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props as Props;
+---
+
+<FeatureShowcase client:visible lang={lang} />

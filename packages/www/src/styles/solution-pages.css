@@ -296,10 +296,45 @@
 }
 .sp-terminal-disclaimer {
   margin: 8px 0 0;
-  color: #8f9399;
+  color: #2f3338;
   font-size: 12px;
   line-height: 1.45;
   text-align: left;
+}
+
+.sp-terminal-disclaimer a {
+  color: #0a58ca;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.sp-terminal-disclaimer a:hover {
+  color: #0847a6;
+}
+
+:root[data-theme='light'] .sp-terminal-disclaimer {
+  color: #cfd6df;
+}
+
+:root[data-theme='light'] .sp-terminal-disclaimer a {
+  color: #9bc7ff;
+}
+
+:root[data-theme='light'] .sp-terminal-disclaimer a:hover {
+  color: #b8d8ff;
+}
+
+:root[data-theme='dark'] .sp-terminal-disclaimer {
+  color: #d8dde5;
+}
+
+:root[data-theme='dark'] .sp-terminal-disclaimer a {
+  color: #7fb3ff;
+}
+
+:root[data-theme='dark'] .sp-terminal-disclaimer a:hover {
+  color: #a6c9ff;
 }
 .sp-terminal-cursor {
   display: inline-block;

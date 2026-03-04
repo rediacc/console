@@ -1297,40 +1297,6 @@ a[target='_blank']::after {
 /* Sidebar now overlays content instead of pushing it */
 /* This improves performance and prevents layout shift */
 
-/* ===== HERO SECTION ===== */
-.hero {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--color-bg-alt);
-  padding: var(--space-24) 0 var(--space-12);
-}
-
-/* Mobile hero optimization - reduce viewport height constraints */
-@media (max-width: 48rem) {
-  /* 768px */
-  .hero {
-    min-height: auto;
-    padding: var(--space-16) 0;
-  }
-}
-
-@media (max-width: 30rem) {
-  /* 480px - smartphones */
-  .hero {
-    padding: var(--space-12) 0;
-  }
-}
-
-.hero-dark-zone {
-  background: var(--gradient-dark);
-}
-
-.hero-dark {
-  background: transparent;
-  color: white;
-}
-
 /* Section Background Utilities */
 .section-light {
   background: var(--color-bg-light);
@@ -1340,119 +1306,6 @@ a[target='_blank']::after {
 .section-dark {
   background: var(--color-bg-dark);
   color: white;
-}
-
-.hero-container {
-  max-width: 900px;
-  min-width: 0;
-  margin: 0 auto;
-  padding: 0 var(--space-8);
-  text-align: center;
-}
-
-/* Mobile hero container - reduce excessive padding */
-@media (max-width: 30rem) {
-  /* 480px - smartphones */
-  .hero-container {
-    padding: 0 var(--space-4);
-  }
-}
-
-.hero-title {
-  font-size: var(--font-size-4xl);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--leading-tight);
-  margin-bottom: var(--space-8);
-  color: var(--color-text);
-}
-
-.hero-dark .hero-title {
-  color: white;
-}
-
-.hero-highlight {
-  color: var(--color-text);
-}
-
-.hero-dark .hero-highlight {
-  color: white;
-}
-
-.hero-subtitle {
-  font-size: 1.25rem;
-  color: var(--color-text-secondary);
-  max-width: var(--container-sm);
-  margin: 0 auto var(--space-12);
-  line-height: var(--leading-normal);
-}
-
-.hero-dark .hero-subtitle {
-  color: rgba(255, 255, 255, var(--opacity-90));
-}
-
-.hero-eyebrow {
-  display: block;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: rgba(255, 255, 255, 0.5);
-  margin-bottom: var(--space-4);
-}
-
-.hero-cta-group {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  justify-content: center;
-  margin-bottom: var(--space-2);
-}
-
-.btn-ghost {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.75rem 1.5rem;
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: var(--radius-md);
-  color: rgba(255, 255, 255, 0.9);
-  background: transparent;
-  text-decoration: none;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.5);
-  color: white;
-  opacity: 1;
-}
-
-.hero-cta-badge {
-  display: block;
-  font-size: var(--font-size-sm);
-  color: rgba(255, 255, 255, 0.4);
-  margin-bottom: var(--space-8);
-}
-
-.hero-cta {
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
-  justify-content: center;
-}
-
-@media (max-width: 30rem) {
-  .hero-cta-group {
-    flex-direction: column;
-    width: 100%;
-  }
-  .hero-cta-group .btn {
-    width: 100%;
-  }
 }
 
 /* ===== INSTALL WIDGET ===== */
@@ -2448,20 +2301,6 @@ a[target='_blank']::after {
 
 .announcement-bar-arrow {
   margin-left: var(--space-2);
-}
-
-/* ===== HERO TERMINAL ===== */
-.hero-terminal-wrapper {
-  --sp-brand-primary: #4a7c3f;
-  --sp-brand-secondary: #3d6834;
-  padding: 0 var(--space-4) var(--space-12);
-  display: flex;
-  justify-content: center;
-}
-
-.hero-terminal-wrapper .sp-hero-visual {
-  max-width: 680px;
-  width: 100%;
 }
 
 /* ===== CLOSING CTA SECTION ===== */

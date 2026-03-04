@@ -1,6 +1,7 @@
 ---
 import { createTranslator } from '../../i18n/utils';
 import type { Language } from '../../i18n/types';
+import { parseRdcCommand } from '../../../scripts/lib/cli-reference-catalog.js';
 
 interface TerminalLine {
   type: 'command' | 'check' | 'spacer' | 'success' | 'summary' | 'comment' | 'warn' | 'table-header' | 'table-row';
@@ -20,6 +21,26 @@ interface Props {
 
 const { lines, lang = 'en' } = Astro.props;
 const { t } = createTranslator(lang);
+
+let referenceLink: { href: string; label: string } | null = null;
+for (const line of lines) {
+  if (line.type !== 'command') continue;
+  const commandText = [line.cmd, line.flag, line.value]
+    .filter((value) => typeof value === 'string' && value.trim().length > 0)
+    .join(' ')
+    .trim();
+  if (!commandText.startsWith('rdc ')) continue;
+
+  const parsed = parseRdcCommand(commandText);
+  if (!parsed.ok || parsed.rootOnly || !parsed.entry) continue;
+
+  const label = `rdc ${parsed.commandPath}`;
+  referenceLink = {
+    label,
+    href: `/${lang}/docs/${parsed.entry.slug}#${parsed.entry.anchorId}`,
+  };
+  break;
+}
 ---
 
 <div class="sp-terminal-wrapper">
@@ -88,5 +109,13 @@ const { t } = createTranslator(lang);
   </div>
   <p class="sp-terminal-disclaimer">
     <span aria-hidden="true">*</span> {t('common.terminalSimulationDisclaimer')}
+    {referenceLink && (
+      <>
+        {' '}CLI reference:{' '}
+        <a href={referenceLink.href} data-cli-ref-link="true" data-cli-ref-title={referenceLink.label}>
+          {referenceLink.label}
+        </a>
+      </>
+    )}
   </p>
 </div>

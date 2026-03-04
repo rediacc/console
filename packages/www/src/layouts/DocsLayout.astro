@@ -167,24 +167,6 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
     </div>
   </div>
 
-  <div class="cli-ref-modal" data-cli-ref-modal hidden>
-    <div class="cli-ref-modal-backdrop" data-cli-ref-close></div>
-    <div class="cli-ref-modal-dialog" role="dialog" aria-modal="true" aria-label="CLI reference">
-      <div class="cli-ref-modal-header">
-        <strong class="cli-ref-modal-title" data-cli-ref-title>CLI reference</strong>
-        <div class="cli-ref-modal-actions">
-          <a class="cli-ref-open-tab" data-cli-ref-open-tab href="#" target="_blank" rel="noopener noreferrer">
-            Open in new tab
-          </a>
-          <button type="button" class="cli-ref-modal-close" data-cli-ref-close aria-label="Close reference">
-            Close
-          </button>
-        </div>
-      </div>
-      <iframe class="cli-ref-modal-frame" data-cli-ref-frame title="CLI reference preview"></iframe>
-    </div>
-  </div>
-
   <script is:inline>
     // Apply embed mode for iframe preview pages via runtime query param detection.
     (function() {
@@ -597,126 +579,6 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
         document.addEventListener('DOMContentLoaded', init);
       } else {
         init();
-      }
-    })();
-  </script>
-
-  <script is:inline>
-    // Open generated CLI reference links in a modal (same tab),
-    // while preserving standard browser behavior for new-tab interactions.
-    (function() {
-      function initializeCliReferenceModal() {
-        const root = document.querySelector('[data-cli-ref-modal]');
-        if (!root) return;
-
-        const dialog = root.querySelector('.cli-ref-modal-dialog');
-        const frame = root.querySelector('[data-cli-ref-frame]');
-        const title = root.querySelector('[data-cli-ref-title]');
-        const openTab = root.querySelector('[data-cli-ref-open-tab]');
-        const closeButtons = root.querySelectorAll('[data-cli-ref-close]');
-        let lastTrigger = null;
-
-        const toEmbedHref = (href) => {
-          try {
-            const url = new URL(href, window.location.origin);
-            url.searchParams.set('embed', 'cli-ref');
-            return url.toString();
-          } catch {
-            return href;
-          }
-        };
-
-        const openModal = (href, linkTitle, trigger) => {
-          const embedHref = toEmbedHref(href);
-          root.removeAttribute('hidden');
-          root.classList.add('is-open');
-          document.body.classList.add('cli-ref-modal-open');
-          frame.setAttribute('src', embedHref);
-          openTab.setAttribute('href', href);
-          title.textContent = linkTitle || 'CLI reference';
-          lastTrigger = trigger;
-          window.requestAnimationFrame(() => {
-            const closeBtn = root.querySelector('.cli-ref-modal-close');
-            closeBtn?.focus();
-          });
-        };
-
-        const closeModal = () => {
-          if (!root.classList.contains('is-open')) return;
-          root.classList.remove('is-open');
-          root.setAttribute('hidden', '');
-          document.body.classList.remove('cli-ref-modal-open');
-          frame.setAttribute('src', '');
-          if (lastTrigger instanceof HTMLElement) lastTrigger.focus();
-          lastTrigger = null;
-        };
-
-        document.addEventListener('click', (event) => {
-          const target = event.target;
-          if (!(target instanceof Element)) return;
-
-          const link = target.closest('a[data-cli-ref-link=\"true\"]');
-          if (link instanceof HTMLAnchorElement) {
-            if (
-              event.defaultPrevented ||
-              event.button !== 0 ||
-              event.metaKey ||
-              event.ctrlKey ||
-              event.shiftKey ||
-              event.altKey ||
-              link.target === '_blank'
-            ) {
-              return;
-            }
-
-            event.preventDefault();
-            openModal(link.href, link.dataset.cliRefTitle || link.textContent || 'CLI reference', link);
-            return;
-          }
-
-          const closeEl = target.closest('[data-cli-ref-close]');
-          if (closeEl) {
-            event.preventDefault();
-            closeModal();
-          }
-        });
-
-        document.addEventListener('keydown', (event) => {
-          if (!root.classList.contains('is-open')) return;
-          if (event.key === 'Escape') {
-            event.preventDefault();
-            closeModal();
-            return;
-          }
-
-          if (event.key !== 'Tab') return;
-          if (!(dialog instanceof HTMLElement)) return;
-          const focusable = dialog.querySelectorAll(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex=\"-1\"])'
-          );
-          if (focusable.length === 0) return;
-          const first = focusable[0];
-          const last = focusable[focusable.length - 1];
-          const active = document.activeElement;
-
-          if (event.shiftKey && active === first) {
-            event.preventDefault();
-            last.focus();
-          } else if (!event.shiftKey && active === last) {
-            event.preventDefault();
-            first.focus();
-          }
-        });
-      }
-
-      if (!window.rediaccCliRefModalInitialized) {
-        window.rediaccCliRefModalInitialized = true;
-        document.addEventListener('astro:page-load', initializeCliReferenceModal);
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', initializeCliReferenceModal);
-        } else {
-          initializeCliReferenceModal();
-        }
       }
     })();
   </script>
@@ -1164,85 +1026,6 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
       pointer-events: none;
     }
 
-    .cli-ref-modal {
-      position: fixed;
-      inset: 0;
-      z-index: 1200;
-    }
-
-    .cli-ref-modal-backdrop {
-      position: absolute;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.45);
-    }
-
-    .cli-ref-modal-dialog {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      width: min(980px, calc(100vw - 2rem));
-      height: min(760px, calc(100vh - 2rem));
-      background: #fff;
-      border-radius: var(--radius-md);
-      border: 1px solid var(--color-border);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
-    }
-
-    .cli-ref-modal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--space-3);
-      padding: var(--space-3) var(--space-4);
-      border-bottom: 1px solid var(--color-border);
-      background: var(--color-bg-light);
-    }
-
-    .cli-ref-modal-title {
-      font-size: var(--font-size-sm);
-    }
-
-    .cli-ref-modal-actions {
-      display: flex;
-      align-items: center;
-      gap: var(--space-2);
-    }
-
-    .cli-ref-open-tab,
-    .cli-ref-modal-close {
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      background: #fff;
-      color: var(--color-text);
-      font-size: var(--font-size-xs);
-      padding: 0.35rem 0.55rem;
-      line-height: 1;
-    }
-
-    .cli-ref-open-tab {
-      text-decoration: none;
-    }
-
-    .cli-ref-open-tab:hover,
-    .cli-ref-modal-close:hover {
-      background: var(--color-hover);
-    }
-
-    .cli-ref-modal-frame {
-      border: 0;
-      width: 100%;
-      height: 100%;
-      background: #fff;
-    }
-
-    :global(body.cli-ref-modal-open) {
-      overflow: hidden;
-    }
-
     /* Responsive Design - TOC sidebar is hidden on tablets/phones (handled in sidebar-shared.css) */
     @media (max-width: 75rem) {
       /* 1200px */
@@ -1271,11 +1054,6 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
 
       .article-header-main {
         flex-direction: column;
-      }
-
-      .cli-ref-modal-dialog {
-        width: calc(100vw - 1rem);
-        height: calc(100vh - 1rem);
       }
 
     }

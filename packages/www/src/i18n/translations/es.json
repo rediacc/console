@@ -77,7 +77,7 @@
       "skipToMainContent": "Saltar al contenido principal",
       "skipToNavigation": "Saltar a navegación"
     },
-    "terminalSimulationDisclaimer": "La salida de comandos es ilustrativa y está abreviada para facilitar la lectura. La ejecución real puede generar registros adicionales.",
+    "terminalSimulationDisclaimer": "Salida ilustrativa; la ejecución real puede incluir más registros.",
     "theProblem": "El problema"
   },
   "contactModal": {
@@ -1458,8 +1458,8 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc status",
-              "flag": "--summary",
+              "cmd": "rdc machine status production",
+              "flag": "",
               "value": ""
             },
             {
@@ -1740,9 +1740,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc snapshot",
-              "flag": "--all-repos",
-              "value": "--schedule daily"
+              "cmd": "rdc backup schedule set",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -2027,9 +2027,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc clone production",
-              "flag": "--name",
-              "value": "feature-auth-v2"
+              "cmd": "rdc repo fork production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -3239,7 +3239,7 @@
           "title": "Lo que obtienes"
         },
         "bottomCta": {
-          "command": "rdc pentest production --ai --scope full",
+          "command": "rdc audit log --level warn --limit 200",
           "ctaText": "Empieza gratis",
           "description": "Comienza con la edición Community gratuita. Ejecuta tu primer pentesting en menos de 60 segundos.",
           "title": "Encuentra vulnerabilidades antes que los atacantes"
@@ -3550,7 +3550,9 @@
           "lines": [
             {
               "type": "command",
-              "text": "rdc pentest production --ai --scope full"
+              "cmd": "rdc term production security-scan",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -4061,7 +4063,7 @@
           "title": "Lo que obtienes"
         },
         "bottomCta": {
-          "command": "rdc backup verify --all",
+          "command": "rdc backup list --verify",
           "description": "Comienza con la edición Community gratuita. Verifica tu primera copia en menos de un minuto.",
           "primaryCta": "Empieza gratis con Community",
           "tierBadge": "Sin tarjeta de crédito",
@@ -4417,8 +4419,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup verify",
-              "flag": "--all"
+              "cmd": "rdc backup list",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -4514,7 +4517,7 @@
           "title": "Lo que obtienes"
         },
         "bottomCta": {
-          "command": "rdc replicate production --target secondary-dc",
+          "command": "rdc backup sync --target secondary-dc",
           "description": "Comienza con la edición Community gratuita. Replica entre ubicaciones sin coste. Sin tarjeta de crédito.",
           "primaryCta": "Empieza gratis con Community",
           "tierBadge": "Gratis para siempre hasta 10 cargas de trabajo",
@@ -4871,9 +4874,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc replicate production",
-              "flag": "--target",
-              "value": "secondary-dc"
+              "cmd": "rdc backup sync",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -5278,7 +5281,9 @@
           "lines": [
             {
               "type": "command",
-              "text": "rdc pentest production --schedule daily --time 02:00 --notify slack"
+              "cmd": "rdc backup schedule set",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -5357,7 +5362,7 @@
           "title": "Lo que obtienes"
         },
         "bottomCta": {
-          "command": "rdc encrypt --key /etc/rediacc/keys/production.key --all",
+          "command": "rdc repo mount production --credential-file /etc/rediacc/keys/production.key",
           "ctaText": "Empieza gratis con Community",
           "description": "Comienza con la edición Community gratuita. Genera tu primera clave en menos de un minuto.",
           "title": "Toma el control de tu cifrado"
@@ -5707,7 +5712,9 @@
           "lines": [
             {
               "type": "command",
-              "text": "rdc encrypt --key /etc/rediacc/keys/production.key --all"
+              "cmd": "rdc repo mount production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -6131,9 +6138,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc clone production",
-              "flag": "--name",
-              "value": "dev-sarah"
+              "cmd": "rdc repo fork production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -6568,9 +6575,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc failover test",
-              "flag": "--target secondary-dc",
-              "value": "--simulate"
+              "cmd": "rdc ops status",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -6662,7 +6669,7 @@
           "title": "Lo que obtienes"
         },
         "bottomCta": {
-          "command": "rdc backup production --immutable --verify",
+          "command": "rdc backup push production --verify",
           "description": "Comienza con la edición Community gratuita. Protege hasta 10 cargas de trabajo sin coste. Sin tarjeta de crédito.",
           "primaryCta": "Empieza gratis con Community",
           "tierBadge": "Gratis para siempre hasta 10 cargas de trabajo",
@@ -7022,9 +7029,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup production",
-              "flag": "--immutable",
-              "value": "--verify"
+              "cmd": "rdc backup push production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -7111,7 +7118,7 @@
           "title": "Lo que obtienes"
         },
         "bottomCta": {
-          "command": "rdc clone production --as dev-loadtest --ttl 4h",
+          "command": "rdc repo fork production --name dev-loadtest",
           "description": "Comienza con la edición Community gratuita. Clonación bajo demanda incluida.",
           "primaryCta": "Empieza gratis",
           "tierBadge": "Gratis hasta 5 repositorios · Sin tarjeta de crédito",
@@ -7454,9 +7461,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc clone production",
-              "flag": "--as",
-              "value": "dev-loadtest --ttl 4h"
+              "cmd": "rdc repo fork production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -7540,7 +7547,7 @@
           "title": "Lo que obtienes"
         },
         "bottomCta": {
-          "command": "rdc restore production --from daily-2026-02-27",
+          "command": "rdc backup pull production --storage daily-2026-02-27",
           "description": "Comienza con la edición Community gratuita. Restaura tu primer entorno en menos de 5 minutos.",
           "primaryCta": "Empieza gratis con Community",
           "tierBadge": "Sin tarjeta de crédito",
@@ -7898,9 +7905,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc restore production",
-              "flag": "--from",
-              "value": "daily-2026-02-27"
+              "cmd": "rdc backup pull production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -8407,7 +8414,7 @@
           "title": "Lo que obtienes"
         },
         "bottomCta": {
-          "command": "rdc migrate production --to secondary --encrypted",
+          "command": "rdc backup sync --target secondary",
           "description": "Comienza con la edición Community gratuita. Migración cifrada incluida.",
           "primaryCta": "Empieza gratis",
           "tierBadge": "Gratis hasta 5 repositorios · Sin tarjeta de crédito",
@@ -8765,9 +8772,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc migrate production",
-              "flag": "--to secondary",
-              "value": "--encrypted"
+              "cmd": "rdc backup sync",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -8866,7 +8873,7 @@
           "title": "Lo que obtienes"
         },
         "bottomCta": {
-          "command": "rdc clone production --as dev-sarah --verify-parity",
+          "command": "rdc repo validate dev-sarah",
           "description": "Comienza con la edición Community gratuita. Paridad con producción incluida.",
           "primaryCta": "Empieza gratis",
           "tierBadge": "Gratis hasta 5 repositorios · Sin tarjeta de crédito",
@@ -9209,9 +9216,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc clone production",
-              "flag": "--as",
-              "value": "dev-sarah --verify-parity"
+              "cmd": "rdc repo validate dev-sarah",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -9661,7 +9668,9 @@
           "lines": [
             {
               "type": "command",
-              "text": "rdc restore production --point-in-time 2026-02-27T02:55"
+              "cmd": "rdc backup pull production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -9726,7 +9735,7 @@
           "title": "Lo que obtienes"
         },
         "bottomCta": {
-          "command": "rdc retention set --policy hipaa --keep 7y",
+          "command": "rdc backup schedule set --cron '0 2 * * *'",
           "description": "Comienza con la edición Community gratuita. Configura tu primera política de retención en 30 segundos.",
           "primaryCta": "Empieza gratis con Community",
           "tierBadge": "Sin tarjeta de crédito",
@@ -9928,7 +9937,7 @@
           "steps": [
             {
               "title": "Set policies",
-              "description": "Run rdc retention set --policy hipaa --keep 7y. Define retention per framework or data type.",
+              "description": "Run rdc backup schedule set --cron '0 2 * * *'. Define retention per framework or data type.",
               "icon": "sliders"
             },
             {
@@ -10083,9 +10092,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc retention set",
-              "flag": "--policy hipaa",
-              "value": "--keep 7y"
+              "cmd": "rdc backup schedule set",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -10116,7 +10125,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc retention status"
+              "cmd": "rdc backup schedule show"
             },
             {
               "type": "spacer"
@@ -10543,9 +10552,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc clone production",
-              "flag": "--name",
-              "value": "patch-test-ubuntu-24"
+              "cmd": "rdc repo fork production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -11002,7 +11011,9 @@
           "lines": [
             {
               "type": "command",
-              "text": "rdc migrate production --from aws-east --to hetzner-fsn"
+              "cmd": "rdc backup sync",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -11071,7 +11082,7 @@
           "title": "Lo que obtienes"
         },
         "bottomCta": {
-          "command": "rdc vuln fix CVE-2026-1234 --clone production --verify",
+          "command": "rdc term production cve-2026-1234-fix",
           "description": "Comienza con la edición Community gratuita. Verifica tu primer parche en menos de 4 minutos.",
           "primaryCta": "Empieza gratis",
           "tierBadge": "Sin tarjeta de crédito",
@@ -11375,9 +11386,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc vuln fix CVE-2026-1234",
-              "flag": "--clone production",
-              "value": "--verify"
+              "cmd": "rdc term production cve-2026-1234-fix",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"

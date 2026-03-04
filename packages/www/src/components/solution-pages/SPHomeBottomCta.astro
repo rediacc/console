@@ -1,0 +1,24 @@
+---
+import type { Language } from '../../i18n/types';
+import { createTranslator } from '../../i18n/utils';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props as Props;
+const { t } = createTranslator(lang);
+---
+
+<section class="closing-cta">
+  <div class="container">
+    <div class="closing-cta-inner reveal">
+      <h2 class="closing-cta-title">{t('getStarted.title')}</h2>
+      <p class="closing-cta-subtitle">{t('getStarted.subtitle')}</p>
+      <div class="closing-cta-actions">
+        <a href={`/${lang}/install`} class="btn btn-primary">{t('getStarted.cta.primary')}</a>
+        <a href={`/${lang}/contact`} class="btn btn-secondary">{t('getStarted.cta.secondary')}</a>
+      </div>
+    </div>
+  </div>
+</section>

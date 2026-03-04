@@ -77,7 +77,7 @@
       "skipToMainContent": "Ana içeriğe atla",
       "skipToNavigation": "Navigasyona atla"
     },
-    "terminalSimulationDisclaimer": "Komut çıktısı yalnızca bilgilendirme amaçlıdır ve okunabilirlik için kısaltılmıştır. Gerçek komut çalıştırmasında ek günlükler üretilebilir.",
+    "terminalSimulationDisclaimer": "Çıktı örnektir; gerçek çalıştırmada ek günlükler olabilir.",
     "theProblem": "Sorun"
   },
   "contactModal": {
@@ -1456,8 +1456,8 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc status",
-              "flag": "--summary",
+              "cmd": "rdc machine status production",
+              "flag": "",
               "value": ""
             },
             {
@@ -1738,9 +1738,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc snapshot",
-              "flag": "--all-repos",
-              "value": "--schedule daily"
+              "cmd": "rdc backup schedule set",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -2025,9 +2025,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc clone production",
-              "flag": "--name",
-              "value": "feature-auth-v2"
+              "cmd": "rdc repo fork production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -3233,7 +3233,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc pentest production --ai --scope full",
+          "command": "rdc audit log --level warn --limit 200",
           "ctaText": "Ücretsiz Başlayın",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk sızma testinizi 60 saniyeden kısa sürede çalıştırın.",
           "title": "Güvenlik açıklarını saldırganlardan önce bulun"
@@ -3544,7 +3544,9 @@
           "lines": [
             {
               "type": "command",
-              "text": "rdc pentest production --ai --scope full"
+              "cmd": "rdc term production security-scan",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -4055,7 +4057,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc backup verify --all",
+          "command": "rdc backup list --verify",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk yedeklemenizi bir dakikadan kısa sürede doğrulayın.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
           "tierBadge": "Kredi kartı gerekmez",
@@ -4411,8 +4413,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup verify",
-              "flag": "--all"
+              "cmd": "rdc backup list",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -4508,7 +4511,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc replicate production --target secondary-dc",
+          "command": "rdc backup sync --target secondary-dc",
           "description": "Ücretsiz Community sürümüyle başlayın. Konumlar arasında ücretsiz çoğaltın. Kredi kartı gerekmez.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
           "tierBadge": "10 iş yüküne kadar sonsuza dek ücretsiz",
@@ -4865,9 +4868,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc replicate production",
-              "flag": "--target",
-              "value": "secondary-dc"
+              "cmd": "rdc backup sync",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -5272,7 +5275,9 @@
           "lines": [
             {
               "type": "command",
-              "text": "rdc pentest production --schedule daily --time 02:00 --notify slack"
+              "cmd": "rdc backup schedule set",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -5351,7 +5356,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc encrypt --key /etc/rediacc/keys/production.key --all",
+          "command": "rdc repo mount production --credential-file /etc/rediacc/keys/production.key",
           "ctaText": "Community ile Ücretsiz Başlayın",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk anahtarınızı bir dakikadan kısa sürede oluşturun.",
           "title": "Şifrelemenizin kontrolünü elinize alın"
@@ -5701,7 +5706,9 @@
           "lines": [
             {
               "type": "command",
-              "text": "rdc encrypt --key /etc/rediacc/keys/production.key --all"
+              "cmd": "rdc repo mount production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -6125,9 +6132,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc clone production",
-              "flag": "--name",
-              "value": "dev-sarah"
+              "cmd": "rdc repo fork production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -6562,9 +6569,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc failover test",
-              "flag": "--target secondary-dc",
-              "value": "--simulate"
+              "cmd": "rdc ops status",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -6656,7 +6663,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc backup production --immutable --verify",
+          "command": "rdc backup push production --verify",
           "description": "Ücretsiz Community sürümüyle başlayın. 10 iş yüküne kadar ücretsiz koruyun. Kredi kartı gerekmez.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
           "tierBadge": "10 iş yüküne kadar sonsuza dek ücretsiz",
@@ -7016,9 +7023,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup production",
-              "flag": "--immutable",
-              "value": "--verify"
+              "cmd": "rdc backup push production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -7105,7 +7112,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc clone production --as dev-loadtest --ttl 4h",
+          "command": "rdc repo fork production --name dev-loadtest",
           "description": "Ücretsiz Community sürümüyle başlayın. İsteğe bağlı klonlama dahil.",
           "primaryCta": "Ücretsiz Başlayın",
           "tierBadge": "5 depoya kadar ücretsiz · Kredi kartı gerekmez",
@@ -7448,9 +7455,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc clone production",
-              "flag": "--as",
-              "value": "dev-loadtest --ttl 4h"
+              "cmd": "rdc repo fork production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -7534,7 +7541,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc restore production --from daily-2026-02-27",
+          "command": "rdc backup pull production --storage daily-2026-02-27",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk ortamınızı 5 dakikadan kısa sürede geri yükleyin.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
           "tierBadge": "Kredi kartı gerekmez",
@@ -7892,9 +7899,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc restore production",
-              "flag": "--from",
-              "value": "daily-2026-02-27"
+              "cmd": "rdc backup pull production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -8401,7 +8408,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc migrate production --to secondary --encrypted",
+          "command": "rdc backup sync --target secondary",
           "description": "Ücretsiz Community sürümüyle başlayın. Şifreli göç dahil.",
           "primaryCta": "Ücretsiz Başlayın",
           "tierBadge": "5 depoya kadar ücretsiz · Kredi kartı gerekmez",
@@ -8759,9 +8766,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc migrate production",
-              "flag": "--to secondary",
-              "value": "--encrypted"
+              "cmd": "rdc backup sync",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -8860,7 +8867,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc clone production --as dev-sarah --verify-parity",
+          "command": "rdc repo validate dev-sarah",
           "description": "Ücretsiz Community sürümüyle başlayın. Üretim eşliği dahil.",
           "primaryCta": "Ücretsiz Başlayın",
           "tierBadge": "5 depoya kadar ücretsiz · Kredi kartı gerekmez",
@@ -9203,9 +9210,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc clone production",
-              "flag": "--as",
-              "value": "dev-sarah --verify-parity"
+              "cmd": "rdc repo validate dev-sarah",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -9655,7 +9662,9 @@
           "lines": [
             {
               "type": "command",
-              "text": "rdc restore production --point-in-time 2026-02-27T02:55"
+              "cmd": "rdc backup pull production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -9720,7 +9729,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc retention set --policy hipaa --keep 7y",
+          "command": "rdc backup schedule set --cron '0 2 * * *'",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk saklama politikanızı 30 saniyede ayarlayın.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
           "tierBadge": "Kredi kartı gerekmez",
@@ -9922,7 +9931,7 @@
           "steps": [
             {
               "title": "Set policies",
-              "description": "Run rdc retention set --policy hipaa --keep 7y. Define retention per framework or data type.",
+              "description": "Run rdc backup schedule set --cron '0 2 * * *'. Define retention per framework or data type.",
               "icon": "sliders"
             },
             {
@@ -10077,9 +10086,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc retention set",
-              "flag": "--policy hipaa",
-              "value": "--keep 7y"
+              "cmd": "rdc backup schedule set",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -10110,7 +10119,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc retention status"
+              "cmd": "rdc backup schedule show"
             },
             {
               "type": "spacer"
@@ -10537,9 +10546,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc clone production",
-              "flag": "--name",
-              "value": "patch-test-ubuntu-24"
+              "cmd": "rdc repo fork production",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -10996,7 +11005,9 @@
           "lines": [
             {
               "type": "command",
-              "text": "rdc migrate production --from aws-east --to hetzner-fsn"
+              "cmd": "rdc backup sync",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"
@@ -11065,7 +11076,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc vuln fix CVE-2026-1234 --clone production --verify",
+          "command": "rdc term production cve-2026-1234-fix",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk yamanızı 4 dakikadan kısa sürede doğrulayın.",
           "primaryCta": "Ücretsiz Başlayın",
           "tierBadge": "Kredi kartı gerekmez",
@@ -11369,9 +11380,9 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc vuln fix CVE-2026-1234",
-              "flag": "--clone production",
-              "value": "--verify"
+              "cmd": "rdc term production cve-2026-1234-fix",
+              "flag": "",
+              "value": ""
             },
             {
               "type": "spacer"

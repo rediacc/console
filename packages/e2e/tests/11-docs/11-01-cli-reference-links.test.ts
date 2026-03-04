@@ -43,4 +43,42 @@ test.describe('Docs CLI Reference Link UX', () => {
 
     await popup.close();
   });
+
+  test('opens terminal disclaimer CLI reference in modal and preserves middle-click new tab @docs @regression', async ({
+    page,
+    context,
+  }) => {
+    await page.goto('/en/for-devops', { waitUntil: 'domcontentloaded' });
+
+    const referenceLink = page
+      .locator('.sp-terminal-disclaimer a[data-cli-ref-link="true"]')
+      .first();
+    await expect(referenceLink).toBeVisible({ timeout: 10000 });
+    await expect(referenceLink).toContainText('rdc ');
+
+    const href = await referenceLink.getAttribute('href');
+    expect(href).toBeTruthy();
+
+    await referenceLink.click();
+
+    const modal = page.locator('[data-cli-ref-modal]');
+    await expect(modal).toHaveClass(/is-open/);
+
+    const frame = page.locator('[data-cli-ref-frame]');
+    const frameSrc = await frame.getAttribute('src');
+    expect(frameSrc).toContain(href as string);
+
+    await page.locator('.cli-ref-modal-close').click();
+    await expect(modal).toBeHidden();
+
+    const popupPromise = context.waitForEvent('page');
+    await referenceLink.click({ button: 'middle' });
+    const popup = await popupPromise;
+    await popup.waitForLoadState('domcontentloaded');
+
+    expect(popup.url()).toContain('/en/docs/cli-application');
+    expect(popup.url()).toMatch(/#cli-(local|cloud)-/);
+
+    await popup.close();
+  });
 });

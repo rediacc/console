@@ -13,12 +13,13 @@ interface Props {
     secondaryCta?: string;
   };
   ctaHref: string;
+  secondaryCtaHref?: string;
   terminal?: {
     lines: any[];
   };
 }
 
-const { lang, hero, ctaHref, terminal } = Astro.props;
+const { lang, hero, ctaHref, secondaryCtaHref, terminal } = Astro.props;
 ---
 
 <section class="sp-hero">
@@ -38,7 +39,7 @@ const { lang, hero, ctaHref, terminal } = Astro.props;
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </a>
       {hero.secondaryCta && (
-        <a href="#problem" class="sp-btn-secondary-dark">{hero.secondaryCta} &rarr;</a>
+        <a href={secondaryCtaHref ?? '#problem'} class="sp-btn-secondary-dark">{hero.secondaryCta} &rarr;</a>
       )}
     </div>
     {terminal && <SPTerminalMockup lines={terminal.lines} lang={lang} />}

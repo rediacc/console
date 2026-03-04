@@ -1,0 +1,12 @@
+---
+import LogoWall from '../LogoWall';
+import type { Language } from '../../i18n/types';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props as Props;
+---
+
+<LogoWall client:visible lang={lang} />

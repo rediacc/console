@@ -3,6 +3,7 @@ import Navigation from '../components/Navigation';
 import ContactModal from '../components/ContactModal';
 import Footer from '../components/Footer';
 import NewsletterReturnPopup from '../components/NewsletterReturnPopup';
+import CliReferenceModal from '../components/docs/CliReferenceModal.astro';
 import StructuredData from '../components/StructuredData.astro';
 import { createTranslator } from '../i18n/utils';
 import { getLanguageFromPath, getPathWithoutLanguage, SUPPORTED_LANGUAGES, getLocale } from '../i18n/language-utils';
@@ -384,31 +385,6 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
         padding-top: 0;
       }
 
-      /* Critical Hero Styles */
-      .hero {
-        padding: var(--space-24) 0 var(--space-20);
-        background-color: var(--color-bg-alt);
-      }
-
-      .hero-container {
-        max-width: var(--container-md);
-        margin: 0 auto;
-        padding: 0 var(--space-4);
-        text-align: center;
-      }
-
-      .hero-title {
-        font-size: var(--font-size-4xl);
-        font-weight: var(--font-weight-semibold);
-        line-height: 1.1;
-        color: var(--color-text);
-        margin-bottom: var(--space-6);
-      }
-
-      .hero-highlight {
-        color: var(--color-text);
-      }
-
       :global(html.cli-ref-embed .skip-nav),
       :global(html.cli-ref-embed #navigation),
       :global(html.cli-ref-embed .nav),
@@ -426,6 +402,7 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
       :global(html.cli-ref-embed main) {
         padding-top: 0 !important;
       }
+
     </style>
 </head>
 <body>
@@ -440,6 +417,7 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
     <main id="main-content">
         <slot />
     </main>
+    <CliReferenceModal />
     <ContactModal client:load />
     <NewsletterReturnPopup client:load />
     <Footer client:visible />
