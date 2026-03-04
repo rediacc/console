@@ -4,7 +4,7 @@ description: "Управление подписками и лицензиями 
 category: "Guides"
 order: 7
 language: ru
-sourceHash: "84215f54750ac4a4"
+sourceHash: "d1f2557708514926"
 ---
 
 # Подписка и лицензирование

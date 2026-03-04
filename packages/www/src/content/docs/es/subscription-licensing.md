@@ -4,7 +4,7 @@ description: "Gestionar suscripciones y licencias de máquina para implementacio
 category: "Guides"
 order: 7
 language: es
-sourceHash: "84215f54750ac4a4"
+sourceHash: "d1f2557708514926"
 ---
 
 # Suscripción y licencias

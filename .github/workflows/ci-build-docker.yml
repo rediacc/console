@@ -163,13 +163,13 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
 
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v4
 
       # Build validation (dry-run)
       - name: Validate plugin images
         run: .ci/scripts/build/build-plugins.sh --dry-run
 
-      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
+      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -236,9 +236,9 @@ jobs:
           cd private/account && npm install
           cd web && npm install && npx vite build --outDir ../../../account-web-assets
 
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v4
 
-      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
+      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -295,9 +295,9 @@ jobs:
           name: cli-bundle-${{ github.sha }}
           path: bundle/
 
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v4
 
-      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
+      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -569,9 +569,9 @@ jobs:
           name: middleware-publish-arm64-${{ github.sha }}
           path: publish/arm64/
 
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v4
 
-      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
+      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -659,9 +659,9 @@ jobs:
       - name: List binaries
         run: ls -la binaries/
 
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v4
 
-      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
+      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -711,9 +711,9 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v4
 
-      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
+      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -743,9 +743,9 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v4
 
-      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
+      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -774,9 +774,9 @@ jobs:
     needs: [build-devcontainer-amd64, build-devcontainer-arm64]
     if: github.event_name == 'push'
     steps:
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v4
 
-      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
+      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}

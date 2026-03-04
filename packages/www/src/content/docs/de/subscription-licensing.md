@@ -4,7 +4,7 @@ description: "Abonnements und Maschinenlizenzen für lokale Bereitstellungen ver
 category: "Guides"
 order: 7
 language: de
-sourceHash: "84215f54750ac4a4"
+sourceHash: "d1f2557708514926"
 ---
 
 # Abonnement & Lizenzierung

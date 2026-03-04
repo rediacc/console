@@ -4,7 +4,7 @@ description: "Gérer les abonnements et les licences machine pour les déploieme
 category: "Guides"
 order: 7
 language: fr
-sourceHash: "84215f54750ac4a4"
+sourceHash: "d1f2557708514926"
 ---
 
 # Abonnement et licences

@@ -4,7 +4,7 @@ description: "إدارة الاشتراكات وتراخيص الأجهزة لع
 category: "Guides"
 order: 7
 language: ar
-sourceHash: "84215f54750ac4a4"
+sourceHash: "d1f2557708514926"
 ---
 
 # الاشتراك والترخيص

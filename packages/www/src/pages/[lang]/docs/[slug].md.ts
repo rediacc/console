@@ -23,4 +23,3 @@ export const GET: APIRoute = ({ props }) => {
     headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
   });
 };
-
