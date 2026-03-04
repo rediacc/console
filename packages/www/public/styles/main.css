@@ -2030,6 +2030,7 @@ a[target='_blank']::after {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  min-width: 0;
 }
 
 .feature-tab-panel h3 {
@@ -2043,6 +2044,10 @@ a[target='_blank']::after {
   color: var(--color-text-secondary);
   line-height: var(--leading-relaxed);
   margin: 0 0 var(--space-4);
+}
+
+.feature-tab-media {
+  min-width: 0;
 }
 
 .feature-tab-solutions {
@@ -2093,6 +2098,82 @@ a[target='_blank']::after {
     padding: var(--space-3) var(--space-4);
     font-size: var(--font-size-sm);
   }
+}
+
+/* ===== TERMINAL TUTORIAL PLAYER ===== */
+.terminal-tutorial {
+  margin: var(--space-6) 0;
+}
+
+.terminal-tutorial-header {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-3);
+}
+
+.terminal-tutorial-layout {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #1a1a2e;
+}
+
+.terminal-tutorial-player {
+  display: flex;
+  flex-direction: column;
+}
+
+.terminal-tutorial-player-inner {
+  flex: 1;
+  min-height: 400px;
+}
+
+.terminal-tutorial-player-inner .ap-player {
+  overflow: visible;
+}
+
+.terminal-tutorial-player-inner .ap-wrapper {
+  width: 100%;
+  max-width: 100%;
+}
+
+.terminal-tutorial-player-inner .ap-player {
+  max-width: 100%;
+}
+
+.terminal-transcript {
+  margin-top: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-alt);
+  padding: var(--space-3);
+}
+
+.terminal-transcript-title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+}
+
+.terminal-transcript-current {
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text);
+  display: grid;
+  gap: 0.2rem;
+}
+
+.terminal-transcript-step {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.terminal-transcript-text {
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-normal);
 }
 
 /* ===== BEFORE/AFTER ===== */

@@ -93,7 +93,7 @@ const FeatureShowcase: React.FC<FeatureShowcaseProps> = ({ lang = 'en' }) => {
           <div className="feature-tab-panel" role="tabpanel" id={`feature-panel-${active.key}`}>
             <p className="feature-tab-description">{active.description}</p>
             <div className="feature-tab-media">
-              <TerminalPlayer src={active.tutorialSrc} />
+              <TerminalPlayer src={active.tutorialSrc} lang={lang} />
             </div>
             <ul className="feature-tab-solutions">
               {active.solutions.map((s) => (

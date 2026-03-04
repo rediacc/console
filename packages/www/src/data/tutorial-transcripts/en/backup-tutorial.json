@@ -1,0 +1,55 @@
+{
+  "cast": "/assets/tutorials/backup-tutorial.cast",
+  "language": "en",
+  "version": 1,
+  "events": [
+    {
+      "id": "backup-01",
+      "markerIndex": 0,
+      "at": 1.509097,
+      "text": "Inspect currently configured backup destinations."
+    },
+    {
+      "id": "backup-02",
+      "markerIndex": 1,
+      "at": 9.565032,
+      "text": "Enable a scheduled backup policy with target storage details."
+    },
+    {
+      "id": "backup-03",
+      "markerIndex": 2,
+      "at": 19.718406,
+      "text": "Review the active backup schedule configuration."
+    },
+    {
+      "id": "backup-04",
+      "markerIndex": 3,
+      "at": 27.974161,
+      "text": "Apply infrastructure settings for external access and certificates."
+    },
+    {
+      "id": "backup-05",
+      "markerIndex": 4,
+      "at": 39.964598,
+      "text": "Register required TCP and UDP service ports."
+    },
+    {
+      "id": "backup-06",
+      "markerIndex": 5,
+      "at": 50.277844,
+      "text": "Display infrastructure details to confirm networking values."
+    },
+    {
+      "id": "backup-07",
+      "markerIndex": 6,
+      "at": 58.727031,
+      "text": "Disable scheduled backups as part of the rollback flow."
+    },
+    {
+      "id": "backup-08",
+      "markerIndex": 7,
+      "at": 65.303576,
+      "text": "Recheck schedule status to confirm the policy change."
+    }
+  ]
+}

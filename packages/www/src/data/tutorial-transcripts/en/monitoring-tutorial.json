@@ -1,0 +1,55 @@
+{
+  "cast": "/assets/tutorials/monitoring-tutorial.cast",
+  "language": "en",
+  "version": 1,
+  "events": [
+    {
+      "id": "monitoring-01",
+      "markerIndex": 0,
+      "at": 1.508459,
+      "text": "Run a full environment diagnostic to surface baseline issues."
+    },
+    {
+      "id": "monitoring-02",
+      "markerIndex": 1,
+      "at": 8.976075,
+      "text": "Check remote machine health indicators."
+    },
+    {
+      "id": "monitoring-03",
+      "markerIndex": 2,
+      "at": 18.228101,
+      "text": "List active containers on the target machine."
+    },
+    {
+      "id": "monitoring-04",
+      "markerIndex": 3,
+      "at": 27.138835,
+      "text": "Inspect service manager status for core components."
+    },
+    {
+      "id": "monitoring-05",
+      "markerIndex": 4,
+      "at": 35.981025,
+      "text": "Review vault and encryption subsystem status."
+    },
+    {
+      "id": "monitoring-06",
+      "markerIndex": 5,
+      "at": 45.106571,
+      "text": "Scan and verify host keys for the machine."
+    },
+    {
+      "id": "monitoring-07",
+      "markerIndex": 6,
+      "at": 53.662765,
+      "text": "Confirm remote command execution with a hostname check."
+    },
+    {
+      "id": "monitoring-08",
+      "markerIndex": 7,
+      "at": 60.414173,
+      "text": "Validate machine responsiveness with an uptime check."
+    }
+  ]
+}

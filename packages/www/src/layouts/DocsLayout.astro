@@ -859,21 +859,39 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
     .article-content :global(.terminal-tutorial-player-inner .ap-wrapper) {
       max-width: 100%;
     }
-    .article-content :global(.terminal-tutorial-controls) {
-      padding: var(--space-2) var(--space-3);
-      background: rgba(0, 0, 0, 0.3);
+    .article-content :global(.terminal-transcript) {
+      margin-top: var(--space-4);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-bg-alt);
+      padding: var(--space-3);
     }
-    .article-content :global(.terminal-tutorial-play-btn) {
-      padding: var(--space-1) var(--space-3);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+
+    .article-content :global(.terminal-transcript-title) {
+      margin: 0 0 var(--space-2);
+      font-size: var(--font-size-base);
+      color: var(--color-text);
+    }
+
+    .article-content :global(.terminal-transcript-current) {
+      border: 1px solid var(--color-border);
+      background: var(--color-bg);
       border-radius: var(--radius-sm);
-      background: transparent;
-      color: #fff;
-      cursor: pointer;
-      font-size: var(--font-size-sm);
+      padding: var(--space-2) var(--space-3);
+      color: var(--color-text);
+      display: grid;
+      gap: 0.2rem;
     }
-    .article-content :global(.terminal-tutorial-play-btn:hover) {
-      background: rgba(255, 255, 255, 0.1);
+
+    .article-content :global(.terminal-transcript-step) {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    .article-content :global(.terminal-transcript-text) {
+      font-size: var(--font-size-sm);
+      line-height: var(--leading-normal);
     }
 
     .article-content :global(.cli-ref-links) {
