@@ -15,6 +15,7 @@
 1112659   # hardlink path traversal (GHSA-34x7-hfp2-rc4v)
 1113300   # arbitrary overwrite/symlink poisoning (GHSA-8qq5-rm4j-mr97)
 1113375   # hardlink target escape through symlink chain (GHSA-83g3-92jg-28cx)
+1113992   # drive-relative hardlink traversal (GHSA-qffp-2rhf-9h96)
 
 # minimatch ReDoS — transitive across eslint/electron-builder chains
 1113545   # matchOne() combinatorial backtracking via GLOBSTAR (GHSA-7r86-cg39-jmmj)
