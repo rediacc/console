@@ -274,7 +274,7 @@ ensure_generative_venv() {
     local content_hash
 
     content_hash="$(
-        cd "$gen_dir" && \
+        cd "$gen_dir" &&
             sha256sum pyproject.toml src/tutorial_tts/*.py src/tutorial_tts/*.json | sha256sum | awk '{print $1}'
     )"
 
