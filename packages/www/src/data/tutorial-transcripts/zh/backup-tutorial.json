@@ -1,0 +1,55 @@
+{
+  "cast": "/assets/tutorials/backup-tutorial.cast",
+  "language": "zh",
+  "version": 1,
+  "events": [
+    {
+      "id": "backup-01",
+      "markerIndex": 0,
+      "at": 1.509097,
+      "text": "检查当前配置的备份目标。"
+    },
+    {
+      "id": "backup-02",
+      "markerIndex": 1,
+      "at": 9.565032,
+      "text": "启用具有目标存储详细信息的计划备份策略。"
+    },
+    {
+      "id": "backup-03",
+      "markerIndex": 2,
+      "at": 19.718406,
+      "text": "查看活动备份计划配置。"
+    },
+    {
+      "id": "backup-04",
+      "markerIndex": 3,
+      "at": 27.974161,
+      "text": "应用外部访问和证书的基础架构设置。"
+    },
+    {
+      "id": "backup-05",
+      "markerIndex": 4,
+      "at": 39.964598,
+      "text": "注册所需的 TCP 和 UDP 服务端口。"
+    },
+    {
+      "id": "backup-06",
+      "markerIndex": 5,
+      "at": 50.277844,
+      "text": "显示基础设施详细信息以确认网络价值。"
+    },
+    {
+      "id": "backup-07",
+      "markerIndex": 6,
+      "at": 58.727031,
+      "text": "作为回滚流程的一部分禁用计划备份。"
+    },
+    {
+      "id": "backup-08",
+      "markerIndex": 7,
+      "at": 65.303576,
+      "text": "重新检查计划状态以确认策略更改。"
+    }
+  ]
+}

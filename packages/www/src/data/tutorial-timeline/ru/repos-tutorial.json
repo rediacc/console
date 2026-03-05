@@ -1,0 +1,454 @@
+{
+  "cast": "/assets/tutorials/repos-tutorial.cast",
+  "language": "ru",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "a1c34b7824c73f589c436d5de7fe0100bc5114fcea736fb2bb293ecddbd3419b",
+  "steps": [
+    {
+      "id": "repos-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.507995,
+      "replayEndSec": 21.785373,
+      "narrationText": "Создайте зашифрованный репозиторий с определенным размером хранилища.",
+      "audioSrc": "/assets/tutorials/audio/ru/repos-tutorial/repos-01.a1dfea45.mp3",
+      "audioDurationSec": 4.04898,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.28,
+          "startChar": 9,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.92,
+          "startChar": 23,
+          "endChar": 34
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.08,
+          "startChar": 35,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.72,
+          "startChar": 37,
+          "endChar": 49
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.2,
+          "startChar": 50,
+          "endChar": 58
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.92,
+          "startChar": 59,
+          "endChar": 68
+        }
+      ]
+    },
+    {
+      "id": "repos-02",
+      "markerIndex": 1,
+      "replayStartSec": 21.785373,
+      "replayEndSec": 31.11554,
+      "narrationText": "Перечислите репозитории, чтобы подтвердить доступность новой рабочей области.",
+      "audioSrc": "/assets/tutorials/audio/ru/repos-tutorial/repos-02.cac57e44.mp3",
+      "audioDurationSec": 4.205714,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.36,
+          "startChar": 12,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.6,
+          "startChar": 25,
+          "endChar": 30
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.24,
+          "startChar": 31,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.88,
+          "startChar": 43,
+          "endChar": 54
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.2,
+          "startChar": 55,
+          "endChar": 60
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.68,
+          "startChar": 61,
+          "endChar": 68
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.16,
+          "startChar": 69,
+          "endChar": 76
+        }
+      ]
+    },
+    {
+      "id": "repos-03",
+      "markerIndex": 2,
+      "replayStartSec": 31.11554,
+      "replayEndSec": 41.275171,
+      "narrationText": "Перед развертыванием проверьте путь монтирования репозитория.",
+      "audioSrc": "/assets/tutorials/audio/ru/repos-tutorial/repos-03.8e9df6dd.mp3",
+      "audioDurationSec": 3.709388,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 1.12,
+          "startChar": 6,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.68,
+          "startChar": 21,
+          "endChar": 30
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.92,
+          "startChar": 31,
+          "endChar": 35
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.72,
+          "startChar": 36,
+          "endChar": 48
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.6,
+          "startChar": 49,
+          "endChar": 60
+        }
+      ]
+    },
+    {
+      "id": "repos-04",
+      "markerIndex": 3,
+      "replayStartSec": 41.275171,
+      "replayEndSec": 59.588726,
+      "narrationText": "Запустите службы репозитория и смонтируйте зашифрованный том.",
+      "audioSrc": "/assets/tutorials/audio/ru/repos-tutorial/repos-04.b479ef0b.mp3",
+      "audioDurationSec": 3.866122,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.92,
+          "startChar": 17,
+          "endChar": 28
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2,
+          "startChar": 29,
+          "endChar": 30
+        },
+        {
+          "startSec": 2,
+          "endSec": 2.8,
+          "startChar": 31,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.52,
+          "startChar": 43,
+          "endChar": 56
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.76,
+          "startChar": 57,
+          "endChar": 60
+        }
+      ]
+    },
+    {
+      "id": "repos-05",
+      "markerIndex": 4,
+      "replayStartSec": 59.588726,
+      "replayEndSec": 68.725808,
+      "narrationText": "Проверьте состояние контейнера машины после запуска.",
+      "audioSrc": "/assets/tutorials/audio/ru/repos-tutorial/repos-05.f49563ab.mp3",
+      "audioDurationSec": 4.519184,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.72,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.84,
+          "startChar": 10,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.56,
+          "startChar": 20,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.12,
+          "startChar": 31,
+          "endChar": 37
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.68,
+          "startChar": 38,
+          "endChar": 43
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.4,
+          "startChar": 44,
+          "endChar": 51
+        }
+      ]
+    },
+    {
+      "id": "repos-06",
+      "markerIndex": 5,
+      "replayStartSec": 68.725808,
+      "replayEndSec": 78.086569,
+      "narrationText": "Проверьте активные контейнеры из контекста выполнения репозитория.",
+      "audioSrc": "/assets/tutorials/audio/ru/repos-tutorial/repos-06.f30c3ad2.mp3",
+      "audioDurationSec": 3.866122,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.04,
+          "startChar": 10,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.76,
+          "startChar": 19,
+          "endChar": 29
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.84,
+          "startChar": 30,
+          "endChar": 32
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.4,
+          "startChar": 33,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 3.04,
+          "startChar": 43,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.76,
+          "startChar": 54,
+          "endChar": 65
+        }
+      ]
+    },
+    {
+      "id": "repos-07",
+      "markerIndex": 6,
+      "replayStartSec": 78.086569,
+      "replayEndSec": 85.461712,
+      "narrationText": "Остановите запуск служб репозитория для очистки.",
+      "audioSrc": "/assets/tutorials/audio/ru/repos-tutorial/repos-07.7a4a0401.mp3",
+      "audioDurationSec": 3.787755,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.2,
+          "startChar": 11,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.56,
+          "startChar": 24,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.88,
+          "startChar": 36,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.68,
+          "startChar": 40,
+          "endChar": 47
+        }
+      ]
+    },
+    {
+      "id": "repos-08",
+      "markerIndex": 7,
+      "replayStartSec": 85.461712,
+      "replayEndSec": 93.028308,
+      "narrationText": "Отсоедините и закройте монтирование зашифрованного репозитория.",
+      "audioSrc": "/assets/tutorials/audio/ru/repos-tutorial/repos-08.312743b0.mp3",
+      "audioDurationSec": 4.04898,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.88,
+          "startChar": 0,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.52,
+          "startChar": 14,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.4,
+          "startChar": 23,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 3.2,
+          "startChar": 36,
+          "endChar": 50
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 4,
+          "startChar": 51,
+          "endChar": 62
+        }
+      ]
+    },
+    {
+      "id": "repos-09",
+      "markerIndex": 8,
+      "replayStartSec": 93.028308,
+      "replayEndSec": 100.434991,
+      "narrationText": "Удалите репозиторий, чтобы завершить демонтаж жизненного цикла.",
+      "audioSrc": "/assets/tutorials/audio/ru/repos-tutorial/repos-09.0c931791.mp3",
+      "audioDurationSec": 4.127347,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.52,
+          "startChar": 8,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2,
+          "startChar": 21,
+          "endChar": 26
+        },
+        {
+          "startSec": 2,
+          "endSec": 2.48,
+          "startChar": 27,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.04,
+          "startChar": 37,
+          "endChar": 45
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.6,
+          "startChar": 46,
+          "endChar": 56
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.08,
+          "startChar": 57,
+          "endChar": 62
+        }
+      ]
+    }
+  ]
+}

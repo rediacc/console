@@ -26,7 +26,7 @@
     "check:actions": "tsx scripts/check-actions.ts",
     "check:deps": "tsx scripts/check-deps.ts",
     "check:format": "biome format packages/ private/account/",
-    "check:i18n": "tsx scripts/check-translation-hashes.ts && tsx scripts/check-translation-completeness.ts && tsx scripts/check-docs-inline-translations.ts && tsx scripts/check-www-only-translations.ts && tsx scripts/check-docs-untranslated-text.ts && npm run validate:cli-docs -w @rediacc/www && npm run validate:docs-cli-usage -w @rediacc/www && npm run validate:landing-cli-usage -w @rediacc/www && npm run validate:translation-freshness -w @rediacc/www && npm run validate:content -w @rediacc/www",
+    "check:i18n": "tsx scripts/check-translation-hashes.ts && tsx scripts/check-translation-completeness.ts && tsx scripts/check-docs-inline-translations.ts && tsx scripts/check-www-only-translations.ts && tsx scripts/check-docs-untranslated-text.ts && npm run validate:cli-docs -w @rediacc/www && npm run validate:docs-cli-usage -w @rediacc/www && npm run validate:landing-cli-usage -w @rediacc/www && npm run validate:translation-freshness -w @rediacc/www && npm run validate:tutorial-audio -w @rediacc/www && npm run validate:content -w @rediacc/www",
     "check:i18n:completeness": "tsx scripts/check-translation-completeness.ts",
     "check:i18n:docs": "tsx scripts/check-docs-inline-translations.ts",
     "check:i18n:hashes": "tsx scripts/check-translation-hashes.ts",
@@ -34,6 +34,7 @@
     "check:i18n:www-only": "tsx scripts/check-www-only-translations.ts",
     "check:lint": "NODE_OPTIONS=--max-old-space-size=8192 eslint packages scripts private/account --max-warnings 0 && biome lint private/account/ --error-on-warnings",
     "check:test": "npm run test:run -w @rediacc/web",
+    "check:test:tutorial-player": "npm run test:tutorial-player -w @rediacc/www",
     "check:types": "tsc -b packages/shared packages/shared-desktop packages/provisioning packages/cli packages/desktop packages/e2e && npm run typecheck -w @rediacc/web && tsc --noEmit -p private/account/tsconfig.json",
     "check:unused": "knip --treat-config-hints-as-errors",
     "check:version": "tsx scripts/check-workspace-versions.ts && syncpack lint",
@@ -76,7 +77,7 @@
     "proper-lockfile": "^4.1.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.5",
+    "@biomejs/biome": "^2.4.6",
     "@eslint/js": "^9.39.2",
     "@eslint/json": "^1.0.1",
     "@types/proper-lockfile": "^4.1.4",

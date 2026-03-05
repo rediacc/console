@@ -1,0 +1,55 @@
+{
+  "cast": "/assets/tutorials/monitoring-tutorial.cast",
+  "language": "es",
+  "version": 1,
+  "events": [
+    {
+      "id": "monitoring-01",
+      "markerIndex": 0,
+      "at": 1.508459,
+      "text": "Ejecute un diagnóstico completo del entorno para detectar problemas básicos."
+    },
+    {
+      "id": "monitoring-02",
+      "markerIndex": 1,
+      "at": 8.976075,
+      "text": "Verifique los indicadores de salud de la máquina remota."
+    },
+    {
+      "id": "monitoring-03",
+      "markerIndex": 2,
+      "at": 18.228101,
+      "text": "Enumere los contenedores activos en la máquina de destino."
+    },
+    {
+      "id": "monitoring-04",
+      "markerIndex": 3,
+      "at": 27.138835,
+      "text": "Inspeccionar el estado del administrador de servicios para los componentes principales."
+    },
+    {
+      "id": "monitoring-05",
+      "markerIndex": 4,
+      "at": 35.981025,
+      "text": "Revise el estado del subsistema de cifrado y bóveda."
+    },
+    {
+      "id": "monitoring-06",
+      "markerIndex": 5,
+      "at": 45.106571,
+      "text": "Escanee y verifique las claves de host de la máquina."
+    },
+    {
+      "id": "monitoring-07",
+      "markerIndex": 6,
+      "at": 53.662765,
+      "text": "Confirme la ejecución remota del comando con una verificación del nombre de host."
+    },
+    {
+      "id": "monitoring-08",
+      "markerIndex": 7,
+      "at": 60.414173,
+      "text": "Valide la capacidad de respuesta de la máquina con una verificación del tiempo de actividad."
+    }
+  ]
+}

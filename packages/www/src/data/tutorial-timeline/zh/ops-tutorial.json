@@ -1,0 +1,583 @@
+{
+  "cast": "/assets/tutorials/ops-tutorial.cast",
+  "language": "zh",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "42e0e4ff85183a3347df3ef74b94f5669e0f1f639794bc44caa4abfa856b627d",
+  "steps": [
+    {
+      "id": "ops-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508416,
+      "replayEndSec": 8.415797,
+      "narrationText": "在配置之前验证本地虚拟化要求。",
+      "audioSrc": "/assets/tutorials/audio/zh/ops-tutorial/ops-01.9ddab1fc.mp3",
+      "audioDurationSec": 3.239184,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.48,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.64,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.8,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.28,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.36,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.68,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.92,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.16,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.4,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.56,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.72,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.2,
+          "startChar": 13,
+          "endChar": 14
+        }
+      ]
+    },
+    {
+      "id": "ops-02",
+      "markerIndex": 1,
+      "replayStartSec": 8.415797,
+      "replayEndSec": 31.165622,
+      "narrationText": "启动一个最小的虚拟机集群进行实验。",
+      "audioSrc": "/assets/tutorials/audio/zh/ops-tutorial/ops-02.46469dc7.mp3",
+      "audioDurationSec": 3.239184,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.4,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.48,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.64,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.8,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.04,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.12,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.36,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.52,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.68,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.92,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.24,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.4,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.72,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.12,
+          "startChar": 15,
+          "endChar": 16
+        }
+      ]
+    },
+    {
+      "id": "ops-03",
+      "markerIndex": 2,
+      "replayStartSec": 31.165622,
+      "replayEndSec": 38.114749,
+      "narrationText": "检查集群状态和机器可用性。",
+      "audioSrc": "/assets/tutorials/audio/zh/ops-tutorial/ops-03.acbbc162.mp3",
+      "audioDurationSec": 2.429388,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.4,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.56,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.8,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 0.96,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.28,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.44,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.6,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.76,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.92,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.08,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 11,
+          "endChar": 12
+        }
+      ]
+    },
+    {
+      "id": "ops-04",
+      "markerIndex": 3,
+      "replayStartSec": 38.114749,
+      "replayEndSec": 43.322534,
+      "narrationText": "对选定的虚拟机运行快速主机名检查。",
+      "audioSrc": "/assets/tutorials/audio/zh/ops-tutorial/ops-04.8a50cccf.mp3",
+      "audioDurationSec": 3.63102,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.56,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.72,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.88,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.12,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.36,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.68,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.76,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.16,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.4,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.56,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.72,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.96,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.04,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.28,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.52,
+          "startChar": 15,
+          "endChar": 16
+        }
+      ]
+    },
+    {
+      "id": "ops-05",
+      "markerIndex": 4,
+      "replayStartSec": 43.322534,
+      "replayEndSec": 50.493824,
+      "narrationText": "从 VM 环境内部检查系统详细信息。",
+      "audioSrc": "/assets/tutorials/audio/zh/ops-tutorial/ops-05.b70c840e.mp3",
+      "audioDurationSec": 3.239184,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.72,
+          "startChar": 2,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.88,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.12,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.28,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.36,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.6,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.76,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 2,
+          "endSec": 2.24,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.48,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.72,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.2,
+          "startChar": 16,
+          "endChar": 17
+        }
+      ]
+    },
+    {
+      "id": "ops-06",
+      "markerIndex": 5,
+      "replayStartSec": 50.493824,
+      "replayEndSec": 56.486148,
+      "narrationText": "关闭并清理临时虚拟机集群。",
+      "audioSrc": "/assets/tutorials/audio/zh/ops-tutorial/ops-06.6fc65434.mp3",
+      "audioDurationSec": 2.76898,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.4,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.72,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.96,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.12,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.36,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.68,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.84,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 2,
+          "endSec": 2.24,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.4,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.64,
+          "startChar": 11,
+          "endChar": 12
+        }
+      ]
+    }
+  ]
+}

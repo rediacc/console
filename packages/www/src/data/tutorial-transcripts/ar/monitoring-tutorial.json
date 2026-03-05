@@ -1,0 +1,55 @@
+{
+  "cast": "/assets/tutorials/monitoring-tutorial.cast",
+  "language": "ar",
+  "version": 1,
+  "events": [
+    {
+      "id": "monitoring-01",
+      "markerIndex": 0,
+      "at": 1.508459,
+      "text": ".ﺔﻴﺳﺎﺳﻷ﻿ﺍ ﺕﻼ﻿ﻜﺸﻤﻟﺍ ﺢﻴﺿﻮﺘﻟ ﺔﺌﻴﺒﻠﻟ ﻞﻣﺎﻛ ﺺﻴﺨﺸﺗ ءﺍﺮﺟﺈﺑ ﻢﻗ"
+    },
+    {
+      "id": "monitoring-02",
+      "markerIndex": 1,
+      "at": 8.976075,
+      "text": ".ﺪﻌﺑ ﻦﻋ ﺯﺎﻬﺠﻟﺍ ﺔﺤﺻ ﺕﺍﺮﺷﺆﻣ ﻦﻣ ﻖﻘﺤﺗ"
+    },
+    {
+      "id": "monitoring-03",
+      "markerIndex": 2,
+      "at": 18.228101,
+      "text": ".ﻑﺪﻬﺘﺴﻤﻟﺍ ﺯﺎﻬﺠﻟﺍ ﻰﻠﻋ ﺔﻄﺸﻨﻟﺍ ﺕﺎﻳﻭﺎﺤﻟﺍ ﺝﺍﺭﺩﺈﺑ ﻢﻗ"
+    },
+    {
+      "id": "monitoring-04",
+      "markerIndex": 3,
+      "at": 27.138835,
+      "text": ".ﺔﻴﺳﺎﺳﻷ﻿ﺍ ﺕﺎﻧﻮﻜﻤﻠﻟ ﺔﻣﺪﺨﻟﺍ ﺮﻳﺪﻣ ﺔﻟﺎﺣ ﺺﺤﻓ"
+    },
+    {
+      "id": "monitoring-05",
+      "markerIndex": 4,
+      "at": 35.981025,
+      "text": ".ﺮﻴﻔﺸﺘﻟﺍﻭ ﻥﺰﺨﻤﻠﻟ ﻲﻋﺮﻔﻟﺍ ﻡﺎﻈﻨﻟﺍ ﺔﻟﺎﺣ ﺔﻌﺟﺍﺮﻤﺑ ﻢﻗ"
+    },
+    {
+      "id": "monitoring-06",
+      "markerIndex": 5,
+      "at": 45.106571,
+      "text": ".ﺎﻬﻨﻣ ﻖﻘﺤﺘﻟﺍﻭ ﺯﺎﻬﺠﻠﻟ ﻒﻴﻀﻤﻟﺍ ﺢﻴﺗﺎﻔﻣ ﺢﺴﻣ"
+    },
+    {
+      "id": "monitoring-07",
+      "markerIndex": 6,
+      "at": 53.662765,
+      "text": ".ﻒﻴﻀﻤﻟﺍ ﻢﺳﺍ ﻦﻣ ﻖﻘﺤﺘﻟﺍ ﻝﻼ﻿ﺧ ﻦﻣ ﺪﻌﺑ ﻦﻋ ﺮﻣﻷ﻿ﺍ ﺬﻴﻔﻨﺗ ﺪﻴﻛﺄﺗ"
+    },
+    {
+      "id": "monitoring-08",
+      "markerIndex": 7,
+      "at": 60.414173,
+      "text": ".ﻞﻴﻐﺸﺘﻟﺍ ﺖﻗﻭ ﺺﺤﻓ ﻝﻼ﻿ﺧ ﻦﻣ ﺯﺎﻬﺠﻟﺍ ﺔﺑﺎﺠﺘﺳﺍ ﺔﺤﺻ ﻦﻣ ﻖﻘﺤﺘﻟﺍ"
+    }
+  ]
+}

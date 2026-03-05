@@ -1,0 +1,653 @@
+{
+  "cast": "/assets/tutorials/monitoring-tutorial.cast",
+  "language": "ja",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "13f7433feb5daf8e30a27dc04b6fc594402dd47310090a48e5d131a2aeb4ec55",
+  "steps": [
+    {
+      "id": "monitoring-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508459,
+      "replayEndSec": 8.976075,
+      "narrationText": "完全な環境診断を実行して、ベースラインの問題を明らかにします。",
+      "audioSrc": "/assets/tutorials/audio/ja/monitoring-tutorial/monitoring-01.3df29037.mp3",
+      "audioDurationSec": 4.989388,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.56,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.96,
+          "startChar": 3,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.44,
+          "startChar": 5,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.52,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.92,
+          "startChar": 8,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 2,
+          "endSec": 2.32,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.36,
+          "startChar": 13,
+          "endChar": 19
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.44,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.84,
+          "startChar": 20,
+          "endChar": 22
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4,
+          "startChar": 22,
+          "endChar": 23
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.48,
+          "startChar": 23,
+          "endChar": 26
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.56,
+          "startChar": 26,
+          "endChar": 27
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.64,
+          "startChar": 27,
+          "endChar": 28
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.96,
+          "startChar": 28,
+          "endChar": 30
+        }
+      ]
+    },
+    {
+      "id": "monitoring-02",
+      "markerIndex": 1,
+      "replayStartSec": 8.976075,
+      "replayEndSec": 18.228101,
+      "narrationText": "リモート マシンの健全性インジケーターを確認します。",
+      "audioSrc": "/assets/tutorials/audio/ja/monitoring-tutorial/monitoring-02.737e11d6.mp3",
+      "audioDurationSec": 3.474286,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.88,
+          "startChar": 5,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.04,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.52,
+          "startChar": 9,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.76,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2,
+          "startChar": 12,
+          "endChar": 15
+        },
+        {
+          "startSec": 2,
+          "endSec": 2.4,
+          "startChar": 15,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.56,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.96,
+          "startChar": 20,
+          "endChar": 22
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.12,
+          "startChar": 22,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.44,
+          "startChar": 23,
+          "endChar": 25
+        }
+      ]
+    },
+    {
+      "id": "monitoring-03",
+      "markerIndex": 2,
+      "replayStartSec": 18.228101,
+      "replayEndSec": 27.138835,
+      "narrationText": "ターゲット マシン上のアクティブなコンテナを一覧表示します。",
+      "audioSrc": "/assets/tutorials/audio/ja/monitoring-tutorial/monitoring-03.1732a104.mp3",
+      "audioDurationSec": 4.205714,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.12,
+          "startChar": 6,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.28,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.52,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.92,
+          "startChar": 11,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.08,
+          "startChar": 16,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.64,
+          "startChar": 17,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.8,
+          "startChar": 21,
+          "endChar": 22
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.36,
+          "startChar": 22,
+          "endChar": 24
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.68,
+          "startChar": 24,
+          "endChar": 26
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.76,
+          "startChar": 26,
+          "endChar": 27
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.08,
+          "startChar": 27,
+          "endChar": 29
+        }
+      ]
+    },
+    {
+      "id": "monitoring-04",
+      "markerIndex": 3,
+      "replayStartSec": 27.138835,
+      "replayEndSec": 35.981025,
+      "narrationText": "コアコンポーネントのサービスマネージャーのステータスを検査します。",
+      "audioSrc": "/assets/tutorials/audio/ja/monitoring-tutorial/monitoring-04.d52dc244.mp3",
+      "audioDurationSec": 3.787755,
+      "wordTimings": [
+        {
+          "startSec": 0.32,
+          "endSec": 1.04,
+          "startChar": 2,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.2,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.6,
+          "startChar": 10,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.16,
+          "startChar": 14,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.32,
+          "startChar": 20,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.88,
+          "startChar": 21,
+          "endChar": 26
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.04,
+          "startChar": 26,
+          "endChar": 27
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.36,
+          "startChar": 27,
+          "endChar": 29
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.44,
+          "startChar": 29,
+          "endChar": 30
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.76,
+          "startChar": 30,
+          "endChar": 32
+        }
+      ]
+    },
+    {
+      "id": "monitoring-05",
+      "markerIndex": 4,
+      "replayStartSec": 35.981025,
+      "replayEndSec": 45.106571,
+      "narrationText": "ボールトと暗号化サブシステムのステータスを確認します。",
+      "audioSrc": "/assets/tutorials/audio/ja/monitoring-tutorial/monitoring-05.b43beb04.mp3",
+      "audioDurationSec": 3.866122,
+      "wordTimings": [
+        {
+          "startSec": 0.56,
+          "endSec": 0.8,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.12,
+          "startChar": 5,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.36,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 2.08,
+          "startChar": 8,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.24,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.88,
+          "startChar": 15,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 2.96,
+          "startChar": 20,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.44,
+          "startChar": 21,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.52,
+          "startChar": 23,
+          "endChar": 24
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.84,
+          "startChar": 24,
+          "endChar": 26
+        }
+      ]
+    },
+    {
+      "id": "monitoring-06",
+      "markerIndex": 5,
+      "replayStartSec": 45.106571,
+      "replayEndSec": 53.662765,
+      "narrationText": "マシンのホスト キーをスキャンして検証します。",
+      "audioSrc": "/assets/tutorials/audio/ja/monitoring-tutorial/monitoring-06.4e63d14c.mp3",
+      "audioDurationSec": 3.004082,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.8,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.12,
+          "startChar": 4,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.36,
+          "startChar": 8,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.44,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.76,
+          "startChar": 11,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.92,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.16,
+          "startChar": 16,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.56,
+          "startChar": 17,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.64,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.04,
+          "startChar": 20,
+          "endChar": 22
+        }
+      ]
+    },
+    {
+      "id": "monitoring-07",
+      "markerIndex": 6,
+      "replayStartSec": 53.662765,
+      "replayEndSec": 60.414173,
+      "narrationText": "ホスト名チェックでリモート コマンドの実行を確認します。",
+      "audioSrc": "/assets/tutorials/audio/ja/monitoring-tutorial/monitoring-07.0149f8aa.mp3",
+      "audioDurationSec": 4.04898,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.72,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.04,
+          "startChar": 4,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.28,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.92,
+          "startChar": 9,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.32,
+          "startChar": 14,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.48,
+          "startChar": 18,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.04,
+          "startChar": 19,
+          "endChar": 21
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.6,
+          "startChar": 22,
+          "endChar": 24
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.68,
+          "startChar": 24,
+          "endChar": 25
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4,
+          "startChar": 25,
+          "endChar": 27
+        }
+      ]
+    },
+    {
+      "id": "monitoring-08",
+      "markerIndex": 7,
+      "replayStartSec": 60.414173,
+      "replayEndSec": 67.00475,
+      "narrationText": "稼働時間チェックでマシンの応答性を検証します。",
+      "audioSrc": "/assets/tutorials/audio/ja/monitoring-tutorial/monitoring-08.50b0a3ab.mp3",
+      "audioDurationSec": 3.239184,
+      "wordTimings": [
+        {
+          "startSec": 0.32,
+          "endSec": 0.64,
+          "startChar": 2,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.96,
+          "startChar": 4,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.2,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.6,
+          "startChar": 9,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.76,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2,
+          "startChar": 13,
+          "endChar": 15
+        },
+        {
+          "startSec": 2,
+          "endSec": 2.24,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.32,
+          "startChar": 16,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.8,
+          "startChar": 17,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 2.88,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.2,
+          "startChar": 20,
+          "endChar": 22
+        }
+      ]
+    }
+  ]
+}

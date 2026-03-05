@@ -1,0 +1,55 @@
+{
+  "cast": "/assets/tutorials/backup-tutorial.cast",
+  "language": "fr",
+  "version": 1,
+  "events": [
+    {
+      "id": "backup-01",
+      "markerIndex": 0,
+      "at": 1.509097,
+      "text": "Inspectez les destinations de sauvegarde actuellement configurées."
+    },
+    {
+      "id": "backup-02",
+      "markerIndex": 1,
+      "at": 9.565032,
+      "text": "Activez une politique de sauvegarde planifiée avec les détails du stockage cible."
+    },
+    {
+      "id": "backup-03",
+      "markerIndex": 2,
+      "at": 19.718406,
+      "text": "Vérifiez la configuration de la planification de sauvegarde active."
+    },
+    {
+      "id": "backup-04",
+      "markerIndex": 3,
+      "at": 27.974161,
+      "text": "Appliquez les paramètres d’infrastructure pour l’accès externe et les certificats."
+    },
+    {
+      "id": "backup-05",
+      "markerIndex": 4,
+      "at": 39.964598,
+      "text": "Enregistrez les ports de service TCP et UDP requis."
+    },
+    {
+      "id": "backup-06",
+      "markerIndex": 5,
+      "at": 50.277844,
+      "text": "Affichez les détails de l'infrastructure pour confirmer les valeurs de mise en réseau."
+    },
+    {
+      "id": "backup-07",
+      "markerIndex": 6,
+      "at": 58.727031,
+      "text": "Désactivez les sauvegardes planifiées dans le cadre du flux de restauration."
+    },
+    {
+      "id": "backup-08",
+      "markerIndex": 7,
+      "at": 65.303576,
+      "text": "Revérifiez l’état de la planification pour confirmer le changement de politique."
+    }
+  ]
+}

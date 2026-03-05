@@ -929,6 +929,24 @@ export default tseslint.config(
     },
   },
 
+  // Tutorial transcript JSON files - translation parity checks
+  {
+    files: ['packages/www/src/data/tutorial-transcripts/*/*.json'],
+    plugins: {
+      json,
+      'i18n': i18nJsonPlugin,
+    },
+    language: 'json/json',
+    rules: {
+      'json/no-duplicate-keys': 'error',
+      'i18n/no-empty-translations': 'error',
+      'i18n/no-untranslated-tutorial-transcript-values': ['error', {
+        transcriptsDir: 'packages/www/src/data/tutorial-transcripts',
+        minLength: 3,
+      }],
+    },
+  },
+
   // JSON package is bash-based, exclude from ESLint
   {
     ignores: ['packages/json/**'],

@@ -1,0 +1,61 @@
+{
+  "cast": "/assets/tutorials/repos-tutorial.cast",
+  "language": "zh",
+  "version": 1,
+  "events": [
+    {
+      "id": "repos-01",
+      "markerIndex": 0,
+      "at": 1.507995,
+      "text": "创建具有定义的存储大小的加密存储库。"
+    },
+    {
+      "id": "repos-02",
+      "markerIndex": 1,
+      "at": 21.785373,
+      "text": "列出存储库以确认新工作区可用。"
+    },
+    {
+      "id": "repos-03",
+      "markerIndex": 2,
+      "at": 31.11554,
+      "text": "部署前检查存储库安装路径。"
+    },
+    {
+      "id": "repos-04",
+      "markerIndex": 3,
+      "at": 41.275171,
+      "text": "启动存储库服务并安装加密卷。"
+    },
+    {
+      "id": "repos-05",
+      "markerIndex": 4,
+      "at": 59.588726,
+      "text": "启动后检查机器容器状态。"
+    },
+    {
+      "id": "repos-06",
+      "markerIndex": 5,
+      "at": 68.725808,
+      "text": "从存储库执行上下文中检查活动容器。"
+    },
+    {
+      "id": "repos-07",
+      "markerIndex": 6,
+      "at": 78.086569,
+      "text": "停止运行存储库服务以进行清理。"
+    },
+    {
+      "id": "repos-08",
+      "markerIndex": 7,
+      "at": 85.461712,
+      "text": "分离并关闭加密存储库挂载。"
+    },
+    {
+      "id": "repos-09",
+      "markerIndex": 8,
+      "at": 93.028308,
+      "text": "删除存储库以完成生命周期拆卸。"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "cast": "/assets/tutorials/backup-tutorial.cast",
+  "language": "de",
+  "version": 1,
+  "events": [
+    {
+      "id": "backup-01",
+      "markerIndex": 0,
+      "at": 1.509097,
+      "text": "Überprüfen Sie die aktuell konfigurierten Sicherungsziele."
+    },
+    {
+      "id": "backup-02",
+      "markerIndex": 1,
+      "at": 9.565032,
+      "text": "Aktivieren Sie eine geplante Sicherungsrichtlinie mit Zielspeicherdetails."
+    },
+    {
+      "id": "backup-03",
+      "markerIndex": 2,
+      "at": 19.718406,
+      "text": "Überprüfen Sie die Konfiguration des aktiven Backup-Zeitplans."
+    },
+    {
+      "id": "backup-04",
+      "markerIndex": 3,
+      "at": 27.974161,
+      "text": "Übernehmen Sie Infrastruktureinstellungen für externen Zugriff und Zertifikate."
+    },
+    {
+      "id": "backup-05",
+      "markerIndex": 4,
+      "at": 39.964598,
+      "text": "Registrieren Sie die erforderlichen TCP- und UDP-Dienstports."
+    },
+    {
+      "id": "backup-06",
+      "markerIndex": 5,
+      "at": 50.277844,
+      "text": "Zeigen Sie Infrastrukturdetails an, um Netzwerkwerte zu bestätigen."
+    },
+    {
+      "id": "backup-07",
+      "markerIndex": 6,
+      "at": 58.727031,
+      "text": "Deaktivieren Sie geplante Sicherungen als Teil des Rollback-Ablaufs."
+    },
+    {
+      "id": "backup-08",
+      "markerIndex": 7,
+      "at": 65.303576,
+      "text": "Überprüfen Sie den Zeitplanstatus erneut, um die Richtlinienänderung zu bestätigen."
+    }
+  ]
+}

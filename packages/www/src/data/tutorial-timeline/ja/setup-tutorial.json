@@ -1,0 +1,1011 @@
+{
+  "cast": "/assets/tutorials/setup-tutorial.cast",
+  "language": "ja",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "4228154d04255ec3a489a04927187ca7c3c1e00c4938b4dc1b8fe054d393d18a",
+  "steps": [
+    {
+      "id": "setup-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.510013,
+      "replayEndSec": 10.550973,
+      "narrationText": "この環境専用の構成プロファイルを初期化します。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-01.8877c2db.mp3",
+      "audioDurationSec": 3.474286,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.88,
+          "startChar": 2,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.28,
+          "startChar": 4,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.36,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.84,
+          "startChar": 7,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.08,
+          "startChar": 9,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.48,
+          "startChar": 11,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.56,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.88,
+          "startChar": 16,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 2.96,
+          "startChar": 18,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.12,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.44,
+          "startChar": 20,
+          "endChar": 22
+        }
+      ]
+    },
+    {
+      "id": "setup-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.550973,
+      "replayEndSec": 17.625716,
+      "narrationText": "利用可能な構成を確認し、新しいプロファイルが存在することを確認します。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-02.77d219db.mp3",
+      "audioDurationSec": 5.564082,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.72,
+          "startChar": 2,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.88,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.36,
+          "startChar": 5,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.44,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.84,
+          "startChar": 8,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.16,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.96,
+          "startChar": 12,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.2,
+          "startChar": 15,
+          "endChar": 17
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.52,
+          "startChar": 17,
+          "endChar": 21
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.68,
+          "startChar": 21,
+          "endChar": 22
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.08,
+          "startChar": 22,
+          "endChar": 24
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.32,
+          "startChar": 24,
+          "endChar": 26
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.56,
+          "startChar": 26,
+          "endChar": 28
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.64,
+          "startChar": 28,
+          "endChar": 29
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.04,
+          "startChar": 29,
+          "endChar": 31
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.2,
+          "startChar": 31,
+          "endChar": 32
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.52,
+          "startChar": 32,
+          "endChar": 34
+        }
+      ]
+    },
+    {
+      "id": "setup-03",
+      "markerIndex": 2,
+      "replayStartSec": 17.625716,
+      "replayEndSec": 28.032443,
+      "narrationText": "ネットワークとユーザーの詳細を含むマシンエントリを登録します。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-03.a274a84c.mp3",
+      "audioDurationSec": 4.205714,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.72,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.12,
+          "startChar": 7,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.28,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.76,
+          "startChar": 12,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.84,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.24,
+          "startChar": 15,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.72,
+          "startChar": 17,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.12,
+          "startChar": 20,
+          "endChar": 24
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.28,
+          "startChar": 24,
+          "endChar": 25
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.76,
+          "startChar": 25,
+          "endChar": 27
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 3.92,
+          "startChar": 27,
+          "endChar": 28
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.16,
+          "startChar": 28,
+          "endChar": 30
+        }
+      ]
+    },
+    {
+      "id": "setup-04",
+      "markerIndex": 3,
+      "replayStartSec": 28.032443,
+      "replayEndSec": 36.265561,
+      "narrationText": "構成されたマシンのリストを調べて、登録を確認します。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-04.963d6069.mp3",
+      "audioDurationSec": 3.970612,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.64,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.8,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.2,
+          "startChar": 5,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.28,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.6,
+          "startChar": 9,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.68,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2,
+          "startChar": 13,
+          "endChar": 15
+        },
+        {
+          "startSec": 2,
+          "endSec": 2.24,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.04,
+          "startChar": 17,
+          "endChar": 19
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.12,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.52,
+          "startChar": 20,
+          "endChar": 22
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.6,
+          "startChar": 22,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.92,
+          "startChar": 23,
+          "endChar": 25
+        }
+      ]
+    },
+    {
+      "id": "setup-05",
+      "markerIndex": 4,
+      "replayStartSec": 36.265561,
+      "replayEndSec": 44.022131,
+      "narrationText": "ターゲット フラグの繰り返しを減らすためにデフォルトのマシンを設定します。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-05.7a498e4c.mp3",
+      "audioDurationSec": 4.754286,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.88,
+          "startChar": 6,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.04,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.6,
+          "startChar": 10,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.76,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2,
+          "startChar": 15,
+          "endChar": 18
+        },
+        {
+          "startSec": 2,
+          "endSec": 2.24,
+          "startChar": 18,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.4,
+          "startChar": 20,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.28,
+          "startChar": 21,
+          "endChar": 26
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.36,
+          "startChar": 26,
+          "endChar": 27
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.84,
+          "startChar": 27,
+          "endChar": 30
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 3.92,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.32,
+          "startChar": 31,
+          "endChar": 33
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.4,
+          "startChar": 33,
+          "endChar": 34
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.64,
+          "startChar": 34,
+          "endChar": 36
+        }
+      ]
+    },
+    {
+      "id": "setup-06",
+      "markerIndex": 5,
+      "replayStartSec": 44.022131,
+      "replayEndSec": 50.965935,
+      "narrationText": "基本的なリモート ホスト チェックを実行して、接続を検証します。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-06.f06e3ef5.mp3",
+      "audioDurationSec": 4.832653,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.64,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.8,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.28,
+          "startChar": 4,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.76,
+          "startChar": 9,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.16,
+          "startChar": 13,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.24,
+          "startChar": 17,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.72,
+          "startChar": 18,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.8,
+          "startChar": 20,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.12,
+          "startChar": 21,
+          "endChar": 22
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.92,
+          "startChar": 23,
+          "endChar": 25
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4,
+          "startChar": 25,
+          "endChar": 26
+        },
+        {
+          "startSec": 4,
+          "endSec": 4.4,
+          "startChar": 26,
+          "endChar": 28
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.48,
+          "startChar": 28,
+          "endChar": 29
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.72,
+          "startChar": 29,
+          "endChar": 31
+        }
+      ]
+    },
+    {
+      "id": "setup-07",
+      "markerIndex": 6,
+      "replayStartSec": 50.965935,
+      "replayEndSec": 59.757783,
+      "narrationText": "システムのランタイムの健全性に焦点を当てた 2 回目のホスト チェックを実行します。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-07.04ee2c08.mp3",
+      "audioDurationSec": 6.034286,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.64,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.2,
+          "startChar": 5,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.36,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.76,
+          "startChar": 11,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.08,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.88,
+          "startChar": 15,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 2.96,
+          "startChar": 17,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.12,
+          "startChar": 18,
+          "endChar": 20
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.36,
+          "startChar": 20,
+          "endChar": 21
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.84,
+          "startChar": 22,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4,
+          "startChar": 24,
+          "endChar": 25
+        },
+        {
+          "startSec": 4,
+          "endSec": 4.16,
+          "startChar": 25,
+          "endChar": 26
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.24,
+          "startChar": 26,
+          "endChar": 27
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.64,
+          "startChar": 27,
+          "endChar": 30
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.12,
+          "startChar": 31,
+          "endChar": 35
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.2,
+          "startChar": 35,
+          "endChar": 36
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.6,
+          "startChar": 36,
+          "endChar": 38
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.76,
+          "startChar": 38,
+          "endChar": 39
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6,
+          "startChar": 39,
+          "endChar": 41
+        }
+      ]
+    },
+    {
+      "id": "setup-08",
+      "markerIndex": 7,
+      "replayStartSec": 59.757783,
+      "replayEndSec": 67.426214,
+      "narrationText": "環境診断を実行して、セットアップの問題を早期に発見します。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-08.c48eed92.mp3",
+      "audioDurationSec": 4.832653,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.04,
+          "startChar": 2,
+          "endChar": 4
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.12,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.52,
+          "startChar": 5,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.6,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.84,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.48,
+          "startChar": 10,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.72,
+          "startChar": 13,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.8,
+          "startChar": 16,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.28,
+          "startChar": 17,
+          "endChar": 19
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.44,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.76,
+          "startChar": 20,
+          "endChar": 22
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 3.92,
+          "startChar": 22,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.32,
+          "startChar": 23,
+          "endChar": 25
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.48,
+          "startChar": 25,
+          "endChar": 26
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.72,
+          "startChar": 26,
+          "endChar": 28
+        }
+      ]
+    },
+    {
+      "id": "setup-09",
+      "markerIndex": 8,
+      "replayStartSec": 67.426214,
+      "replayEndSec": 77.6898,
+      "narrationText": "パブリック アクセスと証明書のインフラストラクチャ設定を適用します。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-09.cc3265e3.mp3",
+      "audioDurationSec": 4.597551,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.88,
+          "startChar": 6,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.12,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.52,
+          "startChar": 11,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.68,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.92,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 3.28,
+          "startChar": 15,
+          "endChar": 25
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.76,
+          "startChar": 25,
+          "endChar": 27
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 3.84,
+          "startChar": 27,
+          "endChar": 28
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.16,
+          "startChar": 28,
+          "endChar": 30
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.32,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.48,
+          "startChar": 31,
+          "endChar": 33
+        }
+      ]
+    },
+    {
+      "id": "setup-10",
+      "markerIndex": 9,
+      "replayStartSec": 77.6898,
+      "replayEndSec": 85.386438,
+      "narrationText": "インフラストラクチャ構成を表示して、最終状態を確認します。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-10.5e4ff796.mp3",
+      "audioDurationSec": 4.832653,
+      "wordTimings": [
+        {
+          "startSec": 1.04,
+          "endSec": 1.2,
+          "startChar": 0,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.68,
+          "startChar": 10,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.76,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.16,
+          "startChar": 13,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.24,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.56,
+          "startChar": 16,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.36,
+          "startChar": 18,
+          "endChar": 20
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.84,
+          "startChar": 20,
+          "endChar": 22
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 3.92,
+          "startChar": 22,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.32,
+          "startChar": 23,
+          "endChar": 25
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.48,
+          "startChar": 25,
+          "endChar": 26
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.72,
+          "startChar": 26,
+          "endChar": 28
+        }
+      ]
+    }
+  ]
+}

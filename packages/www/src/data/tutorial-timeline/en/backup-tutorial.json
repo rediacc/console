@@ -1,0 +1,85 @@
+{
+  "cast": "/assets/tutorials/backup-tutorial.cast",
+  "language": "en",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "3ff8b91671f01038982294efa8b0eff7fa9ce9ca8f3bef60c59bbe74d8370058",
+  "steps": [
+    {
+      "id": "backup-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.509097,
+      "replayEndSec": 9.565032,
+      "narrationText": "Inspect currently configured backup destinations.",
+      "audioSrc": "/assets/tutorials/audio/en/backup-tutorial/backup-01.261981df.mp3",
+      "audioDurationSec": 3.004082
+    },
+    {
+      "id": "backup-02",
+      "markerIndex": 1,
+      "replayStartSec": 9.565032,
+      "replayEndSec": 19.718406,
+      "narrationText": "Enable a scheduled backup policy with target storage details.",
+      "audioSrc": "/assets/tutorials/audio/en/backup-tutorial/backup-02.f8fafe4c.mp3",
+      "audioDurationSec": 3.63102
+    },
+    {
+      "id": "backup-03",
+      "markerIndex": 2,
+      "replayStartSec": 19.718406,
+      "replayEndSec": 27.974161,
+      "narrationText": "Review the active backup schedule configuration.",
+      "audioSrc": "/assets/tutorials/audio/en/backup-tutorial/backup-03.5547e1c9.mp3",
+      "audioDurationSec": 2.847347
+    },
+    {
+      "id": "backup-04",
+      "markerIndex": 3,
+      "replayStartSec": 27.974161,
+      "replayEndSec": 39.964598,
+      "narrationText": "Apply infrastructure settings for external access and certificates.",
+      "audioSrc": "/assets/tutorials/audio/en/backup-tutorial/backup-04.eff82e75.mp3",
+      "audioDurationSec": 4.127347
+    },
+    {
+      "id": "backup-05",
+      "markerIndex": 4,
+      "replayStartSec": 39.964598,
+      "replayEndSec": 50.277844,
+      "narrationText": "Register required TCP and UDP service ports.",
+      "audioSrc": "/assets/tutorials/audio/en/backup-tutorial/backup-05.3fc297c2.mp3",
+      "audioDurationSec": 3.552653
+    },
+    {
+      "id": "backup-06",
+      "markerIndex": 5,
+      "replayStartSec": 50.277844,
+      "replayEndSec": 58.727031,
+      "narrationText": "Display infrastructure details to confirm networking values.",
+      "audioSrc": "/assets/tutorials/audio/en/backup-tutorial/backup-06.ef9d23d5.mp3",
+      "audioDurationSec": 3.474286
+    },
+    {
+      "id": "backup-07",
+      "markerIndex": 6,
+      "replayStartSec": 58.727031,
+      "replayEndSec": 65.303576,
+      "narrationText": "Disable scheduled backups as part of the rollback flow.",
+      "audioSrc": "/assets/tutorials/audio/en/backup-tutorial/backup-07.7bd58982.mp3",
+      "audioDurationSec": 3.239184
+    },
+    {
+      "id": "backup-08",
+      "markerIndex": 7,
+      "replayStartSec": 65.303576,
+      "replayEndSec": 71.459995,
+      "narrationText": "Recheck schedule status to confirm the policy change.",
+      "audioSrc": "/assets/tutorials/audio/en/backup-tutorial/backup-08.86545c9d.mp3",
+      "audioDurationSec": 3.317551
+    }
+  ]
+}

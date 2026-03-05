@@ -1,0 +1,85 @@
+{
+  "cast": "/assets/tutorials/tools-tutorial.cast",
+  "language": "en",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "2ebef48da5f4bcf6ede42606df3c3980937b8730d15fef66326f192d0cf8cef8",
+  "steps": [
+    {
+      "id": "tools-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508545,
+      "replayEndSec": 8.232601,
+      "narrationText": "Open a remote shell command to verify the target machine identity.",
+      "audioSrc": "/assets/tutorials/audio/en/tools-tutorial/tools-01.b88a7da5.mp3",
+      "audioDurationSec": 3.866122
+    },
+    {
+      "id": "tools-02",
+      "markerIndex": 1,
+      "replayStartSec": 8.232601,
+      "replayEndSec": 16.842601,
+      "narrationText": "Confirm the host is responsive by checking its current uptime.",
+      "audioSrc": "/assets/tutorials/audio/en/tools-tutorial/tools-02.bf00fcd5.mp3",
+      "audioDurationSec": 3.395918
+    },
+    {
+      "id": "tools-03",
+      "markerIndex": 2,
+      "replayStartSec": 16.842601,
+      "replayEndSec": 26.099887,
+      "narrationText": "Run a container inspection from inside the repository context.",
+      "audioSrc": "/assets/tutorials/audio/en/tools-tutorial/tools-03.036fea9e.mp3",
+      "audioDurationSec": 3.787755
+    },
+    {
+      "id": "tools-04",
+      "markerIndex": 3,
+      "replayStartSec": 26.099887,
+      "replayEndSec": 36.771157,
+      "narrationText": "Preview file transfer changes before uploading anything.",
+      "audioSrc": "/assets/tutorials/audio/en/tools-tutorial/tools-04.d93e2564.mp3",
+      "audioDurationSec": 3.239184
+    },
+    {
+      "id": "tools-05",
+      "markerIndex": 4,
+      "replayStartSec": 36.771157,
+      "replayEndSec": 47.046053,
+      "narrationText": "Push local project files to the remote repository workspace.",
+      "audioSrc": "/assets/tutorials/audio/en/tools-tutorial/tools-05.a5b2850d.mp3",
+      "audioDurationSec": 3.474286
+    },
+    {
+      "id": "tools-06",
+      "markerIndex": 5,
+      "replayStartSec": 47.046053,
+      "replayEndSec": 56.157243,
+      "narrationText": "List repository files remotely to verify sync results.",
+      "audioSrc": "/assets/tutorials/audio/en/tools-tutorial/tools-06.d17f95aa.mp3",
+      "audioDurationSec": 3.866122
+    },
+    {
+      "id": "tools-07",
+      "markerIndex": 6,
+      "replayStartSec": 56.157243,
+      "replayEndSec": 64.075905,
+      "narrationText": "Validate editor integration prerequisites for remote development.",
+      "audioSrc": "/assets/tutorials/audio/en/tools-tutorial/tools-07.e774f7dc.mp3",
+      "audioDurationSec": 3.970612
+    },
+    {
+      "id": "tools-08",
+      "markerIndex": 7,
+      "replayStartSec": 64.075905,
+      "replayEndSec": 69.351156,
+      "narrationText": "Check whether a newer CLI release is available.",
+      "audioSrc": "/assets/tutorials/audio/en/tools-tutorial/tools-08.2cf751c5.mp3",
+      "audioDurationSec": 2.690612
+    }
+  ]
+}

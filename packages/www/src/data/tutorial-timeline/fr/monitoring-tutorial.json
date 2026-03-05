@@ -1,0 +1,527 @@
+{
+  "cast": "/assets/tutorials/monitoring-tutorial.cast",
+  "language": "fr",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "5558903a43cbea29e050e6094bf6560b16a928e9af74f49833591103f84ad343",
+  "steps": [
+    {
+      "id": "monitoring-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508459,
+      "replayEndSec": 8.976075,
+      "narrationText": "Exécutez un diagnostic complet de l’environnement pour faire apparaître les problèmes de base.",
+      "audioSrc": "/assets/tutorials/audio/fr/monitoring-tutorial/monitoring-01.782d9819.mp3",
+      "audioDurationSec": 5.799184,
+      "wordTimings": [
+        {
+          "startSec": 0.88,
+          "endSec": 1.12,
+          "startChar": 9,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.76,
+          "startChar": 12,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.32,
+          "startChar": 23,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.4,
+          "startChar": 31,
+          "endChar": 33
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.76,
+          "startChar": 50,
+          "endChar": 54
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4,
+          "startChar": 55,
+          "endChar": 60
+        },
+        {
+          "startSec": 4,
+          "endSec": 4.64,
+          "startChar": 61,
+          "endChar": 71
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.88,
+          "startChar": 72,
+          "endChar": 75
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.28,
+          "startChar": 76,
+          "endChar": 85
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.36,
+          "startChar": 86,
+          "endChar": 88
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.76,
+          "startChar": 89,
+          "endChar": 93
+        }
+      ]
+    },
+    {
+      "id": "monitoring-02",
+      "markerIndex": 1,
+      "replayStartSec": 8.976075,
+      "replayEndSec": 18.228101,
+      "narrationText": "Vérifiez les indicateurs d’état de la machine à distance.",
+      "audioSrc": "/assets/tutorials/audio/fr/monitoring-tutorial/monitoring-02.a4d4374e.mp3",
+      "audioDurationSec": 3.082449,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.8,
+          "startChar": 9,
+          "endChar": 12
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.36,
+          "startChar": 13,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.76,
+          "startChar": 32,
+          "endChar": 34
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.92,
+          "startChar": 35,
+          "endChar": 37
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.24,
+          "startChar": 38,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.32,
+          "startChar": 46,
+          "endChar": 47
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.96,
+          "startChar": 48,
+          "endChar": 56
+        }
+      ]
+    },
+    {
+      "id": "monitoring-03",
+      "markerIndex": 2,
+      "replayStartSec": 18.228101,
+      "replayEndSec": 27.138835,
+      "narrationText": "Répertoriez les conteneurs actifs sur la machine cible.",
+      "audioSrc": "/assets/tutorials/audio/fr/monitoring-tutorial/monitoring-03.fc36fce4.mp3",
+      "audioDurationSec": 3.474286,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.04,
+          "startChar": 12,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.6,
+          "startChar": 16,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.08,
+          "startChar": 27,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 34,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.48,
+          "startChar": 38,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.88,
+          "startChar": 41,
+          "endChar": 48
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.36,
+          "startChar": 49,
+          "endChar": 54
+        }
+      ]
+    },
+    {
+      "id": "monitoring-04",
+      "markerIndex": 3,
+      "replayStartSec": 27.138835,
+      "replayEndSec": 35.981025,
+      "narrationText": "Inspectez l’état du gestionnaire de services pour les composants principaux.",
+      "audioSrc": "/assets/tutorials/audio/fr/monitoring-tutorial/monitoring-04.8653423d.mp3",
+      "audioDurationSec": 3.395918,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 0.96,
+          "startChar": 17,
+          "endChar": 19
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.44,
+          "startChar": 20,
+          "endChar": 32
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.52,
+          "startChar": 33,
+          "endChar": 35
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.92,
+          "startChar": 36,
+          "endChar": 44
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.08,
+          "startChar": 45,
+          "endChar": 49
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.24,
+          "startChar": 50,
+          "endChar": 53
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.72,
+          "startChar": 54,
+          "endChar": 64
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.28,
+          "startChar": 65,
+          "endChar": 75
+        }
+      ]
+    },
+    {
+      "id": "monitoring-05",
+      "markerIndex": 4,
+      "replayStartSec": 35.981025,
+      "replayEndSec": 45.106571,
+      "narrationText": "Examinez l’état du coffre-fort et du sous-système de chiffrement.",
+      "audioSrc": "/assets/tutorials/audio/fr/monitoring-tutorial/monitoring-05.cba50964.mp3",
+      "audioDurationSec": 3.63102,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.12,
+          "startChar": 16,
+          "endChar": 18
+        },
+        {
+          "startSec": 2,
+          "endSec": 2.08,
+          "startChar": 31,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.24,
+          "startChar": 34,
+          "endChar": 36
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.6,
+          "startChar": 53,
+          "endChar": 64
+        }
+      ]
+    },
+    {
+      "id": "monitoring-06",
+      "markerIndex": 5,
+      "replayStartSec": 45.106571,
+      "replayEndSec": 53.662765,
+      "narrationText": "Scannez et vérifiez les clés d'hôte de la machine.",
+      "audioSrc": "/assets/tutorials/audio/fr/monitoring-tutorial/monitoring-06.acd65cd1.mp3",
+      "audioDurationSec": 3.160816,
+      "wordTimings": [
+        {
+          "startSec": 0.48,
+          "endSec": 0.56,
+          "startChar": 8,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.6,
+          "startChar": 11,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.76,
+          "startChar": 20,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.08,
+          "startChar": 24,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.4,
+          "startChar": 36,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.48,
+          "startChar": 39,
+          "endChar": 41
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.12,
+          "startChar": 42,
+          "endChar": 49
+        }
+      ]
+    },
+    {
+      "id": "monitoring-07",
+      "markerIndex": 6,
+      "replayStartSec": 53.662765,
+      "replayEndSec": 60.414173,
+      "narrationText": "Confirmez l'exécution de la commande à distance avec une vérification du nom d'hôte.",
+      "audioSrc": "/assets/tutorials/audio/fr/monitoring-tutorial/monitoring-07.55afd0cc.mp3",
+      "audioDurationSec": 5.32898,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.36,
+          "startChar": 10,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.44,
+          "startChar": 22,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.6,
+          "startChar": 25,
+          "endChar": 27
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.08,
+          "startChar": 28,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.88,
+          "startChar": 39,
+          "endChar": 47
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.6,
+          "startChar": 48,
+          "endChar": 52
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.76,
+          "startChar": 53,
+          "endChar": 56
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.48,
+          "startChar": 57,
+          "endChar": 69
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.64,
+          "startChar": 70,
+          "endChar": 72
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.88,
+          "startChar": 73,
+          "endChar": 76
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.2,
+          "startChar": 77,
+          "endChar": 83
+        }
+      ]
+    },
+    {
+      "id": "monitoring-08",
+      "markerIndex": 7,
+      "replayStartSec": 60.414173,
+      "replayEndSec": 67.00475,
+      "narrationText": "Validez la réactivité de la machine avec un contrôle de disponibilité.",
+      "audioSrc": "/assets/tutorials/audio/fr/monitoring-tutorial/monitoring-08.525ca146.mp3",
+      "audioDurationSec": 4.362449,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.72,
+          "startChar": 8,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.52,
+          "startChar": 11,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.6,
+          "startChar": 22,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.68,
+          "startChar": 25,
+          "endChar": 27
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.16,
+          "startChar": 28,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.48,
+          "startChar": 36,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.56,
+          "startChar": 41,
+          "endChar": 43
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.12,
+          "startChar": 44,
+          "endChar": 52
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.28,
+          "startChar": 53,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 4.24,
+          "startChar": 56,
+          "endChar": 69
+        }
+      ]
+    }
+  ]
+}

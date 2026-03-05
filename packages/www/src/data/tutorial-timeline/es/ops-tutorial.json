@@ -1,0 +1,67 @@
+{
+  "cast": "/assets/tutorials/ops-tutorial.cast",
+  "language": "es",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "1234f131fb98b276d15fc2ea4e7ec70663c9e0150c931b39208a32177c95986c",
+  "steps": [
+    {
+      "id": "ops-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508416,
+      "replayEndSec": 8.415797,
+      "narrationText": "Verifique los requisitos de virtualización local antes del aprovisionamiento.",
+      "audioSrc": "/assets/tutorials/audio/es/ops-tutorial/ops-01.ab13a6af.mp3",
+      "audioDurationSec": 4.754286
+    },
+    {
+      "id": "ops-02",
+      "markerIndex": 1,
+      "replayStartSec": 8.415797,
+      "replayEndSec": 31.165622,
+      "narrationText": "Inicie un clúster de VM mínimo para experimentar.",
+      "audioSrc": "/assets/tutorials/audio/es/ops-tutorial/ops-02.240977ee.mp3",
+      "audioDurationSec": 3.474286
+    },
+    {
+      "id": "ops-03",
+      "markerIndex": 2,
+      "replayStartSec": 31.165622,
+      "replayEndSec": 38.114749,
+      "narrationText": "Verifique el estado del clúster y la disponibilidad de la máquina.",
+      "audioSrc": "/assets/tutorials/audio/es/ops-tutorial/ops-03.350eac3e.mp3",
+      "audioDurationSec": 3.866122
+    },
+    {
+      "id": "ops-04",
+      "markerIndex": 3,
+      "replayStartSec": 38.114749,
+      "replayEndSec": 43.322534,
+      "narrationText": "Ejecute una verificación rápida del nombre de host en una VM seleccionada.",
+      "audioSrc": "/assets/tutorials/audio/es/ops-tutorial/ops-04.5243a253.mp3",
+      "audioDurationSec": 6.19102
+    },
+    {
+      "id": "ops-05",
+      "markerIndex": 4,
+      "replayStartSec": 43.322534,
+      "replayEndSec": 50.493824,
+      "narrationText": "Inspeccione los detalles del sistema desde el interior del entorno de VM.",
+      "audioSrc": "/assets/tutorials/audio/es/ops-tutorial/ops-05.c39b7ecf.mp3",
+      "audioDurationSec": 5.067755
+    },
+    {
+      "id": "ops-06",
+      "markerIndex": 5,
+      "replayStartSec": 50.493824,
+      "replayEndSec": 56.486148,
+      "narrationText": "Apague y limpie el clúster de VM temporal.",
+      "audioSrc": "/assets/tutorials/audio/es/ops-tutorial/ops-06.05a664f9.mp3",
+      "audioDurationSec": 2.925714
+    }
+  ]
+}

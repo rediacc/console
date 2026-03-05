@@ -1,0 +1,55 @@
+{
+  "cast": "/assets/tutorials/tools-tutorial.cast",
+  "language": "zh",
+  "version": 1,
+  "events": [
+    {
+      "id": "tools-01",
+      "markerIndex": 0,
+      "at": 1.508545,
+      "text": "打开远程 shell 命令来验证目标计算机身份。"
+    },
+    {
+      "id": "tools-02",
+      "markerIndex": 1,
+      "at": 8.232601,
+      "text": "通过检查主机当前的正常运行时间来确认主机是否响应。"
+    },
+    {
+      "id": "tools-03",
+      "markerIndex": 2,
+      "at": 16.842601,
+      "text": "从存储库上下文内部运行容器检查。"
+    },
+    {
+      "id": "tools-04",
+      "markerIndex": 3,
+      "at": 26.099887,
+      "text": "在上传任何内容之前预览文件传输更改。"
+    },
+    {
+      "id": "tools-05",
+      "markerIndex": 4,
+      "at": 36.771157,
+      "text": "将本地项目文件推送到远程存储库工作区。"
+    },
+    {
+      "id": "tools-06",
+      "markerIndex": 5,
+      "at": 47.046053,
+      "text": "远程列出存储库文件以验证同步结果。"
+    },
+    {
+      "id": "tools-07",
+      "markerIndex": 6,
+      "at": 56.157243,
+      "text": "验证远程开发的编辑器集成先决条件。"
+    },
+    {
+      "id": "tools-08",
+      "markerIndex": 7,
+      "at": 64.075905,
+      "text": "检查是否有较新的 CLI 版本可用。"
+    }
+  ]
+}

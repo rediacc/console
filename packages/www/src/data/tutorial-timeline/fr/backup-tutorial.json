@@ -1,0 +1,563 @@
+{
+  "cast": "/assets/tutorials/backup-tutorial.cast",
+  "language": "fr",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "65d3238597293324abe3e2c35cbb973fd27be38d7f43201a1fa2b0e2ee0d21fd",
+  "steps": [
+    {
+      "id": "backup-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.509097,
+      "replayEndSec": 9.565032,
+      "narrationText": "Inspectez les destinations de sauvegarde actuellement configurées.",
+      "audioSrc": "/assets/tutorials/audio/fr/backup-tutorial/backup-01.2c3de829.mp3",
+      "audioDurationSec": 3.082449,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.56,
+          "startChar": 10,
+          "endChar": 13
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.2,
+          "startChar": 14,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.28,
+          "startChar": 27,
+          "endChar": 29
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.76,
+          "startChar": 30,
+          "endChar": 40
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.32,
+          "startChar": 41,
+          "endChar": 53
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.96,
+          "startChar": 54,
+          "endChar": 65
+        }
+      ]
+    },
+    {
+      "id": "backup-02",
+      "markerIndex": 1,
+      "replayStartSec": 9.565032,
+      "replayEndSec": 19.718406,
+      "narrationText": "Activez une politique de sauvegarde planifiée avec les détails du stockage cible.",
+      "audioSrc": "/assets/tutorials/audio/fr/backup-tutorial/backup-02.56c292b3.mp3",
+      "audioDurationSec": 4.440816,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.64,
+          "startChar": 8,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.04,
+          "startChar": 12,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.12,
+          "startChar": 22,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.76,
+          "startChar": 25,
+          "endChar": 35
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.4,
+          "startChar": 36,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.72,
+          "startChar": 46,
+          "endChar": 50
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.8,
+          "startChar": 51,
+          "endChar": 54
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.28,
+          "startChar": 55,
+          "endChar": 62
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.36,
+          "startChar": 63,
+          "endChar": 65
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.92,
+          "startChar": 66,
+          "endChar": 74
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.4,
+          "startChar": 75,
+          "endChar": 80
+        }
+      ]
+    },
+    {
+      "id": "backup-03",
+      "markerIndex": 2,
+      "replayStartSec": 19.718406,
+      "replayEndSec": 27.974161,
+      "narrationText": "Vérifiez la configuration de la planification de sauvegarde active.",
+      "audioSrc": "/assets/tutorials/audio/fr/backup-tutorial/backup-03.d2cfbc40.mp3",
+      "audioDurationSec": 4.675918,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 0.96,
+          "startChar": 9,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.84,
+          "startChar": 12,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2,
+          "startChar": 26,
+          "endChar": 28
+        },
+        {
+          "startSec": 2,
+          "endSec": 2.16,
+          "startChar": 29,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 3.28,
+          "startChar": 32,
+          "endChar": 45
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.36,
+          "startChar": 46,
+          "endChar": 48
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 4,
+          "startChar": 49,
+          "endChar": 59
+        },
+        {
+          "startSec": 4,
+          "endSec": 4.56,
+          "startChar": 60,
+          "endChar": 66
+        }
+      ]
+    },
+    {
+      "id": "backup-04",
+      "markerIndex": 3,
+      "replayStartSec": 27.974161,
+      "replayEndSec": 39.964598,
+      "narrationText": "Appliquez les paramètres d’infrastructure pour l’accès externe et les certificats.",
+      "audioSrc": "/assets/tutorials/audio/fr/backup-tutorial/backup-04.e35ffac6.mp3",
+      "audioDurationSec": 4.205714,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.64,
+          "startChar": 10,
+          "endChar": 13
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.12,
+          "startChar": 14,
+          "endChar": 24
+        },
+        {
+          "startSec": 2,
+          "endSec": 2.16,
+          "startChar": 42,
+          "endChar": 46
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.12,
+          "startChar": 55,
+          "endChar": 62
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.36,
+          "startChar": 63,
+          "endChar": 65
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.44,
+          "startChar": 66,
+          "endChar": 69
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 4.08,
+          "startChar": 70,
+          "endChar": 81
+        }
+      ]
+    },
+    {
+      "id": "backup-05",
+      "markerIndex": 4,
+      "replayStartSec": 39.964598,
+      "replayEndSec": 50.277844,
+      "narrationText": "Enregistrez les ports de service TCP et UDP requis.",
+      "audioSrc": "/assets/tutorials/audio/fr/backup-tutorial/backup-05.2df5b51c.mp3",
+      "audioDurationSec": 3.866122,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 0.96,
+          "startChar": 12,
+          "endChar": 15
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.2,
+          "startChar": 16,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.28,
+          "startChar": 22,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.84,
+          "startChar": 25,
+          "endChar": 32
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.48,
+          "startChar": 33,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.52,
+          "startChar": 40,
+          "endChar": 43
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.76,
+          "startChar": 44,
+          "endChar": 50
+        }
+      ]
+    },
+    {
+      "id": "backup-06",
+      "markerIndex": 5,
+      "replayStartSec": 50.277844,
+      "replayEndSec": 58.727031,
+      "narrationText": "Affichez les détails de l'infrastructure pour confirmer les valeurs de mise en réseau.",
+      "audioSrc": "/assets/tutorials/audio/fr/backup-tutorial/backup-06.6874e6ba.mp3",
+      "audioDurationSec": 5.067755,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.64,
+          "startChar": 9,
+          "endChar": 12
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.12,
+          "startChar": 13,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.2,
+          "startChar": 21,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 2.24,
+          "startChar": 24,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.72,
+          "startChar": 41,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.36,
+          "startChar": 46,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.6,
+          "startChar": 56,
+          "endChar": 59
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4,
+          "startChar": 60,
+          "endChar": 67
+        },
+        {
+          "startSec": 4,
+          "endSec": 4.16,
+          "startChar": 68,
+          "endChar": 70
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.48,
+          "startChar": 71,
+          "endChar": 75
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.56,
+          "startChar": 76,
+          "endChar": 78
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.96,
+          "startChar": 79,
+          "endChar": 85
+        }
+      ]
+    },
+    {
+      "id": "backup-07",
+      "markerIndex": 6,
+      "replayStartSec": 58.727031,
+      "replayEndSec": 65.303576,
+      "narrationText": "Désactivez les sauvegardes planifiées dans le cadre du flux de restauration.",
+      "audioSrc": "/assets/tutorials/audio/fr/backup-tutorial/backup-07.b1b07497.mp3",
+      "audioDurationSec": 4.754286,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 0.96,
+          "startChar": 11,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.44,
+          "startChar": 15,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.16,
+          "startChar": 27,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.8,
+          "startChar": 38,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 2.88,
+          "startChar": 43,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.28,
+          "startChar": 46,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.44,
+          "startChar": 52,
+          "endChar": 54
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.76,
+          "startChar": 55,
+          "endChar": 59
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 3.92,
+          "startChar": 60,
+          "endChar": 62
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.64,
+          "startChar": 63,
+          "endChar": 75
+        }
+      ]
+    },
+    {
+      "id": "backup-08",
+      "markerIndex": 7,
+      "replayStartSec": 65.303576,
+      "replayEndSec": 71.459995,
+      "narrationText": "Revérifiez l’état de la planification pour confirmer le changement de politique.",
+      "audioSrc": "/assets/tutorials/audio/fr/backup-tutorial/backup-08.ed3f43c1.mp3",
+      "audioDurationSec": 5.955918,
+      "wordTimings": [
+        {
+          "startSec": 1.6,
+          "endSec": 1.76,
+          "startChar": 18,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.08,
+          "startChar": 21,
+          "endChar": 23
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 3.12,
+          "startChar": 24,
+          "endChar": 37
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.44,
+          "startChar": 38,
+          "endChar": 42
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 4.16,
+          "startChar": 43,
+          "endChar": 52
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.32,
+          "startChar": 53,
+          "endChar": 55
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.96,
+          "startChar": 56,
+          "endChar": 66
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.2,
+          "startChar": 67,
+          "endChar": 69
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.84,
+          "startChar": 70,
+          "endChar": 79
+        }
+      ]
+    }
+  ]
+}

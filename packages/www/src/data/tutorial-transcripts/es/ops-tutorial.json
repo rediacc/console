@@ -1,0 +1,43 @@
+{
+  "cast": "/assets/tutorials/ops-tutorial.cast",
+  "language": "es",
+  "version": 1,
+  "events": [
+    {
+      "id": "ops-01",
+      "markerIndex": 0,
+      "at": 1.508416,
+      "text": "Verifique los requisitos de virtualización local antes del aprovisionamiento."
+    },
+    {
+      "id": "ops-02",
+      "markerIndex": 1,
+      "at": 8.415797,
+      "text": "Inicie un clúster de VM mínimo para experimentar."
+    },
+    {
+      "id": "ops-03",
+      "markerIndex": 2,
+      "at": 31.165622,
+      "text": "Verifique el estado del clúster y la disponibilidad de la máquina."
+    },
+    {
+      "id": "ops-04",
+      "markerIndex": 3,
+      "at": 38.114749,
+      "text": "Ejecute una verificación rápida del nombre de host en una VM seleccionada."
+    },
+    {
+      "id": "ops-05",
+      "markerIndex": 4,
+      "at": 43.322534,
+      "text": "Inspeccione los detalles del sistema desde el interior del entorno de VM."
+    },
+    {
+      "id": "ops-06",
+      "markerIndex": 5,
+      "at": 50.493824,
+      "text": "Apague y limpie el clúster de VM temporal."
+    }
+  ]
+}

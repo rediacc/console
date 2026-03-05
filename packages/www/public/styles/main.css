@@ -2103,6 +2103,10 @@ a[target='_blank']::after {
 /* ===== TERMINAL TUTORIAL PLAYER ===== */
 .terminal-tutorial {
   margin: var(--space-6) 0;
+  position: relative;
+  z-index: 4;
+  --terminal-player-layer-controls: 22;
+  --terminal-player-layer-caption: 26;
 }
 
 .terminal-tutorial-header {
@@ -2116,11 +2120,15 @@ a[target='_blank']::after {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: #1a1a2e;
+  position: relative;
+  isolation: isolate;
 }
 
 .terminal-tutorial-player {
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 1;
 }
 
 .terminal-tutorial-player-inner {
@@ -2130,6 +2138,9 @@ a[target='_blank']::after {
 
 .terminal-tutorial-player-inner .ap-player {
   overflow: visible;
+  position: relative;
+  max-width: 100%;
+  z-index: 1;
 }
 
 .terminal-tutorial-player-inner .ap-wrapper {
@@ -2137,43 +2148,249 @@ a[target='_blank']::after {
   max-width: 100%;
 }
 
-.terminal-tutorial-player-inner .ap-player {
+.terminal-tutorial-player-inner .ap-control-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2rem;
+  justify-content: flex-start;
+  background: transparent;
+  border-top: 0;
+  z-index: var(--terminal-player-layer-controls);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease !important;
+}
+
+.terminal-tutorial.is-ui-visible .terminal-tutorial-player-inner .ap-control-bar {
+  opacity: 1 !important;
+  transform: translateY(0);
+}
+
+.terminal-tutorial.is-playing.is-ui-hidden .terminal-tutorial-player-inner .ap-control-bar {
+  opacity: 0 !important;
+  transform: translateY(140%);
+  pointer-events: none;
+}
+
+.terminal-tutorial-player-inner .ap-control-bar .terminal-player-inline-volume-host,
+.terminal-tutorial-player-inner .ap-control-bar .terminal-player-inline-cc-host,
+.terminal-tutorial-player-inner .ap-control-bar .terminal-player-inline-playback-host {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-left: 0.5rem;
+  padding-right: 0.35rem;
+}
+
+.terminal-tutorial-player-inner .ap-control-bar .ap-playback-button {
+  display: none !important;
+}
+
+.terminal-tutorial-player-inner .ap-overlay-start {
+  display: none !important;
+}
+
+.terminal-player-guided-toggle {
+  border: 0;
+  background: transparent;
+  color: rgba(247, 247, 247, 0.95);
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 0.22rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.95;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.terminal-player-guided-toggle:hover,
+.terminal-player-guided-toggle:focus-visible {
+  background: rgba(255, 255, 255, 0.13);
+  color: #fff;
+  opacity: 1;
+}
+
+.terminal-player-guided-toggle svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: currentColor;
+}
+
+.terminal-player-audio-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.terminal-player-audio-icon-btn {
+  border: 0;
+  background: transparent;
+  color: rgba(247, 247, 247, 0.95);
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 0.22rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.95;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.terminal-player-audio-icon-btn:hover,
+.terminal-player-audio-icon-btn:focus-visible {
+  background: rgba(255, 255, 255, 0.13);
+  color: #fff;
+  opacity: 1;
+}
+
+.terminal-player-audio-icon-btn svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: currentColor;
+}
+
+.terminal-player-audio-volume-wrap {
+  display: inline-flex;
+  align-items: center;
+  min-width: 1.65rem;
+}
+
+.terminal-player-audio-slider-wrap {
+  display: inline-flex;
+  align-items: center;
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  margin-left: 0;
+  transition:
+    width 0.18s ease,
+    opacity 0.18s ease,
+    margin-left 0.18s ease;
+}
+
+.terminal-player-audio-volume-wrap:hover .terminal-player-audio-slider-wrap,
+.terminal-player-audio-volume-wrap:focus-within .terminal-player-audio-slider-wrap {
+  width: 5.8rem;
+  opacity: 1;
+  pointer-events: auto;
+  margin-left: 0.32rem;
+}
+
+.terminal-player-audio-slider-wrap input[type='range'] {
+  width: 100%;
+  accent-color: #fff;
+}
+
+.terminal-player-audio-cc-btn {
+  min-width: 2rem;
+  width: auto;
+  padding: 0 0.38rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(247, 247, 247, 0.86);
+}
+
+.terminal-player-audio-cc-btn.is-active {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.terminal-player-caption-layer {
+  position: absolute;
+  left: 50%;
+  bottom: 2.35rem;
+  transform: translateX(-50%);
+  width: min(86%, 60rem);
+  z-index: var(--terminal-player-layer-caption);
+  pointer-events: none;
+  opacity: 1;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.terminal-player-caption-layer--fullscreen {
+  position: fixed;
+  left: 50%;
+  bottom: 2.35rem;
+  transform: translateX(-50%);
+  width: min(88vw, 96rem);
+  z-index: 9999;
+}
+
+.terminal-player-caption-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  width: fit-content;
   max-width: 100%;
+  margin: 0 auto;
+  padding: 0.22rem 0.56rem;
+  border-radius: 0.24rem;
+  background: rgba(0, 0, 0, 0.76);
+  color: #fff;
+  font-size: clamp(0.82rem, 1vw, 1rem);
+  font-weight: 500;
+  line-height: 1.3;
+  text-align: center;
+  text-wrap: pretty;
 }
 
-.terminal-transcript {
-  margin-top: var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-alt);
-  padding: var(--space-3);
+.terminal-player-caption-layer--fullscreen .terminal-player-caption-text {
+  font-size: clamp(1rem, 1.8vw, 1.55rem);
+  line-height: 1.35;
+  padding: clamp(0.3rem, 0.45vw, 0.52rem) clamp(0.65rem, 1vw, 1.05rem);
+  border-radius: clamp(0.24rem, 0.4vw, 0.45rem);
 }
 
-.terminal-transcript-title {
-  margin: 0 0 var(--space-2);
-  font-size: var(--font-size-base);
-  color: var(--color-text);
+.terminal-player-caption-text.is-active-sentence-mode {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
 }
 
-.terminal-transcript-current {
-  border: 1px solid var(--color-border);
-  background: var(--color-bg);
-  border-radius: var(--radius-sm);
-  padding: var(--space-2) var(--space-3);
-  color: var(--color-text);
-  display: grid;
-  gap: 0.2rem;
+.terminal-player-caption-word {
+  border-radius: 0.16rem;
+  transition:
+    background-color 0.08s ease,
+    color 0.08s ease;
 }
 
-.terminal-transcript-step {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-  font-weight: var(--font-weight-semibold);
+.terminal-player-caption-word.is-active {
+  background: #ffd84d;
+  color: #151515;
+  box-shadow: 0 0 0 1px rgba(255, 216, 77, 0.45);
 }
 
-.terminal-transcript-text {
-  font-size: var(--font-size-sm);
-  line-height: var(--leading-normal);
+@media (max-width: 900px) {
+  .terminal-player-audio-volume-wrap:hover .terminal-player-audio-slider-wrap,
+  .terminal-player-audio-volume-wrap:focus-within .terminal-player-audio-slider-wrap {
+    width: 4.1rem;
+  }
+
+  .terminal-player-caption-layer {
+    width: min(92%, 32rem);
+    bottom: 2.4rem;
+  }
+
+  .terminal-player-caption-text {
+    font-size: clamp(0.76rem, 2.7vw, 0.92rem);
+  }
 }
 
 /* ===== BEFORE/AFTER ===== */

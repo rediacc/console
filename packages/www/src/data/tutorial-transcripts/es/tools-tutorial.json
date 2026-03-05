@@ -1,0 +1,55 @@
+{
+  "cast": "/assets/tutorials/tools-tutorial.cast",
+  "language": "es",
+  "version": 1,
+  "events": [
+    {
+      "id": "tools-01",
+      "markerIndex": 0,
+      "at": 1.508545,
+      "text": "Abra un comando de shell remoto para verificar la identidad de la máquina de destino."
+    },
+    {
+      "id": "tools-02",
+      "markerIndex": 1,
+      "at": 8.232601,
+      "text": "Confirme que el host responde verificando su tiempo de actividad actual."
+    },
+    {
+      "id": "tools-03",
+      "markerIndex": 2,
+      "at": 16.842601,
+      "text": "Ejecute una inspección del contenedor desde dentro del contexto del repositorio."
+    },
+    {
+      "id": "tools-04",
+      "markerIndex": 3,
+      "at": 26.099887,
+      "text": "Obtenga una vista previa de los cambios en la transferencia de archivos antes de cargar cualquier cosa."
+    },
+    {
+      "id": "tools-05",
+      "markerIndex": 4,
+      "at": 36.771157,
+      "text": "Envíe los archivos del proyecto local al espacio de trabajo del repositorio remoto."
+    },
+    {
+      "id": "tools-06",
+      "markerIndex": 5,
+      "at": 47.046053,
+      "text": "Enumere los archivos del repositorio de forma remota para verificar los resultados de la sincronización."
+    },
+    {
+      "id": "tools-07",
+      "markerIndex": 6,
+      "at": 56.157243,
+      "text": "Validar los requisitos previos de integración del editor para el desarrollo remoto."
+    },
+    {
+      "id": "tools-08",
+      "markerIndex": 7,
+      "at": 64.075905,
+      "text": "Compruebe si hay disponible una versión CLI más reciente."
+    }
+  ]
+}

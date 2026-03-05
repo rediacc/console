@@ -1,0 +1,455 @@
+{
+  "cast": "/assets/tutorials/backup-tutorial.cast",
+  "language": "ru",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "e6621b5e82abc9a28f8813e7b329330a16eb47723497f79f936e69893e43f9cd",
+  "steps": [
+    {
+      "id": "backup-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.509097,
+      "replayEndSec": 9.565032,
+      "narrationText": "Проверьте текущие настроенные места назначения резервного копирования.",
+      "audioSrc": "/assets/tutorials/audio/ru/backup-tutorial/backup-01.a17a414f.mp3",
+      "audioDurationSec": 4.04898,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.04,
+          "startChar": 10,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.6,
+          "startChar": 18,
+          "endChar": 29
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.92,
+          "startChar": 30,
+          "endChar": 35
+        },
+        {
+          "startSec": 2,
+          "endSec": 2.72,
+          "startChar": 36,
+          "endChar": 46
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.28,
+          "startChar": 47,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.92,
+          "startChar": 58,
+          "endChar": 69
+        }
+      ]
+    },
+    {
+      "id": "backup-02",
+      "markerIndex": 1,
+      "replayStartSec": 9.565032,
+      "replayEndSec": 19.718406,
+      "narrationText": "Включите политику запланированного резервного копирования с подробностями целевого хранилища.",
+      "audioSrc": "/assets/tutorials/audio/ru/backup-tutorial/backup-02.d8ad6376.mp3",
+      "audioDurationSec": 5.32898,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.12,
+          "startChar": 9,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.84,
+          "startChar": 18,
+          "endChar": 34
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.48,
+          "startChar": 35,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.12,
+          "startChar": 46,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.2,
+          "startChar": 58,
+          "endChar": 59
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 4,
+          "startChar": 60,
+          "endChar": 73
+        },
+        {
+          "startSec": 4,
+          "endSec": 4.48,
+          "startChar": 74,
+          "endChar": 82
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 5.28,
+          "startChar": 83,
+          "endChar": 92
+        }
+      ]
+    },
+    {
+      "id": "backup-03",
+      "markerIndex": 2,
+      "replayStartSec": 19.718406,
+      "replayEndSec": 27.974161,
+      "narrationText": "Просмотрите конфигурацию расписания активного резервного копирования.",
+      "audioSrc": "/assets/tutorials/audio/ru/backup-tutorial/backup-03.19b99fe7.mp3",
+      "audioDurationSec": 3.970612,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.44,
+          "startChar": 12,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 2,
+          "startChar": 25,
+          "endChar": 35
+        },
+        {
+          "startSec": 2,
+          "endSec": 2.64,
+          "startChar": 36,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.2,
+          "startChar": 46,
+          "endChar": 56
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.84,
+          "startChar": 57,
+          "endChar": 68
+        }
+      ]
+    },
+    {
+      "id": "backup-04",
+      "markerIndex": 3,
+      "replayStartSec": 27.974161,
+      "replayEndSec": 39.964598,
+      "narrationText": "Примените настройки инфраструктуры для внешнего доступа и сертификатов.",
+      "audioSrc": "/assets/tutorials/audio/ru/backup-tutorial/backup-04.c48f95bb.mp3",
+      "audioDurationSec": 4.127347,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.2,
+          "startChar": 10,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 2,
+          "startChar": 20,
+          "endChar": 34
+        },
+        {
+          "startSec": 2,
+          "endSec": 2.24,
+          "startChar": 35,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.64,
+          "startChar": 39,
+          "endChar": 47
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.12,
+          "startChar": 48,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.28,
+          "startChar": 56,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 4,
+          "startChar": 58,
+          "endChar": 70
+        }
+      ]
+    },
+    {
+      "id": "backup-05",
+      "markerIndex": 4,
+      "replayStartSec": 39.964598,
+      "replayEndSec": 50.277844,
+      "narrationText": "Зарегистрируйте необходимые сервисные порты TCP и UDP.",
+      "audioSrc": "/assets/tutorials/audio/ru/backup-tutorial/backup-05.f0410c5e.mp3",
+      "audioDurationSec": 5.146122,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 1.28,
+          "startChar": 0,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 2,
+          "startChar": 16,
+          "endChar": 27
+        },
+        {
+          "startSec": 2,
+          "endSec": 2.72,
+          "startChar": 28,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.2,
+          "startChar": 38,
+          "endChar": 43
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.16,
+          "startChar": 44,
+          "endChar": 47
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 5.04,
+          "startChar": 50,
+          "endChar": 53
+        }
+      ]
+    },
+    {
+      "id": "backup-06",
+      "markerIndex": 5,
+      "replayStartSec": 50.277844,
+      "replayEndSec": 58.727031,
+      "narrationText": "Отображение сведений об инфраструктуре для подтверждения сетевых значений.",
+      "audioSrc": "/assets/tutorials/audio/ru/backup-tutorial/backup-06.0d868259.mp3",
+      "audioDurationSec": 4.04898,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.2,
+          "startChar": 12,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.36,
+          "startChar": 21,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 2.16,
+          "startChar": 24,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.24,
+          "startChar": 39,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.88,
+          "startChar": 43,
+          "endChar": 56
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.28,
+          "startChar": 57,
+          "endChar": 64
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 4,
+          "startChar": 65,
+          "endChar": 73
+        }
+      ]
+    },
+    {
+      "id": "backup-07",
+      "markerIndex": 6,
+      "replayStartSec": 58.727031,
+      "replayEndSec": 65.303576,
+      "narrationText": "Отключите запланированное резервное копирование в рамках процесса отката.",
+      "audioSrc": "/assets/tutorials/audio/ru/backup-tutorial/backup-07.b0ed3ff1.mp3",
+      "audioDurationSec": 4.205714,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.36,
+          "startChar": 10,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.92,
+          "startChar": 26,
+          "endChar": 35
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.72,
+          "startChar": 36,
+          "endChar": 47
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.12,
+          "startChar": 50,
+          "endChar": 56
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.68,
+          "startChar": 57,
+          "endChar": 65
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.16,
+          "startChar": 66,
+          "endChar": 72
+        }
+      ]
+    },
+    {
+      "id": "backup-08",
+      "markerIndex": 7,
+      "replayStartSec": 65.303576,
+      "replayEndSec": 71.459995,
+      "narrationText": "Еще раз проверьте статус расписания, чтобы подтвердить изменение политики.",
+      "audioSrc": "/assets/tutorials/audio/ru/backup-tutorial/backup-08.e24d27bc.mp3",
+      "audioDurationSec": 5.146122,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.64,
+          "startChar": 4,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.12,
+          "startChar": 8,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.6,
+          "startChar": 18,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.4,
+          "startChar": 25,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.12,
+          "startChar": 37,
+          "endChar": 42
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.84,
+          "startChar": 43,
+          "endChar": 54
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 5.04,
+          "startChar": 65,
+          "endChar": 73
+        }
+      ]
+    }
+  ]
+}

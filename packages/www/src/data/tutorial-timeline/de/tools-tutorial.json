@@ -1,0 +1,85 @@
+{
+  "cast": "/assets/tutorials/tools-tutorial.cast",
+  "language": "de",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "ed058f62ca611f1921f24be4e89ee8b37ad1fdd49d0c95d3caee244cc398129a",
+  "steps": [
+    {
+      "id": "tools-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508545,
+      "replayEndSec": 8.232601,
+      "narrationText": "Öffnen Sie einen Remote-Shell-Befehl, um die Identität des Zielcomputers zu überprüfen.",
+      "audioSrc": "/assets/tutorials/audio/de/tools-tutorial/tools-01.a6600f20.mp3",
+      "audioDurationSec": 5.877551
+    },
+    {
+      "id": "tools-02",
+      "markerIndex": 1,
+      "replayStartSec": 8.232601,
+      "replayEndSec": 16.842601,
+      "narrationText": "Bestätigen Sie, dass der Host reagiert, indem Sie seine aktuelle Betriebszeit überprüfen.",
+      "audioSrc": "/assets/tutorials/audio/de/tools-tutorial/tools-02.fc2125b7.mp3",
+      "audioDurationSec": 5.877551
+    },
+    {
+      "id": "tools-03",
+      "markerIndex": 2,
+      "replayStartSec": 16.842601,
+      "replayEndSec": 26.099887,
+      "narrationText": "Führen Sie eine Containerinspektion aus dem Repository-Kontext heraus aus.",
+      "audioSrc": "/assets/tutorials/audio/de/tools-tutorial/tools-03.6dc7ccf5.mp3",
+      "audioDurationSec": 4.675918
+    },
+    {
+      "id": "tools-04",
+      "markerIndex": 3,
+      "replayStartSec": 26.099887,
+      "replayEndSec": 36.771157,
+      "narrationText": "Zeigen Sie eine Vorschau der Dateiübertragungsänderungen an, bevor Sie etwas hochladen.",
+      "audioSrc": "/assets/tutorials/audio/de/tools-tutorial/tools-04.042884c1.mp3",
+      "audioDurationSec": 5.564082
+    },
+    {
+      "id": "tools-05",
+      "markerIndex": 4,
+      "replayStartSec": 36.771157,
+      "replayEndSec": 47.046053,
+      "narrationText": "Übertragen Sie lokale Projektdateien in den Remote-Repository-Arbeitsbereich.",
+      "audioSrc": "/assets/tutorials/audio/de/tools-tutorial/tools-05.8d7789d1.mp3",
+      "audioDurationSec": 4.989388
+    },
+    {
+      "id": "tools-06",
+      "markerIndex": 5,
+      "replayStartSec": 47.046053,
+      "replayEndSec": 56.157243,
+      "narrationText": "Listen Sie Repository-Dateien remote auf, um die Synchronisierungsergebnisse zu überprüfen.",
+      "audioSrc": "/assets/tutorials/audio/de/tools-tutorial/tools-06.d95eb885.mp3",
+      "audioDurationSec": 6.19102
+    },
+    {
+      "id": "tools-07",
+      "markerIndex": 6,
+      "replayStartSec": 56.157243,
+      "replayEndSec": 64.075905,
+      "narrationText": "Validieren Sie die Voraussetzungen für die Editor-Integration für die Remote-Entwicklung.",
+      "audioSrc": "/assets/tutorials/audio/de/tools-tutorial/tools-07.4396afd0.mp3",
+      "audioDurationSec": 4.91102
+    },
+    {
+      "id": "tools-08",
+      "markerIndex": 7,
+      "replayStartSec": 64.075905,
+      "replayEndSec": 69.351156,
+      "narrationText": "Prüfen Sie, ob eine neuere CLI-Version verfügbar ist.",
+      "audioSrc": "/assets/tutorials/audio/de/tools-tutorial/tools-08.afc58029.mp3",
+      "audioDurationSec": 4.127347
+    }
+  ]
+}

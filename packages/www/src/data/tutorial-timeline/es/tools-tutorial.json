@@ -1,0 +1,701 @@
+{
+  "cast": "/assets/tutorials/tools-tutorial.cast",
+  "language": "es",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "f2bcda025bd48b8af5f67e05982b9c657ca601682ad0f5b3d29de2881d35489d",
+  "steps": [
+    {
+      "id": "tools-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508545,
+      "replayEndSec": 8.232601,
+      "narrationText": "Abra un comando de shell remoto para verificar la identidad de la máquina de destino.",
+      "audioSrc": "/assets/tutorials/audio/es/tools-tutorial/tools-01.742020fc.mp3",
+      "audioDurationSec": 5.250612,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.48,
+          "startChar": 5,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.96,
+          "startChar": 8,
+          "endChar": 15
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.12,
+          "startChar": 16,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.6,
+          "startChar": 19,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.16,
+          "startChar": 25,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.4,
+          "startChar": 32,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 3.12,
+          "startChar": 37,
+          "endChar": 46
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.36,
+          "startChar": 47,
+          "endChar": 49
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.92,
+          "startChar": 50,
+          "endChar": 59
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.08,
+          "startChar": 60,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.16,
+          "startChar": 63,
+          "endChar": 65
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.56,
+          "startChar": 66,
+          "endChar": 73
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.64,
+          "startChar": 74,
+          "endChar": 76
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.2,
+          "startChar": 77,
+          "endChar": 84
+        }
+      ]
+    },
+    {
+      "id": "tools-02",
+      "markerIndex": 1,
+      "replayStartSec": 8.232601,
+      "replayEndSec": 16.842601,
+      "narrationText": "Confirme que el host responde verificando su tiempo de actividad actual.",
+      "audioSrc": "/assets/tutorials/audio/es/tools-tutorial/tools-02.b4932803.mp3",
+      "audioDurationSec": 5.485714,
+      "wordTimings": [
+        {
+          "startSec": 0.64,
+          "endSec": 0.8,
+          "startChar": 9,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.08,
+          "startChar": 21,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.88,
+          "startChar": 30,
+          "endChar": 41
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.44,
+          "startChar": 42,
+          "endChar": 44
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.84,
+          "startChar": 45,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4,
+          "startChar": 52,
+          "endChar": 54
+        },
+        {
+          "startSec": 4,
+          "endSec": 4.64,
+          "startChar": 55,
+          "endChar": 64
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.44,
+          "startChar": 65,
+          "endChar": 71
+        }
+      ]
+    },
+    {
+      "id": "tools-03",
+      "markerIndex": 2,
+      "replayStartSec": 16.842601,
+      "replayEndSec": 26.099887,
+      "narrationText": "Ejecute una inspección del contenedor desde dentro del contexto del repositorio.",
+      "audioSrc": "/assets/tutorials/audio/es/tools-tutorial/tools-03.0bfffad1.mp3",
+      "audioDurationSec": 5.146122,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.8,
+          "startChar": 8,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.44,
+          "startChar": 12,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.68,
+          "startChar": 23,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.4,
+          "startChar": 27,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.88,
+          "startChar": 38,
+          "endChar": 43
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.28,
+          "startChar": 44,
+          "endChar": 50
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.44,
+          "startChar": 51,
+          "endChar": 54
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 4.16,
+          "startChar": 55,
+          "endChar": 63
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.32,
+          "startChar": 64,
+          "endChar": 67
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 5.04,
+          "startChar": 68,
+          "endChar": 79
+        }
+      ]
+    },
+    {
+      "id": "tools-04",
+      "markerIndex": 3,
+      "replayStartSec": 26.099887,
+      "replayEndSec": 36.771157,
+      "narrationText": "Obtenga una vista previa de los cambios en la transferencia de archivos antes de cargar cualquier cosa.",
+      "audioSrc": "/assets/tutorials/audio/es/tools-tutorial/tools-04.20b9a538.mp3",
+      "audioDurationSec": 6.112653,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.72,
+          "startChar": 8,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.04,
+          "startChar": 12,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.52,
+          "startChar": 18,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.68,
+          "startChar": 25,
+          "endChar": 27
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.84,
+          "startChar": 28,
+          "endChar": 31
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.32,
+          "startChar": 32,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.48,
+          "startChar": 40,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.56,
+          "startChar": 43,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.36,
+          "startChar": 46,
+          "endChar": 59
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.44,
+          "startChar": 60,
+          "endChar": 62
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 4,
+          "startChar": 63,
+          "endChar": 71
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.64,
+          "startChar": 72,
+          "endChar": 77
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.8,
+          "startChar": 78,
+          "endChar": 80
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.2,
+          "startChar": 81,
+          "endChar": 87
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.68,
+          "startChar": 88,
+          "endChar": 97
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 6.08,
+          "startChar": 98,
+          "endChar": 102
+        }
+      ]
+    },
+    {
+      "id": "tools-05",
+      "markerIndex": 4,
+      "replayStartSec": 36.771157,
+      "replayEndSec": 47.046053,
+      "narrationText": "Envíe los archivos del proyecto local al espacio de trabajo del repositorio remoto.",
+      "audioSrc": "/assets/tutorials/audio/es/tools-tutorial/tools-05.c8e99f2b.mp3",
+      "audioDurationSec": 5.250612,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.56,
+          "startChar": 6,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.12,
+          "startChar": 10,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.36,
+          "startChar": 19,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.92,
+          "startChar": 23,
+          "endChar": 31
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.32,
+          "startChar": 32,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.56,
+          "startChar": 38,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.04,
+          "startChar": 41,
+          "endChar": 48
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.2,
+          "startChar": 49,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.68,
+          "startChar": 52,
+          "endChar": 59
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.92,
+          "startChar": 60,
+          "endChar": 63
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.72,
+          "startChar": 64,
+          "endChar": 75
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.2,
+          "startChar": 76,
+          "endChar": 82
+        }
+      ]
+    },
+    {
+      "id": "tools-06",
+      "markerIndex": 5,
+      "replayStartSec": 47.046053,
+      "replayEndSec": 56.157243,
+      "narrationText": "Enumere los archivos del repositorio de forma remota para verificar los resultados de la sincronización.",
+      "audioSrc": "/assets/tutorials/audio/es/tools-tutorial/tools-06.f8dc621d.mp3",
+      "audioDurationSec": 7.392653,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.72,
+          "startChar": 8,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.28,
+          "startChar": 12,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.44,
+          "startChar": 21,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 2.32,
+          "startChar": 25,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.48,
+          "startChar": 37,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.96,
+          "startChar": 40,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.52,
+          "startChar": 46,
+          "endChar": 52
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.24,
+          "startChar": 53,
+          "endChar": 57
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.96,
+          "startChar": 58,
+          "endChar": 67
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.2,
+          "startChar": 68,
+          "endChar": 71
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 6,
+          "startChar": 72,
+          "endChar": 82
+        },
+        {
+          "startSec": 6,
+          "endSec": 6.08,
+          "startChar": 83,
+          "endChar": 85
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.24,
+          "startChar": 86,
+          "endChar": 88
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 7.28,
+          "startChar": 89,
+          "endChar": 103
+        }
+      ]
+    },
+    {
+      "id": "tools-07",
+      "markerIndex": 6,
+      "replayStartSec": 56.157243,
+      "replayEndSec": 64.075905,
+      "narrationText": "Validar los requisitos previos de integración del editor para el desarrollo remoto.",
+      "audioSrc": "/assets/tutorials/audio/es/tools-tutorial/tools-07.0ed65ebe.mp3",
+      "audioDurationSec": 5.642449,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.12,
+          "startChar": 8,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 2,
+          "startChar": 12,
+          "endChar": 22
+        },
+        {
+          "startSec": 2,
+          "endSec": 2.56,
+          "startChar": 23,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.64,
+          "startChar": 31,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.36,
+          "startChar": 34,
+          "endChar": 45
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.6,
+          "startChar": 46,
+          "endChar": 49
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.08,
+          "startChar": 50,
+          "endChar": 56
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.4,
+          "startChar": 57,
+          "endChar": 61
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.48,
+          "startChar": 62,
+          "endChar": 64
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 5.04,
+          "startChar": 65,
+          "endChar": 75
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.52,
+          "startChar": 76,
+          "endChar": 82
+        }
+      ]
+    },
+    {
+      "id": "tools-08",
+      "markerIndex": 7,
+      "replayStartSec": 64.075905,
+      "replayEndSec": 69.351156,
+      "narrationText": "Compruebe si hay disponible una versión CLI más reciente.",
+      "audioSrc": "/assets/tutorials/audio/es/tools-tutorial/tools-08.1852f003.mp3",
+      "audioDurationSec": 4.832653,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.04,
+          "startChar": 10,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.2,
+          "startChar": 13,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 2,
+          "startChar": 17,
+          "endChar": 27
+        },
+        {
+          "startSec": 2,
+          "endSec": 2.32,
+          "startChar": 28,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 3.04,
+          "startChar": 32,
+          "endChar": 39
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.76,
+          "startChar": 40,
+          "endChar": 43
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.16,
+          "startChar": 44,
+          "endChar": 47
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.72,
+          "startChar": 48,
+          "endChar": 56
+        }
+      ]
+    }
+  ]
+}

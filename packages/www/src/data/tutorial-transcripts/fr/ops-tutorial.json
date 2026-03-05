@@ -1,0 +1,43 @@
+{
+  "cast": "/assets/tutorials/ops-tutorial.cast",
+  "language": "fr",
+  "version": 1,
+  "events": [
+    {
+      "id": "ops-01",
+      "markerIndex": 0,
+      "at": 1.508416,
+      "text": "Vérifiez les exigences de virtualisation locale avant le provisionnement."
+    },
+    {
+      "id": "ops-02",
+      "markerIndex": 1,
+      "at": 8.415797,
+      "text": "Lancez un cluster de VM minimal à des fins d'expérimentation."
+    },
+    {
+      "id": "ops-03",
+      "markerIndex": 2,
+      "at": 31.165622,
+      "text": "Vérifiez l'état du cluster et la disponibilité de la machine."
+    },
+    {
+      "id": "ops-04",
+      "markerIndex": 3,
+      "at": 38.114749,
+      "text": "Exécutez une vérification rapide du nom d'hôte sur une VM sélectionnée."
+    },
+    {
+      "id": "ops-05",
+      "markerIndex": 4,
+      "at": 43.322534,
+      "text": "Inspectez les détails du système depuis l’environnement de la VM."
+    },
+    {
+      "id": "ops-06",
+      "markerIndex": 5,
+      "at": 50.493824,
+      "text": "Arrêtez et nettoyez le cluster de VM temporaire."
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "cast": "/assets/tutorials/monitoring-tutorial.cast",
+  "language": "fr",
+  "version": 1,
+  "events": [
+    {
+      "id": "monitoring-01",
+      "markerIndex": 0,
+      "at": 1.508459,
+      "text": "Exécutez un diagnostic complet de l’environnement pour faire apparaître les problèmes de base."
+    },
+    {
+      "id": "monitoring-02",
+      "markerIndex": 1,
+      "at": 8.976075,
+      "text": "Vérifiez les indicateurs d’état de la machine à distance."
+    },
+    {
+      "id": "monitoring-03",
+      "markerIndex": 2,
+      "at": 18.228101,
+      "text": "Répertoriez les conteneurs actifs sur la machine cible."
+    },
+    {
+      "id": "monitoring-04",
+      "markerIndex": 3,
+      "at": 27.138835,
+      "text": "Inspectez l’état du gestionnaire de services pour les composants principaux."
+    },
+    {
+      "id": "monitoring-05",
+      "markerIndex": 4,
+      "at": 35.981025,
+      "text": "Examinez l’état du coffre-fort et du sous-système de chiffrement."
+    },
+    {
+      "id": "monitoring-06",
+      "markerIndex": 5,
+      "at": 45.106571,
+      "text": "Scannez et vérifiez les clés d'hôte de la machine."
+    },
+    {
+      "id": "monitoring-07",
+      "markerIndex": 6,
+      "at": 53.662765,
+      "text": "Confirmez l'exécution de la commande à distance avec une vérification du nom d'hôte."
+    },
+    {
+      "id": "monitoring-08",
+      "markerIndex": 7,
+      "at": 60.414173,
+      "text": "Validez la réactivité de la machine avec un contrôle de disponibilité."
+    }
+  ]
+}

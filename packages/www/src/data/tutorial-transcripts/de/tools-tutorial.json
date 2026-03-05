@@ -1,0 +1,55 @@
+{
+  "cast": "/assets/tutorials/tools-tutorial.cast",
+  "language": "de",
+  "version": 1,
+  "events": [
+    {
+      "id": "tools-01",
+      "markerIndex": 0,
+      "at": 1.508545,
+      "text": "Öffnen Sie einen Remote-Shell-Befehl, um die Identität des Zielcomputers zu überprüfen."
+    },
+    {
+      "id": "tools-02",
+      "markerIndex": 1,
+      "at": 8.232601,
+      "text": "Bestätigen Sie, dass der Host reagiert, indem Sie seine aktuelle Betriebszeit überprüfen."
+    },
+    {
+      "id": "tools-03",
+      "markerIndex": 2,
+      "at": 16.842601,
+      "text": "Führen Sie eine Containerinspektion aus dem Repository-Kontext heraus aus."
+    },
+    {
+      "id": "tools-04",
+      "markerIndex": 3,
+      "at": 26.099887,
+      "text": "Zeigen Sie eine Vorschau der Dateiübertragungsänderungen an, bevor Sie etwas hochladen."
+    },
+    {
+      "id": "tools-05",
+      "markerIndex": 4,
+      "at": 36.771157,
+      "text": "Übertragen Sie lokale Projektdateien in den Remote-Repository-Arbeitsbereich."
+    },
+    {
+      "id": "tools-06",
+      "markerIndex": 5,
+      "at": 47.046053,
+      "text": "Listen Sie Repository-Dateien remote auf, um die Synchronisierungsergebnisse zu überprüfen."
+    },
+    {
+      "id": "tools-07",
+      "markerIndex": 6,
+      "at": 56.157243,
+      "text": "Validieren Sie die Voraussetzungen für die Editor-Integration für die Remote-Entwicklung."
+    },
+    {
+      "id": "tools-08",
+      "markerIndex": 7,
+      "at": 64.075905,
+      "text": "Prüfen Sie, ob eine neuere CLI-Version verfügbar ist."
+    }
+  ]
+}

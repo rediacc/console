@@ -1,0 +1,43 @@
+{
+  "cast": "/assets/tutorials/ops-tutorial.cast",
+  "language": "ja",
+  "version": 1,
+  "events": [
+    {
+      "id": "ops-01",
+      "markerIndex": 0,
+      "at": 1.508416,
+      "text": "プロビジョニングの前に、ローカル仮想化要件を確認してください。"
+    },
+    {
+      "id": "ops-02",
+      "markerIndex": 1,
+      "at": 8.415797,
+      "text": "実験用に最小限の VM クラスターを起動します。"
+    },
+    {
+      "id": "ops-03",
+      "markerIndex": 2,
+      "at": 31.165622,
+      "text": "クラスターの状態とマシンの可用性を確認します。"
+    },
+    {
+      "id": "ops-04",
+      "markerIndex": 3,
+      "at": 38.114749,
+      "text": "選択した VM でホスト名のクイック チェックを実行します。"
+    },
+    {
+      "id": "ops-05",
+      "markerIndex": 4,
+      "at": 43.322534,
+      "text": "VM 環境内からシステムの詳細を検査します。"
+    },
+    {
+      "id": "ops-06",
+      "markerIndex": 5,
+      "at": 50.493824,
+      "text": "一時的な VM クラスターをシャットダウンしてクリーンアップします。"
+    }
+  ]
+}

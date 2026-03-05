@@ -824,75 +824,8 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
       line-height: var(--leading-normal);
     }
 
-    /* Terminal tutorial player */
-    .article-content :global(.terminal-tutorial) {
-      margin: var(--space-6) 0;
-    }
-    .article-content :global(.terminal-tutorial-header) {
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-text-secondary);
-      margin-bottom: var(--space-3);
-    }
-    .article-content :global(.terminal-tutorial-layout) {
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      background: #1a1a2e;
-    }
-    .article-content :global(.terminal-tutorial-player) {
-      display: flex;
-      flex-direction: column;
-    }
-    .article-content :global(.terminal-tutorial-player-inner) {
-      flex: 1;
-      min-height: 400px;
-      /* No overflow hidden here — asciinema's .ap-terminal already clips
-         terminal text, and we need control-bar tooltips to overflow. */
-    }
-    /* Override asciinema-player's overflow:hidden on .ap-player so that
-       control-bar tooltips (marker labels, "Fullscreen (f)") are visible.
-       Terminal text stays clipped via .ap-terminal's own overflow:hidden. */
-    .article-content :global(.terminal-tutorial-player-inner .ap-player) {
-      overflow: visible !important;
-    }
-    /* Reset player size after exiting fullscreen */
-    .article-content :global(.terminal-tutorial-player-inner .ap-wrapper) {
-      max-width: 100%;
-    }
-    .article-content :global(.terminal-transcript) {
-      margin-top: var(--space-4);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      background: var(--color-bg-alt);
-      padding: var(--space-3);
-    }
-
-    .article-content :global(.terminal-transcript-title) {
-      margin: 0 0 var(--space-2);
-      font-size: var(--font-size-base);
-      color: var(--color-text);
-    }
-
-    .article-content :global(.terminal-transcript-current) {
-      border: 1px solid var(--color-border);
-      background: var(--color-bg);
-      border-radius: var(--radius-sm);
-      padding: var(--space-2) var(--space-3);
-      color: var(--color-text);
-      display: grid;
-      gap: 0.2rem;
-    }
-
-    .article-content :global(.terminal-transcript-step) {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-secondary);
-      font-weight: var(--font-weight-semibold);
-    }
-
-    .article-content :global(.terminal-transcript-text) {
-      font-size: var(--font-size-sm);
-      line-height: var(--leading-normal);
-    }
+    /* Terminal player styles are centralized in public/styles/main.css to keep
+       docs and homepage behavior identical. */
 
     .article-content :global(.cli-ref-links) {
       margin-top: calc(var(--space-2) * -1);

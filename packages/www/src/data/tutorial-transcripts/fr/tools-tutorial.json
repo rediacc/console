@@ -1,0 +1,55 @@
+{
+  "cast": "/assets/tutorials/tools-tutorial.cast",
+  "language": "fr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tools-01",
+      "markerIndex": 0,
+      "at": 1.508545,
+      "text": "Ouvrez une commande shell distante pour vérifier l'identité de la machine cible."
+    },
+    {
+      "id": "tools-02",
+      "markerIndex": 1,
+      "at": 8.232601,
+      "text": "Confirmez que l'hôte est réactif en vérifiant sa disponibilité actuelle."
+    },
+    {
+      "id": "tools-03",
+      "markerIndex": 2,
+      "at": 16.842601,
+      "text": "Exécutez une inspection du conteneur depuis le contexte du référentiel."
+    },
+    {
+      "id": "tools-04",
+      "markerIndex": 3,
+      "at": 26.099887,
+      "text": "Prévisualisez les modifications apportées au transfert de fichiers avant de télécharger quoi que ce soit."
+    },
+    {
+      "id": "tools-05",
+      "markerIndex": 4,
+      "at": 36.771157,
+      "text": "Transférez les fichiers de projet locaux vers l'espace de travail du référentiel distant."
+    },
+    {
+      "id": "tools-06",
+      "markerIndex": 5,
+      "at": 47.046053,
+      "text": "Répertoriez les fichiers du référentiel à distance pour vérifier les résultats de la synchronisation."
+    },
+    {
+      "id": "tools-07",
+      "markerIndex": 6,
+      "at": 56.157243,
+      "text": "Validez les prérequis d’intégration de l’éditeur pour le développement à distance."
+    },
+    {
+      "id": "tools-08",
+      "markerIndex": 7,
+      "at": 64.075905,
+      "text": "Vérifiez si une version CLI plus récente est disponible."
+    }
+  ]
+}

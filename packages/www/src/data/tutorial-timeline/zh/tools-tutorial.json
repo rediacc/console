@@ -1,0 +1,911 @@
+{
+  "cast": "/assets/tutorials/tools-tutorial.cast",
+  "language": "zh",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "71dbb6c6e2f011c7d21ad9cae8708f739ee83a37bf26128e54b74573b11394d3",
+  "steps": [
+    {
+      "id": "tools-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508545,
+      "replayEndSec": 8.232601,
+      "narrationText": "打开远程 shell 命令来验证目标计算机身份。",
+      "audioSrc": "/assets/tutorials/audio/zh/tools-tutorial/tools-01.5c4d7204.mp3",
+      "audioDurationSec": 4.04898,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.32,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.56,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.88,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.28,
+          "startChar": 5,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.6,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.76,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 2,
+          "endSec": 2.16,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.48,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.72,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 16,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.12,
+          "startChar": 17,
+          "endChar": 18
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.2,
+          "startChar": 18,
+          "endChar": 19
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.44,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.6,
+          "startChar": 20,
+          "endChar": 21
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.76,
+          "startChar": 21,
+          "endChar": 22
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 3.92,
+          "startChar": 22,
+          "endChar": 23
+        }
+      ]
+    },
+    {
+      "id": "tools-02",
+      "markerIndex": 1,
+      "replayStartSec": 8.232601,
+      "replayEndSec": 16.842601,
+      "narrationText": "通过检查主机当前的正常运行时间来确认主机是否响应。",
+      "audioSrc": "/assets/tutorials/audio/zh/tools-tutorial/tools-02.bdd3925f.mp3",
+      "audioDurationSec": 5.564082,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.32,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.48,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.8,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 0.96,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.2,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.36,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.68,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.84,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 2,
+          "endSec": 2.24,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.48,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.64,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.88,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.12,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.76,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4,
+          "startChar": 16,
+          "endChar": 17
+        },
+        {
+          "startSec": 4,
+          "endSec": 4.24,
+          "startChar": 17,
+          "endChar": 18
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.48,
+          "startChar": 18,
+          "endChar": 19
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.72,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 4.88,
+          "startChar": 20,
+          "endChar": 21
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.04,
+          "startChar": 21,
+          "endChar": 22
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.28,
+          "startChar": 22,
+          "endChar": 23
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.44,
+          "startChar": 23,
+          "endChar": 24
+        }
+      ]
+    },
+    {
+      "id": "tools-03",
+      "markerIndex": 2,
+      "replayStartSec": 16.842601,
+      "replayEndSec": 26.099887,
+      "narrationText": "从存储库上下文内部运行容器检查。",
+      "audioSrc": "/assets/tutorials/audio/zh/tools-tutorial/tools-03.5a741472.mp3",
+      "audioDurationSec": 3.239184,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.56,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.72,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.96,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.12,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.36,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.52,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.68,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.76,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 2,
+          "endSec": 2.32,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.48,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.72,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.2,
+          "startChar": 14,
+          "endChar": 15
+        }
+      ]
+    },
+    {
+      "id": "tools-04",
+      "markerIndex": 3,
+      "replayStartSec": 26.099887,
+      "replayEndSec": 36.771157,
+      "narrationText": "在上传任何内容之前预览文件传输更改。",
+      "audioSrc": "/assets/tutorials/audio/zh/tools-tutorial/tools-04.e6bc54b6.mp3",
+      "audioDurationSec": 3.866122,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.56,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.8,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 0.96,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.2,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.28,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.52,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.68,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 2,
+          "endSec": 2.16,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.4,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.64,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.88,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.2,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.36,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.6,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.76,
+          "startChar": 16,
+          "endChar": 17
+        }
+      ]
+    },
+    {
+      "id": "tools-05",
+      "markerIndex": 4,
+      "replayStartSec": 36.771157,
+      "replayEndSec": 47.046053,
+      "narrationText": "将本地项目文件推送到远程存储库工作区。",
+      "audioSrc": "/assets/tutorials/audio/zh/tools-tutorial/tools-05.2b6f76ef.mp3",
+      "audioDurationSec": 3.970612,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.56,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.72,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.88,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.04,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.2,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.44,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.6,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.84,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.08,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.64,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.88,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.04,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.36,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.52,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.68,
+          "startChar": 16,
+          "endChar": 17
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.92,
+          "startChar": 17,
+          "endChar": 18
+        }
+      ]
+    },
+    {
+      "id": "tools-06",
+      "markerIndex": 5,
+      "replayStartSec": 47.046053,
+      "replayEndSec": 56.157243,
+      "narrationText": "远程列出存储库文件以验证同步结果。",
+      "audioSrc": "/assets/tutorials/audio/zh/tools-tutorial/tools-06.d4fc9a8e.mp3",
+      "audioDurationSec": 3.63102,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.48,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.64,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.88,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.12,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.28,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.52,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.68,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.92,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.48,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.72,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.04,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.2,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.44,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.6,
+          "startChar": 15,
+          "endChar": 16
+        }
+      ]
+    },
+    {
+      "id": "tools-07",
+      "markerIndex": 6,
+      "replayStartSec": 56.157243,
+      "replayEndSec": 64.075905,
+      "narrationText": "验证远程开发的编辑器集成先决条件。",
+      "audioSrc": "/assets/tutorials/audio/zh/tools-tutorial/tools-07.1de33b85.mp3",
+      "audioDurationSec": 3.970612,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.56,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.88,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.12,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.28,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.52,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.6,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.92,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.16,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.56,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.8,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.04,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.28,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.44,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.68,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.92,
+          "startChar": 15,
+          "endChar": 16
+        }
+      ]
+    },
+    {
+      "id": "tools-08",
+      "markerIndex": 7,
+      "replayStartSec": 64.075905,
+      "replayEndSec": 69.351156,
+      "narrationText": "检查是否有较新的 CLI 版本可用。",
+      "audioSrc": "/assets/tutorials/audio/zh/tools-tutorial/tools-08.cf786b74.mp3",
+      "audioDurationSec": 3.004082,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.56,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.72,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.88,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 0.96,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.2,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.36,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.52,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.48,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.64,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.88,
+          "startChar": 16,
+          "endChar": 17
+        }
+      ]
+    }
+  ]
+}

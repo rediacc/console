@@ -8,7 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const CAST_DIR = path.join(ROOT, 'public', 'assets', 'tutorials');
 const TRANSCRIPT_DIR = path.join(ROOT, 'src', 'data', 'tutorial-transcripts');
-const LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh'];
+const TRANSCRIPT_LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh'];
 
 const colors = {
   red: (s) => `\x1b[31m${s}\x1b[0m`,
@@ -238,14 +238,54 @@ function main() {
     validateSchema(enFile.data, enRelative, errors);
     validateEnglishParity(castKey, enFile.data, markers, enRelative, errors);
 
-    for (const lang of LANGUAGES) {
+    for (const lang of TRANSCRIPT_LANGUAGES) {
       if (lang === 'en') continue;
       const localeFile = readTranscript(lang, castKey);
-      if (!localeFile) continue;
+      if (!localeFile) {
+        pushError(
+          errors,
+          `src/data/tutorial-transcripts/${lang}/${castKey}.json`,
+          `Missing required ${lang} transcript file.`,
+          `Create ${lang} transcript JSON with translated events`
+        );
+        continue;
+      }
 
       const localeRelative = path.relative(ROOT, localeFile.filePath);
       validateSchema(localeFile.data, localeRelative, errors);
       validateOptionalLocale(castKey, lang, localeFile.data, markers, localeRelative, errors);
+
+      if (Array.isArray(localeFile.data.events) && Array.isArray(enFile.data.events)) {
+        const len = Math.min(localeFile.data.events.length, enFile.data.events.length);
+        for (let i = 0; i < len; i += 1) {
+          const lev = localeFile.data.events[i];
+          const eev = enFile.data.events[i];
+          if (lev.id !== eev.id) {
+            pushError(
+              errors,
+              localeRelative,
+              `events[${i}].id (${lev.id}) must match English id (${eev.id}).`,
+              'Keep localized transcript event IDs aligned with English transcript'
+            );
+          }
+          if (lev.markerIndex !== eev.markerIndex) {
+            pushError(
+              errors,
+              localeRelative,
+              `events[${i}].markerIndex (${lev.markerIndex}) must match English markerIndex (${eev.markerIndex}).`,
+              'Keep localized transcript markerIndex aligned with English transcript'
+            );
+          }
+          if (Math.abs(Number(lev.at) - Number(eev.at)) > 0.001) {
+            pushError(
+              errors,
+              localeRelative,
+              `events[${i}].at (${lev.at}) must match English timestamp (${eev.at}).`,
+              'Keep localized transcript timestamps aligned with English transcript'
+            );
+          }
+        }
+      }
     }
   }
 

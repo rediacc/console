@@ -174,6 +174,180 @@ ensure_renet_built() {
     log_info "Renet built successfully"
 }
 
+# Ensure private/generative submodule is initialized
+ensure_generative_submodule() {
+    if [[ ! -d "$ROOT_DIR/private/generative" ]]; then
+        log_error "Missing private/generative directory"
+        exit 1
+    fi
+
+    if [[ ! -f "$ROOT_DIR/private/generative/.git" ]] && [[ ! -d "$ROOT_DIR/private/generative/.git" ]]; then
+        log_step "Initializing private/generative submodule..."
+        git submodule sync -- private/generative >/dev/null 2>&1 || true
+        git submodule update --init --recursive private/generative
+    fi
+}
+
+ensure_python_installed() {
+    if ! command -v python3 &>/dev/null; then
+        log_error "python3 is required for tutorial audio generation"
+        exit 1
+    fi
+}
+
+ensure_audio_system_deps() {
+    local missing=()
+    command -v ffmpeg >/dev/null 2>&1 || missing+=("ffmpeg")
+    command -v ffprobe >/dev/null 2>&1 || missing+=("ffmpeg")
+    command -v sox >/dev/null 2>&1 || missing+=("sox")
+
+    if [[ "${#missing[@]}" -eq 0 ]]; then
+        return 0
+    fi
+
+    if ! command -v apt-get >/dev/null 2>&1; then
+        log_error "Missing system deps: ${missing[*]}"
+        log_info "Install them manually (ffmpeg, sox) and retry."
+        exit 1
+    fi
+
+    log_step "Installing missing system dependencies: ${missing[*]}"
+    if command -v sudo >/dev/null 2>&1; then
+        sudo apt-get update
+        sudo apt-get install -y ffmpeg sox python3-venv python3-dev build-essential
+    else
+        apt-get update
+        apt-get install -y ffmpeg sox python3-venv python3-dev build-essential
+    fi
+}
+
+install_generative_python_deps() {
+    local gen_dir="$1"
+    local stamp_file="$2"
+    local content_hash="$3"
+    local site_packages=""
+
+    site_packages="$(python -c 'import site; print(site.getsitepackages()[0])' 2>/dev/null || true)"
+    if [[ -n "$site_packages" ]] && [[ -d "$site_packages" ]]; then
+        find "$site_packages" -maxdepth 1 -name '~ransformers*' -exec rm -rf {} + 2>/dev/null || true
+    fi
+
+    pip install --upgrade pip
+    pip install -e "$gen_dir"
+    pip install qwen-tts
+    pip install qwen-asr
+    install_flash_attn_if_supported
+    echo "$content_hash" >"$stamp_file"
+}
+
+install_flash_attn_if_supported() {
+    # Best-effort accelerator install. Keep generation working even if unavailable.
+    if python -c "import flash_attn" >/dev/null 2>&1; then
+        log_debug "flash-attn already installed"
+        return 0
+    fi
+
+    local has_cuda="false"
+    has_cuda="$(python -c 'import torch; print("true" if torch.cuda.is_available() else "false")' 2>/dev/null || echo "false")"
+    if [[ "$has_cuda" != "true" ]]; then
+        log_info "Skipping flash-attn install (CUDA not available in torch)."
+        return 0
+    fi
+
+    if ! command -v nvcc >/dev/null 2>&1; then
+        log_info "Skipping flash-attn install (nvcc not found for source build)."
+        return 0
+    fi
+
+    log_step "Installing flash-attn acceleration..."
+    pip install --upgrade packaging ninja >/dev/null 2>&1 || true
+    if ! pip install flash-attn --no-build-isolation; then
+        log_warn "flash-attn install failed; continuing without it."
+    fi
+}
+
+ensure_generative_venv() {
+    local clean_venv="$1"
+    local gen_dir="$ROOT_DIR/private/generative"
+    local venv_dir="$gen_dir/.venv"
+    local stamp_file="$venv_dir/.deps-sha256"
+    local content_hash
+
+    content_hash="$(
+        cd "$gen_dir" && \
+            sha256sum pyproject.toml src/tutorial_tts/*.py src/tutorial_tts/*.json | sha256sum | awk '{print $1}'
+    )"
+
+    if [[ "$clean_venv" == "true" && -d "$venv_dir" ]]; then
+        log_step "Recreating generative Python environment..."
+        rm -rf "$venv_dir"
+    fi
+
+    if [[ ! -d "$venv_dir" ]]; then
+        log_step "Creating generative Python environment..."
+        python3 -m venv "$venv_dir"
+    fi
+
+    # shellcheck disable=SC1091
+    source "$venv_dir/bin/activate"
+
+    if [[ ! -f "$stamp_file" ]] || [[ "$(cat "$stamp_file" 2>/dev/null || true)" != "$content_hash" ]]; then
+        log_step "Installing generative Python dependencies..."
+        if ! install_generative_python_deps "$gen_dir" "$stamp_file" "$content_hash"; then
+            log_warn "Dependency install failed; recreating Python environment and retrying once..."
+            deactivate || true
+            rm -rf "$venv_dir"
+            python3 -m venv "$venv_dir"
+            # shellcheck disable=SC1091
+            source "$venv_dir/bin/activate"
+            install_generative_python_deps "$gen_dir" "$stamp_file" "$content_hash"
+        fi
+    else
+        log_debug "Generative Python dependencies are up-to-date"
+    fi
+}
+
+www_generate() {
+    check_node_version
+    ensure_generative_submodule
+    ensure_python_installed
+    ensure_audio_system_deps
+
+    local clean_venv=false
+    local destroy_venv=false
+    local passthrough=()
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --clean-venv)
+                clean_venv=true
+                shift
+                ;;
+            --destroy-venv)
+                destroy_venv=true
+                shift
+                ;;
+            *)
+                passthrough+=("$1")
+                shift
+                ;;
+        esac
+    done
+
+    ensure_generative_venv "$clean_venv"
+    ensure_deps
+
+    export QWEN_TTS_PYTHON_BIN="$ROOT_DIR/private/generative/.venv/bin/python"
+
+    log_step "Generating tutorial audio assets (www)..."
+    npm run tutorials:tts:generate -w @rediacc/www -- "${passthrough[@]}"
+
+    if [[ "$destroy_venv" == "true" ]]; then
+        log_step "Destroying generative Python environment..."
+        rm -rf "$ROOT_DIR/private/generative/.venv"
+    fi
+}
+
 # =============================================================================
 # DEVELOPMENT COMMANDS
 # =============================================================================
@@ -667,6 +841,11 @@ DEVELOPMENT COMMANDS:
   worktree <cmd>      Manage git worktrees (create, switch, prune, list)
   setup               Interactive setup wizard
 
+WWW COMMANDS:
+  www generate [opts] Generate tutorial audio assets with auto Python venv setup
+                      Extra opts are passed through to tutorials:tts:generate
+                      Special opts: --clean-venv, --destroy-venv, --subtitle
+
 TEST COMMANDS:
   test unit           Run unit tests
   test cli [opts]     Run CLI tests
@@ -848,6 +1027,21 @@ main() {
             "$ROOT_DIR/scripts/dev/worktree.sh" "$@"
             ;;
         setup) setup ;;
+        www)
+            shift
+            case "${1:-}" in
+                generate)
+                    shift
+                    www_generate "$@"
+                    ;;
+                *)
+                    log_error "Unknown www command: ${1:-}"
+                    echo ""
+                    echo "Usage: ./run.sh www generate [--clean-venv] [--destroy-venv] [--subtitle] [generator args]"
+                    exit 1
+                    ;;
+            esac
+            ;;
 
         # Tests
         test)

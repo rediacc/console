@@ -1,0 +1,575 @@
+{
+  "cast": "/assets/tutorials/setup-tutorial.cast",
+  "language": "ru",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "1338ff704622c75d975ca57edef567890f10399973576bdd28550ee155d7e9f0",
+  "events": [
+    {
+      "id": "setup-01",
+      "markerIndex": 0,
+      "at": 1.510013,
+      "textHash": "5a6b591437cb77be9d0f1c07795819aa77bb9a71df111f4f14952cbad5d64a42",
+      "audioSrc": "/assets/tutorials/audio/ru/setup-tutorial/setup-01.5a6b5914.mp3",
+      "duration": 4.597551,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 1.12,
+          "startChar": 0,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 2.0,
+          "startChar": 16,
+          "endChar": 27
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.48,
+          "startChar": 28,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.44,
+          "startChar": 36,
+          "endChar": 48
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.68,
+          "startChar": 49,
+          "endChar": 52
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.0,
+          "startChar": 53,
+          "endChar": 57
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.48,
+          "startChar": 58,
+          "endChar": 63
+        }
+      ]
+    },
+    {
+      "id": "setup-02",
+      "markerIndex": 1,
+      "at": 10.550973,
+      "textHash": "da006695c4a57374200d72e2194058b7343dfdf2ae4e139f8ec0cb1d53923a3a",
+      "audioSrc": "/assets/tutorials/audio/ru/setup-tutorial/setup-02.da006695.mp3",
+      "duration": 4.91102,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.28,
+          "startChar": 12,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 2.16,
+          "startChar": 22,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.48,
+          "startChar": 35,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.12,
+          "startChar": 37,
+          "endChar": 46
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.36,
+          "startChar": 48,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.68,
+          "startChar": 52,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.16,
+          "startChar": 58,
+          "endChar": 65
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.8,
+          "startChar": 66,
+          "endChar": 76
+        }
+      ]
+    },
+    {
+      "id": "setup-03",
+      "markerIndex": 2,
+      "at": 17.625716,
+      "textHash": "1257b675c2fa22e4d1e8c600ba59b919b1fbb7811959f70f1ce5ca3b7bd2e3cf",
+      "audioSrc": "/assets/tutorials/audio/ru/setup-tutorial/setup-03.1257b675.mp3",
+      "duration": 3.866122,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.96,
+          "startChar": 0,
+          "endChar": 15
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.28,
+          "startChar": 16,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.76,
+          "startChar": 23,
+          "endChar": 29
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.24,
+          "startChar": 32,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.8,
+          "startChar": 40,
+          "endChar": 48
+        }
+      ]
+    },
+    {
+      "id": "setup-04",
+      "markerIndex": 3,
+      "at": 28.032443,
+      "textHash": "a1bffbeea953d8d0b2adf76d7c4eb949f312eebcf999127793cc466864ad28c5",
+      "audioSrc": "/assets/tutorials/audio/ru/setup-tutorial/setup-04.a1bffbee.mp3",
+      "duration": 3.866122,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.12,
+          "startChar": 10,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.44,
+          "startChar": 22,
+          "endChar": 28
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 2.0,
+          "startChar": 29,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.48,
+          "startChar": 42,
+          "endChar": 47
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.04,
+          "startChar": 48,
+          "endChar": 59
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.84,
+          "startChar": 60,
+          "endChar": 71
+        }
+      ]
+    },
+    {
+      "id": "setup-05",
+      "markerIndex": 4,
+      "at": 36.265561,
+      "textHash": "5980aa341bc5cf08dbb962597d3a8800f9d83712c8061c911aa09b7a4f794f11",
+      "audioSrc": "/assets/tutorials/audio/ru/setup-tutorial/setup-05.5980aa34.mp3",
+      "duration": 4.989388,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.12,
+          "startChar": 11,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.28,
+          "startChar": 21,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 2.0,
+          "startChar": 24,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.32,
+          "startChar": 35,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.88,
+          "startChar": 41,
+          "endChar": 50
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.76,
+          "startChar": 51,
+          "endChar": 64
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.16,
+          "startChar": 65,
+          "endChar": 70
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.88,
+          "startChar": 71,
+          "endChar": 81
+        }
+      ]
+    },
+    {
+      "id": "setup-06",
+      "markerIndex": 5,
+      "at": 44.022131,
+      "textHash": "5cfca335572463693f7694d1799aeff475809642345c14d69c4542a61e4d76ac",
+      "audioSrc": "/assets/tutorials/audio/ru/setup-tutorial/setup-06.5cfca335.mp3",
+      "duration": 3.970612,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.04,
+          "startChar": 10,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.44,
+          "startChar": 18,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.92,
+          "startChar": 27,
+          "endChar": 37
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.32,
+          "startChar": 38,
+          "endChar": 43
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.64,
+          "startChar": 45,
+          "endChar": 50
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.12,
+          "startChar": 51,
+          "endChar": 60
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.84,
+          "startChar": 61,
+          "endChar": 72
+        }
+      ]
+    },
+    {
+      "id": "setup-07",
+      "markerIndex": 6,
+      "at": 50.965935,
+      "textHash": "a4724983a251f45c17b3b4f20b07b66c4ad7b6753ee748594fedb67275ef57ba",
+      "audioSrc": "/assets/tutorials/audio/ru/setup-tutorial/setup-07.a4724983.mp3",
+      "duration": 4.832653,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.72,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.12,
+          "startChar": 10,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.6,
+          "startChar": 17,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.08,
+          "startChar": 26,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 3.2,
+          "startChar": 33,
+          "endChar": 48
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.28,
+          "startChar": 49,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 4.16,
+          "startChar": 52,
+          "endChar": 69
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.72,
+          "startChar": 70,
+          "endChar": 77
+        }
+      ]
+    },
+    {
+      "id": "setup-08",
+      "markerIndex": 7,
+      "at": 59.757783,
+      "textHash": "cde8006ec3000114cc9f16c8b1ca4d99508203c33acaf5aca7f68f057592e968",
+      "audioSrc": "/assets/tutorials/audio/ru/setup-tutorial/setup-08.cde8006e.mp3",
+      "duration": 4.989388,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.36,
+          "startChar": 10,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.84,
+          "startChar": 22,
+          "endChar": 27
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.72,
+          "startChar": 29,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.2,
+          "startChar": 35,
+          "endChar": 42
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.68,
+          "startChar": 43,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.16,
+          "startChar": 54,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.24,
+          "startChar": 63,
+          "endChar": 64
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.88,
+          "startChar": 65,
+          "endChar": 75
+        }
+      ]
+    },
+    {
+      "id": "setup-09",
+      "markerIndex": 8,
+      "at": 67.426214,
+      "textHash": "57e536423ff1fd5aec6478dcc4906e80efb194a1ac0d28dc39641aa6cfffad5a",
+      "audioSrc": "/assets/tutorials/audio/ru/setup-tutorial/setup-09.57e53642.mp3",
+      "duration": 3.709388,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.2,
+          "startChar": 10,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 2.0,
+          "startChar": 20,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.16,
+          "startChar": 35,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.56,
+          "startChar": 39,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.96,
+          "startChar": 46,
+          "endChar": 53
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.04,
+          "startChar": 54,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.68,
+          "startChar": 56,
+          "endChar": 68
+        }
+      ]
+    },
+    {
+      "id": "setup-10",
+      "markerIndex": 9,
+      "at": 77.6898,
+      "textHash": "d2b4260032b42d8757d4243135286e4c2e5c6135f098795a65dea69d3b948dec",
+      "audioSrc": "/assets/tutorials/audio/ru/setup-tutorial/setup-10.d2b42600.mp3",
+      "duration": 4.754286,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.44,
+          "startChar": 11,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 2.32,
+          "startChar": 24,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.8,
+          "startChar": 40,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.28,
+          "startChar": 46,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 4.0,
+          "startChar": 56,
+          "endChar": 69
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.72,
+          "startChar": 70,
+          "endChar": 79
+        }
+      ]
+    }
+  ]
+}
