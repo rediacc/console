@@ -219,28 +219,38 @@ jobs:
         run: |
           STATUS=$(node packages/cli/dist/cli-bundle.cjs ops status -o json)
           echo "$STATUS"
-          # QEMU returns localhost:<port> format
-          VM_ADDR=$(echo "$STATUS" | jq -r '.vms[0].ip')
-          echo "vm_addr=$VM_ADDR" >> "$GITHUB_OUTPUT"
+          # QEMU returns localhost:<port> addresses. Keep all running VMs so
+          # SSH checks can fall back if one VM is slow/unreachable.
+          VM_ADDRS=$(echo "$STATUS" | jq -r '[.vms[] | select(.status == "running") | .ip] | join(" ")')
+          if [[ -z "$VM_ADDRS" ]]; then
+            echo "No running VM addresses found in ops status output"
+            exit 1
+          fi
+          echo "vm_addrs=$VM_ADDRS" >> "$GITHUB_OUTPUT"
 
       - name: "Verify: SSH connectivity"
         shell: bash
         run: |
-          VM_ADDR="${{ steps.status.outputs.vm_addr }}"
-          SSH_PORT="${VM_ADDR#localhost:}"
+          VM_ADDRS="${{ steps.status.outputs.vm_addrs }}"
           SSH_KEY="$HOME/.ssh/id_ed25519"
-          for i in $(seq 1 15); do
-            if ssh -i "$SSH_KEY" -p "$SSH_PORT" \
-              -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-              -o ConnectTimeout=5 \
-              "$(whoami)@localhost" "echo 'SSH OK'"; then
-              echo "SSH connection successful on attempt $i"
-              exit 0
-            fi
-            echo "Attempt $i failed, retrying in 5s..."
+
+          for i in $(seq 1 20); do
+            for vm_addr in $VM_ADDRS; do
+              SSH_PORT="${vm_addr#localhost:}"
+              if ssh -i "$SSH_KEY" -p "$SSH_PORT" \
+                -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                -o ConnectTimeout=5 \
+                "$(whoami)@localhost" "echo 'SSH OK'"; then
+                echo "SSH connection successful via ${vm_addr} on attempt $i"
+                exit 0
+              fi
+              echo "Attempt $i on ${vm_addr} failed"
+            done
+            echo "Attempt $i failed for all VM addresses, retrying in 5s..."
             sleep 5
           done
-          echo "SSH connection failed after 15 attempts"
+
+          echo "SSH connection failed for all VM addresses after 20 attempts"
           exit 1
 
       - name: "Test: rdc ops down"
