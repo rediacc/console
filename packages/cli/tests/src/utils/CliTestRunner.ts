@@ -672,41 +672,9 @@ export class CliTestRunner {
   // ===========================================================================
 
   /**
-   * Try to parse JSON from CLI output.
-   * Handles spinner output by finding JSON array or object.
+   * Unwrap CLI JSON envelope if present: {success, command, data, ...} → data
    */
-  private tryParseJson(str: string): unknown {
-    if (!str.trim()) return null;
-
-    // First try direct parse
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(str);
-    } catch {
-      // Continue to regex extraction
-      parsed = null;
-    }
-
-    if (parsed === null) {
-      // Try to extract JSON array or object from output
-      try {
-        const arrayMatch = /\[[\s\S]*\]/.exec(str);
-        if (arrayMatch) {
-          parsed = JSON.parse(arrayMatch[0]);
-        } else {
-          const objectMatch = /\{[\s\S]*\}/.exec(str);
-          if (objectMatch) {
-            parsed = JSON.parse(objectMatch[0]);
-          }
-        }
-      } catch {
-        // JSON extraction failed
-      }
-    }
-
-    if (parsed === null) return null;
-
-    // Unwrap CLI JSON envelope: {success, command, data, errors, ...}
+  private unwrapEnvelope(parsed: unknown): unknown {
     if (
       typeof parsed === 'object' &&
       !Array.isArray(parsed) &&
@@ -717,7 +685,38 @@ export class CliTestRunner {
     ) {
       return (parsed as Record<string, unknown>).data;
     }
-
     return parsed;
+  }
+
+  /**
+   * Try to parse JSON from CLI output.
+   * Handles spinner output by finding JSON array or object.
+   */
+  private tryParseJson(str: string): unknown {
+    if (!str.trim()) return null;
+
+    // First try direct parse
+    try {
+      return this.unwrapEnvelope(JSON.parse(str));
+    } catch {
+      // Continue to regex extraction
+    }
+
+    // Try to extract JSON array or object from output
+    try {
+      const arrayMatch = /\[[\s\S]*\]/.exec(str);
+      if (arrayMatch) {
+        return this.unwrapEnvelope(JSON.parse(arrayMatch[0]));
+      }
+
+      const objectMatch = /\{[\s\S]*\}/.exec(str);
+      if (objectMatch) {
+        return this.unwrapEnvelope(JSON.parse(objectMatch[0]));
+      }
+    } catch {
+      // JSON extraction failed
+    }
+
+    return null;
   }
 }
