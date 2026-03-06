@@ -32,13 +32,17 @@ export default {
 
     // Serve account SPA for /account/* routes
     if (url.pathname === '/account' || url.pathname.startsWith('/account/')) {
-      // Only try assets for paths that look like static files (have an extension)
+      // Static files (JS, CSS, SVG, etc.): serve from assets directly
       if (/\.\w+$/.test(url.pathname)) {
         return env.ASSETS.fetch(request);
       }
-      // All other /account/* paths serve the SPA shell
-      const spaUrl = new URL('/account/index.html', url.origin);
-      return env.ASSETS.fetch(new Request(spaUrl, request));
+      // SPA routes: rewrite to /account/ so assets serves index.html.
+      // Don't use /account/index.html — Cloudflare pretty URLs 307-redirects it.
+      if (url.pathname !== '/account' && url.pathname !== '/account/') {
+        const spaRequest = new Request(new URL('/account/', url.origin), request);
+        return env.ASSETS.fetch(spaRequest);
+      }
+      return env.ASSETS.fetch(request);
     }
 
     return env.ASSETS.fetch(request);
