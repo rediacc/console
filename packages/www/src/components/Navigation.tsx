@@ -5,7 +5,7 @@ import PersonaMegaMenu from './PersonaMegaMenu';
 import SearchModal from './SearchModal';
 import Sidebar from './Sidebar';
 import ThemeToggle from './ThemeToggle';
-import { getConsoleUrl } from '../config/constants';
+import { getAccountUrl } from '../config/constants';
 import { useLanguage } from '../hooks/useLanguage';
 import { SUPPORTED_LANGUAGES } from '../i18n/language-utils';
 import { useTranslation } from '../i18n/react';
@@ -23,8 +23,7 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
   const [isVisible, setIsVisible] = useState(true);
   const { t } = useTranslation(currentLang);
 
-  // Get console URL (use origin from server-side if provided)
-  const consoleUrl = getConsoleUrl(origin);
+  const accountUrl = getAccountUrl(origin);
 
   // Handle scroll to show/hide navigation on solutions pages:
   // Hide when scrolling down past threshold, show when scrolling up
@@ -232,14 +231,14 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
               ariaLabel={t('navigation.selectLanguage')}
             />
             <a
-              href={consoleUrl}
+              href={accountUrl}
               className="nav-cta-btn nav-account-btn"
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`${t('navigation.login')} (${t('common.aria.opensInNewTab')})`}
               data-track="cta_click"
               data-track-label="nav-login"
-              data-track-dest="console"
+              data-track-dest="account"
             >
               Account
             </a>

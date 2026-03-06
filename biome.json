@@ -86,6 +86,9 @@
         "enabled": true,
         "rules": {
           "recommended": true,
+          "nursery": {
+            "noFloatingPromises": "error"
+          },
           "a11y": {
             "noAutofocus": "warn",
             "noStaticElementInteractions": "warn"

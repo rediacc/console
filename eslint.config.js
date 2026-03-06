@@ -875,7 +875,10 @@ export default tseslint.config(
       'custom/prefer-const-arrays': 'off',
       // --- Import/syntax restrictions (packages/web specific) ---
       'no-restricted-imports': 'off',
-      'no-restricted-syntax': 'off',
+      'no-restricted-syntax': ['error', {
+        selector: "CallExpression[callee.property.name='transaction']",
+        message: 'db.transaction() is not supported on D1. Use sequential awaited operations instead.',
+      }],
       'import/order': 'off',
     },
   },
