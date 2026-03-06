@@ -1,0 +1,81 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:05.000
+Seventy percent of backup restores fail when you actually need them.
+
+2
+00:00:05.000 --> 00:00:10.000
+I've spent over a decade managing servers and infrastructure.
+
+3
+00:00:10.000 --> 00:00:14.000
+I've watched backups fail during real incidents.
+
+4
+00:00:14.000 --> 00:00:19.000
+I've seen a single config mistake take down production for eight hours.
+
+5
+00:00:19.000 --> 00:00:25.000
+I've been the person at 2 AM trying to recover a database from a backup that was never tested.
+
+6
+00:00:25.000 --> 00:00:30.000
+The tools we have today weren't built for this.
+
+7
+00:00:30.000 --> 00:00:35.000
+Backup software that can't prove its own restores work.
+
+8
+00:00:35.000 --> 00:00:39.000
+Dev environments that look nothing like production.
+
+9
+00:00:39.000 --> 00:00:45.000
+Security tests that happen once a quarter — if they happen at all. And every tool is a separate product, a separate vendor, a separate bill.
+
+10
+00:00:45.000 --> 00:00:49.000
+Every hour your system is down costs money.
+
+11
+00:00:49.000 --> 00:00:53.000
+Every untested backup is a bet you're making with your business.
+
+12
+00:00:53.000 --> 00:00:58.000
+Every dev environment that doesn't match production is a bug waiting to ship.
+
+13
+00:00:58.000 --> 00:01:05.000
+That's why I built Rediacc. One platform that handles protection, recovery, dev environments, and security testing.
+
+14
+00:01:05.000 --> 00:01:10.000
+Built on btrfs copy-on-write snapshots. Not bolted-on backups.
+
+15
+00:01:10.000 --> 00:01:20.000
+Rediacc takes immutable, encrypted snapshots of your entire stack and restores them in minutes. Not hours. Minutes.
+
+16
+00:01:20.000 --> 00:01:30.000
+Clone your production environment in sixty seconds. Full databases, Docker services, configs — all of it. Zero extra storage cost.
+
+17
+00:01:30.000 --> 00:01:38.000
+Run penetration tests on safe clones every day. Find the holes before attackers do.
+
+18
+00:01:38.000 --> 00:01:48.000
+Everything runs on your hardware. Your encryption keys. Your data never leaves your servers. No cloud lock-in. No vendor dependency.
+
+19
+00:01:48.000 --> 00:01:58.000
+A ten-terabyte database restores in four minutes. Ninety days of backup history stored in the space others need for seven days.
+
+20
+00:01:58.000 --> 00:02:05.000
+Start free. Install on your server in under five minutes. I'm Muhammed. Welcome to Rediacc.

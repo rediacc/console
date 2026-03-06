@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import type { SolutionCategory } from '../config/solution-pages';
+import { CATEGORY_ORDER, SOLUTION_PAGES } from '../config/solution-pages';
+import { useTranslation } from '../i18n/react';
+import type { Language } from '../i18n/types';
 import { CATEGORY_ICONS } from './CategoryIcons';
 import TerminalPlayer from './TerminalPlayer';
-import { SOLUTION_PAGES, CATEGORY_ORDER } from '../config/solution-pages';
-import { useTranslation } from '../i18n/react';
-import type { SolutionCategory } from '../config/solution-pages';
-import type { Language } from '../i18n/types';
 
 interface FeatureShowcaseProps {
   lang?: Language;

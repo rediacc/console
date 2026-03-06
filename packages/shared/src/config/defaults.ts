@@ -352,6 +352,9 @@ export const TIMEOUT_DEFAULTS = {
 
   /** Default execution timeout (10 minutes) */
   EXECUTION: 10 * 60 * 1000,
+
+  /** Default MCP command timeout (2 minutes) */
+  MCP_COMMAND: 120_000,
 } as const;
 
 /**

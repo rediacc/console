@@ -5,10 +5,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import matter from 'gray-matter';
 import {
-  SHELL_FENCE_LANGS,
-  TARGET_DOC_CATEGORIES,
   mergeContinuationLines,
   parseRdcCommand,
+  SHELL_FENCE_LANGS,
+  TARGET_DOC_CATEGORIES,
 } from './lib/cli-reference-catalog.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -35,6 +35,8 @@ function getTargetSlugs() {
     const raw = fs.readFileSync(fullPath, 'utf-8');
     const parsed = matter(raw);
     const category = parsed.data?.category;
+    // Skip auto-generated docs (validated by validate-cli-docs.js)
+    if (parsed.data?.generated) continue;
     if (typeof category === 'string' && TARGET_DOC_CATEGORIES.has(category)) {
       slugs.push(slug);
     }

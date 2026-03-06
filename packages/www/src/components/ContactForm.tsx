@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
-import TurnstileWidget from './TurnstileWidget';
+import React, { useRef, useState } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
+import TurnstileWidget from './TurnstileWidget';
 
 const INTEREST_TO_SUBJECT: Record<string, string> = {
   'disaster-recovery': 'disasterRecovery',

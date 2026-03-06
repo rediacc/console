@@ -4,52 +4,10 @@
   "version": 1,
   "events": [
     {
-      "id": "tools-01",
+      "id": "tools-tutorial-01",
       "markerIndex": 0,
-      "at": 1.508545,
-      "text": "Open a remote shell command to verify the target machine identity."
-    },
-    {
-      "id": "tools-02",
-      "markerIndex": 1,
-      "at": 8.232601,
-      "text": "Confirm the host is responsive by checking its current uptime."
-    },
-    {
-      "id": "tools-03",
-      "markerIndex": 2,
-      "at": 16.842601,
-      "text": "Run a container inspection from inside the repository context."
-    },
-    {
-      "id": "tools-04",
-      "markerIndex": 3,
-      "at": 26.099887,
-      "text": "Preview file transfer changes before uploading anything."
-    },
-    {
-      "id": "tools-05",
-      "markerIndex": 4,
-      "at": 36.771157,
-      "text": "Push local project files to the remote repository workspace."
-    },
-    {
-      "id": "tools-06",
-      "markerIndex": 5,
-      "at": 47.046053,
-      "text": "List repository files remotely to verify sync results."
-    },
-    {
-      "id": "tools-07",
-      "markerIndex": 6,
-      "at": 56.157243,
-      "text": "Validate editor integration prerequisites for remote development."
-    },
-    {
-      "id": "tools-08",
-      "markerIndex": 7,
-      "at": 64.075905,
-      "text": "Check whether a newer CLI release is available."
+      "at": 1.511459,
+      "text": "Day-to-day operations rely on reliable SSH connectivity. We start by verifying the tunnel to the remote machine -- a hostname check confirms the connection target."
     }
   ]
 }

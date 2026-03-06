@@ -4,15 +4,15 @@
  * Functions for validating subscription data structure and status.
  */
 
-import { SUBSCRIPTION_CONFIG, PLAN_ORDER } from './constants';
+import { PLAN_ORDER, SUBSCRIPTION_CONFIG } from './constants';
 import type {
-  SubscriptionData,
-  SubscriptionStatus,
-  SubscriptionValidationResult,
   OrganizationSubscription,
   PlanCode,
   ResourceLimits,
   SignedSubscriptionBlob,
+  SubscriptionData,
+  SubscriptionStatus,
+  SubscriptionValidationResult,
 } from './types';
 
 /**

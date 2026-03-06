@@ -1,77 +1,83 @@
 ---
 title: "Инструменты"
-description: "Смотрите и повторяйте: использование терминала, синхронизация файлов, интеграция VS Code и команды обновления CLI."
+description: "Используйте доступ к терминалу SSH, синхронизацию файлов, интеграцию VS Code и команды обновления CLI."
 category: "Tutorials"
 order: 5
 language: ru
-sourceHash: "6cf8e14712148f7f"
+sourceHash: "f581499837e09360"
 ---
 
-# Руководство: Инструменты
+# Как использовать инструменты терминала, синхронизации и VS Code с Rediacc
 
-This tutorial demonstrates the productivity tools built into `rdc`: SSH terminal access, file synchronization, VS Code integration, and CLI updates.
+CLI включает инструменты продуктивности для повседневных операций: доступ к терминалу SSH, синхронизацию файлов через rsync, удалённую разработку в VS Code и обновления CLI. В этом руководстве вы выполните удалённые команды, синхронизируете файлы в репозиторий, проверите интеграцию VS Code и проверите версию CLI.
 
 ## Предварительные требования
 
-- The `rdc` CLI installed with a config initialized
-- A provisioned machine with a running repository (see [Tutorial: Repository Lifecycle](/ru/docs/tutorial-repos))
+- Установленный CLI `rdc` с инициализированной конфигурацией
+- Подготовленная машина с запущенным репозиторием (см. [Руководство: Жизненный цикл репозитория](/ru/docs/tutorial-repos))
 
 ## Интерактивная запись
 
 ![Tutorial: Tools](/assets/tutorials/tools-tutorial.cast)
 
-## Что вы увидите
-
-The recording above walks through each step below. Use the playback bar to navigate between commands.
-
 ### Шаг 1: Подключение к машине
+
+Выполняйте встроенные команды на удалённой машине через SSH без открытия интерактивной сессии.
 
 ```bash
 rdc term server-1 -c "hostname"
 rdc term server-1 -c "uptime"
 ```
 
-Run inline commands on a remote machine via SSH. The `-c` flag executes a single command and returns the output without opening an interactive session.
+Флаг `-c` выполняет одну команду и возвращает результат. Опустите `-c`, чтобы открыть интерактивную SSH-сессию.
 
 ### Шаг 2: Подключение к репозиторию
+
+Чтобы выполнять команды в изолированной среде Docker репозитория:
 
 ```bash
 rdc term server-1 my-app -c "docker ps"
 ```
 
-When connecting to a repository, `DOCKER_HOST` is automatically set to the repository's isolated Docker socket. Any Docker command runs against that repository's containers only.
+При подключении к репозиторию `DOCKER_HOST` автоматически устанавливается на изолированный Docker-сокет репозитория. Любая команда Docker выполняется только для контейнеров этого репозитория.
 
-### Шаг 3: Предварительный просмотр синхронизации (пробный запуск)
+### Шаг 3: Предварительный просмотр синхронизации файлов (пробный запуск)
+
+Перед передачей файлов просмотрите, что изменится.
 
 ```bash
 rdc sync upload -m server-1 -r my-app --local ./src --dry-run
 ```
 
-The `--dry-run` flag previews what would be transferred without actually uploading files. Shows new files, changed files, and total transfer size.
+Флаг `--dry-run` показывает новые файлы, изменённые файлы и общий объём передачи без фактической загрузки.
 
 ### Шаг 4: Загрузка файлов
+
+Перенесите файлы с локальной машины в точку монтирования удалённого репозитория.
 
 ```bash
 rdc sync upload -m server-1 -r my-app --local ./src
 ```
 
-Transfers files from your local machine to the remote repository mount via rsync over SSH.
+Файлы передаются через rsync по SSH. При последующих загрузках отправляются только изменённые файлы.
 
 ### Шаг 5: Проверка загруженных файлов
+
+Убедитесь, что файлы доставлены, просмотрев содержимое каталога монтирования репозитория.
 
 ```bash
 rdc term server-1 my-app -c "ls -la"
 ```
 
-Confirm the files arrived by listing the repository's mount directory.
-
 ### Шаг 6: Проверка интеграции VS Code
+
+Для удалённой разработки с VS Code убедитесь, что необходимые компоненты установлены.
 
 ```bash
 rdc vscode check
 ```
 
-Verifies your VS Code installation, Remote SSH extension, and SSH configuration for remote development. Shows which settings need to be configured.
+Проверяет установку VS Code, расширение Remote SSH и конфигурацию SSH. Следуйте выводу для устранения отсутствующих предварительных требований, затем подключитесь с помощью `rdc vscode <machine> [repo]`.
 
 ### Шаг 7: Проверка обновлений CLI
 
@@ -79,10 +85,23 @@ Verifies your VS Code installation, Remote SSH extension, and SSH configuration 
 rdc update --check-only
 ```
 
-Checks if a newer version of the `rdc` CLI is available without applying it. Use `rdc update` (without `--check-only`) to install the update.
+Сообщает, доступна ли более новая версия CLI. Чтобы установить обновление, выполните `rdc update` без `--check-only`.
+
+## Устранение неполадок
+
+**"rsync: command not found" при синхронизации файлов**
+Установите rsync на локальную машину и удалённый сервер. На Debian/Ubuntu: `sudo apt install rsync`. На macOS: rsync включён по умолчанию.
+
+**"Permission denied" при загрузке синхронизации**
+Убедитесь, что ваш SSH-пользователь имеет права на запись в каталог монтирования репозитория. Точки монтирования репозиториев принадлежат пользователю, указанному при регистрации машины.
+
+**"VS Code Remote SSH extension not found"**
+Установите расширение из маркетплейса VS Code: найдите "Remote - SSH" от Microsoft. После установки перезапустите VS Code и выполните `rdc vscode check` снова.
 
 ## Следующие шаги
 
-- [Tools](/ru/docs/tools) — full reference for terminal, sync, VS Code, and update commands
-- [Tutorial: Backup & Restore](/ru/docs/tutorial-backup) — backup, restore, and scheduled sync
-- [Services](/ru/docs/services) — Rediaccfile reference and service networking
+Вы выполнили удалённые команды, синхронизировали файлы, проверили интеграцию VS Code и проверили обновления CLI. Чтобы защитить ваши данные:
+
+- [Tools](/ru/docs/tools) — полный справочник по командам терминала, синхронизации, VS Code и обновления
+- [Руководство: Резервное копирование и сеть](/ru/docs/tutorial-backup) — планирование резервного копирования и настройка сети
+- [Сервисы](/ru/docs/services) — справочник Rediaccfile и сети сервисов

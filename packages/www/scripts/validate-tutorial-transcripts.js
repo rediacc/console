@@ -131,6 +131,15 @@ function validateSchema(transcript, file, errors) {
         'Rewrite event text in user-facing language'
       );
     }
+
+    if (/^TODO:/i.test(event.text)) {
+      pushError(
+        errors,
+        file,
+        `events[${index}].text is a TODO placeholder.`,
+        'Write or translate the event text'
+      );
+    }
   });
 }
 

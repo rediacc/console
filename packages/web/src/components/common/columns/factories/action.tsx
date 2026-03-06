@@ -1,10 +1,10 @@
 import { DeleteOutlined, EditOutlined, EyeOutlined, MoreOutlined } from '@ant-design/icons';
-import { Button, Dropdown, type MenuProps } from 'antd';
-import i18n from '@/i18n/config';
 import { DEFAULTS } from '@rediacc/shared/config';
+import { Button, Dropdown, type MenuProps } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import i18n from '@/i18n/config';
 import { RESPONSIVE_HIDE_XS } from '../constants';
 import type { ActionColumnOptions, ActionMenuItem } from '../types';
-import type { ColumnsType } from 'antd/es/table';
 
 /**
  * Create a reusable actions column with a dropdown menu

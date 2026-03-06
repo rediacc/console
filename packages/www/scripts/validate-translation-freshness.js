@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
+import { execSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import crypto from 'node:crypto';
-import matter from 'gray-matter';
-import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import matter from 'gray-matter';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');

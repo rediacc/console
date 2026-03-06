@@ -1,7 +1,7 @@
+import type { CommandResult, ProvisioningConfig, VMNetworkConfig } from '../types';
 import { OpsCommandRunner } from './OpsCommandRunner';
 import { OpsVMExecutor } from './OpsVMExecutor';
 import { OpsVMLifecycle } from './OpsVMLifecycle';
-import type { VMNetworkConfig, ProvisioningConfig, CommandResult } from '../types';
 
 /**
  * OpsManager - Manages VMs via renet ops commands

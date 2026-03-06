@@ -4,9 +4,9 @@
  * Requires S3_TEST_ENDPOINT, S3_TEST_ACCESS_KEY, S3_TEST_SECRET_KEY, S3_TEST_BUCKET.
  */
 
-import { describe, it, expect, afterAll } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import { S3OperationError } from '../s3-client.js';
-import { createTestS3Client, getS3TestConfig, cleanupS3Prefix } from './s3-test-config.js';
+import { cleanupS3Prefix, createTestS3Client, getS3TestConfig } from './s3-test-config.js';
 
 const config = getS3TestConfig();
 const client = createTestS3Client();

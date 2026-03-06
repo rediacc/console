@@ -49,7 +49,7 @@ describe('config/command-registry', () => {
       'queue',
     ];
 
-    const localOnly = ['repo', 'snapshot'];
+    const localOnly = ['repo', 'snapshot', 'ops'];
 
     const allModes = [
       'machine',
@@ -64,6 +64,8 @@ describe('config/command-registry', () => {
       'protocol',
       'vscode',
       'store',
+      'agent',
+      'mcp',
     ];
 
     for (const name of cloudOnly) {

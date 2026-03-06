@@ -1,6 +1,3 @@
-import { useMemo, useState } from 'react';
-import { isValidGuid } from '@/platform/utils/formValidation';
-import type { Machine } from '@/types';
 import {
   getContainers,
   getServices,
@@ -8,7 +5,9 @@ import {
 } from '@rediacc/shared/queue-vault/data/list-types.generated';
 import { parseVaultStatus } from '@rediacc/shared/services/machine';
 import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
-import { groupRepositoriesByName } from '../utils';
+import { useMemo, useState } from 'react';
+import { isValidGuid } from '@/platform/utils/formValidation';
+import type { Machine } from '@/types';
 import type {
   Container,
   GroupedRepository,
@@ -18,6 +17,7 @@ import type {
   RepositoryServicesState,
   SystemInfo,
 } from '../types';
+import { groupRepositoriesByName } from '../utils';
 
 interface UseRepoTableStateProps {
   machine: Machine;

@@ -7,97 +7,61 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "821e1a54434db312210ae05e2a79f416cbd0425a8d9fa3cd82a03d7505bb6ed5",
+  "transcriptHash": "2850529ae29c339b8141ffd20eef1f041e2f1d4cb0835dd862d4d9d04b461cb8",
   "steps": [
     {
-      "id": "setup-01",
+      "id": "setup-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.510013,
-      "replayEndSec": 10.550973,
-      "narrationText": "Initialize a dedicated configuration profile for this environment.",
-      "audioSrc": "/assets/tutorials/audio/en/setup-tutorial/setup-01.e2564de8.mp3",
-      "audioDurationSec": 3.552653
+      "replayStartSec": 1.50986,
+      "replayEndSec": 10.605861,
+      "narrationText": "Every machine connection begins with a configuration profile -- it holds SSH keys, server addresses, and infrastructure settings. We create a new profile now, linked to your private key.",
+      "audioSrc": "/assets/tutorials/audio/en/setup-tutorial/setup-tutorial-01.e2e5e1be.mp3",
+      "audioDurationSec": 11.807347
     },
     {
-      "id": "setup-02",
+      "id": "setup-tutorial-02",
       "markerIndex": 1,
-      "replayStartSec": 10.550973,
-      "replayEndSec": 17.625716,
-      "narrationText": "Review available configurations and confirm the new profile exists.",
-      "audioSrc": "/assets/tutorials/audio/en/setup-tutorial/setup-02.dcb26df6.mp3",
-      "audioDurationSec": 4.519184
+      "replayStartSec": 10.605861,
+      "replayEndSec": 17.961132,
+      "narrationText": "Profile created. We verify it appears in the configuration list alongside any existing profiles, showing their adapter type and registered machine count.",
+      "audioSrc": "/assets/tutorials/audio/en/setup-tutorial/setup-tutorial-02.c33cab9b.mp3",
+      "audioDurationSec": 9.560816
     },
     {
-      "id": "setup-03",
+      "id": "setup-tutorial-03",
       "markerIndex": 2,
-      "replayStartSec": 17.625716,
-      "replayEndSec": 28.032443,
-      "narrationText": "Register a machine entry with network and user details.",
-      "audioSrc": "/assets/tutorials/audio/en/setup-tutorial/setup-03.4bca1cd3.mp3",
-      "audioDurationSec": 3.787755
+      "replayStartSec": 17.961132,
+      "replayEndSec": 31.651331,
+      "narrationText": "To reach a remote server, we register it by IP address and SSH user. The CLI also fetches the server's host key fingerprint to prevent man-in-the-middle attacks.",
+      "audioSrc": "/assets/tutorials/audio/en/setup-tutorial/setup-tutorial-03.6a605b03.mp3",
+      "audioDurationSec": 10.370612
     },
     {
-      "id": "setup-04",
+      "id": "setup-tutorial-04",
       "markerIndex": 3,
-      "replayStartSec": 28.032443,
-      "replayEndSec": 36.265561,
-      "narrationText": "Inspect the configured machine list to verify registration.",
-      "audioSrc": "/assets/tutorials/audio/en/setup-tutorial/setup-04.f429f8b1.mp3",
-      "audioDurationSec": 3.866122
+      "replayStartSec": 31.651331,
+      "replayEndSec": 40.16275,
+      "narrationText": "Machine registered. We confirm the entry is stored correctly. You'll see all machines in this profile with their IP addresses and SSH connection details.",
+      "audioSrc": "/assets/tutorials/audio/en/setup-tutorial/setup-tutorial-04.1181e38d.mp3",
+      "audioDurationSec": 9.639184
     },
     {
-      "id": "setup-05",
+      "id": "setup-tutorial-05",
       "markerIndex": 4,
-      "replayStartSec": 36.265561,
-      "replayEndSec": 44.022131,
-      "narrationText": "Set the default machine to reduce repeated targeting flags.",
-      "audioSrc": "/assets/tutorials/audio/en/setup-tutorial/setup-05.a00f2839.mp3",
-      "audioDurationSec": 3.317551
+      "replayStartSec": 40.16275,
+      "replayEndSec": 48.29967,
+      "narrationText": "When managing a single server, a default machine eliminates repetitive targeting flags. Every command will route to this machine unless you override it explicitly.",
+      "audioSrc": "/assets/tutorials/audio/en/setup-tutorial/setup-tutorial-05.8d6c91ec.mp3",
+      "audioDurationSec": 9.639184
     },
     {
-      "id": "setup-06",
+      "id": "setup-tutorial-06",
       "markerIndex": 5,
-      "replayStartSec": 44.022131,
-      "replayEndSec": 50.965935,
-      "narrationText": "Run a basic remote host check to validate connectivity.",
-      "audioSrc": "/assets/tutorials/audio/en/setup-tutorial/setup-06.d7f1d4c6.mp3",
-      "audioDurationSec": 3.160816
-    },
-    {
-      "id": "setup-07",
-      "markerIndex": 6,
-      "replayStartSec": 50.965935,
-      "replayEndSec": 59.757783,
-      "narrationText": "Run a second host check focused on system runtime health.",
-      "audioSrc": "/assets/tutorials/audio/en/setup-tutorial/setup-07.f8d9b8b7.mp3",
-      "audioDurationSec": 3.552653
-    },
-    {
-      "id": "setup-08",
-      "markerIndex": 7,
-      "replayStartSec": 59.757783,
-      "replayEndSec": 67.426214,
-      "narrationText": "Execute environment diagnostics to catch setup issues early.",
-      "audioSrc": "/assets/tutorials/audio/en/setup-tutorial/setup-08.22cc5e59.mp3",
-      "audioDurationSec": 3.552653
-    },
-    {
-      "id": "setup-09",
-      "markerIndex": 8,
-      "replayStartSec": 67.426214,
-      "replayEndSec": 77.6898,
-      "narrationText": "Apply infrastructure settings for public access and certificates.",
-      "audioSrc": "/assets/tutorials/audio/en/setup-tutorial/setup-09.64cb122a.mp3",
-      "audioDurationSec": 3.63102
-    },
-    {
-      "id": "setup-10",
-      "markerIndex": 9,
-      "replayStartSec": 77.6898,
-      "replayEndSec": 85.386438,
-      "narrationText": "Display infrastructure configuration to verify the final state.",
-      "audioSrc": "/assets/tutorials/audio/en/setup-tutorial/setup-10.b67e4bc1.mp3",
-      "audioDurationSec": 3.787755
+      "replayStartSec": 48.29967,
+      "replayEndSec": 52.258257,
+      "narrationText": "Before deploying anything, we verify the SSH tunnel is functional. A remote hostname check proves the machine is reachable and the host key is trusted.",
+      "audioSrc": "/assets/tutorials/audio/en/setup-tutorial/setup-tutorial-06.972270a3.mp3",
+      "audioDurationSec": 8.437551
     }
   ]
 }

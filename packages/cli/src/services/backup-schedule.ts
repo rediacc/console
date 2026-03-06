@@ -6,9 +6,9 @@
  * on a schedule defined in the context's backup config.
  */
 
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { buildRcloneArgs } from '@rediacc/shared/queue-vault';
+import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { configService } from './config-resources.js';
 import { outputService } from './output.js';
 import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';

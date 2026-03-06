@@ -4,20 +4,20 @@
  * Hides experimental (cloud) commands unless --experimental or REDIACC_EXPERIMENTAL=1.
  */
 
+import type { Command } from 'commander';
 import {
   ALL_MODES,
   COMMAND_DOMAINS,
+  type CommandCategory,
   formatModeTag,
   getCommandDef,
   isExperimentalEnabled,
-  type CommandCategory,
   type ModeSet,
   type SubcommandDef,
 } from '../config/command-registry.js';
 import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
 import { hasCloudIntent } from '../types/index.js';
-import type { Command } from 'commander';
 
 // Fixed column width for the mode tag (longest tag is "[cloud|local]" = 13 chars + padding)
 const TAG_COL_WIDTH = 16;

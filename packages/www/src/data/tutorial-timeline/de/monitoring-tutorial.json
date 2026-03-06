@@ -7,79 +7,34 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "9a4c0829b8a65c283e484e9a09e06e750beaf51a7915ca50b0d1cd36d20f3101",
+  "transcriptHash": "43a58ac23aa321bb5943defae847974cdda0d5d23875118ebe357bbc97fcdd1e",
   "steps": [
     {
-      "id": "monitoring-01",
+      "id": "monitoring-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.508459,
-      "replayEndSec": 8.976075,
+      "replayStartSec": 1.508759,
+      "replayEndSec": 9.844365,
       "narrationText": "Führen Sie eine vollständige Umgebungsdiagnose durch, um grundlegende Probleme aufzudecken.",
-      "audioSrc": "/assets/tutorials/audio/de/monitoring-tutorial/monitoring-01.47c5b961.mp3",
-      "audioDurationSec": 6.687347
+      "audioSrc": "/assets/tutorials/audio/de/monitoring-tutorial/monitoring-tutorial-01.47c5b961.mp3",
+      "audioDurationSec": 6.269388
     },
     {
-      "id": "monitoring-02",
+      "id": "monitoring-tutorial-02",
       "markerIndex": 1,
-      "replayStartSec": 8.976075,
-      "replayEndSec": 18.228101,
+      "replayStartSec": 9.844365,
+      "replayEndSec": 18.393678,
       "narrationText": "Überprüfen Sie die Gesundheitsindikatoren der Remote-Maschine.",
-      "audioSrc": "/assets/tutorials/audio/de/monitoring-tutorial/monitoring-02.57e2b2e2.mp3",
-      "audioDurationSec": 3.970612
+      "audioSrc": "/assets/tutorials/audio/de/monitoring-tutorial/monitoring-tutorial-02.57e2b2e2.mp3",
+      "audioDurationSec": 3.395918
     },
     {
-      "id": "monitoring-03",
+      "id": "monitoring-tutorial-03",
       "markerIndex": 2,
-      "replayStartSec": 18.228101,
-      "replayEndSec": 27.138835,
+      "replayStartSec": 18.393678,
+      "replayEndSec": 22.197305,
       "narrationText": "Aktive Container auf dem Zielcomputer auflisten.",
-      "audioSrc": "/assets/tutorials/audio/de/monitoring-tutorial/monitoring-03.582e8212.mp3",
-      "audioDurationSec": 3.004082
-    },
-    {
-      "id": "monitoring-04",
-      "markerIndex": 3,
-      "replayStartSec": 27.138835,
-      "replayEndSec": 35.981025,
-      "narrationText": "Überprüfen Sie den Service-Manager-Status für Kernkomponenten.",
-      "audioSrc": "/assets/tutorials/audio/de/monitoring-tutorial/monitoring-04.46512315.mp3",
-      "audioDurationSec": 3.474286
-    },
-    {
-      "id": "monitoring-05",
-      "markerIndex": 4,
-      "replayStartSec": 35.981025,
-      "replayEndSec": 45.106571,
-      "narrationText": "Überprüfen Sie den Status des Tresors und des Verschlüsselungssubsystems.",
-      "audioSrc": "/assets/tutorials/audio/de/monitoring-tutorial/monitoring-05.a8d380a1.mp3",
-      "audioDurationSec": 4.754286
-    },
-    {
-      "id": "monitoring-06",
-      "markerIndex": 5,
-      "replayStartSec": 45.106571,
-      "replayEndSec": 53.662765,
-      "narrationText": "Scannen und überprüfen Sie die Hostschlüssel für die Maschine.",
-      "audioSrc": "/assets/tutorials/audio/de/monitoring-tutorial/monitoring-06.dc1dd165.mp3",
-      "audioDurationSec": 3.63102
-    },
-    {
-      "id": "monitoring-07",
-      "markerIndex": 6,
-      "replayStartSec": 53.662765,
-      "replayEndSec": 60.414173,
-      "narrationText": "Bestätigen Sie die Remote-Befehlsausführung mit einer Hostnamenprüfung.",
-      "audioSrc": "/assets/tutorials/audio/de/monitoring-tutorial/monitoring-07.59cc176e.mp3",
-      "audioDurationSec": 4.04898
-    },
-    {
-      "id": "monitoring-08",
-      "markerIndex": 7,
-      "replayStartSec": 60.414173,
-      "replayEndSec": 67.00475,
-      "narrationText": "Überprüfen Sie die Reaktionsfähigkeit der Maschine mit einer Verfügbarkeitsprüfung.",
-      "audioSrc": "/assets/tutorials/audio/de/monitoring-tutorial/monitoring-08.bf48d187.mp3",
-      "audioDurationSec": 4.832653
+      "audioSrc": "/assets/tutorials/audio/de/monitoring-tutorial/monitoring-tutorial-03.582e8212.mp3",
+      "audioDurationSec": 3.552653
     }
   ]
 }

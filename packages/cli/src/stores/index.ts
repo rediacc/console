@@ -1,6 +1,6 @@
+import type { StoreEntry } from '../types/store.js';
 import { EncryptedStoreAdapter } from './encryption.js';
 import type { IStoreAdapter } from './types.js';
-import type { StoreEntry } from '../types/store.js';
 
 /**
  * Factory: create the appropriate store adapter for a store entry.
@@ -48,4 +48,4 @@ export async function createStoreAdapter(entry: StoreEntry): Promise<IStoreAdapt
 }
 
 export { storeRegistry } from './registry.js';
-export type { IStoreAdapter, PushResult, PullResult, ConflictError } from './types.js';
+export type { ConflictError, IStoreAdapter, PullResult, PushResult } from './types.js';

@@ -1,9 +1,9 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { DEFAULTS, SUBSCRIPTION_DEFAULTS } from '@rediacc/shared/config';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { Command } from 'commander';
-import { DEFAULTS, SUBSCRIPTION_DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { clearMachineLicenseCache, ensureMachineLicense } from '../services/license.js';

@@ -6,8 +6,7 @@
  * streaming process output.
  */
 
-import { spawn } from 'node:child_process';
-import { execSync } from 'node:child_process';
+import { execSync, spawn } from 'node:child_process';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { configService } from './config-resources.js';
 import { extractRenetToLocal, isSEA } from './embedded-assets.js';

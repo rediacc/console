@@ -142,6 +142,8 @@ export default tseslint.config(
       'private/account/dist/**',
       'private/account/web/dist/**',
       'private/account/e2e/**',
+      // Ignore Astro build artifacts
+      'packages/www/.astro/**',
       // Ignore CI scripts (shell scripts linted by shellcheck, JS scripts are github-script glue)
       '.ci/**',
     ]
@@ -417,27 +419,8 @@ export default tseslint.config(
       '@typescript-eslint/prefer-regexp-exec': 'error',           // S6594: RegExp.exec
       '@typescript-eslint/no-redundant-type-constituents': 'error', // S6571: unknown in union
 
-      // Import rules - enforce consistent import paths
-      // Note: no-relative-parent-imports is not used because @/ aliases resolve to parent
-      // directories and the rule cannot distinguish between ../foo and @/foo patterns.
-      // All parent imports have been converted to use @/ alias which is the desired pattern.
-      'import/order': ['error', {
-        groups: [
-          'builtin',
-          'external',
-          'internal',
-          ['parent', 'sibling', 'index'],
-          'type',
-        ],
-        pathGroups: [
-          { pattern: 'react', group: 'builtin', position: 'before' },
-          { pattern: '@/**', group: 'internal', position: 'before' },
-          { pattern: '@rediacc/shared/**', group: 'internal', position: 'before' },
-        ],
-        pathGroupsExcludedImportTypes: ['react'],
-        'newlines-between': 'never',
-        alphabetize: { order: 'asc', caseInsensitive: true },
-      }],
+      // Import ordering is handled by Biome (organizeImports in biome.json).
+      // Do not add import/order here — it conflicts with Biome's formatter.
 
       // Ban styled-components and Layout to enforce Ant Design best practices
       // Ban deprecated type utilities to prevent hopping type patterns
@@ -879,7 +862,7 @@ export default tseslint.config(
         selector: "CallExpression[callee.property.name='transaction']",
         message: 'db.transaction() is not supported on D1. Use sequential awaited operations instead.',
       }],
-      'import/order': 'off',
+      // import/order disabled globally (handled by Biome)
     },
   },
 

@@ -1,9 +1,9 @@
-import { Command } from 'commander';
 import {
   formatSizeBytes,
-  resolveGuidFileNames,
   type RemoteFile,
+  resolveGuidFileNames,
 } from '@rediacc/shared/queue-vault';
+import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { configService } from '../services/config-resources.js';

@@ -1,11 +1,11 @@
 import { DEFAULTS } from '@rediacc/shared/config';
+import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
-import { handleError, ValidationError } from '../utils/errors.js';
 import type { OutputFormat } from '../types/index.js';
 import type { StoreType } from '../types/store.js';
-import type { Command } from 'commander';
+import { handleError, ValidationError } from '../utils/errors.js';
 
 const VALID_STORE_TYPES = [
   's3',

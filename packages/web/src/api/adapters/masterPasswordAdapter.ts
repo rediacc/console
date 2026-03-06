@@ -1,5 +1,5 @@
-import { masterPasswordService } from '@/services/auth/masterPasswordService';
 import type { MasterPasswordProvider } from '@rediacc/shared/api';
+import { masterPasswordService } from '@/services/auth/masterPasswordService';
 
 /**
  * Web master password provider wrapping the masterPasswordService.

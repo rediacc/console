@@ -13,6 +13,24 @@
       "descriptionKey": "options.experimental",
       "mandatory": false,
       "defaultValue": null
+    },
+    {
+      "flags": "-y, --yes",
+      "descriptionKey": "options.yes",
+      "mandatory": false,
+      "defaultValue": null
+    },
+    {
+      "flags": "-q, --quiet",
+      "descriptionKey": "options.quiet",
+      "mandatory": false,
+      "defaultValue": null
+    },
+    {
+      "flags": "--fields <fields>",
+      "descriptionKey": "options.fields",
+      "mandatory": false,
+      "defaultValue": null
     }
   ],
   "arguments": [],
@@ -325,6 +343,12 @@
               "descriptionKey": "options.force",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "options.dryRun",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [
@@ -561,6 +585,12 @@
             {
               "flags": "-f, --force",
               "descriptionKey": "options.force",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "options.dryRun",
               "mandatory": false,
               "defaultValue": null
             }
@@ -1193,6 +1223,12 @@
               "descriptionKey": "options.skipRouterRestart",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "options.dryRun",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [
@@ -1322,6 +1358,12 @@
               "descriptionKey": "options.skipRouterRestart",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "options.dryRun",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [
@@ -1421,6 +1463,12 @@
             {
               "flags": "--skip-router-restart",
               "descriptionKey": "options.skipRouterRestart",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "options.dryRun",
               "mandatory": false,
               "defaultValue": null
             }
@@ -1983,6 +2031,12 @@
               "descriptionKey": "options.force",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "options.dryRun",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [
@@ -2384,6 +2438,12 @@
               "descriptionKey": "options.force",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "options.dryRun",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [
@@ -2546,6 +2606,12 @@
             {
               "flags": "-f, --force",
               "descriptionKey": "options.force",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "options.dryRun",
               "mandatory": false,
               "defaultValue": null
             }
@@ -5308,6 +5374,12 @@
               "descriptionKey": "options.debug",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "options.dryRun",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [
@@ -5825,6 +5897,77 @@
               "descriptionKey": "options.machine",
               "mandatory": true,
               "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "agent",
+      "descriptionKey": "commands.agent.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "capabilities",
+          "descriptionKey": "commands.agent.capabilities.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "schema",
+          "descriptionKey": "commands.agent.schema.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "command",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "exec",
+          "descriptionKey": "commands.agent.exec.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "command",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "mcp",
+      "descriptionKey": "commands.mcp.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "serve",
+          "descriptionKey": "commands.mcp.serve.description",
+          "options": [
+            {
+              "flags": "--config <name>",
+              "descriptionKey": "commands.mcp.serve.configOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--timeout <ms>",
+              "descriptionKey": "commands.mcp.serve.timeoutOption",
+              "mandatory": false,
+              "defaultValue": "120000"
             }
           ],
           "arguments": [],

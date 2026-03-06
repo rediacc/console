@@ -1,54 +1,58 @@
 ---
 title: "Yedekleme ve Ağ"
-description: "Yedekleme zamanlamalarını, depolama sağlayıcılarını ve ağ altyapısını yapılandırırken izleyin ve takip edin."
+description: "Otomatik yedekleme zamanlamalarını yapılandırın, depolama sağlayıcılarını yönetin, altyapı ağını kurun ve hizmet portlarını kaydedin."
 category: "Tutorials"
 order: 6
 language: tr
-sourceHash: "d611f5597b819085"
+sourceHash: "e756fef6749b54c5"
 ---
 
-# Öğretici: Yedekleme ve Ağ
+# Rediacc ile Yedekleme ve Ağ Nasıl Yapılandırılır
 
-This tutorial covers backup scheduling, storage configuration, and infrastructure networking setup: the commands you use to protect data and expose services.
+Otomatik yedeklemeler depolarınızı korur ve altyapı ağı hizmetleri dış dünyaya açar. Bu öğreticide, depolama sağlayıcıları ile yedekleme zamanlamalarını yapılandırır, TLS sertifikalarıyla genel ağ kurarsınız, hizmet portlarını kaydeder ve yapılandırmayı doğrularsınız. Tamamladığınızda makineniz üretim trafiğine hazır olacaktır.
 
 ## Ön Koşullar
 
-- The `rdc` CLI installed with a config initialized
-- A provisioned machine (see [Tutorial: Machine Setup](/tr/docs/tutorial-setup))
+- Yapılandırması başlatılmış şekilde kurulmuş `rdc` CLI
+- Hazırlanmış bir makine (bkz. [Öğretici: Makine Kurulumu](/tr/docs/tutorial-setup))
 
 ## Etkileşimli Kayıt
 
 ![Tutorial: Backup & Networking](/assets/tutorials/backup-tutorial.cast)
 
-## Neler Göreceksiniz
-
-The recording above walks through each step below. Use the playback bar to navigate between commands.
-
 ### Adım 1: Mevcut depolamaları görüntüleyin
+
+Depolama sağlayıcıları (S3, B2, Google Drive, vb.) yedekleme hedefleri olarak hizmet eder. Hangi sağlayıcıların yapılandırıldığını kontrol edin.
 
 ```bash
 rdc config storages
 ```
 
-Lists all configured storage providers (S3, B2, Google Drive, etc.) imported from rclone configs. Storages are used as backup destinations.
+rclone yapılandırmalarından içe aktarılmış tüm yapılandırılmış depolama sağlayıcılarını listeler. Boşsa, önce bir depolama sağlayıcı ekleyin — bkz. [Yedekleme ve Geri Yükleme](/tr/docs/backup-restore).
 
 ### Adım 2: Yedekleme zamanlamasını yapılandırın
+
+Bir cron zamanlamasına göre çalışan otomatik yedeklemeler kurun.
 
 ```bash
 rdc backup schedule set --destination my-s3 --cron "0 2 * * *" --enable
 ```
 
-Sets an automated backup schedule: push all repositories to the `my-s3` storage every day at 2 AM. The schedule is stored in your config and can be deployed to machines as a systemd timer.
+Bu, sabah 2'de günlük yedeklemeler zamanlar ve tüm depoları `my-s3` depolamasına gönderir. Zamanlama yapılandırmanızda saklanır ve makinelere systemd zamanlayıcı olarak dağıtılabilir.
 
 ### Adım 3: Yedekleme zamanlamasını görüntüleyin
+
+Zamanlamanın uygulandığını doğrulayın.
 
 ```bash
 rdc backup schedule show
 ```
 
-Shows the current backup schedule configuration: destination, cron expression, and enabled status.
+Mevcut yedekleme yapılandırmasını gösterir: hedef, cron ifadesi ve etkinleştirme durumu.
 
 ### Adım 4: Altyapıyı yapılandırın
+
+Herkese açık hizmetler için makinenin harici IP'si, temel alan adı ve Let's Encrypt TLS için bir sertifika e-postası gereklidir.
 
 ```bash
 rdc config set-infra server-1 \
@@ -57,9 +61,11 @@ rdc config set-infra server-1 \
   --cert-email admin@example.com
 ```
 
-Configures the machine's public networking: its external IP, base domain for auto-routes, and email for Let's Encrypt TLS certificates.
+Rediacc bu ayarlardan bir Traefik ters proxy yapılandırması oluşturur.
 
 ### Adım 5: TCP/UDP portları ekleyin
+
+Hizmetleriniz HTTP dışı portlara ihtiyaç duyuyorsa (örn. SMTP, DNS), bunları Traefik giriş noktaları olarak kaydedin.
 
 ```bash
 rdc config set-infra server-1 \
@@ -67,27 +73,44 @@ rdc config set-infra server-1 \
   --udp-ports 53
 ```
 
-Registers additional TCP/UDP ports for the reverse proxy. These create Traefik entrypoints (`tcp-25`, `udp-53`, etc.) that can be referenced in Docker labels.
+Bu, Docker hizmetlerinin etiketler aracılığıyla referans verebileceği Traefik giriş noktaları (`tcp-25`, `udp-53`, vb.) oluşturur.
 
 ### Adım 6: Altyapı yapılandırmasını görüntüleyin
+
+Tam altyapı yapılandırmasını doğrulayın.
 
 ```bash
 rdc config show-infra server-1
 ```
 
-Displays the full infrastructure configuration for a machine: public IPs, domain, email, and registered ports.
+Genel IP'leri, alan adını, sertifika e-postasını ve tüm kayıtlı portları görüntüler.
 
 ### Adım 7: Yedekleme zamanlamasını devre dışı bırakın
+
+Yapılandırmayı silmeden otomatik yedeklemeleri durdurmak için:
 
 ```bash
 rdc backup schedule set --disable
 rdc backup schedule show
 ```
 
-Disables the automated backup schedule. The configuration is preserved so it can be re-enabled later.
+Yapılandırma korunur ve daha sonra `--enable` ile yeniden etkinleştirilebilir.
+
+## Sorun Giderme
+
+**"Invalid cron expression"**
+Cron formatı `minute hour day month weekday` şeklindedir. Yaygın zamanlamalar: `0 2 * * *` (günlük saat 2), `0 */6 * * *` (her 6 saatte), `0 0 * * 0` (haftalık Pazar gece yarısı).
+
+**"Storage destination not found"**
+Hedef adı yapılandırılmış bir depolama sağlayıcısıyla eşleşmelidir. Mevcut adları görmek için `rdc config storages` çalıştırın. Yeni sağlayıcıları rclone yapılandırması aracılığıyla ekleyin.
+
+**Dağıtım sırasında "Infrastructure config incomplete"**
+Üç alanın tümü gereklidir: `--public-ipv4`, `--base-domain` ve `--cert-email`. Eksik alanları kontrol etmek için `rdc config show-infra <machine>` çalıştırın.
 
 ## Sonraki Adımlar
 
-- [Backup & Restore](/tr/docs/backup-restore) — full reference for push, pull, list, and sync commands
-- [Networking](/tr/docs/networking) — Docker labels, TLS certificates, DNS, and TCP/UDP forwarding
-- [Tutorial: Machine Setup](/tr/docs/tutorial-setup) — initial configuration and provisioning
+Otomatik yedeklemeleri yapılandırdınız, altyapı ağını kurdunuz, hizmet portlarını kaydettiniz ve yapılandırmayı doğruladınız. Yedeklemeleri yönetmek için:
+
+- [Yedekleme ve Geri Yükleme](/tr/docs/backup-restore) — push, pull, list ve sync komutları için tam referans
+- [Ağ](/tr/docs/networking) — Docker etiketleri, TLS sertifikaları, DNS ve TCP/UDP yönlendirme
+- [Öğretici: Makine Kurulumu](/tr/docs/tutorial-setup) — ilk yapılandırma ve hazırlama

@@ -4,64 +4,40 @@
   "version": 1,
   "events": [
     {
-      "id": "setup-01",
+      "id": "setup-tutorial-01",
       "markerIndex": 0,
-      "at": 1.510013,
+      "at": 1.50986,
       "text": "Inicialice un perfil de configuración dedicado para este entorno."
     },
     {
-      "id": "setup-02",
+      "id": "setup-tutorial-02",
       "markerIndex": 1,
-      "at": 10.550973,
+      "at": 10.605861,
       "text": "Revise las configuraciones disponibles y confirme que existe el nuevo perfil."
     },
     {
-      "id": "setup-03",
+      "id": "setup-tutorial-03",
       "markerIndex": 2,
-      "at": 17.625716,
+      "at": 17.961132,
       "text": "Registre una entrada de máquina con detalles de red y usuario."
     },
     {
-      "id": "setup-04",
+      "id": "setup-tutorial-04",
       "markerIndex": 3,
-      "at": 28.032443,
+      "at": 31.651331,
       "text": "Inspeccione la lista de máquinas configuradas para verificar el registro."
     },
     {
-      "id": "setup-05",
+      "id": "setup-tutorial-05",
       "markerIndex": 4,
-      "at": 36.265561,
+      "at": 40.16275,
       "text": "Configure la máquina predeterminada para reducir los indicadores de orientación repetidos."
     },
     {
-      "id": "setup-06",
+      "id": "setup-tutorial-06",
       "markerIndex": 5,
-      "at": 44.022131,
+      "at": 48.29967,
       "text": "Ejecute una verificación básica del host remoto para validar la conectividad."
-    },
-    {
-      "id": "setup-07",
-      "markerIndex": 6,
-      "at": 50.965935,
-      "text": "Ejecute una segunda verificación del host centrada en el estado del tiempo de ejecución del sistema."
-    },
-    {
-      "id": "setup-08",
-      "markerIndex": 7,
-      "at": 59.757783,
-      "text": "Ejecute diagnósticos del entorno para detectar problemas de configuración con antelación."
-    },
-    {
-      "id": "setup-09",
-      "markerIndex": 8,
-      "at": 67.426214,
-      "text": "Aplicar configuraciones de infraestructura para acceso público y certificados."
-    },
-    {
-      "id": "setup-10",
-      "markerIndex": 9,
-      "at": 77.6898,
-      "text": "Visualizar la configuración de la infraestructura para verificar el estado final."
     }
   ]
 }

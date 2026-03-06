@@ -1,5 +1,5 @@
-import { formatBytes } from './format';
 import type { Platform } from '../config/install';
+import { formatBytes } from './format';
 
 export interface DownloadFile {
   platform: Platform;

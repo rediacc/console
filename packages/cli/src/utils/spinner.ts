@@ -19,7 +19,7 @@ export function startSpinner(text: string): Ora | null {
   if (currentSpinner) {
     currentSpinner.stop();
   }
-  currentSpinner = ora(text).start();
+  currentSpinner = ora({ text, stream: process.stderr }).start();
   return currentSpinner;
 }
 
@@ -46,7 +46,7 @@ export async function withSpinner<T>(
       // Avoid polluting machine-readable output formats
       const format = getOutputFormat();
       if (successText && format === 'table') {
-        process.stdout.write(`✓ ${successText}\n`);
+        process.stderr.write(`✓ ${successText}\n`);
       }
       return result;
     } catch (error) {

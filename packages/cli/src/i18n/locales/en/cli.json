@@ -3,6 +3,26 @@
     "description": "Manage machines, repositories, and deployments over SSH"
   },
   "commands": {
+    "agent": {
+      "description": "Agent-friendly utilities for AI coding assistants",
+      "capabilities": {
+        "description": "List all available commands with arguments and options"
+      },
+      "schema": {
+        "description": "Show detailed schema for a specific command"
+      },
+      "exec": {
+        "description": "Execute a command with JSON input from stdin"
+      }
+    },
+    "mcp": {
+      "description": "Model Context Protocol server for AI agents",
+      "serve": {
+        "description": "Start MCP server (stdio transport)",
+        "configOption": "Config name to use for all commands",
+        "timeoutOption": "Default command timeout in milliseconds"
+      }
+    },
     "auth": {
       "description": "Authentication commands",
       "login": {
@@ -630,6 +650,9 @@
         "message": "  Message: {{message}}",
         "saving": "Saving known_hosts to machine \"{{machine}}\" vault...",
         "saved": "Known hosts saved to machine vault"
+      },
+      "info": {
+        "description": "Show full machine status (system, repos, containers, services)"
       }
     },
     "organization": {
@@ -1650,6 +1673,8 @@
     "watch": "Watch for changes",
     "watchUpdates": "Watch for updates",
     "yes": "Skip confirmation prompt",
+    "quiet": "Suppress informational output",
+    "fields": "Comma-separated list of fields to include in output",
     "priority": "Priority (1=highest)",
     "param": "Function parameters",
     "debug": "Enable debug output (local mode)",
@@ -1681,7 +1706,7 @@
     "verifyChecksum": "Verify files using checksums after sync",
     "confirmSync": "Preview changes and ask for confirmation before syncing",
     "excludePatterns": "Patterns to exclude from sync",
-    "dryRun": "Show what would be transferred without actually syncing",
+    "dryRun": "Show what would be done without making changes",
     "filterStatus": "Filter by status",
     "priorityMin": "Minimum priority (1-5)",
     "priorityMax": "Maximum priority (1-5)",
@@ -1839,7 +1864,9 @@
       "update": "CLI Updates",
       "doctor": "System Diagnostics",
       "ops": "Experimental VM Operations",
-      "subscription": "Subscription Management"
+      "subscription": "Subscription Management",
+      "agent": "Agent Utilities",
+      "mcp": "MCP Server"
     },
     "errors": {
       "heading": "Common Error Messages",

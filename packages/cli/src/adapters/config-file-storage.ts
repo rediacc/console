@@ -1,8 +1,8 @@
 import { promises as fs } from 'node:fs';
 import { basename, join } from 'node:path';
-import lockfile from 'proper-lockfile';
 import { getConfigDir } from '@rediacc/shared/paths';
-import { type RdcConfig, createEmptyRdcConfig } from '../types/index.js';
+import lockfile from 'proper-lockfile';
+import { createEmptyRdcConfig, type RdcConfig } from '../types/index.js';
 
 const CONFIG_DIR = getConfigDir();
 const DEFAULT_CONFIG_NAME = 'rediacc';

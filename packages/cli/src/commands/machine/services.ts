@@ -1,13 +1,13 @@
-import { Command } from 'commander';
 import { getMachineServices, type ServiceInfo } from '@rediacc/shared/services/machine';
+import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { getStateProvider } from '../../providers/index.js';
 import { authService } from '../../services/auth.js';
 import { configService } from '../../services/config-resources.js';
 import { outputService } from '../../services/output.js';
+import type { OutputFormat } from '../../types/index.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 import { withSpinner } from '../../utils/spinner.js';
-import type { OutputFormat } from '../../types/index.js';
 
 function isServiceUnstable(service: ServiceInfo): boolean {
   return (

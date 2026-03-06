@@ -8,6 +8,8 @@ import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
 import { PLAN_ORDER, PLAN_PRICING } from '@rediacc/shared/subscription';
 import { EXTERNAL_LINKS } from '../../config/constants';
+import LlmsInlineScript from '../../components/LlmsInlineScript.astro';
+import StructuredData from '../../components/StructuredData.astro';
 import '../../styles/pricing-page.css';
 
 export const getStaticPaths = getLanguagePaths;
@@ -118,6 +120,17 @@ const faqSchema = faqItems ? {
   {faqSchema && (
     <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} slot="head" />
   )}
+
+  <StructuredData
+    type="offer"
+    data={{
+      plans: allPlans.map((p) => ({
+        name: p.name,
+        price: PLAN_PRICING[p.id.toUpperCase() as keyof typeof PLAN_PRICING]?.monthlyPriceCents / 100 ?? 0,
+        description: p.description,
+      })),
+    }}
+  />
 
   <article class="pricing-page">
     <!-- Hero Section -->
@@ -259,6 +272,7 @@ const faqSchema = faqItems ? {
       </div>
     </section>
   </article>
+  <LlmsInlineScript page="pricing" />
 </BaseLayout>
 
 <script>

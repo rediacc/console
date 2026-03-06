@@ -7,88 +7,16 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "a757b93d1bf60ce62bb453041a769e6a284ec425c2118c190c160517e163de30",
+  "transcriptHash": "eac6a07ee250339d463c3c4bf549e0a12a66b6f6bea4bcd1c14ccc9621ad3e02",
   "steps": [
     {
-      "id": "repos-01",
+      "id": "repos-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.507995,
-      "replayEndSec": 21.785373,
+      "replayStartSec": 1.508464,
+      "replayEndSec": 6.646665,
       "narrationText": "Erstellen Sie ein verschlüsseltes Repository mit einer definierten Speichergröße.",
-      "audioSrc": "/assets/tutorials/audio/de/repos-tutorial/repos-01.fb3ba956.mp3",
-      "audioDurationSec": 5.146122
-    },
-    {
-      "id": "repos-02",
-      "markerIndex": 1,
-      "replayStartSec": 21.785373,
-      "replayEndSec": 31.11554,
-      "narrationText": "Listen Sie Repositorys auf, um zu bestätigen, dass der neue Arbeitsbereich verfügbar ist.",
-      "audioSrc": "/assets/tutorials/audio/de/repos-tutorial/repos-02.79a0968e.mp3",
-      "audioDurationSec": 4.989388
-    },
-    {
-      "id": "repos-03",
-      "markerIndex": 2,
-      "replayStartSec": 31.11554,
-      "replayEndSec": 41.275171,
-      "narrationText": "Überprüfen Sie vor der Bereitstellung den Repository-Mount-Pfad.",
-      "audioSrc": "/assets/tutorials/audio/de/repos-tutorial/repos-03.29602b78.mp3",
-      "audioDurationSec": 3.395918
-    },
-    {
-      "id": "repos-04",
-      "markerIndex": 3,
-      "replayStartSec": 41.275171,
-      "replayEndSec": 59.588726,
-      "narrationText": "Starten Sie die Repository-Dienste und mounten Sie das verschlüsselte Volume.",
-      "audioSrc": "/assets/tutorials/audio/de/repos-tutorial/repos-04.855f459a.mp3",
-      "audioDurationSec": 5.642449
-    },
-    {
-      "id": "repos-05",
-      "markerIndex": 4,
-      "replayStartSec": 59.588726,
-      "replayEndSec": 68.725808,
-      "narrationText": "Überprüfen Sie den Containerstatus der Maschine nach dem Start.",
-      "audioSrc": "/assets/tutorials/audio/de/repos-tutorial/repos-05.f78635f8.mp3",
-      "audioDurationSec": 3.709388
-    },
-    {
-      "id": "repos-06",
-      "markerIndex": 5,
-      "replayStartSec": 68.725808,
-      "replayEndSec": 78.086569,
-      "narrationText": "Untersuchen Sie aktive Container aus dem Repository-Ausführungskontext.",
-      "audioSrc": "/assets/tutorials/audio/de/repos-tutorial/repos-06.c386741a.mp3",
-      "audioDurationSec": 4.597551
-    },
-    {
-      "id": "repos-07",
-      "markerIndex": 6,
-      "replayStartSec": 78.086569,
-      "replayEndSec": 85.461712,
-      "narrationText": "Stoppen Sie die Ausführung von Repository-Diensten zur Bereinigung.",
-      "audioSrc": "/assets/tutorials/audio/de/repos-tutorial/repos-07.2a58dbc6.mp3",
-      "audioDurationSec": 3.970612
-    },
-    {
-      "id": "repos-08",
-      "markerIndex": 7,
-      "replayStartSec": 85.461712,
-      "replayEndSec": 93.028308,
-      "narrationText": "Trennen und schließen Sie den verschlüsselten Repository-Mount.",
-      "audioSrc": "/assets/tutorials/audio/de/repos-tutorial/repos-08.11f549f9.mp3",
-      "audioDurationSec": 3.787755
-    },
-    {
-      "id": "repos-09",
-      "markerIndex": 8,
-      "replayStartSec": 93.028308,
-      "replayEndSec": 100.434991,
-      "narrationText": "Entfernen Sie das Repository, um den Lifecycle-Teardown abzuschließen.",
-      "audioSrc": "/assets/tutorials/audio/de/repos-tutorial/repos-09.e4cb8073.mp3",
-      "audioDurationSec": 4.519184
+      "audioSrc": "/assets/tutorials/audio/de/repos-tutorial/repos-tutorial-01.fb3ba956.mp3",
+      "audioDurationSec": 4.362449
     }
   ]
 }

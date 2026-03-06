@@ -1,3 +1,4 @@
+import { DEFAULTS } from '@rediacc/shared/config';
 import {
   buildCliCommand,
   buildProtocolUrl,
@@ -11,10 +12,10 @@ import {
 } from '@rediacc/shared-desktop/protocol';
 import { getPlatform } from '@rediacc/shared-desktop/utils';
 import { Command } from 'commander';
-import { DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../i18n/index.js';
 import { authService } from '../services/auth.js';
-import { handleError } from '../utils/errors.js';
+import { outputService } from '../services/output.js';
+import { getOutputFormat, handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 
 // ProtocolAction type used by VALID_ACTIONS
@@ -134,12 +135,12 @@ function displayStatusFooter(status: ReturnType<typeof getProtocolStatus>): void
 /**
  * Shows protocol handler status
  */
-function handleStatus(options: { output?: string }): void {
+function handleStatus(_options: { output?: string }): void {
   const status = getProtocolStatus();
+  const format = getOutputFormat();
 
-  if (options.output === 'json') {
-    // eslint-disable-next-line no-console
-    console.log(JSON.stringify(status, null, 2));
+  if (format === 'json' || format === 'yaml' || format === 'csv') {
+    outputService.print(status, format);
     return;
   }
 
@@ -303,17 +304,18 @@ function handleBuild(options: BuildOptions): void {
 function handleParse(url: string): void {
   try {
     const parsed = parseProtocolUrl(url);
-
-    // eslint-disable-next-line no-console
-    console.log(t('commands.protocol.parse.parsedUrl'));
-    // eslint-disable-next-line no-console
-    console.log(JSON.stringify(parsed, null, 2));
-
-    // eslint-disable-next-line no-console
-    console.log(t('commands.protocol.parse.cliCommand'));
     const cmd = buildCliCommand(parsed);
-    // eslint-disable-next-line no-console
-    console.log(`rdc ${cmd.join(' ')}`);
+    const format = getOutputFormat();
+
+    if (format === 'json' || format === 'yaml' || format === 'csv') {
+      outputService.print({ ...parsed, cliCommand: `rdc ${cmd.join(' ')}` }, format);
+      return;
+    }
+
+    outputService.info(t('commands.protocol.parse.parsedUrl'));
+    outputService.print(JSON.stringify(parsed, null, 2));
+    outputService.info(t('commands.protocol.parse.cliCommand'));
+    outputService.print(`rdc ${cmd.join(' ')}`);
   } catch (error) {
     throw new Error(
       t('errors.protocol.parseFailed', {

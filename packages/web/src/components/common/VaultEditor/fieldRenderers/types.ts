@@ -1,6 +1,6 @@
-import type { FieldDefinition, VaultFormValues } from '../types';
 import type { FormInstance } from 'antd';
 import type { Rule } from 'antd/es/form';
+import type { FieldDefinition, VaultFormValues } from '../types';
 
 export interface FieldRendererProps {
   fieldName: string;

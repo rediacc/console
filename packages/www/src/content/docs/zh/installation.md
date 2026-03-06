@@ -4,7 +4,7 @@ description: "在 Linux、macOS 或 Windows 上安装 Rediacc CLI。"
 category: "Guides"
 order: 1
 language: zh
-sourceHash: "2cb00a8aeec6988c"
+sourceHash: "7710f243d1cde01e"
 ---
 
 # 安装
@@ -16,7 +16,7 @@ sourceHash: "2cb00a8aeec6988c"
 运行安装脚本：
 
 ```bash
-curl -fsSL https://get.rediacc.com | sh
+curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 此命令会将 `rdc` 二进制文件下载到 `$HOME/.local/bin/`。请确保该目录在您的 PATH 中：

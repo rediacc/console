@@ -7,79 +7,34 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "0e500bd099247b3997f6ed74edbc47624aadc2ebcc10b327698e5eaf9001bc5a",
+  "transcriptHash": "507accb832b5c1f861adad0aa74329dc90b9f0dc17cf6c266ab488c68770eb78",
   "steps": [
     {
-      "id": "monitoring-01",
+      "id": "monitoring-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.508459,
-      "replayEndSec": 8.976075,
+      "replayStartSec": 1.508759,
+      "replayEndSec": 9.844365,
       "narrationText": "Ejecute un diagnóstico completo del entorno para detectar problemas básicos.",
-      "audioSrc": "/assets/tutorials/audio/es/monitoring-tutorial/monitoring-01.3740a176.mp3",
-      "audioDurationSec": 4.832653
+      "audioSrc": "/assets/tutorials/audio/es/monitoring-tutorial/monitoring-tutorial-01.3740a176.mp3",
+      "audioDurationSec": 5.799184
     },
     {
-      "id": "monitoring-02",
+      "id": "monitoring-tutorial-02",
       "markerIndex": 1,
-      "replayStartSec": 8.976075,
-      "replayEndSec": 18.228101,
+      "replayStartSec": 9.844365,
+      "replayEndSec": 18.393678,
       "narrationText": "Verifique los indicadores de salud de la máquina remota.",
-      "audioSrc": "/assets/tutorials/audio/es/monitoring-tutorial/monitoring-02.55e86451.mp3",
+      "audioSrc": "/assets/tutorials/audio/es/monitoring-tutorial/monitoring-tutorial-02.55e86451.mp3",
       "audioDurationSec": 3.395918
     },
     {
-      "id": "monitoring-03",
+      "id": "monitoring-tutorial-03",
       "markerIndex": 2,
-      "replayStartSec": 18.228101,
-      "replayEndSec": 27.138835,
+      "replayStartSec": 18.393678,
+      "replayEndSec": 22.197305,
       "narrationText": "Enumere los contenedores activos en la máquina de destino.",
-      "audioSrc": "/assets/tutorials/audio/es/monitoring-tutorial/monitoring-03.2fc662d7.mp3",
-      "audioDurationSec": 3.709388
-    },
-    {
-      "id": "monitoring-04",
-      "markerIndex": 3,
-      "replayStartSec": 27.138835,
-      "replayEndSec": 35.981025,
-      "narrationText": "Inspeccionar el estado del administrador de servicios para los componentes principales.",
-      "audioSrc": "/assets/tutorials/audio/es/monitoring-tutorial/monitoring-04.2c1113af.mp3",
-      "audioDurationSec": 5.564082
-    },
-    {
-      "id": "monitoring-05",
-      "markerIndex": 4,
-      "replayStartSec": 35.981025,
-      "replayEndSec": 45.106571,
-      "narrationText": "Revise el estado del subsistema de cifrado y bóveda.",
-      "audioSrc": "/assets/tutorials/audio/es/monitoring-tutorial/monitoring-05.cd34759a.mp3",
-      "audioDurationSec": 3.709388
-    },
-    {
-      "id": "monitoring-06",
-      "markerIndex": 5,
-      "replayStartSec": 45.106571,
-      "replayEndSec": 53.662765,
-      "narrationText": "Escanee y verifique las claves de host de la máquina.",
-      "audioSrc": "/assets/tutorials/audio/es/monitoring-tutorial/monitoring-06.52bee15a.mp3",
-      "audioDurationSec": 3.239184
-    },
-    {
-      "id": "monitoring-07",
-      "markerIndex": 6,
-      "replayStartSec": 53.662765,
-      "replayEndSec": 60.414173,
-      "narrationText": "Confirme la ejecución remota del comando con una verificación del nombre de host.",
-      "audioSrc": "/assets/tutorials/audio/es/monitoring-tutorial/monitoring-07.39c978e6.mp3",
-      "audioDurationSec": 4.91102
-    },
-    {
-      "id": "monitoring-08",
-      "markerIndex": 7,
-      "replayStartSec": 60.414173,
-      "replayEndSec": 67.00475,
-      "narrationText": "Valide la capacidad de respuesta de la máquina con una verificación del tiempo de actividad.",
-      "audioSrc": "/assets/tutorials/audio/es/monitoring-tutorial/monitoring-08.331d4ea9.mp3",
-      "audioDurationSec": 6.844082
+      "audioSrc": "/assets/tutorials/audio/es/monitoring-tutorial/monitoring-tutorial-03.2fc662d7.mp3",
+      "audioDurationSec": 3.552653
     }
   ]
 }

@@ -307,7 +307,122 @@ ensure_generative_venv() {
     fi
 }
 
-www_generate() {
+# Compute hash of a tutorial script + shared helpers for change detection
+_tutorial_script_hash() {
+    local script="$1"
+    local helpers="$ROOT_DIR/.ci/tutorials/lib/tutorial-helpers.sh"
+    cat "$script" "$helpers" 2>/dev/null | sha256sum | awk '{print $1}'
+}
+
+www_tutorials_record() {
+    local force=false
+    local name=""
+    local tutorials_dir="$ROOT_DIR/.ci/tutorials"
+    local output_dir="$ROOT_DIR/packages/www/public/assets/tutorials"
+    local hash_file="$output_dir/.recording-hashes"
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --force) force=true; shift ;;
+            *) name="$1"; shift ;;
+        esac
+    done
+
+    if ! command -v asciinema &>/dev/null; then
+        log_error "asciinema is not installed. Install with: pip install asciinema"
+        exit 1
+    fi
+
+    ensure_deps
+    ensure_packages_built
+    ensure_renet_built
+    export PATH="$ROOT_DIR/private/renet/bin:$PATH"
+    export TUTORIAL_RDC_CMD="npx tsx $ROOT_DIR/packages/cli/src/index.ts"
+
+    # Load stored hashes
+    local -A stored_hashes
+    if [[ -f "$hash_file" ]]; then
+        while IFS='=' read -r key val; do
+            stored_hashes["$key"]="$val"
+        done <"$hash_file"
+    fi
+
+    # Determine candidate scripts
+    local candidates=()
+    if [[ -n "$name" ]]; then
+        local script="$tutorials_dir/${name}-tutorial.sh"
+        [[ -f "$script" ]] || { log_error "Tutorial not found: $script"; exit 1; }
+        candidates+=("$script")
+    else
+        for script in "$tutorials_dir"/*-tutorial.sh; do
+            candidates+=("$script")
+        done
+    fi
+
+    # Filter by change detection (unless --force)
+    local scripts_to_record=()
+    for script in "${candidates[@]}"; do
+        local base
+        base="$(basename "$script" .sh)"
+        if [[ "$force" == "true" ]]; then
+            scripts_to_record+=("$script")
+        else
+            local current_hash
+            current_hash="$(_tutorial_script_hash "$script")"
+            if [[ "${stored_hashes[$base]:-}" != "$current_hash" ]]; then
+                scripts_to_record+=("$script")
+            else
+                log_debug "Unchanged: $base (skipping)"
+            fi
+        fi
+    done
+
+    if [[ ${#scripts_to_record[@]} -eq 0 ]]; then
+        log_info "No tutorial scripts changed, skipping recording"
+        return 0
+    fi
+
+    # Auto-provision VMs
+    log_step "Provisioning VMs for tutorial recording..."
+    provision_start
+
+    # Record each changed tutorial
+    for script in "${scripts_to_record[@]}"; do
+        local base
+        base="$(basename "$script" .sh)"
+        log_step "Recording: $base"
+        "$tutorials_dir/record.sh" "$script" "$output_dir/${base}.cast"
+
+        # Update stored hash
+        stored_hashes["$base"]="$(_tutorial_script_hash "$script")"
+    done
+
+    # Teardown VMs
+    log_step "Tearing down VMs..."
+    provision_stop
+
+    # Persist hashes
+    : >"$hash_file"
+    for key in "${!stored_hashes[@]}"; do
+        echo "${key}=${stored_hashes[$key]}" >>"$hash_file"
+    done
+}
+
+www_tutorials_extract() {
+    check_node_version
+    ensure_deps
+    log_step "Extracting cast markers to transcript scaffolds..."
+    npm run transcripts:extract -w @rediacc/www
+}
+
+www_tutorials_scaffold_locales() {
+    check_node_version
+    ensure_deps
+    log_step "Scaffolding locale transcript files..."
+    npm run transcripts:scaffold-locales -w @rediacc/www
+}
+
+www_tutorials_generate() {
     check_node_version
     ensure_generative_submodule
     ensure_python_installed
@@ -339,13 +454,136 @@ www_generate() {
 
     export QWEN_TTS_PYTHON_BIN="$ROOT_DIR/private/generative/.venv/bin/python"
 
-    log_step "Generating tutorial audio assets (www)..."
+    log_step "Generating tutorial audio assets..."
     npm run tutorials:tts:generate -w @rediacc/www -- "${passthrough[@]}"
 
     if [[ "$destroy_venv" == "true" ]]; then
         log_step "Destroying generative Python environment..."
         rm -rf "$ROOT_DIR/private/generative/.venv"
     fi
+}
+
+www_tutorials_validate() {
+    check_node_version
+    ensure_deps
+    log_step "Validating tutorial transcripts..."
+    npm run validate:tutorial-transcripts -w @rediacc/www
+    log_step "Validating tutorial audio..."
+    npm run validate:tutorial-audio -w @rediacc/www
+}
+
+www_tutorials_all() {
+    log_step "Running full tutorial pipeline..."
+    www_tutorials_record "$@"
+    www_tutorials_extract
+    www_tutorials_scaffold_locales
+    www_tutorials_generate "$@"
+    www_tutorials_validate
+    log_info "Tutorial pipeline complete!"
+}
+
+# =============================================================================
+# TEAM VIDEO COMMANDS
+# =============================================================================
+
+www_team_video_extract() {
+    check_node_version
+    ensure_generative_submodule
+    ensure_python_installed
+    ensure_audio_system_deps
+
+    local passthrough=()
+    local clean_venv=false
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --clean-venv) clean_venv=true; shift ;;
+            *) passthrough+=("$1"); shift ;;
+        esac
+    done
+
+    ensure_generative_venv "$clean_venv"
+    ensure_deps
+
+    export QWEN_TTS_PYTHON_BIN="$ROOT_DIR/private/generative/.venv/bin/python"
+
+    log_step "Extracting team video transcripts via ASR..."
+    npm run team-video:extract -w @rediacc/www -- "${passthrough[@]}"
+}
+
+www_team_video_scaffold_locales() {
+    check_node_version
+    ensure_deps
+    log_step "Scaffolding team video locale transcript files..."
+    npm run team-video:scaffold-locales -w @rediacc/www
+}
+
+www_team_video_generate() {
+    check_node_version
+    ensure_generative_submodule
+    ensure_python_installed
+    ensure_audio_system_deps
+
+    local clean_venv=false
+    local destroy_venv=false
+    local passthrough=()
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --clean-venv)
+                clean_venv=true
+                shift
+                ;;
+            --destroy-venv)
+                destroy_venv=true
+                shift
+                ;;
+            *)
+                passthrough+=("$1")
+                shift
+                ;;
+        esac
+    done
+
+    ensure_generative_venv "$clean_venv"
+    ensure_deps
+
+    export QWEN_TTS_PYTHON_BIN="$ROOT_DIR/private/generative/.venv/bin/python"
+
+    log_step "Generating team video audio assets..."
+    npm run team-video:tts:generate -w @rediacc/www -- "${passthrough[@]}"
+
+    if [[ "$destroy_venv" == "true" ]]; then
+        log_step "Destroying generative Python environment..."
+        rm -rf "$ROOT_DIR/private/generative/.venv"
+    fi
+}
+
+www_team_video_validate() {
+    check_node_version
+    ensure_deps
+    log_step "Validating team video transcripts..."
+    npm run validate:team-video-transcripts -w @rediacc/www
+}
+
+www_team_video_all() {
+    log_step "Running full team video pipeline..."
+    www_team_video_extract "$@"
+    www_team_video_scaffold_locales
+    www_team_video_generate "$@"
+    www_team_video_validate
+    log_info "Team video pipeline complete!"
+}
+
+# =============================================================================
+# WWW ALL
+# =============================================================================
+
+www_all() {
+    log_step "Running full www asset pipeline..."
+    www_tutorials_all "$@"
+    www_team_video_all "$@"
+    log_info "All www assets generated!"
 }
 
 # =============================================================================
@@ -842,9 +1080,20 @@ DEVELOPMENT COMMANDS:
   setup               Interactive setup wizard
 
 WWW COMMANDS:
-  www generate [opts] Generate tutorial audio assets with auto Python venv setup
-                      Extra opts are passed through to tutorials:tts:generate
-                      Special opts: --clean-venv, --destroy-venv, --subtitle
+  www all [opts]                    Full pipeline for tutorials + team videos
+
+  www tutorials record [name]       Record .cast files (auto-provision, change-detected)
+  www tutorials extract             Sync cast markers to transcripts (preserves text)
+  www tutorials scaffold-locales    Sync locale transcripts with English
+  www tutorials generate [opts]     Generate TTS audio + timelines (Python venv)
+  www tutorials validate            Validate transcripts + audio integrity
+  www tutorials all [opts]          Full tutorial pipeline (record -> extract -> generate)
+
+  www team-video extract [opts]     ASR: extract English transcripts from video audio
+  www team-video scaffold-locales   Sync locale transcripts with English
+  www team-video generate [opts]    Generate dubbed audio + captions
+  www team-video validate           Validate transcripts + audio integrity
+  www team-video all [opts]         Full team video pipeline
 
 TEST COMMANDS:
   test unit           Run unit tests
@@ -1030,14 +1279,65 @@ main() {
         www)
             shift
             case "${1:-}" in
-                generate)
+                tutorials)
                     shift
-                    www_generate "$@"
+                    case "${1:-}" in
+                        record)
+                            shift
+                            www_tutorials_record "$@"
+                            ;;
+                        extract) www_tutorials_extract ;;
+                        scaffold-locales) www_tutorials_scaffold_locales ;;
+                        generate)
+                            shift
+                            www_tutorials_generate "$@"
+                            ;;
+                        validate) www_tutorials_validate ;;
+                        all)
+                            shift
+                            www_tutorials_all "$@"
+                            ;;
+                        *)
+                            log_error "Unknown tutorials command: ${1:-}"
+                            echo ""
+                            echo "Usage: ./run.sh www tutorials [record|extract|scaffold-locales|generate|validate|all]"
+                            exit 1
+                            ;;
+                    esac
+                    ;;
+                team-video)
+                    shift
+                    case "${1:-}" in
+                        extract)
+                            shift
+                            www_team_video_extract "$@"
+                            ;;
+                        scaffold-locales) www_team_video_scaffold_locales ;;
+                        generate)
+                            shift
+                            www_team_video_generate "$@"
+                            ;;
+                        validate) www_team_video_validate ;;
+                        all)
+                            shift
+                            www_team_video_all "$@"
+                            ;;
+                        *)
+                            log_error "Unknown team-video command: ${1:-}"
+                            echo ""
+                            echo "Usage: ./run.sh www team-video [extract|scaffold-locales|generate|validate|all]"
+                            exit 1
+                            ;;
+                    esac
+                    ;;
+                all)
+                    shift
+                    www_all "$@"
                     ;;
                 *)
                     log_error "Unknown www command: ${1:-}"
                     echo ""
-                    echo "Usage: ./run.sh www generate [--clean-venv] [--destroy-venv] [--subtitle] [generator args]"
+                    echo "Usage: ./run.sh www [all|tutorials|team-video] ..."
                     exit 1
                     ;;
             esac

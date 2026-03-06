@@ -5,8 +5,8 @@
  * Calls `sudo renet snapshot create|list|delete` directly.
  */
 
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
+import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { configService } from './config-resources.js';
 import { outputService } from './output.js';
 import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';

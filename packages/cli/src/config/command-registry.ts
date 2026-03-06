@@ -99,6 +99,8 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
   { name: 'update', modes: ALL_MODES, domain: 'TOOLS' },
   { name: 'protocol', modes: ALL_MODES, domain: 'TOOLS' },
   { name: 'vscode', modes: ALL_MODES, domain: 'TOOLS' },
+  { name: 'agent', modes: ALL_MODES, domain: 'TOOLS' },
+  { name: 'mcp', modes: ALL_MODES, domain: 'TOOLS' },
 ] as const;
 
 /** Lookup a command definition by name. */

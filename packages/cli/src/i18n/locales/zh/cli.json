@@ -3,6 +3,18 @@
     "description": "通过 SSH 管理机器、仓库和部署"
   },
   "commands": {
+    "agent": {
+      "capabilities": {
+        "description": "列出所有可用命令及其参数和选项"
+      },
+      "description": "适用于 AI 编程助手的代理工具",
+      "exec": {
+        "description": "通过 stdin 接收 JSON 输入并执行命令"
+      },
+      "schema": {
+        "description": "显示特定命令的详细模式信息"
+      }
+    },
     "audit": {
       "description": "审计日志命令",
       "history": {
@@ -554,6 +566,9 @@
         "systemSection": "\n系统：",
         "systemUptime": "  运行时间：{{uptime}}"
       },
+      "info": {
+        "description": "显示完整机器状态（系统、仓库、容器、服务）"
+      },
       "list": {
         "description": "列出机器",
         "fetching": "正在获取机器..."
@@ -625,6 +640,14 @@
         "systemSection": "\n系统：",
         "systemUptime": "  运行时间：{{uptime}}",
         "totalRepos": "  总仓库数：{{count}}"
+      }
+    },
+    "mcp": {
+      "description": "用于 AI 代理的 Model Context Protocol 服务器",
+      "serve": {
+        "configOption": "用于所有命令的配置名称",
+        "description": "启动 MCP 服务器（stdio 传输）",
+        "timeoutOption": "默认命令超时时间（毫秒）"
       }
     },
     "ops": {
@@ -1552,7 +1575,9 @@
       "term": "SSH 终端访问",
       "update": "CLI 更新",
       "user": "用户管理",
-      "vscode": "VS Code 集成"
+      "vscode": "VS Code 集成",
+      "agent": "代理工具",
+      "mcp": "MCP 服务器"
     },
     "supplements": {
       "auth": {
@@ -1759,7 +1784,7 @@
     "containerAction": "容器操作：terminal、logs、stats、exec",
     "datastore": "机器上的数据存储路径",
     "debug": "启用调试输出（本地模式）",
-    "dryRun": "显示将传输的内容而不实际同步",
+    "dryRun": "显示将执行的操作但不进行实际更改",
     "email": "电子邮件地址",
     "endpoint": "API 端点 URL",
     "excludePatterns": "从同步中排除的模式",
@@ -1767,6 +1792,7 @@
     "expires": "过期时间（小时数，1-720）",
     "external": "强制在外部终端窗口中启动",
     "extraMachine": "用于多机操作的额外机器 (名称:IP:用户)",
+    "fields": "要包含在输出中的字段列表（逗号分隔）",
     "filterStatus": "按状态过滤",
     "folder": "远程文件夹路径以打开",
     "follow": "跟踪日志输出",
@@ -1816,6 +1842,7 @@
     "protocolSystem": "系统范围内注册（需要管理员权限）",
     "protocolSystemUnregister": "注销系统范围的注册（需要管理员权限）",
     "protocolToken": "身份验证令牌",
+    "quiet": "抑制信息性输出",
     "rawVault": "原始保险箱 JSON（用于脚本/CI）",
     "region": "区域名称",
     "remotePath": "仓库内的远程子目录路径",

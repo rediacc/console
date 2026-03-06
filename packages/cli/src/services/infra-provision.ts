@@ -6,13 +6,13 @@
  * router.env, and docker-compose.override.yml on the remote machine.
  */
 
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS } from '@rediacc/shared/config';
+import { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import { t } from '../i18n/index.js';
+import type { InfraConfig } from '../types/index.js';
 import { configService } from './config-resources.js';
 import { outputService } from './output.js';
 import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
-import { t } from '../i18n/index.js';
-import type { InfraConfig } from '../types/index.js';
 
 interface PushInfraOptions {
   debug?: boolean;

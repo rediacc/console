@@ -4,52 +4,22 @@
   "version": 1,
   "events": [
     {
-      "id": "monitoring-01",
+      "id": "monitoring-tutorial-01",
       "markerIndex": 0,
-      "at": 1.508459,
-      "text": "Run a full environment diagnostic to surface baseline issues."
+      "at": 1.508759,
+      "text": "Healthy infrastructure starts with a healthy workstation. We scan the local environment for configuration issues -- Node.js version, SSH key presence, and KVM virtualization readiness."
     },
     {
-      "id": "monitoring-02",
+      "id": "monitoring-tutorial-02",
       "markerIndex": 1,
-      "at": 8.976075,
-      "text": "Check remote machine health indicators."
+      "at": 9.844365,
+      "text": "Local environment clear. Now we check the remote machine over SSH. You'll see uptime, disk and memory usage, SMART disk health, container counts, and service status."
     },
     {
-      "id": "monitoring-03",
+      "id": "monitoring-tutorial-03",
       "markerIndex": 2,
-      "at": 18.228101,
-      "text": "List active containers on the target machine."
-    },
-    {
-      "id": "monitoring-04",
-      "markerIndex": 3,
-      "at": 27.138835,
-      "text": "Inspect service manager status for core components."
-    },
-    {
-      "id": "monitoring-05",
-      "markerIndex": 4,
-      "at": 35.981025,
-      "text": "Review vault and encryption subsystem status."
-    },
-    {
-      "id": "monitoring-06",
-      "markerIndex": 5,
-      "at": 45.106571,
-      "text": "Scan and verify host keys for the machine."
-    },
-    {
-      "id": "monitoring-07",
-      "markerIndex": 6,
-      "at": 53.662765,
-      "text": "Confirm remote command execution with a hostname check."
-    },
-    {
-      "id": "monitoring-08",
-      "markerIndex": 7,
-      "at": 60.414173,
-      "text": "Validate machine responsiveness with an uptime check."
+      "at": 18.393678,
+      "text": "To see every running container across all isolated Docker daemons on the machine, we pull a unified view -- with state, health checks, CPU, and memory per container."
     }
   ]
 }

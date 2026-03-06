@@ -19,7 +19,7 @@ Deploy an encrypted, isolated container environment on your own server in 5 minu
 ## 1. Install the CLI
 
 ```bash
-curl -fsSL https://get.rediacc.com | sh
+curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 ## 2. Create a Config

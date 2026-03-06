@@ -1,11 +1,11 @@
-import React, { createContext, type ReactNode, useContext, useEffect, useState } from 'react';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { Flex } from 'antd';
+import React, { createContext, type ReactNode, useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 import { createTelemetryConfig, telemetryService } from '@/services/telemetryService';
 import { selectOrganization, selectUser } from '@/store/auth/authSelectors';
 import { isElectron } from '@/utils/environment';
-import { DEFAULTS } from '@rediacc/shared/config';
 
 type TelemetryAttributes = Record<string, string | number | boolean>;
 

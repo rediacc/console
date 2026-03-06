@@ -3,10 +3,10 @@ import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { AudioCcToggle, AudioVolumeControls } from './terminal-player-audio';
 import {
+  type CaptionSegment,
   ensureInlineCcHost,
   ensureInlinePlaybackHost,
   ensureInlineVolumeHost,
-  type CaptionSegment,
 } from './terminal-player-utils';
 
 export interface AsciinemaPlayerInstance {

@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import {
   createTempKnownHostsFile,
   createTempSSHKeyFile,
@@ -14,17 +15,16 @@ import {
   type RsyncChanges,
   type RsyncExecutorOptions,
 } from '@rediacc/shared-desktop/sync';
+import type { SyncProgress } from '@rediacc/shared-desktop/types';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
-import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
-import type { SyncProgress } from '@rediacc/shared-desktop/types';
 
 interface SyncUploadOptions {
   team?: string;

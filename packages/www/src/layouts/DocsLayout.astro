@@ -3,6 +3,8 @@ import BaseLayout from './BaseLayout.astro';
 import DocsSidebar from '../components/DocsSidebar.astro';
 import DocsTopTabs from '../components/DocsTopTabs.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
+import LlmsInlineScript from '../components/LlmsInlineScript.astro';
+import StructuredData from '../components/StructuredData.astro';
 import type { Language } from '../i18n/types';
 import { createTranslator } from '../i18n/utils';
 import { generateTOCFromHtml } from '../utils/sidebar-behavior';
@@ -34,6 +36,11 @@ const {
   tocTrackingSelector = '.article-content h2, .article-content h3, .article-content h4',
   showTOC = true
 } = Astro.props as Props;
+
+// Extract slug for markdown alternate link
+const slugMatch = url.match(/\/docs\/([^/]+)\/?$/);
+const docSlug = slugMatch ? slugMatch[1] : '';
+const mdUrl = docSlug ? `/${currentLang}/docs/${docSlug}.md` : '';
 
 // Generate breadcrumbs
 const { t } = createTranslator(currentLang);
@@ -83,6 +90,7 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
   description={frontmatter.description}
   lang={currentLang}
 >
+  {mdUrl && <link slot="head" rel="alternate" type="text/markdown" href={mdUrl} />}
   <div class="docs-shell">
     <div class="docs-shell-top">
       <div class="docs-header-row">
@@ -104,6 +112,18 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
       <main class="docs-content">
         <article class={`docs-article ${variant === 'index' ? 'docs-article-index' : ''}`}>
           {variant === 'article' && <Breadcrumb items={breadcrumbItems} />}
+          {variant === 'article' && (
+            <StructuredData
+              type="techarticle"
+              data={{
+                title: frontmatter.title,
+                description: frontmatter.description,
+                category: frontmatter.category,
+                url: `${url}`,
+                language: currentLang,
+              }}
+            />
+          )}
 
           {variant === 'article' && showFallbackNotice && (
             <div class="fallback-notice" role="alert">
@@ -119,6 +139,21 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
             <header class="article-header">
               <div class="article-header-main">
                 <h1 class="article-title">{frontmatter.title}</h1>
+                {mdUrl && (
+                  <button
+                    type="button"
+                    class="docs-copy-page-md"
+                    data-md-href={mdUrl}
+                    aria-label="Copy full page as markdown"
+                    title="Copy full page as Markdown"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <rect x="9" y="9" width="13" height="13" rx="2" />
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                    </svg>
+                    <span class="copy-md-label">Copy as Markdown</span>
+                  </button>
+                )}
               </div>
 
               {frontmatter.description && (
@@ -185,6 +220,39 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
       } else {
         applyCliRefEmbedMode();
       }
+    })();
+  </script>
+
+  <script is:inline>
+    // Copy full page as markdown button
+    (function() {
+      function initCopyMd() {
+        document.querySelectorAll('.docs-copy-page-md').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            var href = btn.getAttribute('data-md-href');
+            if (!href) return;
+            fetch(href)
+              .then(function(r) { return r.text(); })
+              .then(function(text) {
+                return navigator.clipboard.writeText(text);
+              })
+              .then(function() {
+                var label = btn.querySelector('.copy-md-label');
+                var orig = label ? label.textContent : '';
+                btn.classList.add('copied');
+                if (label) label.textContent = 'Copied!';
+                setTimeout(function() {
+                  btn.classList.remove('copied');
+                  if (label) label.textContent = orig;
+                }, 2000);
+              })
+              .catch(function() {});
+          });
+        });
+      }
+      document.addEventListener('astro:page-load', initCopyMd);
+      if (document.readyState !== 'loading') initCopyMd();
+      else document.addEventListener('DOMContentLoaded', initCopyMd);
     })();
   </script>
 
@@ -721,6 +789,32 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
       color: var(--color-text);
     }
 
+    .docs-copy-page-md {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      margin-top: var(--space-4);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+      color: var(--color-text-muted);
+      font-size: 0.8rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .docs-copy-page-md:hover {
+      color: var(--color-text);
+      border-color: var(--color-text-muted);
+    }
+
+    .docs-copy-page-md.copied {
+      color: var(--color-success, #22c55e);
+      border-color: var(--color-success, #22c55e);
+    }
+
     .article-description {
       font-size: 1.05rem;
       color: var(--color-text-secondary);
@@ -1010,4 +1104,5 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
     }
   </style>
 
+  <LlmsInlineScript page="docs" />
 </BaseLayout>

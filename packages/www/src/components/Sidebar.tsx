@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { CATEGORY_ICONS } from './CategoryIcons';
+import type { SolutionCategory } from '../config/solution-pages';
 import { CATEGORY_ORDER, SOLUTION_PAGES } from '../config/solution-pages';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
-import type { SolutionCategory } from '../config/solution-pages';
+import { CATEGORY_ICONS } from './CategoryIcons';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -46,6 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { href: `/${currentLang}/for-devops`, label: t('navigation.forDevops') },
     { href: `/${currentLang}/for-ctos`, label: t('navigation.forCtos') },
     { href: `/${currentLang}/for-ceos`, label: t('navigation.forCeos') },
+    { href: `/${currentLang}/for-ai-agents`, label: t('navigation.forAiAgents') },
   ];
 
   const bottomNavItems = [

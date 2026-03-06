@@ -5,10 +5,10 @@
  * Returns the parsed ListResult for display by the command layer.
  */
 
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type { ListResult } from '@rediacc/shared/queue-vault/data/list-types.generated';
 import { isListResult } from '@rediacc/shared/queue-vault/data/list-types.generated';
+import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { configService } from './config-resources.js';
 import { ensureMachineLicense } from './license.js';
 import { outputService } from './output.js';

@@ -1,6 +1,6 @@
-import type { StatusConfig } from './renderers';
 import type { Breakpoint, TooltipProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import type { StatusConfig } from './renderers';
 
 export type ColumnDataIndex = string;
 

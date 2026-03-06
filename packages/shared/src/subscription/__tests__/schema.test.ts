@@ -7,11 +7,11 @@ import {
   getResourceLimit,
   hasFeature,
   isValidPlanCode,
-  SUBSCRIPTION_CONFIG,
   PLAN_FEATURES,
   PLAN_ORDER,
   PLAN_RESOURCES,
   PROGRESSIVE_LIMIT_KEYS,
+  SUBSCRIPTION_CONFIG,
 } from '../constants.js';
 import type { FeatureFlags, PlanCode, ResourceLimits } from '../types.js';
 

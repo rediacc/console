@@ -14,8 +14,8 @@ import {
   verifyAndDecodeSubscription,
   verifySignature,
 } from '../crypto.js';
+import type { SignedSubscriptionBlob, SubscriptionData } from '../types.js';
 import { encodeSubscriptionPayload } from '../validation.js';
-import type { SubscriptionData, SignedSubscriptionBlob } from '../types.js';
 
 // Fixed test keys for deterministic tests (from account-server test helpers)
 const TEST_PUBLIC_KEY_SPKI = 'MCowBQYDK2VwAyEAqS7xKEfPYFtCWxOCRUvKG5N6peFHSAYBNMJqGRMHN5I=';

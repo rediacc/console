@@ -3,14 +3,17 @@ import { createTranslator } from '../i18n/utils';
 import type { Language } from '../i18n/types';
 import { PLAN_ORDER, PLAN_PRICING, PLAN_METADATA } from '@rediacc/shared/subscription';
 import { EXTERNAL_LINKS } from '../config/constants';
+import { TEAM_MEMBERS } from '../config/team-videos';
 import '../styles/pricing-page.css';
 
 interface Props {
   lang?: Language;
+  guaranteeMember?: string;
 }
 
-const { lang = 'en' } = Astro.props;
+const { lang = 'en', guaranteeMember = 'founder' } = Astro.props;
 const { t, ta, to } = createTranslator(lang);
+const guarantorData = TEAM_MEMBERS[guaranteeMember];
 
 const priceFormatter = new Intl.NumberFormat(lang === 'en' ? 'en-US' : lang, {
   style: 'currency',
@@ -91,5 +94,17 @@ const plans = PLAN_ORDER.map((code) => ({
     <a href={`/${lang}/pricing`} class="pricing-preview-compare" data-track="cta_click" data-track-label="pricing-compare">
       {t('pricingPreview.compareAll')} &rarr;
     </a>
+    {guarantorData && (
+      <div class="cf-guarantee-strip">
+        <img
+          src={guarantorData.photos.headshot}
+          alt={guarantorData.name}
+          class="cf-guarantee-photo"
+          loading="lazy"
+          decoding="async"
+        />
+        <p class="cf-guarantee-text">{t(`team.${guaranteeMember}.guarantee`)}</p>
+      </div>
+    )}
   </div>
 </section>

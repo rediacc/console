@@ -4,6 +4,7 @@ import { createTranslator } from '../../i18n/utils';
 import SPHero from './SPHero.astro';
 import SPHomeLogoWall from './SPHomeLogoWall.astro';
 import SPHomeFeatureShowcase from './SPHomeFeatureShowcase.astro';
+import SPHomeTeamStory from './SPHomeTeamStory.astro';
 import SPHomeBeforeAfter from './SPHomeBeforeAfter.astro';
 import SPHomeMetricsBar from './SPHomeMetricsBar.astro';
 import SPHomeTestimonials from './SPHomeTestimonials.astro';
@@ -46,9 +47,11 @@ const homeHero = {
     ctaHref={`/${lang}/install`}
     secondaryCtaHref={`/${lang}/docs/quick-start`}
     terminal={{ lines: heroTerminalLines }}
+    teamVideo={{ member: 'founder', videoKey: 'hero-intro', durationLabel: '0:30' }}
   />
   <SPHomeLogoWall lang={lang} />
   <SPHomeFeatureShowcase lang={lang} />
+  <SPHomeTeamStory member="founder" videoKey="our-story" lang={lang} />
   <SPHomeBeforeAfter lang={lang} />
   <SPHomeMetricsBar lang={lang} />
   <SPHomeTestimonials lang={lang} />

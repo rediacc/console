@@ -1,3 +1,4 @@
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import {
   CloudOutlined,
   CloudServerOutlined,
@@ -9,7 +10,6 @@ import {
   TeamOutlined,
   ThunderboltOutlined,
 } from '@/utils/optimizedIcons';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 
 export type RouteItem = {
   path?: string;

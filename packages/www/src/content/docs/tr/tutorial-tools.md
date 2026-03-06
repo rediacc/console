@@ -1,77 +1,83 @@
 ---
 title: "Araçlar"
-description: "Terminal, dosya senkronizasyonu, VS Code entegrasyonu ve CLI güncelleme komutlarını kullanırken izleyin ve takip edin."
+description: "SSH terminal erişimi, dosya senkronizasyonu, VS Code entegrasyonu ve CLI güncelleme komutlarını kullanın."
 category: "Tutorials"
 order: 5
 language: tr
-sourceHash: "6cf8e14712148f7f"
+sourceHash: "f581499837e09360"
 ---
 
-# Öğretici: Araçlar
+# Rediacc ile Terminal, Senkronizasyon ve VS Code Araçları Nasıl Kullanılır
 
-This tutorial demonstrates the productivity tools built into `rdc`: SSH terminal access, file synchronization, VS Code integration, and CLI updates.
+CLI, günlük işlemler için üretkenlik araçları içerir: SSH terminal erişimi, rsync ile dosya senkronizasyonu, VS Code uzaktan geliştirme ve CLI güncellemeleri. Bu öğreticide, uzak komutlar çalıştıracak, dosyaları bir depoya senkronize edecek, VS Code entegrasyonunu kontrol edecek ve CLI sürümünüzü doğrulayacaksınız.
 
 ## Ön Koşullar
 
-- The `rdc` CLI installed with a config initialized
-- A provisioned machine with a running repository (see [Tutorial: Repository Lifecycle](/tr/docs/tutorial-repos))
+- Yapılandırması başlatılmış `rdc` CLI kurulu
+- Çalışan bir deposu olan hazırlanmış bir makine (bkz. [Öğretici: Depo Yaşam Döngüsü](/tr/docs/tutorial-repos))
 
 ## Etkileşimli Kayıt
 
 ![Tutorial: Tools](/assets/tutorials/tools-tutorial.cast)
 
-## Neler Göreceksiniz
+### Adım 1: Bir makineye bağlanın
 
-The recording above walks through each step below. Use the playback bar to navigate between commands.
-
-### Adım 1: Makineye bağlanın
+Etkileşimli bir oturum açmadan SSH üzerinden uzak bir makinede satır içi komutlar çalıştırın.
 
 ```bash
 rdc term server-1 -c "hostname"
 rdc term server-1 -c "uptime"
 ```
 
-Run inline commands on a remote machine via SSH. The `-c` flag executes a single command and returns the output without opening an interactive session.
+`-c` bayrağı tek bir komutu çalıştırır ve çıktıyı döndürür. Etkileşimli bir SSH oturumu açmak için `-c`'yi atlayın.
 
-### Adım 2: Depoya bağlanın
+### Adım 2: Bir depoya bağlanın
+
+Bir deponun izole Docker ortamında komut çalıştırmak için:
 
 ```bash
 rdc term server-1 my-app -c "docker ps"
 ```
 
-When connecting to a repository, `DOCKER_HOST` is automatically set to the repository's isolated Docker socket. Any Docker command runs against that repository's containers only.
+Bir depoya bağlanıldığında, `DOCKER_HOST` otomatik olarak deponun izole Docker soketine ayarlanır. Herhangi bir Docker komutu yalnızca o deponun konteynerlerine karşı çalışır.
 
-### Adım 3: Dosya senkronizasyonunu önizleyin (deneme)
+### Adım 3: Dosya senkronizasyonunu önizleyin (deneme çalıştırma)
+
+Dosyaları aktarmadan önce nelerin değişeceğini önizleyin.
 
 ```bash
 rdc sync upload -m server-1 -r my-app --local ./src --dry-run
 ```
 
-The `--dry-run` flag previews what would be transferred without actually uploading files. Shows new files, changed files, and total transfer size.
+`--dry-run` bayrağı, gerçekte hiçbir şey yüklemeden yeni dosyaları, değişen dosyaları ve toplam aktarım boyutunu gösterir.
 
 ### Adım 4: Dosyaları yükleyin
+
+Yerel makinenizden uzak depo bağlama noktasına dosyaları aktarın.
 
 ```bash
 rdc sync upload -m server-1 -r my-app --local ./src
 ```
 
-Transfers files from your local machine to the remote repository mount via rsync over SSH.
+Dosyalar SSH üzerinden rsync ile aktarılır. Sonraki yüklemelerde yalnızca değişen dosyalar gönderilir.
 
 ### Adım 5: Yüklenen dosyaları doğrulayın
+
+Deponun bağlama dizinini listeleyerek dosyaların ulaştığını onaylayın.
 
 ```bash
 rdc term server-1 my-app -c "ls -la"
 ```
 
-Confirm the files arrived by listing the repository's mount directory.
-
 ### Adım 6: VS Code entegrasyon kontrolü
+
+VS Code ile uzaktan geliştirme yapmak için gerekli bileşenlerin kurulu olduğunu doğrulayın.
 
 ```bash
 rdc vscode check
 ```
 
-Verifies your VS Code installation, Remote SSH extension, and SSH configuration for remote development. Shows which settings need to be configured.
+VS Code kurulumunuzu, Remote SSH eklentisini ve SSH yapılandırmasını kontrol eder. Eksik ön koşulları çözmek için çıktıyı takip edin, ardından `rdc vscode <machine> [repo]` ile bağlanın.
 
 ### Adım 7: CLI güncellemelerini kontrol edin
 
@@ -79,10 +85,23 @@ Verifies your VS Code installation, Remote SSH extension, and SSH configuration 
 rdc update --check-only
 ```
 
-Checks if a newer version of the `rdc` CLI is available without applying it. Use `rdc update` (without `--check-only`) to install the update.
+CLI'nin daha yeni bir sürümünün mevcut olup olmadığını bildirir. Güncellemeyi yüklemek için `--check-only` olmadan `rdc update` komutunu çalıştırın.
+
+## Sorun Giderme
+
+**Dosya senkronizasyonu sırasında "rsync: command not found"**
+Hem yerel makinenize hem de uzak sunucuya rsync kurun. Debian/Ubuntu'da: `sudo apt install rsync`. macOS'ta: rsync varsayılan olarak dahildir.
+
+**Senkronizasyon yüklemesi sırasında "Permission denied"**
+SSH kullanıcınızın depo bağlama dizinine yazma erişimi olduğunu doğrulayın. Depo bağlama noktaları, makine kaydı sırasında belirtilen kullanıcıya aittir.
+
+**"VS Code Remote SSH extension not found"**
+VS Code marketplace'ten eklentiyi kurun: Microsoft'un "Remote - SSH" eklentisini arayın. Kurduktan sonra VS Code'u yeniden başlatın ve `rdc vscode check` komutunu tekrar çalıştırın.
 
 ## Sonraki Adımlar
 
-- [Tools](/tr/docs/tools) — full reference for terminal, sync, VS Code, and update commands
-- [Tutorial: Backup & Restore](/tr/docs/tutorial-backup) — backup, restore, and scheduled sync
-- [Services](/tr/docs/services) — Rediaccfile reference and service networking
+Uzak komutlar çalıştırdınız, dosyaları senkronize ettiniz, VS Code entegrasyonunu kontrol ettiniz ve CLI güncellemelerini doğruladınız. Verilerinizi korumak için:
+
+- [Tools](/tr/docs/tools) — terminal, senkronizasyon, VS Code ve güncelleme komutları için tam referans
+- [Öğretici: Yedekleme ve Ağ](/tr/docs/tutorial-backup) — yedekleme planlaması ve ağ yapılandırması
+- [Hizmetler](/tr/docs/services) — Rediaccfile referansı ve hizmet ağları

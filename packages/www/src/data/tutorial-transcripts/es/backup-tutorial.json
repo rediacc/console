@@ -4,52 +4,10 @@
   "version": 1,
   "events": [
     {
-      "id": "backup-01",
+      "id": "backup-tutorial-01",
       "markerIndex": 0,
-      "at": 1.509097,
+      "at": 1.510362,
       "text": "Inspeccione los destinos de copia de seguridad actualmente configurados."
-    },
-    {
-      "id": "backup-02",
-      "markerIndex": 1,
-      "at": 9.565032,
-      "text": "Habilite una política de copia de seguridad programada con detalles de almacenamiento de destino."
-    },
-    {
-      "id": "backup-03",
-      "markerIndex": 2,
-      "at": 19.718406,
-      "text": "Revise la configuración del programa de respaldo activo."
-    },
-    {
-      "id": "backup-04",
-      "markerIndex": 3,
-      "at": 27.974161,
-      "text": "Aplique la configuración de infraestructura para acceso externo y certificados."
-    },
-    {
-      "id": "backup-05",
-      "markerIndex": 4,
-      "at": 39.964598,
-      "text": "Registre los puertos de servicio TCP y UDP requeridos."
-    },
-    {
-      "id": "backup-06",
-      "markerIndex": 5,
-      "at": 50.277844,
-      "text": "Muestre los detalles de la infraestructura para confirmar los valores de la red."
-    },
-    {
-      "id": "backup-07",
-      "markerIndex": 6,
-      "at": 58.727031,
-      "text": "Deshabilite las copias de seguridad programadas como parte del flujo de reversión."
-    },
-    {
-      "id": "backup-08",
-      "markerIndex": 7,
-      "at": 65.303576,
-      "text": "Vuelva a verificar el estado del cronograma para confirmar el cambio de política."
     }
   ]
 }

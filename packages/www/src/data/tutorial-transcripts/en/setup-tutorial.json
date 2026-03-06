@@ -4,64 +4,40 @@
   "version": 1,
   "events": [
     {
-      "id": "setup-01",
+      "id": "setup-tutorial-01",
       "markerIndex": 0,
-      "at": 1.510013,
-      "text": "Initialize a dedicated configuration profile for this environment."
+      "at": 1.50986,
+      "text": "Every machine connection begins with a configuration profile -- it holds SSH keys, server addresses, and infrastructure settings. We create a new profile now, linked to your private key."
     },
     {
-      "id": "setup-02",
+      "id": "setup-tutorial-02",
       "markerIndex": 1,
-      "at": 10.550973,
-      "text": "Review available configurations and confirm the new profile exists."
+      "at": 10.605861,
+      "text": "Profile created. We verify it appears in the configuration list alongside any existing profiles, showing their adapter type and registered machine count."
     },
     {
-      "id": "setup-03",
+      "id": "setup-tutorial-03",
       "markerIndex": 2,
-      "at": 17.625716,
-      "text": "Register a machine entry with network and user details."
+      "at": 17.961132,
+      "text": "To reach a remote server, we register it by IP address and SSH user. The CLI also fetches the server's host key fingerprint to prevent man-in-the-middle attacks."
     },
     {
-      "id": "setup-04",
+      "id": "setup-tutorial-04",
       "markerIndex": 3,
-      "at": 28.032443,
-      "text": "Inspect the configured machine list to verify registration."
+      "at": 31.651331,
+      "text": "Machine registered. We confirm the entry is stored correctly. You'll see all machines in this profile with their IP addresses and SSH connection details."
     },
     {
-      "id": "setup-05",
+      "id": "setup-tutorial-05",
       "markerIndex": 4,
-      "at": 36.265561,
-      "text": "Set the default machine to reduce repeated targeting flags."
+      "at": 40.16275,
+      "text": "When managing a single server, a default machine eliminates repetitive targeting flags. Every command will route to this machine unless you override it explicitly."
     },
     {
-      "id": "setup-06",
+      "id": "setup-tutorial-06",
       "markerIndex": 5,
-      "at": 44.022131,
-      "text": "Run a basic remote host check to validate connectivity."
-    },
-    {
-      "id": "setup-07",
-      "markerIndex": 6,
-      "at": 50.965935,
-      "text": "Run a second host check focused on system runtime health."
-    },
-    {
-      "id": "setup-08",
-      "markerIndex": 7,
-      "at": 59.757783,
-      "text": "Execute environment diagnostics to catch setup issues early."
-    },
-    {
-      "id": "setup-09",
-      "markerIndex": 8,
-      "at": 67.426214,
-      "text": "Apply infrastructure settings for public access and certificates."
-    },
-    {
-      "id": "setup-10",
-      "markerIndex": 9,
-      "at": 77.6898,
-      "text": "Display infrastructure configuration to verify the final state."
+      "at": 48.29967,
+      "text": "Before deploying anything, we verify the SSH tunnel is functional. A remote hostname check proves the machine is reachable and the host key is trusted."
     }
   ]
 }

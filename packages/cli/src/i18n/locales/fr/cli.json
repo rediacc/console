@@ -3,6 +3,18 @@
     "description": "Gérer les machines, dépôts et déploiements par SSH"
   },
   "commands": {
+    "agent": {
+      "capabilities": {
+        "description": "Lister toutes les commandes disponibles avec leurs arguments et options"
+      },
+      "description": "Utilitaires pour les assistants de codage IA",
+      "exec": {
+        "description": "Exécuter une commande avec une entrée JSON depuis stdin"
+      },
+      "schema": {
+        "description": "Afficher le schéma détaillé d'une commande spécifique"
+      }
+    },
     "audit": {
       "description": "Commandes de journal d'audit",
       "history": {
@@ -554,6 +566,9 @@
         "systemSection": "\nSystème :",
         "systemUptime": "  Temps de fonctionnement : {{uptime}}"
       },
+      "info": {
+        "description": "Afficher l'état complet de la machine (système, dépôts, conteneurs, services)"
+      },
       "list": {
         "description": "Lister les machines",
         "fetching": "Récupération des machines..."
@@ -625,6 +640,14 @@
         "systemSection": "\nSystème :",
         "systemUptime": "  Temps de fonctionnement : {{uptime}}",
         "totalRepos": "  Dépôts totaux : {{count}}"
+      }
+    },
+    "mcp": {
+      "description": "Serveur Model Context Protocol pour les agents IA",
+      "serve": {
+        "configOption": "Nom de la configuration à utiliser pour toutes les commandes",
+        "description": "Démarrer le serveur MCP (transport stdio)",
+        "timeoutOption": "Délai d'expiration par défaut des commandes en millisecondes"
       }
     },
     "ops": {
@@ -1552,7 +1575,9 @@
       "term": "Accès Terminal SSH",
       "update": "Mises à jour CLI",
       "user": "Gestion des Utilisateurs",
-      "vscode": "Intégration VS Code"
+      "vscode": "Intégration VS Code",
+      "agent": "Utilitaires de l'agent",
+      "mcp": "Serveur MCP"
     },
     "supplements": {
       "auth": {
@@ -1759,7 +1784,7 @@
     "containerAction": "Action du conteneur : terminal, logs, stats, exec",
     "datastore": "Chemin du magasin de données sur la machine",
     "debug": "Activer la sortie de débogage (mode local)",
-    "dryRun": "Afficher ce qui serait transféré sans réellement synchroniser",
+    "dryRun": "Afficher les actions prévues sans effectuer de modifications",
     "email": "Adresse email",
     "endpoint": "URL du point de terminaison de l'API",
     "excludePatterns": "Motifs à exclure de la synchronisation",
@@ -1767,6 +1792,7 @@
     "expires": "Expiration en heures (1-720)",
     "external": "Forcer le lancement dans une fenêtre de terminal externe",
     "extraMachine": "Machine supplémentaire pour les opérations multi-machines (nom:ip:utilisateur)",
+    "fields": "Liste de champs à inclure dans la sortie, séparés par des virgules",
     "filterStatus": "Filtrer par état",
     "folder": "Chemin du dossier distant à ouvrir",
     "follow": "Suivre la sortie des journaux",
@@ -1816,6 +1842,7 @@
     "protocolSystem": "Enregistrer au niveau du système (nécessite des privilèges administrateur)",
     "protocolSystemUnregister": "Désinscrire l'enregistrement au niveau du système (nécessite des privilèges administrateur)",
     "protocolToken": "Jeton d'authentification",
+    "quiet": "Supprimer la sortie informative",
     "rawVault": "JSON du coffre brut (pour scripts/CI)",
     "region": "Nom de la région",
     "remotePath": "Chemin du sous-répertoire distant dans le dépôt",

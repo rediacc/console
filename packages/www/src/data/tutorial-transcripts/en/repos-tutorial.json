@@ -4,58 +4,10 @@
   "version": 1,
   "events": [
     {
-      "id": "repos-01",
+      "id": "repos-tutorial-01",
       "markerIndex": 0,
-      "at": 1.507995,
-      "text": "Create an encrypted repository with a defined storage size."
-    },
-    {
-      "id": "repos-02",
-      "markerIndex": 1,
-      "at": 21.785373,
-      "text": "List repositories to confirm the new workspace is available."
-    },
-    {
-      "id": "repos-03",
-      "markerIndex": 2,
-      "at": 31.11554,
-      "text": "Inspect the repository mount path before deployment."
-    },
-    {
-      "id": "repos-04",
-      "markerIndex": 3,
-      "at": 41.275171,
-      "text": "Start repository services and mount the encrypted volume."
-    },
-    {
-      "id": "repos-05",
-      "markerIndex": 4,
-      "at": 59.588726,
-      "text": "Check machine container state after startup."
-    },
-    {
-      "id": "repos-06",
-      "markerIndex": 5,
-      "at": 68.725808,
-      "text": "Inspect active containers from the repository execution context."
-    },
-    {
-      "id": "repos-07",
-      "markerIndex": 6,
-      "at": 78.086569,
-      "text": "Stop running repository services for cleanup."
-    },
-    {
-      "id": "repos-08",
-      "markerIndex": 7,
-      "at": 85.461712,
-      "text": "Detach and close the encrypted repository mount."
-    },
-    {
-      "id": "repos-09",
-      "markerIndex": 8,
-      "at": 93.028308,
-      "text": "Remove the repository to complete lifecycle teardown."
+      "at": 1.508464,
+      "text": "Each repository is a LUKS-encrypted BTRFS volume with its own Docker daemon and loopback subnet -- fully isolated. We create a two-gigabyte repository now."
     }
   ]
 }

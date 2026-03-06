@@ -4,52 +4,10 @@
   "version": 1,
   "events": [
     {
-      "id": "tools-01",
+      "id": "tools-tutorial-01",
       "markerIndex": 0,
-      "at": 1.508545,
+      "at": 1.511459,
       "text": "Hedef makine kimliğini doğrulamak için uzak kabuk komutunu açın."
-    },
-    {
-      "id": "tools-02",
-      "markerIndex": 1,
-      "at": 8.232601,
-      "text": "Mevcut çalışma süresini kontrol ederek ana bilgisayarın yanıt verdiğini doğrulayın."
-    },
-    {
-      "id": "tools-03",
-      "markerIndex": 2,
-      "at": 16.842601,
-      "text": "Depo bağlamının içinden bir kapsayıcı incelemesi çalıştırın."
-    },
-    {
-      "id": "tools-04",
-      "markerIndex": 3,
-      "at": 26.099887,
-      "text": "Herhangi bir şey yüklemeden önce dosya aktarımı değişikliklerini önizleyin."
-    },
-    {
-      "id": "tools-05",
-      "markerIndex": 4,
-      "at": 36.771157,
-      "text": "Yerel proje dosyalarını uzak depo çalışma alanına aktarın."
-    },
-    {
-      "id": "tools-06",
-      "markerIndex": 5,
-      "at": 47.046053,
-      "text": "Senkronizasyon sonuçlarını doğrulamak için depo dosyalarını uzaktan listeleyin."
-    },
-    {
-      "id": "tools-07",
-      "markerIndex": 6,
-      "at": 56.157243,
-      "text": "Uzaktan geliştirme için düzenleyici entegrasyonu önkoşullarını doğrulayın."
-    },
-    {
-      "id": "tools-08",
-      "markerIndex": 7,
-      "at": 64.075905,
-      "text": "Daha yeni bir CLI sürümünün mevcut olup olmadığını kontrol edin."
     }
   ]
 }

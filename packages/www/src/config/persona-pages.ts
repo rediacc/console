@@ -4,16 +4,16 @@
  * but with persona-specific config and translation namespace.
  */
 
+import type { ImageMetadata } from 'astro';
 import illustrationEnvironmentCloning from '../assets/images/illustrations/environment-cloning.svg';
 import illustrationInfrastructureCosts from '../assets/images/illustrations/infrastructure-costs.svg';
 import illustrationRapidRecovery from '../assets/images/illustrations/rapid-recovery.svg';
 import type { SectionType, TechItem } from './solution-pages';
-import type { ImageMetadata } from 'astro';
 
 /** Persona-specific section types (extends base SectionType) */
-export type PersonaSectionType = SectionType | 'relatedSolutions' | 'shareWithTeam';
+export type PersonaSectionType = SectionType | 'relatedSolutions' | 'shareWithTeam' | 'teamVideo';
 
-export type PersonaType = 'devops' | 'cto' | 'ceo';
+export type PersonaType = 'devops' | 'cto' | 'ceo' | 'ai-agent';
 
 export interface PersonaPageConfig {
   /** Translation content key: pages.personaPages.<contentKey> */
@@ -34,6 +34,8 @@ export interface PersonaPageConfig {
   relatedSolutions?: string[];
   /** Primary CTA destination (overrides persona default). Relative to /{lang}. Use 'CONSULTATION' for external booking link. */
   ctaHref?: string;
+  /** Team member video for the teamVideo section */
+  teamVideo?: { member: string; videoKey: string };
 }
 
 /** Default CTA destinations by persona. 'CONSULTATION' is resolved to EXTERNAL_LINKS.SCHEDULE_CONSULTATION at render time. */
@@ -41,6 +43,7 @@ export const PERSONA_CTA_MAP: Record<PersonaType, string> = {
   devops: '/install',
   cto: 'CONSULTATION',
   ceo: '/#pricing',
+  'ai-agent': '/install',
 };
 
 export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
@@ -52,6 +55,7 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
       'stats',
       'problem',
       'howItWorks',
+      'teamVideo',
       'techDiff',
       'benefits',
       'socialProof',
@@ -65,6 +69,7 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
       'infrastructure-costs',
       'integrations',
     ],
+    teamVideo: { member: 'founder', videoKey: 'persona-devops' },
   },
   'for-ctos': {
     contentKey: 'forCtos',
@@ -74,6 +79,7 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
       'stats',
       'problem',
       'costCalculator',
+      'teamVideo',
       'techDiff',
       'benefits',
       'competitorComparison',
@@ -93,6 +99,7 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
       'vendor-lock-in',
       'cloud-outage-protection',
     ],
+    teamVideo: { member: 'founder', videoKey: 'persona-ctos' },
   },
   'for-ceos': {
     contentKey: 'forCeos',
@@ -102,6 +109,7 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
       'stats',
       'problem',
       'costCalculator',
+      'teamVideo',
       'benefits',
       'socialProof',
       'shareWithTeam',
@@ -110,6 +118,25 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
     calculatorPreset: 'rapid-recovery',
     illustration: illustrationRapidRecovery,
     relatedSolutions: ['rapid-recovery', 'vendor-lock-in', 'cloud-outage-protection'],
+    teamVideo: { member: 'founder', videoKey: 'persona-ceos' },
+  },
+  'for-ai-agents': {
+    contentKey: 'forAiAgents',
+    personaType: 'ai-agent',
+    sections: [
+      'hero',
+      'stats',
+      'problem',
+      'howItWorks',
+      'teamVideo',
+      'techDiff',
+      'benefits',
+      'relatedSolutions',
+      'bottomCta',
+    ],
+    illustration: illustrationEnvironmentCloning,
+    relatedSolutions: ['environment-cloning', 'production-parity', 'integrations'],
+    teamVideo: { member: 'founder', videoKey: 'persona-ai-agents' },
   },
 };
 

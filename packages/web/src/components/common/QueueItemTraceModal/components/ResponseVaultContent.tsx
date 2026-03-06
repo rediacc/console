@@ -1,11 +1,11 @@
-import React from 'react';
+import type { QueueVaultSnapshot } from '@rediacc/shared/types';
 import { Empty, Space, Tabs } from 'antd';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SimpleJsonEditor } from '@/components/common/VaultEditor/components/SimpleJsonEditor';
 import { FileTextOutlined } from '@/utils/optimizedIcons';
-import type { QueueVaultSnapshot } from '@rediacc/shared/types';
-import { SSHTestResultsDisplay } from './SSHTestResultsDisplay';
 import { parseSSHTestResults } from '../utils/sshTestResultParser';
+import { SSHTestResultsDisplay } from './SSHTestResultsDisplay';
 
 interface ResponseVaultContentProps {
   vaultContent: QueueVaultSnapshot | null | undefined;

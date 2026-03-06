@@ -5,9 +5,11 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const LOCAL_GROUPS = [
+  'agent',
   'config',
   'store',
   'machine',
+  'mcp',
   'repo',
   'storage',
   'sync',
@@ -37,9 +39,31 @@ const CLOUD_GROUPS = [
   'audit',
 ];
 
-const TARGET_DOC_CATEGORIES = new Set(['Guides', 'Tutorials', 'Concepts']);
+const TARGET_DOC_CATEGORIES = new Set([
+  'Guides',
+  'Tutorials',
+  'Concepts',
+  'Reference',
+  'Use Cases',
+]);
 const SHELL_FENCE_LANGS = new Set(['bash', 'sh', 'shell', 'zsh', 'powershell', 'ps1']);
-const GLOBAL_ALWAYS_VALID = new Set(['--help', '-h', '--version', '-V']);
+// Flags always valid on any command. Includes options not exported in command-tree.json
+// but registered globally by the CLI framework (output formatting, confirmations, etc.)
+const GLOBAL_ALWAYS_VALID = new Set([
+  '--help',
+  '-h',
+  '--version',
+  '-V',
+  '--output',
+  '-o',
+  '--yes',
+  '-y',
+  '--quiet',
+  '-q',
+  '--dry-run',
+  '--fields',
+  '--no-color',
+]);
 
 const COMMAND_TREE_PATH = path.resolve(__dirname, '../../../cli/scripts/command-tree.json');
 const CLI_JSON_PATH = path.resolve(__dirname, '../../../cli/src/i18n/locales/en/cli.json');

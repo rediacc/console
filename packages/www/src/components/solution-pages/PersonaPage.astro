@@ -14,6 +14,7 @@ import SPBottomCta from './SPBottomCta.astro';
 import SPTechStrip from './SPTechStrip.astro';
 import SPRelatedSolutions from './SPRelatedSolutions.astro';
 import SPShareWithTeam from './SPShareWithTeam.astro';
+import TeamVideoPlayer from '../TeamVideoPlayer';
 import { createTranslator } from '../../i18n/utils';
 import type { Language } from '../../i18n/types';
 import { PERSONA_PAGES, PERSONA_CTA_MAP } from '../../config/persona-pages';
@@ -104,6 +105,23 @@ const breadcrumbItems = [
 
     {has('socialProof') && (
       <SPSocialProof socialProof={(content as any).socialProof} />
+    )}
+
+    {has('teamVideo') && config.teamVideo && (
+      <section class="sp-section sp-team-video-section">
+        <div class="container" style="text-align:center;">
+          <h2 class="section-title">{t('team.video.personaHeadline')}</h2>
+          <div style="display:flex;justify-content:center;margin-top:24px;">
+            <TeamVideoPlayer
+              client:visible
+              member={config.teamVideo.member}
+              videoKey={config.teamVideo.videoKey}
+              lang={lang}
+              size="full"
+            />
+          </div>
+        </div>
+      </section>
     )}
 
     {has('techStrip') && config.techStrip && (

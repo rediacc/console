@@ -9,11 +9,11 @@
  */
 
 import * as fs from 'node:fs/promises';
-import { SFTPClient, type SFTPClientConfig } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { isSEA, getEmbeddedRenetBinary, computeSha256, type RenetArch } from './embedded-assets.js';
-import { compareVersions } from './updater.js';
+import { SFTPClient, type SFTPClientConfig } from '@rediacc/shared-desktop/sftp';
 import { VERSION } from '../version.js';
+import { computeSha256, getEmbeddedRenetBinary, isSEA, type RenetArch } from './embedded-assets.js';
+import { compareVersions } from './updater.js';
 
 /** Canonical install path on remote machines */
 const REMOTE_INSTALL_PATH = '/usr/bin/renet';

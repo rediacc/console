@@ -4,52 +4,22 @@
   "version": 1,
   "events": [
     {
-      "id": "monitoring-01",
+      "id": "monitoring-tutorial-01",
       "markerIndex": 0,
-      "at": 1.508459,
+      "at": 1.508759,
       "text": "Temel sorunları ortaya çıkarmak için tam ortam tanılamayı çalıştırın."
     },
     {
-      "id": "monitoring-02",
+      "id": "monitoring-tutorial-02",
       "markerIndex": 1,
-      "at": 8.976075,
+      "at": 9.844365,
       "text": "Uzak makine sağlığı göstergelerini kontrol edin."
     },
     {
-      "id": "monitoring-03",
+      "id": "monitoring-tutorial-03",
       "markerIndex": 2,
-      "at": 18.228101,
+      "at": 18.393678,
       "text": "Hedef makinedeki etkin kapsayıcıları listeleyin."
-    },
-    {
-      "id": "monitoring-04",
-      "markerIndex": 3,
-      "at": 27.138835,
-      "text": "Temel bileşenler için servis yöneticisi durumunu inceleyin."
-    },
-    {
-      "id": "monitoring-05",
-      "markerIndex": 4,
-      "at": 35.981025,
-      "text": "Kasa ve şifreleme alt sistemi durumunu inceleyin."
-    },
-    {
-      "id": "monitoring-06",
-      "markerIndex": 5,
-      "at": 45.106571,
-      "text": "Makinenin ana bilgisayar anahtarlarını tarayın ve doğrulayın."
-    },
-    {
-      "id": "monitoring-07",
-      "markerIndex": 6,
-      "at": 53.662765,
-      "text": "Bir ana bilgisayar adı kontrolüyle uzaktan komut yürütmeyi onaylayın."
-    },
-    {
-      "id": "monitoring-08",
-      "markerIndex": 7,
-      "at": 60.414173,
-      "text": "Çalışma süresi denetimiyle makinenin yanıt verme yeteneğini doğrulayın."
     }
   ]
 }

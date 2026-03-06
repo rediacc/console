@@ -1,5 +1,11 @@
-import React from 'react';
+import type {
+  GetOrganizationDashboard_ResultSet10,
+  GetOrganizationDashboard_ResultSet11,
+  OrganizationDashboardData,
+} from '@rediacc/shared/types';
 import { Badge, Card, Col, Flex, Grid, List, Row, Table, Tag, Typography } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { createTruncatedColumn } from '@/components/common/columns';
 import { MobileCard } from '@/components/common/MobileCard';
@@ -11,12 +17,6 @@ import {
   ThunderboltOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-import type {
-  GetOrganizationDashboard_ResultSet10,
-  GetOrganizationDashboard_ResultSet11,
-  OrganizationDashboardData,
-} from '@rediacc/shared/types';
-import type { ColumnsType } from 'antd/es/table';
 
 const getMachineIssueColumns = (
   t: (key: string) => string

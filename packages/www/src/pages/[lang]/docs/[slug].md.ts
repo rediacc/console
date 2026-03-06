@@ -1,7 +1,7 @@
 import { getCollection } from 'astro:content';
+import type { APIRoute, GetStaticPaths } from 'astro';
 import { SUPPORTED_LANGUAGES } from '../../../i18n/language-utils';
 import { getBaseSlug } from '../../../utils/slug';
-import type { APIRoute, GetStaticPaths } from 'astro';
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const docs = await getCollection('docs');

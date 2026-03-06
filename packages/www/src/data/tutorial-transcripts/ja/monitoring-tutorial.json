@@ -4,52 +4,22 @@
   "version": 1,
   "events": [
     {
-      "id": "monitoring-01",
+      "id": "monitoring-tutorial-01",
       "markerIndex": 0,
-      "at": 1.508459,
+      "at": 1.508759,
       "text": "完全な環境診断を実行して、ベースラインの問題を明らかにします。"
     },
     {
-      "id": "monitoring-02",
+      "id": "monitoring-tutorial-02",
       "markerIndex": 1,
-      "at": 8.976075,
+      "at": 9.844365,
       "text": "リモート マシンの健全性インジケーターを確認します。"
     },
     {
-      "id": "monitoring-03",
+      "id": "monitoring-tutorial-03",
       "markerIndex": 2,
-      "at": 18.228101,
+      "at": 18.393678,
       "text": "ターゲット マシン上のアクティブなコンテナを一覧表示します。"
-    },
-    {
-      "id": "monitoring-04",
-      "markerIndex": 3,
-      "at": 27.138835,
-      "text": "コアコンポーネントのサービスマネージャーのステータスを検査します。"
-    },
-    {
-      "id": "monitoring-05",
-      "markerIndex": 4,
-      "at": 35.981025,
-      "text": "ボールトと暗号化サブシステムのステータスを確認します。"
-    },
-    {
-      "id": "monitoring-06",
-      "markerIndex": 5,
-      "at": 45.106571,
-      "text": "マシンのホスト キーをスキャンして検証します。"
-    },
-    {
-      "id": "monitoring-07",
-      "markerIndex": 6,
-      "at": 53.662765,
-      "text": "ホスト名チェックでリモート コマンドの実行を確認します。"
-    },
-    {
-      "id": "monitoring-08",
-      "markerIndex": 7,
-      "at": 60.414173,
-      "text": "稼働時間チェックでマシンの応答性を検証します。"
     }
   ]
 }

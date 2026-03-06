@@ -3,12 +3,12 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { validateNetworkId } from '@rediacc/shared/queue-vault';
+import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
-import { handleError, ValidationError } from '../utils/errors.js';
 import type { OutputFormat, RepositoryConfig } from '../types/index.js';
-import type { Command } from 'commander';
+import { handleError, ValidationError } from '../utils/errors.js';
 
 export function registerLocalDataCommands(config: Command, program: Command): void {
   // config import-storage

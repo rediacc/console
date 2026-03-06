@@ -1,11 +1,11 @@
+import type { Code, Root } from 'mdast';
 import { visit } from 'unist-util-visit';
 import {
-  SHELL_FENCE_LANGS,
-  TARGET_DOC_CATEGORIES,
   mergeContinuationLines,
   parseRdcCommand,
+  SHELL_FENCE_LANGS,
+  TARGET_DOC_CATEGORIES,
 } from '../../scripts/lib/cli-reference-catalog.js';
-import type { Code, Root } from 'mdast';
 
 interface RemarkFile {
   data: Record<string, unknown>;

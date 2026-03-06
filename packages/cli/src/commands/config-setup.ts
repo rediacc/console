@@ -1,13 +1,13 @@
 import { execFileSync } from 'node:child_process';
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
+import { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
-import { handleError } from '../utils/errors.js';
 import type { MachineConfig, OutputFormat } from '../types/index.js';
-import type { Command } from 'commander';
+import { handleError } from '../utils/errors.js';
 
 function scanHostKeys(ip: string, port: number): string {
   try {

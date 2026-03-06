@@ -4,7 +4,7 @@ description: Ejecute un servicio en contenedores en su servidor en 5 minutos.
 category: Guides
 order: -1
 language: es
-sourceHash: b368b94e7064efe1
+sourceHash: "ff23efbe832be9bb"
 ---
 
 # Inicio rápido
@@ -20,7 +20,7 @@ Despliegue un entorno de contenedores cifrado y aislado en su propio servidor en
 ## 1. Instalar la CLI
 
 ```bash
-curl -fsSL https://get.rediacc.com | sh
+curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 ## 2. Crear una Configuración

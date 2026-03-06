@@ -1,9 +1,9 @@
-import React from 'react';
-import { Flex, Space, Tag, Typography } from 'antd';
-import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
-import type { Machine } from '@/types';
 import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
+import { Flex, Space, Tag, Typography } from 'antd';
+import React from 'react';
+import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
+import type { Machine } from '@/types';
 import type { FunctionData } from '../hooks/useFunctionExecution';
 import type { Repository } from '../types';
 

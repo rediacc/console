@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import { registerAgentCommands } from './commands/agent.js';
 import { registerAuditCommands } from './commands/audit.js';
 import { registerAuthCommands } from './commands/auth.js';
 import { registerBackupCommands } from './commands/backup.js';
@@ -7,6 +8,7 @@ import { registerCephCommands } from './commands/ceph/index.js';
 import { registerConfigCommands } from './commands/config.js';
 import { registerDoctorCommand } from './commands/doctor.js';
 import { registerMachineCommands } from './commands/machine/index.js';
+import { registerMcpCommands } from './commands/mcp/index.js';
 import { registerOpsCommands } from './commands/ops/index.js';
 import { registerOrganizationCommands } from './commands/organization.js';
 import { registerPermissionCommands } from './commands/permission.js';
@@ -30,10 +32,10 @@ import { changeLanguage, initI18n, SUPPORTED_LANGUAGES, t } from './i18n/index.j
 import { configService } from './services/config-resources.js';
 import { outputService } from './services/output.js';
 import { telemetryService } from './services/telemetry.js';
+import type { OutputFormat } from './types/index.js';
 import { setOutputFormat } from './utils/errors.js';
 import { applyRegistry } from './utils/mode-guard.js';
 import { VERSION } from './version.js';
-import type { OutputFormat } from './types/index.js';
 
 // Track if i18n has been initialized
 let i18nInitialized = false;
@@ -63,6 +65,15 @@ function getFullCommandName(command: Command): string {
   return names.join(' ') || 'unknown';
 }
 
+async function ensureI18n(language: string, explicitLang?: string): Promise<void> {
+  if (!i18nInitialized) {
+    await initI18n(language);
+    i18nInitialized = true;
+  } else if (explicitLang) {
+    await changeLanguage(language);
+  }
+}
+
 export const cli = new Command();
 
 cli
@@ -73,31 +84,47 @@ cli
   .option('--config <name>', t('options.config'))
   .option('-l, --lang <code>', t('options.lang', { languages: SUPPORTED_LANGUAGES.join('|') }))
   .option('--experimental', t('options.experimental'))
+  .option('-y, --yes', t('options.yes'))
+  .option('-q, --quiet', t('options.quiet'))
+  .option('--fields <fields>', t('options.fields'))
   .hook('preAction', async (thisCommand, actionCommand) => {
     const opts = thisCommand.opts();
     // Enable experimental mode if --experimental flag is passed
     if (opts.experimental) {
       process.env.REDIACC_EXPERIMENTAL = '1';
     }
-    // Set output format before any command runs
-    setOutputFormat(opts.output as OutputFormat);
+    // Auto-detect non-TTY: default to JSON when stdout is piped (agent-friendly)
+    const outputSource = thisCommand.getOptionValueSource('output');
+    let effectiveFormat = opts.output as OutputFormat;
+    if (outputSource === 'default' && process.stdout.isTTY !== true) {
+      effectiveFormat = 'json';
+    }
+    setOutputFormat(effectiveFormat);
+    thisCommand.setOptionValue('output', effectiveFormat);
+    // Set --yes flag globally for prompt bypass
+    if (opts.yes) {
+      process.env.REDIACC_YES = '1';
+    }
+    // Set --quiet mode to suppress informational output
+    if (opts.quiet) {
+      outputService.setQuiet(true);
+    }
+    // Set --fields for output filtering
+    if (opts.fields) {
+      outputService.setFields(opts.fields);
+    }
     // Set runtime config override if --config flag is provided
     if (opts.config) {
       configService.setRuntimeConfig(opts.config);
     }
     // Initialize or update i18n language
-    const language = opts.lang ?? (await configService.getLanguage());
-    if (!i18nInitialized) {
-      await initI18n(language);
-      i18nInitialized = true;
-    } else if (opts.lang) {
-      // Only change if explicitly set via flag
-      await changeLanguage(language);
-    }
+    await ensureI18n(opts.lang ?? (await configService.getLanguage()), opts.lang);
 
     // Start telemetry tracking for the command
     const commandName = getFullCommandName(actionCommand);
-    commandContext.set(commandName, { startTime: Date.now() });
+    const startTime = Date.now();
+    commandContext.set(commandName, { startTime });
+    outputService.setCommandContext(commandName, startTime);
     telemetryService.startCommand(commandName, {
       args: actionCommand.args,
       options: actionCommand.opts(),
@@ -160,6 +187,8 @@ registerSnapshotCommands(cli);
 registerBackupCommands(cli);
 registerOpsCommands(cli);
 registerSubscriptionCommands(cli);
+registerAgentCommands(cli);
+registerMcpCommands(cli);
 registerShortcuts(cli);
 
 // Apply mode guards, help tags, and domain grouping from the command registry

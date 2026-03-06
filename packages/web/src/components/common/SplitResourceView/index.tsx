@@ -1,5 +1,5 @@
-import React from 'react';
 import { Drawer, Flex, Grid, Modal } from 'antd';
+import React from 'react';
 import { ContainerDetailPanel } from '@/components/resources/internal/ContainerDetailPanel';
 import { MachineTable } from '@/components/resources/internal/MachineTable';
 import { MachineVaultStatusPanel } from '@/components/resources/internal/MachineVaultStatusPanel';

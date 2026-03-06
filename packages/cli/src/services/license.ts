@@ -13,8 +13,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS } from '@rediacc/shared/config';
+import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import type { MachineConfig } from '../types/index.js';
 
 const CONFIG_DIR = join(homedir(), '.config', 'rediacc');

@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import { t } from '../../i18n/index.js';
 import { registerContainersCommand } from './containers.js';
 import { registerCrudCommands } from './crud.js';
 import { registerHealthCommand } from './health.js';
@@ -7,7 +8,6 @@ import { registerServicesCommand } from './services.js';
 import { registerStatusCommand } from './status.js';
 import { registerTestConnectionCommand } from './test-connection.js';
 import { registerVaultStatusCommand } from './vault-status.js';
-import { t } from '../../i18n/index.js';
 
 export function registerMachineCommands(program: Command): void {
   // Create machine command and register CRUD commands

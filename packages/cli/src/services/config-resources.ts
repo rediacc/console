@@ -6,9 +6,7 @@
 
 import { DEFAULTS } from '@rediacc/shared/config';
 import { MIN_NETWORK_ID, NETWORK_ID_INCREMENT } from '@rediacc/shared/queue-vault';
-import { ConfigServiceBase } from './config-base.js';
 import { configFileStorage } from '../adapters/config-file-storage.js';
-import { hasCloudCredentials } from '../types/index.js';
 import type {
   BackupConfig,
   InfraConfig,
@@ -18,6 +16,8 @@ import type {
   SSHConfig,
   StorageConfig,
 } from '../types/index.js';
+import { hasCloudCredentials } from '../types/index.js';
+import { ConfigServiceBase } from './config-base.js';
 
 class ConfigService extends ConfigServiceBase {
   /**

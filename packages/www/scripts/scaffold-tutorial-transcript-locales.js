@@ -31,7 +31,46 @@ for (const file of files) {
 
   for (const lang of TARGET_LANGS) {
     const targetPath = path.join(TRANSCRIPT_DIR, lang, file);
-    if (fs.existsSync(targetPath)) continue;
+
+    if (fs.existsSync(targetPath)) {
+      const existing = readJson(targetPath);
+      let changed = false;
+
+      // Sync event count: trim excess or add new events from English
+      if (existing.events.length > source.events.length) {
+        existing.events = existing.events.slice(0, source.events.length);
+        changed = true;
+      } else if (existing.events.length < source.events.length) {
+        for (let i = existing.events.length; i < source.events.length; i++) {
+          existing.events.push({
+            ...source.events[i],
+            text: `TODO: translate event ${i + 1}`,
+          });
+        }
+        changed = true;
+      }
+
+      for (let i = 0; i < source.events.length; i++) {
+        if (existing.events[i].id !== source.events[i].id) {
+          existing.events[i].id = source.events[i].id;
+          changed = true;
+        }
+        if (existing.events[i].at !== source.events[i].at) {
+          existing.events[i].at = source.events[i].at;
+          changed = true;
+        }
+        if (existing.events[i].markerIndex !== source.events[i].markerIndex) {
+          existing.events[i].markerIndex = source.events[i].markerIndex;
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        writeJson(targetPath, existing);
+        console.log(`Synced ${path.relative(ROOT, targetPath)}`);
+      }
+      continue;
+    }
 
     const localized = {
       ...source,

@@ -1,8 +1,8 @@
+import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
-import { handleError } from '../utils/errors.js';
-import type { Command } from 'commander';
+import { getOutputFormat, handleError } from '../utils/errors.js';
 
 export function registerSnapshotCommands(program: Command): void {
   const snapshot = program.command('snapshot').description(t('commands.snapshot.description'));
@@ -89,11 +89,20 @@ export function registerSnapshotCommands(program: Command): void {
     .description(t('commands.snapshot.delete.description'))
     .option('-m, --machine <name>', t('options.machine'))
     .option('--debug', t('options.debug'))
+    .option('--dry-run', t('options.dryRun'))
     .action(async (repo, snapshotName, options) => {
       try {
         const machineName = options.machine ?? (await configService.getMachine());
         if (!machineName) {
           throw new Error(t('errors.machineRequiredLocal'));
+        }
+
+        if (options.dryRun) {
+          outputService.print(
+            { dryRun: true, repository: repo, snapshotName, machine: machineName },
+            getOutputFormat()
+          );
+          return;
         }
 
         const { runSnapshotCommand } = await import('../services/snapshot-service.js');

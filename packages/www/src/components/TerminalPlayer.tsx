@@ -4,14 +4,15 @@
 
 import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { loadTutorialTimeline } from '../utils/tutorial-timeline';
 import { useAudioPreferences } from './terminal-player-audio';
 import {
-  CaptionLayer,
-  TerminalPlayerView,
-  isPlayingPhase,
   type AsciinemaPlayerInstance,
   type AsciinemaPlayerModule,
+  CaptionLayer,
   type GuidedPhase,
+  isPlayingPhase,
+  TerminalPlayerView,
   usePlayerSetup,
 } from './terminal-player-shell';
 import {
@@ -22,7 +23,6 @@ import {
   stepWordTimings,
   transcriptLabels,
 } from './terminal-player-utils';
-import { loadTutorialTimeline } from '../utils/tutorial-timeline';
 
 interface TerminalPlayerProps {
   src: string;

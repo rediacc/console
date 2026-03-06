@@ -4,7 +4,7 @@ description: 5分でサーバー上にコンテナ化されたサービスを実
 category: Guides
 order: -1
 language: ja
-sourceHash: b368b94e7064efe1
+sourceHash: "ff23efbe832be9bb"
 ---
 
 # クイックスタート
@@ -20,7 +20,7 @@ sourceHash: b368b94e7064efe1
 ## 1. CLIのインストール
 
 ```bash
-curl -fsSL https://get.rediacc.com | sh
+curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 ## 2. Configの作成

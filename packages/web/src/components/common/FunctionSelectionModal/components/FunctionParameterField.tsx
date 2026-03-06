@@ -1,13 +1,13 @@
-import React from 'react';
-import { Checkbox, Flex, Input, InputNumber, Select } from 'antd';
-import { useTranslation } from 'react-i18next';
-import TemplateSelector from '@/components/common/TemplateSelector';
-import type { Machine, Repository } from '@/types';
 import type {
   GetTeamStorages_ResultSet1,
   QueueFunction,
   QueueFunctionParameter,
 } from '@rediacc/shared/types';
+import { Checkbox, Flex, Input, InputNumber, Select } from 'antd';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import TemplateSelector from '@/components/common/TemplateSelector';
+import type { Machine, Repository } from '@/types';
 
 // Generic translation function type that accepts any namespace configuration
 type TranslateFn = (key: string, options?: Record<string, unknown>) => string;

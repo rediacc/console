@@ -7,61 +7,61 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "de9fc7e756683f4a595dbcfd679a36f5f7915fd46419b29ae0cc14d0e759e326",
+  "transcriptHash": "51d26ab3aa78833ad01c0f6809119d05303b4ab15c92f7aa1ccc65f817f8dbc1",
   "steps": [
     {
-      "id": "ops-01",
+      "id": "ops-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.508416,
-      "replayEndSec": 8.415797,
-      "narrationText": "Verify local virtualization requirements before provisioning.",
-      "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-01.540080e6.mp3",
-      "audioDurationSec": 3.552653
+      "replayStartSec": 1.508295,
+      "replayEndSec": 8.986537,
+      "narrationText": "Testing infrastructure locally prevents production misconfigurations. We verify that your workstation has KVM support, libvirt, QEMU, and cloud-init tools installed for virtual machine provisioning.",
+      "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-tutorial-01.c8159fa6.mp3",
+      "audioDurationSec": 13.244082
     },
     {
-      "id": "ops-02",
+      "id": "ops-tutorial-02",
       "markerIndex": 1,
-      "replayStartSec": 8.415797,
-      "replayEndSec": 31.165622,
-      "narrationText": "Launch a minimal VM cluster for experimentation.",
-      "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-02.0c0746b5.mp3",
-      "audioDurationSec": 3.004082
+      "replayStartSec": 8.986537,
+      "replayEndSec": 17.752282,
+      "narrationText": "All prerequisites pass. We provision a minimal two-VM cluster on a virtual network -- a bridge node and a worker node -- with SSH access ready.",
+      "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-tutorial-02.68ff6a26.mp3",
+      "audioDurationSec": 9.090612
     },
     {
-      "id": "ops-03",
+      "id": "ops-tutorial-03",
       "markerIndex": 2,
-      "replayStartSec": 31.165622,
-      "replayEndSec": 38.114749,
-      "narrationText": "Check cluster state and machine availability.",
-      "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-03.670af116.mp3",
-      "audioDurationSec": 2.847347
+      "replayStartSec": 17.752282,
+      "replayEndSec": 25.263372,
+      "narrationText": "Cluster provisioning complete. We check that both VMs are running, with their assigned IP addresses, CPU allocation, and memory visible in the status table.",
+      "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-tutorial-03.dbb384ff.mp3",
+      "audioDurationSec": 9.090612
     },
     {
-      "id": "ops-04",
+      "id": "ops-tutorial-04",
       "markerIndex": 3,
-      "replayStartSec": 38.114749,
-      "replayEndSec": 43.322534,
-      "narrationText": "Run a quick hostname check on a selected VM.",
-      "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-04.8fb449a7.mp3",
-      "audioDurationSec": 2.847347
+      "replayStartSec": 25.263372,
+      "replayEndSec": 31.160484,
+      "narrationText": "Both VMs are online. We verify SSH access to the bridge node by running a remote command. You'll see its hostname returned, confirming the tunnel works.",
+      "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-tutorial-04.3f800299.mp3",
+      "audioDurationSec": 9.717551
     },
     {
-      "id": "ops-05",
+      "id": "ops-tutorial-05",
       "markerIndex": 4,
-      "replayStartSec": 43.322534,
-      "replayEndSec": 50.493824,
-      "narrationText": "Inspect system details from inside the VM environment.",
-      "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-05.b869f94d.mp3",
-      "audioDurationSec": 3.552653
+      "replayStartSec": 31.160484,
+      "replayEndSec": 39.121485,
+      "narrationText": "SSH confirmed. This time we pull full system details -- kernel version, architecture, and OS release -- to verify the VM environment matches expectations.",
+      "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-tutorial-05.86c0f56f.mp3",
+      "audioDurationSec": 10.527347
     },
     {
-      "id": "ops-06",
+      "id": "ops-tutorial-06",
       "markerIndex": 5,
-      "replayStartSec": 50.493824,
-      "replayEndSec": 56.486148,
-      "narrationText": "Shut down and clean up the temporary VM cluster.",
-      "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-06.ca436a6c.mp3",
-      "audioDurationSec": 3.474286
+      "replayStartSec": 39.121485,
+      "replayEndSec": 46.501637,
+      "narrationText": "When testing is complete, we tear down the cluster. This destroys both VMs and frees all CPU, memory, and disk resources. You can reprovision at any time.",
+      "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-tutorial-06.9df944cd.mp3",
+      "audioDurationSec": 10.527347
     }
   ]
 }

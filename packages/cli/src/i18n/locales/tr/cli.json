@@ -3,6 +3,18 @@
     "description": "SSH üzerinden makineleri, depoları ve dağıtımları yönetin"
   },
   "commands": {
+    "agent": {
+      "capabilities": {
+        "description": "Tüm kullanılabilir komutları argümanları ve seçenekleriyle listele"
+      },
+      "description": "Yapay zeka kodlama asistanları için agent dostu araçlar",
+      "exec": {
+        "description": "stdin üzerinden JSON girdisiyle bir komut çalıştır"
+      },
+      "schema": {
+        "description": "Belirli bir komut için ayrıntılı şemayı göster"
+      }
+    },
     "audit": {
       "description": "Denetim günlüğü komutları",
       "history": {
@@ -554,6 +566,9 @@
         "systemSection": "\nSistem:",
         "systemUptime": "  Çalışma süresi: {{uptime}}"
       },
+      "info": {
+        "description": "Tam makine durumunu göster (sistem, depolar, konteynerler, servisler)"
+      },
       "list": {
         "description": "Makineleri listeleyin",
         "fetching": "Makineler alınıyor..."
@@ -625,6 +640,14 @@
         "systemSection": "\nSistem:",
         "systemUptime": "  Çalışma süresi: {{uptime}}",
         "totalRepos": "  Toplam Depo: {{count}}"
+      }
+    },
+    "mcp": {
+      "description": "Yapay zeka agentları için Model Context Protocol sunucusu",
+      "serve": {
+        "configOption": "Tüm komutlar için kullanılacak yapılandırma adı",
+        "description": "MCP sunucusunu başlat (stdio aktarımı)",
+        "timeoutOption": "Milisaniye cinsinden varsayılan komut zaman aşımı"
       }
     },
     "ops": {
@@ -1552,7 +1575,9 @@
       "term": "SSH Terminal Erişimi",
       "update": "CLI Güncellemeleri",
       "user": "Kullanıcı Yönetimi",
-      "vscode": "VS Code Entegrasyonu"
+      "vscode": "VS Code Entegrasyonu",
+      "agent": "Ajan araçları",
+      "mcp": "MCP Sunucusu"
     },
     "supplements": {
       "auth": {
@@ -1759,7 +1784,7 @@
     "containerAction": "Konteyner işlemi: terminal, günlükler, istatistikler, yürütme",
     "datastore": "Makinedeki depolama yolu",
     "debug": "Hata ayıklama çıkışını etkinleştir (yerel mod)",
-    "dryRun": "Aslında senkronize etmeden aktarılacak dosyaları gösterin",
+    "dryRun": "Değişiklik yapmadan ne yapılacağını göster",
     "email": "E-posta adresi",
     "endpoint": "API uç noktası URL'si",
     "excludePatterns": "Senkronizasyondan hariç tutulacak desenler",
@@ -1767,6 +1792,7 @@
     "expires": "Saat cinsinden sona erme süresi (1-720)",
     "external": "Dış terminal penceresinde başlatmaya zorla",
     "extraMachine": "Çoklu makine işlemleri için ek makine (ad:ip:kullanıcı)",
+    "fields": "Çıkışa dahil edilecek alanların virgülle ayrılmış listesi",
     "filterStatus": "Duruma göre filtreleyin",
     "folder": "Uzak klasör yolu",
     "follow": "Günlük çıkışını izleyin",
@@ -1816,6 +1842,7 @@
     "protocolSystem": "Sistem genelinde kaydedin (yönetici ayrıcalıkları gerektirir)",
     "protocolSystemUnregister": "Sistem genelinde kaydı kaldırın (yönetici ayrıcalıkları gerektirir)",
     "protocolToken": "Kimlik doğrulama token'ı",
+    "quiet": "Bilgilendirme çıkışını bastır",
     "rawVault": "Ham kasa JSON'u (komut dosyaları/CI için)",
     "region": "Bölge adı",
     "remotePath": "Depo içinde uzak alt dizin yolu",

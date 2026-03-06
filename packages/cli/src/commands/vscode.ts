@@ -27,6 +27,12 @@ import {
   setHostServerInstallPath,
 } from '@rediacc/shared-desktop/vscode';
 import { Command } from 'commander';
+import { t } from '../i18n/index.js';
+import { getStateProvider } from '../providers/index.js';
+import { authService } from '../services/auth.js';
+import { configService } from '../services/config-resources.js';
+import { handleError } from '../utils/errors.js';
+import { withSpinner } from '../utils/spinner.js';
 import {
   type ConnectionDetails,
   debugLog,
@@ -35,12 +41,6 @@ import {
   displayVSCodeInstallation,
   getSSHConnectionDetails,
 } from './vscode-utils.js';
-import { t } from '../i18n/index.js';
-import { getStateProvider } from '../providers/index.js';
-import { authService } from '../services/auth.js';
-import { configService } from '../services/config-resources.js';
-import { handleError } from '../utils/errors.js';
-import { withSpinner } from '../utils/spinner.js';
 
 interface VSCodeConnectOptions {
   team?: string;

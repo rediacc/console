@@ -5,25 +5,6 @@
  * Used by account-server, middleware, renet, and CLI.
  */
 
-// Types
-export type {
-  ApiToken,
-  ApiTokenScope,
-  BillingPeriod,
-  FeatureFlags,
-  MachineLicense,
-  PlanMetadata,
-  PlanPricing,
-  SignedMachineLicense,
-  SubscriptionData,
-  SubscriptionStatus,
-  SubscriptionValidationResult,
-  OrganizationSubscription,
-  PlanCode,
-  ResourceLimits,
-  SignedSubscriptionBlob,
-} from './types';
-
 // Constants
 export {
   comparePlans,
@@ -48,24 +29,6 @@ export {
   PROGRESSIVE_LIMIT_KEYS,
   SUBSCRIPTION_CONFIG,
 } from './constants';
-
-// Validation
-export {
-  calculateGracePeriodEnd,
-  decodeSubscriptionPayload,
-  encodeSubscriptionPayload,
-  getEffectivePlanCode,
-  isGracePeriodExpired,
-  isInGracePeriod,
-  isSubscriptionActive,
-  isSubscriptionExpired,
-  validateSubscription,
-  validateSubscriptionData,
-  validateOrganizationSubscription,
-  validateResourceLimits,
-  validateSignedBlob,
-} from './validation';
-
 // Crypto (Ed25519 signature verification)
 export {
   clearPublicKeys,
@@ -79,3 +42,37 @@ export {
   verifyAndDecodeSubscription,
   verifySignature,
 } from './crypto';
+// Types
+export type {
+  ApiToken,
+  ApiTokenScope,
+  BillingPeriod,
+  FeatureFlags,
+  MachineLicense,
+  OrganizationSubscription,
+  PlanCode,
+  PlanMetadata,
+  PlanPricing,
+  ResourceLimits,
+  SignedMachineLicense,
+  SignedSubscriptionBlob,
+  SubscriptionData,
+  SubscriptionStatus,
+  SubscriptionValidationResult,
+} from './types';
+// Validation
+export {
+  calculateGracePeriodEnd,
+  decodeSubscriptionPayload,
+  encodeSubscriptionPayload,
+  getEffectivePlanCode,
+  isGracePeriodExpired,
+  isInGracePeriod,
+  isSubscriptionActive,
+  isSubscriptionExpired,
+  validateOrganizationSubscription,
+  validateResourceLimits,
+  validateSignedBlob,
+  validateSubscription,
+  validateSubscriptionData,
+} from './validation';

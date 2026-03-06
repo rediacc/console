@@ -4,7 +4,7 @@ description: Lancez un service conteneurisé sur votre serveur en 5 minutes.
 category: Guides
 order: -1
 language: fr
-sourceHash: b368b94e7064efe1
+sourceHash: "ff23efbe832be9bb"
 ---
 
 # Démarrage rapide
@@ -20,7 +20,7 @@ Déployez un environnement de conteneurs chiffré et isolé sur votre propre ser
 ## 1. Installer le CLI
 
 ```bash
-curl -fsSL https://get.rediacc.com | sh
+curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 ## 2. Créer une configuration

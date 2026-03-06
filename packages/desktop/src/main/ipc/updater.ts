@@ -1,6 +1,6 @@
+import { isCooldownExpired } from '@rediacc/shared/update';
 import { BrowserWindow, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
-import { isCooldownExpired } from '@rediacc/shared/update';
 import { checkInstallAllowed } from '../updater/autoUpdater';
 import { readDesktopUpdateState } from '../updater/update-state';
 

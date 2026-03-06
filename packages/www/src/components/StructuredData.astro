@@ -10,7 +10,7 @@ import {
 } from '../config/constants';
 
 export interface Props {
-  type?: 'organization' | 'website' | 'service' | 'software' | 'breadcrumb' | 'sitenavigation' | 'blogposting' | 'faq';
+  type?: 'organization' | 'website' | 'service' | 'software' | 'breadcrumb' | 'sitenavigation' | 'blogposting' | 'faq' | 'techarticle' | 'offer' | 'video';
   data?: any;
 }
 
@@ -211,6 +211,72 @@ const getStructuredData = (type: string, customData: any = {}) => {
           url: baseUrl
         },
         ...customData
+      };
+
+    case 'techarticle':
+      return {
+        ...commonData,
+        '@type': 'TechArticle',
+        headline: customData.title,
+        description: customData.description,
+        articleSection: customData.category,
+        author: {
+          '@type': 'Organization',
+          name: 'Rediacc',
+          url: baseUrl,
+        },
+        publisher: {
+          '@type': 'Organization',
+          name: 'Rediacc',
+          url: baseUrl,
+          logo: {
+            '@type': 'ImageObject',
+            url: `${baseUrl}/favicon.svg`,
+          },
+        },
+        url: customData.url || baseUrl,
+        inLanguage: customData.language || 'en',
+        ...customData.additionalData,
+      };
+
+    case 'video':
+      return {
+        ...commonData,
+        '@type': 'VideoObject',
+        name: customData.name ?? '',
+        description: customData.description ?? '',
+        thumbnailUrl: customData.thumbnailUrl ? `${baseUrl}${customData.thumbnailUrl}` : undefined,
+        uploadDate: customData.uploadDate ?? '',
+        duration: customData.duration ?? '',
+        contentUrl: customData.contentUrl ? `${baseUrl}${customData.contentUrl}` : undefined,
+        ...customData.additionalData,
+      };
+
+    case 'offer':
+      return {
+        ...commonData,
+        '@type': 'Product',
+        name: 'Rediacc',
+        description: 'Self-hosted infrastructure platform with encrypted repositories, container isolation, and automated disaster recovery.',
+        brand: {
+          '@type': 'Organization',
+          name: 'Rediacc',
+        },
+        offers: (customData.plans || []).map((plan: { name: string; price: number; description: string }) => ({
+          '@type': 'Offer',
+          name: plan.name,
+          price: String(plan.price),
+          priceCurrency: 'USD',
+          description: plan.description,
+          availability: 'https://schema.org/InStock',
+          priceSpecification: {
+            '@type': 'UnitPriceSpecification',
+            price: String(plan.price),
+            priceCurrency: 'USD',
+            billingDuration: 'P1M',
+          },
+        })),
+        ...customData.additionalData,
       };
 
     default:

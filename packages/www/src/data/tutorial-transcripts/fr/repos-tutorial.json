@@ -4,58 +4,10 @@
   "version": 1,
   "events": [
     {
-      "id": "repos-01",
+      "id": "repos-tutorial-01",
       "markerIndex": 0,
-      "at": 1.507995,
+      "at": 1.508464,
       "text": "Créez un référentiel chiffré avec une taille de stockage définie."
-    },
-    {
-      "id": "repos-02",
-      "markerIndex": 1,
-      "at": 21.785373,
-      "text": "Répertoriez les référentiels pour confirmer que le nouvel espace de travail est disponible."
-    },
-    {
-      "id": "repos-03",
-      "markerIndex": 2,
-      "at": 31.11554,
-      "text": "Inspectez le chemin de montage du référentiel avant le déploiement."
-    },
-    {
-      "id": "repos-04",
-      "markerIndex": 3,
-      "at": 41.275171,
-      "text": "Démarrez les services de référentiel et montez le volume chiffré."
-    },
-    {
-      "id": "repos-05",
-      "markerIndex": 4,
-      "at": 59.588726,
-      "text": "Vérifiez l'état du conteneur de la machine après le démarrage."
-    },
-    {
-      "id": "repos-06",
-      "markerIndex": 5,
-      "at": 68.725808,
-      "text": "Inspectez les conteneurs actifs à partir du contexte d’exécution du référentiel."
-    },
-    {
-      "id": "repos-07",
-      "markerIndex": 6,
-      "at": 78.086569,
-      "text": "Arrêtez d'exécuter les services de référentiel pour le nettoyage."
-    },
-    {
-      "id": "repos-08",
-      "markerIndex": 7,
-      "at": 85.461712,
-      "text": "Détachez et fermez le montage du référentiel chiffré."
-    },
-    {
-      "id": "repos-09",
-      "markerIndex": 8,
-      "at": 93.028308,
-      "text": "Supprimez le référentiel pour terminer le démontage du cycle de vie."
     }
   ]
 }

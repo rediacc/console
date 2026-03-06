@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import NewsletterSignup from './NewsletterSignup';
 import { EXTERNAL_LINKS } from '../config/constants';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
+import NewsletterSignup from './NewsletterSignup';
 import '../styles/newsletter.css';
 
 const HIDE_THRESHOLD_MS = 30 * 1000;

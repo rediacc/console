@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
-import type { Machine } from '@/types';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { DeployedRepo } from '@rediacc/shared/services/machine';
+import { useMemo } from 'react';
+import type { Machine } from '@/types';
 import type { GroupByMode } from '../types';
 
 interface Repository {

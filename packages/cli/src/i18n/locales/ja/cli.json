@@ -3,6 +3,18 @@
     "description": "SSH 経由でマシン、リポジトリ、デプロイを管理する"
   },
   "commands": {
+    "agent": {
+      "capabilities": {
+        "description": "利用可能なすべてのコマンドと引数・オプションをリスト表示する"
+      },
+      "description": "AIコーディングアシスタント向けのエージェントユーティリティ",
+      "exec": {
+        "description": "stdin からの JSON 入力でコマンドを実行する"
+      },
+      "schema": {
+        "description": "特定のコマンドの詳細なスキーマを表示する"
+      }
+    },
     "audit": {
       "description": "監査ログコマンド",
       "history": {
@@ -554,6 +566,9 @@
         "systemSection": "\nシステム:",
         "systemUptime": "  稼働時間: {{uptime}}"
       },
+      "info": {
+        "description": "マシンの完全なステータスを表示（システム、リポジトリ、コンテナ、サービス）"
+      },
       "list": {
         "description": "マシンをリスト表示する",
         "fetching": "マシンを取得中です..."
@@ -625,6 +640,14 @@
         "systemSection": "\nシステム:",
         "systemUptime": "  稼働時間: {{uptime}}",
         "totalRepos": "  総リポジトリ数: {{count}}"
+      }
+    },
+    "mcp": {
+      "description": "AIエージェント向けの Model Context Protocol サーバー",
+      "serve": {
+        "configOption": "すべてのコマンドに使用する設定名",
+        "description": "MCP サーバーを起動する (stdio トランスポート)",
+        "timeoutOption": "デフォルトのコマンドタイムアウト (ミリ秒単位)"
       }
     },
     "ops": {
@@ -1552,7 +1575,9 @@
       "term": "SSHターミナルアクセス",
       "update": "CLIアップデート",
       "user": "ユーザー管理",
-      "vscode": "VS Code統合"
+      "vscode": "VS Code統合",
+      "agent": "エージェントユーティリティ",
+      "mcp": "MCPサーバー"
     },
     "supplements": {
       "auth": {
@@ -1759,7 +1784,7 @@
     "containerAction": "コンテナアクション: terminal, logs, stats, exec",
     "datastore": "マシン上のデータストアパス",
     "debug": "デバッグ出力を有効化 (ローカルモード)",
-    "dryRun": "実際に同期せずに転送されるものを表示する",
+    "dryRun": "変更を加えずに実行内容を表示する",
     "email": "メールアドレス",
     "endpoint": "API エンドポイント URL",
     "excludePatterns": "同期から除外するパターン",
@@ -1767,6 +1792,7 @@
     "expires": "有効期限 (時間単位: 1-720)",
     "external": "外部ターミナルウィンドウで起動を強制する",
     "extraMachine": "マルチマシン操作用の追加マシン (名前:IP:ユーザー)",
+    "fields": "出力に含めるフィールドのカンマ区切りリスト",
     "filterStatus": "ステータスでフィルター",
     "folder": "リモートフォルダーパス",
     "follow": "ログ出力をフォローする",
@@ -1816,6 +1842,7 @@
     "protocolSystem": "システム全体に登録する (管理者権限が必要)",
     "protocolSystemUnregister": "システム全体の登録を解除する (管理者権限が必要)",
     "protocolToken": "認証トークン",
+    "quiet": "情報出力を抑制する",
     "rawVault": "未加工ボルト JSON (スクリプト/CI 用)",
     "region": "リージョン名",
     "remotePath": "リポジトリ内のリモートサブディレクトリパス",

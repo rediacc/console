@@ -22,10 +22,10 @@ const outputPath = path.join(subscriptionDir, 'schema.generated.json');
 
 // Import subscription constants dynamically to get actual values
 import {
-  SUBSCRIPTION_CONFIG,
   PLAN_FEATURES,
   PLAN_ORDER,
   PLAN_RESOURCES,
+  SUBSCRIPTION_CONFIG,
 } from '../src/subscription/constants.js';
 
 /**

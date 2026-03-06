@@ -7,79 +7,16 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "dc944e89c25d074fb736793792df5ae7ecc7feedaf90626a023cfdd8182d30e2",
+  "transcriptHash": "f305e086a221ec313cc97bac14e1afdd346ec4507428434c1b6ffaeaa4cba4c4",
   "steps": [
     {
-      "id": "backup-01",
+      "id": "backup-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.509097,
-      "replayEndSec": 9.565032,
+      "replayStartSec": 1.510362,
+      "replayEndSec": 5.406939,
       "narrationText": "Inspeccione los destinos de copia de seguridad actualmente configurados.",
-      "audioSrc": "/assets/tutorials/audio/es/backup-tutorial/backup-01.f49cf8df.mp3",
-      "audioDurationSec": 5.250612
-    },
-    {
-      "id": "backup-02",
-      "markerIndex": 1,
-      "replayStartSec": 9.565032,
-      "replayEndSec": 19.718406,
-      "narrationText": "Habilite una política de copia de seguridad programada con detalles de almacenamiento de destino.",
-      "audioSrc": "/assets/tutorials/audio/es/backup-tutorial/backup-02.9af30bea.mp3",
-      "audioDurationSec": 6.426122
-    },
-    {
-      "id": "backup-03",
-      "markerIndex": 2,
-      "replayStartSec": 19.718406,
-      "replayEndSec": 27.974161,
-      "narrationText": "Revise la configuración del programa de respaldo activo.",
-      "audioSrc": "/assets/tutorials/audio/es/backup-tutorial/backup-03.0f2e32d6.mp3",
-      "audioDurationSec": 3.160816
-    },
-    {
-      "id": "backup-04",
-      "markerIndex": 3,
-      "replayStartSec": 27.974161,
-      "replayEndSec": 39.964598,
-      "narrationText": "Aplique la configuración de infraestructura para acceso externo y certificados.",
-      "audioSrc": "/assets/tutorials/audio/es/backup-tutorial/backup-04.9d8ed0b0.mp3",
-      "audioDurationSec": 5.564082
-    },
-    {
-      "id": "backup-05",
-      "markerIndex": 4,
-      "replayStartSec": 39.964598,
-      "replayEndSec": 50.277844,
-      "narrationText": "Registre los puertos de servicio TCP y UDP requeridos.",
-      "audioSrc": "/assets/tutorials/audio/es/backup-tutorial/backup-05.5f49cb96.mp3",
-      "audioDurationSec": 3.970612
-    },
-    {
-      "id": "backup-06",
-      "markerIndex": 5,
-      "replayStartSec": 50.277844,
-      "replayEndSec": 58.727031,
-      "narrationText": "Muestre los detalles de la infraestructura para confirmar los valores de la red.",
-      "audioSrc": "/assets/tutorials/audio/es/backup-tutorial/backup-06.292e7a94.mp3",
-      "audioDurationSec": 4.675918
-    },
-    {
-      "id": "backup-07",
-      "markerIndex": 6,
-      "replayStartSec": 58.727031,
-      "replayEndSec": 65.303576,
-      "narrationText": "Deshabilite las copias de seguridad programadas como parte del flujo de reversión.",
-      "audioSrc": "/assets/tutorials/audio/es/backup-tutorial/backup-07.529c214e.mp3",
-      "audioDurationSec": 4.989388
-    },
-    {
-      "id": "backup-08",
-      "markerIndex": 7,
-      "replayStartSec": 65.303576,
-      "replayEndSec": 71.459995,
-      "narrationText": "Vuelva a verificar el estado del cronograma para confirmar el cambio de política.",
-      "audioSrc": "/assets/tutorials/audio/es/backup-tutorial/backup-08.b705217f.mp3",
-      "audioDurationSec": 4.832653
+      "audioSrc": "/assets/tutorials/audio/es/backup-tutorial/backup-tutorial-01.f49cf8df.mp3",
+      "audioDurationSec": 4.91102
     }
   ]
 }

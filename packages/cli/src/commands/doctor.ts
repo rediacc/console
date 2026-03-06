@@ -1,17 +1,17 @@
 import { execSync, spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { DEFAULTS } from '@rediacc/shared/config';
 import chalk from 'chalk';
 import { Command } from 'commander';
-import { DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../i18n/index.js';
 import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
 import { getEmbeddedMetadata, isSEA as isSEAEmbedded } from '../services/embedded-assets.js';
 import { outputService } from '../services/output.js';
+import type { OutputFormat } from '../types/index.js';
 import { hasCloudCredentials } from '../types/index.js';
 import { isSEA } from '../utils/platform.js';
 import { VERSION } from '../version.js';
-import type { OutputFormat } from '../types/index.js';
 
 // ============================================================================
 // Types

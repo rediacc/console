@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import TurnstileWidget from './TurnstileWidget';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
+import TurnstileWidget from './TurnstileWidget';
 
 declare global {
   interface Window {

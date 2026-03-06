@@ -1,3 +1,4 @@
+import type { GetTeamQueueItems_ResultSet1, QueueTraceLog } from '@rediacc/shared/types';
 import dayjs from 'dayjs';
 import { formatTimestampAsIs, normalizeToNumber, normalizeToString } from '@/platform';
 import {
@@ -9,7 +10,6 @@ import {
   SyncOutlined,
   ThunderboltOutlined,
 } from '@/utils/optimizedIcons';
-import type { GetTeamQueueItems_ResultSet1, QueueTraceLog } from '@rediacc/shared/types';
 import type { PriorityInfo, SimplifiedStatus, TaskStalenessLevel } from './types';
 
 // Helper function to extract timestamp from trace logs for specific action

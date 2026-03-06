@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { handleError } from '../utils/errors.js';
-import type { Command } from 'commander';
 
 /**
  * Execute a machine-level function (no repository context needed).

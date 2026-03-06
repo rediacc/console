@@ -279,7 +279,7 @@ This deploys a web application with PostgreSQL, Redis, and an API server.
 ### 1. Set Up
 
 ```bash
-curl -fsSL https://get.rediacc.com | sh
+curl -fsSL https://www.rediacc.com/install.sh | bash
 rdc config init production --ssh-key ~/.ssh/id_ed25519
 rdc config add-machine prod-1 --ip 203.0.113.50 --user deploy
 rdc config setup-machine prod-1

@@ -4,7 +4,7 @@ description: Führen Sie einen containerisierten Dienst auf Ihrem Server in fün
 category: Guides
 order: -1
 language: de
-sourceHash: b368b94e7064efe1
+sourceHash: "ff23efbe832be9bb"
 ---
 
 # Schnellstart
@@ -20,7 +20,7 @@ Stellen Sie eine verschlüsselte, isolierte Container-Umgebung auf Ihrem eigenen
 ## 1. CLI installieren
 
 ```bash
-curl -fsSL https://get.rediacc.com | sh
+curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 ## 2. Konfiguration erstellen

@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   CheckCircleOutlined,
   CloudServerOutlined,
@@ -6,6 +5,7 @@ import {
   FileImageOutlined,
 } from '@ant-design/icons';
 import { Tag, Tooltip, Typography } from 'antd';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { MachineAssignmentType } from '@/types';
 

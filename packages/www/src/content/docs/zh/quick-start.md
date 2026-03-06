@@ -4,7 +4,7 @@ description: 5分钟内在您的服务器上运行容器化服务。
 category: Guides
 order: -1
 language: zh
-sourceHash: b368b94e7064efe1
+sourceHash: "ff23efbe832be9bb"
 ---
 
 # 快速开始
@@ -20,7 +20,7 @@ sourceHash: b368b94e7064efe1
 ## 1. 安装CLI
 
 ```bash
-curl -fsSL https://get.rediacc.com | sh
+curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 ## 2. 创建配置

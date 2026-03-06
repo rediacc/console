@@ -4,6 +4,7 @@ import { createTranslator } from '../../i18n/utils';
 import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
 import InstallMethods from '../../components/InstallMethods';
+import LlmsInlineScript from '../../components/LlmsInlineScript.astro';
 import '../../styles/install-page.css';
 
 export const getStaticPaths = getLanguagePaths;
@@ -192,4 +193,5 @@ const { t } = createTranslator(lang);
       });
     });
   </script>
+  <LlmsInlineScript page="install" />
 </BaseLayout>

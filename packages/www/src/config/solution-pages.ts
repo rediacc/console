@@ -3,6 +3,7 @@
  * Separate from the existing solutions.ts — both systems coexist.
  */
 
+import type { ImageMetadata } from 'astro';
 // Problem section illustrations
 import illustrationAiPentesting from '../assets/images/illustrations/ai-pentesting.svg';
 import illustrationAuditTrail from '../assets/images/illustrations/audit-trail.svg';
@@ -23,7 +24,6 @@ import illustrationRetentionCompliance from '../assets/images/illustrations/rete
 import illustrationSafeOsTesting from '../assets/images/illustrations/safe-os-testing.svg';
 import illustrationVendorLockIn from '../assets/images/illustrations/vendor-lock-in.svg';
 import illustrationVulnerabilityManagement from '../assets/images/illustrations/vulnerability-management.svg';
-import type { ImageMetadata } from 'astro';
 
 export type SectionType =
   | 'hero'

@@ -1,7 +1,7 @@
-import React from 'react';
 import { Alert, Flex, Table } from 'antd';
-import type { ImportStatus, WizardTranslator } from './types';
 import type { ColumnsType } from 'antd/es/table';
+import React from 'react';
+import type { ImportStatus, WizardTranslator } from './types';
 
 interface ConnectionTestProps {
   t: WizardTranslator;

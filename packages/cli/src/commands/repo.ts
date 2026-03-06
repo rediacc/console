@@ -1,11 +1,11 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { Command } from 'commander';
-import { registerExtendedRepoCommands } from './repo-extended.js';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
-import { handleError } from '../utils/errors.js';
+import { getOutputFormat, handleError } from '../utils/errors.js';
+import { registerExtendedRepoCommands } from './repo-extended.js';
 
 function generateCredential(): string {
   return randomBytes(24).toString('base64');
@@ -152,10 +152,11 @@ ${t('help.examples')}
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .option('--dry-run', t('options.dryRun'))
     .action(
       async (
         name: string,
-        options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }
+        options: { machine: string; debug?: boolean; skipRouterRestart?: boolean; dryRun?: boolean }
       ) => {
         try {
           // Validate exists
@@ -165,6 +166,19 @@ ${t('help.examples')}
           }
 
           await configService.ensureRepositoryNetworkId(name);
+
+          if (options.dryRun) {
+            outputService.print(
+              {
+                dryRun: true,
+                repository: name,
+                machine: options.machine,
+                guid: repoConfig.repositoryGuid,
+              },
+              getOutputFormat()
+            );
+            return;
+          }
 
           outputService.info(
             t('commands.repo.delete.starting', { repository: name, machine: options.machine })
@@ -274,6 +288,7 @@ ${t('help.examples')}
     .option('--grand <name>', t('commands.repo.up.grandOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .option('--dry-run', t('options.dryRun'))
     .action(
       async (
         name: string,
@@ -284,6 +299,7 @@ ${t('help.examples')}
           grand?: string;
           debug?: boolean;
           skipRouterRestart?: boolean;
+          dryRun?: boolean;
         }
       ) => {
         try {
@@ -295,6 +311,21 @@ ${t('help.examples')}
           if (options.grand) {
             const grandRepo = await configService.getRepository(options.grand);
             params.grand = grandRepo?.repositoryGuid ?? options.grand;
+          }
+
+          if (options.dryRun) {
+            const repo = await configService.getRepository(name);
+            outputService.print(
+              {
+                dryRun: true,
+                repository: name,
+                machine: options.machine,
+                guid: repo?.repositoryGuid,
+                params,
+              },
+              getOutputFormat()
+            );
+            return;
           }
 
           await executeRepoFunction('repository_up', name, options.machine, params, options, {
@@ -375,6 +406,7 @@ ${t('help.examples')}
     .option('--grand <name>', t('commands.repo.down.grandOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .option('--dry-run', t('options.dryRun'))
     .action(
       async (
         name: string,
@@ -384,6 +416,7 @@ ${t('help.examples')}
           grand?: string;
           debug?: boolean;
           skipRouterRestart?: boolean;
+          dryRun?: boolean;
         }
       ) => {
         try {
@@ -394,6 +427,21 @@ ${t('help.examples')}
           if (options.grand) {
             const grandRepo = await configService.getRepository(options.grand);
             params.grand = grandRepo?.repositoryGuid ?? options.grand;
+          }
+
+          if (options.dryRun) {
+            const repo = await configService.getRepository(name);
+            outputService.print(
+              {
+                dryRun: true,
+                repository: name,
+                machine: options.machine,
+                guid: repo?.repositoryGuid,
+                params,
+              },
+              getOutputFormat()
+            );
+            return;
           }
 
           await executeRepoFunction('repository_down', name, options.machine, params, options, {

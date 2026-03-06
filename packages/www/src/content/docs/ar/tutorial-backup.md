@@ -1,54 +1,58 @@
 ---
 title: "النسخ الاحتياطي والشبكات"
-description: "شاهد وتابع أثناء تكوين جداول النسخ الاحتياطي وموفري التخزين والبنية التحتية للشبكة."
+description: "تكوين جداول النسخ الاحتياطي التلقائي، وإدارة موفري التخزين، وإعداد شبكات البنية التحتية، وتسجيل منافذ الخدمات."
 category: "Tutorials"
 order: 6
 language: ar
-sourceHash: "d611f5597b819085"
+sourceHash: "e756fef6749b54c5"
 ---
 
-# درس تعليمي: النسخ الاحتياطي والشبكات
+# كيفية تكوين النسخ الاحتياطي والشبكات مع Rediacc
 
-This tutorial covers backup scheduling, storage configuration, and infrastructure networking setup: the commands you use to protect data and expose services.
+تحمي النسخ الاحتياطية التلقائية مستودعاتك، وتكشف شبكات البنية التحتية خدماتك للعالم الخارجي. في هذا الدرس، ستقوم بتكوين جداول النسخ الاحتياطي مع موفري التخزين، وإعداد الشبكات العامة مع شهادات TLS، وتسجيل منافذ الخدمات، والتحقق من التكوين. عند الانتهاء، سيكون جهازك جاهزاً لحركة المرور الإنتاجية.
 
 ## المتطلبات الأساسية
 
-- The `rdc` CLI installed with a config initialized
-- A provisioned machine (see [Tutorial: Machine Setup](/ar/docs/tutorial-setup))
+- تثبيت `rdc` CLI مع تهيئة التكوين
+- جهاز مُعدّ مسبقاً (راجع [درس: إعداد الجهاز](/ar/docs/tutorial-setup))
 
 ## التسجيل التفاعلي
 
 ![Tutorial: Backup & Networking](/assets/tutorials/backup-tutorial.cast)
 
-## ما ستراه في هذا الدرس
-
-The recording above walks through each step below. Use the playback bar to navigate between commands.
-
 ### الخطوة 1: عرض التخزين الحالي
+
+موفرو التخزين (S3، B2، Google Drive، إلخ) يعملون كوجهات للنسخ الاحتياطي. تحقق من الموفرين المُكوّنين.
 
 ```bash
 rdc config storages
 ```
 
-Lists all configured storage providers (S3, B2, Google Drive, etc.) imported from rclone configs. Storages are used as backup destinations.
+يعرض جميع موفري التخزين المُكوّنين المستوردين من إعدادات rclone. إذا كانت القائمة فارغة، أضف موفر تخزين أولاً — راجع [النسخ الاحتياطي والاستعادة](/ar/docs/backup-restore).
 
 ### الخطوة 2: تكوين جدول النسخ الاحتياطي
+
+إعداد نسخ احتياطية تلقائية تعمل وفق جدول cron.
 
 ```bash
 rdc backup schedule set --destination my-s3 --cron "0 2 * * *" --enable
 ```
 
-Sets an automated backup schedule: push all repositories to the `my-s3` storage every day at 2 AM. The schedule is stored in your config and can be deployed to machines as a systemd timer.
+يقوم هذا بجدولة نسخ احتياطية يومية في الساعة 2 صباحاً، ودفع جميع المستودعات إلى تخزين `my-s3`. يُحفظ الجدول في تكوينك ويمكن نشره على الأجهزة كمؤقت systemd.
 
 ### الخطوة 3: عرض جدول النسخ الاحتياطي
+
+تحقق من تطبيق الجدول.
 
 ```bash
 rdc backup schedule show
 ```
 
-Shows the current backup schedule configuration: destination, cron expression, and enabled status.
+يعرض تكوين النسخ الاحتياطي الحالي: الوجهة، وتعبير cron، وحالة التمكين.
 
 ### الخطوة 4: تكوين البنية التحتية
+
+للخدمات العامة، يحتاج الجهاز إلى عنوان IP الخارجي والنطاق الأساسي وبريد إلكتروني للشهادات من Let's Encrypt TLS.
 
 ```bash
 rdc config set-infra server-1 \
@@ -57,9 +61,11 @@ rdc config set-infra server-1 \
   --cert-email admin@example.com
 ```
 
-Configures the machine's public networking: its external IP, base domain for auto-routes, and email for Let's Encrypt TLS certificates.
+يقوم Rediacc بإنشاء تكوين وكيل Traefik العكسي من هذه الإعدادات.
 
 ### الخطوة 5: إضافة منافذ TCP/UDP
+
+إذا كانت خدماتك تحتاج منافذ غير HTTP (مثل SMTP، DNS)، قم بتسجيلها كنقاط دخول Traefik.
 
 ```bash
 rdc config set-infra server-1 \
@@ -67,27 +73,44 @@ rdc config set-infra server-1 \
   --udp-ports 53
 ```
 
-Registers additional TCP/UDP ports for the reverse proxy. These create Traefik entrypoints (`tcp-25`, `udp-53`, etc.) that can be referenced in Docker labels.
+يقوم هذا بإنشاء نقاط دخول Traefik (`tcp-25`، `udp-53`، إلخ) يمكن لخدمات Docker الإشارة إليها عبر التسميات.
 
 ### الخطوة 6: عرض إعدادات البنية التحتية
+
+تحقق من تكوين البنية التحتية الكامل.
 
 ```bash
 rdc config show-infra server-1
 ```
 
-Displays the full infrastructure configuration for a machine: public IPs, domain, email, and registered ports.
+يعرض عناوين IP العامة والنطاق والبريد الإلكتروني للشهادات وجميع المنافذ المسجلة.
 
 ### الخطوة 7: تعطيل جدول النسخ الاحتياطي
+
+لإيقاف النسخ الاحتياطية التلقائية دون إزالة التكوين:
 
 ```bash
 rdc backup schedule set --disable
 rdc backup schedule show
 ```
 
-Disables the automated backup schedule. The configuration is preserved so it can be re-enabled later.
+يتم الاحتفاظ بالتكوين ويمكن إعادة تمكينه لاحقاً باستخدام `--enable`.
+
+## استكشاف الأخطاء وإصلاحها
+
+**"Invalid cron expression"**
+صيغة cron هي `minute hour day month weekday`. الجداول الشائعة: `0 2 * * *` (يومياً 2 صباحاً)، `0 */6 * * *` (كل 6 ساعات)، `0 0 * * 0` (أسبوعياً منتصف ليل الأحد).
+
+**"Storage destination not found"**
+يجب أن يتطابق اسم الوجهة مع موفر تخزين مُكوّن. شغّل `rdc config storages` لرؤية الأسماء المتاحة. أضف موفرين جدد عبر تكوين rclone.
+
+**"Infrastructure config incomplete" عند النشر**
+جميع الحقول الثلاثة مطلوبة: `--public-ipv4` و `--base-domain` و `--cert-email`. شغّل `rdc config show-infra <machine>` للتحقق من الحقول المفقودة.
 
 ## الخطوات التالية
 
-- [Backup & Restore](/ar/docs/backup-restore) — full reference for push, pull, list, and sync commands
-- [Networking](/ar/docs/networking) — Docker labels, TLS certificates, DNS, and TCP/UDP forwarding
-- [Tutorial: Machine Setup](/ar/docs/tutorial-setup) — initial configuration and provisioning
+لقد قمت بتكوين النسخ الاحتياطية التلقائية، وإعداد شبكات البنية التحتية، وتسجيل منافذ الخدمات، والتحقق من التكوين. لإدارة النسخ الاحتياطية:
+
+- [النسخ الاحتياطي والاستعادة](/ar/docs/backup-restore) — المرجع الكامل لأوامر push وpull وlist وsync
+- [الشبكات](/ar/docs/networking) — تسميات Docker وشهادات TLS وDNS وتوجيه TCP/UDP
+- [درس: إعداد الجهاز](/ar/docs/tutorial-setup) — التكوين الأولي والتوفير

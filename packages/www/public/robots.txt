@@ -23,3 +23,4 @@ Allow: /favicon.svg
 # LLM documentation
 Allow: /llms.txt
 Allow: /llms-full.txt
+Allow: /docs-markdown.zip

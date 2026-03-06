@@ -91,8 +91,13 @@
       "ceo": {
         "tagline": "Predictable costs. Zero vendor lock-in.",
         "cta": "See Pricing"
+      },
+      "ai-agent": {
+        "tagline": "CLI-first. JSON output. Agent-native.",
+        "cta": "See the Docs"
       }
-    }
+    },
+    "forAiAgents": "For AI Agents"
   },
   "footer": {
     "tagline": "Infrastructure Automation Platform for AI-Driven Operations",
@@ -267,6 +272,22 @@
     "title": "Pricing You Can Defend in a Postmortem",
     "subtitle": "Free to start. Scale when you're ready.",
     "compareAll": "Compare all plans and features"
+  },
+  "team": {
+    "founder": {
+      "story": {
+        "headline": "Why I Built Rediacc",
+        "description": "I spent over a decade managing servers. I watched backups fail during real incidents. Rediacc exists so yours won't."
+      },
+      "guarantee": "If Rediacc doesn't work for you, email me and I'll help you migrate back.",
+      "contact": "Questions? Email me directly",
+      "quote": "I built Rediacc because infrastructure shouldn't be this fragile."
+    },
+    "video": {
+      "playLabel": "Watch video",
+      "ccLabel": "Captions",
+      "personaHeadline": "A message for you"
+    }
   },
   "announcement": {
     "enabled": true,
@@ -1691,113 +1712,284 @@
     "termsOfService": {
       "meta": {
         "title": "Terms of Service — Rediacc",
-        "description": "Terms governing your use of the Rediacc website and infrastructure automation platform. Covers accounts, subscriptions, intellectual property, and liability.",
-        "keywords": "terms of service, terms and conditions, user agreement, Rediacc, SaaS terms"
+        "description": "Terms governing your use of the Rediacc infrastructure automation platform, CLI, Bridge, and related services. Covers software licenses, subscriptions, data ownership, warranties, and liability.",
+        "keywords": "terms of service, customer agreement, software license, Rediacc, infrastructure platform, SaaS terms, CLI license"
       },
       "hero": {
         "title": "Terms of Service",
-        "effectiveDate": "Effective Date: February 1, 2026"
+        "effectiveDate": "Effective Date: March 15, 2026"
       },
       "toc": {
         "title": "Table of Contents"
       },
       "sections": {
+        "definitions": {
+          "id": "definitions",
+          "title": "1. Definitions",
+          "content": ["The following definitions apply throughout these Terms of Service:"],
+          "items": [
+            "<strong>\"Account\"</strong> means the user account you create to access the Platform and manage your Subscription.",
+            "<strong>\"Authorized User\"</strong> means any individual granted access to the Services under your Account, including team members, employees, and contractors acting on your behalf.",
+            "<strong>\"Bridge\" (Renet)</strong> means the Rediacc server-side agent that runs on your Machines to manage encrypted storage, container orchestration, and infrastructure operations.",
+            "<strong>\"CLI\"</strong> means the Rediacc command-line interface (<code>rdc</code>) installed on your workstation.",
+            "<strong>\"Configuration\"</strong> means the local configuration files stored on your workstation that contain Machine connection details, encryption credentials, and other operational settings.",
+            "<strong>\"Customer Data\"</strong> means any data, content, files, containers, configurations, and applications you deploy, store, or process on your Machines using the Services. Customer Data does not include Account information or Telemetry Data.",
+            "<strong>\"Machine\"</strong> means a server or virtual machine that you own or control on which the Bridge is installed.",
+            "<strong>\"On-Premise Software\"</strong> means the software components installed on your infrastructure, including the CLI, the Bridge, and the Desktop Application.",
+            "<strong>\"Platform\"</strong> means the Rediacc web application, account portal, and any cloud-hosted services provided by Rediacc.",
+            "<strong>\"Repository\"</strong> means an isolated application deployment managed by the Bridge, consisting of an encrypted disk image, a dedicated Docker daemon, and associated containers.",
+            "<strong>\"Services\"</strong> means, collectively, the On-Premise Software, the Platform, documentation, and any related professional services provided by Rediacc.",
+            "<strong>\"Subscription\"</strong> means the plan tier you have selected (Community, Professional, Business, or Enterprise), which determines your access to features and resource limits.",
+            "<strong>\"Telemetry Data\"</strong> means anonymized usage data collected by the Services as described in our <a href=\"telemetry-policy\">Telemetry Policy</a>."
+          ]
+        },
         "acceptance": {
           "id": "acceptance",
-          "title": "1. Acceptance of Terms",
+          "title": "2. Acceptance of Terms",
           "content": [
-            "By accessing or using the Rediacc website (<a href=\"https://www.rediacc.com\">www.rediacc.com</a>) or the Rediacc infrastructure automation platform (collectively, the \"Services\"), you agree to be bound by these Terms of Service (\"Terms\"). If you are using the Services on behalf of an organization, you represent that you have the authority to bind that organization to these Terms.",
-            "If you do not agree to these Terms, you must not access or use the Services."
+            "By accessing or using any part of the Services — including downloading the CLI, installing the Bridge on a Machine, creating an Account, or using the Platform — you agree to be bound by these Terms of Service (\"Terms\"). If you are using the Services on behalf of an organization, you represent and warrant that you have the authority to bind that organization to these Terms, and references to \"you\" or \"Customer\" include that organization.",
+            "If you do not agree to these Terms, you must not access or use the Services. These Terms constitute a legally binding agreement between you and Rediacc OÜ (registry code 17363830), a company registered in Estonia with its office at Tartu mnt 67/1-13b, 10115 Tallinn, Estonia (\"Rediacc\", \"we\", \"us\", or \"our\")."
           ]
         },
         "serviceDescription": {
           "id": "service-description",
-          "title": "2. Description of Services",
+          "title": "3. Description of Services",
           "content": [
-            "Rediacc provides an infrastructure automation platform designed for AI-driven operations, including zero-copy database cloning, disaster recovery, development environment provisioning, and related professional services. The specific features available to you depend on your subscription tier."
+            "Rediacc provides an infrastructure automation platform for managing self-hosted server environments. The Services consist of:"
+          ],
+          "items": [
+            "<strong>On-Premise Software:</strong> The CLI (<code>rdc</code>), the Bridge (Renet), and the Desktop Application — installed on your workstations and Machines to orchestrate encrypted, isolated container deployments",
+            "<strong>Platform:</strong> The web application and account portal for subscription management, team collaboration, and (where available) cloud-based infrastructure management",
+            "<strong>Professional Services:</strong> Optional consulting, migration assistance, and implementation support, subject to separate service agreements"
+          ],
+          "content2": [
+            "The specific features, resource limits, and capabilities available to you depend on your Subscription tier. Feature descriptions on our website and documentation describe the intended functionality of each tier but do not constitute binding performance guarantees."
           ]
         },
         "accounts": {
           "id": "accounts",
-          "title": "3. Accounts and Registration",
+          "title": "4. Accounts and Registration",
           "content": [
-            "To access certain features of the Services, you must create an account. You agree to provide accurate, current, and complete information during registration and to update your information to keep it accurate. You are responsible for safeguarding your account credentials and for all activities that occur under your account.",
-            "You must notify us immediately at <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> if you suspect unauthorized access to your account."
+            "To access the Platform and manage Subscriptions, you must create an Account. You agree to provide accurate, current, and complete information during registration and to keep it updated. You are solely responsible for:"
+          ],
+          "items": [
+            "Safeguarding your Account credentials, API tokens, and access keys",
+            "All activities that occur under your Account or through your Authorized Users",
+            "Ensuring that Authorized Users comply with these Terms",
+            "Maintaining the confidentiality of your Configuration files, including SSH private keys and encryption credentials"
+          ],
+          "content2": [
+            "You must notify us immediately at <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> if you suspect unauthorized access to your Account. We reserve the right to suspend or delete Accounts that remain inactive for more than twelve (12) months or that we reasonably believe are being used in violation of these Terms."
           ]
         },
         "subscriptions": {
           "id": "subscriptions",
-          "title": "4. Subscriptions and Payment",
+          "title": "5. Subscriptions, Billing, and Payment",
+          "content": ["Rediacc offers multiple Subscription tiers:"],
+          "items": [
+            "<strong>Community</strong> (free) — Limited to 2 Machine activations, core features, community support",
+            "<strong>Professional</strong> — Up to 5 Machine activations, audit logging, priority support, custom branding",
+            "<strong>Business</strong> — Up to 20 Machine activations, distributed storage, advanced analytics, dedicated success manager",
+            "<strong>Enterprise</strong> — Up to 50 Machine activations, dedicated infrastructure, custom integrations, 24/7 support"
+          ],
+          "subsections": {
+            "billing": {
+              "title": "5.1 Billing",
+              "content": [
+                "Paid Subscriptions are billed monthly or annually in advance. Annual billing is charged at a rate equivalent to ten (10) months of the monthly price. All fees are stated in US dollars. Payment is processed by our third-party payment processor (Stripe); we do not store full payment card details.",
+                "We reserve the right to change our pricing with thirty (30) days' notice. Price changes will not affect your current billing cycle. If you do not agree to a price change, you may cancel your Subscription before the next billing cycle."
+              ]
+            },
+            "taxes": {
+              "title": "5.2 Taxes",
+              "content": [
+                "All fees are exclusive of applicable taxes. You are responsible for all taxes, duties, and levies imposed by taxing authorities on your Subscription, excluding taxes based on Rediacc's net income. Where required by law, Rediacc will collect and remit applicable taxes (including EU VAT) and these will be itemized on your invoice."
+              ]
+            },
+            "renewalCancellation": {
+              "title": "5.3 Renewal and Cancellation",
+              "content": [
+                "Paid Subscriptions renew automatically at the end of each billing cycle at the then-current price unless you cancel before the renewal date. <strong>By subscribing to a paid tier, you authorize recurring charges to your payment method until you cancel.</strong> You may cancel at any time through the account portal or by contacting us at <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>. Upon cancellation, you retain access to paid features until the end of your current billing period. No prorated refunds are issued for partial billing periods except as described in our <a href=\"refund-policy\">Refund Policy</a>. We will send a renewal reminder to your Account email before each annual renewal."
+              ]
+            },
+            "gracePeriod": {
+              "title": "5.4 License Validation and Grace Period",
+              "content": [
+                "The On-Premise Software periodically validates your Subscription status. If validation fails (due to network issues, expired Subscription, or non-payment), a three (3) day grace period applies. After the grace period, the On-Premise Software will operate at the Community tier feature level until Subscription status is restored."
+              ]
+            }
+          }
+        },
+        "onPremiseLicense": {
+          "id": "on-premise-license",
+          "title": "6. On-Premise Software License",
           "content": [
-            "Rediacc offers multiple subscription tiers, including a free tier and paid tiers. Paid subscriptions are billed monthly or annually in advance. All fees are stated in US dollars and are non-refundable except as described in our <a href=\"refund-policy\">Refund Policy</a>.",
-            "We reserve the right to change our pricing with 30 days' notice. Price changes will not affect your current billing cycle. If you do not agree to a price change, you may cancel your subscription before the next billing cycle."
+            "Subject to these Terms and your active Subscription, Rediacc grants you a limited, non-exclusive, non-sublicensable, non-transferable, revocable license to install and use the On-Premise Software (CLI, Bridge, and Desktop Application) solely for your internal business purposes during your Subscription term."
+          ],
+          "subsections": {
+            "installation": {
+              "title": "6.1 Installation and Machine Access",
+              "content": [
+                "The Bridge operates with elevated (root) privileges on your Machines to manage encrypted volumes, container runtimes, and system services. You are solely responsible for the security of your Machines, including SSH access, firewall configuration, operating system updates, and physical security. Rediacc does not remotely access your Machines unless explicitly requested by you for support purposes."
+              ]
+            },
+            "restrictions": {
+              "title": "6.2 Restrictions",
+              "content": ["You shall not:"],
+              "items": [
+                "Reverse engineer, decompile, disassemble, or otherwise attempt to derive the source code of the Bridge binary or any non-open-source component of the On-Premise Software",
+                "Redistribute, sublicense, rent, lease, or lend the On-Premise Software to any third party",
+                "Remove, alter, or obscure any proprietary notices, labels, or marks on the On-Premise Software",
+                "Use the On-Premise Software to build a competing product or service",
+                "Circumvent or disable any license validation, telemetry, or security mechanisms in the On-Premise Software",
+                "Exceed the Machine activation limits of your Subscription tier"
+              ]
+            },
+            "encryptionCredentials": {
+              "title": "6.3 Encryption and Credentials",
+              "content": [
+                "The On-Premise Software uses LUKS full-disk encryption for Repository data. Encryption credentials are generated locally and stored exclusively in your Configuration files on your workstation. <strong>Rediacc does not have access to your encryption credentials and cannot recover your data if you lose them.</strong> You are solely responsible for backing up your Configuration files and encryption credentials."
+              ]
+            }
+          }
+        },
+        "platformLicense": {
+          "id": "platform-license",
+          "title": "7. Platform License",
+          "content": [
+            "Subject to these Terms and your active Subscription, Rediacc grants you a limited, non-exclusive, non-transferable license to access and use the Platform during your Subscription term. You may grant access to Authorized Users within your organization.",
+            "We reserve the right to modify, update, or discontinue features of the Platform at any time. Where practical, we will provide advance notice of material changes. Modifications will not materially reduce the core functionality of your current Subscription tier during an active paid billing period.",
+            "We strive to maintain high availability of the Platform but do not guarantee uninterrupted access. The Platform may be temporarily unavailable due to maintenance, updates, or circumstances beyond our control."
+          ]
+        },
+        "experimentalFeatures": {
+          "id": "experimental-features",
+          "title": "8. Experimental Features",
+          "content": [
+            "Certain features of the Services may be designated as \"experimental\", \"beta\", or \"preview\" (collectively, \"Experimental Features\"). Experimental Features are provided for evaluation purposes and may be incomplete, unstable, or subject to change without notice.",
+            "Experimental Features are provided \"AS IS\" without warranty of any kind. We may modify or discontinue Experimental Features at any time without prior notice, and we are not liable for any loss or damage arising from your use of or reliance on Experimental Features."
+          ]
+        },
+        "useRestrictions": {
+          "id": "use-restrictions",
+          "title": "9. Use Restrictions",
+          "content": ["You agree that you and your Authorized Users will not use the Services to:"],
+          "items": [
+            "Deploy, host, or distribute malware, viruses, ransomware, or any other harmful code",
+            "Operate cryptocurrency mining, peer-to-peer file sharing networks, or open proxy services",
+            "Infringe or misappropriate any third-party intellectual property, privacy, or other rights",
+            "Send unsolicited commercial communications (spam) or conduct phishing attacks",
+            "Perform unauthorized vulnerability scanning, penetration testing, or load testing against Rediacc infrastructure",
+            "Impersonate any person or entity, or misrepresent your affiliation",
+            "Violate any applicable law, regulation, or third-party rights",
+            "Resell, redistribute, or make the Services available to third parties as part of a managed service offering without our prior written consent"
+          ],
+          "content2": [
+            "You are solely responsible for the content and applications you deploy on your Machines using the Services. We reserve the right to suspend or terminate access to the Platform if we reasonably believe a violation of these restrictions has occurred."
           ]
         },
         "telemetry": {
           "id": "telemetry",
-          "title": "6. Telemetry and Data Collection",
+          "title": "10. Telemetry and Data Collection",
           "content": [
-            "Our software products collect anonymized usage telemetry to improve product quality and performance. By using the Services, you acknowledge that telemetry collection occurs as described in our <a href=\"telemetry-policy\">Telemetry Policy</a>.",
-            "Telemetry is designed to be privacy-preserving: personal identifiers are anonymized before transmission, and you may opt out of telemetry at any time. The <a href=\"telemetry-policy\">Telemetry Policy</a> describes the specific data collected by each product and the mechanisms for disabling collection."
-          ]
-        },
-        "intellectualProperty": {
-          "id": "intellectual-property",
-          "title": "7. Intellectual Property",
-          "content": [
-            "The Services, including all software, documentation, designs, text, graphics, and other content provided by Rediacc, are owned by Rediacc and protected by intellectual property laws. Your subscription grants you a limited, non-exclusive, non-transferable license to access and use the Services during your subscription term.",
-            "You retain all rights to your data and content that you upload, store, or process through the Services. By using the Services, you grant Rediacc a limited license to host, store, and process your data solely to provide the Services to you."
+            "The On-Premise Software and Platform collect anonymized Telemetry Data to improve product quality, diagnose errors, and understand usage patterns. Telemetry is privacy-preserving by design: personal identifiers are anonymized before transmission, and all Telemetry Data is processed on infrastructure within the European Union.",
+            "Telemetry is enabled by default in the CLI and Web Application. You may disable telemetry before any data is transmitted using the product-specific mechanisms described in our <a href=\"telemetry-policy\">Telemetry Policy</a>, which details exactly what data each product collects and how to disable collection. Telemetry is automatically disabled in CI environments and in the Desktop Application.",
+            "In jurisdictions that require explicit consent for telemetry collection on terminal equipment (including under the ePrivacy Directive as implemented in your jurisdiction), you should configure your telemetry preferences before first use of the On-Premise Software. Your continued use of the Services with telemetry enabled constitutes your consent to the collection described in the <a href=\"telemetry-policy\">Telemetry Policy</a>."
           ]
         },
         "dataOwnership": {
           "id": "data-ownership",
-          "title": "8. Your Data",
+          "title": "11. Your Data and Encryption",
           "content": [
-            "You own your data. We do not access, use, or share your data except as necessary to provide the Services, comply with the law, or as described in our <a href=\"privacy-policy\">Privacy Policy</a>. Upon termination of your account, you may export your data within 30 days. After 30 days, we will delete your data from our active systems."
+            "<strong>You own your Customer Data.</strong> Because the On-Premise Software stores Customer Data on Machines you control, encrypted with credentials only you possess, Rediacc does not have access to your Customer Data at rest. We do not access, use, or share your Customer Data except as strictly necessary to provide the Services (for example, processing Platform API requests you initiate).",
+            "Account information (email, organization name, billing details) is processed in accordance with our <a href=\"privacy-policy\">Privacy Policy</a>. Upon termination of your Account, you may export your Account data within thirty (30) days. After thirty (30) days, we will delete your Account data from our active systems. Customer Data on your Machines is unaffected by Account termination — it remains on your infrastructure under your control.",
+            "In accordance with the EU Data Act (Regulation 2023/2854), if you use the Platform's cloud features, you have the right to switch providers or migrate to a self-hosted setup. Your Customer Data is stored on your own Machines and is always under your control. Any Account data and configuration stored on the Platform can be exported in standard, machine-readable formats. We will provide reasonable assistance during any transition period of up to thirty (30) days following your request."
           ]
         },
-        "serviceAvailability": {
-          "id": "service-availability",
-          "title": "9. Service Availability",
+        "intellectualProperty": {
+          "id": "intellectual-property",
+          "title": "12. Intellectual Property",
           "content": [
-            "We strive to maintain high availability of the Services but do not guarantee uninterrupted access. The Services may be temporarily unavailable due to maintenance, updates, or circumstances beyond our control. We will provide reasonable advance notice of planned maintenance."
+            "The Services — including the On-Premise Software, Platform, documentation, APIs, designs, and all content provided by Rediacc — are owned by Rediacc OÜ and protected by intellectual property laws of Estonia, the European Union, and applicable international treaties. Except for the licenses expressly granted in these Terms, no other rights or licenses are implied or granted.",
+            "You retain all rights, title, and interest in your Customer Data and any content or applications you create using the Services. By using the Platform, you grant Rediacc a limited, worldwide, royalty-free license to host, process, and display your Account information solely to provide the Services to you. This license terminates when you delete your Account.",
+            "We may collect and use anonymized, aggregated data derived from your use of the Services (including Telemetry Data) for product improvement, analytics, and benchmarking purposes. Such aggregated data does not identify you or any individual user."
+          ]
+        },
+        "thirdPartyComponents": {
+          "id": "third-party-components",
+          "title": "13. Third-Party Components",
+          "content": [
+            "The On-Premise Software may install, configure, or interact with third-party open-source software on your Machines, including Docker, container runtimes, and storage synchronization tools. These third-party components are governed by their own respective licenses and are provided \"AS IS\" without warranty from Rediacc.",
+            "Rediacc does not assume liability for the functionality, security, or availability of third-party components. You are responsible for reviewing and complying with the licenses of any third-party software deployed on your infrastructure."
+          ]
+        },
+        "warranties": {
+          "id": "warranties",
+          "title": "14. Disclaimer of Warranties",
+          "content": [
+            "TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE SERVICES ARE PROVIDED \"AS IS\" AND \"AS AVAILABLE.\" REDIACC DISCLAIMS ALL WARRANTIES, WHETHER EXPRESS, IMPLIED, OR STATUTORY, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND ANY WARRANTIES ARISING FROM COURSE OF DEALING OR USAGE OF TRADE.",
+            "WITHOUT LIMITING THE FOREGOING, REDIACC DOES NOT WARRANT THAT: (A) THE SERVICES WILL MEET YOUR REQUIREMENTS OR EXPECTATIONS; (B) THE SERVICES WILL BE UNINTERRUPTED, TIMELY, SECURE, OR ERROR-FREE; (C) THE RESULTS OBTAINED FROM THE SERVICES WILL BE ACCURATE OR RELIABLE; OR (D) ANY DEFECTS IN THE SERVICES WILL BE CORRECTED.",
+            "NOTHING IN THESE TERMS EXCLUDES OR LIMITS LIABILITY FOR: (A) DEATH OR PERSONAL INJURY CAUSED BY NEGLIGENCE; (B) FRAUD OR FRAUDULENT MISREPRESENTATION; OR (C) ANY LIABILITY THAT CANNOT BE EXCLUDED OR LIMITED UNDER THE ESTONIAN LAW OF OBLIGATIONS ACT (VÕLAÕIGUSSEADUS), INCLUDING LIABILITY FOR INTENTIONAL MISCONDUCT OR GROSS NEGLIGENCE.",
+            "You acknowledge that the On-Premise Software operates with elevated privileges on your Machines and that you assume all risks associated with its installation and operation on your infrastructure. Feature descriptions, performance metrics, and recovery time estimates in our documentation and marketing materials describe intended functionality and are not binding performance guarantees."
           ]
         },
         "limitationOfLiability": {
           "id": "limitation-of-liability",
-          "title": "10. Limitation of Liability",
+          "title": "15. Limitation of Liability",
           "content": [
-            "To the maximum extent permitted by law, Rediacc shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits, data, use, or goodwill, arising out of or in connection with your use of the Services.",
-            "Our total aggregate liability for all claims arising out of or related to these Terms or the Services shall not exceed the total amount you paid to Rediacc during the twelve (12) months preceding the claim."
+            "TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL REDIACC, ITS AFFILIATES, OFFICERS, DIRECTORS, EMPLOYEES, OR AGENTS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS, REVENUE, DATA, USE, OR GOODWILL, ARISING OUT OF OR IN CONNECTION WITH THESE TERMS OR YOUR USE OF THE SERVICES, REGARDLESS OF THE THEORY OF LIABILITY AND WHETHER OR NOT REDIACC HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.",
+            "REDIACC'S TOTAL AGGREGATE LIABILITY FOR ALL CLAIMS ARISING OUT OF OR RELATED TO THESE TERMS OR THE SERVICES SHALL NOT EXCEED THE GREATER OF: (A) THE TOTAL AMOUNT YOU PAID TO REDIACC DURING THE TWELVE (12) MONTHS PRECEDING THE EVENT GIVING RISE TO THE CLAIM; OR (B) ONE HUNDRED US DOLLARS ($100).",
+            "THE LIMITATIONS AND EXCLUSIONS IN SECTIONS 14 AND 15 DO NOT APPLY TO: (A) LIABILITY FOR DEATH OR PERSONAL INJURY CAUSED BY NEGLIGENCE; (B) LIABILITY FOR FRAUD OR FRAUDULENT MISREPRESENTATION; (C) LIABILITY FOR INTENTIONAL MISCONDUCT (TAHTLIK RIKKUMINE) OR GROSS NEGLIGENCE (RASKE HOOLETUS) UNDER THE ESTONIAN LAW OF OBLIGATIONS ACT; OR (D) ANY OTHER LIABILITY THAT CANNOT BE EXCLUDED OR LIMITED UNDER APPLICABLE LAW."
           ]
         },
         "indemnification": {
           "id": "indemnification",
-          "title": "11. Indemnification",
-          "content": [
-            "You agree to indemnify, defend, and hold harmless Rediacc, its officers, directors, employees, and agents from any claims, damages, losses, or expenses (including reasonable attorneys' fees) arising from your use of the Services, your violation of these Terms, or your violation of any rights of a third party."
-          ]
+          "title": "16. Indemnification",
+          "subsections": {
+            "byCustomer": {
+              "title": "16.1 By You",
+              "content": [
+                "You agree to indemnify, defend, and hold harmless Rediacc and its officers, directors, employees, and agents from any third-party claims, damages, losses, or expenses (including reasonable attorneys' fees) arising from: (a) your use of the Services; (b) content or applications you deploy using the Services; (c) your violation of these Terms; or (d) your violation of any applicable law or third-party rights."
+              ]
+            },
+            "byRediacc": {
+              "title": "16.2 By Rediacc",
+              "content": [
+                "Rediacc will indemnify, defend, and hold you harmless from any third-party claim that the On-Premise Software or Platform, as provided by Rediacc, infringes a valid intellectual property right of a third party, provided that you: (a) promptly notify Rediacc of the claim; (b) grant Rediacc sole control of the defense and settlement; and (c) provide reasonable cooperation at Rediacc's expense.",
+                "If the Services become, or in Rediacc's opinion are likely to become, the subject of an infringement claim, Rediacc may at its option: (i) procure the right for you to continue using the Services; (ii) replace or modify the affected component to make it non-infringing; or (iii) if neither (i) nor (ii) is commercially practicable, terminate the affected Subscription and refund any prepaid, unused fees.",
+                "Rediacc has no obligation under this section for claims arising from: modifications you make to the Services, use of the Services in combination with third-party software not provided by Rediacc, or use of the Services in violation of these Terms."
+              ]
+            }
+          }
         },
         "termination": {
           "id": "termination",
-          "title": "12. Termination",
+          "title": "17. Termination",
           "content": [
-            "You may terminate your account at any time by contacting us. We may suspend or terminate your access to the Services if you violate these Terms, with or without notice depending on the severity of the violation.",
-            "Upon termination, your right to use the Services ceases immediately. Sections relating to intellectual property, limitation of liability, indemnification, and governing law survive termination."
+            "You may cancel your Subscription at any time through the account portal or by contacting us at <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>. We may suspend or terminate your access to the Services if you materially breach these Terms, subject to thirty (30) days' written notice and opportunity to cure, except where the breach poses an immediate security risk or involves illegal activity.",
+            "Upon termination:"
+          ],
+          "items": [
+            "Your license to use the On-Premise Software and Platform ceases at the end of your current billing period (or immediately in case of breach)",
+            "Customer Data on your Machines remains under your control — Rediacc has no ability to access or delete it",
+            "Account data will be retained for thirty (30) days to allow export, then deleted from our active systems",
+            "Sections 1 (Definitions), 11 (Your Data), 12 (Intellectual Property), 14 (Warranties), 15 (Liability), 16 (Indemnification), and 18 (Governing Law) survive termination"
           ]
         },
         "governingLaw": {
           "id": "governing-law",
-          "title": "13. Governing Law",
+          "title": "18. Governing Law and Disputes",
           "content": [
-            "These Terms are governed by and construed in accordance with the laws of the Republic of Estonia, without regard to conflict of law principles. Any disputes arising under these Terms shall be subject to the exclusive jurisdiction of the courts located in Estonia."
+            "These Terms are governed by and construed in accordance with the laws of the Republic of Estonia, without regard to conflict of law principles. Any disputes arising under or in connection with these Terms shall be submitted to the exclusive jurisdiction of the Harju County Court (Harju Maakohus) in Tallinn, Estonia.",
+            "Notwithstanding the foregoing, either party may seek injunctive or other equitable relief in any court of competent jurisdiction to prevent the actual or threatened infringement, misappropriation, or violation of intellectual property rights or confidentiality obligations."
           ]
         },
         "changes": {
           "id": "changes",
-          "title": "14. Changes to These Terms",
+          "title": "19. Changes to These Terms",
           "content": [
-            "We may update these Terms from time to time. We will notify you of material changes by posting the updated Terms on our website with a new effective date. Your continued use of the Services after the changes take effect constitutes acceptance of the revised Terms."
+            "We may update these Terms from time to time. We will notify you of material changes by posting the updated Terms on our website with a new effective date and, for changes that materially affect your rights, by email to the address associated with your Account at least thirty (30) days before they take effect.",
+            "Your continued use of the Services after the updated Terms take effect constitutes acceptance of the revised Terms. If you do not agree to the updated Terms, you must stop using the Services and cancel your Subscription before the changes take effect."
           ]
         }
       },
@@ -2960,7 +3152,7 @@
           "steps": [
             {
               "title": "Run",
-              "description": "Developer runs rdc clone production. No tickets. No approvals.",
+              "description": "Developer runs rdc snapshot create production. No tickets. No approvals.",
               "icon": "terminal"
             },
             {
@@ -3132,7 +3324,7 @@
           "description": "Start with the free Community edition. Clone up to 10 workloads at no cost. No credit card.",
           "primaryCta": "Start Free with Community",
           "tierBadge": "Free forever for up to 10 workloads",
-          "command": "rdc clone production --name my-first-clone"
+          "command": "rdc snapshot create production --snapshot-name my-first-clone"
         },
         "techStrip": {
           "label": "Clone any containerized workload",
@@ -4422,7 +4614,7 @@
           "description": "Start with the free Community edition. Git integration included.",
           "primaryCta": "Start Free",
           "tierBadge": "Free for up to 5 repositories · No credit card required",
-          "command": "rdc clone production --as ci-$CI_COMMIT_REF_SLUG --ttl 1h"
+          "command": "rdc snapshot create production --snapshot-name ci-build"
         },
         "techStrip": {
           "label": "Clone any containerized workload",
@@ -6060,7 +6252,7 @@
           "steps": [
             {
               "title": "Clone",
-              "description": "Run rdc clone production. An exact copy spins up in 60 seconds.",
+              "description": "Run rdc snapshot create production. An exact copy spins up in 60 seconds.",
               "icon": "terminal"
             },
             {
@@ -6234,7 +6426,7 @@
           "description": "Start with the free Community edition. Clone, test, and verify at no cost. No credit card.",
           "primaryCta": "Start Free with Community",
           "tierBadge": "Free forever for up to 10 workloads",
-          "command": "rdc clone production --name patch-test"
+          "command": "rdc snapshot create production --snapshot-name patch-test"
         },
         "techStrip": {
           "label": "Protect any containerized workload",
@@ -11170,7 +11362,7 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["rdc clone", "52s", "Done"]
+            "newSteps": ["rdc snapshot create", "52s", "Done"]
           }
         },
         "howItWorks": {
@@ -11179,7 +11371,7 @@
           "steps": [
             {
               "title": "Clone",
-              "description": "Run rdc clone production. Btrfs CoW creates an instant snapshot — app, database, config, everything.",
+              "description": "Run rdc snapshot create production. Btrfs CoW creates an instant snapshot — app, database, config, everything.",
               "icon": "terminal"
             },
             {
@@ -11313,7 +11505,7 @@
           "title": "Try it yourself",
           "description": "Install the CLI. Clone your first environment. No credit card. No sales call.",
           "primaryCta": "Get Started Free",
-          "command": "curl -fsSL https://get.rediacc.com | sh"
+          "command": "curl -fsSL https://www.rediacc.com/install.sh | bash"
         }
       },
       "forCtos": {
@@ -11817,6 +12009,276 @@
           "title": "See the pricing",
           "description": "One flat price per machine. No per-seat fees. No surprises. Start with the free Community edition.",
           "primaryCta": "See Pricing"
+        }
+      },
+      "forAiAgents": {
+        "meta": {
+          "title": "For AI Agents — CLI-Native Infrastructure Automation | Rediacc",
+          "description": "Rediacc is built for AI coding assistants. CLI-first operations, structured JSON output, SSH-based access, and full agent discovery via rdc agent commands.",
+          "keywords": "AI agents, Claude Code, Cursor, Cline, infrastructure automation, CLI, JSON output, self-hosted, agent-native, MCP"
+        },
+        "hero": {
+          "badge": "FOR AI AGENTS",
+          "title": "Infrastructure your AI agent already knows how to use.",
+          "subtitle": "CLI-first. SSH-based. JSON by default. Every rdc command is designed for autonomous agents — no GUI, no browser automation, no custom integrations needed.",
+          "primaryCta": "Get Started Free",
+          "secondaryCta": "Read the Docs"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "prompt": "$",
+              "cmd": "rdc machine status prod-1",
+              "flag": "-o",
+              "value": "json"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "check",
+              "text": "SSH connection established",
+              "result": "done"
+            },
+            {
+              "type": "check",
+              "text": "Querying renet daemon",
+              "result": "done"
+            },
+            {
+              "type": "check",
+              "text": "12 repositories, 47 containers",
+              "result": "all healthy"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "success",
+              "text": "{\"success\": true, \"command\": \"machine info\", \"data\": {...}}"
+            },
+            {
+              "type": "summary",
+              "pairs": [
+                {
+                  "label": "Format",
+                  "value": "JSON"
+                },
+                {
+                  "label": "Latency",
+                  "value": "142ms"
+                },
+                {
+                  "label": "Auth",
+                  "value": "SSH"
+                },
+                {
+                  "label": "Tokens",
+                  "value": "~200"
+                }
+              ]
+            }
+          ]
+        },
+        "stats": [
+          {
+            "number": "100%",
+            "label": "CLI-native operations",
+            "icon": "terminal"
+          },
+          {
+            "number": "~200",
+            "label": "Avg. tokens per response",
+            "icon": "zap"
+          },
+          {
+            "number": "0",
+            "label": "Browser automation needed",
+            "icon": "ticket-x"
+          }
+        ],
+        "problem": {
+          "overline": "THE PROBLEM",
+          "title": "AI agents are powerful — but most infrastructure fights them",
+          "description": "Your AI coding assistant can write, test, and debug code autonomously. But when it needs to deploy, check status, or manage infrastructure, it hits a wall: GUI-only dashboards, OAuth browser flows, unstable APIs, and responses that blow the context window.",
+          "statCallouts": [
+            {
+              "number": "73%",
+              "text": "of developers plan to use AI agents for infrastructure tasks by 2026",
+              "source": "GitHub 2025",
+              "ref": 1
+            },
+            {
+              "number": "4x",
+              "text": "more context window used by unstructured vs. JSON output",
+              "source": "Industry analysis",
+              "ref": 2
+            },
+            {
+              "number": "0%",
+              "text": "of traditional infrastructure platforms designed for AI agents",
+              "source": "Market survey",
+              "ref": 3
+            }
+          ],
+          "timeline": {
+            "oldLabel": "Traditional infrastructure",
+            "oldSteps": [
+              {
+                "day": "Step 1",
+                "text": "Open dashboard"
+              },
+              {
+                "day": "Step 2",
+                "text": "OAuth login"
+              },
+              {
+                "day": "Step 3",
+                "text": "Parse HTML"
+              },
+              {
+                "day": "Step 4",
+                "text": "Custom API"
+              },
+              {
+                "day": "Step 5",
+                "text": "Agent fails"
+              }
+            ],
+            "newLabel": "With Rediacc",
+            "newSteps": ["rdc repo up", "JSON", "Done"]
+          }
+        },
+        "howItWorks": {
+          "overline": "HOW IT WORKS",
+          "title": "Three steps to agent-managed infrastructure",
+          "steps": [
+            {
+              "title": "Configure",
+              "description": "Drop an AGENTS.md template into your project root. Your AI assistant reads it on startup and knows every rdc command.",
+              "icon": "terminal"
+            },
+            {
+              "title": "Discover",
+              "description": "Run rdc agent capabilities to get a structured JSON command tree. The agent knows what's available without documentation.",
+              "icon": "code"
+            },
+            {
+              "title": "Operate",
+              "description": "Deploy, monitor, rollback — all through CLI commands with JSON output. No GUI, no browser, no custom integration.",
+              "icon": "shield"
+            }
+          ],
+          "cloneVisual": {
+            "production": {
+              "title": "AI Agent",
+              "status": "Running",
+              "services": [
+                {
+                  "name": "claude-code",
+                  "port": "CLI"
+                },
+                {
+                  "name": "rdc repo up",
+                  "port": "SSH"
+                },
+                {
+                  "name": "json-output",
+                  "port": "stdout"
+                },
+                {
+                  "name": "agent-caps",
+                  "port": "API"
+                }
+              ],
+              "containerCount": "4 commands",
+              "size": "~200 tokens"
+            },
+            "clone": {
+              "title": "Infrastructure",
+              "status": "Managed",
+              "services": [
+                {
+                  "name": "prod-1",
+                  "port": "12 repos"
+                },
+                {
+                  "name": "staging",
+                  "port": "8 repos"
+                },
+                {
+                  "name": "backups",
+                  "port": "snapshots"
+                },
+                {
+                  "name": "monitoring",
+                  "port": "health"
+                }
+              ],
+              "containerCount": "47 containers",
+              "size": "2.4 TB"
+            },
+            "arrow": {
+              "label": "rdc",
+              "time": "SSH + JSON"
+            }
+          }
+        },
+        "techDiff": {
+          "overline": "AGENT-NATIVE DESIGN",
+          "title": "Why rdc is built for AI agents",
+          "description": "Every design decision in Rediacc prioritizes machine-readable interfaces. Non-TTY detection auto-switches to JSON. The consistent envelope format means agents parse every response the same way. SSH-based auth means no OAuth flows or token management.",
+          "traditionalLabel": "Traditional platforms",
+          "rediaccLabel": "Rediacc (rdc CLI)",
+          "rows": [
+            {
+              "traditional": "GUI dashboards: requires browser automation or screenshots",
+              "rediacc": "CLI-first: every operation is a shell command"
+            },
+            {
+              "traditional": "OAuth/browser login: agents can't authenticate",
+              "rediacc": "SSH keys: agents authenticate like any CLI tool"
+            },
+            {
+              "traditional": "HTML/unstructured output: 4x token usage, fragile parsing",
+              "rediacc": "JSON envelope: consistent schema, ~200 tokens per response"
+            },
+            {
+              "traditional": "No discovery: agents need docs or hardcoded API calls",
+              "rediacc": "rdc agent capabilities: structured command tree at runtime"
+            }
+          ]
+        },
+        "benefits": {
+          "overline": "WHY IT MATTERS",
+          "title": "Built for autonomous infrastructure management",
+          "items": [
+            {
+              "title": "Zero integration effort",
+              "description": "Drop AGENTS.md in your project. Your AI assistant immediately knows every available command, flag, and workflow.",
+              "icon": "zap"
+            },
+            {
+              "title": "Context-window friendly",
+              "description": "JSON responses average ~200 tokens. The --fields flag lets agents request only the data they need. No wasted context.",
+              "icon": "terminal"
+            },
+            {
+              "title": "Safe by default",
+              "description": "--dry-run previews destructive operations. --yes enables automation. Agents can deploy confidently with built-in guardrails.",
+              "icon": "shield"
+            }
+          ]
+        },
+        "relatedSolutions": {
+          "title": "Explore related solutions"
+        },
+        "bottomCta": {
+          "title": "Let your AI agent manage your infrastructure",
+          "description": "Install the CLI. Add the AGENTS.md template. Your AI assistant handles the rest.",
+          "primaryCta": "Get Started Free",
+          "command": "curl -fsSL https://www.rediacc.com/install.sh | bash"
         }
       }
     },

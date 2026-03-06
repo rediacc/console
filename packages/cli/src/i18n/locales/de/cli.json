@@ -3,6 +3,18 @@
     "description": "Maschinen, Repositories und Deployments per SSH verwalten"
   },
   "commands": {
+    "agent": {
+      "capabilities": {
+        "description": "Alle verfügbaren Befehle mit Argumenten und Optionen auflisten"
+      },
+      "description": "Agent-freundliche Hilfsprogramme für KI-Programmierassistenten",
+      "exec": {
+        "description": "Befehl mit JSON-Eingabe von stdin ausführen"
+      },
+      "schema": {
+        "description": "Detailliertes Schema für einen bestimmten Befehl anzeigen"
+      }
+    },
     "audit": {
       "description": "Audit-Log-Befehle",
       "history": {
@@ -554,6 +566,9 @@
         "systemSection": "\nSystem:",
         "systemUptime": "  Betriebszeit: {{uptime}}"
       },
+      "info": {
+        "description": "Vollständigen Maschinenstatus anzeigen (System, Repos, Container, Dienste)"
+      },
       "list": {
         "description": "Machines auflisten",
         "fetching": "Machines werden abgerufen..."
@@ -625,6 +640,14 @@
         "systemSection": "\nSystem:",
         "systemUptime": "  Betriebszeit: {{uptime}}",
         "totalRepos": "  Gesamtzahl Repositories: {{count}}"
+      }
+    },
+    "mcp": {
+      "description": "Model Context Protocol Server für KI-Agenten",
+      "serve": {
+        "configOption": "Konfigurationsname für alle Befehle",
+        "description": "MCP-Server starten (stdio-Transport)",
+        "timeoutOption": "Standard-Befehls-Timeout in Millisekunden"
       }
     },
     "ops": {
@@ -1552,7 +1575,9 @@
       "term": "SSH-Terminalzugang",
       "update": "CLI-Updates",
       "user": "Benutzerverwaltung",
-      "vscode": "VS Code-Integration"
+      "vscode": "VS Code-Integration",
+      "agent": "Agent-Hilfsprogramme",
+      "mcp": "MCP-Server"
     },
     "supplements": {
       "auth": {
@@ -1759,7 +1784,7 @@
     "containerAction": "Container-Aktion: Terminal, Logs, Stats, Exec",
     "datastore": "Datastore-Pfad auf Machine",
     "debug": "Debug-Ausgabe aktivieren (lokaler Modus)",
-    "dryRun": "Anzeigen, was übertragen würde, ohne tatsächlich zu synchronisieren",
+    "dryRun": "Zeigen, was ausgeführt würde, ohne Änderungen vorzunehmen",
     "email": "E-Mail-Adresse",
     "endpoint": "API-Endpunkt-URL",
     "excludePatterns": "Von der Synchronisierung auszuschließende Muster",
@@ -1767,6 +1792,7 @@
     "expires": "Ablauf in Stunden (1-720)",
     "external": "Erzwinge Start in externem Terminal-Fenster",
     "extraMachine": "Zusätzliche Maschine für Multi-Maschinen-Operationen (Name:IP:Benutzer)",
+    "fields": "Kommagetrennte Liste der Felder für die Ausgabe",
     "filterStatus": "Nach Status filtern",
     "folder": "Pfad zum Remote-Ordner zum Öffnen",
     "follow": "Logs-Ausgabe folgen",
@@ -1816,6 +1842,7 @@
     "protocolSystem": "Systemweit registrieren (erfordert Admin-Rechte)",
     "protocolSystemUnregister": "Systemweite Registrierung deregistrieren (erfordert Admin-Rechte)",
     "protocolToken": "Authentifizierungs-Token",
+    "quiet": "Informationsausgabe unterdrücken",
     "rawVault": "Raw Vault JSON (für Scripts/CI)",
     "region": "Regionsname",
     "remotePath": "Remote-Unterverzichnis-Pfad innerhalb des Repository",

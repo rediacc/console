@@ -1,0 +1,21 @@
+{
+  "member": "founder",
+  "videoKey": "persona-ceos",
+  "segments": [
+    {
+      "start": 0,
+      "end": 5,
+      "text": "One vendor for backup, recovery, dev environments, and security testing."
+    },
+    {
+      "start": 5,
+      "end": 9,
+      "text": "On your hardware. No per-seat fees. No cloud bills that grow every month."
+    },
+    {
+      "start": 9,
+      "end": 13,
+      "text": "Predictable costs. Zero lock-in."
+    }
+  ]
+}

@@ -1,14 +1,14 @@
 import { DEFAULTS } from '@rediacc/shared/config';
+import { configFileStorage } from '../adapters/config-file-storage.js';
+import type { RdcConfig, S3Config } from '../types/index.js';
+import { hasCloudCredentials } from '../types/index.js';
 import {
   detectSystemLanguage,
   getSupportedLanguages as getSupportedLanguagesList,
   isLanguageSupported as isLanguageSupportedCheck,
   normalizeLanguage,
 } from './context-language.js';
-import { configFileStorage } from '../adapters/config-file-storage.js';
-import { hasCloudCredentials } from '../types/index.js';
 import type { ResourceState } from './resource-state.js';
-import type { RdcConfig, S3Config } from '../types/index.js';
 
 const DEFAULT_API_URL = 'https://www.rediacc.com/api';
 

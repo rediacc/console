@@ -1,13 +1,16 @@
 ---
 import type { Language } from '../../i18n/types';
 import { createTranslator } from '../../i18n/utils';
+import { TEAM_MEMBERS } from '../../config/team-videos';
 
 interface Props {
   lang: Language;
+  contactMember?: string;
 }
 
-const { lang } = Astro.props as Props;
+const { lang, contactMember = 'founder' } = Astro.props as Props;
 const { t } = createTranslator(lang);
+const memberData = TEAM_MEMBERS[contactMember];
 ---
 
 <section class="closing-cta">
@@ -19,6 +22,48 @@ const { t } = createTranslator(lang);
         <a href={`/${lang}/install`} class="btn btn-primary">{t('getStarted.cta.primary')}</a>
         <a href={`/${lang}/contact`} class="btn btn-secondary">{t('getStarted.cta.secondary')}</a>
       </div>
+      {memberData?.email && (
+        <div class="closing-cta-contact">
+          <img
+            src={memberData.photos.casual}
+            alt={memberData.name}
+            class="closing-cta-contact-photo"
+            loading="lazy"
+            decoding="async"
+          />
+          <a href={`mailto:${memberData.email}`} class="closing-cta-contact-link">
+            {t(`team.${contactMember}.contact`)} &mdash; {memberData.email}
+          </a>
+        </div>
+      )}
     </div>
   </div>
 </section>
+
+<style>
+  .closing-cta-contact {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .closing-cta-contact-photo {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .closing-cta-contact-link {
+    font-size: 0.9rem;
+    color: var(--color-text-muted, #a0a0a0);
+    text-decoration: none;
+  }
+
+  .closing-cta-contact-link:hover {
+    color: var(--color-text, #fff);
+    text-decoration: underline;
+  }
+</style>

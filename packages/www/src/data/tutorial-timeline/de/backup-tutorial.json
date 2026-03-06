@@ -7,79 +7,16 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "50035f3ae47c6f8177f1ba1494b9e7e275db2c16d1fa9dd8e0a28c58706267d0",
+  "transcriptHash": "818df075f9ad49f7cb0138a60a9c908e767551182f9393abe414555983181f80",
   "steps": [
     {
-      "id": "backup-01",
+      "id": "backup-tutorial-01",
       "markerIndex": 0,
-      "replayStartSec": 1.509097,
-      "replayEndSec": 9.565032,
+      "replayStartSec": 1.510362,
+      "replayEndSec": 5.406939,
       "narrationText": "Überprüfen Sie die aktuell konfigurierten Sicherungsziele.",
-      "audioSrc": "/assets/tutorials/audio/de/backup-tutorial/backup-01.6eb7658f.mp3",
-      "audioDurationSec": 3.970612
-    },
-    {
-      "id": "backup-02",
-      "markerIndex": 1,
-      "replayStartSec": 9.565032,
-      "replayEndSec": 19.718406,
-      "narrationText": "Aktivieren Sie eine geplante Sicherungsrichtlinie mit Zielspeicherdetails.",
-      "audioSrc": "/assets/tutorials/audio/de/backup-tutorial/backup-02.8196d8f8.mp3",
-      "audioDurationSec": 4.127347
-    },
-    {
-      "id": "backup-03",
-      "markerIndex": 2,
-      "replayStartSec": 19.718406,
-      "replayEndSec": 27.974161,
-      "narrationText": "Überprüfen Sie die Konfiguration des aktiven Backup-Zeitplans.",
-      "audioSrc": "/assets/tutorials/audio/de/backup-tutorial/backup-03.88fbfa66.mp3",
-      "audioDurationSec": 4.597551
-    },
-    {
-      "id": "backup-04",
-      "markerIndex": 3,
-      "replayStartSec": 27.974161,
-      "replayEndSec": 39.964598,
-      "narrationText": "Übernehmen Sie Infrastruktureinstellungen für externen Zugriff und Zertifikate.",
-      "audioSrc": "/assets/tutorials/audio/de/backup-tutorial/backup-04.45e92165.mp3",
-      "audioDurationSec": 4.91102
-    },
-    {
-      "id": "backup-05",
-      "markerIndex": 4,
-      "replayStartSec": 39.964598,
-      "replayEndSec": 50.277844,
-      "narrationText": "Registrieren Sie die erforderlichen TCP- und UDP-Dienstports.",
-      "audioSrc": "/assets/tutorials/audio/de/backup-tutorial/backup-05.4a3ebcf2.mp3",
-      "audioDurationSec": 5.250612
-    },
-    {
-      "id": "backup-06",
-      "markerIndex": 5,
-      "replayStartSec": 50.277844,
-      "replayEndSec": 58.727031,
-      "narrationText": "Zeigen Sie Infrastrukturdetails an, um Netzwerkwerte zu bestätigen.",
-      "audioSrc": "/assets/tutorials/audio/de/backup-tutorial/backup-06.bced00ec.mp3",
-      "audioDurationSec": 4.989388
-    },
-    {
-      "id": "backup-07",
-      "markerIndex": 6,
-      "replayStartSec": 58.727031,
-      "replayEndSec": 65.303576,
-      "narrationText": "Deaktivieren Sie geplante Sicherungen als Teil des Rollback-Ablaufs.",
-      "audioSrc": "/assets/tutorials/audio/de/backup-tutorial/backup-07.5d2912a7.mp3",
-      "audioDurationSec": 4.127347
-    },
-    {
-      "id": "backup-08",
-      "markerIndex": 7,
-      "replayStartSec": 65.303576,
-      "replayEndSec": 71.459995,
-      "narrationText": "Überprüfen Sie den Zeitplanstatus erneut, um die Richtlinienänderung zu bestätigen.",
-      "audioSrc": "/assets/tutorials/audio/de/backup-tutorial/backup-08.afb21613.mp3",
-      "audioDurationSec": 4.91102
+      "audioSrc": "/assets/tutorials/audio/de/backup-tutorial/backup-tutorial-01.6eb7658f.mp3",
+      "audioDurationSec": 3.709388
     }
   ]
 }

@@ -4,58 +4,10 @@
   "version": 1,
   "events": [
     {
-      "id": "repos-01",
+      "id": "repos-tutorial-01",
       "markerIndex": 0,
-      "at": 1.507995,
+      "at": 1.508464,
       "text": "Cree un repositorio cifrado con un tamaño de almacenamiento definido."
-    },
-    {
-      "id": "repos-02",
-      "markerIndex": 1,
-      "at": 21.785373,
-      "text": "Enumere los repositorios para confirmar que el nuevo espacio de trabajo esté disponible."
-    },
-    {
-      "id": "repos-03",
-      "markerIndex": 2,
-      "at": 31.11554,
-      "text": "Inspeccione la ruta de montaje del repositorio antes de la implementación."
-    },
-    {
-      "id": "repos-04",
-      "markerIndex": 3,
-      "at": 41.275171,
-      "text": "Inicie los servicios del repositorio y monte el volumen cifrado."
-    },
-    {
-      "id": "repos-05",
-      "markerIndex": 4,
-      "at": 59.588726,
-      "text": "Verifique el estado del contenedor de la máquina después del inicio."
-    },
-    {
-      "id": "repos-06",
-      "markerIndex": 5,
-      "at": 68.725808,
-      "text": "Inspeccione los contenedores activos desde el contexto de ejecución del repositorio."
-    },
-    {
-      "id": "repos-07",
-      "markerIndex": 6,
-      "at": 78.086569,
-      "text": "Deje de ejecutar servicios de repositorio para realizar la limpieza."
-    },
-    {
-      "id": "repos-08",
-      "markerIndex": 7,
-      "at": 85.461712,
-      "text": "Separe y cierre el montaje del repositorio cifrado."
-    },
-    {
-      "id": "repos-09",
-      "markerIndex": 8,
-      "at": 93.028308,
-      "text": "Elimine el repositorio para completar el desmontaje del ciclo de vida."
     }
   ]
 }

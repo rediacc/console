@@ -1,14 +1,14 @@
 ---
 title: "Monitoring & Diagnostics"
-description: "Watch and follow along as we check machine health, inspect containers, review services, and run diagnostics."
+description: "Check machine health, inspect containers, review systemd services, scan host keys, and run environment diagnostics."
 category: "Tutorials"
 order: 4
 language: en
 ---
 
-# Tutorial: Monitoring & Diagnostics
+# How To Monitor and Diagnose Infrastructure with Rediacc
 
-This tutorial demonstrates the monitoring and diagnostic commands available in `rdc`: health checks, container inspection, service status, vault overview, and environment diagnostics.
+Keeping infrastructure healthy requires visibility into machine state, container status, and service health. In this tutorial, you run environment diagnostics, check machine health, inspect containers and services, review vault status, and verify connectivity. When you finish, you know how to identify and investigate issues across your infrastructure.
 
 ## Prerequisites
 
@@ -19,17 +19,15 @@ This tutorial demonstrates the monitoring and diagnostic commands available in `
 
 ![Tutorial: Monitoring & Diagnostics](/assets/tutorials/monitoring-tutorial.cast)
 
-## What You'll See
-
-The recording above walks through each step below. Use the playback bar to navigate between commands.
-
 ### Step 1: Run diagnostics
+
+Start by checking your local environment for any configuration issues.
 
 ```bash
 rdc doctor
 ```
 
-Checks your local environment: Node.js, CLI version, renet binary, configuration, and virtualization support. Each check reports **OK**, **Warning**, or **Error**.
+Checks Node.js, CLI version, renet binary, configuration, and virtualization support. Each check reports **OK**, **Warning**, or **Error**.
 
 ### Step 2: Machine health check
 
@@ -37,7 +35,7 @@ Checks your local environment: Node.js, CLI version, renet binary, configuration
 rdc machine health server-1
 ```
 
-Fetches a comprehensive health report including system uptime, disk usage, datastore usage, container counts, storage SMART status, and any identified issues.
+Fetches a comprehensive health report from the remote machine: system uptime, disk usage, datastore usage, container counts, storage SMART status, and any identified issues.
 
 ### Step 3: View running containers
 
@@ -48,6 +46,8 @@ rdc machine containers server-1
 Lists all running containers across all repositories on the machine, showing name, status, state, health, CPU usage, memory usage, and which repository owns each container.
 
 ### Step 4: Check systemd services
+
+To see the underlying services that power each repository's Docker daemon and networking:
 
 ```bash
 rdc machine services server-1
@@ -65,22 +65,39 @@ Provides a high-level overview of the machine: hostname, uptime, memory, disk, d
 
 ### Step 6: Scan host keys
 
+If a machine was rebuilt or its IP changed, refresh the stored SSH host key.
+
 ```bash
 rdc config scan-keys server-1
 ```
 
-Refreshes the SSH host key stored in your config for the machine. Useful after a machine rebuild or IP change.
+Fetches the server's current host keys and updates your config. This prevents "host key verification failed" errors.
 
 ### Step 7: Verify connectivity
+
+A quick SSH connectivity check to confirm the machine is reachable and responding.
 
 ```bash
 rdc term server-1 -c "hostname"
 rdc term server-1 -c "uptime"
 ```
 
-Quick SSH connectivity check by running inline commands on the remote machine.
+The hostname confirms you're connected to the right server. The uptime confirms the system is running normally.
+
+## Troubleshooting
+
+**Health check times out or shows "SSH connection failed"**
+Verify the machine is online and reachable: `ping <ip>`. Check that your SSH key is configured correctly with `rdc term <machine> -c "echo ok"`.
+
+**"Service not found" in service listing**
+Rediacc services only appear after at least one repository has been deployed. If no repositories exist, the service list is empty.
+
+**Container listing shows stale or stopped containers**
+Containers from previous deployments may linger if `repo down` was not run cleanly. Stop them with `rdc repo down <repo> -m <machine>` or inspect directly via `rdc term <machine> <repo> -c "docker ps -a"`.
 
 ## Next Steps
+
+You ran diagnostics, checked machine health, inspected containers and services, and verified connectivity. To work with your deployments:
 
 - [Monitoring](/en/docs/monitoring) — full reference for all monitoring commands
 - [Troubleshooting](/en/docs/troubleshooting) — common issues and solutions

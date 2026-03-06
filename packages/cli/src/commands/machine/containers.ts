@@ -1,36 +1,48 @@
-import { Command } from 'commander';
 import { type ContainerInfo, getMachineContainers } from '@rediacc/shared/services/machine';
+import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { getStateProvider } from '../../providers/index.js';
 import { authService } from '../../services/auth.js';
 import { configService } from '../../services/config-resources.js';
 import { outputService } from '../../services/output.js';
-import { handleError, ValidationError } from '../../utils/errors.js';
-import { withSpinner } from '../../utils/spinner.js';
 import type { OutputFormat } from '../../types/index.js';
+import { handleError, ValidationError } from '../../utils/errors.js';
+import { createGuidResolver, loadGuidMap } from '../../utils/guid-resolver.js';
+import { withSpinner } from '../../utils/spinner.js';
 
-function displayUnhealthyContainers(unhealthy: ContainerInfo[], format: OutputFormat): void {
+function displayUnhealthyContainers(
+  unhealthy: ContainerInfo[],
+  format: OutputFormat,
+  resolve: (guid: string) => string = (g) => g
+): void {
   outputService.error(t('commands.machine.containers.unhealthyFound', { count: unhealthy.length }));
   if (format === 'json') {
     outputService.print(unhealthy, format);
   } else {
     for (const c of unhealthy) {
-      outputService.info(`  - ${c.name} (${c.repository})`);
+      outputService.info(`  - ${c.name} (${resolve(c.repository)})`);
     }
   }
   process.exitCode = 2;
 }
 
-function handleHealthCheck(containers: ContainerInfo[], format: OutputFormat): void {
+function handleHealthCheck(
+  containers: ContainerInfo[],
+  format: OutputFormat,
+  resolve: (guid: string) => string = (g) => g
+): void {
   const unhealthy = containers.filter((c) => c.health?.status === 'unhealthy');
   if (unhealthy.length > 0) {
-    displayUnhealthyContainers(unhealthy, format);
+    displayUnhealthyContainers(unhealthy, format, resolve);
   } else {
     outputService.success(t('commands.machine.containers.allHealthy'));
   }
 }
 
-function formatContainersForTable(containers: ContainerInfo[]) {
+function formatContainersForTable(
+  containers: ContainerInfo[],
+  resolve: (guid: string) => string = (g) => g
+) {
   return containers.map((c) => ({
     name: c.name,
     status: c.status,
@@ -38,7 +50,7 @@ function formatContainersForTable(containers: ContainerInfo[]) {
     health: c.health?.status ?? 'none',
     cpu: c.cpu_percent ?? '-',
     memory: c.memory_usage ?? '-',
-    repository: c.repository,
+    repository: resolve(c.repository),
   }));
 }
 
@@ -60,15 +72,19 @@ export function registerContainersCommand(machine: Command, program: Command): v
           throw new ValidationError(t('errors.teamRequired'));
         }
 
-        const machine = await withSpinner(
-          t('commands.machine.containers.fetching'),
-          () =>
-            provider.machines.getWithVaultStatus({
-              teamName: opts.team as string,
-              machineName: name,
-            }),
-          t('commands.machine.containers.fetched')
-        );
+        const [machine, guidMap] = await Promise.all([
+          withSpinner(
+            t('commands.machine.containers.fetching'),
+            () =>
+              provider.machines.getWithVaultStatus({
+                teamName: opts.team as string,
+                machineName: name,
+              }),
+            t('commands.machine.containers.fetched')
+          ),
+          loadGuidMap(),
+        ]);
+        const resolve = createGuidResolver(guidMap);
 
         if (!machine) {
           throw new ValidationError(t('errors.machineNotFound', { name }));
@@ -78,7 +94,7 @@ export function registerContainersCommand(machine: Command, program: Command): v
         const format = program.opts().output as OutputFormat;
 
         if (options.healthCheck) {
-          handleHealthCheck(containers, format);
+          handleHealthCheck(containers, format, resolve);
           return;
         }
 
@@ -87,7 +103,7 @@ export function registerContainersCommand(machine: Command, program: Command): v
           return;
         }
 
-        const tableData = formatContainersForTable(containers);
+        const tableData = formatContainersForTable(containers, resolve);
         outputService.print(tableData, format);
       } catch (error) {
         handleError(error);

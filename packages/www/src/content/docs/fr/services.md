@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: fr
-sourceHash: 294f92dc32f10c86
+sourceHash: "9a61995f9ea3d770"
 ---
 
 # Services
@@ -280,7 +280,7 @@ Cet exemple déploie une application web avec PostgreSQL, Redis et un serveur AP
 ### 1. Configurer l'environnement
 
 ```bash
-curl -fsSL https://get.rediacc.com | sh
+curl -fsSL https://www.rediacc.com/install.sh | bash
 rdc config init production --ssh-key ~/.ssh/id_ed25519
 rdc config add-machine prod-1 --ip 203.0.113.50 --user deploy
 rdc config setup-machine prod-1

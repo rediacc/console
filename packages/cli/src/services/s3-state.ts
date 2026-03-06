@@ -8,8 +8,6 @@
  * Keys (section names, record names) stay in plaintext; only values are encrypted.
  */
 
-import { decryptSection, encryptSection, type ResourceState } from './resource-state.js';
-import type { S3ClientService } from './s3-client.js';
 import type {
   MachineConfig,
   RepositoryConfig,
@@ -17,6 +15,8 @@ import type {
   SSHContent,
   StorageConfig,
 } from '../types/index.js';
+import { decryptSection, encryptSection, type ResourceState } from './resource-state.js';
+import type { S3ClientService } from './s3-client.js';
 
 const STATE_KEY = 'state.json';
 

@@ -1,14 +1,14 @@
-import { Command } from 'commander';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { registerLocalDataCommands } from './config-data.js';
-import { registerInfraCommands } from './config-infra.js';
-import { registerSetupCommands } from './config-setup.js';
+import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
+import type { OutputFormat, RdcConfig } from '../types/index.js';
 import { hasCloudCredentials } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
-import type { OutputFormat, RdcConfig } from '../types/index.js';
+import { registerLocalDataCommands } from './config-data.js';
+import { registerInfraCommands } from './config-infra.js';
+import { registerSetupCommands } from './config-setup.js';
 
 /** Build display data for a self-hosted config (local or S3 mode). */
 async function buildSelfHostedDisplay(

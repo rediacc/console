@@ -2,8 +2,8 @@ import { execSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { getCacheDir } from '@rediacc/shared/paths';
-import { getPlatform, isWSL } from '../utils/platform.js';
 import type { TerminalInfo, TerminalType } from '../types/index.js';
+import { getPlatform, isWSL } from '../utils/platform.js';
 
 /**
  * Cache file location

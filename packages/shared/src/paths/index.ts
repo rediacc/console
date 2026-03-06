@@ -1,3 +1,4 @@
+export type { RediaccDirs } from './dirs.js';
 export {
   getCacheDir,
   getConfigDir,
@@ -5,4 +6,3 @@ export {
   getRediaccDirs,
   getStateDir,
 } from './dirs.js';
-export type { RediaccDirs } from './dirs.js';

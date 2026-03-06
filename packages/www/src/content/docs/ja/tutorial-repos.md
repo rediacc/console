@@ -1,61 +1,67 @@
 ---
 title: "リポジトリのライフサイクル"
-description: "暗号化されたリポジトリの作成、コンテナ化されたアプリのデプロイ、コンテナの検査、クリーンアップを一緒に見ていきましょう。"
+description: "暗号化されたリポジトリの作成、コンテナ化されたアプリケーションのデプロイ、コンテナの検査、クリーンアップ。"
 category: "Tutorials"
 order: 3
 language: ja
-sourceHash: "b692ef9f49ac4aa0"
+sourceHash: "e6c55c46e8e4cd9c"
 ---
 
-# チュートリアル: リポジトリのライフサイクル
+# Rediaccでリポジトリをデプロイ・管理する方法
 
-This tutorial walks through the full repository lifecycle: creating an encrypted repository, deploying a containerized application, inspecting running containers, stopping services, and cleaning up.
+リポジトリはRediaccの中核となるデプロイ単位です。各リポジトリは独自のDocker daemonと専用ストレージを持つ隔離された暗号化環境です。このチュートリアルでは、暗号化リポジトリを作成し、コンテナ化されたアプリケーションをデプロイし、実行中のコンテナを検査し、クリーンアップします。完了すると、完全なデプロイライフサイクルを体験したことになります。
 
 ## 前提条件
 
-- The `rdc` CLI installed with a config initialized
-- A provisioned machine (run `rdc config setup-machine` first — see [Machine Setup](/ja/docs/setup))
-- A simple application with a `Rediaccfile` and `docker-compose.yml`
+- 設定が初期化された`rdc` CLIがインストール済みであること
+- プロビジョニングされたマシン（[チュートリアル: マシンセットアップ](/ja/docs/tutorial-setup)を参照）
+- `Rediaccfile`と`docker-compose.yml`を持つシンプルなアプリケーション
 
 ## インタラクティブ録画
 
-![Tutorial: Repository lifecycle](/assets/tutorials/repos-tutorial.cast)
-
-## 内容の説明
-
-The recording above walks through each step below. Use the playback bar to navigate between commands.
+![チュートリアル: リポジトリのライフサイクル](/assets/tutorials/repos-tutorial.cast)
 
 ### ステップ1: 暗号化リポジトリを作成
+
+各リポジトリは独自のLUKS暗号化ストレージボリュームを取得します。マシンとストレージサイズを指定します。
 
 ```bash
 rdc repo create test-app -m server-1 --size 2G
 ```
 
-Creates a 2 GB LUKS-encrypted repository on the machine. The repository is automatically mounted and ready for file uploads.
+Rediaccは2GBの暗号化ボリュームを作成し、フォーマットし、自動的にマウントします。リポジトリはファイルアップロードの準備が整いました。
 
 ### ステップ2: リポジトリを一覧表示
+
+新しいリポジトリが利用可能であることを確認します。
 
 ```bash
 rdc repo list -m server-1
 ```
 
-Shows all repositories on the machine with their size, mount status, and encryption state.
+マシン上のすべてのリポジトリをサイズ、マウント状態、暗号化状態とともに表示します。
 
-### ステップ3: アプリケーションファイルをアップロード
+### ステップ3: マウントパスを検査
 
-Upload your `Rediaccfile` and `docker-compose.yml` to the repository mount. The `rdc sync upload` command handles this via rsync:
+デプロイ前に、リポジトリのストレージがマウントされアクセス可能であることを確認します。
 
 ```bash
-rdc sync upload -m server-1 -r test-app --local ./my-app
+rdc term server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 ```
 
+マウントディレクトリはアプリケーションファイルが配置される場所です — `Rediaccfile`、`docker-compose.yml`、およびデータボリュームが含まれます。
+
 ### ステップ4: サービスを開始
+
+リポジトリをマウントしてDockerサービスを起動することでアプリケーションをデプロイします。
 
 ```bash
 rdc repo up test-app -m server-1 --mount
 ```
 
-This mounts the repository (if not already mounted), starts an isolated Docker daemon, pulls images via `prep()`, and starts services via `up()`.
+リポジトリをマウントし（まだマウントされていない場合）、隔離されたDocker daemonを起動し、`prep()`でイメージをプルし、`up()`でサービスを開始します。
+
+> **注意:** 最初のデプロイはDockerイメージのダウンロードのため時間がかかります。以降の起動ではキャッシュされたイメージが再利用されます。
 
 ### ステップ5: 実行中のコンテナを表示
 
@@ -63,28 +69,47 @@ This mounts the repository (if not already mounted), starts an isolated Docker d
 rdc machine containers server-1
 ```
 
-マシン上のすべてのリポジトリにわたって実行中のすべてのコンテナを表示します。CPUとメモリの使用量も表示されます。
+マシン上のすべてのリポジトリにわたるすべての実行中のコンテナを、CPUとメモリの使用量を含めて表示します。
 
-### ステップ6: ターミナル経由でリポジトリにアクセス
+### ステップ6: リポジトリターミナルにアクセス
+
+リポジトリの隔離されたDocker環境内でコマンドを実行するには:
 
 ```bash
 rdc term server-1 test-app -c "docker ps"
 ```
 
-Opens an SSH session with `DOCKER_HOST` set to the repository's isolated Docker daemon. Any Docker command runs against that repo's containers.
+ターミナルセッションは`DOCKER_HOST`をリポジトリの隔離されたDockerソケットに設定します。すべてのDockerコマンドはそのリポジトリのコンテナのみに対して実行されます。
 
 ### ステップ7: 停止してクリーンアップ
 
+完了したら、サービスを停止し、暗号化ボリュームを閉じ、必要に応じてリポジトリを削除します。
+
 ```bash
-rdc repo down test-app -m server-1      # Stop services
-rdc repo unmount test-app -m server-1   # Close encrypted volume
-rdc repo delete test-app -m server-1    # Delete repository permanently
+rdc repo down test-app -m server-1      # サービスを停止
+rdc repo unmount test-app -m server-1   # 暗号化ボリュームを閉じる
+rdc repo delete test-app -m server-1    # リポジトリを完全に削除
 ```
 
-`down` stops containers and the Docker daemon. `unmount` closes the LUKS volume. `delete` permanently removes the repository and its encrypted storage.
+`down`はコンテナとDocker daemonを停止します。`unmount`はLUKSボリュームを閉じます。`delete`はリポジトリとその暗号化ストレージを完全に削除します。
+
+> **警告:** `repo delete`は取り消せません。リポジトリ内のすべてのデータが破壊されます。必要に応じて先にバックアップを作成してください。
+
+## トラブルシューティング
+
+**リポジトリ作成時の「ディスク容量不足」**
+暗号化ボリュームにはホスト上の連続した空き容量が必要です。サーバーで`df -h`を使用して利用可能な容量を確認してください。より小さい`--size`値の使用やディスク容量の解放を検討してください。
+
+**`repo up`中のDockerイメージプルタイムアウト**
+大きなイメージは低速な接続でタイムアウトする場合があります。`rdc repo up`で再試行してください — 中断した箇所から再開します。エアギャップ環境では、リポジトリのDocker daemonにイメージを事前にロードしてください。
+
+**「マウント失敗」または「LUKSオープン失敗」**
+LUKSパスフレーズは設定から導出されます。リポジトリを作成した同じ設定を使用していることを確認してください。ボリュームが別のプロセスによってすでにマウントされている場合は、先にアンマウントしてください。
 
 ## 次のステップ
 
-- [Services](/ja/docs/services) — Rediaccfile reference, service networking, autostart, and multi-service layouts
-- [Tutorial: Monitoring](/ja/docs/tutorial-monitoring) — health checks, container inspection, and diagnostics
-- [Tools](/ja/docs/tools) — terminal, file sync, and VS Code integration
+暗号化リポジトリを作成し、アプリケーションをデプロイし、コンテナを検査し、クリーンアップしました。デプロイを監視するには:
+
+- [サービス](/ja/docs/services) — Rediaccfileリファレンス、サービスネットワーキング、自動起動、マルチサービスレイアウト
+- [チュートリアル: 監視と診断](/ja/docs/tutorial-monitoring) — ヘルスチェック、コンテナ検査、診断
+- [ツール](/ja/docs/tools) — ターミナル、ファイル同期、VS Code連携

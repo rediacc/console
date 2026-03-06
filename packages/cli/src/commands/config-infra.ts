@@ -1,10 +1,10 @@
 import { isIP } from 'node:net';
+import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
-import { handleError } from '../utils/errors.js';
 import type { InfraConfig, OutputFormat } from '../types/index.js';
-import type { Command } from 'commander';
+import { handleError } from '../utils/errors.js';
 
 function validateIpAddresses(infra: Partial<InfraConfig>): string | undefined {
   if (infra.publicIPv4 && isIP(infra.publicIPv4) !== 4) {

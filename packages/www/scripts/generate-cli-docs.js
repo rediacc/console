@@ -16,13 +16,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { computeSourceHash } from './validate-translation-freshness.js';
 import {
   CLOUD_GROUPS,
   LOCAL_GROUPS,
   toAnchorId,
   toGroupAnchorId,
 } from './lib/cli-reference-catalog.js';
+import { computeSourceHash } from './validate-translation-freshness.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

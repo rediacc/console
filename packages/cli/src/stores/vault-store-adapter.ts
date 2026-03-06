@@ -1,7 +1,7 @@
 import { DEFAULTS } from '@rediacc/shared/config';
-import type { IStoreAdapter, PullResult, PushResult } from './types.js';
 import type { RdcConfig } from '../types/index.js';
 import type { StoreEntry } from '../types/store.js';
+import type { IStoreAdapter, PullResult, PushResult } from './types.js';
 
 /**
  * Vault store adapter. Stores config files as secrets in HashiCorp Vault KV v2.

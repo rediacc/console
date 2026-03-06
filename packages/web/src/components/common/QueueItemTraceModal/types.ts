@@ -1,6 +1,6 @@
-import type { BaseModalProps } from '@/types';
 import type { GetTeamQueueItems_ResultSet1, QueueTraceLog } from '@rediacc/shared/types';
 import type { Dayjs } from 'dayjs';
+import type { BaseModalProps } from '@/types';
 
 export interface QueueItemTraceModalProps extends BaseModalProps {
   taskId: string | null;

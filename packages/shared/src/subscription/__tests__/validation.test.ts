@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { PLAN_FEATURES, PLAN_RESOURCES } from '../constants.js';
+import type {
+  OrganizationSubscription,
+  SignedSubscriptionBlob,
+  SubscriptionData,
+} from '../types.js';
 import {
   calculateGracePeriodEnd,
   decodeSubscriptionPayload,
@@ -9,17 +14,12 @@ import {
   isInGracePeriod,
   isSubscriptionActive,
   isSubscriptionExpired,
-  validateSubscription,
-  validateSubscriptionData,
   validateOrganizationSubscription,
   validateResourceLimits,
   validateSignedBlob,
+  validateSubscription,
+  validateSubscriptionData,
 } from '../validation.js';
-import type {
-  SubscriptionData,
-  OrganizationSubscription,
-  SignedSubscriptionBlob,
-} from '../types.js';
 
 const createValidSubscriptionData = (
   overrides: Partial<SubscriptionData> = {}

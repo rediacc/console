@@ -1,4 +1,3 @@
-import { type Key, useCallback, useMemo, useState } from 'react';
 import {
   CameraOutlined,
   CloudUploadOutlined,
@@ -10,7 +9,15 @@ import {
   SecurityScanOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
+import type {
+  GetCephRbdImages_ResultSet1 as CephImage,
+  GetCephPools_ResultSet1 as CephPool,
+  GetCephRbdSnapshots_ResultSet1 as CephSnapshot,
+  CreateCephRbdSnapshotParams,
+} from '@rediacc/shared/types';
+import type { MenuProps } from 'antd';
 import { Button, Flex, Space, Tag, Tooltip, Typography } from 'antd';
+import { type Key, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useCreateCephRbdSnapshot,
@@ -27,14 +34,7 @@ import CloneTable from '@/features/ceph/components/CloneTable';
 import { useExpandableTable, useMessage, useQueueTraceModal } from '@/hooks';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import type {
-  GetCephRbdImages_ResultSet1 as CephImage,
-  GetCephPools_ResultSet1 as CephPool,
-  GetCephRbdSnapshots_ResultSet1 as CephSnapshot,
-  CreateCephRbdSnapshotParams,
-} from '@rediacc/shared/types';
 import { buildSnapshotColumns } from './columns';
-import type { MenuProps } from 'antd';
 
 interface SnapshotTableProps {
   image: CephImage;

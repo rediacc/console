@@ -1,4 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLanguage } from '../../hooks/useLanguage';
+import { useTranslation } from '../../i18n/react';
+import TurnstileWidget from '../TurnstileWidget';
 import {
   ADVANCED_SLIDERS,
   type CompanySize,
@@ -9,9 +12,6 @@ import {
   ROI_DEFAULTS,
   type RoiInputs,
 } from './roi-compute';
-import { useLanguage } from '../../hooks/useLanguage';
-import { useTranslation } from '../../i18n/react';
-import TurnstileWidget from '../TurnstileWidget';
 import '../../styles/newsletter.css';
 
 interface RoiCalculatorContent {

@@ -1,4 +1,3 @@
-import { Command } from 'commander';
 import { parseGetQueueItemTrace } from '@rediacc/shared/api';
 import { DEFAULTS } from '@rediacc/shared/config';
 import {
@@ -19,6 +18,7 @@ import {
   searchInFields,
   unescapeLogOutput,
 } from '@rediacc/shared/utils';
+import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { typedApi } from '../services/api.js';
@@ -26,6 +26,7 @@ import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
 import { queueService } from '../services/queue.js';
+import type { OutputFormat } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { formatLogOutput, getLogHeader } from '../utils/logFormatters.js';
 import {
@@ -37,7 +38,6 @@ import {
   formatStatus,
 } from '../utils/queueFormatters.js';
 import { startSpinner, stopSpinner, withSpinner } from '../utils/spinner.js';
-import type { OutputFormat } from '../types/index.js';
 
 function printTrace(trace: QueueTraceSummary, program: Command): void {
   const format = program.opts().output as OutputFormat;

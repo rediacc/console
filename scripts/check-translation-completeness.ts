@@ -206,6 +206,13 @@ const ALLOWED_IDENTICAL = new Set([
   'APT (Debian / Ubuntu)',
   'DNF (Fedora / RHEL)',
   'Homebrew (macOS / Linux)',
+  // Platform/OS names (universally recognized, not translated)
+  'Linux',
+  'macOS',
+  'Windows',
+  'Binary',
+  'Enterprise',
+  'docker',
 ]);
 
 // Patterns for strings that should not be translated (placeholders, format strings)
