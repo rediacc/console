@@ -87,7 +87,7 @@ jobs:
         run: |
           STATUS=$(sudo -E node packages/cli/dist/cli-bundle.cjs ops status -o json)
           echo "$STATUS"
-          BRIDGE_IP=$(echo "$STATUS" | jq -r '.vms[0].ip')
+          BRIDGE_IP=$(echo "$STATUS" | jq -r '.data.vms[0].ip')
           echo "bridge_ip=$BRIDGE_IP" >> "$GITHUB_OUTPUT"
 
       - name: "Verify: ping connectivity"
@@ -134,8 +134,8 @@ jobs:
       - name: "Verify: cleanup"
         if: always()
         run: |
-          STATUS=$(sudo -E node packages/cli/dist/cli-bundle.cjs ops status -o json 2>/dev/null || echo '{"vms":[]}')
-          echo "$STATUS" | jq -e '.vms | length == 0' || echo "Warning: VMs still present after cleanup"
+          STATUS=$(sudo -E node packages/cli/dist/cli-bundle.cjs ops status -o json 2>/dev/null || echo '{"data":{"vms":[]}}')
+          echo "$STATUS" | jq -e '.data.vms | length == 0' || echo "Warning: VMs still present after cleanup"
 
   # ── Full VM provisioning test (QEMU + HVF on macOS Intel) ────
   # macOS Intel runners support HVF (Hypervisor Framework), enabling
@@ -221,7 +221,7 @@ jobs:
           echo "$STATUS"
           # QEMU returns localhost:<port> addresses. Keep all running VMs so
           # SSH checks can fall back if one VM is slow/unreachable.
-          VM_ADDRS=$(echo "$STATUS" | jq -r '[.vms[] | select(.status == "running") | .ip] | join(" ")')
+          VM_ADDRS=$(echo "$STATUS" | jq -r '[.data.vms[] | select(.status == "running") | .ip] | join(" ")')
           if [[ -z "$VM_ADDRS" ]]; then
             echo "No running VM addresses found in ops status output"
             exit 1
@@ -262,8 +262,8 @@ jobs:
         if: always()
         shell: bash
         run: |
-          STATUS=$(node packages/cli/dist/cli-bundle.cjs ops status -o json 2>/dev/null || echo '{"vms":[]}')
-          echo "$STATUS" | jq -e '.vms | length == 0' || echo "Warning: VMs still present after cleanup"
+          STATUS=$(node packages/cli/dist/cli-bundle.cjs ops status -o json 2>/dev/null || echo '{"data":{"vms":[]}}')
+          echo "$STATUS" | jq -e '.data.vms | length == 0' || echo "Warning: VMs still present after cleanup"
 
   # ── Platform validation (no hardware acceleration, check only) ─
   # Downloads pre-built renet binaries from the build-renet job artifact.
