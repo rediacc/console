@@ -679,27 +679,45 @@ export class CliTestRunner {
     if (!str.trim()) return null;
 
     // First try direct parse
+    let parsed: unknown;
     try {
-      return JSON.parse(str);
+      parsed = JSON.parse(str);
     } catch {
       // Continue to regex extraction
+      parsed = null;
     }
 
-    // Try to extract JSON array or object from output
-    try {
-      const arrayMatch = /\[[\s\S]*\]/.exec(str);
-      if (arrayMatch) {
-        return JSON.parse(arrayMatch[0]);
+    if (parsed === null) {
+      // Try to extract JSON array or object from output
+      try {
+        const arrayMatch = /\[[\s\S]*\]/.exec(str);
+        if (arrayMatch) {
+          parsed = JSON.parse(arrayMatch[0]);
+        } else {
+          const objectMatch = /\{[\s\S]*\}/.exec(str);
+          if (objectMatch) {
+            parsed = JSON.parse(objectMatch[0]);
+          }
+        }
+      } catch {
+        // JSON extraction failed
       }
-
-      const objectMatch = /\{[\s\S]*\}/.exec(str);
-      if (objectMatch) {
-        return JSON.parse(objectMatch[0]);
-      }
-    } catch {
-      // JSON extraction failed
     }
 
-    return null;
+    if (parsed === null) return null;
+
+    // Unwrap CLI JSON envelope: {success, command, data, errors, ...}
+    if (
+      typeof parsed === 'object' &&
+      !Array.isArray(parsed) &&
+      parsed !== null &&
+      'success' in parsed &&
+      'command' in parsed &&
+      'data' in parsed
+    ) {
+      return (parsed as Record<string, unknown>).data;
+    }
+
+    return parsed;
   }
 }
