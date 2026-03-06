@@ -1,11 +1,43 @@
 import { test, expect } from '@/base/BaseTest';
 
+function resolveDocsBaseUrl(baseURL: string | undefined): string | null {
+  const explicitDocsBaseUrl = process.env.E2E_DOCS_BASE_URL?.trim();
+  if (explicitDocsBaseUrl) {
+    return explicitDocsBaseUrl;
+  }
+
+  if (!baseURL) {
+    return null;
+  }
+
+  // The default E2E target is the console app (`/console/`), which does not host docs pages.
+  if (baseURL.includes('/console/')) {
+    return null;
+  }
+
+  return baseURL;
+}
+
+function toDocsUrl(docsBaseUrl: string, pathname: string): string {
+  return new URL(pathname, docsBaseUrl).toString();
+}
+
 test.describe('Docs CLI Reference Link UX', () => {
   test('opens CLI reference in modal on normal click and keeps native new-tab behavior @docs @regression', async ({
     page,
     context,
+    baseURL,
   }) => {
-    await page.goto('/en/docs/setup', { waitUntil: 'domcontentloaded' });
+    const docsBaseUrl = resolveDocsBaseUrl(baseURL);
+    if (!docsBaseUrl) {
+      test.skip(
+        true,
+        'Docs reference tests require E2E_DOCS_BASE_URL when E2E_BASE_URL points to /console/.'
+      );
+      return;
+    }
+
+    await page.goto(toDocsUrl(docsBaseUrl, '/en/docs/setup'), { waitUntil: 'domcontentloaded' });
 
     const referenceLink = page.locator('a[data-cli-ref-link="true"]').first();
     await expect(referenceLink).toBeVisible({ timeout: 10000 });
@@ -47,8 +79,18 @@ test.describe('Docs CLI Reference Link UX', () => {
   test('opens terminal disclaimer CLI reference in modal and preserves middle-click new tab @docs @regression', async ({
     page,
     context,
+    baseURL,
   }) => {
-    await page.goto('/en/for-devops', { waitUntil: 'domcontentloaded' });
+    const docsBaseUrl = resolveDocsBaseUrl(baseURL);
+    if (!docsBaseUrl) {
+      test.skip(
+        true,
+        'Docs reference tests require E2E_DOCS_BASE_URL when E2E_BASE_URL points to /console/.'
+      );
+      return;
+    }
+
+    await page.goto(toDocsUrl(docsBaseUrl, '/en/for-devops'), { waitUntil: 'domcontentloaded' });
 
     const referenceLink = page
       .locator('.sp-terminal-disclaimer a[data-cli-ref-link="true"]')
