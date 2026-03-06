@@ -323,8 +323,14 @@ www_tutorials_record() {
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --force) force=true; shift ;;
-            *) name="$1"; shift ;;
+            --force)
+                force=true
+                shift
+                ;;
+            *)
+                name="$1"
+                shift
+                ;;
         esac
     done
 
@@ -351,7 +357,10 @@ www_tutorials_record() {
     local candidates=()
     if [[ -n "$name" ]]; then
         local script="$tutorials_dir/${name}-tutorial.sh"
-        [[ -f "$script" ]] || { log_error "Tutorial not found: $script"; exit 1; }
+        [[ -f "$script" ]] || {
+            log_error "Tutorial not found: $script"
+            exit 1
+        }
         candidates+=("$script")
     else
         for script in "$tutorials_dir"/*-tutorial.sh; do
@@ -497,8 +506,14 @@ www_team_video_extract() {
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --clean-venv) clean_venv=true; shift ;;
-            *) passthrough+=("$1"); shift ;;
+            --clean-venv)
+                clean_venv=true
+                shift
+                ;;
+            *)
+                passthrough+=("$1")
+                shift
+                ;;
         esac
     done
 
