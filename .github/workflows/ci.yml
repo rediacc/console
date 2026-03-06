@@ -712,19 +712,37 @@ jobs:
           SECRET_TURNSTILE_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
           VAR_SES_FROM: ${{ vars.AWS_SES_FROM }}
         run: |
+          # Use secret:bulk to set all secrets in a single API call.
+          # Individual secret put commands each trigger a new worker version,
+          # which disassociates static assets on assets-bound workers.
           WORKER="pr-${PR_NUMBER}"
-          echo "$SECRET_ED25519_PRIVATE_KEY" | npx wrangler secret put ED25519_PRIVATE_KEY --name "$WORKER"
-          echo "$SECRET_ED25519_PUBLIC_KEY" | npx wrangler secret put ED25519_PUBLIC_KEY --name "$WORKER"
-          echo "$SECRET_API_KEY" | npx wrangler secret put API_KEY --name "$WORKER"
-          echo "$SECRET_JWT_SECRET" | npx wrangler secret put JWT_SECRET --name "$WORKER"
-          echo "$SECRET_STRIPE_KEY" | npx wrangler secret put STRIPE_SECRET_KEY --name "$WORKER"
-          echo "$SECRET_STRIPE_WEBHOOK" | npx wrangler secret put STRIPE_WEBHOOK_SECRET --name "$WORKER"
-          echo "$SECRET_ADMIN_EMAIL" | npx wrangler secret put ADMIN_EMAIL --name "$WORKER"
-          echo "$SECRET_SES_ACCESS_KEY_ID" | npx wrangler secret put AWS_SES_ACCESS_KEY_ID --name "$WORKER"
-          echo "$SECRET_SES_SECRET_ACCESS_KEY" | npx wrangler secret put AWS_SES_SECRET_ACCESS_KEY --name "$WORKER"
-          echo "$SECRET_SES_REGION" | npx wrangler secret put AWS_SES_REGION --name "$WORKER"
-          echo "$VAR_SES_FROM" | npx wrangler secret put AWS_SES_FROM --name "$WORKER"
-          echo "$SECRET_TURNSTILE_KEY" | npx wrangler secret put TURNSTILE_SECRET_KEY --name "$WORKER"
+          jq -n \
+            --arg ed25519_priv "$SECRET_ED25519_PRIVATE_KEY" \
+            --arg ed25519_pub "$SECRET_ED25519_PUBLIC_KEY" \
+            --arg api_key "$SECRET_API_KEY" \
+            --arg jwt "$SECRET_JWT_SECRET" \
+            --arg stripe "$SECRET_STRIPE_KEY" \
+            --arg stripe_wh "$SECRET_STRIPE_WEBHOOK" \
+            --arg admin "$SECRET_ADMIN_EMAIL" \
+            --arg ses_key "$SECRET_SES_ACCESS_KEY_ID" \
+            --arg ses_secret "$SECRET_SES_SECRET_ACCESS_KEY" \
+            --arg ses_region "$SECRET_SES_REGION" \
+            --arg ses_from "$VAR_SES_FROM" \
+            --arg turnstile "$SECRET_TURNSTILE_KEY" \
+            '{
+              ED25519_PRIVATE_KEY: $ed25519_priv,
+              ED25519_PUBLIC_KEY: $ed25519_pub,
+              API_KEY: $api_key,
+              JWT_SECRET: $jwt,
+              STRIPE_SECRET_KEY: $stripe,
+              STRIPE_WEBHOOK_SECRET: $stripe_wh,
+              ADMIN_EMAIL: $admin,
+              AWS_SES_ACCESS_KEY_ID: $ses_key,
+              AWS_SES_SECRET_ACCESS_KEY: $ses_secret,
+              AWS_SES_REGION: $ses_region,
+              AWS_SES_FROM: $ses_from,
+              TURNSTILE_SECRET_KEY: $turnstile
+            }' | npx wrangler secret bulk --name "$WORKER"
 
       - name: Deployment summary
         run: |
