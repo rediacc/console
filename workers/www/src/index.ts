@@ -32,12 +32,13 @@ export default {
 
     // Serve account SPA for /account/* routes
     if (url.pathname === '/account' || url.pathname.startsWith('/account/')) {
-      const response = await env.ASSETS.fetch(request);
-      if (response.status === 404) {
-        const spaUrl = new URL('/account/index.html', url.origin);
-        return env.ASSETS.fetch(new Request(spaUrl, request));
+      // Only try assets for paths that look like static files (have an extension)
+      if (/\.\w+$/.test(url.pathname)) {
+        return env.ASSETS.fetch(request);
       }
-      return response;
+      // All other /account/* paths serve the SPA shell
+      const spaUrl = new URL('/account/index.html', url.origin);
+      return env.ASSETS.fetch(new Request(spaUrl, request));
     }
 
     return env.ASSETS.fetch(request);
