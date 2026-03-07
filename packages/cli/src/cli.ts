@@ -83,16 +83,11 @@ cli
   .option('-o, --output <format>', t('options.output'), 'table')
   .option('--config <name>', t('options.config'))
   .option('-l, --lang <code>', t('options.lang', { languages: SUPPORTED_LANGUAGES.join('|') }))
-  .option('--experimental', t('options.experimental'))
   .option('-y, --yes', t('options.yes'))
   .option('-q, --quiet', t('options.quiet'))
   .option('--fields <fields>', t('options.fields'))
   .hook('preAction', async (thisCommand, actionCommand) => {
     const opts = thisCommand.opts();
-    // Enable experimental mode if --experimental flag is passed
-    if (opts.experimental) {
-      process.env.REDIACC_EXPERIMENTAL = '1';
-    }
     // Auto-detect non-TTY: default to JSON when stdout is piped (agent-friendly)
     const outputSource = thisCommand.getOptionValueSource('output');
     let effectiveFormat = opts.output as OutputFormat;

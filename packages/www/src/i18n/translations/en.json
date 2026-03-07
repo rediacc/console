@@ -188,7 +188,14 @@
   },
   "logoWall": {
     "title": "Works with your infrastructure",
-    "categories": ["Git", "CI/CD", "Containers", "Databases", "Monitoring", "Storage"]
+    "categories": [
+      "Git",
+      "CI/CD",
+      "Containers",
+      "Databases",
+      "Monitoring",
+      "Storage"
+    ]
   },
   "solutions": {
     "title": "How We Ensure Business Continuity",
@@ -855,7 +862,9 @@
           "tiers": [
             {
               "planId": "community",
-              "included": ["Self-service documentation, video tutorials, and community forum"],
+              "included": [
+                "Self-service documentation, video tutorials, and community forum"
+              ],
               "available": [
                 "Standard Implementation ($9,999) or tiered packages (Small $7,499 · Medium $14,999 · Large $29,999 · Enterprise custom)",
                 "Emergency Response engagement ($29,999 on-demand)"
@@ -983,7 +992,10 @@
       },
       "trust": {
         "heading": "Enterprise-Grade Security & Reliability",
-        "items": ["AES-256 encryption standard", "99.99% uptime SLA"]
+        "items": [
+          "AES-256 encryption standard",
+          "99.99% uptime SLA"
+        ]
       },
       "ui": {
         "popular": "Most popular",
@@ -1620,7 +1632,9 @@
         "howWeUseInformation": {
           "id": "how-we-use-information",
           "title": "3. How We Use Your Information",
-          "content": ["We use the information we collect for the following purposes:"],
+          "content": [
+            "We use the information we collect for the following purposes:"
+          ],
           "items": [
             "To respond to your inquiries submitted through the contact form",
             "To provide, operate, and maintain the Rediacc platform",
@@ -1726,7 +1740,9 @@
         "definitions": {
           "id": "definitions",
           "title": "1. Definitions",
-          "content": ["The following definitions apply throughout these Terms of Service:"],
+          "content": [
+            "The following definitions apply throughout these Terms of Service:"
+          ],
           "items": [
             "<strong>\"Account\"</strong> means the user account you create to access the Platform and manage your Subscription.",
             "<strong>\"Authorized User\"</strong> means any individual granted access to the Services under your Account, including team members, employees, and contractors acting on your behalf.",
@@ -1785,7 +1801,9 @@
         "subscriptions": {
           "id": "subscriptions",
           "title": "5. Subscriptions, Billing, and Payment",
-          "content": ["Rediacc offers multiple Subscription tiers:"],
+          "content": [
+            "Rediacc offers multiple Subscription tiers:"
+          ],
           "items": [
             "<strong>Community</strong> (free) — Limited to 2 Machine activations, core features, community support",
             "<strong>Professional</strong> — Up to 5 Machine activations, audit logging, priority support, custom branding",
@@ -1835,7 +1853,9 @@
             },
             "restrictions": {
               "title": "6.2 Restrictions",
-              "content": ["You shall not:"],
+              "content": [
+                "You shall not:"
+              ],
               "items": [
                 "Reverse engineer, decompile, disassemble, or otherwise attempt to derive the source code of the Bridge binary or any non-open-source component of the On-Premise Software",
                 "Redistribute, sublicense, rent, lease, or lend the On-Premise Software to any third party",
@@ -1873,7 +1893,9 @@
         "useRestrictions": {
           "id": "use-restrictions",
           "title": "9. Use Restrictions",
-          "content": ["You agree that you and your Authorized Users will not use the Services to:"],
+          "content": [
+            "You agree that you and your Authorized Users will not use the Services to:"
+          ],
           "items": [
             "Deploy, host, or distribute malware, viruses, ransomware, or any other harmful code",
             "Operate cryptocurrency mining, peer-to-peer file sharing networks, or open proxy services",
@@ -2032,7 +2054,9 @@
         "cookiesWeUse": {
           "id": "cookies-we-use",
           "title": "3. Cookies We Use",
-          "content": ["We use a minimal number of cookies. In fact, we use only one:"],
+          "content": [
+            "We use a minimal number of cookies. In fact, we use only one:"
+          ],
           "subsections": {
             "languageCookie": {
               "title": "3.1 Language Preference Cookie",
@@ -2186,7 +2210,9 @@
             "The reason for your refund request",
             "Any relevant order or invoice numbers"
           ],
-          "content2": ["We aim to respond to all refund requests within 5 business days."]
+          "content2": [
+            "We aim to respond to all refund requests within 5 business days."
+          ]
         },
         "refundProcessing": {
           "id": "refund-processing",
@@ -2199,7 +2225,9 @@
         "nonRefundable": {
           "id": "non-refundable",
           "title": "6. Non-Refundable Items",
-          "content": ["The following are not eligible for refunds:"],
+          "content": [
+            "The following are not eligible for refunds:"
+          ],
           "items": [
             "Subscriptions cancelled after the 14-day new subscriber window",
             "Usage-based charges (e.g., overage fees) for resources already consumed",
@@ -2249,7 +2277,9 @@
         "principles": {
           "id": "principles",
           "title": "2. Our Telemetry Principles",
-          "content": ["All telemetry collection at Rediacc follows these principles:"],
+          "content": [
+            "All telemetry collection at Rediacc follows these principles:"
+          ],
           "items": [
             "<strong>Privacy by design:</strong> Personal identifiers are anonymized before transmission. Email addresses are reduced to domain only, user IDs are hashed (SHA-256) and truncated, passwords and secrets are never collected.",
             "<strong>Minimal collection:</strong> We collect only what is necessary to improve product quality and diagnose issues. We do not collect file contents, database contents, query results, or business data.",
@@ -2277,7 +2307,9 @@
           "subsections": {
             "webDataCollected": {
               "title": "4.1 Data Collected",
-              "content": ["The Web Application collects the following categories of data:"],
+              "content": [
+                "The Web Application collects the following categories of data:"
+              ],
               "items": [
                 "<strong>Browser information:</strong> browser name and version, preferred language, platform (e.g., Windows, macOS, Linux), screen resolution, color depth, user agent string, device memory (if available), network connection type",
                 "<strong>User context:</strong> session ID (randomly generated per session), email domain only (local part is redacted, e.g., <code>***@example.com</code>), organization name, team name",
@@ -2291,7 +2323,9 @@
             },
             "webNotCollected": {
               "title": "4.2 Data NOT Collected",
-              "content": ["The Web Application does not collect:"],
+              "content": [
+                "The Web Application does not collect:"
+              ],
               "items": [
                 "Full email addresses (local part is always redacted)",
                 "Passwords, tokens, or authentication credentials",
@@ -2319,7 +2353,9 @@
           "subsections": {
             "cliDataCollected": {
               "title": "5.1 Data Collected",
-              "content": ["The CLI collects the following categories of data:"],
+              "content": [
+                "The CLI collects the following categories of data:"
+              ],
               "items": [
                 "<strong>Command usage:</strong> command name, CLI version, exit code, success or failure status",
                 "<strong>Anonymized arguments:</strong> command options with sensitive values redacted — passwords, tokens, secrets, API keys, and credentials are replaced with <code>[REDACTED]</code>",
@@ -2331,7 +2367,9 @@
             },
             "cliOptOut": {
               "title": "5.2 How to Opt Out",
-              "content": ["You can disable CLI telemetry using any of these methods:"],
+              "content": [
+                "You can disable CLI telemetry using any of these methods:"
+              ],
               "items": [
                 "Set the environment variable <code>REDIACC_TELEMETRY=off</code> (also accepts <code>false</code> or <code>0</code>)",
                 "Set <code>telemetryEnabled: false</code> in your CLI configuration file",
@@ -2349,7 +2387,9 @@
           "subsections": {
             "middlewareDataCollected": {
               "title": "6.1 Data Collected",
-              "content": ["The Middleware collects the following categories of data:"],
+              "content": [
+                "The Middleware collects the following categories of data:"
+              ],
               "items": [
                 "<strong>System information:</strong> hostname, operating system version, .NET runtime version",
                 "<strong>API calls:</strong> HTTP method, endpoint path, response status code, request duration",
@@ -2377,7 +2417,9 @@
           "subsections": {
             "bridgeDataCollected": {
               "title": "7.1 Data Collected",
-              "content": ["The Bridge collects the following categories of data:"],
+              "content": [
+                "The Bridge collects the following categories of data:"
+              ],
               "items": [
                 "<strong>Queue operations:</strong> task ID, priority level, operation type, execution duration, success or failure status",
                 "<strong>SSH operations:</strong> target host, username, port number, exit code, execution duration (no command content or output is collected)",
@@ -2388,7 +2430,9 @@
             },
             "bridgeOptOut": {
               "title": "7.2 How to Opt Out",
-              "content": ["You can disable Bridge telemetry using either method:"],
+              "content": [
+                "You can disable Bridge telemetry using either method:"
+              ],
               "items": [
                 "Set the environment variable <code>REDIACC_TELEMETRY_DISABLED=1</code>",
                 "Set the environment variable <code>DO_NOT_TRACK=1</code> (respects the <a href=\"https://consult.dntrack.dev/\" target=\"_blank\" rel=\"noopener noreferrer\">Do Not Track</a> standard)"
@@ -2733,7 +2777,9 @@
           "tiers": [
             {
               "planId": "community",
-              "included": ["Self-service documentation, video tutorials, and community forum"],
+              "included": [
+                "Self-service documentation, video tutorials, and community forum"
+              ],
               "available": [
                 "Standard Implementation ($9,999) or tiered packages (Small $7,499 · Medium $14,999 · Large $29,999 · Enterprise custom)",
                 "Emergency Response engagement ($29,999 on-demand)"
@@ -2845,7 +2891,10 @@
       },
       "trust": {
         "heading": "Enterprise-Grade Security & Reliability",
-        "items": ["AES-256 encryption standard", "99.99% uptime SLA"]
+        "items": [
+          "AES-256 encryption standard",
+          "99.99% uptime SLA"
+        ]
       },
       "ui": {
         "popular": "Most popular",
@@ -3115,7 +3164,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Run", "60s", "Done"]
+            "newSteps": [
+              "Run",
+              "60s",
+              "Done"
+            ]
           }
         },
         "calculator": {
@@ -3283,27 +3336,117 @@
           "features": [
             {
               "name": "Application cloning",
-              "values": ["check", "check", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                3,
+                4,
+                5,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Database cloning",
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                6,
+                7,
+                0
+              ]
             },
             {
               "name": "Combined app + DB clone",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Any database engine",
-              "values": ["cross", "cross", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                6,
+                0,
+                0
+              ]
             },
             {
               "name": "Provisioning time",
-              "values": ["Minutes", "Minutes", "Minutes", "Minutes", "Seconds", "<60s"]
+              "values": [
+                "Minutes",
+                "Minutes",
+                "Minutes",
+                "Minutes",
+                "Seconds",
+                "<60s"
+              ],
+              "refs": [
+                3,
+                4,
+                5,
+                6,
+                7,
+                0
+              ]
             },
             {
               "name": "Production-identical data",
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                6,
+                7,
+                0
+              ]
             }
           ]
         },
@@ -3400,6 +3543,26 @@
             {
               "text": "Industry composite from vendor surveys and published benchmarks. \"Context switching costs $24K–$50K per developer per year in lost productivity.\"",
               "url": "https://release.com/blog/hidden-costs-of-staging"
+            },
+            {
+              "text": "GitHub, “GitHub Codespaces.” Cloud-hosted development environments with VS Code integration, prebuilds, and configurable compute.",
+              "url": "https://github.com/features/codespaces/"
+            },
+            {
+              "text": "Coder, “Self-Hosted Cloud Development Environments.” Open-source platform for provisioning dev environments on any infrastructure with templates.",
+              "url": "https://coder.com"
+            },
+            {
+              "text": "Vercel, “Frontend Cloud Platform.” Deployment platform for frontend frameworks with preview deployments and edge functions.",
+              "url": "https://vercel.com/"
+            },
+            {
+              "text": "Delphix (Perforce), “Data Virtualization.” Virtual database cloning with time-travel, masking, and compliance features.",
+              "url": "https://www.perforce.com/products/delphix/data-virtualization"
+            },
+            {
+              "text": "Neon, “Database Branching.” Serverless Postgres with instant database branching, autoscaling, and copy-on-write storage.",
+              "url": "https://neon.com/docs/introduction/branching"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc's btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -3552,7 +3715,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Spin up", "$0 idle", "Auto-cleanup"]
+            "newSteps": [
+              "Spin up",
+              "$0 idle",
+              "Auto-cleanup"
+            ]
           }
         },
         "calculator": {
@@ -3714,27 +3881,105 @@
           "features": [
             {
               "name": "Zero-copy clone storage (CoW)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Configurable TTL auto-destroy",
-              "values": ["check", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Full production data in clone",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Multi-service environments",
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                5,
+                0,
+                7,
+                0
+              ]
             },
             {
               "name": "Self-hosted / no per-seat pricing",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                5,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Sub-60-second provisioning",
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                6,
+                7,
+                0
+              ]
             }
           ]
         },
@@ -3829,6 +4074,22 @@
             {
               "text": "Industry composite from multiple sources on context switching costs. \"Context switching costs $24K–$50K per developer per year in lost productivity.\"",
               "url": "https://release.com/blog/hidden-costs-of-staging"
+            },
+            {
+              "text": "GitHub, “GitHub Codespaces.” Cloud-hosted development environments with VS Code integration, prebuilds, and configurable compute.",
+              "url": "https://github.com/features/codespaces/"
+            },
+            {
+              "text": "Coder, “Self-Hosted Cloud Development Environments.” Open-source platform for provisioning dev environments on any infrastructure with templates.",
+              "url": "https://coder.com"
+            },
+            {
+              "text": "Vercel, “Frontend Cloud Platform.” Deployment platform for frontend frameworks with preview deployments and edge functions.",
+              "url": "https://vercel.com/"
+            },
+            {
+              "text": "Railway, “Platform Features.” Cloud deployment platform with instant deploys, preview environments, and managed databases.",
+              "url": "https://railway.com/features"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc's btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -3996,7 +4257,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Run clone", "47s", "100% match"]
+            "newSteps": [
+              "Run clone",
+              "47s",
+              "100% match"
+            ]
           }
         },
         "calculator": {
@@ -4154,31 +4419,122 @@
           "features": [
             {
               "name": "Full production data clone",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "OS + library parity verification",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Any database engine (MariaDB, Postgres, Mongo)",
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                5,
+                0,
+                7,
+                0
+              ]
             },
             {
               "name": "Multi-service clone (app + DB + mail + storage)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Zero-copy storage (CoW)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Self-hosted / no vendor lock-in",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                5,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Sub-60-second provisioning",
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                6,
+                7,
+                0
+              ]
             }
           ]
         },
@@ -4273,6 +4629,22 @@
             {
               "text": "Industry composite from vendor surveys and published benchmarks. \"60–80% of staging environments sit idle at any given time.\"",
               "url": "https://release.com/blog/hidden-costs-of-staging"
+            },
+            {
+              "text": "GitHub, “GitHub Codespaces.” Cloud-hosted development environments with VS Code integration, prebuilds, and configurable compute.",
+              "url": "https://github.com/features/codespaces/"
+            },
+            {
+              "text": "Coder, “Self-Hosted Cloud Development Environments.” Open-source platform for provisioning dev environments on any infrastructure with templates.",
+              "url": "https://coder.com"
+            },
+            {
+              "text": "Vercel, “Frontend Cloud Platform.” Deployment platform for frontend frameworks with preview deployments and edge functions.",
+              "url": "https://vercel.com/"
+            },
+            {
+              "text": "Railway, “Platform Features.” Cloud deployment platform with instant deploys, preview environments, and managed databases.",
+              "url": "https://railway.com/features"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc’s btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -4437,7 +4809,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["git push", "Auto", "Real data"]
+            "newSteps": [
+              "git push",
+              "Auto",
+              "Real data"
+            ]
           }
         },
         "calculator": {
@@ -4491,19 +4867,31 @@
               {
                 "title": "Git Push",
                 "status": "Trigger",
-                "items": ["branch: feature/auth-v2", "commit: a3f7b2c", "author: sarah"],
+                "items": [
+                  "branch: feature/auth-v2",
+                  "commit: a3f7b2c",
+                  "author: sarah"
+                ],
                 "footer": "webhook → rdc"
               },
               {
                 "title": "Clone",
                 "status": "CoW",
-                "items": ["gitlab · nextcloud", "mariadb · mailcow", "380 GB → 2.1 GB"],
+                "items": [
+                  "gitlab · nextcloud",
+                  "mariadb · mailcow",
+                  "380 GB → 2.1 GB"
+                ],
                 "footer": "ci-auth-v2"
               },
               {
                 "title": "Tests",
                 "status": "Passed",
-                "items": ["247 unit tests ✓", "38 integration ✓", "auto-cleanup ✓"],
+                "items": [
+                  "247 unit tests ✓",
+                  "38 integration ✓",
+                  "auto-cleanup ✓"
+                ],
                 "footer": "285 passed"
               }
             ],
@@ -4573,27 +4961,105 @@
           "features": [
             {
               "name": "Production data in CI clones",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "One-line webhook integration",
-              "values": ["check", "cross", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                3,
+                0,
+                5,
+                6,
+                0
+              ]
             },
             {
               "name": "Multi-service CI environment",
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                4,
+                0,
+                6,
+                0
+              ]
             },
             {
               "name": "Auto-destroy after pipeline",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                3,
+                0,
+                5,
+                0,
+                0
+              ]
             },
             {
               "name": "Zero custom provisioning scripts",
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                5,
+                6,
+                0
+              ]
             },
             {
               "name": "Self-hosted / no vendor lock-in",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                4,
+                0,
+                0,
+                0
+              ]
             }
           ]
         },
@@ -4684,6 +5150,22 @@
             {
               "text": "DORA (Google Cloud), \"Accelerate State of DevOps Report,\" 2024. \"Elite performers deploy 182 times more frequently than their low-performing peers.\"",
               "url": "https://dora.dev/research/2024/dora-report/"
+            },
+            {
+              "text": "GitHub, “GitHub Codespaces.” Cloud-hosted development environments with VS Code integration, prebuilds, and configurable compute.",
+              "url": "https://github.com/features/codespaces/"
+            },
+            {
+              "text": "Coder, “Self-Hosted Cloud Development Environments.” Open-source platform for provisioning dev environments on any infrastructure with templates.",
+              "url": "https://coder.com"
+            },
+            {
+              "text": "Vercel, “Frontend Cloud Platform.” Deployment platform for frontend frameworks with preview deployments and edge functions.",
+              "url": "https://vercel.com/"
+            },
+            {
+              "text": "Railway, “Platform Features.” Cloud deployment platform with instant deploys, preview environments, and managed databases.",
+              "url": "https://railway.com/features"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc’s btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -4798,17 +5280,20 @@
             {
               "number": "94%",
               "text": "of attacks target backups",
-              "source": "Sophos 2024 [1]"
+              "source": "Sophos 2024",
+              "ref": 1
             },
             {
               "number": "$4.88M",
               "text": "avg breach cost",
-              "source": "IBM Cost of a Data Breach 2024 [2]"
+              "source": "IBM Cost of a Data Breach 2024",
+              "ref": 2
             },
             {
               "number": "24 days",
               "text": "avg recovery time",
-              "source": "Coveware Quarterly Report [3]"
+              "source": "Coveware Quarterly Report",
+              "ref": 3
             }
           ],
           "timeline": {
@@ -4836,7 +5321,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Backup", "Sealed", "Verified"]
+            "newSteps": [
+              "Backup",
+              "Sealed",
+              "Verified"
+            ]
           }
         },
         "calculator": {
@@ -4998,31 +5487,136 @@
           "features": [
             {
               "name": "Immutable backups",
-              "values": ["check", "check", "check", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                5,
+                6,
+                7,
+                8,
+                0,
+                0
+              ]
             },
             {
               "name": "Filesystem-level enforcement",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Automated daily restore verification",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                5,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Zero-copy storage (CoW)",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Instant clone for testing",
-              "values": ["cross", "check", "cross", "cross", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                5,
+                6,
+                7,
+                8,
+                9,
+                0
+              ]
             },
             {
               "name": "Recovery time",
-              "values": ["Minutes", "Minutes", "Hours", "Hours", "Seconds", "<5 min"]
+              "values": [
+                "Minutes",
+                "Minutes",
+                "Minutes",
+                "Minutes",
+                "Seconds",
+                "<5 min"
+              ],
+              "refs": [
+                5,
+                6,
+                7,
+                8,
+                9,
+                0
+              ]
             },
             {
               "name": "Self-hosted / no cloud dependency",
-              "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                5,
+                6,
+                7,
+                0,
+                9,
+                0
+              ]
             }
           ]
         },
@@ -5133,6 +5727,26 @@
             {
               "text": "Splunk & Oxford Economics, “The Hidden Costs of Downtime,” June 2024. “Each minute of downtime costs $9,000 or $540,000 per hour.”",
               "url": "https://www.splunk.com/en_us/blog/cio-office/cost-of-downtime-from-global-executives.html"
+            },
+            {
+              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
+              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+            },
+            {
+              "text": "Rubrik, “Zero Trust Data Management.” Immutable append-only file system, air-gapped backups, SaaS-delivered platform, instant recovery.",
+              "url": "https://www.rubrik.com/products/zero-trust-data-management"
+            },
+            {
+              "text": "Commvault, “Backup & Recovery Platform.” Immutable and indelible storage, air-gapped backups, ransomware protection, self-hosted deployment.",
+              "url": "https://www.commvault.com/platform/backup-and-recovery"
+            },
+            {
+              "text": "Druva, “Cloud Backup & Recovery.” SaaS-only cloud-native platform, immutable snapshots, air-gapped storage, ransomware recovery.",
+              "url": "https://www.druva.com/solutions/cloud-backup"
+            },
+            {
+              "text": "Zerto, “Continuous Data Protection.” Journal-based recovery with RPOs of seconds and RTOs of minutes, near-synchronous always-on replication.",
+              "url": "https://www.zerto.com/"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc’s btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -5259,17 +5873,20 @@
             {
               "number": "89%",
               "text": "of enterprises operate multi-cloud, yet only 8% encrypt 80%+ of cloud data",
-              "source": "Flexera 2024 [1] / Thales 2025 [2]"
+              "source": "Flexera 2024 / Thales 2025",
+              "ref": 2
             },
             {
               "number": "$4.88M",
               "text": "average cost of a data breach globally",
-              "source": "IBM Cost of Data Breach 2024 [3]"
+              "source": "IBM Cost of Data Breach 2024",
+              "ref": 3
             },
             {
               "number": "$90K–$300K",
               "text": "egress cost per petabyte when migrating encrypted data between clouds",
-              "source": "Cloud provider pricing [4]"
+              "source": "Cloud provider pricing",
+              "ref": 4
             }
           ],
           "timeline": {
@@ -5297,7 +5914,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Run migrate", "0 exposure", "Verified"]
+            "newSteps": [
+              "Run migrate",
+              "0 exposure",
+              "Verified"
+            ]
           }
         },
         "calculator": {
@@ -5457,31 +6078,122 @@
           "features": [
             {
               "name": "Zero-decryption migration",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Customer-held keys during transfer",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Config + data atomic migration",
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                7,
+                0,
+                0
+              ]
             },
             {
               "name": "Post-transfer integrity verification",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                5,
+                6,
+                7,
+                8,
+                0
+              ]
             },
             {
               "name": "Single-command migration",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Any-to-any destination",
-              "values": ["check", "check", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                5,
+                6,
+                7,
+                0,
+                0
+              ]
             },
             {
               "name": "Automatic rollback on failure",
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                7,
+                0,
+                0
+              ]
             }
           ]
         },
@@ -5592,6 +6304,22 @@
             {
               "text": "AWS, “Amazon S3 Pricing — Data Transfer,” 2024. “Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.”",
               "url": "https://aws.amazon.com/s3/pricing/"
+            },
+            {
+              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
+              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+            },
+            {
+              "text": "Rubrik, “Zero Trust Data Management.” Immutable append-only file system, air-gapped backups, SaaS-delivered platform, instant recovery.",
+              "url": "https://www.rubrik.com/products/zero-trust-data-management"
+            },
+            {
+              "text": "Commvault, “Backup & Recovery Platform.” Immutable and indelible storage, air-gapped backups, ransomware protection, self-hosted deployment.",
+              "url": "https://www.commvault.com/platform/backup-and-recovery"
+            },
+            {
+              "text": "Druva, “Cloud Backup & Recovery.” SaaS-only cloud-native platform, immutable snapshots, air-gapped storage, ransomware recovery.",
+              "url": "https://www.druva.com/solutions/cloud-backup"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc’s btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -5715,17 +6443,20 @@
             {
               "number": "3.4 weeks",
               "text": "average ransomware recovery time",
-              "source": "Sophos State of Ransomware 2024 [1]"
+              "source": "Sophos State of Ransomware 2024",
+              "ref": 1
             },
             {
               "number": "$300K+/hr",
               "text": "downtime cost for 90% of mid-size and large enterprises",
-              "source": "ITIC Hourly Cost of Downtime Survey 2024 [2]"
+              "source": "ITIC Hourly Cost of Downtime Survey 2024",
+              "ref": 2
             },
             {
               "number": "Only 13%",
               "text": "of organizations can orchestrate recovery during a disaster",
-              "source": "Veeam Data Protection Trends Report 2024 [3]"
+              "source": "Veeam Data Protection Trends Report 2024",
+              "ref": 3
             }
           ],
           "timeline": {
@@ -5753,7 +6484,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Run restore", "3m 47s", "Running"]
+            "newSteps": [
+              "Run restore",
+              "3m 47s",
+              "Running"
+            ]
           }
         },
         "calculator": {
@@ -5917,31 +6652,122 @@
           "features": [
             {
               "name": "Full environment restore (not just files)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Sub-5-minute recovery time",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0
+              ]
             },
             {
               "name": "Automated post-restore health checks",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Point-in-time snapshot granularity",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0
+              ]
             },
             {
               "name": "Zero-overhead clone (no extra storage)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Single-command recovery",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                5,
+                6,
+                0,
+                0
+              ]
             }
           ]
         },
@@ -6048,6 +6874,22 @@
             {
               "text": "Veeam, “Data Protection Trends Report — BC/DR Trends,” 2024. “Only 13% of organizations utilize orchestrated workflow as part of their disaster recovery processes.”",
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
+            },
+            {
+              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
+              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+            },
+            {
+              "text": "Rubrik, “Zero Trust Data Management.” Immutable append-only file system, air-gapped backups, SaaS-delivered platform, instant recovery.",
+              "url": "https://www.rubrik.com/products/zero-trust-data-management"
+            },
+            {
+              "text": "Commvault, “Backup & Recovery Platform.” Immutable and indelible storage, air-gapped backups, ransomware protection, self-hosted deployment.",
+              "url": "https://www.commvault.com/platform/backup-and-recovery"
+            },
+            {
+              "text": "Druva, “Cloud Backup & Recovery.” SaaS-only cloud-native platform, immutable snapshots, air-gapped storage, ransomware recovery.",
+              "url": "https://www.druva.com/solutions/cloud-backup"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc’s btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -6177,17 +7019,20 @@
             {
               "number": "3x",
               "text": "surge in vulnerability exploitation as initial access vector",
-              "source": "Verizon DBIR 2024 [1]"
+              "source": "Verizon DBIR 2024",
+              "ref": 1
             },
             {
               "number": "45%",
               "text": "of network outages caused by config/change management",
-              "source": "Uptime Institute 2023 [2]"
+              "source": "Uptime Institute 2023",
+              "ref": 2
             },
             {
               "number": "$9,000/min",
               "text": "average cost of IT downtime",
-              "source": "Splunk/Oxford Economics 2024 [3]"
+              "source": "Splunk/Oxford Economics 2024",
+              "ref": 3
             }
           ],
           "timeline": {
@@ -6215,7 +7060,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Clone", "60s", "Patch & verify"]
+            "newSteps": [
+              "Clone",
+              "60s",
+              "Patch & verify"
+            ]
           }
         },
         "calculator": {
@@ -6377,31 +7226,122 @@
           "features": [
             {
               "name": "Full-stack clone for testing",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Clone creation under 60s",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Isolated network per clone",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                5,
+                0,
+                7,
+                8,
+                0
+              ]
             },
             {
               "name": "Zero additional storage (CoW)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Auto health check after patch",
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                5,
+                6,
+                7,
+                8,
+                0
+              ]
             },
             {
               "name": "Self-hosted, no cloud dependency",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                5,
+                6,
+                7,
+                8,
+                0
+              ]
             },
             {
               "name": "One-command workflow",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             }
           ]
         },
@@ -6512,6 +7452,22 @@
             {
               "text": "IBM Security, “Cost of a Data Breach Report 2024,” July 2024. “The global average cost of a data breach reached $4.88 million in 2024.”",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
+            },
+            {
+              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
+              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+            },
+            {
+              "text": "Rubrik, “Zero Trust Data Management.” Immutable append-only file system, air-gapped backups, SaaS-delivered platform, instant recovery.",
+              "url": "https://www.rubrik.com/products/zero-trust-data-management"
+            },
+            {
+              "text": "Commvault, “Backup & Recovery Platform.” Immutable and indelible storage, air-gapped backups, ransomware protection, self-hosted deployment.",
+              "url": "https://www.commvault.com/platform/backup-and-recovery"
+            },
+            {
+              "text": "Zerto, “Continuous Data Protection.” Journal-based recovery with RPOs of seconds and RTOs of minutes, near-synchronous always-on replication.",
+              "url": "https://www.zerto.com/"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc’s btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -6637,17 +7593,20 @@
             {
               "number": "$4.88M",
               "text": "average cost of a data breach globally",
-              "source": "IBM Cost of Data Breach 2024 [1]"
+              "source": "IBM Cost of Data Breach 2024",
+              "ref": 1
             },
             {
               "number": "$2.13M",
               "text": "maximum HIPAA penalty per violation category per year",
-              "source": "HHS HIPAA Enforcement [2]"
+              "source": "HHS HIPAA Enforcement",
+              "ref": 2
             },
             {
               "number": "€1.2B",
               "text": "in GDPR fines issued across Europe in 2024 alone",
-              "source": "CMS GDPR Enforcement Tracker 2024/2025 [3]"
+              "source": "CMS GDPR Enforcement Tracker 2024/2025",
+              "ref": 3
             }
           ],
           "timeline": {
@@ -6675,7 +7634,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Set policy", "Auto", "Audit-ready"]
+            "newSteps": [
+              "Set policy",
+              "Auto",
+              "Audit-ready"
+            ]
           }
         },
         "calculator": {
@@ -6838,31 +7801,122 @@
           "features": [
             {
               "name": "Configurable retention policies",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0
+              ]
             },
             {
               "name": "Automated lifecycle cleanup",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0
+              ]
             },
             {
               "name": "Retained backup verification",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Instant audit-ready reports",
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0
+              ]
             },
             {
               "name": "Multi-framework support",
-              "values": ["cross", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0
+              ]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                5,
+                6,
+                0,
+                0
+              ]
             },
             {
               "name": "CLI / automation-first",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             }
           ]
         },
@@ -6969,6 +8023,22 @@
             {
               "text": "CMS Law, “GDPR Enforcement Tracker Report 2024/2025,” 2025. “An aggregate total of EUR 1.2 billion in fines was issued across Europe in 2024.”",
               "url": "https://cms.law/en/int/publication/gdpr-enforcement-tracker-report/numbers-and-figures"
+            },
+            {
+              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
+              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+            },
+            {
+              "text": "Rubrik, “Zero Trust Data Management.” Immutable append-only file system, air-gapped backups, SaaS-delivered platform, instant recovery.",
+              "url": "https://www.rubrik.com/products/zero-trust-data-management"
+            },
+            {
+              "text": "Commvault, “Backup & Recovery Platform.” Immutable and indelible storage, air-gapped backups, ransomware protection, self-hosted deployment.",
+              "url": "https://www.commvault.com/platform/backup-and-recovery"
+            },
+            {
+              "text": "Druva, “Cloud Backup & Recovery.” SaaS-only cloud-native platform, immutable snapshots, air-gapped storage, ransomware recovery.",
+              "url": "https://www.druva.com/solutions/cloud-backup"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc’s btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -7095,17 +8165,20 @@
             {
               "number": "$300K+",
               "text": "per hour of downtime for 90% of mid-to-large enterprises",
-              "source": "ITIC 2024 Hourly Cost of Downtime Survey [1]"
+              "source": "ITIC 2024 Hourly Cost of Downtime Survey",
+              "ref": 1
             },
             {
               "number": "18%",
               "text": "increase in critical cloud outage events in 2024",
-              "source": "Parametrix 2024 Cloud Outage Risk Report [2]"
+              "source": "Parametrix 2024 Cloud Outage Risk Report",
+              "ref": 2
             },
             {
               "number": "$400B",
               "text": "annual downtime cost for Global 2000 companies",
-              "source": "Splunk / Oxford Economics 2024 [3]"
+              "source": "Splunk / Oxford Economics 2024",
+              "ref": 3
             }
           ],
           "timeline": {
@@ -7133,7 +8206,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Detect", "<30s", "Online"]
+            "newSteps": [
+              "Detect",
+              "<30s",
+              "Online"
+            ]
           }
         },
         "calculator": {
@@ -7296,31 +8373,122 @@
           "features": [
             {
               "name": "Cross-cloud replication",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                5,
+                6,
+                7,
+                0
+              ]
             },
             {
               "name": "Failover under 30 seconds",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Incremental-only transfer (98% savings)",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                5,
+                6,
+                7,
+                0
+              ]
             },
             {
               "name": "Any-to-any provider failover",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Self-hosted, no cloud agent",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                5,
+                6,
+                0,
+                0
+              ]
             },
             {
               "name": "Automatic DNS failover",
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                6,
+                0,
+                0
+              ]
             },
             {
               "name": "Full-stack replication (app + DB)",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                5,
+                6,
+                0,
+                0
+              ]
             }
           ]
         },
@@ -7427,6 +8595,22 @@
             {
               "text": "Splunk & Oxford Economics, “The Hidden Costs of Downtime,” 2024. “The total cost of downtime for Global 2000 companies is $400B annually, or 9 percent of profits, when digital environments fail unexpectedly.”",
               "url": "https://www.splunk.com/en_us/newsroom/press-releases/2024/conf24-splunk-report-shows-downtime-costs-global-2000-companies-400-billion-annually.html"
+            },
+            {
+              "text": "AWS, “AWS Backup Features.” Centralized, policy-based backup service for AWS resources with cross-region and cross-account capabilities.",
+              "url": "https://aws.amazon.com/backup/features/"
+            },
+            {
+              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
+              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+            },
+            {
+              "text": "Zerto, “Continuous Data Protection.” Journal-based recovery with RPOs of seconds and RTOs of minutes, near-synchronous always-on replication.",
+              "url": "https://www.zerto.com/"
+            },
+            {
+              "text": "Druva, “Cloud Backup & Recovery.” SaaS-only cloud-native platform, immutable snapshots, air-gapped storage, ransomware recovery.",
+              "url": "https://www.druva.com/solutions/cloud-backup"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc’s btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -7546,17 +8730,20 @@
             {
               "number": "Only 13%",
               "text": "of organizations use orchestrated DR workflows",
-              "source": "Veeam 2024 Data Protection Trends Report [1]"
+              "source": "Veeam 2024 Data Protection Trends Report",
+              "ref": 1
             },
             {
               "number": "Only 32%",
               "text": "of organizations can recover 50 servers within a business week",
-              "source": "Veeam 2024 Data Protection Trends Report [1]"
+              "source": "Veeam 2024 Data Protection Trends Report",
+              "ref": 1
             },
             {
               "number": "Only 58%",
               "text": "of servers resumed within SLA during recovery tests",
-              "source": "Veeam 2024 Data Protection Trends Report [1]"
+              "source": "Veeam 2024 Data Protection Trends Report",
+              "ref": 1
             }
           ],
           "timeline": {
@@ -7584,7 +8771,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Run test", "4 min", "Report"]
+            "newSteps": [
+              "Run test",
+              "4 min",
+              "Report"
+            ]
           }
         },
         "calculator": {
@@ -7746,31 +8937,122 @@
           "features": [
             {
               "name": "Full-stack failover test",
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                4,
+                0,
+                0
+              ]
             },
             {
               "name": "Zero production impact",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                3,
+                4,
+                5,
+                0
+              ]
             },
             {
               "name": "Under 5 minutes",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Automated pass/fail report",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                3,
+                4,
+                0,
+                0
+              ]
             },
             {
               "name": "CI/CD integration",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Cross-cloud testing",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                3,
+                4,
+                0,
+                0
+              ]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                3,
+                4,
+                0,
+                0
+              ]
             }
           ]
         },
@@ -7869,6 +9151,22 @@
             {
               "text": "Veeam, “2024 Data Protection Trends Report — BC/DR Trends,” 2024. “Only 13% of organizations utilize orchestrated workflow as part of their disaster recovery processes.” “Only 58% of servers met their recovery SLA during their last large-scale attack.” “Only 32% of organizations believe that they could recover 50 workloads within an entire business week.”",
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
+            },
+            {
+              "text": "AWS, “AWS Backup Features.” Centralized, policy-based backup service for AWS resources with cross-region and cross-account capabilities.",
+              "url": "https://aws.amazon.com/backup/features/"
+            },
+            {
+              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
+              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+            },
+            {
+              "text": "Zerto, “Continuous Data Protection.” Journal-based recovery with RPOs of seconds and RTOs of minutes, near-synchronous always-on replication.",
+              "url": "https://www.zerto.com/"
+            },
+            {
+              "text": "Druva, “Cloud Backup & Recovery.” SaaS-only cloud-native platform, immutable snapshots, air-gapped storage, ransomware recovery.",
+              "url": "https://www.druva.com/solutions/cloud-backup"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc’s btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -7992,17 +9290,20 @@
             {
               "number": "58%",
               "text": "of data backups fail when restoration is attempted",
-              "source": "Veeam Data Protection Trends Report 2021 [1]"
+              "source": "Veeam Data Protection Trends Report 2021",
+              "ref": 1
             },
             {
               "number": "Only 13%",
               "text": "of organizations can orchestrate recovery during a disaster",
-              "source": "Veeam Data Protection Trends Report 2024 [2]"
+              "source": "Veeam Data Protection Trends Report 2024",
+              "ref": 2
             },
             {
               "number": "$173/record",
               "text": "average cost per compromised record",
-              "source": "IBM Cost of a Data Breach Report 2024 [3]"
+              "source": "IBM Cost of a Data Breach Report 2024",
+              "ref": 3
             }
           ],
           "timeline": {
@@ -8030,7 +9331,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Backup", "47s", "Verified"]
+            "newSteps": [
+              "Backup",
+              "47s",
+              "Verified"
+            ]
           }
         },
         "calculator": {
@@ -8192,31 +9497,122 @@
           "features": [
             {
               "name": "Automated restore verification",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Full service health check",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Daily automated testing",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Zero-storage clone for testing",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Checksum / file integrity",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0
+              ]
             },
             {
               "name": "Alerting integration",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0
+              ]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                5,
+                6,
+                0,
+                0
+              ]
             }
           ]
         },
@@ -8323,6 +9719,22 @@
             {
               "text": "IBM Security, “Cost of a Data Breach Report 2024,” July 2024. “Costs associated with stolen records jumped nearly 11% from the prior year to $173 per record.”",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
+            },
+            {
+              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
+              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+            },
+            {
+              "text": "Rubrik, “Zero Trust Data Management.” Immutable append-only file system, air-gapped backups, SaaS-delivered platform, instant recovery.",
+              "url": "https://www.rubrik.com/products/zero-trust-data-management"
+            },
+            {
+              "text": "Commvault, “Backup & Recovery Platform.” Immutable and indelible storage, air-gapped backups, ransomware protection, self-hosted deployment.",
+              "url": "https://www.commvault.com/platform/backup-and-recovery"
+            },
+            {
+              "text": "Druva, “Cloud Backup & Recovery.” SaaS-only cloud-native platform, immutable snapshots, air-gapped storage, ransomware recovery.",
+              "url": "https://www.druva.com/solutions/cloud-backup"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc’s btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -8455,17 +9867,20 @@
             {
               "number": "30.6 days",
               "text": "mean time to remediate weaponized vulnerabilities",
-              "source": "Qualys TruRisk Research Report 2023 [1]"
+              "source": "Qualys TruRisk Research Report 2023",
+              "ref": 1
             },
             {
               "number": "180%",
               "text": "increase in vulnerability exploitation as initial breach vector",
-              "source": "Verizon DBIR 2024 [2]"
+              "source": "Verizon DBIR 2024",
+              "ref": 2
             },
             {
               "number": "$4.88M",
               "text": "average cost of a data breach",
-              "source": "IBM Cost of a Data Breach 2024 [3]"
+              "source": "IBM Cost of a Data Breach 2024",
+              "ref": 3
             }
           ],
           "timeline": {
@@ -8493,7 +9908,12 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Clone + patch", "<4 min", "Verified", "Deploy"]
+            "newSteps": [
+              "Clone + patch",
+              "<4 min",
+              "Verified",
+              "Deploy"
+            ]
           }
         },
         "calculator": {
@@ -8855,21 +10275,21 @@
           "statCallouts": [
             {
               "number": "194 days",
-              "label": "average time to identify a breach",
               "source": "IBM Cost of a Data Breach 2024",
-              "ref": "[1]"
+              "ref": 1,
+              "text": "average time to identify a breach"
             },
             {
               "number": "180%",
-              "label": "increase in vulnerability exploitation as initial breach vector",
               "source": "Verizon DBIR 2024",
-              "ref": "[2]"
+              "ref": 2,
+              "text": "increase in vulnerability exploitation as initial breach vector"
             },
             {
               "number": "$4.88M",
-              "label": "average cost of a data breach",
               "source": "IBM Cost of a Data Breach 2024",
-              "ref": "[1]"
+              "ref": 1,
+              "text": "average cost of a data breach"
             }
           ],
           "timeline": {
@@ -8897,7 +10317,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Run pentest", "47s", "7 vulns found"]
+            "newSteps": [
+              "Run pentest",
+              "47s",
+              "7 vulns found"
+            ]
           }
         },
         "calculator": {
@@ -9241,21 +10665,21 @@
           "statCallouts": [
             {
               "number": "Only 8%",
-              "label": "of organizations encrypt 80%+ of their cloud data",
               "source": "Thales 2025 Cloud Security Study",
-              "ref": "[1]"
+              "ref": 1,
+              "text": "of organizations encrypt 80%+ of their cloud data"
             },
             {
               "number": "$4.88M",
-              "label": "average cost of a data breach globally",
               "source": "IBM Cost of Data Breach 2024",
-              "ref": "[2]"
+              "ref": 2,
+              "text": "average cost of a data breach globally"
             },
             {
               "number": "57%",
-              "label": "of organizations use 5+ key management systems, creating encryption blind spots",
               "source": "Thales 2025 Cloud Security Study",
-              "ref": "[1]"
+              "ref": 1,
+              "text": "of organizations use 5+ key management systems, creating encryption blind spots"
             }
           ],
           "timeline": {
@@ -9283,7 +10707,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Your key", "AES-256", "Zero-knowledge"]
+            "newSteps": [
+              "Your key",
+              "AES-256",
+              "Zero-knowledge"
+            ]
           }
         },
         "calculator": {
@@ -9443,31 +10871,122 @@
           "features": [
             {
               "name": "Customer-held encryption keys",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "Via KMS",
+                "Via KMS",
+                "Via KMS",
+                "Via KMS",
+                "rediacc"
+              ],
+              "refs": [
+                3,
+                4,
+                5,
+                6,
+                0
+              ]
             },
             {
               "name": "Zero-knowledge architecture",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Self-service key rotation",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "Via KMS",
+                "Via KMS",
+                "Via KMS",
+                "Via KMS",
+                "rediacc"
+              ],
+              "refs": [
+                3,
+                4,
+                5,
+                6,
+                0
+              ]
             },
             {
               "name": "AES-256 encryption at rest",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                3,
+                4,
+                5,
+                6,
+                0
+              ]
             },
             {
               "name": "Per-repository key isolation",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Encryption in transit",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                3,
+                4,
+                5,
+                6,
+                0
+              ]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                3,
+                4,
+                5,
+                0,
+                0
+              ]
             }
           ]
         },
@@ -9568,6 +11087,22 @@
             {
               "text": "IBM Security, \"Cost of a Data Breach Report 2024,\" July 2024. \"The global average cost of a data breach reached $4.88 million in 2024.\"",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
+            },
+            {
+              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
+              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+            },
+            {
+              "text": "Rubrik, “Zero Trust Data Management.” Immutable append-only file system, air-gapped backups, SaaS-delivered platform, instant recovery.",
+              "url": "https://www.rubrik.com/products/zero-trust-data-management"
+            },
+            {
+              "text": "Commvault, “Backup & Recovery Platform.” Immutable and indelible storage, air-gapped backups, ransomware protection, self-hosted deployment.",
+              "url": "https://www.commvault.com/platform/backup-and-recovery"
+            },
+            {
+              "text": "Druva, “Cloud Backup & Recovery.” SaaS-only cloud-native platform, immutable snapshots, air-gapped storage, ransomware recovery.",
+              "url": "https://www.druva.com/solutions/cloud-backup"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc's btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -9672,21 +11207,21 @@
           "statCallouts": [
             {
               "number": "364 days",
-              "label": "of exposure between annual pentests",
               "source": "Industry standard: 365 days minus testing window",
-              "ref": ""
+              "ref": 0,
+              "text": "of exposure between annual pentests"
             },
             {
               "number": "30.6 days",
-              "label": "mean time to remediate weaponized vulnerabilities",
               "source": "Qualys TruRisk Research Report 2023",
-              "ref": "[1]"
+              "ref": 1,
+              "text": "mean time to remediate weaponized vulnerabilities"
             },
             {
               "number": "$4.88M",
-              "label": "average cost of a data breach",
               "source": "IBM Cost of a Data Breach 2024",
-              "ref": "[2]"
+              "ref": 2,
+              "text": "average cost of a data breach"
             }
           ],
           "timeline": {
@@ -9714,7 +11249,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Daily scans", "0 days", "Zero blind spots"]
+            "newSteps": [
+              "Daily scans",
+              "0 days",
+              "Zero blind spots"
+            ]
           }
         },
         "calculator": {
@@ -9790,7 +11329,12 @@
               {
                 "title": "4-Week Trend",
                 "status": "-87%",
-                "items": ["W1: ████████ 23", "W2: ████ 12", "W3: ██ 7", "W4: █ 3"],
+                "items": [
+                  "W1: ████████ 23",
+                  "W2: ████ 12",
+                  "W3: ██ 7",
+                  "W4: █ 3"
+                ],
                 "footer": "Continuous improvement · automated"
               }
             ],
@@ -10047,21 +11591,21 @@
           "statCallouts": [
             {
               "number": "204 days",
-              "label": "average time to identify a data breach",
               "source": "IBM Cost of Data Breach 2024",
-              "ref": "[1]"
+              "ref": 1,
+              "text": "average time to identify a data breach"
             },
             {
               "number": ">1/3",
-              "label": "of breaches involve shadow data, complicating forensic investigation",
               "source": "IBM Cost of Data Breach 2024",
-              "ref": "[1]"
+              "ref": 1,
+              "text": "of breaches involve shadow data, complicating forensic investigation"
             },
             {
               "number": "$1.76M",
-              "label": "additional breach cost when security staffing gaps delay response",
               "source": "IBM Cost of Data Breach 2024",
-              "ref": "[1]"
+              "ref": 1,
+              "text": "additional breach cost when security staffing gaps delay response"
             }
           ],
           "timeline": {
@@ -10089,7 +11633,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Run audit", "Instant", "Complete report"]
+            "newSteps": [
+              "Run audit",
+              "Instant",
+              "Complete report"
+            ]
           }
         },
         "calculator": {
@@ -10249,31 +11797,122 @@
           "features": [
             {
               "name": "Tamper-proof audit logs",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                3,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Cryptographic signing (SHA-256)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Instant report generation (CLI)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Basic operation logging",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                2,
+                3,
+                4,
+                5,
+                0
+              ]
             },
             {
               "name": "User attribution per action",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                2,
+                3,
+                4,
+                5,
+                0
+              ]
             },
             {
               "name": "Key rotation tracking",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                2,
+                3,
+                4,
+                0,
+                0
+              ]
             }
           ]
         },
@@ -10370,6 +12009,22 @@
             {
               "text": "IBM Security, \"Cost of a Data Breach Report 2024,\" July 2024. \"The average time to identify a breach was 204 days.\" \"More than one-third of breaches involved shadow data.\" \"Organizations with severe staffing shortages observed an average of $1.76 million in higher breach costs.\"",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
+            },
+            {
+              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
+              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+            },
+            {
+              "text": "Rubrik, “Zero Trust Data Management.” Immutable append-only file system, air-gapped backups, SaaS-delivered platform, instant recovery.",
+              "url": "https://www.rubrik.com/products/zero-trust-data-management"
+            },
+            {
+              "text": "Commvault, “Backup & Recovery Platform.” Immutable and indelible storage, air-gapped backups, ransomware protection, self-hosted deployment.",
+              "url": "https://www.commvault.com/platform/backup-and-recovery"
+            },
+            {
+              "text": "Druva, “Cloud Backup & Recovery.” SaaS-only cloud-native platform, immutable snapshots, air-gapped storage, ransomware recovery.",
+              "url": "https://www.druva.com/solutions/cloud-backup"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc's btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -10460,21 +12115,21 @@
           "statCallouts": [
             {
               "number": "24 days",
-              "label": "average recovery time",
               "source": "Coveware Quarterly Report",
-              "ref": "[1]"
+              "ref": 1,
+              "text": "average recovery time"
             },
             {
               "number": "$9,000",
-              "label": "per minute of downtime",
               "source": "Splunk/Oxford Economics 2024",
-              "ref": "[2]"
+              "ref": 2,
+              "text": "per minute of downtime"
             },
             {
               "number": "80%",
-              "label": "of victims who paid are hit again",
               "source": "Cybereason 2022",
-              "ref": "[3]"
+              "ref": 3,
+              "text": "of victims who paid are hit again"
             }
           ],
           "timeline": {
@@ -10502,7 +12157,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Detect", "<5 min", "Online"]
+            "newSteps": [
+              "Detect",
+              "<5 min",
+              "Online"
+            ]
           }
         },
         "calculator": {
@@ -10663,27 +12322,117 @@
           "features": [
             {
               "name": "Full-environment recovery",
-              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                8,
+                0
+              ]
             },
             {
               "name": "Recovery under 5 minutes",
-              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                8,
+                0
+              ]
             },
             {
               "name": "Point-in-time (minute-level)",
-              "values": ["check", "check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                8,
+                0
+              ]
             },
             {
               "name": "Automated restore verification",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "No data transfer required",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Self-hosted / no cloud dependency",
-              "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                5,
+                6,
+                0,
+                8,
+                0
+              ]
             }
           ]
         },
@@ -10788,6 +12537,26 @@
             {
               "text": "Cybereason, \"Ransomware Attacks and the True Cost to Business 2022,\" 2022. \"80% of organizations that paid were hit by ransomware a second time, with 68% saying the second attack came less than a month later and threat actors demanded a higher ransom amount.\"",
               "url": "https://www.cybereason.com/blog/report-ransomware-attacks-and-the-true-cost-to-business-2022"
+            },
+            {
+              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
+              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+            },
+            {
+              "text": "Rubrik, “Zero Trust Data Management.” Immutable append-only file system, air-gapped backups, SaaS-delivered platform, instant recovery.",
+              "url": "https://www.rubrik.com/products/zero-trust-data-management"
+            },
+            {
+              "text": "Commvault, “Backup & Recovery Platform.” Immutable and indelible storage, air-gapped backups, ransomware protection, self-hosted deployment.",
+              "url": "https://www.commvault.com/platform/backup-and-recovery"
+            },
+            {
+              "text": "Druva, “Cloud Backup & Recovery.” SaaS-only cloud-native platform, immutable snapshots, air-gapped storage, ransomware recovery.",
+              "url": "https://www.druva.com/solutions/cloud-backup"
+            },
+            {
+              "text": "Zerto, “Continuous Data Protection.” Journal-based recovery with RPOs of seconds and RTOs of minutes, near-synchronous always-on replication.",
+              "url": "https://www.zerto.com/"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc's btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -10882,21 +12651,21 @@
           "statCallouts": [
             {
               "number": "27%",
-              "label": "of cloud IaaS/PaaS spend is wasted across organizations",
               "source": "Flexera 2024 State of the Cloud Report",
-              "ref": "[1]"
+              "ref": 1,
+              "text": "of cloud IaaS/PaaS spend is wasted across organizations"
             },
             {
               "number": "17%",
-              "label": "average cloud budget overshoot by organizations",
               "source": "Flexera 2025 State of the Cloud Report",
-              "ref": "[2]"
+              "ref": 2,
+              "text": "average cloud budget overshoot by organizations"
             },
             {
               "number": "$0.09/GB",
-              "label": "egress fees that make leaving expensive by design",
               "source": "AWS/Azure/GCP Pricing 2024",
-              "ref": "[3]"
+              "ref": 3,
+              "text": "egress fees that make leaving expensive by design"
             }
           ],
           "timeline": {
@@ -10924,7 +12693,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Snapshot", "<1hr", "Live"]
+            "newSteps": [
+              "Snapshot",
+              "<1hr",
+              "Live"
+            ]
           }
         },
         "calculator": {
@@ -11085,31 +12858,122 @@
           "features": [
             {
               "name": "Cross-provider migration",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                5,
+                6,
+                0,
+                0
+              ]
             },
             {
               "name": "Migration under 1 hour",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Zero proprietary formats",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Incremental-only transfer",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                5,
+                6,
+                7,
+                0
+              ]
             },
             {
               "name": "No vendor agent required",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Full-stack migration (app + DB)",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                5,
+                6,
+                0,
+                0
+              ]
             },
             {
               "name": "Zero-downtime migration",
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                6,
+                0,
+                0
+              ]
             }
           ]
         },
@@ -11214,6 +13078,22 @@
             {
               "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.\"",
               "url": "https://aws.amazon.com/s3/pricing/"
+            },
+            {
+              "text": "AWS, “AWS Backup Features.” Centralized, policy-based backup service for AWS resources with cross-region and cross-account capabilities.",
+              "url": "https://aws.amazon.com/backup/features/"
+            },
+            {
+              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
+              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+            },
+            {
+              "text": "Zerto, “Continuous Data Protection.” Journal-based recovery with RPOs of seconds and RTOs of minutes, near-synchronous always-on replication.",
+              "url": "https://www.zerto.com/"
+            },
+            {
+              "text": "Druva, “Cloud Backup & Recovery.” SaaS-only cloud-native platform, immutable snapshots, air-gapped storage, ransomware recovery.",
+              "url": "https://www.druva.com/solutions/cloud-backup"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc's btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -11362,7 +13242,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["rdc snapshot create", "52s", "Done"]
+            "newSteps": [
+              "rdc snapshot create",
+              "52s",
+              "Done"
+            ]
           }
         },
         "howItWorks": {
@@ -11649,7 +13533,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Detect", "Rollback", "<5 min"]
+            "newSteps": [
+              "Detect",
+              "Rollback",
+              "<5 min"
+            ]
           }
         },
         "calculator": {
@@ -11734,31 +13622,73 @@
           "features": [
             {
               "name": "Self-hosted / on-premises",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Filesystem-level immutability",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Instant recovery (<5 min)",
-              "values": ["cross", "cross", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero-copy snapshots (CoW)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Per-machine pricing (no per-seat)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Automated restore verification",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "No vendor lock-in",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ]
         },
@@ -11931,7 +13861,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["$204/mo", "Flat", "Yours"]
+            "newSteps": [
+              "$204/mo",
+              "Flat",
+              "Yours"
+            ]
           }
         },
         "calculator": {
@@ -12147,7 +14081,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["rdc repo up", "JSON", "Done"]
+            "newSteps": [
+              "rdc repo up",
+              "JSON",
+              "Done"
+            ]
           }
         },
         "howItWorks": {

@@ -56,7 +56,7 @@ RediaccはSSH経由で連携する2つのバイナリを使用します：
 - ビジュアル管理用Webコンソール
 - `rdc auth login` でセットアップ
 
-> **注意：** クラウドアダプターのコマンドは実験的です。`rdc --experimental <command>`または`REDIACC_EXPERIMENTAL=1`を設定して有効にしてください。
+> **注意：** クラウドアダプターのコマンドは実験的です。`REDIACC_EXPERIMENTAL=1`を設定して有効にしてください。
 
 ### S3リソース状態（オプション）
 

@@ -944,7 +944,7 @@
       }
     },
     "repo": {
-      "description": "Deploy and manage encrypted repositories on machines",
+      "description": "Deploy and manage encrypted repositories on machines. Containers are managed via renet compose (never raw docker compose). IPs and networking are auto-allocated",
       "machineOption": "Target machine name",
       "noCredential": "Warning: Repository \"{{name}}\" has no credential set. Operations on encrypted repos may fail.",
       "mount": {
@@ -962,10 +962,10 @@
         "failed": "Unmount failed"
       },
       "up": {
-        "description": "Deploy or update a repository (mount, prep, start services)",
+        "description": "Deploy or update a repository (mount, run Rediaccfile prep/up which calls renet compose)",
         "mountOption": "Mount repository first",
         "prepOnlyOption": "Only run preparation step",
-        "grandOption": "Grand repository name (auto-resolves to GUID)",
+        "grandOption": "Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent",
         "starting": "Starting services for \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Services started",
         "failed": "Service start failed"
@@ -982,9 +982,9 @@
         "failed": "Up-all operation failed"
       },
       "down": {
-        "description": "Stop repository services",
+        "description": "Stop repository services (runs Rediaccfile down via renet compose)",
         "unmountOption": "Unmount repository after stopping",
-        "grandOption": "Grand repository name (auto-resolves to GUID)",
+        "grandOption": "Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent",
         "starting": "Stopping services for \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Services stopped",
         "failed": "Service stop failed"
@@ -1089,9 +1089,9 @@
         "failed": "Ownership update failed"
       },
       "template": {
-        "description": "Apply a template to a repository",
-        "fileOption": "Path to template JSON file",
-        "grandOption": "Grand repository name (auto-resolves to GUID)",
+        "description": "Apply a template to a repository (writes docker-compose.yml and Rediaccfile). Rediaccfile must define prep()/up()/down() using 'renet compose'",
+        "fileOption": "Path to template JSON file ({\"version\":\"1\",\"compose\":\"<yaml>\",\"rediaccfile\":\"<bash>\"}). Rediaccfile pattern: prep() { renet compose -- pull; } up() { renet compose -- up -d; } down() { renet compose -- down; }. Compose must use network_mode: host. IPs auto-allocated by renet",
+        "grandOption": "Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent",
         "fileNotFound": "Template file not found: {{path}}",
         "starting": "Applying template to \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Template applied",
@@ -1728,7 +1728,6 @@
     "protocolToken": "Authentication token",
     "protocolAction": "Action ({{actions}})",
     "protocolParams": "Additional parameters",
-    "experimental": "Enable experimental cloud commands",
     "skipRouterRestart": "Skip restarting the route server after binary update",
     "opsBackend": "Virtualization backend (kvm|qemu, auto-detected)",
     "opsForce": "Force restart all VMs",

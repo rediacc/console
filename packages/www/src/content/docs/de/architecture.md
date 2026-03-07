@@ -58,7 +58,7 @@ Wird automatisch aktiviert, wenn eine Konfiguration `apiUrl`- und `token`-Felder
 - Web-Konsole für visuelle Verwaltung
 - Eingerichtet mit `rdc auth login`
 
-> **Hinweis:** Cloud-Adapter-Befehle sind experimentell. Aktivieren Sie sie mit `rdc --experimental <befehl>` oder durch Setzen von `REDIACC_EXPERIMENTAL=1`.
+> **Hinweis:** Cloud-Adapter-Befehle sind experimentell. Aktivieren Sie sie durch Setzen von `REDIACC_EXPERIMENTAL=1`.
 
 ### S3-Ressourcenzustand (Optional)
 

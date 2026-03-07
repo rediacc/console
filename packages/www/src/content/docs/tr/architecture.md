@@ -58,7 +58,7 @@ Bir yapılandırma `apiUrl` ve `token` alanları içerdiğinde otomatik olarak e
 - Görsel yönetim için web konsolu
 - `rdc auth login` ile kurulur
 
-> **Not:** Bulut adaptörü komutları deneyseldir. `rdc --experimental <komut>` ile veya `REDIACC_EXPERIMENTAL=1` ayarlayarak etkinleştirin.
+> **Not:** Bulut adaptörü komutları deneyseldir. `REDIACC_EXPERIMENTAL=1` ayarlayarak etkinleştirin.
 
 ### S3 Kaynak Durumu (İsteğe Bağlı)
 

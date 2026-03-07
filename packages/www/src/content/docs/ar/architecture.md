@@ -58,7 +58,7 @@ Each repository gets its own Docker daemon, loopback IP subnet (/26 = 64 IPs), a
 - وحدة تحكم ويب للإدارة المرئية
 - يُعدّ باستخدام `rdc auth login`
 
-> **ملاحظة:** أوامر محوّل السحابة تجريبية. فعّلها باستخدام `rdc --experimental <command>` أو بتعيين `REDIACC_EXPERIMENTAL=1`.
+> **ملاحظة:** أوامر محوّل السحابة تجريبية. فعّلها بتعيين `REDIACC_EXPERIMENTAL=1`.
 
 ### حالة موارد S3 (اختياري)
 

@@ -1,7 +1,7 @@
 /**
  * Mode-aware command guard system.
  * Blocks commands from running in unsupported modes and auto-tags help descriptions.
- * Hides experimental (cloud) commands unless --experimental or REDIACC_EXPERIMENTAL=1.
+ * Hides experimental (cloud) commands unless REDIACC_EXPERIMENTAL=1.
  */
 
 import type { Command } from 'commander';
@@ -50,7 +50,7 @@ function addExperimentalGuard(command: Command): void {
   command.hook('preAction', () => {
     if (!isExperimentalEnabled()) {
       outputService.error(
-        `"${command.name()}" is an experimental command. Enable with --experimental flag or REDIACC_EXPERIMENTAL=1 environment variable.`
+        `"${command.name()}" is an experimental command. Enable with REDIACC_EXPERIMENTAL=1 environment variable.`
       );
       process.exit(1);
     }

@@ -72,7 +72,7 @@ const breadcrumbItems = [
     )}
 
     {has('problem') && (
-      <SPProblem problem={(content as any).problem} illustration={config.illustration} />
+      <SPProblem problem={(content as any).problem} illustration={config.illustration} referenceItems={(content as any).references?.items} />
     )}
 
     {has('costCalculator') && config.calculatorPreset && (
@@ -99,6 +99,7 @@ const breadcrumbItems = [
       <SPComparisonTable
         comparison={(content as any).comparison}
         competitors={config.competitors}
+        referenceItems={(content as any).references?.items}
       />
     )}
 

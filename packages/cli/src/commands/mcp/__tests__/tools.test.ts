@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { TOOLS } from '../tools.js';
 
 describe('MCP tool definitions', () => {
-  it('has exactly 10 tools defined', () => {
-    expect(TOOLS.length).toBe(10);
+  it('has exactly 16 tools defined', () => {
+    expect(TOOLS.length).toBe(16);
   });
 
   it('has no duplicate tool names', () => {
@@ -24,12 +24,14 @@ describe('MCP tool definitions', () => {
     it('includes expected read tools', () => {
       const names = readTools.map((t) => t.name);
       expect(names).toContain('machine_info');
+      expect(names).toContain('machine_list');
       expect(names).toContain('machine_containers');
       expect(names).toContain('machine_services');
       expect(names).toContain('machine_repos');
       expect(names).toContain('machine_health');
       expect(names).toContain('config_repositories');
       expect(names).toContain('agent_capabilities');
+      expect(names).toContain('backup_push');
     });
 
     it('are not marked as destructive', () => {
@@ -44,8 +46,12 @@ describe('MCP tool definitions', () => {
 
     it('includes expected write tools', () => {
       const names = writeTools.map((t) => t.name);
+      expect(names).toContain('repo_create');
       expect(names).toContain('repo_up');
       expect(names).toContain('repo_down');
+      expect(names).toContain('repo_delete');
+      expect(names).toContain('repo_fork');
+      expect(names).toContain('backup_pull');
       expect(names).toContain('term_exec');
     });
 
@@ -55,8 +61,17 @@ describe('MCP tool definitions', () => {
       }
     });
 
-    it('repo_up and repo_down have longer timeouts', () => {
-      for (const name of ['repo_up', 'repo_down']) {
+    it('write tools have longer timeouts', () => {
+      for (const name of [
+        'repo_create',
+        'repo_up',
+        'repo_down',
+        'repo_delete',
+        'repo_fork',
+        'backup_push',
+        'backup_pull',
+        'term_exec',
+      ]) {
         const tool = TOOLS.find((t) => t.name === name)!;
         expect(tool.timeoutMs, `${name} should have >= 300s timeout`).toBeGreaterThanOrEqual(
           300_000
@@ -84,6 +99,19 @@ describe('MCP tool definitions', () => {
     it('agent_capabilities builds correct argv', () => {
       const tool = TOOLS.find((t) => t.name === 'agent_capabilities')!;
       expect(tool.command({})).toEqual(['agent', 'capabilities']);
+    });
+
+    it('repo_create builds correct argv', () => {
+      const tool = TOOLS.find((t) => t.name === 'repo_create')!;
+      expect(tool.command({ name: 'webapp', machine: 'prod', size: '10G' })).toEqual([
+        'repo',
+        'create',
+        'webapp',
+        '-m',
+        'prod',
+        '--size',
+        '10G',
+      ]);
     });
 
     it('repo_up builds correct argv with machine flag', () => {
@@ -131,6 +159,79 @@ describe('MCP tool definitions', () => {
       ]);
     });
 
+    it('repo_down includes --unmount when set', () => {
+      const tool = TOOLS.find((t) => t.name === 'repo_down')!;
+      expect(tool.command({ name: 'gitlab', machine: 'prod', unmount: true })).toEqual([
+        'repo',
+        'down',
+        'gitlab',
+        '-m',
+        'prod',
+        '--unmount',
+      ]);
+    });
+
+    it('repo_down excludes --unmount when false', () => {
+      const tool = TOOLS.find((t) => t.name === 'repo_down')!;
+      expect(tool.command({ name: 'gitlab', machine: 'prod', unmount: false })).toEqual([
+        'repo',
+        'down',
+        'gitlab',
+        '-m',
+        'prod',
+      ]);
+    });
+
+    it('repo_fork builds correct argv', () => {
+      const tool = TOOLS.find((t) => t.name === 'repo_fork')!;
+      expect(tool.command({ parent: 'webapp', machine: 'prod', tag: 'test' })).toEqual([
+        'repo',
+        'fork',
+        'webapp',
+        '-m',
+        'prod',
+        '--tag',
+        'test',
+      ]);
+    });
+
+    it('backup_push builds correct argv with --to-machine', () => {
+      const tool = TOOLS.find((t) => t.name === 'backup_push')!;
+      expect(tool.command({ repo: 'webapp', machine: 'prod', to_machine: 'staging' })).toEqual([
+        'backup',
+        'push',
+        'webapp',
+        '-m',
+        'prod',
+        '--to-machine',
+        'staging',
+      ]);
+    });
+
+    it('backup_pull builds correct argv with --from-machine', () => {
+      const tool = TOOLS.find((t) => t.name === 'backup_pull')!;
+      expect(tool.command({ repo: 'webapp', machine: 'staging', from_machine: 'prod' })).toEqual([
+        'backup',
+        'pull',
+        'webapp',
+        '-m',
+        'staging',
+        '--from-machine',
+        'prod',
+      ]);
+    });
+
+    it('repo_delete builds correct argv', () => {
+      const tool = TOOLS.find((t) => t.name === 'repo_delete')!;
+      expect(tool.command({ name: 'webapp', machine: 'prod' })).toEqual([
+        'repo',
+        'delete',
+        'webapp',
+        '-m',
+        'prod',
+      ]);
+    });
+
     it('term_exec builds correct argv', () => {
       const tool = TOOLS.find((t) => t.name === 'term_exec')!;
       expect(tool.command({ machine: 'prod', command: 'uptime' })).toEqual([
@@ -138,6 +239,16 @@ describe('MCP tool definitions', () => {
         'prod',
         '-c',
         'uptime',
+      ]);
+    });
+
+    it('term_exec preserves complex commands as single argv element', () => {
+      const tool = TOOLS.find((t) => t.name === 'term_exec')!;
+      expect(tool.command({ machine: 'prod', command: 'docker ps | grep running' })).toEqual([
+        'term',
+        'prod',
+        '-c',
+        'docker ps | grep running',
       ]);
     });
   });

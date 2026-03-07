@@ -5,7 +5,7 @@
  * To change which modes a command supports, update its entry here.
  *
  * Commands marked `experimental: true` are hidden by default.
- * Enable with --experimental flag or REDIACC_EXPERIMENTAL=1 env var.
+ * Enable with REDIACC_EXPERIMENTAL=1 env var.
  */
 export type CommandCategory = 'cloud' | 'local';
 export type ModeSet = readonly CommandCategory[];
@@ -88,6 +88,9 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
   { name: 'audit', modes: ['cloud'], domain: 'ORGANIZATION', experimental: true },
   { name: 'ceph', modes: ['cloud'], domain: 'ORGANIZATION', experimental: true },
 
+  // ── Licensing ──────────────────────────────────────────────────────
+  { name: 'subscription', modes: SELF_HOSTED_MODES, domain: 'TOOLS' },
+
   // ── Tools ───────────────────────────────────────────────────────────
   {
     name: 'config',
@@ -117,7 +120,7 @@ export function formatModeTag(modes: ModeSet): string {
 }
 
 /**
- * Check if experimental mode is enabled via --experimental flag or REDIACC_EXPERIMENTAL=1 env var.
+ * Check if experimental mode is enabled via REDIACC_EXPERIMENTAL=1 env var.
  */
 export function isExperimentalEnabled(): boolean {
   return process.env.REDIACC_EXPERIMENTAL === '1';

@@ -125,6 +125,39 @@ describe('MCP server', () => {
     );
   });
 
+  it('registers correct MCP annotations for each tool', () => {
+    const configs = new Map<string, { annotations: Record<string, boolean> }>();
+    const mockServer = {
+      registerTool: (name: string, config: { annotations: Record<string, boolean> }) => {
+        configs.set(name, config);
+      },
+    };
+
+    registerAllTools(mockServer as never, { defaultTimeoutMs: 120_000 });
+
+    // Read tools: readOnly, not destructive, idempotent
+    for (const name of ['machine_info', 'machine_list', 'config_repositories']) {
+      const { annotations } = configs.get(name)!;
+      expect(annotations.readOnlyHint, `${name} readOnlyHint`).toBe(true);
+      expect(annotations.destructiveHint, `${name} destructiveHint`).toBe(false);
+      expect(annotations.idempotentHint, `${name} idempotentHint`).toBe(true);
+    }
+
+    // repo_up/repo_down: destructive, idempotent
+    for (const name of ['repo_up', 'repo_down']) {
+      const { annotations } = configs.get(name)!;
+      expect(annotations.readOnlyHint, `${name} readOnlyHint`).toBe(false);
+      expect(annotations.destructiveHint, `${name} destructiveHint`).toBe(true);
+      expect(annotations.idempotentHint, `${name} idempotentHint`).toBe(true);
+    }
+
+    // term_exec: destructive, NOT idempotent
+    const termAnnotations = configs.get('term_exec')!.annotations;
+    expect(termAnnotations.readOnlyHint).toBe(false);
+    expect(termAnnotations.destructiveHint).toBe(true);
+    expect(termAnnotations.idempotentHint).toBe(false);
+  });
+
   it('tool handler returns isError=true when executor reports failure', async () => {
     // Override the mock for this test
     const { executeRdcCommand } = await import('../executor.js');

@@ -57,7 +57,7 @@ Activated automatically when a config contains `apiUrl` and `token` fields. Uses
 - Web console for visual management
 - Set up with `rdc auth login`
 
-> **Note:** Cloud adapter commands are experimental. Enable them with `rdc --experimental <command>` or by setting `REDIACC_EXPERIMENTAL=1`.
+> **Note:** Cloud adapter commands are experimental. Enable them by setting `REDIACC_EXPERIMENTAL=1`.
 
 ### S3 Resource State (Optional)
 

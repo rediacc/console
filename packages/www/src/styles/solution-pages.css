@@ -1865,6 +1865,13 @@
   color: var(--sp-text-muted-light);
   line-height: 1.5;
 }
+.sp-ref-link {
+  text-decoration: none;
+  cursor: pointer;
+}
+.sp-ref-link:hover .sp-ref-num {
+  text-decoration: underline;
+}
 .sp-ref-num {
   font-family: var(--sp-font-mono);
   font-size: 10px;

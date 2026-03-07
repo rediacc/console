@@ -41,8 +41,8 @@ function walkCommands(cmd: Command, prefix = ''): CommandCapability[] {
           ...(o.defaultValue !== undefined && { default: o.defaultValue }),
         }));
 
-      // Look up registry metadata
-      const topLevel = prefix || sub.name();
+      // Look up registry metadata (extract first word for deeply nested commands)
+      const topLevel = (prefix || sub.name()).split(' ')[0];
       const def = getCommandDef(topLevel);
 
       results.push({

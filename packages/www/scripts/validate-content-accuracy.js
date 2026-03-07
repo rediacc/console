@@ -148,7 +148,7 @@ function validateRdcCommands(commands, errors, rule) {
 
     const tokens = text.split(/\s+/);
 
-    // Skip if the command position has angle-bracket placeholder (e.g. "rdc --experimental <command>")
+    // Skip if the command position has angle-bracket placeholder (e.g. "rdc --flag <command>")
     const firstNonFlag = tokens.slice(1).find((t) => !t.startsWith('-'));
     if (firstNonFlag && firstNonFlag.startsWith('<')) continue;
 

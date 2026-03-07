@@ -19,8 +19,8 @@ const { references } = Astro.props;
   <div class="sp-references-inner">
     <div class="sp-references-label">{references.label}</div>
     <ol class="sp-references-list">
-      {references.items.map((ref) => (
-        <li>
+      {references.items.map((ref, i) => (
+        <li id={`ref-${i + 1}`}>
           {ref.text}{' '}
           <a href={ref.url} target="_blank" rel="noopener noreferrer">
             {new URL(ref.url).hostname}

@@ -2,6 +2,12 @@
 interface Feature {
   name: string;
   values: string[];
+  refs?: number[];
+}
+
+interface ReferenceItem {
+  text: string;
+  url: string;
 }
 
 interface Props {
@@ -13,17 +19,28 @@ interface Props {
     features: Feature[];
   };
   competitors: string[];
+  referenceItems?: ReferenceItem[];
 }
 
-const { comparison, competitors } = Astro.props;
+const { comparison, competitors, referenceItems = [] } = Astro.props;
 
-function renderValue(val: string) {
-  if (val === 'check') return '<span class="sp-comparison-check">&#10003;</span>';
-  if (val === 'cross') return '<span class="sp-comparison-cross">&#10007;</span>';
-  if (val === 'rediacc') return '<span class="sp-comparison-rediacc">&#10003;</span>';
+function renderValue(val: string, ref?: number) {
+  let refHtml = '';
+  if (ref && ref > 0) {
+    const item = referenceItems[ref - 1];
+    const url = item?.url;
+    if (url) {
+      refHtml = `<a href="${url}" target="_blank" rel="noopener noreferrer" class="sp-ref-link"><sup class="sp-ref-num">[${ref}]</sup></a>`;
+    } else {
+      refHtml = `<sup class="sp-ref-num">[${ref}]</sup>`;
+    }
+  }
+  if (val === 'check') return `<span class="sp-comparison-check">&#10003;</span>${refHtml}`;
+  if (val === 'cross') return `<span class="sp-comparison-cross">&#10007;</span>${refHtml}`;
+  if (val === 'rediacc') return `<span class="sp-comparison-rediacc">&#10003;</span>${refHtml}`;
   // Text values like "Minutes", "<60s"
-  if (val.startsWith('<')) return `<span class="sp-comparison-rediacc">${val}</span>`;
-  return val;
+  if (val.startsWith('<')) return `<span class="sp-comparison-rediacc">${val}</span>${refHtml}`;
+  return `${val}${refHtml}`;
 }
 ---
 
@@ -47,9 +64,9 @@ function renderValue(val: string) {
         {comparison.features.map((feature) => (
           <tr>
             <td>{feature.name}</td>
-            {feature.values.map((val) => (
+            {feature.values.map((val, i) => (
               <td>
-                <Fragment set:html={renderValue(val)} />
+                <Fragment set:html={renderValue(val, feature.refs?.[i])} />
               </td>
             ))}
           </tr>

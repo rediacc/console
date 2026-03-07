@@ -56,7 +56,7 @@ Rediacc 采用两个通过 SSH 协同工作的二进制文件：
 - Web 控制台提供可视化管理
 - 使用 `rdc auth login` 设置
 
-> **注意：**云适配器命令为实验性功能。使用 `rdc --experimental <command>` 或设置 `REDIACC_EXPERIMENTAL=1` 来启用。
+> **注意：**云适配器命令为实验性功能。设置 `REDIACC_EXPERIMENTAL=1` 来启用。
 
 ### S3 资源状态（可选）
 

@@ -58,7 +58,7 @@ Se activa automáticamente cuando una configuración contiene los campos `apiUrl
 - Consola web para gestión visual
 - Se configura con `rdc auth login`
 
-> **Nota:** Los comandos del adaptador cloud son experimentales. Habilítelos con `rdc --experimental <command>` o configurando `REDIACC_EXPERIMENTAL=1`.
+> **Nota:** Los comandos del adaptador cloud son experimentales. Habilítelos configurando `REDIACC_EXPERIMENTAL=1`.
 
 ### Estado de Recursos S3 (Opcional)
 

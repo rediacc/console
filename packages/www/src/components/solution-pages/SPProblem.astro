@@ -6,12 +6,17 @@ interface StatCallout {
   number: string;
   text: string;
   source: string;
-  ref: number;
+  ref?: number;
 }
 
 interface TimelineStep {
   day: string;
   text: string;
+}
+
+interface ReferenceItem {
+  text: string;
+  url: string;
 }
 
 interface Props {
@@ -28,9 +33,10 @@ interface Props {
     };
   };
   illustration?: ImageMetadata;
+  referenceItems?: ReferenceItem[];
 }
 
-const { problem, illustration } = Astro.props;
+const { problem, illustration, referenceItems = [] } = Astro.props;
 ---
 
 <section class="sp-problem" id="problem">
@@ -52,7 +58,14 @@ const { problem, illustration } = Astro.props;
             <span class="sp-stat-callout-number">{callout.number}</span>
             {callout.text}
             <span class="sp-stat-callout-source">
-              {callout.source} <span class="sp-ref-num">[{callout.ref}]</span>
+              {callout.source}
+              {callout.ref && callout.ref > 0 && referenceItems[callout.ref - 1]?.url ? (
+                <a href={referenceItems[callout.ref - 1].url} target="_blank" rel="noopener noreferrer" class="sp-ref-link">
+                  <sup class="sp-ref-num">[{callout.ref}]</sup>
+                </a>
+              ) : callout.ref && callout.ref > 0 ? (
+                <sup class="sp-ref-num">[{callout.ref}]</sup>
+              ) : null}
             </span>
           </div>
         ))}
