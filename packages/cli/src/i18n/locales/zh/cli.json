@@ -446,11 +446,11 @@
         "success": "已将 \"{{key}}\" 设置为 \"{{value}}\""
       },
       "setCeph": {
-        "description": "Set Ceph RBD configuration for a machine",
-        "optionCluster": "Ceph cluster name",
-        "optionImage": "RBD image name (e.g., datastore-prod1)",
-        "optionPool": "Ceph pool name (e.g., rbd)",
-        "success": "Ceph config set for \"{{name}}\": pool={{pool}}, image={{image}}"
+        "description": "为机器设置Ceph RBD配置",
+        "optionCluster": "Ceph集群名称",
+        "optionImage": "RBD镜像名称（例如datastore-prod1）",
+        "optionPool": "Ceph池名称（例如rbd）",
+        "success": "已为\"{{name}}\"设置Ceph配置: pool={{pool}}, image={{image}}"
       },
       "setInfra": {
         "description": "为机器设置基础设施配置",
@@ -496,44 +496,44 @@
       }
     },
     "datastore": {
-      "description": "Manage Ceph RBD datastore lifecycle (init, fork, unfork, status)",
+      "description": "管理Ceph RBD数据存储生命周期（init、fork、unfork、status）",
       "fork": {
-        "completed": "Datastore forked successfully (snapshot: {{snapshot}})",
-        "cowSizeOption": "COW backing file size (default: auto, grows on demand)",
-        "description": "Create a local COW copy of a Ceph datastore via RBD snapshot + clone (< 2s). Save snapshot/clone names from output for unfork. Only one fork per target name; unfork before re-forking",
-        "failed": "Datastore fork failed",
-        "starting": "Forking datastore on \"{{source}}\" (clone named for \"{{target}}\")...",
-        "toOption": "Clone suffix (creates clone named <image>-fork-<name>). The fork stays on the source machine"
+        "completed": "数据存储分叉成功（快照：{{snapshot}}）",
+        "cowSizeOption": "COW后备文件大小（默认：auto，按需增长）",
+        "description": "通过RBD快照+克隆创建Ceph数据存储的本地COW副本（不到2秒）。保存输出中的快照/克隆名称以便unfork。每个目标名称只能有一个fork；重新fork之前先unfork",
+        "failed": "数据存储分叉失败",
+        "starting": "正在\"{{source}}\"上分叉数据存储（为\"{{target}}\"命名的克隆）...",
+        "toOption": "克隆后缀（创建名为<image>-fork-<name>的克隆）。fork保留在源机器上"
       },
       "init": {
-        "backendOption": "Backend type: local (default) or ceph",
-        "clusterOption": "Ceph cluster name (default: ceph)",
-        "completed": "Datastore initialized",
-        "description": "Initialize datastore on a machine (local loop-backed or Ceph RBD)",
-        "failed": "Datastore initialization failed",
-        "forceOption": "Force initialization even if datastore already exists (WARNING: reformats storage)",
-        "imageOption": "Ceph RBD image name (default: from machine config via set-ceph)",
-        "imageRequired": "--image is required for ceph backend (or set via: rdc config set-ceph -m <machine> --image <name>)",
-        "poolOption": "Ceph pool name (default: from machine config, or rbd)",
-        "sizeOption": "Datastore size (e.g., 5G, 50G, 100G)",
-        "starting": "Initializing datastore on \"{{machine}}\"..."
+        "backendOption": "后端类型：local（默认）或ceph",
+        "clusterOption": "Ceph集群名称（默认：ceph）",
+        "completed": "数据存储已初始化",
+        "description": "在机器上初始化数据存储（本地或Ceph RBD）",
+        "failed": "数据存储初始化失败",
+        "forceOption": "即使数据存储已存在也强制初始化（警告：将重新格式化存储）",
+        "imageOption": "Ceph RBD镜像名称（默认：通过set-ceph从机器配置获取）",
+        "imageRequired": "ceph后端需要--image参数（或通过 rdc config set-ceph -m <machine> --image <name> 设置）",
+        "poolOption": "Ceph池名称（默认：来自机器配置，或rbd）",
+        "sizeOption": "数据存储大小（例如5G、50G、100G）",
+        "starting": "正在\"{{machine}}\"上初始化数据存储..."
       },
-      "machineOption": "Machine name (where the Ceph datastore is hosted)",
+      "machineOption": "机器名称（Ceph数据存储所在位置）",
       "status": {
-        "description": "Show datastore backend, size, usage, mount status, and cow_mode (if forked)",
-        "starting": "Checking datastore status on \"{{machine}}\"..."
+        "description": "显示数据存储后端、大小、使用情况、挂载状态和cow_mode（如果已分叉）",
+        "starting": "正在检查\"{{machine}}\"上的数据存储状态..."
       },
       "unfork": {
-        "completed": "Fork cleaned up successfully",
-        "description": "Clean up a fork: unmount COW, remove clone, remove snapshot",
-        "destOption": "Clone image to remove (the \"Clone:\" value from fork output, e.g. ds-prod-fork-<machine>)",
-        "failed": "Fork cleanup failed",
-        "forceOption": "Continue cleanup even if individual steps fail (e.g. unmount, snapshot removal)",
-        "mountPointOption": "Fork mount point to unmount (default: /mnt/rediacc)",
-        "poolOption": "Ceph pool name (default: from machine config)",
-        "snapshotOption": "Snapshot to remove (the \"Snapshot:\" value from fork output, e.g. fork-<timestamp>)",
-        "sourceOption": "Original RBD image that was forked (from config set-ceph --image, e.g. ds-prod)",
-        "starting": "Cleaning up forked datastore on \"{{machine}}\"..."
+        "completed": "fork清理成功",
+        "description": "清理fork：卸载COW、移除克隆、移除快照",
+        "destOption": "要移除的克隆镜像（fork输出中的\"Clone:\"值，例如ds-prod-fork-<machine>）",
+        "failed": "fork清理失败",
+        "forceOption": "即使个别步骤失败（例如卸载、快照移除）也继续清理",
+        "mountPointOption": "要卸载的fork挂载点（默认：/mnt/rediacc）",
+        "poolOption": "Ceph池名称（默认：来自机器配置）",
+        "snapshotOption": "要移除的快照（fork输出中的\"Snapshot:\"值，例如fork-<timestamp>）",
+        "sourceOption": "被分叉的原始RBD镜像（来自config set-ceph --image，例如ds-prod）",
+        "starting": "正在\"{{machine}}\"上清理分叉的数据存储..."
       }
     },
     "doctor": {
@@ -546,7 +546,7 @@
         "dockerAvailable": "Docker",
         "goInstalled": "Go",
         "machines": "机器",
-        "nodeVersion": "Node.js",
+        "nodeVersion": "Node.js版本",
         "opsPrereqs": "OPS 前提条件",
         "renetBinary": "二进制文件",
         "renetCriu": "内置CRIU",
@@ -569,7 +569,7 @@
         "authentication": "身份验证",
         "configuration": "配置",
         "environment": "环境",
-        "renet": "Renet",
+        "renet": "Renet网络",
         "virtualization": "虚拟化"
       },
       "status": {
@@ -692,7 +692,7 @@
         "fetching": "正在获取机器...",
         "header": "\n{{name}} 的保险箱状态：",
         "mounted": "  已挂载：{{count}}",
-        "repoDocker": "    Docker：{{status}}",
+        "repoDocker": "    Docker状态: {{status}}",
         "repoMounted": "    已挂载：{{mounted}}",
         "status": "  状态：{{status}}",
         "systemDatastore": "  数据存储：{{used}} / {{total}}（{{percent}}）",
@@ -1511,7 +1511,7 @@
         "title": "VS Code 设置检查\n",
         "variant": "  变体：Insiders",
         "version": "  版本：{{version}}",
-        "vscodeFound": "  VS Code: {{path}}",
+        "vscodeFound": "  VS Code路径: {{path}}",
         "vscodeNotFound": "  VS Code：未找到",
         "yes": "是"
       },

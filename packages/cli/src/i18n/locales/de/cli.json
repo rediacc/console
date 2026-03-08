@@ -99,7 +99,7 @@
           "creating": "Fork-Token wird erstellt...",
           "description": "Erstellen Sie einen Fork-Token für eine andere Anwendung",
           "success": "Token erfolgreich erstellt",
-          "tokenValue": "Token: {{token}}"
+          "tokenValue": "Token-Wert: {{token}}"
         },
         "list": {
           "description": "Aktive Tokens/Sitzungen auflisten",
@@ -446,11 +446,11 @@
         "success": "\"{{key}}\" auf \"{{value}}\" gesetzt"
       },
       "setCeph": {
-        "description": "Set Ceph RBD configuration for a machine",
-        "optionCluster": "Ceph cluster name",
-        "optionImage": "RBD image name (e.g., datastore-prod1)",
-        "optionPool": "Ceph pool name (e.g., rbd)",
-        "success": "Ceph config set for \"{{name}}\": pool={{pool}}, image={{image}}"
+        "description": "Ceph RBD-Konfiguration für eine Maschine festlegen",
+        "optionCluster": "Name des Ceph-Clusters",
+        "optionImage": "RBD-Image-Name (z.B. datastore-prod1)",
+        "optionPool": "Ceph-Pool-Name (z.B. rbd)",
+        "success": "Ceph-Konfiguration für \"{{name}}\" gesetzt: pool={{pool}}, image={{image}}"
       },
       "setInfra": {
         "description": "Infrastrukturkonfiguration für eine Machine setzen",
@@ -496,62 +496,62 @@
       }
     },
     "datastore": {
-      "description": "Manage Ceph RBD datastore lifecycle (init, fork, unfork, status)",
+      "description": "Ceph RBD-Datenspeicher-Lebenszyklus verwalten (init, fork, unfork, status)",
       "fork": {
-        "completed": "Datastore forked successfully (snapshot: {{snapshot}})",
-        "cowSizeOption": "COW backing file size (default: auto, grows on demand)",
-        "description": "Create a local COW copy of a Ceph datastore via RBD snapshot + clone (< 2s). Save snapshot/clone names from output for unfork. Only one fork per target name; unfork before re-forking",
-        "failed": "Datastore fork failed",
-        "starting": "Forking datastore on \"{{source}}\" (clone named for \"{{target}}\")...",
-        "toOption": "Clone suffix (creates clone named <image>-fork-<name>). The fork stays on the source machine"
+        "completed": "Datenspeicher erfolgreich geforkt (Snapshot: {{snapshot}})",
+        "cowSizeOption": "COW-Sicherungsdateigröße (Standard: auto, wächst bei Bedarf)",
+        "description": "Lokale COW-Kopie eines Ceph-Datenspeichers via RBD-Snapshot + Clone erstellen (< 2s). Snapshot-/Clone-Namen aus der Ausgabe für unfork merken. Nur ein Fork pro Zielname; vor erneutem Forken unfork ausführen",
+        "failed": "Datenspeicher-Fork fehlgeschlagen",
+        "starting": "Forke Datenspeicher auf \"{{source}}\" (Clone benannt für \"{{target}}\")...",
+        "toOption": "Clone-Suffix (erstellt Clone mit dem Namen <image>-fork-<name>). Der Fork bleibt auf der Quellmaschine"
       },
       "init": {
-        "backendOption": "Backend type: local (default) or ceph",
-        "clusterOption": "Ceph cluster name (default: ceph)",
-        "completed": "Datastore initialized",
-        "description": "Initialize datastore on a machine (local loop-backed or Ceph RBD)",
-        "failed": "Datastore initialization failed",
-        "forceOption": "Force initialization even if datastore already exists (WARNING: reformats storage)",
-        "imageOption": "Ceph RBD image name (default: from machine config via set-ceph)",
-        "imageRequired": "--image is required for ceph backend (or set via: rdc config set-ceph -m <machine> --image <name>)",
-        "poolOption": "Ceph pool name (default: from machine config, or rbd)",
-        "sizeOption": "Datastore size (e.g., 5G, 50G, 100G)",
-        "starting": "Initializing datastore on \"{{machine}}\"..."
+        "backendOption": "Backend-Typ: local (Standard) oder ceph",
+        "clusterOption": "Ceph-Cluster-Name (Standard: ceph)",
+        "completed": "Datenspeicher initialisiert",
+        "description": "Datenspeicher auf einer Maschine initialisieren (lokal oder Ceph RBD)",
+        "failed": "Datenspeicher-Initialisierung fehlgeschlagen",
+        "forceOption": "Initialisierung erzwingen, auch wenn der Datenspeicher bereits existiert (WARNUNG: formatiert den Speicher neu)",
+        "imageOption": "Ceph RBD-Image-Name (Standard: aus Maschinenkonfiguration über set-ceph)",
+        "imageRequired": "--image ist für das ceph-Backend erforderlich (oder über: rdc config set-ceph -m <machine> --image <name> festlegen)",
+        "poolOption": "Ceph-Pool-Name (Standard: aus Maschinenkonfiguration oder rbd)",
+        "sizeOption": "Datenspeichergröße (z.B. 5G, 50G, 100G)",
+        "starting": "Initialisiere Datenspeicher auf \"{{machine}}\"..."
       },
-      "machineOption": "Machine name (where the Ceph datastore is hosted)",
+      "machineOption": "Maschinenname (wo der Ceph-Datenspeicher gehostet wird)",
       "status": {
-        "description": "Show datastore backend, size, usage, mount status, and cow_mode (if forked)",
-        "starting": "Checking datastore status on \"{{machine}}\"..."
+        "description": "Datenspeicher-Backend, Größe, Nutzung, Mount-Status und cow_mode (falls geforkt) anzeigen",
+        "starting": "Überprüfe Datenspeicher-Status auf \"{{machine}}\"..."
       },
       "unfork": {
-        "completed": "Fork cleaned up successfully",
-        "description": "Clean up a fork: unmount COW, remove clone, remove snapshot",
-        "destOption": "Clone image to remove (the \"Clone:\" value from fork output, e.g. ds-prod-fork-<machine>)",
-        "failed": "Fork cleanup failed",
-        "forceOption": "Continue cleanup even if individual steps fail (e.g. unmount, snapshot removal)",
-        "mountPointOption": "Fork mount point to unmount (default: /mnt/rediacc)",
-        "poolOption": "Ceph pool name (default: from machine config)",
-        "snapshotOption": "Snapshot to remove (the \"Snapshot:\" value from fork output, e.g. fork-<timestamp>)",
-        "sourceOption": "Original RBD image that was forked (from config set-ceph --image, e.g. ds-prod)",
-        "starting": "Cleaning up forked datastore on \"{{machine}}\"..."
+        "completed": "Fork erfolgreich bereinigt",
+        "description": "Fork bereinigen: COW aushängen, Clone entfernen, Snapshot entfernen",
+        "destOption": "Zu entfernendes Clone-Image (der \"Clone:\"-Wert aus der Fork-Ausgabe, z.B. ds-prod-fork-<machine>)",
+        "failed": "Fork-Bereinigung fehlgeschlagen",
+        "forceOption": "Bereinigung fortsetzen, auch wenn einzelne Schritte fehlschlagen (z.B. Aushängen, Snapshot-Entfernung)",
+        "mountPointOption": "Fork-Einhängepunkt zum Aushängen (Standard: /mnt/rediacc)",
+        "poolOption": "Ceph-Pool-Name (Standard: aus Maschinenkonfiguration)",
+        "snapshotOption": "Zu entfernender Snapshot (der \"Snapshot:\"-Wert aus der Fork-Ausgabe, z.B. fork-<timestamp>)",
+        "sourceOption": "Originales RBD-Image, das geforkt wurde (von config set-ceph --image, z.B. ds-prod)",
+        "starting": "Bereinige geforkten Datenspeicher auf \"{{machine}}\"..."
       }
     },
     "doctor": {
       "allPassed": "Alle Prüfungen bestanden",
       "checks": {
         "activeConfig": "Aktive Konfiguration",
-        "authStatus": "Status",
+        "authStatus": "Authentifizierungsstatus",
         "cliVersion": "CLI-Version",
         "contextMode": "Kontextmodus",
         "dockerAvailable": "Docker",
         "goInstalled": "Go",
         "machines": "Maschinen",
-        "nodeVersion": "Node.js",
+        "nodeVersion": "Node.js-Version",
         "opsPrereqs": "OPS-Voraussetzungen",
         "renetBinary": "Binärdatei",
         "renetCriu": "Eingebettetes CRIU",
         "renetRsync": "Eingebettetes rsync",
-        "renetVersion": "Version",
+        "renetVersion": "Renet-Version",
         "seaMode": "SEA-Modus",
         "sshKey": "SSH-Schlüssel"
       },
@@ -569,7 +569,7 @@
         "authentication": "Authentifizierung",
         "configuration": "Konfiguration",
         "environment": "Umgebung",
-        "renet": "Renet",
+        "renet": "Renet-Netzwerk",
         "virtualization": "Virtualisierung"
       },
       "status": {
@@ -611,7 +611,7 @@
         "header": "\nZustandsprüfung für {{name}}:",
         "issuesSection": "\nProbleme:",
         "noData": "Keine Statusdaten für Machine verfügbar",
-        "repositoriesSection": "\nRepositories:",
+        "repositoriesSection": "\nRepositorys:",
         "repositoriesSummary": "  {{mounted}}/{{total}} eingebunden ({{docker}} mit Docker)",
         "servicesSection": "\nDienste:",
         "servicesSummary": "  {{active}}/{{total}} aktiv ({{failed}} fehlgeschlagen)",
@@ -622,10 +622,10 @@
         "storageSection": "\nSpeicher:",
         "storageSmart": "  SMART: {{healthy}} gesund, {{failing}} ausfallend",
         "storageTemp": "  Max. Temperatur: {{temp}}°C",
-        "systemDatastore": "  Datastore: {{percent}}",
+        "systemDatastore": "  Datenspeicher: {{percent}}",
         "systemDisk": "  Festplatte: {{percent}}",
         "systemMemory": "  Speicher: {{percent}}",
-        "systemSection": "\nSystem:",
+        "systemSection": "\nSysteminformationen:",
         "systemUptime": "  Betriebszeit: {{uptime}}"
       },
       "info": {
@@ -662,7 +662,7 @@
         "creating": "SSH-Test-Task wird erstellt...",
         "description": "SSH-Verbindung zu einer Machine testen und Host-Schlüssel erfassen",
         "error": "Fehler: {{error}}",
-        "knownHosts": "  Known Hosts: {{entry}}",
+        "knownHosts": "  Bekannte Hosts: {{entry}}",
         "message": "  Nachricht: {{message}}",
         "publicKeyDeployed": "  Öffentlicher Schlüssel bereitgestellt: {{status}}",
         "rawOutput": "Rohe Ausgabe:",
@@ -670,7 +670,7 @@
         "saved": "Known Hosts im Machine-Vault gespeichert",
         "saving": "known_hosts wird in Machine-Vault \"{{machine}}\" gespeichert...",
         "sshKeyConfigured": "  SSH-Schlüssel konfiguriert: {{status}}",
-        "statusResult": "  Status: {{status}}",
+        "statusResult": "  Verbindungsstatus: {{status}}",
         "taskId": "Task-ID: {{taskId}}",
         "testing": "SSH-Verbindung zu {{user}}@{{ip}}:{{port}} wird getestet...",
         "testResult": "SSH-Test {{result}}",
@@ -692,14 +692,14 @@
         "fetching": "Machine wird abgerufen...",
         "header": "\nVault-Status für {{name}}:",
         "mounted": "  Eingebunden: {{count}}",
-        "repoDocker": "    Docker: {{status}}",
+        "repoDocker": "    Docker-Status: {{status}}",
         "repoMounted": "    Eingebunden: {{mounted}}",
-        "status": "  Status: {{status}}",
-        "systemDatastore": "  Datastore: {{used}} / {{total}} ({{percent}})",
+        "status": "  Maschinenstatus: {{status}}",
+        "systemDatastore": "  Datenspeicher: {{used}} / {{total}} ({{percent}})",
         "systemDisk": "  Festplatte: {{used}} / {{total}} ({{percent}})",
-        "systemHostname": "  Hostname: {{hostname}}",
+        "systemHostname": "  Rechnername: {{hostname}}",
         "systemMemory": "  Speicher: {{used}} / {{total}} ({{percent}})",
-        "systemSection": "\nSystem:",
+        "systemSection": "\nSysteminformationen:",
         "systemUptime": "  Betriebszeit: {{uptime}}",
         "totalRepos": "  Gesamtzahl Repositories: {{count}}"
       }
@@ -861,12 +861,12 @@
         "cliCommand": "\nÄquivalenter CLI-Befehl:",
         "description": "Öffnen Sie eine {{scheme}}://-URL und führen Sie die Aktion aus",
         "executing": "\nAktion wird ausgeführt...\n",
-        "machine": "Machine:",
+        "machine": "Maschine:",
         "params": "Parameter:",
         "parsedUrl": "\nAnalysierte Protokoll-URL:",
-        "repository": "Repository:",
-        "team": "Team:",
-        "token": "Token:"
+        "repository": "Repository-Name:",
+        "team": "Team-Name:",
+        "token": "Token-Wert:"
       },
       "parse": {
         "cliCommand": "\nCLI-Befehl:",
@@ -1500,7 +1500,7 @@
         "configuration": "\nKonfiguration:",
         "configured": "  Konfiguriert: {{status}}",
         "description": "Überprüfen Sie die VS Code-Installation und Konfiguration",
-        "installation": "Installation:",
+        "installation": "Installationsstatus:",
         "installed": "Installiert",
         "missingSettings": "  Fehlende Einstellungen:",
         "no": "Nein",
@@ -1510,8 +1510,8 @@
         "sshConfig": "\nSSH-Konfiguration: {{path}}",
         "title": "VS Code-Setup-Überprüfung\n",
         "variant": "  Variante: Insiders",
-        "version": "  Version: {{version}}",
-        "vscodeFound": "  VS Code: {{path}}",
+        "version": "  Softwareversion: {{version}}",
+        "vscodeFound": "  VS Code-Pfad: {{path}}",
         "vscodeNotFound": "  VS Code: Nicht gefunden",
         "yes": "Ja"
       },
@@ -1595,7 +1595,7 @@
       "intro": "Jeder Befehl unterstützt diese globalen Flags:"
     },
     "installation": {
-      "heading": "Installation",
+      "heading": "Installationsanleitung",
       "text": "Laden Sie die neueste Version für Ihre Plattform von der [Rediacc-Releases-Seite](https://www.rediacc.com) herunter oder installieren Sie über Ihren Paketmanager:"
     },
     "optionLabels": {

@@ -446,11 +446,11 @@
         "success": "\"{{key}}\" défini à \"{{value}}\""
       },
       "setCeph": {
-        "description": "Set Ceph RBD configuration for a machine",
-        "optionCluster": "Ceph cluster name",
-        "optionImage": "RBD image name (e.g., datastore-prod1)",
-        "optionPool": "Ceph pool name (e.g., rbd)",
-        "success": "Ceph config set for \"{{name}}\": pool={{pool}}, image={{image}}"
+        "description": "Définir la configuration Ceph RBD pour une machine",
+        "optionCluster": "Nom du cluster Ceph",
+        "optionImage": "Nom de l'image RBD (ex. : datastore-prod1)",
+        "optionPool": "Nom du pool Ceph (ex. : rbd)",
+        "success": "Configuration Ceph définie pour \"{{name}}\" : pool={{pool}}, image={{image}}"
       },
       "setInfra": {
         "description": "Définir la configuration d'infrastructure pour une machine",
@@ -496,44 +496,44 @@
       }
     },
     "datastore": {
-      "description": "Manage Ceph RBD datastore lifecycle (init, fork, unfork, status)",
+      "description": "Gérer le cycle de vie du datastore Ceph RBD (init, fork, unfork, status)",
       "fork": {
-        "completed": "Datastore forked successfully (snapshot: {{snapshot}})",
-        "cowSizeOption": "COW backing file size (default: auto, grows on demand)",
-        "description": "Create a local COW copy of a Ceph datastore via RBD snapshot + clone (< 2s). Save snapshot/clone names from output for unfork. Only one fork per target name; unfork before re-forking",
-        "failed": "Datastore fork failed",
-        "starting": "Forking datastore on \"{{source}}\" (clone named for \"{{target}}\")...",
-        "toOption": "Clone suffix (creates clone named <image>-fork-<name>). The fork stays on the source machine"
+        "completed": "Datastore forké avec succès (snapshot : {{snapshot}})",
+        "cowSizeOption": "Taille du fichier de sauvegarde COW (par défaut : auto, croît à la demande)",
+        "description": "Créer une copie COW locale d'un datastore Ceph via snapshot + clone RBD (< 2s). Conservez les noms de snapshot/clone de la sortie pour unfork. Un seul fork par nom de cible ; exécutez unfork avant de refaire un fork",
+        "failed": "Échec du fork du datastore",
+        "starting": "Fork du datastore sur \"{{source}}\" (clone nommé pour \"{{target}}\")...",
+        "toOption": "Suffixe du clone (crée un clone nommé <image>-fork-<name>). Le fork reste sur la machine source"
       },
       "init": {
-        "backendOption": "Backend type: local (default) or ceph",
-        "clusterOption": "Ceph cluster name (default: ceph)",
-        "completed": "Datastore initialized",
-        "description": "Initialize datastore on a machine (local loop-backed or Ceph RBD)",
-        "failed": "Datastore initialization failed",
-        "forceOption": "Force initialization even if datastore already exists (WARNING: reformats storage)",
-        "imageOption": "Ceph RBD image name (default: from machine config via set-ceph)",
-        "imageRequired": "--image is required for ceph backend (or set via: rdc config set-ceph -m <machine> --image <name>)",
-        "poolOption": "Ceph pool name (default: from machine config, or rbd)",
-        "sizeOption": "Datastore size (e.g., 5G, 50G, 100G)",
-        "starting": "Initializing datastore on \"{{machine}}\"..."
+        "backendOption": "Type de backend : local (par défaut) ou ceph",
+        "clusterOption": "Nom du cluster Ceph (par défaut : ceph)",
+        "completed": "Datastore initialisé",
+        "description": "Initialiser le datastore sur une machine (local ou Ceph RBD)",
+        "failed": "Échec de l'initialisation du datastore",
+        "forceOption": "Forcer l'initialisation même si le datastore existe déjà (ATTENTION : reformate le stockage)",
+        "imageOption": "Nom de l'image Ceph RBD (par défaut : depuis la configuration de la machine via set-ceph)",
+        "imageRequired": "--image est requis pour le backend ceph (ou définissez-le via : rdc config set-ceph -m <machine> --image <name>)",
+        "poolOption": "Nom du pool Ceph (par défaut : depuis la configuration de la machine, ou rbd)",
+        "sizeOption": "Taille du datastore (ex. : 5G, 50G, 100G)",
+        "starting": "Initialisation du datastore sur \"{{machine}}\"..."
       },
-      "machineOption": "Machine name (where the Ceph datastore is hosted)",
+      "machineOption": "Nom de la machine (où le datastore Ceph est hébergé)",
       "status": {
-        "description": "Show datastore backend, size, usage, mount status, and cow_mode (if forked)",
-        "starting": "Checking datastore status on \"{{machine}}\"..."
+        "description": "Afficher le backend, la taille, l'utilisation, l'état de montage et cow_mode (si forké) du datastore",
+        "starting": "Vérification du statut du datastore sur \"{{machine}}\"..."
       },
       "unfork": {
-        "completed": "Fork cleaned up successfully",
-        "description": "Clean up a fork: unmount COW, remove clone, remove snapshot",
-        "destOption": "Clone image to remove (the \"Clone:\" value from fork output, e.g. ds-prod-fork-<machine>)",
-        "failed": "Fork cleanup failed",
-        "forceOption": "Continue cleanup even if individual steps fail (e.g. unmount, snapshot removal)",
-        "mountPointOption": "Fork mount point to unmount (default: /mnt/rediacc)",
-        "poolOption": "Ceph pool name (default: from machine config)",
-        "snapshotOption": "Snapshot to remove (the \"Snapshot:\" value from fork output, e.g. fork-<timestamp>)",
-        "sourceOption": "Original RBD image that was forked (from config set-ceph --image, e.g. ds-prod)",
-        "starting": "Cleaning up forked datastore on \"{{machine}}\"..."
+        "completed": "Fork nettoyé avec succès",
+        "description": "Nettoyer un fork : démonter COW, supprimer le clone, supprimer le snapshot",
+        "destOption": "Image de clone à supprimer (la valeur \"Clone:\" de la sortie fork, ex. ds-prod-fork-<machine>)",
+        "failed": "Échec du nettoyage du fork",
+        "forceOption": "Continuer le nettoyage même si des étapes individuelles échouent (ex. : démontage, suppression de snapshot)",
+        "mountPointOption": "Point de montage du fork à démonter (par défaut : /mnt/rediacc)",
+        "poolOption": "Nom du pool Ceph (par défaut : depuis la configuration de la machine)",
+        "snapshotOption": "Snapshot à supprimer (la valeur \"Snapshot:\" de la sortie fork, ex. fork-<timestamp>)",
+        "sourceOption": "Image RBD originale qui a été forkée (de config set-ceph --image, ex. ds-prod)",
+        "starting": "Nettoyage du datastore forké sur \"{{machine}}\"..."
       }
     },
     "doctor": {
@@ -545,13 +545,13 @@
         "contextMode": "Mode de contexte",
         "dockerAvailable": "Docker",
         "goInstalled": "Go",
-        "machines": "Machines",
-        "nodeVersion": "Node.js",
+        "machines": "Nombre de machines",
+        "nodeVersion": "Version de Node.js",
         "opsPrereqs": "Prérequis OPS",
         "renetBinary": "Binaire",
         "renetCriu": "CRIU intégré",
         "renetRsync": "rsync intégré",
-        "renetVersion": "Version",
+        "renetVersion": "Version de Renet",
         "seaMode": "Mode SEA",
         "sshKey": "Clé SSH"
       },
@@ -567,9 +567,9 @@
       "seaActive": "oui (Single Executable Application)",
       "sections": {
         "authentication": "Authentification",
-        "configuration": "Configuration",
+        "configuration": "Paramétrage",
         "environment": "Environnement",
-        "renet": "Renet",
+        "renet": "Réseau Renet",
         "virtualization": "Virtualisation"
       },
       "status": {
@@ -1511,7 +1511,7 @@
         "title": "Vérification de la configuration VS Code\n",
         "variant": "  Variante : Insiders",
         "version": "  Version : {{version}}",
-        "vscodeFound": "  VS Code : {{path}}",
+        "vscodeFound": "  Chemin VS Code : {{path}}",
         "vscodeNotFound": "  VS Code : Non trouvé",
         "yes": "Oui"
       },
@@ -1564,7 +1564,7 @@
       "warning": "Avertissement"
     },
     "cloudFrontmatter": {
-      "category": "Reference",
+      "category": "Référence",
       "description": "Commandes cloud exclusives pour la CLI Rediacc — authentification, équipes, organisations et gestion multi-tenant",
       "title": "Application CLI (Cloud / Expérimental)"
     },
@@ -1586,7 +1586,7 @@
       }
     },
     "frontmatter": {
-      "category": "Reference",
+      "category": "Référence",
       "description": "Guide complet pour utiliser l'interface en ligne de commande Rediacc pour la gestion de la plateforme",
       "title": "Application CLI"
     },
@@ -1595,7 +1595,7 @@
       "intro": "Chaque commande prend en charge ces flags globaux :"
     },
     "installation": {
-      "heading": "Installation",
+      "heading": "Guide d'installation",
       "text": "Téléchargez le dernier binaire pour votre plateforme depuis la [page des versions Rediacc](https://www.rediacc.com) ou installez via votre gestionnaire de paquets :"
     },
     "optionLabels": {
@@ -1686,7 +1686,7 @@
     },
     "tableHeaders": {
       "default": "Défaut",
-      "description": "Description",
+      "description": "Libellé",
       "error": "Erreur",
       "flag": "Option",
       "meaning": "Signification",
@@ -1899,7 +1899,7 @@
     "priority": "Priorité (1=la plus élevée)",
     "priorityMax": "Priorité maximale (1-5)",
     "priorityMin": "Priorité minimale (1-5)",
-    "protocolAction": "Action ({{actions}})",
+    "protocolAction": "Action à effectuer ({{actions}})",
     "protocolForce": "Forcer la réinscription même si déjà enregistré",
     "protocolParams": "Paramètres supplémentaires",
     "protocolSystem": "Enregistrer au niveau du système (nécessite des privilèges administrateur)",

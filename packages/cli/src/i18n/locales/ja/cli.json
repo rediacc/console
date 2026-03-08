@@ -446,11 +446,11 @@
         "success": "\"{{key}}\" を \"{{value}}\" に設定しました"
       },
       "setCeph": {
-        "description": "Set Ceph RBD configuration for a machine",
-        "optionCluster": "Ceph cluster name",
-        "optionImage": "RBD image name (e.g., datastore-prod1)",
-        "optionPool": "Ceph pool name (e.g., rbd)",
-        "success": "Ceph config set for \"{{name}}\": pool={{pool}}, image={{image}}"
+        "description": "マシンのCeph RBD設定を構成する",
+        "optionCluster": "Cephクラスター名",
+        "optionImage": "RBDイメージ名（例: datastore-prod1）",
+        "optionPool": "Cephプール名（例: rbd）",
+        "success": "\"{{name}}\"のCeph設定を構成しました: pool={{pool}}, image={{image}}"
       },
       "setInfra": {
         "description": "マシンのインフラ設定を行う",
@@ -496,44 +496,44 @@
       }
     },
     "datastore": {
-      "description": "Manage Ceph RBD datastore lifecycle (init, fork, unfork, status)",
+      "description": "Ceph RBDデータストアのライフサイクルを管理（init、fork、unfork、status）",
       "fork": {
-        "completed": "Datastore forked successfully (snapshot: {{snapshot}})",
-        "cowSizeOption": "COW backing file size (default: auto, grows on demand)",
-        "description": "Create a local COW copy of a Ceph datastore via RBD snapshot + clone (< 2s). Save snapshot/clone names from output for unfork. Only one fork per target name; unfork before re-forking",
-        "failed": "Datastore fork failed",
-        "starting": "Forking datastore on \"{{source}}\" (clone named for \"{{target}}\")...",
-        "toOption": "Clone suffix (creates clone named <image>-fork-<name>). The fork stays on the source machine"
+        "completed": "データストアのフォークが完了しました（スナップショット: {{snapshot}}）",
+        "cowSizeOption": "COWバッキングファイルサイズ（デフォルト: auto、必要に応じて拡張）",
+        "description": "RBDスナップショット+クローンを使用してCephデータストアのローカルCOWコピーを作成（2秒未満）。unforkのために出力からスナップショット/クローン名を保存してください。ターゲット名ごとに1つのforkのみ。再forkする前にunforkしてください",
+        "failed": "データストアのフォークに失敗しました",
+        "starting": "\"{{source}}\"でデータストアをフォーク中（\"{{target}}\"のクローン）...",
+        "toOption": "クローンサフィックス（<image>-fork-<name>という名前のクローンを作成）。forkはソースマシンに残ります"
       },
       "init": {
-        "backendOption": "Backend type: local (default) or ceph",
-        "clusterOption": "Ceph cluster name (default: ceph)",
-        "completed": "Datastore initialized",
-        "description": "Initialize datastore on a machine (local loop-backed or Ceph RBD)",
-        "failed": "Datastore initialization failed",
-        "forceOption": "Force initialization even if datastore already exists (WARNING: reformats storage)",
-        "imageOption": "Ceph RBD image name (default: from machine config via set-ceph)",
-        "imageRequired": "--image is required for ceph backend (or set via: rdc config set-ceph -m <machine> --image <name>)",
-        "poolOption": "Ceph pool name (default: from machine config, or rbd)",
-        "sizeOption": "Datastore size (e.g., 5G, 50G, 100G)",
-        "starting": "Initializing datastore on \"{{machine}}\"..."
+        "backendOption": "バックエンドタイプ: local（デフォルト）またはceph",
+        "clusterOption": "Cephクラスター名（デフォルト: ceph）",
+        "completed": "データストアを初期化しました",
+        "description": "マシン上でデータストアを初期化（ローカルまたはCeph RBD）",
+        "failed": "データストアの初期化に失敗しました",
+        "forceOption": "データストアが既に存在していても強制的に初期化する（警告: ストレージを再フォーマットします）",
+        "imageOption": "Ceph RBDイメージ名（デフォルト: set-cephによるマシン設定から）",
+        "imageRequired": "cephバックエンドには--imageが必要です（または rdc config set-ceph -m <machine> --image <name> で設定してください）",
+        "poolOption": "Cephプール名（デフォルト: マシン設定から、またはrbd）",
+        "sizeOption": "データストアサイズ（例: 5G, 50G, 100G）",
+        "starting": "\"{{machine}}\"でデータストアを初期化中..."
       },
-      "machineOption": "Machine name (where the Ceph datastore is hosted)",
+      "machineOption": "マシン名（Cephデータストアがホストされている場所）",
       "status": {
-        "description": "Show datastore backend, size, usage, mount status, and cow_mode (if forked)",
-        "starting": "Checking datastore status on \"{{machine}}\"..."
+        "description": "データストアのバックエンド、サイズ、使用量、マウント状態、cow_mode（フォーク時）を表示",
+        "starting": "\"{{machine}}\"でデータストアの状態を確認中..."
       },
       "unfork": {
-        "completed": "Fork cleaned up successfully",
-        "description": "Clean up a fork: unmount COW, remove clone, remove snapshot",
-        "destOption": "Clone image to remove (the \"Clone:\" value from fork output, e.g. ds-prod-fork-<machine>)",
-        "failed": "Fork cleanup failed",
-        "forceOption": "Continue cleanup even if individual steps fail (e.g. unmount, snapshot removal)",
-        "mountPointOption": "Fork mount point to unmount (default: /mnt/rediacc)",
-        "poolOption": "Ceph pool name (default: from machine config)",
-        "snapshotOption": "Snapshot to remove (the \"Snapshot:\" value from fork output, e.g. fork-<timestamp>)",
-        "sourceOption": "Original RBD image that was forked (from config set-ceph --image, e.g. ds-prod)",
-        "starting": "Cleaning up forked datastore on \"{{machine}}\"..."
+        "completed": "forkのクリーンアップが完了しました",
+        "description": "forkのクリーンアップ: COWのアンマウント、クローンの削除、スナップショットの削除",
+        "destOption": "削除するクローンイメージ（fork出力の\"Clone:\"値、例: ds-prod-fork-<machine>）",
+        "failed": "forkのクリーンアップに失敗しました",
+        "forceOption": "個々のステップが失敗しても（例：アンマウント、スナップショット削除）クリーンアップを続行する",
+        "mountPointOption": "アンマウントするforkマウントポイント（デフォルト: /mnt/rediacc）",
+        "poolOption": "Cephプール名（デフォルト: マシン設定から）",
+        "snapshotOption": "削除するスナップショット（fork出力の\"Snapshot:\"値、例: fork-<timestamp>）",
+        "sourceOption": "フォークされた元のRBDイメージ（config set-ceph --imageから、例: ds-prod）",
+        "starting": "\"{{machine}}\"でフォークされたデータストアをクリーンアップ中..."
       }
     },
     "doctor": {
@@ -546,7 +546,7 @@
         "dockerAvailable": "Docker",
         "goInstalled": "Go",
         "machines": "マシン",
-        "nodeVersion": "Node.js",
+        "nodeVersion": "Node.jsバージョン",
         "opsPrereqs": "OPS前提条件",
         "renetBinary": "バイナリ",
         "renetCriu": "組み込みCRIU",
@@ -569,7 +569,7 @@
         "authentication": "認証",
         "configuration": "設定",
         "environment": "環境",
-        "renet": "Renet",
+        "renet": "Renetネットワーク",
         "virtualization": "仮想化"
       },
       "status": {
@@ -692,7 +692,7 @@
         "fetching": "マシンを取得中です...",
         "header": "\n{{name}} のボルトステータス:",
         "mounted": "  マウント済み: {{count}}",
-        "repoDocker": "    Docker: {{status}}",
+        "repoDocker": "    Docker状態: {{status}}",
         "repoMounted": "    マウント済み: {{mounted}}",
         "status": "  ステータス: {{status}}",
         "systemDatastore": "  データストア: {{used}} / {{total}} ({{percent}})",
@@ -1511,7 +1511,7 @@
         "title": "VS Code セットアップ確認\n",
         "variant": "  バリアント: Insiders",
         "version": "  バージョン: {{version}}",
-        "vscodeFound": "  VS Code: {{path}}",
+        "vscodeFound": "  VS Codeパス: {{path}}",
         "vscodeNotFound": "  VS Code: 見つかりません",
         "yes": "はい"
       },
@@ -1564,7 +1564,7 @@
       "warning": "警告"
     },
     "cloudFrontmatter": {
-      "category": "Reference",
+      "category": "リファレンス",
       "description": "Rediacc CLIのクラウド専用コマンド — 認証、チーム、組織、マルチテナント管理",
       "title": "CLIアプリケーション（クラウド / 実験的）"
     },
@@ -1586,7 +1586,7 @@
       }
     },
     "frontmatter": {
-      "category": "Reference",
+      "category": "リファレンス",
       "description": "プラットフォーム管理のためのRediaccコマンドラインインターフェースの完全ガイド",
       "title": "CLIアプリケーション"
     },

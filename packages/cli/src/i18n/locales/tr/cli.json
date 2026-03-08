@@ -99,7 +99,7 @@
           "creating": "Çatallanmış token oluşturuluyor...",
           "description": "Başka bir uygulama için çatallanmış token oluşturun",
           "success": "Token başarıyla oluşturuldu",
-          "tokenValue": "Token: {{token}}"
+          "tokenValue": "Token değeri: {{token}}"
         },
         "list": {
           "description": "Etkin tokenları/oturumları listeleyin",
@@ -446,11 +446,11 @@
         "success": "\"{{key}}\" değeri \"{{value}}\" olarak ayarlandı"
       },
       "setCeph": {
-        "description": "Set Ceph RBD configuration for a machine",
-        "optionCluster": "Ceph cluster name",
-        "optionImage": "RBD image name (e.g., datastore-prod1)",
-        "optionPool": "Ceph pool name (e.g., rbd)",
-        "success": "Ceph config set for \"{{name}}\": pool={{pool}}, image={{image}}"
+        "description": "Bir makine için Ceph RBD yapılandırmasını ayarla",
+        "optionCluster": "Ceph küme adı",
+        "optionImage": "RBD imaj adı (örn., datastore-prod1)",
+        "optionPool": "Ceph havuz adı (örn., rbd)",
+        "success": "\"{{name}}\" için Ceph yapılandırması ayarlandı: pool={{pool}}, image={{image}}"
       },
       "setInfra": {
         "description": "Bir makine için altyapı yapılandırmasını belirleyin",
@@ -496,44 +496,44 @@
       }
     },
     "datastore": {
-      "description": "Manage Ceph RBD datastore lifecycle (init, fork, unfork, status)",
+      "description": "Ceph RBD veri deposu yaşam döngüsünü yönet (init, fork, unfork, status)",
       "fork": {
-        "completed": "Datastore forked successfully (snapshot: {{snapshot}})",
-        "cowSizeOption": "COW backing file size (default: auto, grows on demand)",
-        "description": "Create a local COW copy of a Ceph datastore via RBD snapshot + clone (< 2s). Save snapshot/clone names from output for unfork. Only one fork per target name; unfork before re-forking",
-        "failed": "Datastore fork failed",
-        "starting": "Forking datastore on \"{{source}}\" (clone named for \"{{target}}\")...",
-        "toOption": "Clone suffix (creates clone named <image>-fork-<name>). The fork stays on the source machine"
+        "completed": "Veri deposu başarıyla çatallandı (anlık görüntü: {{snapshot}})",
+        "cowSizeOption": "COW destek dosyası boyutu (varsayılan: auto, talep üzerine büyür)",
+        "description": "Ceph veri deposunun RBD anlık görüntü + klon ile yerel COW kopyasını oluştur (< 2sn). Unfork için çıktıdaki anlık görüntü/klon adlarını kaydedin. Hedef ad başına yalnızca bir fork; yeniden fork yapmadan önce unfork çalıştırın",
+        "failed": "Veri deposu çatallama başarısız oldu",
+        "starting": "\"{{source}}\" üzerinde veri deposu çatallanıyor (\"{{target}}\" için adlandırılmış klon)...",
+        "toOption": "Klon son eki (<image>-fork-<name> adlı klon oluşturur). Fork kaynak makinede kalır"
       },
       "init": {
-        "backendOption": "Backend type: local (default) or ceph",
-        "clusterOption": "Ceph cluster name (default: ceph)",
-        "completed": "Datastore initialized",
-        "description": "Initialize datastore on a machine (local loop-backed or Ceph RBD)",
-        "failed": "Datastore initialization failed",
-        "forceOption": "Force initialization even if datastore already exists (WARNING: reformats storage)",
-        "imageOption": "Ceph RBD image name (default: from machine config via set-ceph)",
-        "imageRequired": "--image is required for ceph backend (or set via: rdc config set-ceph -m <machine> --image <name>)",
-        "poolOption": "Ceph pool name (default: from machine config, or rbd)",
-        "sizeOption": "Datastore size (e.g., 5G, 50G, 100G)",
-        "starting": "Initializing datastore on \"{{machine}}\"..."
+        "backendOption": "Arka uç türü: local (varsayılan) veya ceph",
+        "clusterOption": "Ceph küme adı (varsayılan: ceph)",
+        "completed": "Veri deposu başlatıldı",
+        "description": "Bir makinede veri deposunu başlat (yerel veya Ceph RBD)",
+        "failed": "Veri deposu başlatma başarısız oldu",
+        "forceOption": "Veri deposu zaten mevcut olsa bile başlatmayı zorla (UYARI: depolamayı yeniden biçimlendirir)",
+        "imageOption": "Ceph RBD imaj adı (varsayılan: set-ceph ile makine yapılandırmasından)",
+        "imageRequired": "ceph arka ucu için --image gereklidir (veya şununla ayarlayın: rdc config set-ceph -m <machine> --image <name>)",
+        "poolOption": "Ceph havuz adı (varsayılan: makine yapılandırmasından veya rbd)",
+        "sizeOption": "Veri deposu boyutu (örn., 5G, 50G, 100G)",
+        "starting": "\"{{machine}}\" üzerinde veri deposu başlatılıyor..."
       },
-      "machineOption": "Machine name (where the Ceph datastore is hosted)",
+      "machineOption": "Makine adı (Ceph veri deposunun barındırıldığı yer)",
       "status": {
-        "description": "Show datastore backend, size, usage, mount status, and cow_mode (if forked)",
-        "starting": "Checking datastore status on \"{{machine}}\"..."
+        "description": "Veri deposu arka ucunu, boyutunu, kullanımını, bağlama durumunu ve cow_mode'u (çatallanmışsa) göster",
+        "starting": "\"{{machine}}\" üzerinde veri deposu durumu kontrol ediliyor..."
       },
       "unfork": {
-        "completed": "Fork cleaned up successfully",
-        "description": "Clean up a fork: unmount COW, remove clone, remove snapshot",
-        "destOption": "Clone image to remove (the \"Clone:\" value from fork output, e.g. ds-prod-fork-<machine>)",
-        "failed": "Fork cleanup failed",
-        "forceOption": "Continue cleanup even if individual steps fail (e.g. unmount, snapshot removal)",
-        "mountPointOption": "Fork mount point to unmount (default: /mnt/rediacc)",
-        "poolOption": "Ceph pool name (default: from machine config)",
-        "snapshotOption": "Snapshot to remove (the \"Snapshot:\" value from fork output, e.g. fork-<timestamp>)",
-        "sourceOption": "Original RBD image that was forked (from config set-ceph --image, e.g. ds-prod)",
-        "starting": "Cleaning up forked datastore on \"{{machine}}\"..."
+        "completed": "Fork başarıyla temizlendi",
+        "description": "Bir fork'u temizle: COW'u ayır, klonu kaldır, anlık görüntüyü kaldır",
+        "destOption": "Kaldırılacak klon imajı (fork çıktısındaki \"Clone:\" değeri, örn. ds-prod-fork-<machine>)",
+        "failed": "Fork temizleme başarısız oldu",
+        "forceOption": "Bireysel adımlar başarısız olsa bile temizlemeye devam et (örn., ayırma, anlık görüntü kaldırma)",
+        "mountPointOption": "Ayrılacak fork bağlama noktası (varsayılan: /mnt/rediacc)",
+        "poolOption": "Ceph havuz adı (varsayılan: makine yapılandırmasından)",
+        "snapshotOption": "Kaldırılacak anlık görüntü (fork çıktısındaki \"Snapshot:\" değeri, örn. fork-<timestamp>)",
+        "sourceOption": "Çatallanan orijinal RBD imajı (config set-ceph --image'dan, örn. ds-prod)",
+        "starting": "\"{{machine}}\" üzerinde çatallanmış veri deposu temizleniyor..."
       }
     },
     "doctor": {
@@ -546,7 +546,7 @@
         "dockerAvailable": "Docker",
         "goInstalled": "Go",
         "machines": "Makineler",
-        "nodeVersion": "Node.js",
+        "nodeVersion": "Node.js sürümü",
         "opsPrereqs": "OPS gereksinimleri",
         "renetBinary": "İkili dosya",
         "renetCriu": "Gömülü CRIU",
@@ -569,7 +569,7 @@
         "authentication": "Kimlik Doğrulama",
         "configuration": "Yapılandırma",
         "environment": "Ortam",
-        "renet": "Renet",
+        "renet": "Renet ağı",
         "virtualization": "Sanallaştırma"
       },
       "status": {
@@ -623,7 +623,7 @@
         "storageSmart": "  SMART: {{healthy}} sağlıklı, {{failing}} arızalı",
         "storageTemp": "  Maks. Sıcaklık: {{temp}}°C",
         "systemDatastore": "  Veri deposu: {{percent}}",
-        "systemDisk": "  Disk: {{percent}}",
+        "systemDisk": "  Disk alanı: {{percent}}",
         "systemMemory": "  Bellek: {{percent}}",
         "systemSection": "\nSistem:",
         "systemUptime": "  Çalışma süresi: {{uptime}}"
@@ -673,7 +673,7 @@
         "statusResult": "  Durum: {{status}}",
         "taskId": "Görev Kimliği: {{taskId}}",
         "testing": "SSH bağlantısı {{user}}@{{ip}}:{{port}} adresine test ediliyor...",
-        "testResult": "SSH test {{result}}",
+        "testResult": "SSH bağlantı testi {{result}}",
         "timeout": "Sonuç bekleme zaman aşımı",
         "timeoutMessage": "Test bağlantısı zaman aşımına uğradı. Ayrıntılar için sıra izini kontrol edin.",
         "waiting": "SSH test sonucu bekleniyor...",
@@ -692,11 +692,11 @@
         "fetching": "Makine alınıyor...",
         "header": "\n{{name}} için Kasa Durumu:",
         "mounted": "  Bağlı: {{count}}",
-        "repoDocker": "    Docker: {{status}}",
+        "repoDocker": "    Docker durumu: {{status}}",
         "repoMounted": "    Bağlı: {{mounted}}",
         "status": "  Durum: {{status}}",
         "systemDatastore": "  Veri deposu: {{used}} / {{total}} ({{percent}})",
-        "systemDisk": "  Disk: {{used}} / {{total}} ({{percent}})",
+        "systemDisk": "  Disk alanı: {{used}} / {{total}} ({{percent}})",
         "systemHostname": "  Ana bilgisayar adı: {{hostname}}",
         "systemMemory": "  Bellek: {{used}} / {{total}} ({{percent}})",
         "systemSection": "\nSistem:",
@@ -866,7 +866,7 @@
         "parsedUrl": "\nAyrıştırılmış Protokol URL'si:",
         "repository": "Depo:",
         "team": "Takım:",
-        "token": "Token:"
+        "token": "Token değeri:"
       },
       "parse": {
         "cliCommand": "\nCLI Komutu:",
@@ -886,7 +886,7 @@
         "description": "Protokol işleyicisi kayıt durumunu gösterin",
         "error": "\nHata: {{error}}",
         "handlerCommand": "İşleyici Komutu:",
-        "platform": "Platform:",
+        "platform": "Platform bilgisi:",
         "registered": "Kayıtlı:",
         "registerHint": "\nProtokol işleyicisini kaydetmek için şu komutu çalıştırın:",
         "supported": "Desteklenen:",
@@ -1511,7 +1511,7 @@
         "title": "VS Code Kurulum Kontrolü\n",
         "variant": "  Varyant: Insiders",
         "version": "  Sürüm: {{version}}",
-        "vscodeFound": "  VS Code: {{path}}",
+        "vscodeFound": "  VS Code yolu: {{path}}",
         "vscodeNotFound": "  VS Code: Bulunamadı",
         "yes": "Evet"
       },
@@ -1564,7 +1564,7 @@
       "warning": "Uyarı"
     },
     "cloudFrontmatter": {
-      "category": "Reference",
+      "category": "Başvuru",
       "description": "Rediacc CLI için bulut özel komutları — kimlik doğrulama, ekipler, organizasyonlar ve çok kiracılı yönetim",
       "title": "CLI Uygulaması (Bulut / Deneysel)"
     },
@@ -1586,7 +1586,7 @@
       }
     },
     "frontmatter": {
-      "category": "Reference",
+      "category": "Başvuru",
       "description": "Platform yönetimi için Rediacc komut satırı arayüzünü kullanma rehberi",
       "title": "CLI Uygulaması"
     },

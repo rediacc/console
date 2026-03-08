@@ -446,11 +446,11 @@
         "success": "Значение \"{{key}}\" установлено в \"{{value}}\""
       },
       "setCeph": {
-        "description": "Set Ceph RBD configuration for a machine",
-        "optionCluster": "Ceph cluster name",
-        "optionImage": "RBD image name (e.g., datastore-prod1)",
-        "optionPool": "Ceph pool name (e.g., rbd)",
-        "success": "Ceph config set for \"{{name}}\": pool={{pool}}, image={{image}}"
+        "description": "Настроить конфигурацию Ceph RBD для машины",
+        "optionCluster": "Имя кластера Ceph",
+        "optionImage": "Имя RBD-образа (например, datastore-prod1)",
+        "optionPool": "Имя пула Ceph (например, rbd)",
+        "success": "Конфигурация Ceph установлена для \"{{name}}\": pool={{pool}}, image={{image}}"
       },
       "setInfra": {
         "description": "Задать конфигурацию инфраструктуры для машины",
@@ -496,44 +496,44 @@
       }
     },
     "datastore": {
-      "description": "Manage Ceph RBD datastore lifecycle (init, fork, unfork, status)",
+      "description": "Управление жизненным циклом хранилища данных Ceph RBD (init, fork, unfork, status)",
       "fork": {
-        "completed": "Datastore forked successfully (snapshot: {{snapshot}})",
-        "cowSizeOption": "COW backing file size (default: auto, grows on demand)",
-        "description": "Create a local COW copy of a Ceph datastore via RBD snapshot + clone (< 2s). Save snapshot/clone names from output for unfork. Only one fork per target name; unfork before re-forking",
-        "failed": "Datastore fork failed",
-        "starting": "Forking datastore on \"{{source}}\" (clone named for \"{{target}}\")...",
-        "toOption": "Clone suffix (creates clone named <image>-fork-<name>). The fork stays on the source machine"
+        "completed": "Хранилище данных успешно разветвлено (снимок: {{snapshot}})",
+        "cowSizeOption": "Размер резервного файла COW (по умолчанию: auto, увеличивается по мере необходимости)",
+        "description": "Создать локальную COW-копию хранилища данных Ceph через снимок RBD + клон (< 2 сек). Сохраните имена снимка/клона из вывода для unfork. Только один fork на целевое имя; выполните unfork перед повторным fork",
+        "failed": "Ошибка разветвления хранилища данных",
+        "starting": "Создание fork хранилища данных на \"{{source}}\" (клон для \"{{target}}\")...",
+        "toOption": "Суффикс клона (создаёт клон с именем <image>-fork-<name>). Fork остаётся на исходной машине"
       },
       "init": {
-        "backendOption": "Backend type: local (default) or ceph",
-        "clusterOption": "Ceph cluster name (default: ceph)",
-        "completed": "Datastore initialized",
-        "description": "Initialize datastore on a machine (local loop-backed or Ceph RBD)",
-        "failed": "Datastore initialization failed",
-        "forceOption": "Force initialization even if datastore already exists (WARNING: reformats storage)",
-        "imageOption": "Ceph RBD image name (default: from machine config via set-ceph)",
-        "imageRequired": "--image is required for ceph backend (or set via: rdc config set-ceph -m <machine> --image <name>)",
-        "poolOption": "Ceph pool name (default: from machine config, or rbd)",
-        "sizeOption": "Datastore size (e.g., 5G, 50G, 100G)",
-        "starting": "Initializing datastore on \"{{machine}}\"..."
+        "backendOption": "Тип бэкенда: local (по умолчанию) или ceph",
+        "clusterOption": "Имя кластера Ceph (по умолчанию: ceph)",
+        "completed": "Хранилище данных инициализировано",
+        "description": "Инициализировать хранилище данных на машине (локальное или Ceph RBD)",
+        "failed": "Ошибка инициализации хранилища данных",
+        "forceOption": "Принудительная инициализация, даже если хранилище данных уже существует (ВНИМАНИЕ: переформатирует хранилище)",
+        "imageOption": "Имя образа Ceph RBD (по умолчанию: из конфигурации машины через set-ceph)",
+        "imageRequired": "--image обязателен для бэкенда ceph (или задайте через: rdc config set-ceph -m <machine> --image <name>)",
+        "poolOption": "Имя пула Ceph (по умолчанию: из конфигурации машины или rbd)",
+        "sizeOption": "Размер хранилища данных (например, 5G, 50G, 100G)",
+        "starting": "Инициализация хранилища данных на \"{{machine}}\"..."
       },
-      "machineOption": "Machine name (where the Ceph datastore is hosted)",
+      "machineOption": "Имя машины (где размещено хранилище данных Ceph)",
       "status": {
-        "description": "Show datastore backend, size, usage, mount status, and cow_mode (if forked)",
-        "starting": "Checking datastore status on \"{{machine}}\"..."
+        "description": "Показать бэкенд хранилища данных, размер, использование, статус монтирования и cow_mode (если разветвлено)",
+        "starting": "Проверка состояния хранилища данных на \"{{machine}}\"..."
       },
       "unfork": {
-        "completed": "Fork cleaned up successfully",
-        "description": "Clean up a fork: unmount COW, remove clone, remove snapshot",
-        "destOption": "Clone image to remove (the \"Clone:\" value from fork output, e.g. ds-prod-fork-<machine>)",
-        "failed": "Fork cleanup failed",
-        "forceOption": "Continue cleanup even if individual steps fail (e.g. unmount, snapshot removal)",
-        "mountPointOption": "Fork mount point to unmount (default: /mnt/rediacc)",
-        "poolOption": "Ceph pool name (default: from machine config)",
-        "snapshotOption": "Snapshot to remove (the \"Snapshot:\" value from fork output, e.g. fork-<timestamp>)",
-        "sourceOption": "Original RBD image that was forked (from config set-ceph --image, e.g. ds-prod)",
-        "starting": "Cleaning up forked datastore on \"{{machine}}\"..."
+        "completed": "Fork успешно очищен",
+        "description": "Очистить fork: отмонтировать COW, удалить клон, удалить снимок",
+        "destOption": "Образ клона для удаления (значение \"Clone:\" из вывода fork, напр. ds-prod-fork-<machine>)",
+        "failed": "Ошибка очистки fork",
+        "forceOption": "Продолжить очистку, даже если отдельные шаги не удались (напр., отмонтирование, удаление снимка)",
+        "mountPointOption": "Точка монтирования fork для отмонтирования (по умолчанию: /mnt/rediacc)",
+        "poolOption": "Имя пула Ceph (по умолчанию: из конфигурации машины)",
+        "snapshotOption": "Снимок для удаления (значение \"Snapshot:\" из вывода fork, напр. fork-<timestamp>)",
+        "sourceOption": "Исходный RBD-образ, который был разветвлён (из config set-ceph --image, напр. ds-prod)",
+        "starting": "Очистка разветвлённого хранилища данных на \"{{machine}}\"..."
       }
     },
     "doctor": {
@@ -546,7 +546,7 @@
         "dockerAvailable": "Docker",
         "goInstalled": "Go",
         "machines": "Машины",
-        "nodeVersion": "Node.js",
+        "nodeVersion": "Версия Node.js",
         "opsPrereqs": "Требования OPS",
         "renetBinary": "Бинарный файл",
         "renetCriu": "Встроенный CRIU",
@@ -569,7 +569,7 @@
         "authentication": "Аутентификация",
         "configuration": "Конфигурация",
         "environment": "Среда",
-        "renet": "Renet",
+        "renet": "Сеть Renet",
         "virtualization": "Виртуализация"
       },
       "status": {
@@ -692,7 +692,7 @@
         "fetching": "Получение машины...",
         "header": "\nСтатус хранилища для {{name}}:",
         "mounted": "  Смонтировано: {{count}}",
-        "repoDocker": "    Docker: {{status}}",
+        "repoDocker": "    Docker-статус: {{status}}",
         "repoMounted": "    Смонтировано: {{mounted}}",
         "status": "  Статус: {{status}}",
         "systemDatastore": "  Хранилище данных: {{used}} / {{total}} ({{percent}})",
@@ -1511,7 +1511,7 @@
         "title": "Проверка настройки VS Code\n",
         "variant": "  Вариант: Insiders",
         "version": "  Версия: {{version}}",
-        "vscodeFound": "  VS Code: {{path}}",
+        "vscodeFound": "  Путь VS Code: {{path}}",
         "vscodeNotFound": "  VS Code: Не найден",
         "yes": "Да"
       },
@@ -1564,7 +1564,7 @@
       "warning": "Предупреждение"
     },
     "cloudFrontmatter": {
-      "category": "Reference",
+      "category": "Справочник",
       "description": "Облачные команды для Rediacc CLI — аутентификация, команды, организации и мультитенантное управление",
       "title": "Приложение CLI (Облако / Экспериментальный)"
     },
@@ -1586,7 +1586,7 @@
       }
     },
     "frontmatter": {
-      "category": "Reference",
+      "category": "Справочник",
       "description": "Полное руководство по использованию интерфейса командной строки Rediacc для управления платформой",
       "title": "CLI-приложение"
     },

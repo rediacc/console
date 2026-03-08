@@ -446,11 +446,11 @@
         "success": "تم تعيين \"{{key}}\" إلى \"{{value}}\""
       },
       "setCeph": {
-        "description": "Set Ceph RBD configuration for a machine",
-        "optionCluster": "Ceph cluster name",
-        "optionImage": "RBD image name (e.g., datastore-prod1)",
-        "optionPool": "Ceph pool name (e.g., rbd)",
-        "success": "Ceph config set for \"{{name}}\": pool={{pool}}, image={{image}}"
+        "description": "ضبط إعدادات Ceph RBD لجهاز",
+        "optionCluster": "اسم مجموعة Ceph",
+        "optionImage": "اسم صورة RBD (مثال: datastore-prod1)",
+        "optionPool": "اسم مجمع Ceph (مثال: rbd)",
+        "success": "تم ضبط إعدادات Ceph لـ \"{{name}}\": pool={{pool}}, image={{image}}"
       },
       "setInfra": {
         "description": "تعيين إعدادات البنية التحتية لآلة",
@@ -496,44 +496,44 @@
       }
     },
     "datastore": {
-      "description": "Manage Ceph RBD datastore lifecycle (init, fork, unfork, status)",
+      "description": "إدارة دورة حياة مخزن بيانات Ceph RBD (تهيئة، تفريع، إلغاء تفريع، حالة)",
       "fork": {
-        "completed": "Datastore forked successfully (snapshot: {{snapshot}})",
-        "cowSizeOption": "COW backing file size (default: auto, grows on demand)",
-        "description": "Create a local COW copy of a Ceph datastore via RBD snapshot + clone (< 2s). Save snapshot/clone names from output for unfork. Only one fork per target name; unfork before re-forking",
-        "failed": "Datastore fork failed",
-        "starting": "Forking datastore on \"{{source}}\" (clone named for \"{{target}}\")...",
-        "toOption": "Clone suffix (creates clone named <image>-fork-<name>). The fork stays on the source machine"
+        "completed": "تم تفريع مخزن البيانات بنجاح (لقطة: {{snapshot}})",
+        "cowSizeOption": "حجم ملف COW الداعم (افتراضي: تلقائي، ينمو حسب الطلب)",
+        "description": "إنشاء نسخة COW محلية من مخزن بيانات Ceph عبر لقطة RBD + نسخ (أقل من ثانيتين). احفظ أسماء اللقطة/النسخة من المخرجات لإلغاء التفريع. تفريع واحد فقط لكل اسم هدف؛ قم بإلغاء التفريع قبل إعادة التفريع",
+        "failed": "فشل تفريع مخزن البيانات",
+        "starting": "جارٍ تفريع مخزن البيانات على \"{{source}}\" (نسخة مسماة لـ \"{{target}}\")...",
+        "toOption": "لاحقة النسخة (تنشئ نسخة باسم <image>-fork-<name>). يبقى التفريع على الجهاز المصدر"
       },
       "init": {
-        "backendOption": "Backend type: local (default) or ceph",
-        "clusterOption": "Ceph cluster name (default: ceph)",
-        "completed": "Datastore initialized",
-        "description": "Initialize datastore on a machine (local loop-backed or Ceph RBD)",
-        "failed": "Datastore initialization failed",
-        "forceOption": "Force initialization even if datastore already exists (WARNING: reformats storage)",
-        "imageOption": "Ceph RBD image name (default: from machine config via set-ceph)",
-        "imageRequired": "--image is required for ceph backend (or set via: rdc config set-ceph -m <machine> --image <name>)",
-        "poolOption": "Ceph pool name (default: from machine config, or rbd)",
-        "sizeOption": "Datastore size (e.g., 5G, 50G, 100G)",
-        "starting": "Initializing datastore on \"{{machine}}\"..."
+        "backendOption": "نوع الخلفية: local (افتراضي) أو ceph",
+        "clusterOption": "اسم مجموعة Ceph (افتراضي: ceph)",
+        "completed": "تمت تهيئة مخزن البيانات",
+        "description": "تهيئة مخزن البيانات على جهاز (محلي أو Ceph RBD)",
+        "failed": "فشل تهيئة مخزن البيانات",
+        "forceOption": "فرض التهيئة حتى لو كان مخزن البيانات موجوداً بالفعل (تحذير: يعيد تهيئة التخزين)",
+        "imageOption": "اسم صورة Ceph RBD (افتراضي: من إعدادات الجهاز عبر set-ceph)",
+        "imageRequired": "--image مطلوب لخلفية ceph (أو قم بتعيينه عبر: rdc config set-ceph -m <machine> --image <name>)",
+        "poolOption": "اسم مجمع Ceph (افتراضي: من إعدادات الجهاز، أو rbd)",
+        "sizeOption": "حجم مخزن البيانات (مثال: 5G, 50G, 100G)",
+        "starting": "جارٍ تهيئة مخزن البيانات على \"{{machine}}\"..."
       },
-      "machineOption": "Machine name (where the Ceph datastore is hosted)",
+      "machineOption": "اسم الجهاز (حيث يستضاف مخزن بيانات Ceph)",
       "status": {
-        "description": "Show datastore backend, size, usage, mount status, and cow_mode (if forked)",
-        "starting": "Checking datastore status on \"{{machine}}\"..."
+        "description": "عرض خلفية مخزن البيانات والحجم والاستخدام وحالة التحميل ووضع cow_mode (إذا كان متفرعاً)",
+        "starting": "جارٍ فحص حالة مخزن البيانات على \"{{machine}}\"..."
       },
       "unfork": {
-        "completed": "Fork cleaned up successfully",
-        "description": "Clean up a fork: unmount COW, remove clone, remove snapshot",
-        "destOption": "Clone image to remove (the \"Clone:\" value from fork output, e.g. ds-prod-fork-<machine>)",
-        "failed": "Fork cleanup failed",
-        "forceOption": "Continue cleanup even if individual steps fail (e.g. unmount, snapshot removal)",
-        "mountPointOption": "Fork mount point to unmount (default: /mnt/rediacc)",
-        "poolOption": "Ceph pool name (default: from machine config)",
-        "snapshotOption": "Snapshot to remove (the \"Snapshot:\" value from fork output, e.g. fork-<timestamp>)",
-        "sourceOption": "Original RBD image that was forked (from config set-ceph --image, e.g. ds-prod)",
-        "starting": "Cleaning up forked datastore on \"{{machine}}\"..."
+        "completed": "تم تنظيف التفريع بنجاح",
+        "description": "تنظيف تفريع: فك تحميل COW، إزالة النسخة، إزالة اللقطة",
+        "destOption": "صورة النسخة المراد إزالتها (قيمة \"Clone:\" من مخرجات fork، مثال: ds-prod-fork-<machine>)",
+        "failed": "فشل تنظيف التفريع",
+        "forceOption": "متابعة التنظيف حتى لو فشلت خطوات فردية (مثل فك التحميل، إزالة اللقطة)",
+        "mountPointOption": "نقطة تحميل التفريع لفكها (افتراضي: /mnt/rediacc)",
+        "poolOption": "اسم مجمع Ceph (افتراضي: من إعدادات الجهاز)",
+        "snapshotOption": "اللقطة المراد إزالتها (قيمة \"Snapshot:\" من مخرجات fork، مثال: fork-<timestamp>)",
+        "sourceOption": "صورة RBD الأصلية التي تم تفريعها (من config set-ceph --image، مثال: ds-prod)",
+        "starting": "جارٍ تنظيف مخزن البيانات المتفرع على \"{{machine}}\"..."
       }
     },
     "doctor": {
@@ -546,7 +546,7 @@
         "dockerAvailable": "Docker",
         "goInstalled": "Go",
         "machines": "الأجهزة",
-        "nodeVersion": "Node.js",
+        "nodeVersion": "إصدار Node.js",
         "opsPrereqs": "متطلبات OPS",
         "renetBinary": "الملف الثنائي",
         "renetCriu": "CRIU مضمّن",
@@ -569,7 +569,7 @@
         "authentication": "المصادقة",
         "configuration": "الإعدادات",
         "environment": "البيئة",
-        "renet": "رينت",
+        "renet": "شبكة Renet",
         "virtualization": "المحاكاة الافتراضية"
       },
       "status": {
@@ -692,7 +692,7 @@
         "fetching": "جاري جلب الآلة...",
         "header": "\nحالة الخزينة لـ {{name}}:",
         "mounted": "  مثبتة: {{count}}",
-        "repoDocker": "    Docker: {{status}}",
+        "repoDocker": "    حالة Docker: {{status}}",
         "repoMounted": "    مثبتة: {{mounted}}",
         "status": "  الحالة: {{status}}",
         "systemDatastore": "  مخزن البيانات: {{used}} / {{total}} ({{percent}})",
@@ -1511,7 +1511,7 @@
         "title": "فحص إعداد VS Code\n",
         "variant": "  النوع: Insiders",
         "version": "  الإصدار: {{version}}",
-        "vscodeFound": "  VS Code: {{path}}",
+        "vscodeFound": "  مسار VS Code: {{path}}",
         "vscodeNotFound": "  VS Code: غير مثبت",
         "yes": "نعم"
       },
