@@ -11904,7 +11904,9 @@
               "title": "5.1 収集データ"
             },
             "cliOptOut": {
-              "content": ["以下のいずれかの方法でCLIテレメトリ（プロファイリングを含む）を無効にできます："],
+              "content": [
+                "以下のいずれかの方法でCLIテレメトリ（プロファイリングを含む）を無効にできます："
+              ],
               "items": [
                 "環境変数<code>REDIACC_TELEMETRY_DISABLED=1</code>を設定",
                 "CLI設定ファイルで<code>telemetryEnabled: false</code>を設定",
