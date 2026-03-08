@@ -2326,12 +2326,15 @@
                 "<strong>Environment:</strong> operating system type, Node.js runtime version, deployment environment",
                 "<strong>Error information:</strong> error type, error message, and limited stack trace when commands fail",
                 "<strong>API interactions:</strong> HTTP method, URL path, response status code, request duration",
-                "<strong>Session:</strong> randomly generated session ID, command execution duration"
+                "<strong>Session:</strong> randomly generated session ID, command execution duration",
+                "<strong>Performance profiling:</strong> CPU usage samples and memory allocation profiles, collected automatically and sent to our profiling endpoint"
               ]
             },
             "cliOptOut": {
               "title": "5.2 How to Opt Out",
-              "content": ["You can disable CLI telemetry using any of these methods:"],
+              "content": [
+                "You can disable CLI telemetry (including profiling) using any of these methods:"
+              ],
               "items": [
                 "Set the environment variable <code>REDIACC_TELEMETRY_DISABLED=1</code>",
                 "Set <code>telemetryEnabled: false</code> in your CLI configuration file",
@@ -2383,12 +2386,15 @@
                 "<strong>SSH operations:</strong> target host, username, port number, exit code, execution duration (no command content or output is collected)",
                 "<strong>API calls:</strong> procedure name, request duration",
                 "<strong>Vault operations:</strong> operation type and duration (no secret values, keys, or vault contents are collected)",
-                "<strong>Bridge lifecycle:</strong> startup, shutdown, and reconnection events"
+                "<strong>Bridge lifecycle:</strong> startup, shutdown, and reconnection events",
+                "<strong>Performance profiling:</strong> CPU usage samples and memory allocation profiles, collected automatically and sent to our profiling endpoint"
               ]
             },
             "bridgeOptOut": {
               "title": "7.2 How to Opt Out",
-              "content": ["Set the environment variable <code>REDIACC_TELEMETRY_DISABLED=1</code> to disable Bridge telemetry."]
+              "content": [
+                "Set the environment variable <code>REDIACC_TELEMETRY_DISABLED=1</code> to disable Bridge telemetry (including profiling)."
+              ]
             }
           }
         },
