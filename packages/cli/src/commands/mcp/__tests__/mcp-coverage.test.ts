@@ -105,33 +105,18 @@ describe('MCP tool coverage', () => {
             `  - "${name}": add an MCP tool in tools.ts OR add to MCP_EXCLUDED with a reason`
         )
         .join('\n');
-      expect.fail(
-        `${missing.length} non-experimental command(s) missing from MCP tools:\n${hint}`
-      );
+      expect.fail(`${missing.length} non-experimental command(s) missing from MCP tools:\n${hint}`);
     }
   });
 
   it('every non-experimental subcommand is covered by MCP or explicitly excluded', () => {
-    const missing: string[] = [];
-
-    for (const cmd of nonExperimental) {
-      if (!cmd.subcommands) continue;
-
-      // If the entire parent command is excluded, subcommands are implicitly excluded
-      if (cmd.name in MCP_EXCLUDED) continue;
-
-      for (const [subName, subDef] of Object.entries(cmd.subcommands)) {
-        if (subDef.experimental) continue;
-
-        const fullPath = `${cmd.name} ${subName}`;
-        const hasMcpTool = mcpPaths.has(fullPath);
-        const isExcluded = fullPath in MCP_EXCLUDED;
-
-        if (!hasMcpTool && !isExcluded) {
-          missing.push(fullPath);
-        }
-      }
-    }
+    const missing = nonExperimental.flatMap((cmd) => {
+      if (!cmd.subcommands || cmd.name in MCP_EXCLUDED) return [];
+      return Object.entries(cmd.subcommands)
+        .filter(([, subDef]) => !subDef.experimental)
+        .map(([subName]) => `${cmd.name} ${subName}`)
+        .filter((fullPath) => !mcpPaths.has(fullPath) && !(fullPath in MCP_EXCLUDED));
+    });
 
     if (missing.length > 0) {
       const hint = missing
@@ -162,9 +147,7 @@ describe('MCP tool coverage', () => {
     );
 
     if (stale.length > 0) {
-      expect.fail(
-        `MCP_EXCLUDED has entries not in the registry: ${stale.join(', ')}`
-      );
+      expect.fail(`MCP_EXCLUDED has entries not in the registry: ${stale.join(', ')}`);
     }
   });
 

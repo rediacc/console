@@ -121,7 +121,7 @@ export function parseParamOptions(paramOptions: string[] | undefined): Record<st
  */
 export function coerceCliParams(
   functionName: string,
-  params: Record<string, string>
+  params: Record<string, string | boolean | number>
 ): Record<string, unknown> {
   if (!isBridgeFunction(functionName)) return params;
   const def = FUNCTION_DEFINITIONS[functionName];
@@ -135,10 +135,10 @@ export function coerceCliParams(
     const paramDef = def.params[key];
     switch (paramDef.type) {
       case 'bool':
-        result[key] = value === 'true' || value === '1' || value === 'yes';
+        result[key] = value === true || value === 'true' || value === '1' || value === 'yes';
         break;
       case 'int':
-        result[key] = Number.parseInt(value, 10);
+        result[key] = typeof value === 'number' ? value : Number.parseInt(String(value), 10);
         break;
       default:
         result[key] = value;

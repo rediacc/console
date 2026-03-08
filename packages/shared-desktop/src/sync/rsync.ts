@@ -233,7 +233,7 @@ export function buildRsyncArgs(
   if (options.verify) {
     args.push('--checksum', '--ignore-times');
   } else {
-    args.push('--partial', '--append-verify');
+    args.push('--partial');
   }
 
   // Exclude patterns

@@ -8,6 +8,7 @@ import { DEFAULTS } from '@rediacc/shared/config';
 import { MIN_NETWORK_ID, NETWORK_ID_INCREMENT } from '@rediacc/shared/queue-vault';
 import { configFileStorage } from '../adapters/config-file-storage.js';
 import type {
+  ArchivedRepository,
   BackupConfig,
   InfraConfig,
   MachineConfig,
@@ -245,6 +246,72 @@ class ConfigService extends ConfigServiceBase {
 
     const state = await this.getResourceState();
     return state.getRepositories()[repoName];
+  }
+
+  // ============================================================================
+  // Repository Archive (credential preservation on delete)
+  // ============================================================================
+
+  async archiveRepository(repoName: string): Promise<void> {
+    await this.requireSelfHosted();
+    const state = await this.getResourceState();
+    const repos = state.getRepositories();
+    if (!(repoName in repos)) throw new Error(`Repository "${repoName}" not found`);
+
+    const archived: ArchivedRepository = {
+      ...repos[repoName],
+      name: repoName,
+      deletedAt: new Date().toISOString(),
+    };
+
+    const deletedRepos = state.getDeletedRepositories();
+    deletedRepos.push(archived);
+    await state.setDeletedRepositories(deletedRepos);
+
+    delete repos[repoName];
+    await state.setRepositories(repos);
+  }
+
+  async restoreArchivedRepository(guid: string, name?: string): Promise<string> {
+    await this.requireSelfHosted();
+    const state = await this.getResourceState();
+    const deletedRepos = state.getDeletedRepositories();
+    const index = deletedRepos.findIndex((r) => r.repositoryGuid === guid);
+    if (index === -1) throw new Error(`Archived repository with GUID "${guid}" not found`);
+
+    const archived = deletedRepos[index];
+    const restoredName = name ?? archived.name;
+
+    const repos = state.getRepositories();
+    if (restoredName in repos) {
+      throw new Error(
+        `Repository "${restoredName}" already exists. Use --name to specify a different name.`
+      );
+    }
+
+    const { name: originalName, deletedAt, ...repoConfig } = archived;
+    void originalName;
+    void deletedAt;
+    repos[restoredName] = repoConfig;
+    await state.setRepositories(repos);
+
+    deletedRepos.splice(index, 1);
+    await state.setDeletedRepositories(deletedRepos);
+    return restoredName;
+  }
+
+  async listArchivedRepositories(): Promise<ArchivedRepository[]> {
+    await this.requireSelfHosted();
+    const state = await this.getResourceState();
+    return state.getDeletedRepositories();
+  }
+
+  async purgeArchivedRepositories(): Promise<number> {
+    await this.requireSelfHosted();
+    const state = await this.getResourceState();
+    const count = state.getDeletedRepositories().length;
+    await state.setDeletedRepositories([]);
+    return count;
   }
 
   // ============================================================================

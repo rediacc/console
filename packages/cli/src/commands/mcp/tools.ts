@@ -161,7 +161,8 @@ export const TOOLS: ToolDef[] = [
   },
   {
     name: 'repo_fork',
-    description: 'Create a CoW (Copy-on-Write) fork of a repository on the same machine',
+    description:
+      'Create a CoW fork of a repository with a NEW GUID and networkId (fully independent copy). Online forking supported (parent can stay running). Fork gets new auto-route domain ({service}-{networkId}.{baseDomain}). After fork, deploy with repo_up (use --mount). CROSS-MACHINE: fork locally first, then use backup_push to transfer fork to target machine, then repo_up on target. Do NOT use backup_push alone for forking — it copies with the SAME GUID (backup/migration, not fork)',
     schema: {
       parent: z.string().describe('Parent repository name to fork from'),
       machine: z.string().describe('Machine name'),
@@ -183,7 +184,7 @@ export const TOOLS: ToolDef[] = [
   {
     name: 'backup_push',
     description:
-      'Push a repository backup to storage or directly to another machine',
+      'Push a repository backup to storage or directly to another machine. WARNING: machine-to-machine push copies with the SAME GUID (backup/migration). To create an independent fork on another machine, use repo_fork first, then push the fork',
     schema: {
       repo: z.string().describe('Repository name'),
       machine: z.string().describe('Source machine name'),
@@ -210,8 +211,7 @@ export const TOOLS: ToolDef[] = [
   },
   {
     name: 'backup_pull',
-    description:
-      'Pull a repository backup from storage or directly from another machine',
+    description: 'Pull a repository backup from storage or directly from another machine',
     schema: {
       repo: z.string().describe('Repository name'),
       machine: z.string().describe('Destination machine name'),

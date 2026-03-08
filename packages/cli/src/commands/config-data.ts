@@ -196,4 +196,65 @@ export function registerLocalDataCommands(config: Command, program: Command): vo
         handleError(error);
       }
     });
+
+  // config list-archived
+  config
+    .command('list-archived')
+    .description(t('commands.config.listArchived.description'))
+    .action(async () => {
+      try {
+        const archived = await configService.listArchivedRepositories();
+        const format = program.opts().output as OutputFormat;
+
+        if (archived.length === 0) {
+          outputService.info(t('commands.config.listArchived.noArchived'));
+          return;
+        }
+
+        const displayData = archived.map((r) => ({
+          name: r.name,
+          guid: r.repositoryGuid,
+          credential: r.credential ? 'set' : '-',
+          networkId: r.networkId ?? '-',
+          deletedAt: r.deletedAt,
+        }));
+
+        outputService.print(displayData, format);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // config restore-archived <guid>
+  config
+    .command('restore-archived <guid>')
+    .description(t('commands.config.restoreArchived.description'))
+    .option('--name <name>', t('commands.config.restoreArchived.optionName'))
+    .action(async (guid, options) => {
+      try {
+        const restoredName = await configService.restoreArchivedRepository(guid, options.name);
+        outputService.success(
+          t('commands.config.restoreArchived.success', { name: restoredName, guid })
+        );
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // config purge-archived
+  config
+    .command('purge-archived')
+    .description(t('commands.config.purgeArchived.description'))
+    .action(async () => {
+      try {
+        const count = await configService.purgeArchivedRepositories();
+        if (count === 0) {
+          outputService.info(t('commands.config.purgeArchived.noArchived'));
+        } else {
+          outputService.success(t('commands.config.purgeArchived.success', { count }));
+        }
+      } catch (error) {
+        handleError(error);
+      }
+    });
 }

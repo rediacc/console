@@ -91,6 +91,7 @@ export async function provisionRenetToRemote(
   const skipRestart = options.skipRouterRestart ?? !!process.env.RDC_SKIP_ROUTER_RESTART;
   const restartServices = skipRestart ? false : options.restartServices;
 
+  const start = Date.now();
   const result = await renetProvisioner.provision(
     {
       host: machine.ip,
@@ -100,18 +101,19 @@ export async function provisionRenetToRemote(
     },
     { localBinaryPath, restartServices }
   );
+  const elapsed = ((Date.now() - start) / 1000).toFixed(1);
 
   if (!result.success) {
     throw new Error(result.error ?? PROCESS_DEFAULTS.RENET_PROVISION_ERROR);
   }
 
   if (result.action === 'uploaded') {
-    if (options.debug) {
-      outputService.info(`[local] Provisioned renet (${result.arch}) to ${machine.ip}`);
-    }
+    outputService.info(`Renet updated on ${machine.ip} (${result.arch}) in ${elapsed}s`);
     if (result.servicesRestarted) {
       outputService.info(`Restarted rediacc-router on ${machine.ip}`);
     }
+  } else if (options.debug) {
+    outputService.info(`Renet verified on ${machine.ip} (${elapsed}s)`);
   }
 }
 

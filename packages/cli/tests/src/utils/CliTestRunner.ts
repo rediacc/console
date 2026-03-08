@@ -696,7 +696,7 @@ export class CliTestRunner {
 
       // Error envelope: preserve error info in a format getErrorMessage() can use
       if (envelope.success === false) {
-        const errors = envelope.errors as Array<Record<string, unknown>> | undefined;
+        const errors = envelope.errors as Record<string, unknown>[] | undefined;
         if (errors && errors.length > 0) {
           return { success: false, error: errors[0] };
         }

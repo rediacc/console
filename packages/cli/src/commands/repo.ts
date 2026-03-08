@@ -193,8 +193,11 @@ ${t('help.examples')}
           });
 
           if (result.success) {
-            await configService.removeRepository(name);
-            outputService.info(t('commands.repo.delete.removed', { repository: name }));
+            await configService.archiveRepository(name);
+            outputService.info(t('commands.repo.delete.archived', { repository: name }));
+            outputService.info(
+              t('commands.repo.delete.restoreHint', { guid: repoConfig.repositoryGuid })
+            );
             outputService.success(t('commands.repo.delete.completed'));
           } else {
             outputService.error(result.error ?? t('commands.repo.delete.failed'));
@@ -284,6 +287,7 @@ ${t('help.examples')}
     .description(t('commands.repo.up.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--mount', t('commands.repo.up.mountOption'))
+    .option('--checkpoint', t('commands.repo.up.checkpointOption'))
     .option('--prep-only', t('commands.repo.up.prepOnlyOption'))
     .option('--grand <name>', t('commands.repo.up.grandOption'))
     .option('--debug', t('options.debug'))
@@ -295,6 +299,7 @@ ${t('help.examples')}
         options: {
           machine: string;
           mount?: boolean;
+          checkpoint?: boolean;
           prepOnly?: boolean;
           grand?: string;
           debug?: boolean;
@@ -305,6 +310,7 @@ ${t('help.examples')}
         try {
           const params: Record<string, unknown> = {};
           if (options.mount) params.mount = true;
+          if (options.checkpoint) params.checkpoint = true;
           if (options.prepOnly) params.option = 'prep-only';
 
           // Resolve grand repo friendly name → GUID
@@ -421,7 +427,7 @@ ${t('help.examples')}
       ) => {
         try {
           const params: Record<string, unknown> = {};
-          if (options.unmount) params.option = 'unmount';
+          if (options.unmount) params.unmount = true;
 
           // Resolve grand repo friendly name → GUID
           if (options.grand) {

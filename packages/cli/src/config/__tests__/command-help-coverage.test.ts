@@ -11,10 +11,7 @@ import { describe, expect, it } from 'vitest';
 import { COMMAND_REGISTRY } from '../command-registry.js';
 
 // Load English locale JSON directly (avoids bootstrapping the i18n system)
-const localePath = resolve(
-  import.meta.dirname,
-  '../../i18n/locales/en/cli.json'
-);
+const localePath = resolve(import.meta.dirname, '../../i18n/locales/en/cli.json');
 const locale: Record<string, unknown> = JSON.parse(readFileSync(localePath, 'utf-8'));
 const commands = locale.commands as Record<string, Record<string, unknown>>;
 
@@ -54,35 +51,30 @@ describe('command help text coverage', () => {
 
     if (missing.length > 0) {
       expect.fail(
-        `${missing.length} command(s) missing i18n description in en/cli.json:\n` +
-          missing.map((k) => `  - ${k}`).join('\n')
+        `${missing.length} command(s) missing i18n description in en/cli.json:\n${missing.map((k) => `  - ${k}`).join('\n')}`
       );
     }
   });
 
   it('every registry subcommand has a non-empty i18n description', () => {
-    const missing: string[] = [];
-
-    for (const cmd of COMMAND_REGISTRY) {
-      if (!cmd.subcommands) continue;
+    const missing = COMMAND_REGISTRY.flatMap((cmd) => {
+      if (!cmd.subcommands) return [];
       const parentKey = i18nKeyFor(cmd.name);
-
-      for (const [subName, subDef] of Object.entries(cmd.subcommands)) {
-        // Skip experimental subcommands — they may intentionally lack public help text
-        if (subDef.experimental) continue;
-
-        const key = `${parentKey}.${subName}.description`;
-        const desc = getNestedValue(commands, key);
-        if (typeof desc !== 'string' || desc.trim().length === 0) {
-          missing.push(`commands.${key} (registry: "${cmd.name} ${subName}")`);
-        }
-      }
-    }
+      return Object.entries(cmd.subcommands)
+        .filter(([, subDef]) => !subDef.experimental)
+        .flatMap(([subName]) => {
+          const key = `${parentKey}.${subName}.description`;
+          const desc = getNestedValue(commands, key);
+          if (typeof desc !== 'string' || desc.trim().length === 0) {
+            return [`commands.${key} (registry: "${cmd.name} ${subName}")`];
+          }
+          return [];
+        });
+    });
 
     if (missing.length > 0) {
       expect.fail(
-        `${missing.length} subcommand(s) missing i18n description in en/cli.json:\n` +
-          missing.map((k) => `  - ${k}`).join('\n')
+        `${missing.length} subcommand(s) missing i18n description in en/cli.json:\n${missing.map((k) => `  - ${k}`).join('\n')}`
       );
     }
   });

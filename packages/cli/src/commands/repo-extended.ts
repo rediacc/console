@@ -143,7 +143,12 @@ export function registerExtendedRepoCommands(repo: Command): void {
           });
 
           if (result.success) {
-            outputService.success(t('commands.repo.fork.completed'));
+            outputService.success(
+              t('commands.repo.fork.completed', {
+                repository: forkName,
+                machine: options.machine,
+              })
+            );
           } else {
             await configService.removeRepository(forkName);
             outputService.warn(t('commands.repo.fork.rollback', { repository: forkName }));

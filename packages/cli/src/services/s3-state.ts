@@ -9,6 +9,7 @@
  */
 
 import type {
+  ArchivedRepository,
   MachineConfig,
   RepositoryConfig,
   S3StateData,
@@ -72,6 +73,12 @@ export class S3StateService implements ResourceState {
         raw.repositories as string,
         masterPassword
       ),
+      deletedRepositories: raw.deletedRepositories
+        ? await decryptSection<ArchivedRepository[]>(
+            raw.deletedRepositories as string,
+            masterPassword
+          )
+        : undefined,
       ssh: raw.ssh
         ? await decryptSection<SSHContent>(raw.ssh as string, masterPassword)
         : undefined,
@@ -118,6 +125,12 @@ export class S3StateService implements ResourceState {
     return this.state.repositories as Record<string, RepositoryConfig>;
   }
 
+  getDeletedRepositories(): ArchivedRepository[] {
+    const deleted = this.state.deletedRepositories;
+    if (!deleted || typeof deleted === 'string') return [];
+    return deleted;
+  }
+
   getSSH(): SSHContent | null {
     const ssh = this.state.ssh;
     if (!ssh || typeof ssh === 'string') return null;
@@ -143,6 +156,11 @@ export class S3StateService implements ResourceState {
     await this.save();
   }
 
+  async setDeletedRepositories(repos: ArchivedRepository[]): Promise<void> {
+    this.state.deletedRepositories = repos;
+    await this.save();
+  }
+
   async setSSH(ssh: SSHContent): Promise<void> {
     this.state.ssh = ssh;
     await this.save();
@@ -160,6 +178,16 @@ export class S3StateService implements ResourceState {
         : this.state.ssh;
     }
 
+    const deleted = this.getDeletedRepositories();
+    let deletedValue: ArchivedRepository[] | string | undefined;
+    if (deleted.length === 0) {
+      deletedValue = undefined;
+    } else if (this.masterPassword) {
+      deletedValue = await encryptSection(deleted, this.masterPassword);
+    } else {
+      deletedValue = deleted;
+    }
+
     const toWrite: S3StateData = {
       version: 1,
       encrypted: !!this.masterPassword,
@@ -172,6 +200,7 @@ export class S3StateService implements ResourceState {
       repositories: this.masterPassword
         ? await encryptSection(this.state.repositories, this.masterPassword)
         : this.state.repositories,
+      deletedRepositories: deletedValue,
       ssh: sshValue,
     };
 

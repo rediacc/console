@@ -74,6 +74,17 @@ export interface RepositoryConfig {
 }
 
 /**
+ * Archived repository entry. Preserved when a repo is deleted via `rdc repo delete`
+ * so the LUKS credential can be restored if the same repo exists on other machines.
+ */
+export interface ArchivedRepository extends RepositoryConfig {
+  /** Original friendly name of the repository */
+  name: string;
+  /** ISO 8601 timestamp when the repository was deleted */
+  deletedAt: string;
+}
+
+/**
  * SSH configuration. Points to local SSH key files.
  * Used by both local and S3 modes (always stored in config.json).
  */
@@ -160,6 +171,8 @@ export interface RdcConfig {
   storages?: Record<string, StorageConfig>;
   /** Repository name-to-GUID mappings (name -> config) */
   repositories?: Record<string, RepositoryConfig>;
+  /** Archived repository credentials from deleted repos */
+  deletedRepositories?: ArchivedRepository[];
   /** SSH configuration */
   ssh?: SSHConfig;
   /** Inline SSH key content for portability */
@@ -322,6 +335,7 @@ export interface S3StateData {
   machines: Record<string, MachineConfig> | string;
   storages: Record<string, StorageConfig> | string;
   repositories: Record<string, RepositoryConfig> | string;
+  deletedRepositories?: ArchivedRepository[] | string;
   ssh?: SSHContent | string;
 }
 
