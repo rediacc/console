@@ -65,10 +65,17 @@ class CliTelemetryService implements TelemetryHandler {
   private pendingShutdown: Promise<void> | null = null;
 
   // Metrics instruments
-  private commandCounter: ReturnType<ReturnType<typeof metricsApi.getMeter>['createCounter']> | null = null;
-  private commandDuration: ReturnType<ReturnType<typeof metricsApi.getMeter>['createHistogram']> | null = null;
-  private errorCounter: ReturnType<ReturnType<typeof metricsApi.getMeter>['createCounter']> | null = null;
-  private apiCallDuration: ReturnType<ReturnType<typeof metricsApi.getMeter>['createHistogram']> | null = null;
+  private commandCounter: ReturnType<
+    ReturnType<typeof metricsApi.getMeter>['createCounter']
+  > | null = null;
+  private commandDuration: ReturnType<
+    ReturnType<typeof metricsApi.getMeter>['createHistogram']
+  > | null = null;
+  private errorCounter: ReturnType<ReturnType<typeof metricsApi.getMeter>['createCounter']> | null =
+    null;
+  private apiCallDuration: ReturnType<
+    ReturnType<typeof metricsApi.getMeter>['createHistogram']
+  > | null = null;
 
   constructor() {
     this.sessionId = generateSessionId();
@@ -114,7 +121,11 @@ class CliTelemetryService implements TelemetryHandler {
   private detectEnvironment(): string {
     // Running via tsx or ts-node means dev mode (./run.sh rdc)
     const execArgs = process.execArgv.join(' ');
-    if (execArgs.includes('tsx') || execArgs.includes('ts-node') || process.argv[1]?.endsWith('.ts')) {
+    if (
+      execArgs.includes('tsx') ||
+      execArgs.includes('ts-node') ||
+      process.argv[1]?.endsWith('.ts')
+    ) {
       return 'development';
     }
     return DEFAULTS.TELEMETRY.ENVIRONMENT;
@@ -161,7 +172,8 @@ class CliTelemetryService implements TelemetryHandler {
       const endpoint = config?.endpoint ?? this.getEndpoint();
       const serviceName = config?.serviceName ?? DEFAULTS.TELEMETRY.SERVICE_NAME;
       const serviceVersion = config?.serviceVersion ?? CLI_VERSION;
-      const environment = config?.environment ?? process.env.REDIACC_ENVIRONMENT ?? this.detectEnvironment();
+      const environment =
+        config?.environment ?? process.env.REDIACC_ENVIRONMENT ?? this.detectEnvironment();
       const headers = this.getExporterHeaders();
 
       const resource = resourceFromAttributes({
@@ -207,9 +219,7 @@ class CliTelemetryService implements TelemetryHandler {
         resource,
         traceExporter,
         metricReader: this.metricReader,
-        logRecordProcessors: [
-          new SimpleLogRecordProcessor(logExporter),
-        ],
+        logRecordProcessors: [new SimpleLogRecordProcessor(logExporter)],
       });
 
       this.sdk.start();
@@ -385,7 +395,11 @@ class CliTelemetryService implements TelemetryHandler {
       // Log command completion
       const severity = result.success ? SeverityNumber.INFO : SeverityNumber.ERROR;
       const label = result.success ? 'completed' : 'failed';
-      this.emitLog(severity, `Command ${label}: ${commandName}`, this.buildCommandLogAttrs(commandName, result));
+      this.emitLog(
+        severity,
+        `Command ${label}: ${commandName}`,
+        this.buildCommandLogAttrs(commandName, result)
+      );
     } catch {
       // Fail silently
     }

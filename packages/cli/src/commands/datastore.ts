@@ -126,9 +126,7 @@ async function resolveCephInitParams(
 }
 
 export function registerDatastoreCommands(program: Command): void {
-  const datastore = program
-    .command('datastore')
-    .description(t('commands.datastore.description'));
+  const datastore = program.command('datastore').description(t('commands.datastore.description'));
 
   // datastore init
   datastore
@@ -168,9 +166,7 @@ export function registerDatastoreCommands(program: Command): void {
             params.force = 'true';
           }
 
-          outputService.info(
-            t('commands.datastore.init.starting', { machine: options.machine })
-          );
+          outputService.info(t('commands.datastore.init.starting', { machine: options.machine }));
           await executeFunction(functionName, params, options);
         } catch (error) {
           handleError(error);
@@ -186,9 +182,7 @@ export function registerDatastoreCommands(program: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (options: DatastoreRunOptions) => {
       try {
-        outputService.info(
-          t('commands.datastore.status.starting', { machine: options.machine })
-        );
+        outputService.info(t('commands.datastore.status.starting', { machine: options.machine }));
         await executeFunction('datastore_status', {}, options);
       } catch (error) {
         handleError(error);
@@ -298,9 +292,7 @@ export function registerDatastoreCommands(program: Command): void {
             params.force = 'true';
           }
 
-          outputService.info(
-            t('commands.datastore.unfork.starting', { machine: machineName })
-          );
+          outputService.info(t('commands.datastore.unfork.starting', { machine: machineName }));
           await executeFunction('datastore_ceph_unfork', params, options);
         } catch (error) {
           handleError(error);

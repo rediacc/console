@@ -174,9 +174,8 @@ class LocalExecutorService {
 
       try {
         // Pass environment to renet so it reports the same deployment.environment
-        const envPrefix = this.detectEnvironment() === 'development'
-          ? 'REDIACC_ENVIRONMENT=development '
-          : '';
+        const envPrefix =
+          this.detectEnvironment() === 'development' ? 'REDIACC_ENVIRONMENT=development ' : '';
         const exitCode = await sftp.execStreaming(`${envPrefix}renet execute --executor local`, {
           stdin: vault,
           onStdout: (data) => {
@@ -212,7 +211,11 @@ class LocalExecutorService {
    */
   private detectEnvironment(): string {
     const execArgs = process.execArgv.join(' ');
-    if (execArgs.includes('tsx') || execArgs.includes('ts-node') || process.argv[1]?.endsWith('.ts')) {
+    if (
+      execArgs.includes('tsx') ||
+      execArgs.includes('ts-node') ||
+      process.argv[1]?.endsWith('.ts')
+    ) {
       return 'development';
     }
     return process.env.REDIACC_ENVIRONMENT ?? DEFAULTS.TELEMETRY.ENVIRONMENT;
