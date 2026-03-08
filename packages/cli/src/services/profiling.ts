@@ -24,11 +24,22 @@ interface PyroscopeModule {
 }
 
 /** Lazy-load @pyroscope/nodejs to avoid loading native module when not needed. */
-const cjsRequire = createRequire(import.meta.url);
 let pyroscopeModule: PyroscopeModule | null | undefined;
 function loadPyroscope(): PyroscopeModule | null {
   if (pyroscopeModule !== undefined) return pyroscopeModule;
   try {
+    // Resolve require base: import.meta.url for ESM, __filename for CJS/bundled
+    let requireBase: string | undefined;
+    if (typeof import.meta.url === 'string') {
+      requireBase = import.meta.url;
+    } else if (typeof __filename === 'string') {
+      requireBase = __filename;
+    }
+    if (!requireBase) {
+      pyroscopeModule = null;
+      return null;
+    }
+    const cjsRequire = createRequire(requireBase);
     const mod = cjsRequire('@pyroscope/nodejs');
     pyroscopeModule = (mod.default ?? mod) as PyroscopeModule;
     return pyroscopeModule;
