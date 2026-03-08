@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# === Renet Compose Support ===
+_compose() {
+  renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
+}
+
+prep() {
+  docker pull postgres:16-alpine
+  docker pull node:20-alpine
+  mkdir -p data app
+  return $?
+}
+
+up() {
+  # Generate .env with credentials on first run
+  if [[ ! -f .env ]]; then
+    local pg_pass
+    pg_pass=$(openssl rand -hex 16)
+    cat > .env <<EOF
+PGPASSWORD=${pg_pass}
+POSTGRES_USER=heartbeat
+POSTGRES_DB=heartbeat
+HEARTBEAT_INTERVAL_MS=5000
+EOF
+    echo "Generated .env with database credentials"
+  fi
+
+  _compose up -d
+  return $?
+}
+
+down() {
+  _compose down -v
+  return $?
+}
+
+info() {
+  echo "=== Heartbeat Status ==="
+  _compose ps
+  echo ""
+  echo "=== Last 10 heartbeats ==="
+  _compose exec -T db psql -U heartbeat -d heartbeat \
+    -c "SELECT id, counter, recorded_at FROM heartbeats ORDER BY id DESC LIMIT 10;" 2>/dev/null || echo "(db not ready)"
+}
