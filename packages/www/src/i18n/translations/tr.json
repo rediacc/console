@@ -11853,13 +11853,7 @@
               "title": "7.1 Toplanan Veriler"
             },
             "bridgeOptOut": {
-              "content": [
-                "Bridge telemetrisini şu yöntemlerden biriyle devre dışı bırakabilirsiniz:"
-              ],
-              "items": [
-                "<code>REDIACC_TELEMETRY_DISABLED=1</code> ortam değişkenini ayarlayın",
-                "<code>DO_NOT_TRACK=1</code> ortam değişkenini ayarlayın (<a href=\"https://consult.dntrack.dev/\" target=\"_blank\" rel=\"noopener noreferrer\">Do Not Track</a> standardına uygundur)"
-              ],
+              "content": ["Bridge telemetrisini devre dışı bırakmak için <code>REDIACC_TELEMETRY_DISABLED=1</code> ortam değişkenini ayarlayın."],
               "title": "7.2 Nasıl Devre Dışı Bırakılır"
             }
           },
@@ -11908,7 +11902,7 @@
                 "CLI telemetrisini şu yöntemlerden herhangi biriyle devre dışı bırakabilirsiniz:"
               ],
               "items": [
-                "<code>REDIACC_TELEMETRY=off</code> ortam değişkenini ayarlayın (<code>false</code> veya <code>0</code> da kabul edilir)",
+                "<code>REDIACC_TELEMETRY_DISABLED=1</code> ortam değişkenini ayarlayın",
                 "CLI yapılandırma dosyanızda <code>telemetryEnabled: false</code> olarak ayarlayın",
                 "Telemetri, CI ortamlarında (<code>CI</code> ortam değişkeni aracılığıyla algılanır) <strong>otomatik olarak devre dışı bırakılır</strong>"
               ],

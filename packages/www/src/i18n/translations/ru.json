@@ -11856,11 +11856,7 @@
               "title": "7.1 Собираемые данные"
             },
             "bridgeOptOut": {
-              "content": ["Вы можете отключить телеметрию Bridge любым из следующих способов:"],
-              "items": [
-                "Установите переменную окружения <code>REDIACC_TELEMETRY_DISABLED=1</code>",
-                "Установите переменную окружения <code>DO_NOT_TRACK=1</code> (соответствует стандарту <a href=\"https://consult.dntrack.dev/\" target=\"_blank\" rel=\"noopener noreferrer\">Do Not Track</a>)"
-              ],
+              "content": ["Установите переменную окружения <code>REDIACC_TELEMETRY_DISABLED=1</code> для отключения телеметрии Bridge."],
               "title": "7.2 Как отказаться"
             }
           },
@@ -11907,7 +11903,7 @@
             "cliOptOut": {
               "content": ["Вы можете отключить телеметрию CLI любым из следующих способов:"],
               "items": [
-                "Установите переменную окружения <code>REDIACC_TELEMETRY=off</code> (также принимается <code>false</code> или <code>0</code>)",
+                "Установите переменную окружения <code>REDIACC_TELEMETRY_DISABLED=1</code>",
                 "Установите <code>telemetryEnabled: false</code> в файле конфигурации CLI",
                 "Телеметрия <strong>автоматически отключается</strong> в CI-средах (определяется по переменной окружения <code>CI</code>)"
               ],

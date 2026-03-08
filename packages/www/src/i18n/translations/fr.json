@@ -11867,13 +11867,7 @@
               "title": "7.1 Données collectées"
             },
             "bridgeOptOut": {
-              "content": [
-                "Vous pouvez désactiver la télémétrie du Bridge en utilisant l'une de ces méthodes :"
-              ],
-              "items": [
-                "Définissez la variable d'environnement <code>REDIACC_TELEMETRY_DISABLED=1</code>",
-                "Définissez la variable d'environnement <code>DO_NOT_TRACK=1</code> (respecte le standard <a href=\"https://consult.dntrack.dev/\" target=\"_blank\" rel=\"noopener noreferrer\">Do Not Track</a>)"
-              ],
+              "content": ["Définissez la variable d'environnement <code>REDIACC_TELEMETRY_DISABLED=1</code> pour désactiver la télémétrie du Bridge."],
               "title": "7.2 Comment se désinscrire"
             }
           },
@@ -11922,7 +11916,7 @@
                 "Vous pouvez désactiver la télémétrie du CLI en utilisant l'une de ces méthodes :"
               ],
               "items": [
-                "Définissez la variable d'environnement <code>REDIACC_TELEMETRY=off</code> (accepte aussi <code>false</code> ou <code>0</code>)",
+                "Définissez la variable d'environnement <code>REDIACC_TELEMETRY_DISABLED=1</code>",
                 "Définissez <code>telemetryEnabled: false</code> dans votre fichier de configuration du CLI",
                 "La télémétrie est <strong>automatiquement désactivée</strong> dans les environnements CI (détecté via la variable d'environnement <code>CI</code>)"
               ],

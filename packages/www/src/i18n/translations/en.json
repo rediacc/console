@@ -2333,7 +2333,7 @@
               "title": "5.2 How to Opt Out",
               "content": ["You can disable CLI telemetry using any of these methods:"],
               "items": [
-                "Set the environment variable <code>REDIACC_TELEMETRY=off</code> (also accepts <code>false</code> or <code>0</code>)",
+                "Set the environment variable <code>REDIACC_TELEMETRY_DISABLED=1</code>",
                 "Set <code>telemetryEnabled: false</code> in your CLI configuration file",
                 "Telemetry is <strong>automatically disabled</strong> in CI environments (detected via the <code>CI</code> environment variable)"
               ]
@@ -2388,11 +2388,7 @@
             },
             "bridgeOptOut": {
               "title": "7.2 How to Opt Out",
-              "content": ["You can disable Bridge telemetry using either method:"],
-              "items": [
-                "Set the environment variable <code>REDIACC_TELEMETRY_DISABLED=1</code>",
-                "Set the environment variable <code>DO_NOT_TRACK=1</code> (respects the <a href=\"https://consult.dntrack.dev/\" target=\"_blank\" rel=\"noopener noreferrer\">Do Not Track</a> standard)"
-              ]
+              "content": ["Set the environment variable <code>REDIACC_TELEMETRY_DISABLED=1</code> to disable Bridge telemetry."]
             }
           }
         },

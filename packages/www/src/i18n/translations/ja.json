@@ -11855,11 +11855,7 @@
               "title": "7.1 収集データ"
             },
             "bridgeOptOut": {
-              "content": ["以下のいずれかの方法でBridgeテレメトリを無効にできます："],
-              "items": [
-                "環境変数<code>REDIACC_TELEMETRY_DISABLED=1</code>を設定",
-                "環境変数<code>DO_NOT_TRACK=1</code>を設定（<a href=\"https://consult.dntrack.dev/\" target=\"_blank\" rel=\"noopener noreferrer\">Do Not Track</a>標準に準拠）"
-              ],
+              "content": ["環境変数<code>REDIACC_TELEMETRY_DISABLED=1</code>を設定してBridgeテレメトリを無効にします。"],
               "title": "7.2 オプトアウト方法"
             }
           },
@@ -11906,7 +11902,7 @@
             "cliOptOut": {
               "content": ["以下のいずれかの方法でCLIテレメトリを無効にできます："],
               "items": [
-                "環境変数<code>REDIACC_TELEMETRY=off</code>を設定（<code>false</code>または<code>0</code>も使用可能）",
+                "環境変数<code>REDIACC_TELEMETRY_DISABLED=1</code>を設定",
                 "CLI設定ファイルで<code>telemetryEnabled: false</code>を設定",
                 "CI環境では<strong>自動的に無効化</strong>されます（<code>CI</code>環境変数により検出）"
               ],

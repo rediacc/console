@@ -11855,11 +11855,7 @@
               "title": "7.1 البيانات المجمعة"
             },
             "bridgeOptOut": {
-              "content": ["يمكنك تعطيل القياس عن بُعد للجسر باستخدام أي من الطريقتين:"],
-              "items": [
-                "اضبط متغير البيئة <code>REDIACC_TELEMETRY_DISABLED=1</code>",
-                "اضبط متغير البيئة <code>DO_NOT_TRACK=1</code> (يحترم معيار <a href=\"https://consult.dntrack.dev/\" target=\"_blank\" rel=\"noopener noreferrer\">Do Not Track</a>)"
-              ],
+              "content": ["اضبط متغير البيئة <code>REDIACC_TELEMETRY_DISABLED=1</code> لتعطيل القياس عن بُعد للجسر."],
               "title": "7.2 كيفية إلغاء الاشتراك"
             }
           },
@@ -11906,7 +11902,7 @@
             "cliOptOut": {
               "content": ["يمكنك تعطيل القياس عن بُعد لـ CLI باستخدام أي من هذه الطرق:"],
               "items": [
-                "اضبط متغير البيئة <code>REDIACC_TELEMETRY=off</code> (يقبل أيضاً <code>false</code> أو <code>0</code>)",
+                "اضبط متغير البيئة <code>REDIACC_TELEMETRY_DISABLED=1</code>",
                 "اضبط <code>telemetryEnabled: false</code> في ملف تكوين CLI الخاص بك",
                 "يتم <strong>تعطيل القياس عن بُعد تلقائياً</strong> في بيئات CI (يتم الكشف عنها عبر متغير البيئة <code>CI</code>)"
               ],

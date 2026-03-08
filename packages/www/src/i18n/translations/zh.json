@@ -11803,11 +11803,7 @@
               "title": "7.1 收集的数据"
             },
             "bridgeOptOut": {
-              "content": ["您可以使用以下任一方法禁用Bridge遥测："],
-              "items": [
-                "设置环境变量<code>REDIACC_TELEMETRY_DISABLED=1</code>",
-                "设置环境变量<code>DO_NOT_TRACK=1</code>（遵循<a href=\"https://consult.dntrack.dev/\" target=\"_blank\" rel=\"noopener noreferrer\">Do Not Track</a>标准）"
-              ],
+              "content": ["设置环境变量<code>REDIACC_TELEMETRY_DISABLED=1</code>以禁用Bridge遥测。"],
               "title": "7.2 如何退出"
             }
           },
@@ -11854,7 +11850,7 @@
             "cliOptOut": {
               "content": ["您可以使用以下任一方法禁用CLI遥测："],
               "items": [
-                "设置环境变量<code>REDIACC_TELEMETRY=off</code>（也接受<code>false</code>或<code>0</code>）",
+                "设置环境变量<code>REDIACC_TELEMETRY_DISABLED=1</code>",
                 "在CLI配置文件中设置<code>telemetryEnabled: false</code>",
                 "在CI环境中遥测<strong>自动禁用</strong>（通过<code>CI</code>环境变量检测）"
               ],

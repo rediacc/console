@@ -4,7 +4,7 @@
  * Provides OpenTelemetry-based telemetry for CLI commands.
  * Sends traces → Tempo, metrics → Prometheus, logs → Loki via Alloy OTLP receiver.
  *
- * Opt-out: Set REDIACC_TELEMETRY=off to disable telemetry.
+ * Opt-out: Set REDIACC_TELEMETRY_DISABLED=1 to disable telemetry.
  */
 
 import { type Span, SpanStatusCode, type Tracer, trace } from '@opentelemetry/api';
@@ -91,8 +91,7 @@ class CliTelemetryService implements TelemetryHandler {
     }
 
     // Check environment variable
-    const envValue = process.env.REDIACC_TELEMETRY?.toLowerCase();
-    if (envValue === 'off' || envValue === 'false' || envValue === '0') {
+    if (process.env.REDIACC_TELEMETRY_DISABLED === '1') {
       return true;
     }
 
