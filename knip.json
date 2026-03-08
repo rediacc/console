@@ -103,6 +103,7 @@
     "@aws-sdk/client-s3",
     "@types/*",
     "@opentelemetry/instrumentation-*",
+    "@pyroscope/nodejs",
     "@opentelemetry/context-zone",
     "@opentelemetry/core",
     "@opentelemetry/sdk-node",

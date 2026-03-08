@@ -7,6 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LOCAL_GROUPS = [
   'agent',
   'config',
+  'datastore',
   'store',
   'machine',
   'mcp',
