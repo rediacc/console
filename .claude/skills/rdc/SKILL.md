@@ -34,6 +34,7 @@ Every command supports `--help`. When unsure about syntax:
 | `machine` | Remote machine inspection | [machines.md](machines.md) |
 | `backup` | Backup, restore, machine-to-machine transfer | [backup.md](backup.md) |
 | `snapshot` | BTRFS point-in-time snapshots | [backup.md](backup.md) |
+| `datastore` | Ceph RBD datastore, instant fork/unfork | [datastore.md](datastore.md) |
 | `term` | SSH terminal access + container actions | [terminal.md](terminal.md) |
 | containers | High-level container commands | [execution.md](execution.md) |
 
@@ -101,6 +102,26 @@ rdc repo up <repo> -m <target> --mount --checkpoint
 After restore, in-memory state continues (counters, variables, timers). TCP connections become stale — apps must handle `ECONNRESET` and `ECONNREFUSED` (dependent services may need seconds to accept connections after restore). See [backup.md](backup.md) for full CRIU details and troubleshooting.
 
 See [backup.md](backup.md) for full details.
+
+## Quick-start: Instant fork with Ceph (zero data transfer)
+
+```bash
+# 1. Configure Ceph for the source machine (one-time; ops pool is rediacc_rbd_pool)
+rdc config set-ceph -m <machine> --pool rediacc_rbd_pool --image ds-prod
+
+# 2. Initialize Ceph-backed datastore (one-time; reads image/pool from config)
+rdc datastore init -m <machine> --backend ceph --size 100G --force
+
+# 3. Fork to another machine (Ceph operation < 2s; ~4s total with CLI bootstrap)
+rdc datastore fork -m <machine> --to <target>
+# Output includes: Snapshot: fork-<timestamp>, Clone: <image>-fork-<target>
+
+# 4. Clean up when done (all three IDs required — get from fork output above)
+# --force ensures all cleanup steps run even if one fails (recommended)
+rdc datastore unfork -m <machine> --source <image> --snapshot fork-<timestamp> --dest <image>-fork-<target> --force
+```
+
+Requires a Ceph cluster (provisioned by `rdc ops up`). See [datastore.md](datastore.md) for full details.
 
 ## Prerequisites for ops VMs (READ FIRST)
 

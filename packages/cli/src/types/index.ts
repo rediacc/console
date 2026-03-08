@@ -23,6 +23,21 @@ export interface MachineConfig {
   knownHosts?: string;
   /** Infrastructure configuration (public IPs, domain, TLS, ports) */
   infra?: InfraConfig;
+  /** Ceph RBD datastore configuration */
+  ceph?: CephConfig;
+}
+
+/**
+ * Ceph RBD configuration for a machine's datastore.
+ * When set, the machine uses Ceph RBD as the datastore backend instead of local loop device.
+ */
+export interface CephConfig {
+  /** Ceph pool name (e.g., "rbd") */
+  pool: string;
+  /** RBD image name (e.g., "datastore-prod1") */
+  image: string;
+  /** Ceph cluster name (default: "ceph") */
+  clusterName?: string;
 }
 
 /**

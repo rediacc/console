@@ -11,8 +11,8 @@ import { DEFAULTS } from '@rediacc/shared/config';
 import { configService } from './config-resources.js';
 import { extractRenetToLocal, isSEA } from './embedded-assets.js';
 
-/** Default timeout for ops commands (10 minutes) */
-const OPS_COMMAND_TIMEOUT = 600_000;
+/** Default timeout for ops commands (15 minutes — Ceph provisioning needs ~10 min) */
+const OPS_COMMAND_TIMEOUT = 900_000;
 
 /** Supported VM backends */
 export type OpsBackend = 'kvm' | 'qemu' | 'hyperv';

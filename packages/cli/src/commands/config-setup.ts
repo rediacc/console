@@ -247,4 +247,33 @@ export function registerSetupCommands(config: Command, program: Command): void {
         handleError(error);
       }
     });
+
+  // config set-ceph
+  config
+    .command('set-ceph')
+    .description(t('commands.config.setCeph.description'))
+    .requiredOption('-m, --machine <name>', t('options.machine'))
+    .requiredOption('--pool <name>', t('commands.config.setCeph.optionPool'))
+    .requiredOption('--image <name>', t('commands.config.setCeph.optionImage'))
+    .option('--cluster <name>', t('commands.config.setCeph.optionCluster'), 'ceph')
+    .action(async (options: { machine: string; pool: string; image: string; cluster: string }) => {
+      try {
+        await configService.updateMachine(options.machine, {
+          ceph: {
+            pool: options.pool,
+            image: options.image,
+            clusterName: options.cluster === 'ceph' ? undefined : options.cluster,
+          },
+        });
+        outputService.success(
+          t('commands.config.setCeph.success', {
+            name: options.machine,
+            pool: options.pool,
+            image: options.image,
+          })
+        );
+      } catch (error) {
+        handleError(error);
+      }
+    });
 }

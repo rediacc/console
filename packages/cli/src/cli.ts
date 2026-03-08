@@ -6,6 +6,7 @@ import { registerBackupCommands } from './commands/backup.js';
 import { registerBridgeCommands } from './commands/bridge.js';
 import { registerCephCommands } from './commands/ceph/index.js';
 import { registerConfigCommands } from './commands/config.js';
+import { registerDatastoreCommands } from './commands/datastore.js';
 import { registerDoctorCommand } from './commands/doctor.js';
 import { registerMachineCommands } from './commands/machine/index.js';
 import { registerMcpCommands } from './commands/mcp/index.js';
@@ -147,10 +148,8 @@ cli
     telemetryService.endCommand(commandName, {
       success: true,
       exitCode: 0,
+      duration,
     });
-
-    // Track command duration metric
-    telemetryService.trackMetric(`cli.command.${commandName}.duration`, duration, 'ms');
 
     commandContext.delete(commandName);
   });
@@ -181,6 +180,7 @@ registerUpdateCommand(cli);
 registerSnapshotCommands(cli);
 registerBackupCommands(cli);
 registerOpsCommands(cli);
+registerDatastoreCommands(cli);
 registerSubscriptionCommands(cli);
 registerAgentCommands(cli);
 registerMcpCommands(cli);

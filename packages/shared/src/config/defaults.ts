@@ -110,6 +110,17 @@ export const TELEMETRY_DEFAULTS = {
 } as const;
 
 /**
+ * Ceph RBD storage defaults
+ */
+export const CEPH_DEFAULTS = {
+  /** Default Ceph pool name */
+  POOL: 'rbd',
+
+  /** Default Ceph cluster name */
+  CLUSTER: 'ceph',
+} as const;
+
+/**
  * Protocol and URL defaults
  */
 export const PROTOCOL_DEFAULTS = {
@@ -409,6 +420,7 @@ export const DEFAULTS = {
   PROCESS: PROCESS_DEFAULTS,
   CLI_TEST: CLI_TEST_DEFAULTS,
   SORT: SORT_DEFAULTS,
+  CEPH: CEPH_DEFAULTS,
 } as const;
 
 /**

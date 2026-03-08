@@ -379,7 +379,7 @@ mutually_exclusive=[
 | `machine` | str | no | - | List backups on this machine |
 | `storage` | str | no | - | List backups in this storage |
 
-**Returns**: `backup_list.backups` — list of backup entries.
+**Returns**: `backup_list.json` — list of backup entries (unwrapped from JSON envelope).
 
 ---
 
@@ -495,14 +495,6 @@ required_if=[
     state: present
   register: snapshot
 
-# List snapshots
-- name: List snapshots
-  rediacc.console.rediacc_snapshot:
-    repository: my-app
-    machine: server-1
-    state: list
-  register: snapshots
-
 # Delete old snapshot
 - name: Delete old snapshot
   rediacc.console.rediacc_snapshot:
@@ -510,6 +502,13 @@ required_if=[
     machine: server-1
     state: absent
     snapshot_name: "{{ snapshot.name }}"
+
+# List snapshots (read-only — separate _info module)
+- name: List snapshots
+  rediacc.console.rediacc_snapshot_info:
+    repository: my-app
+    machine: server-1
+  register: snapshots
 ```
 
 ---
@@ -654,6 +653,135 @@ required_if=[
 
 ---
 
+## Module 12: `rediacc_datastore`
+
+**Purpose**: Initialize and manage machine datastore backend.
+
+**Wraps**: `rdc config set-ceph`, `rdc datastore init`
+
+```yaml
+# Initialize Ceph-backed datastore
+- name: Setup Ceph datastore
+  rediacc.console.rediacc_datastore:
+    machine: server-1
+    state: present
+    backend: ceph
+    size: 100G
+    pool: rediacc_rbd_pool
+    image: ds-prod
+    force: true
+
+# Local backend (default from setup-machine)
+- name: Verify local datastore
+  rediacc.console.rediacc_datastore:
+    machine: server-1
+    state: present
+    backend: local
+    size: 50G
+```
+
+**Parameters**:
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `machine` | str | yes | - | Target machine |
+| `state` | str | yes | - | `present` (init datastore) |
+| `backend` | str | no | local | `local` or `ceph` |
+| `size` | str | yes | - | Datastore size (e.g., `100G`) |
+| `pool` | str | conditional | - | Required for `ceph`. Ceph pool name |
+| `image` | str | conditional | - | Required for `ceph`. RBD image name |
+| `cluster` | str | no | ceph | Ceph cluster name |
+| `force` | bool | no | false | Replace existing datastore |
+
+**Idempotency**: Check `datastore status` — if backend matches and initialized=true, changed=false. If backend mismatch, requires force=true.
+
+---
+
+## Module 13: `rediacc_datastore_info`
+
+**Purpose**: Query datastore status (read-only).
+
+**Wraps**: `rdc datastore status`
+
+```yaml
+- name: Check datastore status
+  rediacc.console.rediacc_datastore_info:
+    machine: server-1
+  register: ds_status
+
+- name: Assert Ceph backend
+  ansible.builtin.assert:
+    that: ds_status.json.backend == 'ceph'
+```
+
+**Parameters**:
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `machine` | str | yes | - | Target machine |
+
+**Returns**: `ds_status.json` — dict with `type`, `size`, `used`, `available`, `path`, `mounted`, `initialized`, `backend`, `rbd_image`. During fork: `cow_mode: true`.
+
+**Note**: `datastore status` outputs plain JSON (no envelope wrapping). The runner parses it as plain JSON.
+
+---
+
+## Module 14: `rediacc_datastore_fork`
+
+**Purpose**: Instant Ceph datastore fork and cleanup. This is the infrastructure equivalent of PlanetScale database branching — fork an entire encrypted application stack in < 2 seconds.
+
+**Wraps**: `rdc datastore fork`, `rdc datastore unfork`
+
+**Design note:** Uses `state` (not `direction`) because fork has a clear lifecycle — the fork either exists or doesn't. `state: present` creates the fork, `state: absent` destroys it.
+
+```yaml
+# Fork production datastore for testing (< 2 seconds)
+- name: Fork datastore
+  rediacc.console.rediacc_datastore_fork:
+    source_machine: prod-1
+    target_name: staging
+    state: present
+  register: fork_result
+
+# fork_result.json contains: {snapshot, clone, source_image}
+# All repos are instantly available on the COW overlay
+
+# Clean up fork (restores original datastore)
+- name: Unfork datastore
+  rediacc.console.rediacc_datastore_fork:
+    source_machine: prod-1
+    state: absent
+    snapshot: "{{ fork_result.json.snapshot }}"
+    clone: "{{ fork_result.json.clone }}"
+    source_image: "{{ fork_result.json.source_image }}"
+    force: true
+```
+
+**Parameters**:
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `source_machine` | str | yes | - | Machine with Ceph datastore to fork |
+| `target_name` | str | conditional | - | Required for `present`. Name for the fork (used in clone naming) |
+| `state` | str | yes | - | `present` (fork) or `absent` (unfork) |
+| `snapshot` | str | conditional | - | Required for `absent`. Snapshot name from fork output |
+| `clone` | str | conditional | - | Required for `absent`. Clone name from fork output |
+| `source_image` | str | conditional | - | Required for `absent`. Original RBD image name |
+| `cow_size` | str | no | - | COW overlay size |
+| `force` | bool | no | false | Continue cleanup on errors |
+
+**Argument validation:**
+```python
+required_if=[
+    ('state', 'present', ['target_name']),
+    ('state', 'absent', ['snapshot', 'clone', 'source_image']),
+],
+```
+
+**Important**: Fork mounts on the source machine, replacing `/mnt/rediacc` with a COW overlay. The original datastore is restored on unfork. Use separate machines for source and fork targets in production.
+
+---
+
 ## Implementation Priority
 
 | Priority | Module | Effort | Value |
@@ -668,7 +796,11 @@ required_if=[
 | 8 | `rediacc_backup_schedule` | Low | Medium — automation |
 | 9 | `rediacc_autostart` | Low | Medium — production readiness |
 | 10 | `rediacc_snapshot` | Low | Medium — safety net |
-| 11 | `rediacc_infra` | Low | Low — one-time setup |
-| 12 | `rediacc_template` | Low | Low — convenience |
+| 11 | `rediacc_snapshot_info` | Low | Low — list snapshots |
+| 12 | `rediacc_infra` | Low | Low — one-time setup |
+| 13 | `rediacc_template` | Low | Low — convenience |
+| 14 | `rediacc_datastore` | Low | Medium — Ceph setup |
+| 15 | `rediacc_datastore_info` | Low | Medium — status queries |
+| 16 | `rediacc_datastore_fork` | Medium | High — instant fork differentiator |
 
-Start with modules 1-6. They cover the full deploy + backup workflow.
+Start with modules 1-6. They cover the full deploy + backup workflow. Add datastore modules (14-16) after core modules are stable.

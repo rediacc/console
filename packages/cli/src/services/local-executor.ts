@@ -173,7 +173,11 @@ class LocalExecutorService {
       await sftp.connect();
 
       try {
-        const exitCode = await sftp.execStreaming('renet execute --executor local', {
+        // Pass environment to renet so it reports the same deployment.environment
+        const envPrefix = this.detectEnvironment() === 'development'
+          ? 'REDIACC_ENVIRONMENT=development '
+          : '';
+        const exitCode = await sftp.execStreaming(`${envPrefix}renet execute --executor local`, {
           stdin: vault,
           onStdout: (data) => {
             process.stdout.write(data);
@@ -201,6 +205,17 @@ class LocalExecutorService {
         durationMs: Date.now() - startTime,
       };
     }
+  }
+
+  /**
+   * Detect whether CLI is running in development (tsx) or production.
+   */
+  private detectEnvironment(): string {
+    const execArgs = process.execArgv.join(' ');
+    if (execArgs.includes('tsx') || execArgs.includes('ts-node') || process.argv[1]?.endsWith('.ts')) {
+      return 'development';
+    }
+    return process.env.REDIACC_ENVIRONMENT ?? DEFAULTS.TELEMETRY.ENVIRONMENT;
   }
 
   /**

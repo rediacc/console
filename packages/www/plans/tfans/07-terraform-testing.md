@@ -442,6 +442,51 @@ func TestAccHealthDataSource_basic(t *testing.T) {
 }
 ```
 
+### Example: resource_datastore_fork_test.go (Ceph Acceptance)
+
+```go
+func TestAccDatastoreForkResource_lifecycle(t *testing.T) {
+    // Requires Ceph cluster — skip if not available
+    resource.Test(t, resource.TestCase{
+        ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+        Steps: []resource.TestStep{
+            // Step 1: Create fork
+            {
+                Config: `
+                    resource "rediacc_datastore_fork" "test" {
+                        source_machine = "rediacc11"
+                        target_name    = "acc-test-fork"
+                    }
+                `,
+                Check: resource.ComposeAggregateTestCheckFunc(
+                    resource.TestCheckResourceAttr("rediacc_datastore_fork.test", "source_machine", "rediacc11"),
+                    resource.TestCheckResourceAttrSet("rediacc_datastore_fork.test", "snapshot"),
+                    resource.TestCheckResourceAttrSet("rediacc_datastore_fork.test", "clone"),
+                    resource.TestCheckResourceAttr("rediacc_datastore_fork.test", "cow_mode", "true"),
+                ),
+            },
+            // Step 2: Verify datastore status data source
+            {
+                Config: `
+                    resource "rediacc_datastore_fork" "test" {
+                        source_machine = "rediacc11"
+                        target_name    = "acc-test-fork"
+                    }
+                    data "rediacc_datastore_status" "test" {
+                        machine = "rediacc11"
+                    }
+                `,
+                Check: resource.ComposeAggregateTestCheckFunc(
+                    resource.TestCheckResourceAttr("data.rediacc_datastore_status.test", "backend", "ceph"),
+                    resource.TestCheckResourceAttr("data.rediacc_datastore_status.test", "cow_mode", "true"),
+                ),
+            },
+            // Step 3: Destroy (unfork)
+        },
+    })
+}
+```
+
 ---
 
 ## Layer 3: Example Validation
@@ -597,6 +642,10 @@ This pattern is used by the AWS and Google Terraform providers.
 | **Env var fallback** | Provider works with `REDIACC_CONFIG_NAME` env var only |
 | **Provider aliases** | Multiple provider instances target different configs |
 | **Attribute-path errors** | Error messages reference the specific attribute that failed |
+| **Datastore fork lifecycle** | Fork creates cow_mode, unfork restores original |
+| **Fork output parsing** | Snapshot/clone names correctly extracted from stdout |
+| **Fork requires Ceph** | Error when source machine has local backend |
+| **Datastore status (plain JSON)** | Handles non-envelope JSON from `datastore status` |
 
 ## Test Coverage Goals
 

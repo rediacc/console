@@ -24,14 +24,19 @@ packages/ansible/rediacc/console/
 │   │   ├── rediacc_repo.py             # Repository lifecycle
 │   │   ├── rediacc_sync.py             # File sync (upload/download)
 │   │   ├── rediacc_backup.py           # Backup push/pull
+│   │   ├── rediacc_backup_info.py      # Backup listing (read-only)
 │   │   ├── rediacc_backup_sync.py      # Bulk backup sync
 │   │   ├── rediacc_backup_schedule.py  # Backup scheduling
-│   │   ├── rediacc_snapshot.py         # BTRFS snapshots
+│   │   ├── rediacc_snapshot.py         # BTRFS snapshots (create/delete)
+│   │   ├── rediacc_snapshot_info.py    # Snapshot listing (read-only)
 │   │   ├── rediacc_machine.py          # Machine registration + setup
 │   │   ├── rediacc_machine_info.py     # Machine info (read-only)
 │   │   ├── rediacc_autostart.py        # Autostart enable/disable
 │   │   ├── rediacc_infra.py            # Traefik proxy setup
-│   │   └── rediacc_template.py         # Template application
+│   │   ├── rediacc_template.py         # Template application
+│   │   ├── rediacc_datastore.py        # Datastore initialization and backend management
+│   │   ├── rediacc_datastore_info.py   # Datastore status (read-only)
+│   │   └── rediacc_datastore_fork.py   # Instant fork/unfork via Ceph
 │   ├── inventory/
 │   │   └── rediacc.py                  # Dynamic inventory from rdc config
 │   ├── doc_fragments/

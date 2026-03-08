@@ -464,6 +464,13 @@
         "invalidIPv6": "Invalid IPv6 address: {{ip}}",
         "success": "Infrastructure config updated for \"{{name}}\""
       },
+      "setCeph": {
+        "description": "Set Ceph RBD configuration for a machine",
+        "optionPool": "Ceph pool name (e.g., rbd)",
+        "optionImage": "RBD image name (e.g., datastore-prod1)",
+        "optionCluster": "Ceph cluster name",
+        "success": "Ceph config set for \"{{name}}\": pool={{pool}}, image={{image}}"
+      },
       "showInfra": {
         "description": "Show infrastructure configuration for a machine",
         "noInfra": "No infrastructure config set for \"{{name}}\""
@@ -765,6 +772,47 @@
         "allPassed": "All prerequisites satisfied",
         "hasMissing": "{{count}} prerequisite(s) missing",
         "localFallback": "(using local checks — renet not available)"
+      }
+    },
+    "datastore": {
+      "description": "Manage Ceph RBD datastore lifecycle (init, fork, unfork, status)",
+      "machineOption": "Machine name (where the Ceph datastore is hosted)",
+      "init": {
+        "description": "Initialize datastore on a machine (local loop-backed or Ceph RBD)",
+        "sizeOption": "Datastore size (e.g., 5G, 50G, 100G)",
+        "backendOption": "Backend type: local (default) or ceph",
+        "poolOption": "Ceph pool name (default: from machine config, or rbd)",
+        "imageOption": "Ceph RBD image name (default: from machine config via set-ceph)",
+        "clusterOption": "Ceph cluster name (default: ceph)",
+        "forceOption": "Force initialization even if datastore already exists (WARNING: reformats storage)",
+        "starting": "Initializing datastore on \"{{machine}}\"...",
+        "completed": "Datastore initialized",
+        "failed": "Datastore initialization failed",
+        "imageRequired": "--image is required for ceph backend (or set via: rdc config set-ceph -m <machine> --image <name>)"
+      },
+      "fork": {
+        "description": "Create a local COW copy of a Ceph datastore via RBD snapshot + clone (< 2s). Save snapshot/clone names from output for unfork. Only one fork per target name; unfork before re-forking",
+        "toOption": "Clone suffix (creates clone named <image>-fork-<name>). The fork stays on the source machine",
+        "cowSizeOption": "COW backing file size (default: auto, grows on demand)",
+        "starting": "Forking datastore on \"{{source}}\" (clone named for \"{{target}}\")...",
+        "completed": "Datastore forked successfully (snapshot: {{snapshot}})",
+        "failed": "Datastore fork failed"
+      },
+      "unfork": {
+        "description": "Clean up a fork: unmount COW, remove clone, remove snapshot",
+        "sourceOption": "Original RBD image that was forked (from config set-ceph --image, e.g. ds-prod)",
+        "snapshotOption": "Snapshot to remove (the \"Snapshot:\" value from fork output, e.g. fork-<timestamp>)",
+        "destOption": "Clone image to remove (the \"Clone:\" value from fork output, e.g. ds-prod-fork-<machine>)",
+        "poolOption": "Ceph pool name (default: from machine config)",
+        "mountPointOption": "Fork mount point to unmount (default: /mnt/rediacc)",
+        "forceOption": "Continue cleanup even if individual steps fail (e.g. unmount, snapshot removal)",
+        "starting": "Cleaning up forked datastore on \"{{machine}}\"...",
+        "completed": "Fork cleaned up successfully",
+        "failed": "Fork cleanup failed"
+      },
+      "status": {
+        "description": "Show datastore backend, size, usage, mount status, and cow_mode (if forked)",
+        "starting": "Checking datastore status on \"{{machine}}\"..."
       }
     },
     "protocol": {

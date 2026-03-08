@@ -109,6 +109,46 @@ These operations are rdc's domain. Ansible/Terraform should **call** rdc, not re
 | Machine setup | `config setup-machine` | Single machine |
 | Backup scheduling | `backup schedule push` | Single machine |
 | Deploy all repos | `repo up-all --parallel` | Single machine |
+| Ceph datastore init | `datastore init --backend ceph` | Single machine |
+| Instant fork (Ceph) | `datastore fork --to <machine>` | Source machine (Ceph cluster) |
+| Fork cleanup | `datastore unfork` | Single machine |
+| Datastore status | `datastore status` | Single machine |
+| Ceph config | `config set-ceph` | Config write |
+
+## Three Transfer Mechanisms
+
+Rdc provides three ways to move data between machines. Each serves a different
+purpose — they complement each other, not compete:
+
+| | Backup Push | CRIU Migration | Ceph Fork |
+|---|---|---|---|
+| **Scope** | Single repository | Single repo + process state | Entire datastore (all repos) |
+| **Speed** | Minutes-hours (rsync delta) | Seconds + transfer time | < 2 seconds (any size) |
+| **Data transferred** | Changed blocks only (after first full) | Changed blocks + CRIU image (~130MB) | Zero (Ceph COW clone) |
+| **Requires** | Both machines registered | CRIU installed on both | Ceph cluster |
+| **Use case** | Backup, migration, DR | Live migration (preserve memory) | Staging, preview, testing, canary |
+| **Granularity** | Per-repo | Per-repo | All repos at once |
+| **Isolation** | Full (separate identity) | Full (same identity, new machine) | COW (reads shared, writes local) |
+| **rdc command** | `backup push --to-machine` | `backup push --checkpoint` | `datastore fork --to` |
+| **Ansible module** | `rediacc_backup` | `rediacc_backup` | `rediacc_datastore_fork` |
+| **Terraform resource** | N/A (procedural) | N/A (procedural) | `rediacc_datastore_fork` |
+
+**Why Ceph fork is a differentiator:** PlanetScale branches databases. Neon
+branches Postgres. Vercel clones frontend builds. Rediacc forks **entire
+encrypted application stacks** — Docker services, data volumes, LUKS encryption,
+compose configs, all repos on a machine — in under 2 seconds regardless of size.
+No other self-hosted infrastructure tool offers this.
+
+**How fork works:** RBD snapshot → COW clone → device-mapper overlay.
+Reads come from the shared Ceph clone (no transfer needed). Writes go to a
+local sparse file that starts at 0 bytes and grows only with actual changes.
+After unfork, the original datastore is restored automatically.
+
+**Current limitation:** Fork mounts on the source machine, replacing its
+`/mnt/rediacc` with the COW overlay. For production → staging cloning,
+the staging machine needs Ceph client access to mount the clone independently.
+The ops provisioner (`rdc ops up`) configures Ceph client access on all workers
+automatically.
 
 ## What Ansible/Terraform Add (The Gaps)
 
@@ -151,7 +191,13 @@ The CLI has two output methods:
 | Queue | `queue list`, `queue trace` |
 | Repo (dry-run only) | `repo up --dry-run`, `repo down --dry-run`, `repo delete --dry-run` |
 
-**Commands WITHOUT JSON support (37 commands) — the gaps:**
+**Commands with PARTIAL JSON support (streamed, no envelope):**
+
+| Category | Commands | Notes |
+|----------|----------|-------|
+| Datastore | `datastore status` | Renet function outputs clean JSON to stdout, but CLI streams it without envelope wrapping. Parseable by runners as plain JSON. |
+
+**Commands WITHOUT JSON support (42 commands) — the gaps:**
 
 | Category | Commands | Impact |
 |----------|----------|--------|
@@ -161,6 +207,8 @@ The CLI has two output methods:
 | Sync | `upload`, `download`, `status` | LOW — exit-code-only is acceptable |
 | Backup | `push`, `pull`, `list`, `sync` | MEDIUM — `list` needed for DR |
 | Backup schedule | `set`, `show`, `push` | HIGH — `show` blocks Terraform Read() |
+| Datastore lifecycle | `init`, `fork`, `unfork` | LOW — lifecycle commands, exit-code-only is acceptable |
+| Config mutations | `set-ceph` | LOW — config write, uses `outputService.info()` |
 | Queue mutations | `create`, `cancel`, `retry`, `delete` | LOW — not used by IaC tools |
 
 ### Obstacle Severity and Fixes Required
@@ -190,12 +238,23 @@ The CLI has two output methods:
    Workaround: execute-then-query pattern (run command → query state separately).
    Acceptable but adds latency (2 SSH calls per operation).
 
+7. **`datastore status`** — renet function outputs clean JSON to stdout, but the
+   CLI streams it via `outputService.info()` (stderr) + `executeFunction()` (stdout
+   pass-through) instead of routing through `outputService.print()`. Workaround:
+   runners parse stdout as plain JSON (no envelope). Fix: route through
+   `outputService.print()` for consistent envelope wrapping. This partially closes
+   the "volume size not queryable" drift detection gap — `datastore status` returns
+   `size`, `used`, `available`, `backend`, `mounted` at the datastore level.
+
 **NICE-TO-HAVE (workarounds are adequate):**
 
-7. **`repo up/down/delete --dry-run`** DO return JSON — this is useful for
+8. **`repo up/down/delete --dry-run`** DO return JSON — this is useful for
    Ansible check mode. The plans should leverage this.
 
-8. **Sync commands** — exit-code-only is fine for Ansible (`changed: true` always).
+9. **Sync commands** — exit-code-only is fine for Ansible (`changed: true` always).
+
+10. **Datastore lifecycle commands** (`init`, `fork`, `unfork`) — exit-code-only
+    is acceptable. Use `datastore status` to verify state after execution.
 
 ### JSON Envelope Format
 
@@ -336,9 +395,10 @@ Read returns empty state (removes from Terraform state), and next `plan`
 shows it needs recreation. If a repo was stopped manually, Read detects
 the mismatch and `plan` shows it needs to be restarted.
 
-**Key limitation:** Cannot detect all drift. If someone resizes a repo
-outside Terraform, there's no query command to read current volume size.
-Accept this as a known limitation and document it.
+**Key limitation:** Cannot detect all per-repo drift. If someone resizes a
+repo outside Terraform, there's no per-repo size query. Accept this as a
+known limitation. Note: `datastore status` returns datastore-level size/usage,
+which partially closes this gap for the `rediacc_machine` resource.
 
 ### 6. Data Safety
 
@@ -385,6 +445,48 @@ This follows the pattern used by AWS (`AWS_PROFILE`), Hetzner
 (`HCLOUD_TOKEN`), and Cloudflare (`CLOUDFLARE_API_TOKEN`) providers.
 Keeps `.tf` files credential-free and portable across environments.
 
+### 9. Ceph Fork as Core Differentiator
+
+The `datastore fork` command enables instant copy-on-write cloning of entire
+datastores (all repos, all data) in under 2 seconds via Ceph RBD snapshots.
+This is the infrastructure equivalent of what PlanetScale/Neon do for databases
+and what Vercel/Render do for preview deployments — but for entire encrypted
+application stacks.
+
+**Patterns this enables:**
+
+| Pattern | Description | Industry equivalent |
+|---------|-------------|-------------------|
+| Preview environments | Fork production → deploy PR branch → test → unfork | Vercel preview deploys |
+| Canary release | Fork → deploy new version → validate → promote or discard | Netflix canary |
+| Nightly DR validation | Fork → run DR playbook → verify recovery → unfork | Chaos engineering |
+| Time-travel debugging | Fork at incident → attach debuggers → investigate → unfork | Neon branching |
+| Ephemeral test environments | Fork → integration tests with real data → unfork | PlanetScale branches |
+
+**Design implications:**
+
+- **Ansible** owns fork workflows — fork/unfork is procedural (do X, then Y, then cleanup).
+  New module: `rediacc_datastore_fork`. New roles: `fork_environment`, preview/canary patterns.
+- **Terraform** manages fork *lifecycle* — `rediacc_datastore_fork` as a managed resource
+  where Create=fork, Read=`datastore status` (check `cow_mode`), Delete=unfork.
+  Fork metadata (snapshot name, clone name) stored as computed attributes in state.
+- **Ceph is optional** — all existing functionality works with local backend.
+  Ceph adds the instant fork capability for users who need it.
+- **Machine resource extended** — `rediacc_machine` gains an optional `ceph {}` block
+  for Ceph RBD configuration. When present, `config set-ceph` + `datastore init --backend ceph`
+  run during machine setup.
+
+**Two datastore backends:**
+
+| Backend | Storage | Fork speed | Use case |
+|---------|---------|------------|----------|
+| `local` (default) | Loop-backed file | Slow (rsync) | Single machines, no Ceph |
+| `ceph` | RBD image on Ceph cluster | Instant (< 2s) | Multi-machine, testing, staging |
+
+The `datastore status` command returns JSON (plain, no envelope) with: `type`,
+`size`, `used`, `available`, `path`, `mounted`, `initialized`, `backend`,
+`rbd_image`. During an active fork, `cow_mode: true` is added.
+
 ## Progressive Adoption Strategy
 
 ### The Natural Path: Manual → CLI → Terraform/Ansible
@@ -406,6 +508,13 @@ they are, not require a greenfield setup. The adoption path:
 4. **Add Ansible for fleet operations** — when managing 5+ machines,
    Ansible adds value for rolling deploys and health gates. Terraform
    handles what exists; Ansible handles what happens.
+
+5. **Add Ceph for instant operations** — when fork speed matters
+   (staging environments, preview deployments, DR testing, canary releases),
+   provision a Ceph cluster and switch machines to Ceph-backed datastores.
+   Forks go from minutes (rsync) to seconds (Ceph COW). This unlocks the
+   preview environment and canary release patterns that no other self-hosted
+   tool can offer.
 
 ### Import as a Day-One Feature
 
@@ -467,6 +576,7 @@ packages/
 │       ├── meta/runtime.yml
 │       ├── plugins/modules/          # Python modules
 │       ├── plugins/inventory/        # Dynamic inventory plugin
+│       ├── plugins/doc_fragments/    # Shared DOCUMENTATION strings
 │       ├── plugins/module_utils/     # Shared utilities
 │       ├── roles/                    # Reusable roles
 │       ├── playbooks/               # Example playbooks

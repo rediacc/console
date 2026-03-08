@@ -33,6 +33,9 @@ missing a command or JSON output, the fix goes into rdc — not a renet bypass.
 | Disaster recovery runbook | Ansible only | Procedural, needs conditional logic and error recovery |
 | Multi-region replication | Terraform + Ansible | TF manages infra per region, Ansible handles data flow |
 | GitOps CI/CD pipeline | Both | TF in infra step, Ansible in deploy step |
+| Instant staging/preview environment | Terraform + Ansible | TF manages `rediacc_datastore_fork`, Ansible deploys to forked env |
+| Canary release with real data | Ansible only | Fork → deploy new version → validate → promote or discard |
+| Nightly DR validation | Ansible only | Fork production → run DR playbook → verify → unfork |
 
 **Rule of thumb:** Terraform for "what should exist", Ansible for "what should happen".
 Terraform is poor at procedural workflows (backup → migrate → verify → cleanup).
@@ -77,8 +80,12 @@ terraform {
   }
 }
 
-variable "worker_count" {
-  default = 3
+variable "workers" {
+  default = {
+    "worker-1" = { location = "fsn1" }
+    "worker-2" = { location = "fsn1" }
+    "worker-3" = { location = "nbg1" }
+  }
 }
 
 variable "domain" {
@@ -92,44 +99,44 @@ resource "hcloud_ssh_key" "deploy" {
 }
 
 resource "hcloud_server" "worker" {
-  count       = var.worker_count
-  name        = "worker-${count.index + 1}"
+  for_each    = var.workers
+  name        = each.key
   server_type = "cx31"
   image       = "ubuntu-24.04"
   ssh_keys    = [hcloud_ssh_key.deploy.id]
-  location    = "fsn1"
+  location    = each.value.location
 }
 
 # DNS records
 resource "cloudflare_record" "worker" {
-  count   = var.worker_count
-  zone_id = var.cloudflare_zone_id
-  name    = "worker-${count.index + 1}"
-  content = hcloud_server.worker[count.index].ipv4_address
-  type    = "A"
-  proxied = false
+  for_each = var.workers
+  zone_id  = var.cloudflare_zone_id
+  name     = each.key
+  content  = hcloud_server.worker[each.key].ipv4_address
+  type     = "A"
+  proxied  = false
 }
 
 # Register machines in rdc
 resource "rediacc_machine" "worker" {
-  count = var.worker_count
-  name  = "worker-${count.index + 1}"
-  ip    = hcloud_server.worker[count.index].ipv4_address
-  user  = "root"
-  setup = true
+  for_each = var.workers
+  name     = each.key
+  ip       = hcloud_server.worker[each.key].ipv4_address
+  user     = "root"
+  setup    = true
 }
 
 # Infra (Traefik)
 resource "rediacc_infra" "worker" {
-  count   = var.worker_count
-  machine = rediacc_machine.worker[count.index].name
-  domain  = var.domain
-  email   = "ops@${var.domain}"
+  for_each = var.workers
+  machine  = rediacc_machine.worker[each.key].name
+  domain   = var.domain
+  email    = "ops@${var.domain}"
 }
 
 # Outputs for visibility
 output "machines" {
-  value = { for i, m in rediacc_machine.worker : m.name => hcloud_server.worker[i].ipv4_address }
+  value = { for name, m in rediacc_machine.worker : name => hcloud_server.worker[name].ipv4_address }
 }
 ```
 
@@ -603,6 +610,220 @@ should not break when out-of-band changes happen:
 - **Ansible check mode** queries current state before acting
 - **Neither tool** locks out manual `rdc` usage
 - **Config version conflicts** are retried (not fatal)
+
+## Pattern 6: Preview Environments via Ceph Fork
+
+The infrastructure equivalent of Vercel preview deployments — every PR gets a
+complete copy of the production stack with real data, created in < 2 seconds.
+
+### Ansible Playbook (preview.yml)
+
+```yaml
+---
+# Create preview environment from production
+# Usage: ansible-playbook preview.yml -e pr_number=42 -e source_machine=staging-1
+- name: Preview Environment
+  hosts: localhost
+  vars:
+    source_machine: staging-1
+    pr_number: ""
+    app_source: "./my-app/"
+
+  tasks:
+    - name: Fork datastore (< 2 seconds)
+      rediacc.console.rediacc_datastore_fork:
+        source_machine: "{{ source_machine }}"
+        target_name: "pr-{{ pr_number }}"
+        state: present
+      register: fork
+
+    - name: Upload PR changes
+      rediacc.console.rediacc_sync:
+        machine: "{{ source_machine }}"
+        repository: my-app
+        direction: upload
+        local_path: "{{ app_source }}"
+        verify: true
+
+    - name: Redeploy with changes
+      rediacc.console.rediacc_repo:
+        name: my-app
+        machine: "{{ source_machine }}"
+        state: started
+
+    - name: Wait for healthy
+      rediacc.console.rediacc_machine_info:
+        machine: "{{ source_machine }}"
+        query: health
+      register: health
+      until: health.json.status | default('unknown') == 'healthy'
+      retries: 12
+      delay: 10
+
+    - name: Store fork metadata for cleanup
+      ansible.builtin.set_fact:
+        fork_metadata: "{{ fork.json }}"
+```
+
+### Terraform (preview environments as resources)
+
+```hcl
+# CI/CD creates preview per PR, destroys on merge
+variable "pr_number" {}
+
+resource "rediacc_datastore_fork" "preview" {
+  source_machine = rediacc_machine.staging.name
+  target_name    = "pr-${var.pr_number}"
+}
+
+# After fork, deploy PR changes via Ansible
+resource "null_resource" "deploy_pr" {
+  depends_on = [rediacc_datastore_fork.preview]
+  provisioner "local-exec" {
+    command = "ansible-playbook deploy-pr.yml -e source_machine=${rediacc_machine.staging.name}"
+  }
+}
+```
+
+---
+
+## Pattern 7: Canary Release with Real Data
+
+Fork production data → deploy new version → validate → promote or discard.
+Unlike traditional canary deploys that use empty environments, this tests
+against an exact copy of production data.
+
+### Ansible Playbook (canary.yml)
+
+```yaml
+---
+# Canary release: fork → deploy → validate → decide
+- name: Canary Release
+  hosts: localhost
+  vars:
+    production_machine: prod-1
+    app_name: my-app
+    app_source: ./my-app-v2/
+    validation_script: ./scripts/validate-canary.sh
+
+  tasks:
+    - name: Fork production (< 2 seconds)
+      rediacc.console.rediacc_datastore_fork:
+        source_machine: "{{ production_machine }}"
+        target_name: canary
+        state: present
+      register: fork
+
+    - name: Deploy new version to canary
+      rediacc.console.rediacc_sync:
+        machine: "{{ production_machine }}"
+        repository: "{{ app_name }}"
+        direction: upload
+        local_path: "{{ app_source }}"
+        verify: true
+
+    - name: Restart with new code
+      rediacc.console.rediacc_repo:
+        name: "{{ app_name }}"
+        machine: "{{ production_machine }}"
+        state: started
+
+    - name: Run validation suite
+      ansible.builtin.script: "{{ validation_script }}"
+      register: validation
+      ignore_errors: true
+
+    - name: Cleanup canary (unfork restores original)
+      rediacc.console.rediacc_datastore_fork:
+        source_machine: "{{ production_machine }}"
+        state: absent
+        snapshot: "{{ fork.json.snapshot }}"
+        clone: "{{ fork.json.clone }}"
+        source_image: "{{ fork.json.source_image }}"
+        force: true
+
+    - name: Report result
+      ansible.builtin.debug:
+        msg: "Canary {{ 'PASSED' if validation.rc == 0 else 'FAILED' }}. Production restored to original state."
+```
+
+---
+
+## Pattern 8: Nightly DR Validation
+
+Fork production every night → run full DR playbook against the fork →
+verify all services recover → unfork. Actual disaster recovery testing
+with real data, automated. This is what Netflix's Chaos Engineering aims
+for but is typically too expensive to do with full data copies.
+
+### Ansible Playbook (dr-validate.yml)
+
+```yaml
+---
+# Nightly DR validation against production fork
+# Usage: Run via cron or CI schedule
+- name: DR Validation
+  hosts: localhost
+  vars:
+    production_machine: prod-1
+    dr_storage: s3-backups
+    expected_repos:
+      - my-app
+      - database
+      - mail
+
+  tasks:
+    - name: Fork production for DR test
+      rediacc.console.rediacc_datastore_fork:
+        source_machine: "{{ production_machine }}"
+        target_name: dr-test
+        state: present
+      register: fork
+
+    - name: Simulate failure — stop all repos
+      rediacc.console.rediacc_repo:
+        name: "{{ item }}"
+        machine: "{{ production_machine }}"
+        state: stopped
+      loop: "{{ expected_repos }}"
+
+    - name: Restore from backup (DR procedure)
+      ansible.builtin.include_role:
+        name: rediacc.console.disaster_recovery
+      vars:
+        rediacc_dr_storage: "{{ dr_storage }}"
+        rediacc_dr_target_machine: "{{ production_machine }}"
+
+    - name: Verify all repos recovered
+      rediacc.console.rediacc_machine_info:
+        machine: "{{ production_machine }}"
+        query: containers
+      register: containers
+      until: >-
+        expected_repos | difference(
+          containers.json | default([])
+          | selectattr('state', 'equalto', 'running')
+          | map(attribute='repository') | list
+        ) | length == 0
+      retries: 20
+      delay: 15
+
+    - name: Cleanup — unfork restores real production
+      rediacc.console.rediacc_datastore_fork:
+        source_machine: "{{ production_machine }}"
+        state: absent
+        snapshot: "{{ fork.json.snapshot }}"
+        clone: "{{ fork.json.clone }}"
+        source_image: "{{ fork.json.source_image }}"
+        force: true
+      tags: [always]
+
+    - name: Report
+      ansible.builtin.debug:
+        msg: "DR validation PASSED — all {{ expected_repos | length }} repos recovered successfully"
+```
+
+---
 
 ## Anti-Patterns to Avoid
 

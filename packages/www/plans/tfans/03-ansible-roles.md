@@ -18,6 +18,7 @@ This prevents collisions when multiple roles are used in the same play
 | `migrate_repo` | `rediacc_migrate_` | `rediacc_migrate_source`, `rediacc_migrate_target` |
 | `backup_fleet` | `rediacc_backup_` | `rediacc_backup_storage`, `rediacc_backup_cron` |
 | `disaster_recovery` | `rediacc_dr_` | `rediacc_dr_storage`, `rediacc_dr_target_machine` |
+| `fork_environment` | `rediacc_fork_` | `rediacc_fork_source_machine`, `rediacc_fork_target_name` |
 
 ### Tags for Selective Execution
 
@@ -101,6 +102,10 @@ rediacc_datastore_size: "95%"
 rediacc_infra_domain: ""
 rediacc_infra_email: ""
 rediacc_setup_infra: false
+rediacc_datastore_backend: local     # 'local' or 'ceph'
+rediacc_ceph_pool: ""                # Required if backend=ceph
+rediacc_ceph_image: ""               # Required if backend=ceph
+rediacc_ceph_size: ""                # Required if backend=ceph
 ```
 
 ### tasks/main.yml
@@ -113,12 +118,26 @@ rediacc_setup_infra: false
     user: "{{ ansible_user | default('root') }}"
     port: "{{ ansible_port | default(22) }}"
     datastore: "{{ rediacc_datastore }}"
+  tags: [rediacc_register]
 
 - name: Setup machine (Docker, BTRFS, tools)
   rediacc.console.rediacc_machine:
     name: "{{ inventory_hostname }}"
     state: setup
     datastore_size: "{{ rediacc_datastore_size }}"
+  tags: [rediacc_setup]
+
+- name: Configure Ceph for machine
+  rediacc.console.rediacc_datastore:
+    machine: "{{ inventory_hostname }}"
+    state: present
+    backend: ceph
+    size: "{{ rediacc_ceph_size }}"
+    pool: "{{ rediacc_ceph_pool }}"
+    image: "{{ rediacc_ceph_image }}"
+    force: true
+  when: rediacc_datastore_backend == 'ceph'
+  tags: [rediacc_datastore]
 
 - name: Configure infra (Traefik proxy)
   rediacc.console.rediacc_infra:
@@ -127,12 +146,14 @@ rediacc_setup_infra: false
     email: "{{ rediacc_infra_email }}"
     state: configured
   when: rediacc_setup_infra | bool
+  tags: [rediacc_infra]
 
 - name: Push infra to machine
   rediacc.console.rediacc_infra:
     machine: "{{ inventory_hostname }}"
     state: pushed
   when: rediacc_setup_infra | bool
+  tags: [rediacc_infra]
 
 - name: Verify machine health
   rediacc.console.rediacc_machine_info:
@@ -140,10 +161,12 @@ rediacc_setup_infra: false
     query: health
   register: health_result
   failed_when: false
+  tags: [rediacc_health]
 
 - name: Report machine status
   ansible.builtin.debug:
     msg: "Machine {{ inventory_hostname }} setup complete. Health: {{ health_result.json.status | default('unknown') }}"
+  tags: [rediacc_health]
 ```
 
 ### Usage
@@ -403,6 +426,21 @@ rediacc_migrate_verify: true
 
 **Purpose**: Run backup across all machines in the fleet.
 
+```
+roles/backup_fleet/
+├── tasks/main.yml
+├── defaults/main.yml
+├── meta/main.yml
+└── README.md
+```
+
+### defaults/main.yml
+```yaml
+rediacc_backup_storage: ""       # Required: storage name
+rediacc_backup_cron: "0 2 * * *" # Daily at 2 AM
+rediacc_backup_immediate: false   # Run immediate sync in addition to schedule
+```
+
 ### tasks/main.yml
 ```yaml
 - name: Configure and push backup schedule
@@ -515,6 +553,103 @@ rediacc_dr_autostart_after: true
       vars:
         rediacc_dr_storage: s3-backups
         rediacc_dr_target_machine: new-server-1
+```
+
+---
+
+## Role 6: `fork_environment`
+
+**Purpose**: Create instant staging/preview environment from a Ceph-backed datastore. Fork → optionally deploy changes → verify → unfork on cleanup.
+
+This is the infrastructure equivalent of Vercel preview deployments or PlanetScale database branching — but for entire encrypted application stacks. Fork takes < 2 seconds regardless of datastore size.
+
+```
+roles/fork_environment/
+├── tasks/main.yml
+├── defaults/main.yml
+├── meta/main.yml
+└── README.md
+```
+
+### defaults/main.yml
+```yaml
+rediacc_fork_source_machine: ""      # Required: machine with Ceph datastore
+rediacc_fork_target_name: ""         # Required: name for the fork (e.g., "staging", "pr-42")
+rediacc_fork_deploy_repos: []        # Optional: repos to deploy after fork (default: none)
+rediacc_fork_verify_health: true
+rediacc_fork_health_retries: 10
+rediacc_fork_health_delay: 5
+```
+
+### tasks/main.yml
+```yaml
+- name: Verify source has Ceph datastore
+  rediacc.console.rediacc_datastore_info:
+    machine: "{{ rediacc_fork_source_machine }}"
+  register: source_ds
+  failed_when: source_ds.json.backend | default('local') != 'ceph'
+  tags: [rediacc_fork]
+
+- name: Fork datastore (instant, < 2 seconds)
+  rediacc.console.rediacc_datastore_fork:
+    source_machine: "{{ rediacc_fork_source_machine }}"
+    target_name: "{{ rediacc_fork_target_name }}"
+    state: present
+  register: fork_result
+  tags: [rediacc_fork]
+
+- name: Deploy repos on forked datastore
+  rediacc.console.rediacc_repo:
+    name: "{{ item }}"
+    machine: "{{ rediacc_fork_source_machine }}"
+    state: started
+    mount: true
+  loop: "{{ rediacc_fork_deploy_repos }}"
+  when: rediacc_fork_deploy_repos | length > 0
+  tags: [rediacc_fork_deploy]
+
+- name: Verify health on forked environment
+  rediacc.console.rediacc_machine_info:
+    machine: "{{ rediacc_fork_source_machine }}"
+    query: health
+  register: fork_health
+  until: fork_health.json.status | default('unknown') == 'healthy'
+  retries: "{{ rediacc_fork_health_retries }}"
+  delay: "{{ rediacc_fork_health_delay }}"
+  when: rediacc_fork_verify_health | bool
+  tags: [rediacc_fork_health]
+
+- name: Store fork metadata for cleanup
+  ansible.builtin.set_fact:
+    rediacc_fork_metadata: "{{ fork_result.json }}"
+  tags: [rediacc_fork]
+```
+
+### Usage
+```yaml
+# Preview environment for PR testing
+- hosts: localhost
+  tasks:
+    - name: Create preview environment
+      ansible.builtin.include_role:
+        name: rediacc.console.fork_environment
+      vars:
+        rediacc_fork_source_machine: staging-1
+        rediacc_fork_target_name: "pr-{{ pr_number }}"
+        rediacc_fork_deploy_repos:
+          - my-app
+          - database
+
+    # ... run tests against forked environment ...
+
+    - name: Destroy preview environment
+      rediacc.console.rediacc_datastore_fork:
+        source_machine: staging-1
+        state: absent
+        snapshot: "{{ rediacc_fork_metadata.snapshot }}"
+        clone: "{{ rediacc_fork_metadata.clone }}"
+        source_image: "{{ rediacc_fork_metadata.source_image }}"
+        force: true
 ```
 
 ---

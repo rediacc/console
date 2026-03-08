@@ -79,6 +79,7 @@ resource "rediacc_machine" "from_hetzner" {
 | `datastore` | string | no | `/mnt/rediacc` | Datastore path |
 | `setup` | bool | no | false | Run setup-machine after registration |
 | `datastore_size` | string | no | `95%` | Size for BTRFS datastore |
+| `ceph` | object | no | - | Ceph RBD config: `{pool, image, size, cluster}`. Enables instant fork. |
 
 **Computed Attributes**:
 
@@ -95,10 +96,15 @@ Create:  (acquire config mutex + machine mutex)
      → Returns JSON (factory command) — can parse response directly
   2. if setup: rdc config setup-machine <name> [--datastore-size <size>]
      → Lifecycle command (exit code only). Timeout: 20 minutes.
+  3. if ceph: rdc config set-ceph --pool <pool> --image <image> [--cluster <cluster>]
+     → Config write (exit code). Then: rdc datastore init --backend ceph --size <size> --force
+     → Lifecycle command (exit code, timeout: 5 min)
 
 Read:
   1. rdc config show --output json → extract machines[name]
   2. Compare stored attributes (ip, user, port, datastore) with config values
+  3. if ceph configured: rdc datastore status → check backend, size, mounted
+     (plain JSON, no envelope — parse as-is)
   Note: setup status is not queryable — treat as write-only attribute
 
 Update:
@@ -263,7 +269,7 @@ Import:
 `rdc repo up --dry-run` / `rdc repo delete --dry-run` to get structured
 JSON showing what would happen without executing. This improves plan output.
 
-**Known drift detection gaps (v1.0):**
+**Known drift detection gaps (v0.x):**
 - Volume size is not queryable — can't detect external resize
 - Autostart state is not queryable — can't detect external changes
 - Sync content is not comparable — can't detect external file changes
@@ -339,6 +345,86 @@ resource "rediacc_infra" "web" {
 | `machine` | string | yes | - | Target machine |
 | `domain` | string | yes | - | Domain for HTTPS |
 | `email` | string | yes | - | Email for Let's Encrypt |
+
+---
+
+### Resource 5: `rediacc_datastore_fork`
+
+**Purpose**: Declarative Ceph datastore fork lifecycle. Create=fork, Read=status, Delete=unfork. The infrastructure equivalent of Neon database branches or Vercel preview deployments.
+
+**Wraps**: `rdc datastore fork`, `rdc datastore status`, `rdc datastore unfork`
+
+```hcl
+# Instant staging environment from production (< 2 seconds)
+resource "rediacc_datastore_fork" "staging" {
+  source_machine = rediacc_machine.prod.name
+  target_name    = "staging"
+}
+
+# Preview environment per PR
+resource "rediacc_datastore_fork" "preview" {
+  source_machine = rediacc_machine.staging.name
+  target_name    = "pr-${var.pr_number}"
+}
+
+# Output fork metadata
+output "fork_snapshot" {
+  value = rediacc_datastore_fork.staging.snapshot
+}
+```
+
+**Schema**:
+
+| Attribute | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `source_machine` | string | yes | - | Machine with Ceph datastore to fork |
+| `target_name` | string | yes | - | Name for the fork (used in clone naming) |
+| `cow_size` | string | no | - | COW overlay size |
+
+**Computed Attributes**:
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `id` | string | `<source_machine>:<target_name>` |
+| `snapshot` | string | RBD snapshot name (e.g., `fork-1772969558`) |
+| `clone` | string | RBD clone name (e.g., `ds-prod-fork-staging`) |
+| `source_image` | string | Original RBD image name |
+| `cow_mode` | bool | Whether COW overlay is active |
+
+**CRUD Implementation**:
+
+```
+Create:  (acquire machine mutex, timeout: 5 min)
+  1. Verify: datastore status → backend must be "ceph"
+  2. Execute: rdc datastore fork -m <source> --to <target>
+  3. Parse fork output: extract snapshot name, clone name from stdout
+  4. Verify: datastore status → cow_mode should be true
+
+Read:
+  1. datastore status → check cow_mode, backend
+  2. If cow_mode is false: fork was cleaned up externally → remove from state
+
+Update:
+  - source_machine or target_name changed: ForceNew
+  - cow_size changed: ForceNew
+
+Delete:  (acquire machine mutex, timeout: 5 min)
+  1. rdc datastore unfork -m <source> --source <image> --snapshot <snapshot> --dest <clone> --force
+  2. Verify: datastore status → cow_mode should be false, mounted should be true
+```
+
+**Fork output parsing:** The `datastore fork` command prints structured lines:
+```
+  Snapshot: fork-1772969558
+  Clone: ds-prod-fork-staging
+  Mount: /mnt/rediacc
+```
+Parse lines matching `Snapshot:`, `Clone:`, `Mount:` to extract metadata.
+Store in Terraform state as computed attributes for unfork.
+
+**Important:** Fork mounts on the source machine, replacing `/mnt/rediacc` with
+a COW overlay. Plan accordingly — don't fork a production machine that needs to
+stay on its original datastore. Use staging/test machines as fork sources.
 
 ---
 
@@ -427,6 +513,42 @@ output "is_healthy" {
 |-----------|------|-------------|
 | `machine` | string (required) | Machine name |
 | `status` | string | Overall health status |
+
+---
+
+### Data Source 5: `rediacc_datastore_status`
+
+```hcl
+data "rediacc_datastore_status" "prod" {
+  machine = rediacc_machine.prod.name
+}
+
+output "datastore_info" {
+  value = {
+    backend   = data.rediacc_datastore_status.prod.backend
+    size      = data.rediacc_datastore_status.prod.size
+    available = data.rediacc_datastore_status.prod.available
+    cow_mode  = data.rediacc_datastore_status.prod.cow_mode
+  }
+}
+```
+
+**Wraps**: `rdc datastore status -m <machine>` (plain JSON, no envelope)
+
+**Schema**:
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `machine` | string (required) | Machine name |
+| `type` | string | Filesystem type (btrfs) |
+| `size` | string | Total size |
+| `used` | string | Used space |
+| `available` | string | Available space |
+| `backend` | string | `local` or `ceph` |
+| `mounted` | bool | Whether datastore is mounted |
+| `initialized` | bool | Whether datastore is initialized |
+| `rbd_image` | string | Ceph pool/image (when backend=ceph) |
+| `cow_mode` | bool | Whether a fork COW overlay is active |
 
 ---
 
@@ -569,56 +691,14 @@ adjust the resource config to match actual state before applying.
 
 ## Go Client: Envelope Handling
 
-The Go client (`internal/client/rdc.go`) must handle the JSON envelope:
+The Go client (`internal/client/rdc.go`) is defined in `05-terraform-provider.md`.
+Key methods used by resources:
 
-```go
-// Envelope represents the rdc JSON output format for query commands.
-type Envelope struct {
-    Success  bool            `json:"success"`
-    Command  string          `json:"command"`
-    Data     json.RawMessage `json:"data"`
-    Errors   json.RawMessage `json:"errors"`
-    Warnings []string        `json:"warnings"`
-    Metrics  json.RawMessage `json:"metrics"`
-}
-
-func (c *RdcClient) RunQuery(ctx context.Context, args ...string) (json.RawMessage, error) {
-    raw, err := c.Run(ctx, args...)
-    if err != nil {
-        return nil, err
-    }
-    if raw == nil {
-        return nil, nil
-    }
-
-    // Try to unwrap envelope
-    var env Envelope
-    if err := json.Unmarshal(raw, &env); err == nil && env.Data != nil {
-        return env.Data, nil
-    }
-
-    // No envelope — return raw
-    return raw, nil
-}
-
-func (c *RdcClient) RunLifecycle(ctx context.Context, args ...string) error {
-    // Lifecycle commands: skip --output json, only check exit code
-    cmdArgs := []string{}
-    if c.ConfigName != "" {
-        cmdArgs = append(cmdArgs, "--config", c.ConfigName)
-    }
-    cmdArgs = append(cmdArgs, args...)
-
-    cmd := exec.CommandContext(ctx, c.BinaryPath, cmdArgs...)
-    var stderr bytes.Buffer
-    cmd.Stderr = &stderr
-
-    if err := cmd.Run(); err != nil {
-        return fmt.Errorf("rdc %v failed: %s\n%s", args, err, stderr.String())
-    }
-    return nil
-}
-```
+- **`RunQuery()`** — adds `--output json`, unwraps envelope, returns `data` field
+- **`RunLifecycle()`** — no `--output json`, only checks exit code
+- **Convenience methods** — `ConfigRepositories()`, `MachineContainers()`, `MachineHealth()`,
+  `RepoCreate()`, `RepoUp()`, `RepoDown()`, `RepoDelete()`, `DatastoreStatus()`,
+  `DatastoreFork()`, `DatastoreUnfork()`
 
 ## Implementation Priority
 
@@ -633,3 +713,5 @@ func (c *RdcClient) RunLifecycle(ctx context.Context, args ...string) error {
 | 7 | `data.rediacc_health` | Low | Simple JSON read |
 | 8 | `rediacc_backup_schedule` | Medium | Schedule set + push |
 | 9 | `rediacc_infra` | Low | Set-infra + push-infra |
+| 10 | `rediacc_datastore_fork` | Medium | Ceph instant fork — differentiator |
+| 11 | `data.rediacc_datastore_status` | Low | Datastore inspection |

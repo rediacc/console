@@ -48,6 +48,12 @@ Layer 4: Inventory Tests               ← Dynamic inventory plugin
    (not `action`), schedule modules use `state` (not `action`), and all
    state-based modules accept standard values (`present`, `absent`, etc.).
 
+9. **Test Ceph fork lifecycle.** Fork tests must verify: `datastore status`
+   shows `cow_mode: true` after fork, unfork restores original mount, and
+   fork metadata (snapshot, clone, source_image) is captured correctly for
+   cleanup. Mock the streamed JSON output from `datastore status` (plain
+   JSON, no envelope wrapping).
+
 ## Layer 1: Unit Tests
 
 Unit tests verify module internals without calling `rdc`. They mock
@@ -69,8 +75,13 @@ tests/
 │   │   │   ├── test_rediacc_repo.py
 │   │   │   ├── test_rediacc_sync.py
 │   │   │   ├── test_rediacc_backup.py
+│   │   │   ├── test_rediacc_backup_info.py
+│   │   │   ├── test_rediacc_snapshot_info.py
 │   │   │   ├── test_rediacc_machine.py
-│   │   │   └── test_rediacc_machine_info.py
+│   │   │   ├── test_rediacc_machine_info.py
+│   │   │   ├── test_rediacc_datastore.py
+│   │   │   ├── test_rediacc_datastore_info.py
+│   │   │   └── test_rediacc_datastore_fork.py
 │   │   ├── module_utils/
 │   │   │   ├── test_rdc_runner.py
 │   │   │   └── test_rdc_common.py
@@ -347,7 +358,8 @@ tests/integration/
 ├── test_02_repo_lifecycle.py
 ├── test_03_sync_module.py
 ├── test_04_backup_cross_machine.py
-├── test_05_roles.py
+├── test_05_datastore_fork.py
+├── test_06_roles.py
 ├── playbooks/                         # Test playbooks
 │   ├── test_deploy.yml
 │   ├── test_migrate.yml
@@ -492,6 +504,74 @@ class TestCrossMachineBackup:
 
     def test_06_cleanup(self):
         """Delete repos on both machines."""
+        pass
+```
+
+### Example: test_05_datastore_fork.py (Ceph required)
+
+```python
+"""Integration tests for Ceph datastore fork operations.
+Requires: rdc ops up (full, with Ceph nodes) — NOT --basic.
+"""
+
+class TestDatastoreFork:
+    """Tests fork lifecycle on Ceph-backed datastore."""
+
+    def test_01_init_ceph_datastore(self):
+        """Initialize Ceph-backed datastore on test machine."""
+        result = run_playbook(f"""
+        - hosts: localhost
+          tasks:
+            - rediacc.console.rediacc_datastore:
+                machine: rediacc11
+                state: present
+                backend: ceph
+                size: 10G
+                pool: rediacc_rbd_pool
+                image: test-ds
+                force: true
+        """)
+        assert result.returncode == 0
+
+    def test_02_verify_ceph_status(self):
+        """Verify datastore status shows Ceph backend."""
+        result = run_playbook(f"""
+        - hosts: localhost
+          tasks:
+            - rediacc.console.rediacc_datastore_info:
+                machine: rediacc11
+              register: ds
+            - ansible.builtin.assert:
+                that:
+                  - ds.json.backend == 'ceph'
+                  - ds.json.initialized == true
+                  - ds.json.mounted == true
+        """)
+        assert result.returncode == 0
+
+    def test_03_fork_datastore(self):
+        """Fork datastore — should complete in < 5 seconds."""
+        result = run_playbook(f"""
+        - hosts: localhost
+          tasks:
+            - rediacc.console.rediacc_datastore_fork:
+                source_machine: rediacc11
+                target_name: rediacc12
+                state: present
+              register: fork
+            - ansible.builtin.assert:
+                that:
+                  - fork.json.snapshot is defined
+                  - fork.json.clone is defined
+        """)
+        assert result.returncode == 0
+
+    def test_04_verify_cow_mode(self):
+        """After fork, datastore status should show cow_mode."""
+        pass
+
+    def test_05_unfork_cleanup(self):
+        """Unfork should restore original datastore."""
         pass
 ```
 

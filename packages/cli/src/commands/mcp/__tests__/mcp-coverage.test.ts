@@ -24,6 +24,7 @@ const MCP_EXCLUDED: Record<string, string> = {
 
   // ── Local-only tooling ────────────────────────────────────────────
   ops: 'Local VM provisioning — requires host KVM/QEMU, not remote-operable',
+  datastore: 'Infrastructure datastore management — runs via bridge execution, not direct MCP',
   doctor: 'Diagnoses local CLI installation — not a remote operation',
   update: 'CLI self-update — not a remote operation',
   store: 'Config file sync backends — local credential management',
