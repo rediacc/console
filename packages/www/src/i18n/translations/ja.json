@@ -11850,13 +11850,14 @@
                 "<strong>SSH操作：</strong>ターゲットホスト、ユーザー名、ポート番号、終了コード、実行所要時間（コマンド内容や出力は収集されません）",
                 "<strong>API呼び出し：</strong>プロシージャ名、リクエスト所要時間",
                 "<strong>Vault操作：</strong>操作タイプと所要時間（シークレット値、キー、またはVault内容は収集されません）",
-                "<strong>Bridgeライフサイクル：</strong>起動、シャットダウン、および再接続イベント"
+                "<strong>Bridgeライフサイクル：</strong>起動、シャットダウン、および再接続イベント",
+                "<strong>パフォーマンスプロファイリング：</strong>CPU使用率サンプルとメモリ割り当てプロファイル、自動的に収集されプロファイリングエンドポイントに送信されます"
               ],
               "title": "7.1 収集データ"
             },
             "bridgeOptOut": {
               "content": [
-                "環境変数<code>REDIACC_TELEMETRY_DISABLED=1</code>を設定してBridgeテレメトリを無効にします。"
+                "環境変数<code>REDIACC_TELEMETRY_DISABLED=1</code>を設定してBridgeテレメトリ（プロファイリングを含む）を無効にします。"
               ],
               "title": "7.2 オプトアウト方法"
             }
@@ -11897,12 +11898,13 @@
                 "<strong>環境：</strong>オペレーティングシステムタイプ、Node.jsランタイムバージョン、デプロイメント環境",
                 "<strong>エラー情報：</strong>コマンド失敗時のエラータイプ、エラーメッセージ、および限定的なスタックトレース",
                 "<strong>APIインタラクション：</strong>HTTPメソッド、URLパス、レスポンスステータスコード、リクエスト所要時間",
-                "<strong>セッション：</strong>ランダム生成されたセッションID、コマンド実行所要時間"
+                "<strong>セッション：</strong>ランダム生成されたセッションID、コマンド実行所要時間",
+                "<strong>パフォーマンスプロファイリング：</strong>CPU使用率サンプルとメモリ割り当てプロファイル、自動的に収集されプロファイリングエンドポイントに送信されます"
               ],
               "title": "5.1 収集データ"
             },
             "cliOptOut": {
-              "content": ["以下のいずれかの方法でCLIテレメトリを無効にできます："],
+              "content": ["以下のいずれかの方法でCLIテレメトリ（プロファイリングを含む）を無効にできます："],
               "items": [
                 "環境変数<code>REDIACC_TELEMETRY_DISABLED=1</code>を設定",
                 "CLI設定ファイルで<code>telemetryEnabled: false</code>を設定",

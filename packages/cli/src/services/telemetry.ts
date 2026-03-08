@@ -29,6 +29,11 @@ import {
 
 import { metrics as metricsApi } from '@opentelemetry/api';
 
+import {
+  startProfiling as startProfilingImpl,
+  stopProfiling as stopProfilingImpl,
+} from './profiling.js';
+
 // Package version (will be replaced by bundler or read from package.json)
 const CLI_VERSION = '0.3.6';
 
@@ -59,6 +64,7 @@ class CliTelemetryService implements TelemetryHandler {
   private metricReader: PeriodicExportingMetricReader | null = null;
   private isEnabled = true;
   private isInitialized = false;
+  private profilingStarted = false;
   private readonly sessionId: string;
   private userContext: Partial<UserContext> = {};
   private readonly activeSpans: Map<string, Span> = new Map();
@@ -256,6 +262,27 @@ class CliTelemetryService implements TelemetryHandler {
       description: 'API call duration in ms',
       unit: 'ms',
     });
+  }
+
+  /**
+   * Start CPU and heap profiling. Enabled when telemetry is on.
+   */
+  startProfiling(commandName: string): void {
+    if (!this.isEnabled || this.profilingStarted) {
+      return;
+    }
+    startProfilingImpl(commandName);
+    this.profilingStarted = true;
+  }
+
+  /**
+   * Stop profiling and flush data.
+   */
+  async stopProfiling(): Promise<void> {
+    if (!this.profilingStarted) {
+      return;
+    }
+    await stopProfilingImpl();
   }
 
   /**

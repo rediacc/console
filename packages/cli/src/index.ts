@@ -57,7 +57,8 @@ if (process.argv.includes('mcp') && process.argv.includes('serve')) {
 
       await cli.parseAsync(process.argv);
 
-      // Wait for telemetry shutdown (with timeout to avoid delaying exit)
+      // Stop profiling and wait for telemetry shutdown (with timeout to avoid delaying exit)
+      await telemetryService.stopProfiling();
       await Promise.race([
         telemetryService.shutdown(),
         new Promise((resolve) => setTimeout(resolve, 500)),

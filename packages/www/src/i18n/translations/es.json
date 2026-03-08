@@ -11854,13 +11854,14 @@
                 "<strong>Operaciones SSH:</strong> host de destino, nombre de usuario, número de puerto, código de salida, duración de ejecución (no se recopila contenido de comandos ni salida)",
                 "<strong>Llamadas API:</strong> nombre del procedimiento, duración de la solicitud",
                 "<strong>Operaciones de bóveda:</strong> tipo de operación y duración (no se recopilan valores secretos, claves ni contenido de la bóveda)",
-                "<strong>Ciclo de vida del Bridge:</strong> eventos de inicio, cierre y reconexión"
+                "<strong>Ciclo de vida del Bridge:</strong> eventos de inicio, cierre y reconexión",
+                "<strong>Perfilado de rendimiento:</strong> muestras de uso de CPU y perfiles de asignación de memoria, recopilados automáticamente y enviados a nuestro punto de perfilado"
               ],
               "title": "7.1 Datos recopilados"
             },
             "bridgeOptOut": {
               "content": [
-                "Establezca la variable de entorno <code>REDIACC_TELEMETRY_DISABLED=1</code> para desactivar la telemetría del Bridge."
+                "Establezca la variable de entorno <code>REDIACC_TELEMETRY_DISABLED=1</code> para desactivar la telemetría del Bridge (incluido el perfilado)."
               ],
               "title": "7.2 Cómo darse de baja"
             }
@@ -11901,13 +11902,14 @@
                 "<strong>Entorno:</strong> tipo de sistema operativo, versión del entorno de ejecución Node.js, entorno de despliegue",
                 "<strong>Información de errores:</strong> tipo de error, mensaje de error y traza de pila limitada cuando los comandos fallan",
                 "<strong>Interacciones API:</strong> método HTTP, ruta URL, código de estado de respuesta, duración de la solicitud",
-                "<strong>Sesión:</strong> ID de sesión generado aleatoriamente, duración de ejecución del comando"
+                "<strong>Sesión:</strong> ID de sesión generado aleatoriamente, duración de ejecución del comando",
+                "<strong>Perfilado de rendimiento:</strong> muestras de uso de CPU y perfiles de asignación de memoria, recopilados automáticamente y enviados a nuestro punto de perfilado"
               ],
               "title": "5.1 Datos recopilados"
             },
             "cliOptOut": {
               "content": [
-                "Puede desactivar la telemetría de la CLI utilizando cualquiera de estos métodos:"
+                "Puede desactivar la telemetría de la CLI (incluido el perfilado) utilizando cualquiera de estos métodos:"
               ],
               "items": [
                 "Establezca la variable de entorno <code>REDIACC_TELEMETRY_DISABLED=1</code>",

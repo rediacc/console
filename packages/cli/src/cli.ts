@@ -125,6 +125,7 @@ cli
       args: actionCommand.args,
       options: actionCommand.opts(),
     });
+    telemetryService.startProfiling(commandName);
 
     // Set user context if available
     try {
@@ -139,7 +140,10 @@ cli
 
     // License auto-refresh is now handled per-operation in services/license.ts
   })
-  .hook('postAction', (_thisCommand, actionCommand) => {
+  .hook('postAction', async (_thisCommand, actionCommand) => {
+    // Stop profiling before ending telemetry
+    await telemetryService.stopProfiling();
+
     // End telemetry tracking for the command
     const commandName = getFullCommandName(actionCommand);
     const ctx = commandContext.get(commandName);

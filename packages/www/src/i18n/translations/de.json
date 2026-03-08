@@ -11858,13 +11858,14 @@
                 "<strong>SSH-Operationen:</strong> Zielhost, Benutzername, Portnummer, Exit-Code, Ausführungsdauer (keine Befehlsinhalte oder Ausgaben werden erfasst)",
                 "<strong>API-Aufrufe:</strong> Prozedurname, Anfragedauer",
                 "<strong>Vault-Operationen:</strong> Operationstyp und -dauer (keine geheimen Werte, Schlüssel oder Vault-Inhalte werden erfasst)",
-                "<strong>Bridge-Lebenszyklus:</strong> Start-, Stopp- und Wiederverbindungsereignisse"
+                "<strong>Bridge-Lebenszyklus:</strong> Start-, Stopp- und Wiederverbindungsereignisse",
+                "<strong>Performance-Profiling:</strong> CPU-Nutzungsproben und Speicherzuweisungsprofile, automatisch erfasst und an unseren Profiling-Endpunkt gesendet"
               ],
               "title": "7.1 Erfasste Daten"
             },
             "bridgeOptOut": {
               "content": [
-                "Setzen Sie die Umgebungsvariable <code>REDIACC_TELEMETRY_DISABLED=1</code>, um die Bridge-Telemetrie zu deaktivieren."
+                "Setzen Sie die Umgebungsvariable <code>REDIACC_TELEMETRY_DISABLED=1</code>, um die Bridge-Telemetrie (einschließlich Profiling) zu deaktivieren."
               ],
               "title": "7.2 So melden Sie sich ab"
             }
@@ -11905,13 +11906,14 @@
                 "<strong>Umgebung:</strong> Betriebssystemtyp, Node.js-Laufzeitversion, Bereitstellungsumgebung",
                 "<strong>Fehlerinformationen:</strong> Fehlertyp, Fehlermeldung und begrenzter Stack-Trace bei Befehlsfehlern",
                 "<strong>API-Interaktionen:</strong> HTTP-Methode, URL-Pfad, Antwortstatuscode, Anfragedauer",
-                "<strong>Sitzung:</strong> zufällig generierte Sitzungs-ID, Befehlsausführungsdauer"
+                "<strong>Sitzung:</strong> zufällig generierte Sitzungs-ID, Befehlsausführungsdauer",
+                "<strong>Performance-Profiling:</strong> CPU-Nutzungsproben und Speicherzuweisungsprofile, automatisch erfasst und an unseren Profiling-Endpunkt gesendet"
               ],
               "title": "5.1 Erfasste Daten"
             },
             "cliOptOut": {
               "content": [
-                "Sie können die CLI-Telemetrie mit einer der folgenden Methoden deaktivieren:"
+                "Sie können die CLI-Telemetrie (einschließlich Profiling) mit einer der folgenden Methoden deaktivieren:"
               ],
               "items": [
                 "Setzen Sie die Umgebungsvariable <code>REDIACC_TELEMETRY_DISABLED=1</code>",

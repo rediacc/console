@@ -11848,13 +11848,14 @@
                 "<strong>SSH işlemleri:</strong> hedef ana bilgisayar, kullanıcı adı, port numarası, çıkış kodu, yürütme süresi (komut içeriği veya çıktı toplanmaz)",
                 "<strong>API çağrıları:</strong> prosedür adı, istek süresi",
                 "<strong>Vault işlemleri:</strong> işlem türü ve süresi (gizli değerler, anahtarlar veya vault içerikleri toplanmaz)",
-                "<strong>Bridge yaşam döngüsü:</strong> başlatma, kapatma ve yeniden bağlanma olayları"
+                "<strong>Bridge yaşam döngüsü:</strong> başlatma, kapatma ve yeniden bağlanma olayları",
+                "<strong>Performans profilleme:</strong> CPU kullanım örnekleri ve bellek tahsis profilleri, otomatik olarak toplanır ve profilleme uç noktamıza gönderilir"
               ],
               "title": "7.1 Toplanan Veriler"
             },
             "bridgeOptOut": {
               "content": [
-                "Bridge telemetrisini devre dışı bırakmak için <code>REDIACC_TELEMETRY_DISABLED=1</code> ortam değişkenini ayarlayın."
+                "Bridge telemetrisini (profilleme dahil) devre dışı bırakmak için <code>REDIACC_TELEMETRY_DISABLED=1</code> ortam değişkenini ayarlayın."
               ],
               "title": "7.2 Nasıl Devre Dışı Bırakılır"
             }
@@ -11895,13 +11896,14 @@
                 "<strong>Ortam:</strong> işletim sistemi türü, Node.js çalışma zamanı sürümü, dağıtım ortamı",
                 "<strong>Hata bilgileri:</strong> komutlar başarısız olduğunda hata türü, hata mesajı ve sınırlı yığın izleme",
                 "<strong>API etkileşimleri:</strong> HTTP yöntemi, URL yolu, yanıt durum kodu, istek süresi",
-                "<strong>Oturum:</strong> rastgele oluşturulmuş oturum kimliği, komut yürütme süresi"
+                "<strong>Oturum:</strong> rastgele oluşturulmuş oturum kimliği, komut yürütme süresi",
+                "<strong>Performans profilleme:</strong> CPU kullanım örnekleri ve bellek tahsis profilleri, otomatik olarak toplanır ve profilleme uç noktamıza gönderilir"
               ],
               "title": "5.1 Toplanan Veriler"
             },
             "cliOptOut": {
               "content": [
-                "CLI telemetrisini şu yöntemlerden herhangi biriyle devre dışı bırakabilirsiniz:"
+                "CLI telemetrisini (profilleme dahil) şu yöntemlerden herhangi biriyle devre dışı bırakabilirsiniz:"
               ],
               "items": [
                 "<code>REDIACC_TELEMETRY_DISABLED=1</code> ortam değişkenini ayarlayın",

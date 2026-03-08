@@ -11862,13 +11862,14 @@
                 "<strong>Opérations SSH :</strong> hôte cible, nom d'utilisateur, numéro de port, code de sortie, durée d'exécution (aucun contenu de commande ni sortie n'est collecté)",
                 "<strong>Appels API :</strong> nom de la procédure, durée de la requête",
                 "<strong>Opérations de coffre-fort :</strong> type d'opération et durée (aucune valeur secrète, clé ou contenu de coffre-fort n'est collecté)",
-                "<strong>Cycle de vie du Bridge :</strong> événements de démarrage, d'arrêt et de reconnexion"
+                "<strong>Cycle de vie du Bridge :</strong> événements de démarrage, d'arrêt et de reconnexion",
+                "<strong>Profilage des performances :</strong> échantillons d'utilisation du processeur et profils d'allocation mémoire, collectés automatiquement et envoyés à notre point de terminaison de profilage"
               ],
               "title": "7.1 Données collectées"
             },
             "bridgeOptOut": {
               "content": [
-                "Définissez la variable d'environnement <code>REDIACC_TELEMETRY_DISABLED=1</code> pour désactiver la télémétrie du Bridge."
+                "Définissez la variable d'environnement <code>REDIACC_TELEMETRY_DISABLED=1</code> pour désactiver la télémétrie du Bridge (y compris le profilage)."
               ],
               "title": "7.2 Comment se désinscrire"
             }
@@ -11909,13 +11910,14 @@
                 "<strong>Environnement :</strong> type de système d'exploitation, version du runtime Node.js, environnement de déploiement",
                 "<strong>Informations d'erreur :</strong> type d'erreur, message d'erreur et trace de pile limitée en cas d'échec des commandes",
                 "<strong>Interactions API :</strong> méthode HTTP, chemin URL, code de statut de réponse, durée de la requête",
-                "<strong>Session :</strong> identifiant de session généré aléatoirement, durée d'exécution de la commande"
+                "<strong>Session :</strong> identifiant de session généré aléatoirement, durée d'exécution de la commande",
+                "<strong>Profilage des performances :</strong> échantillons d'utilisation du processeur et profils d'allocation mémoire, collectés automatiquement et envoyés à notre point de terminaison de profilage"
               ],
               "title": "5.1 Données collectées"
             },
             "cliOptOut": {
               "content": [
-                "Vous pouvez désactiver la télémétrie du CLI en utilisant l'une de ces méthodes :"
+                "Vous pouvez désactiver la télémétrie du CLI (y compris le profilage) en utilisant l'une de ces méthodes :"
               ],
               "items": [
                 "Définissez la variable d'environnement <code>REDIACC_TELEMETRY_DISABLED=1</code>",

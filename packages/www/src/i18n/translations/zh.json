@@ -11798,13 +11798,14 @@
                 "<strong>SSH操作：</strong>目标主机、用户名、端口号、退出码、执行持续时间（不收集命令内容或输出）",
                 "<strong>API调用：</strong>过程名称、请求持续时间",
                 "<strong>Vault操作：</strong>操作类型和持续时间（不收集密钥值、密钥或Vault内容）",
-                "<strong>Bridge生命周期：</strong>启动、关闭和重连事件"
+                "<strong>Bridge生命周期：</strong>启动、关闭和重连事件",
+                "<strong>性能分析：</strong>CPU使用率采样和内存分配分析，自动收集并发送至我们的性能分析端点"
               ],
               "title": "7.1 收集的数据"
             },
             "bridgeOptOut": {
               "content": [
-                "设置环境变量<code>REDIACC_TELEMETRY_DISABLED=1</code>以禁用Bridge遥测。"
+                "设置环境变量<code>REDIACC_TELEMETRY_DISABLED=1</code>以禁用Bridge遥测（包括性能分析）。"
               ],
               "title": "7.2 如何退出"
             }
@@ -11845,12 +11846,13 @@
                 "<strong>环境：</strong>操作系统类型、Node.js运行时版本、部署环境",
                 "<strong>错误信息：</strong>命令失败时的错误类型、错误消息和有限的堆栈追踪",
                 "<strong>API交互：</strong>HTTP方法、URL路径、响应状态码、请求持续时间",
-                "<strong>会话：</strong>随机生成的会话ID、命令执行持续时间"
+                "<strong>会话：</strong>随机生成的会话ID、命令执行持续时间",
+                "<strong>性能分析：</strong>CPU使用率采样和内存分配分析，自动收集并发送至我们的性能分析端点"
               ],
               "title": "5.1 收集的数据"
             },
             "cliOptOut": {
-              "content": ["您可以使用以下任一方法禁用CLI遥测："],
+              "content": ["您可以使用以下任一方法禁用CLI遥测（包括性能分析）："],
               "items": [
                 "设置环境变量<code>REDIACC_TELEMETRY_DISABLED=1</code>",
                 "在CLI配置文件中设置<code>telemetryEnabled: false</code>",

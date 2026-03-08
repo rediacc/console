@@ -107,6 +107,9 @@ export const TELEMETRY_DEFAULTS = {
 
   /** Default metric unit */
   UNIT: 'ms',
+
+  /** Pyroscope profiling endpoint */
+  PROFILING_ENDPOINT: 'https://profiles.rediacc.io',
 } as const;
 
 /**
