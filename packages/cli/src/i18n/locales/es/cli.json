@@ -1623,6 +1623,7 @@
       "doctor": "Diagnóstico del sistema",
       "machine": "Gestión de Máquinas",
       "mcp": "Servidor MCP",
+      "datastore": "Gestión de almacenamiento de datos",
       "ops": "Operaciones experimentales de VM",
       "organization": "Gestión de Organización",
       "permission": "Gestión de Permisos",

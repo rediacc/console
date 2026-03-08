@@ -1623,6 +1623,7 @@
       "doctor": "システム診断",
       "machine": "マシン管理",
       "mcp": "MCPサーバー",
+      "datastore": "データストア管理",
       "ops": "実験的 VM 操作",
       "organization": "組織管理",
       "permission": "権限管理",

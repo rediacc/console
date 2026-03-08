@@ -1623,6 +1623,7 @@
       "doctor": "系统诊断",
       "machine": "机器管理",
       "mcp": "MCP 服务器",
+      "datastore": "数据存储管理",
       "ops": "实验性 VM 操作",
       "organization": "组织管理",
       "permission": "权限管理",

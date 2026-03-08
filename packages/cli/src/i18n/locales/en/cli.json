@@ -1929,7 +1929,8 @@
       "ops": "Experimental VM Operations",
       "subscription": "Subscription Management",
       "agent": "Agent Utilities",
-      "mcp": "MCP Server"
+      "mcp": "MCP Server",
+      "datastore": "Datastore Management"
     },
     "errors": {
       "heading": "Common Error Messages",

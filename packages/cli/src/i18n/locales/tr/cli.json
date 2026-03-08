@@ -1623,6 +1623,7 @@
       "doctor": "Sistem Tanılama",
       "machine": "Makine Yönetimi",
       "mcp": "MCP Sunucusu",
+      "datastore": "Veri deposu yönetimi",
       "ops": "Deneysel VM Islemleri",
       "organization": "Organizasyon Yönetimi",
       "permission": "İzin Yönetimi",
