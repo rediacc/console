@@ -1,12 +1,12 @@
 ---
 title: "CLIアプリケーション"
 description: "プラットフォーム管理のためのRediaccコマンドラインインターフェースの完全ガイド"
-category: "Reference"
+category: "リファレンス"
 order: 2
 language: ja
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ja/cli.json
-sourceHash: "e00c6b80ba4ecf93"
+sourceHash: "a65370b6201e2a69"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -373,8 +373,17 @@ rdc config set-infra <machine> [options]
 | `--udp-ports <ports>` | {{t:cli.commands.config.setInfra.optionUdpPorts}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
+<a id="cli-local-config-set-ceph"></a>
+### 2.25 set-ceph
+
+{{t:cli.commands.config.setCeph.description}}
+
+```bash
+rdc config set-ceph
+```
+
 <a id="cli-local-config-show-infra"></a>
-### 2.25 show-infra
+### 2.26 show-infra
 
 {{t:cli.commands.config.showInfra.description}}
 
@@ -383,7 +392,7 @@ rdc config show-infra <machine>
 ```
 
 <a id="cli-local-config-push-infra"></a>
-### 2.26 push-infra
+### 2.27 push-infra
 
 {{t:cli.commands.config.pushInfra.description}}
 
@@ -398,13 +407,56 @@ rdc config push-infra <machine> [options]
 
 ---
 
+<a id="cli-local-group-datastore"></a>
+## 3. {{t:cli.docs.sectionTitles.datastore}}
+
+{{t:cli.commands.datastore.description}}
+
+<a id="cli-local-datastore-init"></a>
+### 3.1 init
+
+{{t:cli.commands.datastore.init.description}}
+
+```bash
+rdc datastore init
+```
+
+<a id="cli-local-datastore-fork"></a>
+### 3.2 fork
+
+{{t:cli.commands.datastore.fork.description}}
+
+```bash
+rdc datastore fork
+```
+
+<a id="cli-local-datastore-unfork"></a>
+### 3.3 unfork
+
+{{t:cli.commands.datastore.unfork.description}}
+
+```bash
+rdc datastore unfork
+```
+
+<a id="cli-local-datastore-status"></a>
+### 3.4 status
+
+{{t:cli.commands.datastore.status.description}}
+
+```bash
+rdc datastore status
+```
+
+---
+
 <a id="cli-local-group-store"></a>
-## 3. {{t:cli.docs.sectionTitles.store}}
+## 4. {{t:cli.docs.sectionTitles.store}}
 
 {{t:cli.commands.store.description}}
 
 <a id="cli-local-store-add"></a>
-### 3.1 add
+### 4.1 add
 
 {{t:cli.commands.store.add.description}}
 
@@ -435,7 +487,7 @@ rdc store add <name> [options]
 
 
 <a id="cli-local-store-list"></a>
-### 3.2 list
+### 4.2 list
 
 {{t:cli.commands.store.list.description}}
 
@@ -444,7 +496,7 @@ rdc store list
 ```
 
 <a id="cli-local-store-remove"></a>
-### 3.3 remove
+### 4.3 remove
 
 {{t:cli.commands.store.remove.description}}
 
@@ -453,7 +505,7 @@ rdc store remove <name>
 ```
 
 <a id="cli-local-store-push"></a>
-### 3.4 push
+### 4.4 push
 
 {{t:cli.commands.store.push.description}}
 
@@ -468,7 +520,7 @@ rdc store push [options]
 
 
 <a id="cli-local-store-pull"></a>
-### 3.5 pull
+### 4.5 pull
 
 {{t:cli.commands.store.pull.description}}
 
@@ -483,7 +535,7 @@ rdc store pull [options]
 
 
 <a id="cli-local-store-sync"></a>
-### 3.6 sync
+### 4.6 sync
 
 {{t:cli.commands.store.sync.description}}
 
@@ -500,12 +552,12 @@ rdc store sync [options]
 ---
 
 <a id="cli-local-group-machine"></a>
-## 4. {{t:cli.docs.sectionTitles.machine}}
+## 5. {{t:cli.docs.sectionTitles.machine}}
 
 {{t:cli.commands.machine.description}}
 
 <a id="cli-local-machine-list"></a>
-### 4.1 list
+### 5.1 list
 
 {{t:cli.commands.machine.list.description}}
 
@@ -522,7 +574,7 @@ rdc machine list [options]
 
 
 <a id="cli-local-machine-create"></a>
-### 4.2 create
+### 5.2 create
 
 {{t:cli.commands.machine.create.description}}
 
@@ -538,7 +590,7 @@ rdc machine create <name> [options]
 
 
 <a id="cli-local-machine-delete"></a>
-### 4.3 delete
+### 5.3 delete
 
 {{t:cli.commands.machine.delete.description}}
 
@@ -554,7 +606,7 @@ rdc machine delete <name> [options]
 
 
 <a id="cli-local-machine-update"></a>
-### 4.4 update
+### 5.4 update
 
 {{t:cli.commands.machine.update.description}}
 
@@ -563,7 +615,7 @@ rdc machine update
 ```
 
 <a id="cli-local-machine-health"></a>
-### 4.5 health
+### 5.5 health
 
 {{t:cli.commands.machine.health.description}}
 
@@ -579,7 +631,7 @@ rdc machine health <name> [options]
 
 
 <a id="cli-local-machine-containers"></a>
-### 4.6 containers
+### 5.6 containers
 
 {{t:cli.commands.machine.containers.description}}
 
@@ -594,7 +646,7 @@ rdc machine containers <name> [options]
 
 
 <a id="cli-local-machine-services"></a>
-### 4.7 services
+### 5.7 services
 
 {{t:cli.commands.machine.services.description}}
 
@@ -609,7 +661,7 @@ rdc machine services <name> [options]
 
 
 <a id="cli-local-machine-status"></a>
-### 4.8 status
+### 5.8 status
 
 {{t:cli.commands.machine.status.description}}
 
@@ -623,7 +675,7 @@ rdc machine status <name> [options]
 
 
 <a id="cli-local-machine-vault-status"></a>
-### 4.9 vault-status
+### 5.9 vault-status
 
 {{t:cli.commands.machine.vaultStatus.description}}
 
@@ -637,7 +689,7 @@ rdc machine vault-status <name> [options]
 
 
 <a id="cli-local-machine-repos"></a>
-### 4.10 repos
+### 5.10 repos
 
 {{t:cli.commands.machine.repos.description}}
 
@@ -652,7 +704,7 @@ rdc machine repos <name> [options]
 
 
 <a id="cli-local-machine-test-connection"></a>
-### 4.11 test-connection
+### 5.11 test-connection
 
 {{t:cli.commands.machine.testConnection.description}}
 
@@ -676,7 +728,7 @@ rdc machine test-connection [options]
 > **{{t:cli.docs.admonitions.tip}}**: {{t:cli.docs.supplements.machine.testConnection.tip}}
 
 <a id="cli-local-machine-info"></a>
-### 4.12 info
+### 5.12 info
 
 {{t:cli.commands.machine.info.description}}
 
@@ -692,12 +744,12 @@ rdc machine info <name> [options]
 ---
 
 <a id="cli-local-group-mcp"></a>
-## 5. {{t:cli.docs.sectionTitles.mcp}}
+## 6. {{t:cli.docs.sectionTitles.mcp}}
 
 {{t:cli.commands.mcp.description}}
 
 <a id="cli-local-mcp-serve"></a>
-### 5.1 serve
+### 6.1 serve
 
 {{t:cli.commands.mcp.serve.description}}
 
@@ -714,12 +766,12 @@ rdc mcp serve [options]
 ---
 
 <a id="cli-local-group-repo"></a>
-## 6. {{t:cli.docs.sectionTitles.repo}}
+## 7. {{t:cli.docs.sectionTitles.repo}}
 
 {{t:cli.commands.repo.description}}
 
 <a id="cli-local-repo-mount"></a>
-### 6.1 mount
+### 7.1 mount
 
 {{t:cli.commands.repo.mount.description}}
 
@@ -736,7 +788,7 @@ rdc repo mount <name> [options]
 
 
 <a id="cli-local-repo-unmount"></a>
-### 6.2 unmount
+### 7.2 unmount
 
 {{t:cli.commands.repo.unmount.description}}
 
@@ -753,7 +805,7 @@ rdc repo unmount <name> [options]
 
 
 <a id="cli-local-repo-up"></a>
-### 6.3 up
+### 7.3 up
 
 {{t:cli.commands.repo.up.description}}
 
@@ -774,7 +826,7 @@ rdc repo up <name> [options]
 
 
 <a id="cli-local-repo-up-all"></a>
-### 6.4 up-all
+### 7.4 up-all
 
 {{t:cli.commands.repo.upAll.description}}
 
@@ -795,7 +847,7 @@ rdc repo up-all [options]
 
 
 <a id="cli-local-repo-down"></a>
-### 6.5 down
+### 7.5 down
 
 {{t:cli.commands.repo.down.description}}
 
@@ -814,7 +866,7 @@ rdc repo down <name> [options]
 
 
 <a id="cli-local-repo-status"></a>
-### 6.6 status
+### 7.6 status
 
 {{t:cli.commands.repo.status.description}}
 
@@ -830,7 +882,7 @@ rdc repo status <name> [options]
 
 
 <a id="cli-local-repo-list"></a>
-### 6.7 list
+### 7.7 list
 
 {{t:cli.commands.repo.list.description}}
 
@@ -846,7 +898,7 @@ rdc repo list [options]
 
 
 <a id="cli-local-repo-create"></a>
-### 6.8 create
+### 7.8 create
 
 {{t:cli.commands.repo.create.description}}
 
@@ -863,7 +915,7 @@ rdc repo create <name> [options]
 
 
 <a id="cli-local-repo-delete"></a>
-### 6.9 delete
+### 7.9 delete
 
 {{t:cli.commands.repo.delete.description}}
 
@@ -880,7 +932,7 @@ rdc repo delete <name> [options]
 
 
 <a id="cli-local-repo-fork"></a>
-### 6.10 fork
+### 7.10 fork
 
 {{t:cli.commands.repo.fork.description}}
 
@@ -897,7 +949,7 @@ rdc repo fork <parent> [options]
 
 
 <a id="cli-local-repo-resize"></a>
-### 6.11 resize
+### 7.11 resize
 
 {{t:cli.commands.repo.resize.description}}
 
@@ -914,7 +966,7 @@ rdc repo resize <name> [options]
 
 
 <a id="cli-local-repo-expand"></a>
-### 6.12 expand
+### 7.12 expand
 
 {{t:cli.commands.repo.expand.description}}
 
@@ -931,7 +983,7 @@ rdc repo expand <name> [options]
 
 
 <a id="cli-local-repo-validate"></a>
-### 6.13 validate
+### 7.13 validate
 
 {{t:cli.commands.repo.validate.description}}
 
@@ -947,7 +999,7 @@ rdc repo validate <name> [options]
 
 
 <a id="cli-local-repo-autostart"></a>
-### 6.14 autostart
+### 7.14 autostart
 
 {{t:cli.commands.repo.autostart.description}}
 
@@ -1032,7 +1084,7 @@ rdc repo autostart list [options]
 
 
 <a id="cli-local-repo-ownership"></a>
-### 6.15 ownership
+### 7.15 ownership
 
 {{t:cli.commands.repo.ownership.description}}
 
@@ -1049,7 +1101,7 @@ rdc repo ownership <name> [options]
 
 
 <a id="cli-local-repo-template"></a>
-### 6.16 template
+### 7.16 template
 
 {{t:cli.commands.repo.template.description}}
 
@@ -1069,12 +1121,12 @@ rdc repo template <name> [options]
 ---
 
 <a id="cli-local-group-storage"></a>
-## 7. {{t:cli.docs.sectionTitles.storage}}
+## 8. {{t:cli.docs.sectionTitles.storage}}
 
 {{t:cli.commands.storage.description}}
 
 <a id="cli-local-storage-list"></a>
-### 7.1 list
+### 8.1 list
 
 {{t:cli.commands.storage.list.description}}
 
@@ -1091,7 +1143,7 @@ rdc storage list [options]
 
 
 <a id="cli-local-storage-browse"></a>
-### 7.2 browse
+### 8.2 browse
 
 {{t:cli.commands.storage.browse.description}}
 
@@ -1105,7 +1157,7 @@ rdc storage browse <name> [options]
 
 
 <a id="cli-local-storage-pull"></a>
-### 7.3 pull
+### 8.3 pull
 
 {{t:cli.commands.storage.pull.description}}
 
@@ -1124,12 +1176,12 @@ rdc storage pull <storageName> [options]
 ---
 
 <a id="cli-local-group-sync"></a>
-## 8. {{t:cli.docs.sectionTitles.sync}}
+## 9. {{t:cli.docs.sectionTitles.sync}}
 
 {{t:cli.commands.sync.description}}
 
 <a id="cli-local-sync-upload"></a>
-### 8.1 upload
+### 9.1 upload
 
 {{t:cli.commands.sync.upload.description}}
 
@@ -1152,7 +1204,7 @@ rdc sync upload [options]
 
 
 <a id="cli-local-sync-download"></a>
-### 8.2 download
+### 9.2 download
 
 {{t:cli.commands.sync.download.description}}
 
@@ -1175,7 +1227,7 @@ rdc sync download [options]
 
 
 <a id="cli-local-sync-status"></a>
-### 8.3 status
+### 9.3 status
 
 {{t:cli.commands.sync.status.description}}
 
@@ -1195,12 +1247,12 @@ rdc sync status [options]
 ---
 
 <a id="cli-local-group-vscode"></a>
-## 9. {{t:cli.docs.sectionTitles.vscode}}
+## 10. {{t:cli.docs.sectionTitles.vscode}}
 
 {{t:cli.commands.vscode.description}}
 
 <a id="cli-local-vscode-connect"></a>
-### 9.1 connect
+### 10.1 connect
 
 {{t:cli.commands.vscode.connect.description}}
 
@@ -1221,7 +1273,7 @@ rdc vscode connect [options]
 
 
 <a id="cli-local-vscode-list"></a>
-### 9.2 list
+### 10.2 list
 
 {{t:cli.commands.vscode.list.description}}
 
@@ -1230,7 +1282,7 @@ rdc vscode list
 ```
 
 <a id="cli-local-vscode-cleanup"></a>
-### 9.3 cleanup
+### 10.3 cleanup
 
 {{t:cli.commands.vscode.cleanup.description}}
 
@@ -1245,7 +1297,7 @@ rdc vscode cleanup [options]
 
 
 <a id="cli-local-vscode-check"></a>
-### 9.4 check
+### 10.4 check
 
 {{t:cli.commands.vscode.check.description}}
 
@@ -1261,12 +1313,12 @@ rdc vscode check [options]
 ---
 
 <a id="cli-local-group-term"></a>
-## 10. {{t:cli.docs.sectionTitles.term}}
+## 11. {{t:cli.docs.sectionTitles.term}}
 
 {{t:cli.commands.term.description}}
 
 <a id="cli-local-term-connect"></a>
-### 10.1 connect
+### 11.1 connect
 
 {{t:cli.commands.term.connect.description}}
 
@@ -1290,12 +1342,12 @@ rdc term connect [options]
 ---
 
 <a id="cli-local-group-protocol"></a>
-## 11. {{t:cli.docs.sectionTitles.protocol}}
+## 12. {{t:cli.docs.sectionTitles.protocol}}
 
 {{t:cli.commands.protocol.description}}
 
 <a id="cli-local-protocol-register"></a>
-### 11.1 register
+### 12.1 register
 
 {{t:cli.commands.protocol.register.description}}
 
@@ -1310,7 +1362,7 @@ rdc protocol register [options]
 
 
 <a id="cli-local-protocol-unregister"></a>
-### 11.2 unregister
+### 12.2 unregister
 
 {{t:cli.commands.protocol.unregister.description}}
 
@@ -1324,7 +1376,7 @@ rdc protocol unregister [options]
 
 
 <a id="cli-local-protocol-status"></a>
-### 11.3 status
+### 12.3 status
 
 {{t:cli.commands.protocol.status.description}}
 
@@ -1333,7 +1385,7 @@ rdc protocol status
 ```
 
 <a id="cli-local-protocol-open"></a>
-### 11.4 open
+### 12.4 open
 
 {{t:cli.commands.protocol.open.description}}
 
@@ -1342,7 +1394,7 @@ rdc protocol open <url>
 ```
 
 <a id="cli-local-protocol-build"></a>
-### 11.5 build
+### 12.5 build
 
 {{t:cli.commands.protocol.build.description}}
 
@@ -1361,7 +1413,7 @@ rdc protocol build [options]
 
 
 <a id="cli-local-protocol-parse"></a>
-### 11.6 parse
+### 12.6 parse
 
 {{t:cli.commands.protocol.parse.description}}
 
@@ -1372,12 +1424,12 @@ rdc protocol parse <url>
 ---
 
 <a id="cli-local-group-snapshot"></a>
-## 12. {{t:cli.docs.sectionTitles.snapshot}}
+## 13. {{t:cli.docs.sectionTitles.snapshot}}
 
 {{t:cli.commands.snapshot.description}}
 
 <a id="cli-local-snapshot-create"></a>
-### 12.1 create
+### 13.1 create
 
 {{t:cli.commands.snapshot.create.description}}
 
@@ -1393,7 +1445,7 @@ rdc snapshot create <repo> [options]
 
 
 <a id="cli-local-snapshot-list"></a>
-### 12.2 list
+### 13.2 list
 
 {{t:cli.commands.snapshot.list.description}}
 
@@ -1408,7 +1460,7 @@ rdc snapshot list [repo] [options]
 
 
 <a id="cli-local-snapshot-delete"></a>
-### 12.3 delete
+### 13.3 delete
 
 {{t:cli.commands.snapshot.delete.description}}
 
@@ -1426,12 +1478,12 @@ rdc snapshot delete <repo> <snapshot-name> [options]
 ---
 
 <a id="cli-local-group-backup"></a>
-## 13. {{t:cli.docs.sectionTitles.backup}}
+## 14. {{t:cli.docs.sectionTitles.backup}}
 
 {{t:cli.commands.backup.description}}
 
 <a id="cli-local-backup-push"></a>
-### 13.1 push
+### 14.1 push
 
 {{t:cli.commands.backup.push.description}}
 
@@ -1454,7 +1506,7 @@ rdc backup push <repo> [options]
 
 
 <a id="cli-local-backup-pull"></a>
-### 13.2 pull
+### 14.2 pull
 
 {{t:cli.commands.backup.pull.description}}
 
@@ -1474,7 +1526,7 @@ rdc backup pull <repo> [options]
 
 
 <a id="cli-local-backup-list"></a>
-### 13.3 list
+### 14.3 list
 
 {{t:cli.commands.backup.list.description}}
 
@@ -1493,7 +1545,7 @@ rdc backup list [options]
 
 
 <a id="cli-local-backup-sync"></a>
-### 13.4 sync
+### 14.4 sync
 
 {{t:cli.commands.backup.sync.description}}
 
@@ -1512,7 +1564,7 @@ rdc backup sync [options]
 
 
 <a id="cli-local-backup-schedule"></a>
-### 13.5 schedule
+### 14.5 schedule
 
 {{t:cli.commands.backup.schedule.description}}
 
@@ -1559,10 +1611,10 @@ rdc backup schedule push <machine> [options]
 ---
 
 <a id="cli-local-group-shortcuts"></a>
-## 14. {{t:cli.docs.sectionTitles.shortcuts}}
+## 15. {{t:cli.docs.sectionTitles.shortcuts}}
 
 <a id="cli-local-shortcuts-run"></a>
-### 14.1 run
+### 15.1 run
 
 {{t:cli.commands.shortcuts.run.description}}
 
@@ -1571,7 +1623,7 @@ rdc run
 ```
 
 <a id="cli-local-shortcuts-trace"></a>
-### 14.2 trace
+### 15.2 trace
 
 {{t:cli.commands.shortcuts.trace.description}}
 
@@ -1580,7 +1632,7 @@ rdc trace
 ```
 
 <a id="cli-local-shortcuts-cancel"></a>
-### 14.3 cancel
+### 15.3 cancel
 
 {{t:cli.commands.shortcuts.cancel.description}}
 
@@ -1589,7 +1641,7 @@ rdc cancel
 ```
 
 <a id="cli-local-shortcuts-retry"></a>
-### 14.4 retry
+### 15.4 retry
 
 {{t:cli.commands.shortcuts.retry.description}}
 
@@ -1600,12 +1652,12 @@ rdc retry
 ---
 
 <a id="cli-local-group-subscription"></a>
-## 15. {{t:cli.docs.sectionTitles.subscription}}
+## 16. {{t:cli.docs.sectionTitles.subscription}}
 
 {{t:cli.commands.subscription.description}}
 
 <a id="cli-local-subscription-login"></a>
-### 15.1 login
+### 16.1 login
 
 {{t:cli.commands.subscription.login.description}}
 
@@ -1620,7 +1672,7 @@ rdc subscription login [options]
 
 
 <a id="cli-local-subscription-status"></a>
-### 15.2 status
+### 16.2 status
 
 {{t:cli.commands.subscription.status.description}}
 
@@ -1634,7 +1686,7 @@ rdc subscription status [options]
 
 
 <a id="cli-local-subscription-refresh"></a>
-### 15.3 refresh
+### 16.3 refresh
 
 {{t:cli.commands.subscription.refresh.description}}
 
@@ -1650,7 +1702,7 @@ rdc subscription refresh [options]
 ---
 
 <a id="cli-local-group-update"></a>
-## 16. {{t:cli.docs.sectionTitles.update}}
+## 17. {{t:cli.docs.sectionTitles.update}}
 
 {{t:cli.commands.update.description}}
 
@@ -1670,7 +1722,7 @@ rdc update [options]
 ---
 
 <a id="cli-local-group-doctor"></a>
-## 17. {{t:cli.docs.sectionTitles.doctor}}
+## 18. {{t:cli.docs.sectionTitles.doctor}}
 
 {{t:cli.commands.doctor.description}}
 
@@ -1682,12 +1734,12 @@ rdc doctor
 ---
 
 <a id="cli-local-group-ops"></a>
-## 18. {{t:cli.docs.sectionTitles.ops}}
+## 19. {{t:cli.docs.sectionTitles.ops}}
 
 {{t:cli.commands.ops.description}}
 
 <a id="cli-local-ops-up"></a>
-### 18.1 up
+### 19.1 up
 
 {{t:cli.commands.ops.up.description}}
 
@@ -1708,7 +1760,7 @@ rdc ops up [options]
 
 
 <a id="cli-local-ops-down"></a>
-### 18.2 down
+### 19.2 down
 
 {{t:cli.commands.ops.down.description}}
 
@@ -1723,7 +1775,7 @@ rdc ops down [options]
 
 
 <a id="cli-local-ops-status"></a>
-### 18.3 status
+### 19.3 status
 
 {{t:cli.commands.ops.status.description}}
 
@@ -1737,7 +1789,7 @@ rdc ops status [options]
 
 
 <a id="cli-local-ops-ssh"></a>
-### 18.4 ssh
+### 19.4 ssh
 
 {{t:cli.commands.ops.ssh.description}}
 
@@ -1752,7 +1804,7 @@ rdc ops ssh <vmId> [command...] [options]
 
 
 <a id="cli-local-ops-setup"></a>
-### 18.5 setup
+### 19.5 setup
 
 {{t:cli.commands.ops.setup.description}}
 
@@ -1766,7 +1818,7 @@ rdc ops setup [options]
 
 
 <a id="cli-local-ops-check"></a>
-### 18.6 check
+### 19.6 check
 
 {{t:cli.commands.ops.check.description}}
 

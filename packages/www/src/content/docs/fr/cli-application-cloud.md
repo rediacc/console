@@ -1,7 +1,7 @@
 ---
 title: "Application CLI (Cloud / Expérimental)"
 description: "Commandes cloud exclusives pour la CLI Rediacc — authentification, équipes, organisations et gestion multi-tenant"
-category: "Reference"
+category: "Référence"
 order: 3
 language: fr
 generated: true

@@ -1,7 +1,7 @@
 ---
 title: "Приложение CLI (Облако / Экспериментальный)"
 description: "Облачные команды для Rediacc CLI — аутентификация, команды, организации и мультитенантное управление"
-category: "Reference"
+category: "Справочник"
 order: 3
 language: ru
 generated: true

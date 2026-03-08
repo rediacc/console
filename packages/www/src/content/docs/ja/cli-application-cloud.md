@@ -1,7 +1,7 @@
 ---
 title: "CLIアプリケーション（クラウド / 実験的）"
 description: "Rediacc CLIのクラウド専用コマンド — 認証、チーム、組織、マルチテナント管理"
-category: "Reference"
+category: "リファレンス"
 order: 3
 language: ja
 generated: true

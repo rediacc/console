@@ -1,7 +1,7 @@
 ---
 title: "CLI Uygulaması (Bulut / Deneysel)"
 description: "Rediacc CLI için bulut özel komutları — kimlik doğrulama, ekipler, organizasyonlar ve çok kiracılı yönetim"
-category: "Reference"
+category: "Başvuru"
 order: 3
 language: tr
 generated: true
