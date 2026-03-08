@@ -421,6 +421,20 @@
         "description": "عرض تعيينات GUID للمستودعات في الإعدادات الحالية",
         "noRepositories": "لا توجد مستودعات مكونة. أضف واحداً باستخدام: rdc config add-repository <name> --guid <guid>"
       },
+      "listArchived": {
+        "description": "عرض بيانات الاعتماد المؤرشفة للمستودعات",
+        "noArchived": "لا توجد مستودعات مؤرشفة"
+      },
+      "restoreArchived": {
+        "description": "استعادة بيانات اعتماد مستودع مؤرشف",
+        "optionName": "استعادة باسم مختلف",
+        "success": "تمت استعادة \"{{name}}\" ({{guid}})"
+      },
+      "purgeArchived": {
+        "description": "حذف جميع بيانات الاعتماد المؤرشفة نهائياً",
+        "noArchived": "لا توجد مستودعات مؤرشفة للحذف",
+        "success": "تم حذف {{count}} من بيانات الاعتماد المؤرشفة"
+      },
       "scanKeys": {
         "completed": "تم فحص {{count}}/{{total}} آلة",
         "description": "فحص مفاتيح مضيف SSH للآلات في الإعدادات الحالية",
@@ -935,7 +949,8 @@
         "completed": "تم حذف المستودع",
         "description": "حذف مستودع",
         "failed": "فشل حذف المستودع",
-        "removed": "تمت إزالة \"{{repository}}\" من التكوين",
+        "archived": "تم أرشفة بيانات اعتماد \"{{repository}}\"",
+        "restoreHint": "للاستعادة: rdc config restore-archived {{guid}}",
         "starting": "جارٍ حذف \"{{repository}}\" على \"{{machine}}\"..."
       },
       "description": "نشر وإدارة المستودعات المشفرة على الأجهزة",
@@ -956,7 +971,7 @@
       },
       "fork": {
         "alreadyExists": "المستودع \"{{name}}\" موجود بالفعل في السياق",
-        "completed": "تم إنشاء النسخة",
+        "completed": "تم إنشاء النسخة. للنشر محلياً: repo up {{repository}} -m {{machine}} --mount. لترحيل النسخة إلى جهاز آخر: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
         "description": "إنشاء نسخة CoW (نسخ عند الكتابة) من مستودع",
         "failed": "فشل إنشاء النسخة",
         "registered": "تم تسجيل النسخة \"{{repository}}\" ({{guid}}، شبكة {{networkId}})",
@@ -1021,6 +1036,7 @@
         "failed": "فشل بدء الخدمات",
         "grandOption": "اسم المستودع الرئيسي (يُحلّ تلقائيًا إلى GUID)",
         "mountOption": "تثبيت المستودع أولاً",
+        "checkpointOption": "استعادة الحاويات من نقطة تفتيش CRIU بعد النشر (لترحيل العمليات الحية من جهاز آخر)",
         "prepOnlyOption": "تشغيل خطوة التحضير فقط",
         "starting": "جارٍ بدء الخدمات لـ \"{{repository}}\" على \"{{machine}}\"..."
       },

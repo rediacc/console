@@ -4,7 +4,7 @@ description: "تخطيط المجلدات، وأوامر renet، وخدمات sy
 category: "Concepts"
 order: 3
 language: ar
-sourceHash: "fdfadf580c39b1fe"
+sourceHash: "6afcaaa1867e3244"
 ---
 
 # مرجع الخادم
@@ -24,12 +24,11 @@ sourceHash: "fdfadf580c39b1fe"
 ├── mounts/                            # Mount points for decrypted repos
 │   └── {uuid}/
 │       ├── .rediacc.json              # Service → IP slot mapping
+│       ├── .rediacc/docker/           # Docker daemon data (images, containers)
 │       └── {service-name}/            # Service directory
 │           ├── docker-compose.yml     # Compose definition
 │           ├── Rediaccfile            # Lifecycle hooks (bash)
 │           └── data/                  # Persistent data
-├── interim/                           # Docker overlay2 data (per-repo)
-│   └── {uuid}/docker/data/
 ├── immovable/                         # Read-only shared content
 ├── .credentials/                      # Encrypted secrets
 └── .backup-*/                         # BTRFS snapshots

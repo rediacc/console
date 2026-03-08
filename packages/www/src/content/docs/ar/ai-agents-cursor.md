@@ -4,6 +4,7 @@ description: تهيئة بيئة تطوير Cursor للعمل مع بنية Redi
 category: Guides
 order: 32
 language: ar
+sourceHash: "6da857eb870d511e"
 ---
 
 يتكامل Cursor مع Rediacc من خلال أوامر الطرفية وملف التهيئة `.cursorrules`.

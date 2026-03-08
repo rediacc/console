@@ -4,6 +4,7 @@ description: Готовый шаблон для настройки Claude Code, 
 category: Reference
 order: 50
 language: ru
+sourceHash: "65feffe76efad39d"
 ---
 
 Используйте этот шаблон для настройки AI-ассистентов для кодирования (Claude Code, Cursor, Cline, Windsurf) для автономного управления инфраструктурой Rediacc. Скопируйте блок ниже в файл `CLAUDE.md`, `.cursorrules` или аналогичный файл конфигурации агента в вашем проекте.

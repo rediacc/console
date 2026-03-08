@@ -4,7 +4,7 @@ description: "Solutions aux problèmes courants avec SSH, la configuration, les 
 category: "Guides"
 order: 10
 language: fr
-sourceHash: 4c3163007e6a3326
+sourceHash: "1aea651c31f439b8"
 ---
 
 # Dépannage
@@ -43,8 +43,8 @@ Cette commande récupère de nouvelles clés d'hôte et met à jour votre config
 ## Les services ne démarrent pas
 
 - Vérifiez la syntaxe du Rediaccfile : ce doit être du Bash valide
-- Assurez-vous que les fichiers `docker compose` utilisent `network_mode: host`
-- Vérifiez que les images Docker sont accessibles (envisagez `docker compose pull` dans `prep()`)
+- Assurez-vous que votre Rediaccfile utilise `renet compose --` (et non `docker compose`)
+- Vérifiez que les images Docker sont accessibles (envisagez `renet compose -- pull` dans `prep()`)
 - Consultez les journaux des conteneurs via le socket Docker du dépôt :
 
 ```bash

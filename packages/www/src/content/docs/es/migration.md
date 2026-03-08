@@ -4,7 +4,7 @@ description: "Migrar proyectos existentes a repositorios cifrados de Rediacc."
 category: "Guides"
 order: 11
 language: es
-sourceHash: "feb1fcafc824b4b2"
+sourceHash: "977de49e158a26c0"
 ---
 
 # Guía de migración
@@ -104,15 +104,15 @@ Cree un `Rediaccfile` en la raíz de su proyecto. Este script Bash define cómo 
 #!/bin/bash
 
 prep() {
-    docker compose pull
+    renet compose -- pull
 }
 
 up() {
-    docker compose up -d
+    renet compose -- up -d
 }
 
 down() {
-    docker compose down
+    renet compose -- down
 }
 ```
 
@@ -124,7 +124,9 @@ Las tres funciones del ciclo de vida:
 | `up()` | Iniciar servicios | Fallo en raíz es crítico; fallos en subdirectorios se registran y continúan |
 | `down()` | Detener servicios | Mejor esfuerzo: siempre intenta todo |
 
-> **Importante:** Use `docker` directamente en su Rediaccfile — nunca `sudo docker`. El comando `sudo` restablece las variables de entorno, lo que causa que `DOCKER_HOST` se pierda y los contenedores se creen en el Docker daemon del sistema en lugar del daemon aislado del repositorio. Las funciones del Rediaccfile ya se ejecutan con privilegios suficientes. Vea [Servicios](/es/docs/services#environment-variables) para más detalles.
+> **Importante:** Use siempre `renet compose --` en lugar de `docker compose` en su Rediaccfile. El wrapper `renet compose` impone la red de host, las capacidades de checkpoint/restore de CRIU, la asignación de IP y el descubrimiento de servicios requeridos por renet-proxy. Usar `docker compose` directamente omite todo esto y será rechazado durante la validación.
+>
+> Nunca use `sudo docker` tampoco — `sudo` restablece las variables de entorno, incluyendo `DOCKER_HOST`, lo que causa que los contenedores se creen en el Docker daemon del sistema en lugar del daemon aislado del repositorio. Las funciones del Rediaccfile ya se ejecutan con privilegios suficientes.
 
 Vea [Servicios](/es/docs/services) para detalles completos sobre Rediaccfiles, diseños multi-servicio y orden de ejecución.
 
@@ -167,8 +169,6 @@ services:
 services:
   postgres:
     image: postgres:16
-    network_mode: host
-    restart: unless-stopped
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
@@ -177,14 +177,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    network_mode: host
-    restart: unless-stopped
     command: redis-server --bind ${REDIS_IP} --port 6379
 
   app:
     image: my-app:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
       REDIS_URL: redis://${REDIS_IP}:6379
@@ -193,10 +189,11 @@ services:
 
 Cambios principales:
 
-1. **Agregar `network_mode: host`** a cada servicio
-2. **Eliminar las asignaciones de `ports:`** (no son necesarias con red de host)
-3. **Vincular servicios a variables de entorno `${SERVICE_IP}`** (inyectadas automáticamente por Rediacc)
-4. **Referenciar otros servicios por su IP** en lugar de nombres DNS de Docker (por ejemplo, `${POSTGRES_IP}` en lugar de `postgres`)
+1. **Eliminar las asignaciones de `ports:`** — `renet compose` usa red de host y elimina las asignaciones de puertos automáticamente
+2. **Eliminar `network_mode: host`** — `renet compose` lo agrega automáticamente
+3. **Eliminar `restart: always` o `restart: unless-stopped`** — entran en conflicto con CRIU checkpoint/restore (Docker inicia automáticamente los contenedores antes de que checkpoint restore pueda ejecutarse). Use `restart: on-failure` si necesita comportamiento de reinicio, o omítalo completamente — Rediaccfile `up()`/`down()` gestiona el ciclo de vida del contenedor
+4. **Vincular servicios a variables de entorno `${SERVICE_IP}`** (inyectadas automáticamente por Rediacc)
+5. **Referenciar otros servicios por su IP** en lugar de nombres DNS de Docker (por ejemplo, `${POSTGRES_IP}` en lugar de `postgres`)
 
 Las variables `{SERVICE}_IP` se generan automáticamente a partir de los nombres de servicio de su archivo compose. La convención de nombres: mayúsculas, guiones reemplazados por guiones bajos, con sufijo `_IP`. Por ejemplo, `listmonk-app` se convierte en `LISTMONK_APP_IP`.
 

@@ -4,6 +4,7 @@ description: Konfiguration der Cursor-IDE für die Arbeit mit der Rediacc-Infras
 category: Guides
 order: 32
 language: de
+sourceHash: "6da857eb870d511e"
 ---
 
 Cursor integriert sich mit Rediacc über Terminal-Befehle und die Konfigurationsdatei `.cursorrules`.

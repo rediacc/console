@@ -369,7 +369,7 @@
         "failed": "Failed to restore config \"{{name}}\" from backup"
       },
       "addMachine": {
-        "description": "Add a machine to the current config",
+        "description": "Add a machine to the current config. Auto-scans SSH host keys. After adding, run: config setup-machine <name> to install Docker and create the btrfs datastore",
         "success": "Machine \"{{name}}\" added ({{user}}@{{ip}})"
       },
       "scanKeys": {
@@ -436,6 +436,20 @@
         "description": "List repository GUID mappings in the current config",
         "noRepositories": "No repositories configured. Add one with: rdc config add-repository <name> --guid <guid>"
       },
+      "listArchived": {
+        "description": "List archived repository credentials",
+        "noArchived": "No archived repositories"
+      },
+      "restoreArchived": {
+        "description": "Restore an archived repository credential",
+        "optionName": "Restore with a different name",
+        "success": "Restored \"{{name}}\" ({{guid}})"
+      },
+      "purgeArchived": {
+        "description": "Permanently delete all archived credentials",
+        "noArchived": "No archived repositories to purge",
+        "success": "Purged {{count}} archived credential(s)"
+      },
       "setInfra": {
         "description": "Set infrastructure configuration for a machine",
         "optionPublicIPv4": "Public IPv4 address",
@@ -455,7 +469,7 @@
         "noInfra": "No infrastructure config set for \"{{name}}\""
       },
       "pushInfra": {
-        "description": "Push infrastructure configuration to remote machine",
+        "description": "Push infrastructure configuration to remote machine (installs Traefik reverse proxy + rediacc-router service). Required before deploying repos on a new machine. Run 'config set-infra <machine>' first to configure",
         "success": "Infrastructure config pushed to \"{{name}}\"",
         "proxyInstallWarning": "Proxy install failed (code {{code}}). Run manually: sudo renet proxy install",
         "installingProxy": "Installing and starting proxy..."
@@ -944,7 +958,7 @@
       }
     },
     "repo": {
-      "description": "Deploy and manage encrypted repositories on machines. Containers are managed via renet compose (never raw docker compose). IPs and networking are auto-allocated",
+      "description": "Deploy and manage encrypted repositories on machines. Use renet compose (never raw docker compose). Renet auto-injects network_mode:host (compose ports: are ignored), rediacc.* labels, and per-service loopback IPs. Containers MUST bind to their allocated IP (not 0.0.0.0) to avoid port conflicts. STORAGE: Use ${REPOSITORY_PATH}/... bind mounts for all persistent data (e.g. volumes: ['${REPOSITORY_PATH}/data:/data']). Do NOT use Docker named volumes — they live outside the repo and won't be included in forks/backups. HTTPS routing: (1) Auto-route (default, fork-friendly): renet auto-generates https://{serviceName}-{networkId}.{baseDomain} — the compose service name becomes the URL prefix (e.g. service 'myapp' → myapp-3000.rediacc.io). Use rediacc.service_port label for non-80 ports. (2) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true + traefik.http.routers/services labels. Rediaccfile lifecycle: prep() runs on EVERY deploy with fresh env vars (generate IP-dependent configs here), then up() starts containers. ENV VARS — two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. OPENCLAW_IP), ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REPOSITORY_NETWORK_ID env vars into each container. Use SERVICE_IP in your app code to bind to the correct IP. Proxy routes take ~3s to become active after deploy",
       "machineOption": "Target machine name",
       "noCredential": "Warning: Repository \"{{name}}\" has no credential set. Operations on encrypted repos may fail.",
       "mount": {
@@ -962,8 +976,9 @@
         "failed": "Unmount failed"
       },
       "up": {
-        "description": "Deploy or update a repository (mount, run Rediaccfile prep/up which calls renet compose)",
-        "mountOption": "Mount repository first",
+        "description": "Deploy or update a repository (mount, run Rediaccfile prep/up which calls renet compose). Proxy routes take ~3s to become active after deploy. Use --mount for first deploy or forked repos. Use --checkpoint to restore containers from a CRIU checkpoint (for live process migration)",
+        "mountOption": "Mount repository first (required for forked repos on first deploy)",
+        "checkpointOption": "Restore containers from CRIU checkpoint after deploy (for live process migration from another machine)",
         "prepOnlyOption": "Only run preparation step",
         "grandOption": "Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent",
         "starting": "Starting services for \"{{repository}}\" on \"{{machine}}\"...",
@@ -1015,15 +1030,16 @@
         "description": "Delete a repository",
         "starting": "Deleting \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Repository deleted",
-        "removed": "Removed \"{{repository}}\" from config",
+        "archived": "Credential for \"{{repository}}\" archived",
+        "restoreHint": "Restore with: rdc config restore-archived {{guid}}",
         "failed": "Repository deletion failed"
       },
       "fork": {
-        "description": "Create a CoW (Copy-on-Write) fork of a repository",
+        "description": "Create a CoW (Copy-on-Write) fork of a repository. Fork gets a NEW GUID, networkId, IP range, and auto-route domain — it is a fully independent copy. Online forking is supported — the parent can remain running. Fork inherits the parent's encryption credentials automatically. CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target> --mount. WARNING: Do NOT use 'backup push' alone for forking — it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. For fork-friendly repos, use auto-route (no traefik.enable) so each fork gets a unique domain automatically",
         "tagOption": "Fork name",
         "starting": "Forking \"{{parent}}\" as \"{{repository}}\" on \"{{machine}}\"...",
         "registered": "Registered fork \"{{repository}}\" ({{guid}}, network {{networkId}})",
-        "completed": "Fork created",
+        "completed": "Fork created. Deploy locally: repo up {{repository}} -m {{machine}} --mount. To migrate fork to another machine: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
         "failed": "Fork creation failed",
         "rollback": "Rolled back config for \"{{repository}}\"",
         "alreadyExists": "Repository \"{{name}}\" already exists in config"
@@ -1089,8 +1105,8 @@
         "failed": "Ownership update failed"
       },
       "template": {
-        "description": "Apply a template to a repository (writes docker-compose.yml and Rediaccfile). Rediaccfile must define prep()/up()/down() using 'renet compose'",
-        "fileOption": "Path to template JSON file ({\"version\":\"1\",\"compose\":\"<yaml>\",\"rediaccfile\":\"<bash>\"}). Rediaccfile pattern: prep() { renet compose -- pull; } up() { renet compose -- up -d; } down() { renet compose -- down; }. Compose must use network_mode: host. IPs auto-allocated by renet",
+        "description": "Apply a template to a repository (writes docker-compose.yml and Rediaccfile). Rediaccfile must use 'renet compose' (not 'docker compose'). Compose must NOT use 'restart: always' or 'restart: unless-stopped'. Renet auto-injects network_mode:host, CRIU capabilities, and rediacc labels",
+        "fileOption": "Path to template JSON file ({\"version\":\"1\",\"compose\":\"<yaml>\",\"rediaccfile\":\"<bash>\"}). Rediaccfile lifecycle: prep() runs on EVERY deploy (generate configs, pull images), up() starts containers, down() stops. Minimal Rediaccfile: prep() { renet compose -- pull; } up() { renet compose -- up -d; } down() { renet compose -- down; }. IMPORTANT: Rediaccfile MUST use 'renet compose' — 'docker compose' is rejected. ENV VARS — two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. OPENCLAW_IP), ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REPOSITORY_NETWORK_ID env vars. Use SERVICE_IP in your app code to bind to the correct loopback IP. Containers MUST bind to SERVICE_IP:<port> (not 0.0.0.0) since network_mode:host is injected and ports: are ignored. STORAGE: All persistent data MUST use ${REPOSITORY_PATH}/... bind mounts (e.g. volumes: ['${REPOSITORY_PATH}/dbdata:/data']). Do NOT use Docker named volumes — they are outside the repo and excluded from forks/backups. RESTART POLICY: Do NOT use 'restart: always' or 'restart: unless-stopped' — these conflict with CRIU checkpoint/restore. Use 'restart: on-failure' or omit it. Compose: do NOT add network_mode or rediacc.* labels (renet injects them). The compose service name becomes the auto-route URL prefix (e.g. service 'openclaw' → openclaw-{networkId}.{baseDomain}). HTTPS routing: (A) Auto-route (fork-friendly, recommended): do NOT add traefik.enable. Renet auto-generates https://{serviceName}-{networkId}.{baseDomain}. Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique domain. (B) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true, traefik.http.routers.<n>.rule=Host(`domain`), traefik.http.routers.<n>.entrypoints=websecure,websecure-v6, traefik.http.routers.<n>.tls.certresolver=letsencrypt, traefik.http.services.<n>.loadbalancer.server.port=<port>. For TCP/UDP: rediacc.tcp_ports=3306 / rediacc.udp_ports=53",
         "grandOption": "Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent",
         "fileNotFound": "Template file not found: {{path}}",
         "starting": "Applying template to \"{{repository}}\" on \"{{machine}}\"...",
@@ -1244,11 +1260,11 @@
     "backup": {
       "description": "Back up and restore repositories to external storage",
       "push": {
-        "description": "Push repository backup to storage or machine",
+        "description": "Push repository backup to storage or machine. For machine-to-machine transfer (--to-machine), the encrypted repo image is copied directly with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork on another machine, use 'repo fork' first (gets new GUID/networkId), then push the fork. After push, deploy on the target with: repo up <name> -m <target> --mount",
         "optionDest": "Destination filename",
         "optionToStorage": "Destination storage name",
         "optionToMachine": "Destination machine name",
-        "optionCheckpoint": "Create container checkpoint (hot backup)",
+        "optionCheckpoint": "Create CRIU container checkpoint before backup (captures process memory state). For live migration: backup push <repo> -m <source> --to-machine <target> --checkpoint, then: repo up <repo> -m <target> --mount --checkpoint (restores process state on target)",
         "optionForce": "Force overwrite existing backup",
         "optionTag": "Deployment tag for versioning",
         "destRequired": "Specify --to <storage> or --to-machine <machine>",

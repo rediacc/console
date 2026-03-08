@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: es
-sourceHash: 4a0c6a695d72aa55
+sourceHash: "a21068a947d5a792"
 ---
 
 # Red
@@ -111,7 +111,6 @@ Agregue etiquetas `traefik.*` a los servicios que desea exponer en su `docker-co
 services:
   myapp:
     image: myapp:latest
-    network_mode: host
     environment:
       - LISTEN_ADDR=${MYAPP_IP}:8080
     labels:
@@ -123,7 +122,6 @@ services:
 
   database:
     image: postgres:17
-    network_mode: host
     command: ["-c", "listen_addresses=${DATABASE_IP}"]
     # Sin etiquetas traefik — la base de datos es solo interna
 ```
@@ -184,7 +182,6 @@ Para exponer una base de datos externamente sin paso directo de TLS (Traefik red
 services:
   postgres:
     image: postgres:17
-    network_mode: host
     command: -c listen_addresses=${POSTGRES_IP} -c port=5432
     labels:
       - "traefik.enable=true"
@@ -207,7 +204,6 @@ Use etiquetas `traefik.tcp.*` o `traefik.udp.*` en su archivo compose:
 services:
   mail-server:
     image: ghcr.io/docker-mailserver/docker-mailserver:latest
-    network_mode: host
     labels:
       - "traefik.enable=true"
 
@@ -356,8 +352,6 @@ Este ejemplo despliega una aplicación web con una base de datos PostgreSQL. La 
 services:
   webapp:
     image: myregistry/webapp:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
       LISTEN_ADDR: ${WEBAPP_IP}:3000
@@ -374,8 +368,6 @@ services:
 
   postgres:
     image: postgres:17
-    network_mode: host
-    restart: unless-stopped
     environment:
       POSTGRES_DB: webapp
       POSTGRES_USER: app

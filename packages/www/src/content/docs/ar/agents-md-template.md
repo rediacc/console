@@ -4,6 +4,7 @@ description: قالب جاهز للنسخ واللصق لتهيئة Claude Code 
 category: Reference
 order: 50
 language: ar
+sourceHash: "65feffe76efad39d"
 ---
 
 استخدم هذا القالب لتهيئة مساعدي البرمجة الذكية (Claude Code، Cursor، Cline، Windsurf) لإدارة بنية Rediacc التحتية بشكل مستقل. انسخ الكتلة أدناه إلى ملف `CLAUDE.md` أو `.cursorrules` أو ملف تهيئة الوكيل المعادل في مشروعك.

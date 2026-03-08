@@ -4,6 +4,7 @@ description: Пошаговое руководство по настройке C
 category: Guides
 order: 31
 language: ru
+sourceHash: "90eb12eaaf6806c9"
 ---
 
 Claude Code нативно работает с Rediacc через CLI `rdc`. Это руководство охватывает настройку, разрешения и типичные рабочие процессы.

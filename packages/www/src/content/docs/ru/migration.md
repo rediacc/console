@@ -4,7 +4,7 @@ description: "Миграция существующих проектов в за
 category: "Guides"
 order: 11
 language: ru
-sourceHash: "feb1fcafc824b4b2"
+sourceHash: "977de49e158a26c0"
 ---
 
 # Руководство по миграции
@@ -104,15 +104,15 @@ rdc repo ownership my-project -m server-1 --uid 1000
 #!/bin/bash
 
 prep() {
-    docker compose pull
+    renet compose -- pull
 }
 
 up() {
-    docker compose up -d
+    renet compose -- up -d
 }
 
 down() {
-    docker compose down
+    renet compose -- down
 }
 ```
 
@@ -124,7 +124,9 @@ down() {
 | `up()` | Запуск сервисов | Ошибка в корне критична; ошибки в подкаталогах логируются и продолжаются |
 | `down()` | Остановка сервисов | Максимальное усилие: всегда пытается выполнить всё |
 
-> **Важно:** Используйте `docker` напрямую в вашем Rediaccfile — никогда `sudo docker`. Команда `sudo` сбрасывает переменные окружения, из-за чего теряется `DOCKER_HOST` и контейнеры создаются в системном Docker-демоне, а не в изолированном демоне репозитория. Функции Rediaccfile уже выполняются с достаточными привилегиями. Подробнее см. [Сервисы](/ru/docs/services#environment-variables).
+> **Важно:** Всегда используйте `renet compose --` вместо `docker compose` в вашем Rediaccfile. Обёртка `renet compose` обеспечивает host-сеть, возможности CRIU checkpoint/restore, назначение IP и обнаружение сервисов, необходимые для renet-proxy. Прямое использование `docker compose` обходит всё это и будет отклонено при валидации.
+>
+> Также никогда не используйте `sudo docker` — `sudo` сбрасывает переменные окружения, включая `DOCKER_HOST`, из-за чего контейнеры создаются в системном Docker-демоне, а не в изолированном демоне репозитория. Функции Rediaccfile уже выполняются с достаточными привилегиями.
 
 Подробнее о Rediaccfile, многосервисных конфигурациях и порядке выполнения см. [Сервисы](/ru/docs/services).
 
@@ -167,8 +169,6 @@ services:
 services:
   postgres:
     image: postgres:16
-    network_mode: host
-    restart: unless-stopped
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
@@ -177,14 +177,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    network_mode: host
-    restart: unless-stopped
     command: redis-server --bind ${REDIS_IP} --port 6379
 
   app:
     image: my-app:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
       REDIS_URL: redis://${REDIS_IP}:6379
@@ -193,10 +189,11 @@ services:
 
 Основные изменения:
 
-1. **Добавить `network_mode: host`** к каждому сервису
-2. **Удалить маппинги `ports:`** (не нужны при host-сети)
-3. **Привязать сервисы к переменным окружения `${SERVICE_IP}`** (автоматически внедряются Rediacc)
-4. **Ссылаться на другие сервисы по их IP** вместо Docker DNS-имён (например, `${POSTGRES_IP}` вместо `postgres`)
+1. **Удалить маппинги `ports:`** — `renet compose` использует host-сеть и автоматически удаляет маппинги портов
+2. **Удалить `network_mode: host`** — `renet compose` добавляет это автоматически
+3. **Удалить `restart: always` или `restart: unless-stopped`** — они конфликтуют с CRIU checkpoint/restore (Docker автоматически запускает контейнеры до того, как checkpoint restore сможет выполниться). Используйте `restart: on-failure`, если вам нужно поведение перезапуска, или полностью опустите — Rediaccfile `up()`/`down()` управляет жизненным циклом контейнеров
+4. **Привязать сервисы к переменным окружения `${SERVICE_IP}`** (автоматически внедряются Rediacc)
+5. **Ссылаться на другие сервисы по их IP** вместо Docker DNS-имён (например, `${POSTGRES_IP}` вместо `postgres`)
 
 Переменные `{SERVICE}_IP` автоматически генерируются из имён сервисов вашего compose-файла. Соглашение об именовании: верхний регистр, дефисы заменяются подчёркиваниями, суффикс `_IP`. Например, `listmonk-app` становится `LISTMONK_APP_IP`.
 

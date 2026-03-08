@@ -4,6 +4,7 @@ description: rdc CLI JSON 输出格式、信封模式、错误处理和代理发
 category: Reference
 order: 51
 language: zh
+sourceHash: "a516c49fdaf9a901"
 ---
 
 所有 `rdc` 命令都支持结构化 JSON 输出，供 AI 代理和脚本进行程序化消费。

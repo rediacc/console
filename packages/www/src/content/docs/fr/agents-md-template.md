@@ -4,6 +4,7 @@ description: Modèle prêt à copier-coller pour configurer Claude Code, Cursor 
 category: Reference
 order: 50
 language: fr
+sourceHash: "65feffe76efad39d"
 ---
 
 Utilisez ce modèle pour configurer les assistants de programmation IA (Claude Code, Cursor, Cline, Windsurf) pour la gestion autonome de l'infrastructure Rediacc. Copiez le bloc ci-dessous dans le fichier `CLAUDE.md`, `.cursorrules` ou le fichier de configuration d'agent équivalent de votre projet.

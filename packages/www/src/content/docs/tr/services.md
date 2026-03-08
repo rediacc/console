@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: tr
-sourceHash: "9a61995f9ea3d770"
+sourceHash: "28c4922849c4f3a7"
 ---
 
 # Servisler
@@ -32,8 +32,8 @@ Bir Rediaccfile en fazla üç fonksiyon içerir:
 | Fonksiyon | Ne zaman çalışır | Amacı | Hata davranışı |
 |-----------|-------------------|-------|----------------|
 | `prep()` | `up()` öncesinde | Bağımlılıkları yükleme, imajları çekme, migrasyonları çalıştırma | **Hızlı başarısızlık** -- herhangi bir `prep()` başarısız olursa, tüm süreç derhal durur |
-| `up()` | Tüm `prep()` tamamlandıktan sonra | Servisleri başlatma (ör. `docker compose up -d`) | Kök hatası **kritiktir** (her şeyi durdurur). Alt dizin hataları **kritik değildir** (günlüğe kaydedilir, devam eder) |
-| `down()` | Durdurma sırasında | Servisleri durdurma (ör. `docker compose down`) | **En iyi çaba** -- hatalar günlüğe kaydedilir ancak tüm Rediaccfile'lar her zaman denenir |
+| `up()` | Tüm `prep()` tamamlandıktan sonra | Servisleri başlatma (ör. `renet compose -- up -d`) | Kök hatası **kritiktir** (her şeyi durdurur). Alt dizin hataları **kritik değildir** (günlüğe kaydedilir, devam eder) |
+| `down()` | Durdurma sırasında | Servisleri durdurma (ör. `renet compose -- down`) | **En iyi çaba** -- hatalar günlüğe kaydedilir ancak tüm Rediaccfile'lar her zaman denenir |
 
 Her üç fonksiyon da isteğe bağlıdır. Tanımlanmamış fonksiyonlar sessizce atlanır.
 
@@ -81,7 +81,7 @@ down() {
 }
 ```
 
-> `DOCKER_HOST` otomatik olarak ayarlandığı için `docker compose` de çalışır, ancak `renet compose` ters proxy yönlendirme keşfi için gereken `rediacc.*` etiketlerini de enjekte ettiği için tercih edilir. Ayrıntılar için [Ağ Yapılandırması](/tr/docs/networking) sayfasına bakın.
+> **Önemli:** `docker compose` yerine her zaman `renet compose --` kullanın. `renet compose` sarmalayıcısı, host ağını, CRIU checkpoint/restore yeteneklerini, IP tahsisini ve renet-proxy tarafından gerekli olan servis keşif etiketlerini zorunlu kılar. Doğrudan `docker compose` kullanımı Rediaccfile doğrulaması tarafından reddedilir. Ayrıntılar için [Ağ Yapılandırması](/tr/docs/networking) sayfasına bakın.
 
 ### Çoklu Servis Düzeni
 
@@ -155,13 +155,12 @@ Her depo en fazla **61 servisi** destekler (slot 0'dan 60'a kadar).
 
 ### Docker Compose'da Servis IP'lerini Kullanma
 
-Her depo izole bir Docker daemon'u çalıştırdığından, servisler `network_mode: host` kullanır ve atanan loopback IP'lerine bağlanır:
+Her depo izole bir Docker daemon'u çalıştırdığından, `renet compose` tüm servisler için otomatik olarak `network_mode: host` yapılandırır. Servisleri atanan loopback IP'lerine bağlayın:
 
 ```yaml
 services:
   postgres:
     image: postgres:16
-    network_mode: host
     environment:
       PGDATA: /var/lib/postgresql/data
       POSTGRES_PASSWORD: secret
@@ -169,11 +168,12 @@ services:
 
   api:
     image: my-api:latest
-    network_mode: host
     environment:
       DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
       LISTEN_ADDR: ${API_IP}:8080
 ```
+
+> **Not:** `network_mode: host` ifadesini manuel olarak eklemeyin — `renet compose` bunu otomatik olarak enjekte eder. `restart: always` veya `restart: unless-stopped` kullanmayın — bunlar, CRIU checkpoint restore çalışmadan önce Docker'ın konteynerleri otomatik başlatmasına neden olur. Gerekiyorsa `restart: on-failure` kullanın veya tamamen kaldırın (Rediaccfile `up()`/`down()` yaşam döngüsünü yönetir).
 
 ## Servisleri Başlatma
 
@@ -303,8 +303,6 @@ Depo içinde aşağıdaki dosyaları oluşturun:
 services:
   postgres:
     image: postgres:16
-    network_mode: host
-    restart: unless-stopped
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
@@ -315,14 +313,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    network_mode: host
-    restart: unless-stopped
     command: redis-server --bind ${REDIS_IP} --port 6379
 
   api:
     image: myregistry/api:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
       REDIS_URL: redis://${REDIS_IP}:6379
@@ -344,7 +338,7 @@ up() {
 
     echo "Waiting for PostgreSQL..."
     for i in $(seq 1 30); do
-        if docker compose exec postgres pg_isready -q 2>/dev/null; then
+        if renet compose -- exec postgres pg_isready -q 2>/dev/null; then
             echo "PostgreSQL is ready."
             return 0
         fi

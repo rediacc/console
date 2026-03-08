@@ -4,6 +4,7 @@ description: Schritt-für-Schritt-Anleitung zur Konfiguration von Claude Code f�
 category: Guides
 order: 31
 language: de
+sourceHash: "90eb12eaaf6806c9"
 ---
 
 Claude Code funktioniert nativ mit Rediacc über die `rdc` CLI. Diese Anleitung behandelt Einrichtung, Berechtigungen und gaengige Workflows.

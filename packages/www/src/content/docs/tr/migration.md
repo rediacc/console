@@ -4,7 +4,7 @@ description: "Mevcut projeleri şifrelenmiş Rediacc depolarına taşıyın."
 category: "Guides"
 order: 11
 language: tr
-sourceHash: "feb1fcafc824b4b2"
+sourceHash: "977de49e158a26c0"
 ---
 
 # Geçiş Rehberi
@@ -104,15 +104,15 @@ Proje kök dizininizde bir `Rediaccfile` oluşturun. Bu Bash betiği, servisleri
 #!/bin/bash
 
 prep() {
-    docker compose pull
+    renet compose -- pull
 }
 
 up() {
-    docker compose up -d
+    renet compose -- up -d
 }
 
 down() {
-    docker compose down
+    renet compose -- down
 }
 ```
 
@@ -124,7 +124,9 @@ down() {
 | `up()` | Servisleri başlatma | Kök başarısızlığı kritiktir; alt dizin başarısızlıkları günlüğe kaydedilir ve devam eder |
 | `down()` | Servisleri durdurma | En iyi çaba: her zaman hepsini dener |
 
-> **Önemli:** Rediaccfile'ınızda `docker` komutunu doğrudan kullanın — asla `sudo docker` kullanmayın. `sudo` komutu ortam değişkenlerini sıfırlar, bu da `DOCKER_HOST`'un kaybolmasına ve konteynerlerin deponun izole daemon'u yerine sistem Docker daemon'unda oluşturulmasına neden olur. Rediaccfile fonksiyonları zaten yeterli ayrıcalıklarla çalışır. Ayrıntılar için [Servisler](/tr/docs/services#environment-variables) bölümüne bakın.
+> **Önemli:** Rediaccfile'ınızda `docker compose` yerine her zaman `renet compose --` kullanın. `renet compose` sarmalayıcısı host ağını, CRIU checkpoint/restore yeteneklerini, IP tahsisini ve renet-proxy tarafından gereken servis keşfini zorunlu kılar. `docker compose`'u doğrudan kullanmak bunların hepsini atlar ve doğrulama sırasında reddedilir.
+>
+> Asla `sudo docker` da kullanmayın — `sudo`, `DOCKER_HOST` dahil ortam değişkenlerini sıfırlar, bu da konteynerlerin deponun izole daemon'u yerine sistem Docker daemon'unda oluşturulmasına neden olur. Rediaccfile fonksiyonları zaten yeterli ayrıcalıklarla çalışır.
 
 Rediaccfile'lar, çoklu servis düzenleri ve yürütme sırası hakkında tam ayrıntılar için [Servisler](/tr/docs/services) bölümüne bakın.
 
@@ -167,8 +169,6 @@ services:
 services:
   postgres:
     image: postgres:16
-    network_mode: host
-    restart: unless-stopped
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
@@ -177,14 +177,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    network_mode: host
-    restart: unless-stopped
     command: redis-server --bind ${REDIS_IP} --port 6379
 
   app:
     image: my-app:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
       REDIS_URL: redis://${REDIS_IP}:6379
@@ -193,10 +189,11 @@ services:
 
 Temel değişiklikler:
 
-1. **Her servise `network_mode: host` ekleyin**
-2. **`ports:` eşlemelerini kaldırın** (host ağında gerekli değil)
-3. **Servisleri `${SERVICE_IP}` ortam değişkenlerine bağlayın** (Rediacc tarafından otomatik enjekte edilir)
-4. **Diğer servislere Docker DNS adları yerine IP'leriyle başvurun** (örn. `postgres` yerine `${POSTGRES_IP}`)
+1. **`ports:` eşlemelerini kaldırın** — `renet compose` host ağını kullanır ve port eşlemelerini otomatik olarak kaldırır
+2. **`network_mode: host` kaldırın** — `renet compose` bunu sizin için ekler
+3. **`restart: always` veya `restart: unless-stopped` kaldırın** — bunlar CRIU checkpoint/restore ile çakışır (Docker, checkpoint restore çalışmadan önce konteynerleri otomatik başlatır). Yeniden başlatma davranışına ihtiyacınız varsa `restart: on-failure` kullanın veya tamamen atlayın — Rediaccfile `up()`/`down()` konteyner yaşam döngüsünü yönetir
+4. **Servisleri `${SERVICE_IP}` ortam değişkenlerine bağlayın** (Rediacc tarafından otomatik enjekte edilir)
+5. **Diğer servislere Docker DNS adları yerine IP'leriyle başvurun** (örn. `postgres` yerine `${POSTGRES_IP}`)
 
 `{SERVICE}_IP` değişkenleri compose dosyanızdaki servis adlarından otomatik olarak oluşturulur. Adlandırma kuralı: büyük harf, tireler alt çizgiyle değiştirilir, `_IP` son eki. Örneğin, `listmonk-app` `LISTMONK_APP_IP` olur.
 

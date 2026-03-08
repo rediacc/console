@@ -4,7 +4,7 @@ description: "SSH, kurulum, depolar, servisler ve Docker ile ilgili yaygın soru
 category: "Guides"
 order: 10
 language: tr
-sourceHash: 4c3163007e6a3326
+sourceHash: "1aea651c31f439b8"
 ---
 
 # Sorun Giderme
@@ -43,8 +43,8 @@ Bu komut yeni host anahtarlarını alır ve yapılandırmanızı günceller.
 ## Servisler Başlatılamıyor
 
 - Rediaccfile sözdizimini kontrol edin: geçerli Bash olmalıdır
-- `docker compose` dosyalarının `network_mode: host` kullandığından emin olun
-- Docker imajlarının erişilebilir olduğunu doğrulayın (`prep()` içinde `docker compose pull` kullanmayı düşünün)
+- Rediaccfile'ınızın `renet compose --` kullandığından emin olun (`docker compose` değil)
+- Docker imajlarının erişilebilir olduğunu doğrulayın (`prep()` içinde `renet compose -- pull` kullanmayı düşünün)
 - Deponun Docker soketi üzerinden konteyner günlüklerini kontrol edin:
 
 ```bash

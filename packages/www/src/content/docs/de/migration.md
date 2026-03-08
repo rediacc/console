@@ -4,7 +4,7 @@ description: "Bestehende Projekte in verschlüsselte Rediacc-Repositories migrie
 category: "Guides"
 order: 11
 language: de
-sourceHash: "feb1fcafc824b4b2"
+sourceHash: "977de49e158a26c0"
 ---
 
 # Migrationsleitfaden
@@ -104,15 +104,15 @@ Erstellen Sie ein `Rediaccfile` im Stammverzeichnis Ihres Projekts. Dieses Bash-
 #!/bin/bash
 
 prep() {
-    docker compose pull
+    renet compose -- pull
 }
 
 up() {
-    docker compose up -d
+    renet compose -- up -d
 }
 
 down() {
-    docker compose down
+    renet compose -- down
 }
 ```
 
@@ -124,7 +124,9 @@ Die drei Lebenszyklus-Funktionen:
 | `up()` | Dienste starten | Root-Fehler ist kritisch; Fehler in Unterverzeichnissen werden protokolliert und fortgesetzt |
 | `down()` | Dienste stoppen | Best-Effort: versucht immer alles |
 
-> **Wichtig:** Verwenden Sie `docker` direkt in Ihrem Rediaccfile — niemals `sudo docker`. Der Befehl `sudo` setzt Umgebungsvariablen zurück, wodurch `DOCKER_HOST` verloren geht und Container auf dem System-Docker-Daemon statt auf dem isolierten Daemon des Repositorys erstellt werden. Rediaccfile-Funktionen laufen bereits mit ausreichenden Berechtigungen. Siehe [Dienste](/de/docs/services#environment-variables) für Details.
+> **Wichtig:** Verwenden Sie in Ihrem Rediaccfile immer `renet compose --` anstelle von `docker compose`. Der `renet compose`-Wrapper erzwingt Host-Netzwerk, CRIU-Checkpoint/Restore-Fähigkeiten, IP-Zuweisung und Service-Discovery, die von renet-proxy benötigt werden. Die direkte Verwendung von `docker compose` umgeht all dies und wird bei der Validierung abgelehnt.
+>
+> Verwenden Sie auch niemals `sudo docker` — `sudo` setzt Umgebungsvariablen einschließlich `DOCKER_HOST` zurück, wodurch Container auf dem System-Docker-Daemon statt auf dem isolierten Daemon des Repositorys erstellt werden. Rediaccfile-Funktionen laufen bereits mit ausreichenden Berechtigungen.
 
 Siehe [Dienste](/de/docs/services) für vollständige Details zu Rediaccfiles, Multi-Service-Layouts und Ausführungsreihenfolge.
 
@@ -167,8 +169,6 @@ services:
 services:
   postgres:
     image: postgres:16
-    network_mode: host
-    restart: unless-stopped
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
@@ -177,14 +177,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    network_mode: host
-    restart: unless-stopped
     command: redis-server --bind ${REDIS_IP} --port 6379
 
   app:
     image: my-app:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
       REDIS_URL: redis://${REDIS_IP}:6379
@@ -193,10 +189,11 @@ services:
 
 Wichtige Änderungen:
 
-1. **`network_mode: host` hinzufügen** zu jedem Dienst
-2. **`ports:`-Zuordnungen entfernen** (nicht nötig bei Host-Netzwerk)
-3. **Dienste an `${SERVICE_IP}`-Umgebungsvariablen binden** (werden automatisch von Rediacc injiziert)
-4. **Andere Dienste über ihre IP referenzieren** statt über Docker-DNS-Namen (z. B. `${POSTGRES_IP}` statt `postgres`)
+1. **`ports:`-Zuordnungen entfernen** — `renet compose` verwendet Host-Netzwerk und entfernt Port-Zuordnungen automatisch
+2. **`network_mode: host` entfernen** — `renet compose` fügt dies automatisch hinzu
+3. **`restart: always` oder `restart: unless-stopped` entfernen** — diese konfligieren mit CRIU-Checkpoint/Restore (Docker startet Container automatisch, bevor Checkpoint-Restore ausgeführt werden kann). Verwenden Sie `restart: on-failure`, wenn Sie Neustart-Verhalten benötigen, oder lassen Sie es ganz weg — Rediaccfile `up()`/`down()` verwaltet den Container-Lebenszyklus
+4. **Dienste an `${SERVICE_IP}`-Umgebungsvariablen binden** (werden automatisch von Rediacc injiziert)
+5. **Andere Dienste über ihre IP referenzieren** statt über Docker-DNS-Namen (z. B. `${POSTGRES_IP}` statt `postgres`)
 
 Die `{SERVICE}_IP`-Variablen werden automatisch aus den Dienstnamen Ihrer Compose-Datei generiert. Die Namenskonvention: Großbuchstaben, Bindestriche durch Unterstriche ersetzen, Suffix `_IP`. Zum Beispiel wird `listmonk-app` zu `LISTMONK_APP_IP`.
 

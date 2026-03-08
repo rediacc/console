@@ -4,6 +4,7 @@ description: Configure el IDE Cursor para trabajar con la infraestructura Rediac
 category: Guides
 order: 32
 language: es
+sourceHash: "6da857eb870d511e"
 ---
 
 Cursor se integra con Rediacc a través de comandos de terminal y el archivo de configuración `.cursorrules`.

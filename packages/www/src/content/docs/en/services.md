@@ -29,8 +29,8 @@ A Rediaccfile contains up to three functions:
 | Function | When it runs | Purpose | Error behavior |
 |----------|-------------|---------|----------------|
 | `prep()` | Before `up()` | Install dependencies, pull images, run migrations | **Fail-fast** -- if any `prep()` fails, the entire process stops immediately |
-| `up()` | After all `prep()` complete | Start services (e.g., `docker compose up -d`) | Root failure is **critical** (stops everything). Subdirectory failures are **non-critical** (logged, continues) |
-| `down()` | When stopping | Stop services (e.g., `docker compose down`) | **Best-effort** -- failures are logged but all Rediaccfiles are always attempted |
+| `up()` | After all `prep()` complete | Start services (e.g., `renet compose -- up -d`) | Root failure is **critical** (stops everything). Subdirectory failures are **non-critical** (logged, continues) |
+| `down()` | When stopping | Stop services (e.g., `renet compose -- down`) | **Best-effort** -- failures are logged but all Rediaccfiles are always attempted |
 
 All three functions are optional. If a function is not defined, it is silently skipped.
 
@@ -80,7 +80,7 @@ down() {
 }
 ```
 
-> `docker compose` also works since `DOCKER_HOST` is set automatically, but `renet compose` is preferred because it additionally injects `rediacc.*` labels needed for reverse proxy route discovery. See [Networking](/en/docs/networking) for details.
+> **Important:** Always use `renet compose --` instead of `docker compose`. The `renet compose` wrapper enforces host networking, CRIU checkpoint/restore capabilities, IP allocation, and service discovery labels required by renet-proxy. Direct `docker compose` usage is rejected by Rediaccfile validation. See [Networking](/en/docs/networking) for details.
 
 ### Multi-Service Layout
 
@@ -154,13 +154,12 @@ Each repository supports up to **61 services** (slots 0 through 60).
 
 ### Using Service IPs in Docker Compose
 
-Since each repository runs an isolated Docker daemon, services use `network_mode: host` and bind to their assigned loopback IPs:
+Since each repository runs an isolated Docker daemon, `renet compose` automatically configures `network_mode: host` for all services. Bind services to their assigned loopback IPs:
 
 ```yaml
 services:
   postgres:
     image: postgres:16
-    network_mode: host
     environment:
       PGDATA: /var/lib/postgresql/data
       POSTGRES_PASSWORD: secret
@@ -168,11 +167,12 @@ services:
 
   api:
     image: my-api:latest
-    network_mode: host
     environment:
       DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
       LISTEN_ADDR: ${API_IP}:8080
 ```
+
+> **Note:** Do not add `network_mode: host` manually — `renet compose` injects it automatically. Do not use `restart: always` or `restart: unless-stopped` — these cause Docker to auto-start containers before CRIU checkpoint restore can run. Use `restart: on-failure` if needed, or omit it (Rediaccfile `up()`/`down()` manages the lifecycle).
 
 ## Starting Services
 
@@ -302,8 +302,6 @@ Inside the repository, create:
 services:
   postgres:
     image: postgres:16
-    network_mode: host
-    restart: unless-stopped
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
@@ -314,14 +312,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    network_mode: host
-    restart: unless-stopped
     command: redis-server --bind ${REDIS_IP} --port 6379
 
   api:
     image: myregistry/api:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
       REDIS_URL: redis://${REDIS_IP}:6379
@@ -343,7 +337,7 @@ up() {
 
     echo "Waiting for PostgreSQL..."
     for i in $(seq 1 30); do
-        if docker compose exec postgres pg_isready -q 2>/dev/null; then
+        if renet compose -- exec postgres pg_isready -q 2>/dev/null; then
             echo "PostgreSQL is ready."
             return 0
         fi

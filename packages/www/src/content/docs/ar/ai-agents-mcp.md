@@ -4,6 +4,7 @@ description: ربط وكلاء الذكاء الاصطناعي بالبنية ا
 category: Guides
 order: 33
 language: ar
+sourceHash: "1b6cd5ba5d8d0ffe"
 ---
 
 ## نظرة عامة

@@ -108,7 +108,6 @@ Add `traefik.*` labels to the services you want to expose in your `docker-compos
 services:
   myapp:
     image: myapp:latest
-    network_mode: host
     environment:
       - LISTEN_ADDR=${MYAPP_IP}:8080
     labels:
@@ -120,7 +119,6 @@ services:
 
   database:
     image: postgres:17
-    network_mode: host
     command: ["-c", "listen_addresses=${DATABASE_IP}"]
     # No traefik labels — database is internal only
 ```
@@ -183,7 +181,6 @@ Use `traefik.tcp.*` or `traefik.udp.*` labels in your compose file:
 services:
   mail-server:
     image: ghcr.io/docker-mailserver/docker-mailserver:latest
-    network_mode: host
     labels:
       - "traefik.enable=true"
 
@@ -214,7 +211,6 @@ To expose a database externally without TLS passthrough (Traefik forwards raw TC
 services:
   postgres:
     image: postgres:17
-    network_mode: host
     command: -c listen_addresses=${POSTGRES_IP} -c port=5432
     labels:
       - "traefik.enable=true"
@@ -353,8 +349,6 @@ This deploys a web application with a PostgreSQL database. The app is publicly a
 services:
   webapp:
     image: myregistry/webapp:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
       LISTEN_ADDR: ${WEBAPP_IP}:3000
@@ -371,8 +365,6 @@ services:
 
   postgres:
     image: postgres:17
-    network_mode: host
-    restart: unless-stopped
     environment:
       POSTGRES_DB: webapp
       POSTGRES_USER: app

@@ -188,14 +188,7 @@
   },
   "logoWall": {
     "title": "Works with your infrastructure",
-    "categories": [
-      "Git",
-      "CI/CD",
-      "Containers",
-      "Databases",
-      "Monitoring",
-      "Storage"
-    ]
+    "categories": ["Git", "CI/CD", "Containers", "Databases", "Monitoring", "Storage"]
   },
   "solutions": {
     "title": "How We Ensure Business Continuity",
@@ -862,9 +855,7 @@
           "tiers": [
             {
               "planId": "community",
-              "included": [
-                "Self-service documentation, video tutorials, and community forum"
-              ],
+              "included": ["Self-service documentation, video tutorials, and community forum"],
               "available": [
                 "Standard Implementation ($9,999) or tiered packages (Small $7,499 · Medium $14,999 · Large $29,999 · Enterprise custom)",
                 "Emergency Response engagement ($29,999 on-demand)"
@@ -992,10 +983,7 @@
       },
       "trust": {
         "heading": "Enterprise-Grade Security & Reliability",
-        "items": [
-          "AES-256 encryption standard",
-          "99.99% uptime SLA"
-        ]
+        "items": ["AES-256 encryption standard", "99.99% uptime SLA"]
       },
       "ui": {
         "popular": "Most popular",
@@ -1632,9 +1620,7 @@
         "howWeUseInformation": {
           "id": "how-we-use-information",
           "title": "3. How We Use Your Information",
-          "content": [
-            "We use the information we collect for the following purposes:"
-          ],
+          "content": ["We use the information we collect for the following purposes:"],
           "items": [
             "To respond to your inquiries submitted through the contact form",
             "To provide, operate, and maintain the Rediacc platform",
@@ -1740,9 +1726,7 @@
         "definitions": {
           "id": "definitions",
           "title": "1. Definitions",
-          "content": [
-            "The following definitions apply throughout these Terms of Service:"
-          ],
+          "content": ["The following definitions apply throughout these Terms of Service:"],
           "items": [
             "<strong>\"Account\"</strong> means the user account you create to access the Platform and manage your Subscription.",
             "<strong>\"Authorized User\"</strong> means any individual granted access to the Services under your Account, including team members, employees, and contractors acting on your behalf.",
@@ -1801,9 +1785,7 @@
         "subscriptions": {
           "id": "subscriptions",
           "title": "5. Subscriptions, Billing, and Payment",
-          "content": [
-            "Rediacc offers multiple Subscription tiers:"
-          ],
+          "content": ["Rediacc offers multiple Subscription tiers:"],
           "items": [
             "<strong>Community</strong> (free) — Limited to 2 Machine activations, core features, community support",
             "<strong>Professional</strong> — Up to 5 Machine activations, audit logging, priority support, custom branding",
@@ -1853,9 +1835,7 @@
             },
             "restrictions": {
               "title": "6.2 Restrictions",
-              "content": [
-                "You shall not:"
-              ],
+              "content": ["You shall not:"],
               "items": [
                 "Reverse engineer, decompile, disassemble, or otherwise attempt to derive the source code of the Bridge binary or any non-open-source component of the On-Premise Software",
                 "Redistribute, sublicense, rent, lease, or lend the On-Premise Software to any third party",
@@ -1893,9 +1873,7 @@
         "useRestrictions": {
           "id": "use-restrictions",
           "title": "9. Use Restrictions",
-          "content": [
-            "You agree that you and your Authorized Users will not use the Services to:"
-          ],
+          "content": ["You agree that you and your Authorized Users will not use the Services to:"],
           "items": [
             "Deploy, host, or distribute malware, viruses, ransomware, or any other harmful code",
             "Operate cryptocurrency mining, peer-to-peer file sharing networks, or open proxy services",
@@ -2054,9 +2032,7 @@
         "cookiesWeUse": {
           "id": "cookies-we-use",
           "title": "3. Cookies We Use",
-          "content": [
-            "We use a minimal number of cookies. In fact, we use only one:"
-          ],
+          "content": ["We use a minimal number of cookies. In fact, we use only one:"],
           "subsections": {
             "languageCookie": {
               "title": "3.1 Language Preference Cookie",
@@ -2210,9 +2186,7 @@
             "The reason for your refund request",
             "Any relevant order or invoice numbers"
           ],
-          "content2": [
-            "We aim to respond to all refund requests within 5 business days."
-          ]
+          "content2": ["We aim to respond to all refund requests within 5 business days."]
         },
         "refundProcessing": {
           "id": "refund-processing",
@@ -2225,9 +2199,7 @@
         "nonRefundable": {
           "id": "non-refundable",
           "title": "6. Non-Refundable Items",
-          "content": [
-            "The following are not eligible for refunds:"
-          ],
+          "content": ["The following are not eligible for refunds:"],
           "items": [
             "Subscriptions cancelled after the 14-day new subscriber window",
             "Usage-based charges (e.g., overage fees) for resources already consumed",
@@ -2277,9 +2249,7 @@
         "principles": {
           "id": "principles",
           "title": "2. Our Telemetry Principles",
-          "content": [
-            "All telemetry collection at Rediacc follows these principles:"
-          ],
+          "content": ["All telemetry collection at Rediacc follows these principles:"],
           "items": [
             "<strong>Privacy by design:</strong> Personal identifiers are anonymized before transmission. Email addresses are reduced to domain only, user IDs are hashed (SHA-256) and truncated, passwords and secrets are never collected.",
             "<strong>Minimal collection:</strong> We collect only what is necessary to improve product quality and diagnose issues. We do not collect file contents, database contents, query results, or business data.",
@@ -2307,9 +2277,7 @@
           "subsections": {
             "webDataCollected": {
               "title": "4.1 Data Collected",
-              "content": [
-                "The Web Application collects the following categories of data:"
-              ],
+              "content": ["The Web Application collects the following categories of data:"],
               "items": [
                 "<strong>Browser information:</strong> browser name and version, preferred language, platform (e.g., Windows, macOS, Linux), screen resolution, color depth, user agent string, device memory (if available), network connection type",
                 "<strong>User context:</strong> session ID (randomly generated per session), email domain only (local part is redacted, e.g., <code>***@example.com</code>), organization name, team name",
@@ -2323,9 +2291,7 @@
             },
             "webNotCollected": {
               "title": "4.2 Data NOT Collected",
-              "content": [
-                "The Web Application does not collect:"
-              ],
+              "content": ["The Web Application does not collect:"],
               "items": [
                 "Full email addresses (local part is always redacted)",
                 "Passwords, tokens, or authentication credentials",
@@ -2353,9 +2319,7 @@
           "subsections": {
             "cliDataCollected": {
               "title": "5.1 Data Collected",
-              "content": [
-                "The CLI collects the following categories of data:"
-              ],
+              "content": ["The CLI collects the following categories of data:"],
               "items": [
                 "<strong>Command usage:</strong> command name, CLI version, exit code, success or failure status",
                 "<strong>Anonymized arguments:</strong> command options with sensitive values redacted — passwords, tokens, secrets, API keys, and credentials are replaced with <code>[REDACTED]</code>",
@@ -2367,9 +2331,7 @@
             },
             "cliOptOut": {
               "title": "5.2 How to Opt Out",
-              "content": [
-                "You can disable CLI telemetry using any of these methods:"
-              ],
+              "content": ["You can disable CLI telemetry using any of these methods:"],
               "items": [
                 "Set the environment variable <code>REDIACC_TELEMETRY=off</code> (also accepts <code>false</code> or <code>0</code>)",
                 "Set <code>telemetryEnabled: false</code> in your CLI configuration file",
@@ -2387,9 +2349,7 @@
           "subsections": {
             "middlewareDataCollected": {
               "title": "6.1 Data Collected",
-              "content": [
-                "The Middleware collects the following categories of data:"
-              ],
+              "content": ["The Middleware collects the following categories of data:"],
               "items": [
                 "<strong>System information:</strong> hostname, operating system version, .NET runtime version",
                 "<strong>API calls:</strong> HTTP method, endpoint path, response status code, request duration",
@@ -2417,9 +2377,7 @@
           "subsections": {
             "bridgeDataCollected": {
               "title": "7.1 Data Collected",
-              "content": [
-                "The Bridge collects the following categories of data:"
-              ],
+              "content": ["The Bridge collects the following categories of data:"],
               "items": [
                 "<strong>Queue operations:</strong> task ID, priority level, operation type, execution duration, success or failure status",
                 "<strong>SSH operations:</strong> target host, username, port number, exit code, execution duration (no command content or output is collected)",
@@ -2430,9 +2388,7 @@
             },
             "bridgeOptOut": {
               "title": "7.2 How to Opt Out",
-              "content": [
-                "You can disable Bridge telemetry using either method:"
-              ],
+              "content": ["You can disable Bridge telemetry using either method:"],
               "items": [
                 "Set the environment variable <code>REDIACC_TELEMETRY_DISABLED=1</code>",
                 "Set the environment variable <code>DO_NOT_TRACK=1</code> (respects the <a href=\"https://consult.dntrack.dev/\" target=\"_blank\" rel=\"noopener noreferrer\">Do Not Track</a> standard)"
@@ -2777,9 +2733,7 @@
           "tiers": [
             {
               "planId": "community",
-              "included": [
-                "Self-service documentation, video tutorials, and community forum"
-              ],
+              "included": ["Self-service documentation, video tutorials, and community forum"],
               "available": [
                 "Standard Implementation ($9,999) or tiered packages (Small $7,499 · Medium $14,999 · Large $29,999 · Enterprise custom)",
                 "Emergency Response engagement ($29,999 on-demand)"
@@ -2891,10 +2845,7 @@
       },
       "trust": {
         "heading": "Enterprise-Grade Security & Reliability",
-        "items": [
-          "AES-256 encryption standard",
-          "99.99% uptime SLA"
-        ]
+        "items": ["AES-256 encryption standard", "99.99% uptime SLA"]
       },
       "ui": {
         "popular": "Most popular",
@@ -3164,11 +3115,7 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": [
-              "Run",
-              "60s",
-              "Done"
-            ]
+            "newSteps": ["Run", "60s", "Done"]
           }
         },
         "calculator": {
@@ -3336,117 +3283,33 @@
           "features": [
             {
               "name": "Application cloning",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                3,
-                4,
-                5,
-                0,
-                0,
-                0
-              ]
+              "values": ["check", "check", "check", "cross", "cross", "rediacc"],
+              "refs": [3, 4, 5, 0, 0, 0]
             },
             {
               "name": "Database cloning",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                6,
-                7,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"],
+              "refs": [0, 0, 0, 6, 7, 0]
             },
             {
               "name": "Combined app + DB clone",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0, 0]
             },
             {
               "name": "Any database engine",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                6,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "check", "cross", "rediacc"],
+              "refs": [0, 0, 0, 8, 0, 0]
             },
             {
               "name": "Provisioning time",
-              "values": [
-                "Minutes",
-                "Minutes",
-                "Minutes",
-                "Minutes",
-                "Seconds",
-                "<60s"
-              ],
-              "refs": [
-                3,
-                4,
-                5,
-                6,
-                7,
-                0
-              ]
+              "values": ["Minutes", "Minutes", "Minutes", "Minutes", "Seconds", "<60s"],
+              "refs": [9, 10, 11, 12, 13, 0]
             },
             {
               "name": "Production-identical data",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                6,
-                7,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"],
+              "refs": [0, 0, 0, 14, 15, 0]
             }
           ]
         },
@@ -3545,23 +3408,55 @@
               "url": "https://release.com/blog/hidden-costs-of-staging"
             },
             {
-              "text": "GitHub, “GitHub Codespaces.” Cloud-hosted development environments with VS Code integration, prebuilds, and configurable compute.",
-              "url": "https://github.com/features/codespaces/"
+              "text": "GitHub Codespaces creates a dedicated VM and clones the repository into a dev container for instant cloud development.",
+              "url": "https://docs.github.com/en/codespaces/developing-in-codespaces/creating-a-codespace"
             },
             {
-              "text": "Coder, “Self-Hosted Cloud Development Environments.” Open-source platform for provisioning dev environments on any infrastructure with templates.",
-              "url": "https://coder.com"
+              "text": "Coder templates are Terraform-defined blueprints for creating identical, reproducible development workspaces.",
+              "url": "https://coder.com/docs/admin/templates"
             },
             {
-              "text": "Vercel, “Frontend Cloud Platform.” Deployment platform for frontend frameworks with preview deployments and edge functions.",
-              "url": "https://vercel.com/"
+              "text": "Vercel preview deployments create unique live URLs for every push/PR for isolated frontend review.",
+              "url": "https://vercel.com/docs/deployments/preview-deployments"
             },
             {
-              "text": "Delphix (Perforce), “Data Virtualization.” Virtual database cloning with time-travel, masking, and compliance features.",
-              "url": "https://www.perforce.com/products/delphix/data-virtualization"
+              "text": "Delphix Virtual Databases (VDBs) are full read-write copies from snapshots requiring only a fraction of traditional storage.",
+              "url": "https://cd.delphix.com/docs/latest/virtual-database-vdb-management"
             },
             {
-              "text": "Neon, “Database Branching.” Serverless Postgres with instant database branching, autoscaling, and copy-on-write storage.",
+              "text": "Neon branches are copy-on-write clones sharing pages with the parent until writes diverge.",
+              "url": "https://neon.com/docs/introduction/branching"
+            },
+            {
+              "text": "Delphix supports Oracle, SQL Server, PostgreSQL, MySQL, SAP ASE, IBM Db2, MariaDB, and CockroachDB.",
+              "url": "https://cd.delphix.com/docs/latest/overview"
+            },
+            {
+              "text": "Codespaces prebuilds pre-assemble source code, extensions, and dependencies for substantially faster codespace creation.",
+              "url": "https://docs.github.com/en/codespaces/prebuilding-your-codespaces/about-github-codespaces-prebuilds"
+            },
+            {
+              "text": "Coder prebuilt workspaces maintain a ready-to-use pool, reducing creation time from up to 20 minutes to under a minute.",
+              "url": "https://coder.com/docs/admin/templates/extending-templates/prebuilt-workspaces"
+            },
+            {
+              "text": "Vercel deploys to its global edge network with apps going live within seconds of pushing code.",
+              "url": "https://vercel.com/docs/deployments"
+            },
+            {
+              "text": "Delphix VDB provisioning completes in minutes rather than hours or days for traditional database copies.",
+              "url": "https://cd.delphix.com/docs/latest/virtual-database-vdb-management"
+            },
+            {
+              "text": "Neon branch creation takes approximately 1 second regardless of database size.",
+              "url": "https://neon.com/docs/get-started/workflow-primer"
+            },
+            {
+              "text": "Delphix creates full read-write virtual copies from production data sources for application, AI, and ML teams.",
+              "url": "https://cd.delphix.com/docs/latest/overview"
+            },
+            {
+              "text": "Neon branches include all parent data by default providing instant production-identical copies.",
               "url": "https://neon.com/docs/introduction/branching"
             }
           ],
@@ -3715,11 +3610,7 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": [
-              "Spin up",
-              "$0 idle",
-              "Auto-cleanup"
-            ]
+            "newSteps": ["Spin up", "$0 idle", "Auto-cleanup"]
           }
         },
         "calculator": {
@@ -3881,105 +3772,33 @@
           "features": [
             {
               "name": "Zero-copy clone storage (CoW)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Configurable TTL auto-destroy",
-              "values": [
-                "check",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                4,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["check", "cross", "cross", "cross", "rediacc"],
+              "refs": [4, 0, 0, 0, 0]
             },
             {
               "name": "Full production data in clone",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Multi-service environments",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                5,
-                0,
-                7,
-                0
-              ]
+              "values": ["cross", "check", "cross", "check", "rediacc"],
+              "refs": [0, 5, 0, 6, 0]
             },
             {
               "name": "Self-hosted / no per-seat pricing",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                5,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "check", "cross", "cross", "rediacc"],
+              "refs": [0, 7, 0, 0, 0]
             },
             {
               "name": "Sub-60-second provisioning",
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                6,
-                7,
-                0
-              ]
+              "values": ["cross", "cross", "check", "check", "rediacc"],
+              "refs": [0, 0, 8, 9, 0]
             }
           ]
         },
@@ -4076,20 +3895,28 @@
               "url": "https://release.com/blog/hidden-costs-of-staging"
             },
             {
-              "text": "GitHub, “GitHub Codespaces.” Cloud-hosted development environments with VS Code integration, prebuilds, and configurable compute.",
-              "url": "https://github.com/features/codespaces/"
+              "text": "Stopped codespaces are automatically deleted after a configurable retention period (0-30 days, default 30).",
+              "url": "https://docs.github.com/en/codespaces/setting-your-user-preferences/configuring-automatic-deletion-of-your-codespaces"
             },
             {
-              "text": "Coder, “Self-Hosted Cloud Development Environments.” Open-source platform for provisioning dev environments on any infrastructure with templates.",
-              "url": "https://coder.com"
+              "text": "Coder Dev Containers integration supports multi-container environments inside workspaces via Docker Compose.",
+              "url": "https://coder.com/docs/admin/templates/managing-templates/devcontainers"
             },
             {
-              "text": "Vercel, “Frontend Cloud Platform.” Deployment platform for frontend frameworks with preview deployments and edge functions.",
-              "url": "https://vercel.com/"
+              "text": "Railway supports multi-service projects with private networking for zero-cost service-to-service communication.",
+              "url": "https://docs.railway.com/services"
             },
             {
-              "text": "Railway, “Platform Features.” Cloud deployment platform with instant deploys, preview environments, and managed databases.",
-              "url": "https://railway.com/features"
+              "text": "Coder is a self-hosted open-source (AGPL v3.0) platform deployed in private data centers or cloud services.",
+              "url": "https://coder.com/docs/about"
+            },
+            {
+              "text": "Vercel provisions resources and deploys to Smart CDN making apps live within seconds.",
+              "url": "https://vercel.com/docs/deployments"
+            },
+            {
+              "text": "Railway provides instant previews with auto-config and automatic build-and-package upon source changes.",
+              "url": "https://docs.railway.com/deployments/reference"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc's btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -4257,11 +4084,7 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": [
-              "Run clone",
-              "47s",
-              "100% match"
-            ]
+            "newSteps": ["Run clone", "47s", "100% match"]
           }
         },
         "calculator": {
@@ -4419,122 +4242,38 @@
           "features": [
             {
               "name": "Full production data clone",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "OS + library parity verification",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Any database engine (MariaDB, Postgres, Mongo)",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                5,
-                0,
-                7,
-                0
-              ]
+              "values": ["cross", "check", "cross", "check", "rediacc"],
+              "refs": [0, 4, 0, 5, 0]
             },
             {
               "name": "Multi-service clone (app + DB + mail + storage)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Zero-copy storage (CoW)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Self-hosted / no vendor lock-in",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                5,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "check", "cross", "cross", "rediacc"],
+              "refs": [0, 6, 0, 0, 0]
             },
             {
               "name": "Sub-60-second provisioning",
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                6,
-                7,
-                0
-              ]
+              "values": ["cross", "cross", "check", "check", "rediacc"],
+              "refs": [0, 0, 7, 8, 0]
             }
           ]
         },
@@ -4631,20 +4370,24 @@
               "url": "https://release.com/blog/hidden-costs-of-staging"
             },
             {
-              "text": "GitHub, “GitHub Codespaces.” Cloud-hosted development environments with VS Code integration, prebuilds, and configurable compute.",
-              "url": "https://github.com/features/codespaces/"
+              "text": "Coder Terraform templates can provision any database engine as part of the workspace infrastructure.",
+              "url": "https://coder.com/docs/admin/templates"
             },
             {
-              "text": "Coder, “Self-Hosted Cloud Development Environments.” Open-source platform for provisioning dev environments on any infrastructure with templates.",
-              "url": "https://coder.com"
+              "text": "Railway supports one-click provisioning of PostgreSQL, MySQL, Redis, and MongoDB with zero configuration.",
+              "url": "https://docs.railway.com/databases"
             },
             {
-              "text": "Vercel, “Frontend Cloud Platform.” Deployment platform for frontend frameworks with preview deployments and edge functions.",
-              "url": "https://vercel.com/"
+              "text": "Coder is a self-hosted open-source (AGPL v3.0) platform deployed in private data centers or cloud services.",
+              "url": "https://coder.com/docs/about"
             },
             {
-              "text": "Railway, “Platform Features.” Cloud deployment platform with instant deploys, preview environments, and managed databases.",
-              "url": "https://railway.com/features"
+              "text": "Vercel provisions resources and deploys to Smart CDN making apps live within seconds.",
+              "url": "https://vercel.com/docs/deployments"
+            },
+            {
+              "text": "Railway provides instant previews with auto-config and automatic build-and-package upon source changes.",
+              "url": "https://docs.railway.com/deployments/reference"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc’s btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -4809,11 +4552,7 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": [
-              "git push",
-              "Auto",
-              "Real data"
-            ]
+            "newSteps": ["git push", "Auto", "Real data"]
           }
         },
         "calculator": {
@@ -4867,31 +4606,19 @@
               {
                 "title": "Git Push",
                 "status": "Trigger",
-                "items": [
-                  "branch: feature/auth-v2",
-                  "commit: a3f7b2c",
-                  "author: sarah"
-                ],
+                "items": ["branch: feature/auth-v2", "commit: a3f7b2c", "author: sarah"],
                 "footer": "webhook → rdc"
               },
               {
                 "title": "Clone",
                 "status": "CoW",
-                "items": [
-                  "gitlab · nextcloud",
-                  "mariadb · mailcow",
-                  "380 GB → 2.1 GB"
-                ],
+                "items": ["gitlab · nextcloud", "mariadb · mailcow", "380 GB → 2.1 GB"],
                 "footer": "ci-auth-v2"
               },
               {
                 "title": "Tests",
                 "status": "Passed",
-                "items": [
-                  "247 unit tests ✓",
-                  "38 integration ✓",
-                  "auto-cleanup ✓"
-                ],
+                "items": ["247 unit tests ✓", "38 integration ✓", "auto-cleanup ✓"],
                 "footer": "285 passed"
               }
             ],
@@ -4961,105 +4688,33 @@
           "features": [
             {
               "name": "Production data in CI clones",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "One-line webhook integration",
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                3,
-                0,
-                5,
-                6,
-                0
-              ]
+              "values": ["check", "cross", "check", "check", "rediacc"],
+              "refs": [3, 0, 4, 5, 0]
             },
             {
               "name": "Multi-service CI environment",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                4,
-                0,
-                6,
-                0
-              ]
+              "values": ["cross", "check", "cross", "check", "rediacc"],
+              "refs": [0, 6, 0, 7, 0]
             },
             {
               "name": "Auto-destroy after pipeline",
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                3,
-                0,
-                5,
-                0,
-                0
-              ]
+              "values": ["check", "cross", "check", "cross", "rediacc"],
+              "refs": [8, 0, 9, 0, 0]
             },
             {
               "name": "Zero custom provisioning scripts",
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                5,
-                6,
-                0
-              ]
+              "values": ["cross", "cross", "check", "check", "rediacc"],
+              "refs": [0, 0, 10, 11, 0]
             },
             {
               "name": "Self-hosted / no vendor lock-in",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                4,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "check", "cross", "cross", "rediacc"],
+              "refs": [0, 12, 0, 0, 0]
             }
           ]
         },
@@ -5152,20 +4807,44 @@
               "url": "https://dora.dev/research/2024/dora-report/"
             },
             {
-              "text": "GitHub, “GitHub Codespaces.” Cloud-hosted development environments with VS Code integration, prebuilds, and configurable compute.",
-              "url": "https://github.com/features/codespaces/"
+              "text": "GitHub webhooks deliver HTTP POST payloads for codespace lifecycle events enabling CI/CD integration.",
+              "url": "https://docs.github.com/en/webhooks/about-webhooks"
             },
             {
-              "text": "Coder, “Self-Hosted Cloud Development Environments.” Open-source platform for provisioning dev environments on any infrastructure with templates.",
-              "url": "https://coder.com"
+              "text": "Vercel webhooks support deployment, project, and domain events; deploy hooks trigger deployments from external systems.",
+              "url": "https://vercel.com/docs/webhooks"
             },
             {
-              "text": "Vercel, “Frontend Cloud Platform.” Deployment platform for frontend frameworks with preview deployments and edge functions.",
-              "url": "https://vercel.com/"
+              "text": "Railway webhooks notify applications of deployment status changes across all environments.",
+              "url": "https://docs.railway.com/guides/webhooks"
             },
             {
-              "text": "Railway, “Platform Features.” Cloud deployment platform with instant deploys, preview environments, and managed databases.",
-              "url": "https://railway.com/features"
+              "text": "Coder templates extend with Docker Compose and Terraform for multi-service CI environments with databases and caches.",
+              "url": "https://coder.com/docs/admin/templates/extending-templates"
+            },
+            {
+              "text": "Railway Focused PR Environments deploy only affected services for optimized multi-service CI.",
+              "url": "https://docs.railway.com/guides/environments"
+            },
+            {
+              "text": "Stopped codespaces are automatically deleted after a configurable retention period (0-30 days, default 30).",
+              "url": "https://docs.github.com/en/codespaces/setting-your-user-preferences/configuring-automatic-deletion-of-your-codespaces"
+            },
+            {
+              "text": "Vercel deployment retention policies auto-delete deployments after a configurable period.",
+              "url": "https://vercel.com/docs/deployment-retention"
+            },
+            {
+              "text": "Vercel Zero Config works for any framework with a build script requiring no additional configuration.",
+              "url": "https://vercel.com/blog/zero-config"
+            },
+            {
+              "text": "Railway uses Nixpacks for zero-configuration builds that auto-detect language and dependencies.",
+              "url": "https://docs.railway.com/builds/nixpacks"
+            },
+            {
+              "text": "Coder is a self-hosted open-source (AGPL v3.0) platform deployed in private data centers or cloud services.",
+              "url": "https://coder.com/docs/about"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc’s btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -5321,11 +5000,7 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": [
-              "Backup",
-              "Sealed",
-              "Verified"
-            ]
+            "newSteps": ["Backup", "Sealed", "Verified"]
           }
         },
         "calculator": {
@@ -5487,136 +5162,38 @@
           "features": [
             {
               "name": "Immutable backups",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                5,
-                6,
-                7,
-                8,
-                0,
-                0
-              ]
+              "values": ["check", "check", "check", "check", "cross", "rediacc"],
+              "refs": [4, 5, 6, 7, 0, 0]
             },
             {
               "name": "Filesystem-level enforcement",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0, 0]
             },
             {
               "name": "Automated daily restore verification",
-              "values": [
-                "check",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                5,
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["check", "cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [8, 0, 0, 0, 0, 0]
             },
             {
               "name": "Zero-copy storage (CoW)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0, 0]
             },
             {
               "name": "Instant clone for testing",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                5,
-                6,
-                7,
-                8,
-                9,
-                0
-              ]
+              "values": ["check", "check", "check", "check", "check", "rediacc"],
+              "refs": [9, 10, 11, 12, 13, 0]
             },
             {
               "name": "Recovery time",
-              "values": [
-                "Minutes",
-                "Minutes",
-                "Minutes",
-                "Minutes",
-                "Seconds",
-                "<5 min"
-              ],
-              "refs": [
-                5,
-                6,
-                7,
-                8,
-                9,
-                0
-              ]
+              "values": ["Minutes", "Minutes", "Minutes", "Minutes", "Seconds", "<5 min"],
+              "refs": [14, 15, 16, 17, 18, 0]
             },
             {
               "name": "Self-hosted / no cloud dependency",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                5,
-                6,
-                7,
-                0,
-                9,
-                0
-              ]
+              "values": ["check", "check", "check", "cross", "check", "rediacc"],
+              "refs": [19, 20, 21, 0, 22, 0]
             }
           ]
         },
@@ -5725,28 +5302,80 @@
               "url": "https://www.coveware.com/blog/2022/7/27/fewer-ransomware-victims-pay-as-medium-ransom-falls-in-q2-2022"
             },
             {
-              "text": "Splunk & Oxford Economics, “The Hidden Costs of Downtime,” June 2024. “Each minute of downtime costs $9,000 or $540,000 per hour.”",
-              "url": "https://www.splunk.com/en_us/blog/cio-office/cost-of-downtime-from-global-executives.html"
+              "text": "Veeam Hardened Repository provides Linux-based immutable backup storage using XFS with the immutable flag set at the file level.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/hardened_repository.html"
             },
             {
-              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
-              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+              "text": "Rubrik Atlas filesystem stores all backup data in proprietary append-only immutable format that cannot be modified or deleted.",
+              "url": "https://www.rubrik.com/content/dam/rubrik/en/resources/white-paper/rwp-recovering-fast-from-ransomware-attacks.pdf"
             },
             {
-              "text": "Rubrik, “Zero Trust Data Management.” Immutable append-only file system, air-gapped backups, SaaS-delivered platform, instant recovery.",
-              "url": "https://www.rubrik.com/products/zero-trust-data-management"
+              "text": "Commvault supports WORM storage lock and compliance lock on disk libraries for immutable backups.",
+              "url": "https://documentation.commvault.com/2024e/software/configuring_worm_storage_mode_on_disk_libraries.html"
             },
             {
-              "text": "Commvault, “Backup & Recovery Platform.” Immutable and indelible storage, air-gapped backups, ransomware protection, self-hosted deployment.",
-              "url": "https://www.commvault.com/platform/backup-and-recovery"
+              "text": "Druva's SaaS architecture stores backups in an air-gapped, immutable cloud decoupled from the customer's environment.",
+              "url": "https://www.druva.com/resources/solution-brief/solution-brief-druva-immutability"
             },
             {
-              "text": "Druva, “Cloud Backup & Recovery.” SaaS-only cloud-native platform, immutable snapshots, air-gapped storage, ransomware recovery.",
-              "url": "https://www.druva.com/solutions/cloud-backup"
+              "text": "Veeam SureBackup automatically verifies backup recoverability by booting VMs in an isolated Virtual Lab environment.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Zerto, “Continuous Data Protection.” Journal-based recovery with RPOs of seconds and RTOs of minutes, near-synchronous always-on replication.",
-              "url": "https://www.zerto.com/"
+              "text": "Veeam Instant VM Recovery mounts backups directly on ESXi/Hyper-V hosts for near-instant VM recovery and testing.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
+            },
+            {
+              "text": "Rubrik Live Mount instantly mounts backup snapshots as live VMs or file shares for testing and recovery.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
+            },
+            {
+              "text": "Commvault Live Recovery boots VMs directly from backup via NFS export for instant testing and recovery.",
+              "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
+            },
+            {
+              "text": "Druva Instant Restore boots VMware VMs directly from backup cloud in under 5 minutes with live migration.",
+              "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
+            },
+            {
+              "text": "Zerto continuous replication with journal-based recovery delivers near-zero RPO and minutes-level RTO for instant recovery.",
+              "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
+            },
+            {
+              "text": "Veeam Instant VM Recovery enables sub-5-minute RTO by booting VMs directly from backup files.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
+            },
+            {
+              "text": "Rubrik Instant Recovery enables sub-5-minute recovery by mounting VMs directly from immutable snapshots.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
+            },
+            {
+              "text": "Commvault Live Recovery enables sub-5-minute RTO by mounting VMs from backup with background Storage vMotion.",
+              "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
+            },
+            {
+              "text": "Druva Instant Restore minimizes downtime with sub-5-minute VM recovery directly from backup cloud storage.",
+              "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
+            },
+            {
+              "text": "Zerto's always-on replication with sub-10-second RPOs and minute-level RTOs enables near-instant full-environment recovery.",
+              "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
+            },
+            {
+              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
+            },
+            {
+              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
+            },
+            {
+              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
+            },
+            {
+              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc’s btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -5914,11 +5543,7 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": [
-              "Run migrate",
-              "0 exposure",
-              "Verified"
-            ]
+            "newSteps": ["Run migrate", "0 exposure", "Verified"]
           }
         },
         "calculator": {
@@ -6078,122 +5703,38 @@
           "features": [
             {
               "name": "Zero-decryption migration",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Customer-held keys during transfer",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Config + data atomic migration",
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                7,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "check", "cross", "rediacc"],
+              "refs": [0, 0, 5, 0, 0]
             },
             {
               "name": "Post-transfer integrity verification",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                5,
-                6,
-                7,
-                8,
-                0
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"],
+              "refs": [6, 7, 8, 9, 0]
             },
             {
               "name": "Single-command migration",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Any-to-any destination",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                5,
-                6,
-                7,
-                0,
-                0
-              ]
+              "values": ["check", "check", "check", "cross", "rediacc"],
+              "refs": [10, 11, 12, 0, 0]
             },
             {
               "name": "Automatic rollback on failure",
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                7,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "check", "cross", "rediacc"],
+              "refs": [0, 0, 13, 0, 0]
             }
           ]
         },
@@ -6306,20 +5847,40 @@
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
-              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
-              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+              "text": "Commvault CommCell Migration moves entire clients including configuration, backup history, and data as a single operation.",
+              "url": "https://documentation.commvault.com/v11/commcell-console/commcell_migration_overview.html"
             },
             {
-              "text": "Rubrik, “Zero Trust Data Management.” Immutable append-only file system, air-gapped backups, SaaS-delivered platform, instant recovery.",
-              "url": "https://www.rubrik.com/products/zero-trust-data-management"
+              "text": "Veeam SureBackup verifies data integrity post-transfer by booting VMs and running application-level health checks.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Commvault, “Backup & Recovery Platform.” Immutable and indelible storage, air-gapped backups, ransomware protection, self-hosted deployment.",
-              "url": "https://www.commvault.com/platform/backup-and-recovery"
+              "text": "Rubrik performs automated integrity checks on ingested data using its append-only file system verification.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Druva, “Cloud Backup & Recovery.” SaaS-only cloud-native platform, immutable snapshots, air-gapped storage, ransomware recovery.",
-              "url": "https://www.druva.com/solutions/cloud-backup"
+              "text": "Commvault validates data integrity post-transfer using CRC checksums at multiple stages including Data Verification jobs.",
+              "url": "https://documentation.commvault.com/2024e/commcell-console/data_integrity_validation.html"
+            },
+            {
+              "text": "Druva Restore Check proactively verifies backup data consistency and device snapshots on an automated schedule.",
+              "url": "https://help.druva.com/en/articles/8513279-verify-the-integrity-of-the-downloaded-data"
+            },
+            {
+              "text": "Veeam supports cross-platform recovery including VMware-to-Hyper-V, physical-to-virtual, and cloud migrations via Instant Recovery.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
+            },
+            {
+              "text": "Rubrik supports cross-platform Live Mount and export to VMware, Hyper-V, AWS, and Azure environments.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
+            },
+            {
+              "text": "Commvault supports cross-hypervisor restores (VM conversion) between VMware, Hyper-V, AWS, Azure, GCP, and more.",
+              "url": "https://documentation.commvault.com/saas/cross_hypervisor_restores_vm_conversion.html"
+            },
+            {
+              "text": "Commvault Undo Failover automatically rolls back to pre-failover state by restoring original VM configuration.",
+              "url": "https://documentation.commvault.com/v11/software/undoing_failover.html"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc’s btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -6484,11 +6045,7 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": [
-              "Run restore",
-              "3m 47s",
-              "Running"
-            ]
+            "newSteps": ["Run restore", "3m 47s", "Running"]
           }
         },
         "calculator": {
@@ -6652,122 +6209,38 @@
           "features": [
             {
               "name": "Full environment restore (not just files)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Sub-5-minute recovery time",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                4,
-                5,
-                6,
-                7,
-                0
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"],
+              "refs": [4, 5, 6, 7, 0]
             },
             {
               "name": "Automated post-restore health checks",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Point-in-time snapshot granularity",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                4,
-                5,
-                6,
-                7,
-                0
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"],
+              "refs": [8, 9, 10, 11, 0]
             },
             {
               "name": "Zero-overhead clone (no extra storage)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Single-command recovery",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                4,
-                5,
-                6,
-                0,
-                0
-              ]
+              "values": ["check", "check", "check", "cross", "rediacc"],
+              "refs": [12, 13, 14, 0, 0]
             }
           ]
         },
@@ -6876,20 +6349,48 @@
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
             },
             {
-              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
-              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+              "text": "Veeam Instant VM Recovery enables sub-5-minute RTO by booting VMs directly from backup files.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik, “Zero Trust Data Management.” Immutable append-only file system, air-gapped backups, SaaS-delivered platform, instant recovery.",
-              "url": "https://www.rubrik.com/products/zero-trust-data-management"
+              "text": "Rubrik Instant Recovery enables sub-5-minute recovery by mounting VMs directly from immutable snapshots.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault, “Backup & Recovery Platform.” Immutable and indelible storage, air-gapped backups, ransomware protection, self-hosted deployment.",
-              "url": "https://www.commvault.com/platform/backup-and-recovery"
+              "text": "Commvault Live Recovery enables sub-5-minute RTO by mounting VMs from backup with background Storage vMotion.",
+              "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva, “Cloud Backup & Recovery.” SaaS-only cloud-native platform, immutable snapshots, air-gapped storage, ransomware recovery.",
-              "url": "https://www.druva.com/solutions/cloud-backup"
+              "text": "Druva Instant Restore minimizes downtime with sub-5-minute VM recovery directly from backup cloud storage.",
+              "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
+            },
+            {
+              "text": "Veeam supports per-VM snapshot-based restore points with configurable backup schedules and continuous data protection.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/cdp_replication.html"
+            },
+            {
+              "text": "Rubrik provides SLA-driven snapshot policies with configurable frequency for granular point-in-time recovery.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
+            },
+            {
+              "text": "Commvault supports point-in-time recovery using snapshots for VMs, file servers, databases, and applications.",
+              "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
+            },
+            {
+              "text": "Druva maintains hot, warm, and cold recovery points enabling point-in-time restores of VMs, databases, and SaaS apps.",
+              "url": "https://help.druva.com/en/articles/8651296-recovery-points-that-you-can-restore"
+            },
+            {
+              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
+            },
+            {
+              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
+            },
+            {
+              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc’s btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -7060,11 +6561,7 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": [
-              "Clone",
-              "60s",
-              "Patch & verify"
-            ]
+            "newSteps": ["Clone", "60s", "Patch & verify"]
           }
         },
         "calculator": {
@@ -7226,122 +6723,38 @@
           "features": [
             {
               "name": "Full-stack clone for testing",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Clone creation under 60s",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Isolated network per clone",
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                5,
-                0,
-                7,
-                8,
-                0
-              ]
+              "values": ["check", "cross", "check", "check", "rediacc"],
+              "refs": [4, 0, 5, 6, 0]
             },
             {
               "name": "Zero additional storage (CoW)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Auto health check after patch",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                5,
-                6,
-                7,
-                8,
-                0
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"],
+              "refs": [7, 8, 9, 10, 0]
             },
             {
               "name": "Self-hosted, no cloud dependency",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                5,
-                6,
-                7,
-                8,
-                0
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"],
+              "refs": [11, 12, 13, 14, 0]
             },
             {
               "name": "One-command workflow",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             }
           ]
         },
@@ -7450,24 +6863,48 @@
               "url": "https://www.splunk.com/en_us/blog/cio-office/cost-of-downtime-from-global-executives.html"
             },
             {
-              "text": "IBM Security, “Cost of a Data Breach Report 2024,” July 2024. “The global average cost of a data breach reached $4.88 million in 2024.”",
-              "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
+              "text": "Veeam Virtual Lab creates isolated network environments for SureBackup testing without impacting production networks.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/virtual_lab.html"
             },
             {
-              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
-              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+              "text": "Commvault Cleanroom Recovery creates Isolated Recovery Environments (IREs) with network isolation preventing outbound communication.",
+              "url": "https://documentation.commvault.com/11.42/commvault-user-guide/cleanroom_recovery_isolated_recovery_environments_ires_for_cyber_resilience.html"
             },
             {
-              "text": "Rubrik, “Zero Trust Data Management.” Immutable append-only file system, air-gapped backups, SaaS-delivered platform, instant recovery.",
-              "url": "https://www.rubrik.com/products/zero-trust-data-management"
+              "text": "Zerto test failovers run in isolated bubble networks that prevent interaction with production systems during testing.",
+              "url": "https://help.zerto.com/bundle/DR.Test.VC.HTML/page/The_Failover_Test_Operation.htm"
             },
             {
-              "text": "Commvault, “Backup & Recovery Platform.” Immutable and indelible storage, air-gapped backups, ransomware protection, self-hosted deployment.",
-              "url": "https://www.commvault.com/platform/backup-and-recovery"
+              "text": "Veeam SureBackup with Virtual Lab enables automated testing of patches and updates in isolated sandbox environments.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Zerto, “Continuous Data Protection.” Journal-based recovery with RPOs of seconds and RTOs of minutes, near-synchronous always-on replication.",
-              "url": "https://www.zerto.com/"
+              "text": "Rubrik Live Mount enables safe testing of patches by mounting clean snapshots in isolated environments.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
+            },
+            {
+              "text": "Commvault Cleanroom Recovery enables testing patches in isolated cleanroom environments before applying to production.",
+              "url": "https://documentation.commvault.com/2024e/software/cleanroom_recovery_use_cases.html"
+            },
+            {
+              "text": "Zerto Orchestrator automates periodic failover tests validating VPG checkpoint health and recovery VM boot correctness.",
+              "url": "https://help.zerto.com/bundle/Orchestrator.HTML.95/page/Automated_Failover_Testing_with_the_Zerto_Orchestrator.htm"
+            },
+            {
+              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
+            },
+            {
+              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
+            },
+            {
+              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
+            },
+            {
+              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc’s btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -7634,11 +7071,7 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": [
-              "Set policy",
-              "Auto",
-              "Audit-ready"
-            ]
+            "newSteps": ["Set policy", "Auto", "Audit-ready"]
           }
         },
         "calculator": {
@@ -7801,122 +7234,38 @@
           "features": [
             {
               "name": "Configurable retention policies",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                4,
-                5,
-                6,
-                7,
-                0
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"],
+              "refs": [4, 5, 6, 7, 0]
             },
             {
               "name": "Automated lifecycle cleanup",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                4,
-                5,
-                6,
-                7,
-                0
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"],
+              "refs": [8, 9, 10, 11, 0]
             },
             {
               "name": "Retained backup verification",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Instant audit-ready reports",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                4,
-                5,
-                6,
-                7,
-                0
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"],
+              "refs": [12, 13, 14, 15, 0]
             },
             {
               "name": "Multi-framework support",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                4,
-                5,
-                6,
-                7,
-                0
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"],
+              "refs": [16, 17, 18, 19, 0]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                4,
-                5,
-                6,
-                0,
-                0
-              ]
+              "values": ["check", "check", "check", "cross", "rediacc"],
+              "refs": [20, 21, 22, 0, 0]
             },
             {
               "name": "CLI / automation-first",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             }
           ]
         },
@@ -8025,20 +7374,80 @@
               "url": "https://cms.law/en/int/publication/gdpr-enforcement-tracker-report/numbers-and-figures"
             },
             {
-              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
-              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+              "text": "Veeam provides configurable GFS (Grandfather-Father-Son) retention policies for daily, weekly, monthly, and yearly backups.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/gfs_retention_policy.html"
             },
             {
-              "text": "Rubrik, “Zero Trust Data Management.” Immutable append-only file system, air-gapped backups, SaaS-delivered platform, instant recovery.",
-              "url": "https://www.rubrik.com/products/zero-trust-data-management"
+              "text": "Rubrik SLA Domains provide automated retention with configurable local and archive retention periods.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Commvault, “Backup & Recovery Platform.” Immutable and indelible storage, air-gapped backups, ransomware protection, self-hosted deployment.",
-              "url": "https://www.commvault.com/platform/backup-and-recovery"
+              "text": "Commvault provides configurable retention policies with basic, extended (GFS), and infinite retention options.",
+              "url": "https://documentation.commvault.com/v11/commcell-console/data_retention.html"
             },
             {
-              "text": "Druva, “Cloud Backup & Recovery.” SaaS-only cloud-native platform, immutable snapshots, air-gapped storage, ransomware recovery.",
-              "url": "https://www.druva.com/solutions/cloud-backup"
+              "text": "Druva supports GFS retention policies with daily/weekly/monthly/yearly schedules plus Long-Term Retention to cold storage.",
+              "url": "https://docs.druva.com/CloudRanger/013_Manage_Backup_Policies/About_Backup_Policies_and_Backup_Types/About_Retention_for_Backup_Policies"
+            },
+            {
+              "text": "Veeam Scale-out Backup Repository automates data lifecycle with performance, capacity, and archive tiers.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/backup_repository_sobr.html"
+            },
+            {
+              "text": "Rubrik SLA policies automate data lifecycle management with tiering from local to archive storage.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
+            },
+            {
+              "text": "Commvault Data Aging automates data lifecycle by pruning expired backup data based on retention settings.",
+              "url": "https://documentation.commvault.com/v11/commcell-console/media_management_configuration_data_aging.html"
+            },
+            {
+              "text": "Druva automatically tiers data between S3, Glacier, and Deep Archive using ML-driven storage tiering.",
+              "url": "https://help.druva.com/en/articles/8651731-about-long-term-retention"
+            },
+            {
+              "text": "Veeam ONE provides built-in reporting and monitoring dashboards with compliance-ready audit reports.",
+              "url": "https://helpcenter.veeam.com/docs/one/reporter/about_reporter.html"
+            },
+            {
+              "text": "Rubrik provides compliance and activity reports through its Envision reporting engine for governance needs.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/envision_creating_reports.html"
+            },
+            {
+              "text": "Commvault Audit Trail Report displays all user operations across Critical, High, Medium, and Low severity levels.",
+              "url": "https://documentation.commvault.com/saas/audit_trail_report_01.html"
+            },
+            {
+              "text": "Druva maintains a three-year audit trail of every admin and user activity with downloadable HTML/CSV reports.",
+              "url": "https://docs.druva.com/Cyber_Resilience/Audit_Trails/About_Audit_Trails"
+            },
+            {
+              "text": "Veeam Compliance Analyzer validates backup infrastructure against security and compliance best practices.",
+              "url": "https://helpcenter.veeam.com/docs/one/reporter/compliance_analyzer.html"
+            },
+            {
+              "text": "Rubrik Security Cloud enables compliance monitoring with SOC2, HIPAA, and PCI-DSS reporting templates.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/envision_creating_reports.html"
+            },
+            {
+              "text": "Commvault holds ISO 27001, SOC 2 Type II, HIPAA, PCI DSS, FedRAMP High, and IRAP certifications.",
+              "url": "https://documentation.commvault.com/saas/security_and_compliance.html"
+            },
+            {
+              "text": "Druva holds SOC 2 Type II, HIPAA, FedRAMP ATO, and FIPS 140-2 certifications with GDPR/CCPA monitoring templates.",
+              "url": "https://www.druva.com/use-cases/compliance"
+            },
+            {
+              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
+            },
+            {
+              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
+            },
+            {
+              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc’s btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -8206,11 +7615,7 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": [
-              "Detect",
-              "<30s",
-              "Online"
-            ]
+            "newSteps": ["Detect", "<30s", "Online"]
           }
         },
         "calculator": {
@@ -8373,122 +7778,38 @@
           "features": [
             {
               "name": "Cross-cloud replication",
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                5,
-                6,
-                7,
-                0
-              ]
+              "values": ["cross", "check", "check", "check", "rediacc"],
+              "refs": [0, 4, 5, 6, 0]
             },
             {
               "name": "Failover under 30 seconds",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Incremental-only transfer (98% savings)",
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                5,
-                6,
-                7,
-                0
-              ]
+              "values": ["cross", "check", "check", "check", "rediacc"],
+              "refs": [0, 7, 8, 9, 0]
             },
             {
               "name": "Any-to-any provider failover",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Self-hosted, no cloud agent",
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                5,
-                6,
-                0,
-                0
-              ]
+              "values": ["cross", "check", "check", "cross", "rediacc"],
+              "refs": [0, 10, 11, 0, 0]
             },
             {
               "name": "Automatic DNS failover",
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                6,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "check", "cross", "rediacc"],
+              "refs": [0, 0, 12, 0, 0]
             },
             {
               "name": "Full-stack replication (app + DB)",
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                5,
-                6,
-                0,
-                0
-              ]
+              "values": ["cross", "check", "check", "cross", "rediacc"],
+              "refs": [0, 13, 14, 0, 0]
             }
           ]
         },
@@ -8597,20 +7918,48 @@
               "url": "https://www.splunk.com/en_us/newsroom/press-releases/2024/conf24-splunk-report-shows-downtime-costs-global-2000-companies-400-billion-annually.html"
             },
             {
-              "text": "AWS, “AWS Backup Features.” Centralized, policy-based backup service for AWS resources with cross-region and cross-account capabilities.",
-              "url": "https://aws.amazon.com/backup/features/"
+              "text": "Veeam supports cross-cloud backup and replication between VMware, Hyper-V, AWS, Azure, and Google Cloud.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
-              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+              "text": "Zerto replicates workloads between VMware, Hyper-V, AWS, Azure, IBM Cloud, and 350+ cloud service providers.",
+              "url": "https://www.zerto.com/solutions/use-cases/cloud/hybrid-cloud-and-multi-cloud/"
             },
             {
-              "text": "Zerto, “Continuous Data Protection.” Journal-based recovery with RPOs of seconds and RTOs of minutes, near-synchronous always-on replication.",
-              "url": "https://www.zerto.com/"
+              "text": "Druva provides cross-cloud DR by storing backup data across AWS and Azure from a single console.",
+              "url": "https://www.druva.com/solutions/accelerate-protect-cloud-projects"
             },
             {
-              "text": "Druva, “Cloud Backup & Recovery.” SaaS-only cloud-native platform, immutable snapshots, air-gapped storage, ransomware recovery.",
-              "url": "https://www.druva.com/solutions/cloud-backup"
+              "text": "Veeam uses incremental backup with Changed Block Tracking (CBT) to transfer only modified data blocks.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/changed_block_tracking.html"
+            },
+            {
+              "text": "Zerto VRAs continuously replicate only changed data blocks at the hypervisor level in near-synchronous fashion.",
+              "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
+            },
+            {
+              "text": "Druva uses incremental-forever backup with global variable-block deduplication achieving up to 90% bandwidth savings.",
+              "url": "https://help.druva.com/en/articles/12158018-first-backup-vs-incremental-backups"
+            },
+            {
+              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
+            },
+            {
+              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
+            },
+            {
+              "text": "Zerto provides automated Re-IP of recovered VMs during failover with pre/post recovery scripts for DNS updates.",
+              "url": "https://help.zerto.com/kb/000002926"
+            },
+            {
+              "text": "Veeam Backup & Replication provides continuous replication of full application stacks with orchestrated failover.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/replica_job.html"
+            },
+            {
+              "text": "Zerto Virtual Protection Groups replicate multi-VM application stacks as a single consistent unit with write-order fidelity.",
+              "url": "https://help.zerto.com/bundle/Admin.VC.HTML/page/ProtectingVirtualMachinesfrom.htm"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc’s btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -8771,11 +8120,7 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": [
-              "Run test",
-              "4 min",
-              "Report"
-            ]
+            "newSteps": ["Run test", "4 min", "Report"]
           }
         },
         "calculator": {
@@ -8937,122 +8282,38 @@
           "features": [
             {
               "name": "Full-stack failover test",
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                4,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "check", "cross", "rediacc"],
+              "refs": [0, 0, 2, 0, 0]
             },
             {
               "name": "Zero production impact",
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                3,
-                4,
-                5,
-                0
-              ]
+              "values": ["cross", "check", "check", "check", "rediacc"],
+              "refs": [0, 3, 4, 5, 0]
             },
             {
               "name": "Under 5 minutes",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Automated pass/fail report",
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                3,
-                4,
-                0,
-                0
-              ]
+              "values": ["cross", "check", "check", "cross", "rediacc"],
+              "refs": [0, 6, 7, 0, 0]
             },
             {
               "name": "CI/CD integration",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Cross-cloud testing",
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                3,
-                4,
-                0,
-                0
-              ]
+              "values": ["cross", "check", "check", "cross", "rediacc"],
+              "refs": [0, 8, 9, 0, 0]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                3,
-                4,
-                0,
-                0
-              ]
+              "values": ["cross", "check", "check", "cross", "rediacc"],
+              "refs": [0, 10, 11, 0, 0]
             }
           ]
         },
@@ -9153,20 +8414,44 @@
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
             },
             {
-              "text": "AWS, “AWS Backup Features.” Centralized, policy-based backup service for AWS resources with cross-region and cross-account capabilities.",
-              "url": "https://aws.amazon.com/backup/features/"
+              "text": "Zerto test failovers spin up replica VMs on scratch disks in isolated bubble networks with zero production impact.",
+              "url": "https://help.zerto.com/bundle/DR.Test.VC.HTML/page/The_Failover_Test_Operation.htm"
             },
             {
-              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
-              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+              "text": "Veeam SureBackup runs automated recovery verification in an isolated Virtual Lab with zero production impact.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/virtual_lab.html"
             },
             {
-              "text": "Zerto, “Continuous Data Protection.” Journal-based recovery with RPOs of seconds and RTOs of minutes, near-synchronous always-on replication.",
-              "url": "https://www.zerto.com/"
+              "text": "Zerto Orchestrator automates scheduled failover tests with zero production impact and generates compliance reports.",
+              "url": "https://www.zerto.com/the-platform/automated-disaster-recovery-testing/"
             },
             {
-              "text": "Druva, “Cloud Backup & Recovery.” SaaS-only cloud-native platform, immutable snapshots, air-gapped storage, ransomware recovery.",
-              "url": "https://www.druva.com/solutions/cloud-backup"
+              "text": "Druva DR plan testing spins up cloned resources on-demand without touching production for RTO/RPO validation.",
+              "url": "https://help.druva.com/en/articles/8806108-execute-test-vs-execute-failure-of-a-dr-plan"
+            },
+            {
+              "text": "Veeam ONE Reporter generates detailed DR readiness and compliance reports for audit and governance.",
+              "url": "https://helpcenter.veeam.com/docs/one/reporter/about_reporter.html"
+            },
+            {
+              "text": "Zerto generates Recovery Reports after every failover test with up to 90 days of historical data for SLA validation.",
+              "url": "https://help.zerto.com/bundle/Admin.VC.HTML/page/Recovery_Reports.htm"
+            },
+            {
+              "text": "Veeam SureBackup validates recoverability of cloud workloads including AWS and Azure VMs in isolated tests.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
+            },
+            {
+              "text": "Zerto supports cross-cloud test failovers (on-prem to Azure, AWS to Azure) using scratch disks in isolated networks.",
+              "url": "https://help.zerto.com/bundle/Admin.Azure.HTML.10.0_U1/page/The_Test_Failover_Process.htm"
+            },
+            {
+              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
+            },
+            {
+              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc’s btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -9331,11 +8616,7 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": [
-              "Backup",
-              "47s",
-              "Verified"
-            ]
+            "newSteps": ["Backup", "47s", "Verified"]
           }
         },
         "calculator": {
@@ -9497,122 +8778,38 @@
           "features": [
             {
               "name": "Automated restore verification",
-              "values": [
-                "check",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                4,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["check", "cross", "cross", "cross", "rediacc"],
+              "refs": [4, 0, 0, 0, 0]
             },
             {
               "name": "Full service health check",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Daily automated testing",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Zero-storage clone for testing",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Checksum / file integrity",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                4,
-                5,
-                6,
-                7,
-                0
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"],
+              "refs": [5, 6, 7, 8, 0]
             },
             {
               "name": "Alerting integration",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                4,
-                5,
-                6,
-                7,
-                0
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"],
+              "refs": [9, 10, 11, 12, 0]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                4,
-                5,
-                6,
-                0,
-                0
-              ]
+              "values": ["check", "check", "check", "cross", "rediacc"],
+              "refs": [13, 14, 15, 0, 0]
             }
           ]
         },
@@ -9721,20 +8918,52 @@
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
-              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+              "text": "Veeam SureBackup automatically verifies backup recoverability by booting VMs in an isolated Virtual Lab environment.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Rubrik, “Zero Trust Data Management.” Immutable append-only file system, air-gapped backups, SaaS-delivered platform, instant recovery.",
-              "url": "https://www.rubrik.com/products/zero-trust-data-management"
+              "text": "Veeam performs CRC verification during backup and uses SureBackup for automated integrity validation.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Commvault, “Backup & Recovery Platform.” Immutable and indelible storage, air-gapped backups, ransomware protection, self-hosted deployment.",
-              "url": "https://www.commvault.com/platform/backup-and-recovery"
+              "text": "Rubrik validates data integrity automatically through its Atlas file system with built-in checksums on all stored data.",
+              "url": "https://www.rubrik.com/content/dam/rubrik/en/resources/white-paper/rwp-recovering-fast-from-ransomware-attacks.pdf"
             },
             {
-              "text": "Druva, “Cloud Backup & Recovery.” SaaS-only cloud-native platform, immutable snapshots, air-gapped storage, ransomware recovery.",
-              "url": "https://www.druva.com/solutions/cloud-backup"
+              "text": "Commvault performs CRC validation at client, Backup Gateway, and media writer stages to detect data corruption.",
+              "url": "https://documentation.commvault.com/saas/cyclic_redundancy_check_crc_validation.html"
+            },
+            {
+              "text": "Druva verifies backup integrity by comparing checksums of downloaded files against cloud-stored versions.",
+              "url": "https://help.druva.com/en/articles/8513279-verify-the-integrity-of-the-downloaded-data"
+            },
+            {
+              "text": "Veeam ONE provides real-time alerting with email, SNMP traps, and webhook notifications for backup events.",
+              "url": "https://helpcenter.veeam.com/docs/one/monitor/about_monitoring.html"
+            },
+            {
+              "text": "Rubrik provides real-time alerting through its Security Cloud platform with SIEM integration and webhook notifications.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/monitoring_and_reporting.html"
+            },
+            {
+              "text": "Commvault supports alerting via webhook, email, SNMP traps, and integrations with Splunk, Teams, and Slack.",
+              "url": "https://documentation.commvault.com/saas/webhook.html"
+            },
+            {
+              "text": "Druva Events API exports backup and security events in CEF/Syslog formats for SIEM ingestion plus webhook integrations.",
+              "url": "https://docs.druva.com/001_inSync_Cloud/Cloud/inSync_APIs/Events_API_to_export_inSync_events/050_Export_inSync_events_to_a_SIEM_tool"
+            },
+            {
+              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
+            },
+            {
+              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
+            },
+            {
+              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc’s btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -9908,12 +9137,7 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": [
-              "Clone + patch",
-              "<4 min",
-              "Verified",
-              "Deploy"
-            ]
+            "newSteps": ["Clone + patch", "<4 min", "Verified", "Deploy"]
           }
         },
         "calculator": {
@@ -10317,11 +9541,7 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": [
-              "Run pentest",
-              "47s",
-              "7 vulns found"
-            ]
+            "newSteps": ["Run pentest", "47s", "7 vulns found"]
           }
         },
         "calculator": {
@@ -10707,11 +9927,7 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": [
-              "Your key",
-              "AES-256",
-              "Zero-knowledge"
-            ]
+            "newSteps": ["Your key", "AES-256", "Zero-knowledge"]
           }
         },
         "calculator": {
@@ -10871,122 +10087,38 @@
           "features": [
             {
               "name": "Customer-held encryption keys",
-              "values": [
-                "Via KMS",
-                "Via KMS",
-                "Via KMS",
-                "Via KMS",
-                "rediacc"
-              ],
-              "refs": [
-                3,
-                4,
-                5,
-                6,
-                0
-              ]
+              "values": ["Via KMS", "Via KMS", "Via KMS", "Via KMS", "rediacc"],
+              "refs": [3, 4, 5, 6, 0]
             },
             {
               "name": "Zero-knowledge architecture",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Self-service key rotation",
-              "values": [
-                "Via KMS",
-                "Via KMS",
-                "Via KMS",
-                "Via KMS",
-                "rediacc"
-              ],
-              "refs": [
-                3,
-                4,
-                5,
-                6,
-                0
-              ]
+              "values": ["Via KMS", "Via KMS", "Via KMS", "Via KMS", "rediacc"],
+              "refs": [7, 8, 9, 10, 0]
             },
             {
               "name": "AES-256 encryption at rest",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                3,
-                4,
-                5,
-                6,
-                0
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"],
+              "refs": [11, 12, 13, 14, 0]
             },
             {
               "name": "Per-repository key isolation",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Encryption in transit",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                3,
-                4,
-                5,
-                6,
-                0
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"],
+              "refs": [15, 16, 17, 18, 0]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                3,
-                4,
-                5,
-                0,
-                0
-              ]
+              "values": ["check", "check", "check", "cross", "rediacc"],
+              "refs": [19, 20, 21, 0, 0]
             }
           ]
         },
@@ -11089,20 +10221,80 @@
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
-              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+              "text": "Veeam supports external KMS integration for encryption key management including AWS KMS and Azure Key Vault.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/kms.html"
             },
             {
-              "text": "Rubrik, “Zero Trust Data Management.” Immutable append-only file system, air-gapped backups, SaaS-delivered platform, instant recovery.",
-              "url": "https://www.rubrik.com/products/zero-trust-data-management"
+              "text": "Rubrik supports customer-managed encryption keys via external KMS integration including KMIP-compatible servers.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/adding_a_key_management_server.html"
             },
             {
-              "text": "Commvault, “Backup & Recovery Platform.” Immutable and indelible storage, air-gapped backups, ransomware protection, self-hosted deployment.",
-              "url": "https://www.commvault.com/platform/backup-and-recovery"
+              "text": "Commvault integrates with AWS KMS, Azure Key Vault, HashiCorp Vault, and KMIP-compatible key management servers.",
+              "url": "https://documentation.commvault.com/v11/software/third_party_key_management.html"
             },
             {
-              "text": "Druva, “Cloud Backup & Recovery.” SaaS-only cloud-native platform, immutable snapshots, air-gapped storage, ransomware recovery.",
-              "url": "https://www.druva.com/solutions/cloud-backup"
+              "text": "Druva Enterprise Key Management (BYOK) lets customers use their own AWS KMS keys to encrypt backup data.",
+              "url": "https://docs.druva.com/Endpoints/030_Set_up_inSync_for_Endpoints/Configure_Enterprise_Key_Management_for_Endpoints/Enterprise_Key_Management_for_Endpoints"
+            },
+            {
+              "text": "Veeam supports encryption key rotation through KMS integration for compliance with security policies.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/kms.html"
+            },
+            {
+              "text": "Rubrik supports encryption key rotation through its KMS integration for enterprise key management.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/adding_a_key_management_server.html"
+            },
+            {
+              "text": "Commvault supports automated encryption key rotation via the Rotate Encryption Master Keys workflow with configurable intervals.",
+              "url": "https://documentation.commvault.com/v11/software/rotating_master_key_for_storage_policy_copy.html"
+            },
+            {
+              "text": "Druva supports both cloud encryption key and customer-managed AWS KMS key rotation for security compliance.",
+              "url": "https://help.druva.com/en/articles/11991131-manage-encryption"
+            },
+            {
+              "text": "Veeam encrypts backup data at rest using AES-256 encryption with hardware acceleration support.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/data_encryption.html"
+            },
+            {
+              "text": "Rubrik encrypts all data at rest using AES-256 encryption with software or hardware-based key management.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/data_encryption.html"
+            },
+            {
+              "text": "Commvault supports AES-256 encryption at rest with hardware-accelerated AES-NI support for backup data.",
+              "url": "https://documentation.commvault.com/v11/commcell-console/supported_algorithms_for_software_encryption.html"
+            },
+            {
+              "text": "Druva encrypts all data at rest with AES-256 using unique per-customer Data Encryption Keys.",
+              "url": "https://help.druva.com/en/articles/10021963-how-druva-encrypts-data-for-insync-m365-and-phoenix-workloads"
+            },
+            {
+              "text": "Veeam encrypts all data in transit using TLS for network traffic between backup components.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/data_encryption.html"
+            },
+            {
+              "text": "Rubrik encrypts all data in transit using TLS 1.2+ between cluster nodes and remote targets.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/data_encryption.html"
+            },
+            {
+              "text": "Commvault encrypts network traffic in transit using mutual TLS 1.3 with AES_256_GCM_SHA384 cipher suite.",
+              "url": "https://documentation.commvault.com/v11/commcell-console/enabling_encryption_in_commcell.html"
+            },
+            {
+              "text": "Druva encrypts all data in transit with TLS 1.2 (256-bit) between customer environment and Druva Cloud.",
+              "url": "https://help.druva.com/en/articles/8651817-security-and-certification-faqs"
+            },
+            {
+              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
+            },
+            {
+              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
+            },
+            {
+              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc's btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -11249,11 +10441,7 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": [
-              "Daily scans",
-              "0 days",
-              "Zero blind spots"
-            ]
+            "newSteps": ["Daily scans", "0 days", "Zero blind spots"]
           }
         },
         "calculator": {
@@ -11329,12 +10517,7 @@
               {
                 "title": "4-Week Trend",
                 "status": "-87%",
-                "items": [
-                  "W1: ████████ 23",
-                  "W2: ████ 12",
-                  "W3: ██ 7",
-                  "W4: █ 3"
-                ],
+                "items": ["W1: ████████ 23", "W2: ████ 12", "W3: ██ 7", "W4: █ 3"],
                 "footer": "Continuous improvement · automated"
               }
             ],
@@ -11633,11 +10816,7 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": [
-              "Run audit",
-              "Instant",
-              "Complete report"
-            ]
+            "newSteps": ["Run audit", "Instant", "Complete report"]
           }
         },
         "calculator": {
@@ -11797,122 +10976,38 @@
           "features": [
             {
               "name": "Tamper-proof audit logs",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                3,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "check", "cross", "cross", "rediacc"],
+              "refs": [0, 2, 0, 0, 0]
             },
             {
               "name": "Cryptographic signing (SHA-256)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Instant report generation (CLI)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Basic operation logging",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                2,
-                3,
-                4,
-                5,
-                0
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"],
+              "refs": [3, 4, 5, 6, 0]
             },
             {
               "name": "User attribution per action",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                2,
-                3,
-                4,
-                5,
-                0
-              ]
+              "values": ["check", "check", "check", "check", "rediacc"],
+              "refs": [7, 8, 9, 10, 0]
             },
             {
               "name": "Key rotation tracking",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                2,
-                3,
-                4,
-                0,
-                0
-              ]
+              "values": ["check", "check", "check", "cross", "rediacc"],
+              "refs": [11, 12, 13, 0, 0]
             }
           ]
         },
@@ -12011,20 +11106,52 @@
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
-              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+              "text": "Rubrik append-only immutable file system creates a tamper-proof audit trail that cannot be modified or deleted.",
+              "url": "https://www.rubrik.com/content/dam/rubrik/en/resources/white-paper/rwp-recovering-fast-from-ransomware-attacks.pdf"
             },
             {
-              "text": "Rubrik, “Zero Trust Data Management.” Immutable append-only file system, air-gapped backups, SaaS-delivered platform, instant recovery.",
-              "url": "https://www.rubrik.com/products/zero-trust-data-management"
+              "text": "Veeam Backup & Replication logs all backup operations and configuration changes in its activity log and Windows Event Viewer.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/logging.html"
             },
             {
-              "text": "Commvault, “Backup & Recovery Platform.” Immutable and indelible storage, air-gapped backups, ransomware protection, self-hosted deployment.",
-              "url": "https://www.commvault.com/platform/backup-and-recovery"
+              "text": "Rubrik logs all administrative operations and provides activity logs via its management console and API.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/monitoring_and_reporting.html"
             },
             {
-              "text": "Druva, “Cloud Backup & Recovery.” SaaS-only cloud-native platform, immutable snapshots, air-gapped storage, ransomware recovery.",
-              "url": "https://www.druva.com/solutions/cloud-backup"
+              "text": "Commvault Audit Trail records 300+ operation types with configurable retention per severity level.",
+              "url": "https://documentation.commvault.com/saas/operations_recorded_by_audit_trail.html"
+            },
+            {
+              "text": "Druva logs every administrative operation on the Management Console with zero latency, retaining a 3-year audit trail.",
+              "url": "https://docs.druva.com/Phoenix/Monitor_Phoenix/070_Audit_Trails/010_Introduction_to_Admin_Audit_Trails"
+            },
+            {
+              "text": "Veeam session activity log records which user initiated each backup, restore, or configuration change operation.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/logging.html"
+            },
+            {
+              "text": "Rubrik activity logs include user identity for every operation, enabling per-user attribution and forensics.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/monitoring_and_reporting.html"
+            },
+            {
+              "text": "Commvault Audit Trail displays the specific user who performed each operation with timestamps for forensic tracing.",
+              "url": "https://documentation.commvault.com/v11/software/viewing_audit_trail.html"
+            },
+            {
+              "text": "Druva audit trail records administrator name, action, affected resource, and timestamp for per-user attribution.",
+              "url": "https://docs.druva.com/Data_Governance/Audit_Trails/Audit_Trails"
+            },
+            {
+              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
+            },
+            {
+              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
+            },
+            {
+              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc's btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -12157,11 +11284,7 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": [
-              "Detect",
-              "<5 min",
-              "Online"
-            ]
+            "newSteps": ["Detect", "<5 min", "Online"]
           }
         },
         "calculator": {
@@ -12322,117 +11445,33 @@
           "features": [
             {
               "name": "Full-environment recovery",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                8,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"],
+              "refs": [0, 0, 0, 0, 4, 0]
             },
             {
               "name": "Recovery under 5 minutes",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                4,
-                5,
-                6,
-                7,
-                8,
-                0
-              ]
+              "values": ["check", "check", "check", "check", "check", "rediacc"],
+              "refs": [5, 6, 7, 8, 9, 0]
             },
             {
               "name": "Point-in-time (minute-level)",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                4,
-                5,
-                6,
-                7,
-                8,
-                0
-              ]
+              "values": ["check", "check", "check", "check", "check", "rediacc"],
+              "refs": [10, 11, 12, 13, 14, 0]
             },
             {
               "name": "Automated restore verification",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0, 0]
             },
             {
               "name": "No data transfer required",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0, 0]
             },
             {
               "name": "Self-hosted / no cloud dependency",
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                4,
-                5,
-                6,
-                0,
-                8,
-                0
-              ]
+              "values": ["check", "check", "check", "cross", "check", "rediacc"],
+              "refs": [15, 16, 17, 0, 18, 0]
             }
           ]
         },
@@ -12539,24 +11578,64 @@
               "url": "https://www.cybereason.com/blog/report-ransomware-attacks-and-the-true-cost-to-business-2022"
             },
             {
-              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
-              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+              "text": "Zerto continuous replication with journal-based recovery delivers near-zero RPO and minutes-level RTO for instant recovery.",
+              "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Rubrik, “Zero Trust Data Management.” Immutable append-only file system, air-gapped backups, SaaS-delivered platform, instant recovery.",
-              "url": "https://www.rubrik.com/products/zero-trust-data-management"
+              "text": "Veeam Instant VM Recovery enables sub-5-minute RTO by booting VMs directly from backup files.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Commvault, “Backup & Recovery Platform.” Immutable and indelible storage, air-gapped backups, ransomware protection, self-hosted deployment.",
-              "url": "https://www.commvault.com/platform/backup-and-recovery"
+              "text": "Rubrik Instant Recovery enables sub-5-minute recovery by mounting VMs directly from immutable snapshots.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Druva, “Cloud Backup & Recovery.” SaaS-only cloud-native platform, immutable snapshots, air-gapped storage, ransomware recovery.",
-              "url": "https://www.druva.com/solutions/cloud-backup"
+              "text": "Commvault Live Recovery enables sub-5-minute RTO by mounting VMs from backup with background Storage vMotion.",
+              "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Zerto, “Continuous Data Protection.” Journal-based recovery with RPOs of seconds and RTOs of minutes, near-synchronous always-on replication.",
-              "url": "https://www.zerto.com/"
+              "text": "Druva Instant Restore minimizes downtime with sub-5-minute VM recovery directly from backup cloud storage.",
+              "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
+            },
+            {
+              "text": "Zerto's always-on replication with sub-10-second RPOs and minute-level RTOs enables near-instant full-environment recovery.",
+              "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
+            },
+            {
+              "text": "Veeam supports per-VM snapshot-based restore points with configurable backup schedules and continuous data protection.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/cdp_replication.html"
+            },
+            {
+              "text": "Rubrik provides SLA-driven snapshot policies with configurable frequency for granular point-in-time recovery.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
+            },
+            {
+              "text": "Commvault supports point-in-time recovery using snapshots for VMs, file servers, databases, and applications.",
+              "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
+            },
+            {
+              "text": "Druva maintains hot, warm, and cold recovery points enabling point-in-time restores of VMs, databases, and SaaS apps.",
+              "url": "https://help.druva.com/en/articles/8651296-recovery-points-that-you-can-restore"
+            },
+            {
+              "text": "Zerto journal stores every block-level write creating crash-consistent checkpoints every 5-10 seconds for granular recovery.",
+              "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/journal-based-recovery/"
+            },
+            {
+              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
+            },
+            {
+              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
+            },
+            {
+              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
+            },
+            {
+              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc's btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -12693,11 +11772,7 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": [
-              "Snapshot",
-              "<1hr",
-              "Live"
-            ]
+            "newSteps": ["Snapshot", "<1hr", "Live"]
           }
         },
         "calculator": {
@@ -12858,122 +11933,38 @@
           "features": [
             {
               "name": "Cross-provider migration",
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                5,
-                6,
-                0,
-                0
-              ]
+              "values": ["cross", "check", "check", "cross", "rediacc"],
+              "refs": [0, 4, 5, 0, 0]
             },
             {
               "name": "Migration under 1 hour",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Zero proprietary formats",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Incremental-only transfer",
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                5,
-                6,
-                7,
-                0
-              ]
+              "values": ["cross", "check", "check", "check", "rediacc"],
+              "refs": [0, 6, 7, 8, 0]
             },
             {
               "name": "No vendor agent required",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
             },
             {
               "name": "Full-stack migration (app + DB)",
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                5,
-                6,
-                0,
-                0
-              ]
+              "values": ["cross", "check", "check", "cross", "rediacc"],
+              "refs": [0, 9, 10, 0, 0]
             },
             {
               "name": "Zero-downtime migration",
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ],
-              "refs": [
-                0,
-                0,
-                6,
-                0,
-                0
-              ]
+              "values": ["cross", "cross", "check", "cross", "rediacc"],
+              "refs": [0, 0, 11, 0, 0]
             }
           ]
         },
@@ -13080,20 +12071,36 @@
               "url": "https://aws.amazon.com/s3/pricing/"
             },
             {
-              "text": "AWS, “AWS Backup Features.” Centralized, policy-based backup service for AWS resources with cross-region and cross-account capabilities.",
-              "url": "https://aws.amazon.com/backup/features/"
+              "text": "Veeam supports cross-platform migration between VMware, Hyper-V, and cloud providers via Instant Recovery.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Veeam, “Veeam Data Platform — Backup & Recovery.” Immutable backups, Instant Recovery, self-hosted appliance deployment, restore verification in isolated environments.",
-              "url": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html"
+              "text": "Zerto enables four-click cross-provider migration with continuous replication reducing migration windows to minutes.",
+              "url": "https://www.zerto.com/solutions/use-cases/migrations/"
             },
             {
-              "text": "Zerto, “Continuous Data Protection.” Journal-based recovery with RPOs of seconds and RTOs of minutes, near-synchronous always-on replication.",
-              "url": "https://www.zerto.com/"
+              "text": "Veeam uses incremental backup with Changed Block Tracking (CBT) to transfer only modified data blocks.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/changed_block_tracking.html"
             },
             {
-              "text": "Druva, “Cloud Backup & Recovery.” SaaS-only cloud-native platform, immutable snapshots, air-gapped storage, ransomware recovery.",
-              "url": "https://www.druva.com/solutions/cloud-backup"
+              "text": "Zerto VRAs continuously replicate only changed data blocks at the hypervisor level in near-synchronous fashion.",
+              "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
+            },
+            {
+              "text": "Druva uses incremental-forever backup with global variable-block deduplication achieving up to 90% bandwidth savings.",
+              "url": "https://help.druva.com/en/articles/12158018-first-backup-vs-incremental-backups"
+            },
+            {
+              "text": "Veeam enables full VM migration with application data via backup-based migration to different hypervisors and clouds.",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
+            },
+            {
+              "text": "Zerto Move operation gracefully migrates entire application stacks with zero data loss including auto-commit and rollback.",
+              "url": "https://help.zerto.com/bundle/DR.Test.VC.HTML/page/The_Move_Operation.htm"
+            },
+            {
+              "text": "Zerto continuous replication ensures near-zero downtime migration with real-time VM replication and minute-level cutover.",
+              "url": "https://help.zerto.com/bundle/Admin.HV.HTML/page/Live_Migration.htm"
             }
           ],
           "disclaimer": "Product performance claims are based on Rediacc's btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
@@ -13242,11 +12249,7 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": [
-              "rdc snapshot create",
-              "52s",
-              "Done"
-            ]
+            "newSteps": ["rdc snapshot create", "52s", "Done"]
           }
         },
         "howItWorks": {
@@ -13533,11 +12536,7 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": [
-              "Detect",
-              "Rollback",
-              "<5 min"
-            ]
+            "newSteps": ["Detect", "Rollback", "<5 min"]
           }
         },
         "calculator": {
@@ -13622,73 +12621,31 @@
           "features": [
             {
               "name": "Self-hosted / on-premises",
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["check", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Filesystem-level immutability",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Instant recovery (<5 min)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "check", "rediacc"]
             },
             {
               "name": "Zero-copy snapshots (CoW)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Per-machine pricing (no per-seat)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Automated restore verification",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             },
             {
               "name": "No vendor lock-in",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ]
         },
@@ -13861,11 +12818,7 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": [
-              "$204/mo",
-              "Flat",
-              "Yours"
-            ]
+            "newSteps": ["$204/mo", "Flat", "Yours"]
           }
         },
         "calculator": {
@@ -14081,11 +13034,7 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": [
-              "rdc repo up",
-              "JSON",
-              "Done"
-            ]
+            "newSteps": ["rdc repo up", "JSON", "Done"]
           }
         },
         "howItWorks": {

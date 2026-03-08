@@ -4,7 +4,7 @@ description: "Решения распространённых проблем с 
 category: "Guides"
 order: 10
 language: ru
-sourceHash: 4c3163007e6a3326
+sourceHash: "1aea651c31f439b8"
 ---
 
 # Устранение неполадок
@@ -43,8 +43,8 @@ rdc config scan-keys server-1
 ## Сервисы не запускаются
 
 - Проверьте синтаксис Rediaccfile: он должен быть корректным Bash
-- Убедитесь, что файлы `docker compose` используют `network_mode: host`
-- Проверьте доступность Docker-образов (рассмотрите `docker compose pull` в `prep()`)
+- Убедитесь, что ваш Rediaccfile использует `renet compose --` (а не `docker compose`)
+- Проверьте доступность Docker-образов (рассмотрите `renet compose -- pull` в `prep()`)
 - Просмотрите логи контейнеров через Docker-сокет репозитория:
 
 ```bash

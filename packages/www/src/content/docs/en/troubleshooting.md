@@ -42,8 +42,8 @@ This fetches fresh host keys and updates your config.
 ## Services Fail to Start
 
 - Check the Rediaccfile syntax: it must be valid Bash
-- Ensure `docker compose` files use `network_mode: host`
-- Verify Docker images are accessible (consider `docker compose pull` in `prep()`)
+- Ensure your Rediaccfile uses `renet compose --` (not `docker compose`)
+- Verify Docker images are accessible (consider `renet compose -- pull` in `prep()`)
 - Check container logs using the repository's Docker socket:
 
 ```bash

@@ -4,6 +4,7 @@ description: 使用 .cursorrules 和终端集成配置 Cursor IDE 以使用 Redi
 category: Guides
 order: 32
 language: zh
+sourceHash: "6da857eb870d511e"
 ---
 
 Cursor 通过终端命令和 `.cursorrules` 配置文件与 Rediacc 集成。

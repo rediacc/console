@@ -4,6 +4,7 @@ description: Configurez l'IDE Cursor pour travailler avec l'infrastructure Redia
 category: Guides
 order: 32
 language: fr
+sourceHash: "6da857eb870d511e"
 ---
 
 Cursor s'intègre à Rediacc via les commandes du terminal et le fichier de configuration `.cursorrules`.

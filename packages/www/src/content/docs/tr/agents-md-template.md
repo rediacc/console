@@ -4,6 +4,7 @@ description: Claude Code, Cursor ve diğer AI kodlama asistanlarını Rediacc al
 category: Reference
 order: 50
 language: tr
+sourceHash: "65feffe76efad39d"
 ---
 
 Bu şablonu, AI kodlama asistanlarını (Claude Code, Cursor, Cline, Windsurf) otonom Rediacc altyapı yönetimi için yapılandırmak üzere kullanın. Aşağıdaki bloğu projenizin `CLAUDE.md`, `.cursorrules` veya eşdeğer ajan yapılandırma dosyasına kopyalayın.

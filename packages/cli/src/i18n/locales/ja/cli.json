@@ -421,6 +421,20 @@
         "description": "現在の設定のリポジトリ GUID マッピングをリスト表示する",
         "noRepositories": "リポジトリが設定されていません。次のコマンドで追加してください: rdc config add-repository <name> --guid <guid>"
       },
+      "listArchived": {
+        "description": "アーカイブされたリポジトリ資格情報を一覧表示",
+        "noArchived": "アーカイブされたリポジトリはありません"
+      },
+      "restoreArchived": {
+        "description": "アーカイブされたリポジトリ資格情報を復元",
+        "optionName": "別の名前で復元",
+        "success": "\"{{name}}\" ({{guid}}) を復元しました"
+      },
+      "purgeArchived": {
+        "description": "アーカイブされた資格情報をすべて完全に削除",
+        "noArchived": "削除するアーカイブされたリポジトリはありません",
+        "success": "{{count}} 件のアーカイブされた資格情報を削除しました"
+      },
       "scanKeys": {
         "completed": "{{count}}/{{total}} 台のマシンのホストキーをスキャンしました",
         "description": "現在の設定のマシンの SSH ホストキーをスキャンする",
@@ -935,7 +949,8 @@
         "completed": "リポジトリを削除しました",
         "description": "リポジトリを削除する",
         "failed": "リポジトリの削除に失敗しました",
-        "removed": "\"{{repository}}\" を設定から削除しました",
+        "archived": "\"{{repository}}\" の資格情報をアーカイブしました",
+        "restoreHint": "復元するには: rdc config restore-archived {{guid}}",
         "starting": "\"{{machine}}\" で \"{{repository}}\" を削除中..."
       },
       "description": "マシン上の暗号化リポジトリをデプロイ・管理する",
@@ -956,7 +971,7 @@
       },
       "fork": {
         "alreadyExists": "リポジトリ \"{{name}}\" はコンテキスト内に既に存在します",
-        "completed": "フォークを作成しました",
+        "completed": "フォークを作成しました。ローカルにデプロイ: repo up {{repository}} -m {{machine}} --mount。フォークを別のマシンに移行: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
         "description": "リポジトリのCoW（コピーオンライト）フォークを作成する",
         "failed": "フォークの作成に失敗しました",
         "registered": "フォーク \"{{repository}}\" を登録しました（{{guid}}、ネットワーク {{networkId}}）",
@@ -1021,6 +1036,7 @@
         "failed": "サービスの開始に失敗しました",
         "grandOption": "グランドリポジトリ名 (自動的に GUID に解決)",
         "mountOption": "最初にリポジトリをマウントする",
+        "checkpointOption": "デプロイ後にCRIUチェックポイントからコンテナを復元する（別のマシンからのライブプロセス移行用）",
         "prepOnlyOption": "準備ステップのみ実行する",
         "starting": "\"{{repository}}\" のサービスを \"{{machine}}\" で開始中..."
       },

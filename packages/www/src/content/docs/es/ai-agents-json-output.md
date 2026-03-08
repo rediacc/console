@@ -4,6 +4,7 @@ description: Referencia completa del formato de salida JSON del CLI rdc, esquema
 category: Reference
 order: 51
 language: es
+sourceHash: "a516c49fdaf9a901"
 ---
 
 Todos los comandos `rdc` admiten salida JSON estructurada para consumo programático por agentes de IA y scripts.

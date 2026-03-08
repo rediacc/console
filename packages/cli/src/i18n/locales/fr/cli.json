@@ -421,6 +421,20 @@
         "description": "Lister les mappages GUID de dépôts dans la configuration actuelle",
         "noRepositories": "Aucun dépôt configuré. Ajoutez-en un avec : rdc config add-repository <name> --guid <guid>"
       },
+      "listArchived": {
+        "description": "Lister les identifiants de dépôts archivés",
+        "noArchived": "Aucun dépôt archivé"
+      },
+      "restoreArchived": {
+        "description": "Restaurer un identifiant de dépôt archivé",
+        "optionName": "Restaurer avec un nom différent",
+        "success": "\"{{name}}\" ({{guid}}) restauré"
+      },
+      "purgeArchived": {
+        "description": "Supprimer définitivement tous les identifiants archivés",
+        "noArchived": "Aucun dépôt archivé à purger",
+        "success": "{{count}} identifiant(s) archivé(s) supprimé(s)"
+      },
       "scanKeys": {
         "completed": "{{count}}/{{total}} machines analysées",
         "description": "Analyser les clés d'hôte SSH pour les machines dans la configuration actuelle",
@@ -935,7 +949,8 @@
         "completed": "Dépôt supprimé",
         "description": "Supprimer un dépôt",
         "failed": "Échec de la suppression du dépôt",
-        "removed": "\"{{repository}}\" supprimé de la configuration",
+        "archived": "Identifiant de \"{{repository}}\" archivé",
+        "restoreHint": "Restaurer avec : rdc config restore-archived {{guid}}",
         "starting": "Suppression de \"{{repository}}\" sur \"{{machine}}\"..."
       },
       "description": "Déployer et gérer des dépôts chiffrés sur les machines",
@@ -956,7 +971,7 @@
       },
       "fork": {
         "alreadyExists": "Le dépôt \"{{name}}\" existe déjà dans le contexte",
-        "completed": "Fork créé",
+        "completed": "Fork créé. Déployer localement : repo up {{repository}} -m {{machine}} --mount. Pour migrer le fork vers une autre machine : backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
         "description": "Créer un fork CoW (Copy-on-Write) d'un dépôt",
         "failed": "Échec de la création du fork",
         "registered": "Fork \"{{repository}}\" enregistré ({{guid}}, réseau {{networkId}})",
@@ -1021,6 +1036,7 @@
         "failed": "Échec du démarrage des services",
         "grandOption": "Nom du grand dépôt (résolution automatique vers le GUID)",
         "mountOption": "Monter le dépôt d'abord",
+        "checkpointOption": "Restaurer les conteneurs depuis un checkpoint CRIU après le déploiement (pour la migration de processus en direct depuis une autre machine)",
         "prepOnlyOption": "Exécuter uniquement l'étape de préparation",
         "starting": "Démarrage des services pour \"{{repository}}\" sur \"{{machine}}\"..."
       },

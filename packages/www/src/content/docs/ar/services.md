@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: ar
-sourceHash: "9a61995f9ea3d770"
+sourceHash: "28c4922849c4f3a7"
 ---
 
 # الخدمات
@@ -32,8 +32,8 @@ sourceHash: "9a61995f9ea3d770"
 | الدالة | وقت التشغيل | الغرض | سلوك الخطأ |
 |--------|------------|-------|------------|
 | `prep()` | قبل `up()` | تثبيت المتطلبات، سحب الصور، تشغيل عمليات الترحيل | **إيقاف فوري** -- إذا فشلت أي `prep()`، تتوقف العملية بأكملها فوراً |
-| `up()` | بعد اكتمال جميع `prep()` | تشغيل الخدمات (مثل `docker compose up -d`) | فشل الجذر **حرج** (يوقف كل شيء). فشل المجلدات الفرعية **غير حرج** (يُسجّل ويستمر) |
-| `down()` | عند الإيقاف | إيقاف الخدمات (مثل `docker compose down`) | **أفضل جهد** -- يتم تسجيل الأخطاء لكن يتم تنفيذ جميع ملفات Rediaccfile دائماً |
+| `up()` | بعد اكتمال جميع `prep()` | تشغيل الخدمات (مثل `renet compose -- up -d`) | فشل الجذر **حرج** (يوقف كل شيء). فشل المجلدات الفرعية **غير حرج** (يُسجّل ويستمر) |
+| `down()` | عند الإيقاف | إيقاف الخدمات (مثل `renet compose -- down`) | **أفضل جهد** -- يتم تسجيل الأخطاء لكن يتم تنفيذ جميع ملفات Rediaccfile دائماً |
 
 جميع الدوال الثلاث اختيارية. إذا لم تُعرّف دالة في Rediaccfile، يتم تخطيها بصمت.
 
@@ -81,7 +81,7 @@ down() {
 }
 ```
 
-> يعمل `docker compose` أيضاً لأن `DOCKER_HOST` يُعيّن تلقائياً، لكن `renet compose` مفضّل لأنه يحقن أيضاً تسميات `rediacc.*` اللازمة لاكتشاف مسارات الوكيل العكسي. راجع [الشبكات](/ar/docs/networking) للتفاصيل.
+> **هام:** استخدم دائماً `renet compose --` بدلاً من `docker compose`. يفرض غلاف `renet compose` شبكة المضيف، وقدرات نقاط التفتيش/الاستعادة CRIU، وتخصيص عناوين IP، وتسميات اكتشاف الخدمات المطلوبة من renet-proxy. يتم رفض الاستخدام المباشر لـ `docker compose` بواسطة التحقق من صحة Rediaccfile. راجع [الشبكات](/ar/docs/networking) للتفاصيل.
 
 ### تخطيط متعدد الخدمات
 
@@ -155,13 +155,12 @@ down() {
 
 ### استخدام عناوين IP للخدمات في Docker Compose
 
-بما أن كل مستودع يشغّل عملية Docker معزولة، تستخدم الخدمات `network_mode: host` وترتبط بعناوين IP الحلقية المخصصة لها:
+بما أن كل مستودع يشغّل عملية Docker معزولة، يقوم `renet compose` تلقائياً بتهيئة `network_mode: host` لجميع الخدمات. قم بربط الخدمات بعناوين IP الحلقية المخصصة لها:
 
 ```yaml
 services:
   postgres:
     image: postgres:16
-    network_mode: host
     environment:
       PGDATA: /var/lib/postgresql/data
       POSTGRES_PASSWORD: secret
@@ -169,11 +168,12 @@ services:
 
   api:
     image: my-api:latest
-    network_mode: host
     environment:
       DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
       LISTEN_ADDR: ${API_IP}:8080
 ```
+
+> **ملاحظة:** لا تضف `network_mode: host` يدوياً — يقوم `renet compose` بحقنه تلقائياً. لا تستخدم `restart: always` أو `restart: unless-stopped` — فهذه تتسبب في قيام Docker بالتشغيل التلقائي للحاويات قبل أن يتمكن CRIU من تنفيذ استعادة نقطة التفتيش. استخدم `restart: on-failure` إذا لزم الأمر، أو احذفه (Rediaccfile `up()`/`down()` يدير دورة الحياة).
 
 ## تشغيل الخدمات
 
@@ -303,8 +303,6 @@ rdc repo mount webapp -m prod-1
 services:
   postgres:
     image: postgres:16
-    network_mode: host
-    restart: unless-stopped
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
@@ -315,14 +313,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    network_mode: host
-    restart: unless-stopped
     command: redis-server --bind ${REDIS_IP} --port 6379
 
   api:
     image: myregistry/api:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
       REDIS_URL: redis://${REDIS_IP}:6379
@@ -344,7 +338,7 @@ up() {
 
     echo "Waiting for PostgreSQL..."
     for i in $(seq 1 30); do
-        if docker compose exec postgres pg_isready -q 2>/dev/null; then
+        if renet compose -- exec postgres pg_isready -q 2>/dev/null; then
             echo "PostgreSQL is ready."
             return 0
         fi

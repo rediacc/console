@@ -421,6 +421,20 @@
         "description": "Listar mapeos de GUID de repositorios en la configuración actual",
         "noRepositories": "No hay repositorios configurados. Agregue uno con: rdc config add-repository <name> --guid <guid>"
       },
+      "listArchived": {
+        "description": "Listar credenciales de repositorios archivados",
+        "noArchived": "No hay repositorios archivados"
+      },
+      "restoreArchived": {
+        "description": "Restaurar credencial de repositorio archivado",
+        "optionName": "Restaurar con un nombre diferente",
+        "success": "\"{{name}}\" ({{guid}}) restaurado"
+      },
+      "purgeArchived": {
+        "description": "Eliminar permanentemente todas las credenciales archivadas",
+        "noArchived": "No hay repositorios archivados para eliminar",
+        "success": "{{count}} credencial(es) archivada(s) eliminada(s)"
+      },
       "scanKeys": {
         "completed": "Escaneadas {{count}}/{{total}} máquinas",
         "description": "Escanear claves de host SSH para las máquinas en la configuración actual",
@@ -935,7 +949,8 @@
         "completed": "Repositorio eliminado",
         "description": "Eliminar un repositorio",
         "failed": "Error al eliminar el repositorio",
-        "removed": "\"{{repository}}\" eliminado de la configuración",
+        "archived": "Credencial de \"{{repository}}\" archivada",
+        "restoreHint": "Restaurar con: rdc config restore-archived {{guid}}",
         "starting": "Eliminando \"{{repository}}\" en \"{{machine}}\"..."
       },
       "description": "Desplegar y gestionar repositorios cifrados en máquinas",
@@ -956,7 +971,7 @@
       },
       "fork": {
         "alreadyExists": "El repositorio \"{{name}}\" ya existe en el contexto",
-        "completed": "Fork creado",
+        "completed": "Fork creado. Desplegar localmente: repo up {{repository}} -m {{machine}} --mount. Para migrar el fork a otra máquina: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
         "description": "Crear un fork CoW (Copy-on-Write) de un repositorio",
         "failed": "Error al crear el fork",
         "registered": "Fork \"{{repository}}\" registrado ({{guid}}, red {{networkId}})",
@@ -1021,6 +1036,7 @@
         "failed": "Fallo al iniciar servicios",
         "grandOption": "Nombre del repositorio Grand (se resuelve automáticamente a GUID)",
         "mountOption": "Montar repositorio primero",
+        "checkpointOption": "Restaurar contenedores desde checkpoint CRIU después del despliegue (para migración en vivo de procesos desde otra máquina)",
         "prepOnlyOption": "Ejecutar solo el paso de preparación",
         "starting": "Iniciando servicios para \"{{repository}}\" en \"{{machine}}\"..."
       },

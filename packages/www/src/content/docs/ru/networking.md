@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: ru
-sourceHash: 4a0c6a695d72aa55
+sourceHash: "a21068a947d5a792"
 ---
 
 # Сетевое взаимодействие
@@ -113,7 +113,6 @@ labels:
 services:
   myapp:
     image: myapp:latest
-    network_mode: host
     environment:
       - LISTEN_ADDR=${MYAPP_IP}:8080
     labels:
@@ -125,7 +124,6 @@ services:
 
   database:
     image: postgres:17
-    network_mode: host
     command: ["-c", "listen_addresses=${DATABASE_IP}"]
     # Без меток traefik — база данных только для внутреннего использования
 ```
@@ -186,7 +184,6 @@ To expose a database externally without TLS passthrough (Traefik forwards raw TC
 services:
   postgres:
     image: postgres:17
-    network_mode: host
     command: -c listen_addresses=${POSTGRES_IP} -c port=5432
     labels:
       - "traefik.enable=true"
@@ -209,7 +206,6 @@ Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
 services:
   mail-server:
     image: ghcr.io/docker-mailserver/docker-mailserver:latest
-    network_mode: host
     labels:
       - "traefik.enable=true"
 
@@ -356,8 +352,6 @@ curl -s http://127.0.0.1:7111/ports | python3 -m json.tool
 services:
   webapp:
     image: myregistry/webapp:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
       LISTEN_ADDR: ${WEBAPP_IP}:3000
@@ -374,8 +368,6 @@ services:
 
   postgres:
     image: postgres:17
-    network_mode: host
-    restart: unless-stopped
     environment:
       POSTGRES_DB: webapp
       POSTGRES_USER: app

@@ -4,6 +4,7 @@ description: Cursor IDE'yi .cursorrules ve terminal entegrasyonu kullanarak Redi
 category: Guides
 order: 32
 language: tr
+sourceHash: "6da857eb870d511e"
 ---
 
 Cursor, terminal komutları ve `.cursorrules` yapılandırma dosyası aracılığıyla Rediacc ile entegre olur.

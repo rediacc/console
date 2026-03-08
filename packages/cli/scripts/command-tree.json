@@ -9,12 +9,6 @@
       "defaultValue": null
     },
     {
-      "flags": "--experimental",
-      "descriptionKey": "options.experimental",
-      "mandatory": false,
-      "defaultValue": null
-    },
-    {
       "flags": "-y, --yes",
       "descriptionKey": "options.yes",
       "mandatory": false,
@@ -1332,6 +1326,12 @@
             {
               "flags": "--mount",
               "descriptionKey": "commands.repo.up.mountOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--checkpoint",
+              "descriptionKey": "commands.repo.up.checkpointOption",
               "mandatory": false,
               "defaultValue": null
             },
@@ -4186,6 +4186,41 @@
         {
           "name": "repositories",
           "descriptionKey": "commands.config.repositories.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "list-archived",
+          "descriptionKey": "commands.config.listArchived.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "restore-archived",
+          "descriptionKey": "commands.config.restoreArchived.description",
+          "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "commands.config.restoreArchived.optionName",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "guid",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "purge-archived",
+          "descriptionKey": "commands.config.purgeArchived.description",
           "options": [],
           "arguments": [],
           "subcommands": []

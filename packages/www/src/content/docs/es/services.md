@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: es
-sourceHash: "9a61995f9ea3d770"
+sourceHash: "28c4922849c4f3a7"
 ---
 
 # Servicios
@@ -32,8 +32,8 @@ Un Rediaccfile contiene hasta tres funciones:
 | Función | Cuándo se ejecuta | Propósito | Comportamiento en caso de error |
 |---------|-------------------|-----------|--------------------------------|
 | `prep()` | Antes de `up()` | Instalar dependencias, descargar imágenes, ejecutar migraciones | **Fallo rápido** -- si algún `prep()` falla, todo el proceso se detiene inmediatamente |
-| `up()` | Después de que todos los `prep()` se completen | Iniciar servicios (por ejemplo, `docker compose up -d`) | La falla del Rediaccfile raíz es **crítica** (detiene todo). Las fallas en subdirectorios son **no críticas** (se registran, continúa al siguiente) |
-| `down()` | Al detener | Detener servicios (por ejemplo, `docker compose down`) | **Mejor esfuerzo** -- las fallas se registran pero siempre se intentan todos los Rediaccfiles |
+| `up()` | Después de que todos los `prep()` se completen | Iniciar servicios (por ejemplo, `renet compose -- up -d`) | La falla del Rediaccfile raíz es **crítica** (detiene todo). Las fallas en subdirectorios son **no críticas** (se registran, continúa al siguiente) |
+| `down()` | Al detener | Detener servicios (por ejemplo, `renet compose -- down`) | **Mejor esfuerzo** -- las fallas se registran pero siempre se intentan todos los Rediaccfiles |
 
 Las tres funciones son opcionales. Si una función no está definida, se omite silenciosamente.
 
@@ -81,7 +81,7 @@ down() {
 }
 ```
 
-> `docker compose` también funciona ya que `DOCKER_HOST` se configura automáticamente, pero se prefiere `renet compose` porque adicionalmente inyecta las etiquetas `rediacc.*` necesarias para el descubrimiento de rutas del proxy inverso. Consulte [Red](/es/docs/networking) para más detalles.
+> **Importante:** Use siempre `renet compose --` en lugar de `docker compose`. El wrapper `renet compose` impone la red del host, las capacidades de checkpoint/restauración CRIU, la asignación de IP y las etiquetas de descubrimiento de servicios requeridas por renet-proxy. El uso directo de `docker compose` es rechazado por la validación del Rediaccfile. Consulte [Red](/es/docs/networking) para más detalles.
 
 ### Diseño Multi-Servicio
 
@@ -155,13 +155,12 @@ Cada repositorio soporta hasta **61 servicios** (slots 0 a 60).
 
 ### Uso de IPs de Servicio en Docker Compose
 
-Dado que cada repositorio ejecuta un daemon Docker aislado, los servicios usan `network_mode: host` y se vinculan a sus IPs de loopback asignadas:
+Dado que cada repositorio ejecuta un daemon Docker aislado, `renet compose` configura automáticamente `network_mode: host` para todos los servicios. Vincule los servicios a sus IPs de loopback asignadas:
 
 ```yaml
 services:
   postgres:
     image: postgres:16
-    network_mode: host
     environment:
       PGDATA: /var/lib/postgresql/data
       POSTGRES_PASSWORD: secret
@@ -169,11 +168,12 @@ services:
 
   api:
     image: my-api:latest
-    network_mode: host
     environment:
       DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
       LISTEN_ADDR: ${API_IP}:8080
 ```
+
+> **Nota:** No agregue `network_mode: host` manualmente — `renet compose` lo inyecta automáticamente. No use `restart: always` ni `restart: unless-stopped` — estos hacen que Docker inicie contenedores automáticamente antes de que la restauración de checkpoint CRIU pueda ejecutarse. Use `restart: on-failure` si es necesario, u omítalo (el Rediaccfile `up()`/`down()` gestiona el ciclo de vida).
 
 ## Iniciar Servicios
 
@@ -303,8 +303,6 @@ Dentro del repositorio, cree:
 services:
   postgres:
     image: postgres:16
-    network_mode: host
-    restart: unless-stopped
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
@@ -315,14 +313,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    network_mode: host
-    restart: unless-stopped
     command: redis-server --bind ${REDIS_IP} --port 6379
 
   api:
     image: myregistry/api:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
       REDIS_URL: redis://${REDIS_IP}:6379
@@ -344,7 +338,7 @@ up() {
 
     echo "Waiting for PostgreSQL..."
     for i in $(seq 1 30); do
-        if docker compose exec postgres pg_isready -q 2>/dev/null; then
+        if renet compose -- exec postgres pg_isready -q 2>/dev/null; then
             echo "PostgreSQL is ready."
             return 0
         fi

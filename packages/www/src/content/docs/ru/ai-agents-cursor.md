@@ -4,6 +4,7 @@ description: Настройка Cursor IDE для работы с инфраст
 category: Guides
 order: 32
 language: ru
+sourceHash: "6da857eb870d511e"
 ---
 
 Cursor интегрируется с Rediacc через терминальные команды и файл конфигурации `.cursorrules`.

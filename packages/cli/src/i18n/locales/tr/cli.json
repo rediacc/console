@@ -421,6 +421,20 @@
         "description": "Geçerli yapılandırmadaki depo GUID eşlemelerini listeleyin",
         "noRepositories": "Yapılandırılmış depo yok. Eklemek için: rdc config add-repository <name> --guid <guid>"
       },
+      "listArchived": {
+        "description": "Arşivlenmiş depo kimlik bilgilerini listele",
+        "noArchived": "Arşivlenmiş depo yok"
+      },
+      "restoreArchived": {
+        "description": "Arşivlenmiş depo kimlik bilgisini geri yükle",
+        "optionName": "Farklı bir adla geri yükle",
+        "success": "\"{{name}}\" ({{guid}}) geri yüklendi"
+      },
+      "purgeArchived": {
+        "description": "Tüm arşivlenmiş kimlik bilgilerini kalıcı olarak sil",
+        "noArchived": "Temizlenecek arşivlenmiş depo yok",
+        "success": "{{count}} arşivlenmiş kimlik bilgisi temizlendi"
+      },
       "scanKeys": {
         "completed": "{{count}}/{{total}} makine tarandı",
         "description": "Geçerli yapılandırmadaki makineler için SSH ana bilgisayar anahtarlarını tarayın",
@@ -935,7 +949,8 @@
         "completed": "Depo silindi",
         "description": "Depoyu sil",
         "failed": "Depo silme başarısız",
-        "removed": "\"{{repository}}\" yapılandırmadan kaldırıldı",
+        "archived": "\"{{repository}}\" kimlik bilgisi arşivlendi",
+        "restoreHint": "Geri yüklemek için: rdc config restore-archived {{guid}}",
         "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" siliniyor..."
       },
       "description": "Makinelerde şifreli depoları dağıtın ve yönetin",
@@ -956,7 +971,7 @@
       },
       "fork": {
         "alreadyExists": "\"{{name}}\" deposu bağlamda zaten mevcut",
-        "completed": "Çatal oluşturuldu",
+        "completed": "Çatal oluşturuldu. Yerel olarak dağıtın: repo up {{repository}} -m {{machine}} --mount. Çatalı başka bir makineye taşımak için: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
         "description": "Bir deponun CoW (Copy-on-Write) çatalını oluştur",
         "failed": "Çatal oluşturma başarısız",
         "registered": "Çatal \"{{repository}}\" kaydedildi ({{guid}}, ağ {{networkId}})",
@@ -1021,6 +1036,7 @@
         "failed": "Servis başlatma başarısız",
         "grandOption": "Ana depo adı (GUID'ye otomatik çözümlenir)",
         "mountOption": "Önce depoyu bağla",
+        "checkpointOption": "Dağıtımdan sonra CRIU kontrol noktasından kapsayıcıları geri yükle (başka bir makineden canlı süreç geçişi için)",
         "prepOnlyOption": "Yalnızca hazırlama adımını çalıştır",
         "starting": "\"{{repository}}\" için servisler \"{{machine}}\" üzerinde başlatılıyor..."
       },

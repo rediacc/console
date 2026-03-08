@@ -4,6 +4,7 @@ description: Vollständige Referenz für das JSON-Ausgabeformat der rdc CLI, Env
 category: Reference
 order: 51
 language: de
+sourceHash: "a516c49fdaf9a901"
 ---
 
 Alle `rdc`-Befehle unterstützen strukturierte JSON-Ausgabe für die programmatische Nutzung durch KI-Agenten und Skripte.

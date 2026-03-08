@@ -9,6 +9,7 @@
  * - missing-comparison-ref: Every feature must have a refs array matching values length
  * - invalid-ref-index: Every ref must be 0 or a valid 1-based index into references.items
  * - missing-ref-url: Every referenced item must have a non-empty url field
+ * - duplicate-column-ref: Each check cell in a column must have its own unique ref (no shared generic refs)
  *
  * Rules (--online only — slower, for nightly/manual runs):
  * - ref-url-unreachable: Reference URLs must return 2xx/3xx status
@@ -28,7 +29,7 @@ const TRANSLATIONS_DIR = path.join(ROOT_DIR, 'src', 'i18n', 'translations');
 
 // Domains with aggressive bot protection that block automated requests.
 // These are verified manually via agent-browser and skipped in --online checks.
-const BOT_PROTECTED_DOMAINS = new Set(['www.rubrik.com']);
+const BOT_PROTECTED_DOMAINS = new Set(['www.rubrik.com', 'www.zerto.com']);
 
 const colors = {
   red: (s) => `\x1b[31m${s}\x1b[0m`,
@@ -50,7 +51,15 @@ function addError(errors, rule, file, line, message, matchedText, suggestion) {
 function validateOffline(translations, errors) {
   const solutionPages = translations?.pages?.solutionPages;
   if (!solutionPages) {
-    addError(errors, 'missing-comparison-ref', 'en.json', 0, 'No solutionPages found in translations', '', null);
+    addError(
+      errors,
+      'missing-comparison-ref',
+      'en.json',
+      0,
+      'No solutionPages found in translations',
+      '',
+      null
+    );
     return;
   }
 
@@ -138,6 +147,38 @@ function validateOffline(translations, errors) {
         }
       }
     }
+
+    // Rule 4: duplicate-column-ref — each check cell in a column must use a unique ref
+    // A shared ref means multiple feature claims cite the same generic source instead of
+    // feature-specific evidence. The same URL may appear in multiple reference items with
+    // different text descriptions — that is the correct way to cite the same source for
+    // different claims.
+    const numCols = comparison.features[0]?.values?.length || 0;
+    for (let col = 0; col < numCols - 1; col++) {
+      // skip last column (Rediacc)
+      const refToFeatures = new Map(); // ref index → [feature names]
+      for (const feature of comparison.features) {
+        const val = feature.values?.[col];
+        const ref = feature.refs?.[col];
+        if (val === 'cross' || val === 'rediacc' || !ref || ref <= 0) continue;
+        if (!refToFeatures.has(ref)) refToFeatures.set(ref, []);
+        refToFeatures.get(ref).push(feature.name);
+      }
+      for (const [ref, features] of refToFeatures.entries()) {
+        if (features.length > 1) {
+          const refItem = refItems[ref - 1];
+          addError(
+            errors,
+            'duplicate-column-ref',
+            file,
+            0,
+            `Column ${col} reuses ref [${ref}] across ${features.length} features: ${features.map((f) => `"${f}"`).join(', ')}`,
+            `ref [${ref}]: "${refItem?.text?.slice(0, 80) || '(unknown)'}"`,
+            'Each check cell needs its own reference item with a feature-specific claim text'
+          );
+        }
+      }
+    }
   }
 }
 
@@ -199,7 +240,9 @@ async function validateOnline(translations, errors) {
       if (BOT_PROTECTED_DOMAINS.has(hostname)) {
         return { url, status: 200, ok: true, skipped: true };
       }
-    } catch { /* invalid URL will fail below */ }
+    } catch {
+      /* invalid URL will fail below */
+    }
 
     const makeRequest = async (method) => {
       const controller = new AbortController();
@@ -252,9 +295,7 @@ async function validateOnline(translations, errors) {
     if (!result.ok) {
       const info = urlMap.get(result.url);
       const pages = info?.pages?.join(', ') || 'unknown';
-      const statusMsg = result.error
-        ? `Network error: ${result.error}`
-        : `HTTP ${result.status}`;
+      const statusMsg = result.error ? `Network error: ${result.error}` : `HTTP ${result.status}`;
       addError(
         errors,
         'ref-url-unreachable',
@@ -349,6 +390,7 @@ Rules (always enforced — offline):
   missing-comparison-ref   Every comparison feature must have refs matching values length
   invalid-ref-index        Every ref must be 0 or valid 1-based index into references.items
   missing-ref-url          Referenced items must have non-empty url fields
+  duplicate-column-ref     Each check cell in a column must have its own unique ref index
 
 Rules (--online only):
   ref-url-unreachable      Reference URLs must return 2xx/3xx HTTP status

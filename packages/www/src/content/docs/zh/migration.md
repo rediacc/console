@@ -4,7 +4,7 @@ description: "将现有项目迁移到加密的 Rediacc 仓库中。"
 category: "Guides"
 order: 11
 language: zh
-sourceHash: "feb1fcafc824b4b2"
+sourceHash: "977de49e158a26c0"
 ---
 
 # 迁移指南
@@ -104,15 +104,15 @@ rdc repo ownership my-project -m server-1 --uid 1000
 #!/bin/bash
 
 prep() {
-    docker compose pull
+    renet compose -- pull
 }
 
 up() {
-    docker compose up -d
+    renet compose -- up -d
 }
 
 down() {
-    docker compose down
+    renet compose -- down
 }
 ```
 
@@ -124,7 +124,9 @@ down() {
 | `up()` | 启动服务 | 根目录失败是致命的；子目录失败会被记录并继续 |
 | `down()` | 停止服务 | 尽力而为：始终尝试全部 |
 
-> **重要：** 在 Rediaccfile 中直接使用 `docker` — 绝不要使用 `sudo docker`。`sudo` 命令会重置环境变量，导致 `DOCKER_HOST` 丢失，容器被创建在系统 Docker 守护进程上，而不是仓库的隔离守护进程上。Rediaccfile 函数已经以足够的权限运行。详见 [服务](/zh/docs/services#environment-variables)。
+> **重要：** 在 Rediaccfile 中始终使用 `renet compose --` 而不是 `docker compose`。`renet compose` 包装器会强制执行主机网络、CRIU 检查点/恢复功能、IP 分配以及 renet-proxy 所需的服务发现。直接使用 `docker compose` 会绕过所有这些，并且在验证时会被拒绝。
+>
+> 也不要使用 `sudo docker` — `sudo` 会重置环境变量（包括 `DOCKER_HOST`），导致容器被创建在系统 Docker 守护进程上，而不是仓库的隔离守护进程上。Rediaccfile 函数已经以足够的权限运行。
 
 关于 Rediaccfile、多服务布局和执行顺序的完整详情，请参阅 [服务](/zh/docs/services)。
 
@@ -167,8 +169,6 @@ services:
 services:
   postgres:
     image: postgres:16
-    network_mode: host
-    restart: unless-stopped
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
@@ -177,14 +177,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    network_mode: host
-    restart: unless-stopped
     command: redis-server --bind ${REDIS_IP} --port 6379
 
   app:
     image: my-app:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
       REDIS_URL: redis://${REDIS_IP}:6379
@@ -193,10 +189,11 @@ services:
 
 主要更改：
 
-1. **为每个服务添加 `network_mode: host`**
-2. **移除 `ports:` 映射**（主机网络模式下不需要）
-3. **将服务绑定到 `${SERVICE_IP}` 环境变量**（由 Rediacc 自动注入）
-4. **通过 IP 引用其他服务**，而不是 Docker DNS 名称（例如，使用 `${POSTGRES_IP}` 替代 `postgres`）
+1. **移除 `ports:` 映射** — `renet compose` 使用主机网络并自动去除端口映射
+2. **移除 `network_mode: host`** — `renet compose` 会自动添加
+3. **移除 `restart: always` 或 `restart: unless-stopped`** — 这些与 CRIU 检查点/恢复冲突（Docker 会在检查点恢复运行之前自动启动容器）。如需重启行为，请使用 `restart: on-failure`，或完全省略 — Rediaccfile 的 `up()`/`down()` 管理容器生命周期
+4. **将服务绑定到 `${SERVICE_IP}` 环境变量**（由 Rediacc 自动注入）
+5. **通过 IP 引用其他服务**，而不是 Docker DNS 名称（例如，使用 `${POSTGRES_IP}` 替代 `postgres`）
 
 `{SERVICE}_IP` 变量从 compose 文件的服务名称自动生成。命名约定：大写字母、连字符替换为下划线、加 `_IP` 后缀。例如，`listmonk-app` 变为 `LISTMONK_APP_IP`。
 

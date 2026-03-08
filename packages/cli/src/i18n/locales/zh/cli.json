@@ -421,6 +421,20 @@
         "description": "列出当前配置中的仓库 GUID 映射",
         "noRepositories": "未配置任何仓库。请使用以下命令添加：rdc config add-repository <name> --guid <guid>"
       },
+      "listArchived": {
+        "description": "列出已归档的仓库凭据",
+        "noArchived": "没有已归档的仓库"
+      },
+      "restoreArchived": {
+        "description": "恢复已归档的仓库凭据",
+        "optionName": "使用不同名称恢复",
+        "success": "已恢复 \"{{name}}\" ({{guid}})"
+      },
+      "purgeArchived": {
+        "description": "永久删除所有已归档的凭据",
+        "noArchived": "没有可清除的已归档仓库",
+        "success": "已清除 {{count}} 个已归档的凭据"
+      },
       "scanKeys": {
         "completed": "已扫描 {{count}}/{{total}} 台机器",
         "description": "扫描当前配置中机器的 SSH 主机密钥",
@@ -935,7 +949,8 @@
         "completed": "仓库已删除",
         "description": "删除仓库",
         "failed": "仓库删除失败",
-        "removed": "已从配置中移除 \"{{repository}}\"",
+        "archived": "\"{{repository}}\" 的凭据已归档",
+        "restoreHint": "恢复命令: rdc config restore-archived {{guid}}",
         "starting": "正在 \"{{machine}}\" 上删除 \"{{repository}}\"..."
       },
       "description": "在机器上部署和管理加密仓库",
@@ -956,7 +971,7 @@
       },
       "fork": {
         "alreadyExists": "仓库 \"{{name}}\" 已存在于上下文中",
-        "completed": "分支已创建",
+        "completed": "分支已创建。本地部署: repo up {{repository}} -m {{machine}} --mount。将分支迁移到另一台机器: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
         "description": "创建仓库的 CoW（写时复制）分支",
         "failed": "分支创建失败",
         "registered": "已注册分支 \"{{repository}}\"（{{guid}}，网络 {{networkId}}）",
@@ -1021,6 +1036,7 @@
         "failed": "服务启动失败",
         "grandOption": "主仓库名称 (自动解析为 GUID)",
         "mountOption": "先挂载仓库",
+        "checkpointOption": "部署后从 CRIU 检查点恢复容器（用于从另一台机器进行实时进程迁移）",
         "prepOnlyOption": "仅运行准备步骤",
         "starting": "正在 \"{{machine}}\" 上启动 \"{{repository}}\" 的服务..."
       },

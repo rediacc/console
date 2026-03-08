@@ -4,6 +4,7 @@ description: Comment les assistants de programmation IA comme Claude Code, Curso
 category: Guides
 order: 30
 language: fr
+sourceHash: "3374e0f154375ffb"
 ---
 
 Les assistants de programmation IA peuvent gérer l'infrastructure Rediacc de manière autonome via le CLI `rdc`. Ce guide couvre les approches d'intégration et comment démarrer.

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: fr
-sourceHash: 4a0c6a695d72aa55
+sourceHash: "a21068a947d5a792"
 ---
 
 # Réseau
@@ -111,7 +111,6 @@ Ajoutez les labels `traefik.*` aux services que vous souhaitez exposer dans votr
 services:
   myapp:
     image: myapp:latest
-    network_mode: host
     environment:
       - LISTEN_ADDR=${MYAPP_IP}:8080
     labels:
@@ -123,7 +122,6 @@ services:
 
   database:
     image: postgres:17
-    network_mode: host
     command: ["-c", "listen_addresses=${DATABASE_IP}"]
     # Pas de labels traefik — la base de données est interne uniquement
 ```
@@ -184,7 +182,6 @@ To expose a database externally without TLS passthrough (Traefik forwards raw TC
 services:
   postgres:
     image: postgres:17
-    network_mode: host
     command: -c listen_addresses=${POSTGRES_IP} -c port=5432
     labels:
       - "traefik.enable=true"
@@ -207,7 +204,6 @@ Utilisez les labels `traefik.tcp.*` ou `traefik.udp.*` dans votre fichier compos
 services:
   mail-server:
     image: ghcr.io/docker-mailserver/docker-mailserver:latest
-    network_mode: host
     labels:
       - "traefik.enable=true"
 
@@ -356,8 +352,6 @@ Cet exemple déploie une application web avec une base de données PostgreSQL. L
 services:
   webapp:
     image: myregistry/webapp:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
       LISTEN_ADDR: ${WEBAPP_IP}:3000
@@ -374,8 +368,6 @@ services:
 
   postgres:
     image: postgres:17
-    network_mode: host
-    restart: unless-stopped
     environment:
       POSTGRES_DB: webapp
       POSTGRES_USER: app

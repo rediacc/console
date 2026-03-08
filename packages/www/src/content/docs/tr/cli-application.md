@@ -6,7 +6,7 @@ order: 2
 language: tr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/tr/cli.json
-sourceHash: "b9e9776b7b8d2515"
+sourceHash: "e00c6b80ba4ecf93"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -321,8 +321,40 @@ rdc config remove-repository <name>
 rdc config repositories
 ```
 
+<a id="cli-local-config-list-archived"></a>
+### 2.21 list-archived
+
+{{t:cli.commands.config.listArchived.description}}
+
+```bash
+rdc config list-archived
+```
+
+<a id="cli-local-config-restore-archived"></a>
+### 2.22 restore-archived
+
+{{t:cli.commands.config.restoreArchived.description}}
+
+```bash
+rdc config restore-archived <guid> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--name <name>` | {{t:cli.commands.config.restoreArchived.optionName}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-config-purge-archived"></a>
+### 2.23 purge-archived
+
+{{t:cli.commands.config.purgeArchived.description}}
+
+```bash
+rdc config purge-archived
+```
+
 <a id="cli-local-config-set-infra"></a>
-### 2.21 set-infra
+### 2.24 set-infra
 
 {{t:cli.commands.config.setInfra.description}}
 
@@ -342,7 +374,7 @@ rdc config set-infra <machine> [options]
 
 
 <a id="cli-local-config-show-infra"></a>
-### 2.22 show-infra
+### 2.25 show-infra
 
 {{t:cli.commands.config.showInfra.description}}
 
@@ -351,7 +383,7 @@ rdc config show-infra <machine>
 ```
 
 <a id="cli-local-config-push-infra"></a>
-### 2.23 push-infra
+### 2.26 push-infra
 
 {{t:cli.commands.config.pushInfra.description}}
 
@@ -733,6 +765,7 @@ rdc repo up <name> [options]
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--mount` | {{t:cli.commands.repo.up.mountOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--checkpoint` | {{t:cli.commands.repo.up.checkpointOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--prep-only` | {{t:cli.commands.repo.up.prepOnlyOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--grand <name>` | {{t:cli.commands.repo.up.grandOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |

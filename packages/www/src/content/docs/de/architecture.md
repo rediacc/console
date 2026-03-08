@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: de
-sourceHash: "50f5168f0effbc44"
+sourceHash: "91d4806cfb57e215"
 ---
 
 # Architektur

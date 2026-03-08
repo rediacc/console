@@ -23,12 +23,11 @@ For the high-level architecture, see [Architecture](/en/docs/architecture). For 
 ├── mounts/                            # Mount points for decrypted repos
 │   └── {uuid}/
 │       ├── .rediacc.json              # Service → IP slot mapping
+│       ├── .rediacc/docker/           # Docker daemon data (images, containers)
 │       └── {service-name}/            # Service directory
 │           ├── docker-compose.yml     # Compose definition
 │           ├── Rediaccfile            # Lifecycle hooks (bash)
 │           └── data/                  # Persistent data
-├── interim/                           # Docker overlay2 data (per-repo)
-│   └── {uuid}/docker/data/
 ├── immovable/                         # Read-only shared content
 ├── .credentials/                      # Encrypted secrets
 └── .backup-*/                         # BTRFS snapshots

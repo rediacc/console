@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: de
-sourceHash: 4a0c6a695d72aa55
+sourceHash: "a21068a947d5a792"
 ---
 
 # Netzwerk
@@ -111,7 +111,6 @@ Fügen Sie `traefik.*`-Labels zu den Diensten hinzu, die Sie in Ihrer `docker-co
 services:
   myapp:
     image: myapp:latest
-    network_mode: host
     environment:
       - LISTEN_ADDR=${MYAPP_IP}:8080
     labels:
@@ -123,7 +122,6 @@ services:
 
   database:
     image: postgres:17
-    network_mode: host
     command: ["-c", "listen_addresses=${DATABASE_IP}"]
     # Keine Traefik-Labels — Datenbank ist nur intern
 ```
@@ -184,7 +182,6 @@ To expose a database externally without TLS passthrough (Traefik forwards raw TC
 services:
   postgres:
     image: postgres:17
-    network_mode: host
     command: -c listen_addresses=${POSTGRES_IP} -c port=5432
     labels:
       - "traefik.enable=true"
@@ -207,7 +204,6 @@ Verwenden Sie `traefik.tcp.*`- oder `traefik.udp.*`-Labels in Ihrer Compose-Date
 services:
   mail-server:
     image: ghcr.io/docker-mailserver/docker-mailserver:latest
-    network_mode: host
     labels:
       - "traefik.enable=true"
 
@@ -356,8 +352,6 @@ Dieses Beispiel stellt eine Webanwendung mit einer PostgreSQL-Datenbank bereit. 
 services:
   webapp:
     image: myregistry/webapp:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
       LISTEN_ADDR: ${WEBAPP_IP}:3000
@@ -374,8 +368,6 @@ services:
 
   postgres:
     image: postgres:17
-    network_mode: host
-    restart: unless-stopped
     environment:
       POSTGRES_DB: webapp
       POSTGRES_USER: app
