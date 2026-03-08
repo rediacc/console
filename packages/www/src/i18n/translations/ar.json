@@ -279,7 +279,14 @@
     }
   },
   "logoWall": {
-    "categories": ["Git", "CI/CD", "حاويات", "قواعد بيانات", "مراقبة", "تخزين"],
+    "categories": [
+      "Git",
+      "CI/CD",
+      "حاويات",
+      "قواعد بيانات",
+      "مراقبة",
+      "تخزين"
+    ],
     "title": "يعمل مع بنيتك التحتية"
   },
   "metrics": {
@@ -515,12 +522,16 @@
           "title": "5. نهجنا في التحليلات"
         },
         "changes": {
-          "content": ["إذا قدمنا ملفات تعريف ارتباط إضافية، سنقوم بتحديث هذه السياسة."],
+          "content": [
+            "إذا قدمنا ملفات تعريف ارتباط إضافية، سنقوم بتحديث هذه السياسة."
+          ],
           "id": "changes",
           "title": "7. التغييرات على هذه السياسة"
         },
         "cookiesWeUse": {
-          "content": ["نستخدم ملف تعريف ارتباط واحد فقط:"],
+          "content": [
+            "نستخدم ملف تعريف ارتباط واحد فقط:"
+          ],
           "id": "cookies-we-use",
           "subsections": {
             "languageCookie": {
@@ -540,7 +551,9 @@
           "title": "1. المقدمة"
         },
         "managingCookies": {
-          "content": ["يمكنك إدارة ملفات تعريف الارتباط من خلال إعدادات المتصفح:"],
+          "content": [
+            "يمكنك إدارة ملفات تعريف الارتباط من خلال إعدادات المتصفح:"
+          ],
           "id": "managing-cookies",
           "items": [
             "<strong>Chrome:</strong> الإعدادات ← الخصوصية والأمان ← ملفات تعريف الارتباط",
@@ -558,7 +571,9 @@
           "title": "2. ما هي ملفات تعريف الارتباط؟"
         },
         "whatWeDontUse": {
-          "content": ["التقنيات التالية <strong>لا</strong> تُستخدم على موقعنا:"],
+          "content": [
+            "التقنيات التالية <strong>لا</strong> تُستخدم على موقعنا:"
+          ],
           "content2": [
             "ملاحظة: تنطبق سياسة ملفات تعريف الارتباط هذه على موقع Rediacc التسويقي. تجمع منتجاتنا البرمجية (تطبيق الويب وCLI والبرمجيات الوسيطة والجسر) بيانات قياس عن بُعد منفصلة للاستخدام لا تستخدم ملفات تعريف الارتباط. لمعرفة تفاصيل القياس عن بُعد للمنتج، راجع <a href=\"telemetry-policy\">سياسة القياس عن بُعد</a>."
           ],
@@ -719,7 +734,9 @@
                 "التنفيذ القياسي (9,999 دولارًا أمريكيًا) أو الحزم المتدرجة (الصغيرة 7,499 دولارًا أمريكيًا · المتوسطة 14,999 دولارًا أمريكيًا · الكبيرة 29,999 دولارًا أمريكيًا · مخصص المؤسسة)",
                 "مشاركة الاستجابة للطوارئ (29,999 دولارًا عند الطلب)"
               ],
-              "included": ["وثائق الخدمة الذاتية، ودروس الفيديو، ومنتدى المجتمع"],
+              "included": [
+                "وثائق الخدمة الذاتية، ودروس الفيديو، ومنتدى المجتمع"
+              ],
               "planId": "مجتمع"
             },
             {
@@ -1004,7 +1021,10 @@
       },
       "trust": {
         "heading": "الأمان والموثوقية على مستوى المؤسسات",
-        "items": ["التشفير على مستوى البنك", "التزام بوقت التشغيل بنسبة 99.9%"]
+        "items": [
+          "التشفير على مستوى البنك",
+          "التزام بوقت التشغيل بنسبة 99.9%"
+        ]
       },
       "ui": {
         "anchor": "مرساة استراتيجية",
@@ -1442,7 +1462,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["rdc repo up", "JSON", "Done"],
+            "newSteps": [
+              "rdc repo up",
+              "JSON",
+              "Done"
+            ],
             "oldLabel": "البنية التحتية التقليدية",
             "oldSteps": [
               {
@@ -1664,7 +1688,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["$204/شهر", "ثابت", "ملكك"],
+            "newSteps": [
+              "$204/شهر",
+              "ثابت",
+              "ملكك"
+            ],
             "oldLabel": "البنية التحتية السحابية",
             "oldSteps": [
               {
@@ -1854,31 +1882,73 @@
           "features": [
             {
               "name": "استضافة ذاتية / داخل المؤسسة",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "عدم قابلية التغيير على مستوى نظام الملفات",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "استعادة فورية (أقل من 5 دقائق)",
-              "values": ["cross", "cross", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "لقطات بدون نسخ (CoW)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "تسعير لكل جهاز (بدون رسوم لكل مقعد)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "التحقق التلقائي من الاستعادة",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "بدون تقييد بمورد",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "المشهد التنافسي",
@@ -1921,7 +1991,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["اكتشاف", "تراجع", "<5 min"],
+            "newSteps": [
+              "اكتشاف",
+              "تراجع",
+              "<5 min"
+            ],
             "oldLabel": "استعادة الكوارث التقليدية",
             "oldSteps": [
               {
@@ -2215,7 +2289,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["rdc snapshot create", "52s", "تم"],
+            "newSteps": [
+              "rdc snapshot create",
+              "52s",
+              "تم"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -2765,7 +2843,9 @@
                 "التنفيذ القياسي (9,999 دولارًا أمريكيًا) أو الحزم المتدرجة (الصغيرة 7,499 دولارًا أمريكيًا · المتوسطة 14,999 دولارًا أمريكيًا · الكبيرة 29,999 دولارًا أمريكيًا · مخصص المؤسسة)",
                 "مشاركة الاستجابة للطوارئ (29,999 دولارًا عند الطلب)"
               ],
-              "included": ["وثائق الخدمة الذاتية، ودروس الفيديو، ومنتدى المجتمع"],
+              "included": [
+                "وثائق الخدمة الذاتية، ودروس الفيديو، ومنتدى المجتمع"
+              ],
               "planId": "مجتمع"
             },
             {
@@ -3042,7 +3122,10 @@
       },
       "trust": {
         "heading": "الأمان والموثوقية على مستوى المؤسسات",
-        "items": ["التشفير على مستوى البنك", "التزام بوقت التشغيل بنسبة 99.9%"]
+        "items": [
+          "التشفير على مستوى البنك",
+          "التزام بوقت التشغيل بنسبة 99.9%"
+        ]
       },
       "ui": {
         "anchor": "مرساة استراتيجية",
@@ -3119,7 +3202,9 @@
           "title": "10. التغييرات على هذه السياسة"
         },
         "childrenPrivacy": {
-          "content": ["خدماتنا ليست موجهة للأشخاص الذين تقل أعمارهم عن 16 عاماً."],
+          "content": [
+            "خدماتنا ليست موجهة للأشخاص الذين تقل أعمارهم عن 16 عاماً."
+          ],
           "id": "children-privacy",
           "title": "9. خصوصية الأطفال"
         },
@@ -3140,7 +3225,9 @@
           "title": "7. أمان البيانات"
         },
         "dataSharing": {
-          "content": ["لا نبيع أو نؤجر بياناتك الشخصية لأطراف ثالثة."],
+          "content": [
+            "لا نبيع أو نؤجر بياناتك الشخصية لأطراف ثالثة."
+          ],
           "id": "data-sharing",
           "items": [
             "<strong>مزودي الخدمات</strong> الذين يساعدوننا في تشغيل المنصة",
@@ -3151,7 +3238,9 @@
           "title": "4. مشاركة البيانات والأطراف الثالثة"
         },
         "howWeUseInformation": {
-          "content": ["نستخدم المعلومات المجمعة للأغراض التالية:"],
+          "content": [
+            "نستخدم المعلومات المجمعة للأغراض التالية:"
+          ],
           "id": "how-we-use-information",
           "items": [
             "الرد على استفساراتك",
@@ -3165,7 +3254,9 @@
           "title": "3. كيف نستخدم معلوماتك"
         },
         "informationWeCollect": {
-          "content": ["نجمع الحد الأدنى من المعلومات اللازمة لتقديم خدماتنا."],
+          "content": [
+            "نجمع الحد الأدنى من المعلومات اللازمة لتقديم خدماتنا."
+          ],
           "id": "information-we-collect",
           "subsections": {
             "accountData": {
@@ -3203,7 +3294,9 @@
           "title": "2. المعلومات التي نجمعها"
         },
         "internationalTransfers": {
-          "content": ["قد يتم نقل معلوماتك ومعالجتها في بلدان أخرى. نضمن الضمانات المناسبة."],
+          "content": [
+            "قد يتم نقل معلوماتك ومعالجتها في بلدان أخرى. نضمن الضمانات المناسبة."
+          ],
           "id": "international-transfers",
           "title": "8. عمليات نقل البيانات الدولية"
         },
@@ -3216,7 +3309,9 @@
           "title": "1. المقدمة"
         },
         "yourRights": {
-          "content": ["بحسب اختصاصك القضائي، قد يكون لديك الحقوق التالية:"],
+          "content": [
+            "بحسب اختصاصك القضائي، قد يكون لديك الحقوق التالية:"
+          ],
           "content2": [
             "تواصل معنا على <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> لممارسة حقوقك."
           ],
@@ -3287,7 +3382,9 @@
       },
       "sections": {
         "changes": {
-          "content": ["قد نقوم بتحديث سياسة الاسترداد هذه من وقت لآخر."],
+          "content": [
+            "قد نقوم بتحديث سياسة الاسترداد هذه من وقت لآخر."
+          ],
           "id": "changes",
           "title": "7. التغييرات على هذه السياسة"
         },
@@ -3295,7 +3392,9 @@
           "content": [
             "أرسل بريداً إلكترونياً إلى <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> مع:"
           ],
-          "content2": ["سنرد خلال 5 أيام عمل."],
+          "content2": [
+            "سنرد خلال 5 أيام عمل."
+          ],
           "id": "how-to-request",
           "items": [
             "عنوان بريدك الإلكتروني للحساب",
@@ -3306,7 +3405,9 @@
           "title": "4. كيفية طلب الاسترداد"
         },
         "nonRefundable": {
-          "content": ["العناصر التالية غير مؤهلة للاسترداد:"],
+          "content": [
+            "العناصر التالية غير مؤهلة للاسترداد:"
+          ],
           "id": "non-refundable",
           "items": [
             "الاشتراكات الملغاة بعد فترة 14 يوماً",
@@ -3325,7 +3426,9 @@
           "title": "1. نظرة عامة"
         },
         "platformSubscriptions": {
-          "content": ["تقدم Rediacc مستويات اشتراك متعددة:"],
+          "content": [
+            "تقدم Rediacc مستويات اشتراك متعددة:"
+          ],
           "id": "platform-subscriptions",
           "subsections": {
             "annualSubscriptions": {
@@ -3335,11 +3438,15 @@
               "title": "2.3 الاشتراكات السنوية"
             },
             "freeTier": {
-              "content": ["مستوى Community مجاني للأبد."],
+              "content": [
+                "مستوى Community مجاني للأبد."
+              ],
               "title": "2.1 المستوى المجاني"
             },
             "paidTiers": {
-              "content": ["الاشتراكات المدفوعة غير قابلة للاسترداد بشكل عام. الاستثناءات:"],
+              "content": [
+                "الاشتراكات المدفوعة غير قابلة للاسترداد بشكل عام. الاستثناءات:"
+              ],
               "items": [
                 "<strong>أول 14 يوماً:</strong> استرداد كامل للمشتركين الجدد",
                 "<strong>انقطاع الخدمة:</strong> رصيد تناسبي للانقطاعات الممتدة (أكثر من 48 ساعة)",
@@ -3351,7 +3458,9 @@
           "title": "2. اشتراكات المنصة"
         },
         "professionalServices": {
-          "content": ["تُفوتر الخدمات المهنية بالساعة ($400–$1,200/ساعة):"],
+          "content": [
+            "تُفوتر الخدمات المهنية بالساعة ($400–$1,200/ساعة):"
+          ],
           "id": "professional-services",
           "items": [
             "<strong>قبل بدء العمل:</strong> استرداد كامل",
@@ -3708,7 +3817,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Run pentest", "47s", "7 vulns found"],
+            "newSteps": [
+              "Run pentest",
+              "47s",
+              "7 vulns found"
+            ],
             "oldLabel": "اختبار الاختراق التقليدي",
             "oldSteps": [
               {
@@ -3958,31 +4071,73 @@
           "features": [
             {
               "name": "Tamper-proof audit logs",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Cryptographic signing (SHA-256)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Instant report generation (CLI)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Basic operation logging",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "User attribution per action",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Key rotation tracking",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -4164,7 +4319,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Run audit", "Instant", "Complete report"],
+            "newSteps": [
+              "Run audit",
+              "Instant",
+              "Complete report"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -4374,31 +4533,73 @@
           "features": [
             {
               "name": "Automated restore verification",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Full service health check",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Daily automated testing",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero-storage clone for testing",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Checksum / file integrity",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Alerting integration",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -4578,7 +4779,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Backup", "47s", "Verified"],
+            "newSteps": [
+              "Backup",
+              "47s",
+              "Verified"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -4828,31 +5033,73 @@
           "features": [
             {
               "name": "Cross-cloud replication",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Failover under 30 seconds",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Incremental-only transfer (98% savings)",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Any-to-any provider failover",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted, no cloud agent",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Automatic DNS failover",
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Full-stack replication (app + DB)",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -5033,7 +5280,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Detect", "<30s", "Online"],
+            "newSteps": [
+              "Detect",
+              "<30s",
+              "Online"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -5385,7 +5636,12 @@
               {
                 "title": "4-Week Trend",
                 "status": "-87%",
-                "items": ["W1: ████████ 23", "W2: ████ 12", "W3: ██ 7", "W4: █ 3"],
+                "items": [
+                  "W1: ████████ 23",
+                  "W2: ████ 12",
+                  "W3: ██ 7",
+                  "W4: █ 3"
+                ],
                 "footer": "Continuous improvement · automated"
               }
             ]
@@ -5439,7 +5695,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Daily scans", "0 days", "Zero blind spots"],
+            "newSteps": [
+              "Daily scans",
+              "0 days",
+              "Zero blind spots"
+            ],
             "oldLabel": "اختبار اختراق سنوي",
             "oldSteps": [
               {
@@ -5672,31 +5932,73 @@
           "features": [
             {
               "name": "Customer-held encryption keys",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero-knowledge architecture",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-service key rotation",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "AES-256 encryption at rest",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Per-repository key isolation",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Encryption in transit",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -5878,7 +6180,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Your key", "AES-256", "Zero-knowledge"],
+            "newSteps": [
+              "Your key",
+              "AES-256",
+              "Zero-knowledge"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -6098,27 +6404,69 @@
           "features": [
             {
               "name": "Application cloning",
-              "values": ["check", "check", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Database cloning",
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Combined app + DB clone",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Any database engine",
-              "values": ["cross", "cross", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Provisioning time",
-              "values": ["Minutes", "Minutes", "Minutes", "Minutes", "Seconds", "<60s"]
+              "values": [
+                "Minutes",
+                "Minutes",
+                "Minutes",
+                "Minutes",
+                "Seconds",
+                "<60s"
+              ]
             },
             {
               "name": "Production-identical data",
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -6305,7 +6653,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Run", "60s", "Done"],
+            "newSteps": [
+              "Run",
+              "60s",
+              "Done"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -6538,31 +6890,73 @@
           "features": [
             {
               "name": "Full-stack failover test",
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero production impact",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Under 5 minutes",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Automated pass/fail report",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "CI/CD integration",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Cross-cloud testing",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -6742,7 +7136,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Run test", "4 min", "Report"],
+            "newSteps": [
+              "Run test",
+              "4 min",
+              "Report"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -6980,31 +7378,80 @@
           "features": [
             {
               "name": "Immutable backups",
-              "values": ["check", "check", "check", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Filesystem-level enforcement",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Automated daily restore verification",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero-copy storage (CoW)",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Instant clone for testing",
-              "values": ["cross", "check", "cross", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Recovery time",
-              "values": ["Minutes", "Minutes", "Hours", "Hours", "Seconds", "<5 min"]
+              "values": [
+                "Minutes",
+                "Minutes",
+                "Hours",
+                "Hours",
+                "Seconds",
+                "<5 min"
+              ]
             },
             {
               "name": "Self-hosted / no cloud dependency",
-              "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -7184,7 +7631,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Backup", "Sealed", "Verified"],
+            "newSteps": [
+              "Backup",
+              "Sealed",
+              "Verified"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -7431,27 +7882,63 @@
           "features": [
             {
               "name": "Zero-copy clone storage (CoW)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Configurable TTL auto-destroy",
-              "values": ["check", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Full production data in clone",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Multi-service environments",
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted / no per-seat pricing",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Sub-60-second provisioning",
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -7624,7 +8111,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Spin up", "$0 idle", "Auto-cleanup"],
+            "newSteps": [
+              "Spin up",
+              "$0 idle",
+              "Auto-cleanup"
+            ],
             "oldLabel": "بيئات تعمل دائماً",
             "oldSteps": [
               {
@@ -7860,31 +8351,73 @@
           "features": [
             {
               "name": "Full environment restore (not just files)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Sub-5-minute recovery time",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Automated post-restore health checks",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Point-in-time snapshot granularity",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero-overhead clone (no extra storage)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Single-command recovery",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -8064,7 +8597,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Run restore", "3m 47s", "Running"],
+            "newSteps": [
+              "Run restore",
+              "3m 47s",
+              "Running"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -8312,27 +8849,63 @@
           "features": [
             {
               "name": "Production data in CI clones",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "One-line webhook integration",
-              "values": ["check", "cross", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Multi-service CI environment",
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Auto-destroy after pipeline",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero custom provisioning scripts",
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted / no vendor lock-in",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -8417,19 +8990,31 @@
               {
                 "title": "Git Push",
                 "status": "Trigger",
-                "items": ["branch: feature/auth-v2", "commit: a3f7b2c", "author: sarah"],
+                "items": [
+                  "branch: feature/auth-v2",
+                  "commit: a3f7b2c",
+                  "author: sarah"
+                ],
                 "footer": "webhook → rdc"
               },
               {
                 "title": "Clone",
                 "status": "CoW",
-                "items": ["gitlab · nextcloud", "mariadb · mailcow", "380 GB → 2.1 GB"],
+                "items": [
+                  "gitlab · nextcloud",
+                  "mariadb · mailcow",
+                  "380 GB → 2.1 GB"
+                ],
                 "footer": "ci-auth-v2"
               },
               {
                 "title": "Tests",
                 "status": "Passed",
-                "items": ["247 unit tests ✓", "38 integration ✓", "auto-cleanup ✓"],
+                "items": [
+                  "247 unit tests ✓",
+                  "38 integration ✓",
+                  "auto-cleanup ✓"
+                ],
                 "footer": "285 passed"
               }
             ]
@@ -8483,7 +9068,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["git push", "Auto", "Real data"],
+            "newSteps": [
+              "git push",
+              "Auto",
+              "Real data"
+            ],
             "oldLabel": "سكريبتات CI مخصصة",
             "oldSteps": [
               {
@@ -8723,31 +9312,73 @@
           "features": [
             {
               "name": "Zero-decryption migration",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Customer-held keys during transfer",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Config + data atomic migration",
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Post-transfer integrity verification",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Single-command migration",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Any-to-any destination",
-              "values": ["check", "check", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Automatic rollback on failure",
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -8927,7 +9558,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Run migrate", "0 exposure", "Verified"],
+            "newSteps": [
+              "Run migrate",
+              "0 exposure",
+              "Verified"
+            ],
             "oldLabel": "الترحيل التقليدي",
             "oldSteps": [
               {
@@ -9182,31 +9817,73 @@
           "features": [
             {
               "name": "Full production data clone",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "OS + library parity verification",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Any database engine (MariaDB, Postgres, Mongo)",
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Multi-service clone (app + DB + mail + storage)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero-copy storage (CoW)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted / no vendor lock-in",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Sub-60-second provisioning",
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -9379,7 +10056,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Run clone", "47s", "100% match"],
+            "newSteps": [
+              "Run clone",
+              "47s",
+              "100% match"
+            ],
             "oldLabel": "بيئات التطوير التقليدية",
             "oldSteps": [
               {
@@ -9627,27 +10308,69 @@
           "features": [
             {
               "name": "Full-environment recovery",
-              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Recovery under 5 minutes",
-              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Point-in-time (minute-level)",
-              "values": ["check", "check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Automated restore verification",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "No data transfer required",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted / no cloud dependency",
-              "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -9830,7 +10553,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Detect", "<5 min", "Online"],
+            "newSteps": [
+              "Detect",
+              "<5 min",
+              "Online"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -10046,31 +10773,73 @@
           "features": [
             {
               "name": "Configurable retention policies",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Automated lifecycle cleanup",
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Retained backup verification",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Instant audit-ready reports",
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Multi-framework support",
-              "values": ["cross", "check", "check", "check", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted / your infrastructure",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "CLI / automation-first",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -10251,7 +11020,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Set policy", "Auto", "Audit-ready"],
+            "newSteps": [
+              "Set policy",
+              "Auto",
+              "Audit-ready"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -10503,31 +11276,73 @@
           "features": [
             {
               "name": "Full-stack clone for testing",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Clone creation under 60s",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Isolated network per clone",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero additional storage (CoW)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Auto health check after patch",
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-hosted, no cloud dependency",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "One-command workflow",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -10707,7 +11522,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Clone", "60s", "Patch & verify"],
+            "newSteps": [
+              "Clone",
+              "60s",
+              "Patch & verify"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -10966,31 +11785,73 @@
           "features": [
             {
               "name": "Cross-provider migration",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Migration under 1 hour",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero proprietary formats",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Incremental-only transfer",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "No vendor agent required",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Full-stack migration (app + DB)",
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero-downtime migration",
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "الفجوة",
@@ -11173,7 +12034,11 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Snapshot", "<1hr", "Live"],
+            "newSteps": [
+              "Snapshot",
+              "<1hr",
+              "Live"
+            ],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -11545,7 +12410,12 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Clone + patch", "<4 min", "Verified", "Deploy"],
+            "newSteps": [
+              "Clone + patch",
+              "<4 min",
+              "Verified",
+              "Deploy"
+            ],
             "oldLabel": "التصحيح التقليدي",
             "oldSteps": [
               {
@@ -11844,7 +12714,9 @@
           "id": "bridge",
           "subsections": {
             "bridgeDataCollected": {
-              "content": ["يجمع الجسر الفئات التالية من البيانات:"],
+              "content": [
+                "يجمع الجسر الفئات التالية من البيانات:"
+              ],
               "items": [
                 "<strong>عمليات قائمة الانتظار:</strong> معرف المهمة، مستوى الأولوية، نوع العملية، مدة التنفيذ، حالة النجاح أو الفشل",
                 "<strong>عمليات SSH:</strong> المضيف الهدف، اسم المستخدم، رقم المنفذ، رمز الخروج، مدة التنفيذ (لا يتم جمع محتوى الأوامر أو المخرجات)",
@@ -11855,7 +12727,9 @@
               "title": "7.1 البيانات المجمعة"
             },
             "bridgeOptOut": {
-              "content": ["اضبط متغير البيئة <code>REDIACC_TELEMETRY_DISABLED=1</code> لتعطيل القياس عن بُعد للجسر."],
+              "content": [
+                "اضبط متغير البيئة <code>REDIACC_TELEMETRY_DISABLED=1</code> لتعطيل القياس عن بُعد للجسر."
+              ],
               "title": "7.2 كيفية إلغاء الاشتراك"
             }
           },
@@ -11888,7 +12762,9 @@
           "id": "cli",
           "subsections": {
             "cliDataCollected": {
-              "content": ["يجمع CLI الفئات التالية من البيانات:"],
+              "content": [
+                "يجمع CLI الفئات التالية من البيانات:"
+              ],
               "items": [
                 "<strong>استخدام الأوامر:</strong> اسم الأمر، إصدار CLI، رمز الخروج، حالة النجاح أو الفشل",
                 "<strong>الوسائط المجهولة:</strong> خيارات الأوامر مع حذف القيم الحساسة — يتم استبدال كلمات المرور والرموز المميزة والأسرار ومفاتيح API وبيانات الاعتماد بـ <code>[REDACTED]</code>",
@@ -11900,7 +12776,9 @@
               "title": "5.1 البيانات المجمعة"
             },
             "cliOptOut": {
-              "content": ["يمكنك تعطيل القياس عن بُعد لـ CLI باستخدام أي من هذه الطرق:"],
+              "content": [
+                "يمكنك تعطيل القياس عن بُعد لـ CLI باستخدام أي من هذه الطرق:"
+              ],
               "items": [
                 "اضبط متغير البيئة <code>REDIACC_TELEMETRY_DISABLED=1</code>",
                 "اضبط <code>telemetryEnabled: false</code> في ملف تكوين CLI الخاص بك",
@@ -11957,7 +12835,9 @@
           "id": "middleware",
           "subsections": {
             "middlewareDataCollected": {
-              "content": ["تجمع البرمجيات الوسيطة الفئات التالية من البيانات:"],
+              "content": [
+                "تجمع البرمجيات الوسيطة الفئات التالية من البيانات:"
+              ],
               "items": [
                 "<strong>معلومات النظام:</strong> اسم المضيف، إصدار نظام التشغيل، إصدار بيئة تشغيل .NET",
                 "<strong>استدعاءات API:</strong> طريقة HTTP، مسار نقطة النهاية، رمز حالة الاستجابة، مدة الطلب",
@@ -11979,7 +12859,9 @@
           "title": "6. القياس عن بُعد للبرمجيات الوسيطة"
         },
         "principles": {
-          "content": ["يتبع جمع القياس عن بُعد في Rediacc هذه المبادئ:"],
+          "content": [
+            "يتبع جمع القياس عن بُعد في Rediacc هذه المبادئ:"
+          ],
           "id": "principles",
           "items": [
             "<strong>الخصوصية حسب التصميم:</strong> يتم إخفاء هوية المعرفات الشخصية قبل الإرسال. يتم اختصار عناوين البريد الإلكتروني إلى النطاق فقط، ويتم تجزئة معرفات المستخدمين (SHA-256) واقتطاعها، ولا يتم جمع كلمات المرور والأسرار أبداً.",
@@ -11997,7 +12879,9 @@
           "id": "web-app",
           "subsections": {
             "webDataCollected": {
-              "content": ["يجمع تطبيق الويب الفئات التالية من البيانات:"],
+              "content": [
+                "يجمع تطبيق الويب الفئات التالية من البيانات:"
+              ],
               "items": [
                 "<strong>معلومات المتصفح:</strong> اسم المتصفح وإصداره، اللغة المفضلة، المنصة (مثل Windows وmacOS وLinux)، دقة الشاشة، عمق الألوان، سلسلة وكيل المستخدم، ذاكرة الجهاز (إن توفرت)، نوع اتصال الشبكة",
                 "<strong>سياق المستخدم:</strong> معرف الجلسة (يتم إنشاؤه عشوائياً لكل جلسة)، نطاق البريد الإلكتروني فقط (يتم حذف الجزء المحلي، مثل <code>***@example.com</code>)، اسم المؤسسة، اسم الفريق",
@@ -12011,7 +12895,9 @@
               "title": "4.1 البيانات المجمعة"
             },
             "webNotCollected": {
-              "content": ["لا يجمع تطبيق الويب:"],
+              "content": [
+                "لا يجمع تطبيق الويب:"
+              ],
               "items": [
                 "عناوين البريد الإلكتروني الكاملة (يتم حذف الجزء المحلي دائماً)",
                 "كلمات المرور أو الرموز المميزة أو بيانات اعتماد المصادقة",
@@ -12095,17 +12981,23 @@
           "title": "3. الحسابات والتسجيل"
         },
         "changes": {
-          "content": ["قد نقوم بتحديث هذه الشروط من وقت لآخر."],
+          "content": [
+            "قد نقوم بتحديث هذه الشروط من وقت لآخر."
+          ],
           "id": "changes",
           "title": "14. التغييرات على هذه الشروط"
         },
         "dataOwnership": {
-          "content": ["بياناتك ملك لك. التفاصيل في <a href=\"privacy-policy\">سياسة الخصوصية</a>."],
+          "content": [
+            "بياناتك ملك لك. التفاصيل في <a href=\"privacy-policy\">سياسة الخصوصية</a>."
+          ],
           "id": "data-ownership",
           "title": "8. بياناتك"
         },
         "definitions": {
-          "content": ["The following definitions apply throughout these Terms of Service:"],
+          "content": [
+            "The following definitions apply throughout these Terms of Service:"
+          ],
           "id": "definitions",
           "items": [
             "<strong>\"Account\"</strong> means the user account you create to access the Platform and manage your Subscription.",
@@ -12133,7 +13025,9 @@
           "title": "8. الميزات التجريبية"
         },
         "governingLaw": {
-          "content": ["تخضع هذه الشروط لقوانين جمهورية إستونيا."],
+          "content": [
+            "تخضع هذه الشروط لقوانين جمهورية إستونيا."
+          ],
           "id": "governing-law",
           "title": "13. القانون الحاكم"
         },
@@ -12158,7 +13052,9 @@
           "title": "11. التعويض"
         },
         "intellectualProperty": {
-          "content": ["الخدمات مملوكة لـ Rediacc ومحمية بموجب قوانين الملكية الفكرية."],
+          "content": [
+            "الخدمات مملوكة لـ Rediacc ومحمية بموجب قوانين الملكية الفكرية."
+          ],
           "id": "intellectual-property",
           "title": "7. الملكية الفكرية"
         },
@@ -12188,7 +13084,9 @@
               "title": "6.1 Installation and Machine Access"
             },
             "restrictions": {
-              "content": ["You shall not:"],
+              "content": [
+                "You shall not:"
+              ],
               "items": [
                 "Reverse engineer, decompile, disassemble, or otherwise attempt to derive the source code of the Bridge binary or any non-open-source component of the On-Premise Software",
                 "Redistribute, sublicense, rent, lease, or lend the On-Premise Software to any third party",
@@ -12275,7 +13173,9 @@
           "title": "6. القياس عن بُعد وجمع البيانات"
         },
         "termination": {
-          "content": ["يمكنك إنهاء حسابك في أي وقت. يمكننا تعليق وصولك في حالة انتهاك هذه الشروط."],
+          "content": [
+            "يمكنك إنهاء حسابك في أي وقت. يمكننا تعليق وصولك في حالة انتهاك هذه الشروط."
+          ],
           "id": "termination",
           "items": [
             "Your license to use the On-Premise Software and Platform ceases at the end of your current billing period (or immediately in case of breach)",
@@ -12294,7 +13194,9 @@
           "title": "13. مكونات الطرف الثالث"
         },
         "useRestrictions": {
-          "content": ["You agree that you and your Authorized Users will not use the Services to:"],
+          "content": [
+            "You agree that you and your Authorized Users will not use the Services to:"
+          ],
           "content2": [
             "You are solely responsible for the content and applications you deploy on your Machines using the Services. We reserve the right to suspend or terminate access to the Platform if we reasonably believe a violation of these restrictions has occurred."
           ],
@@ -12332,22 +13234,6 @@
     "subtitle": "مجاني للبدء. توسّع عندما تكون جاهزًا.",
     "title": "أسعار بسيطة وشفافة"
   },
-  "team": {
-    "founder": {
-      "story": {
-        "headline": "لماذا بنيت Rediacc",
-        "description": "قضيت أكثر من عقد في إدارة الخوادم. شاهدت النسخ الاحتياطية تفشل أثناء الحوادث الحقيقية. Rediacc موجود حتى لا تفشل نسخك الاحتياطية."
-      },
-      "guarantee": "إذا لم يعمل Rediacc معك، أرسل لي بريدًا إلكترونيًا وسأساعدك في الانتقال مرة أخرى.",
-      "contact": "أسئلة؟ راسلني مباشرة",
-      "quote": "بنيت Rediacc لأن البنية التحتية لا ينبغي أن تكون بهذه الهشاشة."
-    },
-    "video": {
-      "playLabel": "شاهد الفيديو",
-      "ccLabel": "الترجمة",
-      "personaHeadline": "رسالة لك"
-    }
-  },
   "problem": {
     "reality": {
       "imageAlt": "رسم تخطيطي يوضح تحديات سير عمل البنية التحتية التقليدية: انتظار المطورين المحبطين لتوفير البيئة، وأصحاب المصلحة الذين يطالبون بالنشر بشكل أسرع، ولجوء الفرق إلى اختبارات الإنتاج الخطيرة بسبب تحديثات وضع الحماية البطيئة",
@@ -12371,6 +13257,22 @@
     },
     "subtitle": "19 حلاً عبر ست مجالات تركيز — من النجاة من برامج الفدية إلى الدفاع الاستباقي.",
     "title": "كيف نضمن استمرارية الأعمال"
+  },
+  "team": {
+    "founder": {
+      "contact": "أسئلة؟ راسلني مباشرة",
+      "guarantee": "إذا لم يعمل Rediacc معك، أرسل لي بريدًا إلكترونيًا وسأساعدك في الانتقال مرة أخرى.",
+      "quote": "بنيت Rediacc لأن البنية التحتية لا ينبغي أن تكون بهذه الهشاشة.",
+      "story": {
+        "description": "قضيت أكثر من عقد في إدارة الخوادم. شاهدت النسخ الاحتياطية تفشل أثناء الحوادث الحقيقية. Rediacc موجود حتى لا تفشل نسخك الاحتياطية.",
+        "headline": "لماذا بنيت Rediacc"
+      }
+    },
+    "video": {
+      "ccLabel": "الترجمة",
+      "personaHeadline": "رسالة لك",
+      "playLabel": "شاهد الفيديو"
+    }
   },
   "testimonials": {
     "items": [

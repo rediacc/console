@@ -388,9 +388,18 @@
         "description": "Tüm yapılandırma dosyalarını listeleyin",
         "noConfigs": "Yapılandırma dosyası bulunamadı. Oluşturun: rdc config init"
       },
+      "listArchived": {
+        "description": "Arşivlenmiş depo kimlik bilgilerini listele",
+        "noArchived": "Arşivlenmiş depo yok"
+      },
       "machines": {
         "description": "Geçerli yapılandırmadaki makineleri listeleyin",
         "noMachines": "Yapılandırılmış makine yok. Eklemek için: rdc config add-machine <name> --ip <ip> --user <user>"
+      },
+      "purgeArchived": {
+        "description": "Tüm arşivlenmiş kimlik bilgilerini kalıcı olarak sil",
+        "noArchived": "Temizlenecek arşivlenmiş depo yok",
+        "success": "{{count}} arşivlenmiş kimlik bilgisi temizlendi"
       },
       "pushInfra": {
         "description": "Altyapı yapılandırmasını uzak makineye gönderin",
@@ -421,19 +430,10 @@
         "description": "Geçerli yapılandırmadaki depo GUID eşlemelerini listeleyin",
         "noRepositories": "Yapılandırılmış depo yok. Eklemek için: rdc config add-repository <name> --guid <guid>"
       },
-      "listArchived": {
-        "description": "Arşivlenmiş depo kimlik bilgilerini listele",
-        "noArchived": "Arşivlenmiş depo yok"
-      },
       "restoreArchived": {
         "description": "Arşivlenmiş depo kimlik bilgisini geri yükle",
         "optionName": "Farklı bir adla geri yükle",
         "success": "\"{{name}}\" ({{guid}}) geri yüklendi"
-      },
-      "purgeArchived": {
-        "description": "Tüm arşivlenmiş kimlik bilgilerini kalıcı olarak sil",
-        "noArchived": "Temizlenecek arşivlenmiş depo yok",
-        "success": "{{count}} arşivlenmiş kimlik bilgisi temizlendi"
       },
       "scanKeys": {
         "completed": "{{count}}/{{total}} makine tarandı",
@@ -444,6 +444,13 @@
       "set": {
         "description": "Varsayılan bir değer belirleyin (takım, bölge, köprü, makine)",
         "success": "\"{{key}}\" değeri \"{{value}}\" olarak ayarlandı"
+      },
+      "setCeph": {
+        "description": "Set Ceph RBD configuration for a machine",
+        "optionCluster": "Ceph cluster name",
+        "optionImage": "RBD image name (e.g., datastore-prod1)",
+        "optionPool": "Ceph pool name (e.g., rbd)",
+        "success": "Ceph config set for \"{{name}}\": pool={{pool}}, image={{image}}"
       },
       "setInfra": {
         "description": "Bir makine için altyapı yapılandırmasını belirleyin",
@@ -486,6 +493,47 @@
       "storages": {
         "description": "Geçerli yapılandırmadaki depolamaları listeleyin",
         "noStorages": "Yapılandırılmış depolama yok. İçe aktarmak için: rdc config import-storage <file>"
+      }
+    },
+    "datastore": {
+      "description": "Manage Ceph RBD datastore lifecycle (init, fork, unfork, status)",
+      "fork": {
+        "completed": "Datastore forked successfully (snapshot: {{snapshot}})",
+        "cowSizeOption": "COW backing file size (default: auto, grows on demand)",
+        "description": "Create a local COW copy of a Ceph datastore via RBD snapshot + clone (< 2s). Save snapshot/clone names from output for unfork. Only one fork per target name; unfork before re-forking",
+        "failed": "Datastore fork failed",
+        "starting": "Forking datastore on \"{{source}}\" (clone named for \"{{target}}\")...",
+        "toOption": "Clone suffix (creates clone named <image>-fork-<name>). The fork stays on the source machine"
+      },
+      "init": {
+        "backendOption": "Backend type: local (default) or ceph",
+        "clusterOption": "Ceph cluster name (default: ceph)",
+        "completed": "Datastore initialized",
+        "description": "Initialize datastore on a machine (local loop-backed or Ceph RBD)",
+        "failed": "Datastore initialization failed",
+        "forceOption": "Force initialization even if datastore already exists (WARNING: reformats storage)",
+        "imageOption": "Ceph RBD image name (default: from machine config via set-ceph)",
+        "imageRequired": "--image is required for ceph backend (or set via: rdc config set-ceph -m <machine> --image <name>)",
+        "poolOption": "Ceph pool name (default: from machine config, or rbd)",
+        "sizeOption": "Datastore size (e.g., 5G, 50G, 100G)",
+        "starting": "Initializing datastore on \"{{machine}}\"..."
+      },
+      "machineOption": "Machine name (where the Ceph datastore is hosted)",
+      "status": {
+        "description": "Show datastore backend, size, usage, mount status, and cow_mode (if forked)",
+        "starting": "Checking datastore status on \"{{machine}}\"..."
+      },
+      "unfork": {
+        "completed": "Fork cleaned up successfully",
+        "description": "Clean up a fork: unmount COW, remove clone, remove snapshot",
+        "destOption": "Clone image to remove (the \"Clone:\" value from fork output, e.g. ds-prod-fork-<machine>)",
+        "failed": "Fork cleanup failed",
+        "forceOption": "Continue cleanup even if individual steps fail (e.g. unmount, snapshot removal)",
+        "mountPointOption": "Fork mount point to unmount (default: /mnt/rediacc)",
+        "poolOption": "Ceph pool name (default: from machine config)",
+        "snapshotOption": "Snapshot to remove (the \"Snapshot:\" value from fork output, e.g. fork-<timestamp>)",
+        "sourceOption": "Original RBD image that was forked (from config set-ceph --image, e.g. ds-prod)",
+        "starting": "Cleaning up forked datastore on \"{{machine}}\"..."
       }
     },
     "doctor": {
@@ -946,10 +994,10 @@
         "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" ({{size}}) deposu oluşturuluyor..."
       },
       "delete": {
+        "archived": "\"{{repository}}\" kimlik bilgisi arşivlendi",
         "completed": "Depo silindi",
         "description": "Depoyu sil",
         "failed": "Depo silme başarısız",
-        "archived": "\"{{repository}}\" kimlik bilgisi arşivlendi",
         "restoreHint": "Geri yüklemek için: rdc config restore-archived {{guid}}",
         "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" siliniyor..."
       },
@@ -1031,12 +1079,12 @@
         "starting": "\"{{repository}}\" \"{{machine}}\" üzerinden ayrılıyor..."
       },
       "up": {
+        "checkpointOption": "Dağıtımdan sonra CRIU kontrol noktasından kapsayıcıları geri yükle (başka bir makineden canlı süreç geçişi için)",
         "completed": "Servisler başlatıldı",
         "description": "Bir depoyu dağıtın veya güncelleyin (bağlama, hazırlık, servisleri başlatma)",
         "failed": "Servis başlatma başarısız",
         "grandOption": "Ana depo adı (GUID'ye otomatik çözümlenir)",
         "mountOption": "Önce depoyu bağla",
-        "checkpointOption": "Dağıtımdan sonra CRIU kontrol noktasından kapsayıcıları geri yükle (başka bir makineden canlı süreç geçişi için)",
         "prepOnlyOption": "Yalnızca hazırlama adımını çalıştır",
         "starting": "\"{{repository}}\" için servisler \"{{machine}}\" üzerinde başlatılıyor..."
       },
@@ -1565,6 +1613,7 @@
     },
     "pageTitle": "Rediacc CLI Referansı",
     "sectionTitles": {
+      "agent": "Ajan araçları",
       "audit": "Denetim ve Uyumluluk",
       "auth": "Kimlik Doğrulama",
       "backup": "Yedekleme Yönetimi",
@@ -1573,6 +1622,7 @@
       "config": "Yapılandırma Yönetimi",
       "doctor": "Sistem Tanılama",
       "machine": "Makine Yönetimi",
+      "mcp": "MCP Sunucusu",
       "ops": "Deneysel VM Islemleri",
       "organization": "Organizasyon Yönetimi",
       "permission": "İzin Yönetimi",
@@ -1591,9 +1641,7 @@
       "term": "SSH Terminal Erişimi",
       "update": "CLI Güncellemeleri",
       "user": "Kullanıcı Yönetimi",
-      "vscode": "VS Code Entegrasyonu",
-      "agent": "Ajan araçları",
-      "mcp": "MCP Sunucusu"
+      "vscode": "VS Code Entegrasyonu"
     },
     "supplements": {
       "auth": {

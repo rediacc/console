@@ -388,9 +388,18 @@
         "description": "عرض جميع ملفات الإعدادات",
         "noConfigs": "لم يتم العثور على ملفات إعدادات. أنشئ واحداً باستخدام: rdc config init"
       },
+      "listArchived": {
+        "description": "عرض بيانات الاعتماد المؤرشفة للمستودعات",
+        "noArchived": "لا توجد مستودعات مؤرشفة"
+      },
       "machines": {
         "description": "عرض الآلات في الإعدادات الحالية",
         "noMachines": "لا توجد آلات مكونة. أضف واحدة باستخدام: rdc config add-machine <name> --ip <ip> --user <user>"
+      },
+      "purgeArchived": {
+        "description": "حذف جميع بيانات الاعتماد المؤرشفة نهائياً",
+        "noArchived": "لا توجد مستودعات مؤرشفة للحذف",
+        "success": "تم حذف {{count}} من بيانات الاعتماد المؤرشفة"
       },
       "pushInfra": {
         "description": "دفع إعدادات البنية التحتية إلى الجهاز البعيد",
@@ -421,19 +430,10 @@
         "description": "عرض تعيينات GUID للمستودعات في الإعدادات الحالية",
         "noRepositories": "لا توجد مستودعات مكونة. أضف واحداً باستخدام: rdc config add-repository <name> --guid <guid>"
       },
-      "listArchived": {
-        "description": "عرض بيانات الاعتماد المؤرشفة للمستودعات",
-        "noArchived": "لا توجد مستودعات مؤرشفة"
-      },
       "restoreArchived": {
         "description": "استعادة بيانات اعتماد مستودع مؤرشف",
         "optionName": "استعادة باسم مختلف",
         "success": "تمت استعادة \"{{name}}\" ({{guid}})"
-      },
-      "purgeArchived": {
-        "description": "حذف جميع بيانات الاعتماد المؤرشفة نهائياً",
-        "noArchived": "لا توجد مستودعات مؤرشفة للحذف",
-        "success": "تم حذف {{count}} من بيانات الاعتماد المؤرشفة"
       },
       "scanKeys": {
         "completed": "تم فحص {{count}}/{{total}} آلة",
@@ -444,6 +444,13 @@
       "set": {
         "description": "تعيين قيمة افتراضية (فريق، منطقة، جسر، آلة)",
         "success": "تم تعيين \"{{key}}\" إلى \"{{value}}\""
+      },
+      "setCeph": {
+        "description": "Set Ceph RBD configuration for a machine",
+        "optionCluster": "Ceph cluster name",
+        "optionImage": "RBD image name (e.g., datastore-prod1)",
+        "optionPool": "Ceph pool name (e.g., rbd)",
+        "success": "Ceph config set for \"{{name}}\": pool={{pool}}, image={{image}}"
       },
       "setInfra": {
         "description": "تعيين إعدادات البنية التحتية لآلة",
@@ -486,6 +493,47 @@
       "storages": {
         "description": "عرض وحدات التخزين في الإعدادات الحالية",
         "noStorages": "لا توجد وحدات تخزين مكونة. استورد باستخدام: rdc config import-storage <file>"
+      }
+    },
+    "datastore": {
+      "description": "Manage Ceph RBD datastore lifecycle (init, fork, unfork, status)",
+      "fork": {
+        "completed": "Datastore forked successfully (snapshot: {{snapshot}})",
+        "cowSizeOption": "COW backing file size (default: auto, grows on demand)",
+        "description": "Create a local COW copy of a Ceph datastore via RBD snapshot + clone (< 2s). Save snapshot/clone names from output for unfork. Only one fork per target name; unfork before re-forking",
+        "failed": "Datastore fork failed",
+        "starting": "Forking datastore on \"{{source}}\" (clone named for \"{{target}}\")...",
+        "toOption": "Clone suffix (creates clone named <image>-fork-<name>). The fork stays on the source machine"
+      },
+      "init": {
+        "backendOption": "Backend type: local (default) or ceph",
+        "clusterOption": "Ceph cluster name (default: ceph)",
+        "completed": "Datastore initialized",
+        "description": "Initialize datastore on a machine (local loop-backed or Ceph RBD)",
+        "failed": "Datastore initialization failed",
+        "forceOption": "Force initialization even if datastore already exists (WARNING: reformats storage)",
+        "imageOption": "Ceph RBD image name (default: from machine config via set-ceph)",
+        "imageRequired": "--image is required for ceph backend (or set via: rdc config set-ceph -m <machine> --image <name>)",
+        "poolOption": "Ceph pool name (default: from machine config, or rbd)",
+        "sizeOption": "Datastore size (e.g., 5G, 50G, 100G)",
+        "starting": "Initializing datastore on \"{{machine}}\"..."
+      },
+      "machineOption": "Machine name (where the Ceph datastore is hosted)",
+      "status": {
+        "description": "Show datastore backend, size, usage, mount status, and cow_mode (if forked)",
+        "starting": "Checking datastore status on \"{{machine}}\"..."
+      },
+      "unfork": {
+        "completed": "Fork cleaned up successfully",
+        "description": "Clean up a fork: unmount COW, remove clone, remove snapshot",
+        "destOption": "Clone image to remove (the \"Clone:\" value from fork output, e.g. ds-prod-fork-<machine>)",
+        "failed": "Fork cleanup failed",
+        "forceOption": "Continue cleanup even if individual steps fail (e.g. unmount, snapshot removal)",
+        "mountPointOption": "Fork mount point to unmount (default: /mnt/rediacc)",
+        "poolOption": "Ceph pool name (default: from machine config)",
+        "snapshotOption": "Snapshot to remove (the \"Snapshot:\" value from fork output, e.g. fork-<timestamp>)",
+        "sourceOption": "Original RBD image that was forked (from config set-ceph --image, e.g. ds-prod)",
+        "starting": "Cleaning up forked datastore on \"{{machine}}\"..."
       }
     },
     "doctor": {
@@ -946,10 +994,10 @@
         "starting": "جارٍ إنشاء المستودع \"{{repository}}\" ({{size}}) على \"{{machine}}\"..."
       },
       "delete": {
+        "archived": "تم أرشفة بيانات اعتماد \"{{repository}}\"",
         "completed": "تم حذف المستودع",
         "description": "حذف مستودع",
         "failed": "فشل حذف المستودع",
-        "archived": "تم أرشفة بيانات اعتماد \"{{repository}}\"",
         "restoreHint": "للاستعادة: rdc config restore-archived {{guid}}",
         "starting": "جارٍ حذف \"{{repository}}\" على \"{{machine}}\"..."
       },
@@ -1031,12 +1079,12 @@
         "starting": "جارٍ إلغاء تثبيت \"{{repository}}\" على \"{{machine}}\"..."
       },
       "up": {
+        "checkpointOption": "استعادة الحاويات من نقطة تفتيش CRIU بعد النشر (لترحيل العمليات الحية من جهاز آخر)",
         "completed": "تم بدء الخدمات",
         "description": "نشر أو تحديث مستودع (تحميل، تجهيز، بدء الخدمات)",
         "failed": "فشل بدء الخدمات",
         "grandOption": "اسم المستودع الرئيسي (يُحلّ تلقائيًا إلى GUID)",
         "mountOption": "تثبيت المستودع أولاً",
-        "checkpointOption": "استعادة الحاويات من نقطة تفتيش CRIU بعد النشر (لترحيل العمليات الحية من جهاز آخر)",
         "prepOnlyOption": "تشغيل خطوة التحضير فقط",
         "starting": "جارٍ بدء الخدمات لـ \"{{repository}}\" على \"{{machine}}\"..."
       },
@@ -1565,6 +1613,7 @@
     },
     "pageTitle": "مرجع سطر أوامر Rediacc",
     "sectionTitles": {
+      "agent": "أدوات الوكيل",
       "audit": "التدقيق والامتثال",
       "auth": "المصادقة",
       "backup": "إدارة النسخ الاحتياطي",
@@ -1573,6 +1622,7 @@
       "config": "إدارة الإعدادات",
       "doctor": "تشخيص النظام",
       "machine": "إدارة الأجهزة",
+      "mcp": "خادم MCP",
       "ops": "عمليات VM التجريبية",
       "organization": "إدارة المنظمة",
       "permission": "إدارة الصلاحيات",
@@ -1591,9 +1641,7 @@
       "term": "وصول طرفية SSH",
       "update": "تحديثات سطر الأوامر",
       "user": "إدارة المستخدمين",
-      "vscode": "تكامل VS Code",
-      "agent": "أدوات الوكيل",
-      "mcp": "خادم MCP"
+      "vscode": "تكامل VS Code"
     },
     "supplements": {
       "auth": {

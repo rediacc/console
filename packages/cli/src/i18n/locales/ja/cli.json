@@ -388,9 +388,18 @@
         "description": "すべての設定ファイルをリスト表示する",
         "noConfigs": "設定ファイルが見つかりません。次のコマンドで作成してください: rdc config init"
       },
+      "listArchived": {
+        "description": "アーカイブされたリポジトリ資格情報を一覧表示",
+        "noArchived": "アーカイブされたリポジトリはありません"
+      },
       "machines": {
         "description": "現在の設定のマシンをリスト表示する",
         "noMachines": "マシンが設定されていません。次のコマンドで追加してください: rdc config add-machine <name> --ip <ip> --user <user>"
+      },
+      "purgeArchived": {
+        "description": "アーカイブされた資格情報をすべて完全に削除",
+        "noArchived": "削除するアーカイブされたリポジトリはありません",
+        "success": "{{count}} 件のアーカイブされた資格情報を削除しました"
       },
       "pushInfra": {
         "description": "インフラ設定をリモートマシンにプッシュする",
@@ -421,19 +430,10 @@
         "description": "現在の設定のリポジトリ GUID マッピングをリスト表示する",
         "noRepositories": "リポジトリが設定されていません。次のコマンドで追加してください: rdc config add-repository <name> --guid <guid>"
       },
-      "listArchived": {
-        "description": "アーカイブされたリポジトリ資格情報を一覧表示",
-        "noArchived": "アーカイブされたリポジトリはありません"
-      },
       "restoreArchived": {
         "description": "アーカイブされたリポジトリ資格情報を復元",
         "optionName": "別の名前で復元",
         "success": "\"{{name}}\" ({{guid}}) を復元しました"
-      },
-      "purgeArchived": {
-        "description": "アーカイブされた資格情報をすべて完全に削除",
-        "noArchived": "削除するアーカイブされたリポジトリはありません",
-        "success": "{{count}} 件のアーカイブされた資格情報を削除しました"
       },
       "scanKeys": {
         "completed": "{{count}}/{{total}} 台のマシンのホストキーをスキャンしました",
@@ -444,6 +444,13 @@
       "set": {
         "description": "デフォルト値を設定する (team、region、bridge、machine)",
         "success": "\"{{key}}\" を \"{{value}}\" に設定しました"
+      },
+      "setCeph": {
+        "description": "Set Ceph RBD configuration for a machine",
+        "optionCluster": "Ceph cluster name",
+        "optionImage": "RBD image name (e.g., datastore-prod1)",
+        "optionPool": "Ceph pool name (e.g., rbd)",
+        "success": "Ceph config set for \"{{name}}\": pool={{pool}}, image={{image}}"
       },
       "setInfra": {
         "description": "マシンのインフラ設定を行う",
@@ -486,6 +493,47 @@
       "storages": {
         "description": "現在の設定のストレージをリスト表示する",
         "noStorages": "ストレージが設定されていません。次のコマンドでインポートしてください: rdc config import-storage <file>"
+      }
+    },
+    "datastore": {
+      "description": "Manage Ceph RBD datastore lifecycle (init, fork, unfork, status)",
+      "fork": {
+        "completed": "Datastore forked successfully (snapshot: {{snapshot}})",
+        "cowSizeOption": "COW backing file size (default: auto, grows on demand)",
+        "description": "Create a local COW copy of a Ceph datastore via RBD snapshot + clone (< 2s). Save snapshot/clone names from output for unfork. Only one fork per target name; unfork before re-forking",
+        "failed": "Datastore fork failed",
+        "starting": "Forking datastore on \"{{source}}\" (clone named for \"{{target}}\")...",
+        "toOption": "Clone suffix (creates clone named <image>-fork-<name>). The fork stays on the source machine"
+      },
+      "init": {
+        "backendOption": "Backend type: local (default) or ceph",
+        "clusterOption": "Ceph cluster name (default: ceph)",
+        "completed": "Datastore initialized",
+        "description": "Initialize datastore on a machine (local loop-backed or Ceph RBD)",
+        "failed": "Datastore initialization failed",
+        "forceOption": "Force initialization even if datastore already exists (WARNING: reformats storage)",
+        "imageOption": "Ceph RBD image name (default: from machine config via set-ceph)",
+        "imageRequired": "--image is required for ceph backend (or set via: rdc config set-ceph -m <machine> --image <name>)",
+        "poolOption": "Ceph pool name (default: from machine config, or rbd)",
+        "sizeOption": "Datastore size (e.g., 5G, 50G, 100G)",
+        "starting": "Initializing datastore on \"{{machine}}\"..."
+      },
+      "machineOption": "Machine name (where the Ceph datastore is hosted)",
+      "status": {
+        "description": "Show datastore backend, size, usage, mount status, and cow_mode (if forked)",
+        "starting": "Checking datastore status on \"{{machine}}\"..."
+      },
+      "unfork": {
+        "completed": "Fork cleaned up successfully",
+        "description": "Clean up a fork: unmount COW, remove clone, remove snapshot",
+        "destOption": "Clone image to remove (the \"Clone:\" value from fork output, e.g. ds-prod-fork-<machine>)",
+        "failed": "Fork cleanup failed",
+        "forceOption": "Continue cleanup even if individual steps fail (e.g. unmount, snapshot removal)",
+        "mountPointOption": "Fork mount point to unmount (default: /mnt/rediacc)",
+        "poolOption": "Ceph pool name (default: from machine config)",
+        "snapshotOption": "Snapshot to remove (the \"Snapshot:\" value from fork output, e.g. fork-<timestamp>)",
+        "sourceOption": "Original RBD image that was forked (from config set-ceph --image, e.g. ds-prod)",
+        "starting": "Cleaning up forked datastore on \"{{machine}}\"..."
       }
     },
     "doctor": {
@@ -946,10 +994,10 @@
         "starting": "\"{{machine}}\" でリポジトリ \"{{repository}}\"（{{size}}）を作成中..."
       },
       "delete": {
+        "archived": "\"{{repository}}\" の資格情報をアーカイブしました",
         "completed": "リポジトリを削除しました",
         "description": "リポジトリを削除する",
         "failed": "リポジトリの削除に失敗しました",
-        "archived": "\"{{repository}}\" の資格情報をアーカイブしました",
         "restoreHint": "復元するには: rdc config restore-archived {{guid}}",
         "starting": "\"{{machine}}\" で \"{{repository}}\" を削除中..."
       },
@@ -1031,12 +1079,12 @@
         "starting": "\"{{repository}}\" を \"{{machine}}\" でアンマウント中..."
       },
       "up": {
+        "checkpointOption": "デプロイ後にCRIUチェックポイントからコンテナを復元する（別のマシンからのライブプロセス移行用）",
         "completed": "サービスが開始されました",
         "description": "リポジトリをデプロイまたは更新する (マウント、準備、サービス起動)",
         "failed": "サービスの開始に失敗しました",
         "grandOption": "グランドリポジトリ名 (自動的に GUID に解決)",
         "mountOption": "最初にリポジトリをマウントする",
-        "checkpointOption": "デプロイ後にCRIUチェックポイントからコンテナを復元する（別のマシンからのライブプロセス移行用）",
         "prepOnlyOption": "準備ステップのみ実行する",
         "starting": "\"{{repository}}\" のサービスを \"{{machine}}\" で開始中..."
       },
@@ -1565,6 +1613,7 @@
     },
     "pageTitle": "Rediacc CLIリファレンス",
     "sectionTitles": {
+      "agent": "エージェントユーティリティ",
       "audit": "監査とコンプライアンス",
       "auth": "認証",
       "backup": "バックアップ管理",
@@ -1573,6 +1622,7 @@
       "config": "設定管理",
       "doctor": "システム診断",
       "machine": "マシン管理",
+      "mcp": "MCPサーバー",
       "ops": "実験的 VM 操作",
       "organization": "組織管理",
       "permission": "権限管理",
@@ -1591,9 +1641,7 @@
       "term": "SSHターミナルアクセス",
       "update": "CLIアップデート",
       "user": "ユーザー管理",
-      "vscode": "VS Code統合",
-      "agent": "エージェントユーティリティ",
-      "mcp": "MCPサーバー"
+      "vscode": "VS Code統合"
     },
     "supplements": {
       "auth": {

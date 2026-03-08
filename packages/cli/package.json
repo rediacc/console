@@ -66,6 +66,7 @@
     "@opentelemetry/sdk-node": "^0.211.0",
     "@opentelemetry/semantic-conventions": "^1.28.0",
     "@playwright/test": "^1.40.0",
+    "@pyroscope/nodejs": "^0.4.10",
     "@rediacc/shared": "*",
     "@rediacc/shared-desktop": "*",
     "@types/inquirer": "^9.0.7",

@@ -388,9 +388,18 @@
         "description": "Listar todos los archivos de configuración",
         "noConfigs": "No se encontraron archivos de configuración. Cree uno con: rdc config init"
       },
+      "listArchived": {
+        "description": "Listar credenciales de repositorios archivados",
+        "noArchived": "No hay repositorios archivados"
+      },
       "machines": {
         "description": "Listar máquinas en la configuración actual",
         "noMachines": "No hay máquinas configuradas. Agregue una con: rdc config add-machine <name> --ip <ip> --user <user>"
+      },
+      "purgeArchived": {
+        "description": "Eliminar permanentemente todas las credenciales archivadas",
+        "noArchived": "No hay repositorios archivados para eliminar",
+        "success": "{{count}} credencial(es) archivada(s) eliminada(s)"
       },
       "pushInfra": {
         "description": "Enviar configuración de infraestructura a máquina remota",
@@ -421,19 +430,10 @@
         "description": "Listar mapeos de GUID de repositorios en la configuración actual",
         "noRepositories": "No hay repositorios configurados. Agregue uno con: rdc config add-repository <name> --guid <guid>"
       },
-      "listArchived": {
-        "description": "Listar credenciales de repositorios archivados",
-        "noArchived": "No hay repositorios archivados"
-      },
       "restoreArchived": {
         "description": "Restaurar credencial de repositorio archivado",
         "optionName": "Restaurar con un nombre diferente",
         "success": "\"{{name}}\" ({{guid}}) restaurado"
-      },
-      "purgeArchived": {
-        "description": "Eliminar permanentemente todas las credenciales archivadas",
-        "noArchived": "No hay repositorios archivados para eliminar",
-        "success": "{{count}} credencial(es) archivada(s) eliminada(s)"
       },
       "scanKeys": {
         "completed": "Escaneadas {{count}}/{{total}} máquinas",
@@ -444,6 +444,13 @@
       "set": {
         "description": "Establecer un valor predeterminado (equipo, región, puente, máquina)",
         "success": "\"{{key}}\" establecido en \"{{value}}\""
+      },
+      "setCeph": {
+        "description": "Set Ceph RBD configuration for a machine",
+        "optionCluster": "Ceph cluster name",
+        "optionImage": "RBD image name (e.g., datastore-prod1)",
+        "optionPool": "Ceph pool name (e.g., rbd)",
+        "success": "Ceph config set for \"{{name}}\": pool={{pool}}, image={{image}}"
       },
       "setInfra": {
         "description": "Establecer configuración de infraestructura para una máquina",
@@ -486,6 +493,47 @@
       "storages": {
         "description": "Listar almacenamientos en la configuración actual",
         "noStorages": "No hay almacenamientos configurados. Importe con: rdc config import-storage <file>"
+      }
+    },
+    "datastore": {
+      "description": "Manage Ceph RBD datastore lifecycle (init, fork, unfork, status)",
+      "fork": {
+        "completed": "Datastore forked successfully (snapshot: {{snapshot}})",
+        "cowSizeOption": "COW backing file size (default: auto, grows on demand)",
+        "description": "Create a local COW copy of a Ceph datastore via RBD snapshot + clone (< 2s). Save snapshot/clone names from output for unfork. Only one fork per target name; unfork before re-forking",
+        "failed": "Datastore fork failed",
+        "starting": "Forking datastore on \"{{source}}\" (clone named for \"{{target}}\")...",
+        "toOption": "Clone suffix (creates clone named <image>-fork-<name>). The fork stays on the source machine"
+      },
+      "init": {
+        "backendOption": "Backend type: local (default) or ceph",
+        "clusterOption": "Ceph cluster name (default: ceph)",
+        "completed": "Datastore initialized",
+        "description": "Initialize datastore on a machine (local loop-backed or Ceph RBD)",
+        "failed": "Datastore initialization failed",
+        "forceOption": "Force initialization even if datastore already exists (WARNING: reformats storage)",
+        "imageOption": "Ceph RBD image name (default: from machine config via set-ceph)",
+        "imageRequired": "--image is required for ceph backend (or set via: rdc config set-ceph -m <machine> --image <name>)",
+        "poolOption": "Ceph pool name (default: from machine config, or rbd)",
+        "sizeOption": "Datastore size (e.g., 5G, 50G, 100G)",
+        "starting": "Initializing datastore on \"{{machine}}\"..."
+      },
+      "machineOption": "Machine name (where the Ceph datastore is hosted)",
+      "status": {
+        "description": "Show datastore backend, size, usage, mount status, and cow_mode (if forked)",
+        "starting": "Checking datastore status on \"{{machine}}\"..."
+      },
+      "unfork": {
+        "completed": "Fork cleaned up successfully",
+        "description": "Clean up a fork: unmount COW, remove clone, remove snapshot",
+        "destOption": "Clone image to remove (the \"Clone:\" value from fork output, e.g. ds-prod-fork-<machine>)",
+        "failed": "Fork cleanup failed",
+        "forceOption": "Continue cleanup even if individual steps fail (e.g. unmount, snapshot removal)",
+        "mountPointOption": "Fork mount point to unmount (default: /mnt/rediacc)",
+        "poolOption": "Ceph pool name (default: from machine config)",
+        "snapshotOption": "Snapshot to remove (the \"Snapshot:\" value from fork output, e.g. fork-<timestamp>)",
+        "sourceOption": "Original RBD image that was forked (from config set-ceph --image, e.g. ds-prod)",
+        "starting": "Cleaning up forked datastore on \"{{machine}}\"..."
       }
     },
     "doctor": {
@@ -946,10 +994,10 @@
         "starting": "Creando repositorio \"{{repository}}\" ({{size}}) en \"{{machine}}\"..."
       },
       "delete": {
+        "archived": "Credencial de \"{{repository}}\" archivada",
         "completed": "Repositorio eliminado",
         "description": "Eliminar un repositorio",
         "failed": "Error al eliminar el repositorio",
-        "archived": "Credencial de \"{{repository}}\" archivada",
         "restoreHint": "Restaurar con: rdc config restore-archived {{guid}}",
         "starting": "Eliminando \"{{repository}}\" en \"{{machine}}\"..."
       },
@@ -1031,12 +1079,12 @@
         "starting": "Desmontando \"{{repository}}\" en \"{{machine}}\"..."
       },
       "up": {
+        "checkpointOption": "Restaurar contenedores desde checkpoint CRIU después del despliegue (para migración en vivo de procesos desde otra máquina)",
         "completed": "Servicios iniciados",
         "description": "Desplegar o actualizar un repositorio (montar, preparar, iniciar servicios)",
         "failed": "Fallo al iniciar servicios",
         "grandOption": "Nombre del repositorio Grand (se resuelve automáticamente a GUID)",
         "mountOption": "Montar repositorio primero",
-        "checkpointOption": "Restaurar contenedores desde checkpoint CRIU después del despliegue (para migración en vivo de procesos desde otra máquina)",
         "prepOnlyOption": "Ejecutar solo el paso de preparación",
         "starting": "Iniciando servicios para \"{{repository}}\" en \"{{machine}}\"..."
       },
@@ -1565,6 +1613,7 @@
     },
     "pageTitle": "Referencia de la CLI de Rediacc",
     "sectionTitles": {
+      "agent": "Utilidades del agente",
       "audit": "Auditoría y Cumplimiento",
       "auth": "Autenticación",
       "backup": "Gestión de copias de seguridad",
@@ -1573,6 +1622,7 @@
       "config": "Gestión de Configuración",
       "doctor": "Diagnóstico del sistema",
       "machine": "Gestión de Máquinas",
+      "mcp": "Servidor MCP",
       "ops": "Operaciones experimentales de VM",
       "organization": "Gestión de Organización",
       "permission": "Gestión de Permisos",
@@ -1591,9 +1641,7 @@
       "term": "Acceso Terminal SSH",
       "update": "Actualizaciones de CLI",
       "user": "Gestión de Usuarios",
-      "vscode": "Integración con VS Code",
-      "agent": "Utilidades del agente",
-      "mcp": "Servidor MCP"
+      "vscode": "Integración con VS Code"
     },
     "supplements": {
       "auth": {

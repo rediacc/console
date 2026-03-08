@@ -388,9 +388,18 @@
         "description": "列出所有配置文件",
         "noConfigs": "未找到配置文件。请使用以下命令创建：rdc config init"
       },
+      "listArchived": {
+        "description": "列出已归档的仓库凭据",
+        "noArchived": "没有已归档的仓库"
+      },
       "machines": {
         "description": "列出当前配置中的机器",
         "noMachines": "未配置任何机器。请使用以下命令添加：rdc config add-machine <name> --ip <ip> --user <user>"
+      },
+      "purgeArchived": {
+        "description": "永久删除所有已归档的凭据",
+        "noArchived": "没有可清除的已归档仓库",
+        "success": "已清除 {{count}} 个已归档的凭据"
       },
       "pushInfra": {
         "description": "将基础设施配置推送到远程机器",
@@ -421,19 +430,10 @@
         "description": "列出当前配置中的仓库 GUID 映射",
         "noRepositories": "未配置任何仓库。请使用以下命令添加：rdc config add-repository <name> --guid <guid>"
       },
-      "listArchived": {
-        "description": "列出已归档的仓库凭据",
-        "noArchived": "没有已归档的仓库"
-      },
       "restoreArchived": {
         "description": "恢复已归档的仓库凭据",
         "optionName": "使用不同名称恢复",
         "success": "已恢复 \"{{name}}\" ({{guid}})"
-      },
-      "purgeArchived": {
-        "description": "永久删除所有已归档的凭据",
-        "noArchived": "没有可清除的已归档仓库",
-        "success": "已清除 {{count}} 个已归档的凭据"
       },
       "scanKeys": {
         "completed": "已扫描 {{count}}/{{total}} 台机器",
@@ -444,6 +444,13 @@
       "set": {
         "description": "设置默认值（team、region、bridge、machine）",
         "success": "已将 \"{{key}}\" 设置为 \"{{value}}\""
+      },
+      "setCeph": {
+        "description": "Set Ceph RBD configuration for a machine",
+        "optionCluster": "Ceph cluster name",
+        "optionImage": "RBD image name (e.g., datastore-prod1)",
+        "optionPool": "Ceph pool name (e.g., rbd)",
+        "success": "Ceph config set for \"{{name}}\": pool={{pool}}, image={{image}}"
       },
       "setInfra": {
         "description": "为机器设置基础设施配置",
@@ -486,6 +493,47 @@
       "storages": {
         "description": "列出当前配置中的存储",
         "noStorages": "未配置任何存储。请使用以下命令导入：rdc config import-storage <file>"
+      }
+    },
+    "datastore": {
+      "description": "Manage Ceph RBD datastore lifecycle (init, fork, unfork, status)",
+      "fork": {
+        "completed": "Datastore forked successfully (snapshot: {{snapshot}})",
+        "cowSizeOption": "COW backing file size (default: auto, grows on demand)",
+        "description": "Create a local COW copy of a Ceph datastore via RBD snapshot + clone (< 2s). Save snapshot/clone names from output for unfork. Only one fork per target name; unfork before re-forking",
+        "failed": "Datastore fork failed",
+        "starting": "Forking datastore on \"{{source}}\" (clone named for \"{{target}}\")...",
+        "toOption": "Clone suffix (creates clone named <image>-fork-<name>). The fork stays on the source machine"
+      },
+      "init": {
+        "backendOption": "Backend type: local (default) or ceph",
+        "clusterOption": "Ceph cluster name (default: ceph)",
+        "completed": "Datastore initialized",
+        "description": "Initialize datastore on a machine (local loop-backed or Ceph RBD)",
+        "failed": "Datastore initialization failed",
+        "forceOption": "Force initialization even if datastore already exists (WARNING: reformats storage)",
+        "imageOption": "Ceph RBD image name (default: from machine config via set-ceph)",
+        "imageRequired": "--image is required for ceph backend (or set via: rdc config set-ceph -m <machine> --image <name>)",
+        "poolOption": "Ceph pool name (default: from machine config, or rbd)",
+        "sizeOption": "Datastore size (e.g., 5G, 50G, 100G)",
+        "starting": "Initializing datastore on \"{{machine}}\"..."
+      },
+      "machineOption": "Machine name (where the Ceph datastore is hosted)",
+      "status": {
+        "description": "Show datastore backend, size, usage, mount status, and cow_mode (if forked)",
+        "starting": "Checking datastore status on \"{{machine}}\"..."
+      },
+      "unfork": {
+        "completed": "Fork cleaned up successfully",
+        "description": "Clean up a fork: unmount COW, remove clone, remove snapshot",
+        "destOption": "Clone image to remove (the \"Clone:\" value from fork output, e.g. ds-prod-fork-<machine>)",
+        "failed": "Fork cleanup failed",
+        "forceOption": "Continue cleanup even if individual steps fail (e.g. unmount, snapshot removal)",
+        "mountPointOption": "Fork mount point to unmount (default: /mnt/rediacc)",
+        "poolOption": "Ceph pool name (default: from machine config)",
+        "snapshotOption": "Snapshot to remove (the \"Snapshot:\" value from fork output, e.g. fork-<timestamp>)",
+        "sourceOption": "Original RBD image that was forked (from config set-ceph --image, e.g. ds-prod)",
+        "starting": "Cleaning up forked datastore on \"{{machine}}\"..."
       }
     },
     "doctor": {
@@ -946,10 +994,10 @@
         "starting": "正在 \"{{machine}}\" 上创建仓库 \"{{repository}}\"（{{size}}）..."
       },
       "delete": {
+        "archived": "\"{{repository}}\" 的凭据已归档",
         "completed": "仓库已删除",
         "description": "删除仓库",
         "failed": "仓库删除失败",
-        "archived": "\"{{repository}}\" 的凭据已归档",
         "restoreHint": "恢复命令: rdc config restore-archived {{guid}}",
         "starting": "正在 \"{{machine}}\" 上删除 \"{{repository}}\"..."
       },
@@ -1031,12 +1079,12 @@
         "starting": "正在从 \"{{machine}}\" 卸载 \"{{repository}}\"..."
       },
       "up": {
+        "checkpointOption": "部署后从 CRIU 检查点恢复容器（用于从另一台机器进行实时进程迁移）",
         "completed": "服务已启动",
         "description": "部署或更新仓库（挂载、准备、启动服务）",
         "failed": "服务启动失败",
         "grandOption": "主仓库名称 (自动解析为 GUID)",
         "mountOption": "先挂载仓库",
-        "checkpointOption": "部署后从 CRIU 检查点恢复容器（用于从另一台机器进行实时进程迁移）",
         "prepOnlyOption": "仅运行准备步骤",
         "starting": "正在 \"{{machine}}\" 上启动 \"{{repository}}\" 的服务..."
       },
@@ -1565,6 +1613,7 @@
     },
     "pageTitle": "Rediacc CLI 参考",
     "sectionTitles": {
+      "agent": "代理工具",
       "audit": "审计与合规",
       "auth": "身份验证",
       "backup": "备份管理",
@@ -1573,6 +1622,7 @@
       "config": "配置管理",
       "doctor": "系统诊断",
       "machine": "机器管理",
+      "mcp": "MCP 服务器",
       "ops": "实验性 VM 操作",
       "organization": "组织管理",
       "permission": "权限管理",
@@ -1591,9 +1641,7 @@
       "term": "SSH 终端访问",
       "update": "CLI 更新",
       "user": "用户管理",
-      "vscode": "VS Code 集成",
-      "agent": "代理工具",
-      "mcp": "MCP 服务器"
+      "vscode": "VS Code 集成"
     },
     "supplements": {
       "auth": {

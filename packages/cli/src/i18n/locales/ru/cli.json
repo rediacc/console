@@ -388,9 +388,18 @@
         "description": "Список всех файлов конфигурации",
         "noConfigs": "Файлы конфигурации не найдены. Создайте с помощью: rdc config init"
       },
+      "listArchived": {
+        "description": "Показать архивированные учётные данные репозиториев",
+        "noArchived": "Нет архивированных репозиториев"
+      },
       "machines": {
         "description": "Список машин в текущей конфигурации",
         "noMachines": "Машины не настроены. Добавьте с помощью: rdc config add-machine <name> --ip <ip> --user <user>"
+      },
+      "purgeArchived": {
+        "description": "Безвозвратно удалить все архивированные учётные данные",
+        "noArchived": "Нет архивированных репозиториев для удаления",
+        "success": "Удалено {{count}} архивированных учётных данных"
       },
       "pushInfra": {
         "description": "Отправить конфигурацию инфраструктуры на удалённую машину",
@@ -421,19 +430,10 @@
         "description": "Список сопоставлений GUID репозиториев в текущей конфигурации",
         "noRepositories": "Репозитории не настроены. Добавьте с помощью: rdc config add-repository <name> --guid <guid>"
       },
-      "listArchived": {
-        "description": "Показать архивированные учётные данные репозиториев",
-        "noArchived": "Нет архивированных репозиториев"
-      },
       "restoreArchived": {
         "description": "Восстановить архивированные учётные данные репозитория",
         "optionName": "Восстановить с другим именем",
         "success": "\"{{name}}\" ({{guid}}) восстановлен"
-      },
-      "purgeArchived": {
-        "description": "Безвозвратно удалить все архивированные учётные данные",
-        "noArchived": "Нет архивированных репозиториев для удаления",
-        "success": "Удалено {{count}} архивированных учётных данных"
       },
       "scanKeys": {
         "completed": "Просканировано {{count}}/{{total}} машин",
@@ -444,6 +444,13 @@
       "set": {
         "description": "Задать значение по умолчанию (команда, регион, мост, машина)",
         "success": "Значение \"{{key}}\" установлено в \"{{value}}\""
+      },
+      "setCeph": {
+        "description": "Set Ceph RBD configuration for a machine",
+        "optionCluster": "Ceph cluster name",
+        "optionImage": "RBD image name (e.g., datastore-prod1)",
+        "optionPool": "Ceph pool name (e.g., rbd)",
+        "success": "Ceph config set for \"{{name}}\": pool={{pool}}, image={{image}}"
       },
       "setInfra": {
         "description": "Задать конфигурацию инфраструктуры для машины",
@@ -486,6 +493,47 @@
       "storages": {
         "description": "Список хранилищ в текущей конфигурации",
         "noStorages": "Хранилища не настроены. Импортируйте с помощью: rdc config import-storage <file>"
+      }
+    },
+    "datastore": {
+      "description": "Manage Ceph RBD datastore lifecycle (init, fork, unfork, status)",
+      "fork": {
+        "completed": "Datastore forked successfully (snapshot: {{snapshot}})",
+        "cowSizeOption": "COW backing file size (default: auto, grows on demand)",
+        "description": "Create a local COW copy of a Ceph datastore via RBD snapshot + clone (< 2s). Save snapshot/clone names from output for unfork. Only one fork per target name; unfork before re-forking",
+        "failed": "Datastore fork failed",
+        "starting": "Forking datastore on \"{{source}}\" (clone named for \"{{target}}\")...",
+        "toOption": "Clone suffix (creates clone named <image>-fork-<name>). The fork stays on the source machine"
+      },
+      "init": {
+        "backendOption": "Backend type: local (default) or ceph",
+        "clusterOption": "Ceph cluster name (default: ceph)",
+        "completed": "Datastore initialized",
+        "description": "Initialize datastore on a machine (local loop-backed or Ceph RBD)",
+        "failed": "Datastore initialization failed",
+        "forceOption": "Force initialization even if datastore already exists (WARNING: reformats storage)",
+        "imageOption": "Ceph RBD image name (default: from machine config via set-ceph)",
+        "imageRequired": "--image is required for ceph backend (or set via: rdc config set-ceph -m <machine> --image <name>)",
+        "poolOption": "Ceph pool name (default: from machine config, or rbd)",
+        "sizeOption": "Datastore size (e.g., 5G, 50G, 100G)",
+        "starting": "Initializing datastore on \"{{machine}}\"..."
+      },
+      "machineOption": "Machine name (where the Ceph datastore is hosted)",
+      "status": {
+        "description": "Show datastore backend, size, usage, mount status, and cow_mode (if forked)",
+        "starting": "Checking datastore status on \"{{machine}}\"..."
+      },
+      "unfork": {
+        "completed": "Fork cleaned up successfully",
+        "description": "Clean up a fork: unmount COW, remove clone, remove snapshot",
+        "destOption": "Clone image to remove (the \"Clone:\" value from fork output, e.g. ds-prod-fork-<machine>)",
+        "failed": "Fork cleanup failed",
+        "forceOption": "Continue cleanup even if individual steps fail (e.g. unmount, snapshot removal)",
+        "mountPointOption": "Fork mount point to unmount (default: /mnt/rediacc)",
+        "poolOption": "Ceph pool name (default: from machine config)",
+        "snapshotOption": "Snapshot to remove (the \"Snapshot:\" value from fork output, e.g. fork-<timestamp>)",
+        "sourceOption": "Original RBD image that was forked (from config set-ceph --image, e.g. ds-prod)",
+        "starting": "Cleaning up forked datastore on \"{{machine}}\"..."
       }
     },
     "doctor": {
@@ -946,10 +994,10 @@
         "starting": "Создание репозитория \"{{repository}}\" ({{size}}) на \"{{machine}}\"..."
       },
       "delete": {
+        "archived": "Учётные данные \"{{repository}}\" архивированы",
         "completed": "Репозиторий удалён",
         "description": "Удалить репозиторий",
         "failed": "Ошибка удаления репозитория",
-        "archived": "Учётные данные \"{{repository}}\" архивированы",
         "restoreHint": "Восстановить: rdc config restore-archived {{guid}}",
         "starting": "Удаление \"{{repository}}\" на \"{{machine}}\"..."
       },
@@ -1031,12 +1079,12 @@
         "starting": "Размонтирование \"{{repository}}\" на \"{{machine}}\"..."
       },
       "up": {
+        "checkpointOption": "Восстановить контейнеры из контрольной точки CRIU после развёртывания (для миграции процессов с другой машины)",
         "completed": "Сервисы запущены",
         "description": "Развернуть или обновить репозиторий (монтирование, подготовка, запуск сервисов)",
         "failed": "Ошибка запуска сервисов",
         "grandOption": "Имя главного репозитория (автоматически разрешается в GUID)",
         "mountOption": "Сначала смонтировать репозиторий",
-        "checkpointOption": "Восстановить контейнеры из контрольной точки CRIU после развёртывания (для миграции процессов с другой машины)",
         "prepOnlyOption": "Выполнить только этап подготовки",
         "starting": "Запуск сервисов для \"{{repository}}\" на \"{{machine}}\"..."
       },
@@ -1565,6 +1613,7 @@
     },
     "pageTitle": "Справочник CLI Rediacc",
     "sectionTitles": {
+      "agent": "Утилиты агента",
       "audit": "Аудит и соответствие",
       "auth": "Аутентификация",
       "backup": "Управление резервным копированием",
@@ -1573,6 +1622,7 @@
       "config": "Управление конфигурацией",
       "doctor": "Диагностика системы",
       "machine": "Управление машинами",
+      "mcp": "Сервер MCP",
       "ops": "Экспериментальные операции с VM",
       "organization": "Управление организацией",
       "permission": "Управление правами",
@@ -1591,9 +1641,7 @@
       "term": "Доступ к SSH-терминалу",
       "update": "Обновления CLI",
       "user": "Управление пользователями",
-      "vscode": "Интеграция с VS Code",
-      "agent": "Утилиты агента",
-      "mcp": "Сервер MCP"
+      "vscode": "Интеграция с VS Code"
     },
     "supplements": {
       "auth": {
