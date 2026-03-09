@@ -1,11 +1,9 @@
 #!/bin/bash
 
 # === Renet Compose ===
-# Uses the network-isolated docker socket automatically set by renet
-# via DOCKER_HOST=unix:///var/run/rediacc/docker-{networkID}.sock
-
+# Uses renet compose for network-isolated Docker daemon routing.
 _compose() {
-  docker compose "$@"
+  renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
 }
 
 prep() {
