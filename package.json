@@ -98,7 +98,7 @@
     "syncpack": "^14.2.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.56.1"
+    "typescript-eslint": "^8.57.0"
   },
   "engines": {
     "node": ">=22.12.0"
