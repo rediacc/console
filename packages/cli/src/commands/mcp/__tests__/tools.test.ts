@@ -4,7 +4,7 @@ import { TOOLS } from '../tools.js';
 
 describe('MCP tool definitions', () => {
   it('has exactly 16 tools defined', () => {
-    expect(TOOLS.length).toBe(16);
+    expect(TOOLS.length).toBe(22);
   });
 
   it('has no duplicate tool names', () => {

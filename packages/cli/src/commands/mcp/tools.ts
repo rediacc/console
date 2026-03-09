@@ -214,7 +214,7 @@ export const TOOLS: ToolDef[] = [
         .describe('Create container checkpoint (hot backup, no downtime)'),
     },
     command: (args) => {
-      const cmd = ['repo', 'push', args.repo as string, '-m', args.machine as string];
+      const cmd = ['backup', 'push', args.repo as string, '-m', args.machine as string];
       if (args.to_machine) cmd.push('--to-machine', args.to_machine as string);
       if (args.to) cmd.push('--to', args.to as string);
       if (args.provider) cmd.push('--provider', args.provider as string);
@@ -238,7 +238,7 @@ export const TOOLS: ToolDef[] = [
       from: z.string().optional().describe('Source storage name'),
     },
     command: (args) => {
-      const cmd = ['repo', 'pull', args.repo as string, '-m', args.machine as string];
+      const cmd = ['backup', 'pull', args.repo as string, '-m', args.machine as string];
       if (args.from_machine) cmd.push('--from-machine', args.from_machine as string);
       if (args.from) cmd.push('--from', args.from as string);
       return cmd;

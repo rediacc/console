@@ -1362,7 +1362,13 @@
       }
     },
     "backup": {
-      "description": "Push, pull, and sync repository backups across storage and machines"
+      "description": "Push, pull, and sync repository backups across storage and machines",
+      "sync": {
+        "description": "Bidirectional sync of repository backups across machines"
+      },
+      "schedule": {
+        "description": "Deploy backup schedules to remote machines"
+      }
     },
     "storage": {
       "description": "Manage storage providers and browse remote files",
@@ -1664,6 +1670,9 @@
           "success": "Permission assigned"
         }
       }
+    },
+    "snapshot": {
+      "description": "Manage BTRFS snapshots on remote machines"
     }
   },
   "help": {
