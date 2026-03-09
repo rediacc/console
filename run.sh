@@ -638,7 +638,6 @@ dev() {
     PORT="$PORT_CONSOLE_DEV" npm run dev
 }
 
-
 # Sandbox mode (no backend required) - preserved from original
 sandbox() {
     check_node_version
