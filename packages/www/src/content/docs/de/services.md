@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: de
-sourceHash: "28c4922849c4f3a7"
+sourceHash: "cd5021a29a7b2a59"
 ---
 
 # Dienste
@@ -17,7 +17,7 @@ Diese Seite behandelt die Bereitstellung und Verwaltung containerisierter Dienst
 
 ## Das Rediaccfile
 
-Das **Rediaccfile** ist ein Bash-Skript, das definiert, wie Ihre Dienste vorbereitet, gestartet und gestoppt werden. Es muss `Rediaccfile` oder `rediaccfile` (Groß-/Kleinschreibung wird nicht unterschieden) heißen und im eingebundenen Dateisystem des Repositories platziert werden.
+Das **Rediaccfile** ist ein Bash-Skript, das definiert, wie Ihre Dienste gestartet und gestoppt werden. Es muss `Rediaccfile` oder `rediaccfile` (Groß-/Kleinschreibung wird nicht unterschieden) heißen und im eingebundenen Dateisystem des Repositories platziert werden.
 
 Rediaccfiles werden an zwei Orten gesucht:
 1. Im **Stammverzeichnis** des Repository-Einbindungspfads
@@ -27,15 +27,14 @@ Versteckte Verzeichnisse (Namen, die mit `.` beginnen) werden übersprungen.
 
 ### Lebenszyklus-Funktionen
 
-Ein Rediaccfile enthält bis zu drei Funktionen:
+Ein Rediaccfile enthält bis zu zwei Funktionen:
 
 | Funktion | Ausführungszeitpunkt | Zweck | Fehlerverhalten |
 |----------|---------------------|-------|-----------------|
-| `prep()` | Vor `up()` | Abhängigkeiten installieren, Images pullen, Migrationen ausführen | **Fail-Fast** -- wenn eine `prep()` fehlschlägt, wird der gesamte Prozess sofort gestoppt. |
-| `up()` | Nach Abschluss aller `prep()` | Dienste starten (z. B. `renet compose -- up -d`) | Fehler im Root-Rediaccfile sind **kritisch** (stoppt alles). Fehler in Unterverzeichnissen sind **nicht-kritisch** (werden protokolliert, es wird mit dem nächsten fortgefahren). |
+| `up()` | Beim Starten | Dienste starten (z. B. `renet compose -- up -d`) | Fehler im Root-Rediaccfile sind **kritisch** (stoppt alles). Fehler in Unterverzeichnissen sind **nicht-kritisch** (werden protokolliert, es wird mit dem nächsten fortgefahren). |
 | `down()` | Beim Stoppen | Dienste stoppen (z. B. `renet compose -- down`) | **Best-Effort** -- Fehler werden protokolliert, aber alle Rediaccfiles werden immer verarbeitet. |
 
-Alle drei Funktionen sind optional. Wenn eine Funktion nicht definiert ist, wird sie stillschweigend übersprungen.
+Beide Funktionen sind optional. Wenn eine Funktion nicht definiert ist, wird sie stillschweigend übersprungen.
 
 ### Ausführungsreihenfolge
 
@@ -64,11 +63,6 @@ Die `{SERVICE}_IP`-Variablen werden automatisch aus `.rediacc.json` generiert. D
 
 ```bash
 #!/bin/bash
-
-prep() {
-    echo "Pulling latest images..."
-    renet compose -- pull
-}
 
 up() {
     echo "Starting services..."
@@ -186,15 +180,13 @@ rdc repo up my-app -m server-1 --mount
 | Option | Beschreibung |
 |--------|-------------|
 | `--mount` | Repository zuerst einbinden, falls noch nicht eingebunden |
-| `--prep-only` | Nur die `prep()`-Funktionen ausführen, `up()` überspringen |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 Die Ausführungssequenz ist:
 1. Das LUKS-verschlüsselte Repository einbinden (wenn `--mount`)
 2. Den isolierten Docker-Daemon starten
 3. `.rediacc.json` automatisch aus Compose-Dateien generieren
-4. `prep()` in allen Rediaccfiles ausführen (A-Z-Reihenfolge, Fail-Fast)
-5. `up()` in allen Rediaccfiles ausführen (A-Z-Reihenfolge)
+4. `up()` in allen Rediaccfiles ausführen (A-Z-Reihenfolge)
 
 ## Dienste stoppen
 
@@ -328,12 +320,8 @@ services:
 ```bash
 #!/bin/bash
 
-prep() {
-    mkdir -p data/postgres
-    renet compose -- pull
-}
-
 up() {
+    mkdir -p data/postgres
     renet compose -- up -d
 
     echo "Waiting for PostgreSQL..."

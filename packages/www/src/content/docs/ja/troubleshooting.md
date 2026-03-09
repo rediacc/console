@@ -4,7 +4,7 @@ description: "SSH、セットアップ、リポジトリ、サービス、Docker
 category: "Guides"
 order: 10
 language: ja
-sourceHash: "1aea651c31f439b8"
+sourceHash: "d3e67d736cdd61f8"
 ---
 
 # トラブルシューティング
@@ -44,7 +44,7 @@ rdc config scan-keys server-1
 
 - Rediaccfileの構文を確認してください: 有効なBashである必要があります
 - Rediaccfileが `renet compose --` を使用しているか確認してください（`docker compose` ではなく）
-- Dockerイメージにアクセスできるか確認してください（`prep()` 内で `renet compose -- pull` の実行を検討してください）
+- Dockerイメージにアクセスできるか確認してください（`up()` 内で `renet compose -- pull` の実行を検討してください）
 - リポジトリのDockerソケットを使用してコンテナログを確認してください:
 
 ```bash

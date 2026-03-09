@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: de
-sourceHash: "91d4806cfb57e215"
+sourceHash: "663392a3982ac81b"
 ---
 
 # Architektur
@@ -83,7 +83,7 @@ Der `rediacc`-Benutzer kann nicht direkt per SSH erreicht werden. Stattdessen ve
 
 1. Ihr SSH-Benutzer benötigt `sudo`-Rechte
 2. Alle Repository-Daten gehören `rediacc`, nicht Ihrem SSH-Benutzer
-3. Rediaccfile-Funktionen (`prep()`, `up()`, `down()`) laufen als `rediacc`
+3. Rediaccfile-Funktionen (`up()`, `down()`) laufen als `rediacc`
 
 Diese Trennung stellt sicher, dass Repository-Daten unabhängig vom verwaltenden SSH-Benutzer eine konsistente Eigentümerschaft haben.
 

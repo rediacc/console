@@ -4,7 +4,7 @@ description: "Bestehende Projekte in verschlüsselte Rediacc-Repositories migrie
 category: "Guides"
 order: 11
 language: de
-sourceHash: "977de49e158a26c0"
+sourceHash: "76165f8884e5edf1"
 ---
 
 # Migrationsleitfaden
@@ -29,14 +29,14 @@ rdc repo create my-project -m server-1 --size 20G
 
 ## Schritt 2: Dateien hochladen
 
-Verwenden Sie `rdc sync upload`, um Ihre Projektdateien in das Repository zu übertragen.
+Verwenden Sie `rdc repo sync upload`, um Ihre Projektdateien in das Repository zu übertragen.
 
 ```bash
 # Vorschau der Übertragung (keine Änderungen)
-rdc sync upload -m server-1 -r my-project --local ./my-project --dry-run
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --dry-run
 
 # Dateien hochladen
-rdc sync upload -m server-1 -r my-project --local ./my-project
+rdc repo sync upload -m server-1 -r my-project --local ./my-project
 ```
 
 Das Repository muss vor dem Hochladen eingehängt sein. Falls es noch nicht eingehängt ist:
@@ -48,7 +48,7 @@ rdc repo mount my-project -m server-1
 Für nachfolgende Synchronisierungen, bei denen das Remote-Verzeichnis exakt Ihrem lokalen Verzeichnis entsprechen soll:
 
 ```bash
-rdc sync upload -m server-1 -r my-project --local ./my-project --mirror
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 ```
 
 > Das `--mirror`-Flag löscht Dateien auf dem Remote-Server, die lokal nicht existieren. Verwenden Sie zuerst `--dry-run` zur Überprüfung.
@@ -98,14 +98,10 @@ rdc repo ownership my-project -m server-1 --uid 1000
 
 ## Schritt 4: Rediaccfile einrichten
 
-Erstellen Sie ein `Rediaccfile` im Stammverzeichnis Ihres Projekts. Dieses Bash-Skript definiert, wie Ihre Dienste vorbereitet, gestartet und gestoppt werden.
+Erstellen Sie ein `Rediaccfile` im Stammverzeichnis Ihres Projekts. Dieses Bash-Skript definiert, wie Ihre Dienste gestartet und gestoppt werden.
 
 ```bash
 #!/bin/bash
-
-prep() {
-    renet compose -- pull
-}
 
 up() {
     renet compose -- up -d
@@ -120,7 +116,6 @@ Die drei Lebenszyklus-Funktionen:
 
 | Funktion | Zweck | Fehlerverhalten |
 |----------|-------|-----------------|
-| `prep()` | Images herunterladen, Migrationen ausführen, Abhängigkeiten installieren | Sofortiger Abbruch: jeder Fehler stoppt alles |
 | `up()` | Dienste starten | Root-Fehler ist kritisch; Fehler in Unterverzeichnissen werden protokolliert und fortgesetzt |
 | `down()` | Dienste stoppen | Best-Effort: versucht immer alles |
 
@@ -211,8 +206,7 @@ Dies wird:
 1. Das verschlüsselte Repository einhängen
 2. Den isolierten Docker-Daemon starten
 3. `.rediacc.json` automatisch mit Dienst-IP-Zuweisungen generieren
-4. `prep()` aus allen Rediaccfiles ausführen
-5. `up()` aus allen Rediaccfiles ausführen
+4. `up()` aus allen Rediaccfiles ausführen
 
 Überprüfen Sie, ob Ihre Container laufen:
 
@@ -260,7 +254,7 @@ my-api/
 └── redis-data/             # Redis-Persistenz (UID 999 zur Laufzeit)
 ```
 
-1. Laden Sie Ihr Projekt hoch (erwägen Sie, `node_modules` auszuschließen und in `prep()` zu pullen)
+1. Laden Sie Ihr Projekt hoch (erwägen Sie, `node_modules` auszuschließen und in `up()` zu pullen)
 2. Führen Sie die Eigentümerschaftskorrektur aus, nachdem Container gestartet wurden
 
 ### Benutzerdefiniertes Docker-Projekt

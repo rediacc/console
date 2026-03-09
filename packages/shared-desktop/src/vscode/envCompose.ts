@@ -108,10 +108,16 @@ export function buildRepositoryEnvironment(options: {
     networkMode = 'bridge',
     tag = 'latest',
     immovable = false,
-    dockerHost = 'unix:///var/run/docker.sock',
-    dockerSocket = '/var/run/docker.sock',
+    dockerHost,
+    dockerSocket,
     additionalEnv = {},
   } = options;
+
+  // Derive Docker socket from networkId (per-repo isolated daemon)
+  const resolvedSocket =
+    dockerSocket ??
+    (networkId ? `/var/run/rediacc/docker-${networkId}.sock` : '/var/run/docker.sock');
+  const resolvedHost = dockerHost ?? `unix://${resolvedSocket}`;
 
   const fullRepoPath = `${datastore}${repositoryPath}`;
 
@@ -125,13 +131,12 @@ export function buildRepositoryEnvironment(options: {
     DOCKER_DATA: fullRepoPath,
     DOCKER_EXEC: `${fullRepoPath}/.docker-exec`,
     DOCKER_FOLDER: fullRepoPath,
-    DOCKER_HOST: dockerHost,
-    DOCKER_SOCKET: dockerSocket,
+    DOCKER_HOST: resolvedHost,
+    DOCKER_SOCKET: resolvedSocket,
 
     // Network and datastore
     REDIACC_DATASTORE: datastore,
     REDIACC_DATASTORE_USER: universalUser,
-    REDIACC_NETWORK_ID: networkId,
     REDIACC_IMMOVABLE: immovable ? 'true' : 'false',
 
     // Repository-specific

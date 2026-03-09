@@ -12,12 +12,11 @@ Creates encrypted volume. Size examples: `2G`, `5G`, `100G`, `1T`. Takes ~15-25s
 
 ### Deploy (start services)
 ```
-rdc repo up <name> -m <machine> [--mount] [--prep-only] [--checkpoint]
+rdc repo up <name> -m <machine> [--mount] [--checkpoint]
 ```
-Runs the Rediaccfile lifecycle: `prep()` then `up()`.
-- `--mount`: Mount volume first. Required after any `backup push` to a new machine, and for first deploy of forked repos.
-- `--prep-only`: Only run `prep()`, skip `up()`.
-- `--checkpoint`: Restore CRIU checkpoint instead of running prep/up lifecycle. When checkpoint data is found, the Rediaccfile is **not executed** — containers resume directly from saved state.
+Runs the Rediaccfile lifecycle: `up()`.
+- `--mount`: Mount volume first. Required after any `repo push` to a new machine, and for first deploy of forked repos.
+- `--checkpoint`: Restore CRIU checkpoint instead of running up() lifecycle. When checkpoint data is found, the Rediaccfile is **not executed** — containers resume directly from saved state.
 - `--grand <parent>`: Use parent repo's LUKS credential to unlock a fork. Required when deploying a forked repo that inherited the parent's encryption key.
 
 ### Stop services
@@ -30,7 +29,7 @@ Runs Rediaccfile `down()`. Add `--unmount` to also unmount the volume.
 ```
 rdc repo delete <name> -m <machine>
 ```
-Destroys the repository and removes it from config. **Warning**: The config entry is removed globally. If the same repo exists on another machine (e.g., after `backup push`), you must re-add the mapping with `rdc config add-repository`.
+Destroys the repository and removes it from config. **Warning**: The config entry is removed globally. If the same repo exists on another machine (e.g., after `repo push`), you must re-add the mapping with `rdc config add-repository`.
 
 ### Status
 ```
@@ -48,7 +47,7 @@ rdc repo list -m <machine>
 ```
 rdc repo fork <parent> -m <machine> --tag <fork-name>
 ```
-Creates an independent copy with new GUID, networkId, and IP range. Parent can remain running. Cross-machine fork: fork locally first, then `backup push` to the target.
+Creates an independent copy with new GUID, networkId, and IP range. Parent can remain running. Cross-machine fork: fork locally first, then `repo push` to the target.
 
 ### Resize (offline)
 ```
@@ -84,10 +83,9 @@ rdc repo autostart list -m <machine>
 
 The Rediaccfile is a bash script with lifecycle functions. Key rules:
 - **Must use `renet compose`**, never `docker compose`. Renet injects network isolation and IP allocation.
-- Three required functions: `prep()`, `up()`, `down()`.
+- Two lifecycle functions: `up()`, `down()`.
 - Optional: `info()` for status display.
-- `prep()`: Pull images, create directories. Runs on every deploy.
-- `up()`: Start services. Generate secrets on first run if needed.
+- `up()`: Pull images, start services. Generate secrets on first run if needed.
 - `down()`: Stop and clean up.
 
 ### Compose conventions
@@ -112,7 +110,7 @@ In containers: `SERVICE_IP`, `REPOSITORY_NETWORK_ID` (auto-injected by renet).
 
 ```bash
 rdc repo create my-app -m server-1 --size 5G
-rdc sync upload -m server-1 -r my-app --local ./my-app/
+rdc repo sync upload -m server-1 -r my-app --local ./my-app/
 rdc repo up my-app -m server-1
 rdc machine containers server-1    # verify
 ```

@@ -334,18 +334,18 @@ See `09-test-environment.md` for full details. Summary:
 
 ```bash
 # Provision 2 VMs for testing
-./run.sh rdc ops up --basic --parallel
+./rdc.sh ops up --basic --parallel
 
 # Register machines
-./run.sh rdc config add-machine rediacc11 --ip 192.168.111.11 --user muhammed
-./run.sh rdc config add-machine rediacc12 --ip 192.168.111.12 --user muhammed
-./run.sh rdc config set-ssh \
+./rdc.sh config add-machine rediacc11 --ip 192.168.111.11 --user muhammed
+./rdc.sh config add-machine rediacc12 --ip 192.168.111.12 --user muhammed
+./rdc.sh config set-ssh \
   --private-key ~/.renet/staging/.ssh/id_rsa \
   --public-key ~/.renet/staging/.ssh/id_rsa.pub
 
 # Setup machines
-./run.sh rdc config setup-machine rediacc11
-./run.sh rdc config setup-machine rediacc12
+./rdc.sh config setup-machine rediacc11
+./rdc.sh config setup-machine rediacc12
 ```
 
 ### Integration Test Structure
@@ -382,7 +382,7 @@ all:
       ansible_user: muhammed
       ansible_ssh_private_key_file: ~/.renet/staging/.ssh/id_rsa
   vars:
-    rdc_binary: "{{ lookup('env', 'RDC_BINARY') | default('./run.sh rdc', true) }}"
+    rdc_binary: "{{ lookup('env', 'RDC_BINARY') | default('./rdc.sh', true) }}"
 ```
 
 ### Example: test_02_repo_lifecycle.py
@@ -413,7 +413,7 @@ class TestRepoLifecycle:
                 machine: {MACHINE}
                 state: present
                 size: 1G
-                rdc_binary: ./run.sh rdc
+                rdc_binary: ./rdc.sh
         """)
         assert result.returncode == 0
         # Verify: check rdc config repositories
@@ -434,7 +434,7 @@ class TestRepoLifecycle:
                 machine: {MACHINE}
                 state: present
                 size: 1G
-                rdc_binary: ./run.sh rdc
+                rdc_binary: ./rdc.sh
               register: result
             - ansible.builtin.assert:
                 that: not result.changed
@@ -490,7 +490,7 @@ class TestCrossMachineBackup:
                 machine: rediacc11
                 direction: push
                 to_machine: rediacc12
-                rdc_binary: ./run.sh rdc
+                rdc_binary: ./rdc.sh
         """)
         assert result.returncode == 0
 
@@ -736,16 +736,16 @@ jobs:
       - uses: actions/checkout@v4
       - run: npm install && cd packages/shared && npm run build
       - name: Provision test VMs
-        run: ./run.sh rdc ops up --basic --parallel
+        run: ./rdc.sh ops up --basic --parallel
       - name: Register machines
         run: |
-          ./run.sh rdc config add-machine rediacc11 --ip 192.168.111.11 --user muhammed
-          ./run.sh rdc config add-machine rediacc12 --ip 192.168.111.12 --user muhammed
-          ./run.sh rdc config set-ssh \
+          ./rdc.sh config add-machine rediacc11 --ip 192.168.111.11 --user muhammed
+          ./rdc.sh config add-machine rediacc12 --ip 192.168.111.12 --user muhammed
+          ./rdc.sh config set-ssh \
             --private-key ~/.renet/staging/.ssh/id_rsa \
             --public-key ~/.renet/staging/.ssh/id_rsa.pub
-          ./run.sh rdc config setup-machine rediacc11
-          ./run.sh rdc config setup-machine rediacc12
+          ./rdc.sh config setup-machine rediacc11
+          ./rdc.sh config setup-machine rediacc12
       - name: Install collection
         run: |
           cd packages/ansible/rediacc/console
@@ -754,12 +754,12 @@ jobs:
       - name: Run integration tests
         run: |
           cd packages/ansible
-          RDC_BINARY="$(pwd)/../../run.sh rdc" pytest tests/integration/ -v --tb=short
+          RDC_BINARY="$(pwd)/../../rdc.sh" pytest tests/integration/ -v --tb=short
         env:
           ANSIBLE_COLLECTIONS_PATH: ~/.ansible/collections
       - name: Teardown VMs
         if: always()
-        run: ./run.sh rdc ops down
+        run: ./rdc.sh ops down
 ```
 
 ---

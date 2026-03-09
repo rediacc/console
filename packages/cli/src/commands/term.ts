@@ -92,6 +92,13 @@ function buildRepositoryEnvironment(
   const immovable = repoVault.immovable ? 'true' : 'false';
   const workingDirectory = (repoVault.workingDirectory ?? repositoryPath) as string;
 
+  // Derive Docker socket from networkId (per-repo isolated daemon)
+  const dockerSocket = (machineVault.dockerSocket ??
+    (networkId
+      ? `/var/run/rediacc/docker-${networkId}.sock`
+      : DEFAULTS.DOCKER.SOCKET_PATH)) as string;
+  const dockerHost = (machineVault.dockerHost ?? `unix://${dockerSocket}`) as string;
+
   const environment: Record<string, string> = {
     REDIACC_TEAM: teamName,
     REDIACC_MACHINE: machineName,
@@ -99,11 +106,10 @@ function buildRepositoryEnvironment(
     DOCKER_DATA: `${datastore}${repositoryPath}`,
     DOCKER_EXEC: `${datastore}${repositoryPath}/.docker-exec`,
     DOCKER_FOLDER: `${datastore}${repositoryPath}`,
-    DOCKER_HOST: (machineVault.dockerHost ?? DEFAULTS.DOCKER.HOST_URI) as string,
-    DOCKER_SOCKET: (machineVault.dockerSocket ?? DEFAULTS.DOCKER.SOCKET_PATH) as string,
+    DOCKER_HOST: dockerHost,
+    DOCKER_SOCKET: dockerSocket,
     REDIACC_DATASTORE: datastore,
     REDIACC_DATASTORE_USER: universalUser,
-    REDIACC_NETWORK_ID: networkId,
     REDIACC_IMMOVABLE: immovable,
     REPOSITORY_NETWORK_ID: networkId,
     REPOSITORY_NETWORK_MODE: networkMode,

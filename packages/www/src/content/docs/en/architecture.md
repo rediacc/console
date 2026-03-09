@@ -82,7 +82,7 @@ The `rediacc` user cannot be accessed via SSH directly. Instead, rdc connects as
 
 1. Your SSH user needs `sudo` privileges
 2. All repository data is owned by `rediacc`, not your SSH user
-3. Rediaccfile functions (`prep()`, `up()`, `down()`) run as `rediacc`
+3. Rediaccfile functions (`up()`, `down()`) run as `rediacc`
 
 This separation ensures that repository data has consistent ownership regardless of which SSH user manages it.
 

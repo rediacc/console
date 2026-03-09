@@ -124,6 +124,41 @@ export const CEPH_DEFAULTS = {
 } as const;
 
 /**
+ * Cloud provider defaults (OpenTofu / custom provider config)
+ */
+export const CLOUD_DEFAULTS = {
+  /** Default SSH user for cloud VMs */
+  SSH_USER: 'root',
+
+  /** Default SSH key injection format */
+  SSH_KEY_FORMAT: 'inline_list' as const,
+
+  /** Default provider token attribute name */
+  TOKEN_ATTR: 'token',
+
+  /** Default provider label attribute name */
+  LABEL_ATTR: 'name',
+
+  /** Default provider region attribute name */
+  REGION_ATTR: 'region',
+
+  /** Default provider instance type attribute name */
+  SIZE_ATTR: 'type',
+
+  /** Default provider image attribute name */
+  IMAGE_ATTR: 'image',
+
+  /** Fallback label for unknown providers */
+  UNKNOWN_PROVIDER: 'unknown',
+
+  /** Display placeholder for missing values */
+  DISPLAY_PLACEHOLDER: '-',
+
+  /** Default error message fallback */
+  UNKNOWN_ERROR: 'Unknown error',
+} as const;
+
+/**
  * Protocol and URL defaults
  */
 export const PROTOCOL_DEFAULTS = {
@@ -424,6 +459,7 @@ export const DEFAULTS = {
   CLI_TEST: CLI_TEST_DEFAULTS,
   SORT: SORT_DEFAULTS,
   CEPH: CEPH_DEFAULTS,
+  CLOUD: CLOUD_DEFAULTS,
 } as const;
 
 /**

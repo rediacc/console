@@ -28,7 +28,8 @@ export const TOOLS: ToolDef[] = [
   },
   {
     name: 'machine_containers',
-    description: 'List Docker containers running on a machine',
+    description:
+      'List Docker containers on a machine with status, health, resource usage, labels, and auto-route domain ({service}.{repo}.{machine}.{baseDomain})',
     schema: { name: z.string().describe('Machine name') },
     command: (args) => ['machine', 'containers', args.name as string],
     isDestructive: false,
@@ -76,6 +77,16 @@ export const TOOLS: ToolDef[] = [
     description: 'List configured repositories with name-to-GUID mappings',
     schema: {},
     command: () => ['config', 'repositories'],
+    isDestructive: false,
+    isIdempotent: true,
+    timeoutMs: READ_TIMEOUT,
+  },
+  {
+    name: 'config_show_infra',
+    description:
+      'Show infrastructure configuration for a machine (base domain, public IPs, ports), shared TLS settings (cert email, CF DNS token), and Cloudflare zone ID',
+    schema: { machine: z.string().describe('Machine name') },
+    command: (args) => ['config', 'show-infra', args.machine as string],
     isDestructive: false,
     isIdempotent: true,
     timeoutMs: READ_TIMEOUT,
@@ -193,15 +204,20 @@ export const TOOLS: ToolDef[] = [
         .optional()
         .describe('Destination machine name (for direct machine-to-machine transfer)'),
       to: z.string().optional().describe('Destination storage name'),
+      provider: z
+        .string()
+        .optional()
+        .describe('Cloud provider name to auto-provision target machine if it does not exist'),
       checkpoint: z
         .boolean()
         .optional()
         .describe('Create container checkpoint (hot backup, no downtime)'),
     },
     command: (args) => {
-      const cmd = ['backup', 'push', args.repo as string, '-m', args.machine as string];
+      const cmd = ['repo', 'push', args.repo as string, '-m', args.machine as string];
       if (args.to_machine) cmd.push('--to-machine', args.to_machine as string);
       if (args.to) cmd.push('--to', args.to as string);
+      if (args.provider) cmd.push('--provider', args.provider as string);
       if (args.checkpoint) cmd.push('--checkpoint');
       return cmd;
     },
@@ -222,7 +238,7 @@ export const TOOLS: ToolDef[] = [
       from: z.string().optional().describe('Source storage name'),
     },
     command: (args) => {
-      const cmd = ['backup', 'pull', args.repo as string, '-m', args.machine as string];
+      const cmd = ['repo', 'pull', args.repo as string, '-m', args.machine as string];
       if (args.from_machine) cmd.push('--from-machine', args.from_machine as string);
       if (args.from) cmd.push('--from', args.from as string);
       return cmd;
@@ -230,6 +246,106 @@ export const TOOLS: ToolDef[] = [
     isDestructive: true,
     isIdempotent: true,
     timeoutMs: WRITE_TIMEOUT,
+  },
+  {
+    name: 'machine_provision',
+    description:
+      'Provision a new machine on a cloud provider using OpenTofu. Creates VM, waits for SSH, installs renet, and configures infrastructure (auto-inherits base domain from sibling machines). Requires a cloud provider configured via config add-provider.',
+    schema: {
+      name: z.string().describe('Machine name'),
+      provider: z.string().describe('Cloud provider name (from config add-provider)'),
+      region: z.string().optional().describe('Override default region'),
+      instance_type: z.string().optional().describe('Override default instance type'),
+      image: z.string().optional().describe('Override default OS image'),
+      base_domain: z
+        .string()
+        .optional()
+        .describe(
+          'Base domain for infrastructure (e.g., example.com). Auto-detected from sibling machines if not specified'
+        ),
+      no_infra: z.boolean().optional().describe('Skip infrastructure configuration entirely'),
+    },
+    command: (args) => {
+      const cmd = [
+        'machine',
+        'provision',
+        args.name as string,
+        '--provider',
+        args.provider as string,
+      ];
+      if (args.region) cmd.push('--region', args.region as string);
+      if (args.instance_type) cmd.push('--type', args.instance_type as string);
+      if (args.image) cmd.push('--image', args.image as string);
+      if (args.base_domain) cmd.push('--base-domain', args.base_domain as string);
+      if (args.no_infra) cmd.push('--no-infra');
+      return cmd;
+    },
+    isDestructive: true,
+    isIdempotent: false,
+    timeoutMs: WRITE_TIMEOUT,
+  },
+  {
+    name: 'machine_deprovision',
+    description:
+      'Destroy a cloud-provisioned machine via OpenTofu and remove from config. Only works for machines provisioned with "machine provision".',
+    schema: {
+      name: z.string().describe('Machine name to destroy'),
+    },
+    command: (args) => ['machine', 'deprovision', args.name as string, '--force'],
+    isDestructive: true,
+    isIdempotent: false,
+    timeoutMs: WRITE_TIMEOUT,
+  },
+  {
+    name: 'config_add_provider',
+    description:
+      'Add a cloud provider configuration for automated machine provisioning. Known providers: linode/linode, hetznercloud/hcloud.',
+    schema: {
+      name: z.string().describe('Provider configuration name'),
+      provider: z.string().describe('Provider source (e.g., linode/linode, hetznercloud/hcloud)'),
+      token: z.string().describe('API token for the cloud provider'),
+      region: z.string().optional().describe('Default region for new machines'),
+      instance_type: z.string().optional().describe('Default instance type'),
+      image: z.string().optional().describe('Default OS image'),
+    },
+    command: (args) => {
+      const cmd = [
+        'config',
+        'add-provider',
+        args.name as string,
+        '--provider',
+        args.provider as string,
+        '--token',
+        args.token as string,
+      ];
+      if (args.region) cmd.push('--region', args.region as string);
+      if (args.instance_type) cmd.push('--type', args.instance_type as string);
+      if (args.image) cmd.push('--image', args.image as string);
+      return cmd;
+    },
+    isDestructive: false,
+    isIdempotent: true,
+    timeoutMs: WRITE_TIMEOUT,
+  },
+  {
+    name: 'config_remove_provider',
+    description: 'Remove a cloud provider configuration',
+    schema: {
+      name: z.string().describe('Provider configuration name to remove'),
+    },
+    command: (args) => ['config', 'remove-provider', args.name as string],
+    isDestructive: true,
+    isIdempotent: true,
+    timeoutMs: WRITE_TIMEOUT,
+  },
+  {
+    name: 'config_providers',
+    description: 'List configured cloud providers for machine provisioning',
+    schema: {},
+    command: () => ['config', 'providers'],
+    isDestructive: false,
+    isIdempotent: true,
+    timeoutMs: READ_TIMEOUT,
   },
   {
     name: 'term_exec',

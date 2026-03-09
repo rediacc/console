@@ -2,7 +2,6 @@ import { Command } from 'commander';
 import { registerAgentCommands } from './commands/agent.js';
 import { registerAuditCommands } from './commands/audit.js';
 import { registerAuthCommands } from './commands/auth.js';
-import { registerBackupCommands } from './commands/backup.js';
 import { registerBridgeCommands } from './commands/bridge.js';
 import { registerCephCommands } from './commands/ceph/index.js';
 import { registerConfigCommands } from './commands/config.js';
@@ -19,11 +18,9 @@ import { registerRegionCommands } from './commands/region.js';
 import { registerRepoCommands } from './commands/repo.js';
 import { registerRepositoryCommands } from './commands/repository.js';
 import { registerShortcuts } from './commands/shortcuts.js';
-import { registerSnapshotCommands } from './commands/snapshot.js';
 import { registerStorageCommands } from './commands/storage.js';
 import { registerStoreCommands } from './commands/store.js';
 import { registerSubscriptionCommands } from './commands/subscription.js';
-import { registerSyncCommands } from './commands/sync.js';
 import { registerTeamCommands } from './commands/team.js';
 import { registerTermCommands } from './commands/term.js';
 import { registerUpdateCommand } from './commands/update.js';
@@ -177,12 +174,9 @@ registerDoctorCommand(cli);
 registerPermissionCommands(cli);
 registerAuditCommands(cli);
 registerTermCommands(cli);
-registerSyncCommands(cli);
 registerProtocolCommands(cli);
 registerVSCodeCommands(cli);
 registerUpdateCommand(cli);
-registerSnapshotCommands(cli);
-registerBackupCommands(cli);
 registerOpsCommands(cli);
 registerDatastoreCommands(cli);
 registerSubscriptionCommands(cli);
@@ -201,7 +195,7 @@ ${t('help.examples')}
   $ rdc machine info server-1              ${t('help.cli.machineInfo')}
   $ rdc term server-1 my-app               ${t('help.cli.termRepo')}
   $ rdc repo up my-app -m server-1         ${t('help.cli.repoUp')}
-  $ rdc sync upload -m server-1 -r my-app  ${t('help.cli.syncUpload')}
+  $ rdc repo sync upload -m server-1 -r my-app  ${t('help.cli.syncUpload')}
 `
 );
 

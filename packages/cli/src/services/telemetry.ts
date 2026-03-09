@@ -121,10 +121,10 @@ class CliTelemetryService implements TelemetryHandler {
 
   /**
    * Auto-detect environment from runtime context.
-   * tsx/ts-node = development (./run.sh rdc), compiled binary = production.
+   * tsx/ts-node = development (./rdc.sh), compiled binary = production.
    */
   private detectEnvironment(): string {
-    // Running via tsx or ts-node means dev mode (./run.sh rdc)
+    // Running via tsx or ts-node means dev mode (./rdc.sh)
     const execArgs = process.execArgv.join(' ');
     if (
       execArgs.includes('tsx') ||

@@ -38,8 +38,8 @@ Actions: `terminal`, `logs`, `stats`, `exec`.
 | Exec into container | `rdc term <m> <repo> --container <c> --container-action exec` | `rdc term -c "docker exec"` |
 | Check machine health | `rdc machine health` | `rdc term -c "systemctl status"` |
 | List repos | `rdc machine repos` | `rdc term -c "ls /mnt/rediacc"` |
-| Backup/push repos | `rdc backup push` | `rdc term -c "rsync ..."` |
-| Checkpoint containers | `rdc backup push --checkpoint` | `rdc term -c "docker checkpoint"` |
+| Backup/push repos | `rdc repo push` | `rdc term -c "rsync ..."` |
+| Checkpoint containers | `rdc repo push --checkpoint` | `rdc term -c "docker checkpoint"` |
 
 ## Examples
 

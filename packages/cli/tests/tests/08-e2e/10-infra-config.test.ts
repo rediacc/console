@@ -189,6 +189,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
 
       const content = await ssh.readFile('/etc/rediacc/router.env');
       expect(content).toContain('BASE_DOMAIN="test.rediacc.local"');
+      expect(content).toContain('MACHINE_NAME="vm1"');
       expect(content).toContain('PORT="7111"');
     });
 

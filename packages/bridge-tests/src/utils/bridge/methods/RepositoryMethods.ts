@@ -63,24 +63,6 @@ export class RepositoryMethods {
     });
   }
 
-  /**
-   * Repository up with prep-only option.
-   * Prepares the repository without starting services.
-   */
-  async repositoryUpPrepOnly(
-    name: string,
-    datastorePath?: string,
-    networkId?: string
-  ): Promise<ExecResult> {
-    return this.testFunction({
-      function: 'repository_up',
-      repository: name,
-      datastorePath,
-      networkId,
-      prepOnly: true,
-    });
-  }
-
   async repositoryDown(
     name: string,
     datastorePath?: string,

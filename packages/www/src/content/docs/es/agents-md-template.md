@@ -4,7 +4,7 @@ description: Plantilla lista para copiar y pegar que permite configurar Claude C
 category: Reference
 order: 50
 language: es
-sourceHash: "65feffe76efad39d"
+sourceHash: "872e8796671470d0"
 ---
 
 Utilice esta plantilla para configurar asistentes de programación con IA (Claude Code, Cursor, Cline, Windsurf) para la gestión autónoma de infraestructura Rediacc. Copie el bloque siguiente en el archivo `CLAUDE.md`, `.cursorrules` o el archivo de configuración de agente equivalente de su proyecto.
@@ -60,8 +60,8 @@ rdc term <machine> <repo>
 rdc term <machine> -c "command"
 
 # File sync
-rdc sync upload -m <machine> -r <repo> -l ./local-path
-rdc sync download -m <machine> -r <repo> -l ./local-path
+rdc repo sync upload -m <machine> -r <repo> -l ./local-path
+rdc repo sync download -m <machine> -r <repo> -l ./local-path
 
 # List all available commands with schemas
 rdc agent capabilities

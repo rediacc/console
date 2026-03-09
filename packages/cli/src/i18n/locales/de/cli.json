@@ -113,70 +113,6 @@
         }
       }
     },
-    "backup": {
-      "description": "Repositories auf externem Speicher sichern und wiederherstellen",
-      "list": {
-        "description": "Verfügbare Backups auf Speicher oder Rechner auflisten",
-        "listing": "Backups werden aufgelistet...",
-        "optionFromMachine": "Name des Quellrechners",
-        "optionFromStorage": "Name des Quellspeichers",
-        "sourceRequired": "Geben Sie --from <storage> oder --from-machine <machine> an"
-      },
-      "pull": {
-        "description": "Repository-Backup von Speicher oder Rechner abrufen",
-        "optionForce": "Vorhandenes Repository überschreiben erzwingen",
-        "optionFromMachine": "Name des Quellrechners",
-        "optionFromStorage": "Name des Quellspeichers",
-        "pulling": "Backup von \"{{repo}}\" wird abgerufen...",
-        "sourceRequired": "Geben Sie --from <storage> oder --from-machine <machine> an"
-      },
-      "push": {
-        "description": "Repository-Backup auf Speicher oder Rechner übertragen",
-        "destIgnoredForStorage": "--dest {{provided}} ignoriert: Speicher-Backups verwenden Repository-GUID ({{dest}})",
-        "destRequired": "Geben Sie --to <storage> oder --to-machine <machine> an",
-        "optionCheckpoint": "Container-Checkpoint erstellen (Hot Backup)",
-        "optionDest": "Zieldateiname",
-        "optionForce": "Vorhandenes Backup überschreiben erzwingen",
-        "optionTag": "Deployment-Tag für Versionierung",
-        "optionToMachine": "Name des Zielrechners",
-        "optionToStorage": "Name des Zielspeichers",
-        "pushing": "Backup von \"{{repo}}\" wird nach {{dest}} übertragen..."
-      },
-      "schedule": {
-        "description": "Konfiguration geplanter Backups verwalten",
-        "push": {
-          "description": "Backup-Zeitplan auf Remote-Rechner übertragen (systemd-Timer)",
-          "success": "Backup-Zeitplan an {{machine}} übertragen"
-        },
-        "set": {
-          "description": "Backup-Zeitplan-Einstellungen konfigurieren",
-          "noOptions": "Geben Sie mindestens eine Option an: --destination, --cron, --enable oder --disable",
-          "optionCron": "Cron-Ausdruck für den Backup-Zeitplan (z.B. \"0 2 * * *\")",
-          "optionDestination": "Standard-Speicherzielname",
-          "optionDisable": "Geplante Backups deaktivieren",
-          "optionEnable": "Geplante Backups aktivieren",
-          "saved": "Backup-Zeitplan-Konfiguration gespeichert"
-        },
-        "show": {
-          "description": "Aktuelle Backup-Zeitplan-Konfiguration anzeigen",
-          "destination": "Ziel: {{destination}}",
-          "enabled": "Aktiviert: {{enabled}}",
-          "notConfigured": "Kein Backup-Zeitplan konfiguriert",
-          "schedule": "Zeitplan: {{schedule}}"
-        }
-      },
-      "sync": {
-        "description": "Alle Repositories massenhaft zum/vom Cloud-Speicher übertragen",
-        "directionConflict": "--to und --from können nicht gleichzeitig angegeben werden",
-        "directionRequired": "Geben Sie --to <storage> (Push) oder --from <storage> (Pull) an",
-        "optionFrom": "Name des Quellspeichers (Pull-Modus)",
-        "optionOverride": "Vorhandene nicht eingehängte Repos beim Pull überschreiben",
-        "optionRepo": "Auf bestimmtes Repository filtern (wiederholbar)",
-        "optionTo": "Name des Zielspeichers (Push-Modus)",
-        "pullSuccess": "Synchronisierungs-Pull abgeschlossen",
-        "pushSuccess": "Synchronisierungs-Push abgeschlossen"
-      }
-    },
     "bridge": {
       "description": "Bridge-Verwaltung",
       "list": {
@@ -339,6 +275,27 @@
         "description": "Eine Machine zur aktuellen Konfiguration hinzufügen",
         "success": "Machine \"{{name}}\" hinzugefügt ({{user}}@{{ip}})"
       },
+      "addProvider": {
+        "description": "Cloud-Anbieter für automatisierte Maschinenbereitstellung hinzufügen",
+        "optionImage": "Standard-Betriebssystem-Image",
+        "optionImageAttr": "Benutzerdefiniert: Attributname für OS-Image",
+        "optionInstanceType": "Standard-Instanztyp/-größe",
+        "optionIpv4Output": "Benutzerdefiniert: Ausgabeattribut für IPv4-Adresse",
+        "optionIpv6Output": "Benutzerdefiniert: Ausgabeattribut für IPv6-Adresse",
+        "optionLabelAttr": "Benutzerdefiniert: Attributname für VM-Label",
+        "optionProvider": "Bekannte Anbieterquelle (z.B. linode/linode, hetznercloud/hcloud)",
+        "optionRegion": "Standard-Region für neue Maschinen",
+        "optionRegionAttr": "Benutzerdefiniert: Attributname für Region",
+        "optionResource": "Benutzerdefiniert: OpenTofu-Ressourcentyp für VM",
+        "optionSizeAttr": "Benutzerdefiniert: Attributname für Instanztyp",
+        "optionSource": "Benutzerdefinierte OpenTofu-Anbieterquelle (z.B. vultr/vultr)",
+        "optionSshKeyAttr": "Benutzerdefiniert: Attributname für SSH-Schlüssel",
+        "optionSshKeyFormat": "Benutzerdefiniert: SSH-Schlüsselformat (inline_list oder resource_id)",
+        "optionSshKeyResource": "Benutzerdefiniert: OpenTofu-Ressourcentyp für SSH-Schlüssel",
+        "optionSshUser": "SSH-Benutzername für neue VMs (Standard: root)",
+        "optionToken": "API-Token für den Cloud-Anbieter",
+        "success": "Cloud-Anbieter \"{{name}}\" hinzugefügt ({{provider}})"
+      },
       "addRepository": {
         "description": "Eine Repository-GUID-Zuordnung zur aktuellen Konfiguration hinzufügen",
         "networkIdAssigned": "Netzwerk-ID: {{networkId}}",
@@ -347,6 +304,60 @@
         "optionNetworkId": "Netzwerk-ID für Docker-Isolation (2816, 2880, ...). Wird automatisch vergeben, wenn nicht angegeben",
         "optionTag": "Repository-Tag",
         "success": "Repository \"{{name}}\" hinzugefügt ({{guid}}, Tag: {{tag}})"
+      },
+      "backupStrategy": {
+        "description": "Multi-Ziel-Backup-Strategie verwalten",
+        "set": {
+          "description": "Backup-Zeitplan-Einstellungen konfigurieren",
+          "noOptions": "Geben Sie mindestens eine Option an: --destination, --cron, --enable oder --disable",
+          "optionCron": "Cron-Ausdruck für den Backup-Zeitplan (z.B. \"0 2 * * *\")",
+          "optionDestination": "Standard-Speicherzielname",
+          "optionDisable": "Geplante Backups deaktivieren",
+          "optionEnable": "Geplante Backups aktivieren",
+          "saved": "Backup-Zeitplan-Konfiguration gespeichert"
+        },
+        "show": {
+          "description": "Aktuelle Backup-Zeitplan-Konfiguration anzeigen",
+          "destinations": "Ziele:",
+          "enabled": "Aktiviert: {{enabled}}",
+          "noDestinations": "Keine Backup-Ziele konfiguriert",
+          "notConfigured": "Kein Backup-Zeitplan konfiguriert",
+          "schedule": "Zeitplan: {{schedule}}"
+        }
+      },
+      "certCache": {
+        "clear": {
+          "cleared": "Zertifikats-Cache gelöscht",
+          "description": "Zertifikats-Cache entfernen",
+          "noCache": "Kein Zertifikats-Cache zum Löschen vorhanden"
+        },
+        "description": "Zwischengespeicherte TLS-Zertifikate verwalten",
+        "noBaseDomain": "Maschine hat keine baseDomain konfiguriert",
+        "noCacheForDomain": "Kein Zertifikats-Cache für {{domain}} gefunden",
+        "pull": {
+          "cached": "{{count}} Zertifikat(e) zwischengespeichert ({{size}})",
+          "description": "TLS-Zertifikate von einer Maschine herunterladen und zwischenspeichern",
+          "downloading": "Zertifikate werden von {{machine}} heruntergeladen...",
+          "merged": "{{count}} Zertifikat(e) aus lokalem Cache mit längerer Gültigkeit beibehalten",
+          "noAcmeJson": "Keine acme.json auf {{machine}} gefunden",
+          "optionNoPrune": "Bereinigung veralteter Netzwerk-ID-Zertifikate überspringen",
+          "pruned": "{{count}} veraltete(s) Zertifikat(e) bereinigt"
+        },
+        "push": {
+          "description": "Zwischengespeicherte TLS-Zertifikate auf eine Maschine hochladen",
+          "merged": "{{count}} Zertifikat(e) mit längerer Gültigkeit in {{machine}} zusammengeführt",
+          "noCache": "Kein Zertifikats-Cache gefunden. Zuerst 'rdc config cert-cache pull <machine>' ausführen",
+          "uploaded": "{{count}} Zertifikat(e) auf {{machine}} hochgeladen",
+          "uploading": "Zwischengespeicherte Zertifikate werden auf {{machine}} hochgeladen...",
+          "upToDate": "Zertifikate auf {{machine}} sind aktuell"
+        },
+        "status": {
+          "certCount": "{{count}} Zertifikat(e), {{size}} komprimiert",
+          "description": "Zwischengespeicherten Zertifikatsbestand anzeigen",
+          "header": "Zertifikats-Cache für {{baseDomain}}",
+          "noCache": "Kein Zertifikats-Cache vorhanden",
+          "updatedAt": "Zuletzt aktualisiert: {{date}} (von {{machine}})"
+        }
       },
       "clear": {
         "allCleared": "Alle Standardwerte gelöscht",
@@ -396,16 +407,28 @@
         "description": "Machines in der aktuellen Konfiguration auflisten",
         "noMachines": "Keine Machines konfiguriert. Fügen Sie eine hinzu mit: rdc config add-machine <name> --ip <ip> --user <user>"
       },
+      "providers": {
+        "description": "Konfigurierte Cloud-Anbieter auflisten",
+        "noProviders": "Keine Cloud-Anbieter konfiguriert. Hinzufügen mit: rdc config add-provider"
+      },
       "purgeArchived": {
         "description": "Alle archivierten Zugangsdaten endgültig löschen",
         "noArchived": "Keine archivierten Repositories zum Löschen",
         "success": "{{count}} archivierte Zugangsdaten gelöscht"
       },
       "pushInfra": {
-        "description": "Infrastrukturkonfiguration auf Remote-Machine übertragen",
+        "certCacheUploaded": "Zwischengespeicherte Zertifikate auf Remote hochgeladen",
+        "description": "Infrastrukturkonfiguration an Maschine senden (Traefik-Proxy, Router und Cloudflare-DNS-Einträge für Maschinen-Subdomain). Zuerst 'config set-infra <machine>' ausführen",
+        "dnsCreated": "DNS: {{type}} {{name}} → {{content}} erstellt",
+        "dnsError": "DNS-Warnung: {{message}} (Einträge müssen ggf. manuell erstellt werden)",
+        "dnsResolvingZone": "Cloudflare-Zone für {{domain}} wird aufgelöst...",
+        "dnsSkipLocal": "DNS übersprungen: .local-Domain verwendet kein Cloudflare",
+        "dnsSkipNoToken": "DNS übersprungen: kein Cloudflare-API-Token. Setzen mit: rdc config set-infra <machine> --cf-dns-token <token>",
+        "dnsUnchanged": "DNS: {{type}} {{name}} bereits korrekt",
+        "dnsUpdated": "DNS: {{type}} {{name}} → {{content}} aktualisiert",
         "installingProxy": "Proxy wird installiert und gestartet...",
         "proxyInstallWarning": "Proxy-Installation fehlgeschlagen (Code {{code}}). Manuell ausführen: sudo renet proxy install",
-        "success": "Infrastrukturkonfiguration an \"{{name}}\" übertragen"
+        "success": "Infrastrukturkonfiguration an \"{{name}}\" gesendet"
       },
       "recover": {
         "confirm": "Konfiguration \"{{name}}\" aus Sicherung wiederherstellen?",
@@ -417,6 +440,10 @@
       "removeMachine": {
         "description": "Eine Machine aus der aktuellen Konfiguration entfernen",
         "success": "Machine \"{{name}}\" entfernt"
+      },
+      "removeProvider": {
+        "description": "Cloud-Anbieter-Konfiguration entfernen",
+        "success": "Cloud-Anbieter \"{{name}}\" entfernt"
       },
       "removeRepository": {
         "description": "Eine Repository-Zuordnung aus der aktuellen Konfiguration entfernen",
@@ -453,13 +480,13 @@
         "success": "Ceph-Konfiguration für \"{{name}}\" gesetzt: pool={{pool}}, image={{image}}"
       },
       "setInfra": {
-        "description": "Infrastrukturkonfiguration für eine Machine setzen",
+        "description": "Infrastrukturkonfiguration für eine Machine setzen (machine-specific: IPs, domain, ports; shared: cert email, CF DNS token)",
         "invalidIPv4": "Ungültige IPv4-Adresse: {{ip}}",
         "invalidIPv6": "Ungültige IPv6-Adresse: {{ip}}",
         "noOptions": "Keine Optionen angegeben. Verwenden Sie --public-ipv4, --base-domain usw.",
         "optionBaseDomain": "Basis-Domain für Anwendungen",
-        "optionCertEmail": "E-Mail für TLS-Zertifikat-Benachrichtigungen",
-        "optionCfDnsToken": "Cloudflare DNS-API-Token für ACME DNS-01-Challenge",
+        "optionCertEmail": "E-Mail für TLS-Zertifikat-Benachrichtigungen (shared across machines)",
+        "optionCfDnsToken": "Cloudflare DNS-API-Token für ACME DNS-01-Challenge (shared across machines)",
         "optionPublicIPv4": "Öffentliche IPv4-Adresse",
         "optionPublicIPv6": "Öffentliche IPv6-Adresse",
         "optionTcpPorts": "Weiterzuleitende TCP-Ports (kommagetrennt, z.B. 25,143,465)",
@@ -600,6 +627,21 @@
         "description": "Eine Machine löschen",
         "success": "Machine \"{{name}}\" gelöscht"
       },
+      "deployBackup": {
+        "description": "Backup-Zeitplan auf Remote-Rechner übertragen (systemd-Timer)",
+        "success": "Backup-Zeitplan an {{machine}} übertragen"
+      },
+      "deprovision": {
+        "completed": "Maschine {{name}} zerstört und aus Konfiguration entfernt",
+        "confirm": "Dies wird Maschine \"{{name}}\" und alle ihre Daten dauerhaft zerstören. Fortfahren?",
+        "description": "Cloud-bereitgestellte Maschine zerstören und aus Konfiguration entfernen",
+        "destroyFailed": "Infrastruktur-Zerstörung für {{name}} fehlgeschlagen: {{error}}. Fahre mit Konfigurationsentfernung fort (--force).",
+        "destroying": "{{name}} wird zerstört...",
+        "dnsCleanedUp": "{{count}} DNS-Eintrag/Einträge entfernt",
+        "dnsDeleted": "DNS-Eintrag gelöscht: {{type}} {{name}}",
+        "noState": "Kein OpenTofu-Status für \"{{name}}\" gefunden. Verwenden Sie 'config remove-machine' für manuell hinzugefügte Maschinen.",
+        "optionForce": "Bestätigungsaufforderung überspringen"
+      },
       "description": "Remote-Maschinen verwalten (Status, Container, Dienste, Health)",
       "health": {
         "containersSection": "\nContainer:",
@@ -635,6 +677,28 @@
         "description": "Machines auflisten",
         "fetching": "Machines werden abgerufen..."
       },
+      "provision": {
+        "completed": "Maschine {{name}} bereitgestellt und bereit ({{ip}})",
+        "configuringInfra": "Konfiguriere Infrastruktur (Proxy + DNS) für {{name}}...",
+        "description": "Neue Maschine bei einem Cloud-Anbieter mit OpenTofu bereitstellen",
+        "failed": "Maschinenbereitstellung fehlgeschlagen: {{error}}",
+        "infraInherited": "Basisdomain automatisch von Schwestermaschine \"{{source}}\" erkannt",
+        "noInfraHint": "Keine Basisdomain konfiguriert. Führen Sie 'rdc config set-infra <machine> --base-domain <domain>' und dann 'rdc config push-infra <machine>' aus, um DNS und Proxy zu aktivieren.",
+        "optionBaseDomain": "Basisdomain für Infrastruktur (z.B. example.com). Impliziert --infra",
+        "optionImage": "Standard-Betriebssystem-Image überschreiben",
+        "optionInfra": "Auch Infrastruktur konfigurieren (set-infra + push-infra)",
+        "optionNoInfra": "Infrastrukturkonfiguration überspringen (Proxy + DNS)",
+        "optionProvider": "Name des Cloud-Anbieters (aus config add-provider)",
+        "optionRegion": "Standard-Region überschreiben",
+        "optionSshUser": "SSH-Benutzername für die neue VM (Standard: root)",
+        "optionType": "Standard-Instanztyp überschreiben",
+        "providerRequired": "Cloud-Anbieter \"{{name}}\" nicht gefunden. Hinzufügen mit: rdc config add-provider",
+        "provisioning": "{{name}} wird auf {{provider}} ({{region}}) bereitgestellt...",
+        "settingUp": "Maschineneinrichtung wird ausgeführt...",
+        "sshReady": "SSH-Verbindung hergestellt",
+        "tofuNotInstalled": "OpenTofu (tofu) ist nicht installiert. Installieren von: https://opentofu.org/docs/intro/install/",
+        "waitingSSH": "Warte auf SSH-Verbindung..."
+      },
       "repos": {
         "description": "Auf einer Machine bereitgestellte Repositories auflisten",
         "fetched": "Machine abgerufen",
@@ -654,6 +718,7 @@
         "description": "Vollständigen Maschinenstatus anzeigen (System, Repos, Container, Dienste)",
         "fetched": "Status abgerufen",
         "fetching": "Status von {{machine}} wird abgerufen...",
+        "infrastructure": "Infrastruktur",
         "noData": "Keine Statusdaten verfügbar"
       },
       "testConnection": {
@@ -1033,6 +1098,13 @@
         "failed": "Auflistung fehlgeschlagen: {{error}}",
         "starting": "Repositories auf \"{{machine}}\" werden aufgelistet..."
       },
+      "listBackups": {
+        "description": "Verfügbare Backups auf Speicher oder Rechner auflisten",
+        "listing": "Backups werden aufgelistet...",
+        "optionFromMachine": "Name des Quellrechners",
+        "optionFromStorage": "Name des Quellspeichers",
+        "sourceRequired": "Geben Sie --from <storage> oder --from-machine <machine> an"
+      },
       "machineOption": "Name der Zielmaschine",
       "mount": {
         "checkpointOption": "Nach dem Mounten von Checkpoint wiederherstellen",
@@ -1049,6 +1121,27 @@
         "starting": "Besitz von \"{{repository}}\" wird auf \"{{machine}}\" gesetzt...",
         "uidOption": "Besitzer-UID (Standard: 7111)"
       },
+      "pull": {
+        "description": "Repository-Backup von Speicher oder Rechner abrufen",
+        "optionForce": "Vorhandenes Repository überschreiben erzwingen",
+        "optionFromMachine": "Name des Quellrechners",
+        "optionFromStorage": "Name des Quellspeichers",
+        "pulling": "Backup von \"{{repo}}\" wird abgerufen...",
+        "sourceRequired": "Geben Sie --from <storage> oder --from-machine <machine> an"
+      },
+      "push": {
+        "description": "Repository-Backup auf Speicher oder Rechner übertragen",
+        "destIgnoredForStorage": "--dest {{provided}} ignoriert: Speicher-Backups verwenden Repository-GUID ({{dest}})",
+        "destRequired": "Geben Sie --to <storage> oder --to-machine <machine> an",
+        "optionCheckpoint": "Container-Checkpoint erstellen (Hot Backup)",
+        "optionDest": "Zieldateiname",
+        "optionForce": "Vorhandenes Backup überschreiben erzwingen",
+        "optionProvider": "Cloud-Anbieter zur automatischen Bereitstellung des Zielrechners, falls er nicht existiert (aus config add-provider)",
+        "optionTag": "Deployment-Tag für Versionierung",
+        "optionToMachine": "Name des Zielrechners",
+        "optionToStorage": "Name des Zielspeichers",
+        "pushing": "Backup von \"{{repo}}\" wird nach {{dest}} übertragen..."
+      },
       "resize": {
         "completed": "Skalierung abgeschlossen",
         "description": "Repository offline skalieren (unterstützt Vergrößern und Verkleinern)",
@@ -1056,11 +1149,54 @@
         "sizeOption": "Neue Repository-Größe (z.B. 10G, 100G, 1T)",
         "starting": "\"{{repository}}\" wird auf {{size}} auf \"{{machine}}\" skaliert..."
       },
+      "snapshot": {
+        "create": {
+          "creating": "Snapshot von \"{{repo}}\" auf {{machine}} wird erstellt...",
+          "description": "BTRFS-Snapshot eines Repositorys erstellen",
+          "optionSnapshotName": "Expliziter Snapshot-Name (wird automatisch generiert, wenn leer)",
+          "success": "Snapshot erstellt: {{name}} ({{path}})"
+        },
+        "delete": {
+          "description": "Snapshot von einem Remote-Rechner löschen",
+          "success": "Snapshot gelöscht: {{name}}"
+        },
+        "description": "BTRFS-Snapshots auf Remote-Rechnern verwalten",
+        "list": {
+          "description": "Snapshots auf einem Remote-Rechner auflisten",
+          "header": "{{count}} Snapshot(s) in {{path}}:",
+          "noSnapshots": "Keine Snapshots gefunden."
+        }
+      },
       "status": {
         "completed": "Status abgerufen",
         "description": "Repository-Status abrufen",
         "failed": "Statusabfrage fehlgeschlagen",
         "starting": "Status von \"{{repository}}\" auf \"{{machine}}\" wird abgerufen..."
+      },
+      "sync": {
+        "description": "Repositories und Dateien synchronisieren (Massen-Push/Pull, Dateitransfer)",
+        "pullAll": {
+          "description": "Alle Repositories massenhaft zum/vom Cloud-Speicher übertragen",
+          "optionFrom": "Name des Quellspeichers (Pull-Modus)",
+          "optionOverride": "Vorhandene nicht eingehängte Repos beim Pull überschreiben",
+          "optionRepo": "Auf bestimmtes Repository filtern (wiederholbar)",
+          "success": "Synchronisierungs-Pull abgeschlossen"
+        },
+        "pushAll": {
+          "description": "Alle Repositories massenhaft zum/vom Cloud-Speicher übertragen",
+          "optionRepo": "Auf bestimmtes Repository filtern (wiederholbar)",
+          "optionTo": "Name des Zielspeichers (Push-Modus)",
+          "success": "Synchronisierungs-Push abgeschlossen"
+        },
+        "upload": {
+          "description": "Dateien in ein Repository hochladen"
+        },
+        "download": {
+          "description": "Dateien aus einem Repository herunterladen"
+        },
+        "status": {
+          "description": "Synchronisierungsstatus prüfen und lokale/entfernte Dateien vergleichen"
+        }
       },
       "template": {
         "completed": "Vorlage angewendet",
@@ -1081,11 +1217,10 @@
       "up": {
         "checkpointOption": "Container aus CRIU-Checkpoint nach dem Deployen wiederherstellen (für Live-Prozessmigration von einer anderen Maschine)",
         "completed": "Dienste gestartet",
-        "description": "Repository deployen oder aktualisieren (Mount, Prep, Dienste starten)",
+        "description": "Repository deployen oder aktualisieren (Mount, Dienste starten)",
         "failed": "Starten der Dienste fehlgeschlagen",
         "grandOption": "Grand-Repository-Name (wird automatisch in GUID aufgelöst)",
         "mountOption": "Repository vorher mounten",
-        "prepOnlyOption": "Nur den Vorbereitungsschritt ausführen",
         "starting": "Dienste für \"{{repository}}\" auf \"{{machine}}\" werden gestartet..."
       },
       "upAll": {
@@ -1175,23 +1310,8 @@
         "description": "Eine Aufgabe verfolgen (Kurzbefehl für: queue trace)"
       }
     },
-    "snapshot": {
-      "create": {
-        "creating": "Snapshot von \"{{repo}}\" auf {{machine}} wird erstellt...",
-        "description": "BTRFS-Snapshot eines Repositorys erstellen",
-        "optionSnapshotName": "Expliziter Snapshot-Name (wird automatisch generiert, wenn leer)",
-        "success": "Snapshot erstellt: {{name}} ({{path}})"
-      },
-      "delete": {
-        "description": "Snapshot von einem Remote-Rechner löschen",
-        "success": "Snapshot gelöscht: {{name}}"
-      },
-      "description": "BTRFS-Snapshots auf Remote-Rechnern verwalten",
-      "list": {
-        "description": "Snapshots auf einem Remote-Rechner auflisten",
-        "header": "{{count}} Snapshot(s) in {{path}}:",
-        "noSnapshots": "Keine Snapshots gefunden."
-      }
+    "backup": {
+      "description": "Repository-Backups über Speicher und Maschinen pushen, pullen und synchronisieren"
     },
     "storage": {
       "browse": {
@@ -1615,15 +1735,15 @@
     "sectionTitles": {
       "agent": "Agent-Hilfsprogramme",
       "audit": "Audit und Compliance",
+      "backup": "Sicherung & Wiederherstellung",
       "auth": "Authentifizierung",
-      "backup": "Backup-Verwaltung",
       "bridge": "Bridge-Verwaltung",
       "ceph": "Ceph-Speicherverwaltung",
       "config": "Konfigurationsverwaltung",
+      "datastore": "Datenspeicherverwaltung",
       "doctor": "Systemdiagnose",
       "machine": "Maschinenverwaltung",
       "mcp": "MCP-Server",
-      "datastore": "Datenspeicherverwaltung",
       "ops": "Experimentelle VM-Operationen",
       "organization": "Organisationsverwaltung",
       "permission": "Berechtigungsverwaltung",
@@ -1633,11 +1753,10 @@
       "repo": "Repository-Lebenszyklus",
       "repository": "Repository-Verwaltung",
       "shortcuts": "Schnellbefehle (Shortcuts)",
-      "snapshot": "Snapshot-Verwaltung",
       "storage": "Speicherverwaltung",
       "store": "Store-Verwaltung",
       "subscription": "Abonnementverwaltung",
-      "sync": "Dateisynchronisation",
+      "sync": "Dateisynchronisierung",
       "team": "Teamverwaltung",
       "term": "SSH-Terminalzugang",
       "update": "CLI-Updates",
@@ -1784,11 +1903,6 @@
     }
   },
   "help": {
-    "backup": {
-      "list": "Backups auf Speicher auflisten",
-      "pull": "Repo-Backup vom Speicher abrufen",
-      "push": "Repo-Backup zum Speicher pushen"
-    },
     "cli": {
       "machineInfo": "Maschinenstatus anzeigen",
       "repoUp": "Repository-Dienste bereitstellen",
@@ -1811,6 +1925,13 @@
       "create": "Verschlüsseltes Repository erstellen",
       "down": "Dienste stoppen",
       "fork": "CoW-Fork zum Testen",
+      "listBackups": "Backups auf Speicher auflisten",
+      "pull": "Repo-Backup vom Speicher abrufen",
+      "push": "Repo-Backup zum Speicher pushen",
+      "sync": {
+        "pullAll": "Alle Repos massenhaft vom Speicher abrufen",
+        "pushAll": "Alle Repos massenhaft zum Speicher übertragen"
+      },
       "up": "Bereitstellen mit Auto-Mount"
     },
     "store": {

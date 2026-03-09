@@ -52,14 +52,106 @@ export interface InfraConfig {
   publicIPv6?: string;
   /** Base domain for applications (e.g., "example.com") */
   baseDomain?: string;
-  /** Email address for TLS certificate notifications (Let's Encrypt) */
-  certEmail?: string;
-  /** Cloudflare DNS API token for ACME DNS-01 challenge */
-  cfDnsApiToken?: string;
   /** Additional TCP ports to forward (e.g., [25, 143, 465, 587, 993]) */
   tcpPorts?: number[];
   /** Additional UDP ports to forward (e.g., [53]) */
   udpPorts?: number[];
+}
+
+// ============================================================================
+// Cloud Provider Types (OpenTofu-based VM provisioning)
+// ============================================================================
+
+/** SSH key injection mechanism for cloud providers. */
+export interface ProviderSSHKeyConfig {
+  /** Resource attribute name for SSH keys */
+  attr: string;
+  /** How keys are injected: 'inline_list' (raw key in array) or 'resource_id' (separate SSH key resource) */
+  format: 'inline_list' | 'resource_id';
+  /** If format='resource_id', the OpenTofu resource type for SSH keys (e.g., "hcloud_ssh_key") */
+  keyResource?: string;
+}
+
+/** Firewall configuration in provider registry. */
+export interface ProviderFirewallConfig {
+  /** Firewall resource type (e.g., "linode_firewall") */
+  resource: string;
+  /** Attribute that links firewall to instance (e.g., "linodes") */
+  linkAttr?: string;
+  /** Reference expression for the link (e.g., "${linode_instance.machine.id}") */
+  linkRef?: string;
+  /** Separate attachment resource (e.g., "hcloud_firewall_attachment") */
+  attachResource?: string;
+}
+
+/** Provider mapping — describes how to generate .tf.json for a specific cloud provider. */
+export interface ProviderMapping {
+  /** OpenTofu provider source (e.g., "linode/linode") */
+  source: string;
+  /** Provider version constraint (e.g., "~> 3.0") */
+  version?: string;
+  /** Provider config attribute name for the API token */
+  tokenAttr: string;
+  /** Resource type for the VM (e.g., "linode_instance") */
+  resource: string;
+  /** Attribute name for the VM label/name */
+  labelAttr: string;
+  /** Attribute name for region/location */
+  regionAttr: string;
+  /** Attribute name for instance type/size */
+  sizeAttr: string;
+  /** Attribute name for OS image */
+  imageAttr: string;
+  /** Output attribute path for IPv4 */
+  ipv4Output: string;
+  /** Output attribute path for IPv6 (optional) */
+  ipv6Output?: string;
+  /** SSH key injection config */
+  sshKey: ProviderSSHKeyConfig;
+  /** Firewall configuration (optional) */
+  firewall?: ProviderFirewallConfig;
+  /** Default values for provider-specific attributes */
+  defaults?: Record<string, string>;
+}
+
+/** Cloud provider configuration stored in rediacc.json. */
+export interface CloudProviderConfig {
+  /** For known providers: matches a key in provider-registry.json (e.g., "linode/linode") */
+  provider?: string;
+  /** For custom providers: full OpenTofu source (e.g., "vultr/vultr"). Presence triggers custom mode. */
+  source?: string;
+  /** API token for the cloud provider */
+  apiToken: string;
+  /** Default region */
+  region?: string;
+  /** Default instance type/size */
+  instanceType?: string;
+  /** Default OS image */
+  image?: string;
+  /** SSH username for created VMs (default: "root") */
+  sshUser?: string;
+
+  // --- Custom provider fields (only when source is set) ---
+  /** Provider version constraint */
+  version?: string;
+  /** Provider attribute name for the API token */
+  tokenAttr?: string;
+  /** Resource type for the VM */
+  resource?: string;
+  /** Attribute name for the VM label */
+  labelAttr?: string;
+  /** Attribute name for region */
+  regionAttr?: string;
+  /** Attribute name for instance type */
+  sizeAttr?: string;
+  /** Attribute name for OS image */
+  imageAttr?: string;
+  /** Output attribute for IPv4 */
+  ipv4Output?: string;
+  /** Output attribute for IPv6 */
+  ipv6Output?: string;
+  /** SSH key config */
+  sshKey?: ProviderSSHKeyConfig;
 }
 
 /**
@@ -130,17 +222,52 @@ export interface S3Config {
 }
 
 /**
- * Backup schedule configuration for a context.
- * Defines the default storage destination and cron schedule for automated backups.
- * Used by `rdc backup schedule set|show|push` to configure systemd timers on remote machines.
+ * A single backup destination within the backup strategy.
+ * Each destination targets a named storage and can override the global schedule.
  */
-export interface BackupConfig {
-  /** Storage name to use as backup destination (e.g., "microsoft") */
-  defaultDestination: string;
-  /** Cron expression for backup schedule (e.g., "0 2 * * *") */
+export interface BackupStrategyDestination {
+  /** Storage name (e.g., "my-s3") */
+  storage: string;
+  /** Per-destination cron override (falls back to global schedule) */
   schedule?: string;
-  /** Whether the schedule is enabled (default: true) */
+  /** Per-destination enable/disable (falls back to global enabled) */
   enabled?: boolean;
+}
+
+/**
+ * Backup strategy configuration for a config.
+ * Defines one or more storage destinations and cron schedules for automated backups.
+ * Used by `rdc config backup-strategy set|show` and `rdc machine deploy-backup` to configure systemd timers on remote machines.
+ */
+export interface BackupStrategyConfig {
+  /** Backup destinations */
+  destinations: BackupStrategyDestination[];
+  /** Global default cron expression (e.g., "0 2 * * *") */
+  schedule?: string;
+  /** Global enable/disable (default: true) */
+  enabled?: boolean;
+}
+
+/**
+ * Cached ACME certificate data from Traefik's acme.json.
+ * Stored at config level keyed by baseDomain (shared across machines).
+ * Compressed with gzip + base64. Chunked into 48KB pieces for backends with size limits.
+ */
+export interface AcmeCertCache {
+  /** Base domain this cache applies to (e.g., "rediacc.io") */
+  baseDomain: string;
+  /** ISO 8601 timestamp of last cache update */
+  updatedAt: string;
+  /** Machine name the cache was downloaded from */
+  sourceMachine: string;
+  /** Number of certificates in the cache */
+  certCount: number;
+  /** Certificate inventory: domain → expiry date (ISO 8601) */
+  certs: Record<string, string>;
+  /** gzip + base64 encoded acme.json. Array of 48KB chunks if large. */
+  data: string | string[];
+  /** Original uncompressed size in bytes */
+  rawSize: number;
 }
 
 /**
@@ -194,14 +321,24 @@ export interface RdcConfig {
   sshContent?: SSHContent;
   /** Path to renet binary (default: 'renet' in PATH) */
   renetPath?: string;
-  /** Backup schedule configuration */
-  backup?: BackupConfig;
+  /** Backup strategy configuration */
+  backupStrategy?: BackupStrategyConfig;
+  /** Cloudflare DNS API token for ACME DNS-01 challenge (shared across machines) */
+  cfDnsApiToken?: string;
+  /** Cached Cloudflare DNS zone ID (auto-resolved from baseDomain) */
+  cfDnsZoneId?: string;
+  /** Email address for TLS certificate notifications (shared across machines) */
+  certEmail?: string;
   /** When true, resources are encrypted in encryptedResources blob */
   encrypted?: boolean;
   /** Encrypted blob of {machines, storages, repositories, sshContent} */
   encryptedResources?: string;
   /** Encrypted master password for vault operations */
   masterPassword?: string;
+  /** Cloud provider configurations for automated VM provisioning (name -> config) */
+  cloudProviders?: Record<string, CloudProviderConfig>;
+  /** Cached ACME certificate data, keyed by baseDomain (shared across machines) */
+  acmeCertCache?: Record<string, AcmeCertCache>;
 
   // ============================================================================
   // S3 Resource State (used when config.s3 is populated)

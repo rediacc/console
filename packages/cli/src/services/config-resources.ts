@@ -9,7 +9,9 @@ import { MIN_NETWORK_ID, NETWORK_ID_INCREMENT } from '@rediacc/shared/queue-vaul
 import { configFileStorage } from '../adapters/config-file-storage.js';
 import type {
   ArchivedRepository,
-  BackupConfig,
+  BackupStrategyConfig,
+  BackupStrategyDestination,
+  CloudProviderConfig,
   InfraConfig,
   MachineConfig,
   RdcConfig,
@@ -43,6 +45,9 @@ class ConfigService extends ConfigServiceBase {
     sshPrivateKey?: string;
     sshPublicKey?: string;
     renetPath: string;
+    cfDnsApiToken?: string;
+    cfDnsZoneId?: string;
+    certEmail?: string;
   }> {
     const config = await this.requireSelfHosted();
     const state = await this.getResourceState();
@@ -64,6 +69,9 @@ class ConfigService extends ConfigServiceBase {
       sshPrivateKey: sshContent?.privateKey,
       sshPublicKey: sshContent?.publicKey,
       renetPath: config.renetPath ?? DEFAULTS.CONTEXT.RENET_BINARY,
+      cfDnsApiToken: config.cfDnsApiToken,
+      cfDnsZoneId: config.cfDnsZoneId,
+      certEmail: config.certEmail,
     };
   }
 
@@ -138,6 +146,16 @@ class ConfigService extends ConfigServiceBase {
     const name = this.getEffectiveConfigName();
     await this.requireSelfHosted(name);
     await this.update(name, { renetPath });
+  }
+
+  async updateConfigFields(
+    updates: Partial<
+      Pick<RdcConfig, 'cfDnsApiToken' | 'cfDnsZoneId' | 'certEmail' | 'acmeCertCache'>
+    >
+  ): Promise<void> {
+    const name = this.getEffectiveConfigName();
+    await this.requireSelfHosted(name);
+    await this.update(name, updates);
   }
 
   // ============================================================================
@@ -315,23 +333,84 @@ class ConfigService extends ConfigServiceBase {
   }
 
   // ============================================================================
-  // Backup Configuration
+  // Backup Strategy
   // ============================================================================
 
-  async setBackupConfig(config: Partial<BackupConfig>): Promise<void> {
+  async setBackupStrategy(config: Partial<BackupStrategyConfig>): Promise<void> {
     const name = this.getEffectiveConfigName();
     const current = await this.requireSelfHosted(name);
-    const backup: BackupConfig = {
-      defaultDestination: '',
-      ...current.backup,
+    const backupStrategy: BackupStrategyConfig = {
+      destinations: [],
+      ...current.backupStrategy,
       ...config,
     };
-    await this.update(name, { backup });
+    await this.update(name, { backupStrategy });
   }
 
-  async getBackupConfig(): Promise<BackupConfig | undefined> {
+  async getBackupStrategy(): Promise<BackupStrategyConfig | undefined> {
     const config = await this.requireSelfHosted();
-    return config.backup;
+    return config.backupStrategy;
+  }
+
+  async addBackupDestination(dest: BackupStrategyDestination): Promise<void> {
+    const name = this.getEffectiveConfigName();
+    const current = await this.requireSelfHosted(name);
+    const backupStrategy: BackupStrategyConfig = {
+      destinations: [],
+      ...current.backupStrategy,
+    };
+    const idx = backupStrategy.destinations.findIndex((d) => d.storage === dest.storage);
+    if (idx >= 0) {
+      backupStrategy.destinations[idx] = { ...backupStrategy.destinations[idx], ...dest };
+    } else {
+      backupStrategy.destinations.push(dest);
+    }
+    await this.update(name, { backupStrategy });
+  }
+
+  async removeBackupDestination(storageName: string): Promise<void> {
+    const name = this.getEffectiveConfigName();
+    const current = await this.requireSelfHosted(name);
+    const backupStrategy: BackupStrategyConfig = {
+      destinations: [],
+      ...current.backupStrategy,
+    };
+    backupStrategy.destinations = backupStrategy.destinations.filter(
+      (d) => d.storage !== storageName
+    );
+    await this.update(name, { backupStrategy });
+  }
+
+  // ============================================================================
+  // Cloud Provider CRUD
+  // ============================================================================
+
+  async addCloudProvider(name: string, config: CloudProviderConfig): Promise<void> {
+    const configName = this.getEffectiveConfigName();
+    await this.requireSelfHosted(configName);
+    const current = await this.getCurrent();
+    const providers = { ...current?.cloudProviders };
+    providers[name] = config;
+    await this.update(configName, { cloudProviders: providers });
+  }
+
+  async removeCloudProvider(name: string): Promise<void> {
+    const configName = this.getEffectiveConfigName();
+    await this.requireSelfHosted(configName);
+    const current = await this.getCurrent();
+    const providers = { ...current?.cloudProviders };
+    if (!(name in providers)) throw new Error(`Cloud provider "${name}" not found`);
+    delete providers[name];
+    await this.update(configName, { cloudProviders: providers });
+  }
+
+  async listCloudProviders(): Promise<{ name: string; config: CloudProviderConfig }[]> {
+    const config = await this.getCurrent();
+    if (!config?.cloudProviders) return [];
+    return Object.entries(config.cloudProviders).map(([name, providerConfig]) => ({
+      name,
+      config: providerConfig,
+    }));
   }
 
   // ============================================================================

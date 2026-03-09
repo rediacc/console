@@ -10,17 +10,17 @@ user-invocable: false
 
 ## How to run
 
-In development: `./run.sh rdc <command>` (builds deps, runs via tsx, ~5s startup overhead).
+In development: `./rdc.sh <command>` (builds deps, runs via tsx, ~5s startup overhead).
 In production: `rdc <command>` directly.
 
-Each `./run.sh rdc` invocation has bootstrap overhead. Chain independent commands with `&&` or `;` to minimize total invocations.
+Each `./rdc.sh` invocation has bootstrap overhead. Chain independent commands with `&&` or `;` to minimize total invocations.
 
 ## Command discovery
 
 Every command supports `--help`. When unsure about syntax:
 ```
-./run.sh rdc <command> --help
-./run.sh rdc <command> <subcommand> --help
+./rdc.sh <command> --help
+./rdc.sh <command> <subcommand> --help
 ```
 
 ## Command groups
@@ -29,11 +29,11 @@ Every command supports `--help`. When unsure about syntax:
 |-------|---------|---------|
 | `ops` | Local VM provisioning | [ops.md](ops.md) |
 | `config` | Machine registration, SSH, setup | [config.md](config.md) |
-| `repo` | Repository lifecycle | [repositories.md](repositories.md) |
-| `sync` | File transfer to/from repos | [sync.md](sync.md) |
+| `repo` | Repository lifecycle, backup, sync, snapshots | [repositories.md](repositories.md) |
+| `repo push/pull` | Backup, restore, machine-to-machine transfer | [backup.md](backup.md) |
+| `repo sync` | File transfer to/from repos | [sync.md](sync.md) |
+| `repo snapshot` | BTRFS point-in-time snapshots | [backup.md](backup.md) |
 | `machine` | Remote machine inspection | [machines.md](machines.md) |
-| `backup` | Backup, restore, machine-to-machine transfer | [backup.md](backup.md) |
-| `snapshot` | BTRFS point-in-time snapshots | [backup.md](backup.md) |
 | `datastore` | Ceph RBD datastore, instant fork/unfork | [datastore.md](datastore.md) |
 | `term` | SSH terminal access + container actions | [terminal.md](terminal.md) |
 | containers | High-level container commands | [execution.md](execution.md) |
@@ -64,7 +64,7 @@ If VMs are already running and machine is registered, these 4 commands deploy an
 rdc repo create <app-name> -m <machine> --size 2G
 
 # 2. Upload your app files (Rediaccfile + docker-compose.yaml + any app code)
-rdc sync upload -m <machine> -r <app-name> --local <path-to-app-dir>/
+rdc repo sync upload -m <machine> -r <app-name> --local <path-to-app-dir>/
 
 # 3. Deploy (runs Rediaccfile prep + up, pulls images, starts containers)
 rdc repo up <app-name> -m <machine>
@@ -80,12 +80,12 @@ For first-time setup (new VMs), see prerequisites in [ops.md](ops.md) and [confi
 
 ```bash
 # Migration (same identity)
-rdc backup push <repo> -m <source> --to-machine <target>
+rdc repo push <repo> -m <source> --to-machine <target>
 rdc repo up <repo> -m <target> --mount
 
 # Independent fork to another machine (--grand passes parent's encryption key)
 rdc repo fork <repo> -m <source> --tag <fork-name>
-rdc backup push <fork-name> -m <source> --to-machine <target>
+rdc repo push <fork-name> -m <source> --to-machine <target>
 rdc repo up <fork-name> -m <target> --mount --grand <repo>
 ```
 
@@ -93,7 +93,7 @@ rdc repo up <fork-name> -m <target> --mount --grand <repo>
 
 ```bash
 # Checkpoint + push (captures process memory + disk state, source keeps running)
-rdc backup push <repo> -m <source> --to-machine <target> --checkpoint
+rdc repo push <repo> -m <source> --to-machine <target> --checkpoint
 
 # Restore on target (process resumes from saved state — no fresh start)
 rdc repo up <repo> -m <target> --mount --checkpoint
@@ -131,7 +131,7 @@ Before ANY operation on ops-provisioned VMs, the CLI must have the correct SSH k
 rdc config set-ssh --private-key ~/.renet/staging/.ssh/id_rsa --public-key ~/.renet/staging/.ssh/id_rsa.pub
 ```
 
-This is required because ops VMs trust a staging key, not your default SSH key. Without this, all remote operations (setup-machine, repo create, backup push, sync, etc.) will fail with "All configured authentication methods failed".
+This is required because ops VMs trust a staging key, not your default SSH key. Without this, all remote operations (setup-machine, repo create, repo push, sync, etc.) will fail with "All configured authentication methods failed".
 
 Each target machine must also be registered and set up:
 ```bash

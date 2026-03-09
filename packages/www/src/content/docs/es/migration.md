@@ -4,7 +4,7 @@ description: "Migrar proyectos existentes a repositorios cifrados de Rediacc."
 category: "Guides"
 order: 11
 language: es
-sourceHash: "977de49e158a26c0"
+sourceHash: "76165f8884e5edf1"
 ---
 
 # Guía de migración
@@ -29,14 +29,14 @@ rdc repo create my-project -m server-1 --size 20G
 
 ## Paso 2: Subir sus archivos
 
-Use `rdc sync upload` para transferir los archivos de su proyecto al repositorio.
+Use `rdc repo sync upload` para transferir los archivos de su proyecto al repositorio.
 
 ```bash
 # Vista previa de lo que se transferirá (sin cambios)
-rdc sync upload -m server-1 -r my-project --local ./my-project --dry-run
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --dry-run
 
 # Subir archivos
-rdc sync upload -m server-1 -r my-project --local ./my-project
+rdc repo sync upload -m server-1 -r my-project --local ./my-project
 ```
 
 El repositorio debe estar montado antes de subir archivos. Si aún no lo está:
@@ -48,7 +48,7 @@ rdc repo mount my-project -m server-1
 Para sincronizaciones posteriores donde desea que el remoto coincida exactamente con su directorio local:
 
 ```bash
-rdc sync upload -m server-1 -r my-project --local ./my-project --mirror
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 ```
 
 > La opción `--mirror` elimina archivos en el remoto que no existen localmente. Use `--dry-run` primero para verificar.
@@ -98,14 +98,10 @@ rdc repo ownership my-project -m server-1 --uid 1000
 
 ## Paso 4: Configurar su Rediaccfile
 
-Cree un `Rediaccfile` en la raíz de su proyecto. Este script Bash define cómo se preparan, inician y detienen sus servicios.
+Cree un `Rediaccfile` en la raíz de su proyecto. Este script Bash define cómo se inician y detienen sus servicios.
 
 ```bash
 #!/bin/bash
-
-prep() {
-    renet compose -- pull
-}
 
 up() {
     renet compose -- up -d
@@ -120,7 +116,6 @@ Las tres funciones del ciclo de vida:
 
 | Función | Propósito | Comportamiento ante errores |
 |---------|-----------|---------------------------|
-| `prep()` | Descargar imágenes, ejecutar migraciones, instalar dependencias | Fallo rápido: cualquier fallo detiene todo |
 | `up()` | Iniciar servicios | Fallo en raíz es crítico; fallos en subdirectorios se registran y continúan |
 | `down()` | Detener servicios | Mejor esfuerzo: siempre intenta todo |
 
@@ -211,8 +206,7 @@ Esto hará:
 1. Montar el repositorio cifrado
 2. Iniciar el Docker daemon aislado
 3. Generar automáticamente `.rediacc.json` con las asignaciones de IP de servicios
-4. Ejecutar `prep()` de todos los Rediaccfiles
-5. Ejecutar `up()` de todos los Rediaccfiles
+4. Ejecutar `up()` de todos los Rediaccfiles
 
 Verifique que sus contenedores estén ejecutándose:
 
@@ -260,7 +254,7 @@ my-api/
 └── redis-data/             # Persistencia de Redis (UID 999 en ejecución)
 ```
 
-1. Suba su proyecto (considere excluir `node_modules` y descargarlos en `prep()`)
+1. Suba su proyecto (considere excluir `node_modules` y descargarlos en `up()`)
 2. Ejecute la corrección de propiedad después de que los contenedores hayan iniciado
 
 ### Proyecto Docker personalizado

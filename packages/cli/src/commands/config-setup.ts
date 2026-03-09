@@ -4,10 +4,58 @@ import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
+import { pushInfraConfig } from '../services/infra-provision.js';
 import { outputService } from '../services/output.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
-import type { MachineConfig, OutputFormat } from '../types/index.js';
+import type {
+  CloudProviderConfig,
+  MachineConfig,
+  OutputFormat,
+  ProviderSSHKeyConfig,
+} from '../types/index.js';
 import { handleError } from '../utils/errors.js';
+
+/**
+ * Apply custom provider fields from CLI options to a config object.
+ */
+function applyCustomProviderFields(
+  config: CloudProviderConfig,
+  options: Record<string, string | undefined>
+): void {
+  if (options.resource) config.resource = options.resource;
+  if (options.labelAttr) config.labelAttr = options.labelAttr;
+  if (options.regionAttr) config.regionAttr = options.regionAttr;
+  if (options.sizeAttr) config.sizeAttr = options.sizeAttr;
+  if (options.imageAttr) config.imageAttr = options.imageAttr;
+  if (options.ipv4Output) config.ipv4Output = options.ipv4Output;
+  if (options.ipv6Output) config.ipv6Output = options.ipv6Output;
+  if (options.sshKeyAttr) {
+    config.sshKey = {
+      attr: options.sshKeyAttr,
+      format:
+        (options.sshKeyFormat as ProviderSSHKeyConfig['format'] | undefined) ??
+        DEFAULTS.CLOUD.SSH_KEY_FORMAT,
+      keyResource: options.sshKeyResource,
+    };
+  }
+}
+
+/**
+ * Build a CloudProviderConfig from CLI options.
+ */
+function buildProviderConfig(options: Record<string, string | undefined>): CloudProviderConfig {
+  const config: CloudProviderConfig = { apiToken: options.token! };
+
+  if (options.provider) config.provider = options.provider;
+  if (options.source) config.source = options.source;
+  if (options.region) config.region = options.region;
+  if (options.type) config.instanceType = options.type;
+  if (options.image) config.image = options.image;
+  if (options.sshUser) config.sshUser = options.sshUser;
+
+  applyCustomProviderFields(config, options);
+  return config;
+}
 
 function scanHostKeys(ip: string, port: number): string {
   try {
@@ -231,6 +279,18 @@ export function registerSetupCommands(config: Command, program: Command): void {
 
           if (exitCode === 0) {
             outputService.success(t('commands.config.setupMachine.completed', { machine: name }));
+
+            // Auto push-infra if machine has infra configured
+            try {
+              const postSetupConfig = await configService.getLocalConfig();
+              const postSetupMachine = postSetupConfig.machines[name];
+              if (postSetupMachine?.infra?.baseDomain) {
+                outputService.info(t('commands.machine.provision.configuringInfra', { name }));
+                await pushInfraConfig(name, { debug: options.debug });
+              }
+            } catch {
+              // push-infra failure is non-fatal during setup
+            }
           } else {
             outputService.error(
               t('commands.config.setupMachine.failed', {
@@ -272,6 +332,89 @@ export function registerSetupCommands(config: Command, program: Command): void {
             image: options.image,
           })
         );
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // config add-provider <name>
+  config
+    .command('add-provider <name>')
+    .description(t('commands.config.addProvider.description'))
+    .option('--provider <source>', t('commands.config.addProvider.optionProvider'))
+    .option('--source <source>', t('commands.config.addProvider.optionSource'))
+    .requiredOption('--token <token>', t('commands.config.addProvider.optionToken'))
+    .option('--region <region>', t('commands.config.addProvider.optionRegion'))
+    .option('--type <type>', t('commands.config.addProvider.optionInstanceType'))
+    .option('--image <image>', t('commands.config.addProvider.optionImage'))
+    .option('--ssh-user <user>', t('commands.config.addProvider.optionSshUser'))
+    .option('--resource <type>', t('commands.config.addProvider.optionResource'))
+    .option('--label-attr <attr>', t('commands.config.addProvider.optionLabelAttr'))
+    .option('--region-attr <attr>', t('commands.config.addProvider.optionRegionAttr'))
+    .option('--size-attr <attr>', t('commands.config.addProvider.optionSizeAttr'))
+    .option('--image-attr <attr>', t('commands.config.addProvider.optionImageAttr'))
+    .option('--ipv4-output <attr>', t('commands.config.addProvider.optionIpv4Output'))
+    .option('--ipv6-output <attr>', t('commands.config.addProvider.optionIpv6Output'))
+    .option('--ssh-key-attr <attr>', t('commands.config.addProvider.optionSshKeyAttr'))
+    .option('--ssh-key-format <format>', t('commands.config.addProvider.optionSshKeyFormat'))
+    .option('--ssh-key-resource <type>', t('commands.config.addProvider.optionSshKeyResource'))
+    .action(async (name, options) => {
+      try {
+        if (!options.provider && !options.source) {
+          throw new Error(
+            'Either --provider (known provider) or --source (custom provider) is required'
+          );
+        }
+
+        const providerConfig = buildProviderConfig(options);
+        await configService.addCloudProvider(name, providerConfig);
+        outputService.success(
+          t('commands.config.addProvider.success', {
+            name,
+            provider: options.provider ?? options.source,
+          })
+        );
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // config remove-provider <name>
+  config
+    .command('remove-provider <name>')
+    .description(t('commands.config.removeProvider.description'))
+    .action(async (name) => {
+      try {
+        await configService.removeCloudProvider(name);
+        outputService.success(t('commands.config.removeProvider.success', { name }));
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // config providers
+  config
+    .command('providers')
+    .description(t('commands.config.providers.description'))
+    .action(async () => {
+      try {
+        const providers = await configService.listCloudProviders();
+        const format = program.opts().output as OutputFormat;
+
+        if (providers.length === 0) {
+          outputService.info(t('commands.config.providers.noProviders'));
+          return;
+        }
+
+        const displayData = providers.map((p) => ({
+          name: p.name,
+          provider: p.config.provider ?? p.config.source ?? DEFAULTS.CLOUD.DISPLAY_PLACEHOLDER,
+          region: p.config.region ?? DEFAULTS.CLOUD.DISPLAY_PLACEHOLDER,
+          instanceType: p.config.instanceType ?? DEFAULTS.CLOUD.DISPLAY_PLACEHOLDER,
+          sshUser: p.config.sshUser ?? DEFAULTS.CLOUD.SSH_USER,
+        }));
+
+        outputService.print(displayData, format);
       } catch (error) {
         handleError(error);
       }

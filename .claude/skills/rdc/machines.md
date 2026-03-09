@@ -8,13 +8,13 @@ Query machine status, containers, services, and health.
 ```
 rdc machine info <name> [--debug]
 ```
-Shows system info, deployed repos, running containers, and systemd services in one view.
+Shows infrastructure config (base domain, public IPs, TLS), system info, deployed repos, running containers, and systemd services in one view. Use this to check a machine's base domain, public IPs, or any infrastructure setting.
 
 ### List containers
 ```
 rdc machine containers <name>
 ```
-Returns JSON array of containers with: `name`, `status`, `state`, `health`, `cpu`, `memory`, `repository`.
+Returns containers with: `name`, `status`, `state`, `health`, `cpu`, `memory`, `domain` (custom domain from labels), `autoRoute` (`{service}.{repo}.{machine}.{baseDomain}`), `repository`. JSON output includes full `labels` map with all Docker labels (Traefik rules, rediacc routing, etc.).
 
 ### List deployed repositories
 ```
@@ -36,6 +36,12 @@ Quick health check suitable for CI/CD pipelines.
 ```
 rdc machine status <name>
 ```
+
+### Deploy backup schedule to machine
+```
+rdc machine deploy-backup <name>
+```
+Pushes the configured backup strategy (from `rdc config backup-strategy set`) to the machine as a systemd timer.
 
 ## Output formats
 

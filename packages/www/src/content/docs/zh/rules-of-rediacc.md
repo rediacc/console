@@ -4,6 +4,7 @@ description: "在 Rediacc 平台上构建应用程序的基本规则和约定。
 category: "Guides"
 order: 5
 language: zh
+sourceHash: "1848011813342420"
 ---
 
 # Rediacc 规则
@@ -13,8 +14,7 @@ language: zh
 ## Rediaccfile
 
 - **每个仓库都需要一个 Rediaccfile** — 一个包含生命周期函数的 bash 脚本。
-- **必需函数**：`prep()`、`up()`、`down()`。可选：`info()`。
-- `prep()` 在**每次部署时**运行 — 用于拉取镜像、生成配置和创建目录。
+- **生命周期函数**：`up()`、`down()`。可选：`info()`。
 - `up()` 启动您的服务。`down()` 停止它们。
 - `info()` 提供状态信息（容器状态、最近日志、健康状况）。
 - Rediaccfile 由 renet source 加载 — 它可以访问 shell 变量，而不仅仅是环境变量。
@@ -35,10 +35,6 @@ language: zh
 
 _compose() {
   renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
-}
-
-prep() {
-  _compose pull
 }
 
 up() {
@@ -133,7 +129,7 @@ Renet 会自动将以下变量注入每个容器：
 
 ## 部署
 
-- **`rdc repo up`** 执行 `prep()` 然后执行 `up()` — 始终如此。
+- **`rdc repo up`** 在所有Rediaccfile中执行 `up()`。
 - **`rdc repo up --mount`** 先打开 LUKS 卷，然后执行生命周期。在 `backup push` 到新机器后需要此选项。
 - **`rdc repo down`** 执行 `down()` 并停止 Docker 守护进程。
 - **`rdc repo down --unmount`** 还会关闭 LUKS 卷（锁定加密存储）。

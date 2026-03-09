@@ -4,7 +4,7 @@ description: "Cree una configuración, agregue máquinas, aprovisione servidores
 category: "Guides"
 order: 3
 language: es
-sourceHash: "0c725f9eb65e6c0f"
+sourceHash: "5256e189c350ee18"
 ---
 
 # Configuración de Máquinas
@@ -119,15 +119,17 @@ rdc config set-infra server-1 \
   --cf-dns-token your-cloudflare-api-token
 ```
 
-| Opción | Descripción |
-|--------|-------------|
-| `--public-ipv4 <ip>` | Dirección IPv4 pública para acceso externo |
-| `--public-ipv6 <ip>` | Dirección IPv6 pública para acceso externo |
-| `--base-domain <domain>` | Dominio base para aplicaciones (por ejemplo, `example.com`) |
-| `--cert-email <email>` | Correo electrónico para certificados TLS de Let's Encrypt |
-| `--cf-dns-token <token>` | Token de la API DNS de Cloudflare para desafíos ACME DNS-01 |
-| `--tcp-ports <ports>` | Puertos TCP adicionales separados por comas para redirigir (por ejemplo, `25,143,465,587,993`) |
-| `--udp-ports <ports>` | Puertos UDP adicionales separados por comas para redirigir (por ejemplo, `53`) |
+| Opción | Alcance | Descripción |
+|--------|---------|-------------|
+| `--public-ipv4 <ip>` | Machine | Public IPv4 address — proxy entrypoints are only created for configured address families |
+| `--public-ipv6 <ip>` | Machine | Public IPv6 address — proxy entrypoints are only created for configured address families |
+| `--base-domain <domain>` | Machine | Dominio base para aplicaciones (por ejemplo, `example.com`) |
+| `--cert-email <email>` | Config | Correo electrónico para certificados TLS de Let's Encrypt (compartido entre máquinas) |
+| `--cf-dns-token <token>` | Config | Token de la API DNS de Cloudflare para desafíos ACME DNS-01 (compartido entre máquinas) |
+| `--tcp-ports <ports>` | Machine | Puertos TCP adicionales separados por comas para redirigir (por ejemplo, `25,143,465,587,993`) |
+| `--udp-ports <ports>` | Machine | Puertos UDP adicionales separados por comas para redirigir (por ejemplo, `53`) |
+
+Las opciones de alcance Machine se almacenan por máquina. Las opciones de alcance Config (`--cert-email`, `--cf-dns-token`) son compartidas entre todas las máquinas en la configuración — configúrelas una vez y se aplican en todas partes.
 
 ### Ver Infraestructura
 
@@ -143,7 +145,85 @@ Genere y despliegue la configuración del proxy inverso Traefik en el servidor:
 rdc config push-infra server-1
 ```
 
-Esto envía la configuración del proxy basada en sus ajustes de infraestructura. Traefik gestiona la terminación TLS, el enrutamiento y la redirección de puertos.
+Este comando:
+1. Despliega el binario renet en la máquina remota
+2. Configura el proxy inverso Traefik, el enrutador y los servicios systemd
+3. Crea registros DNS de Cloudflare para el subdominio de la máquina (`server-1.example.com` y `*.server-1.example.com`) si se ha establecido `--cf-dns-token`
+
+El paso de DNS es automático e idempotente: crea registros faltantes, actualiza registros con IPs cambiadas y omite registros que ya son correctos. Si no se ha configurado un token de Cloudflare, se omite el DNS con una advertencia. Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
+
+## Aprovisionamiento en la Nube
+
+En lugar de crear VMs manualmente, puede configurar un proveedor de nube y dejar que `rdc` aprovisione máquinas automáticamente usando [OpenTofu](https://opentofu.org/).
+
+### Requisitos Previos
+
+Instale OpenTofu: [opentofu.org/docs/intro/install](https://opentofu.org/docs/intro/install/)
+
+Asegúrese de que su configuración SSH incluya una clave pública:
+
+```bash
+rdc config set-ssh --private-key ~/.ssh/id_ed25519 --public-key ~/.ssh/id_ed25519.pub
+```
+
+### Agregar un Proveedor de Nube
+
+```bash
+rdc config add-provider my-linode \
+  --provider linode/linode \
+  --token $LINODE_API_TOKEN \
+  --region us-east \
+  --type g6-standard-2
+```
+
+| Opción | Requerido | Descripción |
+|--------|-----------|-------------|
+| `--provider <source>` | Sí* | Fuente de proveedor conocido (por ejemplo, `linode/linode`, `hetznercloud/hcloud`) |
+| `--source <source>` | Sí* | Fuente de proveedor OpenTofu personalizada (para proveedores desconocidos) |
+| `--token <token>` | Sí | Token de API para el proveedor de nube |
+| `--region <region>` | No | Región predeterminada para nuevas máquinas |
+| `--type <type>` | No | Tipo/tamaño de instancia predeterminado |
+| `--image <image>` | No | Imagen de SO predeterminada |
+| `--ssh-user <user>` | No | Nombre de usuario SSH (predeterminado: `root`) |
+
+\* Se requiere `--provider` o `--source`. Use `--provider` para proveedores conocidos (valores predeterminados integrados). Use `--source` con las banderas adicionales `--resource`, `--ipv4-output`, `--ssh-key-attr` para proveedores personalizados.
+
+### Aprovisionar una Máquina
+
+```bash
+rdc machine provision prod-2 --provider my-linode
+```
+
+Este único comando:
+1. Crea una VM en el proveedor de nube mediante OpenTofu
+2. Espera la conectividad SSH
+3. Registra la máquina en su configuración
+4. Instala renet y todas las dependencias
+5. Configures Traefik proxy and Cloudflare DNS (auto-detects base domain from sibling machines, or pass `--base-domain` explicitly)
+
+| Opción | Descripción |
+|--------|-------------|
+| `--provider <name>` | Nombre del proveedor de nube (de `add-provider`) |
+| `--region <region>` | Anula la región predeterminada del proveedor |
+| `--type <type>` | Anula el tipo de instancia predeterminado |
+| `--image <image>` | Anula la imagen de SO predeterminada |
+| `--base-domain <domain>` | Base domain for infrastructure. Auto-detected from sibling machines if not specified |
+| `--no-infra` | Skip infrastructure configuration (proxy + DNS) entirely |
+| `--debug` | Muestra salida detallada del aprovisionamiento |
+
+### Desaprovisionar una Máquina
+
+```bash
+rdc machine deprovision prod-2
+```
+
+Destruye la VM mediante OpenTofu y la elimina de su configuración. Requiere confirmación a menos que se use `--force`. Solo funciona para máquinas creadas con `machine provision`.
+
+### Listar Proveedores
+
+```bash
+rdc config providers
+```
 
 ## Establecer Valores Predeterminados
 

@@ -4,7 +4,7 @@ description: "Şifreli bir depo oluşturun, konteynerleştirilmiş bir uygulama 
 category: "Tutorials"
 order: 3
 language: tr
-sourceHash: "e6c55c46e8e4cd9c"
+sourceHash: "0c4edddefa30df1c"
 ---
 
 # Rediacc ile Depoları Dağıtma ve Yönetme
@@ -59,7 +59,7 @@ Depoyu bağlayarak ve Docker servislerini başlatarak uygulamayı dağıtın.
 rdc repo up test-app -m server-1 --mount
 ```
 
-Bu, depoyu bağlar (zaten bağlı değilse), izole bir Docker daemon başlatır, `prep()` ile imajları çeker ve `up()` ile servisleri başlatır.
+Bu, depoyu bağlar (zaten bağlı değilse), izole bir Docker daemon başlatır ve `up()` ile servisleri başlatır.
 
 > **Not:** İlk dağıtım, Docker imajları indirildiği için daha uzun sürer. Sonraki başlatmalar önbelleğe alınmış imajları yeniden kullanır.
 

@@ -93,7 +93,7 @@ rdc repo up heartbeat-app -m source
 # Wait for beats, note the counter value
 
 # Checkpoint + push to target
-rdc backup push heartbeat-app -m source --to-machine target --checkpoint
+rdc repo backup push heartbeat-app -m source --to-machine target --checkpoint
 
 # Restore on target
 rdc repo up heartbeat-app -m target --mount --checkpoint

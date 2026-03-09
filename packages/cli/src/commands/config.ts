@@ -10,6 +10,40 @@ import { registerLocalDataCommands } from './config-data.js';
 import { registerInfraCommands } from './config-infra.js';
 import { registerSetupCommands } from './config-setup.js';
 
+/** Resolve enabled state from --enable/--disable flags. */
+function resolveEnabledFlag(enable?: boolean, disable?: boolean): boolean | undefined {
+  if (enable) return true;
+  if (disable) return false;
+  return undefined;
+}
+
+/**
+ * Apply backup-strategy set options: either upsert a destination or update global settings.
+ */
+async function applyBackupStrategyOptions(options: {
+  destination?: string;
+  cron?: string;
+  enable?: boolean;
+  disable?: boolean;
+}): Promise<void> {
+  const hasAnyOption = options.destination ?? options.cron ?? options.enable ?? options.disable;
+  if (!hasAnyOption) {
+    throw new ValidationError(t('commands.config.backupStrategy.set.noOptions'));
+  }
+
+  const enabled = resolveEnabledFlag(options.enable, options.disable);
+
+  if (options.destination) {
+    await configService.addBackupDestination({
+      storage: options.destination,
+      schedule: options.cron,
+      enabled,
+    });
+  } else {
+    await configService.setBackupStrategy({ schedule: options.cron, enabled });
+  }
+}
+
 /** Build display data for a self-hosted config (local or S3 mode). */
 async function buildSelfHostedDisplay(
   config: RdcConfig,
@@ -429,6 +463,66 @@ ${t('help.examples')}
             version: String(recovered.version),
           })
         );
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // ── backup-strategy ────────────────────────────────────────────────
+  const backupStrategy = config
+    .command('backup-strategy')
+    .description(t('commands.config.backupStrategy.description'));
+
+  // backup-strategy set
+  backupStrategy
+    .command('set')
+    .description(t('commands.config.backupStrategy.set.description'))
+    .option('--destination <storage>', t('commands.config.backupStrategy.set.optionDestination'))
+    .option('--cron <expression>', t('commands.config.backupStrategy.set.optionCron'))
+    .option('--enable', t('commands.config.backupStrategy.set.optionEnable'))
+    .option('--disable', t('commands.config.backupStrategy.set.optionDisable'))
+    .action(async (options) => {
+      try {
+        await applyBackupStrategyOptions(options);
+        outputService.success(t('commands.config.backupStrategy.set.saved'));
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // backup-strategy show
+  backupStrategy
+    .command('show')
+    .description(t('commands.config.backupStrategy.show.description'))
+    .action(async () => {
+      try {
+        const strategy = await configService.getBackupStrategy();
+        if (!strategy) {
+          outputService.info(t('commands.config.backupStrategy.show.notConfigured'));
+          return;
+        }
+
+        if (strategy.schedule) {
+          outputService.info(
+            t('commands.config.backupStrategy.show.schedule', { schedule: strategy.schedule })
+          );
+        }
+        outputService.info(
+          t('commands.config.backupStrategy.show.enabled', {
+            enabled: String(strategy.enabled !== false),
+          })
+        );
+
+        if (strategy.destinations.length === 0) {
+          outputService.info(t('commands.config.backupStrategy.show.noDestinations'));
+        } else {
+          outputService.info(t('commands.config.backupStrategy.show.destinations'));
+          for (const dest of strategy.destinations) {
+            const schedule = dest.schedule ?? strategy.schedule ?? '-';
+            const enabled = dest.enabled !== false && strategy.enabled !== false;
+            outputService.info(`  ${dest.storage}  schedule=${schedule}  enabled=${enabled}`);
+          }
+        }
       } catch (error) {
         handleError(error);
       }

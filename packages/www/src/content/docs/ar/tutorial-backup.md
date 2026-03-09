@@ -4,7 +4,7 @@ description: "تكوين جداول النسخ الاحتياطي التلقائ
 category: "Tutorials"
 order: 6
 language: ar
-sourceHash: "e756fef6749b54c5"
+sourceHash: "26db200e730fff43"
 ---
 
 # كيفية تكوين النسخ الاحتياطي والشبكات مع Rediacc
@@ -35,17 +35,24 @@ rdc config storages
 إعداد نسخ احتياطية تلقائية تعمل وفق جدول cron.
 
 ```bash
-rdc backup schedule set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
 ```
 
-يقوم هذا بجدولة نسخ احتياطية يومية في الساعة 2 صباحاً، ودفع جميع المستودعات إلى تخزين `my-s3`. يُحفظ الجدول في تكوينك ويمكن نشره على الأجهزة كمؤقت systemd.
+يمكنك تكوين وجهات متعددة بجداول مختلفة:
+
+```bash
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
+```
+
+يقوم هذا بجدولة نسخ احتياطية يومية في الساعة 2 صباحاً إلى `my-s3` وفي الساعة 6 صباحاً إلى `azure-backup`. كل وجهة لها جدولها الخاص. تُحفظ الجداول في تكوينك ويمكن نشرها على الأجهزة كمؤقتات systemd.
 
 ### الخطوة 3: عرض جدول النسخ الاحتياطي
 
 تحقق من تطبيق الجدول.
 
 ```bash
-rdc backup schedule show
+rdc config backup-strategy show
 ```
 
 يعرض تكوين النسخ الاحتياطي الحالي: الوجهة، وتعبير cron، وحالة التمكين.
@@ -90,8 +97,8 @@ rdc config show-infra server-1
 لإيقاف النسخ الاحتياطية التلقائية دون إزالة التكوين:
 
 ```bash
-rdc backup schedule set --disable
-rdc backup schedule show
+rdc config backup-strategy set --disable
+rdc config backup-strategy show
 ```
 
 يتم الاحتفاظ بالتكوين ويمكن إعادة تمكينه لاحقاً باستخدام `--enable`.

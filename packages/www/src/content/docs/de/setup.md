@@ -4,7 +4,7 @@ description: "Konfiguration erstellen, Maschinen hinzufügen, Server provisionie
 category: "Guides"
 order: 3
 language: de
-sourceHash: "0c725f9eb65e6c0f"
+sourceHash: "5256e189c350ee18"
 ---
 
 # Maschineneinrichtung
@@ -119,15 +119,17 @@ rdc config set-infra server-1 \
   --cf-dns-token your-cloudflare-api-token
 ```
 
-| Option | Beschreibung |
-|--------|-------------|
-| `--public-ipv4 <ip>` | Öffentliche IPv4-Adresse für externen Zugriff |
-| `--public-ipv6 <ip>` | Öffentliche IPv6-Adresse für externen Zugriff |
-| `--base-domain <domain>` | Basis-Domain für Anwendungen (z. B. `example.com`) |
-| `--cert-email <email>` | E-Mail für Let's Encrypt TLS-Zertifikate |
-| `--cf-dns-token <token>` | Cloudflare DNS API-Token für ACME DNS-01-Challenges |
-| `--tcp-ports <ports>` | Kommagetrennte zusätzliche TCP-Ports zur Weiterleitung (z. B. `25,143,465,587,993`) |
-| `--udp-ports <ports>` | Kommagetrennte zusätzliche UDP-Ports zur Weiterleitung (z. B. `53`) |
+| Option | Bereich | Beschreibung |
+|--------|---------|-------------|
+| `--public-ipv4 <ip>` | Machine | Public IPv4 address — proxy entrypoints are only created for configured address families |
+| `--public-ipv6 <ip>` | Machine | Public IPv6 address — proxy entrypoints are only created for configured address families |
+| `--base-domain <domain>` | Machine | Basis-Domain für Anwendungen (z. B. `example.com`) |
+| `--cert-email <email>` | Config | E-Mail für Let's Encrypt TLS-Zertifikate (maschinenübergreifend geteilt) |
+| `--cf-dns-token <token>` | Config | Cloudflare DNS API-Token für ACME DNS-01-Challenges (maschinenübergreifend geteilt) |
+| `--tcp-ports <ports>` | Machine | Kommagetrennte zusätzliche TCP-Ports zur Weiterleitung (z. B. `25,143,465,587,993`) |
+| `--udp-ports <ports>` | Machine | Kommagetrennte zusätzliche UDP-Ports zur Weiterleitung (z. B. `53`) |
+
+Machine-Optionen werden pro Maschine gespeichert. Config-Optionen (`--cert-email`, `--cf-dns-token`) gelten für alle Maschinen in der Konfiguration — einmal setzen und sie gelten überall.
 
 ### Infrastruktur anzeigen
 
@@ -143,7 +145,85 @@ Generieren und verteilen Sie die Traefik-Reverse-Proxy-Konfiguration auf den Ser
 rdc config push-infra server-1
 ```
 
-Dies überträgt die Proxy-Konfiguration basierend auf Ihren Infrastruktureinstellungen. Traefik übernimmt die TLS-Terminierung, das Routing und die Portweiterleitung.
+Dieser Befehl:
+1. Verteilt die renet-Binary auf die entfernte Maschine
+2. Konfiguriert den Traefik-Reverse-Proxy, Router und systemd-Dienste
+3. Erstellt Cloudflare-DNS-Einträge für die Maschinen-Subdomain (`server-1.example.com` und `*.server-1.example.com`), wenn `--cf-dns-token` gesetzt ist
+
+Der DNS-Schritt ist automatisch und idempotent — er erstellt fehlende Einträge, aktualisiert Einträge mit geänderten IPs und überspringt bereits korrekte Einträge. Wenn kein Cloudflare-Token konfiguriert ist, wird DNS mit einer Warnung übersprungen. Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
+
+## Cloud-Provisionierung
+
+Anstatt VMs manuell zu erstellen, können Sie einen Cloud-Provider konfigurieren und `rdc` Maschinen automatisch mit [OpenTofu](https://opentofu.org/) provisionieren lassen.
+
+### Voraussetzungen
+
+Installieren Sie OpenTofu: [opentofu.org/docs/intro/install](https://opentofu.org/docs/intro/install/)
+
+Stellen Sie sicher, dass Ihre SSH-Konfiguration einen öffentlichen Schlüssel enthält:
+
+```bash
+rdc config set-ssh --private-key ~/.ssh/id_ed25519 --public-key ~/.ssh/id_ed25519.pub
+```
+
+### Einen Cloud-Provider hinzufügen
+
+```bash
+rdc config add-provider my-linode \
+  --provider linode/linode \
+  --token $LINODE_API_TOKEN \
+  --region us-east \
+  --type g6-standard-2
+```
+
+| Option | Erforderlich | Beschreibung |
+|--------|-------------|--------------|
+| `--provider <source>` | Ja* | Bekannte Provider-Quelle (z. B. `linode/linode`, `hetznercloud/hcloud`) |
+| `--source <source>` | Ja* | Benutzerdefinierte OpenTofu-Provider-Quelle (für unbekannte Provider) |
+| `--token <token>` | Ja | API-Token für den Cloud-Provider |
+| `--region <region>` | Nein | Standard-Region für neue Maschinen |
+| `--type <type>` | Nein | Standard-Instanztyp/-größe |
+| `--image <image>` | Nein | Standard-Betriebssystem-Image |
+| `--ssh-user <user>` | Nein | SSH-Benutzername (Standard: `root`) |
+
+\* Entweder `--provider` oder `--source` ist erforderlich. Verwenden Sie `--provider` für bekannte Provider (eingebaute Standardwerte). Verwenden Sie `--source` mit zusätzlichen `--resource`, `--ipv4-output`, `--ssh-key-attr` Flags für benutzerdefinierte Provider.
+
+### Eine Maschine provisionieren
+
+```bash
+rdc machine provision prod-2 --provider my-linode
+```
+
+Dieser einzelne Befehl:
+1. Erstellt eine VM beim Cloud-Provider über OpenTofu
+2. Wartet auf SSH-Konnektivität
+3. Registriert die Maschine in Ihrer Konfiguration
+4. Installiert renet und alle Abhängigkeiten
+5. Configures Traefik proxy and Cloudflare DNS (auto-detects base domain from sibling machines, or pass `--base-domain` explicitly)
+
+| Option | Beschreibung |
+|--------|--------------|
+| `--provider <name>` | Name des Cloud-Providers (von `add-provider`) |
+| `--region <region>` | Überschreibt die Standard-Region des Providers |
+| `--type <type>` | Überschreibt den Standard-Instanztyp |
+| `--image <image>` | Überschreibt das Standard-Betriebssystem-Image |
+| `--base-domain <domain>` | Base domain for infrastructure. Auto-detected from sibling machines if not specified |
+| `--no-infra` | Skip infrastructure configuration (proxy + DNS) entirely |
+| `--debug` | Zeigt detaillierte Provisionierungsausgabe |
+
+### Eine Maschine deprovisionieren
+
+```bash
+rdc machine deprovision prod-2
+```
+
+Zerstört die VM über OpenTofu und entfernt sie aus Ihrer Konfiguration. Erfordert eine Bestätigung, es sei denn `--force` wird verwendet. Funktioniert nur für Maschinen, die mit `machine provision` erstellt wurden.
+
+### Provider auflisten
+
+```bash
+rdc config providers
+```
 
 ## Standardwerte festlegen
 

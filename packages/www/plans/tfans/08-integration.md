@@ -431,7 +431,7 @@ Test the complete Terraform → Ansible → rdc flow using ops VMs:
 set -e
 
 echo "=== Phase 1: Provision VMs ==="
-./run.sh rdc ops up --basic --parallel
+./rdc.sh ops up --basic --parallel
 
 echo "=== Phase 2: Terraform apply ==="
 cd tests/integration/terraform
@@ -439,12 +439,12 @@ terraform init
 terraform apply -auto-approve \
   -var "machine1_ip=192.168.111.11" \
   -var "machine2_ip=192.168.111.12" \
-  -var "rdc_binary=$(pwd)/../../../run.sh rdc"
+  -var "rdc_binary=$(pwd)/../../../rdc.sh"
 
 echo "=== Phase 3: Ansible deploy ==="
 cd ../ansible
 ansible-playbook -i rediacc.yml deploy.yml \
-  -e "rdc_binary=$(pwd)/../../../run.sh rdc"
+  -e "rdc_binary=$(pwd)/../../../rdc.sh"
 
 echo "=== Phase 4: Verify ==="
 ansible-playbook -i rediacc.yml verify.yml
@@ -455,7 +455,7 @@ terraform destroy -auto-approve
 
 echo "=== Phase 6: Teardown VMs ==="
 cd ../../..
-./run.sh rdc ops down
+./rdc.sh ops down
 
 echo "=== All integration tests passed ==="
 ```

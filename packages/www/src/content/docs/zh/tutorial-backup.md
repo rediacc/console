@@ -4,7 +4,7 @@ description: "配置自动备份计划、管理存储提供商、设置基础设
 category: "Tutorials"
 order: 6
 language: zh
-sourceHash: "e756fef6749b54c5"
+sourceHash: "26db200e730fff43"
 ---
 
 # 如何使用 Rediacc 配置备份和网络
@@ -35,17 +35,24 @@ rdc config storages
 设置按 cron 计划运行的自动备份。
 
 ```bash
-rdc backup schedule set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
 ```
 
-这会安排每天凌晨 2 点进行每日备份，将所有仓库推送到 `my-s3` 存储。计划保存在您的配置中，可以作为 systemd 定时器部署到机器上。
+您可以为不同的计划配置多个目标：
+
+```bash
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
+```
+
+这会安排每天凌晨 2 点备份到 `my-s3`，凌晨 6 点备份到 `azure-backup`。每个目标都有自己的计划。计划保存在您的配置中，可以作为 systemd 定时器部署到机器上。
 
 ### 步骤 3：查看备份计划
 
 验证计划是否已应用。
 
 ```bash
-rdc backup schedule show
+rdc config backup-strategy show
 ```
 
 显示当前备份配置：目标、cron 表达式和启用状态。
@@ -90,8 +97,8 @@ rdc config show-infra server-1
 要在不删除配置的情况下停止自动备份：
 
 ```bash
-rdc backup schedule set --disable
-rdc backup schedule show
+rdc config backup-strategy set --disable
+rdc config backup-strategy show
 ```
 
 配置将被保留，以后可以使用 `--enable` 重新启用。

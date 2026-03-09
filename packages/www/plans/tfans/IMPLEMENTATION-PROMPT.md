@@ -28,7 +28,7 @@ There are 11 plan files that specify everything in detail. Your job is to read t
 
 In development, ALL `rdc` commands run through:
 ```bash
-./run.sh rdc <command>
+./rdc.sh <command>
 ```
 
 This script:
@@ -41,20 +41,20 @@ This script:
 **Each invocation has ~5 seconds bootstrap overhead.** Minimize invocations by chaining independent commands:
 ```bash
 # BAD: 3 invocations = 15s overhead
-./run.sh rdc config add-machine rediacc11 --ip 192.168.111.11 --user muhammed
-./run.sh rdc config add-machine rediacc12 --ip 192.168.111.12 --user muhammed
-./run.sh rdc config set-ssh --private-key ~/.renet/staging/.ssh/id_rsa --public-key ~/.renet/staging/.ssh/id_rsa.pub
+./rdc.sh config add-machine rediacc11 --ip 192.168.111.11 --user muhammed
+./rdc.sh config add-machine rediacc12 --ip 192.168.111.12 --user muhammed
+./rdc.sh config set-ssh --private-key ~/.renet/staging/.ssh/id_rsa --public-key ~/.renet/staging/.ssh/id_rsa.pub
 
 # GOOD: 1 invocation chained = 5s overhead
-./run.sh rdc config add-machine rediacc11 --ip 192.168.111.11 --user muhammed && \
-./run.sh rdc config add-machine rediacc12 --ip 192.168.111.12 --user muhammed && \
-./run.sh rdc config set-ssh --private-key ~/.renet/staging/.ssh/id_rsa --public-key ~/.renet/staging/.ssh/id_rsa.pub
+./rdc.sh config add-machine rediacc11 --ip 192.168.111.11 --user muhammed && \
+./rdc.sh config add-machine rediacc12 --ip 192.168.111.12 --user muhammed && \
+./rdc.sh config set-ssh --private-key ~/.renet/staging/.ssh/id_rsa --public-key ~/.renet/staging/.ssh/id_rsa.pub
 ```
 
-Actually no — `./run.sh rdc` must be called separately per command (it's the entrypoint). You can't chain rdc subcommands inside one `./run.sh rdc` call. But you CAN chain multiple `./run.sh rdc` calls with `&&`:
+Actually no — `./rdc.sh` must be called separately per command (it's the entrypoint). You can't chain rdc subcommands inside one `./rdc.sh` call. But you CAN chain multiple `./rdc.sh` calls with `&&`:
 ```bash
-./run.sh rdc config add-machine rediacc11 --ip 192.168.111.11 --user muhammed && \
-./run.sh rdc config add-machine rediacc12 --ip 192.168.111.12 --user muhammed
+./rdc.sh config add-machine rediacc11 --ip 192.168.111.11 --user muhammed && \
+./rdc.sh config add-machine rediacc12 --ip 192.168.111.12 --user muhammed
 ```
 
 ### Build Commands
@@ -118,16 +118,16 @@ packages/www/plans/tfans/
 
 ```bash
 # Check prerequisites (KVM, virsh, qemu-img, etc.)
-./run.sh rdc ops check
+./rdc.sh ops check
 
 # Install prerequisites if missing
-./run.sh rdc ops setup
+./rdc.sh ops setup
 
 # Provision VMs (basic: 1 bridge + 2 workers, ~5 min)
-./run.sh rdc ops up --basic --parallel
+./rdc.sh ops up --basic --parallel
 
 # Check they're running
-./run.sh rdc ops status
+./rdc.sh ops status
 ```
 
 ### VM Topology
@@ -144,13 +144,13 @@ packages/www/plans/tfans/
 After `ops up`, register machines and set SSH keys:
 
 ```bash
-./run.sh rdc config add-machine rediacc11 --ip 192.168.111.11 --user muhammed
-./run.sh rdc config add-machine rediacc12 --ip 192.168.111.12 --user muhammed
-./run.sh rdc config set-ssh \
+./rdc.sh config add-machine rediacc11 --ip 192.168.111.11 --user muhammed
+./rdc.sh config add-machine rediacc12 --ip 192.168.111.12 --user muhammed
+./rdc.sh config set-ssh \
     --private-key ~/.renet/staging/.ssh/id_rsa \
     --public-key ~/.renet/staging/.ssh/id_rsa.pub
-./run.sh rdc config setup-machine rediacc11
-./run.sh rdc config setup-machine rediacc12
+./rdc.sh config setup-machine rediacc11
+./rdc.sh config setup-machine rediacc12
 ```
 
 **IMPORTANT:** `setup-machine` takes 5-15 minutes per machine (installs Docker, creates BTRFS datastore, provisions renet). Be patient and use a long timeout.
@@ -159,32 +159,32 @@ After `ops up`, register machines and set SSH keys:
 
 ```bash
 # Provision with Ceph nodes (takes ~15 min)
-./run.sh rdc ops up --parallel
+./rdc.sh ops up --parallel
 
 # Configure Ceph on workers
-./run.sh rdc config set-ceph -m rediacc11 --pool rediacc_rbd_pool --image test-ds-11
-./run.sh rdc config set-ceph -m rediacc12 --pool rediacc_rbd_pool --image test-ds-12
-./run.sh rdc datastore init -m rediacc11 --backend ceph --size 10G --force
-./run.sh rdc datastore init -m rediacc12 --backend ceph --size 10G --force
+./rdc.sh config set-ceph -m rediacc11 --pool rediacc_rbd_pool --image test-ds-11
+./rdc.sh config set-ceph -m rediacc12 --pool rediacc_rbd_pool --image test-ds-12
+./rdc.sh datastore init -m rediacc11 --backend ceph --size 10G --force
+./rdc.sh datastore init -m rediacc12 --backend ceph --size 10G --force
 ```
 
 ### Teardown
 
 ```bash
-./run.sh rdc ops down
+./rdc.sh ops down
 ```
 
 ### VM Lifecycle During Development
 
 VMs persist across test runs. You only need `ops up` once per session. If tests leave dirty state (orphan repos, etc.), clean up with:
 ```bash
-./run.sh rdc repo delete <repo-name> -m rediacc11
-./run.sh rdc config remove-repository <repo-name>
+./rdc.sh repo delete <repo-name> -m rediacc11
+./rdc.sh config remove-repository <repo-name>
 ```
 
 If VMs are corrupted, destroy and recreate:
 ```bash
-./run.sh rdc ops down && ./run.sh rdc ops up --basic --parallel
+./rdc.sh ops down && ./rdc.sh ops up --basic --parallel
 ```
 
 ## Implementation Approach
@@ -202,7 +202,7 @@ If VMs are corrupted, destroy and recreate:
 ### Phase 0: Foundations
 
 Before writing any Ansible or Terraform code:
-1. Provision VMs: `./run.sh rdc ops up --basic --parallel`
+1. Provision VMs: `./rdc.sh ops up --basic --parallel`
 2. Register + setup machines (see "Post-Provisioning Setup" above)
 3. Fix the BLOCKING CLI JSON output gaps listed in Phase 0
 4. Create the smoke test files defined in `09-test-environment.md`
@@ -216,7 +216,7 @@ For each module:
 1. Read its spec in `02-ansible-modules.md`
 2. Implement the module in `plugins/modules/`
 3. Write unit tests in `tests/unit/` (pytest, mock `run_command`)
-4. Write integration tests in `tests/integration/` (real VMs — `./run.sh rdc` must work)
+4. Write integration tests in `tests/integration/` (real VMs — `./rdc.sh` must work)
 5. Add the module's section to the smoke playbook
 6. Run the milestone's gate
 
@@ -253,12 +253,12 @@ go get github.com/hashicorp/terraform-plugin-framework
 go get github.com/hashicorp/terraform-plugin-testing
 ```
 
-The Go client (`internal/client/rdc.go`) wraps `rdc` via `exec.Command`. The binary path comes from the provider config — use `./run.sh rdc` path during development.
+The Go client (`internal/client/rdc.go`) wraps `rdc` via `exec.Command`. The binary path comes from the provider config — use `./rdc.sh` path during development.
 
 For acceptance tests:
 ```bash
 cd packages/terraform/terraform-provider-rediacc
-TF_ACC=1 RDC_BINARY="/home/muhammed/monorepo/console/.worktrees/0227-1/run.sh rdc" \
+TF_ACC=1 RDC_BINARY="/home/muhammed/monorepo/console/.worktrees/0227-1/rdc.sh" \
     go test ./... -v -timeout 30m
 ```
 
@@ -313,7 +313,7 @@ The integration patterns from `08-integration.md` combine Terraform and Ansible.
 
 ```
 1. Read all 11 plan files (00-10)
-2. Provision VMs: ./run.sh rdc ops up --basic --parallel
+2. Provision VMs: ./rdc.sh ops up --basic --parallel
 3. Register + setup machines
 4. Phase 0: Fix CLI gaps, create test infra, run Phase 0 gate
 5. Phase 1 milestones 1.1 → 1.9: Ansible collection, gate each

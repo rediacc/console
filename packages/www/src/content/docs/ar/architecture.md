@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: ar
-sourceHash: "91d4806cfb57e215"
+sourceHash: "663392a3982ac81b"
 ---
 
 # البنية التحتية
@@ -83,7 +83,7 @@ Each repository gets its own Docker daemon, loopback IP subnet (/26 = 64 IPs), a
 
 1. يحتاج مستخدم SSH الخاص بك إلى صلاحيات `sudo`
 2. جميع بيانات المستودع مملوكة لـ `rediacc`، وليس لمستخدم SSH الخاص بك
-3. دوال Rediaccfile (`prep()` و `up()` و `down()`) تعمل بصفة `rediacc`
+3. دوال Rediaccfile (`up()` و `down()`) تعمل بصفة `rediacc`
 
 يضمن هذا الفصل أن بيانات المستودع لها ملكية متسقة بغض النظر عن مستخدم SSH الذي يديرها.
 

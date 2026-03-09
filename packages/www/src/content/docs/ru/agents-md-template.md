@@ -4,7 +4,7 @@ description: Готовый шаблон для настройки Claude Code, 
 category: Reference
 order: 50
 language: ru
-sourceHash: "65feffe76efad39d"
+sourceHash: "872e8796671470d0"
 ---
 
 Используйте этот шаблон для настройки AI-ассистентов для кодирования (Claude Code, Cursor, Cline, Windsurf) для автономного управления инфраструктурой Rediacc. Скопируйте блок ниже в файл `CLAUDE.md`, `.cursorrules` или аналогичный файл конфигурации агента в вашем проекте.
@@ -60,8 +60,8 @@ rdc term <machine> <repo>
 rdc term <machine> -c "command"
 
 # File sync
-rdc sync upload -m <machine> -r <repo> -l ./local-path
-rdc sync download -m <machine> -r <repo> -l ./local-path
+rdc repo sync upload -m <machine> -r <repo> -l ./local-path
+rdc repo sync download -m <machine> -r <repo> -l ./local-path
 
 # List all available commands with schemas
 rdc agent capabilities

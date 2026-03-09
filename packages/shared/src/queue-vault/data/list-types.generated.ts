@@ -112,7 +112,7 @@ export interface ContainerInfo {
   health?: HealthInfo;
   id: string;
   image: string;
-  labels?: string;
+  labels?: Record<string, string>;
   memory_percent?: string;
   memory_usage?: string;
   mounts?: string;

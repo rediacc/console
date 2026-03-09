@@ -4,15 +4,23 @@ import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 
-export function registerSnapshotCommands(program: Command): void {
-  const snapshot = program.command('snapshot').description(t('commands.snapshot.description'));
+/**
+ * Register snapshot commands under repo:
+ * - repo snapshot create <repo>
+ * - repo snapshot list [repo]
+ * - repo snapshot delete <repo> <snapshot-name>
+ */
+export function registerRepoSnapshotCommands(repoCommand: Command): void {
+  const snapshot = repoCommand
+    .command('snapshot')
+    .description(t('commands.repo.snapshot.description'));
 
   // snapshot create <repo>
   snapshot
     .command('create <repo>')
-    .description(t('commands.snapshot.create.description'))
+    .description(t('commands.repo.snapshot.create.description'))
     .option('-m, --machine <name>', t('options.machine'))
-    .option('--snapshot-name <name>', t('commands.snapshot.create.optionSnapshotName'))
+    .option('--snapshot-name <name>', t('commands.repo.snapshot.create.optionSnapshotName'))
     .option('--debug', t('options.debug'))
     .action(async (repo, options) => {
       try {
@@ -21,7 +29,9 @@ export function registerSnapshotCommands(program: Command): void {
           throw new Error(t('errors.machineRequiredLocal'));
         }
 
-        outputService.info(t('commands.snapshot.create.creating', { repo, machine: machineName }));
+        outputService.info(
+          t('commands.repo.snapshot.create.creating', { repo, machine: machineName })
+        );
 
         const { runSnapshotCommand } = await import('../services/snapshot-service.js');
         const flags = ['--name', repo];
@@ -35,7 +45,7 @@ export function registerSnapshotCommands(program: Command): void {
 
         const parsed = JSON.parse(result.output);
         outputService.success(
-          t('commands.snapshot.create.success', { name: parsed.name, path: parsed.path })
+          t('commands.repo.snapshot.create.success', { name: parsed.name, path: parsed.path })
         );
       } catch (error) {
         handleError(error);
@@ -45,7 +55,7 @@ export function registerSnapshotCommands(program: Command): void {
   // snapshot list [repo]
   snapshot
     .command('list [repo]')
-    .description(t('commands.snapshot.list.description'))
+    .description(t('commands.repo.snapshot.list.description'))
     .option('-m, --machine <name>', t('options.machine'))
     .option('--debug', t('options.debug'))
     .action(async (repo, options) => {
@@ -67,12 +77,12 @@ export function registerSnapshotCommands(program: Command): void {
 
         const parsed = JSON.parse(result.output);
         if (parsed.total === 0) {
-          outputService.info(t('commands.snapshot.list.noSnapshots'));
+          outputService.info(t('commands.repo.snapshot.list.noSnapshots'));
           return;
         }
 
         outputService.info(
-          t('commands.snapshot.list.header', { count: parsed.total, path: parsed.basePath })
+          t('commands.repo.snapshot.list.header', { count: parsed.total, path: parsed.basePath })
         );
         for (const snap of parsed.snapshots) {
           const sizeKB = Math.round(snap.size / 1024);
@@ -86,7 +96,7 @@ export function registerSnapshotCommands(program: Command): void {
   // snapshot delete <repo> <snapshot-name>
   snapshot
     .command('delete <repo> <snapshot-name>')
-    .description(t('commands.snapshot.delete.description'))
+    .description(t('commands.repo.snapshot.delete.description'))
     .option('-m, --machine <name>', t('options.machine'))
     .option('--debug', t('options.debug'))
     .option('--dry-run', t('options.dryRun'))
@@ -114,7 +124,7 @@ export function registerSnapshotCommands(program: Command): void {
         );
 
         const parsed = JSON.parse(result.output);
-        outputService.success(t('commands.snapshot.delete.success', { name: parsed.deleted }));
+        outputService.success(t('commands.repo.snapshot.delete.success', { name: parsed.deleted }));
       } catch (error) {
         handleError(error);
       }

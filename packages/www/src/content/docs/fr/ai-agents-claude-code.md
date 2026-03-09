@@ -4,7 +4,7 @@ description: Guide étape par étape pour configurer Claude Code pour la gestion
 category: Guides
 order: 31
 language: fr
-sourceHash: "90eb12eaaf6806c9"
+sourceHash: "faa990e37ee96a23"
 ---
 
 Claude Code fonctionne nativement avec Rediacc via le CLI `rdc`. Ce guide couvre la configuration, les permissions et les flux de travail courants.
@@ -88,9 +88,9 @@ Claude Code runs: rdc term prod-1 -c "docker logs nextcloud-app --tail 50"
 ```
 You: "Upload the local config to the mail repo"
 
-Claude Code runs: rdc sync upload -m prod-1 -r mail -l ./config --dry-run
+Claude Code runs: rdc repo sync upload -m prod-1 -r mail -l ./config --dry-run
 → Shows files that would be synced
-Claude Code runs: rdc sync upload -m prod-1 -r mail -l ./config
+Claude Code runs: rdc repo sync upload -m prod-1 -r mail -l ./config
 → Syncs the files
 ```
 

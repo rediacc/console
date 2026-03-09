@@ -6,13 +6,10 @@ _compose() {
   renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
 }
 
-prep() {
+up() {
   echo "Pulling PostgreSQL image..."
   docker pull postgres:16-alpine
-  return $?
-}
 
-up() {
   echo "Starting PostgreSQL..."
   _compose up -d
 

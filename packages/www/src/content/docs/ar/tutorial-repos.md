@@ -4,7 +4,7 @@ description: "إنشاء مستودع مشفر ونشر تطبيق حاوية و
 category: "Tutorials"
 order: 3
 language: ar
-sourceHash: "e6c55c46e8e4cd9c"
+sourceHash: "0c4edddefa30df1c"
 ---
 
 # كيفية نشر وإدارة المستودعات باستخدام Rediacc
@@ -59,7 +59,7 @@ rdc term server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 rdc repo up test-app -m server-1 --mount
 ```
 
-يقوم هذا بتوصيل المستودع (إذا لم يكن موصّلاً بالفعل)، وبدء Docker daemon معزول، وسحب الصور عبر `prep()`، وبدء الخدمات عبر `up()`.
+يقوم هذا بتوصيل المستودع (إذا لم يكن موصّلاً بالفعل)، وبدء Docker daemon معزول، وبدء الخدمات عبر `up()`.
 
 > **ملاحظة:** يستغرق النشر الأول وقتاً أطول لتنزيل صور Docker. عمليات البدء اللاحقة تستخدم الصور المخزنة مؤقتاً.
 

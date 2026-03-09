@@ -113,70 +113,6 @@
         }
       }
     },
-    "backup": {
-      "description": "نسخ المستودعات احتياطيًا واستعادتها إلى تخزين خارجي",
-      "list": {
-        "description": "سرد النسخ الاحتياطية المتاحة على التخزين أو الجهاز",
-        "listing": "جارٍ سرد النسخ الاحتياطية...",
-        "optionFromMachine": "اسم الجهاز المصدر",
-        "optionFromStorage": "اسم التخزين المصدر",
-        "sourceRequired": "حدد --from <storage> أو --from-machine <machine>"
-      },
-      "pull": {
-        "description": "سحب نسخة احتياطية للمستودع من التخزين أو جهاز",
-        "optionForce": "فرض الكتابة فوق المستودع الموجود",
-        "optionFromMachine": "اسم الجهاز المصدر",
-        "optionFromStorage": "اسم التخزين المصدر",
-        "pulling": "جارٍ سحب نسخة احتياطية لـ \"{{repo}}\"...",
-        "sourceRequired": "حدد --from <storage> أو --from-machine <machine>"
-      },
-      "push": {
-        "description": "دفع نسخة احتياطية للمستودع إلى التخزين أو جهاز",
-        "destIgnoredForStorage": "تم تجاهل --dest {{provided}}: النسخ الاحتياطية للتخزين تستخدم GUID المستودع ({{dest}})",
-        "destRequired": "حدد --to <storage> أو --to-machine <machine>",
-        "optionCheckpoint": "إنشاء نقطة فحص للحاوية (نسخ احتياطي ساخن)",
-        "optionDest": "اسم ملف الوجهة",
-        "optionForce": "فرض الكتابة فوق النسخة الاحتياطية الموجودة",
-        "optionTag": "علامة النشر للإصدارات",
-        "optionToMachine": "اسم الجهاز الوجهة",
-        "optionToStorage": "اسم التخزين الوجهة",
-        "pushing": "جارٍ دفع نسخة احتياطية لـ \"{{repo}}\" إلى {{dest}}..."
-      },
-      "schedule": {
-        "description": "إدارة تكوين النسخ الاحتياطي المجدول",
-        "push": {
-          "description": "دفع جدولة النسخ الاحتياطي إلى الجهاز البعيد (مؤقت systemd)",
-          "success": "تم دفع جدولة النسخ الاحتياطي إلى {{machine}}"
-        },
-        "set": {
-          "description": "تكوين إعدادات جدولة النسخ الاحتياطي",
-          "noOptions": "حدد خياراً واحداً على الأقل: --destination، --cron، --enable، أو --disable",
-          "optionCron": "تعبير cron لجدولة النسخ الاحتياطي (مثلاً \"0 2 * * *\")",
-          "optionDestination": "اسم وجهة التخزين الافتراضي",
-          "optionDisable": "تعطيل النسخ الاحتياطي المجدول",
-          "optionEnable": "تفعيل النسخ الاحتياطي المجدول",
-          "saved": "تم حفظ تكوين جدولة النسخ الاحتياطي"
-        },
-        "show": {
-          "description": "عرض تكوين جدولة النسخ الاحتياطي الحالي",
-          "destination": "الوجهة: {{destination}}",
-          "enabled": "مفعّل: {{enabled}}",
-          "notConfigured": "لم يتم تكوين جدولة النسخ الاحتياطي",
-          "schedule": "الجدول: {{schedule}}"
-        }
-      },
-      "sync": {
-        "description": "دفع/سحب جميع المستودعات بالجملة من/إلى التخزين السحابي",
-        "directionConflict": "لا يمكن تحديد --to و --from معاً",
-        "directionRequired": "حدد --to <storage> (دفع) أو --from <storage> (سحب)",
-        "optionFrom": "اسم التخزين المصدر (وضع السحب)",
-        "optionOverride": "الكتابة فوق المستودعات غير المُركّبة الموجودة عند السحب",
-        "optionRepo": "تصفية لمستودع محدد (قابل للتكرار)",
-        "optionTo": "اسم التخزين الوجهة (وضع الدفع)",
-        "pullSuccess": "اكتمل سحب المزامنة",
-        "pushSuccess": "اكتمل دفع المزامنة"
-      }
-    },
     "bridge": {
       "description": "إدارة الجسور",
       "list": {
@@ -339,6 +275,27 @@
         "description": "إضافة آلة إلى الإعدادات الحالية",
         "success": "تمت إضافة الآلة \"{{name}}\" ({{user}}@{{ip}})"
       },
+      "addProvider": {
+        "description": "إضافة مزود سحابي لتوفير الأجهزة تلقائياً",
+        "optionImage": "صورة نظام التشغيل الافتراضية",
+        "optionImageAttr": "مخصص: اسم السمة لصورة نظام التشغيل",
+        "optionInstanceType": "نوع/حجم المثيل الافتراضي",
+        "optionIpv4Output": "مخصص: سمة الإخراج لعنوان IPv4",
+        "optionIpv6Output": "مخصص: سمة الإخراج لعنوان IPv6",
+        "optionLabelAttr": "مخصص: اسم السمة لتسمية الجهاز الافتراضي",
+        "optionProvider": "مصدر مزود معروف (مثل linode/linode، hetznercloud/hcloud)",
+        "optionRegion": "المنطقة الافتراضية للأجهزة الجديدة",
+        "optionRegionAttr": "مخصص: اسم السمة للمنطقة",
+        "optionResource": "مخصص: نوع مورد OpenTofu للجهاز الافتراضي",
+        "optionSizeAttr": "مخصص: اسم السمة لنوع المثيل",
+        "optionSource": "مصدر مزود OpenTofu مخصص (مثل vultr/vultr)",
+        "optionSshKeyAttr": "مخصص: اسم السمة لمفاتيح SSH",
+        "optionSshKeyFormat": "مخصص: تنسيق مفتاح SSH (inline_list أو resource_id)",
+        "optionSshKeyResource": "مخصص: نوع مورد OpenTofu لمفاتيح SSH",
+        "optionSshUser": "اسم مستخدم SSH للأجهزة الافتراضية الجديدة (الافتراضي: root)",
+        "optionToken": "رمز API للمزود السحابي",
+        "success": "تمت إضافة المزود السحابي \"{{name}}\" ({{provider}})"
+      },
       "addRepository": {
         "description": "إضافة تعيين GUID للمستودع إلى الإعدادات الحالية",
         "networkIdAssigned": "معرف الشبكة: {{networkId}}",
@@ -347,6 +304,60 @@
         "optionNetworkId": "معرف الشبكة لعزل Docker (2816، 2880، ...). يُعيَّن تلقائياً إذا لم يُحدَّد",
         "optionTag": "علامة المستودع",
         "success": "تمت إضافة المستودع \"{{name}}\" ({{guid}}، علامة: {{tag}})"
+      },
+      "backupStrategy": {
+        "description": "إدارة استراتيجية النسخ الاحتياطي متعددة الوجهات",
+        "set": {
+          "description": "تكوين إعدادات جدولة النسخ الاحتياطي",
+          "noOptions": "حدد خياراً واحداً على الأقل: --destination، --cron، --enable، أو --disable",
+          "optionCron": "تعبير cron لجدولة النسخ الاحتياطي (مثلاً \"0 2 * * *\")",
+          "optionDestination": "اسم وجهة التخزين الافتراضي",
+          "optionDisable": "تعطيل النسخ الاحتياطي المجدول",
+          "optionEnable": "تفعيل النسخ الاحتياطي المجدول",
+          "saved": "تم حفظ تكوين جدولة النسخ الاحتياطي"
+        },
+        "show": {
+          "description": "عرض تكوين جدولة النسخ الاحتياطي الحالي",
+          "destinations": "الوجهات:",
+          "enabled": "مفعّل: {{enabled}}",
+          "noDestinations": "لم يتم تكوين وجهات النسخ الاحتياطي",
+          "notConfigured": "لم يتم تكوين جدولة النسخ الاحتياطي",
+          "schedule": "الجدول: {{schedule}}"
+        }
+      },
+      "certCache": {
+        "clear": {
+          "cleared": "تم مسح ذاكرة تخزين الشهادات المؤقتة",
+          "description": "إزالة ذاكرة تخزين الشهادات المؤقتة",
+          "noCache": "لا توجد ذاكرة تخزين مؤقت للشهادات لمسحها"
+        },
+        "description": "إدارة شهادات TLS المخزنة مؤقتاً",
+        "noBaseDomain": "الجهاز لا يحتوي على baseDomain مُعدّ",
+        "noCacheForDomain": "لم يتم العثور على ذاكرة تخزين مؤقت للشهادات لـ {{domain}}",
+        "pull": {
+          "cached": "تم تخزين {{count}} شهادة(شهادات) مؤقتاً ({{size}})",
+          "description": "تنزيل وتخزين شهادات TLS مؤقتاً من جهاز",
+          "downloading": "جارٍ تنزيل الشهادات من {{machine}}...",
+          "merged": "تم الاحتفاظ بـ {{count}} شهادة(شهادات) من الذاكرة المؤقتة المحلية بفترة صلاحية أطول",
+          "noAcmeJson": "لم يتم العثور على acme.json في {{machine}}",
+          "optionNoPrune": "تخطي تنظيف شهادات معرّف الشبكة القديمة",
+          "pruned": "تم تنظيف {{count}} شهادة(شهادات) قديمة"
+        },
+        "push": {
+          "description": "رفع شهادات TLS المخزنة مؤقتاً إلى جهاز",
+          "merged": "تم دمج {{count}} شهادة(شهادات) بفترة صلاحية أطول في {{machine}}",
+          "noCache": "لم يتم العثور على ذاكرة تخزين مؤقت للشهادات. شغّل 'rdc config cert-cache pull <machine>' أولاً",
+          "uploaded": "تم رفع {{count}} شهادة(شهادات) إلى {{machine}}",
+          "uploading": "جارٍ رفع الشهادات المخزنة مؤقتاً إلى {{machine}}...",
+          "upToDate": "الشهادات على {{machine}} محدّثة"
+        },
+        "status": {
+          "certCount": "{{count}} شهادة(شهادات)، {{size}} مضغوطة",
+          "description": "عرض مخزون الشهادات المخزنة مؤقتاً",
+          "header": "ذاكرة تخزين الشهادات المؤقتة لـ {{baseDomain}}",
+          "noCache": "لا توجد شهادات مخزنة مؤقتاً",
+          "updatedAt": "آخر تحديث: {{date}} (من {{machine}})"
+        }
       },
       "clear": {
         "allCleared": "تم مسح جميع القيم الافتراضية",
@@ -396,15 +407,27 @@
         "description": "عرض الآلات في الإعدادات الحالية",
         "noMachines": "لا توجد آلات مكونة. أضف واحدة باستخدام: rdc config add-machine <name> --ip <ip> --user <user>"
       },
+      "providers": {
+        "description": "عرض قائمة المزودين السحابيين المكونين",
+        "noProviders": "لا يوجد مزودون سحابيون مكونون. أضف باستخدام: rdc config add-provider"
+      },
       "purgeArchived": {
         "description": "حذف جميع بيانات الاعتماد المؤرشفة نهائياً",
         "noArchived": "لا توجد مستودعات مؤرشفة للحذف",
         "success": "تم حذف {{count}} من بيانات الاعتماد المؤرشفة"
       },
       "pushInfra": {
-        "description": "دفع إعدادات البنية التحتية إلى الجهاز البعيد",
-        "installingProxy": "جاري تثبيت وتشغيل البروكسي...",
-        "proxyInstallWarning": "فشل تثبيت البروكسي (الرمز {{code}}). قم بالتشغيل يدوياً: sudo renet proxy install",
+        "certCacheUploaded": "تم رفع الشهادات المخزنة مؤقتاً إلى الخادم البعيد",
+        "description": "دفع إعدادات البنية التحتية إلى الجهاز (وكيل Traefik والموجه وسجلات Cloudflare DNS للنطاق الفرعي للجهاز). شغّل 'config set-infra <machine>' أولاً",
+        "dnsCreated": "DNS: تم إنشاء {{type}} {{name}} → {{content}}",
+        "dnsError": "تحذير DNS: {{message}} (قد تحتاج السجلات إلى إعداد يدوي)",
+        "dnsResolvingZone": "جارٍ حل منطقة Cloudflare لـ {{domain}}...",
+        "dnsSkipLocal": "تخطي DNS: نطاق .local لا يستخدم Cloudflare",
+        "dnsSkipNoToken": "تخطي DNS: لا يوجد رمز Cloudflare API. عيّنه بـ: rdc config set-infra <machine> --cf-dns-token <token>",
+        "dnsUnchanged": "DNS: {{type}} {{name}} صحيح بالفعل",
+        "dnsUpdated": "DNS: تم تحديث {{type}} {{name}} → {{content}}",
+        "installingProxy": "جارٍ التثبيت وبدء الوكيل...",
+        "proxyInstallWarning": "فشل تثبيت الوكيل (الرمز {{code}}). شغّل يدوياً: sudo renet proxy install",
         "success": "تم دفع إعدادات البنية التحتية إلى \"{{name}}\""
       },
       "recover": {
@@ -417,6 +440,10 @@
       "removeMachine": {
         "description": "إزالة آلة من الإعدادات الحالية",
         "success": "تمت إزالة الآلة \"{{name}}\""
+      },
+      "removeProvider": {
+        "description": "إزالة إعدادات مزود سحابي",
+        "success": "تمت إزالة المزود السحابي \"{{name}}\""
       },
       "removeRepository": {
         "description": "إزالة تعيين مستودع من الإعدادات الحالية",
@@ -453,13 +480,13 @@
         "success": "تم ضبط إعدادات Ceph لـ \"{{name}}\": pool={{pool}}, image={{image}}"
       },
       "setInfra": {
-        "description": "تعيين إعدادات البنية التحتية لآلة",
+        "description": "تعيين إعدادات البنية التحتية لآلة (machine-specific: IPs, domain, ports; shared: cert email, CF DNS token)",
         "invalidIPv4": "عنوان IPv4 غير صحيح: {{ip}}",
         "invalidIPv6": "عنوان IPv6 غير صحيح: {{ip}}",
         "noOptions": "لم يتم تحديد خيارات. استخدم --public-ipv4 أو --base-domain وغيرها.",
         "optionBaseDomain": "النطاق الأساسي للتطبيقات",
-        "optionCertEmail": "البريد الإلكتروني لإشعارات شهادات TLS",
-        "optionCfDnsToken": "رمز واجهة برمجة تطبيقات DNS لـ Cloudflare لتحدي ACME DNS-01",
+        "optionCertEmail": "البريد الإلكتروني لإشعارات شهادات TLS (shared across machines)",
+        "optionCfDnsToken": "رمز واجهة برمجة تطبيقات DNS لـ Cloudflare لتحدي ACME DNS-01 (shared across machines)",
         "optionPublicIPv4": "عنوان IPv4 العام",
         "optionPublicIPv6": "عنوان IPv6 العام",
         "optionTcpPorts": "منافذ TCP لإعادة التوجيه (مفصولة بفواصل، مثلاً 25,143,465)",
@@ -600,6 +627,21 @@
         "description": "حذف آلة",
         "success": "تم حذف الآلة \"{{name}}\""
       },
+      "deployBackup": {
+        "description": "دفع جدولة النسخ الاحتياطي إلى الجهاز البعيد (مؤقت systemd)",
+        "success": "تم دفع جدولة النسخ الاحتياطي إلى {{machine}}"
+      },
+      "deprovision": {
+        "completed": "تم تدمير الجهاز {{name}} وإزالته من الإعدادات",
+        "confirm": "سيؤدي هذا إلى تدمير الجهاز \"{{name}}\" وجميع بياناته بشكل دائم. هل تريد المتابعة؟",
+        "description": "تدمير جهاز مُوفَّر سحابياً وإزالته من الإعدادات",
+        "destroyFailed": "فشل تدمير البنية التحتية لـ {{name}}: {{error}}. متابعة إزالة الإعدادات (--force).",
+        "destroying": "جاري تدمير {{name}}...",
+        "dnsCleanedUp": "تمت إزالة {{count}} سجل(ات) DNS",
+        "dnsDeleted": "تم حذف سجل DNS: {{type}} {{name}}",
+        "noState": "لم يتم العثور على حالة OpenTofu لـ \"{{name}}\". استخدم 'config remove-machine' للأجهزة المضافة يدوياً.",
+        "optionForce": "تخطي مطالبة التأكيد"
+      },
       "description": "إدارة الأجهزة البعيدة (الحالة، الحاويات، الخدمات، الصحة)",
       "health": {
         "containersSection": "\nالحاويات:",
@@ -635,6 +677,28 @@
         "description": "قائمة الآلات",
         "fetching": "جاري جلب الآلات..."
       },
+      "provision": {
+        "completed": "تم توفير الجهاز {{name}} وهو جاهز ({{ip}})",
+        "configuringInfra": "جاري تكوين البنية التحتية (الوكيل + DNS) لـ {{name}}...",
+        "description": "توفير جهاز جديد على مزود سحابي باستخدام OpenTofu",
+        "failed": "فشل توفير الجهاز: {{error}}",
+        "infraInherited": "تم اكتشاف النطاق الأساسي تلقائياً من الجهاز الشقيق \"{{source}}\"",
+        "noInfraHint": "لم يتم تكوين النطاق الأساسي. شغّل 'rdc config set-infra <machine> --base-domain <domain>' ثم 'rdc config push-infra <machine>' لتفعيل DNS والوكيل.",
+        "optionBaseDomain": "النطاق الأساسي للبنية التحتية (مثال: example.com). يتضمن --infra",
+        "optionImage": "تجاوز صورة نظام التشغيل الافتراضية",
+        "optionInfra": "تكوين البنية التحتية أيضاً (set-infra + push-infra)",
+        "optionNoInfra": "تخطي تكوين البنية التحتية (الوكيل + DNS)",
+        "optionProvider": "اسم المزود السحابي (من config add-provider)",
+        "optionRegion": "تجاوز المنطقة الافتراضية",
+        "optionSshUser": "اسم مستخدم SSH للجهاز الافتراضي الجديد (الافتراضي: root)",
+        "optionType": "تجاوز نوع المثيل الافتراضي",
+        "providerRequired": "المزود السحابي \"{{name}}\" غير موجود. أضفه باستخدام: rdc config add-provider",
+        "provisioning": "جاري توفير {{name}} على {{provider}} ({{region}})...",
+        "settingUp": "جاري تشغيل إعداد الجهاز...",
+        "sshReady": "تم إنشاء اتصال SSH",
+        "tofuNotInstalled": "OpenTofu (tofu) غير مثبت. قم بالتثبيت من: https://opentofu.org/docs/intro/install/",
+        "waitingSSH": "في انتظار اتصال SSH..."
+      },
       "repos": {
         "description": "قائمة المستودعات المنتشرة على آلة",
         "fetched": "تم جلب الآلة",
@@ -654,6 +718,7 @@
         "description": "عرض حالة الجهاز الكاملة (النظام، المستودعات، الحاويات، الخدمات)",
         "fetched": "تم جلب الحالة",
         "fetching": "جارٍ جلب الحالة من {{machine}}...",
+        "infrastructure": "البنية التحتية",
         "noData": "لا تتوفر بيانات حالة"
       },
       "testConnection": {
@@ -1033,6 +1098,13 @@
         "failed": "فشل العرض: {{error}}",
         "starting": "جارٍ عرض المستودعات على \"{{machine}}\"..."
       },
+      "listBackups": {
+        "description": "سرد النسخ الاحتياطية المتاحة على التخزين أو الجهاز",
+        "listing": "جارٍ سرد النسخ الاحتياطية...",
+        "optionFromMachine": "اسم الجهاز المصدر",
+        "optionFromStorage": "اسم التخزين المصدر",
+        "sourceRequired": "حدد --from <storage> أو --from-machine <machine>"
+      },
       "machineOption": "اسم الجهاز المستهدف",
       "mount": {
         "checkpointOption": "الاستعادة من نقطة تفتيش بعد التثبيت",
@@ -1049,6 +1121,27 @@
         "starting": "جارٍ تعيين ملكية \"{{repository}}\" على \"{{machine}}\"...",
         "uidOption": "معرّف المالك UID (افتراضي: 7111)"
       },
+      "pull": {
+        "description": "سحب نسخة احتياطية للمستودع من التخزين أو جهاز",
+        "optionForce": "فرض الكتابة فوق المستودع الموجود",
+        "optionFromMachine": "اسم الجهاز المصدر",
+        "optionFromStorage": "اسم التخزين المصدر",
+        "pulling": "جارٍ سحب نسخة احتياطية لـ \"{{repo}}\"...",
+        "sourceRequired": "حدد --from <storage> أو --from-machine <machine>"
+      },
+      "push": {
+        "description": "دفع نسخة احتياطية للمستودع إلى التخزين أو جهاز",
+        "destIgnoredForStorage": "تم تجاهل --dest {{provided}}: النسخ الاحتياطية للتخزين تستخدم GUID المستودع ({{dest}})",
+        "destRequired": "حدد --to <storage> أو --to-machine <machine>",
+        "optionCheckpoint": "إنشاء نقطة فحص للحاوية (نسخ احتياطي ساخن)",
+        "optionDest": "اسم ملف الوجهة",
+        "optionForce": "فرض الكتابة فوق النسخة الاحتياطية الموجودة",
+        "optionProvider": "مزود السحابة لتوفير الجهاز الهدف تلقائيًا إذا لم يكن موجودًا (من config add-provider)",
+        "optionTag": "علامة النشر للإصدارات",
+        "optionToMachine": "اسم الجهاز الوجهة",
+        "optionToStorage": "اسم التخزين الوجهة",
+        "pushing": "جارٍ دفع نسخة احتياطية لـ \"{{repo}}\" إلى {{dest}}..."
+      },
       "resize": {
         "completed": "اكتمل تغيير الحجم",
         "description": "تغيير حجم مستودع دون اتصال (يدعم التوسيع والتقليص)",
@@ -1056,11 +1149,54 @@
         "sizeOption": "حجم المستودع الجديد (مثلاً 10G، 100G، 1T)",
         "starting": "جارٍ تغيير حجم \"{{repository}}\" إلى {{size}} على \"{{machine}}\"..."
       },
+      "snapshot": {
+        "create": {
+          "creating": "جارٍ إنشاء لقطة لـ \"{{repo}}\" على {{machine}}...",
+          "description": "إنشاء لقطة BTRFS لمستودع",
+          "optionSnapshotName": "اسم اللقطة صريح (يُولّد تلقائياً إذا ترك فارغاً)",
+          "success": "تم إنشاء اللقطة: {{name}} ({{path}})"
+        },
+        "delete": {
+          "description": "حذف لقطة من جهاز بعيد",
+          "success": "تم حذف اللقطة: {{name}}"
+        },
+        "description": "إدارة لقطات BTRFS على الأجهزة البعيدة",
+        "list": {
+          "description": "سرد اللقطات على جهاز بعيد",
+          "header": "{{count}} لقطة في {{path}}:",
+          "noSnapshots": "لم يتم العثور على لقطات."
+        }
+      },
       "status": {
         "completed": "تم جلب الحالة",
         "description": "الحصول على حالة المستودع",
         "failed": "فشل التحقق من الحالة",
         "starting": "جارٍ جلب حالة \"{{repository}}\" على \"{{machine}}\"..."
+      },
+      "sync": {
+        "description": "مزامنة المستودعات والملفات (دفع/سحب جماعي، نقل ملفات)",
+        "pullAll": {
+          "description": "دفع/سحب جميع المستودعات بالجملة من/إلى التخزين السحابي",
+          "optionFrom": "اسم التخزين المصدر (وضع السحب)",
+          "optionOverride": "الكتابة فوق المستودعات غير المُركّبة الموجودة عند السحب",
+          "optionRepo": "تصفية لمستودع محدد (قابل للتكرار)",
+          "success": "اكتمل سحب المزامنة"
+        },
+        "pushAll": {
+          "description": "دفع/سحب جميع المستودعات بالجملة من/إلى التخزين السحابي",
+          "optionRepo": "تصفية لمستودع محدد (قابل للتكرار)",
+          "optionTo": "اسم التخزين الوجهة (وضع الدفع)",
+          "success": "اكتمل دفع المزامنة"
+        },
+        "upload": {
+          "description": "رفع الملفات إلى مستودع"
+        },
+        "download": {
+          "description": "تنزيل الملفات من مستودع"
+        },
+        "status": {
+          "description": "التحقق من حالة المزامنة ومقارنة الملفات المحلية/البعيدة"
+        }
       },
       "template": {
         "completed": "تم تطبيق القالب",
@@ -1081,11 +1217,10 @@
       "up": {
         "checkpointOption": "استعادة الحاويات من نقطة تفتيش CRIU بعد النشر (لترحيل العمليات الحية من جهاز آخر)",
         "completed": "تم بدء الخدمات",
-        "description": "نشر أو تحديث مستودع (تحميل، تجهيز، بدء الخدمات)",
+        "description": "نشر أو تحديث مستودع (تحميل، بدء الخدمات)",
         "failed": "فشل بدء الخدمات",
         "grandOption": "اسم المستودع الرئيسي (يُحلّ تلقائيًا إلى GUID)",
         "mountOption": "تثبيت المستودع أولاً",
-        "prepOnlyOption": "تشغيل خطوة التحضير فقط",
         "starting": "جارٍ بدء الخدمات لـ \"{{repository}}\" على \"{{machine}}\"..."
       },
       "upAll": {
@@ -1175,23 +1310,8 @@
         "description": "تتبع مهمة (اختصار لـ: queue trace)"
       }
     },
-    "snapshot": {
-      "create": {
-        "creating": "جارٍ إنشاء لقطة لـ \"{{repo}}\" على {{machine}}...",
-        "description": "إنشاء لقطة BTRFS لمستودع",
-        "optionSnapshotName": "اسم اللقطة صريح (يُولّد تلقائياً إذا ترك فارغاً)",
-        "success": "تم إنشاء اللقطة: {{name}} ({{path}})"
-      },
-      "delete": {
-        "description": "حذف لقطة من جهاز بعيد",
-        "success": "تم حذف اللقطة: {{name}}"
-      },
-      "description": "إدارة لقطات BTRFS على الأجهزة البعيدة",
-      "list": {
-        "description": "سرد اللقطات على جهاز بعيد",
-        "header": "{{count}} لقطة في {{path}}:",
-        "noSnapshots": "لم يتم العثور على لقطات."
-      }
+    "backup": {
+      "description": "دفع واسترجاع ومزامنة النسخ الاحتياطية للمستودعات عبر التخزين والأجهزة"
     },
     "storage": {
       "browse": {
@@ -1615,15 +1735,15 @@
     "sectionTitles": {
       "agent": "أدوات الوكيل",
       "audit": "التدقيق والامتثال",
+      "backup": "النسخ الاحتياطي والاستعادة",
       "auth": "المصادقة",
-      "backup": "إدارة النسخ الاحتياطي",
       "bridge": "إدارة الجسر",
       "ceph": "إدارة تخزين Ceph",
       "config": "إدارة الإعدادات",
+      "datastore": "إدارة مخزن البيانات",
       "doctor": "تشخيص النظام",
       "machine": "إدارة الأجهزة",
       "mcp": "خادم MCP",
-      "datastore": "إدارة مخزن البيانات",
       "ops": "عمليات VM التجريبية",
       "organization": "إدارة المنظمة",
       "permission": "إدارة الصلاحيات",
@@ -1633,7 +1753,6 @@
       "repo": "دورة حياة المستودعات",
       "repository": "إدارة المستودعات",
       "shortcuts": "أوامر سريعة (اختصارات)",
-      "snapshot": "إدارة اللقطات",
       "storage": "إدارة التخزين",
       "store": "إدارة المتاجر",
       "subscription": "إدارة الاشتراكات",
@@ -1784,11 +1903,6 @@
     }
   },
   "help": {
-    "backup": {
-      "list": "عرض النسخ الاحتياطية على التخزين",
-      "pull": "سحب نسخة احتياطية من التخزين",
-      "push": "دفع نسخة احتياطية إلى التخزين"
-    },
     "cli": {
       "machineInfo": "عرض حالة الجهاز",
       "repoUp": "نشر خدمات المستودع",
@@ -1811,6 +1925,13 @@
       "create": "إنشاء مستودع مشفر",
       "down": "إيقاف الخدمات",
       "fork": "نسخ CoW للاختبار",
+      "listBackups": "عرض النسخ الاحتياطية على التخزين",
+      "pull": "سحب نسخة احتياطية من التخزين",
+      "push": "دفع نسخة احتياطية إلى التخزين",
+      "sync": {
+        "pullAll": "سحب جميع المستودعات من التخزين بالجملة",
+        "pushAll": "دفع جميع المستودعات إلى التخزين بالجملة"
+      },
       "up": "نشر مع التحميل التلقائي"
     },
     "store": {

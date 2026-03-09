@@ -34,17 +34,24 @@ Lists all configured storage providers imported from rclone configs. If empty, a
 Set up automated backups that run on a cron schedule.
 
 ```bash
-rdc backup schedule set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
 ```
 
-This schedules daily backups at 2 AM, pushing all repositories to the `my-s3` storage. The schedule is stored in your config and can be deployed to machines as a systemd timer.
+You can configure multiple destinations with different schedules:
+
+```bash
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
+```
+
+This schedules daily backups at 2 AM to `my-s3` and at 6 AM to `azure-backup`. Each destination gets its own schedule. The schedules are stored in your config and can be deployed to machines as systemd timers.
 
 ### Step 3: View backup schedule
 
 Verify the schedule was applied.
 
 ```bash
-rdc backup schedule show
+rdc config backup-strategy show
 ```
 
 Shows the current backup configuration: destination, cron expression, and enabled status.
@@ -89,8 +96,8 @@ Displays public IPs, domain, certificate email, and all registered ports.
 To stop automated backups without removing the configuration:
 
 ```bash
-rdc backup schedule set --disable
-rdc backup schedule show
+rdc config backup-strategy set --disable
+rdc config backup-strategy show
 ```
 
 The configuration is preserved and can be re-enabled later with `--enable`.

@@ -139,6 +139,48 @@ check_node_version() {
     return 0
 }
 
+# Check if Go is installed (required for renet build)
+check_go_installed() {
+    if ! command -v go &>/dev/null; then
+        log_error "Go is not installed (required for building renet)"
+        log_info "Install Go from: https://go.dev/dl/"
+        exit 1
+    fi
+    log_debug "Go version: $(go version)"
+}
+
+# Ensure renet binary is built and up-to-date
+# Builds from Go source with embedded assets (CRIU, rsync)
+# Only rebuilds when Go sources are newer than the binary
+ensure_renet_built() {
+    local renet_dir="$LOCAL_ROOT_DIR/private/renet"
+    local renet_bin="$renet_dir/bin/renet"
+
+    if [[ -f "$renet_bin" ]]; then
+        local newer_files
+        newer_files=$(find "$renet_dir" \
+            \( -name "*.go" -o -name "go.mod" -o -name "go.sum" \) \
+            -newer "$renet_bin" -type f 2>/dev/null | head -1)
+
+        if [[ -z "$newer_files" ]]; then
+            log_debug "Renet binary is up-to-date"
+            return 0
+        fi
+        log_step "Renet sources changed, rebuilding..."
+    else
+        log_step "Building renet (first time, requires Docker for asset extraction)..."
+    fi
+
+    check_go_installed
+    (cd "$renet_dir" && ./build.sh dev)
+
+    if [[ ! -f "$renet_bin" ]]; then
+        log_error "Renet build failed: binary not found at $renet_bin"
+        exit 1
+    fi
+    log_info "Renet built successfully"
+}
+
 # Export for use in subprocesses
 export LOCAL_ROOT_DIR
 export LOCAL_CI_DIR

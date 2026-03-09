@@ -4,7 +4,7 @@ description: "使用 SSH 终端访问、文件同步、VS Code 集成和 CLI 更
 category: "Tutorials"
 order: 5
 language: zh
-sourceHash: "f581499837e09360"
+sourceHash: "9391a34dfb244942"
 ---
 
 # 如何在 Rediacc 中使用终端、同步和 VS Code 工具
@@ -46,7 +46,7 @@ rdc term server-1 my-app -c "docker ps"
 在传输文件之前，预览将会发生的更改。
 
 ```bash
-rdc sync upload -m server-1 -r my-app --local ./src --dry-run
+rdc repo sync upload -m server-1 -r my-app --local ./src --dry-run
 ```
 
 `--dry-run` 标志显示新文件、已更改的文件和总传输大小，而不实际上传任何内容。
@@ -56,7 +56,7 @@ rdc sync upload -m server-1 -r my-app --local ./src --dry-run
 将文件从本地机器传输到远程仓库挂载点。
 
 ```bash
-rdc sync upload -m server-1 -r my-app --local ./src
+rdc repo sync upload -m server-1 -r my-app --local ./src
 ```
 
 文件通过 SSH 上的 rsync 传输。后续上传仅发送更改的文件。

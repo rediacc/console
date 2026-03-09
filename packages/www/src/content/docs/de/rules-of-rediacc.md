@@ -4,6 +4,7 @@ description: "Wesentliche Regeln und Konventionen für die Entwicklung von Anwen
 category: "Guides"
 order: 5
 language: de
+sourceHash: "1848011813342420"
 ---
 
 # Regeln von Rediacc
@@ -13,8 +14,7 @@ Jedes Rediacc-Repository läuft in einer isolierten Umgebung mit eigenem Docker-
 ## Rediaccfile
 
 - **Jedes Repository benötigt ein Rediaccfile** — ein Bash-Skript mit Lifecycle-Funktionen.
-- **Erforderliche Funktionen**: `prep()`, `up()`, `down()`. Optional: `info()`.
-- `prep()` wird bei **jedem Deploy** ausgeführt — verwenden Sie es für Image-Pulls, Konfigurationsgenerierung und Verzeichniserstellung.
+- **Lifecycle-Funktionen**: `up()`, `down()`. Optional: `info()`.
 - `up()` startet Ihre Dienste. `down()` stoppt sie.
 - `info()` liefert Statusinformationen (Container-Zustand, aktuelle Logs, Health).
 - Rediaccfile wird von renet gesourced — es hat Zugriff auf Shell-Variablen, nicht nur auf Umgebungsvariablen.
@@ -35,10 +35,6 @@ Jedes Rediacc-Repository läuft in einer isolierten Umgebung mit eigenem Docker-
 
 _compose() {
   renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
-}
-
-prep() {
-  _compose pull
 }
 
 up() {
@@ -133,7 +129,7 @@ Renet injiziert diese automatisch in jeden Container:
 
 ## Deployment
 
-- **`rdc repo up`** führt `prep()` und dann `up()` aus — immer.
+- **`rdc repo up`** führt `up()` in allen Rediaccfiles aus.
 - **`rdc repo up --mount`** öffnet zuerst das LUKS-Volume und führt dann den Lifecycle aus. Erforderlich nach `backup push` auf eine neue Maschine.
 - **`rdc repo down`** führt `down()` aus und stoppt den Docker-Daemon.
 - **`rdc repo down --unmount`** schließt zusätzlich das LUKS-Volume (sperrt den verschlüsselten Speicher).

@@ -4,7 +4,7 @@ description: "Crear un repositorio cifrado, desplegar una aplicación en contene
 category: "Tutorials"
 order: 3
 language: es
-sourceHash: "e6c55c46e8e4cd9c"
+sourceHash: "0c4edddefa30df1c"
 ---
 
 # Cómo desplegar y gestionar repositorios con Rediacc
@@ -59,7 +59,7 @@ Despliega la aplicación montando el repositorio e iniciando sus servicios Docke
 rdc repo up test-app -m server-1 --mount
 ```
 
-Esto monta el repositorio (si no está ya montado), inicia un Docker daemon aislado, descarga imágenes mediante `prep()` e inicia servicios mediante `up()`.
+Esto monta el repositorio (si no está ya montado), inicia un Docker daemon aislado e inicia servicios mediante `up()`.
 
 > **Nota:** El primer despliegue tarda más ya que se descargan las imágenes Docker. Los inicios posteriores reutilizan las imágenes en caché.
 

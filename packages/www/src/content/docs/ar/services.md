@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: ar
-sourceHash: "28c4922849c4f3a7"
+sourceHash: "cd5021a29a7b2a59"
 ---
 
 # الخدمات
@@ -17,7 +17,7 @@ sourceHash: "28c4922849c4f3a7"
 
 ## ملف Rediaccfile
 
-**Rediaccfile** هو سكريبت Bash يحدد كيفية تحضير خدماتك وتشغيلها وإيقافها. يجب أن يُسمّى `Rediaccfile` أو `rediaccfile` (غير حساس لحالة الأحرف) ويُوضع داخل نظام ملفات المستودع المحمّل.
+**Rediaccfile** هو سكريبت Bash يحدد كيفية تشغيل خدماتك وإيقافها. يجب أن يُسمّى `Rediaccfile` أو `rediaccfile` (غير حساس لحالة الأحرف) ويُوضع داخل نظام ملفات المستودع المحمّل.
 
 يتم اكتشاف ملفات Rediaccfile في موقعين:
 1. **جذر** مسار تحميل المستودع
@@ -27,15 +27,14 @@ sourceHash: "28c4922849c4f3a7"
 
 ### دوال دورة الحياة
 
-يحتوي Rediaccfile على ما يصل إلى ثلاث دوال:
+يحتوي Rediaccfile على ما يصل إلى دالتين:
 
 | الدالة | وقت التشغيل | الغرض | سلوك الخطأ |
 |--------|------------|-------|------------|
-| `prep()` | قبل `up()` | تثبيت المتطلبات، سحب الصور، تشغيل عمليات الترحيل | **إيقاف فوري** -- إذا فشلت أي `prep()`، تتوقف العملية بأكملها فوراً |
-| `up()` | بعد اكتمال جميع `prep()` | تشغيل الخدمات (مثل `renet compose -- up -d`) | فشل الجذر **حرج** (يوقف كل شيء). فشل المجلدات الفرعية **غير حرج** (يُسجّل ويستمر) |
+| `up()` | عند التشغيل | تشغيل الخدمات (مثل `renet compose -- up -d`) | فشل الجذر **حرج** (يوقف كل شيء). فشل المجلدات الفرعية **غير حرج** (يُسجّل ويستمر) |
 | `down()` | عند الإيقاف | إيقاف الخدمات (مثل `renet compose -- down`) | **أفضل جهد** -- يتم تسجيل الأخطاء لكن يتم تنفيذ جميع ملفات Rediaccfile دائماً |
 
-جميع الدوال الثلاث اختيارية. إذا لم تُعرّف دالة في Rediaccfile، يتم تخطيها بصمت.
+كلتا الدالتين اختيارية. إذا لم تُعرّف دالة في Rediaccfile، يتم تخطيها بصمت.
 
 ### ترتيب التنفيذ
 
@@ -64,11 +63,6 @@ sourceHash: "28c4922849c4f3a7"
 
 ```bash
 #!/bin/bash
-
-prep() {
-    echo "Pulling latest images..."
-    renet compose -- pull
-}
 
 up() {
     echo "Starting services..."
@@ -186,15 +180,13 @@ rdc repo up my-app -m server-1 --mount
 | الخيار | الوصف |
 |--------|-------|
 | `--mount` | تحميل المستودع أولاً إن لم يكن محمّلاً بالفعل |
-| `--prep-only` | تشغيل دوال `prep()` فقط، وتخطي `up()` |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 تسلسل التنفيذ هو:
 1. تحميل المستودع المشفر بـ LUKS (إذا تم تحديد `--mount`)
 2. تشغيل عملية Docker المعزولة
 3. إنشاء `.rediacc.json` تلقائياً من ملفات compose
-4. تشغيل `prep()` في جميع ملفات Rediaccfile (بترتيب A-Z، إيقاف فوري عند الفشل)
-5. تشغيل `up()` في جميع ملفات Rediaccfile (بترتيب A-Z)
+4. تشغيل `up()` في جميع ملفات Rediaccfile (بترتيب A-Z)
 
 ## إيقاف الخدمات
 
@@ -328,12 +320,8 @@ services:
 ```bash
 #!/bin/bash
 
-prep() {
-    mkdir -p data/postgres
-    renet compose -- pull
-}
-
 up() {
+    mkdir -p data/postgres
     renet compose -- up -d
 
     echo "Waiting for PostgreSQL..."

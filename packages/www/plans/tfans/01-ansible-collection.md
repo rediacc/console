@@ -454,7 +454,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: npm install && cd packages/shared && npm run build
-      - run: ./run.sh rdc ops up --basic --parallel
+      - run: ./rdc.sh ops up --basic --parallel
       # ... register machines, run integration playbooks
-      - run: ./run.sh rdc ops down
+      - run: ./rdc.sh ops down
 ```

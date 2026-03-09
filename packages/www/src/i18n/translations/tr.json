@@ -2013,7 +2013,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup schedule set",
+              "cmd": "rdc config backup-strategy set",
               "flag": "",
               "value": ""
             },
@@ -2165,7 +2165,7 @@
           "steps": [
             {
               "title": "Klonla",
-              "description": "rdc snapshot create production komutunu çalıştırın. Btrfs CoW anında bir anlık görüntü oluşturur — uygulama, veritabanı, yapılandırma, her şey.",
+              "description": "rdc repo snapshot create production komutunu çalıştırın. Btrfs CoW anında bir anlık görüntü oluşturur — uygulama, veritabanı, yapılandırma, her şey.",
               "icon": "terminal"
             },
             {
@@ -2211,7 +2211,7 @@
           ],
           "timeline": {
             "newLabel": "Rediacc ile",
-            "newSteps": ["rdc snapshot create", "52s", "Tamam"],
+            "newSteps": ["rdc repo snapshot create", "52s", "Tamam"],
             "oldLabel": "Eski yöntem",
             "oldSteps": [
               {
@@ -4332,7 +4332,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc backup list --verify",
+          "command": "rdc repo list-backups --verify",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk yedeklemenizi bir dakikadan kısa sürede doğrulayın.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
           "tierBadge": "Kredi kartı gerekmez",
@@ -4533,7 +4533,7 @@
           "steps": [
             {
               "title": "Back up",
-              "description": "Run rdc backup production. Btrfs snapshot captures your entire stack atomically.",
+              "description": "Run rdc repo push production. Btrfs snapshot captures your entire stack atomically.",
               "icon": "download"
             },
             {
@@ -4688,7 +4688,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup list",
+              "cmd": "rdc repo list-backups",
               "flag": "",
               "value": ""
             },
@@ -4786,7 +4786,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc backup sync --target secondary-dc",
+          "command": "rdc repo sync push-all --target secondary-dc",
           "description": "Ücretsiz Community sürümüyle başlayın. Konumlar arasında ücretsiz çoğaltın. Kredi kartı gerekmez.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
           "tierBadge": "10 iş yüküne kadar sonsuza dek ücretsiz",
@@ -5143,7 +5143,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup sync",
+              "cmd": "rdc repo sync push-all",
               "flag": "",
               "value": ""
             },
@@ -5550,7 +5550,7 @@
           "lines": [
             {
               "type": "command",
-              "cmd": "rdc backup schedule set",
+              "cmd": "rdc config backup-strategy set",
               "flag": "",
               "value": ""
             },
@@ -6056,7 +6056,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc snapshot create production --snapshot-name my-first-clone",
+          "command": "rdc repo snapshot create production --snapshot-name my-first-clone",
           "description": "Ücretsiz Community sürümüyle başlayın. 10 iş yüküne kadar ücretsiz klonlayın. Kredi kartı gerekmez.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
           "tierBadge": "10 iş yüküne kadar sonsuza dek ücretsiz",
@@ -6257,7 +6257,7 @@
           "steps": [
             {
               "title": "Run",
-              "description": "Developer runs rdc snapshot create production. No tickets. No approvals.",
+              "description": "Developer runs rdc repo snapshot create production. No tickets. No approvals.",
               "icon": "terminal"
             },
             {
@@ -6938,7 +6938,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc backup push production --verify",
+          "command": "rdc repo push production --verify",
           "description": "Ücretsiz Community sürümüyle başlayın. 10 iş yüküne kadar ücretsiz koruyun. Kredi kartı gerekmez.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
           "tierBadge": "10 iş yüküne kadar sonsuza dek ücretsiz",
@@ -7139,7 +7139,7 @@
           "steps": [
             {
               "title": "Back up",
-              "description": "Run rdc backup production --immutable. Your data is captured and sealed instantly.",
+              "description": "Run rdc repo push production --immutable. Your data is captured and sealed instantly.",
               "icon": "download"
             },
             {
@@ -7298,7 +7298,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup push production",
+              "cmd": "rdc repo push production",
               "flag": "",
               "value": ""
             },
@@ -7816,7 +7816,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc backup pull production --storage daily-2026-02-27",
+          "command": "rdc repo pull production --storage daily-2026-02-27",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk ortamınızı 5 dakikadan kısa sürede geri yükleyin.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
           "tierBadge": "Kredi kartı gerekmez",
@@ -8019,7 +8019,7 @@
           "steps": [
             {
               "title": "Select",
-              "description": "Run rdc snapshots production. Pick any point in your backup timeline.",
+              "description": "Run rdc repo snapshot list production. Pick any point in your backup timeline.",
               "icon": "clock"
             },
             {
@@ -8174,7 +8174,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup pull production",
+              "cmd": "rdc repo pull production",
               "flag": "",
               "value": ""
             },
@@ -8272,7 +8272,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc snapshot create production --snapshot-name ci-build",
+          "command": "rdc repo snapshot create production --snapshot-name ci-build",
           "description": "Ücretsiz Community sürümüyle başlayın. Git entegrasyonu dahil.",
           "primaryCta": "Ücretsiz Başlayın",
           "tierBadge": "5 depoya kadar ücretsiz · Kredi kartı gerekmez",
@@ -8683,7 +8683,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc backup sync --target secondary",
+          "command": "rdc repo sync push-all --target secondary",
           "description": "Ücretsiz Community sürümüyle başlayın. Şifreli göç dahil.",
           "primaryCta": "Ücretsiz Başlayın",
           "tierBadge": "5 depoya kadar ücretsiz · Kredi kartı gerekmez",
@@ -9041,7 +9041,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup sync",
+              "cmd": "rdc repo sync push-all",
               "flag": "",
               "value": ""
             },
@@ -9782,7 +9782,7 @@
           "steps": [
             {
               "title": "Detect",
-              "description": "Run rdc backup list --verified to find your last clean snapshot.",
+              "description": "Run rdc repo list-backups --verified to find your last clean snapshot.",
               "icon": "eye"
             },
             {
@@ -9937,7 +9937,7 @@
           "lines": [
             {
               "type": "command",
-              "cmd": "rdc backup pull production",
+              "cmd": "rdc repo pull production",
               "flag": "",
               "value": ""
             },
@@ -10004,7 +10004,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc backup schedule set --cron '0 2 * * *'",
+          "command": "rdc config backup-strategy set --cron '0 2 * * *'",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk saklama politikanızı 30 saniyede ayarlayın.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
           "tierBadge": "Kredi kartı gerekmez",
@@ -10206,7 +10206,7 @@
           "steps": [
             {
               "title": "Set policies",
-              "description": "Run rdc backup schedule set --cron '0 2 * * *'. Define retention per framework or data type.",
+              "description": "Run rdc config backup-strategy set --cron '0 2 * * *'. Define retention per framework or data type.",
               "icon": "sliders"
             },
             {
@@ -10361,7 +10361,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup schedule set",
+              "cmd": "rdc config backup-strategy set",
               "flag": "",
               "value": ""
             },
@@ -10394,7 +10394,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup schedule show"
+              "cmd": "rdc config backup-strategy show"
             },
             {
               "type": "spacer"
@@ -10461,7 +10461,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc snapshot create production --snapshot-name patch-test",
+          "command": "rdc repo snapshot create production --snapshot-name patch-test",
           "description": "Ücretsiz Community sürümüyle başlayın. Ücretsiz klonlayın, test edin ve doğrulayın. Kredi kartı gerekmez.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
           "tierBadge": "10 iş yüküne kadar sonsuza dek ücretsiz",
@@ -10662,7 +10662,7 @@
           "steps": [
             {
               "title": "Clone",
-              "description": "Run rdc snapshot create production. An exact copy spins up in 60 seconds.",
+              "description": "Run rdc repo snapshot create production. An exact copy spins up in 60 seconds.",
               "icon": "terminal"
             },
             {
@@ -11280,7 +11280,7 @@
           "lines": [
             {
               "type": "command",
-              "cmd": "rdc backup sync",
+              "cmd": "rdc repo sync push-all",
               "flag": "",
               "value": ""
             },

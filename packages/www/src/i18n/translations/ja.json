@@ -2015,7 +2015,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup schedule set",
+              "cmd": "rdc config backup-strategy set",
               "flag": "",
               "value": ""
             },
@@ -2167,7 +2167,7 @@
           "steps": [
             {
               "title": "クローン",
-              "description": "rdc snapshot create productionを実行。btrfs CoWが瞬時にスナップショットを作成 — アプリ、データベース、設定、すべて。",
+              "description": "rdc repo snapshot create productionを実行。btrfs CoWが瞬時にスナップショットを作成 — アプリ、データベース、設定、すべて。",
               "icon": "terminal"
             },
             {
@@ -2213,7 +2213,7 @@
           ],
           "timeline": {
             "newLabel": "Rediaccなら",
-            "newSteps": ["rdc snapshot create", "52s", "完了"],
+            "newSteps": ["rdc repo snapshot create", "52s", "完了"],
             "oldLabel": "従来の方法",
             "oldSteps": [
               {
@@ -4334,7 +4334,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc backup list --verify",
+          "command": "rdc repo list-backups --verify",
           "description": "無料のCommunityエディションから始めましょう。1分以内に最初のバックアップを検証できます。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "クレジットカード不要",
@@ -4535,7 +4535,7 @@
           "steps": [
             {
               "title": "Back up",
-              "description": "Run rdc backup production. Btrfs snapshot captures your entire stack atomically.",
+              "description": "Run rdc repo push production. Btrfs snapshot captures your entire stack atomically.",
               "icon": "download"
             },
             {
@@ -4690,7 +4690,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup list",
+              "cmd": "rdc repo list-backups",
               "flag": "",
               "value": ""
             },
@@ -4788,7 +4788,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc backup sync --target secondary-dc",
+          "command": "rdc repo sync push-all --target secondary-dc",
           "description": "無料のCommunityエディションから始めましょう。ロケーション間レプリケーションが無料。クレジットカード不要。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "10ワークロードまで永久無料",
@@ -5145,7 +5145,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup sync",
+              "cmd": "rdc repo sync push-all",
               "flag": "",
               "value": ""
             },
@@ -5552,7 +5552,7 @@
           "lines": [
             {
               "type": "command",
-              "cmd": "rdc backup schedule set",
+              "cmd": "rdc config backup-strategy set",
               "flag": "",
               "value": ""
             },
@@ -6058,7 +6058,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc snapshot create production --snapshot-name my-first-clone",
+          "command": "rdc repo snapshot create production --snapshot-name my-first-clone",
           "description": "無料のCommunityエディションから始めましょう。最大10ワークロードまで無料でクローン可能。クレジットカード不要。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "10ワークロードまで永久無料",
@@ -6259,7 +6259,7 @@
           "steps": [
             {
               "title": "Run",
-              "description": "Developer runs rdc snapshot create production. No tickets. No approvals.",
+              "description": "Developer runs rdc repo snapshot create production. No tickets. No approvals.",
               "icon": "terminal"
             },
             {
@@ -6940,7 +6940,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc backup push production --verify",
+          "command": "rdc repo push production --verify",
           "description": "無料のCommunityエディションから始めましょう。最大10ワークロードまで無料で保護。クレジットカード不要。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "10ワークロードまで永久無料",
@@ -7141,7 +7141,7 @@
           "steps": [
             {
               "title": "Back up",
-              "description": "Run rdc backup production --immutable. Your data is captured and sealed instantly.",
+              "description": "Run rdc repo push production --immutable. Your data is captured and sealed instantly.",
               "icon": "download"
             },
             {
@@ -7300,7 +7300,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup push production",
+              "cmd": "rdc repo push production",
               "flag": "",
               "value": ""
             },
@@ -7818,7 +7818,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc backup pull production --storage daily-2026-02-27",
+          "command": "rdc repo pull production --storage daily-2026-02-27",
           "description": "無料のCommunityエディションから始めましょう。5分以内に最初の環境を復元できます。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "クレジットカード不要",
@@ -8021,7 +8021,7 @@
           "steps": [
             {
               "title": "Select",
-              "description": "Run rdc snapshots production. Pick any point in your backup timeline.",
+              "description": "Run rdc repo snapshot list production. Pick any point in your backup timeline.",
               "icon": "clock"
             },
             {
@@ -8176,7 +8176,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup pull production",
+              "cmd": "rdc repo pull production",
               "flag": "",
               "value": ""
             },
@@ -8274,7 +8274,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc snapshot create production --snapshot-name ci-build",
+          "command": "rdc repo snapshot create production --snapshot-name ci-build",
           "description": "無料のCommunityエディションから始めましょう。Git統合機能付き。",
           "primaryCta": "無料で始める",
           "tierBadge": "5リポジトリまで無料 · クレジットカード不要",
@@ -8685,7 +8685,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc backup sync --target secondary",
+          "command": "rdc repo sync push-all --target secondary",
           "description": "無料のCommunityエディションから始めましょう。暗号化移行機能付き。",
           "primaryCta": "無料で始める",
           "tierBadge": "5リポジトリまで無料 · クレジットカード不要",
@@ -9043,7 +9043,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup sync",
+              "cmd": "rdc repo sync push-all",
               "flag": "",
               "value": ""
             },
@@ -9784,7 +9784,7 @@
           "steps": [
             {
               "title": "Detect",
-              "description": "Run rdc backup list --verified to find your last clean snapshot.",
+              "description": "Run rdc repo list-backups --verified to find your last clean snapshot.",
               "icon": "eye"
             },
             {
@@ -9939,7 +9939,7 @@
           "lines": [
             {
               "type": "command",
-              "cmd": "rdc backup pull production",
+              "cmd": "rdc repo pull production",
               "flag": "",
               "value": ""
             },
@@ -10006,7 +10006,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc backup schedule set --cron '0 2 * * *'",
+          "command": "rdc config backup-strategy set --cron '0 2 * * *'",
           "description": "無料のCommunityエディションから始めましょう。30秒で最初の保持ポリシーを設定できます。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "クレジットカード不要",
@@ -10208,7 +10208,7 @@
           "steps": [
             {
               "title": "Set policies",
-              "description": "Run rdc backup schedule set --cron '0 2 * * *'. Define retention per framework or data type.",
+              "description": "Run rdc config backup-strategy set --cron '0 2 * * *'. Define retention per framework or data type.",
               "icon": "sliders"
             },
             {
@@ -10363,7 +10363,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup schedule set",
+              "cmd": "rdc config backup-strategy set",
               "flag": "",
               "value": ""
             },
@@ -10396,7 +10396,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup schedule show"
+              "cmd": "rdc config backup-strategy show"
             },
             {
               "type": "spacer"
@@ -10463,7 +10463,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc snapshot create production --snapshot-name patch-test",
+          "command": "rdc repo snapshot create production --snapshot-name patch-test",
           "description": "無料のCommunityエディションから始めましょう。クローン、テスト、検証が無料。クレジットカード不要。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "10ワークロードまで永久無料",
@@ -10664,7 +10664,7 @@
           "steps": [
             {
               "title": "Clone",
-              "description": "Run rdc snapshot create production. An exact copy spins up in 60 seconds.",
+              "description": "Run rdc repo snapshot create production. An exact copy spins up in 60 seconds.",
               "icon": "terminal"
             },
             {
@@ -11282,7 +11282,7 @@
           "lines": [
             {
               "type": "command",
-              "cmd": "rdc backup sync",
+              "cmd": "rdc repo sync push-all",
               "flag": "",
               "value": ""
             },

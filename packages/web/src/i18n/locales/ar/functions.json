@@ -26,7 +26,6 @@
   "checkboxOptions": {
     "mountRepoFirst": "جبل المستودع أولا",
     "overrideExistingFile": "تجاوز الملف الموجود",
-    "preparationOnly": "التحضير فقط",
     "unmountAfterStopping": "قم بإلغاء التحميل بعد التوقف"
   },
   "configure": "تكوين",

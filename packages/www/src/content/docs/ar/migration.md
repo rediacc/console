@@ -4,7 +4,7 @@ description: "ترحيل المشاريع الحالية إلى مستودعات
 category: "Guides"
 order: 11
 language: ar
-sourceHash: "977de49e158a26c0"
+sourceHash: "76165f8884e5edf1"
 ---
 
 # دليل الترحيل
@@ -29,14 +29,14 @@ rdc repo create my-project -m server-1 --size 20G
 
 ## الخطوة 2: رفع الملفات
 
-استخدم `rdc sync upload` لنقل ملفات مشروعك إلى المستودع.
+استخدم `rdc repo sync upload` لنقل ملفات مشروعك إلى المستودع.
 
 ```bash
 # معاينة ما سيتم نقله (بدون إجراء تغييرات)
-rdc sync upload -m server-1 -r my-project --local ./my-project --dry-run
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --dry-run
 
 # رفع الملفات
-rdc sync upload -m server-1 -r my-project --local ./my-project
+rdc repo sync upload -m server-1 -r my-project --local ./my-project
 ```
 
 يجب أن يكون المستودع محمّلاً قبل الرفع. إذا لم يكن محمّلاً بالفعل:
@@ -48,7 +48,7 @@ rdc repo mount my-project -m server-1
 لعمليات المزامنة اللاحقة حيث تريد أن يطابق المحتوى البعيد دليلك المحلي تماماً:
 
 ```bash
-rdc sync upload -m server-1 -r my-project --local ./my-project --mirror
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 ```
 
 > يحذف خيار `--mirror` الملفات على الخادم البعيد التي لا توجد محلياً. استخدم `--dry-run` أولاً للتحقق.
@@ -98,14 +98,10 @@ rdc repo ownership my-project -m server-1 --uid 1000
 
 ## الخطوة 4: إعداد Rediaccfile
 
-أنشئ ملف `Rediaccfile` في جذر مشروعك. هذا السكربت بلغة Bash يحدد كيفية تحضير خدماتك وبدئها وإيقافها.
+أنشئ ملف `Rediaccfile` في جذر مشروعك. هذا السكربت بلغة Bash يحدد كيفية بدء خدماتك وإيقافها.
 
 ```bash
 #!/bin/bash
-
-prep() {
-    renet compose -- pull
-}
 
 up() {
     renet compose -- up -d
@@ -120,7 +116,6 @@ down() {
 
 | الدالة | الغرض | سلوك الخطأ |
 |--------|-------|------------|
-| `prep()` | سحب الصور، تشغيل عمليات الترحيل، تثبيت التبعيات | إيقاف فوري: أي فشل يوقف كل شيء |
 | `up()` | بدء الخدمات | فشل الجذر حرج؛ فشل الأدلة الفرعية يُسجّل ويستمر |
 | `down()` | إيقاف الخدمات | بأفضل جهد: يحاول دائماً تنفيذ الكل |
 
@@ -211,8 +206,7 @@ rdc repo up my-project -m server-1 --mount
 1. تحميل المستودع المشفر
 2. بدء Docker daemon المعزول
 3. إنشاء `.rediacc.json` تلقائياً مع تعيينات عناوين IP للخدمات
-4. تشغيل `prep()` من جميع ملفات Rediaccfile
-5. تشغيل `up()` من جميع ملفات Rediaccfile
+4. تشغيل `up()` من جميع ملفات Rediaccfile
 
 تحقق من أن الحاويات تعمل:
 
@@ -260,7 +254,7 @@ my-api/
 └── redis-data/             # بيانات Redis المستمرة (UID 999 عند التشغيل)
 ```
 
-1. ارفع مشروعك (فكّر في استثناء `node_modules` وسحبها في `prep()`)
+1. ارفع مشروعك (فكّر في استثناء `node_modules` وسحبها في `up()`)
 2. شغّل إصلاح الملكية بعد بدء الحاويات
 
 ### مشروع Docker مخصص

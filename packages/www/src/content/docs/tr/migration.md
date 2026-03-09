@@ -4,7 +4,7 @@ description: "Mevcut projeleri şifrelenmiş Rediacc depolarına taşıyın."
 category: "Guides"
 order: 11
 language: tr
-sourceHash: "977de49e158a26c0"
+sourceHash: "76165f8884e5edf1"
 ---
 
 # Geçiş Rehberi
@@ -29,14 +29,14 @@ rdc repo create my-project -m server-1 --size 20G
 
 ## Adım 2: Dosyalarınızı Yükleme
 
-Proje dosyalarınızı depoya aktarmak için `rdc sync upload` kullanın.
+Proje dosyalarınızı depoya aktarmak için `rdc repo sync upload` kullanın.
 
 ```bash
 # Ne aktarılacağını önizleyin (değişiklik yapılmaz)
-rdc sync upload -m server-1 -r my-project --local ./my-project --dry-run
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --dry-run
 
 # Dosyaları yükleyin
-rdc sync upload -m server-1 -r my-project --local ./my-project
+rdc repo sync upload -m server-1 -r my-project --local ./my-project
 ```
 
 Yüklemeden önce depo bağlı olmalıdır. Henüz bağlı değilse:
@@ -48,7 +48,7 @@ rdc repo mount my-project -m server-1
 Uzak dizinin yerel dizininizle tam olarak eşleşmesini istediğiniz sonraki senkronizasyonlar için:
 
 ```bash
-rdc sync upload -m server-1 -r my-project --local ./my-project --mirror
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 ```
 
 > `--mirror` bayrağı, yerel olarak bulunmayan uzak dosyaları siler. Doğrulamak için önce `--dry-run` kullanın.
@@ -98,14 +98,10 @@ rdc repo ownership my-project -m server-1 --uid 1000
 
 ## Adım 4: Rediaccfile Kurulumu
 
-Proje kök dizininizde bir `Rediaccfile` oluşturun. Bu Bash betiği, servislerinizin nasıl hazırlanacağını, başlatılacağını ve durdurulacağını tanımlar.
+Proje kök dizininizde bir `Rediaccfile` oluşturun. Bu Bash betiği, servislerinizin nasıl başlatılacağını ve durdurulacağını tanımlar.
 
 ```bash
 #!/bin/bash
-
-prep() {
-    renet compose -- pull
-}
 
 up() {
     renet compose -- up -d
@@ -120,7 +116,6 @@ down() {
 
 | Fonksiyon | Amaç | Hata Davranışı |
 |-----------|------|----------------|
-| `prep()` | İmajları çekme, migrasyon çalıştırma, bağımlılıkları yükleme | Hızlı başarısızlık: herhangi bir hata her şeyi durdurur |
 | `up()` | Servisleri başlatma | Kök başarısızlığı kritiktir; alt dizin başarısızlıkları günlüğe kaydedilir ve devam eder |
 | `down()` | Servisleri durdurma | En iyi çaba: her zaman hepsini dener |
 
@@ -211,7 +206,6 @@ Bu işlem:
 1. Şifrelenmiş depoyu bağlar
 2. İzole Docker daemon'unu başlatır
 3. Servis IP atamalarıyla `.rediacc.json` dosyasını otomatik oluşturur
-4. Tüm Rediaccfile'lardan `prep()` fonksiyonunu çalıştırır
 5. Tüm Rediaccfile'lardan `up()` fonksiyonunu çalıştırır
 
 Konteynerlerinizin çalıştığını doğrulayın:
@@ -260,7 +254,7 @@ my-api/
 └── redis-data/             # Redis kalıcılığı (çalışırken UID 999)
 ```
 
-1. Projenizi yükleyin (`node_modules` hariç tutmayı ve `prep()` içinde çekmeyi düşünün)
+1. Projenizi yükleyin (`node_modules` hariç tutmayı ve `up()` içinde çekmeyi düşünün)
 2. Konteynerler başladıktan sonra sahiplik düzeltmesini çalıştırın
 
 ### Özel Docker Projesi

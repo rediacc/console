@@ -28,7 +28,6 @@ export interface RepositoryEnvironment {
   // Network and datastore
   REDIACC_DATASTORE: string;
   REDIACC_DATASTORE_USER: string;
-  REDIACC_NETWORK_ID: string;
   REDIACC_IMMOVABLE: string;
 
   // Repository-specific
@@ -150,7 +149,6 @@ export function buildRepositoryEnvironment(
     // Network and datastore
     REDIACC_DATASTORE: datastore,
     REDIACC_DATASTORE_USER: universalUser,
-    REDIACC_NETWORK_ID: networkId,
     REDIACC_IMMOVABLE: immovable,
 
     // Repository-specific

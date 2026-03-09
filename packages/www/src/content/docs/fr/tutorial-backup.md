@@ -4,7 +4,7 @@ description: "Configurez des planifications de sauvegarde automatisées, gérez 
 category: "Tutorials"
 order: 6
 language: fr
-sourceHash: "e756fef6749b54c5"
+sourceHash: "26db200e730fff43"
 ---
 
 # Comment configurer les sauvegardes et le réseau avec Rediacc
@@ -35,17 +35,24 @@ Liste tous les fournisseurs de stockage configurés importés depuis les configu
 Mettez en place des sauvegardes automatisées qui s'exécutent selon un calendrier cron.
 
 ```bash
-rdc backup schedule set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
 ```
 
-Ceci planifie des sauvegardes quotidiennes à 2h du matin, envoyant tous les dépôts vers le stockage `my-s3`. La planification est stockée dans votre configuration et peut être déployée sur les machines en tant que minuteur systemd.
+Vous pouvez configurer plusieurs destinations avec des planifications différentes :
+
+```bash
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
+```
+
+Ceci planifie des sauvegardes quotidiennes à 2h du matin vers `my-s3` et à 6h du matin vers `azure-backup`. Chaque destination a sa propre planification. Les planifications sont stockées dans votre configuration et peuvent être déployées sur les machines en tant que minuteurs systemd.
 
 ### Étape 3 : Voir la planification de sauvegarde
 
 Vérifiez que la planification a été appliquée.
 
 ```bash
-rdc backup schedule show
+rdc config backup-strategy show
 ```
 
 Affiche la configuration de sauvegarde actuelle : destination, expression cron et statut d'activation.
@@ -90,8 +97,8 @@ Affiche les IPs publiques, le domaine, l'e-mail de certificat et tous les ports 
 Pour arrêter les sauvegardes automatisées sans supprimer la configuration :
 
 ```bash
-rdc backup schedule set --disable
-rdc backup schedule show
+rdc config backup-strategy set --disable
+rdc config backup-strategy show
 ```
 
 La configuration est conservée et peut être réactivée ultérieurement avec `--enable`.

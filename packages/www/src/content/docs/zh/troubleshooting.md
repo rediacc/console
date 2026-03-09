@@ -4,7 +4,7 @@ description: "SSH、设置、仓库、服务和Docker常见问题的解决方案
 category: "Guides"
 order: 10
 language: zh
-sourceHash: "1aea651c31f439b8"
+sourceHash: "d3e67d736cdd61f8"
 ---
 
 # 故障排除
@@ -44,7 +44,7 @@ rdc config scan-keys server-1
 
 - 检查Rediaccfile语法：必须是有效的Bash
 - 确保你的Rediaccfile使用 `renet compose --`（而不是 `docker compose`）
-- 验证Docker镜像是否可访问（考虑在 `prep()` 中使用 `renet compose -- pull`）
+- 验证Docker镜像是否可访问（考虑在 `up()` 中使用 `renet compose -- pull`）
 - 通过仓库的Docker套接字检查容器日志:
 
 ```bash

@@ -17,14 +17,20 @@ import {
 } from '@rediacc/shared-desktop/sync';
 import type { SyncProgress } from '@rediacc/shared-desktop/types';
 import chalk from 'chalk';
-import { Command } from 'commander';
+import type { Command } from 'commander';
 import ora from 'ora';
 import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
-import { handleError } from '../utils/errors.js';
+import { outputService } from '../services/output.js';
+import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
+
+/** Accumulate repeatable option values into an array. */
+function collect(val: string, prev: string[]): string[] {
+  return [...prev, val];
+}
 
 interface SyncUploadOptions {
   team?: string;
@@ -64,15 +70,11 @@ interface RsyncConnectionDetails {
   universalUser?: string;
 }
 
-/**
- * Gets rsync connection details from the API using type-safe endpoints
- */
 async function getRsyncConnectionDetails(
   teamName: string,
   machineName: string,
   repositoryName: string
 ): Promise<RsyncConnectionDetails> {
-  // Fetch vault data using state provider
   const provider = await getStateProvider();
   const { machineVault, teamVault, repositoryVault } = await provider.vaults.getConnectionVaults(
     teamName,
@@ -92,17 +94,14 @@ async function getRsyncConnectionDetails(
   if (!host) {
     throw new Error(t('errors.sync.noIpAddress', { machine: machineName }));
   }
-
   if (!privateKey) {
     throw new Error(t('errors.sync.noPrivateKey', { team: teamName }));
   }
-
   if (!knownHosts) {
     throw new Error(t('errors.sync.noHostKey', { machine: machineName }));
   }
 
   const repoVault = repositoryVault ?? {};
-  // workingDirectory is the actual mount path on disk; path is the Docker-visible path
   const remotePath = (repoVault.workingDirectory ??
     `${datastore}/mounts/${repoVault.repositoryGuid ?? repositoryName}`) as string;
 
@@ -117,9 +116,6 @@ async function getRsyncConnectionDetails(
   };
 }
 
-/**
- * Formats bytes to human-readable string
- */
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
   const k = 1024;
@@ -128,21 +124,10 @@ function formatBytes(bytes: number): string {
   return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
-/**
- * Interactive confirmation loop with details option (matches Python CLI behavior)
- * Prompts [y/N/d(etails)] and allows viewing detailed file list before confirming
- *
- * @param changes - The rsync changes to confirm
- * @returns Promise<boolean> - true if user confirms, false if cancelled
- */
 async function interactiveConfirmation(changes: RsyncChanges): Promise<boolean> {
   const readline = await import('node:readline');
+  process.stdout.write(`${formatChangesSummary(changes)}\n`);
 
-  // Show summary first
-  // eslint-disable-next-line no-console
-  console.log(formatChangesSummary(changes));
-
-  // Create readline interface
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -153,13 +138,11 @@ async function interactiveConfirmation(changes: RsyncChanges): Promise<boolean> 
       rl.question(t('prompts.syncConfirm'), resolve);
     });
 
-  // Interactive loop
   let answered = false;
   let proceed = false;
 
   while (!answered) {
     const answer = (await ask()).toLowerCase().trim();
-
     switch (answer) {
       case 'y':
       case 'yes':
@@ -174,23 +157,18 @@ async function interactiveConfirmation(changes: RsyncChanges): Promise<boolean> 
         break;
       case 'd':
       case 'details':
-        // Show detailed file list with colorized output
-        // eslint-disable-next-line no-console
-        console.log(
-          formatDetailedChanges(changes, {
+        process.stdout.write(
+          `${formatDetailedChanges(changes, {
             colorNew: chalk.green,
             colorModified: chalk.yellow,
             colorDeleted: chalk.red,
             colorDim: chalk.dim,
-          })
+          })}\n`
         );
-        // eslint-disable-next-line no-console
-        console.log(`\n${formatChangesSummary(changes)}`);
-        // Loop continues to ask again
+        process.stdout.write(`\n${formatChangesSummary(changes)}\n`);
         break;
       default:
-        // eslint-disable-next-line no-console
-        console.log(t('prompts.syncConfirmHelp'));
+        process.stdout.write(`${t('prompts.syncConfirmHelp')}\n`);
     }
   }
 
@@ -212,21 +190,18 @@ async function handleConfirmMode(
 ): Promise<boolean> {
   if (!options.confirm || options.dryRun) return true;
 
-  // eslint-disable-next-line no-console
-  console.log(t('commands.sync.previewingChanges'));
+  process.stdout.write(`${t('commands.sync.previewingChanges')}\n`);
 
   const changes = await getRsyncPreview(rsyncOptions);
 
   if (hasNoChanges(changes)) {
-    // eslint-disable-next-line no-console
-    console.log(t('commands.sync.noChanges'));
+    process.stdout.write(`${t('commands.sync.noChanges')}\n`);
     return false;
   }
 
   const proceed = await interactiveConfirmation(changes);
   if (!proceed) {
-    // eslint-disable-next-line no-console
-    console.log(t('commands.sync.cancelled'));
+    process.stdout.write(`${t('commands.sync.cancelled')}\n`);
     return false;
   }
 
@@ -234,11 +209,9 @@ async function handleConfirmMode(
 }
 
 async function handleDryRun(rsyncOptions: RsyncExecutorOptions): Promise<void> {
-  // eslint-disable-next-line no-console
-  console.log(t('commands.sync.dryRunHeader'));
+  process.stdout.write(`${t('commands.sync.dryRunHeader')}\n`);
   const changes = await getRsyncPreview(rsyncOptions);
-  // eslint-disable-next-line no-console
-  console.log(formatChangesSummary(changes));
+  process.stdout.write(`${formatChangesSummary(changes)}\n`);
 }
 
 function displaySyncResult(
@@ -255,11 +228,13 @@ function displaySyncResult(
   if (result.success) {
     spinner.succeed(t(`commands.sync.${mode}.completed`, { count: result.filesTransferred }));
     if (result.bytesTransferred > 0) {
-      // eslint-disable-next-line no-console
-      console.log(t('commands.sync.totalSize', { size: formatBytes(result.bytesTransferred) }));
+      process.stdout.write(
+        `${t('commands.sync.totalSize', { size: formatBytes(result.bytesTransferred) })}\n`
+      );
     }
-    // eslint-disable-next-line no-console
-    console.log(t('commands.sync.duration', { seconds: (result.duration / 1000).toFixed(1) }));
+    process.stdout.write(
+      `${t('commands.sync.duration', { seconds: (result.duration / 1000).toFixed(1) })}\n`
+    );
   } else {
     spinner.fail(t(`commands.sync.${mode}.failed`));
     if (result.errors.length > 0) {
@@ -290,9 +265,6 @@ async function executeSyncWithProgress(
   displaySyncResult(result, spinner, mode);
 }
 
-/**
- * Uploads files to a repository
- */
 async function syncUpload(options: SyncUploadOptions): Promise<void> {
   const opts = await configService.applyDefaults(options);
 
@@ -308,11 +280,9 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
   }
 
   let localPath = resolve(options.local ?? process.cwd());
-
   if (!existsSync(localPath)) {
     throw new Error(t('errors.sync.localPathNotFound', { path: localPath }));
   }
-
   if (!localPath.endsWith('/')) {
     localPath += '/';
   }
@@ -356,9 +326,6 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
   }
 }
 
-/**
- * Downloads files from a repository
- */
 async function syncDownload(options: SyncDownloadOptions): Promise<void> {
   const opts = await configService.applyDefaults(options);
 
@@ -414,22 +381,96 @@ async function syncDownload(options: SyncDownloadOptions): Promise<void> {
   }
 }
 
+/** Resolve an array of repo names to their corresponding GUIDs. */
+async function resolveRepoGUIDs(repoNames: string[]): Promise<string[]> {
+  const guids: string[] = [];
+  for (const repoName of repoNames) {
+    const repoConfig = await configService.getRepository(repoName);
+    if (!repoConfig) {
+      throw new ValidationError(t('errors.repositoryNotFound', { name: repoName }));
+    }
+    guids.push(repoConfig.repositoryGuid);
+  }
+  return guids;
+}
+
 /**
- * Registers the sync commands
+ * Register sync commands under repo:
+ * - repo sync push-all   (bulk push repos to storage)
+ * - repo sync pull-all   (bulk pull repos from storage)
+ * - repo sync upload      (file transfer upload)
+ * - repo sync download    (file transfer download)
+ * - repo sync status      (file transfer status)
  */
-export function registerSyncCommands(program: Command): void {
-  const sync = program.command('sync').description(t('commands.sync.description'));
+export function registerRepoSyncCommands(repoCommand: Command): void {
+  const sync = repoCommand.command('sync').description(t('commands.repo.sync.description'));
 
   sync.addHelpText(
     'after',
     `
 ${t('help.examples')}
-  $ rdc sync upload -m server-1 -r my-app --local ./src    ${t('help.sync.upload')}
-  $ rdc sync download -m server-1 -r my-app --local ./data ${t('help.sync.download')}
-  $ rdc sync status -m server-1 -r my-app                  ${t('help.sync.status')}
+  $ rdc repo sync push-all --to my-storage -m server-1   ${t('help.repo.sync.pushAll')}
+  $ rdc repo sync pull-all --from my-storage -m server-1  ${t('help.repo.sync.pullAll')}
+  $ rdc repo sync upload -m server-1 -r my-app --local ./src  ${t('help.sync.upload')}
+  $ rdc repo sync download -m server-1 -r my-app --local ./data  ${t('help.sync.download')}
 `
   );
 
+  // sync push-all
+  sync
+    .command('push-all')
+    .description(t('commands.repo.sync.pushAll.description'))
+    .requiredOption('--to <storage>', t('commands.repo.sync.pushAll.optionTo'))
+    .option('--repo <name>', t('commands.repo.sync.pushAll.optionRepo'), collect, [])
+    .option('-m, --machine <name>', t('options.machine'))
+    .option('--debug', t('options.debug'))
+    .action(async (options) => {
+      try {
+        const repoGUIDs = await resolveRepoGUIDs(options.repo as string[]);
+        const repos = repoGUIDs.length > 0 ? repoGUIDs : undefined;
+
+        const { runBackupSyncPush } = await import('../services/backup-sync.js');
+        await runBackupSyncPush({
+          storageName: options.to,
+          machine: options.machine,
+          repos,
+          debug: options.debug,
+        });
+        outputService.success(t('commands.repo.sync.pushAll.success'));
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // sync pull-all
+  sync
+    .command('pull-all')
+    .description(t('commands.repo.sync.pullAll.description'))
+    .requiredOption('--from <storage>', t('commands.repo.sync.pullAll.optionFrom'))
+    .option('--repo <name>', t('commands.repo.sync.pullAll.optionRepo'), collect, [])
+    .option('--override', t('commands.repo.sync.pullAll.optionOverride'))
+    .option('-m, --machine <name>', t('options.machine'))
+    .option('--debug', t('options.debug'))
+    .action(async (options) => {
+      try {
+        const repoGUIDs = await resolveRepoGUIDs(options.repo as string[]);
+        const repos = repoGUIDs.length > 0 ? repoGUIDs : undefined;
+
+        const { runBackupSyncPull } = await import('../services/backup-sync.js');
+        await runBackupSyncPull({
+          storageName: options.from,
+          machine: options.machine,
+          repos,
+          override: options.override,
+          debug: options.debug,
+        });
+        outputService.success(t('commands.repo.sync.pullAll.success'));
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // sync upload
   sync
     .command('upload')
     .description(t('commands.sync.upload.description'))
@@ -455,6 +496,7 @@ ${t('help.examples')}
       }
     });
 
+  // sync download
   sync
     .command('download')
     .description(t('commands.sync.download.description'))
@@ -480,6 +522,7 @@ ${t('help.examples')}
       }
     });
 
+  // sync status
   sync
     .command('status')
     .description(t('commands.sync.status.description'))

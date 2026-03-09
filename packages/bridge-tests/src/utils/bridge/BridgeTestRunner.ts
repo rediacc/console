@@ -512,10 +512,6 @@ export class BridgeTestRunner {
     if (opts.uid) {
       flags += ` --uid ${opts.uid}`;
     }
-    if (opts.prepOnly) {
-      flags += ` --prep-only`;
-    }
-
     return flags;
   }
 

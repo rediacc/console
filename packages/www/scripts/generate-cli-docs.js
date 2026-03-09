@@ -49,12 +49,18 @@ const CLOUD_COMMAND_ORDER = [...CLOUD_GROUPS];
 // Combined for validation
 const COMMAND_ORDER = [...LOCAL_COMMAND_ORDER, ...CLOUD_COMMAND_ORDER];
 
+// i18n-only groups: keys that exist in cli.json commands but are NOT standalone
+// top-level commands. They provide translations used by subcommands of other groups
+// (e.g. "sync" translations are used by "repo sync", "backup" by "repo push/pull").
+const I18N_ONLY_GROUPS = new Set(['sync', 'backup']);
+
 // Validate COMMAND_ORDER against actual command groups in cli.json
 function validateCommandOrder(commands) {
   const allGroups = new Set(Object.keys(commands));
   const orderedGroups = new Set(COMMAND_ORDER);
 
   for (const group of allGroups) {
+    if (I18N_ONLY_GROUPS.has(group)) continue;
     if (!orderedGroups.has(group)) {
       throw new Error(
         `Command group "${group}" exists in cli.json but is missing from COMMAND_ORDER in generate-cli-docs.js. ` +

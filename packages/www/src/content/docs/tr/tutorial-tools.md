@@ -4,7 +4,7 @@ description: "SSH terminal erişimi, dosya senkronizasyonu, VS Code entegrasyonu
 category: "Tutorials"
 order: 5
 language: tr
-sourceHash: "f581499837e09360"
+sourceHash: "9391a34dfb244942"
 ---
 
 # Rediacc ile Terminal, Senkronizasyon ve VS Code Araçları Nasıl Kullanılır
@@ -46,7 +46,7 @@ Bir depoya bağlanıldığında, `DOCKER_HOST` otomatik olarak deponun izole Doc
 Dosyaları aktarmadan önce nelerin değişeceğini önizleyin.
 
 ```bash
-rdc sync upload -m server-1 -r my-app --local ./src --dry-run
+rdc repo sync upload -m server-1 -r my-app --local ./src --dry-run
 ```
 
 `--dry-run` bayrağı, gerçekte hiçbir şey yüklemeden yeni dosyaları, değişen dosyaları ve toplam aktarım boyutunu gösterir.
@@ -56,7 +56,7 @@ rdc sync upload -m server-1 -r my-app --local ./src --dry-run
 Yerel makinenizden uzak depo bağlama noktasına dosyaları aktarın.
 
 ```bash
-rdc sync upload -m server-1 -r my-app --local ./src
+rdc repo sync upload -m server-1 -r my-app --local ./src
 ```
 
 Dosyalar SSH üzerinden rsync ile aktarılır. Sonraki yüklemelerde yalnızca değişen dosyalar gönderilir.

@@ -196,7 +196,6 @@ resource "rediacc_repository" "test_copy" {
 | `deploy` | bool | no | false | Run `repo up` after create |
 | `mount` | bool | no | false | Mount volume before deploy |
 | `checkpoint` | bool | no | false | CRIU checkpoint restore |
-| `prep_only` | bool | no | false | Only run prep(), skip up() |
 | `grand` | string | no | - | Parent repo for fork credentials |
 | `fork_from` | string | no | - | Fork from this repo instead of creating fresh |
 | `source_dir` | string | no | - | Local dir to sync before deploy |
@@ -252,7 +251,7 @@ Update:  (acquire machine mutex, timeout: 30 min)
   - autostart changed: autostart enable/disable
 
 Delete:  (acquire config mutex + machine mutex, timeout: 15 min)
-  1. if backup_before_destroy: rdc backup push --to <storage>
+  1. if backup_before_destroy: rdc repo backup push --to <storage>
   2. rdc repo down --unmount  (exit code)
   3. rdc repo delete  (exit code)
   4. Verify: config repositories → confirm removed
@@ -283,7 +282,7 @@ These are accepted limitations. Future rdc CLI improvements (JSON for
 
 **Purpose**: Configure and push backup schedule to a machine.
 
-**Wraps**: `rdc backup schedule set`, `rdc backup schedule push`
+**Wraps**: `rdc repo backup schedule set`, `rdc repo backup schedule push`
 
 ```hcl
 resource "rediacc_backup_schedule" "daily" {
@@ -307,19 +306,19 @@ resource "rediacc_backup_schedule" "daily" {
 
 ```
 Create:
-  1. rdc backup schedule set --destination <storage> --cron <cron> --enable
-  2. rdc backup schedule push <machine>
+  1. rdc repo backup schedule set --destination <storage> --cron <cron> --enable
+  2. rdc repo backup schedule push <machine>
 
 Read:
-  1. rdc backup schedule show --output json
+  1. rdc repo backup schedule show --output json
 
 Update:
-  1. rdc backup schedule set --destination/--cron/--enable/--disable
-  2. rdc backup schedule push <machine>
+  1. rdc repo backup schedule set --destination/--cron/--enable/--disable
+  2. rdc repo backup schedule push <machine>
 
 Delete:
-  1. rdc backup schedule set --disable
-  2. rdc backup schedule push <machine>  (pushes disabled state)
+  1. rdc repo backup schedule set --disable
+  2. rdc repo backup schedule push <machine>  (pushes disabled state)
 ```
 
 ---

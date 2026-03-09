@@ -4,7 +4,7 @@ description: "Use el acceso de terminal SSH, la sincronización de archivos, la 
 category: "Tutorials"
 order: 5
 language: es
-sourceHash: "f581499837e09360"
+sourceHash: "9391a34dfb244942"
 ---
 
 # Cómo usar las herramientas de terminal, sincronización y VS Code con Rediacc
@@ -46,7 +46,7 @@ Al conectarse a un repositorio, `DOCKER_HOST` se configura automáticamente al s
 Antes de transferir archivos, previsualice qué cambiaría.
 
 ```bash
-rdc sync upload -m server-1 -r my-app --local ./src --dry-run
+rdc repo sync upload -m server-1 -r my-app --local ./src --dry-run
 ```
 
 El indicador `--dry-run` muestra archivos nuevos, archivos modificados y el tamaño total de transferencia sin cargar nada realmente.
@@ -56,7 +56,7 @@ El indicador `--dry-run` muestra archivos nuevos, archivos modificados y el tama
 Transfiera archivos desde su máquina local al punto de montaje del repositorio remoto.
 
 ```bash
-rdc sync upload -m server-1 -r my-app --local ./src
+rdc repo sync upload -m server-1 -r my-app --local ./src
 ```
 
 Los archivos se transfieren mediante rsync a través de SSH. Solo se envían los archivos modificados en las cargas posteriores.

@@ -7,7 +7,7 @@ description: >-
 category: Guides
 order: 7
 language: ru
-sourceHash: "4cc40d3db5384f5d"
+sourceHash: "9c6ab927c2220db7"
 ---
 
 # Резервное копирование и восстановление
@@ -39,7 +39,7 @@ rdc config storages
 Отправьте резервную копию репозитория во внешнее хранилище:
 
 ```bash
-rdc backup push my-app -m server-1 --to my-storage
+rdc repo push my-app -m server-1 --to my-storage
 ```
 
 | Опция | Описание |
@@ -59,7 +59,7 @@ rdc backup push my-app -m server-1 --to my-storage
 Получите резервную копию репозитория из внешнего хранилища:
 
 ```bash
-rdc backup pull my-app -m server-1 --from my-storage
+rdc repo pull my-app -m server-1 --from my-storage
 ```
 
 | Опция | Описание |
@@ -76,7 +76,7 @@ rdc backup pull my-app -m server-1 --from my-storage
 Просмотрите доступные резервные копии в хранилище:
 
 ```bash
-rdc backup list --from my-storage -m server-1
+rdc repo list-backups --from my-storage -m server-1
 ```
 
 ## Массовая синхронизация
@@ -86,13 +86,13 @@ rdc backup list --from my-storage -m server-1
 ### Отправка всех в хранилище
 
 ```bash
-rdc backup sync --to my-storage -m server-1
+rdc repo sync push-all --to my-storage -m server-1
 ```
 
 ### Получение всех из хранилища
 
 ```bash
-rdc backup sync --from my-storage -m server-1
+rdc repo sync pull-all --from my-storage -m server-1
 ```
 
 | Опция | Описание |
@@ -111,12 +111,19 @@ rdc backup sync --from my-storage -m server-1
 ### Настройка расписания
 
 ```bash
-rdc backup schedule set --destination my-storage --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination my-storage --cron "0 2 * * *" --enable
+```
+
+Вы можете настроить несколько хранилищ с разными расписаниями:
+
+```bash
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
 ```
 
 | Опция | Описание |
 |-------|----------|
-| `--destination <storage>` | Хранилище для резервных копий по умолчанию |
+| `--destination <storage>` | Хранилище для резервных копий (настраивается для каждого хранилища) |
 | `--cron <expression>` | Cron-выражение (например, `"0 2 * * *"` для ежедневного запуска в 2 часа ночи) |
 | `--enable` | Включить расписание |
 | `--disable` | Отключить расписание |
@@ -126,13 +133,13 @@ rdc backup schedule set --destination my-storage --cron "0 2 * * *" --enable
 Разверните конфигурацию расписания на машине как systemd-таймер:
 
 ```bash
-rdc backup schedule push server-1
+rdc machine deploy-backup server-1
 ```
 
 ### Просмотр расписания
 
 ```bash
-rdc backup schedule show
+rdc config backup-strategy show
 ```
 
 ## Обзор хранилища

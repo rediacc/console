@@ -4,6 +4,7 @@ description: "Información esencial sobre reglas y convenciones para crear aplic
 category: "Guides"
 order: 5
 language: es
+sourceHash: "1848011813342420"
 ---
 
 # Reglas de Rediacc
@@ -13,8 +14,7 @@ Cada repositorio de Rediacc se ejecuta dentro de un entorno aislado con su propi
 ## Rediaccfile
 
 - **Cada repositorio necesita un Rediaccfile** — un script bash con funciones de ciclo de vida.
-- **Funciones requeridas**: `prep()`, `up()`, `down()`. Opcional: `info()`.
-- `prep()` se ejecuta en **cada despliegue** — úsalo para descargar imágenes, generar configuraciones y crear directorios.
+- **Funciones del ciclo de vida**: `up()`, `down()`. Opcional: `info()`.
 - `up()` inicia tus servicios. `down()` los detiene.
 - `info()` proporciona información de estado (estado de contenedores, logs recientes, salud).
 - Rediaccfile es cargado (sourced) por renet — tiene acceso a variables de shell, no solo a variables de entorno.
@@ -35,10 +35,6 @@ Cada repositorio de Rediacc se ejecuta dentro de un entorno aislado con su propi
 
 _compose() {
   renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
-}
-
-prep() {
-  _compose pull
 }
 
 up() {
@@ -133,7 +129,7 @@ Renet auto-inyecta estas en cada contenedor:
 
 ## Despliegue
 
-- **`rdc repo up`** ejecuta `prep()` y luego `up()` — siempre.
+- **`rdc repo up`** ejecuta `up()` en todos los Rediaccfiles.
 - **`rdc repo up --mount`** abre primero el volumen LUKS y luego ejecuta el ciclo de vida. Requerido después de `backup push` a una nueva máquina.
 - **`rdc repo down`** ejecuta `down()` y detiene el daemon Docker.
 - **`rdc repo down --unmount`** también cierra el volumen LUKS (bloquea el almacenamiento cifrado).

@@ -113,70 +113,6 @@
         }
       }
     },
-    "backup": {
-      "description": "Respaldar y restaurar repositorios en almacenamiento externo",
-      "list": {
-        "description": "Listar respaldos disponibles en almacenamiento o máquina",
-        "listing": "Listando respaldos...",
-        "optionFromMachine": "Nombre de la máquina de origen",
-        "optionFromStorage": "Nombre del almacenamiento de origen",
-        "sourceRequired": "Especifique --from <storage> o --from-machine <machine>"
-      },
-      "pull": {
-        "description": "Obtener respaldo del repositorio desde almacenamiento o máquina",
-        "optionForce": "Forzar sobrescritura del repositorio existente",
-        "optionFromMachine": "Nombre de la máquina de origen",
-        "optionFromStorage": "Nombre del almacenamiento de origen",
-        "pulling": "Obteniendo respaldo de \"{{repo}}\"...",
-        "sourceRequired": "Especifique --from <storage> o --from-machine <machine>"
-      },
-      "push": {
-        "description": "Enviar respaldo del repositorio al almacenamiento o máquina",
-        "destIgnoredForStorage": "Ignorando --dest {{provided}}: los respaldos de almacenamiento usan el GUID del repositorio ({{dest}})",
-        "destRequired": "Especifique --to <storage> o --to-machine <machine>",
-        "optionCheckpoint": "Crear punto de control del contenedor (respaldo en caliente)",
-        "optionDest": "Nombre del archivo de destino",
-        "optionForce": "Forzar sobrescritura del respaldo existente",
-        "optionTag": "Etiqueta de despliegue para versionamiento",
-        "optionToMachine": "Nombre de la máquina de destino",
-        "optionToStorage": "Nombre del almacenamiento de destino",
-        "pushing": "Enviando respaldo de \"{{repo}}\" a {{dest}}..."
-      },
-      "schedule": {
-        "description": "Gestionar la configuración de respaldos programados",
-        "push": {
-          "description": "Enviar programación de respaldos a máquina remota (temporizador systemd)",
-          "success": "Programación de respaldos enviada a {{machine}}"
-        },
-        "set": {
-          "description": "Configurar ajustes de programación de respaldos",
-          "noOptions": "Especifique al menos una opción: --destination, --cron, --enable o --disable",
-          "optionCron": "Expresión cron para la programación de respaldos (ej. \"0 2 * * *\")",
-          "optionDestination": "Nombre del destino de almacenamiento predeterminado",
-          "optionDisable": "Deshabilitar respaldos programados",
-          "optionEnable": "Habilitar respaldos programados",
-          "saved": "Configuración de programación de respaldos guardada"
-        },
-        "show": {
-          "description": "Mostrar la configuración actual de programación de respaldos",
-          "destination": "Destino: {{destination}}",
-          "enabled": "Habilitado: {{enabled}}",
-          "notConfigured": "No hay programación de respaldos configurada",
-          "schedule": "Programación: {{schedule}}"
-        }
-      },
-      "sync": {
-        "description": "Enviar/obtener todos los repositorios en masa desde/hacia almacenamiento en la nube",
-        "directionConflict": "No se puede especificar --to y --from simultáneamente",
-        "directionRequired": "Especifique --to <storage> (push) o --from <storage> (pull)",
-        "optionFrom": "Nombre del almacenamiento de origen (modo pull)",
-        "optionOverride": "Sobrescribir repositorios no montados existentes al obtener",
-        "optionRepo": "Filtrar a un repositorio específico (repetible)",
-        "optionTo": "Nombre del almacenamiento de destino (modo push)",
-        "pullSuccess": "Pull de sincronización completado",
-        "pushSuccess": "Push de sincronización completado"
-      }
-    },
     "bridge": {
       "description": "Gestión de puentes",
       "list": {
@@ -339,6 +275,27 @@
         "description": "Agregar una máquina a la configuración actual",
         "success": "Máquina \"{{name}}\" agregada ({{user}}@{{ip}})"
       },
+      "addProvider": {
+        "description": "Agregar un proveedor de nube para el aprovisionamiento automático de máquinas",
+        "optionImage": "Imagen de SO predeterminada",
+        "optionImageAttr": "Personalizado: nombre del atributo para imagen de SO",
+        "optionInstanceType": "Tipo/tamaño de instancia predeterminado",
+        "optionIpv4Output": "Personalizado: atributo de salida para dirección IPv4",
+        "optionIpv6Output": "Personalizado: atributo de salida para dirección IPv6",
+        "optionLabelAttr": "Personalizado: nombre del atributo para etiqueta de VM",
+        "optionProvider": "Fuente de proveedor conocida (ej., linode/linode, hetznercloud/hcloud)",
+        "optionRegion": "Región predeterminada para nuevas máquinas",
+        "optionRegionAttr": "Personalizado: nombre del atributo para región",
+        "optionResource": "Personalizado: tipo de recurso OpenTofu para VM",
+        "optionSizeAttr": "Personalizado: nombre del atributo para tipo de instancia",
+        "optionSource": "Fuente personalizada de proveedor OpenTofu (ej., vultr/vultr)",
+        "optionSshKeyAttr": "Personalizado: nombre del atributo para claves SSH",
+        "optionSshKeyFormat": "Personalizado: formato de clave SSH (inline_list o resource_id)",
+        "optionSshKeyResource": "Personalizado: tipo de recurso OpenTofu para claves SSH",
+        "optionSshUser": "Nombre de usuario SSH para nuevas VMs (predeterminado: root)",
+        "optionToken": "Token API para el proveedor de nube",
+        "success": "Proveedor de nube \"{{name}}\" agregado ({{provider}})"
+      },
       "addRepository": {
         "description": "Agregar un mapeo de GUID de repositorio a la configuración actual",
         "networkIdAssigned": "ID de red: {{networkId}}",
@@ -347,6 +304,60 @@
         "optionNetworkId": "ID de red para aislamiento Docker (2816, 2880, ...). Se asigna automáticamente si se omite",
         "optionTag": "Etiqueta del repositorio",
         "success": "Repositorio \"{{name}}\" agregado ({{guid}}, etiqueta: {{tag}})"
+      },
+      "backupStrategy": {
+        "description": "Gestionar estrategia de respaldo multi-destino",
+        "set": {
+          "description": "Configurar ajustes de programación de respaldos",
+          "noOptions": "Especifique al menos una opción: --destination, --cron, --enable o --disable",
+          "optionCron": "Expresión cron para la programación de respaldos (ej. \"0 2 * * *\")",
+          "optionDestination": "Nombre del destino de almacenamiento predeterminado",
+          "optionDisable": "Deshabilitar respaldos programados",
+          "optionEnable": "Habilitar respaldos programados",
+          "saved": "Configuración de programación de respaldos guardada"
+        },
+        "show": {
+          "description": "Mostrar la configuración actual de programación de respaldos",
+          "destinations": "Destinos:",
+          "enabled": "Habilitado: {{enabled}}",
+          "noDestinations": "No hay destinos de respaldo configurados",
+          "notConfigured": "No hay programación de respaldos configurada",
+          "schedule": "Programación: {{schedule}}"
+        }
+      },
+      "certCache": {
+        "clear": {
+          "cleared": "Caché de certificados eliminada",
+          "description": "Eliminar la caché de certificados",
+          "noCache": "No hay caché de certificados que eliminar"
+        },
+        "description": "Gestionar certificados TLS en caché",
+        "noBaseDomain": "La máquina no tiene baseDomain configurado",
+        "noCacheForDomain": "No se encontró caché de certificados para {{domain}}",
+        "pull": {
+          "cached": "{{count}} certificado(s) almacenado(s) en caché ({{size}})",
+          "description": "Descargar y almacenar en caché certificados TLS desde una máquina",
+          "downloading": "Descargando certificados desde {{machine}}...",
+          "merged": "Se conservaron {{count}} certificado(s) de la caché local con mayor vigencia",
+          "noAcmeJson": "No se encontró acme.json en {{machine}}",
+          "optionNoPrune": "Omitir limpieza de certificados de ID de red obsoletos",
+          "pruned": "{{count}} certificado(s) obsoleto(s) limpiado(s)"
+        },
+        "push": {
+          "description": "Subir certificados TLS en caché a una máquina",
+          "merged": "{{count}} certificado(s) con mayor vigencia fusionado(s) en {{machine}}",
+          "noCache": "No se encontró caché de certificados. Ejecutar 'rdc config cert-cache pull <machine>' primero",
+          "uploaded": "{{count}} certificado(s) subido(s) a {{machine}}",
+          "uploading": "Subiendo certificados en caché a {{machine}}...",
+          "upToDate": "Los certificados en {{machine}} están actualizados"
+        },
+        "status": {
+          "certCount": "{{count}} certificado(s), {{size}} comprimido",
+          "description": "Mostrar inventario de certificados en caché",
+          "header": "Caché de certificados para {{baseDomain}}",
+          "noCache": "No hay certificados en caché almacenados",
+          "updatedAt": "Última actualización: {{date}} (desde {{machine}})"
+        }
       },
       "clear": {
         "allCleared": "Todos los valores predeterminados borrados",
@@ -396,15 +407,27 @@
         "description": "Listar máquinas en la configuración actual",
         "noMachines": "No hay máquinas configuradas. Agregue una con: rdc config add-machine <name> --ip <ip> --user <user>"
       },
+      "providers": {
+        "description": "Listar proveedores de nube configurados",
+        "noProviders": "No hay proveedores de nube configurados. Agregar con: rdc config add-provider"
+      },
       "purgeArchived": {
         "description": "Eliminar permanentemente todas las credenciales archivadas",
         "noArchived": "No hay repositorios archivados para eliminar",
         "success": "{{count}} credencial(es) archivada(s) eliminada(s)"
       },
       "pushInfra": {
-        "description": "Enviar configuración de infraestructura a máquina remota",
+        "certCacheUploaded": "Certificados en caché subidos al remoto",
+        "description": "Enviar configuración de infraestructura a la máquina (proxy Traefik, router y registros DNS de Cloudflare para subdominio de máquina). Ejecutar 'config set-infra <machine>' primero",
+        "dnsCreated": "DNS: creado {{type}} {{name}} → {{content}}",
+        "dnsError": "Advertencia DNS: {{message}} (los registros pueden necesitar configuración manual)",
+        "dnsResolvingZone": "Resolviendo zona de Cloudflare para {{domain}}...",
+        "dnsSkipLocal": "Omitiendo DNS: el dominio .local no usa Cloudflare",
+        "dnsSkipNoToken": "Omitiendo DNS: no hay token de API de Cloudflare. Configurar con: rdc config set-infra <machine> --cf-dns-token <token>",
+        "dnsUnchanged": "DNS: {{type}} {{name}} ya correcto",
+        "dnsUpdated": "DNS: actualizado {{type}} {{name}} → {{content}}",
         "installingProxy": "Instalando e iniciando proxy...",
-        "proxyInstallWarning": "Falló la instalación del proxy (código {{code}}). Ejecute manualmente: sudo renet proxy install",
+        "proxyInstallWarning": "Instalación del proxy fallida (código {{code}}). Ejecutar manualmente: sudo renet proxy install",
         "success": "Configuración de infraestructura enviada a \"{{name}}\""
       },
       "recover": {
@@ -417,6 +440,10 @@
       "removeMachine": {
         "description": "Eliminar una máquina de la configuración actual",
         "success": "Máquina \"{{name}}\" eliminada"
+      },
+      "removeProvider": {
+        "description": "Eliminar configuración de proveedor de nube",
+        "success": "Proveedor de nube \"{{name}}\" eliminado"
       },
       "removeRepository": {
         "description": "Eliminar un mapeo de repositorio de la configuración actual",
@@ -453,13 +480,13 @@
         "success": "Configuración Ceph establecida para \"{{name}}\": pool={{pool}}, image={{image}}"
       },
       "setInfra": {
-        "description": "Establecer configuración de infraestructura para una máquina",
+        "description": "Establecer configuración de infraestructura para una máquina (machine-specific: IPs, domain, ports; shared: cert email, CF DNS token)",
         "invalidIPv4": "Dirección IPv4 inválida: {{ip}}",
         "invalidIPv6": "Dirección IPv6 inválida: {{ip}}",
         "noOptions": "No se especificaron opciones. Use --public-ipv4, --base-domain, etc.",
         "optionBaseDomain": "Dominio base para las aplicaciones",
-        "optionCertEmail": "Correo para notificaciones de certificados TLS",
-        "optionCfDnsToken": "Token de API DNS de Cloudflare para desafío ACME DNS-01",
+        "optionCertEmail": "Correo para notificaciones de certificados TLS (shared across machines)",
+        "optionCfDnsToken": "Token de API DNS de Cloudflare para desafío ACME DNS-01 (shared across machines)",
         "optionPublicIPv4": "Dirección IPv4 pública",
         "optionPublicIPv6": "Dirección IPv6 pública",
         "optionTcpPorts": "Puertos TCP a reenviar (separados por coma, ej. 25,143,465)",
@@ -600,6 +627,21 @@
         "description": "Eliminar una máquina",
         "success": "Máquina \"{{name}}\" eliminada"
       },
+      "deployBackup": {
+        "description": "Enviar programación de respaldos a máquina remota (temporizador systemd)",
+        "success": "Programación de respaldos enviada a {{machine}}"
+      },
+      "deprovision": {
+        "completed": "Máquina {{name}} destruida y eliminada de la configuración",
+        "confirm": "Esto destruirá permanentemente la máquina \"{{name}}\" y todos sus datos. ¿Continuar?",
+        "description": "Destruir una máquina aprovisionada en la nube y eliminar de la configuración",
+        "destroyFailed": "Falló la destrucción de infraestructura para {{name}}: {{error}}. Continuando con la eliminación de configuración (--force).",
+        "destroying": "Destruyendo {{name}}...",
+        "dnsCleanedUp": "Se eliminaron {{count}} registro(s) DNS",
+        "dnsDeleted": "Registro DNS eliminado: {{type}} {{name}}",
+        "noState": "No se encontró estado de OpenTofu para \"{{name}}\". Use 'config remove-machine' para máquinas agregadas manualmente.",
+        "optionForce": "Omitir solicitud de confirmación"
+      },
       "description": "Gestionar máquinas remotas (estado, contenedores, servicios, salud)",
       "health": {
         "containersSection": "\nContenedores:",
@@ -635,6 +677,28 @@
         "description": "Listar máquinas",
         "fetching": "Obteniendo máquinas..."
       },
+      "provision": {
+        "completed": "Máquina {{name}} aprovisionada y lista ({{ip}})",
+        "configuringInfra": "Configurando infraestructura (proxy + DNS) para {{name}}...",
+        "description": "Aprovisionar una nueva máquina en un proveedor de nube usando OpenTofu",
+        "failed": "Aprovisionamiento de máquina fallido: {{error}}",
+        "infraInherited": "Dominio base detectado automáticamente desde la máquina hermana \"{{source}}\"",
+        "noInfraHint": "No hay dominio base configurado. Ejecute 'rdc config set-infra <machine> --base-domain <domain>' y luego 'rdc config push-infra <machine>' para habilitar DNS y proxy.",
+        "optionBaseDomain": "Dominio base para infraestructura (ej. example.com). Implica --infra",
+        "optionImage": "Anular imagen de SO predeterminada",
+        "optionInfra": "También configurar infraestructura (set-infra + push-infra)",
+        "optionNoInfra": "Omitir configuración de infraestructura (proxy + DNS)",
+        "optionProvider": "Nombre del proveedor de nube (de config add-provider)",
+        "optionRegion": "Anular región predeterminada",
+        "optionSshUser": "Nombre de usuario SSH para la nueva VM (predeterminado: root)",
+        "optionType": "Anular tipo de instancia predeterminado",
+        "providerRequired": "Proveedor de nube \"{{name}}\" no encontrado. Agregar con: rdc config add-provider",
+        "provisioning": "Aprovisionando {{name}} en {{provider}} ({{region}})...",
+        "settingUp": "Ejecutando configuración de la máquina...",
+        "sshReady": "Conexión SSH establecida",
+        "tofuNotInstalled": "OpenTofu (tofu) no está instalado. Instalar desde: https://opentofu.org/docs/intro/install/",
+        "waitingSSH": "Esperando conectividad SSH..."
+      },
       "repos": {
         "description": "Listar repositorios implementados en una máquina",
         "fetched": "Máquina obtenida",
@@ -654,6 +718,7 @@
         "description": "Mostrar estado completo de la máquina (sistema, repos, contenedores, servicios)",
         "fetched": "Estado obtenido",
         "fetching": "Obteniendo estado de {{machine}}...",
+        "infrastructure": "Infraestructura",
         "noData": "No hay datos de estado disponibles"
       },
       "testConnection": {
@@ -1033,6 +1098,13 @@
         "failed": "Error al listar: {{error}}",
         "starting": "Listando repositorios en \"{{machine}}\"..."
       },
+      "listBackups": {
+        "description": "Listar respaldos disponibles en almacenamiento o máquina",
+        "listing": "Listando respaldos...",
+        "optionFromMachine": "Nombre de la máquina de origen",
+        "optionFromStorage": "Nombre del almacenamiento de origen",
+        "sourceRequired": "Especifique --from <storage> o --from-machine <machine>"
+      },
       "machineOption": "Nombre de la máquina de destino",
       "mount": {
         "checkpointOption": "Restaurar desde checkpoint después de montar",
@@ -1049,6 +1121,27 @@
         "starting": "Estableciendo propiedad de \"{{repository}}\" en \"{{machine}}\"...",
         "uidOption": "UID del propietario (predeterminado: 7111)"
       },
+      "pull": {
+        "description": "Obtener respaldo del repositorio desde almacenamiento o máquina",
+        "optionForce": "Forzar sobrescritura del repositorio existente",
+        "optionFromMachine": "Nombre de la máquina de origen",
+        "optionFromStorage": "Nombre del almacenamiento de origen",
+        "pulling": "Obteniendo respaldo de \"{{repo}}\"...",
+        "sourceRequired": "Especifique --from <storage> o --from-machine <machine>"
+      },
+      "push": {
+        "description": "Enviar respaldo del repositorio al almacenamiento o máquina",
+        "destIgnoredForStorage": "Ignorando --dest {{provided}}: los respaldos de almacenamiento usan el GUID del repositorio ({{dest}})",
+        "destRequired": "Especifique --to <storage> o --to-machine <machine>",
+        "optionCheckpoint": "Crear punto de control del contenedor (respaldo en caliente)",
+        "optionDest": "Nombre del archivo de destino",
+        "optionForce": "Forzar sobrescritura del respaldo existente",
+        "optionProvider": "Proveedor de nube para aprovisionar automáticamente la máquina de destino si no existe (de config add-provider)",
+        "optionTag": "Etiqueta de despliegue para versionamiento",
+        "optionToMachine": "Nombre de la máquina de destino",
+        "optionToStorage": "Nombre del almacenamiento de destino",
+        "pushing": "Enviando respaldo de \"{{repo}}\" a {{dest}}..."
+      },
       "resize": {
         "completed": "Redimensionamiento completado",
         "description": "Redimensionar un repositorio sin conexión (soporta expandir y reducir)",
@@ -1056,11 +1149,54 @@
         "sizeOption": "Nuevo tamaño del repositorio (ej. 10G, 100G, 1T)",
         "starting": "Redimensionando \"{{repository}}\" a {{size}} en \"{{machine}}\"..."
       },
+      "snapshot": {
+        "create": {
+          "creating": "Creando instantánea de \"{{repo}}\" en {{machine}}...",
+          "description": "Crear una instantánea BTRFS de un repositorio",
+          "optionSnapshotName": "Nombre explícito de la instantánea (generado automáticamente si está vacío)",
+          "success": "Instantánea creada: {{name}} ({{path}})"
+        },
+        "delete": {
+          "description": "Eliminar una instantánea de una máquina remota",
+          "success": "Instantánea eliminada: {{name}}"
+        },
+        "description": "Gestionar instantáneas BTRFS en máquinas remotas",
+        "list": {
+          "description": "Listar instantáneas en una máquina remota",
+          "header": "{{count}} instantánea(s) en {{path}}:",
+          "noSnapshots": "No se encontraron instantáneas."
+        }
+      },
       "status": {
         "completed": "Estado obtenido",
         "description": "Obtener estado del repositorio",
         "failed": "Fallo al consultar estado",
         "starting": "Obteniendo estado de \"{{repository}}\" en \"{{machine}}\"..."
+      },
+      "sync": {
+        "description": "Sincronizar repositorios y archivos (push/pull masivo, transferencia de archivos)",
+        "pullAll": {
+          "description": "Enviar/obtener todos los repositorios en masa desde/hacia almacenamiento en la nube",
+          "optionFrom": "Nombre del almacenamiento de origen (modo pull)",
+          "optionOverride": "Sobrescribir repositorios no montados existentes al obtener",
+          "optionRepo": "Filtrar a un repositorio específico (repetible)",
+          "success": "Pull de sincronización completado"
+        },
+        "pushAll": {
+          "description": "Enviar/obtener todos los repositorios en masa desde/hacia almacenamiento en la nube",
+          "optionRepo": "Filtrar a un repositorio específico (repetible)",
+          "optionTo": "Nombre del almacenamiento de destino (modo push)",
+          "success": "Push de sincronización completado"
+        },
+        "upload": {
+          "description": "Subir archivos a un repositorio"
+        },
+        "download": {
+          "description": "Descargar archivos de un repositorio"
+        },
+        "status": {
+          "description": "Verificar el estado de sincronización y comparar archivos locales/remotos"
+        }
       },
       "template": {
         "completed": "Plantilla aplicada",
@@ -1081,11 +1217,10 @@
       "up": {
         "checkpointOption": "Restaurar contenedores desde checkpoint CRIU después del despliegue (para migración en vivo de procesos desde otra máquina)",
         "completed": "Servicios iniciados",
-        "description": "Desplegar o actualizar un repositorio (montar, preparar, iniciar servicios)",
+        "description": "Desplegar o actualizar un repositorio (montar, iniciar servicios)",
         "failed": "Fallo al iniciar servicios",
         "grandOption": "Nombre del repositorio Grand (se resuelve automáticamente a GUID)",
         "mountOption": "Montar repositorio primero",
-        "prepOnlyOption": "Ejecutar solo el paso de preparación",
         "starting": "Iniciando servicios para \"{{repository}}\" en \"{{machine}}\"..."
       },
       "upAll": {
@@ -1175,23 +1310,8 @@
         "description": "Rastrear una tarea (atajo para: queue trace)"
       }
     },
-    "snapshot": {
-      "create": {
-        "creating": "Creando instantánea de \"{{repo}}\" en {{machine}}...",
-        "description": "Crear una instantánea BTRFS de un repositorio",
-        "optionSnapshotName": "Nombre explícito de la instantánea (generado automáticamente si está vacío)",
-        "success": "Instantánea creada: {{name}} ({{path}})"
-      },
-      "delete": {
-        "description": "Eliminar una instantánea de una máquina remota",
-        "success": "Instantánea eliminada: {{name}}"
-      },
-      "description": "Gestionar instantáneas BTRFS en máquinas remotas",
-      "list": {
-        "description": "Listar instantáneas en una máquina remota",
-        "header": "{{count}} instantánea(s) en {{path}}:",
-        "noSnapshots": "No se encontraron instantáneas."
-      }
+    "backup": {
+      "description": "Enviar, recibir y sincronizar copias de seguridad de repositorios entre almacenamiento y máquinas"
     },
     "storage": {
       "browse": {
@@ -1615,15 +1735,15 @@
     "sectionTitles": {
       "agent": "Utilidades del agente",
       "audit": "Auditoría y Cumplimiento",
+      "backup": "Copia de seguridad y restauración",
       "auth": "Autenticación",
-      "backup": "Gestión de copias de seguridad",
       "bridge": "Gestión de Bridge",
       "ceph": "Gestión de Almacenamiento Ceph",
       "config": "Gestión de Configuración",
+      "datastore": "Gestión de almacenamiento de datos",
       "doctor": "Diagnóstico del sistema",
       "machine": "Gestión de Máquinas",
       "mcp": "Servidor MCP",
-      "datastore": "Gestión de almacenamiento de datos",
       "ops": "Operaciones experimentales de VM",
       "organization": "Gestión de Organización",
       "permission": "Gestión de Permisos",
@@ -1633,11 +1753,10 @@
       "repo": "Ciclo de vida de repositorios",
       "repository": "Gestión de Repositorios",
       "shortcuts": "Comandos Rápidos (Atajos)",
-      "snapshot": "Gestión de instantáneas",
       "storage": "Gestión de Almacenamiento",
       "store": "Gestión de Stores",
       "subscription": "Gestión de Suscripciones",
-      "sync": "Sincronización de Archivos",
+      "sync": "Sincronización de archivos",
       "team": "Gestión de Equipos",
       "term": "Acceso Terminal SSH",
       "update": "Actualizaciones de CLI",
@@ -1784,11 +1903,6 @@
     }
   },
   "help": {
-    "backup": {
-      "list": "Listar respaldos en almacenamiento",
-      "pull": "Obtener respaldo del almacenamiento",
-      "push": "Enviar respaldo al almacenamiento"
-    },
     "cli": {
       "machineInfo": "Mostrar estado de la máquina",
       "repoUp": "Desplegar servicios del repositorio",
@@ -1811,6 +1925,13 @@
       "create": "Crear repositorio cifrado",
       "down": "Detener servicios",
       "fork": "Fork CoW para pruebas",
+      "listBackups": "Listar respaldos en almacenamiento",
+      "pull": "Obtener respaldo del almacenamiento",
+      "push": "Enviar respaldo al almacenamiento",
+      "sync": {
+        "pullAll": "Pull masivo de todos los repos desde el almacenamiento",
+        "pushAll": "Push masivo de todos los repos al almacenamiento"
+      },
       "up": "Desplegar con montaje automático"
     },
     "store": {

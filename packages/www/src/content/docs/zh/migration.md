@@ -4,7 +4,7 @@ description: "将现有项目迁移到加密的 Rediacc 仓库中。"
 category: "Guides"
 order: 11
 language: zh
-sourceHash: "977de49e158a26c0"
+sourceHash: "76165f8884e5edf1"
 ---
 
 # 迁移指南
@@ -29,14 +29,14 @@ rdc repo create my-project -m server-1 --size 20G
 
 ## 步骤 2：上传文件
 
-使用 `rdc sync upload` 将项目文件传输到仓库中。
+使用 `rdc repo sync upload` 将项目文件传输到仓库中。
 
 ```bash
 # 预览将要传输的内容（不做任何更改）
-rdc sync upload -m server-1 -r my-project --local ./my-project --dry-run
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --dry-run
 
 # 上传文件
-rdc sync upload -m server-1 -r my-project --local ./my-project
+rdc repo sync upload -m server-1 -r my-project --local ./my-project
 ```
 
 上传前仓库必须已挂载。如果尚未挂载：
@@ -48,7 +48,7 @@ rdc repo mount my-project -m server-1
 对于后续需要远程目录与本地目录完全匹配的同步：
 
 ```bash
-rdc sync upload -m server-1 -r my-project --local ./my-project --mirror
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 ```
 
 > `--mirror` 标志会删除远程上本地不存在的文件。请先使用 `--dry-run` 进行验证。
@@ -98,14 +98,10 @@ rdc repo ownership my-project -m server-1 --uid 1000
 
 ## 步骤 4：设置 Rediaccfile
 
-在项目根目录创建一个 `Rediaccfile`。这个 Bash 脚本定义了服务如何准备、启动和停止。
+在项目根目录创建一个 `Rediaccfile`。这个 Bash 脚本定义了服务如何启动和停止。
 
 ```bash
 #!/bin/bash
-
-prep() {
-    renet compose -- pull
-}
 
 up() {
     renet compose -- up -d
@@ -120,7 +116,6 @@ down() {
 
 | 函数 | 用途 | 错误行为 |
 |------|------|----------|
-| `prep()` | 拉取镜像、运行迁移、安装依赖 | 快速失败：任何错误都会停止一切 |
 | `up()` | 启动服务 | 根目录失败是致命的；子目录失败会被记录并继续 |
 | `down()` | 停止服务 | 尽力而为：始终尝试全部 |
 
@@ -211,7 +206,6 @@ rdc repo up my-project -m server-1 --mount
 1. 挂载加密仓库
 2. 启动隔离的 Docker 守护进程
 3. 自动生成包含服务 IP 分配的 `.rediacc.json`
-4. 执行所有 Rediaccfile 中的 `prep()`
 5. 执行所有 Rediaccfile 中的 `up()`
 
 验证您的容器正在运行：
@@ -260,7 +254,7 @@ my-api/
 └── redis-data/             # Redis 持久化（运行时 UID 999）
 ```
 
-1. 上传项目（考虑排除 `node_modules` 并在 `prep()` 中拉取）
+1. 上传项目（考虑排除 `node_modules` 并在 `up()` 中拉取）
 2. 容器启动后运行所有权修复
 
 ### 自定义 Docker 项目

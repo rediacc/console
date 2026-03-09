@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: tr
-sourceHash: "a21068a947d5a792"
+sourceHash: "51ec174f68da3b34"
 ---
 
 # Ağ
@@ -51,22 +51,40 @@ Bu etiketler, servisler başlatılırken `renet compose` tarafından **otomatik 
 | `rediacc.service_name` | Servis kimliği | `myapp` |
 | `rediacc.service_ip` | Atanmış geri döngü IP'si | `127.0.11.2` |
 | `rediacc.network_id` | Deponun daemon ID'si | `2816` |
+| `rediacc.repo_name` | Repository name | `marketing` |
 | `rediacc.tcp_ports` | TCP ports the service listens on | `8080,8443` |
 | `rediacc.udp_ports` | UDP ports the service listens on | `53` |
 
-Bir konteyner yalnızca `rediacc.*` etiketlerine sahipken (`traefik.enable=true` yokken), route server bir **otomatik yönlendirme** oluşturur:
+Bir konteyner yalnızca `rediacc.*` etiketlerine sahipken (`traefik.enable=true` yokken), route server depo adını ve makinenin alt alan adını kullanarak bir **otomatik yönlendirme** oluşturur:
 
 ```
-{service}-{networkID}.{baseDomain}
+{service}.{repoName}.{machineName}.{baseDomain}
 ```
 
-Örneğin, ağ ID'si `2816` ve temel alan adı `example.com` olan bir depodaki `myapp` adlı servis şunu alır:
+Örneğin, `server-1` makinesinde `marketing` adlı bir depodaki `myapp` adlı servis, temel alan adı `example.com` ile şunu alır:
 
 ```
-myapp-2816.example.com
+myapp.marketing.server-1.example.com
 ```
 
-Otomatik yönlendirmeler geliştirme ve dahili erişim için kullanışlıdır. Özel alan adlarına sahip üretim servisleri için Seviye 2 etiketlerini kullanın.
+Her deponun kendi alt alan adı seviyesi vardır, bu nedenle çatallamalar ve farklı depolar asla çakışmaz. Bir depoyu çatalladığınızda (ör. `marketing-staging`), çatal otomatik olarak farklı yönlendirmeler alır. Özel alan adlarına sahip servisler için Seviye 2 etiketlerini veya `rediacc.domain` etiketini kullanın.
+
+#### `rediacc.domain` ile Özel Alan Adı
+
+`docker-compose.yml` dosyanızdaki `rediacc.domain` etiketini kullanarak bir servis için özel alan adı belirleyebilirsiniz. Hem kısa adlar hem de tam alan adları desteklenir:
+
+```yaml
+labels:
+  # Kısa ad — makinenin baseDomain'i kullanılarak cloud.example.com olarak çözümlenir
+  - "rediacc.domain=cloud"
+
+  # Tam alan adı — olduğu gibi kullanılır
+  - "rediacc.domain=cloud.example.com"
+```
+
+Nokta içermeyen değer kısa ad olarak değerlendirilir ve makinenin `baseDomain`'i otomatik olarak eklenir. Nokta içeren değer tam alan adı olarak kullanılır.
+
+`machineName` yapılandırıldığında, özel alan adlı servisler **iki yönlendirme** alır: biri temel alan adında (`cloud.example.com`) ve biri makine alt alan adında (`cloud.server-1.example.com`).
 
 ### Seviye 2: `traefik.*` Etiketleri (Kullanıcı Tanımlı)
 
@@ -92,11 +110,15 @@ Bunlar standart [Traefik v3 etiket sözdizimini](https://doc.traefik.io/traefik/
 1. Makinede yapılandırılmış altyapı ([Makine Kurulumu — Altyapı Yapılandırması](/tr/docs/setup#infrastructure-configuration)):
 
    ```bash
+   # Paylaşılan kimlik bilgileri (yapılandırma başına bir kez, tüm makinelere uygulanır)
    rdc config set-infra server-1 \
-     --public-ipv4 203.0.113.50 \
-     --base-domain example.com \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
+
+   # Makineye özel ayarlar
+   rdc config set-infra server-1 \
+     --public-ipv4 203.0.113.50 \
+     --base-domain example.com
 
    rdc config push-infra server-1
    ```
@@ -140,7 +162,7 @@ Etiketlerdeki `{name}` rastgele bir tanımlayıcıdır — sadece ilgili router/
 
 ## TLS Sertifikaları
 
-TLS sertifikaları, Cloudflare DNS-01 doğrulaması kullanılarak Let's Encrypt aracılığıyla otomatik olarak alınır. Bu, altyapı kurulumu sırasında bir kez yapılandırılır:
+TLS sertifikaları, Cloudflare DNS-01 doğrulaması kullanılarak Let's Encrypt aracılığıyla otomatik olarak alınır. Kimlik bilgileri yapılandırma başına bir kez ayarlanır (tüm makineler arasında paylaşılır):
 
 ```bash
 rdc config set-infra server-1 \
@@ -148,13 +170,11 @@ rdc config set-infra server-1 \
   --cf-dns-token your-cloudflare-api-token
 ```
 
-Bir servis `traefik.http.routers.{name}.tls.certresolver=letsencrypt` etiketine sahip olduğunda, Traefik otomatik olarak:
-1. Let's Encrypt'ten bir sertifika talep eder
-2. Cloudflare DNS üzerinden alan adı sahipliğini doğrular
-3. Sertifikayı yerel olarak saklar
-4. Süresi dolmadan yeniler
+Otomatik yönlendirmeler, servis başına sertifika yerine depo alt alan adı seviyesinde **joker sertifikalar** (`*.marketing.server-1.example.com`) kullanır. Bu, Let's Encrypt hız sınırlarını önler ve başlatmayı hızlandırır. Özel alan adlı yönlendirmeler makine seviyesi joker sertifikalar (`*.server-1.example.com`) kullanır.
 
-Cloudflare DNS API token'ının, güvence altına almak istediğiniz alan adları için `Zone:DNS:Edit` iznine sahip olması gerekir. Bu yaklaşım, joker sertifikalar dahil Cloudflare tarafından yönetilen herhangi bir alan adı için çalışır.
+`traefik.http.routers.{name}.tls.certresolver=letsencrypt` içeren Seviye 2 yönlendirmeler için, joker alan adı SAN'ları yönlendirmenin ana bilgisayar adına göre otomatik olarak enjekte edilir.
+
+Cloudflare DNS API token'ının, güvence altına almak istediğiniz alan adları için `Zone:DNS:Edit` iznine sahip olması gerekir.
 
 ## TCP/UDP Port Yönlendirme
 
@@ -228,7 +248,7 @@ Temel kavramlar:
 
 ### Önceden Yapılandırılmış Portlar
 
-Aşağıdaki TCP/UDP portları varsayılan olarak giriş noktalarına sahiptir (`--tcp-ports` ile eklemeye gerek yoktur):
+Aşağıdaki TCP/UDP portları varsayılan olarak giriş noktalarına sahiptir (`--tcp-ports` ile eklemeye gerek yoktur). Giriş noktaları yalnızca yapılandırılmış adres aileleri için oluşturulur — IPv4 giriş noktaları `--public-ipv4`, IPv6 giriş noktaları `--public-ipv6` gerektirir:
 
 | Port | Protokol | Yaygın Kullanım |
 |------|----------|-----------------|
@@ -246,29 +266,41 @@ Aşağıdaki TCP/UDP portları varsayılan olarak giriş noktalarına sahiptir (
 
 ## DNS Yapılandırması
 
-Alan adlarınızı `set-infra` ile yapılandırılan sunucunun genel IP adreslerine yönlendirin:
+### Otomatik DNS (Cloudflare)
 
-### Bireysel Servis Alan Adları
+`--cf-dns-token` yapılandırıldığında, `rdc config push-infra` gerekli DNS kayıtlarını Cloudflare'de otomatik olarak oluşturur:
 
-Her servis için A (IPv4) ve/veya AAAA (IPv6) kayıtları oluşturun:
+| Kayıt | Tür | İçerik | Oluşturan |
+|-------|-----|--------|-----------|
+| `server-1.example.com` | A / AAAA | Makinenin genel IP'si | `push-infra` |
+| `*.server-1.example.com` | A / AAAA | Makinenin genel IP'si | `push-infra` |
+| `*.marketing.server-1.example.com` | A / AAAA | Makinenin genel IP'si | `repo up` |
+
+Makine seviyesi kayıtlar `push-infra` tarafından oluşturulur ve özel alan adlı yönlendirmeleri (`rediacc.domain`) kapsar. Depo başına joker kayıtlar `repo up` tarafından otomatik olarak oluşturulur ve o deponun otomatik yönlendirmelerini kapsar.
+
+Bu idempotent bir işlemdir — IP değişirse mevcut kayıtlar güncellenir, zaten doğruysa değiştirilmez.
+
+Temel alan adı joker kaydı (`*.example.com`), `rediacc.domain=erp` gibi özel alan adı etiketleri kullanıyorsanız manuel olarak oluşturulmalıdır.
+
+### Manuel DNS
+
+Cloudflare kullanmıyorsanız veya DNS'i manuel yönetiyorsanız, A (IPv4) ve/veya AAAA (IPv6) kayıtları oluşturun:
 
 ```
-app.example.com      A     203.0.113.50
-app.example.com      AAAA  2001:db8::1
-gitlab.example.com   A     203.0.113.50
-mail.example.com     A     203.0.113.50
+# Makine alt alan adı (rediacc.domain=erp gibi özel alan adlı yönlendirmeler için)
+server-1.example.com           A     203.0.113.50
+*.server-1.example.com         A     203.0.113.50
+*.server-1.example.com         AAAA  2001:db8::1
+
+# Depo başına joker kayıtlar (myapp.marketing.server-1.example.com gibi otomatik yönlendirmeler için)
+*.marketing.server-1.example.com    A     203.0.113.50
+*.marketing.server-1.example.com    AAAA  2001:db8::1
+
+# Temel alan adı joker kaydı (rediacc.domain=erp gibi özel alan adlı servisler için)
+*.example.com                  A     203.0.113.50
 ```
 
-### Otomatik Yönlendirmeler İçin Joker
-
-Otomatik yönlendirmeleri (Seviye 1) kullanıyorsanız, bir joker DNS kaydı oluşturun:
-
-```
-*.example.com   A     203.0.113.50
-*.example.com   AAAA  2001:db8::1
-```
-
-Bu, tüm alt alan adlarını sunucunuza yönlendirir ve Traefik bunları `Host()` kuralına veya otomatik yönlendirme ana bilgisayar adına göre doğru servisle eşleştirir.
+Cloudflare DNS yapılandırıldığında, depo başına joker kayıtlar `repo up` tarafından otomatik olarak oluşturulur. Birden fazla makine ile her makine kendi IP'sine işaret eden kendi DNS kayıtlarını alır.
 
 ## Ara Yazılımlar
 
@@ -383,12 +415,8 @@ services:
 ```bash
 #!/bin/bash
 
-prep() {
-    mkdir -p data/postgres
-    renet compose -- pull
-}
-
 up() {
+    mkdir -p data/postgres
     renet compose -- up -d
 }
 

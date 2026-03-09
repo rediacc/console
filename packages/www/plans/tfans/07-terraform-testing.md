@@ -215,18 +215,18 @@ Acceptance tests require:
 
 ```bash
 # Setup (run once before tests)
-./run.sh rdc ops up --basic --parallel
-./run.sh rdc config add-machine rediacc11 --ip 192.168.111.11 --user muhammed
-./run.sh rdc config add-machine rediacc12 --ip 192.168.111.12 --user muhammed
-./run.sh rdc config set-ssh \
+./rdc.sh ops up --basic --parallel
+./rdc.sh config add-machine rediacc11 --ip 192.168.111.11 --user muhammed
+./rdc.sh config add-machine rediacc12 --ip 192.168.111.12 --user muhammed
+./rdc.sh config set-ssh \
   --private-key ~/.renet/staging/.ssh/id_rsa \
   --public-key ~/.renet/staging/.ssh/id_rsa.pub
-./run.sh rdc config setup-machine rediacc11
-./run.sh rdc config setup-machine rediacc12
+./rdc.sh config setup-machine rediacc11
+./rdc.sh config setup-machine rediacc12
 
 # Run acceptance tests
 cd packages/terraform/terraform-provider-rediacc
-TF_ACC=1 RDC_BINARY="$(pwd)/../../../run.sh rdc" go test ./... -v -timeout 30m
+TF_ACC=1 RDC_BINARY="$(pwd)/../../../rdc.sh" go test ./... -v -timeout 30m
 ```
 
 ### Example: resource_machine_test.go (Acceptance)
@@ -577,23 +577,23 @@ jobs:
           go-version: '1.22'
       - run: npm install && cd packages/shared && npm run build
       - name: Provision test VMs
-        run: ./run.sh rdc ops up --basic --parallel
+        run: ./rdc.sh ops up --basic --parallel
       - name: Register and setup machines
         run: |
-          ./run.sh rdc config add-machine rediacc11 --ip 192.168.111.11 --user muhammed
-          ./run.sh rdc config add-machine rediacc12 --ip 192.168.111.12 --user muhammed
-          ./run.sh rdc config set-ssh \
+          ./rdc.sh config add-machine rediacc11 --ip 192.168.111.11 --user muhammed
+          ./rdc.sh config add-machine rediacc12 --ip 192.168.111.12 --user muhammed
+          ./rdc.sh config set-ssh \
             --private-key ~/.renet/staging/.ssh/id_rsa \
             --public-key ~/.renet/staging/.ssh/id_rsa.pub
-          ./run.sh rdc config setup-machine rediacc11
-          ./run.sh rdc config setup-machine rediacc12
+          ./rdc.sh config setup-machine rediacc11
+          ./rdc.sh config setup-machine rediacc12
       - name: Run acceptance tests
         run: |
           cd packages/terraform/terraform-provider-rediacc
-          TF_ACC=1 RDC_BINARY="$(pwd)/../../../run.sh rdc" go test ./... -v -timeout 30m
+          TF_ACC=1 RDC_BINARY="$(pwd)/../../../rdc.sh" go test ./... -v -timeout 30m
       - name: Teardown VMs
         if: always()
-        run: ./run.sh rdc ops down
+        run: ./rdc.sh ops down
 
   docs:
     runs-on: ubuntu-latest

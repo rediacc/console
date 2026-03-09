@@ -4,7 +4,7 @@ description: "Nutzen Sie SSH-Terminalzugriff, Dateisynchronisation, VS Code-Inte
 category: "Tutorials"
 order: 5
 language: de
-sourceHash: "f581499837e09360"
+sourceHash: "9391a34dfb244942"
 ---
 
 # So verwenden Sie Terminal-, Sync- und VS Code-Werkzeuge mit Rediacc
@@ -46,7 +46,7 @@ Beim Verbinden mit einem Repository wird `DOCKER_HOST` automatisch auf den isoli
 Bevor Sie Dateien übertragen, schauen Sie sich an, was sich ändern würde.
 
 ```bash
-rdc sync upload -m server-1 -r my-app --local ./src --dry-run
+rdc repo sync upload -m server-1 -r my-app --local ./src --dry-run
 ```
 
 Das `--dry-run`-Flag zeigt neue Dateien, geänderte Dateien und die gesamte Übertragungsgröße an, ohne tatsächlich etwas hochzuladen.
@@ -56,7 +56,7 @@ Das `--dry-run`-Flag zeigt neue Dateien, geänderte Dateien und die gesamte Übe
 Übertragen Sie Dateien von Ihrem lokalen Rechner zum Remote-Repository-Mount.
 
 ```bash
-rdc sync upload -m server-1 -r my-app --local ./src
+rdc repo sync upload -m server-1 -r my-app --local ./src
 ```
 
 Dateien werden über rsync via SSH übertragen. Bei nachfolgenden Uploads werden nur geänderte Dateien gesendet.

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: tr
-sourceHash: "28c4922849c4f3a7"
+sourceHash: "cd5021a29a7b2a59"
 ---
 
 # Servisler
@@ -17,7 +17,7 @@ Bu sayfa, konteynerleştirilmiş servislerin nasıl dağıtılacağını ve yön
 
 ## Rediaccfile
 
-**Rediaccfile**, servislerinizin nasıl hazırlandığını, başlatıldığını ve durdurulduğunu tanımlayan bir Bash betiğidir. Dosya adı `Rediaccfile` veya `rediaccfile` (büyük/küçük harf duyarsız) olmalı ve deponun bağlı dosya sistemi içine yerleştirilmelidir.
+**Rediaccfile**, servislerinizin nasıl başlatıldığını ve durdurulduğunu tanımlayan bir Bash betiğidir. Dosya adı `Rediaccfile` veya `rediaccfile` (büyük/küçük harf duyarsız) olmalı ve deponun bağlı dosya sistemi içine yerleştirilmelidir.
 
 Rediaccfile'lar iki konumda aranır:
 1. Depo bağlama yolunun **kök dizini**
@@ -27,15 +27,14 @@ Gizli dizinler (`.` ile başlayan adlar) atlanır.
 
 ### Yaşam Döngüsü Fonksiyonları
 
-Bir Rediaccfile en fazla üç fonksiyon içerir:
+Bir Rediaccfile en fazla iki fonksiyon içerir:
 
 | Fonksiyon | Ne zaman çalışır | Amacı | Hata davranışı |
 |-----------|-------------------|-------|----------------|
-| `prep()` | `up()` öncesinde | Bağımlılıkları yükleme, imajları çekme, migrasyonları çalıştırma | **Hızlı başarısızlık** -- herhangi bir `prep()` başarısız olursa, tüm süreç derhal durur |
-| `up()` | Tüm `prep()` tamamlandıktan sonra | Servisleri başlatma (ör. `renet compose -- up -d`) | Kök hatası **kritiktir** (her şeyi durdurur). Alt dizin hataları **kritik değildir** (günlüğe kaydedilir, devam eder) |
+| `up()` | Başlatma sırasında | Servisleri başlatma (ör. `renet compose -- up -d`) | Kök hatası **kritiktir** (her şeyi durdurur). Alt dizin hataları **kritik değildir** (günlüğe kaydedilir, devam eder) |
 | `down()` | Durdurma sırasında | Servisleri durdurma (ör. `renet compose -- down`) | **En iyi çaba** -- hatalar günlüğe kaydedilir ancak tüm Rediaccfile'lar her zaman denenir |
 
-Her üç fonksiyon da isteğe bağlıdır. Tanımlanmamış fonksiyonlar sessizce atlanır.
+Her iki fonksiyon da isteğe bağlıdır. Tanımlanmamış fonksiyonlar sessizce atlanır.
 
 ### Çalıştırma Sırası
 
@@ -64,11 +63,6 @@ Bir Rediaccfile fonksiyonu çalıştığında, aşağıdaki ortam değişkenleri
 
 ```bash
 #!/bin/bash
-
-prep() {
-    echo "Pulling latest images..."
-    renet compose -- pull
-}
 
 up() {
     echo "Starting services..."
@@ -186,15 +180,13 @@ rdc repo up my-app -m server-1 --mount
 | Seçenek | Açıklama |
 |---------|----------|
 | `--mount` | Henüz bağlanmamışsa önce depoyu bağla |
-| `--prep-only` | Yalnızca `prep()` fonksiyonlarını çalıştır, `up()` atla |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 Çalıştırma sırası:
 1. LUKS ile şifrelenmiş depoyu bağla (`--mount` belirtilmişse)
 2. İzole Docker daemon'unu başlat
 3. Compose dosyalarından `.rediacc.json` dosyasını otomatik oluştur
-4. Tüm Rediaccfile'larda `prep()` çalıştır (A-Z sırası, hızlı başarısızlık)
-5. Tüm Rediaccfile'larda `up()` çalıştır (A-Z sırası)
+4. Tüm Rediaccfile'larda `up()` çalıştır (A-Z sırası)
 
 ## Servisleri Durdurma
 
@@ -328,12 +320,8 @@ services:
 ```bash
 #!/bin/bash
 
-prep() {
-    mkdir -p data/postgres
-    renet compose -- pull
-}
-
 up() {
+    mkdir -p data/postgres
     renet compose -- up -d
 
     echo "Waiting for PostgreSQL..."

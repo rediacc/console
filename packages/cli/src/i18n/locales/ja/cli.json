@@ -113,70 +113,6 @@
         }
       }
     },
-    "backup": {
-      "description": "リポジトリを外部ストレージにバックアップ・復元する",
-      "list": {
-        "description": "ストレージまたはマシン上の利用可能なバックアップを一覧表示する",
-        "listing": "バックアップを一覧表示中...",
-        "optionFromMachine": "ソースマシン名",
-        "optionFromStorage": "ソースストレージ名",
-        "sourceRequired": "--from <storage> または --from-machine <machine> を指定してください"
-      },
-      "pull": {
-        "description": "ストレージまたはマシンからリポジトリのバックアップをプルする",
-        "optionForce": "既存のリポジトリを強制的に上書きする",
-        "optionFromMachine": "ソースマシン名",
-        "optionFromStorage": "ソースストレージ名",
-        "pulling": "\"{{repo}}\" のバックアップをプル中...",
-        "sourceRequired": "--from <storage> または --from-machine <machine> を指定してください"
-      },
-      "push": {
-        "description": "リポジトリのバックアップをストレージまたはマシンにプッシュする",
-        "destIgnoredForStorage": "--dest {{provided}} を無視: ストレージバックアップはリポジトリGUIDを使用します（{{dest}}）",
-        "destRequired": "--to <storage> または --to-machine <machine> を指定してください",
-        "optionCheckpoint": "コンテナチェックポイントを作成（ホットバックアップ）",
-        "optionDest": "宛先ファイル名",
-        "optionForce": "既存のバックアップを強制的に上書きする",
-        "optionTag": "バージョニング用デプロイタグ",
-        "optionToMachine": "宛先マシン名",
-        "optionToStorage": "宛先ストレージ名",
-        "pushing": "\"{{repo}}\" のバックアップを {{dest}} にプッシュ中..."
-      },
-      "schedule": {
-        "description": "スケジュールバックアップ設定を管理する",
-        "push": {
-          "description": "バックアップスケジュールをリモートマシンにプッシュする（systemdタイマー）",
-          "success": "バックアップスケジュールを {{machine}} にプッシュしました"
-        },
-        "set": {
-          "description": "バックアップスケジュール設定を構成する",
-          "noOptions": "少なくとも1つのオプションを指定してください: --destination、--cron、--enable、または --disable",
-          "optionCron": "バックアップスケジュールのcron式（例: \"0 2 * * *\"）",
-          "optionDestination": "デフォルトのストレージ宛先名",
-          "optionDisable": "スケジュールバックアップを無効にする",
-          "optionEnable": "スケジュールバックアップを有効にする",
-          "saved": "バックアップスケジュール設定を保存しました"
-        },
-        "show": {
-          "description": "現在のバックアップスケジュール設定を表示する",
-          "destination": "宛先: {{destination}}",
-          "enabled": "有効: {{enabled}}",
-          "notConfigured": "バックアップスケジュールが設定されていません",
-          "schedule": "スケジュール: {{schedule}}"
-        }
-      },
-      "sync": {
-        "description": "すべてのリポジトリをクラウドストレージに一括プッシュ/プルする",
-        "directionConflict": "--to と --from を同時に指定することはできません",
-        "directionRequired": "--to <storage>（プッシュ）または --from <storage>（プル）を指定してください",
-        "optionFrom": "ソースストレージ名（プルモード）",
-        "optionOverride": "プル時に既存の未マウントリポジトリを上書きする",
-        "optionRepo": "特定のリポジトリにフィルタ（繰り返し可能）",
-        "optionTo": "宛先ストレージ名（プッシュモード）",
-        "pullSuccess": "同期プルが完了しました",
-        "pushSuccess": "同期プッシュが完了しました"
-      }
-    },
     "bridge": {
       "description": "ブリッジ管理",
       "list": {
@@ -339,6 +275,27 @@
         "description": "現在の設定にマシンを追加する",
         "success": "マシン \"{{name}}\" が追加されました ({{user}}@{{ip}})"
       },
+      "addProvider": {
+        "description": "自動マシンプロビジョニング用のクラウドプロバイダーを追加する",
+        "optionImage": "デフォルトのOSイメージ",
+        "optionImageAttr": "カスタム: OSイメージの属性名",
+        "optionInstanceType": "デフォルトのインスタンスタイプ/サイズ",
+        "optionIpv4Output": "カスタム: IPv4アドレスの出力属性",
+        "optionIpv6Output": "カスタム: IPv6アドレスの出力属性",
+        "optionLabelAttr": "カスタム: VMラベルの属性名",
+        "optionProvider": "既知のプロバイダーソース（例: linode/linode、hetznercloud/hcloud）",
+        "optionRegion": "新しいマシンのデフォルトリージョン",
+        "optionRegionAttr": "カスタム: リージョンの属性名",
+        "optionResource": "カスタム: VM用のOpenTofuリソースタイプ",
+        "optionSizeAttr": "カスタム: インスタンスタイプの属性名",
+        "optionSource": "カスタムOpenTofuプロバイダーソース（例: vultr/vultr）",
+        "optionSshKeyAttr": "カスタム: SSHキーの属性名",
+        "optionSshKeyFormat": "カスタム: SSHキー形式（inline_listまたはresource_id）",
+        "optionSshKeyResource": "カスタム: SSHキー用のOpenTofuリソースタイプ",
+        "optionSshUser": "新しいVMのSSHユーザー名（デフォルト: root）",
+        "optionToken": "クラウドプロバイダーのAPIトークン",
+        "success": "クラウドプロバイダー \"{{name}}\" を追加しました ({{provider}})"
+      },
       "addRepository": {
         "description": "現在の設定にリポジトリの GUID マッピングを追加する",
         "networkIdAssigned": "ネットワーク ID: {{networkId}}",
@@ -347,6 +304,60 @@
         "optionNetworkId": "Docker 分離用のネットワーク ID (2816, 2880, ...)。省略した場合は自動割り当て",
         "optionTag": "リポジトリタグ",
         "success": "リポジトリ \"{{name}}\" が追加されました ({{guid}}、タグ: {{tag}})"
+      },
+      "backupStrategy": {
+        "description": "マルチ宛先バックアップ戦略を管理",
+        "set": {
+          "description": "バックアップスケジュール設定を構成する",
+          "noOptions": "少なくとも1つのオプションを指定してください: --destination、--cron、--enable、または --disable",
+          "optionCron": "バックアップスケジュールのcron式（例: \"0 2 * * *\"）",
+          "optionDestination": "デフォルトのストレージ宛先名",
+          "optionDisable": "スケジュールバックアップを無効にする",
+          "optionEnable": "スケジュールバックアップを有効にする",
+          "saved": "バックアップスケジュール設定を保存しました"
+        },
+        "show": {
+          "description": "現在のバックアップスケジュール設定を表示する",
+          "destinations": "宛先:",
+          "enabled": "有効: {{enabled}}",
+          "noDestinations": "バックアップ先が設定されていません",
+          "notConfigured": "バックアップスケジュールが設定されていません",
+          "schedule": "スケジュール: {{schedule}}"
+        }
+      },
+      "certCache": {
+        "clear": {
+          "cleared": "証明書キャッシュを削除しました",
+          "description": "証明書キャッシュを削除",
+          "noCache": "削除する証明書キャッシュがありません"
+        },
+        "description": "キャッシュされたTLS証明書を管理",
+        "noBaseDomain": "マシンにbaseDomainが設定されていません",
+        "noCacheForDomain": "{{domain}} の証明書キャッシュが見つかりません",
+        "pull": {
+          "cached": "{{count}} 件の証明書をキャッシュしました ({{size}})",
+          "description": "マシンからTLS証明書をダウンロードしてキャッシュ",
+          "downloading": "{{machine}} から証明書をダウンロード中...",
+          "merged": "ローカルキャッシュからより長い有効期限の証明書を {{count}} 件保持しました",
+          "noAcmeJson": "{{machine}} に acme.json が見つかりません",
+          "optionNoPrune": "古いネットワークID証明書の整理をスキップ",
+          "pruned": "古い証明書を {{count}} 件整理しました"
+        },
+        "push": {
+          "description": "キャッシュされたTLS証明書をマシンにアップロード",
+          "merged": "より長い有効期限の証明書 {{count}} 件を {{machine}} にマージしました",
+          "noCache": "証明書キャッシュが見つかりません。先に 'rdc config cert-cache pull <machine>' を実行してください",
+          "uploaded": "{{count}} 件の証明書を {{machine}} にアップロードしました",
+          "uploading": "キャッシュされた証明書を {{machine}} にアップロード中...",
+          "upToDate": "{{machine}} の証明書は最新です"
+        },
+        "status": {
+          "certCount": "{{count}} 件の証明書、{{size}} 圧縮",
+          "description": "キャッシュされた証明書のインベントリを表示",
+          "header": "{{baseDomain}} の証明書キャッシュ",
+          "noCache": "保存された証明書キャッシュはありません",
+          "updatedAt": "最終更新: {{date}} ({{machine}} から)"
+        }
       },
       "clear": {
         "allCleared": "すべてのデフォルトをクリアしました",
@@ -396,16 +407,28 @@
         "description": "現在の設定のマシンをリスト表示する",
         "noMachines": "マシンが設定されていません。次のコマンドで追加してください: rdc config add-machine <name> --ip <ip> --user <user>"
       },
+      "providers": {
+        "description": "設定済みのクラウドプロバイダーを一覧表示する",
+        "noProviders": "クラウドプロバイダーが設定されていません。追加: rdc config add-provider"
+      },
       "purgeArchived": {
         "description": "アーカイブされた資格情報をすべて完全に削除",
         "noArchived": "削除するアーカイブされたリポジトリはありません",
         "success": "{{count}} 件のアーカイブされた資格情報を削除しました"
       },
       "pushInfra": {
-        "description": "インフラ設定をリモートマシンにプッシュする",
-        "installingProxy": "プロキシをインストールして起動中です...",
-        "proxyInstallWarning": "プロキシのインストールに失敗しました (コード {{code}})。手動で実行してください: sudo renet proxy install",
-        "success": "インフラ設定を \"{{name}}\" にプッシュしました"
+        "certCacheUploaded": "キャッシュされた証明書をリモートにアップロードしました",
+        "description": "インフラ設定をマシンに送信（Traefikプロキシ、ルーター、マシンサブドメイン用Cloudflare DNSレコード）。先に 'config set-infra <machine>' を実行してください",
+        "dnsCreated": "DNS: {{type}} {{name}} → {{content}} を作成",
+        "dnsError": "DNS警告: {{message}}（レコードの手動設定が必要な場合があります）",
+        "dnsResolvingZone": "{{domain}} のCloudflareゾーンを解決中...",
+        "dnsSkipLocal": "DNSスキップ: .localドメインはCloudflareを使用しません",
+        "dnsSkipNoToken": "DNSスキップ: Cloudflare APIトークンがありません。設定: rdc config set-infra <machine> --cf-dns-token <token>",
+        "dnsUnchanged": "DNS: {{type}} {{name}} は既に正しい設定",
+        "dnsUpdated": "DNS: {{type}} {{name}} → {{content}} を更新",
+        "installingProxy": "プロキシをインストール・起動中...",
+        "proxyInstallWarning": "プロキシのインストールに失敗しました（コード {{code}}）。手動で実行: sudo renet proxy install",
+        "success": "インフラ設定を \"{{name}}\" に送信しました"
       },
       "recover": {
         "confirm": "設定 \"{{name}}\" をバックアップから復元しますか？",
@@ -417,6 +440,10 @@
       "removeMachine": {
         "description": "現在の設定からマシンを削除する",
         "success": "マシン \"{{name}}\" が削除されました"
+      },
+      "removeProvider": {
+        "description": "クラウドプロバイダーの設定を削除する",
+        "success": "クラウドプロバイダー \"{{name}}\" を削除しました"
       },
       "removeRepository": {
         "description": "現在の設定からリポジトリのマッピングを削除する",
@@ -453,13 +480,13 @@
         "success": "\"{{name}}\"のCeph設定を構成しました: pool={{pool}}, image={{image}}"
       },
       "setInfra": {
-        "description": "マシンのインフラ設定を行う",
+        "description": "マシンのインフラ設定を行う (machine-specific: IPs, domain, ports; shared: cert email, CF DNS token)",
         "invalidIPv4": "無効な IPv4 アドレス: {{ip}}",
         "invalidIPv6": "無効な IPv6 アドレス: {{ip}}",
         "noOptions": "オプションが指定されていません。--public-ipv4、--base-domain などを使用してください。",
         "optionBaseDomain": "アプリケーションのベースドメイン",
-        "optionCertEmail": "TLS 証明書通知用のメールアドレス",
-        "optionCfDnsToken": "ACME DNS-01 チャレンジ用の Cloudflare DNS API トークン",
+        "optionCertEmail": "TLS 証明書通知用のメールアドレス (shared across machines)",
+        "optionCfDnsToken": "ACME DNS-01 チャレンジ用の Cloudflare DNS API トークン (shared across machines)",
         "optionPublicIPv4": "パブリック IPv4 アドレス",
         "optionPublicIPv6": "パブリック IPv6 アドレス",
         "optionTcpPorts": "転送する TCP ポート (カンマ区切り、例: 25,143,465)",
@@ -600,6 +627,21 @@
         "description": "マシンを削除する",
         "success": "マシン \"{{name}}\" が削除されました"
       },
+      "deployBackup": {
+        "description": "バックアップスケジュールをリモートマシンにプッシュする（systemdタイマー）",
+        "success": "バックアップスケジュールを {{machine}} にプッシュしました"
+      },
+      "deprovision": {
+        "completed": "マシン {{name}} が破棄され、設定から削除されました",
+        "confirm": "マシン \"{{name}}\" とそのすべてのデータが完全に破棄されます。続行しますか？",
+        "description": "クラウドでプロビジョニングされたマシンを破棄し、設定から削除する",
+        "destroyFailed": "{{name}} のインフラ破棄に失敗しました: {{error}}。設定の削除を続行します (--force)。",
+        "destroying": "{{name}} を破棄中...",
+        "dnsCleanedUp": "{{count}} 件のDNSレコードを削除しました",
+        "dnsDeleted": "DNSレコードを削除しました: {{type}} {{name}}",
+        "noState": "\"{{name}}\" のOpenTofu状態が見つかりません。手動で追加したマシンには 'config remove-machine' を使用してください。",
+        "optionForce": "確認プロンプトをスキップ"
+      },
       "description": "リモートマシンの管理 (ステータス、コンテナ、サービス、ヘルス)",
       "health": {
         "containersSection": "\nコンテナ:",
@@ -635,6 +677,28 @@
         "description": "マシンをリスト表示する",
         "fetching": "マシンを取得中です..."
       },
+      "provision": {
+        "completed": "マシン {{name}} がプロビジョニングされ準備完了 ({{ip}})",
+        "configuringInfra": "{{name}} のインフラストラクチャ（プロキシ + DNS）を設定中...",
+        "description": "OpenTofuを使用してクラウドプロバイダーに新しいマシンをプロビジョニングする",
+        "failed": "マシンのプロビジョニングに失敗しました: {{error}}",
+        "infraInherited": "兄弟マシン \"{{source}}\" からベースドメインを自動検出しました",
+        "noInfraHint": "ベースドメインが設定されていません。'rdc config set-infra <machine> --base-domain <domain>' を実行してから 'rdc config push-infra <machine>' を実行してDNSとプロキシを有効にしてください。",
+        "optionBaseDomain": "インフラストラクチャのベースドメイン（例: example.com）。--infra を含む",
+        "optionImage": "デフォルトOSイメージを上書き",
+        "optionInfra": "インフラストラクチャも設定する（set-infra + push-infra）",
+        "optionNoInfra": "インフラ設定をスキップ（プロキシ + DNS）",
+        "optionProvider": "クラウドプロバイダー名（config add-providerから）",
+        "optionRegion": "デフォルトリージョンを上書き",
+        "optionSshUser": "新しいVMのSSHユーザー名（デフォルト: root）",
+        "optionType": "デフォルトインスタンスタイプを上書き",
+        "providerRequired": "クラウドプロバイダー \"{{name}}\" が見つかりません。追加: rdc config add-provider",
+        "provisioning": "{{provider}} ({{region}}) で {{name}} をプロビジョニング中...",
+        "settingUp": "マシンセットアップを実行中...",
+        "sshReady": "SSH接続が確立されました",
+        "tofuNotInstalled": "OpenTofu (tofu) がインストールされていません。インストール: https://opentofu.org/docs/intro/install/",
+        "waitingSSH": "SSH接続を待機中..."
+      },
       "repos": {
         "description": "マシンにデプロイされたリポジトリをリスト表示する",
         "fetched": "マシンが取得されました",
@@ -654,6 +718,7 @@
         "description": "マシンの完全なステータスを表示（システム、リポジトリ、コンテナ、サービス）",
         "fetched": "ステータスを取得しました",
         "fetching": "{{machine}} からステータスを取得中...",
+        "infrastructure": "インフラストラクチャ",
         "noData": "ステータスデータがありません"
       },
       "testConnection": {
@@ -1033,6 +1098,13 @@
         "failed": "一覧取得に失敗しました: {{error}}",
         "starting": "\"{{machine}}\" のリポジトリをリスト表示中..."
       },
+      "listBackups": {
+        "description": "ストレージまたはマシン上の利用可能なバックアップを一覧表示する",
+        "listing": "バックアップを一覧表示中...",
+        "optionFromMachine": "ソースマシン名",
+        "optionFromStorage": "ソースストレージ名",
+        "sourceRequired": "--from <storage> または --from-machine <machine> を指定してください"
+      },
       "machineOption": "対象マシン名",
       "mount": {
         "checkpointOption": "マウント後にチェックポイントから復元する",
@@ -1049,6 +1121,27 @@
         "starting": "\"{{machine}}\" で \"{{repository}}\" の所有権を設定中...",
         "uidOption": "所有者UID（デフォルト: 7111）"
       },
+      "pull": {
+        "description": "ストレージまたはマシンからリポジトリのバックアップをプルする",
+        "optionForce": "既存のリポジトリを強制的に上書きする",
+        "optionFromMachine": "ソースマシン名",
+        "optionFromStorage": "ソースストレージ名",
+        "pulling": "\"{{repo}}\" のバックアップをプル中...",
+        "sourceRequired": "--from <storage> または --from-machine <machine> を指定してください"
+      },
+      "push": {
+        "description": "リポジトリのバックアップをストレージまたはマシンにプッシュする",
+        "destIgnoredForStorage": "--dest {{provided}} を無視: ストレージバックアップはリポジトリGUIDを使用します（{{dest}}）",
+        "destRequired": "--to <storage> または --to-machine <machine> を指定してください",
+        "optionCheckpoint": "コンテナチェックポイントを作成（ホットバックアップ）",
+        "optionDest": "宛先ファイル名",
+        "optionForce": "既存のバックアップを強制的に上書きする",
+        "optionProvider": "ターゲットマシンが存在しない場合に自動プロビジョニングするクラウドプロバイダー（config add-providerから）",
+        "optionTag": "バージョニング用デプロイタグ",
+        "optionToMachine": "宛先マシン名",
+        "optionToStorage": "宛先ストレージ名",
+        "pushing": "\"{{repo}}\" のバックアップを {{dest}} にプッシュ中..."
+      },
       "resize": {
         "completed": "リサイズが完了しました",
         "description": "リポジトリをオフラインでリサイズ（拡張と縮小をサポート）",
@@ -1056,11 +1149,54 @@
         "sizeOption": "新しいリポジトリサイズ（例: 10G、100G、1T）",
         "starting": "\"{{machine}}\" で \"{{repository}}\" を {{size}} にリサイズ中..."
       },
+      "snapshot": {
+        "create": {
+          "creating": "{{machine}} で \"{{repo}}\" のスナップショットを作成中...",
+          "description": "リポジトリのBTRFSスナップショットを作成する",
+          "optionSnapshotName": "明示的なスナップショット名（空の場合は自動生成）",
+          "success": "スナップショットを作成しました: {{name}}（{{path}}）"
+        },
+        "delete": {
+          "description": "リモートマシンからスナップショットを削除する",
+          "success": "スナップショットを削除しました: {{name}}"
+        },
+        "description": "リモートマシン上のBTRFSスナップショットを管理する",
+        "list": {
+          "description": "リモートマシン上のスナップショットを一覧表示する",
+          "header": "{{path}} 内に {{count}} 個のスナップショット:",
+          "noSnapshots": "スナップショットが見つかりませんでした。"
+        }
+      },
       "status": {
         "completed": "ステータスを取得しました",
         "description": "リポジトリのステータスを取得する",
         "failed": "ステータスの確認に失敗しました",
         "starting": "\"{{repository}}\" のステータスを \"{{machine}}\" で取得中..."
+      },
+      "sync": {
+        "description": "リポジトリとファイルの同期（一括プッシュ/プル、ファイル転送）",
+        "pullAll": {
+          "description": "すべてのリポジトリをクラウドストレージに一括プッシュ/プルする",
+          "optionFrom": "ソースストレージ名（プルモード）",
+          "optionOverride": "プル時に既存の未マウントリポジトリを上書きする",
+          "optionRepo": "特定のリポジトリにフィルタ（繰り返し可能）",
+          "success": "同期プルが完了しました"
+        },
+        "pushAll": {
+          "description": "すべてのリポジトリをクラウドストレージに一括プッシュ/プルする",
+          "optionRepo": "特定のリポジトリにフィルタ（繰り返し可能）",
+          "optionTo": "宛先ストレージ名（プッシュモード）",
+          "success": "同期プッシュが完了しました"
+        },
+        "upload": {
+          "description": "リポジトリにファイルをアップロード"
+        },
+        "download": {
+          "description": "リポジトリからファイルをダウンロード"
+        },
+        "status": {
+          "description": "同期ステータスを確認しローカル/リモートファイルを比較"
+        }
       },
       "template": {
         "completed": "テンプレートを適用しました",
@@ -1081,11 +1217,10 @@
       "up": {
         "checkpointOption": "デプロイ後にCRIUチェックポイントからコンテナを復元する（別のマシンからのライブプロセス移行用）",
         "completed": "サービスが開始されました",
-        "description": "リポジトリをデプロイまたは更新する (マウント、準備、サービス起動)",
+        "description": "リポジトリをデプロイまたは更新する (マウント、サービス起動)",
         "failed": "サービスの開始に失敗しました",
         "grandOption": "グランドリポジトリ名 (自動的に GUID に解決)",
         "mountOption": "最初にリポジトリをマウントする",
-        "prepOnlyOption": "準備ステップのみ実行する",
         "starting": "\"{{repository}}\" のサービスを \"{{machine}}\" で開始中..."
       },
       "upAll": {
@@ -1175,23 +1310,8 @@
         "description": "タスクをトレースする (queue trace のショートカット)"
       }
     },
-    "snapshot": {
-      "create": {
-        "creating": "{{machine}} で \"{{repo}}\" のスナップショットを作成中...",
-        "description": "リポジトリのBTRFSスナップショットを作成する",
-        "optionSnapshotName": "明示的なスナップショット名（空の場合は自動生成）",
-        "success": "スナップショットを作成しました: {{name}}（{{path}}）"
-      },
-      "delete": {
-        "description": "リモートマシンからスナップショットを削除する",
-        "success": "スナップショットを削除しました: {{name}}"
-      },
-      "description": "リモートマシン上のBTRFSスナップショットを管理する",
-      "list": {
-        "description": "リモートマシン上のスナップショットを一覧表示する",
-        "header": "{{path}} 内に {{count}} 個のスナップショット:",
-        "noSnapshots": "スナップショットが見つかりませんでした。"
-      }
+    "backup": {
+      "description": "ストレージやマシン間でリポジトリバックアップのプッシュ、プル、同期を行う"
     },
     "storage": {
       "browse": {
@@ -1615,15 +1735,15 @@
     "sectionTitles": {
       "agent": "エージェントユーティリティ",
       "audit": "監査とコンプライアンス",
+      "backup": "バックアップと復元",
       "auth": "認証",
-      "backup": "バックアップ管理",
       "bridge": "ブリッジ管理",
       "ceph": "Cephストレージ管理",
       "config": "設定管理",
+      "datastore": "データストア管理",
       "doctor": "システム診断",
       "machine": "マシン管理",
       "mcp": "MCPサーバー",
-      "datastore": "データストア管理",
       "ops": "実験的 VM 操作",
       "organization": "組織管理",
       "permission": "権限管理",
@@ -1633,7 +1753,6 @@
       "repo": "リポジトリライフサイクル",
       "repository": "リポジトリ管理",
       "shortcuts": "クイックコマンド（ショートカット）",
-      "snapshot": "スナップショット管理",
       "storage": "ストレージ管理",
       "store": "ストア管理",
       "subscription": "サブスクリプション管理",
@@ -1784,11 +1903,6 @@
     }
   },
   "help": {
-    "backup": {
-      "list": "ストレージ上のバックアップを一覧表示",
-      "pull": "ストレージからバックアップをプル",
-      "push": "バックアップをストレージにプッシュ"
-    },
     "cli": {
       "machineInfo": "マシンの状態を表示",
       "repoUp": "リポジトリサービスをデプロイ",
@@ -1811,6 +1925,13 @@
       "create": "暗号化リポジトリを作成",
       "down": "サービスを停止",
       "fork": "テスト用CoWフォーク",
+      "listBackups": "ストレージ上のバックアップを一覧表示",
+      "pull": "ストレージからバックアップをプル",
+      "push": "バックアップをストレージにプッシュ",
+      "sync": {
+        "pullAll": "すべてのリポジトリをストレージから一括プル",
+        "pushAll": "すべてのリポジトリをストレージに一括プッシュ"
+      },
       "up": "自動マウントでデプロイ"
     },
     "store": {

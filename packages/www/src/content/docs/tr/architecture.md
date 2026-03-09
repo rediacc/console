@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: tr
-sourceHash: "91d4806cfb57e215"
+sourceHash: "663392a3982ac81b"
 ---
 
 # Mimari
@@ -83,7 +83,7 @@ Tüm adaptörler aynı CLI komutlarını kullanır. Adaptör yalnızca durumun n
 
 1. SSH kullanıcınızın `sudo` yetkisine sahip olması gerekir
 2. Tüm depo verileri SSH kullanıcınız değil, `rediacc` kullanıcısına aittir
-3. Rediaccfile fonksiyonları (`prep()`, `up()`, `down()`) `rediacc` olarak çalışır
+3. Rediaccfile fonksiyonları (`up()`, `down()`) `rediacc` olarak çalışır
 
 Bu ayrım, depo verilerinin hangi SSH kullanıcısı yönetirse yönetsin tutarlı sahipliğe sahip olmasını sağlar.
 

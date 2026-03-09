@@ -2126,7 +2126,6 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
         label: 'Options',
         checkboxOptions: [
           { value: 'mount', label: 'mountRepositoryFirst' },
-          { value: 'prep-only', label: 'preparationOnly' },
         ],
       },
       grand: {

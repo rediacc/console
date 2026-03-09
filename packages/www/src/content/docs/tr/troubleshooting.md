@@ -4,7 +4,7 @@ description: "SSH, kurulum, depolar, servisler ve Docker ile ilgili yaygın soru
 category: "Guides"
 order: 10
 language: tr
-sourceHash: "1aea651c31f439b8"
+sourceHash: "d3e67d736cdd61f8"
 ---
 
 # Sorun Giderme
@@ -44,7 +44,7 @@ Bu komut yeni host anahtarlarını alır ve yapılandırmanızı günceller.
 
 - Rediaccfile sözdizimini kontrol edin: geçerli Bash olmalıdır
 - Rediaccfile'ınızın `renet compose --` kullandığından emin olun (`docker compose` değil)
-- Docker imajlarının erişilebilir olduğunu doğrulayın (`prep()` içinde `renet compose -- pull` kullanmayı düşünün)
+- Docker imajlarının erişilebilir olduğunu doğrulayın (`up()` içinde `renet compose -- pull` kullanmayı düşünün)
 - Deponun Docker soketi üzerinden konteyner günlüklerini kontrol edin:
 
 ```bash

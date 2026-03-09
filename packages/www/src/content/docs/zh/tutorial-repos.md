@@ -4,7 +4,7 @@ description: "创建加密仓库、部署容器化应用、检查容器和清理
 category: "Tutorials"
 order: 3
 language: zh
-sourceHash: "e6c55c46e8e4cd9c"
+sourceHash: "0c4edddefa30df1c"
 ---
 
 # 如何使用 Rediacc 部署和管理仓库
@@ -59,7 +59,7 @@ rdc term server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 rdc repo up test-app -m server-1 --mount
 ```
 
-这将挂载仓库（如果尚未挂载），启动隔离的 Docker daemon，通过 `prep()` 拉取镜像，并通过 `up()` 启动服务。
+这将挂载仓库（如果尚未挂载），启动隔离的 Docker daemon，并通过 `up()` 启动服务。
 
 > **注意：** 首次部署需要更长时间，因为需要下载 Docker 镜像。后续启动会重用缓存的镜像。
 

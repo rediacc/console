@@ -570,7 +570,7 @@ export default tseslint.config(
       '^[A-Za-z]+\\d+$',
       '^(Docker|Renet|Go|Node\\.js|Status|Version|Machines|Configuration)$',
       '^rdc\\s',
-      '^(Installation|Description|Note|Error|Reference)$',
+      '^(Installation|Description|Note|Error|Reference|Infrastructure)$',
     ],
   }),
   ...i18nLocaleConfigs({

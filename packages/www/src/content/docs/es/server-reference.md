@@ -4,7 +4,7 @@ description: "Organización de directorios, comandos de renet, servicios systemd
 category: "Concepts"
 order: 3
 language: es
-sourceHash: "6afcaaa1867e3244"
+sourceHash: "6134ec4c7a74cc87"
 ---
 
 # Server Reference
@@ -35,7 +35,7 @@ For the high-level architecture, see [Architecture](/es/docs/architecture). For 
 
 /opt/rediacc/proxy/                    # Traefik reverse proxy
 ├── docker-compose.yml
-├── config.env                         # BASE_DOMAIN, CERTBOT_EMAIL, CF_DNS_API_TOKEN
+├── config.env                         # CERTBOT_EMAIL, CF_DNS_API_TOKEN
 ├── letsencrypt/                       # ACME certificates
 └── traefik/dynamic/                   # Dynamic route files
 
@@ -158,7 +158,7 @@ renet backup pull --name {uuid} --network-id {id} --source machine \
 renet backup list --source machine --src-host {host} --src-user {user} --src-path /mnt/rediacc
 ```
 
-> Most users should use `rdc backup push/pull` instead. The `rdc` commands handle credentials and machine resolution automatically.
+> Most users should use `rdc repo push/pull` instead. The `rdc` commands handle credentials and machine resolution automatically.
 
 ### Checkpointing (CRIU)
 

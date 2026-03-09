@@ -35,7 +35,7 @@ Terraform Provider (Go)
 
 **Requirements:**
 - `rdc` binary must be installed on the machine running Terraform
-- For CI/CD: `./run.sh rdc` can be used as the binary path in development
+- For CI/CD: `./rdc.sh` can be used as the binary path in development
 
 ## Directory Structure
 
@@ -505,7 +505,7 @@ data loss.
 **Guardrails:**
 - All documentation examples include `lifecycle { prevent_destroy = true }`
 - `backup_before_destroy` attribute: when true, Delete() runs
-  `rdc backup push --to <storage>` before `rdc repo delete`
+  `rdc repo backup push --to <storage>` before `rdc repo delete`
 - Ansible modules require `force: true` for `state: absent`
 
 **Import support (day-one requirement):** Import is the #1 adoption barrier.

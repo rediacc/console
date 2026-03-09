@@ -5,7 +5,10 @@ import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
+import { registerRepoBackupCommands } from './repo-backup.js';
 import { registerExtendedRepoCommands } from './repo-extended.js';
+import { registerRepoSnapshotCommands } from './repo-snapshot.js';
+import { registerRepoSyncCommands } from './repo-sync.js';
 
 function generateCredential(): string {
   return randomBytes(24).toString('base64');
@@ -288,7 +291,6 @@ ${t('help.examples')}
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--mount', t('commands.repo.up.mountOption'))
     .option('--checkpoint', t('commands.repo.up.checkpointOption'))
-    .option('--prep-only', t('commands.repo.up.prepOnlyOption'))
     .option('--grand <name>', t('commands.repo.up.grandOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
@@ -300,7 +302,6 @@ ${t('help.examples')}
           machine: string;
           mount?: boolean;
           checkpoint?: boolean;
-          prepOnly?: boolean;
           grand?: string;
           debug?: boolean;
           skipRouterRestart?: boolean;
@@ -311,7 +312,6 @@ ${t('help.examples')}
           const params: Record<string, unknown> = {};
           if (options.mount) params.mount = true;
           if (options.checkpoint) params.checkpoint = true;
-          if (options.prepOnly) params.option = 'prep-only';
 
           // Resolve grand repo friendly name → GUID
           if (options.grand) {
@@ -342,6 +342,26 @@ ${t('help.examples')}
             completed: t('commands.repo.up.completed'),
             failed: t('commands.repo.up.failed'),
           });
+
+          // Ensure per-repo wildcard DNS records (non-blocking)
+          try {
+            const machineConfig = await configService.getLocalMachine(options.machine);
+            if (machineConfig.infra?.baseDomain) {
+              const localConfig = await configService.getLocalConfig();
+              const { ensureRepoDnsRecords } = await import('../services/infra-provision.js');
+              await ensureRepoDnsRecords(options.machine, name, machineConfig.infra, localConfig);
+            }
+          } catch {
+            // Non-fatal: DNS record creation failure should not block repo up
+          }
+
+          // Update cert cache after deployment (new wildcard cert may have been issued)
+          try {
+            const { downloadCertCache } = await import('../services/cert-cache.js');
+            await downloadCertCache(options.machine, { silent: true });
+          } catch {
+            // Non-fatal: cert cache failure should not block repo up
+          }
         } catch (error) {
           handleError(error);
         }
@@ -523,4 +543,13 @@ ${t('help.examples')}
 
   // Extended commands: fork, resize, expand, validate, autostart, ownership, template
   registerExtendedRepoCommands(repo);
+
+  // Backup commands: push, pull, list-backups
+  registerRepoBackupCommands(repo);
+
+  // Sync commands: push-all, pull-all, upload, download, status
+  registerRepoSyncCommands(repo);
+
+  // Snapshot commands: create, list, delete
+  registerRepoSnapshotCommands(repo);
 }

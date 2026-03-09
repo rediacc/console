@@ -29,14 +29,14 @@ rdc repo create my-project -m server-1 --size 20G
 
 ## Step 2: Upload Your Files
 
-Use `rdc sync upload` to transfer your project files into the repository.
+Use `rdc repo sync upload` to transfer your project files into the repository.
 
 ```bash
 # Preview what will be transferred (no changes made)
-rdc sync upload -m server-1 -r my-project --local ./my-project --dry-run
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --dry-run
 
 # Upload files
-rdc sync upload -m server-1 -r my-project --local ./my-project
+rdc repo sync upload -m server-1 -r my-project --local ./my-project
 ```
 
 The repository must be mounted before uploading. If it isn't already:
@@ -48,7 +48,7 @@ rdc repo mount my-project -m server-1
 For subsequent syncs where you want the remote to exactly match your local directory:
 
 ```bash
-rdc sync upload -m server-1 -r my-project --local ./my-project --mirror
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 ```
 
 > The `--mirror` flag deletes files on the remote that don't exist locally. Use `--dry-run` first to verify.
@@ -98,14 +98,10 @@ rdc repo ownership my-project -m server-1 --uid 1000
 
 ## Step 4: Set Up Your Rediaccfile
 
-Create a `Rediaccfile` in your project root. This Bash script defines how your services are prepared, started, and stopped.
+Create a `Rediaccfile` in your project root. This Bash script defines how your services are started and stopped.
 
 ```bash
 #!/bin/bash
-
-prep() {
-    renet compose -- pull
-}
 
 up() {
     renet compose -- up -d
@@ -116,11 +112,10 @@ down() {
 }
 ```
 
-The three lifecycle functions:
+The two lifecycle functions:
 
 | Function | Purpose | Error behavior |
 |----------|---------|----------------|
-| `prep()` | Pull images, run migrations, install dependencies | Fail-fast: any failure stops everything |
 | `up()` | Start services | Root failure is critical; subdirectory failures are logged and continue |
 | `down()` | Stop services | Best-effort: always attempts all |
 
@@ -211,8 +206,7 @@ This will:
 1. Mount the encrypted repository
 2. Start the isolated Docker daemon
 3. Auto-generate `.rediacc.json` with service IP assignments
-4. Run `prep()` from all Rediaccfiles
-5. Run `up()` from all Rediaccfiles
+4. Run `up()` from all Rediaccfiles
 
 Verify your containers are running:
 
@@ -260,7 +254,7 @@ my-api/
 └── redis-data/             # Redis persistence (UID 999 when running)
 ```
 
-1. Upload your project (consider excluding `node_modules` and pulling in `prep()`)
+1. Upload your project (consider excluding `node_modules` and pulling in `up()`)
 2. Run ownership fix after containers have started
 
 ### Custom Docker Project

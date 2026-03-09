@@ -4,7 +4,7 @@ description: "Ein verschlüsseltes Repository erstellen, eine containerisierte A
 category: "Tutorials"
 order: 3
 language: de
-sourceHash: "e6c55c46e8e4cd9c"
+sourceHash: "0c4edddefa30df1c"
 ---
 
 # So stellen Sie Repositories mit Rediacc bereit und verwalten sie
@@ -59,7 +59,7 @@ Stellen Sie die Anwendung bereit, indem Sie das Repository mounten und seine Doc
 rdc repo up test-app -m server-1 --mount
 ```
 
-Dies mountet das Repository (falls nicht bereits gemountet), startet einen isolierten Docker Daemon, zieht Images über `prep()` und startet Dienste über `up()`.
+Dies mountet das Repository (falls nicht bereits gemountet), startet einen isolierten Docker Daemon und startet Dienste über `up()`.
 
 > **Hinweis:** Die erste Bereitstellung dauert länger, da Docker-Images heruntergeladen werden. Nachfolgende Starts verwenden zwischengespeicherte Images.
 

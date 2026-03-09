@@ -1,3 +1,4 @@
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { ListResult, SystemInfo } from '@rediacc/shared/queue-vault/data/list-types.generated';
 import {
   getBlockDevices,
@@ -10,8 +11,9 @@ import {
 } from '@rediacc/shared/queue-vault/data/list-types.generated';
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
+import { configService } from '../../services/config-resources.js';
 import { outputService } from '../../services/output.js';
-import type { OutputFormat } from '../../types/index.js';
+import type { InfraConfig, OutputFormat } from '../../types/index.js';
 import { handleError } from '../../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../../utils/guid-resolver.js';
 import { withSpinner } from '../../utils/spinner.js';
@@ -143,6 +145,16 @@ function printSummary(result: ListResult): void {
   outputService.info(parts.join(' | '));
 }
 
+function flattenInfra(infra: InfraConfig): Record<string, unknown> {
+  return {
+    baseDomain: infra.baseDomain ?? '-',
+    publicIPv4: infra.publicIPv4 ?? '-',
+    publicIPv6: infra.publicIPv6 ?? '-',
+    tcpPorts: infra.tcpPorts?.join(', ') ?? DEFAULTS.CLOUD.DISPLAY_PLACEHOLDER,
+    udpPorts: infra.udpPorts?.join(', ') ?? DEFAULTS.CLOUD.DISPLAY_PLACEHOLDER,
+  };
+}
+
 export function registerStatusCommand(machine: Command, program: Command): void {
   machine
     .command('info <name>')
@@ -157,19 +169,21 @@ export function registerStatusCommand(machine: Command, program: Command): void 
 
         const { fetchMachineStatus } = await import('../../services/machine-status.js');
 
-        const [listResult, guidMap] = await Promise.all([
+        const [listResult, guidMap, machineConfig] = await Promise.all([
           withSpinner(
             t('commands.machine.status.fetching', { machine: machineName }),
             () => fetchMachineStatus(machineName, { debug: options.debug }),
             t('commands.machine.status.fetched')
           ),
           loadGuidMap(),
+          configService.getLocalMachine(machineName).catch(() => undefined),
         ]);
 
+        const infra = machineConfig?.infra;
         const format = program.opts().output as OutputFormat;
 
         if (format === 'json') {
-          outputService.print(listResult, format);
+          outputService.print({ ...listResult, infra: infra ?? null }, format);
           return;
         }
 
@@ -177,6 +191,12 @@ export function registerStatusCommand(machine: Command, program: Command): void 
         const resolve = createGuidResolver(guidMap);
         const sections = getSections(resolve);
         printSummary(listResult);
+
+        // Infrastructure section from local config
+        if (infra) {
+          outputService.info(`\n${t('commands.machine.status.infrastructure')}`);
+          process.stdout.write(`${outputService.formatTable([flattenInfra(infra)])}\n`);
+        }
 
         for (const section of sections) {
           const data = section.getData(listResult);

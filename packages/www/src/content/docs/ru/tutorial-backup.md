@@ -4,7 +4,7 @@ description: "Настройте автоматические расписани
 category: "Tutorials"
 order: 6
 language: ru
-sourceHash: "e756fef6749b54c5"
+sourceHash: "26db200e730fff43"
 ---
 
 # Как настроить резервное копирование и сеть с Rediacc
@@ -35,17 +35,24 @@ rdc config storages
 Настройте автоматическое резервное копирование, выполняемое по расписанию cron.
 
 ```bash
-rdc backup schedule set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
 ```
 
-Это создаёт ежедневное расписание резервного копирования в 2 часа ночи с отправкой всех репозиториев в хранилище `my-s3`. Расписание сохраняется в конфигурации и может быть развёрнуто на машинах как таймер systemd.
+Вы можете настроить несколько хранилищ с разными расписаниями:
+
+```bash
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
+```
+
+Это создаёт ежедневное расписание резервного копирования в 2 часа ночи в `my-s3` и в 6 часов утра в `azure-backup`. Каждое хранилище имеет собственное расписание. Расписания сохраняются в конфигурации и могут быть развёрнуты на машинах как таймеры systemd.
 
 ### Шаг 3: Просмотр расписания резервного копирования
 
 Убедитесь, что расписание было применено.
 
 ```bash
-rdc backup schedule show
+rdc config backup-strategy show
 ```
 
 Показывает текущую конфигурацию резервного копирования: место назначения, выражение cron и статус активации.
@@ -90,8 +97,8 @@ rdc config show-infra server-1
 Чтобы остановить автоматическое резервное копирование без удаления конфигурации:
 
 ```bash
-rdc backup schedule set --disable
-rdc backup schedule show
+rdc config backup-strategy set --disable
+rdc config backup-strategy show
 ```
 
 Конфигурация сохраняется и может быть повторно активирована позже с помощью `--enable`.

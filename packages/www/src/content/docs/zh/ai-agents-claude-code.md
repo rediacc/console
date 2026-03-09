@@ -4,7 +4,7 @@ description: 配置 Claude Code 进行自主 Rediacc 基础设施管理的分步
 category: Guides
 order: 31
 language: zh
-sourceHash: "90eb12eaaf6806c9"
+sourceHash: "faa990e37ee96a23"
 ---
 
 Claude Code 通过 `rdc` CLI 与 Rediacc 原生集成。本指南涵盖设置、权限和常见工作流程。
@@ -88,9 +88,9 @@ Claude Code runs: rdc term prod-1 -c "docker logs nextcloud-app --tail 50"
 ```
 You: "Upload the local config to the mail repo"
 
-Claude Code runs: rdc sync upload -m prod-1 -r mail -l ./config --dry-run
+Claude Code runs: rdc repo sync upload -m prod-1 -r mail -l ./config --dry-run
 → Shows files that would be synced
-Claude Code runs: rdc sync upload -m prod-1 -r mail -l ./config
+Claude Code runs: rdc repo sync upload -m prod-1 -r mail -l ./config
 → Syncs the files
 ```
 

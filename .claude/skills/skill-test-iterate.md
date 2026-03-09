@@ -25,7 +25,7 @@ Launch a sub-agent with a concrete task that exercises the skill docs. The promp
 ```
 You are testing the [DOMAIN] workflow end-to-end. Use the skill docs at `.claude/skills/[SKILL]/` for guidance.
 
-**CRITICAL**: This repo uses git worktrees. Your working directory is [WORKTREE_PATH] — use this for ALL paths. Use `./run.sh rdc` (not `npx tsx`) for CLI commands.
+**CRITICAL**: This repo uses git worktrees. Your working directory is [WORKTREE_PATH] — use this for ALL paths. Use `./rdc.sh` (not `npx tsx`) for CLI commands.
 
 **Infrastructure state**: [describe current state — what's running, what's clean, SSH keys, etc.]
 

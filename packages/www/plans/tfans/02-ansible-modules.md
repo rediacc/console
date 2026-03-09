@@ -179,7 +179,6 @@ All modules return structured data (not raw stdout). Minimum return values:
 | `size` | str | conditional | - | Required for `present`, `resized`, `expanded`. E.g., `5G`, `100G`, `1T` |
 | `mount` | bool | no | false | Mount volume before deploy |
 | `checkpoint` | bool | no | false | Restore CRIU checkpoint |
-| `prep_only` | bool | no | false | Only run prep(), skip up() |
 | `grand` | str | no | - | Parent repo name for fork credential inheritance |
 | `unmount` | bool | no | false | Unmount volume on stop |
 | `fork_tag` | str | conditional | - | Required for `state: forked`. Name for the fork |
@@ -291,7 +290,7 @@ Reports `changed: true/false` without executing.
 
 **Purpose**: Backup push/pull between machines or to/from storage.
 
-**Wraps**: `rdc backup push|pull`
+**Wraps**: `rdc repo backup push|pull`
 
 **Design note:** The `list` functionality is in `rediacc_backup_info` (separate
 read-only module, following Ansible `_info` convention).
@@ -356,7 +355,7 @@ mutually_exclusive=[
 
 **Purpose**: List available backups (read-only, no changes).
 
-**Wraps**: `rdc backup list`
+**Wraps**: `rdc repo backup list`
 
 ```yaml
 # List backups from a machine
@@ -387,7 +386,7 @@ mutually_exclusive=[
 
 **Purpose**: Bulk backup sync of all repos on a machine to/from storage.
 
-**Wraps**: `rdc backup sync push|pull`
+**Wraps**: `rdc repo backup sync push|pull`
 
 ```yaml
 # Push all repos to S3
@@ -435,7 +434,7 @@ sync action with no idempotent target state.
 
 **Purpose**: Configure and push backup schedules to machines.
 
-**Wraps**: `rdc backup schedule set|show|push`
+**Wraps**: `rdc repo backup schedule set|show|push`
 
 ```yaml
 # Configure and push schedule (desired state: present + pushed)

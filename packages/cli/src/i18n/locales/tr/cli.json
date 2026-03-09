@@ -113,70 +113,6 @@
         }
       }
     },
-    "backup": {
-      "description": "Depoları harici depolamaya yedekleyin ve geri yükleyin",
-      "list": {
-        "description": "Depolamadaki veya makinedeki mevcut yedekleri listele",
-        "listing": "Yedekler listeleniyor...",
-        "optionFromMachine": "Kaynak makine adı",
-        "optionFromStorage": "Kaynak depolama adı",
-        "sourceRequired": "--from <storage> veya --from-machine <machine> belirtin"
-      },
-      "pull": {
-        "description": "Depo yedeğini depolamadan veya makineden al",
-        "optionForce": "Mevcut deponun üzerine yazmaya zorla",
-        "optionFromMachine": "Kaynak makine adı",
-        "optionFromStorage": "Kaynak depolama adı",
-        "pulling": "\"{{repo}}\" yedeği alınıyor...",
-        "sourceRequired": "--from <storage> veya --from-machine <machine> belirtin"
-      },
-      "push": {
-        "description": "Depo yedeğini depolamaya veya makineye gönder",
-        "destIgnoredForStorage": "--dest {{provided}} yoksayıldı: depolama yedekleri depo GUID'sini kullanır ({{dest}})",
-        "destRequired": "--to <storage> veya --to-machine <machine> belirtin",
-        "optionCheckpoint": "Konteyner kontrol noktası oluştur (canlı yedekleme)",
-        "optionDest": "Hedef dosya adı",
-        "optionForce": "Mevcut yedeğin üzerine yazmaya zorla",
-        "optionTag": "Sürüm belirleme için dağıtım etiketi",
-        "optionToMachine": "Hedef makine adı",
-        "optionToStorage": "Hedef depolama adı",
-        "pushing": "\"{{repo}}\" yedeği {{dest}} hedefine gönderiliyor..."
-      },
-      "schedule": {
-        "description": "Zamanlanmış yedekleme yapılandırmasını yönet",
-        "push": {
-          "description": "Yedekleme zamanlamasını uzak makineye gönder (systemd zamanlayıcı)",
-          "success": "Yedekleme zamanlaması {{machine}} makinesine gönderildi"
-        },
-        "set": {
-          "description": "Yedekleme zamanlama ayarlarını yapılandır",
-          "noOptions": "En az bir seçenek belirtin: --destination, --cron, --enable veya --disable",
-          "optionCron": "Yedekleme zamanlaması için cron ifadesi (ör. \"0 2 * * *\")",
-          "optionDestination": "Varsayılan depolama hedef adı",
-          "optionDisable": "Zamanlanmış yedeklemeleri devre dışı bırak",
-          "optionEnable": "Zamanlanmış yedeklemeleri etkinleştir",
-          "saved": "Yedekleme zamanlama yapılandırması kaydedildi"
-        },
-        "show": {
-          "description": "Mevcut yedekleme zamanlama yapılandırmasını göster",
-          "destination": "Hedef: {{destination}}",
-          "enabled": "Etkin: {{enabled}}",
-          "notConfigured": "Yedekleme zamanlaması yapılandırılmamış",
-          "schedule": "Zamanlama: {{schedule}}"
-        }
-      },
-      "sync": {
-        "description": "Tüm depoları toplu olarak bulut depolamaya gönder/al",
-        "directionConflict": "--to ve --from aynı anda belirtilemez",
-        "directionRequired": "--to <storage> (gönderme) veya --from <storage> (alma) belirtin",
-        "optionFrom": "Kaynak depolama adı (alma modu)",
-        "optionOverride": "Pull sırasında mevcut bağlı olmayan depoların üzerine yaz",
-        "optionRepo": "Belirli depoya filtrele (tekrarlanabilir)",
-        "optionTo": "Hedef depolama adı (gönderme modu)",
-        "pullSuccess": "Eşitleme alımı tamamlandı",
-        "pushSuccess": "Eşitleme gönderimi tamamlandı"
-      }
-    },
     "bridge": {
       "description": "Köprü yönetimi",
       "list": {
@@ -339,6 +275,27 @@
         "description": "Geçerli yapılandırmaya bir makine ekleyin",
         "success": "\"{{name}}\" makinesi eklendi ({{user}}@{{ip}})"
       },
+      "addProvider": {
+        "description": "Otomatik makine oluşturma için bulut sağlayıcı ekle",
+        "optionImage": "Varsayılan işletim sistemi imajı",
+        "optionImageAttr": "Özel: işletim sistemi imajı için öznitelik adı",
+        "optionInstanceType": "Varsayılan örnek türü/boyutu",
+        "optionIpv4Output": "Özel: IPv4 adresi için çıkış özniteliği",
+        "optionIpv6Output": "Özel: IPv6 adresi için çıkış özniteliği",
+        "optionLabelAttr": "Özel: VM etiketi için öznitelik adı",
+        "optionProvider": "Bilinen sağlayıcı kaynağı (örn., linode/linode, hetznercloud/hcloud)",
+        "optionRegion": "Yeni makineler için varsayılan bölge",
+        "optionRegionAttr": "Özel: bölge için öznitelik adı",
+        "optionResource": "Özel: VM için OpenTofu kaynak türü",
+        "optionSizeAttr": "Özel: örnek türü için öznitelik adı",
+        "optionSource": "Özel OpenTofu sağlayıcı kaynağı (örn., vultr/vultr)",
+        "optionSshKeyAttr": "Özel: SSH anahtarları için öznitelik adı",
+        "optionSshKeyFormat": "Özel: SSH anahtar formatı (inline_list veya resource_id)",
+        "optionSshKeyResource": "Özel: SSH anahtarları için OpenTofu kaynak türü",
+        "optionSshUser": "Yeni VM'ler için SSH kullanıcı adı (varsayılan: root)",
+        "optionToken": "Bulut sağlayıcı için API token",
+        "success": "Bulut sağlayıcı \"{{name}}\" eklendi ({{provider}})"
+      },
       "addRepository": {
         "description": "Geçerli yapılandırmaya bir depo GUID eşlemesi ekleyin",
         "networkIdAssigned": "Ağ Kimliği: {{networkId}}",
@@ -347,6 +304,60 @@
         "optionNetworkId": "Docker yalıtımı için ağ kimliği (2816, 2880, ...). Belirtilmezse otomatik atanır",
         "optionTag": "Depo etiketi",
         "success": "\"{{name}}\" deposu eklendi ({{guid}}, etiket: {{tag}})"
+      },
+      "backupStrategy": {
+        "description": "Çoklu hedef yedekleme stratejisini yönet",
+        "set": {
+          "description": "Yedekleme zamanlama ayarlarını yapılandır",
+          "noOptions": "En az bir seçenek belirtin: --destination, --cron, --enable veya --disable",
+          "optionCron": "Yedekleme zamanlaması için cron ifadesi (ör. \"0 2 * * *\")",
+          "optionDestination": "Varsayılan depolama hedef adı",
+          "optionDisable": "Zamanlanmış yedeklemeleri devre dışı bırak",
+          "optionEnable": "Zamanlanmış yedeklemeleri etkinleştir",
+          "saved": "Yedekleme zamanlama yapılandırması kaydedildi"
+        },
+        "show": {
+          "description": "Mevcut yedekleme zamanlama yapılandırmasını göster",
+          "destinations": "Hedefler:",
+          "enabled": "Etkin: {{enabled}}",
+          "noDestinations": "Yedekleme hedefleri yapılandırılmamış",
+          "notConfigured": "Yedekleme zamanlaması yapılandırılmamış",
+          "schedule": "Zamanlama: {{schedule}}"
+        }
+      },
+      "certCache": {
+        "clear": {
+          "cleared": "Sertifika önbelleği temizlendi",
+          "description": "Sertifika önbelleğini kaldır",
+          "noCache": "Temizlenecek sertifika önbelleği yok"
+        },
+        "description": "Önbelleğe alınmış TLS sertifikalarını yönet",
+        "noBaseDomain": "Makinede baseDomain yapılandırılmamış",
+        "noCacheForDomain": "{{domain}} için sertifika önbelleği bulunamadı",
+        "pull": {
+          "cached": "{{count}} sertifika önbelleğe alındı ({{size}})",
+          "description": "Bir makineden TLS sertifikalarını indir ve önbelleğe al",
+          "downloading": "{{machine}} üzerinden sertifikalar indiriliyor...",
+          "merged": "Yerel önbellekten daha uzun süreli {{count}} sertifika korundu",
+          "noAcmeJson": "{{machine}} üzerinde acme.json bulunamadı",
+          "optionNoPrune": "Eski ağ kimliği sertifikalarının temizliğini atla",
+          "pruned": "{{count}} eski sertifika temizlendi"
+        },
+        "push": {
+          "description": "Önbelleğe alınmış TLS sertifikalarını bir makineye yükle",
+          "merged": "Daha uzun süreli {{count}} sertifika {{machine}} ile birleştirildi",
+          "noCache": "Sertifika önbelleği bulunamadı. Önce 'rdc config cert-cache pull <machine>' çalıştırın",
+          "uploaded": "{{count}} sertifika {{machine}} adresine yüklendi",
+          "uploading": "Önbelleğe alınmış sertifikalar {{machine}} adresine yükleniyor...",
+          "upToDate": "{{machine}} üzerindeki sertifikalar güncel"
+        },
+        "status": {
+          "certCount": "{{count}} sertifika, {{size}} sıkıştırılmış",
+          "description": "Önbelleğe alınmış sertifika envanterini göster",
+          "header": "{{baseDomain}} için sertifika önbelleği",
+          "noCache": "Kayıtlı sertifika önbelleği yok",
+          "updatedAt": "Son güncelleme: {{date}} ({{machine}} kaynağından)"
+        }
       },
       "clear": {
         "allCleared": "Tüm varsayılanlar temizlendi",
@@ -396,16 +407,28 @@
         "description": "Geçerli yapılandırmadaki makineleri listeleyin",
         "noMachines": "Yapılandırılmış makine yok. Eklemek için: rdc config add-machine <name> --ip <ip> --user <user>"
       },
+      "providers": {
+        "description": "Yapılandırılmış bulut sağlayıcıları listele",
+        "noProviders": "Yapılandırılmış bulut sağlayıcı yok. Eklemek için: rdc config add-provider"
+      },
       "purgeArchived": {
         "description": "Tüm arşivlenmiş kimlik bilgilerini kalıcı olarak sil",
         "noArchived": "Temizlenecek arşivlenmiş depo yok",
         "success": "{{count}} arşivlenmiş kimlik bilgisi temizlendi"
       },
       "pushInfra": {
-        "description": "Altyapı yapılandırmasını uzak makineye gönderin",
+        "certCacheUploaded": "Önbelleğe alınmış sertifikalar uzak sunucuya yüklendi",
+        "description": "Altyapı yapılandırmasını makineye gönder (Traefik proxy, yönlendirici ve makine alt alan adı için Cloudflare DNS kayıtları). Önce 'config set-infra <machine>' çalıştırın",
+        "dnsCreated": "DNS: {{type}} {{name}} → {{content}} oluşturuldu",
+        "dnsError": "DNS uyarısı: {{message}} (kayıtların manuel kurulumu gerekebilir)",
+        "dnsResolvingZone": "{{domain}} için Cloudflare bölgesi çözümleniyor...",
+        "dnsSkipLocal": "DNS atlanıyor: .local alan adı Cloudflare kullanmaz",
+        "dnsSkipNoToken": "DNS atlanıyor: Cloudflare API jetonu yok. Ayarlamak için: rdc config set-infra <machine> --cf-dns-token <token>",
+        "dnsUnchanged": "DNS: {{type}} {{name}} zaten doğru",
+        "dnsUpdated": "DNS: {{type}} {{name}} → {{content}} güncellendi",
         "installingProxy": "Proxy kuruluyor ve başlatılıyor...",
-        "proxyInstallWarning": "Proxy kurulumu başarısız (kod {{code}}). Elle çalıştırın: sudo renet proxy install",
-        "success": "Altyapı yapılandırması \"{{name}}\" makinesine gönderildi"
+        "proxyInstallWarning": "Proxy kurulumu başarısız (kod {{code}}). Manuel çalıştırın: sudo renet proxy install",
+        "success": "Altyapı yapılandırması \"{{name}}\" adresine gönderildi"
       },
       "recover": {
         "confirm": "\"{{name}}\" yapılandırması yedekten geri yüklensin mi?",
@@ -417,6 +440,10 @@
       "removeMachine": {
         "description": "Geçerli yapılandırmadan bir makine kaldırın",
         "success": "\"{{name}}\" makinesi kaldırıldı"
+      },
+      "removeProvider": {
+        "description": "Bulut sağlayıcı yapılandırmasını kaldır",
+        "success": "Bulut sağlayıcı \"{{name}}\" kaldırıldı"
       },
       "removeRepository": {
         "description": "Geçerli yapılandırmadan bir depo eşlemesini kaldırın",
@@ -453,13 +480,13 @@
         "success": "\"{{name}}\" için Ceph yapılandırması ayarlandı: pool={{pool}}, image={{image}}"
       },
       "setInfra": {
-        "description": "Bir makine için altyapı yapılandırmasını belirleyin",
+        "description": "Bir makine için altyapı yapılandırmasını belirleyin (machine-specific: IPs, domain, ports; shared: cert email, CF DNS token)",
         "invalidIPv4": "Geçersiz IPv4 adresi: {{ip}}",
         "invalidIPv6": "Geçersiz IPv6 adresi: {{ip}}",
         "noOptions": "Hiçbir seçenek belirtilmedi. --public-ipv4, --base-domain vb. kullanın.",
         "optionBaseDomain": "Uygulamalar için temel etki alanı",
-        "optionCertEmail": "TLS sertifika bildirimleri için e-posta",
-        "optionCfDnsToken": "ACME DNS-01 doğrulaması için Cloudflare DNS API token'ı",
+        "optionCertEmail": "TLS sertifika bildirimleri için e-posta (shared across machines)",
+        "optionCfDnsToken": "ACME DNS-01 doğrulaması için Cloudflare DNS API token'ı (shared across machines)",
         "optionPublicIPv4": "Genel IPv4 adresi",
         "optionPublicIPv6": "Genel IPv6 adresi",
         "optionTcpPorts": "İletilecek TCP bağlantı noktaları (virgülle ayrılmış, ör. 25,143,465)",
@@ -600,6 +627,21 @@
         "description": "Bir makineyi silin",
         "success": "\"{{name}}\" makinesi silindi"
       },
+      "deployBackup": {
+        "description": "Yedekleme zamanlamasını uzak makineye gönder (systemd zamanlayıcı)",
+        "success": "Yedekleme zamanlaması {{machine}} makinesine gönderildi"
+      },
+      "deprovision": {
+        "completed": "Makine {{name}} yok edildi ve yapılandırmadan kaldırıldı",
+        "confirm": "Bu, \"{{name}}\" makinesini ve tüm verilerini kalıcı olarak yok edecek. Devam edilsin mi?",
+        "description": "Bulutta oluşturulan makineyi yok et ve yapılandırmadan kaldır",
+        "destroyFailed": "{{name}} için altyapı yok etme başarısız: {{error}}. Yapılandırma kaldırma ile devam ediliyor (--force).",
+        "destroying": "{{name}} yok ediliyor...",
+        "dnsCleanedUp": "{{count}} DNS kaydı kaldırıldı",
+        "dnsDeleted": "DNS kaydı silindi: {{type}} {{name}}",
+        "noState": "\"{{name}}\" için OpenTofu durumu bulunamadı. Manuel eklenen makineler için 'config remove-machine' kullanın.",
+        "optionForce": "Onay istemini atla"
+      },
       "description": "Uzak makineleri yönetin (durum, konteynerler, servisler, sağlık)",
       "health": {
         "containersSection": "\nKonteynerler:",
@@ -635,6 +677,28 @@
         "description": "Makineleri listeleyin",
         "fetching": "Makineler alınıyor..."
       },
+      "provision": {
+        "completed": "Makine {{name}} oluşturuldu ve hazır ({{ip}})",
+        "configuringInfra": "{{name}} için altyapı (proxy + DNS) yapılandırılıyor...",
+        "description": "OpenTofu kullanarak bir bulut sağlayıcıda yeni makine oluştur",
+        "failed": "Makine oluşturma başarısız: {{error}}",
+        "infraInherited": "Temel alan adı kardeş makineden otomatik algılandı: \"{{source}}\"",
+        "noInfraHint": "Temel alan adı yapılandırılmamış. DNS ve proxy'yi etkinleştirmek için 'rdc config set-infra <machine> --base-domain <domain>' ardından 'rdc config push-infra <machine>' komutunu çalıştırın.",
+        "optionBaseDomain": "Altyapı için temel alan adı (ör. example.com). --infra'yı içerir",
+        "optionImage": "Varsayılan işletim sistemi imajını geçersiz kıl",
+        "optionInfra": "Altyapıyı da yapılandır (set-infra + push-infra)",
+        "optionNoInfra": "Altyapı yapılandırmasını atla (proxy + DNS)",
+        "optionProvider": "Bulut sağlayıcı adı (config add-provider'dan)",
+        "optionRegion": "Varsayılan bölgeyi geçersiz kıl",
+        "optionSshUser": "Yeni VM için SSH kullanıcı adı (varsayılan: root)",
+        "optionType": "Varsayılan örnek türünü geçersiz kıl",
+        "providerRequired": "Bulut sağlayıcı \"{{name}}\" bulunamadı. Eklemek için: rdc config add-provider",
+        "provisioning": "{{provider}} ({{region}}) üzerinde {{name}} oluşturuluyor...",
+        "settingUp": "Makine kurulumu çalıştırılıyor...",
+        "sshReady": "SSH bağlantısı kuruldu",
+        "tofuNotInstalled": "OpenTofu (tofu) yüklü değil. Yüklemek için: https://opentofu.org/docs/intro/install/",
+        "waitingSSH": "SSH bağlantısı bekleniyor..."
+      },
       "repos": {
         "description": "Bir makinede başlatılan depoları listeleyin",
         "fetched": "Makine alındı",
@@ -654,6 +718,7 @@
         "description": "Tam makine durumunu göster (sistem, depolar, konteynerler, servisler)",
         "fetched": "Durum alındı",
         "fetching": "{{machine}} durumu alınıyor...",
+        "infrastructure": "Altyapı",
         "noData": "Durum verisi mevcut değil"
       },
       "testConnection": {
@@ -1033,6 +1098,13 @@
         "failed": "Listeleme başarısız: {{error}}",
         "starting": "\"{{machine}}\" üzerindeki depolar listeleniyor..."
       },
+      "listBackups": {
+        "description": "Depolamadaki veya makinedeki mevcut yedekleri listele",
+        "listing": "Yedekler listeleniyor...",
+        "optionFromMachine": "Kaynak makine adı",
+        "optionFromStorage": "Kaynak depolama adı",
+        "sourceRequired": "--from <storage> veya --from-machine <machine> belirtin"
+      },
       "machineOption": "Hedef makine adı",
       "mount": {
         "checkpointOption": "Bağlamadan sonra kontrol noktasından geri yükle",
@@ -1049,6 +1121,27 @@
         "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" sahipliği ayarlanıyor...",
         "uidOption": "Sahip UID'si (varsayılan: 7111)"
       },
+      "pull": {
+        "description": "Depo yedeğini depolamadan veya makineden al",
+        "optionForce": "Mevcut deponun üzerine yazmaya zorla",
+        "optionFromMachine": "Kaynak makine adı",
+        "optionFromStorage": "Kaynak depolama adı",
+        "pulling": "\"{{repo}}\" yedeği alınıyor...",
+        "sourceRequired": "--from <storage> veya --from-machine <machine> belirtin"
+      },
+      "push": {
+        "description": "Depo yedeğini depolamaya veya makineye gönder",
+        "destIgnoredForStorage": "--dest {{provided}} yoksayıldı: depolama yedekleri depo GUID'sini kullanır ({{dest}})",
+        "destRequired": "--to <storage> veya --to-machine <machine> belirtin",
+        "optionCheckpoint": "Konteyner kontrol noktası oluştur (canlı yedekleme)",
+        "optionDest": "Hedef dosya adı",
+        "optionForce": "Mevcut yedeğin üzerine yazmaya zorla",
+        "optionProvider": "Hedef makine mevcut değilse otomatik olarak sağlamak için bulut sağlayıcı (config add-provider'dan)",
+        "optionTag": "Sürüm belirleme için dağıtım etiketi",
+        "optionToMachine": "Hedef makine adı",
+        "optionToStorage": "Hedef depolama adı",
+        "pushing": "\"{{repo}}\" yedeği {{dest}} hedefine gönderiliyor..."
+      },
       "resize": {
         "completed": "Yeniden boyutlandırma tamamlandı",
         "description": "Depoyu çevrimdışı yeniden boyutlandır (büyütme ve küçültme destekler)",
@@ -1056,11 +1149,54 @@
         "sizeOption": "Yeni depo boyutu (ör. 10G, 100G, 1T)",
         "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" {{size}} olarak yeniden boyutlandırılıyor..."
       },
+      "snapshot": {
+        "create": {
+          "creating": "{{machine}} üzerinde \"{{repo}}\" anlık görüntüsü oluşturuluyor...",
+          "description": "Bir deponun BTRFS anlık görüntüsünü oluştur",
+          "optionSnapshotName": "Açık anlık görüntü adı (boşsa otomatik oluşturulur)",
+          "success": "Anlık görüntü oluşturuldu: {{name}} ({{path}})"
+        },
+        "delete": {
+          "description": "Uzak makineden anlık görüntü sil",
+          "success": "Anlık görüntü silindi: {{name}}"
+        },
+        "description": "Uzak makinelerdeki BTRFS anlık görüntülerini yönet",
+        "list": {
+          "description": "Uzak makinedeki anlık görüntüleri listele",
+          "header": "{{path}} içinde {{count}} anlık görüntü:",
+          "noSnapshots": "Anlık görüntü bulunamadı."
+        }
+      },
       "status": {
         "completed": "Durum alındı",
         "description": "Depo durumunu al",
         "failed": "Durum kontrolü başarısız",
         "starting": "\"{{repository}}\" deposunun durumu \"{{machine}}\" üzerinden alınıyor..."
+      },
+      "sync": {
+        "description": "Depoları ve dosyaları senkronize et (toplu push/pull, dosya aktarımı)",
+        "pullAll": {
+          "description": "Tüm depoları toplu olarak bulut depolamaya gönder/al",
+          "optionFrom": "Kaynak depolama adı (alma modu)",
+          "optionOverride": "Pull sırasında mevcut bağlı olmayan depoların üzerine yaz",
+          "optionRepo": "Belirli depoya filtrele (tekrarlanabilir)",
+          "success": "Eşitleme alımı tamamlandı"
+        },
+        "pushAll": {
+          "description": "Tüm depoları toplu olarak bulut depolamaya gönder/al",
+          "optionRepo": "Belirli depoya filtrele (tekrarlanabilir)",
+          "optionTo": "Hedef depolama adı (gönderme modu)",
+          "success": "Eşitleme gönderimi tamamlandı"
+        },
+        "upload": {
+          "description": "Depoya dosya yükle"
+        },
+        "download": {
+          "description": "Depodan dosya indir"
+        },
+        "status": {
+          "description": "Senkronizasyon durumunu kontrol et ve yerel/uzak dosyaları karşılaştır"
+        }
       },
       "template": {
         "completed": "Şablon uygulandı",
@@ -1081,11 +1217,10 @@
       "up": {
         "checkpointOption": "Dağıtımdan sonra CRIU kontrol noktasından kapsayıcıları geri yükle (başka bir makineden canlı süreç geçişi için)",
         "completed": "Servisler başlatıldı",
-        "description": "Bir depoyu dağıtın veya güncelleyin (bağlama, hazırlık, servisleri başlatma)",
+        "description": "Bir depoyu dağıtın veya güncelleyin (bağlama, servisleri başlatma)",
         "failed": "Servis başlatma başarısız",
         "grandOption": "Ana depo adı (GUID'ye otomatik çözümlenir)",
         "mountOption": "Önce depoyu bağla",
-        "prepOnlyOption": "Yalnızca hazırlama adımını çalıştır",
         "starting": "\"{{repository}}\" için servisler \"{{machine}}\" üzerinde başlatılıyor..."
       },
       "upAll": {
@@ -1175,23 +1310,8 @@
         "description": "Bir görevi izle (kısayol: queue trace)"
       }
     },
-    "snapshot": {
-      "create": {
-        "creating": "{{machine}} üzerinde \"{{repo}}\" anlık görüntüsü oluşturuluyor...",
-        "description": "Bir deponun BTRFS anlık görüntüsünü oluştur",
-        "optionSnapshotName": "Açık anlık görüntü adı (boşsa otomatik oluşturulur)",
-        "success": "Anlık görüntü oluşturuldu: {{name}} ({{path}})"
-      },
-      "delete": {
-        "description": "Uzak makineden anlık görüntü sil",
-        "success": "Anlık görüntü silindi: {{name}}"
-      },
-      "description": "Uzak makinelerdeki BTRFS anlık görüntülerini yönet",
-      "list": {
-        "description": "Uzak makinedeki anlık görüntüleri listele",
-        "header": "{{path}} içinde {{count}} anlık görüntü:",
-        "noSnapshots": "Anlık görüntü bulunamadı."
-      }
+    "backup": {
+      "description": "Depo yedeklerini depolama ve makineler arasında gönderme, çekme ve senkronize etme"
     },
     "storage": {
       "browse": {
@@ -1615,15 +1735,15 @@
     "sectionTitles": {
       "agent": "Ajan araçları",
       "audit": "Denetim ve Uyumluluk",
+      "backup": "Yedekleme ve Geri Yükleme",
       "auth": "Kimlik Doğrulama",
-      "backup": "Yedekleme Yönetimi",
       "bridge": "Bridge Yönetimi",
       "ceph": "Ceph Depolama Yönetimi",
       "config": "Yapılandırma Yönetimi",
+      "datastore": "Veri deposu yönetimi",
       "doctor": "Sistem Tanılama",
       "machine": "Makine Yönetimi",
       "mcp": "MCP Sunucusu",
-      "datastore": "Veri deposu yönetimi",
       "ops": "Deneysel VM Islemleri",
       "organization": "Organizasyon Yönetimi",
       "permission": "İzin Yönetimi",
@@ -1633,7 +1753,6 @@
       "repo": "Depo Yaşam Döngüsü",
       "repository": "Depo Yönetimi",
       "shortcuts": "Hızlı Komutlar (Kısayollar)",
-      "snapshot": "Anlık Görüntü Yönetimi",
       "storage": "Depolama Yönetimi",
       "store": "Depo Yönetimi",
       "subscription": "Abonelik Yönetimi",
@@ -1784,11 +1903,6 @@
     }
   },
   "help": {
-    "backup": {
-      "list": "Depolamadaki yedeklemeleri listele",
-      "pull": "Yedeklemeyi depolamadan al",
-      "push": "Yedeklemeyi depolamaya gönder"
-    },
     "cli": {
       "machineInfo": "Makine durumunu göster",
       "repoUp": "Depo servislerini dağıt",
@@ -1811,6 +1925,13 @@
       "create": "Şifreli depo oluştur",
       "down": "Servisleri durdur",
       "fork": "Test için CoW fork",
+      "listBackups": "Depolamadaki yedeklemeleri listele",
+      "pull": "Yedeklemeyi depolamadan al",
+      "push": "Yedeklemeyi depolamaya gönder",
+      "sync": {
+        "pullAll": "Tüm depoları toplu olarak depodan çek",
+        "pushAll": "Tüm depoları toplu olarak depoya gönder"
+      },
       "up": "Otomatik bağlama ile dağıt"
     },
     "store": {

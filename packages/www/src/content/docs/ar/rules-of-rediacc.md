@@ -4,6 +4,7 @@ description: "القواعد والاصطلاحات الأساسية لبناء 
 category: "Guides"
 order: 5
 language: ar
+sourceHash: "1848011813342420"
 ---
 
 # قواعد Rediacc
@@ -13,8 +14,7 @@ language: ar
 ## Rediaccfile
 
 - **كل مستودع يحتاج إلى Rediaccfile** — سكريبت bash يحتوي على دوال دورة الحياة.
-- **الدوال المطلوبة**: `prep()`، `up()`، `down()`. اختياري: `info()`.
-- `prep()` يعمل عند **كل نشر** — استخدمه لسحب الصور، وتوليد الإعدادات، وإنشاء المجلدات.
+- **دوال دورة الحياة**: `up()`، `down()`. اختياري: `info()`.
 - `up()` يبدأ خدماتك. `down()` يوقفها.
 - `info()` يوفر معلومات الحالة (حالة الحاويات، السجلات الأخيرة، الصحة).
 - يتم تحميل Rediaccfile بواسطة renet — لديه وصول إلى متغيرات الشل، وليس فقط متغيرات البيئة.
@@ -35,10 +35,6 @@ language: ar
 
 _compose() {
   renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
-}
-
-prep() {
-  _compose pull
 }
 
 up() {
@@ -133,7 +129,7 @@ down() {
 
 ## النشر
 
-- **`rdc repo up`** ينفذ `prep()` ثم `up()` — دائماً.
+- **`rdc repo up`** ينفذ `up()` في جميع ملفات Rediaccfile.
 - **`rdc repo up --mount`** يفتح وحدة تخزين LUKS أولاً، ثم ينفذ دورة الحياة. مطلوب بعد `backup push` إلى جهاز جديد.
 - **`rdc repo down`** ينفذ `down()` ويوقف Docker daemon.
 - **`rdc repo down --unmount`** يغلق أيضاً وحدة تخزين LUKS (يقفل التخزين المشفر).

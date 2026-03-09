@@ -4,7 +4,7 @@ description: "暗号化されたリポジトリの作成、コンテナ化され
 category: "Tutorials"
 order: 3
 language: ja
-sourceHash: "e6c55c46e8e4cd9c"
+sourceHash: "0c4edddefa30df1c"
 ---
 
 # Rediaccでリポジトリをデプロイ・管理する方法
@@ -59,7 +59,7 @@ rdc term server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 rdc repo up test-app -m server-1 --mount
 ```
 
-リポジトリをマウントし（まだマウントされていない場合）、隔離されたDocker daemonを起動し、`prep()`でイメージをプルし、`up()`でサービスを開始します。
+リポジトリをマウントし（まだマウントされていない場合）、隔離されたDocker daemonを起動し、`up()`でサービスを開始します。
 
 > **注意:** 最初のデプロイはDockerイメージのダウンロードのため時間がかかります。以降の起動ではキャッシュされたイメージが再利用されます。
 

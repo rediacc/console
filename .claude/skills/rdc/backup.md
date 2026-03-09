@@ -1,14 +1,14 @@
-# rdc backup — Backup, Restore & Machine-to-Machine Transfer
+# rdc repo — Backup, Restore, Sync & Snapshots
 
-Transfer repository images between machines or to/from external storage.
+Backup, restore, transfer, and sync repository images between machines or to/from external storage. All backup and sync operations are subcommands of `rdc repo`.
 
 **Prerequisite**: Both source AND target machines must be registered, set up, and the CLI SSH key must be configured. See "Prerequisites for ops VMs" in [SKILL.md](SKILL.md) and [config.md](config.md).
 
-## Commands
+## Backup commands
 
 ### Push to another machine
 ```
-rdc backup push <repo> -m <source-machine> --to-machine <target-machine> [--checkpoint] [--force]
+rdc repo push <repo> -m <source-machine> --to-machine <target-machine> [--checkpoint] [--force]
 ```
 Copies the encrypted repo image directly to the target machine with the **same GUID**. This is a backup/migration, not a fork. After push, deploy on target with:
 ```
@@ -19,24 +19,24 @@ rdc repo up <repo> -m <target-machine> --mount
 
 ### Push to storage
 ```
-rdc backup push <repo> -m <machine> --to <storage-name> [--dest <filename>] [--tag <tag>]
+rdc repo push <repo> -m <machine> --to <storage-name> [--dest <filename>] [--tag <tag>]
 ```
 Backs up to configured external storage (S3, local file, etc.).
 
 ### Pull from another machine
 ```
-rdc backup pull <repo> -m <target-machine> --from-machine <source-machine> [--force]
+rdc repo pull <repo> -m <target-machine> --from-machine <source-machine> [--force]
 ```
 
 ### Pull from storage
 ```
-rdc backup pull <repo> -m <machine> --from <storage-name> [--force]
+rdc repo pull <repo> -m <machine> --from <storage-name> [--force]
 ```
 
 ### List backups
 ```
-rdc backup list --from-machine <machine>
-rdc backup list --from <storage-name>
+rdc repo list-backups --from-machine <machine>
+rdc repo list-backups --from <storage-name>
 ```
 
 ### Live migration with CRIU checkpoint
@@ -45,7 +45,7 @@ CRIU (Checkpoint/Restore In Userspace) captures running process memory state. Th
 
 ```bash
 # On source: checkpoint all containers + push (captures process memory + disk state)
-rdc backup push <repo> -m <source> --to-machine <target> --checkpoint
+rdc repo push <repo> -m <source> --to-machine <target> --checkpoint
 
 # On target: restore with checkpoint (process resumes from saved state)
 rdc repo up <repo> -m <target> --mount --checkpoint
@@ -53,14 +53,14 @@ rdc repo up <repo> -m <target> --mount --checkpoint
 
 **What's preserved**: Process memory, open file descriptors, in-memory variables, timers. The app continues from the exact instruction where it was checkpointed.
 
-**What to expect**: After restore, the app doesn't re-run prep/up lifecycle — containers resume directly from checkpoint. Logs will continue from where they left off (no "Starting..." messages).
+**What to expect**: After restore, the app doesn't re-run up() lifecycle — containers resume directly from checkpoint. Logs will continue from where they left off (no "Starting..." messages).
 
 ### Fork + CRIU (independent copy with live state)
 
 ```bash
 # Fork locally, then checkpoint + push the fork
 rdc repo fork <parent> -m <source> --tag <fork-name>
-rdc backup push <fork-name> -m <source> --to-machine <target> --checkpoint
+rdc repo push <fork-name> -m <source> --to-machine <target> --checkpoint
 rdc repo up <fork-name> -m <target> --mount --checkpoint --grand <parent>
 ```
 
@@ -73,7 +73,7 @@ rdc repo up <fork-name> -m <target> --mount --checkpoint --grand <parent>
 - **TCP connections break after cross-machine restore**: Apps with persistent connections (database pools, websockets) must handle both `ECONNRESET` (stale socket) and `ECONNREFUSED` (service not yet accepting connections). After restore, dependent services like databases may need a few seconds to become ready even though their containers show as "running". See the [heartbeat template](https://github.com/rediacc/console/tree/main/packages/json/templates/monitoring/heartbeat) for a CRIU-safe reconnection pattern.
 - **`restart: always` conflicts with CRIU**: Use `restart: on-failure` or omit it.
 - CRIU captures kernel-specific state (cgroup paths, mount IDs, container IDs). Cross-machine restore works best with compatible Docker versions.
-- **Do NOT attempt manual workarounds** (raw `docker checkpoint`, `runc`, or `rdc term -c "..."` with Docker commands). Always use `rdc backup push --checkpoint` and `rdc repo up --checkpoint`.
+- **Do NOT attempt manual workarounds** (raw `docker checkpoint`, `runc`, or `rdc term -c "..."` with Docker commands). Always use `rdc repo push --checkpoint` and `rdc repo up --checkpoint`.
 - If checkpoint fails, the push/deploy still succeeds — it falls back to a fresh start (no process memory preservation).
 
 ### CRIU performance (tested)
@@ -90,28 +90,58 @@ rdc repo up <fork-name> -m <target> --mount --checkpoint --grand <parent>
 
 ## Backup scheduling
 
-### Configure schedule
+### Configure backup strategy
 ```
-rdc backup schedule set [--interval <cron>] [--storage <name>] [--retention <count>]
-```
-
-### Show schedule
-```
-rdc backup schedule show
+rdc config backup-strategy set [--destination <name>] [--cron <expr>] [--enable] [--retention <count>]
 ```
 
-### Push schedule to machine (systemd timer)
+Multiple destinations can be configured with different schedules:
+```bash
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
 ```
-rdc backup schedule push <machine>
+
+### Show backup strategy
 ```
+rdc config backup-strategy show
+```
+
+### Deploy backup schedule to machine (systemd timer)
+```
+rdc machine deploy-backup <machine>
+```
+
+## Bulk sync (push/pull all repos)
+
+### Push all repos to storage
+```
+rdc repo sync push-all -m <machine> --to <storage-name>
+```
+
+### Pull all repos from storage
+```
+rdc repo sync pull-all -m <machine> --from <storage-name>
+```
+
+## File sync (rsync-based file transfer)
+
+File transfer between local machine and remote repositories:
+
+```
+rdc repo sync upload -m <machine> -r <repository> [--local <path>] [--remote <subdir>] [options]
+rdc repo sync download -m <machine> -r <repository> [--local <path>] [--remote <subdir>] [options]
+rdc repo sync status -m <machine> -r <repository> [--local <path>]
+```
+
+See [sync.md](sync.md) for full details on file sync options and behavior.
 
 ## Fork vs Push — when to use which
 
 | Goal | Command | Result |
 |------|---------|--------|
-| **Independent copy** on another machine | `repo fork` → `backup push` fork → `repo up --mount` | New GUID, new networkId, new IPs |
-| **Migrate/backup** same repo to another machine | `backup push --to-machine` → `repo up --mount` | Same GUID, same identity |
-| **Test copy** on same machine | `repo fork --tag <name>` → `repo up --mount` | New GUID, shares encryption cred |
+| **Independent copy** on another machine | `repo fork` then `repo push` fork then `repo up --mount` | New GUID, new networkId, new IPs |
+| **Migrate/backup** same repo to another machine | `repo push --to-machine` then `repo up --mount` | Same GUID, same identity |
+| **Test copy** on same machine | `repo fork --tag <name>` then `repo up --mount` | New GUID, shares encryption cred |
 
 ### Cross-machine fork (independent copy)
 
@@ -122,7 +152,7 @@ The fork gets a **different name** (via `--tag`) because it's an independent rep
 rdc repo fork <parent> -m <source-machine> --tag <fork-name>
 
 # 2. Push the fork to target
-rdc backup push <fork-name> -m <source-machine> --to-machine <target-machine>
+rdc repo push <fork-name> -m <source-machine> --to-machine <target-machine>
 
 # 3. Deploy on target (--mount + --grand to unlock with parent's credential)
 rdc repo up <fork-name> -m <target-machine> --mount --grand <parent>
@@ -133,7 +163,7 @@ rdc repo up <fork-name> -m <target-machine> --mount --grand <parent>
 ### Simple migration (same identity)
 ```bash
 # 1. Push directly
-rdc backup push <repo> -m <source-machine> --to-machine <target-machine>
+rdc repo push <repo> -m <source-machine> --to-machine <target-machine>
 
 # 2. Deploy on target
 rdc repo up <repo> -m <target-machine> --mount
@@ -141,7 +171,7 @@ rdc repo up <repo> -m <target-machine> --mount
 
 ## Delta transfer for repo push
 
-`backup push --to-machine` uses rsync delta transfer. When a previous backup already exists on the target:
+`repo push --to-machine` uses rsync delta transfer. When a previous backup already exists on the target:
 - **First push**: Full transfer (entire LUKS image, e.g., 2.15GB).
 - **Subsequent pushes**: Only changed blocks are sent. A 2.15GB repo with small changes transfers ~1.8MB (speedup 985x).
 - Renet logs: `"Pre-seeded temp from existing backup (delta transfer enabled)"` confirms delta mode.
@@ -154,7 +184,7 @@ This makes incremental backups and frequent pushes very fast after the initial f
 Local point-in-time snapshots on the same machine:
 
 ```
-rdc snapshot create <repo> -m <machine>
-rdc snapshot list [repo] -m <machine>
-rdc snapshot delete <repo> <snapshot-name> -m <machine>
+rdc repo snapshot create <repo> -m <machine>
+rdc repo snapshot list [repo] -m <machine>
+rdc repo snapshot delete <repo> <snapshot-name> -m <machine>
 ```

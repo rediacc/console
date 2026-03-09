@@ -4,7 +4,7 @@ description: "تخطيط المجلدات، وأوامر renet، وخدمات sy
 category: "Concepts"
 order: 3
 language: ar
-sourceHash: "6afcaaa1867e3244"
+sourceHash: "6134ec4c7a74cc87"
 ---
 
 # مرجع الخادم
@@ -35,7 +35,7 @@ sourceHash: "6afcaaa1867e3244"
 
 /opt/rediacc/proxy/                    # Traefik reverse proxy
 ├── docker-compose.yml
-├── config.env                         # BASE_DOMAIN, CERTBOT_EMAIL, CF_DNS_API_TOKEN
+├── config.env                         # CERTBOT_EMAIL, CF_DNS_API_TOKEN
 ├── letsencrypt/                       # ACME certificates
 └── traefik/dynamic/                   # Dynamic route files
 
@@ -158,7 +158,7 @@ renet backup pull --name {uuid} --network-id {id} --source machine \
 renet backup list --source machine --src-host {host} --src-user {user} --src-path /mnt/rediacc
 ```
 
-> يجب على معظم المستخدمين استخدام `rdc backup push/pull` بدلاً من ذلك. تتعامل أوامر `rdc` مع بيانات الاعتماد وتحليل الأجهزة تلقائيًا.
+> يجب على معظم المستخدمين استخدام `rdc repo push/pull` بدلاً من ذلك. تتعامل أوامر `rdc` مع بيانات الاعتماد وتحليل الأجهزة تلقائيًا.
 
 ### نقاط التحقق (CRIU)
 

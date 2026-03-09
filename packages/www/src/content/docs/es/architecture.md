@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: es
-sourceHash: "91d4806cfb57e215"
+sourceHash: "663392a3982ac81b"
 ---
 
 # Arquitectura
@@ -83,7 +83,7 @@ El usuario `rediacc` no puede accederse directamente vía SSH. En su lugar, rdc 
 
 1. Su usuario SSH necesita privilegios de `sudo`
 2. Todos los datos del repositorio son propiedad de `rediacc`, no de su usuario SSH
-3. Las funciones del Rediaccfile (`prep()`, `up()`, `down()`) se ejecutan como `rediacc`
+3. Las funciones del Rediaccfile (`up()`, `down()`) se ejecutan como `rediacc`
 
 Esta separación asegura que los datos del repositorio tengan una propiedad consistente independientemente de qué usuario SSH los gestione.
 

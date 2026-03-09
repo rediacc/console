@@ -4,7 +4,7 @@ description: "Решения распространённых проблем с 
 category: "Guides"
 order: 10
 language: ru
-sourceHash: "1aea651c31f439b8"
+sourceHash: "d3e67d736cdd61f8"
 ---
 
 # Устранение неполадок
@@ -44,7 +44,7 @@ rdc config scan-keys server-1
 
 - Проверьте синтаксис Rediaccfile: он должен быть корректным Bash
 - Убедитесь, что ваш Rediaccfile использует `renet compose --` (а не `docker compose`)
-- Проверьте доступность Docker-образов (рассмотрите `renet compose -- pull` в `prep()`)
+- Проверьте доступность Docker-образов (рассмотрите `renet compose -- pull` в `up()`)
 - Просмотрите логи контейнеров через Docker-сокет репозитория:
 
 ```bash

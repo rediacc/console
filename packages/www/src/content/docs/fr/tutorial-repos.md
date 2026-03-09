@@ -4,7 +4,7 @@ description: "Créer un dépôt chiffré, déployer une application conteneuris�
 category: "Tutorials"
 order: 3
 language: fr
-sourceHash: "e6c55c46e8e4cd9c"
+sourceHash: "0c4edddefa30df1c"
 ---
 
 # Comment déployer et gérer des dépôts avec Rediacc
@@ -59,7 +59,7 @@ Déployez l'application en montant le dépôt et en démarrant ses services Dock
 rdc repo up test-app -m server-1 --mount
 ```
 
-Cela monte le dépôt (s'il n'est pas déjà monté), démarre un Docker daemon isolé, tire les images via `prep()` et démarre les services via `up()`.
+Cela monte le dépôt (s'il n'est pas déjà monté), démarre un Docker daemon isolé et démarre les services via `up()`.
 
 > **Remarque :** Le premier déploiement prend plus de temps car les images Docker sont téléchargées. Les démarrages suivants réutilisent les images en cache.
 

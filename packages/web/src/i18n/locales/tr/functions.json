@@ -26,7 +26,6 @@
   "checkboxOptions": {
     "mountRepoFirst": "Önce depoyu bağla",
     "overrideExistingFile": "Mevcut dosyayı geçersiz kıl",
-    "preparationOnly": "Sadece hazırlık",
     "unmountAfterStopping": "Durdurduktan sonra bağlantıyı kaldır"
   },
   "configure": "Yapılandırma",

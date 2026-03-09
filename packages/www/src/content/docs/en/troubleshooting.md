@@ -43,7 +43,7 @@ This fetches fresh host keys and updates your config.
 
 - Check the Rediaccfile syntax: it must be valid Bash
 - Ensure your Rediaccfile uses `renet compose --` (not `docker compose`)
-- Verify Docker images are accessible (consider `renet compose -- pull` in `prep()`)
+- Verify Docker images are accessible (consider `renet compose -- pull` in `up()`)
 - Check container logs using the repository's Docker socket:
 
 ```bash

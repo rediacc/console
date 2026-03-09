@@ -13,8 +13,7 @@ Every Rediacc repository runs inside an isolated environment with its own Docker
 ## Rediaccfile
 
 - **Every repository needs a Rediaccfile** — a bash script with lifecycle functions.
-- **Required functions**: `prep()`, `up()`, `down()`. Optional: `info()`.
-- `prep()` runs on **every deploy** — use it for image pulls, config generation, directory creation.
+- **Lifecycle functions**: `up()`, `down()`. Optional: `info()`.
 - `up()` starts your services. `down()` stops them.
 - `info()` provides status information (container state, recent logs, health).
 - Rediaccfile is sourced by renet — it has access to shell variables, not just env vars.
@@ -35,10 +34,6 @@ Every Rediacc repository runs inside an isolated environment with its own Docker
 
 _compose() {
   renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
-}
-
-prep() {
-  _compose pull
 }
 
 up() {
@@ -133,7 +128,7 @@ Renet auto-injects these into every container:
 
 ## Deployment
 
-- **`rdc repo up`** runs `prep()` then `up()` — always.
+- **`rdc repo up`** runs `up()` in all Rediaccfiles.
 - **`rdc repo up --mount`** opens the LUKS volume first, then runs lifecycle. Required after `backup push` to a new machine.
 - **`rdc repo down`** runs `down()` and stops the Docker daemon.
 - **`rdc repo down --unmount`** also closes the LUKS volume (locks the encrypted storage).

@@ -4,7 +4,7 @@ description: "Configure programaciones de copias de seguridad automatizadas, ges
 category: "Tutorials"
 order: 6
 language: es
-sourceHash: "e756fef6749b54c5"
+sourceHash: "26db200e730fff43"
 ---
 
 # Cómo configurar copias de seguridad y redes con Rediacc
@@ -35,17 +35,24 @@ Lista todos los proveedores de almacenamiento configurados importados desde conf
 Configure copias de seguridad automatizadas que se ejecutan según una programación cron.
 
 ```bash
-rdc backup schedule set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
 ```
 
-Esto programa copias de seguridad diarias a las 2 AM, enviando todos los repositorios al almacenamiento `my-s3`. La programación se guarda en su configuración y puede desplegarse en máquinas como un temporizador systemd.
+Puede configurar múltiples destinos con diferentes cronogramas:
+
+```bash
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
+```
+
+Esto programa copias de seguridad diarias a las 2 AM en `my-s3` y a las 6 AM en `azure-backup`. Cada destino tiene su propio cronograma. Los cronogramas se guardan en su configuración y pueden desplegarse en máquinas como temporizadores systemd.
 
 ### Paso 3: Ver programación de copias
 
 Verifique que la programación se haya aplicado.
 
 ```bash
-rdc backup schedule show
+rdc config backup-strategy show
 ```
 
 Muestra la configuración actual de copia de seguridad: destino, expresión cron y estado de activación.
@@ -90,8 +97,8 @@ Muestra IPs públicas, dominio, correo electrónico de certificado y todos los p
 Para detener las copias de seguridad automatizadas sin eliminar la configuración:
 
 ```bash
-rdc backup schedule set --disable
-rdc backup schedule show
+rdc config backup-strategy set --disable
+rdc config backup-strategy show
 ```
 
 La configuración se conserva y puede reactivarse posteriormente con `--enable`.

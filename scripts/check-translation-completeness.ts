@@ -170,6 +170,7 @@ const ALLOWED_IDENTICAL = new Set([
   'docker',
   'section',
   // International words identical across many languages
+  'Infrastructure',
   'Standard',
   'Binary',
   'Documentation',
@@ -286,7 +287,7 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
   /\.(rpo|rto)$/, // Recovery point/time objective values (technical metrics)
   /\.cardClass$/, // CSS class identifiers (sealed, restored, verified, down, config, compliant)
   /\.icon$/, // Icon identifiers (lock-arrow, refresh-arrow, etc.)
-  /\.command$/, // CLI command examples (rdc clone, rdc backup, etc.)
+  /\.command$/, // CLI command examples (rdc clone, rdc repo backup, etc.)
   /^\d+\s*GB\s*·/, // Storage with annotation like "380 GB · locked"
   /^~?\$[\d,]+$/, // Currency values like ~$200
   /^\$[\d,]+\/mo$/, // Monthly prices like $4,500/mo, $1,440/mo, $33K/mo, $4.2K/mo

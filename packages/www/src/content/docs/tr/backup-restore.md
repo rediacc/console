@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: "4cc40d3db5384f5d"
+sourceHash: "9c6ab927c2220db7"
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -38,7 +38,7 @@ rdc config storages
 Bir depo yedeğini harici depolamaya gönderin:
 
 ```bash
-rdc backup push my-app -m server-1 --to my-storage
+rdc repo push my-app -m server-1 --to my-storage
 ```
 
 | Seçenek | Açıklama |
@@ -58,7 +58,7 @@ rdc backup push my-app -m server-1 --to my-storage
 Harici depolamadan bir depo yedeğini çekin:
 
 ```bash
-rdc backup pull my-app -m server-1 --from my-storage
+rdc repo pull my-app -m server-1 --from my-storage
 ```
 
 | Seçenek | Açıklama |
@@ -75,7 +75,7 @@ rdc backup pull my-app -m server-1 --from my-storage
 Bir depolama konumundaki mevcut yedekleri görüntüleyin:
 
 ```bash
-rdc backup list --from my-storage -m server-1
+rdc repo list-backups --from my-storage -m server-1
 ```
 
 ## Toplu Senkronizasyon
@@ -85,13 +85,13 @@ Tüm depoları aynı anda gönderin veya çekin:
 ### Tümünü Depolamaya Gönder
 
 ```bash
-rdc backup sync --to my-storage -m server-1
+rdc repo sync push-all --to my-storage -m server-1
 ```
 
 ### Tümünü Depolamadan Çek
 
 ```bash
-rdc backup sync --from my-storage -m server-1
+rdc repo sync pull-all --from my-storage -m server-1
 ```
 
 | Seçenek | Açıklama |
@@ -110,12 +110,19 @@ Uzak makinede systemd zamanlayıcısı olarak çalışan bir cron zamanlamasıyl
 ### Zamanlama Ayarlama
 
 ```bash
-rdc backup schedule set --destination my-storage --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination my-storage --cron "0 2 * * *" --enable
+```
+
+Farklı zamanlamalarla birden fazla hedef yapılandırabilirsiniz:
+
+```bash
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
 ```
 
 | Seçenek | Açıklama |
 |---------|----------|
-| `--destination <storage>` | Varsayılan yedekleme hedefi |
+| `--destination <storage>` | Yedekleme hedefi (hedef başına ayarlanabilir) |
 | `--cron <expression>` | Cron ifadesi (ör. `"0 2 * * *"` günlük saat 02:00 için) |
 | `--enable` | Zamanlamayı etkinleştir |
 | `--disable` | Zamanlamayı devre dışı bırak |
@@ -125,13 +132,13 @@ rdc backup schedule set --destination my-storage --cron "0 2 * * *" --enable
 Zamanlama yapılandırmasını systemd zamanlayıcısı olarak bir makineye dağıtın:
 
 ```bash
-rdc backup schedule push server-1
+rdc machine deploy-backup server-1
 ```
 
 ### Zamanlamayı Görüntüleme
 
 ```bash
-rdc backup schedule show
+rdc config backup-strategy show
 ```
 
 ## Depolamayı Tarama

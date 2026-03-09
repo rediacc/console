@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: de
-sourceHash: "4cc40d3db5384f5d"
+sourceHash: "9c6ab927c2220db7"
 ---
 
 # Backup & Wiederherstellung
@@ -38,7 +38,7 @@ rdc config storages
 Ein Repository-Backup auf externen Speicher übertragen:
 
 ```bash
-rdc backup push my-app -m server-1 --to my-storage
+rdc repo push my-app -m server-1 --to my-storage
 ```
 
 | Option | Beschreibung |
@@ -58,7 +58,7 @@ rdc backup push my-app -m server-1 --to my-storage
 Ein Repository-Backup vom externen Speicher abrufen:
 
 ```bash
-rdc backup pull my-app -m server-1 --from my-storage
+rdc repo pull my-app -m server-1 --from my-storage
 ```
 
 | Option | Beschreibung |
@@ -75,7 +75,7 @@ rdc backup pull my-app -m server-1 --from my-storage
 Verfügbare Backups an einem Speicherort anzeigen:
 
 ```bash
-rdc backup list --from my-storage -m server-1
+rdc repo list-backups --from my-storage -m server-1
 ```
 
 ## Massen-Synchronisation
@@ -85,13 +85,13 @@ Alle Repositories auf einmal übertragen oder abrufen:
 ### Alle zum Speicher übertragen
 
 ```bash
-rdc backup sync --to my-storage -m server-1
+rdc repo sync push-all --to my-storage -m server-1
 ```
 
 ### Alle vom Speicher abrufen
 
 ```bash
-rdc backup sync --from my-storage -m server-1
+rdc repo sync pull-all --from my-storage -m server-1
 ```
 
 | Option | Beschreibung |
@@ -110,12 +110,19 @@ Automatisieren Sie Backups mit einem Cron-Zeitplan, der als systemd-Timer auf de
 ### Zeitplan festlegen
 
 ```bash
-rdc backup schedule set --destination my-storage --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination my-storage --cron "0 2 * * *" --enable
+```
+
+Sie können mehrere Ziele mit verschiedenen Zeitplänen konfigurieren:
+
+```bash
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
 ```
 
 | Option | Beschreibung |
 |--------|-------------|
-| `--destination <storage>` | Standard-Backup-Ziel |
+| `--destination <storage>` | Backup-Ziel (kann pro Ziel festgelegt werden) |
 | `--cron <expression>` | Cron-Ausdruck (z. B. `"0 2 * * *"` für täglich um 2 Uhr) |
 | `--enable` | Den Zeitplan aktivieren |
 | `--disable` | Den Zeitplan deaktivieren |
@@ -125,13 +132,13 @@ rdc backup schedule set --destination my-storage --cron "0 2 * * *" --enable
 Die Zeitplan-Konfiguration als systemd-Timer auf eine Maschine verteilen:
 
 ```bash
-rdc backup schedule push server-1
+rdc machine deploy-backup server-1
 ```
 
 ### Zeitplan anzeigen
 
 ```bash
-rdc backup schedule show
+rdc config backup-strategy show
 ```
 
 ## Speicher durchsuchen

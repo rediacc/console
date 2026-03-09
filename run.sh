@@ -638,40 +638,6 @@ dev() {
     PORT="$PORT_CONSOLE_DEV" npm run dev
 }
 
-# Run CLI in development mode with renet available
-cli() {
-    check_node_version
-
-    log_step "Preparing CLI development environment"
-
-    # Ensure npm dependencies are installed
-    ensure_deps
-
-    # Ensure shared packages are built
-    ensure_packages_built
-
-    # Ensure renet is built and up-to-date
-    ensure_renet_built
-
-    # Add renet binary directory to PATH so CLI can find it
-    local renet_bin_dir="$ROOT_DIR/private/renet/bin"
-    export PATH="$renet_bin_dir:$PATH"
-
-    log_info "Renet available at: $renet_bin_dir/renet"
-
-    # Load account env if available (provides REDIACC_ACCOUNT_SERVER for subscription commands)
-    local account_env="$ROOT_DIR/private/account/.env"
-    if [[ -f "$account_env" ]]; then
-        set -a
-        source "$account_env"
-        set +a
-    fi
-
-    log_step "Starting CLI (dev mode)"
-
-    # Run CLI via tsx, passing through all arguments
-    npx tsx "$ROOT_DIR/packages/cli/src/index.ts" "$@"
-}
 
 # Sandbox mode (no backend required) - preserved from original
 sandbox() {
@@ -1089,7 +1055,7 @@ PROVISION COMMANDS:
 
 DEVELOPMENT COMMANDS:
   dev                 Start development server (auto-starts backend if needed)
-  rdc [args...]       Run CLI in dev mode (auto-builds renet with embeddings)
+  (rdc)               Use ./rdc.sh instead (standalone CLI runner)
   sandbox             Start in sandbox mode (no backend required)
   worktree <cmd>      Manage git worktrees (create, switch, prune, list)
   setup               Interactive setup wizard
@@ -1159,7 +1125,7 @@ MAINTENANCE:
 QUICK START:
   ./run.sh setup          # One-time setup
   ./run.sh dev            # Start web development
-  ./run.sh rdc auth login # Run CLI command in dev mode
+  ./rdc.sh auth login     # Run CLI command in dev mode
 
 REQUIREMENTS:
   Node.js v${NODE_VERSION_REQUIRED}.x (https://nodejs.org/)
@@ -1278,10 +1244,6 @@ main() {
 
         # Development
         dev) dev ;;
-        rdc)
-            shift
-            cli "$@"
-            ;;
         sandbox)
             shift
             sandbox "$@"

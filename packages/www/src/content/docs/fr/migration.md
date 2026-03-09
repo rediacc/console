@@ -4,7 +4,7 @@ description: "Migrer des projets existants vers des dépôts chiffrés Rediacc."
 category: "Guides"
 order: 11
 language: fr
-sourceHash: "977de49e158a26c0"
+sourceHash: "76165f8884e5edf1"
 ---
 
 # Guide de migration
@@ -29,14 +29,14 @@ rdc repo create my-project -m server-1 --size 20G
 
 ## Étape 2 : Téléverser vos fichiers
 
-Utilisez `rdc sync upload` pour transférer les fichiers de votre projet dans le dépôt.
+Utilisez `rdc repo sync upload` pour transférer les fichiers de votre projet dans le dépôt.
 
 ```bash
 # Aperçu de ce qui sera transféré (aucune modification effectuée)
-rdc sync upload -m server-1 -r my-project --local ./my-project --dry-run
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --dry-run
 
 # Téléverser les fichiers
-rdc sync upload -m server-1 -r my-project --local ./my-project
+rdc repo sync upload -m server-1 -r my-project --local ./my-project
 ```
 
 Le dépôt doit être monté avant le téléversement. S'il ne l'est pas encore :
@@ -48,7 +48,7 @@ rdc repo mount my-project -m server-1
 Pour les synchronisations suivantes où vous souhaitez que le distant corresponde exactement à votre répertoire local :
 
 ```bash
-rdc sync upload -m server-1 -r my-project --local ./my-project --mirror
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 ```
 
 > L'option `--mirror` supprime les fichiers sur le serveur distant qui n'existent pas en local. Utilisez d'abord `--dry-run` pour vérifier.
@@ -98,14 +98,10 @@ rdc repo ownership my-project -m server-1 --uid 1000
 
 ## Étape 4 : Configurer votre Rediaccfile
 
-Créez un `Rediaccfile` à la racine de votre projet. Ce script Bash définit comment vos services sont préparés, démarrés et arrêtés.
+Créez un `Rediaccfile` à la racine de votre projet. Ce script Bash définit comment vos services sont démarrés et arrêtés.
 
 ```bash
 #!/bin/bash
-
-prep() {
-    renet compose -- pull
-}
 
 up() {
     renet compose -- up -d
@@ -120,7 +116,6 @@ Les trois fonctions du cycle de vie :
 
 | Fonction | Objectif | Comportement en cas d'erreur |
 |----------|----------|------------------------------|
-| `prep()` | Télécharger les images, exécuter les migrations, installer les dépendances | Échec immédiat : toute erreur arrête tout |
 | `up()` | Démarrer les services | L'échec racine est critique ; les échecs dans les sous-répertoires sont journalisés et continuent |
 | `down()` | Arrêter les services | Meilleur effort : tente toujours tout |
 
@@ -211,7 +206,6 @@ Cela va :
 1. Monter le dépôt chiffré
 2. Démarrer le daemon Docker isolé
 3. Générer automatiquement `.rediacc.json` avec les attributions d'IP des services
-4. Exécuter `prep()` de tous les Rediaccfiles
 5. Exécuter `up()` de tous les Rediaccfiles
 
 Vérifiez que vos conteneurs sont en cours d'exécution :
@@ -260,7 +254,7 @@ my-api/
 └── redis-data/             # Persistance Redis (UID 999 en exécution)
 ```
 
-1. Téléversez votre projet (envisagez d'exclure `node_modules` et de les récupérer dans `prep()`)
+1. Téléversez votre projet (envisagez d'exclure `node_modules` et de les récupérer dans `up()`)
 2. Exécutez la correction de propriété après le démarrage des conteneurs
 
 ### Projet Docker personnalisé

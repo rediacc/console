@@ -58,7 +58,7 @@ Deploy the application by mounting the repository and starting its Docker servic
 rdc repo up test-app -m server-1 --mount
 ```
 
-This mounts the repository (if not already mounted), starts an isolated Docker daemon, pulls images via `prep()`, and starts services via `up()`.
+This mounts the repository (if not already mounted), starts an isolated Docker daemon, and starts services via `up()`.
 
 > **Note:** The first deployment takes longer as Docker images are downloaded. Subsequent starts reuse cached images.
 

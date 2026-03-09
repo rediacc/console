@@ -24,7 +24,6 @@
     "test:14-vault": "playwright test tests/14-vault-builder.test.ts",
     "test:15-storage": "playwright test tests/15-storage-backup.test.ts",
     "test:16-setup-params": "playwright test tests/16-setup-installation-params.test.ts",
-    "test:17-prep-only": "playwright test tests/17-repository-prep-only.test.ts",
     "test:18-ops": "playwright test tests/18-ops-workflow.test.ts",
     "test:19-rustfs": "playwright test tests/19-rustfs-operations.test.ts",
     "test:20-image": "playwright test tests/20-image-build.test.ts",

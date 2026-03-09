@@ -2017,7 +2017,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup schedule set",
+              "cmd": "rdc config backup-strategy set",
               "flag": "",
               "value": ""
             },
@@ -2169,7 +2169,7 @@
           "steps": [
             {
               "title": "استنساخ",
-              "description": "شغّل rdc snapshot create production. تقنية btrfs CoW تنشئ لقطة فورية — التطبيق وقاعدة البيانات والإعدادات، كل شيء.",
+              "description": "شغّل rdc repo snapshot create production. تقنية btrfs CoW تنشئ لقطة فورية — التطبيق وقاعدة البيانات والإعدادات، كل شيء.",
               "icon": "terminal"
             },
             {
@@ -2215,7 +2215,7 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["rdc snapshot create", "52s", "تم"],
+            "newSteps": ["rdc repo snapshot create", "52s", "تم"],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -4334,7 +4334,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc backup list --verify",
+          "command": "rdc repo list-backups --verify",
           "description": "ابدأ مع الإصدار المجاني Community. تحقق من أول نسخة في أقل من دقيقة.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "بدون بطاقة ائتمان",
@@ -4535,7 +4535,7 @@
           "steps": [
             {
               "title": "Back up",
-              "description": "Run rdc backup production. Btrfs snapshot captures your entire stack atomically.",
+              "description": "Run rdc repo push production. Btrfs snapshot captures your entire stack atomically.",
               "icon": "download"
             },
             {
@@ -4690,7 +4690,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup list",
+              "cmd": "rdc repo list-backups",
               "flag": "",
               "value": ""
             },
@@ -4788,7 +4788,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc backup sync --target secondary-dc",
+          "command": "rdc repo sync push-all --target secondary-dc",
           "description": "ابدأ مع الإصدار المجاني Community. انسخ عبر المواقع بدون تكلفة. بدون بطاقة ائتمان.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "مجاني للأبد حتى 10 أحمال عمل",
@@ -5145,7 +5145,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup sync",
+              "cmd": "rdc repo sync push-all",
               "flag": "",
               "value": ""
             },
@@ -5552,7 +5552,7 @@
           "lines": [
             {
               "type": "command",
-              "cmd": "rdc backup schedule set",
+              "cmd": "rdc config backup-strategy set",
               "flag": "",
               "value": ""
             },
@@ -6058,7 +6058,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc snapshot create production --snapshot-name my-first-clone",
+          "command": "rdc repo snapshot create production --snapshot-name my-first-clone",
           "description": "ابدأ مع الإصدار المجاني Community. استنسخ حتى 10 أحمال عمل بدون تكلفة. بدون بطاقة ائتمان.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "مجاني للأبد حتى 10 أحمال عمل",
@@ -6259,7 +6259,7 @@
           "steps": [
             {
               "title": "Run",
-              "description": "Developer runs rdc snapshot create production. No tickets. No approvals.",
+              "description": "Developer runs rdc repo snapshot create production. No tickets. No approvals.",
               "icon": "terminal"
             },
             {
@@ -6940,7 +6940,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc backup push production --verify",
+          "command": "rdc repo push production --verify",
           "description": "ابدأ مع الإصدار المجاني Community. احمِ حتى 10 أحمال عمل بدون تكلفة. بدون بطاقة ائتمان.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "مجاني للأبد حتى 10 أحمال عمل",
@@ -7141,7 +7141,7 @@
           "steps": [
             {
               "title": "Back up",
-              "description": "Run rdc backup production --immutable. Your data is captured and sealed instantly.",
+              "description": "Run rdc repo push production --immutable. Your data is captured and sealed instantly.",
               "icon": "download"
             },
             {
@@ -7300,7 +7300,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup push production",
+              "cmd": "rdc repo push production",
               "flag": "",
               "value": ""
             },
@@ -7818,7 +7818,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc backup pull production --storage daily-2026-02-27",
+          "command": "rdc repo pull production --storage daily-2026-02-27",
           "description": "ابدأ مع الإصدار المجاني Community. استعد بيئتك الأولى في أقل من 5 دقائق.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "بدون بطاقة ائتمان",
@@ -8021,7 +8021,7 @@
           "steps": [
             {
               "title": "Select",
-              "description": "Run rdc snapshots production. Pick any point in your backup timeline.",
+              "description": "Run rdc repo snapshot list production. Pick any point in your backup timeline.",
               "icon": "clock"
             },
             {
@@ -8176,7 +8176,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup pull production",
+              "cmd": "rdc repo pull production",
               "flag": "",
               "value": ""
             },
@@ -8274,7 +8274,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc snapshot create production --snapshot-name ci-build",
+          "command": "rdc repo snapshot create production --snapshot-name ci-build",
           "description": "ابدأ مع الإصدار المجاني Community. تكامل Git مُضمّن.",
           "primaryCta": "ابدأ مجاناً",
           "tierBadge": "مجاني حتى 5 مستودعات · بدون بطاقة ائتمان",
@@ -8685,7 +8685,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc backup sync --target secondary",
+          "command": "rdc repo sync push-all --target secondary",
           "description": "ابدأ مع الإصدار المجاني Community. الترحيل المشفر مُضمّن.",
           "primaryCta": "ابدأ مجاناً",
           "tierBadge": "مجاني حتى 5 مستودعات · بدون بطاقة ائتمان",
@@ -9043,7 +9043,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup sync",
+              "cmd": "rdc repo sync push-all",
               "flag": "",
               "value": ""
             },
@@ -9784,7 +9784,7 @@
           "steps": [
             {
               "title": "Detect",
-              "description": "Run rdc backup list --verified to find your last clean snapshot.",
+              "description": "Run rdc repo list-backups --verified to find your last clean snapshot.",
               "icon": "eye"
             },
             {
@@ -9939,7 +9939,7 @@
           "lines": [
             {
               "type": "command",
-              "cmd": "rdc backup pull production",
+              "cmd": "rdc repo pull production",
               "flag": "",
               "value": ""
             },
@@ -10006,7 +10006,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc backup schedule set --cron '0 2 * * *'",
+          "command": "rdc config backup-strategy set --cron '0 2 * * *'",
           "description": "ابدأ مع الإصدار المجاني Community. عيّن أول سياسة احتفاظ في 30 ثانية.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "بدون بطاقة ائتمان",
@@ -10208,7 +10208,7 @@
           "steps": [
             {
               "title": "Set policies",
-              "description": "Run rdc backup schedule set --cron '0 2 * * *'. Define retention per framework or data type.",
+              "description": "Run rdc config backup-strategy set --cron '0 2 * * *'. Define retention per framework or data type.",
               "icon": "sliders"
             },
             {
@@ -10363,7 +10363,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup schedule set",
+              "cmd": "rdc config backup-strategy set",
               "flag": "",
               "value": ""
             },
@@ -10396,7 +10396,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup schedule show"
+              "cmd": "rdc config backup-strategy show"
             },
             {
               "type": "spacer"
@@ -10463,7 +10463,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc snapshot create production --snapshot-name patch-test",
+          "command": "rdc repo snapshot create production --snapshot-name patch-test",
           "description": "ابدأ مع الإصدار المجاني Community. استنسخ واختبر وتحقق بدون تكلفة. بدون بطاقة ائتمان.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "مجاني للأبد حتى 10 أحمال عمل",
@@ -10664,7 +10664,7 @@
           "steps": [
             {
               "title": "Clone",
-              "description": "Run rdc snapshot create production. An exact copy spins up in 60 seconds.",
+              "description": "Run rdc repo snapshot create production. An exact copy spins up in 60 seconds.",
               "icon": "terminal"
             },
             {
@@ -11282,7 +11282,7 @@
           "lines": [
             {
               "type": "command",
-              "cmd": "rdc backup sync",
+              "cmd": "rdc repo sync push-all",
               "flag": "",
               "value": ""
             },

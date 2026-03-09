@@ -4,6 +4,7 @@ description: "Rediacc platformunda uygulama geliştirmek için temel kurallar ve
 category: "Guides"
 order: 5
 language: tr
+sourceHash: "1848011813342420"
 ---
 
 # Rediacc Kuralları
@@ -13,8 +14,7 @@ Her Rediacc deposu, kendi Docker daemon'ı, şifrelenmiş LUKS birimi ve ayrılm
 ## Rediaccfile
 
 - **Her depo bir Rediaccfile'a ihtiyaç duyar** — yaşam döngüsü fonksiyonlarına sahip bir bash betiği.
-- **Gerekli fonksiyonlar**: `prep()`, `up()`, `down()`. İsteğe bağlı: `info()`.
-- `prep()` **her dağıtımda** çalışır — imaj çekme, yapılandırma oluşturma ve dizin oluşturma için kullanın.
+- **Yaşam döngüsü fonksiyonları**: `up()`, `down()`. İsteğe bağlı: `info()`.
 - `up()` servislerinizi başlatır. `down()` onları durdurur.
 - `info()` durum bilgisi sağlar (konteyner durumu, son günlükler, sağlık).
 - Rediaccfile, renet tarafından source edilir — sadece ortam değişkenlerine değil, kabuk değişkenlerine de erişimi vardır.
@@ -35,10 +35,6 @@ Her Rediacc deposu, kendi Docker daemon'ı, şifrelenmiş LUKS birimi ve ayrılm
 
 _compose() {
   renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
-}
-
-prep() {
-  _compose pull
 }
 
 up() {
@@ -133,7 +129,7 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 
 ## Dağıtım
 
-- **`rdc repo up`** `prep()` ardından `up()` çalıştırır — her zaman.
+- **`rdc repo up`** tüm Rediaccfile'larda `up()` çalıştırır.
 - **`rdc repo up --mount`** önce LUKS birimini açar, sonra yaşam döngüsünü çalıştırır. Yeni bir makineye `backup push` sonrasında gereklidir.
 - **`rdc repo down`** `down()` çalıştırır ve Docker daemon'ını durdurur.
 - **`rdc repo down --unmount`** ayrıca LUKS birimini kapatır (şifreli depolamayı kilitler).

@@ -1990,7 +1990,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup schedule set",
+              "cmd": "rdc config backup-strategy set",
               "flag": "",
               "value": ""
             },
@@ -2142,7 +2142,7 @@
           "steps": [
             {
               "title": "克隆",
-              "description": "运行 rdc snapshot create production。Btrfs CoW 创建即时快照 — 应用、数据库、配置，一切就绪。",
+              "description": "运行 rdc repo snapshot create production。Btrfs CoW 创建即时快照 — 应用、数据库、配置，一切就绪。",
               "icon": "terminal"
             },
             {
@@ -2188,7 +2188,7 @@
           ],
           "timeline": {
             "newLabel": "使用 Rediacc",
-            "newSteps": ["rdc snapshot create", "52s", "完成"],
+            "newSteps": ["rdc repo snapshot create", "52s", "完成"],
             "oldLabel": "传统方式",
             "oldSteps": [
               {
@@ -4282,7 +4282,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc backup list --verify",
+          "command": "rdc repo list-backups --verify",
           "description": "从免费的社区版开始。一分钟内验证你的第一个备份。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "无需信用卡",
@@ -4483,7 +4483,7 @@
           "steps": [
             {
               "title": "Back up",
-              "description": "Run rdc backup production. Btrfs snapshot captures your entire stack atomically.",
+              "description": "Run rdc repo push production. Btrfs snapshot captures your entire stack atomically.",
               "icon": "download"
             },
             {
@@ -4638,7 +4638,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup list",
+              "cmd": "rdc repo list-backups",
               "flag": "",
               "value": ""
             },
@@ -4736,7 +4736,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc backup sync --target secondary-dc",
+          "command": "rdc repo sync push-all --target secondary-dc",
           "description": "从免费的社区版开始。免费跨地域复制。无需信用卡。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "最多 10 个工作负载永久免费",
@@ -5093,7 +5093,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup sync",
+              "cmd": "rdc repo sync push-all",
               "flag": "",
               "value": ""
             },
@@ -5500,7 +5500,7 @@
           "lines": [
             {
               "type": "command",
-              "cmd": "rdc backup schedule set",
+              "cmd": "rdc config backup-strategy set",
               "flag": "",
               "value": ""
             },
@@ -6006,7 +6006,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc snapshot create production --snapshot-name my-first-clone",
+          "command": "rdc repo snapshot create production --snapshot-name my-first-clone",
           "description": "从免费的社区版开始。免费克隆最多 10 个工作负载。无需信用卡。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "最多 10 个工作负载永久免费",
@@ -6207,7 +6207,7 @@
           "steps": [
             {
               "title": "Run",
-              "description": "Developer runs rdc snapshot create production. No tickets. No approvals.",
+              "description": "Developer runs rdc repo snapshot create production. No tickets. No approvals.",
               "icon": "terminal"
             },
             {
@@ -6888,7 +6888,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc backup push production --verify",
+          "command": "rdc repo push production --verify",
           "description": "从免费的社区版开始。免费保护最多 10 个工作负载。无需信用卡。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "最多 10 个工作负载永久免费",
@@ -7089,7 +7089,7 @@
           "steps": [
             {
               "title": "Back up",
-              "description": "Run rdc backup production --immutable. Your data is captured and sealed instantly.",
+              "description": "Run rdc repo push production --immutable. Your data is captured and sealed instantly.",
               "icon": "download"
             },
             {
@@ -7248,7 +7248,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup push production",
+              "cmd": "rdc repo push production",
               "flag": "",
               "value": ""
             },
@@ -7766,7 +7766,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc backup pull production --storage daily-2026-02-27",
+          "command": "rdc repo pull production --storage daily-2026-02-27",
           "description": "从免费的社区版开始。5 分钟内恢复你的第一个环境。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "无需信用卡",
@@ -7969,7 +7969,7 @@
           "steps": [
             {
               "title": "Select",
-              "description": "Run rdc snapshots production. Pick any point in your backup timeline.",
+              "description": "Run rdc repo snapshot list production. Pick any point in your backup timeline.",
               "icon": "clock"
             },
             {
@@ -8124,7 +8124,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup pull production",
+              "cmd": "rdc repo pull production",
               "flag": "",
               "value": ""
             },
@@ -8222,7 +8222,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc snapshot create production --snapshot-name ci-build",
+          "command": "rdc repo snapshot create production --snapshot-name ci-build",
           "description": "从免费的社区版开始。包含 Git 集成。",
           "primaryCta": "免费开始",
           "tierBadge": "最多 5 个仓库免费 · 无需信用卡",
@@ -8633,7 +8633,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc backup sync --target secondary",
+          "command": "rdc repo sync push-all --target secondary",
           "description": "从免费的社区版开始。包含加密迁移功能。",
           "primaryCta": "免费开始",
           "tierBadge": "最多 5 个仓库免费 · 无需信用卡",
@@ -8991,7 +8991,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup sync",
+              "cmd": "rdc repo sync push-all",
               "flag": "",
               "value": ""
             },
@@ -9732,7 +9732,7 @@
           "steps": [
             {
               "title": "Detect",
-              "description": "Run rdc backup list --verified to find your last clean snapshot.",
+              "description": "Run rdc repo list-backups --verified to find your last clean snapshot.",
               "icon": "eye"
             },
             {
@@ -9887,7 +9887,7 @@
           "lines": [
             {
               "type": "command",
-              "cmd": "rdc backup pull production",
+              "cmd": "rdc repo pull production",
               "flag": "",
               "value": ""
             },
@@ -9954,7 +9954,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc backup schedule set --cron '0 2 * * *'",
+          "command": "rdc config backup-strategy set --cron '0 2 * * *'",
           "description": "从免费的社区版开始。30 秒内设置你的第一个保留策略。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "无需信用卡",
@@ -10156,7 +10156,7 @@
           "steps": [
             {
               "title": "Set policies",
-              "description": "Run rdc backup schedule set --cron '0 2 * * *'. Define retention per framework or data type.",
+              "description": "Run rdc config backup-strategy set --cron '0 2 * * *'. Define retention per framework or data type.",
               "icon": "sliders"
             },
             {
@@ -10311,7 +10311,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup schedule set",
+              "cmd": "rdc config backup-strategy set",
               "flag": "",
               "value": ""
             },
@@ -10344,7 +10344,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup schedule show"
+              "cmd": "rdc config backup-strategy show"
             },
             {
               "type": "spacer"
@@ -10411,7 +10411,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc snapshot create production --snapshot-name patch-test",
+          "command": "rdc repo snapshot create production --snapshot-name patch-test",
           "description": "从免费的社区版开始。免费克隆、测试和验证。无需信用卡。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "最多 10 个工作负载永久免费",
@@ -10612,7 +10612,7 @@
           "steps": [
             {
               "title": "Clone",
-              "description": "Run rdc snapshot create production. An exact copy spins up in 60 seconds.",
+              "description": "Run rdc repo snapshot create production. An exact copy spins up in 60 seconds.",
               "icon": "terminal"
             },
             {
@@ -11230,7 +11230,7 @@
           "lines": [
             {
               "type": "command",
-              "cmd": "rdc backup sync",
+              "cmd": "rdc repo sync push-all",
               "flag": "",
               "value": ""
             },

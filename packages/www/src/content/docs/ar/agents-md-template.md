@@ -4,7 +4,7 @@ description: قالب جاهز للنسخ واللصق لتهيئة Claude Code 
 category: Reference
 order: 50
 language: ar
-sourceHash: "65feffe76efad39d"
+sourceHash: "872e8796671470d0"
 ---
 
 استخدم هذا القالب لتهيئة مساعدي البرمجة الذكية (Claude Code، Cursor، Cline، Windsurf) لإدارة بنية Rediacc التحتية بشكل مستقل. انسخ الكتلة أدناه إلى ملف `CLAUDE.md` أو `.cursorrules` أو ملف تهيئة الوكيل المعادل في مشروعك.
@@ -60,8 +60,8 @@ rdc term <machine> <repo>
 rdc term <machine> -c "command"
 
 # File sync
-rdc sync upload -m <machine> -r <repo> -l ./local-path
-rdc sync download -m <machine> -r <repo> -l ./local-path
+rdc repo sync upload -m <machine> -r <repo> -l ./local-path
+rdc repo sync download -m <machine> -r <repo> -l ./local-path
 
 # List all available commands with schemas
 rdc agent capabilities

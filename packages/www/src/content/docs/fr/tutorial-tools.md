@@ -4,7 +4,7 @@ description: "Utilisez l'accès terminal SSH, la synchronisation de fichiers, l'
 category: "Tutorials"
 order: 5
 language: fr
-sourceHash: "f581499837e09360"
+sourceHash: "9391a34dfb244942"
 ---
 
 # Comment utiliser les outils Terminal, Sync et VS Code avec Rediacc
@@ -46,7 +46,7 @@ Lors de la connexion à un dépôt, `DOCKER_HOST` est automatiquement défini su
 Avant de transférer des fichiers, prévisualisez ce qui changerait.
 
 ```bash
-rdc sync upload -m server-1 -r my-app --local ./src --dry-run
+rdc repo sync upload -m server-1 -r my-app --local ./src --dry-run
 ```
 
 Le drapeau `--dry-run` affiche les nouveaux fichiers, les fichiers modifiés et la taille totale du transfert sans rien télécharger réellement.
@@ -56,7 +56,7 @@ Le drapeau `--dry-run` affiche les nouveaux fichiers, les fichiers modifiés et 
 Transférez des fichiers de votre machine locale vers le point de montage du dépôt distant.
 
 ```bash
-rdc sync upload -m server-1 -r my-app --local ./src
+rdc repo sync upload -m server-1 -r my-app --local ./src
 ```
 
 Les fichiers sont transférés via rsync sur SSH. Seuls les fichiers modifiés sont envoyés lors des téléchargements suivants.

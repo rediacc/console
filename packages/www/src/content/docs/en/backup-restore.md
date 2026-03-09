@@ -36,7 +36,7 @@ rdc config storages
 Push a repository backup to external storage:
 
 ```bash
-rdc backup push my-app -m server-1 --to my-storage
+rdc repo push my-app -m server-1 --to my-storage
 ```
 
 | Option | Description |
@@ -56,7 +56,7 @@ rdc backup push my-app -m server-1 --to my-storage
 Pull a repository backup from external storage:
 
 ```bash
-rdc backup pull my-app -m server-1 --from my-storage
+rdc repo pull my-app -m server-1 --from my-storage
 ```
 
 | Option | Description |
@@ -73,7 +73,7 @@ rdc backup pull my-app -m server-1 --from my-storage
 View available backups in a storage location:
 
 ```bash
-rdc backup list --from my-storage -m server-1
+rdc repo list-backups --from my-storage -m server-1
 ```
 
 ## Bulk Sync
@@ -83,13 +83,13 @@ Push or pull all repositories at once:
 ### Push All to Storage
 
 ```bash
-rdc backup sync --to my-storage -m server-1
+rdc repo sync push-all --to my-storage -m server-1
 ```
 
 ### Pull All from Storage
 
 ```bash
-rdc backup sync --from my-storage -m server-1
+rdc repo sync pull-all --from my-storage -m server-1
 ```
 
 | Option | Description |
@@ -108,12 +108,19 @@ Automate backups with a cron schedule that runs as a systemd timer on the remote
 ### Set Schedule
 
 ```bash
-rdc backup schedule set --destination my-storage --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination my-storage --cron "0 2 * * *" --enable
+```
+
+You can configure multiple destinations with different schedules:
+
+```bash
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--destination <storage>` | Default backup destination |
+| `--destination <storage>` | Backup destination (can be set per-destination) |
 | `--cron <expression>` | Cron expression (e.g., `"0 2 * * *"` for daily at 2 AM) |
 | `--enable` | Enable the schedule |
 | `--disable` | Disable the schedule |
@@ -123,13 +130,13 @@ rdc backup schedule set --destination my-storage --cron "0 2 * * *" --enable
 Deploy the schedule configuration to a machine as a systemd timer:
 
 ```bash
-rdc backup schedule push server-1
+rdc machine deploy-backup server-1
 ```
 
 ### View Schedule
 
 ```bash
-rdc backup schedule show
+rdc config backup-strategy show
 ```
 
 ## Browse Storage

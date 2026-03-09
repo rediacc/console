@@ -3154,7 +3154,7 @@
           "steps": [
             {
               "title": "Run",
-              "description": "Developer runs rdc snapshot create production. No tickets. No approvals.",
+              "description": "Developer runs rdc repo snapshot create production. No tickets. No approvals.",
               "icon": "terminal"
             },
             {
@@ -3332,7 +3332,7 @@
           "description": "Start with the free Community edition. Clone up to 10 workloads at no cost. No credit card.",
           "primaryCta": "Start Free with Community",
           "tierBadge": "Free forever for up to 10 workloads",
-          "command": "rdc snapshot create production --snapshot-name my-first-clone"
+          "command": "rdc repo snapshot create production --snapshot-name my-first-clone"
         },
         "techStrip": {
           "label": "Clone any containerized workload",
@@ -4737,7 +4737,7 @@
           "description": "Start with the free Community edition. Git integration included.",
           "primaryCta": "Start Free",
           "tierBadge": "Free for up to 5 repositories · No credit card required",
-          "command": "rdc snapshot create production --snapshot-name ci-build"
+          "command": "rdc repo snapshot create production --snapshot-name ci-build"
         },
         "techStrip": {
           "label": "Clone any containerized workload",
@@ -4871,7 +4871,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup push production",
+              "cmd": "rdc repo push production",
               "flag": "",
               "value": ""
             },
@@ -5039,7 +5039,7 @@
           "steps": [
             {
               "title": "Back up",
-              "description": "Run rdc backup production --immutable. Your data is captured and sealed instantly.",
+              "description": "Run rdc repo push production --immutable. Your data is captured and sealed instantly.",
               "icon": "download"
             },
             {
@@ -5220,7 +5220,7 @@
           "description": "Start with the free Community edition. Protect up to 10 workloads at no cost. No credit card.",
           "primaryCta": "Start Free with Community",
           "tierBadge": "Free forever for up to 10 workloads",
-          "command": "rdc backup push production --verify"
+          "command": "rdc repo push production --verify"
         },
         "techStrip": {
           "label": "Protect any containerized workload",
@@ -5402,7 +5402,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup sync",
+              "cmd": "rdc repo sync push-all",
               "flag": "",
               "value": ""
             },
@@ -5761,7 +5761,7 @@
           "description": "Start with the free Community edition. Encrypted migration included.",
           "primaryCta": "Start Free",
           "tierBadge": "Free for up to 5 repositories · No credit card required",
-          "command": "rdc backup sync --target secondary"
+          "command": "rdc repo sync push-all --target secondary"
         },
         "techStrip": {
           "label": "Encrypt any containerized workload",
@@ -5907,7 +5907,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup pull production",
+              "cmd": "rdc repo pull production",
               "flag": "",
               "value": ""
             },
@@ -6086,7 +6086,7 @@
           "steps": [
             {
               "title": "Select",
-              "description": "Run rdc snapshots production. Pick any point in your backup timeline.",
+              "description": "Run rdc repo snapshot list production. Pick any point in your backup timeline.",
               "icon": "clock"
             },
             {
@@ -6267,7 +6267,7 @@
           "description": "Start with the free Community edition. Restore your first environment in under 5 minutes.",
           "primaryCta": "Start Free with Community",
           "tierBadge": "No credit card required",
-          "command": "rdc backup pull production --storage daily-2026-02-27"
+          "command": "rdc repo pull production --storage daily-2026-02-27"
         },
         "techStrip": {
           "label": "Restore any containerized workload",
@@ -6600,7 +6600,7 @@
           "steps": [
             {
               "title": "Clone",
-              "description": "Run rdc snapshot create production. An exact copy spins up in 60 seconds.",
+              "description": "Run rdc repo snapshot create production. An exact copy spins up in 60 seconds.",
               "icon": "terminal"
             },
             {
@@ -6781,7 +6781,7 @@
           "description": "Start with the free Community edition. Clone, test, and verify at no cost. No credit card.",
           "primaryCta": "Start Free with Community",
           "tierBadge": "Free forever for up to 10 workloads",
-          "command": "rdc snapshot create production --snapshot-name patch-test"
+          "command": "rdc repo snapshot create production --snapshot-name patch-test"
         },
         "techStrip": {
           "label": "Protect any containerized workload",
@@ -6931,7 +6931,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup schedule set",
+              "cmd": "rdc config backup-strategy set",
               "flag": "",
               "value": ""
             },
@@ -6964,7 +6964,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup schedule show"
+              "cmd": "rdc config backup-strategy show"
             },
             {
               "type": "spacer"
@@ -7110,7 +7110,7 @@
           "steps": [
             {
               "title": "Set policies",
-              "description": "Run rdc backup schedule set --cron '0 2 * * *'. Define retention per framework or data type.",
+              "description": "Run rdc config backup-strategy set --cron '0 2 * * *'. Define retention per framework or data type.",
               "icon": "sliders"
             },
             {
@@ -7292,7 +7292,7 @@
           "description": "Start with the free Community edition. Set your first retention policy in 30 seconds.",
           "primaryCta": "Start Free with Community",
           "tierBadge": "No credit card required",
-          "command": "rdc backup schedule set --cron '0 2 * * *'"
+          "command": "rdc config backup-strategy set --cron '0 2 * * *'"
         },
         "techStrip": {
           "label": "Verify any containerized workload",
@@ -7474,7 +7474,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup sync",
+              "cmd": "rdc repo sync push-all",
               "flag": "",
               "value": ""
             },
@@ -7836,7 +7836,7 @@
           "description": "Start with the free Community edition. Replicate across locations at no cost. No credit card.",
           "primaryCta": "Start Free with Community",
           "tierBadge": "Free forever for up to 10 workloads",
-          "command": "rdc backup sync --target secondary-dc"
+          "command": "rdc repo sync push-all --target secondary-dc"
         },
         "techStrip": {
           "label": "Replicate any containerized workload",
@@ -8478,7 +8478,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup list",
+              "cmd": "rdc repo list-backups",
               "flag": "",
               "value": ""
             },
@@ -8655,7 +8655,7 @@
           "steps": [
             {
               "title": "Back up",
-              "description": "Run rdc backup production. Btrfs snapshot captures your entire stack atomically.",
+              "description": "Run rdc repo push production. Btrfs snapshot captures your entire stack atomically.",
               "icon": "download"
             },
             {
@@ -8836,7 +8836,7 @@
           "description": "Start with the free Community edition. Verify your first backup in under a minute.",
           "primaryCta": "Start Free with Community",
           "tierBadge": "No credit card required",
-          "command": "rdc backup list --verify"
+          "command": "rdc repo list-backups --verify"
         },
         "techStrip": {
           "label": "Verify any containerized workload",
@@ -10320,7 +10320,7 @@
           "lines": [
             {
               "type": "command",
-              "cmd": "rdc backup schedule set",
+              "cmd": "rdc config backup-strategy set",
               "flag": "",
               "value": ""
             },
@@ -11177,7 +11177,7 @@
           "lines": [
             {
               "type": "command",
-              "cmd": "rdc backup pull production",
+              "cmd": "rdc repo pull production",
               "flag": "",
               "value": ""
             },
@@ -11323,7 +11323,7 @@
           "steps": [
             {
               "title": "Detect",
-              "description": "Run rdc backup list --verified to find your last clean snapshot.",
+              "description": "Run rdc repo list-backups --verified to find your last clean snapshot.",
               "icon": "eye"
             },
             {
@@ -11661,7 +11661,7 @@
           "lines": [
             {
               "type": "command",
-              "cmd": "rdc backup sync",
+              "cmd": "rdc repo sync push-all",
               "flag": "",
               "value": ""
             },
@@ -12251,7 +12251,7 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["rdc snapshot create", "52s", "Done"]
+            "newSteps": ["rdc repo snapshot create", "52s", "Done"]
           }
         },
         "howItWorks": {
@@ -12260,7 +12260,7 @@
           "steps": [
             {
               "title": "Clone",
-              "description": "Run rdc snapshot create production. Btrfs CoW creates an instant snapshot — app, database, config, everything.",
+              "description": "Run rdc repo snapshot create production. Btrfs CoW creates an instant snapshot — app, database, config, everything.",
               "icon": "terminal"
             },
             {
@@ -12415,7 +12415,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup schedule set",
+              "cmd": "rdc config backup-strategy set",
               "flag": "",
               "value": ""
             },

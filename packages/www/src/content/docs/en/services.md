@@ -14,7 +14,7 @@ This page covers how to deploy and manage containerized services: Rediaccfiles, 
 
 ## The Rediaccfile
 
-The **Rediaccfile** is a Bash script that defines how your services are prepared, started, and stopped. It is **sourced** (not executed as a separate process), so its functions share the same shell context and have access to all exported environment variables. It must be named `Rediaccfile` or `rediaccfile` (case-insensitive) and placed inside the repository's mounted filesystem.
+The **Rediaccfile** is a Bash script that defines how your services are started and stopped. It is **sourced** (not executed as a separate process), so its functions share the same shell context and have access to all exported environment variables. It must be named `Rediaccfile` or `rediaccfile` (case-insensitive) and placed inside the repository's mounted filesystem.
 
 Rediaccfiles are discovered in two locations:
 1. The **root** of the repository mount path
@@ -24,15 +24,14 @@ Hidden directories (names starting with `.`) are skipped.
 
 ### Lifecycle Functions
 
-A Rediaccfile contains up to three functions:
+A Rediaccfile contains up to two functions:
 
 | Function | When it runs | Purpose | Error behavior |
 |----------|-------------|---------|----------------|
-| `prep()` | Before `up()` | Install dependencies, pull images, run migrations | **Fail-fast** -- if any `prep()` fails, the entire process stops immediately |
-| `up()` | After all `prep()` complete | Start services (e.g., `renet compose -- up -d`) | Root failure is **critical** (stops everything). Subdirectory failures are **non-critical** (logged, continues) |
+| `up()` | When starting | Start services (e.g., `renet compose -- up -d`) | Root failure is **critical** (stops everything). Subdirectory failures are **non-critical** (logged, continues) |
 | `down()` | When stopping | Stop services (e.g., `renet compose -- down`) | **Best-effort** -- failures are logged but all Rediaccfiles are always attempted |
 
-All three functions are optional. If a function is not defined, it is silently skipped.
+Both functions are optional. If a function is not defined, it is silently skipped.
 
 ### Execution Order
 
@@ -63,11 +62,6 @@ The `{SERVICE}_IP` variables are auto-generated from the slot mappings in `.redi
 
 ```bash
 #!/bin/bash
-
-prep() {
-    echo "Pulling latest images..."
-    renet compose -- pull
-}
 
 up() {
     echo "Starting services..."
@@ -185,15 +179,13 @@ rdc repo up my-app -m server-1 --mount
 | Option | Description |
 |--------|-------------|
 | `--mount` | Mount the repository first if not already mounted |
-| `--prep-only` | Run only `prep()` functions, skip `up()` |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 The execution sequence is:
 1. Mount the LUKS-encrypted repository (if `--mount`)
 2. Start the isolated Docker daemon
 3. Auto-generate `.rediacc.json` from compose files
-4. Run `prep()` in all Rediaccfiles (A-Z order, fail-fast)
-5. Run `up()` in all Rediaccfiles (A-Z order)
+4. Run `up()` in all Rediaccfiles (A-Z order)
 
 ## Stopping Services
 
@@ -327,12 +319,8 @@ services:
 ```bash
 #!/bin/bash
 
-prep() {
-    mkdir -p data/postgres
-    renet compose -- pull
-}
-
 up() {
+    mkdir -p data/postgres
     renet compose -- up -d
 
     echo "Waiting for PostgreSQL..."

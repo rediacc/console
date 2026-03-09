@@ -45,7 +45,7 @@ When connecting to a repository, `DOCKER_HOST` is automatically set to the repos
 Before transferring files, preview what would change.
 
 ```bash
-rdc sync upload -m server-1 -r my-app --local ./src --dry-run
+rdc repo sync upload -m server-1 -r my-app --local ./src --dry-run
 ```
 
 The `--dry-run` flag shows new files, changed files, and total transfer size without actually uploading anything.
@@ -55,7 +55,7 @@ The `--dry-run` flag shows new files, changed files, and total transfer size wit
 Transfer files from your local machine to the remote repository mount.
 
 ```bash
-rdc sync upload -m server-1 -r my-app --local ./src
+rdc repo sync upload -m server-1 -r my-app --local ./src
 ```
 
 Files are transferred via rsync over SSH. Only changed files are sent on subsequent uploads.

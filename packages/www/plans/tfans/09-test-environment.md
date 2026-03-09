@@ -39,16 +39,16 @@ $RDC datastore status -m rediacc12
 The host machine needs:
 - KVM/QEMU (Linux), QEMU (macOS), or Hyper-V (Windows)
 - Sufficient RAM for 2-3 VMs (~2GB each)
-- `rdc` accessible (via `./run.sh rdc` in development)
+- `rdc` accessible (via `./rdc.sh` in development)
 
 Verify prerequisites:
 ```bash
-./run.sh rdc ops check
+./rdc.sh ops check
 ```
 
 If checks fail, install prerequisites:
 ```bash
-./run.sh rdc ops setup
+./rdc.sh ops setup
 ```
 
 ## VM Topology
@@ -74,7 +74,7 @@ For testing, use the `--basic` flag (1 bridge + 1-2 workers):
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-RDC="$PROJECT_ROOT/run.sh rdc"
+RDC="$PROJECT_ROOT/rdc.sh"
 SSH_KEY_DIR="$HOME/.renet/staging/.ssh"
 
 echo "=== Step 1: Build dependencies ==="
@@ -150,7 +150,7 @@ echo "RDC binary: $RDC"
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-RDC="$PROJECT_ROOT/run.sh rdc"
+RDC="$PROJECT_ROOT/rdc.sh"
 
 echo "=== Cleaning up test repos ==="
 # Delete any test repos that weren't cleaned up
@@ -194,10 +194,6 @@ mkdir -p tests/fixtures/test-app
 
 _use_renet() { [[ -n "$REPOSITORY_NETWORK_ID" ]] && command -v renet &>/dev/null; }
 _compose() { _use_renet && renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@" || docker compose "$@"; }
-
-prep() {
-    _compose pull
-}
 
 up() {
     _compose up -d
@@ -649,7 +645,7 @@ echo "=== Results: $PASS passed, $FAIL failed ==="
 cd packages/ansible && pytest tests/unit/ -v
 
 # Run Ansible integration tests
-cd packages/ansible && RDC_BINARY="../../run.sh rdc" pytest tests/integration/ -v
+cd packages/ansible && RDC_BINARY="../../rdc.sh" pytest tests/integration/ -v
 
 # Run Ansible smoke test (all tags)
 cd packages/ansible && ansible-playbook tests/smoke/ansible-smoke.yml --tags all
@@ -662,7 +658,7 @@ cd packages/terraform/terraform-provider-rediacc && go test ./... -v
 
 # Run Terraform acceptance tests
 cd packages/terraform/terraform-provider-rediacc
-TF_ACC=1 RDC_BINARY="../../../run.sh rdc" go test ./... -v -timeout 30m
+TF_ACC=1 RDC_BINARY="../../../rdc.sh" go test ./... -v -timeout 30m
 
 # Run Terraform smoke test
 cd tests/smoke/terraform-smoke && terraform apply -auto-approve && terraform destroy -auto-approve
@@ -671,7 +667,7 @@ cd tests/smoke/terraform-smoke && terraform apply -auto-approve && terraform des
 TEST_TIER=full ./scripts/test-env-setup.sh
 
 # Run datastore fork tests (requires full tier)
-cd packages/ansible && RDC_BINARY="../../run.sh rdc" pytest tests/integration/test_05_datastore_fork.py -v
+cd packages/ansible && RDC_BINARY="../../rdc.sh" pytest tests/integration/test_05_datastore_fork.py -v
 
 # Run Terraform fork smoke (requires full tier)
 cd tests/smoke/terraform-smoke && terraform apply -auto-approve -var="enable_fork=true"

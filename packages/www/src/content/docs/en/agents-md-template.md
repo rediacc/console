@@ -59,8 +59,8 @@ rdc term <machine> <repo>
 rdc term <machine> -c "command"
 
 # File sync
-rdc sync upload -m <machine> -r <repo> -l ./local-path
-rdc sync download -m <machine> -r <repo> -l ./local-path
+rdc repo sync upload -m <machine> -r <repo> -l ./local-path
+rdc repo sync download -m <machine> -r <repo> -l ./local-path
 
 # List all available commands with schemas
 rdc agent capabilities

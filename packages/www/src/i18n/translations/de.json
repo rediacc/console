@@ -2015,7 +2015,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup schedule set",
+              "cmd": "rdc config backup-strategy set",
               "flag": "",
               "value": ""
             },
@@ -2167,7 +2167,7 @@
           "steps": [
             {
               "title": "Klonen",
-              "description": "Führen Sie rdc snapshot create production aus. Btrfs CoW erstellt einen sofortigen Snapshot — App, Datenbank, Konfiguration, alles.",
+              "description": "Führen Sie rdc repo snapshot create production aus. Btrfs CoW erstellt einen sofortigen Snapshot — App, Datenbank, Konfiguration, alles.",
               "icon": "terminal"
             },
             {
@@ -2213,7 +2213,7 @@
           ],
           "timeline": {
             "newLabel": "Mit Rediacc",
-            "newSteps": ["rdc snapshot create", "52s", "Fertig"],
+            "newSteps": ["rdc repo snapshot create", "52s", "Fertig"],
             "oldLabel": "Der alte Weg",
             "oldSteps": [
               {
@@ -4342,7 +4342,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc backup list --verify",
+          "command": "rdc repo list-backups --verify",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Verifizieren Sie Ihr erstes Backup in unter einer Minute.",
           "primaryCta": "Kostenlos mit Community starten",
           "tierBadge": "Keine Kreditkarte erforderlich",
@@ -4543,7 +4543,7 @@
           "steps": [
             {
               "title": "Back up",
-              "description": "Run rdc backup production. Btrfs snapshot captures your entire stack atomically.",
+              "description": "Run rdc repo push production. Btrfs snapshot captures your entire stack atomically.",
               "icon": "download"
             },
             {
@@ -4698,7 +4698,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup list",
+              "cmd": "rdc repo list-backups",
               "flag": "",
               "value": ""
             },
@@ -4796,7 +4796,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc backup sync --target secondary-dc",
+          "command": "rdc repo sync push-all --target secondary-dc",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Replizieren Sie standortübergreifend kostenlos. Keine Kreditkarte.",
           "primaryCta": "Kostenlos mit Community starten",
           "tierBadge": "Für immer kostenlos für bis zu 10 Workloads",
@@ -5153,7 +5153,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup sync",
+              "cmd": "rdc repo sync push-all",
               "flag": "",
               "value": ""
             },
@@ -5560,7 +5560,7 @@
           "lines": [
             {
               "type": "command",
-              "cmd": "rdc backup schedule set",
+              "cmd": "rdc config backup-strategy set",
               "flag": "",
               "value": ""
             },
@@ -6066,7 +6066,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc snapshot create production --snapshot-name my-first-clone",
+          "command": "rdc repo snapshot create production --snapshot-name my-first-clone",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Klonen Sie bis zu 10 Workloads kostenlos. Keine Kreditkarte.",
           "primaryCta": "Kostenlos mit Community starten",
           "tierBadge": "Für immer kostenlos für bis zu 10 Workloads",
@@ -6267,7 +6267,7 @@
           "steps": [
             {
               "title": "Run",
-              "description": "Developer runs rdc snapshot create production. No tickets. No approvals.",
+              "description": "Developer runs rdc repo snapshot create production. No tickets. No approvals.",
               "icon": "terminal"
             },
             {
@@ -6948,7 +6948,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc backup push production --verify",
+          "command": "rdc repo push production --verify",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Schützen Sie bis zu 10 Workloads kostenlos. Keine Kreditkarte.",
           "primaryCta": "Kostenlos mit Community starten",
           "tierBadge": "Für immer kostenlos für bis zu 10 Workloads",
@@ -7149,7 +7149,7 @@
           "steps": [
             {
               "title": "Back up",
-              "description": "Run rdc backup production --immutable. Your data is captured and sealed instantly.",
+              "description": "Run rdc repo push production --immutable. Your data is captured and sealed instantly.",
               "icon": "download"
             },
             {
@@ -7308,7 +7308,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup push production",
+              "cmd": "rdc repo push production",
               "flag": "",
               "value": ""
             },
@@ -7826,7 +7826,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc backup pull production --storage daily-2026-02-27",
+          "command": "rdc repo pull production --storage daily-2026-02-27",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Stellen Sie Ihre erste Umgebung in unter 5 Minuten wieder her.",
           "primaryCta": "Kostenlos mit Community starten",
           "tierBadge": "Keine Kreditkarte erforderlich",
@@ -8029,7 +8029,7 @@
           "steps": [
             {
               "title": "Select",
-              "description": "Run rdc snapshots production. Pick any point in your backup timeline.",
+              "description": "Run rdc repo snapshot list production. Pick any point in your backup timeline.",
               "icon": "clock"
             },
             {
@@ -8184,7 +8184,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup pull production",
+              "cmd": "rdc repo pull production",
               "flag": "",
               "value": ""
             },
@@ -8282,7 +8282,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc snapshot create production --snapshot-name ci-build",
+          "command": "rdc repo snapshot create production --snapshot-name ci-build",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Git-Integration inklusive.",
           "primaryCta": "Kostenlos starten",
           "tierBadge": "Kostenlos für bis zu 5 Repositories · Keine Kreditkarte erforderlich",
@@ -8693,7 +8693,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc backup sync --target secondary",
+          "command": "rdc repo sync push-all --target secondary",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Verschlüsselte Migration inklusive.",
           "primaryCta": "Kostenlos starten",
           "tierBadge": "Kostenlos für bis zu 5 Repositories · Keine Kreditkarte erforderlich",
@@ -9051,7 +9051,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup sync",
+              "cmd": "rdc repo sync push-all",
               "flag": "",
               "value": ""
             },
@@ -9792,7 +9792,7 @@
           "steps": [
             {
               "title": "Detect",
-              "description": "Run rdc backup list --verified to find your last clean snapshot.",
+              "description": "Run rdc repo list-backups --verified to find your last clean snapshot.",
               "icon": "eye"
             },
             {
@@ -9947,7 +9947,7 @@
           "lines": [
             {
               "type": "command",
-              "cmd": "rdc backup pull production",
+              "cmd": "rdc repo pull production",
               "flag": "",
               "value": ""
             },
@@ -10014,7 +10014,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc backup schedule set --cron '0 2 * * *'",
+          "command": "rdc config backup-strategy set --cron '0 2 * * *'",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Legen Sie Ihre erste Aufbewahrungsrichtlinie in 30 Sekunden fest.",
           "primaryCta": "Kostenlos mit Community starten",
           "tierBadge": "Keine Kreditkarte erforderlich",
@@ -10216,7 +10216,7 @@
           "steps": [
             {
               "title": "Set policies",
-              "description": "Run rdc backup schedule set --cron '0 2 * * *'. Define retention per framework or data type.",
+              "description": "Run rdc config backup-strategy set --cron '0 2 * * *'. Define retention per framework or data type.",
               "icon": "sliders"
             },
             {
@@ -10371,7 +10371,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup schedule set",
+              "cmd": "rdc config backup-strategy set",
               "flag": "",
               "value": ""
             },
@@ -10404,7 +10404,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc backup schedule show"
+              "cmd": "rdc config backup-strategy show"
             },
             {
               "type": "spacer"
@@ -10471,7 +10471,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc snapshot create production --snapshot-name patch-test",
+          "command": "rdc repo snapshot create production --snapshot-name patch-test",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Klonen, testen und verifizieren Sie kostenlos. Keine Kreditkarte.",
           "primaryCta": "Kostenlos mit Community starten",
           "tierBadge": "Für immer kostenlos für bis zu 10 Workloads",
@@ -10672,7 +10672,7 @@
           "steps": [
             {
               "title": "Clone",
-              "description": "Run rdc snapshot create production. An exact copy spins up in 60 seconds.",
+              "description": "Run rdc repo snapshot create production. An exact copy spins up in 60 seconds.",
               "icon": "terminal"
             },
             {
@@ -11290,7 +11290,7 @@
           "lines": [
             {
               "type": "command",
-              "cmd": "rdc backup sync",
+              "cmd": "rdc repo sync push-all",
               "flag": "",
               "value": ""
             },

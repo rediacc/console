@@ -87,9 +87,9 @@ Claude Code runs: rdc term prod-1 -c "docker logs nextcloud-app --tail 50"
 ```
 You: "Upload the local config to the mail repo"
 
-Claude Code runs: rdc sync upload -m prod-1 -r mail -l ./config --dry-run
+Claude Code runs: rdc repo sync upload -m prod-1 -r mail -l ./config --dry-run
 → Shows files that would be synced
-Claude Code runs: rdc sync upload -m prod-1 -r mail -l ./config
+Claude Code runs: rdc repo sync upload -m prod-1 -r mail -l ./config
 → Syncs the files
 ```
 

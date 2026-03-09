@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: es
-sourceHash: "4cc40d3db5384f5d"
+sourceHash: "9c6ab927c2220db7"
 ---
 
 # Respaldo y Restauración
@@ -38,7 +38,7 @@ rdc config storages
 Envíe un respaldo del repositorio al almacenamiento externo:
 
 ```bash
-rdc backup push my-app -m server-1 --to my-storage
+rdc repo push my-app -m server-1 --to my-storage
 ```
 
 | Opción | Descripción |
@@ -58,7 +58,7 @@ rdc backup push my-app -m server-1 --to my-storage
 Descargue un respaldo del repositorio desde almacenamiento externo:
 
 ```bash
-rdc backup pull my-app -m server-1 --from my-storage
+rdc repo pull my-app -m server-1 --from my-storage
 ```
 
 | Opción | Descripción |
@@ -75,7 +75,7 @@ rdc backup pull my-app -m server-1 --from my-storage
 Ver los respaldos disponibles en una ubicación de almacenamiento:
 
 ```bash
-rdc backup list --from my-storage -m server-1
+rdc repo list-backups --from my-storage -m server-1
 ```
 
 ## Sincronización Masiva
@@ -85,13 +85,13 @@ Envíe o descargue todos los repositorios a la vez:
 ### Enviar Todos al Almacenamiento
 
 ```bash
-rdc backup sync --to my-storage -m server-1
+rdc repo sync push-all --to my-storage -m server-1
 ```
 
 ### Descargar Todos desde el Almacenamiento
 
 ```bash
-rdc backup sync --from my-storage -m server-1
+rdc repo sync pull-all --from my-storage -m server-1
 ```
 
 | Opción | Descripción |
@@ -110,12 +110,19 @@ Automatice los respaldos con un cronograma cron que se ejecuta como un temporiza
 ### Configurar Cronograma
 
 ```bash
-rdc backup schedule set --destination my-storage --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination my-storage --cron "0 2 * * *" --enable
+```
+
+Puede configurar múltiples destinos con diferentes cronogramas:
+
+```bash
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
 ```
 
 | Opción | Descripción |
 |--------|-------------|
-| `--destination <storage>` | Destino de respaldo predeterminado |
+| `--destination <storage>` | Destino de respaldo (se puede configurar por destino) |
 | `--cron <expression>` | Expresión cron (por ejemplo, `"0 2 * * *"` para diario a las 2 AM) |
 | `--enable` | Habilitar el cronograma |
 | `--disable` | Deshabilitar el cronograma |
@@ -125,13 +132,13 @@ rdc backup schedule set --destination my-storage --cron "0 2 * * *" --enable
 Despliegue la configuración del cronograma en una máquina como un temporizador systemd:
 
 ```bash
-rdc backup schedule push server-1
+rdc machine deploy-backup server-1
 ```
 
 ### Ver Cronograma
 
 ```bash
-rdc backup schedule show
+rdc config backup-strategy show
 ```
 
 ## Explorar Almacenamiento

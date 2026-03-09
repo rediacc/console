@@ -451,12 +451,12 @@
         "success": "Purged {{count}} archived credential(s)"
       },
       "setInfra": {
-        "description": "Set infrastructure configuration for a machine",
-        "optionPublicIPv4": "Public IPv4 address",
-        "optionPublicIPv6": "Public IPv6 address",
-        "optionBaseDomain": "Base domain for applications",
-        "optionCertEmail": "Email for TLS certificate notifications",
-        "optionCfDnsToken": "Cloudflare DNS API token for ACME DNS-01 challenge",
+        "description": "Set infrastructure configuration for a machine (machine-specific: IPs, domain, ports; shared: cert email, CF DNS token)",
+        "optionPublicIPv4": "Public IPv4 address (per-machine)",
+        "optionPublicIPv6": "Public IPv6 address (per-machine)",
+        "optionBaseDomain": "Base domain for applications (per-machine)",
+        "optionCertEmail": "Email for TLS certificate notifications (shared across machines)",
+        "optionCfDnsToken": "Cloudflare DNS API token for ACME DNS-01 challenge (shared across machines)",
         "optionTcpPorts": "TCP ports to forward (comma-separated, e.g., 25,143,465)",
         "optionUdpPorts": "UDP ports to forward (comma-separated, e.g., 53)",
         "noOptions": "No options specified. Use --public-ipv4, --base-domain, etc.",
@@ -471,15 +471,106 @@
         "optionCluster": "Ceph cluster name",
         "success": "Ceph config set for \"{{name}}\": pool={{pool}}, image={{image}}"
       },
+      "addProvider": {
+        "description": "Add a cloud provider for automated machine provisioning",
+        "optionProvider": "Known provider source (e.g., linode/linode, hetznercloud/hcloud)",
+        "optionSource": "Custom OpenTofu provider source (e.g., vultr/vultr)",
+        "optionToken": "API token for the cloud provider",
+        "optionRegion": "Default region for new machines",
+        "optionInstanceType": "Default instance type/size",
+        "optionImage": "Default OS image",
+        "optionSshUser": "SSH username for new VMs (default: root)",
+        "optionResource": "Custom: OpenTofu resource type for VM",
+        "optionLabelAttr": "Custom: attribute name for VM label",
+        "optionRegionAttr": "Custom: attribute name for region",
+        "optionSizeAttr": "Custom: attribute name for instance type",
+        "optionImageAttr": "Custom: attribute name for OS image",
+        "optionIpv4Output": "Custom: output attribute for IPv4 address",
+        "optionIpv6Output": "Custom: output attribute for IPv6 address",
+        "optionSshKeyAttr": "Custom: attribute name for SSH keys",
+        "optionSshKeyFormat": "Custom: SSH key format (inline_list or resource_id)",
+        "optionSshKeyResource": "Custom: OpenTofu resource type for SSH keys",
+        "success": "Cloud provider \"{{name}}\" added ({{provider}})"
+      },
+      "removeProvider": {
+        "description": "Remove a cloud provider configuration",
+        "success": "Cloud provider \"{{name}}\" removed"
+      },
+      "providers": {
+        "description": "List configured cloud providers",
+        "noProviders": "No cloud providers configured. Add with: rdc config add-provider"
+      },
       "showInfra": {
         "description": "Show infrastructure configuration for a machine",
         "noInfra": "No infrastructure config set for \"{{name}}\""
       },
       "pushInfra": {
-        "description": "Push infrastructure configuration to remote machine (installs Traefik reverse proxy + rediacc-router service). Required before deploying repos on a new machine. Run 'config set-infra <machine>' first to configure",
+        "description": "Push infrastructure config to machine (Traefik proxy, router, and Cloudflare DNS records for machine subdomain). Run 'config set-infra <machine>' first",
         "success": "Infrastructure config pushed to \"{{name}}\"",
         "proxyInstallWarning": "Proxy install failed (code {{code}}). Run manually: sudo renet proxy install",
-        "installingProxy": "Installing and starting proxy..."
+        "installingProxy": "Installing and starting proxy...",
+        "dnsSkipNoToken": "Skipping DNS: no Cloudflare API token. Set with: rdc config set-infra <machine> --cf-dns-token <token>",
+        "dnsSkipLocal": "Skipping DNS: .local domain does not use Cloudflare",
+        "dnsResolvingZone": "Resolving Cloudflare zone for {{domain}}...",
+        "dnsCreated": "DNS: created {{type}} {{name}} → {{content}}",
+        "dnsUpdated": "DNS: updated {{type}} {{name}} → {{content}}",
+        "dnsUnchanged": "DNS: {{type}} {{name}} already correct",
+        "dnsError": "DNS warning: {{message}} (records may need manual setup)",
+        "certCacheUploaded": "Uploaded cached certificates to remote"
+      },
+      "certCache": {
+        "description": "Manage cached TLS certificates",
+        "noBaseDomain": "Machine has no baseDomain configured",
+        "noCacheForDomain": "No cert cache found for {{domain}}",
+        "pull": {
+          "description": "Download and cache TLS certificates from a machine",
+          "optionNoPrune": "Skip pruning stale network-ID certificates",
+          "downloading": "Downloading certificates from {{machine}}...",
+          "pruned": "Pruned {{count}} stale certificate(s)",
+          "cached": "Cached {{count}} certificate(s) ({{size}})",
+          "merged": "Kept {{count}} certificate(s) from local cache with longer expiry",
+          "noAcmeJson": "No acme.json found on {{machine}}"
+        },
+        "push": {
+          "description": "Upload cached TLS certificates to a machine",
+          "uploading": "Uploading cached certificates to {{machine}}...",
+          "uploaded": "Uploaded {{count}} certificate(s) to {{machine}}",
+          "merged": "Merged {{count}} certificate(s) with longer expiry into {{machine}}",
+          "upToDate": "Certificates on {{machine}} are up to date",
+          "noCache": "No certificate cache found. Run 'rdc config cert-cache pull <machine>' first"
+        },
+        "status": {
+          "description": "Show cached certificate inventory",
+          "noCache": "No certificate cache stored",
+          "header": "Certificate cache for {{baseDomain}}",
+          "updatedAt": "Last updated: {{date}} (from {{machine}})",
+          "certCount": "{{count}} certificate(s), {{size}} compressed"
+        },
+        "clear": {
+          "description": "Remove the certificate cache",
+          "cleared": "Certificate cache cleared",
+          "noCache": "No certificate cache to clear"
+        }
+      },
+      "backupStrategy": {
+        "description": "Manage multi-destination backup strategy",
+        "set": {
+          "description": "Configure backup strategy settings",
+          "optionDestination": "Storage destination name",
+          "optionCron": "Cron expression for backup schedule (e.g., \"0 2 * * *\")",
+          "optionEnable": "Enable scheduled backups",
+          "optionDisable": "Disable scheduled backups",
+          "noOptions": "Specify at least one option: --destination, --cron, --enable, or --disable",
+          "saved": "Backup strategy configuration saved"
+        },
+        "show": {
+          "description": "Show current backup strategy configuration",
+          "notConfigured": "No backup strategy configured",
+          "schedule": "Schedule: {{schedule}}",
+          "enabled": "Enabled: {{enabled}}",
+          "noDestinations": "No backup destinations configured",
+          "destinations": "Destinations:"
+        }
       }
     },
     "store": {
@@ -601,7 +692,7 @@
         "exitCode": "\nExit Code: {{code}}"
       },
       "containers": {
-        "description": "List running containers on a machine",
+        "description": "List containers on a machine with status, health, and domain routing",
         "fetching": "Fetching containers...",
         "fetched": "Containers fetched",
         "noContainers": "No containers found on this machine",
@@ -619,10 +710,11 @@
         "unstableFound": "{{count}} unstable service(s) found"
       },
       "status": {
-        "description": "Show full machine status (system, repos, containers, services)",
+        "description": "Show full machine status (infra, system, repos, containers, services)",
         "fetching": "Fetching status from {{machine}}...",
         "fetched": "Status fetched",
-        "noData": "No status data available"
+        "noData": "No status data available",
+        "infrastructure": "Infrastructure"
       },
       "vaultStatus": {
         "description": "Show parsed vault status for a machine",
@@ -673,7 +765,44 @@
         "saved": "Known hosts saved to machine vault"
       },
       "info": {
-        "description": "Show full machine status (system, repos, containers, services)"
+        "description": "Show full machine status (infra, system, repos, containers, services)"
+      },
+      "provision": {
+        "description": "Provision a new machine on a cloud provider using OpenTofu",
+        "optionProvider": "Cloud provider name (from config add-provider)",
+        "optionRegion": "Override default region",
+        "optionType": "Override default instance type",
+        "optionImage": "Override default OS image",
+        "optionSshUser": "SSH username for the new VM (default: root)",
+        "optionInfra": "Also configure infrastructure (set-infra + push-infra)",
+        "optionBaseDomain": "Base domain for infrastructure (e.g., example.com). Implies --infra",
+        "optionNoInfra": "Skip infrastructure configuration (proxy + DNS)",
+        "configuringInfra": "Configuring infrastructure (proxy + DNS) for {{name}}...",
+        "infraInherited": "Auto-detected base domain from sibling machine \"{{source}}\"",
+        "noInfraHint": "No base domain configured. Run 'rdc config set-infra <machine> --base-domain <domain>' then 'rdc config push-infra <machine>' to enable DNS and proxy.",
+        "providerRequired": "Cloud provider \"{{name}}\" not found. Add with: rdc config add-provider",
+        "tofuNotInstalled": "OpenTofu (tofu) is not installed. Install from: https://opentofu.org/docs/intro/install/",
+        "provisioning": "Provisioning {{name}} on {{provider}} ({{region}})...",
+        "waitingSSH": "Waiting for SSH connectivity...",
+        "sshReady": "SSH connection established",
+        "settingUp": "Running machine setup...",
+        "completed": "Machine {{name}} provisioned and ready ({{ip}})",
+        "failed": "Machine provisioning failed: {{error}}"
+      },
+      "deprovision": {
+        "description": "Destroy a cloud-provisioned machine and remove from config",
+        "optionForce": "Skip confirmation prompt",
+        "confirm": "This will permanently destroy machine \"{{name}}\" and all its data. Continue?",
+        "destroying": "Destroying {{name}}...",
+        "completed": "Machine {{name}} destroyed and removed from config",
+        "noState": "No OpenTofu state found for \"{{name}}\". Use 'config remove-machine' for manually added machines.",
+        "destroyFailed": "Infrastructure destroy failed for {{name}}: {{error}}. Continuing with config removal (--force).",
+        "dnsDeleted": "Deleted DNS record: {{type}} {{name}}",
+        "dnsCleanedUp": "Removed {{count}} DNS record(s)"
+      },
+      "deployBackup": {
+        "description": "Deploy backup schedule to a remote machine (systemd timer)",
+        "success": "Backup schedule deployed to {{machine}}"
       }
     },
     "organization": {
@@ -1006,7 +1135,7 @@
       }
     },
     "repo": {
-      "description": "Deploy and manage encrypted repositories on machines. Use renet compose (never raw docker compose). Renet auto-injects network_mode:host (compose ports: are ignored), rediacc.* labels, and per-service loopback IPs. Containers MUST bind to their allocated IP (not 0.0.0.0) to avoid port conflicts. STORAGE: Use ${REPOSITORY_PATH}/... bind mounts for all persistent data (e.g. volumes: ['${REPOSITORY_PATH}/data:/data']). Do NOT use Docker named volumes — they live outside the repo and won't be included in forks/backups. HTTPS routing: (1) Auto-route (default, fork-friendly): renet auto-generates https://{serviceName}-{networkId}.{baseDomain} — the compose service name becomes the URL prefix (e.g. service 'myapp' → myapp-3000.rediacc.io). Use rediacc.service_port label for non-80 ports. (2) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true + traefik.http.routers/services labels. Rediaccfile lifecycle: prep() runs on EVERY deploy with fresh env vars (generate IP-dependent configs here), then up() starts containers. ENV VARS — two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. OPENCLAW_IP), ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REPOSITORY_NETWORK_ID env vars into each container. Use SERVICE_IP in your app code to bind to the correct IP. Proxy routes take ~3s to become active after deploy",
+      "description": "Deploy and manage encrypted repositories on machines. Use renet compose (never raw docker compose). Renet auto-injects network_mode:host (compose ports: are ignored), rediacc.* labels, and per-service loopback IPs. Containers MUST bind to their allocated IP (not 0.0.0.0) to avoid port conflicts. STORAGE: Use ${REPOSITORY_PATH}/... bind mounts for all persistent data (e.g. volumes: ['${REPOSITORY_PATH}/data:/data']). Do NOT use Docker named volumes — they live outside the repo and won't be included in forks/backups. HTTPS routing: (1) Auto-route (default, fork-friendly): renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain} — the compose service name becomes the URL prefix (e.g. service 'myapp' in repo 'marketing' → myapp.marketing.hostinger.rediacc.io). Use rediacc.service_port label for non-80 ports. (2) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true + traefik.http.routers/services labels. Rediaccfile lifecycle: up() starts containers (generate IP-dependent configs and pull images here). ENV VARS — two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. OPENCLAW_IP), ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REPOSITORY_NETWORK_ID env vars into each container. Use SERVICE_IP in your app code to bind to the correct IP. Proxy routes take ~3s to become active after deploy",
       "machineOption": "Target machine name",
       "noCredential": "Warning: Repository \"{{name}}\" has no credential set. Operations on encrypted repos may fail.",
       "mount": {
@@ -1024,10 +1153,9 @@
         "failed": "Unmount failed"
       },
       "up": {
-        "description": "Deploy or update a repository (mount, run Rediaccfile prep/up which calls renet compose). Proxy routes take ~3s to become active after deploy. Use --mount for first deploy or forked repos. Use --checkpoint to restore containers from a CRIU checkpoint (for live process migration)",
+        "description": "Deploy or update a repository (mount, run Rediaccfile up which calls renet compose). Proxy routes take ~3s to become active after deploy. Use --mount for first deploy or forked repos. Use --checkpoint to restore containers from a CRIU checkpoint (for live process migration)",
         "mountOption": "Mount repository first (required for forked repos on first deploy)",
         "checkpointOption": "Restore containers from CRIU checkpoint after deploy (for live process migration from another machine)",
-        "prepOnlyOption": "Only run preparation step",
         "grandOption": "Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent",
         "starting": "Starting services for \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Services started",
@@ -1083,7 +1211,7 @@
         "failed": "Repository deletion failed"
       },
       "fork": {
-        "description": "Create a CoW (Copy-on-Write) fork of a repository. Fork gets a NEW GUID, networkId, IP range, and auto-route domain — it is a fully independent copy. Online forking is supported — the parent can remain running. Fork inherits the parent's encryption credentials automatically. CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target> --mount. WARNING: Do NOT use 'backup push' alone for forking — it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. For fork-friendly repos, use auto-route (no traefik.enable) so each fork gets a unique domain automatically",
+        "description": "Create a CoW (Copy-on-Write) fork of a repository. Fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}.{forkName}.{machine}.{baseDomain}) — it is a fully independent copy. Online forking is supported — the parent can remain running. Fork inherits the parent's encryption credentials automatically. CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target> --mount. WARNING: Do NOT use 'backup push' alone for forking — it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically",
         "tagOption": "Fork name",
         "starting": "Forking \"{{parent}}\" as \"{{repository}}\" on \"{{machine}}\"...",
         "registered": "Registered fork \"{{repository}}\" ({{guid}}, network {{networkId}})",
@@ -1154,13 +1282,87 @@
       },
       "template": {
         "description": "Apply a template to a repository (writes docker-compose.yml and Rediaccfile). Rediaccfile must use 'renet compose' (not 'docker compose'). Compose must NOT use 'restart: always' or 'restart: unless-stopped'. Renet auto-injects network_mode:host, CRIU capabilities, and rediacc labels",
-        "fileOption": "Path to template JSON file ({\"version\":\"1\",\"compose\":\"<yaml>\",\"rediaccfile\":\"<bash>\"}). Rediaccfile lifecycle: prep() runs on EVERY deploy (generate configs, pull images), up() starts containers, down() stops. Minimal Rediaccfile: prep() { renet compose -- pull; } up() { renet compose -- up -d; } down() { renet compose -- down; }. IMPORTANT: Rediaccfile MUST use 'renet compose' — 'docker compose' is rejected. ENV VARS — two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. OPENCLAW_IP), ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REPOSITORY_NETWORK_ID env vars. Use SERVICE_IP in your app code to bind to the correct loopback IP. Containers MUST bind to SERVICE_IP:<port> (not 0.0.0.0) since network_mode:host is injected and ports: are ignored. STORAGE: All persistent data MUST use ${REPOSITORY_PATH}/... bind mounts (e.g. volumes: ['${REPOSITORY_PATH}/dbdata:/data']). Do NOT use Docker named volumes — they are outside the repo and excluded from forks/backups. RESTART POLICY: Do NOT use 'restart: always' or 'restart: unless-stopped' — these conflict with CRIU checkpoint/restore. Use 'restart: on-failure' or omit it. Compose: do NOT add network_mode or rediacc.* labels (renet injects them). The compose service name becomes the auto-route URL prefix (e.g. service 'openclaw' → openclaw-{networkId}.{baseDomain}). HTTPS routing: (A) Auto-route (fork-friendly, recommended): do NOT add traefik.enable. Renet auto-generates https://{serviceName}-{networkId}.{baseDomain}. Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique domain. (B) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true, traefik.http.routers.<n>.rule=Host(`domain`), traefik.http.routers.<n>.entrypoints=websecure,websecure-v6, traefik.http.routers.<n>.tls.certresolver=letsencrypt, traefik.http.services.<n>.loadbalancer.server.port=<port>. For TCP/UDP: rediacc.tcp_ports=3306 / rediacc.udp_ports=53",
+        "fileOption": "Path to template JSON file ({\"version\":\"1\",\"compose\":\"<yaml>\",\"rediaccfile\":\"<bash>\"}). Rediaccfile lifecycle: up() starts containers (pull images, generate configs here), down() stops. Minimal Rediaccfile: up() { renet compose -- pull; renet compose -- up -d; } down() { renet compose -- down; }. IMPORTANT: Rediaccfile MUST use 'renet compose' — 'docker compose' is rejected. ENV VARS — two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. OPENCLAW_IP), ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REPOSITORY_NETWORK_ID env vars. Use SERVICE_IP in your app code to bind to the correct loopback IP. Containers MUST bind to SERVICE_IP:<port> (not 0.0.0.0) since network_mode:host is injected and ports: are ignored. STORAGE: All persistent data MUST use ${REPOSITORY_PATH}/... bind mounts (e.g. volumes: ['${REPOSITORY_PATH}/dbdata:/data']). Do NOT use Docker named volumes — they are outside the repo and excluded from forks/backups. RESTART POLICY: Do NOT use 'restart: always' or 'restart: unless-stopped' — these conflict with CRIU checkpoint/restore. Use 'restart: on-failure' or omit it. Compose: do NOT add network_mode or rediacc.* labels (renet injects them). The compose service name becomes the auto-route URL prefix (e.g. service 'openclaw' in repo 'myapp' → openclaw.myapp.{machineName}.{baseDomain}). HTTPS routing: (A) Auto-route (fork-friendly, recommended): do NOT add traefik.enable. Renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain}. Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique domain. (B) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true, traefik.http.routers.<n>.rule=Host(`domain`), traefik.http.routers.<n>.entrypoints=websecure,websecure-v6, traefik.http.routers.<n>.tls.certresolver=letsencrypt, traefik.http.services.<n>.loadbalancer.server.port=<port>. For TCP/UDP: rediacc.tcp_ports=3306 / rediacc.udp_ports=53",
         "grandOption": "Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent",
         "fileNotFound": "Template file not found: {{path}}",
         "starting": "Applying template to \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Template applied",
         "failed": "Template application failed"
+      },
+      "push": {
+        "description": "Push repository backup to storage or machine. For machine-to-machine transfer (--to-machine), the encrypted repo image is copied directly with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork on another machine, use 'repo fork' first (gets new GUID/networkId), then push the fork. After push, deploy on the target with: repo up <name> -m <target> --mount",
+        "optionDest": "Destination filename",
+        "optionToStorage": "Destination storage name",
+        "optionToMachine": "Destination machine name",
+        "optionProvider": "Cloud provider to auto-provision target machine if it doesn't exist (from config add-provider)",
+        "optionCheckpoint": "Create CRIU container checkpoint before backup (captures process memory state). For live migration: repo push <repo> -m <source> --to-machine <target> --checkpoint, then: repo up <repo> -m <target> --mount --checkpoint (restores process state on target)",
+        "optionForce": "Force overwrite existing backup",
+        "optionTag": "Deployment tag for versioning",
+        "destRequired": "Specify --to <storage> or --to-machine <machine>",
+        "destIgnoredForStorage": "Ignoring --dest {{provided}}: storage backups use repository GUID ({{dest}})",
+        "pushing": "Pushing backup of \"{{repo}}\" to {{dest}}..."
+      },
+      "pull": {
+        "description": "Pull repository backup from storage or machine",
+        "optionFromStorage": "Source storage name",
+        "optionFromMachine": "Source machine name",
+        "optionForce": "Force overwrite existing repository",
+        "sourceRequired": "Specify --from <storage> or --from-machine <machine>",
+        "pulling": "Pulling backup of \"{{repo}}\"..."
+      },
+      "listBackups": {
+        "description": "List available backups on storage or machine",
+        "optionFromStorage": "Source storage name",
+        "optionFromMachine": "Source machine name",
+        "sourceRequired": "Specify --from <storage> or --from-machine <machine>",
+        "listing": "Listing backups..."
+      },
+      "sync": {
+        "description": "Sync repositories and files (bulk push/pull, file transfer)",
+        "pushAll": {
+          "description": "Bulk push all repositories to cloud storage",
+          "optionTo": "Destination storage name",
+          "optionRepo": "Filter to specific repository (repeatable)",
+          "success": "Sync push completed"
+        },
+        "pullAll": {
+          "description": "Bulk pull all repositories from cloud storage",
+          "optionFrom": "Source storage name",
+          "optionRepo": "Filter to specific repository (repeatable)",
+          "optionOverride": "Override existing unmounted repos on pull",
+          "success": "Sync pull completed"
+        },
+        "upload": {
+          "description": "Upload files to a repository"
+        },
+        "download": {
+          "description": "Download files from a repository"
+        },
+        "status": {
+          "description": "Check sync status and compare local/remote files"
+        }
+      },
+      "snapshot": {
+        "description": "Manage BTRFS snapshots on remote machines",
+        "create": {
+          "description": "Create a BTRFS snapshot of a repository",
+          "optionSnapshotName": "Explicit snapshot name (auto-generated if empty)",
+          "creating": "Creating snapshot of \"{{repo}}\" on {{machine}}...",
+          "success": "Snapshot created: {{name}} ({{path}})"
+        },
+        "list": {
+          "description": "List snapshots on a remote machine",
+          "noSnapshots": "No snapshots found.",
+          "header": "{{count}} snapshot(s) in {{path}}:"
+        },
+        "delete": {
+          "description": "Delete a snapshot from a remote machine",
+          "success": "Snapshot deleted: {{name}}"
+        }
       }
+    },
+    "backup": {
+      "description": "Push, pull, and sync repository backups across storage and machines"
     },
     "storage": {
       "description": "Manage storage providers and browse remote files",
@@ -1284,88 +1486,6 @@
           "description": "Remove a user from a team",
           "removing": "Removing {{email}} from team \"{{team}}\"...",
           "success": "User removed from team \"{{team}}\""
-        }
-      }
-    },
-    "snapshot": {
-      "description": "Manage BTRFS snapshots on remote machines",
-      "create": {
-        "description": "Create a BTRFS snapshot of a repository",
-        "optionSnapshotName": "Explicit snapshot name (auto-generated if empty)",
-        "creating": "Creating snapshot of \"{{repo}}\" on {{machine}}...",
-        "success": "Snapshot created: {{name}} ({{path}})"
-      },
-      "list": {
-        "description": "List snapshots on a remote machine",
-        "noSnapshots": "No snapshots found.",
-        "header": "{{count}} snapshot(s) in {{path}}:"
-      },
-      "delete": {
-        "description": "Delete a snapshot from a remote machine",
-        "success": "Snapshot deleted: {{name}}"
-      }
-    },
-    "backup": {
-      "description": "Back up and restore repositories to external storage",
-      "push": {
-        "description": "Push repository backup to storage or machine. For machine-to-machine transfer (--to-machine), the encrypted repo image is copied directly with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork on another machine, use 'repo fork' first (gets new GUID/networkId), then push the fork. After push, deploy on the target with: repo up <name> -m <target> --mount",
-        "optionDest": "Destination filename",
-        "optionToStorage": "Destination storage name",
-        "optionToMachine": "Destination machine name",
-        "optionCheckpoint": "Create CRIU container checkpoint before backup (captures process memory state). For live migration: backup push <repo> -m <source> --to-machine <target> --checkpoint, then: repo up <repo> -m <target> --mount --checkpoint (restores process state on target)",
-        "optionForce": "Force overwrite existing backup",
-        "optionTag": "Deployment tag for versioning",
-        "destRequired": "Specify --to <storage> or --to-machine <machine>",
-        "destIgnoredForStorage": "Ignoring --dest {{provided}}: storage backups use repository GUID ({{dest}})",
-        "pushing": "Pushing backup of \"{{repo}}\" to {{dest}}..."
-      },
-      "pull": {
-        "description": "Pull repository backup from storage or machine",
-        "optionFromStorage": "Source storage name",
-        "optionFromMachine": "Source machine name",
-        "optionForce": "Force overwrite existing repository",
-        "sourceRequired": "Specify --from <storage> or --from-machine <machine>",
-        "pulling": "Pulling backup of \"{{repo}}\"..."
-      },
-      "list": {
-        "description": "List available backups on storage or machine",
-        "optionFromStorage": "Source storage name",
-        "optionFromMachine": "Source machine name",
-        "sourceRequired": "Specify --from <storage> or --from-machine <machine>",
-        "listing": "Listing backups..."
-      },
-      "sync": {
-        "description": "Bulk push/pull all repositories to/from cloud storage",
-        "optionTo": "Destination storage name (push mode)",
-        "optionFrom": "Source storage name (pull mode)",
-        "optionRepo": "Filter to specific repository (repeatable)",
-        "optionOverride": "Override existing unmounted repos on pull",
-        "directionRequired": "Specify --to <storage> (push) or --from <storage> (pull)",
-        "directionConflict": "Cannot specify both --to and --from",
-        "pushSuccess": "Sync push completed",
-        "pullSuccess": "Sync pull completed"
-      },
-      "schedule": {
-        "description": "Manage scheduled backup configuration",
-        "set": {
-          "description": "Configure backup schedule settings",
-          "optionDestination": "Default storage destination name",
-          "optionCron": "Cron expression for backup schedule (e.g., \"0 2 * * *\")",
-          "optionEnable": "Enable scheduled backups",
-          "optionDisable": "Disable scheduled backups",
-          "noOptions": "Specify at least one option: --destination, --cron, --enable, or --disable",
-          "saved": "Backup schedule configuration saved"
-        },
-        "show": {
-          "description": "Show current backup schedule configuration",
-          "notConfigured": "No backup schedule configured",
-          "destination": "Destination: {{destination}}",
-          "schedule": "Schedule: {{schedule}}",
-          "enabled": "Enabled: {{enabled}}"
-        },
-        "push": {
-          "description": "Push backup schedule to remote machine (systemd timer)",
-          "success": "Backup schedule pushed to {{machine}}"
         }
       }
     },
@@ -1563,7 +1683,14 @@
       "create": "Create encrypted repo",
       "up": "Deploy with auto-mount",
       "down": "Stop services",
-      "fork": "CoW fork for testing"
+      "fork": "CoW fork for testing",
+      "push": "Push repo backup to storage",
+      "pull": "Pull repo backup from storage",
+      "listBackups": "List backups on storage",
+      "sync": {
+        "pushAll": "Bulk push all repos to storage",
+        "pullAll": "Bulk pull all repos from storage"
+      }
     },
     "term": {
       "machine": "SSH into machine",
@@ -1589,11 +1716,6 @@
       "upload": "Upload local files to repository",
       "download": "Download repository files locally",
       "status": "Show sync status"
-    },
-    "backup": {
-      "push": "Push repo backup to storage",
-      "pull": "Pull repo backup from storage",
-      "list": "List backups on storage"
     }
   },
   "errors": {
@@ -1915,14 +2037,11 @@
       "repo": "Repository Lifecycle",
       "storage": "Storage Management",
       "queue": "Queue Operations",
-      "sync": "File Synchronization",
       "vscode": "VS Code Integration",
       "term": "SSH Terminal Access",
       "ceph": "Ceph Storage Management",
       "audit": "Audit and Compliance",
       "protocol": "Protocol Handler",
-      "snapshot": "Snapshot Management",
-      "backup": "Backup Management",
       "shortcuts": "Quick Commands (Shortcuts)",
       "update": "CLI Updates",
       "doctor": "System Diagnostics",
@@ -1930,7 +2049,9 @@
       "subscription": "Subscription Management",
       "agent": "Agent Utilities",
       "mcp": "MCP Server",
-      "datastore": "Datastore Management"
+      "datastore": "Datastore Management",
+      "sync": "File Sync",
+      "backup": "Backup & Restore"
     },
     "errors": {
       "heading": "Common Error Messages",
