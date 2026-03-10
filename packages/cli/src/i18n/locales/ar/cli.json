@@ -116,10 +116,10 @@
     "backup": {
       "description": "دفع واسترجاع ومزامنة النسخ الاحتياطية للمستودعات عبر التخزين والأجهزة",
       "schedule": {
-        "description": "Deploy backup schedules to remote machines"
+        "description": "نشر جداول النسخ الاحتياطي على الأجهزة البعيدة"
       },
       "sync": {
-        "description": "Bidirectional sync of repository backups across machines"
+        "description": "مزامنة ثنائية الاتجاه للنسخ الاحتياطية عبر الأجهزة"
       }
     },
     "bridge": {
@@ -1320,7 +1320,7 @@
       }
     },
     "snapshot": {
-      "description": "Manage BTRFS snapshots on remote machines"
+      "description": "إدارة لقطات BTRFS على الأجهزة البعيدة"
     },
     "storage": {
       "browse": {

@@ -116,10 +116,10 @@
     "backup": {
       "description": "Repository-Backups über Speicher und Maschinen pushen, pullen und synchronisieren",
       "schedule": {
-        "description": "Deploy backup schedules to remote machines"
+        "description": "Backup-Zeitpläne auf Remote-Maschinen bereitstellen"
       },
       "sync": {
-        "description": "Bidirectional sync of repository backups across machines"
+        "description": "Bidirektionale Synchronisation von Backups zwischen Maschinen"
       }
     },
     "bridge": {
@@ -1320,7 +1320,7 @@
       }
     },
     "snapshot": {
-      "description": "Manage BTRFS snapshots on remote machines"
+      "description": "BTRFS-Snapshots auf Remote-Maschinen verwalten"
     },
     "storage": {
       "browse": {

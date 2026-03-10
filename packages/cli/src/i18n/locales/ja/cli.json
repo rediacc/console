@@ -116,10 +116,10 @@
     "backup": {
       "description": "ストレージやマシン間でリポジトリバックアップのプッシュ、プル、同期を行う",
       "schedule": {
-        "description": "Deploy backup schedules to remote machines"
+        "description": "リモートマシンにバックアップスケジュールをデプロイ"
       },
       "sync": {
-        "description": "Bidirectional sync of repository backups across machines"
+        "description": "マシン間のバックアップの双方向同期"
       }
     },
     "bridge": {
@@ -1320,7 +1320,7 @@
       }
     },
     "snapshot": {
-      "description": "Manage BTRFS snapshots on remote machines"
+      "description": "リモートマシンのBTRFSスナップショットを管理"
     },
     "storage": {
       "browse": {

@@ -116,10 +116,10 @@
     "backup": {
       "description": "在存储和机器之间推送、拉取和同步仓库备份",
       "schedule": {
-        "description": "Deploy backup schedules to remote machines"
+        "description": "将备份计划部署到远程机器"
       },
       "sync": {
-        "description": "Bidirectional sync of repository backups across machines"
+        "description": "跨机器双向同步备份"
       }
     },
     "bridge": {
@@ -1320,7 +1320,7 @@
       }
     },
     "snapshot": {
-      "description": "Manage BTRFS snapshots on remote machines"
+      "description": "管理远程机器上的 BTRFS 快照"
     },
     "storage": {
       "browse": {

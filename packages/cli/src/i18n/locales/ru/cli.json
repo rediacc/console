@@ -116,10 +116,10 @@
     "backup": {
       "description": "Отправка, получение и синхронизация резервных копий репозиториев между хранилищами и машинами",
       "schedule": {
-        "description": "Deploy backup schedules to remote machines"
+        "description": "Развёртывание расписаний резервного копирования на удалённых машинах"
       },
       "sync": {
-        "description": "Bidirectional sync of repository backups across machines"
+        "description": "Двунаправленная синхронизация резервных копий между машинами"
       }
     },
     "bridge": {
@@ -1320,7 +1320,7 @@
       }
     },
     "snapshot": {
-      "description": "Manage BTRFS snapshots on remote machines"
+      "description": "Управление снимками BTRFS на удалённых машинах"
     },
     "storage": {
       "browse": {

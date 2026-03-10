@@ -116,10 +116,10 @@
     "backup": {
       "description": "Depo yedeklerini depolama ve makineler arasında gönderme, çekme ve senkronize etme",
       "schedule": {
-        "description": "Deploy backup schedules to remote machines"
+        "description": "Uzak makinelere yedekleme zamanlamalarını dağıt"
       },
       "sync": {
-        "description": "Bidirectional sync of repository backups across machines"
+        "description": "Makineler arası yedeklerin çift yönlü senkronizasyonu"
       }
     },
     "bridge": {
@@ -1320,7 +1320,7 @@
       }
     },
     "snapshot": {
-      "description": "Manage BTRFS snapshots on remote machines"
+      "description": "Uzak makinelerde BTRFS anlık görüntülerini yönet"
     },
     "storage": {
       "browse": {
