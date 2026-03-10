@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1477
+    "keyCount": 1480
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -71,6 +71,8 @@
     "commands.auth.token.revoke.revoking": "5d64a0e8",
     "commands.auth.token.revoke.success": "64225043",
     "commands.backup.description": "21bd92cc",
+    "commands.backup.schedule.description": "a26fe0e0",
+    "commands.backup.sync.description": "0ae484ae",
     "commands.bridge.description": "144775ba",
     "commands.bridge.list.description": "cad9bc18",
     "commands.bridge.list.fetching": "ec163945",
@@ -884,6 +886,7 @@
     "commands.shortcuts.run.failedLocal": "13f26b72",
     "commands.shortcuts.run.watching": "d43269d4",
     "commands.shortcuts.trace.description": "686c9eca",
+    "commands.snapshot.description": "a2355565",
     "commands.storage.browse.description": "3cda07a4",
     "commands.storage.browse.failed": "d90527a6",
     "commands.storage.browse.listing": "5eb86702",
