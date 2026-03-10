@@ -113,6 +113,15 @@
         }
       }
     },
+    "backup": {
+      "description": "在存储和机器之间推送、拉取和同步仓库备份",
+      "schedule": {
+        "description": "Deploy backup schedules to remote machines"
+      },
+      "sync": {
+        "description": "Bidirectional sync of repository backups across machines"
+      }
+    },
     "bridge": {
       "description": "网桥管理",
       "list": {
@@ -1175,6 +1184,9 @@
       },
       "sync": {
         "description": "同步仓库和文件（批量推送/拉取，文件传输）",
+        "download": {
+          "description": "从仓库下载文件"
+        },
         "pullAll": {
           "description": "批量推送/拉取所有仓库到/从云存储",
           "optionFrom": "源存储名称（拉取模式）",
@@ -1188,14 +1200,11 @@
           "optionTo": "目标存储名称（推送模式）",
           "success": "同步推送完成"
         },
-        "upload": {
-          "description": "上传文件到仓库"
-        },
-        "download": {
-          "description": "从仓库下载文件"
-        },
         "status": {
           "description": "检查同步状态并比较本地/远程文件"
+        },
+        "upload": {
+          "description": "上传文件到仓库"
         }
       },
       "template": {
@@ -1310,8 +1319,8 @@
         "description": "跟踪任务 (queue trace 的快捷方式)"
       }
     },
-    "backup": {
-      "description": "在存储和机器之间推送、拉取和同步仓库备份"
+    "snapshot": {
+      "description": "Manage BTRFS snapshots on remote machines"
     },
     "storage": {
       "browse": {
@@ -1735,8 +1744,8 @@
     "sectionTitles": {
       "agent": "代理工具",
       "audit": "审计与合规",
-      "backup": "备份与恢复",
       "auth": "身份验证",
+      "backup": "备份与恢复",
       "bridge": "桥接管理",
       "ceph": "Ceph 存储管理",
       "config": "配置管理",

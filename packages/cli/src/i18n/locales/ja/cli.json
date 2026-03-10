@@ -113,6 +113,15 @@
         }
       }
     },
+    "backup": {
+      "description": "ストレージやマシン間でリポジトリバックアップのプッシュ、プル、同期を行う",
+      "schedule": {
+        "description": "Deploy backup schedules to remote machines"
+      },
+      "sync": {
+        "description": "Bidirectional sync of repository backups across machines"
+      }
+    },
     "bridge": {
       "description": "ブリッジ管理",
       "list": {
@@ -1175,6 +1184,9 @@
       },
       "sync": {
         "description": "リポジトリとファイルの同期（一括プッシュ/プル、ファイル転送）",
+        "download": {
+          "description": "リポジトリからファイルをダウンロード"
+        },
         "pullAll": {
           "description": "すべてのリポジトリをクラウドストレージに一括プッシュ/プルする",
           "optionFrom": "ソースストレージ名（プルモード）",
@@ -1188,14 +1200,11 @@
           "optionTo": "宛先ストレージ名（プッシュモード）",
           "success": "同期プッシュが完了しました"
         },
-        "upload": {
-          "description": "リポジトリにファイルをアップロード"
-        },
-        "download": {
-          "description": "リポジトリからファイルをダウンロード"
-        },
         "status": {
           "description": "同期ステータスを確認しローカル/リモートファイルを比較"
+        },
+        "upload": {
+          "description": "リポジトリにファイルをアップロード"
         }
       },
       "template": {
@@ -1310,8 +1319,8 @@
         "description": "タスクをトレースする (queue trace のショートカット)"
       }
     },
-    "backup": {
-      "description": "ストレージやマシン間でリポジトリバックアップのプッシュ、プル、同期を行う"
+    "snapshot": {
+      "description": "Manage BTRFS snapshots on remote machines"
     },
     "storage": {
       "browse": {
@@ -1735,8 +1744,8 @@
     "sectionTitles": {
       "agent": "エージェントユーティリティ",
       "audit": "監査とコンプライアンス",
-      "backup": "バックアップと復元",
       "auth": "認証",
+      "backup": "バックアップと復元",
       "bridge": "ブリッジ管理",
       "ceph": "Cephストレージ管理",
       "config": "設定管理",

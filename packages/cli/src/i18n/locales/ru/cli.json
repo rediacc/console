@@ -113,6 +113,15 @@
         }
       }
     },
+    "backup": {
+      "description": "Отправка, получение и синхронизация резервных копий репозиториев между хранилищами и машинами",
+      "schedule": {
+        "description": "Deploy backup schedules to remote machines"
+      },
+      "sync": {
+        "description": "Bidirectional sync of repository backups across machines"
+      }
+    },
     "bridge": {
       "description": "Управление мостом",
       "list": {
@@ -1175,6 +1184,9 @@
       },
       "sync": {
         "description": "Синхронизация репозиториев и файлов (массовый push/pull, передача файлов)",
+        "download": {
+          "description": "Скачать файлы из репозитория"
+        },
         "pullAll": {
           "description": "Массовая отправка/получение всех репозиториев в/из облачного хранилища",
           "optionFrom": "Имя исходного хранилища (режим получения)",
@@ -1188,14 +1200,11 @@
           "optionTo": "Имя целевого хранилища (режим отправки)",
           "success": "Синхронизация отправки завершена"
         },
-        "upload": {
-          "description": "Загрузить файлы в репозиторий"
-        },
-        "download": {
-          "description": "Скачать файлы из репозитория"
-        },
         "status": {
           "description": "Проверить статус синхронизации и сравнить локальные/удалённые файлы"
+        },
+        "upload": {
+          "description": "Загрузить файлы в репозиторий"
         }
       },
       "template": {
@@ -1310,8 +1319,8 @@
         "description": "Отслеживать задачу (сокращение для: queue trace)"
       }
     },
-    "backup": {
-      "description": "Отправка, получение и синхронизация резервных копий репозиториев между хранилищами и машинами"
+    "snapshot": {
+      "description": "Manage BTRFS snapshots on remote machines"
     },
     "storage": {
       "browse": {
@@ -1735,8 +1744,8 @@
     "sectionTitles": {
       "agent": "Утилиты агента",
       "audit": "Аудит и соответствие",
-      "backup": "Резервное копирование и восстановление",
       "auth": "Аутентификация",
+      "backup": "Резервное копирование и восстановление",
       "bridge": "Управление мостами",
       "ceph": "Управление хранилищем Ceph",
       "config": "Управление конфигурацией",

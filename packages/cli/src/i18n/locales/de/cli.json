@@ -113,6 +113,15 @@
         }
       }
     },
+    "backup": {
+      "description": "Repository-Backups über Speicher und Maschinen pushen, pullen und synchronisieren",
+      "schedule": {
+        "description": "Deploy backup schedules to remote machines"
+      },
+      "sync": {
+        "description": "Bidirectional sync of repository backups across machines"
+      }
+    },
     "bridge": {
       "description": "Bridge-Verwaltung",
       "list": {
@@ -1175,6 +1184,9 @@
       },
       "sync": {
         "description": "Repositories und Dateien synchronisieren (Massen-Push/Pull, Dateitransfer)",
+        "download": {
+          "description": "Dateien aus einem Repository herunterladen"
+        },
         "pullAll": {
           "description": "Alle Repositories massenhaft zum/vom Cloud-Speicher übertragen",
           "optionFrom": "Name des Quellspeichers (Pull-Modus)",
@@ -1188,14 +1200,11 @@
           "optionTo": "Name des Zielspeichers (Push-Modus)",
           "success": "Synchronisierungs-Push abgeschlossen"
         },
-        "upload": {
-          "description": "Dateien in ein Repository hochladen"
-        },
-        "download": {
-          "description": "Dateien aus einem Repository herunterladen"
-        },
         "status": {
           "description": "Synchronisierungsstatus prüfen und lokale/entfernte Dateien vergleichen"
+        },
+        "upload": {
+          "description": "Dateien in ein Repository hochladen"
         }
       },
       "template": {
@@ -1310,8 +1319,8 @@
         "description": "Eine Aufgabe verfolgen (Kurzbefehl für: queue trace)"
       }
     },
-    "backup": {
-      "description": "Repository-Backups über Speicher und Maschinen pushen, pullen und synchronisieren"
+    "snapshot": {
+      "description": "Manage BTRFS snapshots on remote machines"
     },
     "storage": {
       "browse": {
@@ -1735,8 +1744,8 @@
     "sectionTitles": {
       "agent": "Agent-Hilfsprogramme",
       "audit": "Audit und Compliance",
-      "backup": "Sicherung & Wiederherstellung",
       "auth": "Authentifizierung",
+      "backup": "Sicherung & Wiederherstellung",
       "bridge": "Bridge-Verwaltung",
       "ceph": "Ceph-Speicherverwaltung",
       "config": "Konfigurationsverwaltung",

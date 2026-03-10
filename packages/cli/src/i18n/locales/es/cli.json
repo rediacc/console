@@ -113,6 +113,15 @@
         }
       }
     },
+    "backup": {
+      "description": "Enviar, recibir y sincronizar copias de seguridad de repositorios entre almacenamiento y máquinas",
+      "schedule": {
+        "description": "Deploy backup schedules to remote machines"
+      },
+      "sync": {
+        "description": "Bidirectional sync of repository backups across machines"
+      }
+    },
     "bridge": {
       "description": "Gestión de puentes",
       "list": {
@@ -1175,6 +1184,9 @@
       },
       "sync": {
         "description": "Sincronizar repositorios y archivos (push/pull masivo, transferencia de archivos)",
+        "download": {
+          "description": "Descargar archivos de un repositorio"
+        },
         "pullAll": {
           "description": "Enviar/obtener todos los repositorios en masa desde/hacia almacenamiento en la nube",
           "optionFrom": "Nombre del almacenamiento de origen (modo pull)",
@@ -1188,14 +1200,11 @@
           "optionTo": "Nombre del almacenamiento de destino (modo push)",
           "success": "Push de sincronización completado"
         },
-        "upload": {
-          "description": "Subir archivos a un repositorio"
-        },
-        "download": {
-          "description": "Descargar archivos de un repositorio"
-        },
         "status": {
           "description": "Verificar el estado de sincronización y comparar archivos locales/remotos"
+        },
+        "upload": {
+          "description": "Subir archivos a un repositorio"
         }
       },
       "template": {
@@ -1310,8 +1319,8 @@
         "description": "Rastrear una tarea (atajo para: queue trace)"
       }
     },
-    "backup": {
-      "description": "Enviar, recibir y sincronizar copias de seguridad de repositorios entre almacenamiento y máquinas"
+    "snapshot": {
+      "description": "Manage BTRFS snapshots on remote machines"
     },
     "storage": {
       "browse": {
@@ -1735,8 +1744,8 @@
     "sectionTitles": {
       "agent": "Utilidades del agente",
       "audit": "Auditoría y Cumplimiento",
-      "backup": "Copia de seguridad y restauración",
       "auth": "Autenticación",
+      "backup": "Copia de seguridad y restauración",
       "bridge": "Gestión de Bridge",
       "ceph": "Gestión de Almacenamiento Ceph",
       "config": "Gestión de Configuración",

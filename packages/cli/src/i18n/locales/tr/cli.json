@@ -113,6 +113,15 @@
         }
       }
     },
+    "backup": {
+      "description": "Depo yedeklerini depolama ve makineler arasında gönderme, çekme ve senkronize etme",
+      "schedule": {
+        "description": "Deploy backup schedules to remote machines"
+      },
+      "sync": {
+        "description": "Bidirectional sync of repository backups across machines"
+      }
+    },
     "bridge": {
       "description": "Köprü yönetimi",
       "list": {
@@ -1175,6 +1184,9 @@
       },
       "sync": {
         "description": "Depoları ve dosyaları senkronize et (toplu push/pull, dosya aktarımı)",
+        "download": {
+          "description": "Depodan dosya indir"
+        },
         "pullAll": {
           "description": "Tüm depoları toplu olarak bulut depolamaya gönder/al",
           "optionFrom": "Kaynak depolama adı (alma modu)",
@@ -1188,14 +1200,11 @@
           "optionTo": "Hedef depolama adı (gönderme modu)",
           "success": "Eşitleme gönderimi tamamlandı"
         },
-        "upload": {
-          "description": "Depoya dosya yükle"
-        },
-        "download": {
-          "description": "Depodan dosya indir"
-        },
         "status": {
           "description": "Senkronizasyon durumunu kontrol et ve yerel/uzak dosyaları karşılaştır"
+        },
+        "upload": {
+          "description": "Depoya dosya yükle"
         }
       },
       "template": {
@@ -1310,8 +1319,8 @@
         "description": "Bir görevi izle (kısayol: queue trace)"
       }
     },
-    "backup": {
-      "description": "Depo yedeklerini depolama ve makineler arasında gönderme, çekme ve senkronize etme"
+    "snapshot": {
+      "description": "Manage BTRFS snapshots on remote machines"
     },
     "storage": {
       "browse": {
@@ -1735,8 +1744,8 @@
     "sectionTitles": {
       "agent": "Ajan araçları",
       "audit": "Denetim ve Uyumluluk",
-      "backup": "Yedekleme ve Geri Yükleme",
       "auth": "Kimlik Doğrulama",
+      "backup": "Yedekleme ve Geri Yükleme",
       "bridge": "Bridge Yönetimi",
       "ceph": "Ceph Depolama Yönetimi",
       "config": "Yapılandırma Yönetimi",

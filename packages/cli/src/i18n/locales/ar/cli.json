@@ -113,6 +113,15 @@
         }
       }
     },
+    "backup": {
+      "description": "دفع واسترجاع ومزامنة النسخ الاحتياطية للمستودعات عبر التخزين والأجهزة",
+      "schedule": {
+        "description": "Deploy backup schedules to remote machines"
+      },
+      "sync": {
+        "description": "Bidirectional sync of repository backups across machines"
+      }
+    },
     "bridge": {
       "description": "إدارة الجسور",
       "list": {
@@ -1175,6 +1184,9 @@
       },
       "sync": {
         "description": "مزامنة المستودعات والملفات (دفع/سحب جماعي، نقل ملفات)",
+        "download": {
+          "description": "تنزيل الملفات من مستودع"
+        },
         "pullAll": {
           "description": "دفع/سحب جميع المستودعات بالجملة من/إلى التخزين السحابي",
           "optionFrom": "اسم التخزين المصدر (وضع السحب)",
@@ -1188,14 +1200,11 @@
           "optionTo": "اسم التخزين الوجهة (وضع الدفع)",
           "success": "اكتمل دفع المزامنة"
         },
-        "upload": {
-          "description": "رفع الملفات إلى مستودع"
-        },
-        "download": {
-          "description": "تنزيل الملفات من مستودع"
-        },
         "status": {
           "description": "التحقق من حالة المزامنة ومقارنة الملفات المحلية/البعيدة"
+        },
+        "upload": {
+          "description": "رفع الملفات إلى مستودع"
         }
       },
       "template": {
@@ -1310,8 +1319,8 @@
         "description": "تتبع مهمة (اختصار لـ: queue trace)"
       }
     },
-    "backup": {
-      "description": "دفع واسترجاع ومزامنة النسخ الاحتياطية للمستودعات عبر التخزين والأجهزة"
+    "snapshot": {
+      "description": "Manage BTRFS snapshots on remote machines"
     },
     "storage": {
       "browse": {
@@ -1735,8 +1744,8 @@
     "sectionTitles": {
       "agent": "أدوات الوكيل",
       "audit": "التدقيق والامتثال",
-      "backup": "النسخ الاحتياطي والاستعادة",
       "auth": "المصادقة",
+      "backup": "النسخ الاحتياطي والاستعادة",
       "bridge": "إدارة الجسر",
       "ceph": "إدارة تخزين Ceph",
       "config": "إدارة الإعدادات",
