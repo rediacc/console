@@ -109,10 +109,9 @@ class ConfigService extends ConfigServiceBase {
   async listMachines(): Promise<{ name: string; config: MachineConfig }[]> {
     await this.requireSelfHosted();
     const state = await this.getResourceState();
-    return Object.entries(state.getMachines()).map(([name, config]) => ({
-      name,
-      config,
-    }));
+    return Object.entries(state.getMachines())
+      .map(([name, config]) => ({ name, config }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   async updateMachine(machineName: string, updates: Partial<MachineConfig>): Promise<void> {
@@ -182,10 +181,9 @@ class ConfigService extends ConfigServiceBase {
   async listStorages(): Promise<{ name: string; config: StorageConfig }[]> {
     await this.requireSelfHosted();
     const state = await this.getResourceState();
-    return Object.entries(state.getStorages()).map(([name, config]) => ({
-      name,
-      config,
-    }));
+    return Object.entries(state.getStorages())
+      .map(([name, config]) => ({ name, config }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   async getStorage(storageName: string): Promise<StorageConfig> {
@@ -223,10 +221,9 @@ class ConfigService extends ConfigServiceBase {
   async listRepositories(): Promise<{ name: string; config: RepositoryConfig }[]> {
     await this.requireSelfHosted();
     const state = await this.getResourceState();
-    return Object.entries(state.getRepositories()).map(([name, config]) => ({
-      name,
-      config,
-    }));
+    return Object.entries(state.getRepositories())
+      .map(([name, config]) => ({ name, config }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   async getRepositoryGuidMap(): Promise<Record<string, string>> {
@@ -365,6 +362,7 @@ class ConfigService extends ConfigServiceBase {
     } else {
       backupStrategy.destinations.push(dest);
     }
+    backupStrategy.destinations.sort((a, b) => a.storage.localeCompare(b.storage));
     await this.update(name, { backupStrategy });
   }
 
@@ -407,10 +405,9 @@ class ConfigService extends ConfigServiceBase {
   async listCloudProviders(): Promise<{ name: string; config: CloudProviderConfig }[]> {
     const config = await this.getCurrent();
     if (!config?.cloudProviders) return [];
-    return Object.entries(config.cloudProviders).map(([name, providerConfig]) => ({
-      name,
-      config: providerConfig,
-    }));
+    return Object.entries(config.cloudProviders)
+      .map(([name, providerConfig]) => ({ name, config: providerConfig }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   // ============================================================================

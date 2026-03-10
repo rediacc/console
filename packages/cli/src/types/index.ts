@@ -178,6 +178,8 @@ export interface RepositoryConfig {
   credential?: string;
   /** Network ID for Docker isolation (2816 + n*64). Auto-assigned if omitted. */
   networkId?: number;
+  /** GUID of the grand (parent) repository. Present on forks; absent on grand repos. */
+  grandGuid?: string;
 }
 
 /**

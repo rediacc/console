@@ -6,18 +6,39 @@ import { authService } from '../../services/auth.js';
 import { configService } from '../../services/config-resources.js';
 import { outputService } from '../../services/output.js';
 import type { OutputFormat } from '../../types/index.js';
+import { extractAutoRoute, extractCustomDomain } from '../../utils/domain-helpers.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../../utils/guid-resolver.js';
 import { withSpinner } from '../../utils/spinner.js';
 
+function enrichContainersForJson(
+  containers: ContainerInfo[],
+  resolve: (guid: string) => string,
+  baseDomain?: string,
+  machineName?: string
+) {
+  return containers.map((c) => ({
+    ...c,
+    repository: resolve(c.repository),
+    repository_guid: c.repository,
+    domain: extractCustomDomain(c.labels, baseDomain),
+    autoRoute: extractAutoRoute(c.labels, baseDomain, machineName),
+  }));
+}
+
 function displayUnhealthyContainers(
   unhealthy: ContainerInfo[],
   format: OutputFormat,
-  resolve: (guid: string) => string = (g) => g
+  resolve: (guid: string) => string = (g) => g,
+  baseDomain?: string,
+  machineName?: string
 ): void {
   outputService.error(t('commands.machine.containers.unhealthyFound', { count: unhealthy.length }));
   if (format === 'json') {
-    outputService.print(unhealthy, format);
+    outputService.print(
+      enrichContainersForJson(unhealthy, resolve, baseDomain, machineName),
+      format
+    );
   } else {
     for (const c of unhealthy) {
       outputService.info(`  - ${c.name} (${resolve(c.repository)})`);
@@ -29,52 +50,16 @@ function displayUnhealthyContainers(
 function handleHealthCheck(
   containers: ContainerInfo[],
   format: OutputFormat,
-  resolve: (guid: string) => string = (g) => g
+  resolve: (guid: string) => string = (g) => g,
+  baseDomain?: string,
+  machineName?: string
 ): void {
   const unhealthy = containers.filter((c) => c.health?.status === 'unhealthy');
   if (unhealthy.length > 0) {
-    displayUnhealthyContainers(unhealthy, format, resolve);
+    displayUnhealthyContainers(unhealthy, format, resolve, baseDomain, machineName);
   } else {
     outputService.success(t('commands.machine.containers.allHealthy'));
   }
-}
-
-/** Resolve a short domain name (no dots) to FQDN using baseDomain. */
-function resolveDomain(domain: string, baseDomain?: string): string {
-  if (!domain || domain.includes('.')) return domain;
-  return baseDomain ? `${domain}.${baseDomain}` : domain;
-}
-
-/** Extract the custom domain from container labels (Traefik Host rule or rediacc.domain). */
-function extractCustomDomain(labels?: Record<string, string>, baseDomain?: string): string {
-  if (!labels) return '-';
-
-  if (labels['rediacc.domain']) return resolveDomain(labels['rediacc.domain'], baseDomain);
-
-  for (const [key, value] of Object.entries(labels)) {
-    if (key.startsWith('traefik.http.routers.') && key.endsWith('.rule')) {
-      const match = /Host\(`([^`]+)`\)/.exec(value);
-      if (match) return match[1];
-    }
-  }
-
-  return '-';
-}
-
-/** Derive the auto-route domain from service labels + machineName + baseDomain. */
-function extractAutoRoute(
-  labels?: Record<string, string>,
-  baseDomain?: string,
-  machineName?: string
-): string {
-  if (!labels) return '-';
-  const repoName = labels['rediacc.repo_name'];
-  const serviceName = labels['rediacc.service_name'];
-  if (serviceName && repoName && baseDomain) {
-    const domain = machineName ? `${machineName}.${baseDomain}` : baseDomain;
-    return `${serviceName}.${repoName}.${domain}`;
-  }
-  return '-';
 }
 
 function formatContainersForTable(
@@ -135,7 +120,7 @@ export function registerContainersCommand(machine: Command, program: Command): v
         const format = program.opts().output as OutputFormat;
 
         if (options.healthCheck) {
-          handleHealthCheck(containers, format, resolve);
+          handleHealthCheck(containers, format, resolve, baseDomain, name);
           return;
         }
 
@@ -144,8 +129,15 @@ export function registerContainersCommand(machine: Command, program: Command): v
           return;
         }
 
-        const tableData = formatContainersForTable(containers, resolve, baseDomain, name);
-        outputService.print(tableData, format);
+        if (format === 'json') {
+          outputService.print(
+            enrichContainersForJson(containers, resolve, baseDomain, name),
+            format
+          );
+        } else {
+          const tableData = formatContainersForTable(containers, resolve, baseDomain, name);
+          outputService.print(tableData, format);
+        }
       } catch (error) {
         handleError(error);
       }

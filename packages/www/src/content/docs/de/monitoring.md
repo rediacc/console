@@ -4,7 +4,7 @@ description: 'Maschinengesundheit, Container, Dienste, Repositories und Diagnose
 category: Guides
 order: 9
 language: de
-sourceHash: 5a0f43834cb143a2
+sourceHash: ed667247d300508a
 ---
 
 # Überwachung
@@ -49,6 +49,8 @@ Optionen:
 - `--health-check` — Aktive Gesundheitsprüfungen an Containern durchführen
 - `--output json` — Maschinenlesbare JSON-Ausgabe
 
+Die JSON-Ausgabe enthält vollständige Containerdetails (`labels`, `port_mappings`, `image`, `id`) sowie `repository` (aufgelöster Name), `repository_guid` (ursprüngliche GUID), `domain` und `autoRoute`.
+
 ## Dienste auflisten
 
 Systemd-Dienste im Zusammenhang mit Rediacc auf einer Maschine anzeigen:
@@ -69,6 +71,8 @@ rdc machine services server-1
 Optionen:
 - `--stability-check` — Instabile Dienste markieren (fehlgeschlagen, >3 Neustarts, automatischer Neustart)
 - `--output json` — Maschinenlesbare JSON-Ausgabe
+
+Die JSON-Ausgabe enthält vollständige Dienstdetails mit `repository` (aufgelöster Name) und `repository_guid` (ursprüngliche GUID).
 
 ## Repositories auflisten
 
@@ -91,6 +95,8 @@ rdc machine repos server-1
 Optionen:
 - `--search <text>` — Nach Name oder Einbindungspfad filtern
 - `--output json` — Maschinenlesbare JSON-Ausgabe
+
+Die JSON-Ausgabe enthält `name` (aufgelöst) und `guid` (ursprüngliche GUID) und verschachtelt für jedes Repository die Arrays `containers` (mit `domain`, `autoRoute`, `repository`/`repository_guid`) und `services`.
 
 ## Vault-Status
 

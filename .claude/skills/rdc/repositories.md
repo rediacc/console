@@ -23,18 +23,19 @@ Runs the Rediaccfile lifecycle: `up()`.
 ```
 rdc repo down <name> -m <machine> [--unmount]
 ```
-Runs Rediaccfile `down()`. Add `--unmount` to also unmount the volume.
+Runs Rediaccfile `down()`. Stops containers but does NOT unmount — the repo stays mounted and can be restarted with `repo up`. Use `--unmount` to also close the LUKS volume.
 
 ### Delete
 ```
 rdc repo delete <name> -m <machine>
 ```
-Destroys the repository and removes it from config. **Warning**: The config entry is removed globally. If the same repo exists on another machine (e.g., after `repo push`), you must re-add the mapping with `rdc config add-repository`.
+Destroys containers, volumes, and encrypted image. Credential is archived for recovery via `config restore-archived`. **Warning**: Config mapping is removed globally — if the repo exists on another machine (after `repo push`), re-add with `config add-repository`.
 
 ### Status
 ```
 rdc repo status <name> -m <machine>
 ```
+Shows mount state, Docker daemon, container count, disk usage.
 
 ### List all repos on a machine
 ```
@@ -49,17 +50,19 @@ rdc repo fork <parent> -m <machine> --tag <fork-name>
 ```
 Creates an independent copy with new GUID, networkId, and IP range. Parent can remain running. Cross-machine fork: fork locally first, then `repo push` to the target.
 
+**Agent guard**: AI agents operate in fork-only mode by default — they can only modify fork repositories. Use `repo fork` to create a fork first, then operate on the fork. Grand repo access requires `REDIACC_ALLOW_GRAND_REPO=<name>` or `--allow-grand` on the MCP server.
+
 ### Resize (offline)
 ```
 rdc repo resize <name> -m <machine> --size <new-size>
 ```
-Supports grow and shrink. Repo must be stopped.
+Supports grow and shrink. Must be unmounted first (`repo down --unmount`).
 
 ### Expand (online, zero downtime)
 ```
 rdc repo expand <name> -m <machine> --size <new-size>
 ```
-Grow-only while repo is running.
+Grow-only while repo is running. Cannot shrink — use `repo resize` for that.
 
 ### Apply template
 ```
@@ -71,6 +74,7 @@ Writes Rediaccfile and docker-compose.yaml from a template file.
 ```
 rdc repo validate <name> -m <machine>
 ```
+Checks LUKS container, filesystem consistency, and configuration. Use after unexpected shutdowns or to verify backup health.
 
 ### Autostart
 ```
@@ -89,12 +93,26 @@ The Rediaccfile is a bash script with lifecycle functions. Key rules:
 - `down()`: Stop and clean up.
 
 ### Compose conventions
+- Use `renet compose -- "$@"` in Rediaccfiles (no `--network-id` flag — renet passes the network ID automatically via `REPOSITORY_NETWORK_ID` env var).
 - `network_mode` is auto-injected by renet (`network_mode: host` on all services) — do not set it manually.
 - **CRIU security settings are auto-injected**: `cap_add: [CHECKPOINT_RESTORE, SYS_PTRACE, NET_ADMIN]`, `security_opt: [apparmor=unconfined]`, and `userns_mode: host` are added to every container by renet. Default seccomp profile is preserved. Do not set these manually.
 - `ports:` declarations are ignored (host networking). Services bind to allocated IPs.
 - Use healthchecks in compose for dependent services.
 - Persistent data: use `${REPOSITORY_PATH}/...` bind mounts, NOT Docker named volumes.
 - Do NOT use `restart: always` or `restart: unless-stopped` — these conflict with CRIU checkpoint/restore. Use `restart: on-failure` or omit it.
+
+### SERVICE_IP binding
+- Renet injects `SERVICE_IP` into each service's environment when running `renet compose`.
+- Services binding to well-known ports (5432, 3306, 6379, etc.) should listen on `SERVICE_IP` instead of `0.0.0.0` to avoid port conflicts when multiple repositories run the same service.
+- Use `$${SERVICE_IP:-0.0.0.0}` in compose commands (`$$` so Compose passes `$` literally to the container shell):
+  ```yaml
+  command: ["sh", "-c", "exec docker-entrypoint.sh postgres -c listen_addresses=$${SERVICE_IP:-0.0.0.0}"]
+  ```
+- Healthchecks should also use `$${SERVICE_IP:-localhost}`:
+  ```yaml
+  test: ["CMD-SHELL", "pg_isready -U postgres -h $${SERVICE_IP:-localhost}"]
+  ```
+- For services configured via environment variables (not command flags), use `${SERVICE_IP:-0.0.0.0}` (single `$` — Compose substitutes directly).
 
 ### CRIU compatibility
 - Apps must handle both `ECONNRESET` (stale socket) and `ECONNREFUSED` (service not yet ready) on persistent connections — after CRIU restore, TCP socket FDs are restored but connections are stale, and dependent services (databases) may need a few seconds to accept connections.

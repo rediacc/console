@@ -31,7 +31,6 @@ describe('MCP tool definitions', () => {
       expect(names).toContain('machine_health');
       expect(names).toContain('config_repositories');
       expect(names).toContain('agent_capabilities');
-      expect(names).toContain('backup_push');
     });
 
     it('are not marked as destructive', () => {
@@ -232,7 +231,7 @@ describe('MCP tool definitions', () => {
       ]);
     });
 
-    it('term_exec builds correct argv', () => {
+    it('term_exec builds correct argv (machine only)', () => {
       const tool = TOOLS.find((t) => t.name === 'term_exec')!;
       expect(tool.command({ machine: 'prod', command: 'uptime' })).toEqual([
         'term',
@@ -242,14 +241,69 @@ describe('MCP tool definitions', () => {
       ]);
     });
 
-    it('term_exec preserves complex commands as single argv element', () => {
+    it('term_exec builds correct argv with repository', () => {
       const tool = TOOLS.find((t) => t.name === 'term_exec')!;
-      expect(tool.command({ machine: 'prod', command: 'docker ps | grep running' })).toEqual([
+      expect(
+        tool.command({ machine: 'prod', repository: 'webapp', command: 'docker ps | grep running' })
+      ).toEqual(['term', 'prod', 'webapp', '-c', 'docker ps | grep running']);
+    });
+
+    it('term_exec omits repository when not provided', () => {
+      const tool = TOOLS.find((t) => t.name === 'term_exec')!;
+      expect(tool.command({ machine: 'prod', command: 'df -h' })).toEqual([
         'term',
         'prod',
         '-c',
-        'docker ps | grep running',
+        'df -h',
       ]);
+    });
+  });
+
+  describe('repoArgField for grand repo guard', () => {
+    it('is set on guarded destructive tools', () => {
+      const guarded = [
+        'repo_up',
+        'repo_down',
+        'repo_delete',
+        'backup_push',
+        'backup_pull',
+        'term_exec',
+      ];
+      for (const name of guarded) {
+        const tool = TOOLS.find((t) => t.name === name)!;
+        expect(tool.repoArgField, `${name} should have repoArgField`).toBeDefined();
+      }
+    });
+
+    it('is not set on safe or non-repo tools', () => {
+      const safe = [
+        'repo_create',
+        'repo_fork',
+        'machine_info',
+        'machine_list',
+        'config_repositories',
+        'machine_provision',
+        'machine_deprovision',
+      ];
+      for (const name of safe) {
+        const tool = TOOLS.find((t) => t.name === name)!;
+        expect(tool.repoArgField, `${name} should not have repoArgField`).toBeUndefined();
+      }
+    });
+
+    it('repo_up and repo_down use "name" field', () => {
+      expect(TOOLS.find((t) => t.name === 'repo_up')!.repoArgField).toBe('name');
+      expect(TOOLS.find((t) => t.name === 'repo_down')!.repoArgField).toBe('name');
+      expect(TOOLS.find((t) => t.name === 'repo_delete')!.repoArgField).toBe('name');
+    });
+
+    it('backup tools use "repo" field', () => {
+      expect(TOOLS.find((t) => t.name === 'backup_push')!.repoArgField).toBe('repo');
+      expect(TOOLS.find((t) => t.name === 'backup_pull')!.repoArgField).toBe('repo');
+    });
+
+    it('term_exec uses "repository" field', () => {
+      expect(TOOLS.find((t) => t.name === 'term_exec')!.repoArgField).toBe('repository');
     });
   });
 

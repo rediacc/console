@@ -4,7 +4,7 @@ description: "Dizin yapısı, renet komutları, systemd servisleri ve uzak sunuc
 category: "Concepts"
 order: 3
 language: tr
-sourceHash: "6134ec4c7a74cc87"
+sourceHash: "e7380a1d70386a2b"
 ---
 
 # Server Reference
@@ -81,10 +81,10 @@ renet repository delete --name {uuid} --network-id {id}
 Run compose commands against a specific repository's Docker daemon:
 
 ```bash
-sudo renet compose --network-id {id} -- up -d
-sudo renet compose --network-id {id} -- down
-sudo renet compose --network-id {id} -- logs -f
-sudo renet compose --network-id {id} -- config
+sudo renet compose -- up -d
+sudo renet compose -- down
+sudo renet compose -- logs -f
+sudo renet compose -- config
 ```
 
 Run docker commands directly:
@@ -102,6 +102,18 @@ DOCKER_HOST=unix:///run/rediacc/docker-{id}.sock docker ps
 ```
 
 > Always run compose from the directory that contains `docker-compose.yml`, or Docker will not find the file.
+
+### Dosya Sistemi Sandbox'ı
+
+```bash
+# Landlock destegini kontrol et
+renet sandbox-exec --detect
+
+# Bir komutu Landlock sandbox'i icinde calistir (renet bunu dahili olarak kullanir)
+renet sandbox-exec --allow-rw /path --allow-ro /usr --allow-exec /bin -- command
+```
+
+`sandbox-exec`, bir komuta Landlock LSM dosya sistemi kisitlamalari uygular. Sandbox icindeki surec yalnizca acikca izin verilen yollara erisebilir; diger tum dosya sistemi erisimleri cekirdek tarafindan engellenir. renet bunu dahili olarak kullanarak Rediaccfile calistirmayi, compose islemlerini ve SSH komutlarini ilgili deponun baglama yoluyla sinirlar.
 
 ### Proxy & Routing
 
@@ -229,7 +241,7 @@ done
 ### Recreate a Service After Config Changes
 
 ```bash
-sudo renet compose --network-id {id} -- up -d
+sudo renet compose -- up -d
 ```
 
 Run this from the directory with `docker-compose.yml`. Changed containers are automatically recreated.

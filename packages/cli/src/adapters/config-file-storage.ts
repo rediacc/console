@@ -3,6 +3,7 @@ import { basename, join } from 'node:path';
 import { getConfigDir } from '@rediacc/shared/paths';
 import lockfile from 'proper-lockfile';
 import { createEmptyRdcConfig, type RdcConfig } from '../types/index.js';
+import { stringifyConfig } from '../utils/config-schema.js';
 
 const CONFIG_DIR = getConfigDir();
 const DEFAULT_CONFIG_NAME = 'rediacc';
@@ -68,7 +69,7 @@ export class ConfigFileStorage {
       await fs.access(configPath);
     } catch {
       const emptyConfig = createEmptyRdcConfig();
-      await fs.writeFile(configPath, JSON.stringify(emptyConfig, null, 2), { mode: 0o600 });
+      await fs.writeFile(configPath, stringifyConfig(emptyConfig), { mode: 0o600 });
     }
   }
 
@@ -151,7 +152,7 @@ export class ConfigFileStorage {
     };
 
     const tempPath = `${configPath}.tmp.${process.pid}.${Date.now()}`;
-    const content = JSON.stringify(toWrite, null, 2);
+    const content = stringifyConfig(toWrite);
 
     await fs.writeFile(tempPath, content, { mode: 0o600 });
     await fs.rename(tempPath, configPath);
@@ -199,7 +200,7 @@ export class ConfigFileStorage {
     }
 
     const config = createEmptyRdcConfig();
-    const content = JSON.stringify(config, null, 2);
+    const content = stringifyConfig(config);
     await fs.writeFile(configPath, content, { mode: 0o600 });
     this.cache.set(name, config);
     return config;

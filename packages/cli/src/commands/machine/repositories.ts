@@ -1,4 +1,5 @@
 import { parseListResult } from '@rediacc/shared/services/machine';
+import { getContainers, getServices } from '@rediacc/shared/queue-vault/data/list-types.generated';
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { getStateProvider } from '../../providers/index.js';
@@ -6,6 +7,7 @@ import { authService } from '../../services/auth.js';
 import { configService } from '../../services/config-resources.js';
 import { outputService } from '../../services/output.js';
 import type { OutputFormat } from '../../types/index.js';
+import { extractAutoRoute, extractCustomDomain } from '../../utils/domain-helpers.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../../utils/guid-resolver.js';
 import { withSpinner } from '../../utils/spinner.js';
@@ -28,7 +30,7 @@ export function registerRepositoriesCommand(machine: Command, program: Command):
           throw new ValidationError(t('errors.teamRequired'));
         }
 
-        const [machine, guidMap] = await Promise.all([
+        const [machine, guidMap, machineConfig] = await Promise.all([
           withSpinner(
             t('commands.machine.repos.fetching'),
             () =>
@@ -39,6 +41,7 @@ export function registerRepositoriesCommand(machine: Command, program: Command):
             t('commands.machine.repos.fetched')
           ),
           loadGuidMap(),
+          configService.getLocalMachine(name).catch(() => undefined),
         ]);
         const resolve = createGuidResolver(guidMap);
 
@@ -76,7 +79,32 @@ export function registerRepositoriesCommand(machine: Command, program: Command):
         }
 
         if (format === 'json') {
-          outputService.print(repositories, format);
+          const containers = getContainers(listResult);
+          const services = getServices(listResult);
+          const baseDomain = machineConfig?.infra?.baseDomain;
+
+          const enriched = repositories.map((repo) => ({
+            ...repo,
+            name: resolve(repo.name),
+            guid: repo.name,
+            containers: containers
+              .filter((c) => c.repository === repo.name)
+              .map((c) => ({
+                ...c,
+                repository: resolve(c.repository),
+                repository_guid: c.repository,
+                domain: extractCustomDomain(c.labels, baseDomain),
+                autoRoute: extractAutoRoute(c.labels, baseDomain, name),
+              })),
+            services: services
+              .filter((s) => s.repository === repo.name)
+              .map((s) => ({
+                ...s,
+                repository: resolve(s.repository),
+                repository_guid: s.repository,
+              })),
+          }));
+          outputService.print(enriched, format);
         } else {
           // Format for enhanced table output
           const tableData = repositories.map((r) => ({

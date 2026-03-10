@@ -41,6 +41,8 @@ export const TEAM_MEMBERS: Record<string, TeamMemberMedia> = {
     email: 'muhammed@rediacc.com',
     photos: {
       headshot: '/media/founder/photos/headshot.jpg',
+      'headshot-sm': '/media/founder/photos/headshot-sm.jpg',
+      'headshot-xs': '/media/founder/photos/headshot-xs.jpg',
       standing: '/media/founder/photos/standing.jpg',
       casual: '/media/founder/photos/casual.jpg',
       working: '/media/founder/photos/working.jpg',

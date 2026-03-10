@@ -2,17 +2,18 @@ services:
   db:
     image: mariadb:10.3
     restart: always
-    network_mode: "${NETWORK_MODE:-bridge}"
+    network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
     env_file:
       - .env
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
       - "3306"
+    command: ["sh", "-c", "exec docker-entrypoint.sh mysqld --bind-address=$${SERVICE_IP:-0.0.0.0}"]
     volumes:
       - ./data/mariadb:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "$${SERVICE_IP:-localhost}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -21,7 +22,7 @@ services:
   phpmyadmin:
     image: phpmyadmin
     restart: always
-    network_mode: "${NETWORK_MODE:-bridge}"
+    network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
     env_file:
       - .env
     ports:

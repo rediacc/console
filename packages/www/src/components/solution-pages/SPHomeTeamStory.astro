@@ -19,7 +19,7 @@ const memberData = TEAM_MEMBERS[member];
   <div class="sp-team-story-container">
     <div class="sp-team-story-photo">
       <img
-        src={memberData?.photos.standing ?? `/media/${member}/photos/standing.jpg`}
+        src={memberData?.photos.working ?? `/media/${member}/photos/working.jpg`}
         alt={memberData?.name ?? ''}
         class="sp-team-story-img"
         loading="lazy"
@@ -43,6 +43,7 @@ const memberData = TEAM_MEMBERS[member];
 <style>
   .sp-team-story {
     padding: 80px 0;
+    background: var(--sp-bg-dark);
   }
 
   .sp-team-story-container {
@@ -59,7 +60,7 @@ const memberData = TEAM_MEMBERS[member];
     width: 100%;
     border-radius: 12px;
     object-fit: cover;
-    aspect-ratio: 3 / 4;
+    aspect-ratio: 1 / 1;
   }
 
   .sp-team-story-headline {

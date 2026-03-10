@@ -501,7 +501,7 @@ test_template() {
     local overall_status="passed"
     local error_msg=""
     local first_failure_stage=""
-    local original_network_mode="${NETWORK_MODE:-}"
+    local original_network_mode="${REPOSITORY_NETWORK_MODE:-}"
     local auto_network=""
     local using_auto_network=0
 
@@ -549,11 +549,11 @@ test_template() {
     if [[ $using_auto_network -eq 0 && -z "$original_network_mode" ]]; then
         auto_network=$(printf '%s' "$template_path" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '_')
         auto_network="rediacc_${auto_network}"
-        log_verbose "Auto-configuring NETWORK_MODE=${auto_network}"
+        log_verbose "Auto-configuring REPOSITORY_NETWORK_MODE=${auto_network}"
         if ! docker network inspect "$auto_network" >/dev/null 2>&1; then
             docker network create "$auto_network" >/dev/null 2>&1 || true
         fi
-        export NETWORK_MODE="$auto_network"
+        export REPOSITORY_NETWORK_MODE="$auto_network"
         using_auto_network=1
     fi
 
@@ -639,9 +639,9 @@ test_template() {
     if [[ $using_auto_network -eq 1 && -n "$auto_network" ]]; then
         log_verbose "Removing auto-configured network: $auto_network"
         docker network rm "$auto_network" >/dev/null 2>&1 || true
-        unset NETWORK_MODE
+        unset REPOSITORY_NETWORK_MODE
     elif [[ -n "$original_network_mode" ]]; then
-        export NETWORK_MODE="$original_network_mode"
+        export REPOSITORY_NETWORK_MODE="$original_network_mode"
     fi
 
     local cleanup_duration=$(($(date +%s) - cleanup_start))

@@ -4,7 +4,7 @@ description: "在 Rediacc 平台上构建应用程序的基本规则和约定。
 category: "Guides"
 order: 5
 language: zh
-sourceHash: "1848011813342420"
+sourceHash: "c276f24c681da0ef"
 ---
 
 # Rediacc 规则
@@ -34,7 +34,7 @@ sourceHash: "1848011813342420"
 #!/bin/bash
 
 _compose() {
-  renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
+  renet compose -- "$@"
 }
 
 up() {
@@ -126,6 +126,7 @@ Renet 会自动将以下变量注入每个容器：
 - **凭据存储在 CLI 配置中**（`~/.config/rediacc/rediacc.json`）。丢失配置意味着失去对加密卷的访问权限。
 - **永远不要将凭据提交**到版本控制。使用 `env_file` 并在 `up()` 中生成密钥。
 - **仓库隔离**：每个仓库的 Docker 守护进程、网络和存储与同一台机器上的其他仓库完全隔离。
+- **代理隔离**：AI 代理默认以仅 fork 模式运行，只能修改 fork 仓库，不能修改 grand（原始）仓库。通过 `term_exec` 或带仓库上下文的 `rdc term` 执行的命令会使用 Landlock LSM 在内核级进行沙箱隔离，从而阻止跨仓库文件系统访问。
 
 ## 部署
 

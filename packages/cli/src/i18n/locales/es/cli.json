@@ -781,6 +781,7 @@
     "mcp": {
       "description": "Servidor de Model Context Protocol para agentes de IA",
       "serve": {
+        "allowGrandOption": "Permitir operaciones destructivas en repositorios grand (no fork). Predeterminado: modo solo fork",
         "configOption": "Nombre de configuración a usar para todos los comandos",
         "description": "Iniciar servidor MCP (transporte stdio)",
         "timeoutOption": "Tiempo de espera predeterminado de comando en milisegundos"
@@ -1825,12 +1826,24 @@
   "errors": {
     "activationFailed": "Falló la activación",
     "affectedChildClones": ". Clones secundarios afectados: {{clones}}. Primero elimine o promueva clones secundarios.",
+    "agent": {
+      "forkBlocked": "El comando \"{{command}}\" no está disponible en repositorios fork.\n\nLos repos fork son entornos provisionales. Esta operación solo aplica a repositorios grand.",
+      "grandGuard": "No se puede modificar el repositorio grand \"{{name}}\" en modo agente.\n\nLos agentes de IA solo pueden operar en repositorios fork.\nPrimero cree un fork:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nLuego opere en el fork.\n\nPara anular: establezca REDIACC_ALLOW_GRAND_REPO={{name}}",
+      "machineGuard": "No se puede acceder a la máquina \"{{machine}}\" directamente en modo agente.\n\nLos agentes de IA solo pueden conectarse a contextos de repositorio.\nUse:\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nPara anular: establezca REDIACC_ALLOW_GRAND_REPO=*",
+      "mcpGrandGuard": "No se puede modificar el repositorio grand \"{{name}}\" en modo solo fork.\n\nUse repo_fork para crear un fork primero, luego opere en el fork.\nPara permitir acceso a repositorios grand, reinicie el servidor MCP con --allow-grand",
+      "mcpMachineGuard": "No se puede acceder a la máquina directamente en modo solo fork.\n\nEspecifique un repositorio para conectarse a un contexto de repositorio.\nPara permitir acceso directo a la máquina, reinicie el servidor MCP con --allow-grand"
+    },
     "authFailed": "Falló la autenticación",
     "authRequired": "Se requiere autenticación. Ejecute: rdc auth login",
     "bridgeRequired": "Nombre de puente requerido. Use --bridge o establezca contexto.",
     "cannotDeleteGrandRepo": "No se puede eliminar repositorio maestro: {{reason}}",
     "cannotPromote": "No se puede promover: {{reason}}",
     "clusterNotFound": "Clúster Ceph \"{{name}}\" no encontrado",
+    "config": {
+      "invalidEmail": "Dirección de correo electrónico no válida: \"{{value}}\".",
+      "machineNotFound": "Máquina \"{{name}}\" no encontrada en la configuración. Disponibles: {{available}}.",
+      "storageNotFound": "Almacenamiento \"{{name}}\" no encontrado en la configuración. Disponibles: {{available}}."
+    },
     "contextNotFound": "Contexto \"{{name}}\" no encontrado",
     "failedCreateQueueItem": "Falló al crear elemento de cola",
     "invalidAction": "Acción inválida \"{{action}}\". Use \"{{valid}}\".",
@@ -1875,10 +1888,12 @@
       "notLoggedIn": "No ha iniciado sesión. Ejecute primero `rdc subscription login`."
     },
     "sync": {
+      "absolutePathBlocked": "La ruta --remote debe ser relativa, no absoluta. Use una ruta relativa a la raíz del repositorio.",
       "localPathNotFound": "Ruta local no existe: {{path}}",
       "noHostKey": "Máquina '{{machine}}' no tiene clave de host configurada en la bóveda",
       "noIpAddress": "Máquina '{{machine}}' no tiene dirección IP configurada",
-      "noPrivateKey": "Equipo '{{team}}' no tiene clave privada SSH configurada"
+      "noPrivateKey": "Equipo '{{team}}' no tiene clave privada SSH configurada",
+      "pathTraversalBlocked": "La ruta --remote no debe contener recorrido de ruta \"..\". Use una ruta dentro del repositorio."
     },
     "teamRequired": "Nombre de equipo requerido. Use --team o establezca contexto.",
     "term": {
@@ -1887,6 +1902,7 @@
       "noHostKey": "Máquina '{{machine}}' no tiene clave de host configurada en la bóveda",
       "noIpAddress": "Máquina '{{machine}}' no tiene dirección IP configurada",
       "noPrivateKey": "Equipo '{{team}}' no tiene clave privada SSH configurada",
+      "repoContextRequired": "El comando requiere contexto de repositorio.\n\nSe detectó \"{{detected}}\" que necesita DOCKER_HOST y variables de entorno del repositorio.\nEstas solo están disponibles cuando se especifica un repositorio.\n\nEn lugar de:\n  rdc term {{machine}} -c \"{{command}}\"\n\nUse:\n  rdc term {{machine}} <repository> -c \"{{command}}\"",
       "sshCode1": "Error genérico - verificar sintaxis de comando o permisos remotos",
       "sshCode126": "Permiso denegado - no se puede ejecutar comando en remoto",
       "sshCode127": "Comando no encontrado en máquina remota",

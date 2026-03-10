@@ -5,6 +5,7 @@ import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
+import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { registerRepoBackupCommands } from './repo-backup.js';
 import { registerExtendedRepoCommands } from './repo-extended.js';
 import { registerRepoSnapshotCommands } from './repo-snapshot.js';
@@ -162,6 +163,8 @@ ${t('help.examples')}
         options: { machine: string; debug?: boolean; skipRouterRestart?: boolean; dryRun?: boolean }
       ) => {
         try {
+          await assertCommandPolicy(CMD.REPO_DELETE, name);
+
           // Validate exists
           const repoConfig = await configService.getRepository(name);
           if (!repoConfig) {
@@ -231,6 +234,8 @@ ${t('help.examples')}
         }
       ) => {
         try {
+          await assertCommandPolicy(CMD.REPO_MOUNT, name);
+
           const params: Record<string, unknown> = {};
           if (options.checkpoint) params.checkpoint = true;
 
@@ -267,6 +272,8 @@ ${t('help.examples')}
         }
       ) => {
         try {
+          await assertCommandPolicy(CMD.REPO_UNMOUNT, name);
+
           const params: Record<string, unknown> = {};
           if (options.checkpoint) params.checkpoint = true;
 
@@ -309,6 +316,8 @@ ${t('help.examples')}
         }
       ) => {
         try {
+          await assertCommandPolicy(CMD.REPO_UP, name);
+
           const params: Record<string, unknown> = {};
           if (options.mount) params.mount = true;
           if (options.checkpoint) params.checkpoint = true;
@@ -446,6 +455,8 @@ ${t('help.examples')}
         }
       ) => {
         try {
+          await assertCommandPolicy(CMD.REPO_DOWN, name);
+
           const params: Record<string, unknown> = {};
           if (options.unmount) params.unmount = true;
 

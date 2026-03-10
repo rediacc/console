@@ -27,9 +27,10 @@ if (process.argv.includes('mcp') && process.argv.includes('serve')) {
   const timeoutIdx = process.argv.indexOf('--timeout');
   const defaultTimeoutMs =
     timeoutIdx >= 0 ? Number.parseInt(process.argv[timeoutIdx + 1], 10) : 120_000;
+  const allowGrand = process.argv.includes('--allow-grand');
 
   import('./commands/mcp/server.js')
-    .then(({ startMcpServer }) => startMcpServer({ configName, defaultTimeoutMs }))
+    .then(({ startMcpServer }) => startMcpServer({ configName, defaultTimeoutMs, allowGrand }))
     .catch((err: unknown) => {
       process.stderr.write(
         `MCP server error: ${err instanceof Error ? err.message : String(err)}\n`

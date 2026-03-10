@@ -4,6 +4,7 @@ import { createTranslator } from '../../i18n/utils';
 import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
 import { EXTERNAL_LINKS } from '../../config/constants';
+import { TEAM_MEMBERS } from '../../config/team-videos';
 
 export const getStaticPaths = getLanguagePaths;
 
@@ -79,20 +80,13 @@ const teamMembers = [
   }}
 >
   <article class="team-page">
-    <!-- Hero Section -->
+    <!-- Hero + Team Section -->
     <section id="about" class="team-hero">
       <div class="container">
         <h1>{t('pages.team.hero.title')}</h1>
         <p class="hero-subtitle">{t('pages.team.hero.subtitle')}</p>
-      </div>
-    </section>
 
-    <!-- Team Section -->
-    <section id="team" class="team-section">
-      <div class="container">
-        <h2>{t('pages.team.team.title')}</h2>
-
-        <div class="team-grid">
+        <div id="team" class="team-grid">
           {teamMembers.map((member) => (
             <div class="team-member">
               <div class="member-image">
@@ -156,31 +150,42 @@ const teamMembers = [
     <!-- Story Section -->
     <section id="story" class="story-section">
       <div class="container">
-        <div class="story-content">
-          <h2>{t('pages.team.story.title')}</h2>
-
-          <div class="story-chapter">
-            <h3>{t('pages.team.story.beginning.title')}</h3>
-            <p>{t('pages.team.story.beginning.paragraph1')}</p>
-            <p>{t('pages.team.story.beginning.paragraph2')}</p>
-            <p>{t('pages.team.story.beginning.paragraph3')}</p>
+        <h2 class="story-heading">{t('pages.team.story.title')}</h2>
+        <div class="story-layout">
+          <div class="story-photo">
+            <img
+              src={TEAM_MEMBERS['founder']?.photos.standing ?? '/media/founder/photos/standing.jpg'}
+              alt={TEAM_MEMBERS['founder']?.name ?? 'Founder'}
+              class="story-photo-img"
+              loading="lazy"
+              decoding="async"
+            />
           </div>
 
-          <div class="story-chapter">
-            <h3>{t('pages.team.story.turningPoint.title')}</h3>
-            <p>{t('pages.team.story.turningPoint.paragraph1')}</p>
-            <p>{t('pages.team.story.turningPoint.paragraph2')}</p>
-            <p>{t('pages.team.story.turningPoint.paragraph3')}</p>
-          </div>
+          <div class="story-content">
+            <div class="story-chapter">
+              <h3>{t('pages.team.story.beginning.title')}</h3>
+              <p>{t('pages.team.story.beginning.paragraph1')}</p>
+              <p>{t('pages.team.story.beginning.paragraph2')}</p>
+              <p>{t('pages.team.story.beginning.paragraph3')}</p>
+            </div>
 
-          <div class="story-chapter">
-            <h3>{t('pages.team.story.birth.title')}</h3>
-            <p>{t('pages.team.story.birth.paragraph1')}</p>
-            <p>{t('pages.team.story.birth.paragraph2')}</p>
+            <div class="story-chapter">
+              <h3>{t('pages.team.story.turningPoint.title')}</h3>
+              <p>{t('pages.team.story.turningPoint.paragraph1')}</p>
+              <p>{t('pages.team.story.turningPoint.paragraph2')}</p>
+              <p>{t('pages.team.story.turningPoint.paragraph3')}</p>
+            </div>
 
-            <blockquote class="story-quote">
-              {t('pages.team.story.birth.quote')}
-            </blockquote>
+            <div class="story-chapter">
+              <h3>{t('pages.team.story.birth.title')}</h3>
+              <p>{t('pages.team.story.birth.paragraph1')}</p>
+              <p>{t('pages.team.story.birth.paragraph2')}</p>
+
+              <blockquote class="story-quote">
+                {t('pages.team.story.birth.quote')}
+              </blockquote>
+            </div>
           </div>
         </div>
       </div>
@@ -209,9 +214,9 @@ const teamMembers = [
   color: var(--color-text);
 }
 
-/* Hero Section */
+/* Hero + Team Section */
 .team-hero {
-  padding: var(--space-20) 0 var(--space-12);
+  padding: var(--space-16) 0 var(--space-12);
   background: var(--color-bg-alt);
   border-bottom: 1px solid var(--color-border);
   text-align: center;
@@ -220,7 +225,7 @@ const teamMembers = [
 .team-hero h1 {
   font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-bold);
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-4);
   color: var(--color-text);
 }
 
@@ -228,26 +233,13 @@ const teamMembers = [
   font-size: var(--font-size-xl);
   color: var(--color-text-secondary);
   max-width: var(--container-md);
-  margin: 0 auto;
-}
-
-/* Team Section */
-.team-section {
-  padding: var(--space-16) 0;
-  background: var(--color-bg);
-}
-
-.team-section h2 {
-  font-size: var(--font-size-3xl);
-  margin-bottom: var(--space-12);
-  text-align: center;
-  color: var(--color-text);
+  margin: 0 auto var(--space-12);
 }
 
 .team-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--space-12);
+  gap: var(--space-10);
   max-width: var(--container-lg);
   margin: 0 auto;
 }
@@ -377,20 +369,44 @@ const teamMembers = [
   background: var(--color-bg-alt);
 }
 
-.story-content {
-  max-width: var(--container-md);
-  margin: 0 auto;
-}
-
-.story-section h2 {
+.story-heading {
   font-size: var(--font-size-3xl);
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--space-12);
   text-align: center;
   color: var(--color-text);
 }
 
+.story-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: var(--space-12);
+  max-width: var(--container-lg);
+  margin: 0 auto;
+  align-items: start;
+}
+
+.story-photo {
+  position: sticky;
+  top: var(--space-8);
+}
+
+.story-photo-img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: var(--radius-lg);
+}
+
+.story-content {
+  min-width: 0;
+}
+
 .story-chapter {
   margin-bottom: var(--space-8);
+}
+
+.story-chapter:first-child h3 {
+  margin-top: 0;
 }
 
 .story-chapter h3 {
@@ -462,7 +478,22 @@ const teamMembers = [
     grid-template-columns: 1fr;
   }
 
-  .story-section h2,
+  .story-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-8);
+  }
+
+  .story-photo {
+    position: static;
+    display: flex;
+    justify-content: center;
+  }
+
+  .story-photo-img {
+    width: 200px;
+  }
+
+  .story-heading,
   .mission-section h2,
   .values-section h2,
   .team-cta h2 {

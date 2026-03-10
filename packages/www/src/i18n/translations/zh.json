@@ -1387,7 +1387,7 @@
         },
         "meta": {
           "description": "Rediacc专为AI编程助手打造。CLI优先操作、结构化JSON输出、基于SSH的访问，以及通过rdc agent命令实现完整的Agent发现。",
-          "keywords": "AI agents, Claude Code, Cursor, Cline, infrastructure automation, CLI, JSON output, self-hosted, agent-native, MCP",
+          "keywords": "AI 智能体, Claude Code, Cursor, Cline, 基础设施自动化, CLI, JSON 输出, 自托管, 智能体原生, MCP",
           "title": "For AI Agents — CLI-Native Infrastructure Automation | Rediacc"
         },
         "problem": {
@@ -12317,6 +12317,7 @@
     }
   },
   "testimonials": {
+    "fromTheFounder": "来自创始人",
     "items": [
       {
         "role": "灾难恢复经理",

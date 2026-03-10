@@ -222,6 +222,7 @@ export function buildRsyncArgs(
   if (universalUser) {
     args.push('--rsync-path', 'sudo rsync');
     args.push('--numeric-ids');
+    args.push('--no-links'); // prevent symlink exploitation with sudo
   }
 
   // Mirror mode: delete files not in source

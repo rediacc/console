@@ -183,7 +183,7 @@
     },
     "solution": {
       "title": "The Solution: Rediacc Platform",
-      "imageAlt": "Rediacc platform solution diagram: automated infrastructure provisioning, instant production-like environment clones, streamlined developer workflows, and AI-safe operations with Model Context Protocol integration"
+      "imageAlt": "Rediacc platform solution diagram: automated infrastructure provisioning, instant production-like environment clones, faster developer workflows, and AI-safe operations with Model Context Protocol integration"
     }
   },
   "logoWall": {
@@ -210,8 +210,8 @@
       "multi-cloud": "Move your infrastructure between providers with zero vendor lock-in. Instant failover, tested disaster recovery, cloud-agnostic portability.",
       "backups": "Verified, instantly recoverable backups with full retention compliance. Every backup is tested — not just stored.",
       "encryption": "Every repository encrypted at rest with LUKS and in transit. Full audit trails and safe migration between environments.",
-      "dev-env": "Clone your entire production stack in seconds. Zero additional storage, perfect parity, instant developer environments.",
-      "defense": "Continuous security testing with AI-powered penetration testing on isolated clones. Find vulnerabilities before attackers do."
+      "dev-env": "Clone your entire production stack in seconds. Zero additional storage, same data, instant developer environments.",
+      "defense": "Clone production. Point your pen-testing tools at the clone. Fix what they find. Delete the clone."
     }
   },
   "beforeAfter": {
@@ -297,6 +297,7 @@
   "testimonials": {
     "title": "What Teams Say",
     "subtitle": "How different roles experience Rediacc",
+    "fromTheFounder": "From the founder",
     "items": [
       {
         "role": "Disaster Recovery Manager",
@@ -397,8 +398,8 @@
     },
     "roiGate": {
       "title": "Get your detailed ROI report",
-      "description": "Enter your email to unlock the full cost breakdown and savings analysis.",
-      "unlock": "Unlock Report"
+      "description": "Enter your email to see the full cost breakdown and savings analysis.",
+      "unlock": "View Report"
     },
     "returnPopup": {
       "title": "Want a guided walkthrough?",
@@ -438,7 +439,7 @@
     "home": {
       "meta": {
         "title": "Rediacc — Clone Production. Break Nothing.",
-        "description": "Transform development with Rediacc's infrastructure automation. Get instant environments, disaster recovery & AI-safe operations.",
+        "description": "Clone production in 60 seconds. Recover from disasters in under 5 minutes. Self-hosted, runs on your hardware.",
         "keywords": "infrastructure automation, development environments, disaster recovery, DevOps automation, CI/CD pipeline, cloud infrastructure, development operations, Model Context Protocol, AI-safe infrastructure"
       },
       "imageModal": {
@@ -461,7 +462,7 @@
       },
       "info": {
         "title": "What You Get",
-        "description": "Work directly with our team. Know your backups work.",
+        "description": "Direct line to the engineering team. Most replies within 24 hours.",
         "methods": {
           "general": {
             "title": "Questions?",
@@ -515,7 +516,7 @@
     "team": {
       "meta": {
         "title": "Our Team | Rediacc - Building Infrastructure That Survives",
-        "description": "Meet the team building disaster-proof infrastructure. Engineers dedicated to ensuring your systems survive every challenge.",
+        "description": "Meet the team building disaster-proof infrastructure. Engineers dedicated to making your systems survive every disaster.",
         "keywords": "Rediacc team, infrastructure engineering, disaster recovery experts, system reliability, DevOps team"
       },
       "hero": {
@@ -528,30 +529,30 @@
       "mission": {
         "title": "Our Mission: Make Disasters Impossible",
         "description": "Every 47 days, AI deletes a production database. Every year, 1.71% of drives fail. 75% of ransomware targets backups. We make all these disasters recoverable in 60 seconds.",
-        "belief": "We believe that every organization, regardless of size or budget, deserves access to the same powerful infrastructure tools that Fortune 500 companies use. That's why we built Rediacc—to level the playing field and empower businesses to focus on what they do best, while we handle the infrastructure complexity."
+        "belief": "The Community tier does everything the paid tiers do — same btrfs cloning, same LUKS encryption, same immutable backups. Just with smaller limits. No feature gates, no bait-and-switch."
       },
       "values": {
         "title": "Our Values",
         "items": {
           "simplicity": {
             "title": "Simplicity First",
-            "description": "Complex problems don't require complex solutions. We obsess over making powerful features simple to use."
+            "description": "One command to clone 241 GB of production data. That's our complexity budget."
           },
           "security": {
             "title": "Security by Design",
-            "description": "Security isn't an afterthought—it's built into every line of code, every feature, every decision we make."
+            "description": "LUKS encryption at rest. TLS in transit. Isolated Docker daemons per repo. Every layer locked down."
           },
           "success": {
             "title": "Customer Success",
-            "description": "Your success is our success. We're not happy unless you're achieving extraordinary results with our platform."
+            "description": "We measure ourselves by your recovery time — not our feature count."
           },
           "innovation": {
             "title": "Continuous Innovation",
-            "description": "The tech world never stops evolving, and neither do we. We're always pushing boundaries and exploring new possibilities."
+            "description": "We ship weekly. Every release solves a real deployment problem our users reported."
           },
           "global": {
             "title": "Global Thinking",
-            "description": "Infrastructure is global, and so is our perspective. We build for users everywhere, respecting local needs and regulations."
+            "description": "9 languages. EU-hosted telemetry. Estonian company with GDPR compliance built in."
           },
           "transparency": {
             "title": "Transparency",
@@ -581,8 +582,8 @@
         }
       },
       "cta": {
-        "title": "Join Us on Our Mission",
-        "subtitle": "Whether as a customer, partner, or team member, be part of the infrastructure revolution.",
+        "title": "Try It Free",
+        "subtitle": "Install Rediacc in under 5 minutes. Community tier is free forever.",
         "buttons": {
           "contact": "Get in Touch",
           "learnMore": "Learn More"
@@ -592,7 +593,7 @@
     "professionalServices": {
       "meta": {
         "title": "Professional Services | Expert Implementation & Support",
-        "description": "Get expert help when you need it most. From standard implementation to emergency response, our professional services ensure your success.",
+        "description": "Implementation support, migration help, and emergency response. 2-hour response time. 100% migration success rate.",
         "keywords": "professional services, implementation support, infrastructure consulting, emergency response, migration services, ransomware recovery"
       },
       "hero": {
@@ -602,7 +603,7 @@
       },
       "value": {
         "heading": "Why Professional Services Matter",
-        "description": "Infrastructure challenges require expert guidance. Our professional services team brings years of experience to ensure your deployment succeeds, your migrations complete safely, and your emergencies resolve quickly.",
+        "description": "75% faster deployments. 100% migration success rate. 2-hour emergency response. That's what our professional services team delivers.",
         "statistics": [
           "Average implementation time reduced by 75% with professional support",
           "Emergency response team available within 2 hours for critical incidents",
@@ -614,7 +615,7 @@
         "subtitle": "Choose the service level that matches your urgency and complexity"
       },
       "cta": {
-        "heading": "Ready to Get Started?",
+        "heading": "Talk to Our Team",
         "description": "Schedule a consultation to discuss your infrastructure needs and get a custom quote.",
         "button": "Schedule Consultation",
         "subtext": "Most consultations completed within 48 hours"
@@ -623,7 +624,7 @@
     "pricing": {
       "meta": {
         "title": "Pricing | Built for Real Operations",
-        "description": "Choose the right plan for your business. From free community access to enterprise-grade infrastructure. No hidden fees.",
+        "description": "Choose the right plan for your business. Free community tier included. No hidden fees.",
         "keywords": "pricing, infrastructure automation, CI/CD pricing, DevOps plans, task execution"
       },
       "hero": {
@@ -792,7 +793,7 @@
             {
               "name": "Security Assessment",
               "standard": "Full security audit with implementation roadmap",
-              "priority": "Comprehensive vulnerability assessment + remediation plan within 48h",
+              "priority": "Full vulnerability assessment + remediation plan within 48h",
               "emergency": "Critical vulnerability scan + high-risk patches deployed same-day + full audit begins",
               "id": "security-assessment"
             },
@@ -805,14 +806,14 @@
             },
             {
               "name": "Team Training",
-              "standard": "Comprehensive multi-day training program",
+              "standard": "Multi-day hands-on training program",
               "priority": "Intensive hands-on workshop + key workflows covered within 2 days",
               "emergency": "Critical procedures briefing same-day + incident response prep + full program begins",
               "id": "team-training"
             },
             {
               "name": "Performance Optimization",
-              "standard": "Deep analysis with comprehensive performance tuning",
+              "standard": "Deep analysis with full performance tuning",
               "priority": "Quick profiling + high-impact optimizations deployed within 48h",
               "emergency": "Critical bottleneck identified + immediate hotfix deployed same-day + full optimization begins",
               "id": "performance-optimization"
@@ -832,7 +833,7 @@
             "The average cost of a ransomware attack is $4.62 million (IBM Security, 2023)",
             "The average downtime cost is $5,600 per minute for enterprises"
           ],
-          "description": "Our professional services ensure you're never alone when facing critical infrastructure challenges.",
+          "description": "Dedicated engineers on your side when infrastructure fails.",
           "items": [
             "Dedicated team of experts assigned to your project",
             "Guaranteed response times with SLA",
@@ -906,7 +907,7 @@
         },
         "retainers": {
           "heading": "Retainer options for always-on readiness",
-          "description": "Give executive stakeholders guaranteed access to our specialists with predictable monthly pricing.",
+          "description": "Executive stakeholders get direct access to our specialists. Predictable monthly pricing.",
           "items": [
             {
               "title": "Emergency Response Retainer",
@@ -974,15 +975,15 @@
         "description": "Use our interactive ROI calculator to see how much you can save with Rediacc."
       },
       "finalCta": {
-        "heading": "Ready to Get Started?",
-        "description": "Start building with Rediacc today",
+        "heading": "Protect Your Infrastructure",
+        "description": "Install in 5 minutes. Community tier is free forever.",
         "buttons": {
           "startFree": "Start Free",
           "talkToSales": "Talk to Sales"
         }
       },
       "trust": {
-        "heading": "Enterprise-Grade Security & Reliability",
+        "heading": "Security & Reliability",
         "items": ["AES-256 encryption standard", "99.99% uptime SLA"]
       },
       "ui": {
@@ -991,8 +992,8 @@
         "limitedOffer": "Limited Launch Offer",
         "anchor": "Strategic anchor",
         "whatsIncluded": "What's included:",
-        "getStarted": "Get Started",
-        "learnMore": "Learn More",
+        "getStarted": "Install Now",
+        "learnMore": "Compare Plans",
         "contactSales": "Contact Sales",
         "startingAt": "*Starting at",
         "keyBenefits": "Key Benefits",
@@ -1001,11 +1002,11 @@
         "cta": {
           "community": {
             "primary": "Try Rediacc",
-            "secondary": "Learn More",
+            "secondary": "See What's Included",
             "note": "No credit card required"
           },
           "professional": {
-            "primary": "Get Started",
+            "primary": "Start Professional",
             "secondary": "Contact Sales",
             "guarantee": "Money Back Guarantee"
           },
@@ -1371,13 +1372,13 @@
     "docs": {
       "meta": {
         "title": "Documentation | Rediacc - Infrastructure Automation Platform",
-        "description": "Learn how to use Rediacc with our comprehensive documentation, guides, and API reference for distributed task execution.",
+        "description": "Rediacc documentation — getting started, CLI reference, API docs, and deployment guides.",
         "keywords": "documentation, API reference, guides, infrastructure automation, CLI reference, queue system"
       },
       "title": "Documentation",
       "subtitle": "Learn how to use Rediacc and master distributed task execution",
       "welcome": "Welcome to Rediacc Documentation",
-      "welcomeDescription": "Rediacc is a powerful distributed task execution system. Whether you're just getting started or looking to master advanced features, you'll find everything you need here.",
+      "welcomeDescription": "Rediacc manages Docker-based repositories with encrypted, isolated environments. Start with the getting started guide or jump to the CLI reference.",
       "gettingStarted": "Getting Started",
       "gettingStartedDesc": "New to Rediacc? Start with the basics and learn fundamental concepts.",
       "cliReference": "CLI Reference",
@@ -2467,7 +2468,7 @@
     "disasterRecovery": {
       "meta": {
         "title": "Disaster Recovery Pricing | Rediacc",
-        "description": "Choose the right disaster recovery plan for your business. From free community access to enterprise-grade protection. No hidden fees.",
+        "description": "Choose the right disaster recovery plan. Free community tier included. No feature gates.",
         "keywords": "disaster recovery pricing, backup pricing, business continuity plans, infrastructure protection, ransomware recovery"
       },
       "hero": {
@@ -2567,7 +2568,7 @@
         "copy": "Choose the plan that fits your operational stage today and scale without switching platforms tomorrow.",
         "distribution": [
           "Professional → Business: Add geo-redundant storage, continuous data protection, guaranteed 4-hour RTO, and dedicated customer success as your team grows.",
-          "Business → Enterprise: Unlock custom SLAs with 15-60 minute RTO, dedicated infrastructure tenancy, and white-glove partnership when stakes are highest."
+          "Business → Enterprise: Add custom SLAs with 15-60 minute RTO, dedicated infrastructure tenancy, and white-glove partnership when stakes are highest."
         ]
       },
       "enterpriseCta": {
@@ -2672,7 +2673,7 @@
             {
               "name": "Security Assessment",
               "standard": "Full security audit with implementation roadmap",
-              "priority": "Comprehensive vulnerability assessment + remediation plan within 48h",
+              "priority": "Full vulnerability assessment + remediation plan within 48h",
               "emergency": "Critical vulnerability scan + high-risk patches deployed same-day + full audit begins",
               "id": "security-assessment"
             },
@@ -2685,14 +2686,14 @@
             },
             {
               "name": "Team Training",
-              "standard": "Comprehensive multi-day training program",
+              "standard": "Multi-day hands-on training program",
               "priority": "Intensive hands-on workshop + key workflows covered within 2 days",
               "emergency": "Critical procedures briefing same-day + incident response prep + full program begins",
               "id": "team-training"
             },
             {
               "name": "Performance Optimization",
-              "standard": "Deep analysis with comprehensive performance tuning",
+              "standard": "Deep analysis with full performance tuning",
               "priority": "Quick profiling + high-impact optimizations deployed within 48h",
               "emergency": "Critical bottleneck identified + immediate hotfix deployed same-day + full optimization begins",
               "id": "performance-optimization"
@@ -2712,7 +2713,7 @@
             "The average cost of a ransomware attack is $4.62 million (IBM Security, 2023)",
             "The average downtime cost is $5,600 per minute for enterprises"
           ],
-          "description": "Our professional services ensure you're never alone when facing critical infrastructure challenges.",
+          "description": "Dedicated engineers on your side when infrastructure fails.",
           "items": [
             "Dedicated team of experts assigned to your project",
             "Guaranteed response times with SLA",
@@ -2786,7 +2787,7 @@
         },
         "retainers": {
           "heading": "Retainer options for always-on readiness",
-          "description": "Give executive stakeholders guaranteed access to our specialists with predictable monthly pricing.",
+          "description": "Executive stakeholders get direct access to our specialists. Predictable monthly pricing.",
           "items": [
             {
               "title": "Emergency Response Retainer",
@@ -2838,15 +2839,15 @@
         ]
       },
       "finalCta": {
-        "heading": "Ready to Get Started?",
-        "description": "Start protecting your infrastructure from day one",
+        "heading": "Start Recovering Faster",
+        "description": "Install Rediacc and run your first backup in under 10 minutes.",
         "buttons": {
           "startFree": "Start Free",
           "talkToSales": "Talk to Sales"
         }
       },
       "trust": {
-        "heading": "Enterprise-Grade Security & Reliability",
+        "heading": "Security & Reliability",
         "items": ["AES-256 encryption standard", "99.99% uptime SLA"]
       },
       "ui": {
@@ -2855,8 +2856,8 @@
         "limitedOffer": "Limited Launch Offer",
         "anchor": "Strategic anchor",
         "whatsIncluded": "What's included:",
-        "getStarted": "Get Started",
-        "learnMore": "Learn More",
+        "getStarted": "Install Now",
+        "learnMore": "Compare Plans",
         "contactSales": "Contact Sales",
         "startingAt": "*Starting at",
         "keyBenefits": "Key Benefits",
@@ -2865,11 +2866,11 @@
         "cta": {
           "community": {
             "primary": "Start Free",
-            "secondary": "Learn More",
+            "secondary": "See What's Included",
             "note": "No credit card required"
           },
           "professional": {
-            "primary": "Get Started",
+            "primary": "Start Professional",
             "secondary": "Contact Sales",
             "guarantee": "Money Back Guarantee"
           },
@@ -7288,7 +7289,7 @@
           }
         },
         "bottomCta": {
-          "title": "Make compliance effortless",
+          "title": "Make compliance automatic",
           "description": "Start with the free Community edition. Set your first retention policy in 30 seconds.",
           "primaryCta": "Start Free with Community",
           "tierBadge": "No credit card required",
@@ -7768,7 +7769,7 @@
             {
               "icon": "lock",
               "title": "No vendor lock-in",
-              "description": "Move between clouds whenever you want. Open-format snapshots. No proprietary agents. Standard btrfs — available in every modern Linux kernel."
+              "description": "Move between clouds whenever you want. Open-format snapshots. No proprietary agents. Standard btrfs — in the Linux kernel since 2013."
             }
           ]
         },
@@ -10141,7 +10142,7 @@
           }
         },
         "bottomCta": {
-          "title": "Take control of your encryption",
+          "title": "Own your encryption keys",
           "description": "Start with the free Community edition. Generate your first key in under a minute.",
           "ctaText": "Start Free with Community",
           "command": "rdc repo mount production --credential-file /etc/rediacc/keys/production.key"
@@ -10558,7 +10559,7 @@
             },
             {
               "traditional": "Schedule, scope, coordinate, review",
-              "rediacc": "One-time setup, then fully automated"
+              "rediacc": "One-time setup, then automated"
             },
             {
               "traditional": "$15,000-$50,000 per engagement",
@@ -11918,7 +11919,7 @@
             {
               "icon": "file-text",
               "title": "Open standards",
-              "description": "No proprietary formats. Standard btrfs subvolumes — available in every modern Linux kernel. Your data is always accessible, always portable."
+              "description": "No proprietary formats. Standard btrfs subvolumes — in the Linux kernel since 2013. Your data is always accessible, always portable."
             },
             {
               "icon": "dollar",
@@ -12400,7 +12401,7 @@
       "forCtos": {
         "meta": {
           "title": "For CTOs — Reduce Infrastructure TCO by 60% | Rediacc",
-          "description": "Self-hosted infrastructure protection that scales on your hardware. Reduce TCO, eliminate vendor lock-in, and recover from any disaster in minutes.",
+          "description": "Self-hosted infrastructure protection on your hardware. Reduce TCO by 60%, eliminate vendor lock-in, and recover from any disaster in minutes.",
           "keywords": "CTO, infrastructure TCO, self-hosted, disaster recovery, vendor lock-in, btrfs snapshots, compliance, scalability"
         },
         "hero": {
@@ -13324,7 +13325,7 @@
   },
   "layout": {
     "meta": {
-      "defaultDescription": "Infrastructure Automation Platform designed for accelerated development operations. Instant development environments and next-generation disaster recovery.",
+      "defaultDescription": "Self-hosted infrastructure automation. Instant environment cloning, immutable backups, and sub-60-second disaster recovery.",
       "defaultKeywords": "infrastructure automation, AI operations, disaster recovery, development environments, Model Context Protocol, DevOps, CI/CD",
       "author": "Rediacc",
       "siteName": "Rediacc",

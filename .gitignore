@@ -40,6 +40,7 @@ packages/desktop/out/
 # Environment variables
 .env
 .env.local
+secrets.env
 
 # Logs
 *.log
@@ -50,6 +51,7 @@ Thumbs.db
 
 # Temporary files
 *.tmp
+.claude/scheduled_tasks.lock
 .backend-state
 .provision-state
 .service-state

@@ -2,12 +2,15 @@ declare const __APP_VERSION__: string;
 
 import React from 'react';
 import { COMPANY_LEGAL_NAME, COMPANY_REGISTRY_CODE, COMPANY_VAT_NUMBER } from '../config/constants';
+import { TEAM_MEMBERS } from '../config/team-videos';
 import { useLanguage } from '../hooks/useLanguage';
 import { SUPPORTED_LANGUAGES } from '../i18n/language-utils';
 import { useTranslation } from '../i18n/react';
 import LanguageMenu from './LanguageMenu';
 import NewsletterSignup from './NewsletterSignup';
 import '../styles/language-switcher.css';
+
+const founderData = TEAM_MEMBERS['founder'] as (typeof TEAM_MEMBERS)[string] | undefined;
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -320,6 +323,22 @@ const Footer: React.FC = () => {
                 </svg>
               </a>
             </div>
+            {founderData && (
+              <a
+                href={`/${currentLang}/team`}
+                className="footer-founder"
+                data-track="cta_click"
+                data-track-label="footer-founder"
+              >
+                <img
+                  src={founderData.photos['headshot-xs'] ?? founderData.photos.headshot}
+                  alt={founderData.name}
+                  className="footer-founder-photo"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </a>
+            )}
             <p className="footer-copyright">Rediacc &copy; 2023-{currentYear}</p>
             <p className="footer-version">v{__APP_VERSION__}</p>
           </div>

@@ -1414,7 +1414,7 @@
         },
         "meta": {
           "description": "Rediacc مصمم لمساعدي البرمجة بالذكاء الاصطناعي. عمليات CLI أولاً، مخرجات JSON منظمة، وصول عبر SSH، واكتشاف كامل للوكلاء عبر أوامر rdc agent.",
-          "keywords": "AI agents, Claude Code, Cursor, Cline, infrastructure automation, CLI, JSON output, self-hosted, agent-native, MCP",
+          "keywords": "وكلاء الذكاء الاصطناعي, Claude Code, Cursor, Cline, أتمتة البنية التحتية, CLI, مخرجات JSON, استضافة ذاتية, أصلي للوكلاء, MCP",
           "title": "For AI Agents — CLI-Native Infrastructure Automation | Rediacc"
         },
         "problem": {
@@ -12379,6 +12379,7 @@
     }
   },
   "testimonials": {
+    "fromTheFounder": "من المؤسس",
     "items": [
       {
         "role": "مدير التعافي من الكوارث",

@@ -71,6 +71,7 @@ export async function executeRdcCommand(
         REDIACC_YES: '1',
         NO_COLOR: '1',
         REDIACC_NO_COLOR: '1',
+        REDIACC_AGENT: '1',
       },
     });
 

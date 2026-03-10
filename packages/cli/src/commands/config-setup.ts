@@ -13,6 +13,7 @@ import type {
   OutputFormat,
   ProviderSSHKeyConfig,
 } from '../types/index.js';
+import { assertResourceName, MachineConfigSchema, parseConfig } from '../utils/config-schema.js';
 import { handleError } from '../utils/errors.js';
 
 /**
@@ -119,12 +120,17 @@ export function registerSetupCommands(config: Command, program: Command): void {
     .option('--datastore <path>', t('options.datastore'), '/mnt/rediacc')
     .action(async (name, options) => {
       try {
-        const machineConfig: MachineConfig = {
-          ip: options.ip,
-          user: options.user,
-          port: Number.parseInt(options.port, 10),
-          datastore: options.datastore,
-        };
+        assertResourceName(name);
+        const machineConfig = parseConfig(
+          MachineConfigSchema,
+          {
+            ip: options.ip.trim(),
+            user: options.user.trim(),
+            port: Number.parseInt(options.port, 10),
+            datastore: options.datastore?.trim(),
+          },
+          'machine config'
+        ) as MachineConfig;
 
         await configService.addMachine(name, machineConfig);
         outputService.success(
@@ -360,6 +366,8 @@ export function registerSetupCommands(config: Command, program: Command): void {
     .option('--ssh-key-resource <type>', t('commands.config.addProvider.optionSshKeyResource'))
     .action(async (name, options) => {
       try {
+        assertResourceName(name);
+
         if (!options.provider && !options.source) {
           throw new Error(
             'Either --provider (known provider) or --source (custom provider) is required'

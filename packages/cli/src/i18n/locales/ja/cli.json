@@ -781,6 +781,7 @@
     "mcp": {
       "description": "AIエージェント向けの Model Context Protocol サーバー",
       "serve": {
+        "allowGrandOption": "grand（非 fork）リポジトリに対する破壊的操作を許可する。デフォルト: fork 専用モード",
         "configOption": "すべてのコマンドに使用する設定名",
         "description": "MCP サーバーを起動する (stdio トランスポート)",
         "timeoutOption": "デフォルトのコマンドタイムアウト (ミリ秒単位)"
@@ -1825,12 +1826,24 @@
   "errors": {
     "activationFailed": "認証に失敗しました",
     "affectedChildClones": "。影響を受ける子クローン: {{clones}}。子クローンを最初に削除するか昇格させてください。",
+    "agent": {
+      "forkBlocked": "コマンド \"{{command}}\" は fork リポジトリでは使用できません。\n\nfork リポジトリは一時的な環境です。この操作は grand リポジトリにのみ適用されます。",
+      "grandGuard": "エージェントモードでは grand リポジトリ \"{{name}}\" を変更できません。\n\nAI エージェントは fork リポジトリでのみ操作できます。\nまず fork を作成してください:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nその後、fork で操作してください。\n\nオーバーライドするには: REDIACC_ALLOW_GRAND_REPO={{name}} を設定",
+      "machineGuard": "エージェントモードではマシン \"{{machine}}\" に直接アクセスできません。\n\nAI エージェントはリポジトリコンテキストにのみ接続できます。\n次を使用してください:\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nオーバーライドするには: REDIACC_ALLOW_GRAND_REPO=* を設定",
+      "mcpGrandGuard": "fork 専用モードでは grand リポジトリ \"{{name}}\" を変更できません。\n\nrepo_fork を使用してまず fork を作成し、その後 fork で操作してください。\ngrand リポジトリへのアクセスを許可するには、--allow-grand を付けて MCP サーバーを再起動してください",
+      "mcpMachineGuard": "fork 専用モードではマシンに直接アクセスできません。\n\nリポジトリを指定してリポジトリコンテキストに接続してください。\n直接マシンアクセスを許可するには、--allow-grand を付けて MCP サーバーを再起動してください"
+    },
     "authFailed": "認証に失敗しました",
     "authRequired": "認証が必要です。実行してください: rdc auth login",
     "bridgeRequired": "ブリッジ名が必要です。--bridge を使用するか、コンテキストを設定してください。",
     "cannotDeleteGrandRepo": "グランドリポジトリを削除できません: {{reason}}",
     "cannotPromote": "昇格できません: {{reason}}",
     "clusterNotFound": "Ceph クラスター \"{{name}}\" が見つかりません",
+    "config": {
+      "invalidEmail": "無効なメールアドレス: \"{{value}}\"。",
+      "machineNotFound": "マシン \"{{name}}\" が設定に見つかりません。利用可能: {{available}}。",
+      "storageNotFound": "ストレージ \"{{name}}\" が設定に見つかりません。利用可能: {{available}}。"
+    },
     "contextNotFound": "コンテキスト \"{{name}}\" が見つかりません",
     "failedCreateQueueItem": "キュー項目の作成に失敗しました",
     "invalidAction": "無効なアクション \"{{action}}\"。\"{{valid}}\" を使用してください。",
@@ -1875,10 +1888,12 @@
       "notLoggedIn": "ログインしていません。先に `rdc subscription login` を実行してください。"
     },
     "sync": {
+      "absolutePathBlocked": "--remote パスは絶対パスではなく相対パスでなければなりません。リポジトリルートからの相対パスを使用してください。",
       "localPathNotFound": "ローカルパスが存在しません: {{path}}",
       "noHostKey": "マシン '{{machine}}' のボルトにホストキーが設定されていません",
       "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
-      "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません"
+      "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません",
+      "pathTraversalBlocked": "--remote パスに \"..\" パストラバーサルを含めることはできません。リポジトリ内のパスを使用してください。"
     },
     "teamRequired": "チーム名が必要です。--team を使用するか、コンテキストを設定してください。",
     "term": {
@@ -1887,6 +1902,7 @@
       "noHostKey": "マシン '{{machine}}' のボルトにホストキーが設定されていません",
       "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
       "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません",
+      "repoContextRequired": "コマンドにはリポジトリコンテキストが必要です。\n\nDOCKER_HOST とリポジトリ環境変数を必要とする \"{{detected}}\" が検出されました。\nこれらはリポジトリが指定されている場合にのみ利用可能です。\n\n次の代わりに:\n  rdc term {{machine}} -c \"{{command}}\"\n\n次を使用してください:\n  rdc term {{machine}} <repository> -c \"{{command}}\"",
       "sshCode1": "一般的なエラー - コマンド構文またはリモート権限を確認してください",
       "sshCode126": "権限がありません - リモートでコマンドを実行できません",
       "sshCode127": "リモートマシンにコマンドが見つかりません",

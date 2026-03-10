@@ -781,6 +781,7 @@
     "mcp": {
       "description": "Model Context Protocol Server für KI-Agenten",
       "serve": {
+        "allowGrandOption": "Destruktive Operationen auf Grand-Repositories (nicht Fork) erlauben. Standard: Nur-Fork-Modus",
         "configOption": "Konfigurationsname für alle Befehle",
         "description": "MCP-Server starten (stdio-Transport)",
         "timeoutOption": "Standard-Befehls-Timeout in Millisekunden"
@@ -1825,12 +1826,24 @@
   "errors": {
     "activationFailed": "Aktivierung fehlgeschlagen",
     "affectedChildClones": ". Betroffene untergeordnete Klone: {{clones}}. Löschen oder befördern Sie untergeordnete Klone zuerst.",
+    "agent": {
+      "forkBlocked": "Befehl \"{{command}}\" ist auf Fork-Repositories nicht verfügbar.\n\nFork-Repos sind temporäre Umgebungen. Diese Operation gilt nur für Grand-Repositories.",
+      "grandGuard": "Grand-Repository \"{{name}}\" kann im Agentenmodus nicht geändert werden.\n\nKI-Agenten können nur auf Fork-Repositories arbeiten.\nErstellen Sie zuerst einen Fork:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nArbeiten Sie dann stattdessen auf dem Fork.\n\nZum Überschreiben: REDIACC_ALLOW_GRAND_REPO={{name}} setzen",
+      "machineGuard": "Auf Maschine \"{{machine}}\" kann im Agentenmodus nicht direkt zugegriffen werden.\n\nKI-Agenten können sich nur mit Repository-Kontexten verbinden.\nVerwenden Sie:\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nZum Überschreiben: REDIACC_ALLOW_GRAND_REPO=* setzen",
+      "mcpGrandGuard": "Grand-Repository \"{{name}}\" kann im Nur-Fork-Modus nicht geändert werden.\n\nVerwenden Sie repo_fork, um zuerst einen Fork zu erstellen, und arbeiten Sie dann auf dem Fork.\nUm den Zugriff auf Grand-Repositories zu erlauben, starten Sie den MCP-Server mit --allow-grand neu",
+      "mcpMachineGuard": "Auf die Maschine kann im Nur-Fork-Modus nicht direkt zugegriffen werden.\n\nGeben Sie ein Repository an, um eine Verbindung zu einem Repository-Kontext herzustellen.\nUm direkten Maschinenzugriff zu erlauben, starten Sie den MCP-Server mit --allow-grand neu"
+    },
     "authFailed": "Authentifizierung fehlgeschlagen",
     "authRequired": "Authentifizierung erforderlich. Ausführen: rdc auth login",
     "bridgeRequired": "Bridge-Name erforderlich. Verwenden Sie --bridge oder stellen Sie den Kontext ein.",
     "cannotDeleteGrandRepo": "Kann Grand-Repository nicht löschen: {{reason}}",
     "cannotPromote": "Kann nicht befördern: {{reason}}",
     "clusterNotFound": "Ceph-Cluster \"{{name}}\" nicht gefunden",
+    "config": {
+      "invalidEmail": "Ungültige E-Mail-Adresse: \"{{value}}\".",
+      "machineNotFound": "Maschine \"{{name}}\" nicht in der Konfiguration gefunden. Verfügbar: {{available}}.",
+      "storageNotFound": "Speicher \"{{name}}\" nicht in der Konfiguration gefunden. Verfügbar: {{available}}."
+    },
     "contextNotFound": "Kontext \"{{name}}\" nicht gefunden",
     "failedCreateQueueItem": "Queue-Item konnte nicht erstellt werden",
     "invalidAction": "Ungültige Aktion \"{{action}}\". Verwenden Sie \"{{valid}}\".",
@@ -1875,10 +1888,12 @@
       "notLoggedIn": "Nicht angemeldet. Führen Sie zuerst `rdc subscription login` aus."
     },
     "sync": {
+      "absolutePathBlocked": "Der --remote-Pfad muss relativ sein, nicht absolut. Verwenden Sie einen Pfad relativ zum Repository-Stammverzeichnis.",
       "localPathNotFound": "Lokaler Pfad existiert nicht: {{path}}",
       "noHostKey": "Machine '{{machine}}' hat keinen Host-Schlüssel im Vault konfiguriert",
       "noIpAddress": "Machine '{{machine}}' hat keine IP-Adresse konfiguriert",
-      "noPrivateKey": "Team '{{team}}' hat keinen SSH-Private-Key konfiguriert"
+      "noPrivateKey": "Team '{{team}}' hat keinen SSH-Private-Key konfiguriert",
+      "pathTraversalBlocked": "Der --remote-Pfad darf keine \"..\" Pfadtraversierung enthalten. Verwenden Sie einen Pfad innerhalb des Repositorys."
     },
     "teamRequired": "Team-Name erforderlich. Verwenden Sie --team oder stellen Sie den Kontext ein.",
     "term": {
@@ -1887,6 +1902,7 @@
       "noHostKey": "Machine '{{machine}}' hat keinen Host-Schlüssel im Vault konfiguriert",
       "noIpAddress": "Machine '{{machine}}' hat keine IP-Adresse konfiguriert",
       "noPrivateKey": "Team '{{team}}' hat keinen SSH-Private-Key konfiguriert",
+      "repoContextRequired": "Befehl erfordert Repository-Kontext.\n\n\"{{detected}}\" wurde erkannt, welches DOCKER_HOST und Repository-Umgebungsvariablen benötigt.\nDiese sind nur verfügbar, wenn ein Repository angegeben wird.\n\nAnstatt:\n  rdc term {{machine}} -c \"{{command}}\"\n\nVerwenden Sie:\n  rdc term {{machine}} <repository> -c \"{{command}}\"",
       "sshCode1": "Generischer Fehler - Überprüfen Sie die Befehlssyntax oder Remote-Berechtigungen",
       "sshCode126": "Berechtigung verweigert - Befehl kann nicht auf Remote ausgeführt werden",
       "sshCode127": "Befehl auf Remote-Machine nicht gefunden",

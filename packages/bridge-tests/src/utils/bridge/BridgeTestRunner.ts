@@ -2,7 +2,7 @@
 // The actual implementations are in separate module files (methods/*.ts, helpers/*.ts).
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
-import { DEFAULT_NETWORK_ID } from '../../constants';
+import { DEFAULT_NETWORK_ID, FORK_NETWORK_ID_A, FORK_NETWORK_ID_B } from '../../constants';
 import { getSSHExecutor, SSHExecutor } from '../ssh';
 import type { VaultBuilder } from '../vault/VaultBuilder';
 import { RepositoryHelpers } from './helpers/RepositoryHelpers';
@@ -714,10 +714,12 @@ export class BridgeTestRunner {
     // eslint-disable-next-line no-console
     console.log(`\n[Reset] Cleaning worker state at ${datastorePath}...`);
 
-    // 1. Force teardown daemon (stops containers, unmounts repos)
-    await this.executeViaBridge(
-      `sudo renet daemon teardown --network-id ${DEFAULT_NETWORK_ID} --force 2>/dev/null || true`
-    );
+    // 1. Force teardown all daemons (stops containers, unmounts repos)
+    for (const netId of [DEFAULT_NETWORK_ID, FORK_NETWORK_ID_A, FORK_NETWORK_ID_B]) {
+      await this.executeViaBridge(
+        `sudo renet daemon teardown --network-id ${netId} --force 2>/dev/null || true`
+      );
+    }
 
     // 2. Kill any processes using the datastore (prevents busy mount)
     await this.executeViaBridge(

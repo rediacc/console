@@ -56,11 +56,11 @@ const FeatureShowcase: React.FC<FeatureShowcaseProps> = ({ lang = 'en' }) => {
   return (
     <section className="feature-showcase" id="features">
       <div className="container">
-        <header className="section-header reveal" suppressHydrationWarning>
+        <header className="section-header" suppressHydrationWarning>
           <h2 className="section-title">{t('featureShowcase.title')}</h2>
           <p className="section-subtitle">{t('featureShowcase.subtitle')}</p>
         </header>
-        <div className="feature-tabs reveal">
+        <div className="feature-tabs">
           <div className="feature-tab-list" role="tablist">
             {categories.map((cat, index) => (
               <button

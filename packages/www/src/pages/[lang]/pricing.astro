@@ -8,6 +8,7 @@ import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
 import { PLAN_ORDER, PLAN_PRICING } from '@rediacc/shared/subscription';
 import { EXTERNAL_LINKS } from '../../config/constants';
+import { TEAM_MEMBERS } from '../../config/team-videos';
 import LlmsInlineScript from '../../components/LlmsInlineScript.astro';
 import StructuredData from '../../components/StructuredData.astro';
 import '../../styles/pricing-page.css';
@@ -16,6 +17,7 @@ export const getStaticPaths = getLanguagePaths;
 
 const { lang } = Astro.params as { lang: Language };
 const { t, ta, to } = createTranslator(lang);
+const guarantorData = TEAM_MEMBERS['founder'];
 
 const ns = 'pages.pricing';
 
@@ -196,6 +198,19 @@ const faqSchema = faqItems ? {
             </div>
           </div>
         </div>
+
+        {guarantorData && (
+          <div class="cf-guarantee-strip">
+            <img
+              src={guarantorData.photos.headshot}
+              alt={guarantorData.name}
+              class="cf-guarantee-photo"
+              loading="lazy"
+              decoding="async"
+            />
+            <p class="cf-guarantee-text">{t('team.founder.guarantee')}</p>
+          </div>
+        )}
       </div>
     </section>
 

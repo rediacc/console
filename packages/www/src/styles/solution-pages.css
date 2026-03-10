@@ -59,7 +59,12 @@
 /* ========== HERO ========== */
 .sp-hero {
   background: var(--sp-bg-hero);
-  padding: 48px 48px 96px;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 48px;
   text-align: center;
   position: relative;
   overflow: hidden;
@@ -1932,6 +1937,7 @@
   }
 
   .sp-hero {
+    min-height: auto;
     padding: 32px 24px 64px;
   }
   .sp-hero h1 {

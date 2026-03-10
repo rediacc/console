@@ -14,8 +14,9 @@ import { t } from '../../i18n/index.js';
 import { configService } from '../../services/config-resources.js';
 import { outputService } from '../../services/output.js';
 import type { InfraConfig, OutputFormat } from '../../types/index.js';
+import { extractAutoRoute, extractCustomDomain } from '../../utils/domain-helpers.js';
 import { handleError } from '../../utils/errors.js';
-import { createGuidResolver, loadGuidMap } from '../../utils/guid-resolver.js';
+import { createGuidResolver, resolveGuids, loadGuidMap } from '../../utils/guid-resolver.js';
 import { withSpinner } from '../../utils/spinner.js';
 
 /**
@@ -182,13 +183,28 @@ export function registerStatusCommand(machine: Command, program: Command): void 
         const infra = machineConfig?.infra;
         const format = program.opts().output as OutputFormat;
 
+        const resolve = createGuidResolver(guidMap);
+
         if (format === 'json') {
-          outputService.print({ ...listResult, infra: infra ?? null }, format);
+          const baseDomain = infra?.baseDomain;
+          const enriched = {
+            ...listResult,
+            repositories: resolveGuids(getRepositories(listResult), resolve),
+            containers: getContainers(listResult).map((c) => ({
+              ...c,
+              repository: resolve(c.repository),
+              repository_guid: c.repository,
+              domain: extractCustomDomain(c.labels, baseDomain),
+              autoRoute: extractAutoRoute(c.labels, baseDomain, machineName),
+            })),
+            services: resolveGuids(getServices(listResult), resolve, 'repository'),
+            infra: infra ?? null,
+          };
+          outputService.print(enriched, format);
           return;
         }
 
         // Table mode: render sections with headers
-        const resolve = createGuidResolver(guidMap);
         const sections = getSections(resolve);
         printSummary(listResult);
 

@@ -3,11 +3,11 @@ services:
     image: nginx:latest
     container_name: ${CONTAINER_NAME}
     restart: always
-    network_mode: "${NETWORK_MODE:-bridge}"
+    network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
     ports:
       - "80"
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:80 || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://${SERVICE_IP:-localhost}:80 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

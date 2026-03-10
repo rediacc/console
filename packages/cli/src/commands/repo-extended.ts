@@ -5,6 +5,7 @@ import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
+import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError } from '../utils/errors.js';
 
 /**
@@ -116,6 +117,7 @@ export function registerExtendedRepoCommands(repo: Command): void {
             tag: 'latest',
             credential: parentConfig.credential,
             networkId,
+            grandGuid: parentConfig.grandGuid ?? parentConfig.repositoryGuid,
           });
 
           outputService.info(
@@ -180,6 +182,7 @@ export function registerExtendedRepoCommands(repo: Command): void {
         options: { machine: string; size: string; debug?: boolean; skipRouterRestart?: boolean }
       ) => {
         try {
+          await assertCommandPolicy(CMD.REPO_RESIZE, name);
           await executeRepoFunction(
             'repository_resize',
             name,
@@ -216,6 +219,7 @@ export function registerExtendedRepoCommands(repo: Command): void {
         options: { machine: string; size: string; debug?: boolean; skipRouterRestart?: boolean }
       ) => {
         try {
+          await assertCommandPolicy(CMD.REPO_EXPAND, name);
           await executeRepoFunction(
             'repository_expand',
             name,
@@ -281,6 +285,7 @@ export function registerExtendedRepoCommands(repo: Command): void {
         options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }
       ) => {
         try {
+          await assertCommandPolicy(CMD.REPO_AUTOSTART_ENABLE, name);
           await executeRepoFunction(
             'repository_autostart_enable',
             name,
@@ -315,6 +320,7 @@ export function registerExtendedRepoCommands(repo: Command): void {
         options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }
       ) => {
         try {
+          await assertCommandPolicy(CMD.REPO_AUTOSTART_DISABLE, name);
           await executeRepoFunction(
             'repository_autostart_disable',
             name,
@@ -407,6 +413,7 @@ export function registerExtendedRepoCommands(repo: Command): void {
         options: { machine: string; uid?: string; debug?: boolean; skipRouterRestart?: boolean }
       ) => {
         try {
+          await assertCommandPolicy(CMD.REPO_OWNERSHIP, name);
           const params: Record<string, unknown> = {};
           if (options.uid) params.owner_uid = options.uid;
 
@@ -452,6 +459,7 @@ export function registerExtendedRepoCommands(repo: Command): void {
         }
       ) => {
         try {
+          await assertCommandPolicy(CMD.REPO_TEMPLATE, name);
           // Read and base64-encode template file
           let fileContent: string;
           try {

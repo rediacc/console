@@ -4,7 +4,7 @@ description: "Règles et conventions essentielles pour construire des applicatio
 category: "Guides"
 order: 5
 language: fr
-sourceHash: "1848011813342420"
+sourceHash: "c276f24c681da0ef"
 ---
 
 # Règles de Rediacc
@@ -34,7 +34,7 @@ Chaque dépôt Rediacc s'exécute dans un environnement isolé avec son propre d
 #!/bin/bash
 
 _compose() {
-  renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
+  renet compose -- "$@"
 }
 
 up() {
@@ -126,6 +126,7 @@ Renet auto-injecte celles-ci dans chaque conteneur :
 - **Les identifiants sont stockés dans la configuration CLI** (`~/.config/rediacc/rediacc.json`). Perdre la configuration signifie perdre l'accès aux volumes chiffrés.
 - **Ne committez jamais d'identifiants** dans le contrôle de version. Utilisez `env_file` et générez les secrets dans `up()`.
 - **Isolation des dépôts** : Le daemon Docker, le réseau et le stockage de chaque dépôt sont entièrement isolés des autres dépôts sur la même machine.
+- **Isolation des agents** : Par défaut, les agents IA fonctionnent en mode fork-only. Ils ne peuvent modifier que des dépôts fork, pas les dépôts grand (originaux). Les commandes exécutées via `term_exec` ou `rdc term` avec un contexte de dépôt sont isolées au niveau du noyau avec Landlock LSM, ce qui empêche l'accès au système de fichiers entre dépôts.
 
 ## Déploiement
 

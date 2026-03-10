@@ -1,4 +1,4 @@
-import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { generateSetupCommand, generateSourceCommand } from '@rediacc/shared-desktop/repository';
 import { SSHConnection, spawnSSH, testSSHConnectivity } from '@rediacc/shared-desktop/ssh';
 import { getDefaultTerminalType, launchTerminal } from '@rediacc/shared-desktop/terminal';
@@ -7,7 +7,16 @@ import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
-import { handleError } from '../utils/errors.js';
+import { getSSHConnectionDetails, type ConnectionDetails } from './term-connection.js';
+import { assertAgentMachineAccess } from '../utils/agent-guard.js';
+import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
+import { handleError, ValidationError } from '../utils/errors.js';
+import { detectRepoContextCommand } from '../utils/repo-context-guard.js';
+import {
+  buildSandboxPrefix,
+  buildTermSandboxOptions,
+  shellEscapeForBashC,
+} from '../utils/sandbox.js';
 import { withSpinner } from '../utils/spinner.js';
 
 interface TermConnectOptions {
@@ -26,16 +35,6 @@ interface TermConnectOptions {
   [key: string]: unknown;
 }
 
-interface ConnectionDetails {
-  host: string;
-  user: string;
-  port: number;
-  privateKey: string;
-  known_hosts: string;
-  environment?: Record<string, string>;
-  workingDirectory?: string;
-}
-
 /**
  * Debug logging helper - outputs when REDIACC_DEBUG or DEBUG env var is set
  */
@@ -44,169 +43,6 @@ function debugLog(message: string): void {
     // eslint-disable-next-line no-console
     console.log(`[DEBUG] ${message}`);
   }
-}
-
-function extractBaseConnectionInfo(
-  machineVault: Record<string, unknown>,
-  teamVault: Record<string, unknown>,
-  machineName: string,
-  teamName: string
-) {
-  const host = (machineVault.ip ?? machineVault.host) as string | undefined;
-  const port = (machineVault.port ?? DEFAULTS.SSH.PORT) as number;
-  const privateKey = (teamVault.SSH_PRIVATE_KEY ?? teamVault.sshPrivateKey) as string | undefined;
-  const knownHosts = (machineVault.known_hosts ?? '') as string;
-  const datastore = (machineVault.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH) as string;
-  const universalUser = (machineVault.universalUser ??
-    DEFAULTS.REPOSITORY.UNIVERSAL_USER) as string;
-  const sshUser = (machineVault.user ?? universalUser) as string;
-
-  if (!host) {
-    throw new Error(t('errors.term.noIpAddress', { machine: machineName }));
-  }
-  if (!privateKey) {
-    throw new Error(t('errors.term.noPrivateKey', { team: teamName }));
-  }
-  if (!knownHosts) {
-    throw new Error(t('errors.term.noHostKey', { machine: machineName }));
-  }
-
-  return { host, port, privateKey, knownHosts, datastore, universalUser, sshUser };
-}
-
-function buildRepositoryEnvironment(
-  teamName: string,
-  machineName: string,
-  repositoryName: string,
-  machineVault: Record<string, unknown>,
-  repoVault: Record<string, unknown>,
-  datastore: string,
-  universalUser: string
-): { environment: Record<string, string>; workingDirectory: string } {
-  const repositoryPath = (repoVault.path ?? `/home/${repositoryName}`) as string;
-  const networkId = (repoVault.networkId ?? '') as string;
-  const networkMode = (repoVault.networkMode ??
-    machineVault.networkMode ??
-    DEFAULTS.REPOSITORY.NETWORK_MODE) as string;
-  const tag = (repoVault.tag ?? DEFAULTS.REPOSITORY.TAG) as string;
-  const immovable = repoVault.immovable ? 'true' : 'false';
-  const workingDirectory = (repoVault.workingDirectory ?? repositoryPath) as string;
-
-  // Derive Docker socket from networkId (per-repo isolated daemon)
-  const dockerSocket = (machineVault.dockerSocket ??
-    (networkId
-      ? `/var/run/rediacc/docker-${networkId}.sock`
-      : DEFAULTS.DOCKER.SOCKET_PATH)) as string;
-  const dockerHost = (machineVault.dockerHost ?? `unix://${dockerSocket}`) as string;
-
-  const environment: Record<string, string> = {
-    REDIACC_TEAM: teamName,
-    REDIACC_MACHINE: machineName,
-    REDIACC_REPOSITORY: repositoryName,
-    DOCKER_DATA: `${datastore}${repositoryPath}`,
-    DOCKER_EXEC: `${datastore}${repositoryPath}/.docker-exec`,
-    DOCKER_FOLDER: `${datastore}${repositoryPath}`,
-    DOCKER_HOST: dockerHost,
-    DOCKER_SOCKET: dockerSocket,
-    REDIACC_DATASTORE: datastore,
-    REDIACC_DATASTORE_USER: universalUser,
-    REDIACC_IMMOVABLE: immovable,
-    REPOSITORY_NETWORK_ID: networkId,
-    REPOSITORY_NETWORK_MODE: networkMode,
-    REPOSITORY_PATH: repositoryPath,
-    REPOSITORY_TAG: tag,
-    UNIVERSAL_USER_NAME: universalUser,
-    UNIVERSAL_USER_ID: (machineVault.universalUserId ??
-      DEFAULTS.REPOSITORY.UNIVERSAL_USER_ID) as string,
-    ...(typeof repoVault.environment === 'object' && repoVault.environment !== null
-      ? (repoVault.environment as Record<string, string>)
-      : {}),
-  };
-
-  return { environment, workingDirectory };
-}
-
-function buildMachineEnvironment(
-  teamName: string,
-  machineName: string,
-  datastore: string,
-  universalUser: string
-): { environment: Record<string, string>; workingDirectory: string } {
-  return {
-    environment: {
-      REDIACC_TEAM: teamName,
-      REDIACC_MACHINE: machineName,
-      REDIACC_DATASTORE: datastore,
-      REDIACC_DATASTORE_USER: universalUser,
-      UNIVERSAL_USER_NAME: universalUser,
-    },
-    workingDirectory: datastore,
-  };
-}
-
-/**
- * Gets SSH connection details using the mode-aware state provider
- */
-async function getSSHConnectionDetails(
-  teamName: string,
-  machineName: string,
-  repositoryName?: string
-): Promise<ConnectionDetails> {
-  debugLog(
-    `Getting SSH connection details for team=${teamName}, machine=${machineName}, repository=${repositoryName ?? '(none)'}`
-  );
-
-  const provider = await getStateProvider();
-  const vaults = await provider.vaults.getConnectionVaults(teamName, machineName, repositoryName);
-  const { machineVault, teamVault } = vaults;
-
-  debugLog(`Machine vault fields: ${Object.keys(machineVault).join(', ') || '(empty)'}`);
-  debugLog(`Team vault fields: ${Object.keys(teamVault).join(', ') || '(empty)'}`);
-
-  const baseInfo = extractBaseConnectionInfo(machineVault, teamVault, machineName, teamName);
-
-  let envData: { environment: Record<string, string>; workingDirectory: string };
-
-  if (repositoryName) {
-    debugLog(`Using repository vault for: ${repositoryName}`);
-    const repoVault = vaults.repositoryVault ?? {};
-    debugLog(`Repository vault fields: ${Object.keys(repoVault).join(', ') || '(empty)'}`);
-
-    envData = buildRepositoryEnvironment(
-      teamName,
-      machineName,
-      repositoryName,
-      machineVault,
-      repoVault,
-      baseInfo.datastore,
-      baseInfo.universalUser
-    );
-    debugLog(`Working directory: ${envData.workingDirectory}`);
-  } else {
-    debugLog('Machine-only mode (no repository specified)');
-    envData = buildMachineEnvironment(
-      teamName,
-      machineName,
-      baseInfo.datastore,
-      baseInfo.universalUser
-    );
-    debugLog(`Working directory set to datastore: ${envData.workingDirectory}`);
-  }
-
-  debugLog(
-    `Final connection: ${baseInfo.sshUser}@${baseInfo.host}:${baseInfo.port}, workingDirectory=${envData.workingDirectory}`
-  );
-  debugLog(`Environment variables count: ${Object.keys(envData.environment).length}`);
-
-  return {
-    host: baseInfo.host,
-    user: baseInfo.sshUser,
-    port: baseInfo.port,
-    privateKey: baseInfo.privateKey,
-    known_hosts: baseInfo.knownHosts,
-    environment: envData.environment,
-    workingDirectory: envData.workingDirectory,
-  };
 }
 
 type ContainerAction = 'terminal' | 'logs' | 'stats' | 'exec';
@@ -227,18 +63,12 @@ const containerCommandBuilders: Record<
     `docker exec -it ${containerId} ${options.command ?? DEFAULTS.SHELL.BASH}`,
 };
 
-function buildRemoteCommand(
-  options: TermConnectOptions,
-  connectionDetails?: ConnectionDetails
-): string | undefined {
-  // Build environment export and cd prefix for the remote shell
+function buildEnvPrefix(connectionDetails?: ConnectionDetails): string {
   const parts: string[] = [];
 
   if (connectionDetails?.environment) {
     for (const [key, value] of Object.entries(connectionDetails.environment)) {
-      const strVal = String(value);
-      // Shell-escape the value by wrapping in single quotes and escaping embedded single quotes
-      const escaped = strVal.replaceAll("'", "'\\''");
+      const escaped = String(value).replaceAll("'", "'\\''");
       parts.push(`export ${key}='${escaped}'`);
     }
   }
@@ -247,23 +77,56 @@ function buildRemoteCommand(
     parts.push(`cd '${connectionDetails.workingDirectory}' 2>/dev/null`);
   }
 
-  const envPrefix = parts.length > 0 ? `${parts.join('; ')}; ` : '';
+  return parts.length > 0 ? `${parts.join('; ')}; ` : '';
+}
+
+function buildContainerCommand(
+  options: TermConnectOptions,
+  envPrefix: string,
+  sandbox: string
+): string {
+  const containerId = options.container!;
+  const containerAction = (options.containerAction ??
+    DEFAULTS.REPOSITORY.CONTAINER_ACTION) as ContainerAction;
+  const builder = containerCommandBuilders[containerAction];
+  const dockerCmd = builder(options, containerId);
+  return sandbox ? `${envPrefix}${sandbox} ${dockerCmd}` : `${envPrefix}${dockerCmd}`;
+}
+
+function buildShellCommand(
+  options: TermConnectOptions,
+  envPrefix: string,
+  sandbox: string
+): string {
+  const ensureBashSetup = `[ -f ~/.bashrc-rediacc ] || { ${generateSetupCommand()}; }`;
+  const sourceCmd = generateSourceCommand();
+  const userCmd = options.command;
+
+  if (sandbox) {
+    const setupPart = `${envPrefix}${ensureBashSetup}; `;
+    const inner = userCmd ? `${sourceCmd} && ${userCmd}` : `${sourceCmd} && exec bash`;
+    return `${setupPart}${sandbox} bash -c '${shellEscapeForBashC(inner)}'`;
+  }
+
+  const ensureBashFunctions = `${ensureBashSetup}; ${sourceCmd}`;
+  return userCmd
+    ? `${envPrefix}${ensureBashFunctions} && ${userCmd}`
+    : `${envPrefix}${ensureBashFunctions} && exec bash`;
+}
+
+function buildRemoteCommand(
+  options: TermConnectOptions,
+  connectionDetails?: ConnectionDetails
+): string | undefined {
+  const envPrefix = buildEnvPrefix(connectionDetails);
+  const sandboxOpts = buildTermSandboxOptions(connectionDetails);
+  const sandbox = sandboxOpts ? buildSandboxPrefix(sandboxOpts) : '';
 
   if (options.container) {
-    const containerId = options.container;
-    const containerAction = (options.containerAction ??
-      DEFAULTS.REPOSITORY.CONTAINER_ACTION) as ContainerAction;
-    const builder = containerCommandBuilders[containerAction];
-    return `${envPrefix}${builder(options, containerId)}`;
+    return buildContainerCommand(options, envPrefix, sandbox);
   }
 
-  const ensureBashFunctions = `[ -f ~/.bashrc-rediacc ] || { ${generateSetupCommand()}; }; ${generateSourceCommand()}`;
-
-  if (options.command) {
-    return `${envPrefix}${ensureBashFunctions} && ${options.command}`;
-  }
-
-  return `${envPrefix}${ensureBashFunctions} && exec bash`;
+  return buildShellCommand(options, envPrefix, sandbox);
 }
 
 async function validateAndGetConnectionDetails(opts: {
@@ -313,8 +176,66 @@ async function validateAndGetConnectionDetails(opts: {
 /**
  * Connects to a machine or repository via SSH
  */
+async function enforceTermPolicy(opts: TermConnectOptions): Promise<void> {
+  if (opts.command && !opts.repository) {
+    const match = detectRepoContextCommand(opts.command);
+    if (match) {
+      throw new ValidationError(
+        t('errors.term.repoContextRequired', {
+          detected: match.label,
+          machine: opts.machine ?? DEFAULTS.CLOUD.MACHINE_PLACEHOLDER,
+          command: opts.command,
+        })
+      );
+    }
+  }
+
+  if (opts.repository) {
+    await assertCommandPolicy(CMD.TERM_REPO, opts.repository);
+  } else {
+    assertAgentMachineAccess(opts.machine ?? DEFAULTS.CLOUD.MACHINE_PLACEHOLDER);
+  }
+}
+
+function shouldUseExternalTerminal(options: TermConnectOptions): boolean {
+  const isTTY = process.stdin.isTTY && process.stdout.isTTY;
+  const hasCommand = !!options.command || !!options.container;
+  return hasCommand ? options.external === true : (options.external ?? !isTTY);
+}
+
+async function executeSSH(
+  sshConnection: SSHConnection,
+  destination: string,
+  remoteCommand: string | undefined,
+  title: string,
+  connectionDetails: ConnectionDetails,
+  useExternal: boolean
+): Promise<void> {
+  if (!useExternal) {
+    await runInlineSSH(sshConnection, destination, remoteCommand, title, connectionDetails);
+    return;
+  }
+
+  try {
+    await launchExternalTerminal(
+      sshConnection,
+      destination,
+      remoteCommand,
+      title,
+      connectionDetails
+    );
+  } catch (error) {
+    debugLog(
+      `External terminal failed: ${error instanceof Error ? error.message : String(error)}, falling back to inline SSH`
+    );
+    await runInlineSSH(sshConnection, destination, remoteCommand, title, connectionDetails);
+  }
+}
+
 async function connectTerminal(options: TermConnectOptions): Promise<void> {
   const opts = await configService.applyDefaults(options);
+  await enforceTermPolicy(opts);
+
   const { connectionDetails, teamName, machineName, repositoryName } =
     await validateAndGetConnectionDetails(opts);
 
@@ -334,32 +255,14 @@ async function connectTerminal(options: TermConnectOptions): Promise<void> {
     const destination = `${connectionDetails.user}@${connectionDetails.host}`;
     const remoteCommand = buildRemoteCommand(options, connectionDetails);
 
-    const isTTY = process.stdin.isTTY && process.stdout.isTTY;
-    // When a command is provided (-c), always prefer inline SSH since the output
-    // goes to stdout and no interactive terminal is needed.
-    // When no command, use external only if explicitly requested or if there's no TTY.
-    const hasCommand = !!options.command || !!options.container;
-    const useExternal = hasCommand ? options.external === true : (options.external ?? !isTTY);
-
-    if (useExternal) {
-      try {
-        await launchExternalTerminal(
-          sshConnection,
-          destination,
-          remoteCommand,
-          title,
-          connectionDetails
-        );
-      } catch (error) {
-        // Fall back to inline SSH if external terminal is not available
-        debugLog(
-          `External terminal failed: ${error instanceof Error ? error.message : String(error)}, falling back to inline SSH`
-        );
-        await runInlineSSH(sshConnection, destination, remoteCommand, title, connectionDetails);
-      }
-    } else {
-      await runInlineSSH(sshConnection, destination, remoteCommand, title, connectionDetails);
-    }
+    await executeSSH(
+      sshConnection,
+      destination,
+      remoteCommand,
+      title,
+      connectionDetails,
+      shouldUseExternalTerminal(options)
+    );
   } finally {
     await sshConnection.cleanup();
   }

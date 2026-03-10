@@ -8,6 +8,7 @@ import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
 import type { OutputFormat, RepositoryConfig } from '../types/index.js';
+import { assertResourceName, parseConfig, RepositoryConfigSchema } from '../utils/config-schema.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 
 export function registerLocalDataCommands(config: Command, program: Command): void {
@@ -123,6 +124,8 @@ export function registerLocalDataCommands(config: Command, program: Command): vo
     .option('--network-id <id>', t('commands.config.addRepository.optionNetworkId'))
     .action(async (name, options) => {
       try {
+        assertResourceName(name);
+
         let networkId: number | undefined;
 
         if (options.networkId === undefined) {
@@ -135,12 +138,16 @@ export function registerLocalDataCommands(config: Command, program: Command): vo
           }
         }
 
-        const repoConfig: RepositoryConfig = {
-          repositoryGuid: options.guid,
-          tag: options.tag,
-          credential: options.credential,
-          networkId,
-        };
+        const repoConfig = parseConfig(
+          RepositoryConfigSchema,
+          {
+            repositoryGuid: options.guid,
+            tag: options.tag,
+            credential: options.credential,
+            networkId,
+          },
+          'repository config'
+        ) as RepositoryConfig;
 
         await configService.addRepository(name, repoConfig);
         outputService.success(

@@ -781,6 +781,7 @@
     "mcp": {
       "description": "用于 AI 代理的 Model Context Protocol 服务器",
       "serve": {
+        "allowGrandOption": "允许对 grand（非 fork）仓库执行破坏性操作。默认：仅 fork 模式",
         "configOption": "用于所有命令的配置名称",
         "description": "启动 MCP 服务器（stdio 传输）",
         "timeoutOption": "默认命令超时时间（毫秒）"
@@ -1825,12 +1826,24 @@
   "errors": {
     "activationFailed": "激活失败",
     "affectedChildClones": "。受影响的子克隆：{{clones}}。请先删除或提升子克隆。",
+    "agent": {
+      "forkBlocked": "命令 \"{{command}}\" 在 fork 仓库上不可用。\n\nfork 仓库是临时环境。此操作仅适用于 grand 仓库。",
+      "grandGuard": "无法在代理模式下修改 grand 仓库 \"{{name}}\"。\n\nAI 代理只能在 fork 仓库上操作。\n请先创建 fork：\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\n然后在 fork 上操作。\n\n要覆盖此限制：设置 REDIACC_ALLOW_GRAND_REPO={{name}}",
+      "machineGuard": "无法在代理模式下直接访问机器 \"{{machine}}\"。\n\nAI 代理只能连接到仓库上下文。\n请使用：\n  rdc term {{machine}} <repository> -c \"<command>\"\n\n要覆盖此限制：设置 REDIACC_ALLOW_GRAND_REPO=*",
+      "mcpGrandGuard": "无法在仅 fork 模式下修改 grand 仓库 \"{{name}}\"。\n\n请使用 repo_fork 先创建 fork，然后在 fork 上操作。\n要允许访问 grand 仓库，请使用 --allow-grand 重新启动 MCP 服务器",
+      "mcpMachineGuard": "无法在仅 fork 模式下直接访问机器。\n\n请指定一个仓库以连接到仓库上下文。\n要允许直接访问机器，请使用 --allow-grand 重新启动 MCP 服务器"
+    },
     "authFailed": "身份验证失败",
     "authRequired": "需要身份验证。运行：rdc auth login",
     "bridgeRequired": "需要网桥名称。使用 --bridge 或设置上下文。",
     "cannotDeleteGrandRepo": "无法删除主仓库：{{reason}}",
     "cannotPromote": "无法提升：{{reason}}",
     "clusterNotFound": "Ceph 集群 \"{{name}}\" 未找到",
+    "config": {
+      "invalidEmail": "无效的电子邮件地址: \"{{value}}\"。",
+      "machineNotFound": "机器 \"{{name}}\" 在配置中未找到。可用: {{available}}。",
+      "storageNotFound": "存储 \"{{name}}\" 在配置中未找到。可用: {{available}}。"
+    },
     "contextNotFound": "上下文 \"{{name}}\" 未找到",
     "failedCreateQueueItem": "无法创建队列项",
     "invalidAction": "无效的操作 \"{{action}}\"。使用 \"{{valid}}\"。",
@@ -1875,10 +1888,12 @@
       "notLoggedIn": "未登录。请先运行 `rdc subscription login`。"
     },
     "sync": {
+      "absolutePathBlocked": "--remote 路径必须是相对路径，不能是绝对路径。请使用相对于仓库根目录的路径。",
       "localPathNotFound": "本地路径不存在：{{path}}",
       "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
-      "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥"
+      "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
+      "pathTraversalBlocked": "--remote 路径不得包含 \"..\" 路径遍历。请使用仓库内的路径。"
     },
     "teamRequired": "需要团队名称。使用 --team 或设置上下文。",
     "term": {
@@ -1887,6 +1902,7 @@
       "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
       "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
+      "repoContextRequired": "命令需要仓库上下文。\n\n检测到 \"{{detected}}\"，它需要 DOCKER_HOST 和仓库环境变量。\n这些仅在指定仓库时可用。\n\n不要使用：\n  rdc term {{machine}} -c \"{{command}}\"\n\n请使用：\n  rdc term {{machine}} <repository> -c \"{{command}}\"",
       "sshCode1": "通用错误 - 检查命令语法或远程权限",
       "sshCode126": "权限被拒绝 - 无法在远程执行命令",
       "sshCode127": "在远程机器上找不到命令",

@@ -1416,7 +1416,7 @@
         },
         "meta": {
           "description": "Rediacc est conçu pour les assistants de codage IA. Opérations CLI d'abord, sortie JSON structurée, accès SSH, et découverte complète des agents via les commandes rdc agent.",
-          "keywords": "AI agents, Claude Code, Cursor, Cline, infrastructure automation, CLI, JSON output, self-hosted, agent-native, MCP",
+          "keywords": "Agents IA, Claude Code, Cursor, Cline, automatisation d'infrastructure, CLI, sortie JSON, auto-hébergé, natif pour agents, MCP",
           "title": "For AI Agents — CLI-Native Infrastructure Automation | Rediacc"
         },
         "problem": {
@@ -12397,6 +12397,7 @@
     }
   },
   "testimonials": {
+    "fromTheFounder": "Du fondateur",
     "items": [
       {
         "role": "Responsable de la reprise après sinistre",

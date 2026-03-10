@@ -5,6 +5,13 @@ import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
 import type { OutputFormat, RdcConfig } from '../types/index.js';
 import { hasCloudCredentials } from '../types/index.js';
+import {
+  assertMachineExists,
+  assertStorageExists,
+  BackupDestinationSchema,
+  BackupScheduleSchema,
+  parseConfig,
+} from '../utils/config-schema.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { registerLocalDataCommands } from './config-data.js';
 import { registerInfraCommands } from './config-infra.js';
@@ -34,12 +41,15 @@ async function applyBackupStrategyOptions(options: {
   const enabled = resolveEnabledFlag(options.enable, options.disable);
 
   if (options.destination) {
-    await configService.addBackupDestination({
-      storage: options.destination,
-      schedule: options.cron,
-      enabled,
-    });
+    await assertStorageExists(options.destination);
+    const dest = parseConfig(
+      BackupDestinationSchema,
+      { storage: options.destination, schedule: options.cron, enabled },
+      'backup destination'
+    );
+    await configService.addBackupDestination(dest);
   } else {
+    parseConfig(BackupScheduleSchema, { schedule: options.cron, enabled }, 'backup schedule');
     await configService.setBackupStrategy({ schedule: options.cron, enabled });
   }
 }
@@ -382,6 +392,9 @@ ${t('help.examples')}
         const validKeys = ['team', 'region', 'bridge', 'machine'];
         if (!validKeys.includes(key)) {
           throw new ValidationError(t('errors.invalidKey', { keys: validKeys.join(', ') }));
+        }
+        if (key === 'machine') {
+          await assertMachineExists(value);
         }
         await configService.set(key as 'team' | 'region' | 'bridge' | 'machine', value);
         outputService.success(t('commands.config.set.success', { key, value }));

@@ -154,6 +154,9 @@ export const CLOUD_DEFAULTS = {
   /** Display placeholder for missing values */
   DISPLAY_PLACEHOLDER: '-',
 
+  /** Placeholder for unresolved machine name in error messages */
+  MACHINE_PLACEHOLDER: '<machine>',
+
   /** Default error message fallback */
   UNKNOWN_ERROR: 'Unknown error',
 } as const;

@@ -68,15 +68,21 @@ const hasSplit = !!teamVideo;
 
 <style>
   .sp-hero--split .sp-hero-content {
+    max-width: 1200px;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 40px;
+    grid-template-columns: 1fr 1.1fr;
+    gap: 56px;
     align-items: center;
+    text-align: left;
   }
 
   .sp-hero-video {
     display: flex;
     justify-content: center;
+  }
+
+  .sp-hero-video :global(.tv-player--compact) {
+    max-width: 100%;
   }
 
   @media (max-width: 768px) {

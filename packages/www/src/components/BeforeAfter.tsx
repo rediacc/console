@@ -14,10 +14,10 @@ const BeforeAfter: React.FC<BeforeAfterProps> = ({ lang = 'en' }) => {
   return (
     <section className="before-after">
       <div className="container">
-        <header className="section-header reveal">
+        <header className="section-header">
           <h2 className="section-title">{t('beforeAfter.title')}</h2>
         </header>
-        <div className="before-after-grid reveal">
+        <div className="before-after-grid">
           <div className="before-after-card before-after-card--before">
             <h3>{t('beforeAfter.before.label')}</h3>
             <ul>

@@ -20,7 +20,8 @@
       "serve": {
         "description": "Start MCP server (stdio transport)",
         "configOption": "Config name to use for all commands",
-        "timeoutOption": "Default command timeout in milliseconds"
+        "timeoutOption": "Default command timeout in milliseconds",
+        "allowGrandOption": "Allow destructive operations on grand (non-fork) repositories. Default: fork-only mode"
       }
     },
     "auth": {
@@ -395,7 +396,7 @@
         "success": "Renet path set to: {{path}}"
       },
       "setupMachine": {
-        "description": "Run setup on a remote machine (installs btrfs, Docker, etc.)",
+        "description": "Provision a remote machine for repositories (installs renet, then runs 'renet setup' which configures Docker, BTRFS datastore, and dependencies). Idempotent -- safe to re-run. Required after 'config add-machine' and before 'repo create'",
         "starting": "Setting up machine '{{machine}}'...",
         "completed": "Machine '{{machine}}' setup completed successfully",
         "failed": "Machine '{{machine}}' setup failed: {{error}}",
@@ -692,7 +693,7 @@
         "exitCode": "\nExit Code: {{code}}"
       },
       "containers": {
-        "description": "List containers on a machine with status, health, and domain routing",
+        "description": "List containers on a machine with status, health, and domain routing. JSON includes full container details with repository resolved to name (original in repository_guid), domain, and autoRoute",
         "fetching": "Fetching containers...",
         "fetched": "Containers fetched",
         "noContainers": "No containers found on this machine",
@@ -701,7 +702,7 @@
         "unhealthyFound": "{{count}} unhealthy container(s) found"
       },
       "services": {
-        "description": "List systemd services on a machine",
+        "description": "List rediacc-managed systemd services on a machine (name, state, sub-state, restart count, memory, repository resolved to name with original in repository_guid). Use --stability-check to exit with code 2 if any failed or restarting (for CI/CD)",
         "fetching": "Fetching services...",
         "fetched": "Services fetched",
         "noServices": "No rediacc services found on this machine",
@@ -710,7 +711,7 @@
         "unstableFound": "{{count}} unstable service(s) found"
       },
       "status": {
-        "description": "Show full machine status (infra, system, repos, containers, services)",
+        "description": "Show full machine status (infra, system, repos with name/guid, containers with repository/repository_guid/domain/autoRoute, services with repository/repository_guid)",
         "fetching": "Fetching status from {{machine}}...",
         "fetched": "Status fetched",
         "noData": "No status data available",
@@ -736,7 +737,7 @@
         "repoDocker": "    Docker: {{status}}"
       },
       "repos": {
-        "description": "List deployed repositories on a machine",
+        "description": "List deployed repositories on a machine (name, GUID, size, mount status, Docker state, container count, disk usage, modified date, Rediaccfile present). JSON nests containers and services under each repo. Use --search to filter by name or GUID",
         "fetching": "Fetching machine...",
         "fetched": "Machine fetched",
         "noRepos": "No repositories deployed on this machine"
@@ -1139,15 +1140,15 @@
       "machineOption": "Target machine name",
       "noCredential": "Warning: Repository \"{{name}}\" has no credential set. Operations on encrypted repos may fail.",
       "mount": {
-        "description": "Mount a repository (open LUKS container)",
-        "checkpointOption": "Restore from checkpoint after mount",
+        "description": "Mount a repository (decrypt and open the LUKS container, making the filesystem accessible). Needed on first deploy, after 'repo push' to a new machine, or after 'repo unmount'. Can also be done via 'repo up --mount'. The volume stays mounted until explicitly unmounted",
+        "checkpointOption": "Restore CRIU container checkpoint after mount (resume processes from saved memory state). Used after 'repo push --checkpoint' for live migration",
         "starting": "Mounting \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Mount completed",
         "failed": "Mount failed"
       },
       "unmount": {
-        "description": "Unmount a repository",
-        "checkpointOption": "Create checkpoint before unmount",
+        "description": "Unmount a repository (close the LUKS container, detaching the encrypted filesystem). Services must be stopped first ('repo down'). After unmount, repo data is inaccessible until remounted. Required before 'repo resize'",
+        "checkpointOption": "Create CRIU container checkpoint before unmount (capture running process memory state for later restore)",
         "starting": "Unmounting \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Unmount completed",
         "failed": "Unmount failed"
@@ -1173,15 +1174,15 @@
         "failed": "Up-all operation failed"
       },
       "down": {
-        "description": "Stop repository services (runs Rediaccfile down via renet compose)",
-        "unmountOption": "Unmount repository after stopping",
+        "description": "Stop repository Docker containers (runs Rediaccfile down via renet compose). Does NOT unmount the encrypted volume -- the repo stays mounted and can be restarted with 'repo up'. Use --unmount to also close the LUKS container after stopping",
+        "unmountOption": "Also unmount (close LUKS container) after stopping. Equivalent to 'repo down' then 'repo unmount'. Required before 'repo resize' or to fully secure the volume",
         "grandOption": "Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent",
         "starting": "Stopping services for \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Services stopped",
         "failed": "Service stop failed"
       },
       "status": {
-        "description": "Get repository status",
+        "description": "Get repository status (mount state, Docker daemon running, container count, disk usage)",
         "starting": "Getting status of \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Status retrieved",
         "failed": "Status check failed"
@@ -1203,7 +1204,7 @@
         "alreadyExists": "Repository \"{{name}}\" already exists in config"
       },
       "delete": {
-        "description": "Delete a repository",
+        "description": "Delete a repository (destroys containers, volumes, and encrypted image). Credential is archived for recovery via 'config restore-archived'. WARNING: config mapping is removed globally -- if the repo exists on another machine (after 'repo push'), re-add with 'config add-repository'",
         "starting": "Deleting \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Repository deleted",
         "archived": "Credential for \"{{repository}}\" archived",
@@ -1221,21 +1222,21 @@
         "alreadyExists": "Repository \"{{name}}\" already exists in config"
       },
       "resize": {
-        "description": "Resize a repository offline (supports grow and shrink)",
+        "description": "Resize a repository offline (supports both grow and shrink). Repo must be unmounted first ('repo down --unmount'). For zero-downtime growth without stopping, use 'repo expand' instead",
         "sizeOption": "New repository size (e.g., 10G, 100G, 1T)",
         "starting": "Resizing \"{{repository}}\" to {{size}} on \"{{machine}}\"...",
         "completed": "Resize completed",
         "failed": "Resize failed"
       },
       "expand": {
-        "description": "Expand a mounted repository online (zero downtime)",
+        "description": "Expand a mounted repository online (zero downtime, grow-only). Grows the LUKS container and filesystem while containers keep running. Cannot shrink -- use 'repo resize' for that (requires unmount)",
         "sizeOption": "New repository size (e.g., 10G, 100G, 1T)",
         "starting": "Expanding \"{{repository}}\" to {{size}} on \"{{machine}}\"...",
         "completed": "Expansion completed",
         "failed": "Expansion failed"
       },
       "validate": {
-        "description": "Validate repository integrity",
+        "description": "Validate repository integrity (LUKS container, filesystem consistency, configuration). Use after unexpected shutdowns or to verify backup health",
         "starting": "Validating \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Validation completed",
         "failed": "Validation failed"
@@ -1274,7 +1275,7 @@
         }
       },
       "ownership": {
-        "description": "Change repository directory ownership",
+        "description": "Change repository directory ownership UID on the mounted volume (default: 7111). Use when containers need a specific UID to access repo files",
         "uidOption": "Owner UID (default: 7111)",
         "starting": "Setting ownership of \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Ownership updated",
@@ -1303,7 +1304,7 @@
         "pushing": "Pushing backup of \"{{repo}}\" to {{dest}}..."
       },
       "pull": {
-        "description": "Pull repository backup from storage or machine",
+        "description": "Pull repository backup from storage or another machine (restores the encrypted LUKS image). After pull, deploy with 'repo up <name> -m <machine> --mount'. Use --force to overwrite existing",
         "optionFromStorage": "Source storage name",
         "optionFromMachine": "Source machine name",
         "optionForce": "Force overwrite existing repository",
@@ -1333,25 +1334,25 @@
           "success": "Sync pull completed"
         },
         "upload": {
-          "description": "Upload files to a repository"
+          "description": "Upload files to a repository via rsync over SSH (delta transfer). Use --mirror to delete extra remote files, --dry-run to preview, --exclude to skip patterns"
         },
         "download": {
-          "description": "Download files from a repository"
+          "description": "Download files from a repository via rsync over SSH (delta transfer). Use --mirror to delete extra local files, --dry-run to preview, --exclude to skip patterns"
         },
         "status": {
-          "description": "Check sync status and compare local/remote files"
+          "description": "Dry-run comparison of local and remote files (shows what would be transferred without actually transferring)"
         }
       },
       "snapshot": {
         "description": "Manage BTRFS snapshots on remote machines",
         "create": {
-          "description": "Create a BTRFS snapshot of a repository",
+          "description": "Create a point-in-time BTRFS snapshot of a repository (instant, no downtime). Use --snapshot-name for a custom name",
           "optionSnapshotName": "Explicit snapshot name (auto-generated if empty)",
           "creating": "Creating snapshot of \"{{repo}}\" on {{machine}}...",
           "success": "Snapshot created: {{name}} ({{path}})"
         },
         "list": {
-          "description": "List snapshots on a remote machine",
+          "description": "List BTRFS snapshots on a remote machine with name, creation date, and size",
           "noSnapshots": "No snapshots found.",
           "header": "{{count}} snapshot(s) in {{path}}:"
         },
@@ -1404,21 +1405,21 @@
       "duration": "Duration: {{seconds}}s",
       "errors": "Errors:",
       "upload": {
-        "description": "Upload files to a repository",
+        "description": "Upload files to a repository via rsync over SSH (delta transfer). Use --mirror to delete extra remote files, --dry-run to preview, --exclude to skip patterns",
         "starting": "Starting upload...",
         "progress": "Uploading: {{percentage}}% - {{file}} ({{speed}})",
         "completed": "Upload completed: {{count}} files transferred",
         "failed": "Upload failed"
       },
       "download": {
-        "description": "Download files from a repository",
+        "description": "Download files from a repository via rsync over SSH (delta transfer). Use --mirror to delete extra local files, --dry-run to preview, --exclude to skip patterns",
         "starting": "Starting download...",
         "progress": "Downloading: {{percentage}}% - {{file}} ({{speed}})",
         "completed": "Download completed: {{count}} files transferred",
         "failed": "Download failed"
       },
       "status": {
-        "description": "Check sync status and compare local/remote files"
+        "description": "Dry-run comparison of local and remote files (shows what would be transferred without actually transferring)"
       }
     },
     "subscription": {
@@ -1783,7 +1784,9 @@
       "noIpAddress": "Machine '{{machine}}' does not have an IP address configured",
       "noPrivateKey": "Team '{{team}}' does not have an SSH private key configured",
       "noHostKey": "Machine '{{machine}}' does not have a host key configured in the vault",
-      "localPathNotFound": "Local path does not exist: {{path}}"
+      "localPathNotFound": "Local path does not exist: {{path}}",
+      "absolutePathBlocked": "The --remote path must be relative, not absolute. Use a path relative to the repository root.",
+      "pathTraversalBlocked": "The --remote path must not contain \"..\" path traversal. Use a path within the repository."
     },
     "subscription": {
       "notLoggedIn": "Not logged in. Run `rdc subscription login` first."
@@ -1800,6 +1803,7 @@
       "sshCode127": "Command not found on remote machine",
       "sshCode130": "Connection terminated by user (Ctrl+C)",
       "sshCode255": "SSH connection failed - possible causes:\n    - Authentication failed (check SSH key permissions)\n    - Host key verification failed\n    - Network connection dropped\n    - Remote SSH service not running",
+      "repoContextRequired": "Command requires repository context.\n\nDetected \"{{detected}}\" which needs DOCKER_HOST and repository environment variables.\nThese are only available when a repository is specified.\n\nInstead of:\n  rdc term {{machine}} -c \"{{command}}\"\n\nUse:\n  rdc term {{machine}} <repository> -c \"{{command}}\"",
       "sshExitCode": "SSH exited with code {{code}}"
     },
     "vscode": {
@@ -1814,7 +1818,19 @@
     "unexpectedError": "Unexpected error: {{message}}",
     "validationError": "Validation error: {{message}}",
     "vaultDataRequired": "Vault data required. Use --vault <json> or pipe JSON via stdin.",
-    "vaultVersionRequired": "Vault version required. Use --vault-version <n>."
+    "vaultVersionRequired": "Vault version required. Use --vault-version <n>.",
+    "agent": {
+      "grandGuard": "Cannot modify grand repository \"{{name}}\" in agent mode.\n\nAI agents can only operate on fork repositories.\nFork it first:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nThen operate on the fork instead.\n\nTo override: set REDIACC_ALLOW_GRAND_REPO={{name}}",
+      "mcpGrandGuard": "Cannot modify grand repository \"{{name}}\" in fork-only mode.\n\nUse repo_fork to create a fork first, then operate on the fork.\nTo allow grand repository access, restart MCP server with --allow-grand",
+      "machineGuard": "Cannot access machine \"{{machine}}\" directly in agent mode.\n\nAI agents can only connect to repository contexts.\nUse:\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nTo override: set REDIACC_ALLOW_GRAND_REPO=*",
+      "mcpMachineGuard": "Cannot access machine directly in fork-only mode.\n\nSpecify a repository to connect to a repository context.\nTo allow direct machine access, restart MCP server with --allow-grand",
+      "forkBlocked": "Command \"{{command}}\" is not available on fork repositories.\n\nFork repos are interim environments. This operation only applies to grand repositories."
+    },
+    "config": {
+      "storageNotFound": "Storage \"{{name}}\" not found in config. Available: {{available}}.",
+      "machineNotFound": "Machine \"{{name}}\" not found in config. Available: {{available}}.",
+      "invalidEmail": "Invalid email address: \"{{value}}\"."
+    }
   },
   "options": {
     "activationCode": "Activation code from email",

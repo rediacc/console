@@ -6,6 +6,7 @@ import { registerAllTools } from './tools.js';
 export interface McpServerOptions {
   configName?: string;
   defaultTimeoutMs: number;
+  allowGrand?: boolean;
 }
 
 export async function startMcpServer(options: McpServerOptions): Promise<void> {

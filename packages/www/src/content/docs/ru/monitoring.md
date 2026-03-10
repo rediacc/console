@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: ru
-sourceHash: 5a0f43834cb143a2
+sourceHash: ed667247d300508a
 ---
 
 # Мониторинг
@@ -51,6 +51,8 @@ rdc machine containers server-1
 - `--health-check` — выполнить активные проверки состояния контейнеров
 - `--output json` — машиночитаемый вывод в формате JSON
 
+JSON-вывод включает полные сведения о контейнере (`labels`, `port_mappings`, `image`, `id`), а также `repository` (разрешённое имя), `repository_guid` (исходный GUID), `domain` и `autoRoute`.
+
 ## Список сервисов
 
 Просмотр systemd-сервисов, связанных с Rediacc, на машине:
@@ -71,6 +73,8 @@ rdc machine services server-1
 Параметры:
 - `--stability-check` — пометить нестабильные сервисы (сбой, более 3 перезапусков, автоматический перезапуск)
 - `--output json` — машиночитаемый вывод в формате JSON
+
+JSON-вывод включает полные сведения о сервисе с `repository` (разрешённое имя) и `repository_guid` (исходный GUID).
 
 ## Список репозиториев
 
@@ -93,6 +97,8 @@ rdc machine repos server-1
 Параметры:
 - `--search <text>` — фильтрация по имени или пути монтирования
 - `--output json` — машиночитаемый вывод в формате JSON
+
+JSON-вывод включает `name` (разрешённое) и `guid` (исходный GUID), а также содержит для каждого репозитория вложенные массивы `containers` (с `domain`, `autoRoute`, `repository`/`repository_guid`) и `services`.
 
 ## Статус Vault
 

@@ -1410,7 +1410,7 @@
         },
         "meta": {
           "description": "Rediacc, yapay zeka kodlama asistanları için tasarlanmıştır. CLI öncelikli işlemler, yapılandırılmış JSON çıktısı, SSH tabanlı erişim ve rdc agent komutlarıyla tam ajan keşfi.",
-          "keywords": "AI agents, Claude Code, Cursor, Cline, infrastructure automation, CLI, JSON output, self-hosted, agent-native, MCP",
+          "keywords": "Yapay zeka ajanları, Claude Code, Cursor, Cline, altyapı otomasyonu, CLI, JSON çıktısı, kendi sunucunuzda barındırma, ajan-doğal, MCP",
           "title": "For AI Agents — CLI-Native Infrastructure Automation | Rediacc"
         },
         "problem": {
@@ -12381,6 +12381,7 @@
     }
   },
   "testimonials": {
+    "fromTheFounder": "Kurucudan",
     "items": [
       {
         "role": "Felaket Kurtarma Müdürü",

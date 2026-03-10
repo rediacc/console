@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: fr
-sourceHash: 5a0f43834cb143a2
+sourceHash: ed667247d300508a
 ---
 
 # Supervision
@@ -51,6 +51,8 @@ Options :
 - `--health-check` — Effectuer des vérifications de santé actives sur les conteneurs
 - `--output json` — Sortie JSON lisible par les machines
 
+La sortie JSON inclut les détails complets des conteneurs (`labels`, `port_mappings`, `image`, `id`) ainsi que `repository` (nom résolu), `repository_guid` (GUID d'origine), `domain` et `autoRoute`.
+
 ## Lister les services
 
 Affichez les services systemd liés à Rediacc sur une machine :
@@ -71,6 +73,8 @@ rdc machine services server-1
 Options :
 - `--stability-check` — Signaler les services instables (en échec, >3 redémarrages, redémarrage automatique)
 - `--output json` — Sortie JSON lisible par les machines
+
+La sortie JSON inclut les détails complets des services avec `repository` (nom résolu) et `repository_guid` (GUID d'origine).
 
 ## Lister les dépôts
 
@@ -93,6 +97,8 @@ rdc machine repos server-1
 Options :
 - `--search <text>` — Filtrer par nom ou chemin de montage
 - `--output json` — Sortie JSON lisible par les machines
+
+La sortie JSON inclut `name` (résolu) et `guid` (GUID d'origine), et imbrique pour chaque dépôt les tableaux `containers` (avec `domain`, `autoRoute`, `repository`/`repository_guid`) et `services`.
 
 ## Statut du coffre
 

@@ -2,6 +2,7 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
+import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 
 /**
@@ -24,6 +25,7 @@ export function registerRepoSnapshotCommands(repoCommand: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (repo, options) => {
       try {
+        await assertCommandPolicy(CMD.REPO_SNAPSHOT_CREATE, repo);
         const machineName = options.machine ?? (await configService.getMachine());
         if (!machineName) {
           throw new Error(t('errors.machineRequiredLocal'));
@@ -102,6 +104,7 @@ export function registerRepoSnapshotCommands(repoCommand: Command): void {
     .option('--dry-run', t('options.dryRun'))
     .action(async (repo, snapshotName, options) => {
       try {
+        await assertCommandPolicy(CMD.REPO_SNAPSHOT_DELETE, repo);
         const machineName = options.machine ?? (await configService.getMachine());
         if (!machineName) {
           throw new Error(t('errors.machineRequiredLocal'));

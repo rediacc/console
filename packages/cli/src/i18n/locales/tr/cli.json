@@ -781,6 +781,7 @@
     "mcp": {
       "description": "Yapay zeka agentları için Model Context Protocol sunucusu",
       "serve": {
+        "allowGrandOption": "Grand (fork olmayan) depolar üzerinde yıkıcı işlemlere izin ver. Varsayılan: yalnızca fork modu",
         "configOption": "Tüm komutlar için kullanılacak yapılandırma adı",
         "description": "MCP sunucusunu başlat (stdio aktarımı)",
         "timeoutOption": "Milisaniye cinsinden varsayılan komut zaman aşımı"
@@ -1825,12 +1826,24 @@
   "errors": {
     "activationFailed": "Etkinleştirme başarısız",
     "affectedChildClones": ". Etkilenen alt klonlar: {{clones}}. Önce alt klonları silin veya yükseltin.",
+    "agent": {
+      "forkBlocked": "\"{{command}}\" komutu fork depolarında kullanılamaz.\n\nFork depoları geçici ortamlardır. Bu işlem yalnızca grand depolar için geçerlidir.",
+      "grandGuard": "Agent modunda grand depo \"{{name}}\" değiştirilemez.\n\nYapay zeka agentları yalnızca fork depolarında çalışabilir.\nÖnce fork oluşturun:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nArdından fork üzerinde çalışın.\n\nGeçersiz kılmak için: REDIACC_ALLOW_GRAND_REPO={{name}} ayarlayın",
+      "machineGuard": "Agent modunda makine \"{{machine}}\" üzerine doğrudan erişilemez.\n\nYapay zeka agentları yalnızca depo bağlamlarına bağlanabilir.\nŞunu kullanın:\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nGeçersiz kılmak için: REDIACC_ALLOW_GRAND_REPO=* ayarlayın",
+      "mcpGrandGuard": "Yalnızca fork modunda grand depo \"{{name}}\" değiştirilemez.\n\nÖnce bir fork oluşturmak için repo_fork kullanın, ardından fork üzerinde çalışın.\nGrand depo erişimine izin vermek için MCP sunucusunu --allow-grand ile yeniden başlatın",
+      "mcpMachineGuard": "Yalnızca fork modunda makineye doğrudan erişilemez.\n\nBir depo bağlamına bağlanmak için bir depo belirtin.\nDoğrudan makine erişimine izin vermek için MCP sunucusunu --allow-grand ile yeniden başlatın"
+    },
     "authFailed": "Kimlik doğrulama başarısız",
     "authRequired": "Kimlik doğrulama gerekli. Çalıştırın: rdc auth login",
     "bridgeRequired": "Köprü adı gerekli. --bridge kullanın veya bağlamı ayarlayın.",
     "cannotDeleteGrandRepo": "Ana depo silinemiyor: {{reason}}",
     "cannotPromote": "Yükseltilemez: {{reason}}",
     "clusterNotFound": "Ceph kümesi \"{{name}}\" bulunamadı",
+    "config": {
+      "invalidEmail": "Geçersiz e-posta adresi: \"{{value}}\".",
+      "machineNotFound": "\"{{name}}\" makinesi yapılandırmada bulunamadı. Mevcut: {{available}}.",
+      "storageNotFound": "\"{{name}}\" depolama alanı yapılandırmada bulunamadı. Mevcut: {{available}}."
+    },
     "contextNotFound": "\"{{name}}\" bağlamı bulunamadı",
     "failedCreateQueueItem": "Sıra öğesi oluşturulamadı",
     "invalidAction": "Geçersiz işlem \"{{action}}\". \"{{valid}}\" kullanın.",
@@ -1875,10 +1888,12 @@
       "notLoggedIn": "Giriş yapılmamış. Önce `rdc subscription login` komutunu çalıştırın."
     },
     "sync": {
+      "absolutePathBlocked": "--remote yolu mutlak değil, göreli olmalıdır. Depo kök dizinine göre göreli bir yol kullanın.",
       "localPathNotFound": "Yerel yol bulunamadı: {{path}}",
       "noHostKey": "\"{{machine}}\" makinesinin kasada yapılandırılmış bir ana bilgisayar anahtarı yok",
       "noIpAddress": "\"{{machine}}\" makinesinin yapılandırılmış bir IP adresi yok",
-      "noPrivateKey": "\"{{team}}\" takımının yapılandırılmış bir SSH özel anahtarı yok"
+      "noPrivateKey": "\"{{team}}\" takımının yapılandırılmış bir SSH özel anahtarı yok",
+      "pathTraversalBlocked": "--remote yolu \"..\" yol geçişi içermemelidir. Depo içinde bir yol kullanın."
     },
     "teamRequired": "Takım adı gerekli. --team kullanın veya bağlamı ayarlayın.",
     "term": {
@@ -1887,6 +1902,7 @@
       "noHostKey": "\"{{machine}}\" makinesinin kasada yapılandırılmış bir ana bilgisayar anahtarı yok",
       "noIpAddress": "\"{{machine}}\" makinesinin yapılandırılmış bir IP adresi yok",
       "noPrivateKey": "\"{{team}}\" takımının yapılandırılmış bir SSH özel anahtarı yok",
+      "repoContextRequired": "Komut depo bağlamı gerektiriyor.\n\nDOCKER_HOST ve depo ortam değişkenlerini gerektiren \"{{detected}}\" algılandı.\nBunlar yalnızca bir depo belirtildiğinde kullanılabilir.\n\nŞunun yerine:\n  rdc term {{machine}} -c \"{{command}}\"\n\nŞunu kullanın:\n  rdc term {{machine}} <repository> -c \"{{command}}\"",
       "sshCode1": "Genel hata - komut söz dizimini veya uzak izinleri kontrol edin",
       "sshCode126": "İzin reddedildi - uzaktan komut yürütülemiyor",
       "sshCode127": "Komut uzak makinede bulunamadı",

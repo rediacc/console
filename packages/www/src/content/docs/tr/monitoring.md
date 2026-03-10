@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: tr
-sourceHash: 5a0f43834cb143a2
+sourceHash: ed667247d300508a
 ---
 
 # İzleme
@@ -51,6 +51,8 @@ Seçenekler:
 - `--health-check` — Konteynerlerde aktif sağlık kontrolleri gerçekleştir
 - `--output json` — Makine tarafından okunabilir JSON çıktısı
 
+JSON çıktısı tam konteyner ayrıntılarını (`labels`, `port_mappings`, `image`, `id`) ve ayrıca `repository` (çözümlenmiş ad), `repository_guid` (orijinal GUID), `domain` ve `autoRoute` alanlarını içerir.
+
 ## Servisleri Listeleme
 
 Bir makinedeki Rediacc ile ilgili systemd servislerini görüntüleyin:
@@ -71,6 +73,8 @@ rdc machine services server-1
 Seçenekler:
 - `--stability-check` — Kararsız servisleri işaretle (başarısız, 3'ten fazla yeniden başlatma, otomatik yeniden başlatma)
 - `--output json` — Makine tarafından okunabilir JSON çıktısı
+
+JSON çıktısı, `repository` (çözümlenmiş ad) ve `repository_guid` (orijinal GUID) ile birlikte tam servis ayrıntılarını içerir.
 
 ## Depoları Listeleme
 
@@ -93,6 +97,8 @@ rdc machine repos server-1
 Seçenekler:
 - `--search <text>` — Ad veya bağlama yoluna göre filtrele
 - `--output json` — Makine tarafından okunabilir JSON çıktısı
+
+JSON çıktısı `name` (çözümlenmiş) ve `guid` (orijinal GUID) alanlarını içerir; ayrıca her depo için `containers` (`domain`, `autoRoute`, `repository`/`repository_guid` ile birlikte) ve `services` dizilerini iç içe verir.
 
 ## Vault Durumu
 

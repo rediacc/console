@@ -66,7 +66,7 @@ rdc repo create <app-name> -m <machine> --size 2G
 # 2. Upload your app files (Rediaccfile + docker-compose.yaml + any app code)
 rdc repo sync upload -m <machine> -r <app-name> --local <path-to-app-dir>/
 
-# 3. Deploy (runs Rediaccfile prep + up, pulls images, starts containers)
+# 3. Deploy (runs Rediaccfile up, starts containers)
 rdc repo up <app-name> -m <machine>
 
 # 4. Verify (~5s after deploy for first output)
@@ -140,6 +140,13 @@ rdc config setup-machine <name>
 ```
 
 See [config.md](config.md) for full details.
+
+## Security — Agent guards
+
+- **Fork-only mode** (default): AI agents can only modify fork repositories. Grand (original) repos are protected. To override, set `REDIACC_ALLOW_GRAND_REPO=<repo-name>` or `REDIACC_ALLOW_GRAND_REPO=*` for all repos.
+- **MCP fork-only mode**: The MCP server (`rdc mcp serve`) runs in fork-only mode by default. Use `--allow-grand` flag to enable grand repo access.
+- **Kernel-level sandbox**: All `rdc term` commands with a repository context run inside a Landlock filesystem sandbox on the remote machine. The sandboxed process can only access the repo's own mount path and required system paths. Cross-repo filesystem access is blocked by the kernel.
+- **Machine-level SSH**: Direct machine access (`rdc term <machine>` without a repo) is blocked for agents unless `REDIACC_ALLOW_GRAND_REPO=*` is set.
 
 ## Important conventions
 

@@ -1,20 +1,17 @@
-import { isIP } from 'node:net';
+import { isValidEmail } from '@rediacc/shared/validation';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
 import type { InfraConfig, OutputFormat } from '../types/index.js';
-import { handleError } from '../utils/errors.js';
-
-function validateIpAddresses(infra: Partial<InfraConfig>): string | undefined {
-  if (infra.publicIPv4 && isIP(infra.publicIPv4) !== 4) {
-    return t('commands.config.setInfra.invalidIPv4', { ip: infra.publicIPv4 });
-  }
-  if (infra.publicIPv6 && isIP(infra.publicIPv6) !== 6) {
-    return t('commands.config.setInfra.invalidIPv6', { ip: infra.publicIPv6 });
-  }
-  return undefined;
-}
+import {
+  InfraConfigSchema,
+  normalizeDomain,
+  normalizeEmail,
+  normalizeIp,
+  parseConfig,
+} from '../utils/config-schema.js';
+import { handleError, ValidationError } from '../utils/errors.js';
 
 interface ParsedInfraOptions {
   infra: Partial<InfraConfig>;
@@ -25,16 +22,22 @@ function parseInfraOptions(options: Record<string, string>): ParsedInfraOptions 
   const infra: Partial<InfraConfig> = {};
   const configLevel: { certEmail?: string; cfDnsApiToken?: string } = {};
 
-  if (options.publicIpv4) infra.publicIPv4 = options.publicIpv4;
-  if (options.publicIpv6) infra.publicIPv6 = options.publicIpv6;
-  if (options.baseDomain) infra.baseDomain = options.baseDomain;
-  if (options.certEmail) configLevel.certEmail = options.certEmail;
-  if (options.cfDnsToken) configLevel.cfDnsApiToken = options.cfDnsToken;
+  if (options.publicIpv4) infra.publicIPv4 = normalizeIp(options.publicIpv4);
+  if (options.publicIpv6) infra.publicIPv6 = normalizeIp(options.publicIpv6);
+  if (options.baseDomain) infra.baseDomain = normalizeDomain(options.baseDomain);
+  if (options.certEmail) configLevel.certEmail = normalizeEmail(options.certEmail);
+  if (options.cfDnsToken) configLevel.cfDnsApiToken = options.cfDnsToken.trim();
   if (options.tcpPorts) {
-    infra.tcpPorts = options.tcpPorts.split(',').map((p: string) => Number.parseInt(p.trim(), 10));
+    infra.tcpPorts = options.tcpPorts
+      .split(',')
+      .map((p: string) => Number.parseInt(p.trim(), 10))
+      .sort((a, b) => a - b);
   }
   if (options.udpPorts) {
-    infra.udpPorts = options.udpPorts.split(',').map((p: string) => Number.parseInt(p.trim(), 10));
+    infra.udpPorts = options.udpPorts
+      .split(',')
+      .map((p: string) => Number.parseInt(p.trim(), 10))
+      .sort((a, b) => a - b);
   }
 
   return { infra, configLevel };
@@ -61,10 +64,16 @@ export function registerInfraCommands(config: Command, program: Command): void {
           return;
         }
 
-        const ipError = validateIpAddresses(infra);
-        if (ipError) {
-          outputService.error(ipError);
-          return;
+        // Validate infra fields via Zod schema
+        if (Object.keys(infra).length > 0) {
+          parseConfig(InfraConfigSchema, infra, 'infra config');
+        }
+
+        // Validate config-level fields
+        if (configLevel.certEmail && !isValidEmail(configLevel.certEmail)) {
+          throw new ValidationError(
+            t('errors.config.invalidEmail', { value: configLevel.certEmail })
+          );
         }
 
         // Set machine-level infra (IPs, domain, ports)

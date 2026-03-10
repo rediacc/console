@@ -2,12 +2,8 @@ services:
   cratedb:
     image: crate:latest
     container_name: ${CONTAINER_NAME}
-    network_mode: "${NETWORK_MODE:-bridge}"
-    command: >
-      crate
-      -Cnetwork.host=0.0.0.0
-      -Cdiscovery.type=single-node
-      -Ccluster.name=${CLUSTER_NAME}
+    network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
+    command: ["sh", "-c", "exec crate -Cnetwork.host=$${SERVICE_IP:-0.0.0.0} -Cdiscovery.type=single-node -Ccluster.name=${CLUSTER_NAME}"]
     environment:
       CRATE_HEAP_SIZE: ${CRATE_HEAP_SIZE}
     ports:

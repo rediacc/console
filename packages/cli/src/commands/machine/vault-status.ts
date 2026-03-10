@@ -14,6 +14,7 @@ import { configService } from '../../services/config-resources.js';
 import { outputService } from '../../services/output.js';
 import type { OutputFormat } from '../../types/index.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
+import { createGuidResolver, resolveGuids, loadGuidMap } from '../../utils/guid-resolver.js';
 import { withSpinner } from '../../utils/spinner.js';
 
 function displaySystemInfo(systemInfo: SystemInfo): void {
@@ -103,20 +104,24 @@ export function registerVaultStatusCommand(machine: Command, program: Command): 
           throw new ValidationError(t('errors.teamRequired'));
         }
 
-        const machine = await withSpinner(
-          t('commands.machine.vaultStatus.fetching'),
-          () =>
-            provider.machines.getWithVaultStatus({
-              teamName: opts.team as string,
-              machineName: name,
-            }),
-          t('commands.machine.vaultStatus.fetched')
-        );
+        const [machine, guidMap] = await Promise.all([
+          withSpinner(
+            t('commands.machine.vaultStatus.fetching'),
+            () =>
+              provider.machines.getWithVaultStatus({
+                teamName: opts.team as string,
+                machineName: name,
+              }),
+            t('commands.machine.vaultStatus.fetched')
+          ),
+          loadGuidMap(),
+        ]);
 
         if (!machine) {
           throw new ValidationError(t('errors.machineNotFound', { name }));
         }
 
+        const resolve = createGuidResolver(guidMap);
         const format = program.opts().output as OutputFormat;
         const parsed = parseVaultStatus(machine.vaultStatus);
         const summary = getDeploymentSummary(machine);
@@ -124,7 +129,17 @@ export function registerVaultStatusCommand(machine: Command, program: Command): 
         const listResult = parseListResult(machine.vaultStatus);
 
         if (format === 'json') {
-          outputService.print({ parsed, summary, systemInfo, listResult }, format);
+          outputService.print(
+            {
+              parsed: { ...parsed, repositories: resolveGuids(parsed.repositories, resolve) },
+              summary,
+              systemInfo,
+              listResult: listResult
+                ? { ...listResult, repositories: resolveGuids(listResult.repositories, resolve) }
+                : null,
+            },
+            format
+          );
           return;
         }
 

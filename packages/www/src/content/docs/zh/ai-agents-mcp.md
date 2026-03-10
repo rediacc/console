@@ -4,7 +4,7 @@ description: 使用模型上下文协议 (MCP) 服务器将 AI 代理连接到 R
 category: Guides
 order: 33
 language: zh
-sourceHash: "1b6cd5ba5d8d0ffe"
+sourceHash: "f95b630692519da6"
 ---
 
 ## 概述
@@ -55,21 +55,33 @@ sourceHash: "1b6cd5ba5d8d0ffe"
 
 | 工具 | 描述 |
 |------|------|
-| `machine_info` | 获取系统信息、容器、服务和资源使用情况 |
-| `machine_containers` | 列出机器上运行的 Docker 容器 |
-| `machine_services` | 列出机器上的 systemd 服务 |
-| `machine_repos` | 列出机器上已部署的仓库 |
-| `machine_health` | 运行健康检查（系统、容器、服务、存储） |
-| `config_repositories` | 列出已配置的仓库及名称到 GUID 的映射 |
-| `agent_capabilities` | 列出所有可用的 rdc CLI 命令 |
+| `machine_info` | Get system info, containers, services, and resource usage for a machine |
+| `machine_containers` | List Docker containers with status, health, resource usage, labels, and auto-route domain |
+| `machine_services` | List rediacc-managed systemd services (name, state, sub-state, restart count, memory, owning repository) |
+| `machine_repos` | List deployed repositories (name, GUID, size, mount status, Docker state, container count, disk usage, modified date, Rediaccfile present) |
+| `machine_health` | Run health check on a machine (system, containers, services, storage) |
+| `machine_list` | List all configured machines |
+| `config_repositories` | List configured repositories with name-to-GUID mappings |
+| `config_show_infra` | Show infrastructure configuration for a machine (base domain, public IPs, TLS, Cloudflare zone) |
+| `config_providers` | List configured cloud providers for machine provisioning |
+| `agent_capabilities` | List all available rdc CLI commands with their arguments and options |
 
 ### 写入工具（具有破坏性）
 
 | 工具 | 描述 |
 |------|------|
-| `repo_up` | 在机器上部署/更新仓库 |
-| `repo_down` | 在机器上停止仓库 |
-| `term_exec` | 通过 SSH 在远程机器上执行命令 |
+| `repo_create` | Create a new encrypted repository on a machine |
+| `repo_up` | Deploy/update a repository (runs Rediaccfile up, starts containers). Use `mount` for first deploy or after pull |
+| `repo_down` | Stop repository containers. Does NOT unmount by default. Use `unmount` to also close the LUKS container |
+| `repo_delete` | Delete a repository (destroys containers, volumes, encrypted image). Credential archived for recovery |
+| `repo_fork` | Create a CoW fork with new GUID and networkId (fully independent copy, online forking supported) |
+| `backup_push` | Push repository backup to storage or another machine (same GUID -- backup/migration, not fork) |
+| `backup_pull` | Pull repository backup from storage or machine. After pull, deploy with `repo_up` (mount=true) |
+| `machine_provision` | Provision a new machine on a cloud provider using OpenTofu |
+| `machine_deprovision` | Destroy a cloud-provisioned machine and remove from config |
+| `config_add_provider` | Add a cloud provider configuration for machine provisioning |
+| `config_remove_provider` | Remove a cloud provider configuration |
+| `term_exec` | Execute a command on a remote machine via SSH |
 
 ## 示例工作流
 
@@ -94,6 +106,39 @@ sourceHash: "1b6cd5ba5d8d0ffe"
 |------|--------|------|
 | `--config <name>` | （默认配置） | 用于所有命令的命名配置 |
 | `--timeout <ms>` | `120000` | 默认命令超时时间（毫秒） |
+| `--allow-grand` | off | Allow destructive operations on grand (non-fork) repositories |
+
+## 安全
+
+The MCP server enforces two layers of protection:
+
+### Fork-only mode (default)
+
+By default, the server runs in **fork-only mode** — write tools (`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`) can only operate on fork repositories. Grand (original) repositories are protected from agent modifications.
+
+To allow an agent to modify grand repos, start with `--allow-grand`:
+
+```json
+{
+  "mcpServers": {
+    "rdc": {
+      "command": "rdc",
+      "args": ["mcp", "serve", "--allow-grand"]
+    }
+  }
+}
+```
+
+你也可以将环境变量 `REDIACC_ALLOW_GRAND_REPO` 设置为某个特定仓库名称，或设置为适用于所有仓库的 `*`。
+
+### Kernel-level filesystem sandbox (Landlock)
+
+When `term_exec` runs a command on a repository, the command is wrapped with `renet sandbox-exec` on the remote machine. This applies Linux Landlock LSM restrictions at the kernel level:
+
+- **Allowed**: the repository's own mount path, `/tmp`, system binaries (`/usr`, `/bin`, `/etc`), the repo's Docker socket
+- **Blocked**: other repositories' mount paths, home directory writes, arbitrary filesystem access
+
+This prevents lateral movement — even if an agent gains shell access to a fork, it cannot read or modify other repositories on the same machine. Machine-level SSH (without a repository) is not sandboxed.
 
 ## 架构
 

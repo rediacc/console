@@ -4,7 +4,7 @@ description: "تخطيط المجلدات، وأوامر renet، وخدمات sy
 category: "Concepts"
 order: 3
 language: ar
-sourceHash: "6134ec4c7a74cc87"
+sourceHash: "e7380a1d70386a2b"
 ---
 
 # مرجع الخادم
@@ -81,10 +81,10 @@ renet repository delete --name {uuid} --network-id {id}
 تنفيذ أوامر compose على عملية Docker daemon الخاصة بمستودع معين:
 
 ```bash
-sudo renet compose --network-id {id} -- up -d
-sudo renet compose --network-id {id} -- down
-sudo renet compose --network-id {id} -- logs -f
-sudo renet compose --network-id {id} -- config
+sudo renet compose -- up -d
+sudo renet compose -- down
+sudo renet compose -- logs -f
+sudo renet compose -- config
 ```
 
 تنفيذ أوامر Docker مباشرة:
@@ -102,6 +102,18 @@ DOCKER_HOST=unix:///run/rediacc/docker-{id}.sock docker ps
 ```
 
 > قم دائمًا بتشغيل compose من المجلد الذي يحتوي على `docker-compose.yml`، وإلا لن يتمكن Docker من العثور على الملف.
+
+### عزل نظام الملفات
+
+```bash
+# التحقق من دعم Landlock
+renet sandbox-exec --detect
+
+# تشغيل أمر داخل عزل Landlock (يُستخدم داخليًا بواسطة renet)
+renet sandbox-exec --allow-rw /path --allow-ro /usr --allow-exec /bin -- command
+```
+
+يطبق `sandbox-exec` قيود نظام الملفات الخاصة بـ Landlock LSM على أمر ما. لا يمكن للعملية المعزولة الوصول إلا إلى المسارات المسموح بها صراحةً، بينما يمنع النواة أي وصول آخر إلى نظام الملفات. يُستخدم هذا داخليًا في renet لعزل تنفيذ Rediaccfile وعمليات compose وأوامر SSH ضمن مسار تثبيت المستودع الخاص بها.
 
 ### الوكيل والتوجيه
 
@@ -229,7 +241,7 @@ done
 ### إعادة إنشاء خدمة بعد تغيير التكوين
 
 ```bash
-sudo renet compose --network-id {id} -- up -d
+sudo renet compose -- up -d
 ```
 
 قم بتشغيل هذا من المجلد الذي يحتوي على `docker-compose.yml`. يتم إعادة إنشاء الحاويات المُعدّلة تلقائيًا.

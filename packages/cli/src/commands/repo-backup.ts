@@ -5,6 +5,7 @@ import { getStateProvider } from '../providers/index.js';
 import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
+import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import {
   type CreateActionOptions,
@@ -191,6 +192,7 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (repo, options) => {
       try {
+        await assertCommandPolicy(CMD.BACKUP_PUSH, repo);
         const repoConfig = await configService.getRepository(repo);
         if (!repoConfig) {
           throw new ValidationError(t('errors.repositoryNotFound', { name: repo }));
@@ -228,6 +230,7 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (repo, options) => {
       try {
+        await assertCommandPolicy(CMD.BACKUP_PULL, repo);
         const params: Record<string, unknown> = { repository: repo };
 
         if (options.from) {

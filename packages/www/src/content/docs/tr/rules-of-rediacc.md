@@ -4,7 +4,7 @@ description: "Rediacc platformunda uygulama geliştirmek için temel kurallar ve
 category: "Guides"
 order: 5
 language: tr
-sourceHash: "1848011813342420"
+sourceHash: "c276f24c681da0ef"
 ---
 
 # Rediacc Kuralları
@@ -34,7 +34,7 @@ Her Rediacc deposu, kendi Docker daemon'ı, şifrelenmiş LUKS birimi ve ayrılm
 #!/bin/bash
 
 _compose() {
-  renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
+  renet compose -- "$@"
 }
 
 up() {
@@ -126,6 +126,7 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 - **Kimlik bilgileri CLI yapılandırmasında saklanır** (`~/.config/rediacc/rediacc.json`). Yapılandırmayı kaybetmek, şifreli birimlere erişimi kaybetmek anlamına gelir.
 - **Kimlik bilgilerini asla** sürüm kontrolüne commit etmeyin. `env_file` kullanın ve sırları `up()` içinde oluşturun.
 - **Depo izolasyonu**: Her deponun Docker daemon'ı, ağı ve depolaması aynı makinedeki diğer depolardan tamamen izole edilmiştir.
+- **Ajan izolasyonu**: Yapay zeka ajanları varsayılan olarak yalnızca fork modunda çalışır; grand (orijinal) depoları değil, sadece fork depoları değiştirebilirler. `term_exec` veya depo bağlamıyla `rdc term` üzerinden çalıştırılan komutlar Landlock LSM ile çekirdek düzeyinde sandbox içine alınır ve depolar arası dosya sistemi erişimi engellenir.
 
 ## Dağıtım
 

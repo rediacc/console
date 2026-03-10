@@ -781,6 +781,7 @@
     "mcp": {
       "description": "Serveur Model Context Protocol pour les agents IA",
       "serve": {
+        "allowGrandOption": "Autoriser les opérations destructives sur les dépôts grand (non fork). Par défaut : mode fork uniquement",
         "configOption": "Nom de la configuration à utiliser pour toutes les commandes",
         "description": "Démarrer le serveur MCP (transport stdio)",
         "timeoutOption": "Délai d'expiration par défaut des commandes en millisecondes"
@@ -1825,12 +1826,24 @@
   "errors": {
     "activationFailed": "L'activation a échoué",
     "affectedChildClones": ". Clones enfants affectés : {{clones}}. Supprimez ou promouvez d'abord les clones enfants.",
+    "agent": {
+      "forkBlocked": "La commande \"{{command}}\" n'est pas disponible sur les dépôts fork.\n\nLes dépôts fork sont des environnements provisoires. Cette opération ne s'applique qu'aux dépôts grand.",
+      "grandGuard": "Impossible de modifier le dépôt grand \"{{name}}\" en mode agent.\n\nLes agents IA ne peuvent opérer que sur les dépôts fork.\nCréez d'abord un fork :\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nEnsuite opérez sur le fork.\n\nPour outrepasser : définissez REDIACC_ALLOW_GRAND_REPO={{name}}",
+      "machineGuard": "Impossible d'accéder directement à la machine \"{{machine}}\" en mode agent.\n\nLes agents IA ne peuvent se connecter qu'aux contextes de dépôt.\nUtilisez :\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nPour outrepasser : définissez REDIACC_ALLOW_GRAND_REPO=*",
+      "mcpGrandGuard": "Impossible de modifier le dépôt grand \"{{name}}\" en mode fork uniquement.\n\nUtilisez repo_fork pour créer d'abord un fork, puis opérez sur le fork.\nPour autoriser l'accès aux dépôts grand, redémarrez le serveur MCP avec --allow-grand",
+      "mcpMachineGuard": "Impossible d'accéder directement à la machine en mode fork uniquement.\n\nSpécifiez un dépôt pour vous connecter à un contexte de dépôt.\nPour autoriser l'accès direct à la machine, redémarrez le serveur MCP avec --allow-grand"
+    },
     "authFailed": "L'authentification a échoué",
     "authRequired": "L'authentification est requise. Exécutez : rdc auth login",
     "bridgeRequired": "Le nom du pont est requis. Utilisez --bridge ou définissez un contexte.",
     "cannotDeleteGrandRepo": "Impossible de supprimer le grand dépôt : {{reason}}",
     "cannotPromote": "Impossible de promouvoir : {{reason}}",
     "clusterNotFound": "Cluster Ceph \"{{name}}\" non trouvé",
+    "config": {
+      "invalidEmail": "Adresse e-mail invalide : \"{{value}}\".",
+      "machineNotFound": "Machine \"{{name}}\" introuvable dans la configuration. Disponibles : {{available}}.",
+      "storageNotFound": "Stockage \"{{name}}\" introuvable dans la configuration. Disponibles : {{available}}."
+    },
     "contextNotFound": "Contexte \"{{name}}\" non trouvé",
     "failedCreateQueueItem": "Impossible de créer un élément de file d'attente",
     "invalidAction": "Action invalide \"{{action}}\". Utilisez \"{{valid}}\".",
@@ -1875,10 +1888,12 @@
       "notLoggedIn": "Non connecté. Exécutez d’abord `rdc subscription login`."
     },
     "sync": {
+      "absolutePathBlocked": "Le chemin --remote doit être relatif, pas absolu. Utilisez un chemin relatif à la racine du dépôt.",
       "localPathNotFound": "Le chemin local n'existe pas : {{path}}",
       "noHostKey": "La machine '{{machine}}' n'a pas de clé d'hôte configurée dans le coffre",
       "noIpAddress": "La machine '{{machine}}' n'a pas d'adresse IP configurée",
-      "noPrivateKey": "L'équipe '{{team}}' n'a pas de clé privée SSH configurée"
+      "noPrivateKey": "L'équipe '{{team}}' n'a pas de clé privée SSH configurée",
+      "pathTraversalBlocked": "Le chemin --remote ne doit pas contenir de traversée de chemin \"..\". Utilisez un chemin à l'intérieur du dépôt."
     },
     "teamRequired": "Le nom de l'équipe est requis. Utilisez --team ou définissez un contexte.",
     "term": {
@@ -1887,6 +1902,7 @@
       "noHostKey": "La machine '{{machine}}' n'a pas de clé d'hôte configurée dans le coffre",
       "noIpAddress": "La machine '{{machine}}' n'a pas d'adresse IP configurée",
       "noPrivateKey": "L'équipe '{{team}}' n'a pas de clé privée SSH configurée",
+      "repoContextRequired": "La commande nécessite un contexte de dépôt.\n\n\"{{detected}}\" a été détecté, ce qui nécessite DOCKER_HOST et les variables d'environnement du dépôt.\nCelles-ci ne sont disponibles que lorsqu'un dépôt est spécifié.\n\nAu lieu de :\n  rdc term {{machine}} -c \"{{command}}\"\n\nUtilisez :\n  rdc term {{machine}} <repository> -c \"{{command}}\"",
       "sshCode1": "Erreur générique - vérifiez la syntaxe de la commande ou les permissions distantes",
       "sshCode126": "Permission refusée - impossible d'exécuter la commande sur le serveur distant",
       "sshCode127": "Commande non trouvée sur la machine distante",

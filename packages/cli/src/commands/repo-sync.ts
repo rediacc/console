@@ -24,6 +24,7 @@ import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
+import { assertCommandPolicy, CMD, validateRemotePath } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 
@@ -279,6 +280,9 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
     throw new Error(t('errors.repositoryRequired'));
   }
 
+  await assertCommandPolicy(CMD.REPO_SYNC_UPLOAD, opts.repository);
+  if (options.remote) validateRemotePath(options.remote);
+
   let localPath = resolve(options.local ?? process.cwd());
   if (!existsSync(localPath)) {
     throw new Error(t('errors.sync.localPathNotFound', { path: localPath }));
@@ -339,6 +343,9 @@ async function syncDownload(options: SyncDownloadOptions): Promise<void> {
   if (!opts.repository) {
     throw new Error(t('errors.repositoryRequired'));
   }
+
+  await assertCommandPolicy(CMD.REPO_SYNC_DOWNLOAD, opts.repository);
+  if (options.remote) validateRemotePath(options.remote);
 
   const localPath = resolve(options.local ?? process.cwd());
 

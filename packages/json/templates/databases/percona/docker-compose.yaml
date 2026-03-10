@@ -2,7 +2,7 @@ services:
   db:
     image: percona:8.0
     restart: always
-    network_mode: "${NETWORK_MODE:-bridge}"
+    network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
     env_file:
       - .env
     environment:
@@ -12,10 +12,11 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
       - "3306"
+    command: ["sh", "-c", "exec docker-entrypoint.sh mysqld --bind-address=$${SERVICE_IP:-0.0.0.0}"]
     volumes:
       - ./data/mysql:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "$${SERVICE_IP:-localhost}", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5

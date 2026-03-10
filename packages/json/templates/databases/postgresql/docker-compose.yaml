@@ -1,7 +1,7 @@
 services:
   db:
     container_name: postgres_sysbench_template
-    network_mode: "${NETWORK_MODE:-bridge}"
+    network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
     env_file:
       - .env
     environment:
@@ -14,8 +14,9 @@ services:
     tmpfs:
       - /var/lib/postgresql
     image: postgres
+    command: ["sh", "-c", "exec docker-entrypoint.sh postgres -c listen_addresses=$${SERVICE_IP:-0.0.0.0}"]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -h $${SERVICE_IP:-localhost}"]
       interval: 10s
       timeout: 5s
       retries: 5

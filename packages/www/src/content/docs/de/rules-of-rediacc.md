@@ -4,7 +4,7 @@ description: "Wesentliche Regeln und Konventionen für die Entwicklung von Anwen
 category: "Guides"
 order: 5
 language: de
-sourceHash: "1848011813342420"
+sourceHash: "c276f24c681da0ef"
 ---
 
 # Regeln von Rediacc
@@ -34,7 +34,7 @@ Jedes Rediacc-Repository läuft in einer isolierten Umgebung mit eigenem Docker-
 #!/bin/bash
 
 _compose() {
-  renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
+  renet compose -- "$@"
 }
 
 up() {
@@ -126,6 +126,7 @@ Renet injiziert diese automatisch in jeden Container:
 - **Anmeldeinformationen werden in der CLI-Konfiguration gespeichert** (`~/.config/rediacc/rediacc.json`). Der Verlust der Konfiguration bedeutet den Verlust des Zugangs zu verschlüsselten Volumes.
 - **Committen Sie niemals Anmeldeinformationen** in die Versionskontrolle. Verwenden Sie `env_file` und generieren Sie Secrets in `up()`.
 - **Repository-Isolation**: Docker-Daemon, Netzwerk und Speicher jedes Repos sind vollständig von anderen Repos auf derselben Maschine isoliert.
+- **Agenten-Isolation**: KI-Agenten arbeiten standardmäßig im fork-only-Modus. Sie können nur Fork-Repositories ändern, nicht grand (ursprüngliche) Repositories. Befehle, die über `term_exec` oder `rdc term` mit Repository-Kontext ausgeführt werden, werden mit Landlock LSM auf Kernel-Ebene sandboxed und verhindern dateisystemweiten Zugriff zwischen Repositories.
 
 ## Deployment
 

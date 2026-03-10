@@ -3,12 +3,13 @@ services:
     image: elasticsearch:8.11.0
     container_name: ${CONTAINER_NAME}
     restart: always
-    network_mode: "${NETWORK_MODE:-bridge}"
+    network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=${ES_SECURITY_ENABLED}
       - "ES_JAVA_OPTS=-Xms${ES_HEAP_SIZE} -Xmx${ES_HEAP_SIZE}"
       - cluster.name=${ES_CLUSTER_NAME}
+      - network.host=${SERVICE_IP:-0.0.0.0}
       - bootstrap.memory_lock=true
     ulimits:
       memlock:
@@ -30,11 +31,11 @@ services:
     image: kibana:8.11.0
     container_name: ${CONTAINER_NAME}-kibana
     restart: always
-    network_mode: "${NETWORK_MODE:-bridge}"
+    network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - SERVER_NAME=${KIBANA_SERVER_NAME}
-      - SERVER_HOST=0.0.0.0
+      - SERVER_HOST=${SERVICE_IP:-0.0.0.0}
     ports:
       - "5601"
     depends_on:

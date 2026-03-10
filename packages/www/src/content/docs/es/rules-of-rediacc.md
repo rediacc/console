@@ -4,7 +4,7 @@ description: "Información esencial sobre reglas y convenciones para crear aplic
 category: "Guides"
 order: 5
 language: es
-sourceHash: "1848011813342420"
+sourceHash: "c276f24c681da0ef"
 ---
 
 # Reglas de Rediacc
@@ -34,7 +34,7 @@ Cada repositorio de Rediacc se ejecuta dentro de un entorno aislado con su propi
 #!/bin/bash
 
 _compose() {
-  renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
+  renet compose -- "$@"
 }
 
 up() {
@@ -126,6 +126,7 @@ Renet auto-inyecta estas en cada contenedor:
 - **Las credenciales se almacenan en la configuración del CLI** (`~/.config/rediacc/rediacc.json`). Perder la configuración significa perder acceso a los volúmenes cifrados.
 - **Nunca hagas commit de credenciales** en el control de versiones. Usa `env_file` y genera secretos en `up()`.
 - **Aislamiento de repositorio**: El daemon Docker, la red y el almacenamiento de cada repo están completamente aislados de otros repos en la misma máquina.
+- **Aislamiento de agentes**: Los agentes de IA operan en modo solo-fork por defecto; solo pueden modificar repositorios fork, no repositorios grand (originales). Los comandos ejecutados mediante `term_exec` o `rdc term` con contexto de repositorio se aíslan a nivel del kernel mediante Landlock LSM, lo que evita el acceso al sistema de archivos entre repositorios.
 
 ## Despliegue
 

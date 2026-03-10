@@ -1412,7 +1412,7 @@
         },
         "meta": {
           "description": "Rediaccは、AIコーディングアシスタント向けに構築されています。CLI優先のオペレーション、構造化されたJSON出力、SSHベースのアクセス、rdc agentコマンドによる完全なエージェントディスカバリーを提供します。",
-          "keywords": "AI agents, Claude Code, Cursor, Cline, infrastructure automation, CLI, JSON output, self-hosted, agent-native, MCP",
+          "keywords": "AIエージェント, Claude Code, Cursor, Cline, インフラ自動化, CLI, JSON出力, セルフホスト, エージェントネイティブ, MCP",
           "title": "For AI Agents — CLI-Native Infrastructure Automation | Rediacc"
         },
         "problem": {
@@ -12383,6 +12383,7 @@
     }
   },
   "testimonials": {
+    "fromTheFounder": "創設者より",
     "items": [
       {
         "role": "災害復旧マネージャー",

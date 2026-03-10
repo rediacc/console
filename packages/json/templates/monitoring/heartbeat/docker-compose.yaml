@@ -1,7 +1,7 @@
 services:
   db:
     container_name: heartbeat_db
-    network_mode: "${NETWORK_MODE:-bridge}"
+    network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
     image: postgres:16-alpine
     env_file:
       - .env

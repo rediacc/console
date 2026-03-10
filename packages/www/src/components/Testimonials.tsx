@@ -25,16 +25,16 @@ const Testimonials: React.FC<TestimonialsProps> = ({ lang = 'en', featuredMember
   return (
     <section className="testimonials" id="testimonials">
       <div className="container">
-        <div className="section-header reveal">
+        <div className="section-header">
           <h2 className="section-title">{t('testimonials.title')}</h2>
           <p className="section-subtitle">{t('testimonials.subtitle')}</p>
         </div>
-        <div className="testimonials-grid reveal-stagger">
+        <div className="testimonials-grid">
           {member && founderQuote && (
-            <div className="testimonial-card reveal testimonial-card--featured testimonial-card--team">
+            <div className="testimonial-card testimonial-card--featured testimonial-card--team">
               <div className="testimonial-team-header">
                 <img
-                  src={member.photos.headshot}
+                  src={member.photos['headshot-sm'] ?? member.photos.headshot}
                   alt={member.name}
                   className="testimonial-team-photo"
                   loading="lazy"
@@ -42,14 +42,14 @@ const Testimonials: React.FC<TestimonialsProps> = ({ lang = 'en', featuredMember
                 />
                 <div className="testimonial-meta">
                   <span className="testimonial-name">{member.name}</span>
-                  <span className="testimonial-role">{member.role}</span>
+                  <span className="testimonial-role">{t('testimonials.fromTheFounder')}</span>
                 </div>
               </div>
               <blockquote className="testimonial-quote">&ldquo;{founderQuote}&rdquo;</blockquote>
             </div>
           )}
           {items.map((item, index) => (
-            <div key={`testimonial-${index}`} className="testimonial-card reveal">
+            <div key={`testimonial-${index}`} className="testimonial-card">
               <blockquote className="testimonial-quote">&ldquo;{item.quote}&rdquo;</blockquote>
               <div className="testimonial-author">
                 <div className="testimonial-meta">

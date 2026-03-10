@@ -781,6 +781,7 @@
     "mcp": {
       "description": "خادم MCP للوكلاء الذكية",
       "serve": {
+        "allowGrandOption": "السماح بالعمليات المدمرة على المستودعات الرئيسية (غير fork). الافتراضي: وضع fork فقط",
         "configOption": "اسم الإعدادات المستخدمة لجميع الأوامر",
         "description": "تشغيل خادم MCP (نقل stdio)",
         "timeoutOption": "مهلة الأمر الافتراضية بالميلي ثانية"
@@ -1825,12 +1826,24 @@
   "errors": {
     "activationFailed": "فشل التفعيل",
     "affectedChildClones": ". النسخ المتأثرة: {{clones}}. احذف أو ارقِ النسخ الفرعية أولاً.",
+    "agent": {
+      "forkBlocked": "الأمر \"{{command}}\" غير متاح على مستودعات fork.\n\nمستودعات fork هي بيئات مؤقتة. هذه العملية تنطبق فقط على المستودعات الرئيسية.",
+      "grandGuard": "لا يمكن تعديل المستودع الرئيسي \"{{name}}\" في وضع الوكيل.\n\nوكلاء الذكاء الاصطناعي يمكنهم العمل فقط على مستودعات fork.\nأنشئ fork أولاً:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nثم قم بالعمل على fork بدلاً من ذلك.\n\nللتجاوز: عيّن REDIACC_ALLOW_GRAND_REPO={{name}}",
+      "machineGuard": "لا يمكن الوصول إلى الآلة \"{{machine}}\" مباشرة في وضع الوكيل.\n\nوكلاء الذكاء الاصطناعي يمكنهم الاتصال فقط بسياقات المستودعات.\nاستخدم:\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nللتجاوز: عيّن REDIACC_ALLOW_GRAND_REPO=*",
+      "mcpGrandGuard": "لا يمكن تعديل المستودع الرئيسي \"{{name}}\" في وضع fork فقط.\n\nاستخدم repo_fork لإنشاء fork أولاً، ثم قم بالعمل على fork.\nللسماح بالوصول إلى المستودع الرئيسي، أعد تشغيل خادم MCP مع --allow-grand",
+      "mcpMachineGuard": "لا يمكن الوصول إلى الآلة مباشرة في وضع fork فقط.\n\nحدد مستودعاً للاتصال بسياق المستودع.\nللسماح بالوصول المباشر إلى الآلة، أعد تشغيل خادم MCP مع --allow-grand"
+    },
     "authFailed": "فشلت المصادقة",
     "authRequired": "المصادقة مطلوبة. قم بتشغيل: rdc auth login",
     "bridgeRequired": "اسم الجسر مطلوب. استخدم --bridge أو اضبط السياق.",
     "cannotDeleteGrandRepo": "لا يمكن حذف المستودع الرئيسي: {{reason}}",
     "cannotPromote": "لا يمكن الترقية: {{reason}}",
     "clusterNotFound": "مجموعة Ceph \"{{name}}\" غير موجودة",
+    "config": {
+      "invalidEmail": "عنوان بريد إلكتروني غير صالح: \"{{value}}\".",
+      "machineNotFound": "الآلة \"{{name}}\" غير موجودة في التكوين. المتاحة: {{available}}.",
+      "storageNotFound": "التخزين \"{{name}}\" غير موجود في التكوين. المتاحة: {{available}}."
+    },
     "contextNotFound": "لم يتم العثور على السياق \"{{name}}\"",
     "failedCreateQueueItem": "فشل إنشاء عنصر الطابور",
     "invalidAction": "إجراء غير صحيح \"{{action}}\". استخدم \"{{valid}}\".",
@@ -1875,10 +1888,12 @@
       "notLoggedIn": "لم يتم تسجيل الدخول. شغّل `rdc subscription login` أولاً."
     },
     "sync": {
+      "absolutePathBlocked": "يجب أن يكون مسار --remote نسبياً وليس مطلقاً. استخدم مساراً نسبياً بالنسبة لجذر المستودع.",
       "localPathNotFound": "المسار المحلي غير موجود: {{path}}",
       "noHostKey": "الآلة '{{machine}}' لا تحتوي على مفتاح مضيف مكون في الخزينة",
       "noIpAddress": "الآلة '{{machine}}' لا تحتوي على عنوان IP مكون",
-      "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون"
+      "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون",
+      "pathTraversalBlocked": "يجب ألا يحتوي مسار --remote على اجتياز المسار \"..\". استخدم مساراً داخل المستودع."
     },
     "teamRequired": "اسم الفريق مطلوب. استخدم --team أو اضبط السياق.",
     "term": {
@@ -1887,6 +1902,7 @@
       "noHostKey": "الآلة '{{machine}}' لا تحتوي على مفتاح مضيف مكون في الخزينة",
       "noIpAddress": "الآلة '{{machine}}' لا تحتوي على عنوان IP مكون",
       "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون",
+      "repoContextRequired": "الأمر يتطلب سياق مستودع.\n\nتم اكتشاف \"{{detected}}\" الذي يحتاج إلى DOCKER_HOST ومتغيرات بيئة المستودع.\nهذه متاحة فقط عند تحديد مستودع.\n\nبدلاً من:\n  rdc term {{machine}} -c \"{{command}}\"\n\nاستخدم:\n  rdc term {{machine}} <repository> -c \"{{command}}\"",
       "sshCode1": "خطأ عام - تحقق من صيغة الأمر أو أذونات البعيد",
       "sshCode126": "تم رفض الإذن - لا يمكن تنفيذ الأمر على البعيد",
       "sshCode127": "الأمر غير موجود على الآلة البعيدة",

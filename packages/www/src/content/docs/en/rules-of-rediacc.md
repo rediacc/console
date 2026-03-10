@@ -33,7 +33,7 @@ Every Rediacc repository runs inside an isolated environment with its own Docker
 #!/bin/bash
 
 _compose() {
-  renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
+  renet compose -- "$@"
 }
 
 up() {
@@ -125,6 +125,7 @@ Renet auto-injects these into every container:
 - **Credentials are stored in the CLI config** (`~/.config/rediacc/rediacc.json`). Losing the config means losing access to encrypted volumes.
 - **Never commit credentials** to version control. Use `env_file` and generate secrets in `up()`.
 - **Repository isolation**: Each repo's Docker daemon, network, and storage are fully isolated from other repos on the same machine.
+- **Agent isolation**: AI agents operate in fork-only mode by default — they can only modify fork repositories, not grand (original) repos. Commands executed via `term_exec` or `rdc term` with a repository context are sandboxed at the kernel level using Landlock LSM, preventing cross-repo filesystem access.
 
 ## Deployment
 

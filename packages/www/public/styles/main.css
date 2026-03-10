@@ -2930,6 +2930,33 @@ a[target='_blank']::after {
   display: block;
 }
 
+.footer-founder {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  color: var(--color-text-secondary);
+  transition: color 0.15s ease;
+}
+
+.footer-founder:hover {
+  color: var(--color-text);
+}
+
+.footer-founder-photo {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.footer-founder-name {
+  font-size: var(--font-size-xs);
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .footer-nav {
   gap: var(--space-3);
 }
