@@ -57,7 +57,7 @@ export function registerSnapshotCommands(program: Command): void {
         });
         const parsed = JSON.parse(result.output);
 
-        if (getOutputFormat(options) === 'json') {
+        if (getOutputFormat() === 'json') {
           outputService.print(JSON.stringify(parsed, null, 2));
           return;
         }
