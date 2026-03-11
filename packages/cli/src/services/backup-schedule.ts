@@ -18,6 +18,8 @@ interface PushScheduleOptions {
   debug?: boolean;
 }
 
+const SYSTEMD_BACKUP_UNIT_GLOB = 'rediacc-backup*';
+
 /**
  * Convert a 5-field cron expression to systemd OnCalendar format.
  *
@@ -229,6 +231,52 @@ async function deployDestinationUnits(
   outputService.info(`Deployed ${unitName}.timer (${onCalendar})`);
 }
 
+async function runRemoteCommand(
+  sftp: SFTPClient,
+  command: string,
+  options: PushScheduleOptions,
+  errorMessage: string
+): Promise<void> {
+  const exitCode = await sftp.execStreaming(command, {
+    onStdout: (data) => {
+      if (options.debug) process.stdout.write(data);
+    },
+    onStderr: (data) => {
+      process.stderr.write(data);
+    },
+  });
+
+  if (exitCode !== 0) {
+    throw new Error(`${errorMessage} (exit ${exitCode})`);
+  }
+}
+
+async function cleanupExistingBackupUnits(
+  sftp: SFTPClient,
+  options: PushScheduleOptions
+): Promise<void> {
+  const cleanupCmd = [
+    'sudo rm -f',
+    `/etc/systemd/system/${SYSTEMD_BACKUP_UNIT_GLOB}.service`,
+    `/etc/systemd/system/${SYSTEMD_BACKUP_UNIT_GLOB}.timer`,
+    `/etc/systemd/system/timers.target.wants/${SYSTEMD_BACKUP_UNIT_GLOB}.timer`,
+  ].join(' ');
+
+  await runRemoteCommand(sftp, cleanupCmd, options, 'Failed to remove existing backup units');
+  await runRemoteCommand(
+    sftp,
+    'sudo systemctl daemon-reload',
+    options,
+    'Failed to reload systemd daemon after cleanup'
+  );
+  await runRemoteCommand(
+    sftp,
+    'sudo systemctl reset-failed',
+    options,
+    'Failed to reset systemd failed state after cleanup'
+  );
+}
+
 /**
  * Push backup schedule to a remote machine as per-destination systemd service + timer units.
  *
@@ -236,8 +284,9 @@ async function deployDestinationUnits(
  * 1. Load backup strategy from config
  * 2. Filter to enabled destinations
  * 3. Provision renet binary to remote
- * 4. For each destination: deploy service + timer units
- * 5. Daemon-reload once after all units are written
+ * 4. Delete all existing Rediacc backup units/symlinks on the machine
+ * 5. For each destination: deploy service + timer units
+ * 6. Daemon-reload after all units are written
  */
 export async function pushBackupSchedule(
   machineName: string,
@@ -293,6 +342,8 @@ export async function pushBackupSchedule(
   await sftp.connect();
 
   try {
+    await cleanupExistingBackupUnits(sftp, options);
+
     // Deploy units for each enabled destination
     for (const dest of enabledDests) {
       await deployDestinationUnits(
@@ -305,19 +356,12 @@ export async function pushBackupSchedule(
       );
     }
 
-    // Daemon-reload once after all units are written
-    const reloadCmd = 'sudo systemctl daemon-reload';
-    const exitCode = await sftp.execStreaming(reloadCmd, {
-      onStdout: (data) => {
-        if (options.debug) process.stdout.write(data);
-      },
-      onStderr: (data) => {
-        process.stderr.write(data);
-      },
-    });
-    if (exitCode !== 0) {
-      throw new Error(`Failed to reload systemd daemon (exit ${exitCode})`);
-    }
+    await runRemoteCommand(
+      sftp,
+      'sudo systemctl daemon-reload',
+      options,
+      'Failed to reload systemd daemon after deploy'
+    );
   } finally {
     sftp.close();
   }
