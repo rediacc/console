@@ -10,7 +10,6 @@ import type { ListResult } from '@rediacc/shared/queue-vault/data/list-types.gen
 import { isListResult } from '@rediacc/shared/queue-vault/data/list-types.generated';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { configService } from './config-resources.js';
-import { ensureMachineLicense } from './license.js';
 import { outputService } from './output.js';
 import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
 
@@ -41,19 +40,21 @@ export async function fetchMachineStatus(
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
-  await ensureMachineLicense(machine, sshPrivateKey);
-
   // Provision renet binary to remote
   if (options.debug) {
     outputService.info(`Provisioning renet to ${machine.ip}...`);
   }
-  await provisionRenetToRemote({ renetPath: localConfig.renetPath }, machine, sshPrivateKey, {
-    debug: options.debug,
-  });
-
+  const remoteRenetPath = await provisionRenetToRemote(
+    { renetPath: localConfig.renetPath },
+    machine,
+    sshPrivateKey,
+    {
+      debug: options.debug,
+    }
+  );
   // Build command
   const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
-  const cmd = `sudo renet list all --datastore ${datastore} --json`;
+  const cmd = `sudo ${remoteRenetPath} list all --datastore ${datastore} --json`;
 
   if (options.debug) {
     outputService.info(`[status] Running: ${cmd}`);

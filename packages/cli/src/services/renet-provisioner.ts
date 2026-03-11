@@ -4,25 +4,37 @@
  * Provisions the appropriate renet binary to remote Linux machines
  * before execution. Handles architecture detection, verification, and caching.
  *
- * Installs renet to /usr/bin/renet (canonical path) so that `sudo renet`
- * works without PATH issues. Uses a staging upload to /tmp then sudo cp.
+ * Installs renet to a versioned path under /usr/lib/rediacc/renet so
+ * multiple CLI versions can coexist on the same remote machine.
  */
 
 import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
+import { createTempSSHKeyFile, removeTempSSHKeyFile } from '@rediacc/shared-desktop/ssh';
 import { SFTPClient, type SFTPClientConfig } from '@rediacc/shared-desktop/sftp';
+import { executeRsync, getRsyncCommand } from '@rediacc/shared-desktop/sync';
 import { VERSION } from '../version.js';
 import { computeSha256, getEmbeddedRenetBinary, isSEA, type RenetArch } from './embedded-assets.js';
+import { outputService } from './output.js';
 import { compareVersions } from './updater.js';
 
-/** Canonical install path on remote machines */
-const REMOTE_INSTALL_PATH = '/usr/bin/renet';
+/** Root directory for versioned renet installs on remote machines */
+const REMOTE_INSTALL_ROOT = '/usr/lib/rediacc/renet';
+const REMOTE_CURRENT_DIR = `${REMOTE_INSTALL_ROOT}/current`;
+const REMOTE_CURRENT_PATH = `${REMOTE_CURRENT_DIR}/renet`;
 
-/** Staging path for SFTP upload (no sudo needed for /tmp) */
-const STAGING_PATH = '/tmp/.rdc-staging-renet';
+/** Prefix for per-attempt staging uploads (no sudo needed for /tmp) */
+const STAGING_PATH_PREFIX = '/tmp/.rdc-staging-renet';
+
+/** Remote host-scoped lock file for install/restart critical section */
+const REMOTE_LOCK_PATH = '/tmp/.rdc-renet-provision.lock';
 
 /** Cache TTL in milliseconds (1 hour) */
 const CACHE_TTL_MS = 60 * 60 * 1000;
+const LOCAL_LOCK_TIMEOUT_MS = 2 * 60 * 1000;
+const LOCAL_LOCK_POLL_MS = 250;
 
 /** Systemd service name for the route server */
 const ROUTER_SERVICE = 'rediacc-router';
@@ -39,12 +51,32 @@ export interface ProvisionResult {
   error?: string;
   /** Whether running services were restarted after binary update */
   servicesRestarted?: boolean;
+  /** Exact remote binary path that was verified or installed */
+  remotePath: string;
 }
 
 /** Cache entry for a provisioned host */
 interface CacheEntry {
   hash: string;
   provisionedAt: number;
+}
+
+interface InstallResult {
+  binaryUpdated: boolean;
+  currentUpdated: boolean;
+}
+
+interface RemoteSeedCandidate {
+  path: string;
+  source: 'current' | 'slot';
+}
+
+interface ProvisionContext {
+  arch: RenetArch;
+  binary: Buffer;
+  localHash: string;
+  cacheKey: string;
+  remoteInstallPath: string;
 }
 
 /**
@@ -57,12 +89,13 @@ interface CacheEntry {
  * Installation flow:
  * 1. Compute SHA256 of local binary
  * 2. Single SSH call: `renet hash` + `renet version` (sha256sum fallback)
- * 3. If hash mismatch + version guard passes: SFTP upload to staging, atomic mv to /usr/bin/renet
+ * 3. If hash mismatch + version guard passes: SFTP upload to staging, atomic mv to the versioned install path
  *
  * Maintains an in-memory cache to avoid redundant checks within TTL.
  */
 class RenetProvisionerService {
   private readonly cache = new Map<string, CacheEntry>();
+  private readonly inflight = new Map<string, Promise<ProvisionResult>>();
 
   /**
    * Provision renet to a remote Linux machine.
@@ -76,79 +109,156 @@ class RenetProvisionerService {
     config: SFTPClientConfig,
     options?: {
       localBinaryPath?: string;
-      /** Restart running services (e.g., rediacc-router) after binary update. Default: true. */
+      /** Restart running services after binary update. Default: false. */
       restartServices?: boolean;
+      debug?: boolean;
+    }
+  ): Promise<ProvisionResult> {
+    const cacheKey = `${config.host}:${config.port ?? DEFAULTS.SSH.PORT}`;
+    const inflight = this.inflight.get(cacheKey);
+    if (inflight) {
+      return inflight;
+    }
+
+    const provisioningPromise = this.withLocalProvisionLock(cacheKey, () =>
+      this.provisionInternal(config, options)
+    );
+    this.inflight.set(cacheKey, provisioningPromise);
+
+    try {
+      return await provisioningPromise;
+    } finally {
+      if (this.inflight.get(cacheKey) === provisioningPromise) {
+        this.inflight.delete(cacheKey);
+      }
+    }
+  }
+
+  private async provisionInternal(
+    config: SFTPClientConfig,
+    options?: {
+      localBinaryPath?: string;
+      restartServices?: boolean;
+      debug?: boolean;
     }
   ): Promise<ProvisionResult> {
     const sftp = new SFTPClient(config);
 
     try {
       await sftp.connect();
-
-      // Detect remote architecture
-      const arch = await this.detectArch(sftp);
-
-      // Get binary data from the appropriate source
-      const binary = await this.getBinary(arch, options?.localBinaryPath);
-      const localHash = computeSha256(binary);
-
-      // Check in-memory cache
-      const cacheKey = `${config.host}:${config.port ?? DEFAULTS.SSH.PORT}`;
-      const cached = this.cache.get(cacheKey);
-      if (cached?.hash === localHash && Date.now() - cached.provisionedAt < CACHE_TTL_MS) {
-        return { success: true, action: 'verified', arch };
+      const context = await this.buildProvisionContext(sftp, config, options?.localBinaryPath);
+      if (this.isCachedProvision(context.cacheKey, context.localHash)) {
+        return this.buildVerifiedResult(context.arch, context.remoteInstallPath);
       }
 
-      // Single SSH call: get both hash and version from remote binary.
-      // Avoids two separate roundtrips for needsInstall + checkVersionGuard.
-      const remote = await this.getRemoteHashAndVersion(sftp);
-
-      if (remote.hash === localHash) {
-        this.cache.set(cacheKey, { hash: localHash, provisionedAt: Date.now() });
-        return { success: true, action: 'verified', arch };
+      const remote = await this.getRemoteHashAndVersion(sftp, context.remoteInstallPath);
+      const versionRejected = this.buildVersionRejectedResult(remote.version, context);
+      if (versionRejected) {
+        return versionRejected;
       }
 
-      // Version guard: prevent accidental downgrade unless explicitly allowed
-      const isDowngrade = remote.version && compareVersions(VERSION, remote.version) < 0;
-      if (isDowngrade && !process.env.RDC_ALLOW_DOWNGRADE) {
-        return {
-          success: false,
-          action: 'version_rejected',
-          arch,
-          error: `Remote has renet v${remote.version} but this CLI bundles v${VERSION}. Run \`rdc update\` to upgrade your CLI, or set RDC_ALLOW_DOWNGRADE=1 to force.`,
-        };
+      const stagingPath = this.buildStagingPath();
+      if (remote.hash !== context.localHash) {
+        await this.stageBinary(sftp, config, stagingPath, context.binary, context.localHash);
       }
-
-      // Stage and install: SFTP upload to /tmp, then atomic mv to /usr/bin/renet.
-      // Uses mv (not cp) so the replacement works even when the binary is running
-      // (e.g., during a backup sync). mv replaces the directory entry atomically;
-      // the old inode stays alive until the running process exits.
-      await sftp.writeFile(STAGING_PATH, binary);
-      await sftp.exec(
-        `sudo chmod 755 ${STAGING_PATH} && sudo mv -f ${STAGING_PATH} ${REMOTE_INSTALL_PATH}`
+      if (options?.debug) {
+        outputService.info(`Activating remote renet slot ${context.remoteInstallPath}...`);
+      }
+      const installResult = await this.installWithRemoteLock(
+        sftp,
+        stagingPath,
+        context.localHash,
+        context.remoteInstallPath
       );
+      this.logInstallResult(config.host, installResult, options?.debug === true);
 
       // Restart the route server so it picks up the new binary.
       // Safe: the router is only a config provider (not in the data path).
       // Traefik keeps serving with last-known config during the ~1-2s restart.
       // Best-effort: don't fail provisioning if restart fails.
       let servicesRestarted = false;
-      if (options?.restartServices !== false) {
+      if (options?.restartServices === true && installResult.currentUpdated) {
         servicesRestarted = await this.restartRunningServices(sftp);
       }
 
-      this.cache.set(cacheKey, { hash: localHash, provisionedAt: Date.now() });
-      return { success: true, action: 'uploaded', arch, servicesRestarted };
+      this.cache.set(context.cacheKey, { hash: context.localHash, provisionedAt: Date.now() });
+      return {
+        success: true,
+        action: installResult.binaryUpdated ? 'uploaded' : 'verified',
+        arch: context.arch,
+        servicesRestarted,
+        remotePath: context.remoteInstallPath,
+      };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       return {
         success: false,
         action: 'failed',
+        remotePath: this.buildRemoteInstallPath(),
         error: `Failed to provision renet: ${errorMessage}`,
       };
     } finally {
       sftp.close();
     }
+  }
+
+  private async buildProvisionContext(
+    sftp: SFTPClient,
+    config: SFTPClientConfig,
+    localBinaryPath?: string
+  ): Promise<ProvisionContext> {
+    const remoteInstallPath = this.buildRemoteInstallPath();
+    const arch = await this.detectArch(sftp);
+    const binary = await this.getBinary(arch, localBinaryPath);
+    return {
+      arch,
+      binary,
+      localHash: computeSha256(binary),
+      cacheKey: `${config.host}:${config.port ?? DEFAULTS.SSH.PORT}`,
+      remoteInstallPath,
+    };
+  }
+
+  private isCachedProvision(cacheKey: string, localHash: string): boolean {
+    const cached = this.cache.get(cacheKey);
+    return cached?.hash === localHash && Date.now() - cached.provisionedAt < CACHE_TTL_MS;
+  }
+
+  private buildVerifiedResult(arch: RenetArch, remoteInstallPath: string): ProvisionResult {
+    return { success: true, action: 'verified', arch, remotePath: remoteInstallPath };
+  }
+
+  private buildVersionRejectedResult(
+    remoteVersion: string | null,
+    context: ProvisionContext
+  ): ProvisionResult | null {
+    const isDowngrade = remoteVersion && compareVersions(VERSION, remoteVersion) < 0;
+    if (!isDowngrade || process.env.RDC_ALLOW_DOWNGRADE) {
+      return null;
+    }
+
+    return {
+      success: false,
+      action: 'version_rejected',
+      arch: context.arch,
+      remotePath: context.remoteInstallPath,
+      error: `Remote has renet v${remoteVersion} but this CLI bundles v${VERSION}. Run \`rdc update\` to upgrade your CLI, or set RDC_ALLOW_DOWNGRADE=1 to force.`,
+    };
+  }
+
+  private logInstallResult(host: string, installResult: InstallResult, debug: boolean): void {
+    if (!debug) {
+      return;
+    }
+
+    if (installResult.binaryUpdated || installResult.currentUpdated) {
+      outputService.info(
+        `Remote renet ready on ${host} (${installResult.binaryUpdated ? 'slot updated' : 'slot verified'}${installResult.currentUpdated ? ', current updated' : ''})`
+      );
+      return;
+    }
+
+    outputService.info(`Remote renet already current on ${host}`);
   }
 
   /**
@@ -164,6 +274,90 @@ class RenetProvisionerService {
     }
 
     throw new Error('Cannot provision renet: not running as SEA and no localBinaryPath provided');
+  }
+
+  private async stageBinary(
+    sftp: SFTPClient,
+    config: SFTPClientConfig,
+    stagingPath: string,
+    binary: Buffer,
+    localHash: string
+  ): Promise<void> {
+    const seedCandidate = await this.findRemoteSeedCandidate(sftp, this.buildRemoteInstallPath());
+    const remoteRsyncPath = await this.getRemoteRsyncPath(sftp);
+    if (
+      await this.tryDeltaSyncStage(
+        sftp,
+        config,
+        stagingPath,
+        binary,
+        localHash,
+        seedCandidate,
+        remoteRsyncPath
+      )
+    ) {
+      return;
+    }
+
+    // Stage and install: SFTP upload to /tmp, then atomic mv to a versioned remote path.
+    // Uses mv (not cp) so the replacement works even when the binary is running
+    // (e.g., during a backup sync). mv replaces the directory entry atomically;
+    // the old inode stays alive until the running process exits.
+    outputService.info(`Uploading renet to ${config.host}...`);
+    const uploadStart = Date.now();
+    await sftp.writeFile(stagingPath, binary);
+    outputService.info(
+      `Uploaded renet to ${config.host} in ${((Date.now() - uploadStart) / 1000).toFixed(1)}s`
+    );
+  }
+
+  private async tryDeltaSyncStage(
+    sftp: SFTPClient,
+    config: SFTPClientConfig,
+    stagingPath: string,
+    binary: Buffer,
+    localHash: string,
+    seedCandidate: RemoteSeedCandidate | null,
+    remoteRsyncPath: string | null
+  ): Promise<boolean> {
+    if (seedCandidate === null || remoteRsyncPath === null || !(await this.hasLocalRsync())) {
+      return false;
+    }
+
+    try {
+      outputService.info(
+        `Seeding remote renet from ${seedCandidate.source === 'current' ? 'current slot' : 'existing slot'}...`
+      );
+      await sftp.exec(
+        `cp -f ${this.shellEscape(seedCandidate.path)} ${this.shellEscape(stagingPath)} && chmod 600 ${this.shellEscape(stagingPath)}`
+      );
+      outputService.info(`Syncing renet delta to ${config.host}...`);
+      await this.deltaSyncBinary(config, binary, stagingPath, remoteRsyncPath);
+      const stagedHash = await this.getRemoteFileHash(sftp, stagingPath);
+      if (stagedHash !== localHash) {
+        throw new Error(
+          `Staged renet hash mismatch after rsync: expected ${localHash}, got ${stagedHash ?? 'none'}`
+        );
+      }
+      return true;
+    } catch (error) {
+      outputService.info(`Falling back to full upload to ${config.host}...`);
+      await this.cleanupStagingPath(sftp, stagingPath);
+      if (process.env.RDC_DEBUG_RENET_PROVISION === '1') {
+        outputService.info(
+          `Delta sync fallback reason: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+      return false;
+    }
+  }
+
+  private async cleanupStagingPath(sftp: SFTPClient, stagingPath: string): Promise<void> {
+    try {
+      await sftp.exec(`rm -f ${this.shellEscape(stagingPath)}`);
+    } catch {
+      // Best-effort cleanup only.
+    }
   }
 
   /**
@@ -199,19 +393,104 @@ class RenetProvisionerService {
     }
   }
 
+  private async findRemoteSeedCandidate(
+    sftp: SFTPClient,
+    _remoteInstallPath: string
+  ): Promise<RemoteSeedCandidate | null> {
+    const currentTarget = (
+      await sftp.exec(`readlink ${this.shellEscape(REMOTE_CURRENT_PATH)} 2>/dev/null || true`)
+    ).trim();
+    if (currentTarget) {
+      return { path: currentTarget, source: 'current' };
+    }
+
+    const firstSlot = (
+      await sftp.exec(
+        `find ${this.shellEscape(REMOTE_INSTALL_ROOT)} -mindepth 2 -maxdepth 2 -type f -name renet 2>/dev/null | head -n 1`
+      )
+    ).trim();
+    if (firstSlot) {
+      return { path: firstSlot, source: 'slot' };
+    }
+
+    return null;
+  }
+
+  private async getRemoteRsyncPath(sftp: SFTPClient): Promise<string | null> {
+    const output = await sftp.exec(
+      'if command -v rsync >/dev/null 2>&1; then command -v rsync; elif [ -x /usr/local/bin/rsync-renet ]; then echo /usr/local/bin/rsync-renet; fi'
+    );
+    const rsyncPath = output.trim();
+    return rsyncPath || null;
+  }
+
+  private async hasLocalRsync(): Promise<boolean> {
+    try {
+      await getRsyncCommand();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private async deltaSyncBinary(
+    config: SFTPClientConfig,
+    binary: Buffer,
+    stagingPath: string,
+    remoteRsyncPath: string
+  ): Promise<void> {
+    const keyFilePath = await createTempSSHKeyFile(config.privateKey);
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'rdc-renet-'));
+    const localBinaryPath = path.join(tempDir, 'renet');
+
+    try {
+      await fs.writeFile(localBinaryPath, binary, { mode: 0o700 });
+      const sshOptions = [
+        '-o StrictHostKeyChecking=no',
+        '-o UserKnownHostsFile=/dev/null',
+        '-o IdentitiesOnly=yes',
+        `-p ${config.port ?? DEFAULTS.SSH.PORT}`,
+        `-i "${keyFilePath}"`,
+      ].join(' ');
+      const destination = `${config.username}@${config.host}:${stagingPath}`;
+      const result = await executeRsync({
+        sshOptions,
+        source: localBinaryPath,
+        destination,
+        remoteRsyncPath,
+      } as Parameters<typeof executeRsync>[0]);
+      if (!result.success) {
+        throw new Error(result.errors.join('\n') || 'rsync transfer failed');
+      }
+    } finally {
+      await fs.rm(tempDir, { recursive: true, force: true });
+      await removeTempSSHKeyFile(keyFilePath);
+    }
+  }
+
+  private async getRemoteFileHash(sftp: SFTPClient, remotePath: string): Promise<string | null> {
+    const output = await sftp.exec(
+      `sha256sum ${this.shellEscape(remotePath)} 2>/dev/null | cut -d' ' -f1 || true`
+    );
+    const hash = output.trim();
+    return hash || null;
+  }
+
   /**
    * Get the remote binary's hash and version in a single SSH call.
    * Returns hash (for content comparison) and version (for downgrade guard).
    * Uses `renet hash` + `renet version` combined, with sha256sum fallback.
    */
   private async getRemoteHashAndVersion(
-    sftp: SFTPClient
+    sftp: SFTPClient,
+    remoteInstallPath: string
   ): Promise<{ hash: string | null; version: string | null }> {
     try {
+      const escapedInstallPath = this.shellEscape(remoteInstallPath);
       // Single SSH exec: get both hash and version. Two lines of output.
       // Falls back to sha256sum if `renet hash` isn't available (pre-0.6.0).
       const output = await sftp.exec(
-        `(${REMOTE_INSTALL_PATH} hash 2>/dev/null || sha256sum ${REMOTE_INSTALL_PATH} | cut -d' ' -f1) && ${REMOTE_INSTALL_PATH} version 2>/dev/null || true`
+        `(${escapedInstallPath} hash 2>/dev/null || sha256sum ${escapedInstallPath} | cut -d' ' -f1) && ${escapedInstallPath} version 2>/dev/null || true`
       );
       const lines = output.trim().split('\n');
       const hash = lines[0]?.trim().split(/\s+/)[0] ?? null;
@@ -247,6 +526,122 @@ class RenetProvisionerService {
   clearCache(): void {
     this.cache.clear();
   }
+
+  private async withLocalProvisionLock<T>(cacheKey: string, fn: () => Promise<T>): Promise<T> {
+    const lockPath = path.join(
+      os.tmpdir(),
+      `.rdc-renet-provision-${cacheKey.replaceAll(/[^a-zA-Z0-9_.-]/g, '_')}.lock`
+    );
+    const deadline = Date.now() + LOCAL_LOCK_TIMEOUT_MS;
+
+    for (;;) {
+      try {
+        await fs.mkdir(lockPath);
+        break;
+      } catch (error) {
+        if (!isLockAlreadyHeldError(error)) {
+          throw error;
+        }
+        if (Date.now() >= deadline) {
+          throw new Error(`Timed out waiting for local renet provision lock: ${lockPath}`);
+        }
+        await new Promise((resolve) => setTimeout(resolve, LOCAL_LOCK_POLL_MS));
+      }
+    }
+
+    try {
+      return await fn();
+    } finally {
+      await fs.rm(lockPath, { recursive: true, force: true });
+    }
+  }
+
+  private buildStagingPath(): string {
+    const timestamp = Date.now();
+    const random = Math.random().toString(16).slice(2, 10);
+    return `${STAGING_PATH_PREFIX}-${process.pid}-${timestamp}-${random}`;
+  }
+
+  private async installWithRemoteLock(
+    sftp: SFTPClient,
+    stagingPath: string,
+    localHash: string,
+    remoteInstallPath: string
+  ): Promise<InstallResult> {
+    try {
+      const output = await sftp.exec(
+        this.buildLockedInstallCommand(stagingPath, localHash, remoteInstallPath)
+      );
+      const trimmed = output.trim();
+      const statusTokens = new Set(trimmed.split(/\s+/).filter(Boolean));
+      const binaryUpdated = statusTokens.has('UPDATED');
+      const currentUpdated = statusTokens.has('CURRENT_UPDATED') || binaryUpdated;
+      if (binaryUpdated || statusTokens.has('VERIFIED') || statusTokens.has('CURRENT_UPDATED')) {
+        return { binaryUpdated, currentUpdated };
+      }
+      throw new Error(`Unexpected provisioning result: ${trimmed || '(empty output)'}`);
+    } catch (error) {
+      try {
+        await sftp.exec(`rm -f ${stagingPath}`);
+      } catch {
+        // Best-effort cleanup only.
+      }
+      if (error instanceof Error && error.message.includes('FLOCK_MISSING')) {
+        throw new Error(
+          "Remote machine is missing 'flock', which is required for safe concurrent renet provisioning"
+        );
+      }
+      throw error;
+    }
+  }
+
+  private buildLockedInstallCommand(
+    stagingPath: string,
+    localHash: string,
+    remoteInstallPath: string
+  ): string {
+    const escapedHash = this.shellEscape(localHash);
+    const escapedStagingPath = this.shellEscape(stagingPath);
+    const escapedInstallPath = this.shellEscape(remoteInstallPath);
+    const escapedLockPath = this.shellEscape(REMOTE_LOCK_PATH);
+    const escapedInstallDir = this.shellEscape(this.remoteInstallDir(remoteInstallPath));
+    const escapedCurrentDir = this.shellEscape(REMOTE_CURRENT_DIR);
+    const escapedCurrentPath = this.shellEscape(REMOTE_CURRENT_PATH);
+    const escapedCurrentTmpPath = this.shellEscape(`${REMOTE_CURRENT_PATH}.tmp`);
+
+    const body = [
+      // Execute under POSIX sh on remote hosts; do not rely on bash-only options.
+      'set -eu',
+      `hash_remote() { (${escapedInstallPath} hash 2>/dev/null || sha256sum ${escapedInstallPath} | cut -d' ' -f1) 2>/dev/null || true; }`,
+      `current_target() { readlink ${escapedCurrentPath} 2>/dev/null || true; }`,
+      'result=',
+      `sudo mkdir -p ${escapedInstallDir}`,
+      `sudo mkdir -p ${escapedCurrentDir}`,
+      `if [ "$(hash_remote)" = ${escapedHash} ]; then rm -f ${escapedStagingPath}; else sudo chmod 755 ${escapedStagingPath}; sudo mv -f ${escapedStagingPath} ${escapedInstallPath}; result=UPDATED; fi`,
+      `if [ "$(current_target)" != ${escapedInstallPath} ]; then sudo ln -sfn ${escapedInstallPath} ${escapedCurrentTmpPath}; sudo mv -Tf ${escapedCurrentTmpPath} ${escapedCurrentPath}; if [ -n "$result" ]; then result="$result CURRENT_UPDATED"; else result=CURRENT_UPDATED; fi; fi`,
+      'if [ -z "$result" ]; then result=VERIFIED; fi',
+      'echo "$result"',
+    ].join('; ');
+
+    const quotedBody = this.shellEscape(body);
+    return `command -v flock >/dev/null 2>&1 || { echo FLOCK_MISSING >&2; exit 127; }; flock -w 120 ${escapedLockPath} sh -c ${quotedBody}`;
+  }
+
+  private buildRemoteInstallPath(): string {
+    return `${REMOTE_INSTALL_ROOT}/${VERSION}/renet`;
+  }
+
+  private remoteInstallDir(remoteInstallPath: string): string {
+    return remoteInstallPath.split('/').slice(0, -1).join('/');
+  }
+
+  private shellEscape(value: string): string {
+    return `'${value.replaceAll("'", `'\\''`)}'`;
+  }
+}
+
+function isLockAlreadyHeldError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && 'code' in error && error.code === 'EEXIST';
 }
 
 /** Singleton instance of the renet provisioner */

@@ -3510,7 +3510,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc audit log --level warn --limit 200",
+          "command": "rdc audit log --limit 200",
           "ctaText": "ابدأ مجاناً",
           "description": "ابدأ مع الإصدار المجاني Community. شغّل أول اختبار اختراق في أقل من 60 ثانية.",
           "title": "اكتشف الثغرات قبل المهاجمين"
@@ -3919,7 +3919,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc audit --from 2026-01-01 --to 2026-02-27",
+          "command": "rdc audit history repository production",
           "ctaText": "ابدأ مجاناً مع Community",
           "description": "ابدأ مع الإصدار المجاني Community. أنشئ أول تقرير تدقيق في أقل من دقيقة.",
           "title": "شاهد كل شيء. لا تفوّت شيئاً."
@@ -4334,7 +4334,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo list-backups --verify",
+          "command": "rdc repo list-backups --from backup-vault -m primary",
           "description": "ابدأ مع الإصدار المجاني Community. تحقق من أول نسخة في أقل من دقيقة.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "بدون بطاقة ائتمان",
@@ -4788,7 +4788,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo sync push-all --target secondary-dc",
+          "command": "rdc repo sync push-all --to secondary-dc -m primary",
           "description": "ابدأ مع الإصدار المجاني Community. انسخ عبر المواقع بدون تكلفة. بدون بطاقة ائتمان.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "مجاني للأبد حتى 10 أحمال عمل",
@@ -5246,7 +5246,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc pentest production --schedule daily --time 02:00",
+          "command": "rdc repo validate production -m primary",
           "ctaText": "ابدأ مجاناً",
           "description": "ابدأ مع الإصدار المجاني Community. جدوِل أول اختبار اختراق مستمر في 30 ثانية.",
           "title": "أغلق النافذة التي يعتمد عليها المهاجمون"
@@ -5633,7 +5633,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo mount production --credential-file /etc/rediacc/keys/production.key",
+          "command": "rdc repo mount production -m primary",
           "ctaText": "ابدأ مجاناً مع Community",
           "description": "ابدأ مع الإصدار المجاني Community. أنشئ أول مفتاح في أقل من دقيقة.",
           "title": "تحكم في تشفيرك"
@@ -6498,7 +6498,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc failover test --target secondary --simulate",
+          "command": "rdc repo push production --to-machine secondary -m primary --checkpoint",
           "description": "ابدأ مع الإصدار المجاني Community. شغّل أول اختبار DR في أقل من 5 دقائق.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "بدون بطاقة ائتمان",
@@ -6940,7 +6940,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo push production --verify",
+          "command": "rdc repo push production --to backup-vault -m primary",
           "description": "ابدأ مع الإصدار المجاني Community. احمِ حتى 10 أحمال عمل بدون تكلفة. بدون بطاقة ائتمان.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "مجاني للأبد حتى 10 أحمال عمل",
@@ -7389,7 +7389,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo fork production --name dev-loadtest",
+          "command": "rdc repo fork production -m primary --tag dev-loadtest",
           "description": "ابدأ مع الإصدار المجاني Community. الاستنساخ عند الطلب مُضمّن.",
           "primaryCta": "ابدأ مجاناً",
           "tierBadge": "مجاني حتى 5 مستودعات · بدون بطاقة ائتمان",
@@ -7818,7 +7818,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo pull production --storage daily-2026-02-27",
+          "command": "rdc repo pull production --from daily-2026-02-27 -m primary",
           "description": "ابدأ مع الإصدار المجاني Community. استعد بيئتك الأولى في أقل من 5 دقائق.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "بدون بطاقة ائتمان",
@@ -8685,7 +8685,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo sync push-all --target secondary",
+          "command": "rdc repo sync push-all --to secondary -m primary",
           "description": "ابدأ مع الإصدار المجاني Community. الترحيل المشفر مُضمّن.",
           "primaryCta": "ابدأ مجاناً",
           "tierBadge": "مجاني حتى 5 مستودعات · بدون بطاقة ائتمان",
@@ -9588,7 +9588,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc restore production --point-in-time latest-clean",
+          "command": "rdc repo pull production --from backup-vault -m primary --force",
           "ctaText": "ابدأ مجاناً مع Community",
           "description": "ابدأ مع الإصدار المجاني Community. احمِ حتى 10 أحمال عمل بدون تكلفة. بدون بطاقة ائتمان.",
           "title": "لا تدع الاستعادة أبطأ من الهجوم"
@@ -10927,7 +10927,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc migrate production --to new-provider",
+          "command": "rdc repo push production --to-machine new-provider -m primary --checkpoint",
           "ctaText": "ابدأ مجاناً مع Community",
           "description": "ابدأ مع الإصدار المجاني Community. انشر في أي مكان. رحّل في أي وقت. بدون بطاقة ائتمان.",
           "title": "استعد السيطرة على بنيتك التحتية"
@@ -11132,7 +11132,7 @@
             },
             {
               "title": "One-command migration",
-              "description": "Run rdc migrate production --to new-provider. Incremental transfer. Zero downtime.",
+              "description": "Run rdc repo push production --to-machine new-provider -m primary --checkpoint. Incremental transfer. Zero downtime.",
               "icon": "arrow-right-circle"
             },
             {

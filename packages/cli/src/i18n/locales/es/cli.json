@@ -1437,7 +1437,8 @@
         "description": "Renovar la licencia de la máquina",
         "refreshed": "Licencia renovada",
         "refreshing": "Renovando licencia...",
-        "success": "Licencia renovada e instalada"
+        "success": "Licencia renovada e instalada",
+        "failed": "No se pudo emitir la licencia de la máquina"
       },
       "status": {
         "description": "Mostrar estado de suscripción y licencia",
@@ -1456,7 +1457,33 @@
         "remoteStatus": "  Estado:    {{status}}",
         "sequence": "  Secuencia: {{sequenceNumber}}",
         "statusLabel": "  Estado:    {{status}}",
-        "valid": "  Válida (expira en {{mins}} minutos)"
+        "valid": "  Válida (expira en {{mins}} minutos)",
+        "serverMismatch": "El token de desarrollo pertenece a {{actualServerUrl}}, pero este worktree usa {{expectedServerUrl}}. Ejecute `rdc subscription login` de nuevo.",
+        "remoteFloatingLicenses": "  Licencias flotantes: {{active}}/{{max}}",
+        "remoteFloatingLicenseRequests": "  Solicitudes de licencia flotante: {{used}}/{{limit}}",
+        "remoteRepoLicenses": "  Licencias de repositorio: {{totalTrackedRepos}} rastreados, {{validCount}} válidos, {{refreshRecommendedCount}} con renovación recomendada, {{hardExpiredCount}} vencidos"
+      },
+      "repoStatus": {
+        "description": "Mostrar licencias de repositorio instaladas en una máquina",
+        "header": "\nLicencias de repositorio: ({{machineName}})",
+        "empty": "  No hay licencias de repositorio instaladas",
+        "entry": "  - Repositorio {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
+        "hardExpirySuffix": " (vencimiento definitivo: {{effectiveHardExpiry}})",
+        "freshness": {
+          "unknown": "desconocido",
+          "hardExpired": "vencido",
+          "refreshRecommended": "se recomienda renovar",
+          "valid": "válido"
+        }
+      },
+      "refreshRepo": {
+        "description": "Actualizar la licencia del repositorio para un repositorio existente en una máquina",
+        "repoArgument": "Nombre del repositorio",
+        "refreshing": "Actualizando licencia del repositorio...",
+        "notFound": "Repositorio no encontrado: {{repoName}}",
+        "failed": "No se pudo actualizar la licencia del repositorio",
+        "refreshed": "Licencia del repositorio actualizada",
+        "success": "Licencia del repositorio actualizada para \"{{repoName}}\""
       }
     },
     "sync": {

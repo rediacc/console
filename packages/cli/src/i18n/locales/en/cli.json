@@ -1457,13 +1457,40 @@
         "remotePlan": "  Plan:     {{plan}}",
         "remoteStatus": "  Status:   {{status}}",
         "remoteMachines": "  Machines: {{active}}/{{max}}",
-        "remoteMachine": "    - {{id}}... (last seen: {{lastSeen}})"
+        "remoteMachine": "    - {{id}}... (last seen: {{lastSeen}})",
+        "serverMismatch": "Dev token belongs to {{actualServerUrl}}, but this worktree is using {{expectedServerUrl}}. Run `rdc subscription login` again.",
+        "remoteFloatingLicenses": "  Floating Licenses: {{active}}/{{max}}",
+        "remoteFloatingLicenseRequests": "  Floating license requests: {{used}}/{{limit}}",
+        "remoteRepoLicenses": "  Repo licenses: {{totalTrackedRepos}} tracked, {{validCount}} valid, {{refreshRecommendedCount}} refresh recommended, {{hardExpiredCount}} hard expired"
       },
       "refresh": {
         "description": "Force-refresh license on a remote machine",
         "refreshing": "Refreshing license...",
         "refreshed": "License refreshed",
-        "success": "License refreshed and delivered to machine"
+        "success": "License refreshed and delivered to machine",
+        "failed": "Failed to issue machine license"
+      },
+      "repoStatus": {
+        "description": "Show installed repo licenses on a machine",
+        "header": "\nRepo licenses: ({{machineName}})",
+        "empty": "  No repo licenses installed",
+        "entry": "  - {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
+        "hardExpirySuffix": " (hard expiry: {{effectiveHardExpiry}})",
+        "freshness": {
+          "unknown": "unknown",
+          "hardExpired": "hard expired",
+          "refreshRecommended": "refresh recommended",
+          "valid": "valid"
+        }
+      },
+      "refreshRepo": {
+        "description": "Refresh the repo license for an existing repository on a machine",
+        "repoArgument": "Repository name",
+        "refreshing": "Refreshing repo license...",
+        "notFound": "Repository not found: {{repoName}}",
+        "failed": "Failed to refresh repo license",
+        "refreshed": "Repo license refreshed",
+        "success": "Repo license refreshed for \"{{repoName}}\""
       }
     },
     "team": {

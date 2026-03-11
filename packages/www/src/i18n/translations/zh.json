@@ -3458,7 +3458,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc audit log --level warn --limit 200",
+          "command": "rdc audit log --limit 200",
           "ctaText": "免费开始",
           "description": "从免费的社区版开始。60 秒内运行你的第一次渗透测试。",
           "title": "在攻击者之前发现漏洞"
@@ -3867,7 +3867,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc audit --from 2026-01-01 --to 2026-02-27",
+          "command": "rdc audit history repository production",
           "ctaText": "免费开始使用社区版",
           "description": "从免费的社区版开始。一分钟内生成你的第一份审计报告。",
           "title": "看到一切，遗漏为零。"
@@ -4282,7 +4282,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo list-backups --verify",
+          "command": "rdc repo list-backups --from backup-vault -m primary",
           "description": "从免费的社区版开始。一分钟内验证你的第一个备份。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "无需信用卡",
@@ -4736,7 +4736,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo sync push-all --target secondary-dc",
+          "command": "rdc repo sync push-all --to secondary-dc -m primary",
           "description": "从免费的社区版开始。免费跨地域复制。无需信用卡。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "最多 10 个工作负载永久免费",
@@ -5194,7 +5194,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc pentest production --schedule daily --time 02:00",
+          "command": "rdc repo validate production -m primary",
           "ctaText": "免费开始",
           "description": "从免费的社区版开始。30 秒内安排你的第一次持续渗透测试。",
           "title": "关闭攻击者依赖的窗口"
@@ -5581,7 +5581,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo mount production --credential-file /etc/rediacc/keys/production.key",
+          "command": "rdc repo mount production -m primary",
           "ctaText": "免费开始使用社区版",
           "description": "从免费的社区版开始。一分钟内生成你的第一个密钥。",
           "title": "掌控你的加密"
@@ -6446,7 +6446,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc failover test --target secondary --simulate",
+          "command": "rdc repo push production --to-machine secondary -m primary --checkpoint",
           "description": "从免费的社区版开始。5 分钟内运行你的第一次 DR 测试。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "无需信用卡",
@@ -6888,7 +6888,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo push production --verify",
+          "command": "rdc repo push production --to backup-vault -m primary",
           "description": "从免费的社区版开始。免费保护最多 10 个工作负载。无需信用卡。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "最多 10 个工作负载永久免费",
@@ -7337,7 +7337,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo fork production --name dev-loadtest",
+          "command": "rdc repo fork production -m primary --tag dev-loadtest",
           "description": "从免费的社区版开始。包含按需克隆功能。",
           "primaryCta": "免费开始",
           "tierBadge": "最多 5 个仓库免费 · 无需信用卡",
@@ -7766,7 +7766,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo pull production --storage daily-2026-02-27",
+          "command": "rdc repo pull production --from daily-2026-02-27 -m primary",
           "description": "从免费的社区版开始。5 分钟内恢复你的第一个环境。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "无需信用卡",
@@ -8633,7 +8633,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo sync push-all --target secondary",
+          "command": "rdc repo sync push-all --to secondary -m primary",
           "description": "从免费的社区版开始。包含加密迁移功能。",
           "primaryCta": "免费开始",
           "tierBadge": "最多 5 个仓库免费 · 无需信用卡",
@@ -9536,7 +9536,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc restore production --point-in-time latest-clean",
+          "command": "rdc repo pull production --from backup-vault -m primary --force",
           "ctaText": "免费开始使用社区版",
           "description": "从免费的社区版开始。免费保护最多 10 个工作负载。无需信用卡。",
           "title": "不要让恢复比攻击还慢"
@@ -10875,7 +10875,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc migrate production --to new-provider",
+          "command": "rdc repo push production --to-machine new-provider -m primary --checkpoint",
           "ctaText": "免费开始使用社区版",
           "description": "从免费的社区版开始。随处部署，随时迁移。无需信用卡。",
           "title": "夺回基础设施的控制权"
@@ -11080,7 +11080,7 @@
             },
             {
               "title": "One-command migration",
-              "description": "Run rdc migrate production --to new-provider. Incremental transfer. Zero downtime.",
+              "description": "Run rdc repo push production --to-machine new-provider -m primary --checkpoint. Incremental transfer. Zero downtime.",
               "icon": "arrow-right-circle"
             },
             {

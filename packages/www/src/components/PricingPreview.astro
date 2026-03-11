@@ -58,7 +58,12 @@ const plans = PLAN_ORDER.map((code) => ({
           <ul class="cf-features">
             {technicalMetrics.map((metric: any) => (
               <li>
-                <span class="cf-feature-info" data-tooltip={metric.label} aria-label={metric.label} tabindex="0">
+                <span
+                  class="cf-feature-info"
+                  data-tooltip={metric.tooltip ?? metric.label}
+                  aria-label={metric.tooltip ?? metric.label}
+                  tabindex="0"
+                >
                   i
                 </span>
                 <span><strong>{technicalValues?.[plan.id]?.[metric.key] ?? '—'}</strong> {metric.label}</span>

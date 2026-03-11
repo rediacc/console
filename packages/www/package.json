@@ -20,7 +20,7 @@
     "team-video:scaffold-locales": "node scripts/scaffold-team-video-transcript-locales.js",
     "team-video:tts:generate": "tsx scripts/generate-team-video-audio.ts",
     "validate:cli-docs": "node scripts/validate-cli-docs.js",
-    "validate:content-accuracy": "node scripts/validate-content-accuracy.js",
+    "validate:content-accuracy": "node scripts/validate-content-accuracy.js --strict",
     "validate:docs-cli-usage": "node scripts/validate-docs-cli-usage.js",
     "validate:landing-cli-usage": "node scripts/validate-landing-cli-usage.js",
     "validate:tutorial-audio": "node scripts/validate-tutorial-audio.js",

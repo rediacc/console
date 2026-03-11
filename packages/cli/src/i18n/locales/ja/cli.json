@@ -1437,7 +1437,8 @@
         "description": "マシンライセンスを更新",
         "refreshed": "ライセンスが更新されました",
         "refreshing": "ライセンスを更新中...",
-        "success": "ライセンスが更新・インストールされました"
+        "success": "ライセンスが更新・インストールされました",
+        "failed": "マシンライセンスを発行できませんでした"
       },
       "status": {
         "description": "サブスクリプションとライセンスの状態を表示",
@@ -1456,7 +1457,33 @@
         "remoteStatus": "  ステータス: {{status}}",
         "sequence": "  シーケンス: {{sequenceNumber}}",
         "statusLabel": "  ステータス: {{status}}",
-        "valid": "  有効（残り {{mins}} 分で期限切れ）"
+        "valid": "  有効（残り {{mins}} 分で期限切れ）",
+        "serverMismatch": "開発トークンは {{actualServerUrl}} 用ですが、このワークツリーは {{expectedServerUrl}} を使用しています。`rdc subscription login` を再実行してください。",
+        "remoteFloatingLicenses": "  フローティングライセンス: {{active}}/{{max}}",
+        "remoteFloatingLicenseRequests": "  フローティングライセンス要求: {{used}}/{{limit}}",
+        "remoteRepoLicenses": "  リポジトリライセンス: 追跡 {{totalTrackedRepos}}、有効 {{validCount}}、更新推奨 {{refreshRecommendedCount}}、完全失効 {{hardExpiredCount}}"
+      },
+      "repoStatus": {
+        "description": "マシンにインストールされたリポジトリライセンスを表示",
+        "header": "\nリポジトリライセンス: ({{machineName}})",
+        "empty": "  インストールされたリポジトリライセンスはありません",
+        "entry": "  - リポジトリ {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
+        "hardExpirySuffix": " (完全失効日時: {{effectiveHardExpiry}})",
+        "freshness": {
+          "unknown": "不明",
+          "hardExpired": "完全失効",
+          "refreshRecommended": "更新推奨",
+          "valid": "有効"
+        }
+      },
+      "refreshRepo": {
+        "description": "マシン上の既存リポジトリのリポジトリライセンスを更新",
+        "repoArgument": "リポジトリ名",
+        "refreshing": "リポジトリライセンスを更新しています...",
+        "notFound": "リポジトリが見つかりません: {{repoName}}",
+        "failed": "リポジトリライセンスの更新に失敗しました",
+        "refreshed": "リポジトリライセンスを更新しました",
+        "success": "\"{{repoName}}\" のリポジトリライセンスを更新しました"
       }
     },
     "sync": {

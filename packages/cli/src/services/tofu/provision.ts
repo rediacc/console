@@ -84,7 +84,9 @@ async function bootstrapMachine(machineName: string, options: { debug?: boolean 
   const sshPrivateKey =
     updatedConfig.sshPrivateKey ?? (await readSSHKey(updatedConfig.ssh.privateKeyPath));
 
-  await provisionRenetToRemote(updatedConfig, machine, sshPrivateKey, { debug: options.debug });
+  const remoteRenetPath = await provisionRenetToRemote(updatedConfig, machine, sshPrivateKey, {
+    debug: options.debug,
+  });
 
   const sftp = new SFTPClient({
     host: machine.ip,
@@ -95,7 +97,7 @@ async function bootstrapMachine(machineName: string, options: { debug?: boolean 
   await sftp.connect();
 
   try {
-    const cmd = 'sudo renet setup --auto --datastore /mnt/rediacc --datastore-size 95%';
+    const cmd = `sudo ${remoteRenetPath} setup --auto --datastore /mnt/rediacc --datastore-size 95%`;
     const exitCode = await sftp.execStreaming(cmd, {
       onStdout: (data) => {
         if (options.debug) process.stdout.write(data);

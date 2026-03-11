@@ -255,6 +255,7 @@ function writeSetupErrorLog(error: unknown) {
  */
 async function bridgeGlobalSetup(_config: FullConfig) {
   ensureEnvFile();
+  const skipReset = process.env.BRIDGE_TEST_SKIP_RESET === '1';
 
   /* eslint-disable no-console */
   console.log('');
@@ -270,15 +271,20 @@ async function bridgeGlobalSetup(_config: FullConfig) {
     // Step 1: Soft reset VMs (mandatory - no skip option)
     // eslint-disable-next-line no-console
     console.log('');
-    // eslint-disable-next-line no-console
-    console.log('Step 1: Performing VM soft reset...');
-    const resetResult = await opsManager.resetVMs();
+    if (skipReset) {
+      // eslint-disable-next-line no-console
+      console.log('Step 1: Skipping VM soft reset (BRIDGE_TEST_SKIP_RESET=1)');
+    } else {
+      // eslint-disable-next-line no-console
+      console.log('Step 1: Performing VM soft reset...');
+      const resetResult = await opsManager.resetVMs();
 
-    if (!resetResult.success) {
-      throw new Error('VM reset failed - cannot proceed with tests');
+      if (!resetResult.success) {
+        throw new Error('VM reset failed - cannot proceed with tests');
+      }
+      // eslint-disable-next-line no-console
+      console.log(`  ✓ VM reset completed in ${(resetResult.duration / 1000).toFixed(1)}s`);
     }
-    // eslint-disable-next-line no-console
-    console.log(`  ✓ VM reset completed in ${(resetResult.duration / 1000).toFixed(1)}s`);
 
     // Note: Ceph provisioning is automatically handled by ops up when VM_CEPH_NODES is configured
     const cephNodes = opsManager.getCephVMIps();

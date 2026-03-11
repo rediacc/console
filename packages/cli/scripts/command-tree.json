@@ -6444,6 +6444,20 @@
           "subcommands": []
         },
         {
+          "name": "repo-status",
+          "descriptionKey": "commands.subscription.repoStatus.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machine",
+              "mandatory": true,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
           "name": "refresh",
           "descriptionKey": "commands.subscription.refresh.description",
           "options": [
@@ -6455,6 +6469,27 @@
             }
           ],
           "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "refresh-repo",
+          "descriptionKey": "commands.subscription.refreshRepo.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machine",
+              "mandatory": true,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "repo",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
           "subcommands": []
         }
       ]
@@ -6842,6 +6877,12 @@
               "descriptionKey": "commands.mcp.serve.timeoutOption",
               "mandatory": false,
               "defaultValue": "120000"
+            },
+            {
+              "flags": "--allow-grand",
+              "descriptionKey": "commands.mcp.serve.allowGrandOption",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [],

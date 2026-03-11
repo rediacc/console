@@ -6,7 +6,7 @@ order: 2
 language: en
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/en/cli.json
-sourceHash: "49eef795ed59e297"
+sourceHash: "b2e04cb9013aea6d"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -988,6 +988,7 @@ rdc mcp serve [options]
 |------|-------------|----------|---------|
 | `--config <name>` | {{t:cli.commands.mcp.serve.configOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--timeout <ms>` | {{t:cli.commands.mcp.serve.timeoutOption}} | {{t:cli.docs.optionLabels.no}} | `120000` |
+| `--allow-grand` | {{t:cli.commands.mcp.serve.allowGrandOption}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ---
@@ -1879,6 +1880,34 @@ rdc subscription status [options]
 
 ```bash
 rdc subscription refresh [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
+
+
+<a id="cli-local-subscription-repo-status"></a>
+### 13.4 repo-status
+
+{{t:cli.commands.subscription.repoStatus.description}}
+
+```bash
+rdc subscription repo-status [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
+
+
+<a id="cli-local-subscription-refresh-repo"></a>
+### 13.5 refresh-repo
+
+{{t:cli.commands.subscription.refreshRepo.description}}
+
+```bash
+rdc subscription refresh-repo <repo> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |

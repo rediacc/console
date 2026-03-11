@@ -16,30 +16,6 @@ export type PlanCode = 'COMMUNITY' | 'PROFESSIONAL' | 'BUSINESS' | 'ENTERPRISE';
 export type SubscriptionStatus = 'ACTIVE' | 'INACTIVE' | 'EXPIRED' | 'SUSPENDED' | 'GRACE';
 
 /**
- * Resource limits per subscription plan.
- * A value of -1 indicates unlimited.
- * A value of 0 indicates none/blocked.
- */
-export interface ResourceLimits {
-  /** Number of customer-created bridges allowed. 0 = none, -1 = unlimited */
-  bridges: number;
-  /** Reserved job slots */
-  maxReservedJobs: number;
-  /** Maximum job timeout in hours */
-  jobTimeoutHours: number;
-  /** Maximum repository size in GB */
-  maxRepositorySizeGb: number;
-  /** Maximum jobs per month */
-  maxJobsPerMonth: number;
-  /** Maximum pending queue items per user */
-  maxPendingPerUser: number;
-  /** Maximum concurrent tasks per machine */
-  maxTasksPerMachine: number;
-  /** Ceph pools per team. 0 = none, -1 = unlimited */
-  cephPoolsPerTeam: number;
-}
-
-/**
  * Feature availability flags per subscription plan.
  */
 export interface FeatureFlags {
@@ -92,8 +68,10 @@ export interface SubscriptionData {
   gracePeriodEnds: string;
 
   // Limits & Features
-  /** Resource limits for this plan */
-  resources: ResourceLimits;
+  /** Maximum repository size in GB */
+  maxRepositorySizeGb: number;
+  /** Maximum floating license requests per UTC calendar month */
+  maxFloatingLicenseRequestsPerMonth: number;
   /** Feature flags for this plan */
   features: FeatureFlags;
 
@@ -127,7 +105,8 @@ export interface MachineLicense {
   machineId: string;
   planCode: PlanCode;
   status: SubscriptionStatus;
-  resources: ResourceLimits;
+  maxRepositorySizeGb: number;
+  maxFloatingLicenseRequestsPerMonth: number;
   features: FeatureFlags;
   issuedAt: string;
   expiresAt: string;
@@ -139,6 +118,32 @@ export interface MachineLicense {
  * Signed machine license blob (Ed25519).
  */
 export interface SignedMachineLicense {
+  payload: string;
+  signature: string;
+  publicKeyId: string;
+}
+
+export type RepoLicenseKind = 'grand' | 'fork';
+
+export interface RepoLicense {
+  version: 1;
+  subscriptionId: string;
+  machineId: string;
+  clientMachineId: string;
+  repositoryGuid: string;
+  grandGuid: string;
+  kind: RepoLicenseKind;
+  planCode: PlanCode;
+  status: SubscriptionStatus;
+  maxRepositorySizeGb: number;
+  luksUuid?: string;
+  storageFingerprint?: string;
+  issuedAt: string;
+  refreshRecommendedAt: string;
+  hardExpiresAt: string;
+}
+
+export interface SignedRepoLicense {
   payload: string;
   signature: string;
   publicKeyId: string;
@@ -176,7 +181,8 @@ export interface OrganizationSubscription {
   cachedData: {
     planCode: PlanCode;
     status: SubscriptionStatus;
-    resources: ResourceLimits;
+    maxRepositorySizeGb: number;
+    maxFloatingLicenseRequestsPerMonth: number;
     features: FeatureFlags;
     expiresAt: string;
     gracePeriodEnds: string;

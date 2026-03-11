@@ -74,7 +74,8 @@ function generateServiceUnit(
   destinationName: string,
   rcloneRemote: string,
   rcloneParams: string[],
-  datastore: string
+  datastore: string,
+  remoteRenetPath: string
 ): string {
   // Parse backend from remote string ":backend:path"
   const backendMatch = /^:([^:]+):(.*)/.exec(rcloneRemote);
@@ -90,7 +91,7 @@ function generateServiceUnit(
 
   // Build ExecStart command
   const execParts = [
-    '/usr/bin/renet backup sync push',
+    `${remoteRenetPath} backup sync push`,
     `--datastore ${datastore}`,
     `--rclone-backend ${backend}`,
   ];
@@ -144,6 +145,7 @@ async function deployDestinationUnits(
   dest: BackupStrategyDestination,
   globalSchedule: string | undefined,
   datastore: string,
+  remoteRenetPath: string,
   options: PushScheduleOptions
 ): Promise<void> {
   const storageCfg = await configService.getStorage(dest.storage);
@@ -166,7 +168,13 @@ async function deployDestinationUnits(
     outputService.info(`Rclone remote: ${remote}`);
   }
 
-  const serviceContent = generateServiceUnit(dest.storage, remote, rcloneParams, datastore);
+  const serviceContent = generateServiceUnit(
+    dest.storage,
+    remote,
+    rcloneParams,
+    datastore,
+    remoteRenetPath
+  );
   const timerContent = generateTimerUnit(dest.storage, onCalendar);
 
   if (options.debug) {
@@ -266,9 +274,14 @@ export async function pushBackupSchedule(
 
   // Provision renet binary to remote
   outputService.info(`Provisioning renet to ${machine.ip}...`);
-  await provisionRenetToRemote({ renetPath: localConfig.renetPath }, machine, sshPrivateKey, {
-    debug: options.debug,
-  });
+  const remoteRenetPath = await provisionRenetToRemote(
+    { renetPath: localConfig.renetPath },
+    machine,
+    sshPrivateKey,
+    {
+      debug: options.debug,
+    }
+  );
 
   // Connect via SSH
   const sftp = new SFTPClient({
@@ -282,7 +295,14 @@ export async function pushBackupSchedule(
   try {
     // Deploy units for each enabled destination
     for (const dest of enabledDests) {
-      await deployDestinationUnits(sftp, dest, strategy.schedule, datastore, options);
+      await deployDestinationUnits(
+        sftp,
+        dest,
+        strategy.schedule,
+        datastore,
+        remoteRenetPath,
+        options
+      );
     }
 
     // Daemon-reload once after all units are written

@@ -1,26 +1,19 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
 import { DEFAULTS, SUBSCRIPTION_DEFAULTS } from '@rediacc/shared/config';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
-import { clearMachineLicenseCache, ensureMachineLicense } from '../services/license.js';
+import { issueMachineLicense, refreshRepoLicenseIdentity } from '../services/license.js';
 import { outputService } from '../services/output.js';
 import { readSSHKey } from '../services/renet-execution.js';
+import {
+  getSubscriptionServerUrl,
+  getSubscriptionTokenState,
+  saveStoredSubscriptionToken,
+  type StoredSubscriptionToken,
+} from '../services/subscription-auth.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
-
-// Paths
-const CONFIG_DIR = join(homedir(), '.config', 'rediacc');
-const TOKEN_FILE = join(CONFIG_DIR, 'api-token.json');
-
-interface StoredToken {
-  token: string;
-  serverUrl: string;
-  subscriptionId?: string;
-}
 
 export function registerSubscriptionCommands(program: Command): void {
   const sub = program.command('subscription').description(t('commands.subscription.description'));
@@ -33,10 +26,7 @@ export function registerSubscriptionCommands(program: Command): void {
     .option('--server <url>', t('options.serverUrl'))
     .action(async (options) => {
       try {
-        const serverUrl =
-          options.server ??
-          process.env.REDIACC_ACCOUNT_SERVER ??
-          SUBSCRIPTION_DEFAULTS.ACCOUNT_SERVER_URL;
+        const serverUrl = getSubscriptionServerUrl(options.server);
 
         let token: string;
 
@@ -67,15 +57,12 @@ export function registerSubscriptionCommands(program: Command): void {
         );
 
         // Save token
-        mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
-        const stored: StoredToken = {
+        const stored: StoredSubscriptionToken = {
           token,
           serverUrl,
           subscriptionId: (status as { subscriptionId?: string }).subscriptionId,
         };
-        writeFileSync(TOKEN_FILE, JSON.stringify(stored, null, 2), {
-          mode: 0o600,
-        });
+        saveStoredSubscriptionToken(stored);
 
         const s = status as {
           planCode?: string;
@@ -118,6 +105,18 @@ export function registerSubscriptionCommands(program: Command): void {
       }
     });
 
+  sub
+    .command('repo-status')
+    .description(t('commands.subscription.repoStatus.description'))
+    .requiredOption('-m, --machine <name>', t('options.machine'))
+    .action(async (options) => {
+      try {
+        await displayRepoLicenseStatus(options.machine);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
   // subscription refresh
   sub
     .command('refresh')
@@ -133,14 +132,54 @@ export function registerSubscriptionCommands(program: Command): void {
             const sshPrivateKey =
               localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
-            // Clear cache to force re-issue
-            clearMachineLicenseCache(machine);
-            await ensureMachineLicense(machine, sshPrivateKey);
+            const issued = await issueMachineLicense(machine, sshPrivateKey);
+            if (!issued) {
+              throw new ValidationError(t('commands.subscription.refresh.failed'));
+            }
           },
           t('commands.subscription.refresh.refreshed')
         );
 
         outputService.success(t('commands.subscription.refresh.success'));
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  sub
+    .command('refresh-repo')
+    .description(t('commands.subscription.refreshRepo.description'))
+    .argument('<repo>', t('commands.subscription.refreshRepo.repoArgument'))
+    .requiredOption('-m, --machine <name>', t('options.machine'))
+    .action(async (repoName, options) => {
+      try {
+        await withSpinner(
+          t('commands.subscription.refreshRepo.refreshing'),
+          async () => {
+            const localConfig = await configService.getLocalConfig();
+            const machine = await configService.getLocalMachine(options.machine);
+            const repo = await configService.getRepository(repoName);
+            if (!repo) {
+              throw new ValidationError(
+                t('commands.subscription.refreshRepo.notFound', { repoName })
+              );
+            }
+            const sshPrivateKey =
+              localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
+
+            const refreshed = await refreshRepoLicenseIdentity(machine, sshPrivateKey, {
+              repositoryGuid: repo.repositoryGuid,
+              grandGuid: repo.grandGuid,
+              kind: repo.grandGuid && repo.grandGuid !== repo.repositoryGuid ? 'fork' : 'grand',
+            });
+            if (!refreshed) {
+              throw new ValidationError(t('commands.subscription.refreshRepo.failed'));
+            }
+          },
+          t('commands.subscription.refreshRepo.refreshed')
+        );
+
+        outputService.success(t('commands.subscription.refreshRepo.success', { repoName }));
       } catch (error) {
         handleError(error);
       }
@@ -199,46 +238,202 @@ async function deviceCodeLogin(serverUrl: string): Promise<string> {
 }
 
 async function displayRemoteStatus(): Promise<void> {
-  if (!existsSync(TOKEN_FILE)) {
-    outputService.info(t('errors.subscription.notLoggedIn'));
+  const tokenState = getSubscriptionTokenState();
+  if (tokenState.kind !== 'ready') {
+    handleSubscriptionTokenState(tokenState);
     return;
   }
 
-  const { token, serverUrl } = loadToken();
+  const { token } = tokenState.token;
+  const { serverUrl } = tokenState;
   try {
-    const resp = await fetch(`${serverUrl}/account/api/v1/licenses/status`, {
+    const resp = await fetch(`${serverUrl}/account/api/v1/licenses/report`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!resp.ok) return;
 
     const status = (await resp.json()) as {
+      subscriptionId: string;
       planCode: string;
       status: string;
-      activeMachineCount: number;
-      maxMachines: number;
-      machines: { machineId: string; lastSeenAt: string }[];
+      machineSlots: {
+        active: number;
+        max: number;
+        machines: { machineId: string; lastSeenAt: string }[];
+      };
+      floatingLicenseRequests: {
+        used: number;
+        limit: number;
+        windowStart: string;
+        windowEnd: string;
+      };
+      repoLicenses: {
+        totalTrackedRepos: number;
+        validCount: number;
+        refreshRecommendedCount: number;
+        hardExpiredCount: number;
+      };
     };
 
     outputService.info(t('commands.subscription.status.remote'));
     outputService.info(t('commands.subscription.status.remotePlan', { plan: status.planCode }));
     outputService.info(t('commands.subscription.status.remoteStatus', { status: status.status }));
-    outputService.info(
-      t('commands.subscription.status.remoteMachines', {
-        active: status.activeMachineCount,
-        max: status.maxMachines,
-      })
-    );
-    for (const m of status.machines) {
-      outputService.info(
-        t('commands.subscription.status.remoteMachine', {
-          id: m.machineId.slice(0, 12),
-          lastSeen: m.lastSeenAt,
-        })
-      );
-    }
+    outputRemoteStatus(status);
   } catch {
     // Remote status is optional
   }
+}
+
+function handleSubscriptionTokenState(
+  tokenState: ReturnType<typeof getSubscriptionTokenState>
+): boolean {
+  if (tokenState.kind === 'missing') {
+    outputService.info(t('errors.subscription.notLoggedIn'));
+    return true;
+  }
+  if (tokenState.kind === 'server_mismatch') {
+    outputService.warn(
+      t('commands.subscription.status.serverMismatch', {
+        actualServerUrl: tokenState.actualServerUrl,
+        expectedServerUrl: tokenState.expectedServerUrl,
+      })
+    );
+    return true;
+  }
+  return false;
+}
+
+function outputRemoteStatus(status: {
+  subscriptionId: string;
+  planCode: string;
+  status: string;
+  machineSlots: {
+    active: number;
+    max: number;
+    machines: { machineId: string; lastSeenAt: string }[];
+  };
+  floatingLicenseRequests: {
+    used: number;
+    limit: number;
+    windowStart: string;
+    windowEnd: string;
+  };
+  repoLicenses: {
+    totalTrackedRepos: number;
+    validCount: number;
+    refreshRecommendedCount: number;
+    hardExpiredCount: number;
+  };
+}): void {
+  outputService.info(t('commands.subscription.status.remote'));
+  outputService.info(t('commands.subscription.status.remotePlan', { plan: status.planCode }));
+  outputService.info(t('commands.subscription.status.remoteStatus', { status: status.status }));
+  outputService.info(
+    t('commands.subscription.status.remoteFloatingLicenses', {
+      active: status.machineSlots.active,
+      max: status.machineSlots.max,
+    })
+  );
+  outputService.info(
+    t('commands.subscription.status.remoteFloatingLicenseRequests', {
+      used: status.floatingLicenseRequests.used,
+      limit: status.floatingLicenseRequests.limit,
+    })
+  );
+  outputService.info(
+    t('commands.subscription.status.remoteRepoLicenses', {
+      totalTrackedRepos: status.repoLicenses.totalTrackedRepos,
+      validCount: status.repoLicenses.validCount,
+      refreshRecommendedCount: status.repoLicenses.refreshRecommendedCount,
+      hardExpiredCount: status.repoLicenses.hardExpiredCount,
+    })
+  );
+  for (const machine of status.machineSlots.machines) {
+    outputService.info(
+      t('commands.subscription.status.remoteMachine', {
+        id: machine.machineId.slice(0, 12),
+        lastSeen: machine.lastSeenAt,
+      })
+    );
+  }
+}
+
+async function displayRepoLicenseStatus(machineName: string): Promise<void> {
+  const localConfig = await configService.getLocalConfig();
+  const machine = await configService.getLocalMachine(machineName);
+  const sshPrivateKey =
+    localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
+
+  const sftp = new SFTPClient({
+    host: machine.ip,
+    port: machine.port ?? DEFAULTS.SSH.PORT,
+    username: machine.user,
+    privateKey: sshPrivateKey,
+  });
+
+  try {
+    await sftp.connect();
+    const content = await sftp.exec(
+      'sudo sh -lc \'for f in /var/lib/rediacc/license/repos/*.json; do [ -f "$f" ] || continue; base64 -w0 "$f"; printf "\\n"; done\''
+    );
+    const entries = content
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => Buffer.from(line, 'base64').toString('utf-8'))
+      .map((line) => JSON.parse(line) as { payload: string })
+      .map(
+        (line) =>
+          JSON.parse(Buffer.from(line.payload, 'base64').toString('utf-8')) as {
+            repositoryGuid: string;
+            expiresAt?: string;
+            refreshRecommendedAt?: string;
+            hardExpiresAt?: string;
+          }
+      );
+
+    outputService.info(t('commands.subscription.repoStatus.header', { machineName }));
+    if (entries.length === 0) {
+      outputService.info(t('commands.subscription.repoStatus.empty'));
+      return;
+    }
+
+    for (const entry of entries) {
+      const freshness = getRepoLicenseFreshness(entry);
+      const effectiveHardExpiry = entry.hardExpiresAt ?? entry.expiresAt;
+      outputService.info(
+        t('commands.subscription.repoStatus.entry', {
+          repositoryGuid: entry.repositoryGuid,
+          freshness: t(`commands.subscription.repoStatus.freshness.${freshness}`),
+          hardExpirySuffix: effectiveHardExpiry
+            ? t('commands.subscription.repoStatus.hardExpirySuffix', {
+                effectiveHardExpiry,
+              })
+            : '',
+        })
+      );
+    }
+  } finally {
+    sftp.close();
+  }
+}
+
+function getRepoLicenseFreshness(entry: {
+  expiresAt?: string;
+  refreshRecommendedAt?: string;
+  hardExpiresAt?: string;
+}): 'unknown' | 'hardExpired' | 'refreshRecommended' | 'valid' {
+  const effectiveHardExpiry = entry.hardExpiresAt ?? entry.expiresAt;
+  if (!effectiveHardExpiry) {
+    return 'unknown';
+  }
+  if (new Date(effectiveHardExpiry) <= new Date()) {
+    return 'hardExpired';
+  }
+  if (entry.refreshRecommendedAt && new Date(entry.refreshRecommendedAt) <= new Date()) {
+    return 'refreshRecommended';
+  }
+  return 'valid';
 }
 
 async function displayMachineLicense(machineName: string): Promise<void> {
@@ -300,11 +495,4 @@ async function tryOpenBrowser(url: string): Promise<void> {
   } catch {
     outputService.info(t('commands.subscription.login.browserFailed'));
   }
-}
-
-function loadToken(): StoredToken {
-  if (!existsSync(TOKEN_FILE)) {
-    throw new ValidationError(t('errors.subscription.notLoggedIn'));
-  }
-  return JSON.parse(readFileSync(TOKEN_FILE, 'utf-8'));
 }

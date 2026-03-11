@@ -205,9 +205,10 @@ async function executeProxySetup(
   sftp: SFTPClient,
   infraJSON: string,
   baseDomain: string | undefined,
+  remoteRenetPath: string,
   options: PushInfraOptions
 ): Promise<void> {
-  const configExitCode = await sftp.execStreaming('sudo renet proxy configure', {
+  const configExitCode = await sftp.execStreaming(`sudo ${remoteRenetPath} proxy configure`, {
     stdin: infraJSON,
     onStdout: (data) => {
       if (options.debug) process.stdout.write(data);
@@ -240,7 +241,7 @@ async function executeProxySetup(
     outputService.info(t('commands.context.pushInfra.installingProxy'));
   }
 
-  const installExitCode = await sftp.execStreaming('sudo renet proxy install', {
+  const installExitCode = await sftp.execStreaming(`sudo ${remoteRenetPath} proxy install`, {
     onStdout: (data) => {
       if (options.debug) process.stdout.write(data);
     },
@@ -287,10 +288,15 @@ export async function pushInfraConfig(
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
-  await provisionRenetToRemote({ renetPath: localConfig.renetPath }, machine, sshPrivateKey, {
-    debug: options.debug,
-    restartServices: false,
-  });
+  const remoteRenetPath = await provisionRenetToRemote(
+    { renetPath: localConfig.renetPath },
+    machine,
+    sshPrivateKey,
+    {
+      debug: options.debug,
+      restartServices: false,
+    }
+  );
 
   const infraJSON = buildInfraPayload(machineName, machine.infra, {
     cfDnsApiToken: localConfig.cfDnsApiToken,
@@ -306,7 +312,7 @@ export async function pushInfraConfig(
   await sftp.connect();
 
   try {
-    await executeProxySetup(sftp, infraJSON, machine.infra.baseDomain, options);
+    await executeProxySetup(sftp, infraJSON, machine.infra.baseDomain, remoteRenetPath, options);
   } finally {
     sftp.close();
   }

@@ -1437,7 +1437,8 @@
         "description": "تحديث ترخيص الجهاز",
         "refreshed": "تم تحديث الترخيص",
         "refreshing": "جارٍ تحديث الترخيص...",
-        "success": "تم تحديث وتثبيت الترخيص"
+        "success": "تم تحديث وتثبيت الترخيص",
+        "failed": "فشل إصدار ترخيص الجهاز"
       },
       "status": {
         "description": "عرض حالة الاشتراك والترخيص",
@@ -1456,7 +1457,33 @@
         "remoteStatus": "  الحالة:   {{status}}",
         "sequence": "  التسلسل:  {{sequenceNumber}}",
         "statusLabel": "  الحالة:   {{status}}",
-        "valid": "  صالح (ينتهي خلال {{mins}} دقيقة)"
+        "valid": "  صالح (ينتهي خلال {{mins}} دقيقة)",
+        "serverMismatch": "رمز المطور يتبع {{actualServerUrl}}، لكن شجرة العمل هذه تستخدم {{expectedServerUrl}}. شغّل `rdc subscription login` مرة أخرى.",
+        "remoteFloatingLicenses": "  التراخيص العائمة: {{active}}/{{max}}",
+        "remoteFloatingLicenseRequests": "  طلبات الترخيص العائم: {{used}}/{{limit}}",
+        "remoteRepoLicenses": "  تراخيص المستودعات: {{totalTrackedRepos}} متتبعة، {{validCount}} صالحة، {{refreshRecommendedCount}} تحتاج تحديثًا، {{hardExpiredCount}} منتهية بالكامل"
+      },
+      "repoStatus": {
+        "description": "عرض تراخيص المستودعات المثبتة على جهاز",
+        "header": "\nتراخيص المستودعات: ({{machineName}})",
+        "empty": "  لا توجد تراخيص مستودعات مثبتة",
+        "entry": "  - المستودع {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
+        "hardExpirySuffix": " (انتهاء نهائي: {{effectiveHardExpiry}})",
+        "freshness": {
+          "unknown": "غير معروف",
+          "hardExpired": "منتهي بالكامل",
+          "refreshRecommended": "يوصى بالتحديث",
+          "valid": "صالح"
+        }
+      },
+      "refreshRepo": {
+        "description": "تحديث ترخيص المستودع لمستودع موجود على جهاز",
+        "repoArgument": "اسم المستودع",
+        "refreshing": "جارٍ تحديث ترخيص المستودع...",
+        "notFound": "المستودع غير موجود: {{repoName}}",
+        "failed": "فشل تحديث ترخيص المستودع",
+        "refreshed": "تم تحديث ترخيص المستودع",
+        "success": "تم تحديث ترخيص المستودع لـ \"{{repoName}}\""
       }
     },
     "sync": {

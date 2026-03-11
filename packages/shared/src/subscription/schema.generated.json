@@ -9,43 +9,6 @@
       "kind": "enum",
       "values": ["ACTIVE", "INACTIVE", "EXPIRED", "SUSPENDED", "GRACE"]
     },
-    "ResourceLimits": {
-      "kind": "struct",
-      "fields": {
-        "bridges": {
-          "type": "number",
-          "jsonKey": "bridges"
-        },
-        "maxReservedJobs": {
-          "type": "number",
-          "jsonKey": "maxReservedJobs"
-        },
-        "jobTimeoutHours": {
-          "type": "number",
-          "jsonKey": "jobTimeoutHours"
-        },
-        "maxRepositorySizeGb": {
-          "type": "number",
-          "jsonKey": "maxRepositorySizeGb"
-        },
-        "maxJobsPerMonth": {
-          "type": "number",
-          "jsonKey": "maxJobsPerMonth"
-        },
-        "maxPendingPerUser": {
-          "type": "number",
-          "jsonKey": "maxPendingPerUser"
-        },
-        "maxTasksPerMachine": {
-          "type": "number",
-          "jsonKey": "maxTasksPerMachine"
-        },
-        "cephPoolsPerTeam": {
-          "type": "number",
-          "jsonKey": "cephPoolsPerTeam"
-        }
-      }
-    },
     "FeatureFlags": {
       "kind": "struct",
       "fields": {
@@ -132,10 +95,13 @@
           "type": "string",
           "jsonKey": "gracePeriodEnds"
         },
-        "resources": {
-          "type": "object",
-          "jsonKey": "resources",
-          "nestedType": "ResourceLimits"
+        "maxRepositorySizeGb": {
+          "type": "number",
+          "jsonKey": "maxRepositorySizeGb"
+        },
+        "maxFloatingLicenseRequestsPerMonth": {
+          "type": "number",
+          "jsonKey": "maxFloatingLicenseRequestsPerMonth"
         },
         "features": {
           "type": "object",
@@ -182,10 +148,13 @@
           "jsonKey": "status",
           "nestedType": "SubscriptionStatus"
         },
-        "resources": {
-          "type": "object",
-          "jsonKey": "resources",
-          "nestedType": "ResourceLimits"
+        "maxRepositorySizeGb": {
+          "type": "number",
+          "jsonKey": "maxRepositorySizeGb"
+        },
+        "maxFloatingLicenseRequestsPerMonth": {
+          "type": "number",
+          "jsonKey": "maxFloatingLicenseRequestsPerMonth"
         },
         "features": {
           "type": "object",
@@ -227,44 +196,20 @@
     "checkInIntervalHours": 24,
     "planResources": {
       "COMMUNITY": {
-        "bridges": 0,
-        "maxReservedJobs": 1,
-        "jobTimeoutHours": 2,
         "maxRepositorySizeGb": 10,
-        "maxJobsPerMonth": 500,
-        "maxPendingPerUser": 5,
-        "maxTasksPerMachine": 1,
-        "cephPoolsPerTeam": 0
+        "maxFloatingLicenseRequestsPerMonth": 500
       },
       "PROFESSIONAL": {
-        "bridges": 1,
-        "maxReservedJobs": 2,
-        "jobTimeoutHours": 24,
         "maxRepositorySizeGb": 100,
-        "maxJobsPerMonth": 5000,
-        "maxPendingPerUser": 10,
-        "maxTasksPerMachine": 2,
-        "cephPoolsPerTeam": 0
+        "maxFloatingLicenseRequestsPerMonth": 5000
       },
       "BUSINESS": {
-        "bridges": 2,
-        "maxReservedJobs": 3,
-        "jobTimeoutHours": 72,
         "maxRepositorySizeGb": 500,
-        "maxJobsPerMonth": 20000,
-        "maxPendingPerUser": 20,
-        "maxTasksPerMachine": 3,
-        "cephPoolsPerTeam": 1
+        "maxFloatingLicenseRequestsPerMonth": 20000
       },
       "ENTERPRISE": {
-        "bridges": 10,
-        "maxReservedJobs": 5,
-        "jobTimeoutHours": 96,
         "maxRepositorySizeGb": 2048,
-        "maxJobsPerMonth": 100000,
-        "maxPendingPerUser": 50,
-        "maxTasksPerMachine": 5,
-        "cephPoolsPerTeam": -1
+        "maxFloatingLicenseRequestsPerMonth": 100000
       }
     },
     "planFeatures": {

@@ -8,7 +8,6 @@ import { PLAN_ORDER, SUBSCRIPTION_CONFIG } from './constants';
 import type {
   OrganizationSubscription,
   PlanCode,
-  ResourceLimits,
   SignedSubscriptionBlob,
   SubscriptionData,
   SubscriptionStatus,
@@ -58,13 +57,15 @@ export function validateSubscriptionData(data: unknown): data is SubscriptionDat
     return false;
   }
 
-  // Check resources object
-  if (!subscription.resources || typeof subscription.resources !== 'object') {
+  // Check features object
+  if (!subscription.features || typeof subscription.features !== 'object') {
     return false;
   }
 
-  // Check features object
-  if (!subscription.features || typeof subscription.features !== 'object') {
+  if (
+    typeof subscription.maxRepositorySizeGb !== 'number' ||
+    typeof subscription.maxFloatingLicenseRequestsPerMonth !== 'number'
+  ) {
     return false;
   }
 
@@ -118,8 +119,8 @@ export function validateOrganizationSubscription(
     typeof cached.status === 'string' &&
     typeof cached.expiresAt === 'string' &&
     typeof cached.gracePeriodEnds === 'string' &&
-    cached.resources !== null &&
-    typeof cached.resources === 'object' &&
+    typeof cached.maxRepositorySizeGb === 'number' &&
+    typeof cached.maxFloatingLicenseRequestsPerMonth === 'number' &&
     cached.features !== null &&
     typeof cached.features === 'object'
   );
@@ -256,33 +257,4 @@ export function decodeSubscriptionPayload(payload: string): SubscriptionData | n
  */
 export function encodeSubscriptionPayload(data: SubscriptionData): string {
   return btoa(JSON.stringify(data));
-}
-
-/**
- * Validate resource limits object has all required fields.
- */
-export function validateResourceLimits(limits: unknown): limits is ResourceLimits {
-  if (!limits || typeof limits !== 'object') {
-    return false;
-  }
-
-  const l = limits as Partial<ResourceLimits>;
-  const requiredKeys: (keyof ResourceLimits)[] = [
-    'bridges',
-    'maxReservedJobs',
-    'jobTimeoutHours',
-    'maxRepositorySizeGb',
-    'maxJobsPerMonth',
-    'maxPendingPerUser',
-    'maxTasksPerMachine',
-    'cephPoolsPerTeam',
-  ];
-
-  for (const key of requiredKeys) {
-    if (typeof l[key] !== 'number') {
-      return false;
-    }
-  }
-
-  return true;
 }

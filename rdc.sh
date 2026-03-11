@@ -14,13 +14,6 @@ source "$ROOT_DIR/.ci/lib/service.sh"
 source "$ROOT_DIR/.ci/scripts/lib/common.sh"
 source "$ROOT_DIR/.ci/lib/local-common.sh"
 
-# Backward compatibility: Load parent .env if exists
-if [[ -f "$ROOT_DIR/../.env" ]]; then
-    set +u # Disable unset variable errors temporarily
-    source "$ROOT_DIR/../.env"
-    set -u
-fi
-
 check_node_version
 
 log_step "Preparing CLI development environment"
@@ -31,12 +24,17 @@ ensure_deps
 # Ensure shared packages are built
 ensure_packages_built
 
+# Ensure CLI is built and type-valid
+ensure_cli_built
+
 # Ensure renet is built and up-to-date
 ensure_renet_built
 
 # Add renet binary directory to PATH so CLI can find it
 renet_bin_dir="$ROOT_DIR/private/renet/bin"
 export PATH="$renet_bin_dir:$PATH"
+export REDIACC_ENVIRONMENT=development
+export REDIACC_SUBSCRIPTION_TOKEN_FILE="$ROOT_DIR/.rdc-dev/api-token.json"
 
 log_info "Renet available at: $renet_bin_dir/renet"
 
@@ -50,5 +48,5 @@ fi
 
 log_step "Starting CLI (dev mode)"
 
-# Run CLI via tsx, passing through all arguments
-npx tsx "$ROOT_DIR/packages/cli/src/index.ts" "$@"
+# Run the compiled CLI bundle, passing through all arguments
+node "$ROOT_DIR/packages/cli/dist/cli-bundle.cjs" "$@"

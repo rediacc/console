@@ -41,15 +41,20 @@ export async function runSnapshotCommand(
   if (options.debug) {
     outputService.info(`Provisioning renet to ${machine.ip}...`);
   }
-  await provisionRenetToRemote({ renetPath: localConfig.renetPath }, machine, sshPrivateKey, {
-    debug: options.debug,
-  });
+  const remoteRenetPath = await provisionRenetToRemote(
+    { renetPath: localConfig.renetPath },
+    machine,
+    sshPrivateKey,
+    {
+      debug: options.debug,
+    }
+  );
 
   // Build command
   const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
   const cmdParts = [
     'sudo',
-    'renet',
+    remoteRenetPath,
     'snapshot',
     subcommand,
     '--datastore',

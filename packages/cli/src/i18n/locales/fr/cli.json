@@ -1437,7 +1437,8 @@
         "description": "Renouveler la licence de la machine",
         "refreshed": "Licence renouvelée",
         "refreshing": "Renouvellement de la licence...",
-        "success": "Licence renouvelée et installée"
+        "success": "Licence renouvelée et installée",
+        "failed": "Impossible de délivrer la licence de la machine"
       },
       "status": {
         "description": "Afficher l’état de l’abonnement et de la licence",
@@ -1456,7 +1457,33 @@
         "remoteStatus": "  État :       {{status}}",
         "sequence": "  Séquence :   {{sequenceNumber}}",
         "statusLabel": "  État :       {{status}}",
-        "valid": "  Valide (expire dans {{mins}} minutes)"
+        "valid": "  Valide (expire dans {{mins}} minutes)",
+        "serverMismatch": "Le jeton de développement appartient à {{actualServerUrl}}, mais ce worktree utilise {{expectedServerUrl}}. Exécutez `rdc subscription login` à nouveau.",
+        "remoteFloatingLicenses": "  Licences flottantes : {{active}}/{{max}}",
+        "remoteFloatingLicenseRequests": "  Demandes de licence flottante : {{used}}/{{limit}}",
+        "remoteRepoLicenses": "  Licences de dépôt : {{totalTrackedRepos}} suivis, {{validCount}} valides, {{refreshRecommendedCount}} actualisation recommandée, {{hardExpiredCount}} expirées définitivement"
+      },
+      "repoStatus": {
+        "description": "Afficher les licences de dépôt installées sur une machine",
+        "header": "\nLicences de dépôt : ({{machineName}})",
+        "empty": "  Aucune licence de dépôt installée",
+        "entry": "  - {{repositoryGuid}} : {{freshness}}{{hardExpirySuffix}}",
+        "hardExpirySuffix": " (expiration définitive : {{effectiveHardExpiry}})",
+        "freshness": {
+          "unknown": "inconnu",
+          "hardExpired": "expiré définitivement",
+          "refreshRecommended": "actualisation recommandée",
+          "valid": "valide"
+        }
+      },
+      "refreshRepo": {
+        "description": "Actualiser la licence du dépôt pour un dépôt existant sur une machine",
+        "repoArgument": "Nom du dépôt",
+        "refreshing": "Actualisation de la licence du dépôt...",
+        "notFound": "Dépôt introuvable : {{repoName}}",
+        "failed": "Impossible d'actualiser la licence du dépôt",
+        "refreshed": "Licence du dépôt actualisée",
+        "success": "Licence du dépôt actualisée pour \"{{repoName}}\""
       }
     },
     "sync": {

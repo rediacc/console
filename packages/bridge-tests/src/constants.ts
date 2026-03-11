@@ -64,11 +64,11 @@ export const TEST_TEAM = TEST_ENV.testTeam;
 
 /**
  * Installation path for renet on VMs (NOT the local build path).
- * NOTE: Mirrored from renet/pkg/common/constants.go (RenetBinaryPath)
+ * NOTE: Mirrored from renet/pkg/common/constants.go (RenetInstallRoot)
  *
- * Uses /usr/bin because sudo's restricted PATH doesn't include /usr/local/bin.
+ * Tests pin to the current CLI version's install slot.
  */
-export const VM_RENET_INSTALL_PATH = '/usr/bin/renet';
+export const VM_RENET_INSTALL_PATH = '/usr/lib/rediacc/renet/0.6.0/renet';
 
 /**
  * Ceph health wait settings for bridge tests.

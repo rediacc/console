@@ -3508,7 +3508,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc audit log --level warn --limit 200",
+          "command": "rdc audit log --limit 200",
           "ctaText": "Ücretsiz Başlayın",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk sızma testinizi 60 saniyeden kısa sürede çalıştırın.",
           "title": "Güvenlik açıklarını saldırganlardan önce bulun"
@@ -3917,7 +3917,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc audit --from 2026-01-01 --to 2026-02-27",
+          "command": "rdc audit history repository production",
           "ctaText": "Community ile Ücretsiz Başlayın",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk denetim raporunuzu bir dakikadan kısa sürede oluşturun.",
           "title": "Her şeyi görün. Hiçbir şeyi kaçırmayın."
@@ -4332,7 +4332,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc repo list-backups --verify",
+          "command": "rdc repo list-backups --from backup-vault -m primary",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk yedeklemenizi bir dakikadan kısa sürede doğrulayın.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
           "tierBadge": "Kredi kartı gerekmez",
@@ -4786,7 +4786,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc repo sync push-all --target secondary-dc",
+          "command": "rdc repo sync push-all --to secondary-dc -m primary",
           "description": "Ücretsiz Community sürümüyle başlayın. Konumlar arasında ücretsiz çoğaltın. Kredi kartı gerekmez.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
           "tierBadge": "10 iş yüküne kadar sonsuza dek ücretsiz",
@@ -5244,7 +5244,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc pentest production --schedule daily --time 02:00",
+          "command": "rdc repo validate production -m primary",
           "ctaText": "Ücretsiz Başlayın",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk sürekli sızma testinizi 30 saniyede zamanlayın.",
           "title": "Saldırganların güvendiği pencereyi kapatın"
@@ -5631,7 +5631,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc repo mount production --credential-file /etc/rediacc/keys/production.key",
+          "command": "rdc repo mount production -m primary",
           "ctaText": "Community ile Ücretsiz Başlayın",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk anahtarınızı bir dakikadan kısa sürede oluşturun.",
           "title": "Şifrelemenizin kontrolünü elinize alın"
@@ -6496,7 +6496,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc failover test --target secondary --simulate",
+          "command": "rdc repo push production --to-machine secondary -m primary --checkpoint",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk felaket kurtarma testinizi 5 dakikadan kısa sürede çalıştırın.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
           "tierBadge": "Kredi kartı gerekmez",
@@ -6938,7 +6938,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc repo push production --verify",
+          "command": "rdc repo push production --to backup-vault -m primary",
           "description": "Ücretsiz Community sürümüyle başlayın. 10 iş yüküne kadar ücretsiz koruyun. Kredi kartı gerekmez.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
           "tierBadge": "10 iş yüküne kadar sonsuza dek ücretsiz",
@@ -7387,7 +7387,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc repo fork production --name dev-loadtest",
+          "command": "rdc repo fork production -m primary --tag dev-loadtest",
           "description": "Ücretsiz Community sürümüyle başlayın. İsteğe bağlı klonlama dahil.",
           "primaryCta": "Ücretsiz Başlayın",
           "tierBadge": "5 depoya kadar ücretsiz · Kredi kartı gerekmez",
@@ -7816,7 +7816,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc repo pull production --storage daily-2026-02-27",
+          "command": "rdc repo pull production --from daily-2026-02-27 -m primary",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk ortamınızı 5 dakikadan kısa sürede geri yükleyin.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
           "tierBadge": "Kredi kartı gerekmez",
@@ -8683,7 +8683,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc repo sync push-all --target secondary",
+          "command": "rdc repo sync push-all --to secondary -m primary",
           "description": "Ücretsiz Community sürümüyle başlayın. Şifreli göç dahil.",
           "primaryCta": "Ücretsiz Başlayın",
           "tierBadge": "5 depoya kadar ücretsiz · Kredi kartı gerekmez",
@@ -9586,7 +9586,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc restore production --point-in-time latest-clean",
+          "command": "rdc repo pull production --from backup-vault -m primary --force",
           "ctaText": "Community ile Ücretsiz Başlayın",
           "description": "Ücretsiz Community sürümüyle başlayın. 10 iş yüküne kadar ücretsiz koruyun. Kredi kartı gerekmez.",
           "title": "Kurtarmanın saldırıdan daha yavaş olmasına izin vermeyin"
@@ -10925,7 +10925,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc migrate production --to new-provider",
+          "command": "rdc repo push production --to-machine new-provider -m primary --checkpoint",
           "ctaText": "Community ile Ücretsiz Başlayın",
           "description": "Ücretsiz Community sürümüyle başlayın. İstediğiniz yere dağıtın. İstediğiniz zaman göç edin. Kredi kartı gerekmez.",
           "title": "Altyapınızın kontrolünü geri alın"
@@ -11130,7 +11130,7 @@
             },
             {
               "title": "One-command migration",
-              "description": "Run rdc migrate production --to new-provider. Incremental transfer. Zero downtime.",
+              "description": "Run rdc repo push production --to-machine new-provider -m primary --checkpoint. Incremental transfer. Zero downtime.",
               "icon": "arrow-right-circle"
             },
             {

@@ -5,16 +5,17 @@
  * built-in provider registry or using custom inline mappings.
  */
 
-import { createRequire } from 'node:module';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { CloudProviderConfig, ProviderMapping } from '../../types/index.js';
+import providerRegistry from './provider-registry.json' with { type: 'json' };
 
-let registryCache: Record<string, ProviderMapping> | undefined;
+type KnownProviderMapping = Omit<ProviderMapping, 'source'>;
 
-function loadRegistry(): Record<string, ProviderMapping> {
+let registryCache: Record<string, KnownProviderMapping> | undefined;
+
+function loadRegistry(): Record<string, KnownProviderMapping> {
   if (registryCache) return registryCache;
-  const require = createRequire(import.meta.url);
-  registryCache = require('./provider-registry.json') as Record<string, ProviderMapping>;
+  registryCache = providerRegistry as Record<string, KnownProviderMapping>;
   return registryCache;
 }
 

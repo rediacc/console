@@ -8,7 +8,6 @@
 
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs/promises';
-import { createRequire } from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { PLATFORM_DEFAULTS } from '@rediacc/shared/config/defaults';
@@ -51,8 +50,10 @@ interface SEAModule {
  */
 function tryLoadSEA(): SEAModule | null {
   try {
-    const require = createRequire(import.meta.url);
-    const sea = require('node:sea') as SEAModule;
+    const sea = process.getBuiltinModule('node:sea') as SEAModule | undefined;
+    if (!sea) {
+      return null;
+    }
     if (typeof sea.isSea === 'function' && sea.isSea()) {
       return sea;
     }

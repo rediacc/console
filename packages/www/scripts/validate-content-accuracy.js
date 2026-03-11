@@ -43,8 +43,8 @@ const VALID_REDIACC_DOMAINS = new Set(['www.rediacc.com', 'releases.rediacc.com'
 
 // Regex to extract rdc commands from inline backticks
 const BACKTICK_RDC_RE = /`(rdc\s[^`]+)`/g;
-// Regex to extract rdc commands from JSON string values
-const JSON_RDC_RE = /\brdc\s+\S+[^"']*/g;
+// Regex to extract rdc commands from translation command fields
+const JSON_COMMAND_FIELD_RE = /"command"\s*:\s*"([^"]*\brdc\s[^"]*)"/;
 // Regex to match URLs with rediacc in the domain
 const REDIACC_URL_RE = /https?:\/\/([a-z0-9.-]*rediacc[a-z0-9.-]*\.[a-z]{2,})(\/[^\s"'`)\]]*)?/gi;
 
@@ -101,17 +101,14 @@ function extractJsonRdcCommands(jsonContent, file) {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (!line.includes('rdc ')) continue;
+    if (!line.includes('"command"') || !line.includes('rdc ')) continue;
 
-    JSON_RDC_RE.lastIndex = 0;
-    let match;
-    while ((match = JSON_RDC_RE.exec(line)) !== null) {
-      let text = match[0].trim();
-      text = text.replace(/[",}\]]+$/, '').trim();
-      text = text.replace(/\.\s*$/, '').trim();
-      if (text.split(/\s+/).length >= 2) {
-        commands.push({ text, line: i + 1, file });
-      }
+    const match = line.match(JSON_COMMAND_FIELD_RE);
+    if (!match) continue;
+
+    const text = match[1].trim();
+    if (text.split(/\s+/).length >= 2) {
+      commands.push({ text, line: i + 1, file });
     }
   }
 

@@ -261,7 +261,9 @@ export function registerSetupCommands(config: Command, program: Command): void {
 
         outputService.info(t('commands.config.setupMachine.starting', { machine: name }));
 
-        await provisionRenetToRemote(localConfig, machine, sshPrivateKey, { debug: options.debug });
+        const remoteRenetPath = await provisionRenetToRemote(localConfig, machine, sshPrivateKey, {
+          debug: options.debug,
+        });
 
         const sftp = new SFTPClient({
           host: machine.ip,
@@ -272,7 +274,7 @@ export function registerSetupCommands(config: Command, program: Command): void {
         await sftp.connect();
 
         try {
-          const cmd = `sudo renet setup --auto --datastore ${options.datastore} --datastore-size ${options.datastoreSize}`;
+          const cmd = `sudo ${remoteRenetPath} setup --auto --datastore ${options.datastore} --datastore-size ${options.datastoreSize}`;
 
           if (options.debug) {
             outputService.info(`[setup] Running: ${cmd}`);

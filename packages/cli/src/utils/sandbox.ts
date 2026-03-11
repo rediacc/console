@@ -13,14 +13,14 @@ export interface SandboxOptions {
 }
 
 /**
- * Build the `renet sandbox-exec` prefix for a remote command.
+ * Build the `<renet-path> sandbox-exec` prefix for a remote command.
  * Mirrors Go's BuildSSHSandboxPrefix().
  * Returns empty string if no read-write paths are configured.
  */
-export function buildSandboxPrefix(opts: SandboxOptions): string {
+export function buildSandboxPrefix(opts: SandboxOptions, renetBinaryPath: string): string {
   if (opts.allowedReadWrite.length === 0) return '';
 
-  let prefix = 'renet sandbox-exec';
+  let prefix = `${shellQuote(renetBinaryPath)} sandbox-exec`;
   for (const p of opts.allowedReadWrite) {
     prefix += ` --allow-rw ${shellQuote(p)}`;
   }

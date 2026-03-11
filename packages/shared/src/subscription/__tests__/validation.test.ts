@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PLAN_FEATURES, PLAN_RESOURCES } from '../constants.js';
+import { PLAN_FEATURES, PLAN_LIMITS } from '../constants.js';
 import type {
   OrganizationSubscription,
   SignedSubscriptionBlob,
@@ -15,7 +15,6 @@ import {
   isSubscriptionActive,
   isSubscriptionExpired,
   validateOrganizationSubscription,
-  validateResourceLimits,
   validateSignedBlob,
   validateSubscription,
   validateSubscriptionData,
@@ -34,7 +33,8 @@ const createValidSubscriptionData = (
   expiresAt: '2027-01-01T00:00:00Z',
   lastCheckIn: new Date().toISOString(),
   gracePeriodEnds: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-  resources: PLAN_RESOURCES.PROFESSIONAL,
+  maxRepositorySizeGb: PLAN_LIMITS.PROFESSIONAL.maxRepositorySizeGb,
+  maxFloatingLicenseRequestsPerMonth: PLAN_LIMITS.PROFESSIONAL.maxFloatingLicenseRequestsPerMonth,
   features: PLAN_FEATURES.PROFESSIONAL,
   maxActivations: 5,
   activationCount: 1,
@@ -72,9 +72,9 @@ describe('Subscription Validation', () => {
       expect(validateSubscriptionData(data)).toBe(false);
     });
 
-    it('should return false for missing resources', () => {
+    it('should return false for missing limits', () => {
       const data = createValidSubscriptionData();
-      delete (data as unknown as Record<string, unknown>).resources;
+      delete (data as unknown as Record<string, unknown>).maxRepositorySizeGb;
       expect(validateSubscriptionData(data)).toBe(false);
     });
 
@@ -122,7 +122,9 @@ describe('Subscription Validation', () => {
         cachedData: {
           planCode: 'PROFESSIONAL',
           status: 'ACTIVE',
-          resources: PLAN_RESOURCES.PROFESSIONAL,
+          maxRepositorySizeGb: PLAN_LIMITS.PROFESSIONAL.maxRepositorySizeGb,
+          maxFloatingLicenseRequestsPerMonth:
+            PLAN_LIMITS.PROFESSIONAL.maxFloatingLicenseRequestsPerMonth,
           features: PLAN_FEATURES.PROFESSIONAL,
           expiresAt: '2027-01-01T00:00:00Z',
           gracePeriodEnds: '2026-01-04T00:00:00Z',
@@ -144,22 +146,6 @@ describe('Subscription Validation', () => {
         },
       };
       expect(validateOrganizationSubscription(subscription)).toBe(false);
-    });
-  });
-
-  describe('validateResourceLimits', () => {
-    it('should return true for valid resource limits', () => {
-      expect(validateResourceLimits(PLAN_RESOURCES.COMMUNITY)).toBe(true);
-      expect(validateResourceLimits(PLAN_RESOURCES.ENTERPRISE)).toBe(true);
-    });
-
-    it('should return false for missing fields', () => {
-      expect(validateResourceLimits({ bridges: 0 })).toBe(false);
-    });
-
-    it('should return false for non-numeric values', () => {
-      const invalid = { ...PLAN_RESOURCES.COMMUNITY, bridges: 'zero' };
-      expect(validateResourceLimits(invalid)).toBe(false);
     });
   });
 });

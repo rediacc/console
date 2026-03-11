@@ -637,8 +637,8 @@
           "description": "Production-ready infrastructure automation — Free forever",
           "features": [
             "Unlimited users & teams",
-            "Unlimited repositories, 10 GB each",
-            "500 jobs/month",
+            "Unlimited repositories",
+            "500 floating license requests/month",
             "Unlimited machines",
             "Snapshot restores",
             "Manual scheduling",
@@ -651,8 +651,8 @@
           "description": "Professional automation and scheduling for growing teams",
           "features": [
             "Everything in Community +",
-            "Unlimited repositories, 100 GB each",
-            "5,000 jobs/month",
+            "Unlimited repositories",
+            "5,000 floating license requests/month",
             "Automated scheduling",
             "24-hour point-in-time restore",
             "Email + chat support",
@@ -666,8 +666,8 @@
           "description": "Mission-critical infrastructure with expert onboarding",
           "features": [
             "Everything in Professional +",
-            "Unlimited repositories, 500 GB each",
-            "20,000 jobs/month",
+            "Unlimited repositories",
+            "20,000 floating license requests/month",
             "$9,999 implementation support included (Launch Offer)",
             "Geo-redundant storage (3 regions)",
             "Continuous data protection",
@@ -684,8 +684,8 @@
           "priceNote": "*Starting at",
           "features": [
             "Everything in Business +",
-            "Unlimited repositories, 2 TB+ each",
-            "100,000 jobs/month",
+            "Unlimited repositories",
+            "100,000 floating license requests/month",
             "Custom SLA with guaranteed restore times",
             "Dedicated infrastructure tenant",
             "24/7/365 white-glove support",
@@ -930,7 +930,7 @@
         "items": [
           {
             "question": "Is there a free plan?",
-            "answer": "Yes. The Community plan is free forever with up to 2 machines, 500 jobs per month, and full snapshot restore capabilities. No credit card required."
+            "answer": "Yes. The Community plan is free forever with up to 2 machines, 500 floating license requests per month, and full snapshot restore capabilities. No credit card required."
           },
           {
             "question": "Can I upgrade or downgrade my plan?",
@@ -1040,19 +1040,22 @@
         "metrics": [
           {
             "key": "jobsPerMonth",
-            "label": "Jobs per month"
-          },
-          {
-            "key": "repoSize",
-            "label": "Repository size limit"
+            "label": "Floating license requests",
+            "tooltip": "Successful machine license issuances counted in the current UTC calendar month."
           },
           {
             "key": "floatingLicenses",
-            "label": "Floating Licenses"
+            "label": "Floating Licenses",
+            "tooltip": "How many machines can hold active licenses at the same time."
           },
           {
             "key": "repositories",
             "label": "Repositories"
+          },
+          {
+            "key": "repoSize",
+            "label": "Repository size",
+            "tooltip": "Unregistered users can use up to 4 GB. Registered Community users can use up to 10 GB. Larger repositories require a paid plan."
           },
           {
             "key": "usersTeams",
@@ -1083,7 +1086,7 @@
           },
           "enterprise": {
             "jobsPerMonth": "100,000",
-            "repoSize": "2 TB+",
+            "repoSize": "2 TB",
             "repositories": "Unlimited",
             "floatingLicenses": "50",
             "usersTeams": "Unlimited"
@@ -1105,46 +1108,18 @@
                 "enterprise": "50"
               },
               {
-                "label": "Jobs per Month",
+                "label": "Floating license requests",
                 "community": "500",
                 "professional": "5,000",
                 "business": "20,000",
                 "enterprise": "100,000"
               },
               {
-                "label": "Storage per Repository",
+                "label": "Repository size",
                 "community": "10 GB",
                 "professional": "100 GB",
                 "business": "500 GB",
-                "enterprise": "2 TB+"
-              },
-              {
-                "label": "Bridges",
-                "community": "—",
-                "professional": "1",
-                "business": "2",
-                "enterprise": "10"
-              },
-              {
-                "label": "Job Timeout",
-                "community": "2 hours",
-                "professional": "24 hours",
-                "business": "72 hours",
-                "enterprise": "96 hours"
-              },
-              {
-                "label": "Reserved Jobs",
-                "community": "1",
-                "professional": "2",
-                "business": "3",
-                "enterprise": "5"
-              },
-              {
-                "label": "Tasks per Machine",
-                "community": "1",
-                "professional": "2",
-                "business": "3",
-                "enterprise": "5"
+                "enterprise": "2 TB"
               }
             ]
           },
@@ -3822,7 +3797,7 @@
           "description": "Start with the free Community edition. On-demand cloning included.",
           "primaryCta": "Start Free",
           "tierBadge": "Free for up to 5 repositories · No credit card required",
-          "command": "rdc repo fork production --name dev-loadtest"
+          "command": "rdc repo fork production -m primary --tag dev-loadtest"
         },
         "techStrip": {
           "label": "Clone any containerized workload",
@@ -5221,7 +5196,7 @@
           "description": "Start with the free Community edition. Protect up to 10 workloads at no cost. No credit card.",
           "primaryCta": "Start Free with Community",
           "tierBadge": "Free forever for up to 10 workloads",
-          "command": "rdc repo push production --verify"
+          "command": "rdc repo push production --to backup-vault -m primary"
         },
         "techStrip": {
           "label": "Protect any containerized workload",
@@ -5762,7 +5737,7 @@
           "description": "Start with the free Community edition. Encrypted migration included.",
           "primaryCta": "Start Free",
           "tierBadge": "Free for up to 5 repositories · No credit card required",
-          "command": "rdc repo sync push-all --target secondary"
+          "command": "rdc repo sync push-all --to secondary -m primary"
         },
         "techStrip": {
           "label": "Encrypt any containerized workload",
@@ -6268,7 +6243,7 @@
           "description": "Start with the free Community edition. Restore your first environment in under 5 minutes.",
           "primaryCta": "Start Free with Community",
           "tierBadge": "No credit card required",
-          "command": "rdc repo pull production --storage daily-2026-02-27"
+          "command": "rdc repo pull production --from daily-2026-02-27 -m primary"
         },
         "techStrip": {
           "label": "Restore any containerized workload",
@@ -7837,7 +7812,7 @@
           "description": "Start with the free Community edition. Replicate across locations at no cost. No credit card.",
           "primaryCta": "Start Free with Community",
           "tierBadge": "Free forever for up to 10 workloads",
-          "command": "rdc repo sync push-all --target secondary-dc"
+          "command": "rdc repo sync push-all --to secondary-dc -m primary"
         },
         "techStrip": {
           "label": "Replicate any containerized workload",
@@ -8341,7 +8316,7 @@
           "description": "Start with the free Community edition. Run your first DR test in under 5 minutes.",
           "primaryCta": "Start Free with Community",
           "tierBadge": "No credit card required",
-          "command": "rdc failover test --target secondary --simulate"
+          "command": "rdc repo push production --to-machine secondary -m primary --checkpoint"
         },
         "techStrip": {
           "label": "Replicate any containerized workload",
@@ -8837,7 +8812,7 @@
           "description": "Start with the free Community edition. Verify your first backup in under a minute.",
           "primaryCta": "Start Free with Community",
           "tierBadge": "No credit card required",
-          "command": "rdc repo list-backups --verify"
+          "command": "rdc repo list-backups --from backup-vault -m primary"
         },
         "techStrip": {
           "label": "Verify any containerized workload",
@@ -9713,7 +9688,7 @@
           "title": "Find vulnerabilities before attackers do",
           "description": "Start with the free Community edition. Run your first pentest in under 60 seconds.",
           "ctaText": "Start Free",
-          "command": "rdc audit log --level warn --limit 200"
+          "command": "rdc audit log --limit 200"
         },
         "techStrip": {
           "label": "Test any containerized workload",
@@ -10145,7 +10120,7 @@
           "title": "Own your encryption keys",
           "description": "Start with the free Community edition. Generate your first key in under a minute.",
           "ctaText": "Start Free with Community",
-          "command": "rdc repo mount production --credential-file /etc/rediacc/keys/production.key"
+          "command": "rdc repo mount production -m primary"
         },
         "techStrip": {
           "label": "Encrypt any containerized workload",
@@ -10608,7 +10583,7 @@
           "title": "Close the window attackers count on",
           "description": "Start with the free Community edition. Schedule your first continuous pentest in 30 seconds.",
           "ctaText": "Start Free",
-          "command": "rdc pentest production --schedule daily --time 02:00"
+          "command": "rdc repo validate production -m primary"
         },
         "techStrip": {
           "label": "Test any containerized workload",
@@ -11034,7 +11009,7 @@
           "title": "See everything. Miss nothing.",
           "description": "Start with the free Community edition. Generate your first audit report in under a minute.",
           "ctaText": "Start Free with Community",
-          "command": "rdc audit --from 2026-01-01 --to 2026-02-27"
+          "command": "rdc audit history repository production"
         },
         "techStrip": {
           "label": "Audit any containerized workload",
@@ -11498,7 +11473,7 @@
           "title": "Don't let recovery be slower than the attack",
           "description": "Start with the free Community edition. Protect up to 10 workloads at no cost. No credit card.",
           "ctaText": "Start Free with Community",
-          "command": "rdc restore production --point-in-time latest-clean"
+          "command": "rdc repo pull production --from backup-vault -m primary --force"
         },
         "techStrip": {
           "label": "Protect any containerized workload",
@@ -11817,7 +11792,7 @@
             },
             {
               "title": "One-command migration",
-              "description": "Run rdc migrate production --to new-provider. Incremental transfer. Zero downtime.",
+              "description": "Run rdc repo push production --to-machine new-provider -m primary --checkpoint. Incremental transfer. Zero downtime.",
               "icon": "arrow-right-circle"
             },
             {
@@ -11991,7 +11966,7 @@
           "title": "Take back control of your infrastructure",
           "description": "Start with the free Community edition. Deploy anywhere. Migrate anytime. No credit card.",
           "ctaText": "Start Free with Community",
-          "command": "rdc migrate production --to new-provider"
+          "command": "rdc repo push production --to-machine new-provider -m primary --checkpoint"
         },
         "techStrip": {
           "label": "Replicate any containerized workload",

@@ -7,6 +7,7 @@ import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
+import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
 import { getSSHConnectionDetails, type ConnectionDetails } from './term-connection.js';
 import { assertAgentMachineAccess } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
@@ -116,11 +117,13 @@ function buildShellCommand(
 
 function buildRemoteCommand(
   options: TermConnectOptions,
-  connectionDetails?: ConnectionDetails
+  connectionDetails?: ConnectionDetails,
+  remoteRenetPath?: string
 ): string | undefined {
   const envPrefix = buildEnvPrefix(connectionDetails);
   const sandboxOpts = buildTermSandboxOptions(connectionDetails);
-  const sandbox = sandboxOpts ? buildSandboxPrefix(sandboxOpts) : '';
+  const sandbox =
+    sandboxOpts && remoteRenetPath ? buildSandboxPrefix(sandboxOpts, remoteRenetPath) : '';
 
   if (options.container) {
     return buildContainerCommand(options, envPrefix, sandbox);
@@ -238,6 +241,14 @@ async function connectTerminal(options: TermConnectOptions): Promise<void> {
 
   const { connectionDetails, teamName, machineName, repositoryName } =
     await validateAndGetConnectionDetails(opts);
+  const localConfig = await configService.getLocalConfig();
+  const machine = localConfig.machines[machineName];
+  if (!machine) {
+    throw new Error(`Machine "${machineName}" not found in local config`);
+  }
+  const sshPrivateKey =
+    localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
+  const remoteRenetPath = await provisionRenetToRemote(localConfig, machine, sshPrivateKey, {});
 
   const sshConnection = new SSHConnection(
     connectionDetails.privateKey,
@@ -253,7 +264,7 @@ async function connectTerminal(options: TermConnectOptions): Promise<void> {
       : `Rediacc - ${teamName}/${machineName}`;
 
     const destination = `${connectionDetails.user}@${connectionDetails.host}`;
-    const remoteCommand = buildRemoteCommand(options, connectionDetails);
+    const remoteCommand = buildRemoteCommand(options, connectionDetails, remoteRenetPath);
 
     await executeSSH(
       sshConnection,

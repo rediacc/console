@@ -1,10 +1,10 @@
 ---
-title: "Abonnement & Lizenzierung"
-description: "Abonnements und Maschinenlizenzen für lokale Bereitstellungen verwalten."
-category: "Guides"
+title: Abonnement & Lizenzierung
+description: Abonnements und Maschinenlizenzen für lokale Bereitstellungen verwalten.
+category: Guides
 order: 7
 language: de
-sourceHash: "d1f2557708514926"
+sourceHash: 49e050bdc4fcd1a8
 ---
 
 # Abonnement & Lizenzierung
@@ -78,17 +78,11 @@ Wenn eine Lizenz abläuft und nicht innerhalb der 3-tägigen Kulanzfrist aktuali
 | Business | 20 |
 | Enterprise | 50 |
 
-### Ressourcenlimits
+### Floating License Request Limits
 
-| Ressource | Community | Professional | Business | Enterprise |
+| Resource | Community | Professional | Business | Enterprise |
 |----------|-----------|--------------|----------|------------|
-| Bridges | 0 | 1 | 2 | 10 |
-| Max reserved jobs | 1 | 2 | 3 | 5 |
-| Job timeout (hours) | 2 | 24 | 72 | 96 |
-| Repository size (GB) | 10 | 100 | 500 | 2,048 |
-| Jobs per month | 500 | 5,000 | 20,000 | 100,000 |
-| Pending per user | 5 | 10 | 20 | 50 |
-| Tasks per machine | 1 | 2 | 3 | 5 |
+| Floating license requests | 500 | 5,000 | 20,000 | 100,000 |
 
 ### Feature-Verfügbarkeit
 
@@ -102,3 +96,94 @@ Wenn eine Lizenz abläuft und nicht innerhalb der 3-tägigen Kulanzfrist aktuali
 | Advanced queue | - | - | Yes | Yes |
 | Custom branding | - | Yes | Yes | Yes |
 | Dedicated account | - | - | - | Yes |
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->

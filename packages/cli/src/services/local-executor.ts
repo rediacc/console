@@ -14,11 +14,16 @@ import { spawn } from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { DEFAULTS } from '@rediacc/shared/config';
+import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { configService } from './config-resources.js';
-import { ensureMachineLicense } from './license.js';
+import { issueMachineLicense, issueRepoLicense, refreshRepoLicenseIdentity } from './license.js';
 import { outputService } from './output.js';
+import {
+  isLicensedRenetFunction,
+  parseRenetLicenseFailure,
+  RENET_LICENSE_REQUIRED_EXIT_CODE,
+} from './renet-license-contract.js';
 import {
   buildLocalVault,
   getLocalRenetPath,
@@ -46,6 +51,8 @@ interface LocalExecuteOptions {
   json?: boolean;
   /** Skip restarting the rediacc-router service after binary update */
   skipRouterRestart?: boolean;
+  /** Capture stdout/stderr instead of streaming them directly */
+  captureOutput?: boolean;
 }
 
 /** Result of local execution */
@@ -58,6 +65,19 @@ interface LocalExecuteResult {
   error?: string;
   /** Execution duration in milliseconds */
   durationMs: number;
+  /** Captured stdout, when requested */
+  stdout?: string;
+  /** Captured stderr, when requested */
+  stderr?: string;
+}
+
+interface RepoLicenseContext {
+  repositoryGuid: string;
+  grandGuid?: string;
+  kind: 'grand' | 'fork';
+  requestedSizeGb: number;
+  luksUuid?: string;
+  storageFingerprint?: string;
 }
 
 async function resolveKnownHosts(machineKnownHosts: string | undefined): Promise<string> {
@@ -108,6 +128,138 @@ async function loadContextRepositories(): Promise<{
   }
 }
 
+function parseSizeToGb(size: string): number {
+  const trimmed = size.trim().toUpperCase();
+  const match = /^(\d+(?:\.\d+)?)([MGT])$/.exec(trimmed);
+  if (!match) throw new Error(`Unsupported repository size: ${size}`);
+  const value = Number(match[1]);
+  const unit = match[2];
+  if (unit === 'T') return Math.ceil(value * 1024);
+  if (unit === 'G') return Math.ceil(value);
+  return Math.max(1, Math.ceil(value / 1024));
+}
+
+async function resolveRepoLicenseContext(
+  functionName: string,
+  machineName: string,
+  params: Record<string, unknown>,
+  sftp: SFTPClient
+): Promise<RepoLicenseContext | null> {
+  const resolved = await resolveRepoLicenseInputs(functionName, machineName, params);
+  if (!resolved) return null;
+  const { repo, machine } = resolved;
+
+  const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
+  const requestedSizeGb = await resolveRequestedSizeGb(
+    functionName,
+    params,
+    repo?.repositoryGuid,
+    datastore,
+    sftp
+  );
+  if (requestedSizeGb === null) return null;
+  const targetGuid = resolveTargetGuid(functionName, params, repo?.repositoryGuid);
+  const identity = await resolveRepoIdentity(functionName, targetGuid, datastore, sftp);
+
+  return buildRepoLicenseContext(functionName, params, repo, requestedSizeGb, identity);
+}
+
+async function resolveRepoLicenseInputs(
+  functionName: string,
+  machineName: string,
+  params: Record<string, unknown>
+): Promise<{
+  machine: Awaited<ReturnType<typeof configService.getLocalMachine>>;
+  repo: Awaited<ReturnType<typeof configService.getRepository>> | null;
+} | null> {
+  if (!functionName.startsWith('repository_')) return null;
+  const repoName = typeof params.repository === 'string' ? params.repository : '';
+  if (!repoName && functionName !== 'repository_fork') return null;
+  const [repo, machine] = await Promise.all([
+    configService.getRepository(repoName),
+    configService.getLocalMachine(machineName),
+  ]);
+  if (!repo && functionName !== 'repository_fork') return null;
+  return { repo, machine };
+}
+
+function buildRepoLicenseContext(
+  functionName: string,
+  params: Record<string, unknown>,
+  repo: Awaited<ReturnType<typeof configService.getRepository>> | null,
+  requestedSizeGb: number,
+  identity: Pick<RepoLicenseContext, 'luksUuid' | 'storageFingerprint'>
+): RepoLicenseContext | null {
+  if (functionName === 'repository_fork') {
+    const forkGuid = typeof params.tag === 'string' ? params.tag : '';
+    if (!repo || !forkGuid) return null;
+    return {
+      repositoryGuid: forkGuid,
+      grandGuid: repo.grandGuid ?? repo.repositoryGuid,
+      kind: 'fork',
+      requestedSizeGb,
+      ...identity,
+    };
+  }
+  if (!repo) return null;
+  return {
+    repositoryGuid: repo.repositoryGuid,
+    grandGuid: repo.grandGuid,
+    kind: repo.grandGuid && repo.grandGuid !== repo.repositoryGuid ? 'fork' : 'grand',
+    requestedSizeGb,
+    ...identity,
+  };
+}
+
+async function resolveRequestedSizeGb(
+  functionName: string,
+  params: Record<string, unknown>,
+  repositoryGuid: string | undefined,
+  datastore: string,
+  sftp: SFTPClient
+): Promise<number | null> {
+  if (typeof params.size === 'string' && params.size.trim()) {
+    return parseSizeToGb(params.size);
+  }
+  const statGuid = functionName === 'repository_fork' ? repositoryGuid : repositoryGuid;
+  if (!statGuid) return null;
+  const bytesOutput = await sftp.exec(
+    `stat -c %s '${datastore}/repositories/${statGuid}' 2>/dev/null || echo 0`
+  );
+  const bytes = Number.parseInt(bytesOutput.trim(), 10);
+  return Math.max(1, Math.ceil(bytes / (1024 * 1024 * 1024)));
+}
+
+function resolveTargetGuid(
+  functionName: string,
+  params: Record<string, unknown>,
+  repositoryGuid: string | undefined
+): string {
+  if (functionName === 'repository_fork') {
+    return typeof params.tag === 'string' ? params.tag : '';
+  }
+  return repositoryGuid ?? '';
+}
+
+async function resolveRepoIdentity(
+  functionName: string,
+  targetGuid: string,
+  datastore: string,
+  sftp: SFTPClient
+): Promise<Pick<RepoLicenseContext, 'luksUuid' | 'storageFingerprint'>> {
+  if (!targetGuid || functionName === 'repository_create' || functionName === 'repository_fork') {
+    return {};
+  }
+  const identityOutput = await sftp.exec(
+    `sudo sh -lc 'p="${datastore}/repositories/${targetGuid}"; if cryptsetup luksUUID "$p" >/dev/null 2>&1; then cryptsetup luksUUID "$p"; else stat -c "%F:%d:%i:%s:%Y" "$p" 2>/dev/null || true; fi'`
+  );
+  const trimmed = identityOutput.trim();
+  if (!trimmed) {
+    return {};
+  }
+  return /^[0-9a-f-]{36}$/i.test(trimmed) ? { luksUuid: trimmed } : { storageFingerprint: trimmed };
+}
+
 /**
  * Service for executing tasks directly via renet subprocess.
  * Bypasses middleware for single-machine local deployments.
@@ -116,6 +268,139 @@ async function loadContextRepositories(): Promise<{
  * with vault JSON piped via stdin. This avoids double-SSH (CLI→renet→machine).
  */
 class LocalExecutorService {
+  private async executeWithConnectedSftp(
+    sftp: SFTPClient,
+    options: LocalExecuteOptions,
+    remoteRenetPath: string,
+    vault: string,
+    machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
+    sshPrivateKey: string,
+    startTime: number
+  ): Promise<LocalExecuteResult> {
+    try {
+      let result = await this.runRemoteExecution(sftp, remoteRenetPath, vault, options);
+
+      if (!result.success && result.exitCode === RENET_LICENSE_REQUIRED_EXIT_CODE) {
+        const failure = parseRenetLicenseFailure(result.stderr, result.stdout);
+        if (failure) {
+          const issued = await this.maybeIssueLicense(
+            options,
+            machine,
+            sshPrivateKey,
+            remoteRenetPath,
+            sftp
+          );
+          if (issued) {
+            result = await this.runRemoteExecution(sftp, remoteRenetPath, vault, options);
+          }
+        }
+      }
+
+      if (result.success) {
+        await this.maybeRefreshRepoIdentity(options, machine, sshPrivateKey, remoteRenetPath, sftp);
+      }
+
+      return {
+        ...result,
+        durationMs: Date.now() - startTime,
+      };
+    } finally {
+      sftp.close();
+    }
+  }
+
+  private async maybeIssueLicense(
+    options: LocalExecuteOptions,
+    machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
+    sshPrivateKey: string,
+    remoteRenetPath: string,
+    sftp: SFTPClient
+  ): Promise<boolean> {
+    if (!isLicensedRenetFunction(options.functionName)) {
+      return false;
+    }
+    if (options.functionName.startsWith('backup_')) {
+      return issueMachineLicense(machine, sshPrivateKey, remoteRenetPath).catch(() => false);
+    }
+    if (!options.functionName.startsWith('repository_')) {
+      return false;
+    }
+    const repoLicense = await resolveRepoLicenseContext(
+      options.functionName,
+      options.machineName,
+      options.params ?? {},
+      sftp
+    );
+    if (!repoLicense) {
+      return false;
+    }
+    return issueRepoLicense(machine, sshPrivateKey, repoLicense, remoteRenetPath).catch(
+      () => false
+    );
+  }
+
+  private async maybeRefreshRepoIdentity(
+    options: LocalExecuteOptions,
+    machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
+    sshPrivateKey: string,
+    remoteRenetPath: string,
+    sftp: SFTPClient
+  ): Promise<void> {
+    if (
+      options.functionName !== 'repository_create' &&
+      options.functionName !== 'repository_fork'
+    ) {
+      return;
+    }
+    const repoLicense = await resolveRepoLicenseContext(
+      options.functionName,
+      options.machineName,
+      options.params ?? {},
+      sftp
+    );
+    if (repoLicense) {
+      await refreshRepoLicenseIdentity(machine, sshPrivateKey, repoLicense, remoteRenetPath);
+    }
+  }
+
+  private async runRemoteExecution(
+    sftp: SFTPClient,
+    remoteRenetPath: string,
+    vault: string,
+    options: LocalExecuteOptions
+  ): Promise<LocalExecuteResult> {
+    const command =
+      this.detectEnvironment() === 'development'
+        ? `sudo env REDIACC_ENVIRONMENT=development ${remoteRenetPath} execute --executor local`
+        : `sudo ${remoteRenetPath} execute --executor local`;
+    let stdout = '';
+    let stderr = '';
+    const exitCode = await sftp.execStreaming(command, {
+      stdin: vault,
+      onStdout: (data) => {
+        stdout += data;
+        if (!options.captureOutput) {
+          process.stdout.write(data);
+        }
+      },
+      onStderr: (data) => {
+        stderr += data;
+        if (!options.captureOutput) {
+          process.stderr.write(data);
+        }
+      },
+    });
+
+    return {
+      success: exitCode === 0,
+      exitCode,
+      error: exitCode === 0 ? undefined : `renet exited with code ${exitCode}`,
+      durationMs: 0,
+      stdout,
+      stderr,
+    };
+  }
+
   /**
    * Execute a function on a machine via direct SSH.
    * SSHes to the machine and runs `renet execute --executor local` with vault via stdin.
@@ -153,8 +438,7 @@ class LocalExecutorService {
         repositoryConfigs,
       });
 
-      await ensureMachineLicense(machine, sshPrivateKey);
-      await provisionRenetToRemote(config, machine, sshPrivateKey, options);
+      const remoteRenetPath = await provisionRenetToRemote(config, machine, sshPrivateKey, options);
       await verifyMachineSetup(machine, sshPrivateKey, {
         ...options,
         functionName: options.functionName,
@@ -172,29 +456,15 @@ class LocalExecutorService {
       });
       await sftp.connect();
 
-      try {
-        // Pass environment to renet so it reports the same deployment.environment
-        const envPrefix =
-          this.detectEnvironment() === 'development' ? 'REDIACC_ENVIRONMENT=development ' : '';
-        const exitCode = await sftp.execStreaming(`${envPrefix}renet execute --executor local`, {
-          stdin: vault,
-          onStdout: (data) => {
-            process.stdout.write(data);
-          },
-          onStderr: (data) => {
-            process.stderr.write(data);
-          },
-        });
-
-        return {
-          success: exitCode === 0,
-          exitCode,
-          error: exitCode === 0 ? undefined : `renet exited with code ${exitCode}`,
-          durationMs: Date.now() - startTime,
-        };
-      } finally {
-        sftp.close();
-      }
+      return await this.executeWithConnectedSftp(
+        sftp,
+        options,
+        remoteRenetPath,
+        vault,
+        machine,
+        sshPrivateKey,
+        startTime
+      );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       return {

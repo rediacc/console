@@ -1437,7 +1437,8 @@
         "description": "Обновить лицензию машины",
         "refreshed": "Лицензия обновлена",
         "refreshing": "Обновление лицензии...",
-        "success": "Лицензия обновлена и установлена"
+        "success": "Лицензия обновлена и установлена",
+        "failed": "Не удалось выдать лицензию машины"
       },
       "status": {
         "description": "Показать статус подписки и лицензии",
@@ -1456,7 +1457,33 @@
         "remoteStatus": "  Статус:   {{status}}",
         "sequence": "  Секвенция: {{sequenceNumber}}",
         "statusLabel": "  Статус:   {{status}}",
-        "valid": "  Действительна (истекает через {{mins}} минут)"
+        "valid": "  Действительна (истекает через {{mins}} минут)",
+        "serverMismatch": "Токен разработки принадлежит {{actualServerUrl}}, но этот worktree использует {{expectedServerUrl}}. Снова выполните `rdc subscription login`.",
+        "remoteFloatingLicenses": "  Плавающие лицензии: {{active}}/{{max}}",
+        "remoteFloatingLicenseRequests": "  Запросы плавающих лицензий: {{used}}/{{limit}}",
+        "remoteRepoLicenses": "  Лицензии репозитория: отслеживается {{totalTrackedRepos}}, действует {{validCount}}, рекомендуется обновить {{refreshRecommendedCount}}, полностью истекло {{hardExpiredCount}}"
+      },
+      "repoStatus": {
+        "description": "Показать установленные лицензии репозитория на машине",
+        "header": "\nЛицензии репозитория: ({{machineName}})",
+        "empty": "  Лицензии репозитория не установлены",
+        "entry": "  - Репозиторий {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
+        "hardExpirySuffix": " (окончательное истечение: {{effectiveHardExpiry}})",
+        "freshness": {
+          "unknown": "неизвестно",
+          "hardExpired": "полностью истекла",
+          "refreshRecommended": "рекомендуется обновить",
+          "valid": "действует"
+        }
+      },
+      "refreshRepo": {
+        "description": "Обновить лицензию репозитория для существующего репозитория на машине",
+        "repoArgument": "Имя репозитория",
+        "refreshing": "Обновление лицензии репозитория...",
+        "notFound": "Репозиторий не найден: {{repoName}}",
+        "failed": "Не удалось обновить лицензию репозитория",
+        "refreshed": "Лицензия репозитория обновлена",
+        "success": "Лицензия репозитория обновлена для \"{{repoName}}\""
       }
     },
     "sync": {

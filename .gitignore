@@ -41,6 +41,7 @@ packages/desktop/out/
 .env
 .env.local
 secrets.env
+.rdc-dev/
 
 # Logs
 *.log
@@ -102,6 +103,7 @@ reports/
 
 # CI backend data (SQL Server volumes)
 .ci/docker/ci/mssql/
+.ci/cache/
 
 # Git worktrees
 .worktrees/

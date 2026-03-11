@@ -1437,7 +1437,8 @@
         "description": "Makine lisansını yenile",
         "refreshed": "Lisans yenilendi",
         "refreshing": "Lisans yenileniyor...",
-        "success": "Lisans yenilendi ve yüklendi"
+        "success": "Lisans yenilendi ve yüklendi",
+        "failed": "Makine lisansı verilemedi"
       },
       "status": {
         "description": "Abonelik ve lisans durumunu göster",
@@ -1456,7 +1457,33 @@
         "remoteStatus": "  Durum:     {{status}}",
         "sequence": "  Sıra:      {{sequenceNumber}}",
         "statusLabel": "  Durum:     {{status}}",
-        "valid": "  Geçerli ({{mins}} dakika sonra süresi doluyor)"
+        "valid": "  Geçerli ({{mins}} dakika sonra süresi doluyor)",
+        "serverMismatch": "Geliştirme belirteci {{actualServerUrl}} için, ancak bu worktree {{expectedServerUrl}} kullanıyor. `rdc subscription login` komutunu yeniden çalıştırın.",
+        "remoteFloatingLicenses": "  Yüzen lisanslar: {{active}}/{{max}}",
+        "remoteFloatingLicenseRequests": "  Yüzen lisans istekleri: {{used}}/{{limit}}",
+        "remoteRepoLicenses": "  Depo lisansları: {{totalTrackedRepos}} izleniyor, {{validCount}} geçerli, {{refreshRecommendedCount}} yenileme öneriliyor, {{hardExpiredCount}} tamamen süresi dolmuş"
+      },
+      "repoStatus": {
+        "description": "Bir makinede kurulu depo lisanslarını göster",
+        "header": "\nDepo lisansları: ({{machineName}})",
+        "empty": "  Kurulu depo lisansı yok",
+        "entry": "  - Depo {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
+        "hardExpirySuffix": " (kesin bitiş: {{effectiveHardExpiry}})",
+        "freshness": {
+          "unknown": "bilinmiyor",
+          "hardExpired": "tamamen süresi dolmuş",
+          "refreshRecommended": "yenileme önerilir",
+          "valid": "geçerli"
+        }
+      },
+      "refreshRepo": {
+        "description": "Bir makinedeki mevcut depo için depo lisansını yenile",
+        "repoArgument": "Depo adı",
+        "refreshing": "Depo lisansı yenileniyor...",
+        "notFound": "Depo bulunamadı: {{repoName}}",
+        "failed": "Depo lisansı yenilenemedi",
+        "refreshed": "Depo lisansı yenilendi",
+        "success": "\"{{repoName}}\" için depo lisansı yenilendi"
       }
     },
     "sync": {

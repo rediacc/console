@@ -1437,7 +1437,8 @@
         "description": "Maschinenlizenz erneuern",
         "refreshed": "Lizenz erneuert",
         "refreshing": "Lizenz wird erneuert...",
-        "success": "Lizenz erneuert und installiert"
+        "success": "Lizenz erneuert und installiert",
+        "failed": "Maschinenlizenz konnte nicht ausgestellt werden"
       },
       "status": {
         "description": "Abonnement- und Lizenzstatus anzeigen",
@@ -1456,7 +1457,33 @@
         "remoteStatus": "  Zustand:  {{status}}",
         "sequence": "  Sequenz:  {{sequenceNumber}}",
         "statusLabel": "  Zustand:  {{status}}",
-        "valid": "  Gültig (läuft in {{mins}} Minuten ab)"
+        "valid": "  Gültig (läuft in {{mins}} Minuten ab)",
+        "serverMismatch": "Das Dev-Token gehört zu {{actualServerUrl}}, aber dieser Worktree verwendet {{expectedServerUrl}}. Führe `rdc subscription login` erneut aus.",
+        "remoteFloatingLicenses": "  Floating-Lizenzen: {{active}}/{{max}}",
+        "remoteFloatingLicenseRequests": "  Floating-Lizenzanfragen: {{used}}/{{limit}}",
+        "remoteRepoLicenses": "  Repo-Lizenzen: {{totalTrackedRepos}} verfolgt, {{validCount}} gültig, {{refreshRecommendedCount}} Aktualisierung empfohlen, {{hardExpiredCount}} hart abgelaufen"
+      },
+      "repoStatus": {
+        "description": "Installierte Repo-Lizenzen auf einer Maschine anzeigen",
+        "header": "\nRepo-Lizenzen: ({{machineName}})",
+        "empty": "  Keine Repo-Lizenzen installiert",
+        "entry": "  - Repo {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
+        "hardExpirySuffix": " (hartes Ablaufdatum: {{effectiveHardExpiry}})",
+        "freshness": {
+          "unknown": "unbekannt",
+          "hardExpired": "hart abgelaufen",
+          "refreshRecommended": "Aktualisierung empfohlen",
+          "valid": "gültig"
+        }
+      },
+      "refreshRepo": {
+        "description": "Repo-Lizenz für ein bestehendes Repository auf einer Maschine aktualisieren",
+        "repoArgument": "Repository-Name",
+        "refreshing": "Repo-Lizenz wird aktualisiert...",
+        "notFound": "Repository nicht gefunden: {{repoName}}",
+        "failed": "Repo-Lizenz konnte nicht aktualisiert werden",
+        "refreshed": "Repo-Lizenz aktualisiert",
+        "success": "Repo-Lizenz für \"{{repoName}}\" aktualisiert"
       }
     },
     "sync": {

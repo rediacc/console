@@ -3510,7 +3510,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc audit log --level warn --limit 200",
+          "command": "rdc audit log --limit 200",
           "ctaText": "無料で始める",
           "description": "無料のCommunityエディションから始めましょう。60秒以内に最初のペンテストを実行できます。",
           "title": "攻撃者より先に脆弱性を発見"
@@ -3919,7 +3919,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc audit --from 2026-01-01 --to 2026-02-27",
+          "command": "rdc audit history repository production",
           "ctaText": "Communityで無料で始める",
           "description": "無料のCommunityエディションから始めましょう。1分以内に最初の監査レポートを生成できます。",
           "title": "すべてを見る。何も見逃さない。"
@@ -4334,7 +4334,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo list-backups --verify",
+          "command": "rdc repo list-backups --from backup-vault -m primary",
           "description": "無料のCommunityエディションから始めましょう。1分以内に最初のバックアップを検証できます。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "クレジットカード不要",
@@ -4788,7 +4788,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo sync push-all --target secondary-dc",
+          "command": "rdc repo sync push-all --to secondary-dc -m primary",
           "description": "無料のCommunityエディションから始めましょう。ロケーション間レプリケーションが無料。クレジットカード不要。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "10ワークロードまで永久無料",
@@ -5246,7 +5246,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc pentest production --schedule daily --time 02:00",
+          "command": "rdc repo validate production -m primary",
           "ctaText": "無料で始める",
           "description": "無料のCommunityエディションから始めましょう。30秒で最初の継続的ペンテストをスケジュールできます。",
           "title": "攻撃者が頼りにするウィンドウを閉じる"
@@ -5633,7 +5633,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo mount production --credential-file /etc/rediacc/keys/production.key",
+          "command": "rdc repo mount production -m primary",
           "ctaText": "Communityで無料で始める",
           "description": "無料のCommunityエディションから始めましょう。1分以内に最初の鍵を生成できます。",
           "title": "暗号化の制御を取り戻す"
@@ -6498,7 +6498,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc failover test --target secondary --simulate",
+          "command": "rdc repo push production --to-machine secondary -m primary --checkpoint",
           "description": "無料のCommunityエディションから始めましょう。5分以内に最初のDRテストを実行できます。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "クレジットカード不要",
@@ -6940,7 +6940,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo push production --verify",
+          "command": "rdc repo push production --to backup-vault -m primary",
           "description": "無料のCommunityエディションから始めましょう。最大10ワークロードまで無料で保護。クレジットカード不要。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "10ワークロードまで永久無料",
@@ -7389,7 +7389,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo fork production --name dev-loadtest",
+          "command": "rdc repo fork production -m primary --tag dev-loadtest",
           "description": "無料のCommunityエディションから始めましょう。オンデマンドクローン機能付き。",
           "primaryCta": "無料で始める",
           "tierBadge": "5リポジトリまで無料 · クレジットカード不要",
@@ -7818,7 +7818,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo pull production --storage daily-2026-02-27",
+          "command": "rdc repo pull production --from daily-2026-02-27 -m primary",
           "description": "無料のCommunityエディションから始めましょう。5分以内に最初の環境を復元できます。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "クレジットカード不要",
@@ -8685,7 +8685,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo sync push-all --target secondary",
+          "command": "rdc repo sync push-all --to secondary -m primary",
           "description": "無料のCommunityエディションから始めましょう。暗号化移行機能付き。",
           "primaryCta": "無料で始める",
           "tierBadge": "5リポジトリまで無料 · クレジットカード不要",
@@ -9588,7 +9588,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc restore production --point-in-time latest-clean",
+          "command": "rdc repo pull production --from backup-vault -m primary --force",
           "ctaText": "Communityで無料で始める",
           "description": "無料のCommunityエディションから始めましょう。最大10ワークロードまで無料で保護。クレジットカード不要。",
           "title": "復旧を攻撃より遅くしない"
@@ -10927,7 +10927,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc migrate production --to new-provider",
+          "command": "rdc repo push production --to-machine new-provider -m primary --checkpoint",
           "ctaText": "Communityで無料で始める",
           "description": "無料のCommunityエディションから始めましょう。どこにでもデプロイ。いつでも移行。クレジットカード不要。",
           "title": "インフラの制御を取り戻す"
@@ -11132,7 +11132,7 @@
             },
             {
               "title": "One-command migration",
-              "description": "Run rdc migrate production --to new-provider. Incremental transfer. Zero downtime.",
+              "description": "Run rdc repo push production --to-machine new-provider -m primary --checkpoint. Incremental transfer. Zero downtime.",
               "icon": "arrow-right-circle"
             },
             {

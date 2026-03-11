@@ -1,10 +1,10 @@
 ---
-title: "Abonelik ve Lisanslama"
-description: "Yerel dağıtımlar için abonelikleri ve makine lisanslarını yönetin."
-category: "Guides"
+title: Abonelik ve Lisanslama
+description: Yerel dağıtımlar için abonelikleri ve makine lisanslarını yönetin.
+category: Guides
 order: 7
 language: tr
-sourceHash: "d1f2557708514926"
+sourceHash: 49e050bdc4fcd1a8
 ---
 
 # Abonelik ve Lisanslama
@@ -82,13 +82,6 @@ Bir lisansın süresi dolduğunda ve 3 günlük ek süre içinde yenilenemediği
 
 | Kaynak | Community | Professional | Business | Enterprise |
 |----------|-----------|--------------|----------|------------|
-| Bridges | 0 | 1 | 2 | 10 |
-| Max reserved jobs | 1 | 2 | 3 | 5 |
-| Job timeout (hours) | 2 | 24 | 72 | 96 |
-| Repository size (GB) | 10 | 100 | 500 | 2,048 |
-| Jobs per month | 500 | 5,000 | 20,000 | 100,000 |
-| Pending per user | 5 | 10 | 20 | 50 |
-| Tasks per machine | 1 | 2 | 3 | 5 |
 
 ### Özellik Kullanılabilirliği
 
@@ -102,3 +95,95 @@ Bir lisansın süresi dolduğunda ve 3 günlük ek süre içinde yenilenemediği
 | Advanced queue | - | - | Yes | Yes |
 | Custom branding | - | Yes | Yes | Yes |
 | Dedicated account | - | - | - | Yes |
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->
+<!---->

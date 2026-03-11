@@ -24,6 +24,53 @@ source "$LOCAL_CI_DIR/scripts/lib/common.sh"
 # CONSOLE-SPECIFIC HELPERS
 # =============================================================================
 
+compute_hash_for_paths() {
+    local root_dir="$1"
+    shift
+
+    (
+        cd "$root_dir"
+        find "$@" -type f -print0 2>/dev/null |
+            LC_ALL=C sort -z |
+            xargs -0 sha256sum 2>/dev/null |
+            sha256sum |
+            awk '{print $1}'
+    )
+}
+
+compute_hash_for_package_dirs() {
+    local root_dir="$1"
+    shift
+
+    (
+        cd "$root_dir"
+        find "$@" \
+            \( -path '*/dist/*' -o -path '*/node_modules/*' -o -path '*/reports/*' -o -path '*/test-results/*' \) -prune -o \
+            \( -name '*.tsbuildinfo' -o -name '.DS_Store' \) -prune -o \
+            -type f -print0 2>/dev/null |
+            LC_ALL=C sort -z |
+            xargs -0 sha256sum 2>/dev/null |
+            sha256sum |
+            awk '{print $1}'
+    )
+}
+
+read_stamp_hash() {
+    local stamp_file="$1"
+
+    if [[ -f "$stamp_file" ]]; then
+        cat "$stamp_file"
+    fi
+}
+
+write_stamp_hash() {
+    local stamp_file="$1"
+    local stamp_hash="$2"
+
+    mkdir -p "$(dirname "$stamp_file")"
+    printf '%s\n' "$stamp_hash" >"$stamp_file"
+}
+
 # Check if middleware API is available
 # Returns: 0 if available, 1 otherwise
 check_middleware() {
@@ -42,31 +89,96 @@ check_middleware() {
 }
 
 # Smart dependency installation (only if needed)
-# Checks if node_modules is up-to-date before running npm install
+# Uses a hash-based stamp so npm metadata-only mtime changes do not force reinstall
 ensure_deps() {
-    if [[ ! -d "$LOCAL_ROOT_DIR/node_modules" ]] ||
-        [[ "$LOCAL_ROOT_DIR/package-lock.json" -nt "$LOCAL_ROOT_DIR/node_modules" ]]; then
-        log_step "Installing dependencies..."
-        (cd "$LOCAL_ROOT_DIR" && npm install)
-    else
-        log_debug "Dependencies are up-to-date"
+    local node_modules_dir="$LOCAL_ROOT_DIR/node_modules"
+    local stamp_file="$LOCAL_ROOT_DIR/.ci/cache/npm-install.stamp"
+    local current_hash
+    local saved_hash=""
+
+    current_hash="$(
+        {
+            sha256sum "$LOCAL_ROOT_DIR/package.json"
+            sha256sum "$LOCAL_ROOT_DIR/package-lock.json"
+            if [[ -f "$LOCAL_ROOT_DIR/.npmrc" ]]; then
+                sha256sum "$LOCAL_ROOT_DIR/.npmrc"
+            fi
+        } | sha256sum | awk '{print $1}'
+    )"
+
+    saved_hash="$(read_stamp_hash "$stamp_file")"
+
+    if [[ -d "$node_modules_dir" ]] &&
+        [[ -x "$node_modules_dir/.bin/tsx" ]] &&
+        [[ -L "$node_modules_dir/@rediacc/cli" ]] &&
+        [[ "$saved_hash" == "$current_hash" ]]; then
+        log_debug "Dependencies are up-to-date (stamp matched)"
+        return 0
     fi
+
+    log_step "Installing dependencies..."
+    (cd "$LOCAL_ROOT_DIR" && npm install)
+    write_stamp_hash "$stamp_file" "$current_hash"
 }
 
 # Ensure shared packages are built
 # Required before running tests or building web/CLI
 ensure_packages_built() {
-    local shared_dist="$LOCAL_ROOT_DIR/packages/shared/dist"
-    local shared_src="$LOCAL_ROOT_DIR/packages/shared/src"
+    local stamp_file="$LOCAL_ROOT_DIR/.ci/cache/build-packages.stamp"
+    local current_hash
+    local saved_hash=""
 
-    # Check if shared package needs rebuilding
-    if [[ ! -d "$shared_dist" ]] ||
-        [[ "$shared_src" -nt "$shared_dist" ]]; then
-        log_step "Building shared packages..."
-        "$LOCAL_CI_DIR/scripts/setup/build-packages.sh"
-    else
-        log_debug "Shared packages are up-to-date"
+    current_hash="$(
+        compute_hash_for_package_dirs "$LOCAL_ROOT_DIR" \
+            packages/shared \
+            packages/shared-desktop \
+            packages/provisioning
+    )"
+
+    saved_hash="$(read_stamp_hash "$stamp_file")"
+
+    if [[ -d "$LOCAL_ROOT_DIR/packages/shared/dist" ]] &&
+        [[ -d "$LOCAL_ROOT_DIR/packages/shared-desktop/dist" ]] &&
+        [[ -d "$LOCAL_ROOT_DIR/packages/provisioning/dist" ]] &&
+        [[ "$saved_hash" == "$current_hash" ]]; then
+        log_debug "Shared packages are up-to-date (stamp matched)"
+        return 0
     fi
+
+    log_step "Building shared packages..."
+    "$LOCAL_CI_DIR/scripts/setup/build-packages.sh"
+    write_stamp_hash "$stamp_file" "$current_hash"
+}
+
+ensure_cli_built() {
+    local cli_dist="$LOCAL_ROOT_DIR/packages/cli/dist"
+    local cli_entry="$cli_dist/cli-bundle.cjs"
+    local stamp_file="$LOCAL_ROOT_DIR/.ci/cache/build-cli.stamp"
+    local current_hash
+    local saved_hash=""
+
+    current_hash="$(
+        compute_hash_for_package_dirs "$LOCAL_ROOT_DIR" \
+            packages/cli
+    )"
+
+    saved_hash="$(read_stamp_hash "$stamp_file")"
+
+    if [[ -f "$cli_entry" ]] && [[ "$saved_hash" == "$current_hash" ]]; then
+        log_debug "CLI build is up-to-date (stamp matched)"
+        return 0
+    fi
+
+    log_step "Building CLI..."
+    (cd "$LOCAL_ROOT_DIR" && npm run build -w @rediacc/cli)
+    (cd "$LOCAL_ROOT_DIR" && npm run build:bundle -w @rediacc/cli)
+
+    if [[ ! -f "$cli_entry" ]]; then
+        log_error "CLI build failed: entrypoint not found at $cli_entry"
+        exit 1
+    fi
+
+    write_stamp_hash "$stamp_file" "$current_hash"
 }
 
 # Prompt user to continue with a yes/no question

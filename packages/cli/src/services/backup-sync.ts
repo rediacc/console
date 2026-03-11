@@ -99,14 +99,19 @@ export async function runBackupSyncPush(options: SyncOptions): Promise<void> {
 
   // Provision renet binary
   outputService.info(`Provisioning renet to ${machine.ip}...`);
-  await provisionRenetToRemote({ renetPath: localConfig.renetPath }, machine, sshPrivateKey, {
-    debug: options.debug,
-  });
+  const remoteRenetPath = await provisionRenetToRemote(
+    { renetPath: localConfig.renetPath },
+    machine,
+    sshPrivateKey,
+    {
+      debug: options.debug,
+    }
+  );
 
   // Build SSH command
   const cmdParts = [
     'sudo',
-    '/usr/bin/renet',
+    remoteRenetPath,
     'backup',
     'sync',
     'push',
@@ -194,14 +199,19 @@ export async function runBackupSyncPull(options: SyncOptions): Promise<void> {
 
   // Provision renet binary
   outputService.info(`Provisioning renet to ${machine.ip}...`);
-  await provisionRenetToRemote({ renetPath: localConfig.renetPath }, machine, sshPrivateKey, {
-    debug: options.debug,
-  });
+  const remoteRenetPath = await provisionRenetToRemote(
+    { renetPath: localConfig.renetPath },
+    machine,
+    sshPrivateKey,
+    {
+      debug: options.debug,
+    }
+  );
 
   // Build SSH command
   const cmdParts = [
     'sudo',
-    '/usr/bin/renet',
+    remoteRenetPath,
     'backup',
     'sync',
     'pull',

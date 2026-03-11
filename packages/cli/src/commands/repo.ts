@@ -5,7 +5,9 @@ import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
+import { createGuidResolver, loadGuidMap, resolveGuids } from '../utils/guid-resolver.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
+import { parseRepositoryListOutput } from './repo-list-parser.js';
 import { registerRepoBackupCommands } from './repo-backup.js';
 import { registerExtendedRepoCommands } from './repo-extended.js';
 import { registerRepoSnapshotCommands } from './repo-snapshot.js';
@@ -532,16 +534,23 @@ ${t('help.examples')}
     .action(async (options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }) => {
       try {
         outputService.info(t('commands.repo.list.starting', { machine: options.machine }));
+        const format = getOutputFormat();
 
         const result = await localExecutorService.execute({
           functionName: 'repository_list',
           machineName: options.machine,
           params: {},
           debug: options.debug,
+          captureOutput: true,
           skipRouterRestart: options.skipRouterRestart,
         });
 
         if (result.success) {
+          const repositories = parseRepositoryListOutput(result.stdout ?? '[]');
+          const guidMap = await loadGuidMap();
+          const resolve = createGuidResolver(guidMap);
+          const resolved = resolveGuids(repositories, resolve, 'name');
+          outputService.print(resolved, format);
           outputService.success(t('commands.repo.list.completed'));
         } else {
           outputService.error(t('commands.repo.list.failed', { error: result.error }));

@@ -3,23 +3,29 @@ import { buildSandboxPrefix, buildTermSandboxOptions, shellEscapeForBashC } from
 
 describe('buildSandboxPrefix', () => {
   it('returns empty string when no read-write paths', () => {
-    const result = buildSandboxPrefix({
-      allowedReadWrite: [],
-      allowedReadOnly: ['/usr'],
-      allowedExecute: ['/bin'],
-    });
+    const result = buildSandboxPrefix(
+      {
+        allowedReadWrite: [],
+        allowedReadOnly: ['/usr'],
+        allowedExecute: ['/bin'],
+      },
+      '/usr/lib/rediacc/renet/0.6.0/renet'
+    );
     expect(result).toBe('');
   });
 
   it('builds correct prefix with all options', () => {
-    const result = buildSandboxPrefix({
-      allowedReadWrite: ['/mnt/rediacc/mounts/abc123', '/tmp'],
-      allowedReadOnly: ['/usr', '/etc'],
-      allowedExecute: ['/bin'],
-      dockerSocket: '/var/run/rediacc/docker-3200.sock',
-    });
+    const result = buildSandboxPrefix(
+      {
+        allowedReadWrite: ['/mnt/rediacc/mounts/abc123', '/tmp'],
+        allowedReadOnly: ['/usr', '/etc'],
+        allowedExecute: ['/bin'],
+        dockerSocket: '/var/run/rediacc/docker-3200.sock',
+      },
+      '/usr/lib/rediacc/renet/0.6.0/renet'
+    );
 
-    expect(result).toContain('renet sandbox-exec');
+    expect(result).toContain('/usr/lib/rediacc/renet/0.6.0/renet sandbox-exec');
     expect(result).toContain('--allow-rw /mnt/rediacc/mounts/abc123');
     expect(result).toContain('--allow-rw /tmp');
     expect(result).toContain('--allow-ro /usr');
@@ -30,22 +36,28 @@ describe('buildSandboxPrefix', () => {
   });
 
   it('omits docker-socket when not provided', () => {
-    const result = buildSandboxPrefix({
-      allowedReadWrite: ['/tmp'],
-      allowedReadOnly: [],
-      allowedExecute: [],
-    });
+    const result = buildSandboxPrefix(
+      {
+        allowedReadWrite: ['/tmp'],
+        allowedReadOnly: [],
+        allowedExecute: [],
+      },
+      '/usr/lib/rediacc/renet/0.6.0/renet'
+    );
 
     expect(result).not.toContain('--docker-socket');
     expect(result).toMatch(/--$/);
   });
 
   it('quotes paths with spaces', () => {
-    const result = buildSandboxPrefix({
-      allowedReadWrite: ['/path with spaces'],
-      allowedReadOnly: [],
-      allowedExecute: [],
-    });
+    const result = buildSandboxPrefix(
+      {
+        allowedReadWrite: ['/path with spaces'],
+        allowedReadOnly: [],
+        allowedExecute: [],
+      },
+      '/usr/lib/rediacc/renet/0.6.0/renet'
+    );
 
     expect(result).toContain("--allow-rw '/path with spaces'");
   });
