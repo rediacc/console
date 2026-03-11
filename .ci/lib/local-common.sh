@@ -29,7 +29,7 @@ compute_hash_for_paths() {
     shift
 
     (
-        cd "$root_dir"
+        cd "$root_dir" || exit
         find "$@" -type f -print0 2>/dev/null |
             LC_ALL=C sort -z |
             xargs -0 sha256sum 2>/dev/null |
@@ -43,7 +43,7 @@ compute_hash_for_package_dirs() {
     shift
 
     (
-        cd "$root_dir"
+        cd "$root_dir" || exit
         find "$@" \
             \( -path '*/dist/*' -o -path '*/node_modules/*' -o -path '*/reports/*' -o -path '*/test-results/*' \) -prune -o \
             \( -name '*.tsbuildinfo' -o -name '.DS_Store' \) -prune -o \
