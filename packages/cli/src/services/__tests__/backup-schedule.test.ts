@@ -105,7 +105,8 @@ describe('pushBackupSchedule', () => {
 
     const cleanupIndex = mockExecStreaming.mock.calls.findIndex(
       ([cmd]) =>
-        typeof cmd === 'string' && cmd.includes('sudo rm -f /etc/systemd/system/rediacc-backup*.service')
+        typeof cmd === 'string' &&
+        cmd.includes('sudo rm -f /etc/systemd/system/rediacc-backup*.service')
     );
     const writeMicrosoftIndex = mockExecStreaming.mock.calls.findIndex(
       ([cmd]) =>
@@ -139,6 +140,8 @@ describe('pushBackupSchedule', () => {
     expect(commands).not.toContain(
       'sudo tee /etc/systemd/system/rediacc-backup-r2-cloudflare.service > /dev/null'
     );
-    expect(commands).not.toContain('sudo systemctl enable --now rediacc-backup-r2-cloudflare.timer');
+    expect(commands).not.toContain(
+      'sudo systemctl enable --now rediacc-backup-r2-cloudflare.timer'
+    );
   });
 });

@@ -9,18 +9,18 @@ const pythonBin = process.env.QWEN_TTS_PYTHON_BIN || 'python3';
 const backendSrc = path.join(repoRoot, 'private', 'generative', 'src');
 const args = ['-m', 'tutorial_tts.cli', '--repo-root', repoRoot, ...process.argv.slice(2)];
 const result = spawnSync(pythonBin, args, {
-    cwd: repoRoot,
-    env: {
-        ...process.env,
-        PYTHONPATH: process.env.PYTHONPATH
-            ? `${backendSrc}${path.delimiter}${process.env.PYTHONPATH}`
-            : backendSrc,
-    },
-    stdio: 'inherit',
+  cwd: repoRoot,
+  env: {
+    ...process.env,
+    PYTHONPATH: process.env.PYTHONPATH
+      ? `${backendSrc}${path.delimiter}${process.env.PYTHONPATH}`
+      : backendSrc,
+  },
+  stdio: 'inherit',
 });
 if (result.error) {
-    console.error(`Failed to execute Python backend: ${result.error.message}`);
-    process.exit(1);
+  console.error(`Failed to execute Python backend: ${result.error.message}`);
+  process.exit(1);
 }
 process.exit(result.status ?? 1);
 //# sourceMappingURL=generate-tutorial-audio.js.map
