@@ -35,7 +35,16 @@
         "src/components/app/Terminal/DesktopPrompt.tsx",
         "src/components/app/DirectFileBrowser/index.tsx",
         "src/components/app/DirectFileBrowser/DesktopPrompt.tsx",
-        "src/utils/formatters.ts"
+        "src/utils/formatters.ts",
+        "src/services/telemetryService.ts",
+        "src/components/layout/MainLayout/index.tsx",
+        "src/components/layout/MainLayout/components/NotificationBell/index.tsx",
+        "src/components/common/LanguageSelector/index.tsx",
+        "src/components/common/QueueItemTraceModal/QueueItemTraceModal.tsx",
+        "src/features/audit/pages/AuditPage.tsx",
+        "src/features/organization/components/UserSessionsTab/index.tsx",
+        "src/features/queue/pages/QueuePage.tsx",
+        "src/features/queue/hooks/useQueueExport.ts"
       ],
       "project": ["src/**/*.{ts,tsx}"],
       "ignore": [
@@ -57,7 +66,9 @@
         "src/preload/index.ts",
         "src/renderer/main.tsx",
         "electron.vite.config.ts",
-        "src/main/protocol.ts"
+        "src/main/protocol.ts",
+        "src/main/updater/autoUpdater.ts",
+        "src/main/services/telemetry.ts"
       ],
       "project": ["src/**/*.ts", "*.ts"]
     },
@@ -65,7 +76,10 @@
       "entry": [
         "tests/**/*.test.ts",
         "tests/**/*.setup.ts",
-        "pages/**/*.ts"
+        "pages/**/*.ts",
+        "src/utils/report/TestReporter.ts",
+        "src/utils/data/TestDataManager.ts",
+        "src/utils/screenshot/ScreenshotManager.ts"
       ],
       "project": ["**/*.ts"]
     },
@@ -75,7 +89,12 @@
         "tests/**/*.test.ts",
         "src/base/*.ts",
         "src/reporters/*.ts",
-        "src/utils/image/index.ts"
+        "src/utils/image/index.ts",
+        "src/utils/bridge/OpsManager.ts",
+        "src/utils/bridge/OpsRustFSManager.ts",
+        "src/utils/ssh/SSHExecutor.ts",
+        "src/utils/RenetResolver.ts",
+        "src/utils/renetPath.ts"
       ],
       "project": ["**/*.ts"]
     },
@@ -113,7 +132,6 @@
     "node-pty",
     "ssh2",
     "@rediacc/shared",
-    "@rediacc/provisioning",
     "loupe",
     "@vitest/runner",
     "@vitest/utils",
@@ -125,22 +143,11 @@
     "glob",
     "react-i18next",
     "tiny-typed-emitter",
-    "@opentelemetry/api",
-    "electron-updater",
-    "electron-log",
-    "date-fns",
-    "proper-lockfile",
-    "@ant-design/pro-components",
-    "@opentelemetry/auto-instrumentations-web",
-    "@opentelemetry/exporter-trace-otlp-http",
-    "@opentelemetry/resources",
-    "@opentelemetry/semantic-conventions",
     "@reduxjs/toolkit",
     "axios",
     "i18next-browser-languagedetector",
     "react-hot-toast",
     "react-markdown",
-    "react-router-dom",
     "react-syntax-highlighter"
   ],
   "ignoreBinaries": ["rimraf", "vite", "wrangler"]
