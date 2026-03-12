@@ -16,11 +16,13 @@ const mockOutputInfo = vi.fn();
 const mockOutputWarn = vi.fn();
 
 vi.mock('@rediacc/shared-desktop/sftp', () => ({
-  SFTPClient: vi.fn(() => ({
-    connect: mockConnect,
-    close: mockClose,
-    execStreaming: mockExecStreaming,
-  })),
+  SFTPClient: vi.fn(
+    class MockSFTPClient {
+      connect = mockConnect;
+      close = mockClose;
+      execStreaming = mockExecStreaming;
+    }
+  ),
 }));
 
 vi.mock('@rediacc/shared/queue-vault', () => ({
