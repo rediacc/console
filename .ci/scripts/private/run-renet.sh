@@ -22,4 +22,5 @@ if [[ ! -f "$RENET_DIR/.ci/ci.sh" ]]; then
 fi
 
 log_step "Running renet CI (stage: $STAGE)..."
+export GOTOOLCHAIN="${GOTOOLCHAIN:-go1.25.8+auto}"
 "$RENET_DIR/.ci/ci.sh" "$STAGE"
