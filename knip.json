@@ -37,14 +37,20 @@
         "src/components/app/DirectFileBrowser/DesktopPrompt.tsx",
         "src/utils/formatters.ts",
         "src/services/telemetryService.ts",
+        "src/api/client.ts",
         "src/components/layout/MainLayout/index.tsx",
         "src/components/layout/MainLayout/components/NotificationBell/index.tsx",
+        "src/components/app/ThemedToaster/index.tsx",
         "src/components/common/LanguageSelector/index.tsx",
         "src/components/common/QueueItemTraceModal/QueueItemTraceModal.tsx",
+        "src/components/common/TemplatePreviewModal/index.tsx",
         "src/features/audit/pages/AuditPage.tsx",
+        "src/features/auth/components/EndpointSelector/index.tsx",
         "src/features/organization/components/UserSessionsTab/index.tsx",
         "src/features/queue/pages/QueuePage.tsx",
-        "src/features/queue/hooks/useQueueExport.ts"
+        "src/features/queue/hooks/useQueueExport.ts",
+        "src/i18n/config.ts",
+        "src/store/store.ts"
       ],
       "project": ["src/**/*.{ts,tsx}"],
       "ignore": [
@@ -142,13 +148,7 @@
     "astro-seo",
     "glob",
     "react-i18next",
-    "tiny-typed-emitter",
-    "@reduxjs/toolkit",
-    "axios",
-    "i18next-browser-languagedetector",
-    "react-hot-toast",
-    "react-markdown",
-    "react-syntax-highlighter"
+    "tiny-typed-emitter"
   ],
   "ignoreBinaries": ["rimraf", "vite", "wrangler"]
 }
