@@ -46,6 +46,11 @@ function main(): void {
   console.log('Account Email Template Validation');
   console.log('============================================================\n');
 
+  if (!fs.existsSync(TEMPLATE_DIR) || !fs.existsSync(LOCALES_DIR)) {
+    console.log('\u001B[33m↷\u001B[0m Skipping account email template validation (private/account not initialized)\n');
+    return;
+  }
+
   const errors: string[] = [];
   const englishKeys = new Set(flattenKeys(readJson(path.join(LOCALES_DIR, 'en', 'emails.json'))));
 
