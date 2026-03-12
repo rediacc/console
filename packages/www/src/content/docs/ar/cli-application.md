@@ -6,7 +6,7 @@ order: 2
 language: ar
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ar/cli.json
-sourceHash: "b2e04cb9013aea6d"
+sourceHash: "628d3c02428f6d0e"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -1865,16 +1865,25 @@ rdc subscription login [options]
 {{t:cli.commands.subscription.status.description}}
 
 ```bash
-rdc subscription status [options]
+rdc subscription status
+```
+
+<a id="cli-local-subscription-activation-status"></a>
+### 13.3 activation-status
+
+{{t:cli.commands.subscription.activationStatus.description}}
+
+```bash
+rdc subscription activation-status [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
 
 
 <a id="cli-local-subscription-refresh"></a>
-### 13.3 refresh
+### 13.4 refresh
 
 {{t:cli.commands.subscription.refresh.description}}
 
@@ -1887,8 +1896,36 @@ rdc subscription refresh [options]
 | `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
 
 
+<a id="cli-local-subscription-refresh-activation"></a>
+### 13.5 refresh-activation
+
+{{t:cli.commands.subscription.refreshActivation.description}}
+
+```bash
+rdc subscription refresh-activation [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
+
+
+<a id="cli-local-subscription-refresh-repos"></a>
+### 13.6 refresh-repos
+
+{{t:cli.commands.subscription.refreshRepos.description}}
+
+```bash
+rdc subscription refresh-repos [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
+
+
 <a id="cli-local-subscription-repo-status"></a>
-### 13.4 repo-status
+### 13.7 repo-status
 
 {{t:cli.commands.subscription.repoStatus.description}}
 
@@ -1902,7 +1939,7 @@ rdc subscription repo-status [options]
 
 
 <a id="cli-local-subscription-refresh-repo"></a>
-### 13.5 refresh-repo
+### 13.8 refresh-repo
 
 {{t:cli.commands.subscription.refreshRepo.description}}
 

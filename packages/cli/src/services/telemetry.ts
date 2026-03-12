@@ -25,6 +25,7 @@ import {
   errorToAttributes,
   extractApiEndpoint,
   generateSessionId,
+  TELEMETRY_ATTRIBUTES,
 } from '@rediacc/shared/telemetry';
 
 import { metrics as metricsApi } from '@opentelemetry/api';
@@ -643,6 +644,23 @@ class CliTelemetryService implements TelemetryHandler {
 
     if (this.userContext.teamName) {
       attrs['user.team'] = this.userContext.teamName;
+      attrs['team.name'] = this.userContext.teamName;
+    }
+
+    if (this.userContext.subscriptionId) {
+      attrs[TELEMETRY_ATTRIBUTES.subscriptionId] = this.userContext.subscriptionId;
+    }
+
+    if (this.userContext.subscriptionPlanCode) {
+      attrs[TELEMETRY_ATTRIBUTES.subscriptionPlanCode] = this.userContext.subscriptionPlanCode;
+    }
+
+    if (this.userContext.subscriptionStatus) {
+      attrs[TELEMETRY_ATTRIBUTES.subscriptionStatus] = this.userContext.subscriptionStatus;
+    }
+
+    if (this.userContext.subscriptionSource) {
+      attrs[TELEMETRY_ATTRIBUTES.subscriptionSource] = this.userContext.subscriptionSource;
     }
 
     return attrs;

@@ -4,7 +4,7 @@ description: Yerel dağıtımlar için abonelikleri ve makine lisanslarını yö
 category: Guides
 order: 7
 language: tr
-sourceHash: 49e050bdc4fcd1a8
+sourceHash: 58873ba427babd61
 ---
 
 # Abonelik ve Lisanslama
@@ -37,11 +37,12 @@ Cihaz kodu akışı ile kimlik doğrulama için tarayıcı açar. Onaydan sonra 
 # Hesap düzeyinde durum (plan, makineler)
 rdc subscription status
 
-# Belirli bir makineden lisans ayrıntılarını dahil et
-rdc subscription status -m hostinger
+# Belirli bir makinenin aktivasyon ayrıntılarını göster
+
+rdc subscription activation-status -m hostinger
 ```
 
-Hesap sunucusundan abonelik ayrıntılarını gösterir. `-m` ile birlikte makineye SSH bağlantısı yaparak mevcut lisans bilgilerini de görüntüler.
+Hesap sunucusundan abonelik ayrıntılarını gösterir. Makineye özel aktivasyon ayrıntıları için `rdc subscription activation-status -m` kullanın.
 
 ## Lisansı Zorla Yenileme
 
@@ -71,7 +72,7 @@ Bir lisansın süresi dolduğunda ve 3 günlük ek süre içinde yenilenemediği
 
 ### Yüzen Lisans Sınırları
 
-| Plan | Floating Licenses |
+| Plan | Yüzen lisanslar |
 |------|-------------|
 | Community | 2 |
 | Professional | 5 |
@@ -87,103 +88,11 @@ Bir lisansın süresi dolduğunda ve 3 günlük ek süre içinde yenilenemediği
 
 | Özellik | Community | Professional | Business | Enterprise |
 |---------|-----------|--------------|----------|------------|
-| Permission groups | - | Yes | Yes | Yes |
-| Queue priority | - | - | Yes | Yes |
-| Advanced analytics | - | - | Yes | Yes |
-| Priority support | - | Yes | Yes | Yes |
-| Audit log | - | Yes | Yes | Yes |
-| Advanced queue | - | - | Yes | Yes |
-| Custom branding | - | Yes | Yes | Yes |
-| Dedicated account | - | - | - | Yes |
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
+| İzin grupları | - | Evet | Evet | Evet |
+| Kuyruk önceliği | - | - | Evet | Evet |
+| Gelişmiş analizler | - | - | Evet | Evet |
+| Öncelikli destek | - | Evet | Evet | Evet |
+| Denetim günlüğü | - | Evet | Evet | Evet |
+| Gelişmiş kuyruk | - | - | Evet | Evet |
+| Özel markalama | - | Evet | Evet | Evet |
+| Adanmış hesap | - | - | - | Evet |

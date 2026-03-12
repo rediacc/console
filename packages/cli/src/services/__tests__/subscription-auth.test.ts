@@ -2,10 +2,12 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
+  getSubscriptionScopeMismatch,
   getSubscriptionServerUrl,
   getSubscriptionTokenFile,
   getSubscriptionTokenState,
   isDevelopmentSubscriptionMode,
+  loadEnvSubscriptionToken,
   normalizeServerUrl,
   saveStoredSubscriptionToken,
 } from '../subscription-auth.js';
@@ -67,6 +69,53 @@ describe('subscription-auth', () => {
     rmSync(tempDir, { recursive: true, force: true });
   });
 
+  it('loads a ready token from REDIACC_SUBSCRIPTION_TOKEN', () => {
+    process.env.REDIACC_SUBSCRIPTION_TOKEN = 'rdt_env';
+    process.env.REDIACC_ACCOUNT_SERVER = 'http://localhost:4800/account/';
+
+    expect(loadEnvSubscriptionToken()).toEqual({
+      token: 'rdt_env',
+      serverUrl: 'http://localhost:4800/account',
+    });
+
+    expect(getSubscriptionTokenState()).toEqual({
+      kind: 'ready',
+      serverUrl: 'http://localhost:4800/account',
+      token: {
+        token: 'rdt_env',
+        serverUrl: 'http://localhost:4800/account',
+      },
+    });
+  });
+
+  it('prefers REDIACC_SUBSCRIPTION_TOKEN over the stored token file', () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'subscription-auth-'));
+    const tokenFile = join(tempDir, 'api-token.json');
+
+    process.env.REDIACC_SUBSCRIPTION_TOKEN = 'rdt_env';
+    process.env.REDIACC_ACCOUNT_SERVER = 'http://localhost:4800/account/';
+    process.env.REDIACC_SUBSCRIPTION_TOKEN_FILE = tokenFile;
+
+    writeFileSync(
+      tokenFile,
+      JSON.stringify({
+        token: 'rdt_file',
+        serverUrl: 'http://localhost:4830/account',
+      })
+    );
+
+    expect(getSubscriptionTokenState()).toEqual({
+      kind: 'ready',
+      serverUrl: 'http://localhost:4800/account',
+      token: {
+        token: 'rdt_env',
+        serverUrl: 'http://localhost:4800/account',
+      },
+    });
+
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
   it('persists normalized dev tokens and loads them as ready', () => {
     const tempDir = mkdtempSync(join(tmpdir(), 'subscription-auth-'));
     const tokenFile = join(tempDir, 'nested', 'api-token.json');
@@ -80,6 +129,10 @@ describe('subscription-auth', () => {
       token: 'rdt_valid',
       serverUrl: 'http://localhost:4800/',
       subscriptionId: 'sub_123',
+      orgId: 'org_123',
+      orgName: 'Acme',
+      teamId: 'team_123',
+      teamName: 'Platform',
     });
 
     expect(getSubscriptionTokenState()).toEqual({
@@ -89,6 +142,10 @@ describe('subscription-auth', () => {
         token: 'rdt_valid',
         serverUrl: 'http://localhost:4800',
         subscriptionId: 'sub_123',
+        orgId: 'org_123',
+        orgName: 'Acme',
+        teamId: 'team_123',
+        teamName: 'Platform',
       },
     });
 
@@ -97,5 +154,31 @@ describe('subscription-auth', () => {
 
   it('normalizes trailing slashes consistently', () => {
     expect(normalizeServerUrl('http://localhost:4800///')).toBe('http://localhost:4800');
+  });
+
+  it('reports a hard mismatch when the config team differs from the token team', () => {
+    expect(
+      getSubscriptionScopeMismatch(
+        {
+          token: 'rdt_valid',
+          serverUrl: 'http://localhost:4800',
+          teamId: 'team_123',
+          teamName: 'Platform',
+        },
+        'Infra'
+      )
+    ).toContain('Platform');
+  });
+
+  it('requires re-login when config team exists but token team metadata is missing', () => {
+    expect(
+      getSubscriptionScopeMismatch(
+        {
+          token: 'rdt_valid',
+          serverUrl: 'http://localhost:4800',
+        },
+        'Platform'
+      )
+    ).toContain('Run "rdc subscription login" again');
   });
 });

@@ -99,9 +99,9 @@
           "type": "number",
           "jsonKey": "maxRepositorySizeGb"
         },
-        "maxFloatingLicenseRequestsPerMonth": {
+        "maxRepoLicenseIssuancesPerMonth": {
           "type": "number",
-          "jsonKey": "maxFloatingLicenseRequestsPerMonth"
+          "jsonKey": "maxRepoLicenseIssuancesPerMonth"
         },
         "features": {
           "type": "object",
@@ -152,9 +152,9 @@
           "type": "number",
           "jsonKey": "maxRepositorySizeGb"
         },
-        "maxFloatingLicenseRequestsPerMonth": {
+        "maxRepoLicenseIssuancesPerMonth": {
           "type": "number",
-          "jsonKey": "maxFloatingLicenseRequestsPerMonth"
+          "jsonKey": "maxRepoLicenseIssuancesPerMonth"
         },
         "features": {
           "type": "object",
@@ -197,19 +197,19 @@
     "planResources": {
       "COMMUNITY": {
         "maxRepositorySizeGb": 10,
-        "maxFloatingLicenseRequestsPerMonth": 500
+        "maxRepoLicenseIssuancesPerMonth": 500
       },
       "PROFESSIONAL": {
         "maxRepositorySizeGb": 100,
-        "maxFloatingLicenseRequestsPerMonth": 5000
+        "maxRepoLicenseIssuancesPerMonth": 5000
       },
       "BUSINESS": {
         "maxRepositorySizeGb": 500,
-        "maxFloatingLicenseRequestsPerMonth": 20000
+        "maxRepoLicenseIssuancesPerMonth": 20000
       },
       "ENTERPRISE": {
         "maxRepositorySizeGb": 2048,
-        "maxFloatingLicenseRequestsPerMonth": 100000
+        "maxRepoLicenseIssuancesPerMonth": 100000
       }
     },
     "planFeatures": {

@@ -1459,9 +1459,30 @@
         "statusLabel": "  Статус:   {{status}}",
         "valid": "  Действительна (истекает через {{mins}} минут)",
         "serverMismatch": "Токен разработки принадлежит {{actualServerUrl}}, но этот worktree использует {{expectedServerUrl}}. Снова выполните `rdc subscription login`.",
-        "remoteFloatingLicenses": "  Плавающие лицензии: {{active}}/{{max}}",
-        "remoteFloatingLicenseRequests": "  Запросы плавающих лицензий: {{used}}/{{limit}}",
-        "remoteRepoLicenses": "  Лицензии репозитория: отслеживается {{totalTrackedRepos}}, действует {{validCount}}, рекомендуется обновить {{refreshRecommendedCount}}, полностью истекло {{hardExpiredCount}}"
+        "remoteMachineActivations": "  Активации машин: {{active}}/{{max}}",
+        "remoteRepoLicenseIssuances": "  Запросы плавающих лицензий: {{used}}/{{limit}}",
+        "remoteRepoLicenses": "  Лицензии репозитория: отслеживается {{totalTrackedRepos}}, действует {{validCount}}, рекомендуется обновить {{refreshRecommendedCount}}, полностью истекло {{hardExpiredCount}}",
+        "issuanceLimitReached": "Достигнут месячный лимит выдачи лицензий репозитория для текущего календарного месяца UTC.",
+        "issuanceUsageHigh95": "Месячные выдачи лицензий репозитория превысили 95 % текущего лимита UTC.",
+        "issuanceUsageHigh80": "Месячные выдачи лицензий репозитория превысили 80 % текущего лимита UTC."
+      },
+      "activationStatus": {
+        "description": "Показать статус активации одной машины",
+        "header": "\nАктивация машины ({{machineName}})",
+        "unavailable": "  Активация: не удалось запросить состояние аккаунта",
+        "machineId": "  Идентификатор машины: {{machineId}}",
+        "activations": "  Активации: {{active}}/{{max}}",
+        "active": "  Активация: активна (последний раз замечена {{lastSeenAt}})",
+        "inactive": "  Активация: машина сейчас не активна в состоянии аккаунта"
+      },
+      "refreshActivation": {
+        "description": "Обновить активацию машины на удалённой машине"
+      },
+      "refreshRepos": {
+        "description": "Пакетно обновить лицензии репозиториев на удалённой машине",
+        "refreshing": "Обновление лицензий репозитория...",
+        "refreshed": "Лицензии репозитория обновлены",
+        "success": "Пакетное обновление лицензий репозитория завершено"
       },
       "repoStatus": {
         "description": "Показать установленные лицензии репозитория на машине",

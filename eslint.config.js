@@ -124,6 +124,11 @@ export default tseslint.config(
       'packages/cli/bundle.mjs',
       // Ignore .d.ts files (generated type declarations)
       '**/*.d.ts',
+      // Ignore generated JS companions for TypeScript source/test files
+      'packages/*/src/**/*.js',
+      'packages/*/src/**/*.js.map',
+      'packages/*/tests/**/*.js',
+      'packages/*/tests/**/*.js.map',
       // Ignore public config files
       'packages/web/public/**',
       // Ignore desktop build output
@@ -225,7 +230,11 @@ export default tseslint.config(
           jsx: true
         },
         projectService: {
-          allowDefaultProject: ['scripts/*.ts', 'scripts/utils/*.ts'],
+          allowDefaultProject: [
+            'scripts/*.ts',
+            'scripts/utils/*.ts',
+            'packages/desktop/electron.vite.config.js',
+          ],
           maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 12,
         },
         tsconfigRootDir: import.meta.dirname,
@@ -622,6 +631,27 @@ export default tseslint.config(
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/no-unused-expressions': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+
+  {
+    files: ['private/account/src/services/email.service.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "CallExpression[callee.property.name='sendEmail'] > Literal:nth-child(n+2)",
+          message:
+            'Do not hardcode email copy in EmailService. Render subject/html/text via translated email templates.',
+        },
+        {
+          selector:
+            "CallExpression[callee.property.name='sendEmail'] > TemplateLiteral:nth-child(n+2)",
+          message:
+            'Do not hardcode email copy in EmailService. Render subject/html/text via translated email templates.',
+        },
+      ],
     },
   },
 

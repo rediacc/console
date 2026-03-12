@@ -1459,9 +1459,30 @@
         "statusLabel": "  Zustand:  {{status}}",
         "valid": "  Gültig (läuft in {{mins}} Minuten ab)",
         "serverMismatch": "Das Dev-Token gehört zu {{actualServerUrl}}, aber dieser Worktree verwendet {{expectedServerUrl}}. Führe `rdc subscription login` erneut aus.",
-        "remoteFloatingLicenses": "  Floating-Lizenzen: {{active}}/{{max}}",
-        "remoteFloatingLicenseRequests": "  Floating-Lizenzanfragen: {{used}}/{{limit}}",
-        "remoteRepoLicenses": "  Repo-Lizenzen: {{totalTrackedRepos}} verfolgt, {{validCount}} gültig, {{refreshRecommendedCount}} Aktualisierung empfohlen, {{hardExpiredCount}} hart abgelaufen"
+        "remoteMachineActivations": "  Maschinenaktivierungen: {{active}}/{{max}}",
+        "remoteRepoLicenseIssuances": "  Floating-Lizenzanfragen: {{used}}/{{limit}}",
+        "remoteRepoLicenses": "  Repo-Lizenzen: {{totalTrackedRepos}} verfolgt, {{validCount}} gültig, {{refreshRecommendedCount}} Aktualisierung empfohlen, {{hardExpiredCount}} hart abgelaufen",
+        "issuanceLimitReached": "Das monatliche Kontingent für Repo-Lizenzerteilungen im aktuellen UTC-Kalendermonat ist erreicht.",
+        "issuanceUsageHigh95": "Die monatlichen Repo-Lizenzerteilungen liegen über 95 % des aktuellen UTC-Limits.",
+        "issuanceUsageHigh80": "Die monatlichen Repo-Lizenzerteilungen liegen über 80 % des aktuellen UTC-Limits."
+      },
+      "activationStatus": {
+        "description": "Aktivierungsstatus für eine Maschine anzeigen",
+        "header": "\nMaschinenaktivierung ({{machineName}})",
+        "unavailable": "  Aktivierung: Kontostatus konnte nicht abgefragt werden",
+        "machineId": "  Maschinen-ID: {{machineId}}",
+        "activations": "  Aktivierungen: {{active}}/{{max}}",
+        "active": "  Aktivierung: aktiv (zuletzt gesehen {{lastSeenAt}})",
+        "inactive": "  Aktivierung: Maschine ist im Kontostatus derzeit nicht aktiv"
+      },
+      "refreshActivation": {
+        "description": "Maschinenaktivierung auf einer Remote-Maschine aktualisieren"
+      },
+      "refreshRepos": {
+        "description": "Repo-Lizenzen auf einer Remote-Maschine gesammelt aktualisieren",
+        "refreshing": "Repo-Lizenzen werden aktualisiert...",
+        "refreshed": "Repo-Lizenzen aktualisiert",
+        "success": "Stapelaktualisierung der Repo-Lizenzen abgeschlossen"
       },
       "repoStatus": {
         "description": "Installierte Repo-Lizenzen auf einer Maschine anzeigen",

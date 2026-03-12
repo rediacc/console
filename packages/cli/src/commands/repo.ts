@@ -6,6 +6,7 @@ import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap, resolveGuids } from '../utils/guid-resolver.js';
+import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
 import { registerRepoBackupCommands } from './repo-backup.js';
@@ -54,8 +55,7 @@ async function executeRepoFunction(
   if (result.success) {
     outputService.success(messages.completed);
   } else {
-    outputService.error(result.error ?? messages.failed);
-    process.exitCode = result.exitCode;
+    renderLocalExecutionFailure(result, result.error ?? messages.failed);
   }
 }
 
@@ -136,8 +136,7 @@ ${t('help.examples')}
             // Rollback: remove from config.json
             await configService.removeRepository(name);
             outputService.warn(t('commands.repo.create.rollback', { repository: name }));
-            outputService.error(result.error ?? t('commands.repo.create.failed'));
-            process.exitCode = result.exitCode;
+            renderLocalExecutionFailure(result, t('commands.repo.create.failed'));
           }
         } catch (error) {
           // Rollback on unexpected error
@@ -208,8 +207,7 @@ ${t('help.examples')}
             );
             outputService.success(t('commands.repo.delete.completed'));
           } else {
-            outputService.error(result.error ?? t('commands.repo.delete.failed'));
-            process.exitCode = result.exitCode;
+            renderLocalExecutionFailure(result, t('commands.repo.delete.failed'));
           }
         } catch (error) {
           handleError(error);
@@ -425,8 +423,7 @@ ${t('help.examples')}
           if (result.success) {
             outputService.success(t('commands.repo.upAll.completed'));
           } else {
-            outputService.error(result.error ?? t('commands.repo.upAll.failed'));
-            process.exitCode = result.exitCode;
+            renderLocalExecutionFailure(result, t('commands.repo.upAll.failed'));
           }
         } catch (error) {
           handleError(error);
@@ -553,8 +550,10 @@ ${t('help.examples')}
           outputService.print(resolved, format);
           outputService.success(t('commands.repo.list.completed'));
         } else {
-          outputService.error(t('commands.repo.list.failed', { error: result.error }));
-          process.exitCode = result.exitCode;
+          renderLocalExecutionFailure(
+            result,
+            t('commands.repo.list.failed', { error: result.error })
+          );
         }
       } catch (error) {
         handleError(error);

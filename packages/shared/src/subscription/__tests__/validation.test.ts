@@ -34,7 +34,7 @@ const createValidSubscriptionData = (
   lastCheckIn: new Date().toISOString(),
   gracePeriodEnds: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
   maxRepositorySizeGb: PLAN_LIMITS.PROFESSIONAL.maxRepositorySizeGb,
-  maxFloatingLicenseRequestsPerMonth: PLAN_LIMITS.PROFESSIONAL.maxFloatingLicenseRequestsPerMonth,
+  maxRepoLicenseIssuancesPerMonth: PLAN_LIMITS.PROFESSIONAL.maxRepoLicenseIssuancesPerMonth,
   features: PLAN_FEATURES.PROFESSIONAL,
   maxActivations: 5,
   activationCount: 1,
@@ -123,8 +123,7 @@ describe('Subscription Validation', () => {
           planCode: 'PROFESSIONAL',
           status: 'ACTIVE',
           maxRepositorySizeGb: PLAN_LIMITS.PROFESSIONAL.maxRepositorySizeGb,
-          maxFloatingLicenseRequestsPerMonth:
-            PLAN_LIMITS.PROFESSIONAL.maxFloatingLicenseRequestsPerMonth,
+          maxRepoLicenseIssuancesPerMonth: PLAN_LIMITS.PROFESSIONAL.maxRepoLicenseIssuancesPerMonth,
           features: PLAN_FEATURES.PROFESSIONAL,
           expiresAt: '2027-01-01T00:00:00Z',
           gracePeriodEnds: '2026-01-04T00:00:00Z',

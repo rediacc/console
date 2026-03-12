@@ -638,7 +638,7 @@
           "features": [
             "Unlimited users & teams",
             "Unlimited repositories",
-            "500 floating license requests/month",
+            "500 monthly repo license issuances",
             "Unlimited machines",
             "Snapshot restores",
             "Manual scheduling",
@@ -652,7 +652,7 @@
           "features": [
             "Everything in Community +",
             "Unlimited repositories",
-            "5,000 floating license requests/month",
+            "5,000 monthly repo license issuances",
             "Automated scheduling",
             "24-hour point-in-time restore",
             "Email + chat support",
@@ -667,7 +667,7 @@
           "features": [
             "Everything in Professional +",
             "Unlimited repositories",
-            "20,000 floating license requests/month",
+            "20,000 monthly repo license issuances",
             "$9,999 implementation support included (Launch Offer)",
             "Geo-redundant storage (3 regions)",
             "Continuous data protection",
@@ -685,7 +685,7 @@
           "features": [
             "Everything in Business +",
             "Unlimited repositories",
-            "100,000 floating license requests/month",
+            "100,000 monthly repo license issuances",
             "Custom SLA with guaranteed restore times",
             "Dedicated infrastructure tenant",
             "24/7/365 white-glove support",
@@ -930,7 +930,7 @@
         "items": [
           {
             "question": "Is there a free plan?",
-            "answer": "Yes. The Community plan is free forever with up to 2 machines, 500 floating license requests per month, and full snapshot restore capabilities. No credit card required."
+            "answer": "Yes. The Community plan is free forever with up to 2 machines, 500 monthly repo license issuances, and full snapshot restore capabilities. No credit card required."
           },
           {
             "question": "Can I upgrade or downgrade my plan?",
@@ -1041,12 +1041,12 @@
           {
             "key": "jobsPerMonth",
             "label": "Floating license requests",
-            "tooltip": "Successful machine license issuances counted in the current UTC calendar month."
+            "tooltip": "Successful activation-backed repo license issuances counted in the current UTC calendar month."
           },
           {
             "key": "floatingLicenses",
             "label": "Floating Licenses",
-            "tooltip": "How many machines can hold active licenses at the same time."
+            "tooltip": "How many machines can hold active activation slots at the same time."
           },
           {
             "key": "repositories",
@@ -1055,7 +1055,7 @@
           {
             "key": "repoSize",
             "label": "Repository size",
-            "tooltip": "Unregistered users can use up to 4 GB. Registered Community users can use up to 10 GB. Larger repositories require a paid plan."
+            "tooltip": "Community users can use up to 10 GB. Larger repositories require a paid plan."
           },
           {
             "key": "usersTeams",

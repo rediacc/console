@@ -11,6 +11,8 @@ export type {
   UserContext,
 } from './types';
 
+export { TELEMETRY_ATTRIBUTES, TELEMETRY_SUBSCRIPTION_SOURCES } from './attributes';
+
 // Utilities
 export {
   anonymizeArgs,

@@ -195,19 +195,19 @@ export const EditionErrorPatterns = {
 export const PLAN_LIMITS = {
   COMMUNITY: {
     maxRepositorySizeGb: 10,
-    maxFloatingLicenseRequestsPerMonth: 500,
+    maxRepoLicenseIssuancesPerMonth: 500,
   },
   PROFESSIONAL: {
     maxRepositorySizeGb: 100,
-    maxFloatingLicenseRequestsPerMonth: 5000,
+    maxRepoLicenseIssuancesPerMonth: 5000,
   },
   BUSINESS: {
     maxRepositorySizeGb: 500,
-    maxFloatingLicenseRequestsPerMonth: 20000,
+    maxRepoLicenseIssuancesPerMonth: 20000,
   },
   ENTERPRISE: {
     maxRepositorySizeGb: 1024,
-    maxFloatingLicenseRequestsPerMonth: 100000,
+    maxRepoLicenseIssuancesPerMonth: 100000,
   },
 } as const;
 

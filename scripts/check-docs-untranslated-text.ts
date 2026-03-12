@@ -242,6 +242,7 @@ function analyzeFile(filePath: string, lang: string): UntranslatedLine[] {
   let inCodeBlock = false;
   let inFrontmatter = false;
   let frontmatterCount = 0;
+  let blankRun = 0;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -270,6 +271,50 @@ function analyzeFile(filePath: string, lang: string): UntranslatedLine[] {
     }
 
     if (inCodeBlock) {
+      continue;
+    }
+
+    if (/^\s*$/.test(line)) {
+      blankRun++;
+      if (blankRun === 6) {
+        issues.push({
+          file: filePath,
+          lang,
+          lineNumber,
+          content: '[blank line run]',
+          pattern: 'excessive blank lines',
+        });
+      }
+      continue;
+    }
+    blankRun = 0;
+
+    if (line.trim() === '<!---->') {
+      issues.push({
+        file: filePath,
+        lang,
+        lineNumber,
+        content: '<!---->',
+        pattern: 'html comment padding',
+      });
+      continue;
+    }
+
+    if (/^\|/.test(line)) {
+      if (/^\|[\s\-:|]+\|?\s*$/.test(line)) {
+        continue;
+      }
+      const tableText = line.replace(/\|/g, ' ');
+      const pattern = detectUntranslatedText(tableText);
+      if (pattern) {
+        issues.push({
+          file: filePath,
+          lang,
+          lineNumber,
+          content: line.trim().slice(0, 100) + (line.length > 100 ? '...' : ''),
+          pattern,
+        });
+      }
       continue;
     }
 

@@ -4,12 +4,17 @@ import { SUBSCRIPTION_DEFAULTS } from '@rediacc/shared/config';
 import { getConfigDir } from '@rediacc/shared/paths';
 
 const TOKEN_FILE_ENV = 'REDIACC_SUBSCRIPTION_TOKEN_FILE';
+const SUBSCRIPTION_TOKEN_ENV = 'REDIACC_SUBSCRIPTION_TOKEN';
 const DEV_ENV = 'development';
 
 export interface StoredSubscriptionToken {
   token: string;
   serverUrl: string;
   subscriptionId?: string;
+  orgId?: string;
+  orgName?: string;
+  teamId?: string;
+  teamName?: string;
 }
 
 export function normalizeServerUrl(serverUrl: string): string {
@@ -55,6 +60,16 @@ export function loadStoredSubscriptionToken(): StoredSubscriptionToken | null {
   }
 }
 
+export function loadEnvSubscriptionToken(): StoredSubscriptionToken | null {
+  const token = process.env[SUBSCRIPTION_TOKEN_ENV]?.trim();
+  if (!token) return null;
+
+  return {
+    token,
+    serverUrl: getSubscriptionServerUrl(),
+  };
+}
+
 export function saveStoredSubscriptionToken(token: StoredSubscriptionToken): void {
   const tokenFile = getSubscriptionTokenFile();
   mkdirSync(dirname(tokenFile), { recursive: true, mode: 0o700 });
@@ -72,13 +87,35 @@ export function saveStoredSubscriptionToken(token: StoredSubscriptionToken): voi
   );
 }
 
+export function getSubscriptionScopeMismatch(
+  token: Pick<StoredSubscriptionToken, 'teamName'>,
+  configTeamName?: string
+): string | null {
+  const normalizedConfigTeam = configTeamName?.trim();
+  const normalizedTokenTeam = token.teamName?.trim();
+
+  if (!normalizedConfigTeam) {
+    return null;
+  }
+
+  if (!normalizedTokenTeam) {
+    return `Stored subscription token is missing team metadata for config team "${normalizedConfigTeam}". Run "rdc subscription login" again.`;
+  }
+
+  if (normalizedConfigTeam !== normalizedTokenTeam) {
+    return `Stored subscription token is bound to team "${normalizedTokenTeam}", but the current config team is "${normalizedConfigTeam}". Run "rdc subscription login" again after selecting the correct team.`;
+  }
+
+  return null;
+}
+
 export type SubscriptionTokenState =
   | { kind: 'missing' }
   | { kind: 'server_mismatch'; expectedServerUrl: string; actualServerUrl: string }
   | { kind: 'ready'; token: StoredSubscriptionToken; serverUrl: string };
 
 export function getSubscriptionTokenState(): SubscriptionTokenState {
-  const token = loadStoredSubscriptionToken();
+  const token = loadEnvSubscriptionToken() ?? loadStoredSubscriptionToken();
   if (!token) return { kind: 'missing' };
 
   if (isDevelopmentSubscriptionMode()) {

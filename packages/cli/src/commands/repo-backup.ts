@@ -6,6 +6,7 @@ import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
+import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import {
   type CreateActionOptions,
@@ -84,8 +85,10 @@ async function executeFunction(
         t('commands.shortcuts.run.completedLocal', { duration: result.durationMs })
       );
     } else {
-      outputService.error(t('commands.shortcuts.run.failedLocal', { error: result.error }));
-      process.exitCode = result.exitCode;
+      renderLocalExecutionFailure(
+        result,
+        t('commands.shortcuts.run.failedLocal', { error: result.error })
+      );
     }
   }
 }

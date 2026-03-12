@@ -27,13 +27,13 @@ These are related, but they are not the same artifact.
 
 ## How `account`, `rdc`, and `renet` Work Together
 
-`account` is the source of truth for plans, contract overrides, machine-slot usage, and monthly floating license requests.
+`account` is the source of truth for plans, contract overrides, machine activation state, and monthly repo license issuances.
 
 `rdc` runs on your workstation. It logs you into the account server, requests the licenses it needs, and installs them on remote machines over SSH.
 
 `renet` runs on the remote machine. It validates the installed signatures locally and decides whether a repository operation can continue. `renet` does not call the account server.
 
-The normal flow looks like this:
+The normal human-operated flow looks like this:
 
 1. You authenticate with `rdc subscription login`
 2. You run a repository command such as `rdc repo create`, `rdc repo up`, or `rdc repo down`
@@ -43,19 +43,32 @@ The normal flow looks like this:
 
 See [rdc vs renet](/en/docs/rdc-vs-renet) for the workstation-vs-server split, and [Repositories](/en/docs/repositories) for the repository lifecycle itself.
 
+For automation and AI agents, use a scoped subscription token instead of browser login:
+
+```bash
+rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+```
+
+You can also inject the token directly through the environment so the CLI can issue and refresh repo licenses without any interactive login step:
+
+```bash
+export REDIACC_SUBSCRIPTION_TOKEN="rdt_..."
+export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
+```
+
 ## Machine Licenses vs Repo Licenses
 
-### Machine license
+### Machine activation
 
-A machine license is a short-lived, machine-scoped license that represents account-backed access for a remote machine.
+Machine activation is the server-side machine state that represents account-backed access for a remote machine.
 
 It is used for:
 
 - floating machine-slot accounting
-- machine-level entitlement checks
-- bridging account-backed operations to a specific machine
+- machine-level activation checks
+- bridging account-backed repo issuance to a specific machine
 
-It is not the runtime authority for repository start and stop anymore.
+It is not an installed runtime artifact and it is not the runtime authority for repository start and stop.
 
 ### Repo license
 
@@ -68,31 +81,33 @@ It is used for repository lifecycle operations such as:
 - `repo expand`
 - `repo up`
 - `repo down`
+- `backup push`
+- `backup pull`
+- `backup sync`
 - repo autostart on machine restart
 
 Repo licenses are bound to the machine and the target repository, and Rediacc hardens that binding with repository identity metadata. For encrypted repositories, that includes the LUKS identity of the underlying volume.
 
 In practice:
 
-- machine license answers: "can this machine participate in account-backed licensing?"
+- machine activation answers: "can this machine participate in account-backed licensing?"
 - repo license answers: "can this specific repo run on this specific machine?"
 
 ## Default Limits
 
 Repository size depends on the entitlement level:
 
-- registered user with no paid subscription: up to `4 GB`
 - Community: up to `10 GB`
 - paid plans: plan or contract limit
 
 Default paid-plan limits are:
 
-| Plan | Floating Licenses | Repository Size | Floating license requests |
-|------|-------------------|-----------------|---------------------------|
-| Community | 2 | 10 GB | 500 |
-| Professional | 5 | 100 GB | 5,000 |
-| Business | 20 | 500 GB | 20,000 |
-| Enterprise | 50 | 2048 GB | 100,000 |
+| Plan | Repository Size | Monthly repo license issuances |
+|------|-----------------|-------------------------------|
+| Community | 10 GB | 500 |
+| Professional | 100 GB | 5,000 |
+| Business | 500 GB | 20,000 |
+| Enterprise | 2048 GB | 100,000 |
 
 Contract-specific limits can raise or lower these values for a specific customer.
 
@@ -102,10 +117,7 @@ Contract-specific limits can raise or lower these values for a specific customer
 
 When you create a repository, `rdc` contacts `account`, obtains the required license material, installs it on the target machine, and retries if needed.
 
-That account-backed issuance counts toward:
-
-- your machine-slot activity when a machine license is involved
-- your monthly **Floating license requests**
+That account-backed issuance counts toward your monthly **repo license issuances** usage.
 
 ### Repo up and repo down
 
@@ -126,11 +138,19 @@ If the repo license is stale but still before hard expiry, runtime can continue.
 
 ## Checking Status and Refreshing Licenses
 
-Login:
+Human login:
 
 ```bash
 rdc subscription login
 ```
+
+Automation or AI-agent login:
+
+```bash
+rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+```
+
+For non-interactive environments, setting `REDIACC_SUBSCRIPTION_TOKEN` is the simplest option. The token should be scoped only for the subscription and repo-license operations the agent needs.
 
 Show account-backed subscription status:
 
@@ -138,10 +158,10 @@ Show account-backed subscription status:
 rdc subscription status
 ```
 
-Show machine-license details for one machine:
+Show machine activation details for one machine:
 
 ```bash
-rdc subscription status -m hostinger
+rdc subscription activation-status -m hostinger
 ```
 
 Show installed repo-license details on one machine:
@@ -150,17 +170,23 @@ Show installed repo-license details on one machine:
 rdc subscription repo-status -m hostinger
 ```
 
-Force a machine-license refresh:
+Refresh machine activation and batch-refresh repo licenses:
 
 ```bash
 rdc subscription refresh -m hostinger
 ```
+
+Repositories discovered on the machine but missing from local `rdc` config are rejected during batch refresh. They are reported as failures and are not auto-classified.
 
 Force a repo-license refresh for an existing repository:
 
 ```bash
 rdc subscription refresh-repo my-app -m hostinger
 ```
+
+On first use, a licensed repo or backup operation that finds no usable repo license can trigger an account-authorization handoff automatically. The CLI prints an authorization URL, tries to open the browser in interactive terminals, and retries the operation once after authorization and issuance succeed.
+
+In non-interactive environments, the CLI does not wait for browser approval. Instead, it tells you to supply a scoped token with `rdc subscription login --token ...` or `REDIACC_SUBSCRIPTION_TOKEN`.
 
 For first-time machine setup, see [Machine Setup](/en/docs/setup).
 
@@ -174,15 +200,34 @@ That means:
 - repo restarts can continue while the repo license is stale but still valid
 - truly expired repo licenses must be refreshed through `rdc`
 
-Machine licenses and repo licenses expire differently. A machine can show an expired machine license while some repositories on it still have valid repo licenses. When that happens, inspect both surfaces separately instead of assuming they mean the same thing.
+Machine activation and repo runtime licenses are separate surfaces. A machine can be inactive in account state while some repositories still have valid installed repo licenses. When that happens, inspect both surfaces separately instead of assuming they mean the same thing.
 
-## Floating Licenses vs Floating License Requests
+## Recovery Behavior
 
-These names are intentionally separate:
+Automatic recovery is intentionally narrow:
 
-- **Floating Licenses** = active machine slots
-- **Floating license requests** = monthly account-backed license issuance activity
+- `missing`: the CLI may authorize account access if needed, issue a repo license, and retry once
+- `expired`: the CLI may refresh the repo license and retry once
+- `machine_mismatch`: fails fast and tells you to reissue from the current machine context
+- `repository_mismatch`: fails fast and tells you to refresh repo licenses explicitly
+- `sequence_regression`: fails fast as a repo-license integrity/state problem
+- `invalid_signature`: fails fast as a repo-license integrity/state problem
 
-Repo-license issuance contributes to floating-license-request usage. It is normal for those numbers to move independently.
+These fail-fast cases do not automatically consume account-backed refresh or issuance calls.
 
-If you need a customer-facing view of usage and recent repo-license issuance history, use the account portal. If you need machine-side inspection, use `rdc subscription status -m` and `rdc subscription repo-status -m`.
+## Monthly Repo License Issuances
+
+This metric counts successful account-backed repo-license issuance activity in the current UTC calendar month.
+
+It includes:
+
+- first-time repo-license issuance
+- successful repo-license refresh that returns a newly signed license
+
+It does not include:
+
+- unchanged batch entries
+- failed issuance attempts
+- untracked repositories rejected before issuance
+
+If you need a customer-facing view of usage and recent repo-license issuance history, use the account portal. If you need machine-side inspection, use `rdc subscription activation-status -m` and `rdc subscription repo-status -m`.

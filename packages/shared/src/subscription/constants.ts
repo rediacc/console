@@ -15,24 +15,24 @@ export const PLAN_LIMITS: Record<
   PlanCode,
   {
     maxRepositorySizeGb: number;
-    maxFloatingLicenseRequestsPerMonth: number;
+    maxRepoLicenseIssuancesPerMonth: number;
   }
 > = {
   COMMUNITY: {
     maxRepositorySizeGb: 10,
-    maxFloatingLicenseRequestsPerMonth: 500,
+    maxRepoLicenseIssuancesPerMonth: 500,
   },
   PROFESSIONAL: {
     maxRepositorySizeGb: 100,
-    maxFloatingLicenseRequestsPerMonth: 5000,
+    maxRepoLicenseIssuancesPerMonth: 5000,
   },
   BUSINESS: {
     maxRepositorySizeGb: 500,
-    maxFloatingLicenseRequestsPerMonth: 20000,
+    maxRepoLicenseIssuancesPerMonth: 20000,
   },
   ENTERPRISE: {
     maxRepositorySizeGb: 2048,
-    maxFloatingLicenseRequestsPerMonth: 100000,
+    maxRepoLicenseIssuancesPerMonth: 100000,
   },
 } as const;
 
@@ -137,7 +137,7 @@ export function getMaxMachines(planCode: string): number {
  */
 export const PROGRESSIVE_LIMIT_KEYS: readonly (keyof (typeof PLAN_LIMITS)[PlanCode])[] = [
   'maxRepositorySizeGb',
-  'maxFloatingLicenseRequestsPerMonth',
+  'maxRepoLicenseIssuancesPerMonth',
 ] as const;
 
 /**

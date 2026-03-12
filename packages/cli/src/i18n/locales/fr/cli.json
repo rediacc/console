@@ -1459,9 +1459,30 @@
         "statusLabel": "  État :       {{status}}",
         "valid": "  Valide (expire dans {{mins}} minutes)",
         "serverMismatch": "Le jeton de développement appartient à {{actualServerUrl}}, mais ce worktree utilise {{expectedServerUrl}}. Exécutez `rdc subscription login` à nouveau.",
-        "remoteFloatingLicenses": "  Licences flottantes : {{active}}/{{max}}",
-        "remoteFloatingLicenseRequests": "  Demandes de licence flottante : {{used}}/{{limit}}",
-        "remoteRepoLicenses": "  Licences de dépôt : {{totalTrackedRepos}} suivis, {{validCount}} valides, {{refreshRecommendedCount}} actualisation recommandée, {{hardExpiredCount}} expirées définitivement"
+        "remoteMachineActivations": "  Activations de machine : {{active}}/{{max}}",
+        "remoteRepoLicenseIssuances": "  Demandes de licence flottante : {{used}}/{{limit}}",
+        "remoteRepoLicenses": "  Licences de dépôt : {{totalTrackedRepos}} suivis, {{validCount}} valides, {{refreshRecommendedCount}} actualisation recommandée, {{hardExpiredCount}} expirées définitivement",
+        "issuanceLimitReached": "La limite mensuelle d’émission de licences de dépôt a été atteinte pour le mois calendaire UTC en cours.",
+        "issuanceUsageHigh95": "Les émissions mensuelles de licences de dépôt dépassent 95 % de la limite UTC actuelle.",
+        "issuanceUsageHigh80": "Les émissions mensuelles de licences de dépôt dépassent 80 % de la limite UTC actuelle."
+      },
+      "activationStatus": {
+        "description": "Afficher l’état d’activation d’une machine",
+        "header": "\nActivation de la machine ({{machineName}})",
+        "unavailable": "  Activation : impossible d’interroger l’état du compte",
+        "machineId": "  ID machine : {{machineId}}",
+        "activations": "  Activations : {{active}}/{{max}}",
+        "active": "  Activation : active (vue pour la dernière fois {{lastSeenAt}})",
+        "inactive": "  Activation : la machine n’est actuellement pas active dans l’état du compte"
+      },
+      "refreshActivation": {
+        "description": "Actualiser l’activation de la machine sur une machine distante"
+      },
+      "refreshRepos": {
+        "description": "Actualiser en lot les licences de dépôt sur une machine distante",
+        "refreshing": "Actualisation des licences de dépôt...",
+        "refreshed": "Licences de dépôt actualisées",
+        "success": "L’actualisation par lot des licences de dépôt est terminée"
       },
       "repoStatus": {
         "description": "Afficher les licences de dépôt installées sur une machine",

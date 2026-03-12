@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * LocalExecutorService - Direct task execution without middleware.
  *
@@ -17,13 +18,21 @@ import * as path from 'node:path';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { configService } from './config-resources.js';
-import { issueMachineLicense, issueRepoLicense, refreshRepoLicenseIdentity } from './license.js';
+import {
+  refreshMachineActivation,
+  issueRepoLicense,
+  refreshRepoLicenseIdentity,
+  refreshRepoLicensesBatch,
+} from './license.js';
 import { outputService } from './output.js';
 import {
   isLicensedRenetFunction,
+  type RenetLicenseFailure,
   parseRenetLicenseFailure,
   RENET_LICENSE_REQUIRED_EXIT_CODE,
 } from './renet-license-contract.js';
+import { authorizeSubscriptionViaDeviceCode } from './subscription-device-auth.js';
+import { getSubscriptionTokenState } from './subscription-auth.js';
 import {
   buildLocalVault,
   getLocalRenetPath,
@@ -56,13 +65,19 @@ interface LocalExecuteOptions {
 }
 
 /** Result of local execution */
-interface LocalExecuteResult {
+export interface LocalExecuteResult {
   /** Whether execution succeeded */
   success: boolean;
   /** Exit code from renet */
   exitCode: number;
   /** Error message if failed */
   error?: string;
+  /** Stable machine-readable error code, when available */
+  errorCode?: string;
+  /** Actionable guidance for operators or automation */
+  errorGuidance?: string;
+  /** Structured repo-license reason from renet, when available */
+  licenseFailureReason?: string;
   /** Execution duration in milliseconds */
   durationMs: number;
   /** Captured stdout, when requested */
@@ -268,6 +283,76 @@ async function resolveRepoIdentity(
  * with vault JSON piped via stdin. This avoids double-SSH (CLI→renet→machine).
  */
 class LocalExecutorService {
+  private async resolveLicenseFailure(
+    result: LocalExecuteResult,
+    failure: RenetLicenseFailure,
+    options: LocalExecuteOptions,
+    machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
+    sshPrivateKey: string,
+    remoteRenetPath: string,
+    sftp: SFTPClient,
+    startTime: number
+  ): Promise<LocalExecuteResult | null> {
+    const guidance = this.resolveLicenseRecoveryGuidance(failure, options.machineName);
+    if (guidance.failFastMessage) {
+      return this.buildRecoveryFailureResult(
+        result,
+        guidance,
+        guidance.failFastMessage,
+        failure.reason,
+        startTime
+      );
+    }
+    try {
+      await this.maybeOnboardSubscription(failure.reason);
+    } catch (error) {
+      return this.buildRecoveryFailureResult(
+        result,
+        guidance,
+        error instanceof Error ? error.message : String(error),
+        failure.reason,
+        startTime
+      );
+    }
+    const issued = await this.maybeIssueLicense(
+      options,
+      machine,
+      sshPrivateKey,
+      remoteRenetPath,
+      sftp
+    );
+    if (issued) {
+      return null;
+    }
+    if (!guidance.recoveryFailedMessage) {
+      return result;
+    }
+    return this.buildRecoveryFailureResult(
+      result,
+      guidance,
+      guidance.recoveryFailedMessage,
+      failure.reason,
+      startTime
+    );
+  }
+
+  private buildRecoveryFailureResult(
+    result: LocalExecuteResult,
+    guidance: ReturnType<LocalExecutorService['resolveLicenseRecoveryGuidance']>,
+    error: string,
+    failureReason: string,
+    startTime: number
+  ): LocalExecuteResult {
+    return {
+      ...result,
+      errorCode: guidance.errorCode,
+      error,
+      errorGuidance: guidance.guidance,
+      licenseFailureReason: failureReason,
+      durationMs: Date.now() - startTime,
+    };
+  }
+
   private async executeWithConnectedSftp(
     sftp: SFTPClient,
     options: LocalExecuteOptions,
@@ -279,20 +364,25 @@ class LocalExecutorService {
   ): Promise<LocalExecuteResult> {
     try {
       let result = await this.runRemoteExecution(sftp, remoteRenetPath, vault, options);
-
+      let failure: RenetLicenseFailure | null = null;
       if (!result.success && result.exitCode === RENET_LICENSE_REQUIRED_EXIT_CODE) {
-        const failure = parseRenetLicenseFailure(result.stderr, result.stdout);
-        if (failure) {
-          const issued = await this.maybeIssueLicense(
-            options,
-            machine,
-            sshPrivateKey,
-            remoteRenetPath,
-            sftp
-          );
-          if (issued) {
-            result = await this.runRemoteExecution(sftp, remoteRenetPath, vault, options);
-          }
+        failure = parseRenetLicenseFailure(result.stderr, result.stdout);
+      }
+      if (failure) {
+        const recovered = await this.resolveLicenseFailure(
+          result,
+          failure,
+          options,
+          machine,
+          sshPrivateKey,
+          remoteRenetPath,
+          sftp,
+          startTime
+        );
+        if (recovered === null) {
+          result = await this.runRemoteExecution(sftp, remoteRenetPath, vault, options);
+        } else {
+          return recovered;
         }
       }
 
@@ -320,7 +410,17 @@ class LocalExecutorService {
       return false;
     }
     if (options.functionName.startsWith('backup_')) {
-      return issueMachineLicense(machine, sshPrivateKey, remoteRenetPath).catch(() => false);
+      const machineIssued = await refreshMachineActivation(
+        machine,
+        sshPrivateKey,
+        remoteRenetPath
+      ).catch(() => false);
+      const batchResult = await refreshRepoLicensesBatch(
+        machine,
+        sshPrivateKey,
+        remoteRenetPath
+      ).catch(() => null);
+      return machineIssued || Boolean(batchResult && batchResult.valid > 0);
     }
     if (!options.functionName.startsWith('repository_')) {
       return false;
@@ -337,6 +437,84 @@ class LocalExecutorService {
     return issueRepoLicense(machine, sshPrivateKey, repoLicense, remoteRenetPath).catch(
       () => false
     );
+  }
+
+  private async maybeOnboardSubscription(reason: string): Promise<boolean> {
+    if (reason !== 'missing') {
+      return false;
+    }
+    const tokenState = getSubscriptionTokenState();
+    if (tokenState.kind === 'ready') {
+      return false;
+    }
+    await authorizeSubscriptionViaDeviceCode(undefined, {
+      interactive: process.stdin.isTTY && process.stdout.isTTY,
+      announceIntro: true,
+    });
+    return true;
+  }
+
+  private resolveLicenseRecoveryGuidance(
+    failure: RenetLicenseFailure,
+    machineName: string
+  ): {
+    errorCode?: string;
+    guidance?: string;
+    failFastMessage?: string;
+    recoveryFailedMessage?: string;
+  } {
+    switch (failure.reason) {
+      case 'missing':
+        return {
+          errorCode: 'REPO_LICENSE_ISSUANCE_REQUIRED',
+          guidance: `Issue repo licenses explicitly with: rdc subscription refresh-repos -m ${machineName}`,
+          recoveryFailedMessage:
+            `A repo license is required for this operation, and automatic issuance did not succeed. ` +
+            `Run: rdc subscription refresh-repos -m ${machineName}`,
+        };
+      case 'expired':
+        return {
+          errorCode: 'REPO_LICENSE_REFRESH_REQUIRED',
+          guidance: `Refresh repo licenses explicitly with: rdc subscription refresh-repos -m ${machineName}`,
+          recoveryFailedMessage:
+            `The installed repo license must be refreshed before this operation can continue. ` +
+            `Run: rdc subscription refresh-repos -m ${machineName}`,
+        };
+      case 'machine_mismatch':
+        return {
+          errorCode: 'REPO_LICENSE_MACHINE_MISMATCH',
+          guidance: `Reissue repo licenses from this machine context with: rdc subscription refresh-repos -m ${machineName}`,
+          failFastMessage:
+            `The installed repo license belongs to a different machine. ` +
+            `Reissue it from this machine context with: rdc subscription refresh-repos -m ${machineName}`,
+        };
+      case 'repository_mismatch':
+        return {
+          errorCode: 'REPO_LICENSE_REPOSITORY_MISMATCH',
+          guidance: `Refresh repo licenses explicitly with: rdc subscription refresh-repos -m ${machineName}`,
+          failFastMessage:
+            `The installed repo license does not match the target repository. ` +
+            `Refresh repo licenses explicitly with: rdc subscription refresh-repos -m ${machineName}`,
+        };
+      case 'sequence_regression':
+        return {
+          errorCode: 'REPO_LICENSE_INTEGRITY_ERROR',
+          guidance: `Replace the installed repo license with: rdc subscription refresh-repos -m ${machineName}`,
+          failFastMessage:
+            `The installed repo license is older than the latest accepted sequence. ` +
+            `Replace it with a newer repo license using: rdc subscription refresh-repos -m ${machineName}`,
+        };
+      case 'invalid_signature':
+        return {
+          errorCode: 'REPO_LICENSE_INTEGRITY_ERROR',
+          guidance: `Replace the installed repo license with: rdc subscription refresh-repos -m ${machineName}`,
+          failFastMessage:
+            `The installed repo license could not be trusted. ` +
+            `Replace it with a newly issued repo license using: rdc subscription refresh-repos -m ${machineName}`,
+        };
+      default:
+        return {};
+    }
   }
 
   private async maybeRefreshRepoIdentity(

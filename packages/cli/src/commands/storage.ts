@@ -11,6 +11,7 @@ import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { storageBrowserService } from '../services/storage-browser.js';
 import { createResourceCommands } from '../utils/commandFactory.js';
+import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 
@@ -168,8 +169,10 @@ export function registerStorageCommands(program: Command): void {
               })
             );
           } else {
-            outputService.error(t('commands.storage.pull.failed', { error: result.error }));
-            process.exitCode = result.exitCode;
+            renderLocalExecutionFailure(
+              result,
+              t('commands.storage.pull.failed', { error: result.error })
+            );
           }
         } catch (error) {
           handleError(error);

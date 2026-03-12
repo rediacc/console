@@ -4,7 +4,7 @@ description: Abonnements und Maschinenlizenzen für lokale Bereitstellungen verw
 category: Guides
 order: 7
 language: de
-sourceHash: 49e050bdc4fcd1a8
+sourceHash: 58873ba427babd61
 ---
 
 # Abonnement & Lizenzierung
@@ -37,11 +37,12 @@ rdc subscription login
 # Status auf Account-Ebene (Plan, Maschinen)
 rdc subscription status
 
-# Lizenzdetails von einer bestimmten Maschine einbeziehen
-rdc subscription status -m hostinger
+# Aktivierungsdetails einer bestimmten Maschine anzeigen
+
+rdc subscription activation-status -m hostinger
 ```
 
-Zeigt Abonnementdetails vom Account-Server an. Mit `-m` wird zusätzlich eine SSH-Verbindung zur Maschine hergestellt und deren aktuelle Lizenzinformationen angezeigt.
+Zeigt Abonnementdetails vom Account-Server an. Für maschinenspezifische Aktivierungsdetails verwenden Sie `rdc subscription activation-status -m`.
 
 ## Lizenz erzwungen aktualisieren
 
@@ -72,118 +73,27 @@ Wenn eine Lizenz abläuft und nicht innerhalb der 3-tägigen Kulanzfrist aktuali
 ### Floating-Lizenz-Limits
 
 | Plan | Floating-Lizenzen |
-|------|-------------|
+|------|-------------------|
 | Community | 2 |
 | Professional | 5 |
 | Business | 20 |
 | Enterprise | 50 |
 
-### Floating License Request Limits
+### Limits für Floating-Lizenzanfragen
 
-| Resource | Community | Professional | Business | Enterprise |
-|----------|-----------|--------------|----------|------------|
-| Floating license requests | 500 | 5,000 | 20,000 | 100,000 |
+| Ressource | Community | Professional | Business | Enterprise |
+|-----------|-----------|--------------|----------|------------|
+| Floating-Lizenzanfragen | 500 | 5,000 | 20,000 | 100,000 |
 
 ### Feature-Verfügbarkeit
 
 | Feature | Community | Professional | Business | Enterprise |
 |---------|-----------|--------------|----------|------------|
-| Permission groups | - | Yes | Yes | Yes |
-| Queue priority | - | - | Yes | Yes |
-| Advanced analytics | - | - | Yes | Yes |
-| Priority support | - | Yes | Yes | Yes |
-| Audit log | - | Yes | Yes | Yes |
-| Advanced queue | - | - | Yes | Yes |
-| Custom branding | - | Yes | Yes | Yes |
-| Dedicated account | - | - | - | Yes |
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
+| Berechtigungsgruppen | - | Ja | Ja | Ja |
+| Warteschlangenpriorität | - | - | Ja | Ja |
+| Erweiterte Analysen | - | - | Ja | Ja |
+| Prioritäts-Support | - | Ja | Ja | Ja |
+| Audit-Protokoll | - | Ja | Ja | Ja |
+| Erweiterte Warteschlange | - | - | Ja | Ja |
+| Individuelles Branding | - | Ja | Ja | Ja |
+| Dedizierter Account | - | - | - | Ja |

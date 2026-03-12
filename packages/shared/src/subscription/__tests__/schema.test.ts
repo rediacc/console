@@ -27,7 +27,7 @@ describe('Subscription Schema Constants', () => {
     it('should have all required resource limit keys for each plan', () => {
       const requiredKeys: (keyof (typeof PLAN_LIMITS)[PlanCode])[] = [
         'maxRepositorySizeGb',
-        'maxFloatingLicenseRequestsPerMonth',
+        'maxRepoLicenseIssuancesPerMonth',
       ];
 
       for (const planCode of PLAN_ORDER) {
@@ -57,7 +57,7 @@ describe('Subscription Schema Constants', () => {
 
     it('should have ENTERPRISE with highest limits', () => {
       expect(PLAN_LIMITS.ENTERPRISE.maxRepositorySizeGb).toBe(2048);
-      expect(PLAN_LIMITS.ENTERPRISE.maxFloatingLicenseRequestsPerMonth).toBe(100000);
+      expect(PLAN_LIMITS.ENTERPRISE.maxRepoLicenseIssuancesPerMonth).toBe(100000);
     });
   });
 
@@ -168,12 +168,12 @@ describe('Subscription Schema Helper Functions', () => {
   describe('getPlanLimits', () => {
     it('should return correct limits for valid plan', () => {
       const limits = getPlanLimits('PROFESSIONAL');
-      expect(limits.maxFloatingLicenseRequestsPerMonth).toBe(5000);
+      expect(limits.maxRepoLicenseIssuancesPerMonth).toBe(5000);
     });
 
     it('should return COMMUNITY limits for invalid plan', () => {
       const limits = getPlanLimits('INVALID' as PlanCode);
-      expect(limits.maxFloatingLicenseRequestsPerMonth).toBe(500);
+      expect(limits.maxRepoLicenseIssuancesPerMonth).toBe(500);
     });
   });
 
@@ -204,11 +204,11 @@ describe('Subscription Schema Helper Functions', () => {
 
   describe('getPlanLimit', () => {
     it('should return correct limit', () => {
-      expect(getPlanLimit('COMMUNITY', 'maxFloatingLicenseRequestsPerMonth')).toBe(500);
+      expect(getPlanLimit('COMMUNITY', 'maxRepoLicenseIssuancesPerMonth')).toBe(500);
     });
 
     it('should return 0 for invalid plan', () => {
-      expect(getPlanLimit('INVALID' as PlanCode, 'maxFloatingLicenseRequestsPerMonth')).toBe(500);
+      expect(getPlanLimit('INVALID' as PlanCode, 'maxRepoLicenseIssuancesPerMonth')).toBe(500);
     });
   });
 

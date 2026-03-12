@@ -4,7 +4,7 @@ description: Gestionar suscripciones y licencias de máquina para implementacion
 category: Guides
 order: 7
 language: es
-sourceHash: 49e050bdc4fcd1a8
+sourceHash: 58873ba427babd61
 ---
 
 # Suscripción y licencias
@@ -37,11 +37,12 @@ Abre un navegador para autenticación mediante el flujo de código de dispositiv
 # Estado a nivel de cuenta (plan, máquinas)
 rdc subscription status
 
-# Incluir detalles de licencia de una máquina específica
-rdc subscription status -m hostinger
+# Mostrar detalles de activación de una máquina específica
+
+rdc subscription activation-status -m hostinger
 ```
 
-Muestra los detalles de la suscripción desde el servidor de cuentas. Con `-m`, también se conecta a la máquina vía SSH y muestra su información de licencia actual.
+Muestra los detalles de la suscripción desde el servidor de cuentas. Para ver detalles de activación por máquina, usa `rdc subscription activation-status -m`.
 
 ## Actualización forzada de licencia
 
@@ -67,123 +68,32 @@ Cada activación de máquina consume una plaza en tu suscripción. Para liberar 
 
 Si una licencia expira y no puede actualizarse dentro del período de gracia de 3 días, los límites de recursos de la máquina se degradan a los valores predeterminados del plan Community. Una vez que se actualiza la licencia (restaurando la conectividad y ejecutando cualquier comando `rdc`), los límites del plan original se restauran inmediatamente.
 
-## Límites de plan
+## Límites del plan
 
 ### Límites de licencias flotantes
 
 | Plan | Licencias flotantes |
-|------|-------------|
+|------|---------------------|
 | Community | 2 |
 | Professional | 5 |
 | Business | 20 |
 | Enterprise | 50 |
 
-### Límites de recursos
+### Límites de solicitudes de licencias flotantes
 
 | Recurso | Community | Professional | Business | Enterprise |
-|----------|-----------|--------------|----------|------------|
+|---------|-----------|--------------|----------|------------|
+| Solicitudes de licencias flotantes | 500 | 5,000 | 20,000 | 100,000 |
 
 ### Disponibilidad de funcionalidades
 
 | Funcionalidad | Community | Professional | Business | Enterprise |
-|---------|-----------|--------------|----------|------------|
-| Permission groups | - | Yes | Yes | Yes |
-| Queue priority | - | - | Yes | Yes |
-| Advanced analytics | - | - | Yes | Yes |
-| Priority support | - | Yes | Yes | Yes |
-| Audit log | - | Yes | Yes | Yes |
-| Advanced queue | - | - | Yes | Yes |
-| Custom branding | - | Yes | Yes | Yes |
-| Dedicated account | - | - | - | Yes |
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
+|---------------|-----------|--------------|----------|------------|
+| Grupos de permisos | - | Sí | Sí | Sí |
+| Prioridad de cola | - | - | Sí | Sí |
+| Analítica avanzada | - | - | Sí | Sí |
+| Soporte prioritario | - | Sí | Sí | Sí |
+| Registro de auditoría | - | Sí | Sí | Sí |
+| Cola avanzada | - | - | Sí | Sí |
+| Marca personalizada | - | Sí | Sí | Sí |
+| Cuenta dedicada | - | - | - | Sí |

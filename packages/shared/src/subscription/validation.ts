@@ -64,7 +64,7 @@ export function validateSubscriptionData(data: unknown): data is SubscriptionDat
 
   if (
     typeof subscription.maxRepositorySizeGb !== 'number' ||
-    typeof subscription.maxFloatingLicenseRequestsPerMonth !== 'number'
+    typeof subscription.maxRepoLicenseIssuancesPerMonth !== 'number'
   ) {
     return false;
   }
@@ -120,7 +120,7 @@ export function validateOrganizationSubscription(
     typeof cached.expiresAt === 'string' &&
     typeof cached.gracePeriodEnds === 'string' &&
     typeof cached.maxRepositorySizeGb === 'number' &&
-    typeof cached.maxFloatingLicenseRequestsPerMonth === 'number' &&
+    typeof cached.maxRepoLicenseIssuancesPerMonth === 'number' &&
     cached.features !== null &&
     typeof cached.features === 'object'
   );

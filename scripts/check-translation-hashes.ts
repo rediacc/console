@@ -123,6 +123,18 @@ function main(): void {
     errors.push(...checkLocaleDir('www', wwwLocales, false, true));
   }
 
+  // Check account web locales
+  const accountWebLocales = path.join(__dirname, '../private/account/web/src/i18n/locales');
+  if (fs.existsSync(accountWebLocales)) {
+    errors.push(...checkLocaleDir('account-web', accountWebLocales, true));
+  }
+
+  // Check account email locales
+  const accountEmailLocales = path.join(__dirname, '../private/account/src/i18n/locales');
+  if (fs.existsSync(accountEmailLocales)) {
+    errors.push(...checkLocaleDir('account-emails', accountEmailLocales, false));
+  }
+
   if (errors.length > 0) {
     console.error('Translation hash check FAILED:\n');
     errors.forEach((e) => console.error(e));

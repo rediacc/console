@@ -1459,9 +1459,30 @@
         "statusLabel": "  الحالة:   {{status}}",
         "valid": "  صالح (ينتهي خلال {{mins}} دقيقة)",
         "serverMismatch": "رمز المطور يتبع {{actualServerUrl}}، لكن شجرة العمل هذه تستخدم {{expectedServerUrl}}. شغّل `rdc subscription login` مرة أخرى.",
-        "remoteFloatingLicenses": "  التراخيص العائمة: {{active}}/{{max}}",
-        "remoteFloatingLicenseRequests": "  طلبات الترخيص العائم: {{used}}/{{limit}}",
-        "remoteRepoLicenses": "  تراخيص المستودعات: {{totalTrackedRepos}} متتبعة، {{validCount}} صالحة، {{refreshRecommendedCount}} تحتاج تحديثًا، {{hardExpiredCount}} منتهية بالكامل"
+        "remoteMachineActivations": "  تفعيلات الأجهزة: {{active}}/{{max}}",
+        "remoteRepoLicenseIssuances": "  طلبات الترخيص العائم: {{used}}/{{limit}}",
+        "remoteRepoLicenses": "  تراخيص المستودعات: {{totalTrackedRepos}} متتبعة، {{validCount}} صالحة، {{refreshRecommendedCount}} تحتاج تحديثًا، {{hardExpiredCount}} منتهية بالكامل",
+        "issuanceLimitReached": "تم بلوغ الحد الشهري لإصدار تراخيص المستودعات للشهر التقويمي الحالي وفق UTC.",
+        "issuanceUsageHigh95": "تجاوزت إصدارات تراخيص المستودعات الشهرية 95٪ من الحد الحالي وفق UTC.",
+        "issuanceUsageHigh80": "تجاوزت إصدارات تراخيص المستودعات الشهرية 80٪ من الحد الحالي وفق UTC."
+      },
+      "activationStatus": {
+        "description": "عرض حالة تفعيل جهاز واحد",
+        "header": "\nتفعيل الجهاز ({{machineName}})",
+        "unavailable": "  التفعيل: تعذر الاستعلام عن حالة الحساب",
+        "machineId": "  معرّف الجهاز: {{machineId}}",
+        "activations": "  عمليات التفعيل: {{active}}/{{max}}",
+        "active": "  التفعيل: نشط (آخر ظهور {{lastSeenAt}})",
+        "inactive": "  التفعيل: الجهاز غير نشط حاليًا في حالة الحساب"
+      },
+      "refreshActivation": {
+        "description": "تحديث تفعيل الجهاز على جهاز بعيد"
+      },
+      "refreshRepos": {
+        "description": "تحديث تراخيص المستودعات دفعةً واحدة على جهاز بعيد",
+        "refreshing": "جارٍ تحديث تراخيص المستودعات...",
+        "refreshed": "تم تحديث تراخيص المستودعات",
+        "success": "اكتمل التحديث الدفعي لتراخيص المستودعات"
       },
       "repoStatus": {
         "description": "عرض تراخيص المستودعات المثبتة على جهاز",

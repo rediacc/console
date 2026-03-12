@@ -70,8 +70,8 @@ export interface SubscriptionData {
   // Limits & Features
   /** Maximum repository size in GB */
   maxRepositorySizeGb: number;
-  /** Maximum floating license requests per UTC calendar month */
-  maxFloatingLicenseRequestsPerMonth: number;
+  /** Maximum successful repo-license issuances per UTC calendar month */
+  maxRepoLicenseIssuancesPerMonth: number;
   /** Feature flags for this plan */
   features: FeatureFlags;
 
@@ -92,34 +92,6 @@ export interface SignedSubscriptionBlob {
   /** Base64 encoded Ed25519 signature */
   signature: string;
   /** Public key identifier for key rotation support */
-  publicKeyId: string;
-}
-
-/**
- * Machine license payload.
- * Short-lived (1 hour), machine-specific, signed by account server.
- */
-export interface MachineLicense {
-  version: 1;
-  subscriptionId: string;
-  machineId: string;
-  planCode: PlanCode;
-  status: SubscriptionStatus;
-  maxRepositorySizeGb: number;
-  maxFloatingLicenseRequestsPerMonth: number;
-  features: FeatureFlags;
-  issuedAt: string;
-  expiresAt: string;
-  sequenceNumber: number;
-  ipAddress: string;
-}
-
-/**
- * Signed machine license blob (Ed25519).
- */
-export interface SignedMachineLicense {
-  payload: string;
-  signature: string;
   publicKeyId: string;
 }
 
@@ -163,6 +135,7 @@ export interface ApiToken {
   name: string;
   tokenHash: string;
   subscriptionId: string;
+  teamId: string | null;
   scopes: ApiTokenScope[];
   boundIp: string | null;
   createdAt: string;
@@ -182,7 +155,7 @@ export interface OrganizationSubscription {
     planCode: PlanCode;
     status: SubscriptionStatus;
     maxRepositorySizeGb: number;
-    maxFloatingLicenseRequestsPerMonth: number;
+    maxRepoLicenseIssuancesPerMonth: number;
     features: FeatureFlags;
     expiresAt: string;
     gracePeriodEnds: string;

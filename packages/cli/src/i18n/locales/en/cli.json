@@ -1441,34 +1441,55 @@
         "initFailed": "Failed to initiate login. Is the server running?"
       },
       "status": {
-        "description": "Show subscription and license status",
-        "localLicense": "Machine license:",
+        "description": "Show subscription, machine activation, and repo license status",
         "plan": "  Plan:     {{plan}}",
         "statusLabel": "  Status:   {{status}}",
         "machine": "  Machine:  {{machineId}}",
         "issued": "  Issued:   {{issuedAt}}",
         "expires": "  Expires:  {{expiresAt}}",
         "sequence": "  Sequence: {{sequenceNumber}}",
-        "expired": "  License has EXPIRED — run `rdc subscription refresh -m <machine>`",
-        "valid": "  Valid (expires in {{mins}} minutes)",
-        "parseFailed": "  Could not read license from remote machine",
-        "noLicense": "No license installed on this machine.",
+        "expired": "  Activation needs refresh — run `rdc subscription refresh -m <machine>`",
+        "valid": "  Activation is current",
+        "parseFailed": "  Could not read remote machine status",
+        "localLicense": "Local activation:",
+        "noLicense": "No local activation installed.",
         "remote": "\nSubscription:",
         "remotePlan": "  Plan:     {{plan}}",
         "remoteStatus": "  Status:   {{status}}",
         "remoteMachines": "  Machines: {{active}}/{{max}}",
         "remoteMachine": "    - {{id}}... (last seen: {{lastSeen}})",
         "serverMismatch": "Dev token belongs to {{actualServerUrl}}, but this worktree is using {{expectedServerUrl}}. Run `rdc subscription login` again.",
-        "remoteFloatingLicenses": "  Floating Licenses: {{active}}/{{max}}",
-        "remoteFloatingLicenseRequests": "  Floating license requests: {{used}}/{{limit}}",
-        "remoteRepoLicenses": "  Repo licenses: {{totalTrackedRepos}} tracked, {{validCount}} valid, {{refreshRecommendedCount}} refresh recommended, {{hardExpiredCount}} hard expired"
+        "remoteMachineActivations": "  Machine activations: {{active}}/{{max}}",
+        "remoteRepoLicenseIssuances": "  Monthly repo license issuances: {{used}}/{{limit}}",
+        "remoteRepoLicenses": "  Repo licenses: {{totalTrackedRepos}} tracked, {{validCount}} valid, {{refreshRecommendedCount}} refresh recommended, {{hardExpiredCount}} hard expired",
+        "issuanceLimitReached": "Monthly repo license issuance limit reached for the current UTC calendar month.",
+        "issuanceUsageHigh95": "Monthly repo license issuances are above 95% of the current UTC limit.",
+        "issuanceUsageHigh80": "Monthly repo license issuances are above 80% of the current UTC limit."
+      },
+      "activationStatus": {
+        "description": "Show machine activation status for one machine",
+        "header": "\nMachine activation ({{machineName}})",
+        "unavailable": "  Activation: could not query account state",
+        "machineId": "  Machine ID: {{machineId}}",
+        "activations": "  Activations: {{active}}/{{max}}",
+        "active": "  Activation: active (last seen {{lastSeenAt}})",
+        "inactive": "  Activation: machine is not currently active in account state"
       },
       "refresh": {
-        "description": "Force-refresh license on a remote machine",
-        "refreshing": "Refreshing license...",
-        "refreshed": "License refreshed",
-        "success": "License refreshed and delivered to machine",
-        "failed": "Failed to issue machine license"
+        "description": "Refresh machine activation and repo licenses on a remote machine",
+        "refreshing": "Refreshing machine activation...",
+        "refreshed": "Machine activation refreshed",
+        "success": "Machine activation refreshed and repo licenses processed",
+        "failed": "Failed to refresh machine activation"
+      },
+      "refreshActivation": {
+        "description": "Refresh machine activation on a remote machine"
+      },
+      "refreshRepos": {
+        "description": "Batch-refresh repo licenses on a remote machine",
+        "refreshing": "Refreshing repo licenses...",
+        "refreshed": "Repo licenses refreshed",
+        "success": "Repo license batch refresh completed"
       },
       "repoStatus": {
         "description": "Show installed repo licenses on a machine",
@@ -1816,7 +1837,7 @@
       "pathTraversalBlocked": "The --remote path must not contain \"..\" path traversal. Use a path within the repository."
     },
     "subscription": {
-      "notLoggedIn": "Not logged in. Run `rdc subscription login` first."
+      "notLoggedIn": "Not logged in. Humans should run `rdc subscription login`. Automation should run `rdc subscription login --token <token>` or set `REDIACC_SUBSCRIPTION_TOKEN`."
     },
     "teamRequired": "Team name required. Use --team or set default with: rdc config set team <name>",
     "term": {

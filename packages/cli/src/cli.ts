@@ -31,11 +31,13 @@ import { registerVSCodeCommands } from './commands/vscode.js';
 import { changeLanguage, initI18n, SUPPORTED_LANGUAGES, t } from './i18n/index.js';
 import { configService } from './services/config-resources.js';
 import { outputService } from './services/output.js';
+import { getSubscriptionTokenState } from './services/subscription-auth.js';
 import { telemetryService } from './services/telemetry.js';
 import type { OutputFormat } from './types/index.js';
 import { setOutputFormat } from './utils/errors.js';
 import { applyRegistry } from './utils/mode-guard.js';
 import { VERSION } from './version.js';
+import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
 
 // Track if i18n has been initialized
 let i18nInitialized = false;
@@ -130,8 +132,21 @@ cli
     try {
       const email = await configService.getUserEmail();
       const team = await configService.getTeam();
-      if (email || team) {
-        telemetryService.setUserContext({ email: email ?? undefined, teamName: team ?? undefined });
+      const tokenState = getSubscriptionTokenState();
+      const subscriptionContext =
+        tokenState.kind === 'ready' && tokenState.token.subscriptionId
+          ? {
+              subscriptionId: tokenState.token.subscriptionId,
+              subscriptionSource: TELEMETRY_SUBSCRIPTION_SOURCES.storedToken,
+            }
+          : {};
+
+      if (email || team || Object.keys(subscriptionContext).length > 0) {
+        telemetryService.setUserContext({
+          email: email ?? undefined,
+          teamName: team ?? undefined,
+          ...subscriptionContext,
+        });
       }
     } catch {
       // Ignore errors getting user context

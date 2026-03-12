@@ -36,7 +36,7 @@ const createValidSubscriptionData = (
   lastCheckIn: new Date().toISOString(),
   gracePeriodEnds: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
   maxRepositorySizeGb: PLAN_LIMITS.PROFESSIONAL.maxRepositorySizeGb,
-  maxFloatingLicenseRequestsPerMonth: PLAN_LIMITS.PROFESSIONAL.maxFloatingLicenseRequestsPerMonth,
+  maxRepoLicenseIssuancesPerMonth: PLAN_LIMITS.PROFESSIONAL.maxRepoLicenseIssuancesPerMonth,
   features: PLAN_FEATURES.PROFESSIONAL,
   maxActivations: 5,
   activationCount: 1,

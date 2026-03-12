@@ -7,6 +7,7 @@ const mockBuildRcloneArgs = vi.fn();
 
 const mockProvisionRenetToRemote = vi.fn().mockResolvedValue('/usr/bin/renet');
 const mockReadSSHKey = vi.fn().mockResolvedValue('PRIVATE_KEY');
+const mockRefreshRepoLicensesBatch = vi.fn();
 
 const mockGetBackupStrategy = vi.fn();
 const mockGetLocalConfig = vi.fn();
@@ -32,6 +33,10 @@ vi.mock('@rediacc/shared/queue-vault', () => ({
 vi.mock('../renet-execution.js', () => ({
   provisionRenetToRemote: mockProvisionRenetToRemote,
   readSSHKey: mockReadSSHKey,
+}));
+
+vi.mock('../license.js', () => ({
+  refreshRepoLicensesBatch: mockRefreshRepoLicensesBatch,
 }));
 
 vi.mock('../config-resources.js', () => ({
@@ -82,6 +87,15 @@ describe('pushBackupSchedule', () => {
     mockBuildRcloneArgs.mockReturnValue({
       remote: ':s3:rediacc/hostinger',
       params: ['--s3-region=auto'],
+    });
+    mockRefreshRepoLicensesBatch.mockResolvedValue({
+      scanned: 2,
+      issued: 1,
+      refreshed: 0,
+      unchanged: 1,
+      failed: 0,
+      valid: 2,
+      failures: [],
     });
   });
 
@@ -143,5 +157,24 @@ describe('pushBackupSchedule', () => {
     expect(commands).not.toContain(
       'sudo systemctl enable --now rediacc-backup-r2-cloudflare.timer'
     );
+  });
+
+  it('aborts deploy when repo batch refresh yields zero valid repos', async () => {
+    mockRefreshRepoLicensesBatch.mockResolvedValueOnce({
+      scanned: 2,
+      issued: 0,
+      refreshed: 0,
+      unchanged: 0,
+      failed: 2,
+      valid: 0,
+      failures: [
+        { repositoryGuid: 'a', error: 'expired' },
+        { repositoryGuid: 'b', error: 'expired' },
+      ],
+    });
+
+    const { pushBackupSchedule } = await import('../backup-schedule.js');
+
+    await expect(pushBackupSchedule('hostinger')).rejects.toThrow('no valid repo licenses');
   });
 });

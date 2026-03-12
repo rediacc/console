@@ -32,6 +32,16 @@ function countBodyLines(body) {
   return normalized.split('\n').length;
 }
 
+function countMatchingLines(body, pattern) {
+  const normalized = normalizeText(body).replace(/\n$/, '');
+  if (!normalized) return 0;
+  return normalized.split('\n').filter((line) => pattern.test(line)).length;
+}
+
+function countPaddingCommentLines(body) {
+  return countMatchingLines(body, /^<!--\s*pad:[^>]+-->$/);
+}
+
 function isExcludedEnglishPath(relPath) {
   for (const collection of COLLECTIONS) {
     const prefixes = EXCLUDED_EN_PATHS[collection] ?? [];
@@ -232,12 +242,26 @@ export function validateTranslationFreshness({
 
       const langParsed = parseMarkdown(langAbs);
       const localeLineCount = countBodyLines(langParsed.content);
-      if (localeLineCount !== enLineCount) {
+      const localePaddingCount = countPaddingCommentLines(langParsed.content);
+      const minimumLineCount = Math.max(10, Math.floor(enLineCount * 0.4));
+
+      if (localeLineCount < minimumLineCount) {
         errors.push({
-          rule: 'translation-line-count-mismatch',
+          rule: 'translation-line-count-too-low',
           file: langRel,
-          message: `Line count mismatch for ${enRel} (en=${enLineCount}, ${lang}=${localeLineCount})`,
-          suggestion: 'Align translated markdown structure/line count with the English source',
+          message: `Translated content for ${enRel} is unusually short (${lang}=${localeLineCount}, expected at least ${minimumLineCount} from en=${enLineCount})`,
+          suggestion:
+            'Expand the translation so it covers the full source content, not only a shortened summary',
+        });
+      }
+
+      if (localePaddingCount > 0) {
+        errors.push({
+          rule: 'translation-padding-comments-forbidden',
+          file: langRel,
+          message: `Padding comments detected in ${langRel} (${localePaddingCount} line(s))`,
+          suggestion:
+            'Remove synthetic padding comments and keep translations structurally aligned with real content',
         });
       }
 

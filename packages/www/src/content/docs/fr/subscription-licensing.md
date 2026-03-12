@@ -4,7 +4,7 @@ description: Gérer les abonnements et les licences machine pour les déploiemen
 category: Guides
 order: 7
 language: fr
-sourceHash: 49e050bdc4fcd1a8
+sourceHash: 58873ba427babd61
 ---
 
 # Abonnement et licences
@@ -37,11 +37,12 @@ Ouvre un navigateur pour l'authentification via le flux de code d'appareil. Apr�
 # Statut au niveau du compte (plan, machines)
 rdc subscription status
 
-# Inclure les détails de licence d'une machine spécifique
-rdc subscription status -m hostinger
+# Afficher les détails d'activation d'une machine spécifique
+
+rdc subscription activation-status -m hostinger
 ```
 
-Affiche les détails de l'abonnement depuis le serveur de comptes. Avec `-m`, se connecte également à la machine via SSH et affiche ses informations de licence actuelles.
+Affiche les détails de l'abonnement depuis le serveur de comptes. Pour les détails d'activation d'une machine, utilisez `rdc subscription activation-status -m`.
 
 ## Actualisation forcée d'une licence
 
@@ -72,118 +73,27 @@ Si une licence expire et ne peut pas être actualisée dans la période de grâc
 ### Limites de licences flottantes
 
 | Plan | Licences flottantes |
-|------|-------------|
+|------|---------------------|
 | Community | 2 |
 | Professional | 5 |
 | Business | 20 |
 | Enterprise | 50 |
 
-### Floating License Request Limits
+### Limites des demandes de licences flottantes
 
-| Resource | Community | Professional | Business | Enterprise |
-|----------|-----------|--------------|----------|------------|
-| Floating license requests | 500 | 5,000 | 20,000 | 100,000 |
+| Ressource | Community | Professional | Business | Enterprise |
+|-----------|-----------|--------------|----------|------------|
+| Demandes de licences flottantes | 500 | 5,000 | 20,000 | 100,000 |
 
 ### Disponibilité des fonctionnalités
 
 | Fonctionnalité | Community | Professional | Business | Enterprise |
-|---------|-----------|--------------|----------|------------|
-| Permission groups | - | Yes | Yes | Yes |
-| Queue priority | - | - | Yes | Yes |
-| Advanced analytics | - | - | Yes | Yes |
-| Priority support | - | Yes | Yes | Yes |
-| Audit log | - | Yes | Yes | Yes |
-| Advanced queue | - | - | Yes | Yes |
-| Custom branding | - | Yes | Yes | Yes |
-| Dedicated account | - | - | - | Yes |
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
-<!---->
+|----------------|-----------|--------------|----------|------------|
+| Groupes d’autorisations | - | Oui | Oui | Oui |
+| Priorité de file | - | - | Oui | Oui |
+| Analyses avancées | - | - | Oui | Oui |
+| Support prioritaire | - | Oui | Oui | Oui |
+| Journal d’audit | - | Oui | Oui | Oui |
+| File avancée | - | - | Oui | Oui |
+| Marquage personnalisé | - | Oui | Oui | Oui |
+| Compte dédié | - | - | - | Oui |

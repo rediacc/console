@@ -6432,11 +6432,18 @@
         {
           "name": "status",
           "descriptionKey": "commands.subscription.status.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "activation-status",
+          "descriptionKey": "commands.subscription.activationStatus.description",
           "options": [
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "options.machine",
-              "mandatory": false,
+              "mandatory": true,
               "defaultValue": null
             }
           ],
@@ -6460,6 +6467,34 @@
         {
           "name": "refresh",
           "descriptionKey": "commands.subscription.refresh.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machine",
+              "mandatory": true,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "refresh-activation",
+          "descriptionKey": "commands.subscription.refreshActivation.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machine",
+              "mandatory": true,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "refresh-repos",
+          "descriptionKey": "commands.subscription.refreshRepos.description",
           "options": [
             {
               "flags": "-m, --machine <name>",

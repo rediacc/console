@@ -574,6 +574,52 @@ function main(): void {
     console.log('');
   }
 
+  const accountWebLocales = path.join(__dirname, '../private/account/web/src/i18n/locales');
+  if (fs.existsSync(accountWebLocales)) {
+    console.log('Checking account web translations...');
+    const { errors, warnings, stats } = checkLocaleDir('account-web', accountWebLocales);
+    allErrors.push(...errors);
+    allWarnings.push(...warnings);
+
+    if (stats) {
+      for (const [lang, data] of Object.entries(stats)) {
+        const status =
+          data.missing > 0 || Number.parseFloat(data.untranslatedPercent) > MAX_UNTRANSLATED_PERCENT
+            ? '\u001B[31m\u2717\u001B[0m'
+            : data.untranslated > 0
+              ? '\u001B[33m!\u001B[0m'
+              : '\u001B[32m\u2713\u001B[0m';
+        console.log(
+          `  ${status} ${lang}: ${data.untranslated} untranslated (${data.untranslatedPercent}%)`
+        );
+      }
+    }
+    console.log('');
+  }
+
+  const accountEmailLocales = path.join(__dirname, '../private/account/src/i18n/locales');
+  if (fs.existsSync(accountEmailLocales)) {
+    console.log('Checking account email translations...');
+    const { errors, warnings, stats } = checkLocaleDir('account-emails', accountEmailLocales);
+    allErrors.push(...errors);
+    allWarnings.push(...warnings);
+
+    if (stats) {
+      for (const [lang, data] of Object.entries(stats)) {
+        const status =
+          data.missing > 0 || Number.parseFloat(data.untranslatedPercent) > MAX_UNTRANSLATED_PERCENT
+            ? '\u001B[31m\u2717\u001B[0m'
+            : data.untranslated > 0
+              ? '\u001B[33m!\u001B[0m'
+              : '\u001B[32m\u2713\u001B[0m';
+        console.log(
+          `  ${status} ${lang}: ${data.untranslated} untranslated (${data.untranslatedPercent}%)`
+        );
+      }
+    }
+    console.log('');
+  }
+
   // Print warnings
   if (allWarnings.length > 0) {
     console.log('Warnings:');

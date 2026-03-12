@@ -11,6 +11,7 @@ import { buildRcloneArgs } from '@rediacc/shared/queue-vault';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import type { BackupStrategyDestination } from '../types/index.js';
 import { configService } from './config-resources.js';
+import { refreshRepoLicensesBatch } from './license.js';
 import { outputService } from './output.js';
 import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
 
@@ -331,6 +332,18 @@ export async function pushBackupSchedule(
       debug: options.debug,
     }
   );
+
+  const repoRefresh = await refreshRepoLicensesBatch(machine, sshPrivateKey, remoteRenetPath);
+  if (repoRefresh.scanned > 0 && repoRefresh.valid === 0) {
+    throw new Error(
+      'Backup deployment aborted: no valid repo licenses are available on target machine'
+    );
+  }
+  if (repoRefresh.scanned > 0) {
+    outputService.info(
+      `Repo licenses refreshed: scanned ${repoRefresh.scanned}, issued ${repoRefresh.issued}, refreshed ${repoRefresh.refreshed}, unchanged ${repoRefresh.unchanged}, failed ${repoRefresh.failed}`
+    );
+  }
 
   // Connect via SSH
   const sftp = new SFTPClient({

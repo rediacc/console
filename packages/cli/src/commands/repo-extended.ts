@@ -6,6 +6,7 @@ import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
+import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { handleError } from '../utils/errors.js';
 
 /**
@@ -29,8 +30,7 @@ async function executeMachineFunction(
   if (result.success) {
     outputService.success(messages.completed);
   } else {
-    outputService.error(result.error ?? messages.failed);
-    process.exitCode = result.exitCode;
+    renderLocalExecutionFailure(result, result.error ?? messages.failed);
   }
 }
 
@@ -71,8 +71,7 @@ async function executeRepoFunction(
   if (result.success) {
     outputService.success(messages.completed);
   } else {
-    outputService.error(result.error ?? messages.failed);
-    process.exitCode = result.exitCode;
+    renderLocalExecutionFailure(result, result.error ?? messages.failed);
   }
 }
 
@@ -154,8 +153,7 @@ export function registerExtendedRepoCommands(repo: Command): void {
           } else {
             await configService.removeRepository(forkName);
             outputService.warn(t('commands.repo.fork.rollback', { repository: forkName }));
-            outputService.error(result.error ?? t('commands.repo.fork.failed'));
-            process.exitCode = result.exitCode;
+            renderLocalExecutionFailure(result, t('commands.repo.fork.failed'));
           }
         } catch (error) {
           const exists = await configService.getRepository(forkName);

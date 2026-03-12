@@ -104,9 +104,9 @@ function generateSchema(): SubscriptionSchema {
           lastCheckIn: { type: 'string', jsonKey: 'lastCheckIn' },
           gracePeriodEnds: { type: 'string', jsonKey: 'gracePeriodEnds' },
           maxRepositorySizeGb: { type: 'number', jsonKey: 'maxRepositorySizeGb' },
-          maxFloatingLicenseRequestsPerMonth: {
+          maxRepoLicenseIssuancesPerMonth: {
             type: 'number',
-            jsonKey: 'maxFloatingLicenseRequestsPerMonth',
+            jsonKey: 'maxRepoLicenseIssuancesPerMonth',
           },
           features: { type: 'object', jsonKey: 'features', nestedType: 'FeatureFlags' },
           maxActivations: { type: 'number', jsonKey: 'maxActivations' },
@@ -127,9 +127,9 @@ function generateSchema(): SubscriptionSchema {
           planCode: { type: 'string', jsonKey: 'planCode', nestedType: 'PlanCode' },
           status: { type: 'string', jsonKey: 'status', nestedType: 'SubscriptionStatus' },
           maxRepositorySizeGb: { type: 'number', jsonKey: 'maxRepositorySizeGb' },
-          maxFloatingLicenseRequestsPerMonth: {
+          maxRepoLicenseIssuancesPerMonth: {
             type: 'number',
-            jsonKey: 'maxFloatingLicenseRequestsPerMonth',
+            jsonKey: 'maxRepoLicenseIssuancesPerMonth',
           },
           features: { type: 'object', jsonKey: 'features', nestedType: 'FeatureFlags' },
           expiresAt: { type: 'string', jsonKey: 'expiresAt' },

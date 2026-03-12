@@ -149,7 +149,7 @@ rdc doctor
 |-----------|---------------|
 | **Environnement** | Version de Node.js, version du CLI, mode SEA, installation de Go, disponibilité de Docker |
 | **Renet** | Emplacement du binaire, version, CRIU, rsync, ressources SEA embarquées |
-| **Configuration** | Configuration active, adaptateur, machines, clé SSH |
+| **Paramètres** | Profil actif, adaptateur, machines, clé SSH |
 | **Virtualisation** | Vérifie si votre système peut exécuter des machines virtuelles locales (`rdc ops`) |
 
 Chaque vérification indique **OK**, **Avertissement** ou **Erreur**. Utilisez cette commande comme première étape lors du dépannage de tout problème.

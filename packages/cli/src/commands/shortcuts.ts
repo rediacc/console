@@ -5,6 +5,7 @@ import { getStateProvider } from '../providers/index.js';
 import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
+import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import {
   type CreateActionOptions,
@@ -38,10 +39,12 @@ async function resolveRunParams(
   return { machineName, params };
 }
 
-function handleExecutionResult(result: {
+export function handleExecutionResult(result: {
   success: boolean;
   durationMs?: number;
   error?: string;
+  errorCode?: string;
+  errorGuidance?: string;
   exitCode?: number;
 }): void {
   if (result.success) {
@@ -49,8 +52,10 @@ function handleExecutionResult(result: {
       t('commands.shortcuts.run.completedLocal', { duration: result.durationMs })
     );
   } else {
-    outputService.error(t('commands.shortcuts.run.failedLocal', { error: result.error }));
-    process.exitCode = result.exitCode;
+    renderLocalExecutionFailure(
+      result,
+      t('commands.shortcuts.run.failedLocal', { error: result.error })
+    );
   }
 }
 
