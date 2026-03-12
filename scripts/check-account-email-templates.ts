@@ -47,7 +47,13 @@ function main(): void {
   console.log('============================================================\n');
 
   if (!fs.existsSync(TEMPLATE_DIR) || !fs.existsSync(LOCALES_DIR)) {
-    console.log('\u001B[33m↷\u001B[0m Skipping account email template validation (private/account not initialized)\n');
+    const message = 'private/account is not initialized; account email template validation requires the account submodule';
+    if (process.env.CI) {
+      console.log(`\u001B[31m✗\u001B[0m ${message}\n`);
+      process.exit(1);
+    }
+
+    console.log(`\u001B[33m↷\u001B[0m Skipping account email template validation (${message})\n`);
     return;
   }
 
