@@ -34,6 +34,7 @@ GREP="${ARG_GREP:-}"
 SKIP_SETUP="${ARG_SKIP_SETUP:-false}"
 WORKERS="${ARG_WORKERS:-1}"
 ACCOUNT_API_PORT="${ACCOUNT_API_PORT:-3001}"
+E2E_PORT="${E2E_PORT:-5173}"
 
 REPO_ROOT="$(get_repo_root)"
 ACCOUNT_DIR="$REPO_ROOT/private/account"
@@ -130,17 +131,26 @@ if [[ "$SKIP_SETUP" != "true" ]]; then
 
     log_step "Starting backend API on port $ACCOUNT_API_PORT..."
     cd "$ACCOUNT_DIR"
-    ED25519_PRIVATE_KEY="${ED25519_PRIVATE_KEY:?ED25519_PRIVATE_KEY must be set}" \
-        ED25519_PUBLIC_KEY="${ED25519_PUBLIC_KEY:?ED25519_PUBLIC_KEY must be set}" \
-        API_KEY="${API_KEY:?API_KEY must be set}" \
-        JWT_SECRET="${JWT_SECRET:?JWT_SECRET must be set}" \
-        ADMIN_EMAIL="${ADMIN_EMAIL:?ADMIN_EMAIL must be set}" \
-        DATABASE_PATH="e2e-account.db" \
-        STRIPE_WEBHOOK_SECRET="${STRIPE_LISTEN_WEBHOOK_SECRET:-}" \
-        STRIPE_SANDBOX_WEBHOOK_SECRET="${STRIPE_SANDBOX_WEBHOOK_SECRET:-}" \
-        STRIPE_SANDBOX_SECRET_KEY="${STRIPE_SANDBOX_SECRET_KEY:-}" \
-        PORT="$ACCOUNT_API_PORT" \
-        npx tsx src/entry/node.ts &
+    ACCOUNT_ENV=(
+        "ED25519_PRIVATE_KEY=${ED25519_PRIVATE_KEY:?ED25519_PRIVATE_KEY must be set}"
+        "ED25519_PUBLIC_KEY=${ED25519_PUBLIC_KEY:?ED25519_PUBLIC_KEY must be set}"
+        "API_KEY=${API_KEY:?API_KEY must be set}"
+        "JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be set}"
+        "ADMIN_EMAIL=${ADMIN_EMAIL:?ADMIN_EMAIL must be set}"
+        "DATABASE_PATH=e2e-account.db"
+        "PUBLIC_SITE_URL=http://localhost:$E2E_PORT"
+        "PORT=$ACCOUNT_API_PORT"
+    )
+    if [[ -n "${STRIPE_LISTEN_WEBHOOK_SECRET:-}" ]]; then
+        ACCOUNT_ENV+=("STRIPE_WEBHOOK_SECRET=$STRIPE_LISTEN_WEBHOOK_SECRET")
+    fi
+    if [[ -n "${STRIPE_SANDBOX_WEBHOOK_SECRET:-}" ]]; then
+        ACCOUNT_ENV+=("STRIPE_SANDBOX_WEBHOOK_SECRET=$STRIPE_SANDBOX_WEBHOOK_SECRET")
+    fi
+    if [[ -n "${STRIPE_SANDBOX_SECRET_KEY:-}" ]]; then
+        ACCOUNT_ENV+=("STRIPE_SANDBOX_SECRET_KEY=$STRIPE_SANDBOX_SECRET_KEY")
+    fi
+    env "${ACCOUNT_ENV[@]}" npx tsx src/entry/node.ts &
     BACKEND_PID=$!
     cd "$REPO_ROOT"
 
