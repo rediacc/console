@@ -20,3 +20,6 @@
 # minimatch ReDoS — transitive across eslint/electron-builder chains
 1113545   # matchOne() combinatorial backtracking via GLOBSTAR (GHSA-7r86-cg39-jmmj)
 1113553   # nested *() extglobs catastrophic backtracking (GHSA-23c5-xmqv-rm74)
+
+# yauzl — electron → extract-zip → yauzl, no upstream fix
+1114530   # off-by-one error (GHSA-gmq8-994r-jv83)
