@@ -5,8 +5,8 @@
 
 import { DEFAULTS } from '@rediacc/shared/config';
 import {
-  SANDBOX_READ_ONLY,
   SANDBOX_EXECUTE,
+  SANDBOX_READ_ONLY,
   SANDBOX_READ_WRITE_SYSTEM,
 } from '@rediacc/shared-desktop/vscode';
 

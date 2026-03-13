@@ -23,9 +23,9 @@ import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
+import { getSSHConnectionDetails } from '../services/ssh-connection.js';
 import { assertCommandPolicy, CMD, validateRemotePath } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
-import { getSSHConnectionDetails } from '../services/ssh-connection.js';
 import { withSpinner } from '../utils/spinner.js';
 
 /** Accumulate repeatable option values into an array. */

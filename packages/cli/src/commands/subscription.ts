@@ -1,12 +1,6 @@
 import { SUBSCRIPTION_DEFAULTS } from '@rediacc/shared/config';
 import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
 import { Command } from 'commander';
-import {
-  formatRuntimeRepoLicenseStatus,
-  outputSubscriptionScope,
-  renderMachineActivationStatus,
-  renderRepoBatchRefreshSummary,
-} from './subscription-output.js';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import {
@@ -30,6 +24,12 @@ import { authorizeSubscriptionViaDeviceCode } from '../services/subscription-dev
 import { telemetryService } from '../services/telemetry.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
+import {
+  formatRuntimeRepoLicenseStatus,
+  outputSubscriptionScope,
+  renderMachineActivationStatus,
+  renderRepoBatchRefreshSummary,
+} from './subscription-output.js';
 
 function setSubscriptionTelemetryContext(input: {
   subscriptionId?: string;

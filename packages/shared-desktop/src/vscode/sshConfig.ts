@@ -8,10 +8,10 @@ import { dirname, join } from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { getSSHHome } from '../utils/platform.js';
 import {
-  type SandboxOptions,
   buildMachineEnvironment,
   buildRemoteCommand,
   buildRepositoryEnvironment,
+  type SandboxOptions,
 } from './envCompose.js';
 import type { SSHConfigEntry } from './types.js';
 

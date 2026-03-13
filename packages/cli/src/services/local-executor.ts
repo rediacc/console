@@ -25,14 +25,6 @@ import {
 } from './license.js';
 import { outputService } from './output.js';
 import {
-  isLicensedRenetFunction,
-  type RenetLicenseFailure,
-  parseRenetLicenseFailure,
-  RENET_LICENSE_REQUIRED_EXIT_CODE,
-} from './renet-license-contract.js';
-import { authorizeSubscriptionViaDeviceCode } from './subscription-device-auth.js';
-import { getSubscriptionTokenState } from './subscription-auth.js';
-import {
   buildLocalVault,
   getLocalRenetPath,
   provisionRenetToRemote,
@@ -40,6 +32,14 @@ import {
   readSSHKey,
   verifyMachineSetup,
 } from './renet-execution.js';
+import {
+  isLicensedRenetFunction,
+  parseRenetLicenseFailure,
+  RENET_LICENSE_REQUIRED_EXIT_CODE,
+  type RenetLicenseFailure,
+} from './renet-license-contract.js';
+import { getSubscriptionTokenState } from './subscription-auth.js';
+import { authorizeSubscriptionViaDeviceCode } from './subscription-device-auth.js';
 
 /** Options for local execution */
 interface LocalExecuteOptions {

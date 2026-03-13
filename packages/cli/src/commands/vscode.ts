@@ -31,10 +31,10 @@ import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
+import { type ConnectionDetails, getSSHConnectionDetails } from '../services/ssh-connection.js';
 import { debugLog } from '../utils/debug.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
-import { type ConnectionDetails, getSSHConnectionDetails } from '../services/ssh-connection.js';
 import {
   displayActiveConnections,
   displayConfigurationStatus,

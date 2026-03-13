@@ -8,7 +8,7 @@ import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
-import { getSSHConnectionDetails, type ConnectionDetails } from '../services/ssh-connection.js';
+import { type ConnectionDetails, getSSHConnectionDetails } from '../services/ssh-connection.js';
 import { assertAgentMachineAccess } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { debugLog } from '../utils/debug.js';
