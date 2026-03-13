@@ -11,8 +11,8 @@ language: en
 Rediacc licensing has three moving parts:
 
 - `account` signs entitlements and tracks usage
-- `rdc` authenticates, requests licenses, and delivers them to machines
-- `renet` enforces the installed licenses on the machine without calling the account server
+- `rdc` authenticates, requests licenses, delivers them to machines, and enforces them at runtime
+- `renet` (the on-machine runtime) validates installed licenses locally without calling the account server
 
 This page explains how those pieces fit together for local deployments.
 
@@ -25,21 +25,19 @@ Licensing controls two different things:
 
 These are related, but they are not the same artifact.
 
-## How `account`, `rdc`, and `renet` Work Together
+## How Licensing Works
 
 `account` is the source of truth for plans, contract overrides, machine activation state, and monthly repo license issuances.
 
-`rdc` runs on your workstation. It logs you into the account server, requests the licenses it needs, and installs them on remote machines over SSH.
+`rdc` runs on your workstation. It logs you into the account server, requests the licenses it needs, and installs them on remote machines over SSH. When you run a repository command, `rdc` ensures the required licenses are in place and validates them on the machine at runtime.
 
-`renet` runs on the remote machine. It validates the installed signatures locally and decides whether a repository operation can continue. `renet` does not call the account server.
-
-The normal human-operated flow looks like this:
+The normal flow looks like this:
 
 1. You authenticate with `rdc subscription login`
 2. You run a repository command such as `rdc repo create`, `rdc repo up`, or `rdc repo down`
 3. If the required license is missing or expired, `rdc` requests it from `account`
 4. `rdc` writes the signed license to the machine
-5. `renet` validates the installed license and continues the operation
+5. The license is validated locally on the machine and the operation continues
 
 See [rdc vs renet](/en/docs/rdc-vs-renet) for the workstation-vs-server split, and [Repositories](/en/docs/repositories) for the repository lifecycle itself.
 
@@ -60,37 +58,27 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Machine activation
 
-Machine activation is the server-side machine state that represents account-backed access for a remote machine.
+Machine activation serves a dual role:
 
-It is used for:
-
-- floating machine-slot accounting
-- machine-level activation checks
-- bridging account-backed repo issuance to a specific machine
-
-It is not an installed runtime artifact and it is not the runtime authority for repository start and stop.
+- **Server-side**: floating machine-slot accounting, machine-level activation checks, bridging account-backed repo issuance to a specific machine
+- **On-disk**: `rdc` writes a signed subscription blob to `/var/lib/rediacc/license/machine.json` during activation. This blob is validated locally for provisioning operations (`rdc repo create`, `rdc repo fork`). The machine license is valid for 1 hour from the last activation.
 
 ### Repo license
 
 A repo license is a signed license for one repository on one machine.
 
-It is used for repository lifecycle operations such as:
+It is used for:
 
-- `repo create`
-- `repo resize`
-- `repo expand`
-- `repo up`
-- `repo down`
-- `backup push`
-- `backup pull`
-- `backup sync`
-- repo autostart on machine restart
+- `rdc repo resize` and `rdc repo expand` — full validation including expiry
+- `rdc repo up`, `rdc repo down`, `rdc repo delete` — validated with **expiry skipped**
+- `rdc backup push`, `rdc backup pull`, `rdc backup sync` — validated with **expiry skipped**
+- repo autostart on machine restart — validated with **expiry skipped**
 
 Repo licenses are bound to the machine and the target repository, and Rediacc hardens that binding with repository identity metadata. For encrypted repositories, that includes the LUKS identity of the underlying volume.
 
 In practice:
 
-- machine activation answers: "can this machine participate in account-backed licensing?"
+- machine activation answers: "can this machine provision new repositories?"
 - repo license answers: "can this specific repo run on this specific machine?"
 
 ## Default Limits
@@ -102,39 +90,50 @@ Repository size depends on the entitlement level:
 
 Default paid-plan limits are:
 
-| Plan | Repository Size | Monthly repo license issuances |
-|------|-----------------|-------------------------------|
-| Community | 10 GB | 500 |
-| Professional | 100 GB | 5,000 |
-| Business | 500 GB | 20,000 |
-| Enterprise | 2048 GB | 100,000 |
+| Plan | Floating Licenses | Repository Size | Monthly repo license issuances |
+|------|-------------------|-----------------|-------------------------------|
+| Community | 2 | 10 GB | 500 |
+| Professional | 5 | 100 GB | 5,000 |
+| Business | 20 | 500 GB | 20,000 |
+| Enterprise | 50 | 2048 GB | 100,000 |
 
 Contract-specific limits can raise or lower these values for a specific customer.
 
 ## What Happens During Repo Create, Up, Down, and Restart
 
-### Repo create
+### Repo create and fork
 
-When you create a repository, `rdc` contacts `account`, obtains the required license material, installs it on the target machine, and retries if needed.
+When you create or fork a repository:
 
-That account-backed issuance counts toward your monthly **repo license issuances** usage.
+1. `rdc` ensures your subscription token is available (triggers device-code auth if needed)
+2. `rdc` activates the machine and writes the signed subscription blob to the remote machine
+3. The machine license is validated locally (it must be within 1 hour of activation) — the machine license also enforces the plan's repository size limit, blocking creation if the requested size exceeds the limit
+4. After successful creation, `rdc` issues the repo license for the new repository
 
-### Repo up and repo down
+That account-backed issuance counts toward your monthly **repo license issuances** usage. Each license contains the account holder's email and company name, which is logged when renet validates the license.
 
-`renet` checks the installed repo license locally before it allows the repository to start or stop.
+### Repo up, down, and delete
 
-This is important because users may change storage outside Rediacc. Licensing is enforced on the runtime path, not only at create time.
+`rdc` validates the installed repo license on the machine but **skips the expiry check**. Signature, machine ID, repository GUID, and identity are still verified. Users are never locked out of operating their repositories, even with an expired subscription.
+
+### Repo resize and expand
+
+`rdc` performs full repo license validation including expiry and size limits.
 
 ### Machine restart and autostart
 
-Autostart also relies on the installed repo license. `renet` does not need live account access to decide whether the repository can start after reboot.
+Autostart uses the same rules as `rdc repo up` — expiry is skipped, so repositories always restart freely.
 
-That is why repo licenses use a long-lived validity model:
+Repo licenses use a long-lived validity model:
 
 - `refreshRecommendedAt` is the soft refresh point
 - `hardExpiresAt` is the blocking point
 
-If the repo license is stale but still before hard expiry, runtime can continue. Once it reaches hard expiry, `rdc` must refresh it.
+If the repo license is stale but still before hard expiry, runtime can continue. Once it reaches hard expiry, `rdc` must refresh it for resize/expand operations.
+
+### Other repository operations
+
+Operations like listing repos, inspecting repo info, and mounting do not require any license validation.
 
 ## Checking Status and Refreshing Licenses
 
@@ -192,13 +191,15 @@ For first-time machine setup, see [Machine Setup](/en/docs/setup).
 
 ## Offline Behavior and Expiry
 
-`renet` stays offline from the account server. It only trusts the installed signed licenses.
+License validation happens locally on the machine — it does not require live connectivity to the account server.
 
 That means:
 
 - a running environment does not need live account connectivity on every command
-- repo restarts can continue while the repo license is stale but still valid
-- truly expired repo licenses must be refreshed through `rdc`
+- all repos can always start, stop, and be deleted even with expired licenses — users are never locked out of operating their own repositories
+- provisioning operations (`create`, `fork`) require a valid machine license, and growth operations (`resize`, `expand`) require a valid repo license
+- truly expired repo licenses must be refreshed through `rdc` before resize/expand
+- license signatures are verified against an embedded public key — signature verification cannot be disabled
 
 Machine activation and repo runtime licenses are separate surfaces. A machine can be inactive in account state while some repositories still have valid installed repo licenses. When that happens, inspect both surfaces separately instead of assuming they mean the same thing.
 
@@ -206,12 +207,13 @@ Machine activation and repo runtime licenses are separate surfaces. A machine ca
 
 Automatic recovery is intentionally narrow:
 
-- `missing`: the CLI may authorize account access if needed, issue a repo license, and retry once
-- `expired`: the CLI may refresh the repo license and retry once
+- `missing`: `rdc` may authorize account access if needed, batch-refresh repo licenses, and retry once
+- `expired`: `rdc` may batch-refresh repo licenses and retry once
 - `machine_mismatch`: fails fast and tells you to reissue from the current machine context
 - `repository_mismatch`: fails fast and tells you to refresh repo licenses explicitly
 - `sequence_regression`: fails fast as a repo-license integrity/state problem
 - `invalid_signature`: fails fast as a repo-license integrity/state problem
+- `identity_mismatch`: fails fast — the repository identity does not match the installed license
 
 These fail-fast cases do not automatically consume account-backed refresh or issuance calls.
 

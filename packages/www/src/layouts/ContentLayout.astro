@@ -126,8 +126,8 @@ const toc = frontmatter.toc !== false ? generateTOCFromMarkdown(await Astro.slot
     <div class="article-container">
       {toc.length > 0 && (
         <aside class="sidebar-base sidebar-toc toc-sidebar">
-          <nav class="sidebar-nav sidebar-nav-with-accent toc-nav" role="navigation" aria-label="Table of contents">
-            <h3 class="sidebar-title toc-title">On this page</h3>
+          <nav class="sidebar-nav sidebar-nav-with-accent toc-nav" role="navigation" aria-label={t('common.aria.tableOfContents')}>
+            <h3 class="sidebar-title toc-title">{t('pages.docs.tableOfContents')}</h3>
             <ul class="sidebar-list toc-list">
               {toc.map(heading => (
                 <li class={`sidebar-item toc-item toc-level-${heading.level}`}>

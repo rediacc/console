@@ -26,7 +26,7 @@ const Footer: React.FC = () => {
             <a
               href={`/${currentLang}/`}
               className="footer-logo-link"
-              aria-label="Rediacc home"
+              aria-label={t('common.aria.rediaccHome')}
               data-track="cta_click"
               data-track-label="footer-logo"
             >

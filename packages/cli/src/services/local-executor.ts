@@ -20,7 +20,6 @@ import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { configService } from './config-resources.js';
 import {
   refreshMachineActivation,
-  issueRepoLicense,
   refreshRepoLicenseIdentity,
   refreshRepoLicensesBatch,
 } from './license.js';
@@ -404,39 +403,23 @@ class LocalExecutorService {
     machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
     sshPrivateKey: string,
     remoteRenetPath: string,
-    sftp: SFTPClient
+    _sftp: SFTPClient
   ): Promise<boolean> {
     if (!isLicensedRenetFunction(options.functionName)) {
       return false;
     }
-    if (options.functionName.startsWith('backup_')) {
-      const machineIssued = await refreshMachineActivation(
-        machine,
-        sshPrivateKey,
-        remoteRenetPath
-      ).catch(() => false);
-      const batchResult = await refreshRepoLicensesBatch(
-        machine,
-        sshPrivateKey,
-        remoteRenetPath
-      ).catch(() => null);
-      return machineIssued || Boolean(batchResult && batchResult.valid > 0);
-    }
-    if (!options.functionName.startsWith('repository_')) {
-      return false;
-    }
-    const repoLicense = await resolveRepoLicenseContext(
-      options.functionName,
-      options.machineName,
-      options.params ?? {},
-      sftp
-    );
-    if (!repoLicense) {
-      return false;
-    }
-    return issueRepoLicense(machine, sshPrivateKey, repoLicense, remoteRenetPath).catch(
-      () => false
-    );
+    // Unified path: machine activation + batch refresh for all licensed functions
+    const machineIssued = await refreshMachineActivation(
+      machine,
+      sshPrivateKey,
+      remoteRenetPath
+    ).catch(() => false);
+    const batchResult = await refreshRepoLicensesBatch(
+      machine,
+      sshPrivateKey,
+      remoteRenetPath
+    ).catch(() => null);
+    return machineIssued || Boolean(batchResult && batchResult.valid > 0);
   }
 
   private async maybeOnboardSubscription(reason: string): Promise<boolean> {
@@ -452,6 +435,31 @@ class LocalExecutorService {
       announceIntro: true,
     });
     return true;
+  }
+
+  /**
+   * Pre-flight for repository_create / repository_fork:
+   * Ensure subscription token exists (trigger device-code auth if needed)
+   * and call refreshMachineActivation (which writes the blob to disk).
+   */
+  private async ensureMachineActivationForProvisioning(
+    machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
+    sshPrivateKey: string,
+    remoteRenetPath: string
+  ): Promise<void> {
+    const tokenState = getSubscriptionTokenState();
+    if (tokenState.kind !== 'ready') {
+      await authorizeSubscriptionViaDeviceCode(undefined, {
+        interactive: process.stdin.isTTY && process.stdout.isTTY,
+        announceIntro: true,
+      });
+    }
+    const activated = await refreshMachineActivation(machine, sshPrivateKey, remoteRenetPath);
+    if (!activated) {
+      throw new Error(
+        'Machine activation failed. Ensure your subscription is active and the machine slot is available.'
+      );
+    }
   }
 
   private resolveLicenseRecoveryGuidance(
@@ -511,6 +519,14 @@ class LocalExecutorService {
           failFastMessage:
             `The installed repo license could not be trusted. ` +
             `Replace it with a newly issued repo license using: rdc subscription refresh-repos -m ${machineName}`,
+        };
+      case 'identity_mismatch':
+        return {
+          errorCode: 'REPO_LICENSE_IDENTITY_MISMATCH',
+          guidance: `Reissue repo licenses with: rdc subscription refresh-repos -m ${machineName}`,
+          failFastMessage:
+            `The repository identity does not match the installed repo license. ` +
+            `Reissue repo licenses with: rdc subscription refresh-repos -m ${machineName}`,
         };
       default:
         return {};
@@ -621,6 +637,14 @@ class LocalExecutorService {
         ...options,
         functionName: options.functionName,
       });
+
+      // Pre-flight for create/fork: ensure machine activation (writes machine license to disk)
+      if (
+        options.functionName === 'repository_create' ||
+        options.functionName === 'repository_fork'
+      ) {
+        await this.ensureMachineActivationForProvisioning(machine, sshPrivateKey, remoteRenetPath);
+      }
 
       if (options.debug) {
         outputService.info(`[local] Direct SSH to ${machine.ip}, executor=local`);

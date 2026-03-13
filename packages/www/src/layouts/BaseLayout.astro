@@ -417,7 +417,7 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
     <main id="main-content">
         <slot />
     </main>
-    <CliReferenceModal />
+    <CliReferenceModal lang={currentLang} />
     <ContactModal client:load />
     <NewsletterReturnPopup client:load />
     <Footer client:visible />

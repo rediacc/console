@@ -1,9 +1,8 @@
-import { DEFAULTS, SUBSCRIPTION_DEFAULTS } from '@rediacc/shared/config';
+import { SUBSCRIPTION_DEFAULTS } from '@rediacc/shared/config';
 import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { Command } from 'commander';
 import {
-  getRepoLicenseFreshness,
+  formatRuntimeRepoLicenseStatus,
   outputSubscriptionScope,
   renderMachineActivationStatus,
   renderRepoBatchRefreshSummary,
@@ -14,6 +13,7 @@ import {
   fetchSubscriptionLicenseReport,
   type RepoBatchRefreshResult,
   readMachineActivationStatus,
+  readRuntimeRepoLicenseStatuses,
   refreshMachineActivation,
   refreshRepoLicenseIdentity,
   refreshRepoLicensesBatch,
@@ -372,58 +372,30 @@ export async function executeRepoStatus(machineName: string): Promise<void> {
   const machine = await configService.getLocalMachine(machineName);
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-
-  const sftp = new SFTPClient({
-    host: machine.ip,
-    port: machine.port ?? DEFAULTS.SSH.PORT,
-    username: machine.user,
-    privateKey: sshPrivateKey,
+  const remoteRenetPath = await provisionRenetToRemote(localConfig, machine, sshPrivateKey, {
+    skipRouterRestart: true,
   });
+  const entries = await readRuntimeRepoLicenseStatuses(machine, sshPrivateKey, remoteRenetPath);
 
-  try {
-    await sftp.connect();
-    const content = await sftp.exec(
-      'sudo sh -lc \'for f in /var/lib/rediacc/license/repos/*.json; do [ -f "$f" ] || continue; base64 -w0 "$f"; printf "\\n"; done\''
+  outputService.info(t('commands.subscription.repoStatus.header', { machineName }));
+  if (entries.length === 0) {
+    outputService.info(t('commands.subscription.repoStatus.empty'));
+    return;
+  }
+
+  for (const entry of entries) {
+    const effectiveHardExpiry = entry.hardExpiresAt ?? entry.expiresAt;
+    outputService.info(
+      t('commands.subscription.repoStatus.entry', {
+        repositoryGuid: entry.repositoryGuid,
+        freshness: formatRuntimeRepoLicenseStatus(entry),
+        hardExpirySuffix: effectiveHardExpiry
+          ? t('commands.subscription.repoStatus.hardExpirySuffix', {
+              effectiveHardExpiry,
+            })
+          : '',
+      })
     );
-    const entries = content
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => Buffer.from(line, 'base64').toString('utf-8'))
-      .map((line) => JSON.parse(line) as { payload: string })
-      .map(
-        (line) =>
-          JSON.parse(Buffer.from(line.payload, 'base64').toString('utf-8')) as {
-            repositoryGuid: string;
-            expiresAt?: string;
-            refreshRecommendedAt?: string;
-            hardExpiresAt?: string;
-          }
-      );
-
-    outputService.info(t('commands.subscription.repoStatus.header', { machineName }));
-    if (entries.length === 0) {
-      outputService.info(t('commands.subscription.repoStatus.empty'));
-      return;
-    }
-
-    for (const entry of entries) {
-      const freshness = getRepoLicenseFreshness(entry);
-      const effectiveHardExpiry = entry.hardExpiresAt ?? entry.expiresAt;
-      outputService.info(
-        t('commands.subscription.repoStatus.entry', {
-          repositoryGuid: entry.repositoryGuid,
-          freshness: t(`commands.subscription.repoStatus.freshness.${freshness}`),
-          hardExpirySuffix: effectiveHardExpiry
-            ? t('commands.subscription.repoStatus.hardExpirySuffix', {
-                effectiveHardExpiry,
-              })
-            : '',
-        })
-      );
-    }
-  } finally {
-    sftp.close();
   }
 }
 

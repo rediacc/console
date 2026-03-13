@@ -1416,6 +1416,15 @@
       }
     },
     "subscription": {
+      "activationStatus": {
+        "activations": "  عمليات التفعيل: {{active}}/{{max}}",
+        "active": "  التفعيل: نشط (آخر ظهور {{lastSeenAt}})",
+        "description": "عرض حالة تفعيل جهاز واحد",
+        "header": "\nتفعيل الجهاز ({{machineName}})",
+        "inactive": "  التفعيل: الجهاز غير نشط حاليًا في حالة الحساب",
+        "machineId": "  معرّف الجهاز: {{machineId}}",
+        "unavailable": "  التفعيل: تعذر الاستعلام عن حالة الحساب"
+      },
       "description": "إدارة تراخيص الجهاز والاشتراك",
       "login": {
         "browserFailed": "تعذر فتح المتصفح تلقائياً. يرجى زيارة الرابط أعلاه.",
@@ -1435,15 +1444,49 @@
       },
       "refresh": {
         "description": "تحديث ترخيص الجهاز",
+        "failed": "فشل إصدار ترخيص الجهاز",
         "refreshed": "تم تحديث الترخيص",
         "refreshing": "جارٍ تحديث الترخيص...",
-        "success": "تم تحديث وتثبيت الترخيص",
-        "failed": "فشل إصدار ترخيص الجهاز"
+        "success": "تم تحديث وتثبيت الترخيص"
+      },
+      "refreshActivation": {
+        "description": "تحديث تفعيل الجهاز على جهاز بعيد"
+      },
+      "refreshRepo": {
+        "description": "تحديث ترخيص المستودع لمستودع موجود على جهاز",
+        "failed": "فشل تحديث ترخيص المستودع",
+        "notFound": "المستودع غير موجود: {{repoName}}",
+        "refreshed": "تم تحديث ترخيص المستودع",
+        "refreshing": "جارٍ تحديث ترخيص المستودع...",
+        "repoArgument": "اسم المستودع",
+        "success": "تم تحديث ترخيص المستودع لـ \"{{repoName}}\""
+      },
+      "refreshRepos": {
+        "description": "تحديث تراخيص المستودعات دفعةً واحدة على جهاز بعيد",
+        "refreshed": "تم تحديث تراخيص المستودعات",
+        "refreshing": "جارٍ تحديث تراخيص المستودعات...",
+        "success": "اكتمل التحديث الدفعي لتراخيص المستودعات"
+      },
+      "repoStatus": {
+        "description": "عرض تراخيص المستودعات المثبتة على جهاز",
+        "empty": "  لا توجد تراخيص مستودعات مثبتة",
+        "entry": "  - المستودع {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
+        "freshness": {
+          "hardExpired": "منتهي بالكامل",
+          "refreshRecommended": "يوصى بالتحديث",
+          "unknown": "غير معروف",
+          "valid": "صالح"
+        },
+        "hardExpirySuffix": " (انتهاء نهائي: {{effectiveHardExpiry}})",
+        "header": "\nتراخيص المستودعات: ({{machineName}})"
       },
       "status": {
         "description": "عرض حالة الاشتراك والترخيص",
         "expired": "  انتهت صلاحية الترخيص — شغّل `rdc subscription refresh`",
         "expires": "  الانتهاء:  {{expiresAt}}",
+        "issuanceLimitReached": "تم بلوغ الحد الشهري لإصدار تراخيص المستودعات للشهر التقويمي الحالي وفق UTC.",
+        "issuanceUsageHigh80": "تجاوزت إصدارات تراخيص المستودعات الشهرية 80٪ من الحد الحالي وفق UTC.",
+        "issuanceUsageHigh95": "تجاوزت إصدارات تراخيص المستودعات الشهرية 95٪ من الحد الحالي وفق UTC.",
         "issued": "  الإصدار:   {{issuedAt}}",
         "localLicense": "الترخيص المحلي:",
         "machine": "  الجهاز:   {{machineId}}",
@@ -1452,59 +1495,16 @@
         "plan": "  الخطة:    {{plan}}",
         "remote": "\nالاشتراك البعيد:",
         "remoteMachine": "    - {{id}}... (آخر ظهور: {{lastSeen}})",
+        "remoteMachineActivations": "  تفعيلات الأجهزة: {{active}}/{{max}}",
         "remoteMachines": "  الأجهزة: {{active}}/{{max}}",
         "remotePlan": "  الخطة:    {{plan}}",
-        "remoteStatus": "  الحالة:   {{status}}",
-        "sequence": "  التسلسل:  {{sequenceNumber}}",
-        "statusLabel": "  الحالة:   {{status}}",
-        "valid": "  صالح (ينتهي خلال {{mins}} دقيقة)",
-        "serverMismatch": "رمز المطور يتبع {{actualServerUrl}}، لكن شجرة العمل هذه تستخدم {{expectedServerUrl}}. شغّل `rdc subscription login` مرة أخرى.",
-        "remoteMachineActivations": "  تفعيلات الأجهزة: {{active}}/{{max}}",
         "remoteRepoLicenseIssuances": "  طلبات الترخيص العائم: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  تراخيص المستودعات: {{totalTrackedRepos}} متتبعة، {{validCount}} صالحة، {{refreshRecommendedCount}} تحتاج تحديثًا، {{hardExpiredCount}} منتهية بالكامل",
-        "issuanceLimitReached": "تم بلوغ الحد الشهري لإصدار تراخيص المستودعات للشهر التقويمي الحالي وفق UTC.",
-        "issuanceUsageHigh95": "تجاوزت إصدارات تراخيص المستودعات الشهرية 95٪ من الحد الحالي وفق UTC.",
-        "issuanceUsageHigh80": "تجاوزت إصدارات تراخيص المستودعات الشهرية 80٪ من الحد الحالي وفق UTC."
-      },
-      "activationStatus": {
-        "description": "عرض حالة تفعيل جهاز واحد",
-        "header": "\nتفعيل الجهاز ({{machineName}})",
-        "unavailable": "  التفعيل: تعذر الاستعلام عن حالة الحساب",
-        "machineId": "  معرّف الجهاز: {{machineId}}",
-        "activations": "  عمليات التفعيل: {{active}}/{{max}}",
-        "active": "  التفعيل: نشط (آخر ظهور {{lastSeenAt}})",
-        "inactive": "  التفعيل: الجهاز غير نشط حاليًا في حالة الحساب"
-      },
-      "refreshActivation": {
-        "description": "تحديث تفعيل الجهاز على جهاز بعيد"
-      },
-      "refreshRepos": {
-        "description": "تحديث تراخيص المستودعات دفعةً واحدة على جهاز بعيد",
-        "refreshing": "جارٍ تحديث تراخيص المستودعات...",
-        "refreshed": "تم تحديث تراخيص المستودعات",
-        "success": "اكتمل التحديث الدفعي لتراخيص المستودعات"
-      },
-      "repoStatus": {
-        "description": "عرض تراخيص المستودعات المثبتة على جهاز",
-        "header": "\nتراخيص المستودعات: ({{machineName}})",
-        "empty": "  لا توجد تراخيص مستودعات مثبتة",
-        "entry": "  - المستودع {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
-        "hardExpirySuffix": " (انتهاء نهائي: {{effectiveHardExpiry}})",
-        "freshness": {
-          "unknown": "غير معروف",
-          "hardExpired": "منتهي بالكامل",
-          "refreshRecommended": "يوصى بالتحديث",
-          "valid": "صالح"
-        }
-      },
-      "refreshRepo": {
-        "description": "تحديث ترخيص المستودع لمستودع موجود على جهاز",
-        "repoArgument": "اسم المستودع",
-        "refreshing": "جارٍ تحديث ترخيص المستودع...",
-        "notFound": "المستودع غير موجود: {{repoName}}",
-        "failed": "فشل تحديث ترخيص المستودع",
-        "refreshed": "تم تحديث ترخيص المستودع",
-        "success": "تم تحديث ترخيص المستودع لـ \"{{repoName}}\""
+        "remoteStatus": "  الحالة:   {{status}}",
+        "sequence": "  التسلسل:  {{sequenceNumber}}",
+        "serverMismatch": "رمز المطور يتبع {{actualServerUrl}}، لكن شجرة العمل هذه تستخدم {{expectedServerUrl}}. شغّل `rdc subscription login` مرة أخرى.",
+        "statusLabel": "  الحالة:   {{status}}",
+        "valid": "  صالح (ينتهي خلال {{mins}} دقيقة)"
       }
     },
     "sync": {
@@ -1932,6 +1932,11 @@
     "repositoryRequired": "اسم المستودع مطلوب. استخدم --repository <name>.",
     "resourceNotFound": "{{resource}} غير موجود",
     "sshKeyNotFound": "لم يتم العثور على مفتاح SSH: {{path}}",
+    "ssh": {
+      "noIpAddress": "الآلة '{{machine}}' لا تحتوي على عنوان IP مكون",
+      "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون",
+      "noHostKey": "الآلة '{{machine}}' لا تحتوي على مفتاح مضيف مكون في الخزينة"
+    },
     "subscription": {
       "notLoggedIn": "لم يتم تسجيل الدخول. شغّل `rdc subscription login` أولاً."
     },

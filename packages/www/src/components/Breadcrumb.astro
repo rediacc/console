@@ -1,5 +1,7 @@
 ---
 import StructuredData from './StructuredData.astro';
+import { getLanguageFromPath } from '../i18n/language-utils';
+import { createTranslator } from '../i18n/utils';
 
 export interface BreadcrumbItem {
   name: string;
@@ -13,6 +15,8 @@ export interface Props {
 }
 
 const { items, showStructuredData = true, class: className = '' } = Astro.props;
+const lang = getLanguageFromPath(Astro.url.pathname);
+const { t } = createTranslator(lang);
 
 // Generate structured data for breadcrumbs
 const breadcrumbStructuredData = {
@@ -31,7 +35,7 @@ const lastIndex = items.length - 1;
   <StructuredData type="breadcrumb" data={breadcrumbStructuredData} />
 )}
 
-<nav class={`breadcrumb ${className}`.trim()} aria-label="Breadcrumb navigation">
+<nav class={`breadcrumb ${className}`.trim()} aria-label={t('common.aria.breadcrumbNavigation')}>
   <ol class="breadcrumb-list" itemscope itemtype="https://schema.org/BreadcrumbList">
     {items.map((item, index) => (
       <li

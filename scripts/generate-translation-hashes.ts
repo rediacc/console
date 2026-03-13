@@ -16,6 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { flattenAndHash } from './utils/crc32.js';
+import { getLatestCommitForFile } from './utils/translation-diff.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -32,6 +33,7 @@ interface HashManifest {
     algorithm: string;
     sourceLanguage: string;
     keyCount: number;
+    sourceCommit?: string;
   };
   hashes: Record<string, string>;
 }
@@ -153,13 +155,21 @@ function processLocaleDir(config: LocaleConfig): Record<string, string> | null {
 /**
  * Write hash manifest file
  */
-function writeHashManifest(dir: string, hashes: Record<string, string>, name: string): string {
+function writeHashManifest(dir: string, hashes: Record<string, string>, name: string, config: LocaleConfig): string {
+  // Resolve sourceCommit: latest git commit that touched the English source files
+  const repoRoot = path.resolve(__dirname, '..');
+  const englishSourcePath = config.flatFiles
+    ? path.relative(repoRoot, path.join(dir, `${SOURCE_LANG}.json`))
+    : path.relative(repoRoot, path.join(dir, SOURCE_LANG));
+  const sourceCommit = getLatestCommitForFile(repoRoot, englishSourcePath) ?? undefined;
+
   // Note: We intentionally omit timestamps to reduce merge conflicts
   const manifest: HashManifest = {
     $meta: {
       algorithm: 'crc32',
       sourceLanguage: SOURCE_LANG,
       keyCount: Object.keys(hashes).length,
+      ...(sourceCommit ? { sourceCommit } : {}),
     },
     hashes: sortObjectKeys(hashes),
   };
@@ -183,7 +193,7 @@ async function main(): Promise<void> {
 
     const hashes = processLocaleDir(config);
     if (hashes) {
-      const outputPath = writeHashManifest(config.dir, hashes, config.name);
+      const outputPath = writeHashManifest(config.dir, hashes, config.name, config);
       results.push({ name: config.name, path: outputPath, keyCount: Object.keys(hashes).length });
     }
   }

@@ -4,6 +4,7 @@ const {
   mockGetSubscriptionTokenState,
   mockFetchSubscriptionLicenseReport,
   mockReadMachineActivationStatus,
+  mockReadRuntimeRepoLicenseStatuses,
   mockRefreshMachineActivation,
   mockRefreshRepoLicensesBatch,
   mockAuthorizeSubscriptionViaDeviceCode,
@@ -23,6 +24,7 @@ const {
   mockGetSubscriptionTokenState: vi.fn(),
   mockFetchSubscriptionLicenseReport: vi.fn(),
   mockReadMachineActivationStatus: vi.fn(),
+  mockReadRuntimeRepoLicenseStatuses: vi.fn(),
   mockRefreshMachineActivation: vi.fn(),
   mockRefreshRepoLicensesBatch: vi.fn(),
   mockAuthorizeSubscriptionViaDeviceCode: vi.fn(),
@@ -61,6 +63,7 @@ vi.mock('../../services/subscription-auth.js', () => ({
 vi.mock('../../services/license.js', () => ({
   fetchSubscriptionLicenseReport: mockFetchSubscriptionLicenseReport,
   readMachineActivationStatus: mockReadMachineActivationStatus,
+  readRuntimeRepoLicenseStatuses: mockReadRuntimeRepoLicenseStatuses,
   refreshMachineActivation: mockRefreshMachineActivation,
   refreshRepoLicensesBatch: mockRefreshRepoLicensesBatch,
 }));
@@ -99,9 +102,11 @@ const {
   executeActivationStatus,
   executeSubscriptionRefresh,
   executeActivationRefresh,
+  executeRepoStatus,
   executeRepoRefresh,
-  renderRepoBatchRefreshSummary,
 } = await import('../subscription.js');
+
+const { renderRepoBatchRefreshSummary } = await import('../subscription-output.js');
 
 describe('subscription command helpers', () => {
   beforeEach(() => {
@@ -148,6 +153,7 @@ describe('subscription command helpers', () => {
       },
     });
     mockRefreshMachineActivation.mockResolvedValue(true);
+    mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([]);
     mockRefreshRepoLicensesBatch.mockResolvedValue({
       scanned: 3,
       issued: 1,
@@ -253,6 +259,51 @@ describe('subscription command helpers', () => {
       'commands.subscription.activationStatus.active:2026-03-12T00:00:00Z'
     );
     expect(mockFetchSubscriptionLicenseReport).not.toHaveBeenCalled();
+  });
+
+  it('repo-status renders runtime repo license statuses from renet', async () => {
+    mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([
+      {
+        repositoryGuid: 'repo-valid',
+        status: 'valid',
+        runtimeValid: true,
+        installed: true,
+        hardExpiresAt: '2026-05-10T14:29:53.723Z',
+      },
+      {
+        repositoryGuid: 'repo-missing',
+        status: 'missing',
+        runtimeValid: false,
+        installed: false,
+      },
+      {
+        repositoryGuid: 'repo-machine',
+        status: 'machine_mismatch',
+        runtimeValid: false,
+        installed: true,
+      },
+    ]);
+
+    await executeRepoStatus('hostinger');
+
+    expect(mockProvisionRenetToRemote).toHaveBeenCalledTimes(1);
+    expect(mockReadRuntimeRepoLicenseStatuses).toHaveBeenCalledWith(
+      expect.objectContaining({ machineName: 'hostinger' }),
+      'PRIVATE_KEY',
+      '/usr/bin/renet'
+    );
+    expect(mockOutputInfo).toHaveBeenCalledWith(
+      'commands.subscription.repoStatus.header:hostinger'
+    );
+    expect(mockOutputInfo).toHaveBeenCalledWith(
+      'commands.subscription.repoStatus.entry:repo-valid:valid:commands.subscription.repoStatus.hardExpirySuffix:2026-05-10T14:29:53.723Z'
+    );
+    expect(mockOutputInfo).toHaveBeenCalledWith(
+      'commands.subscription.repoStatus.entry:repo-missing:missing:'
+    );
+    expect(mockOutputInfo).toHaveBeenCalledWith(
+      'commands.subscription.repoStatus.entry:repo-machine:machine mismatch:'
+    );
   });
 
   it('refresh runs activation refresh before repo batch refresh and prints combined summary', async () => {

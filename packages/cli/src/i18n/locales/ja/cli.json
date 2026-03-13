@@ -1416,6 +1416,15 @@
       }
     },
     "subscription": {
+      "activationStatus": {
+        "activations": "  アクティベーション数: {{active}}/{{max}}",
+        "active": "  アクティベーション: 有効 (最終確認 {{lastSeenAt}})",
+        "description": "1 台のマシンのアクティベーション状態を表示",
+        "header": "\nマシンアクティベーション ({{machineName}})",
+        "inactive": "  アクティベーション: このマシンは現在アカウント状態で有効ではありません",
+        "machineId": "  マシン ID: {{machineId}}",
+        "unavailable": "  アクティベーション: アカウント状態を照会できませんでした"
+      },
       "description": "マシンライセンスとサブスクリプションの管理",
       "login": {
         "browserFailed": "ブラウザを自動的に開けませんでした。上記のURLにアクセスしてください。",
@@ -1435,15 +1444,49 @@
       },
       "refresh": {
         "description": "マシンライセンスを更新",
+        "failed": "マシンライセンスを発行できませんでした",
         "refreshed": "ライセンスが更新されました",
         "refreshing": "ライセンスを更新中...",
-        "success": "ライセンスが更新・インストールされました",
-        "failed": "マシンライセンスを発行できませんでした"
+        "success": "ライセンスが更新・インストールされました"
+      },
+      "refreshActivation": {
+        "description": "リモートマシン上のマシンアクティベーションを更新"
+      },
+      "refreshRepo": {
+        "description": "マシン上の既存リポジトリのリポジトリライセンスを更新",
+        "failed": "リポジトリライセンスの更新に失敗しました",
+        "notFound": "リポジトリが見つかりません: {{repoName}}",
+        "refreshed": "リポジトリライセンスを更新しました",
+        "refreshing": "リポジトリライセンスを更新しています...",
+        "repoArgument": "リポジトリ名",
+        "success": "\"{{repoName}}\" のリポジトリライセンスを更新しました"
+      },
+      "refreshRepos": {
+        "description": "リモートマシン上のリポジトリライセンスを一括更新",
+        "refreshed": "リポジトリライセンスを更新しました",
+        "refreshing": "リポジトリライセンスを更新しています...",
+        "success": "リポジトリライセンスの一括更新が完了しました"
+      },
+      "repoStatus": {
+        "description": "マシンにインストールされたリポジトリライセンスを表示",
+        "empty": "  インストールされたリポジトリライセンスはありません",
+        "entry": "  - リポジトリ {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
+        "freshness": {
+          "hardExpired": "完全失効",
+          "refreshRecommended": "更新推奨",
+          "unknown": "不明",
+          "valid": "有効"
+        },
+        "hardExpirySuffix": " (完全失効日時: {{effectiveHardExpiry}})",
+        "header": "\nリポジトリライセンス: ({{machineName}})"
       },
       "status": {
         "description": "サブスクリプションとライセンスの状態を表示",
         "expired": "  ライセンスが期限切れです — `rdc subscription refresh` を実行してください",
         "expires": "  有効期限:   {{expiresAt}}",
+        "issuanceLimitReached": "現在の UTC 暦月のリポジトリライセンス発行上限に達しました。",
+        "issuanceUsageHigh80": "月間リポジトリライセンス発行数が現在の UTC 上限の 80% を超えています。",
+        "issuanceUsageHigh95": "月間リポジトリライセンス発行数が現在の UTC 上限の 95% を超えています。",
         "issued": "  発行日:     {{issuedAt}}",
         "localLicense": "ローカルライセンス:",
         "machine": "  マシン:     {{machineId}}",
@@ -1452,59 +1495,16 @@
         "plan": "  プラン:     {{plan}}",
         "remote": "\nリモートサブスクリプション:",
         "remoteMachine": "    - {{id}}... (最終確認: {{lastSeen}})",
+        "remoteMachineActivations": "  マシンアクティベーション: {{active}}/{{max}}",
         "remoteMachines": "  マシン: {{active}}/{{max}}",
         "remotePlan": "  プラン:     {{plan}}",
-        "remoteStatus": "  ステータス: {{status}}",
-        "sequence": "  シーケンス: {{sequenceNumber}}",
-        "statusLabel": "  ステータス: {{status}}",
-        "valid": "  有効（残り {{mins}} 分で期限切れ）",
-        "serverMismatch": "開発トークンは {{actualServerUrl}} 用ですが、このワークツリーは {{expectedServerUrl}} を使用しています。`rdc subscription login` を再実行してください。",
-        "remoteMachineActivations": "  マシンアクティベーション: {{active}}/{{max}}",
         "remoteRepoLicenseIssuances": "  フローティングライセンス要求: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  リポジトリライセンス: 追跡 {{totalTrackedRepos}}、有効 {{validCount}}、更新推奨 {{refreshRecommendedCount}}、完全失効 {{hardExpiredCount}}",
-        "issuanceLimitReached": "現在の UTC 暦月のリポジトリライセンス発行上限に達しました。",
-        "issuanceUsageHigh95": "月間リポジトリライセンス発行数が現在の UTC 上限の 95% を超えています。",
-        "issuanceUsageHigh80": "月間リポジトリライセンス発行数が現在の UTC 上限の 80% を超えています。"
-      },
-      "activationStatus": {
-        "description": "1 台のマシンのアクティベーション状態を表示",
-        "header": "\nマシンアクティベーション ({{machineName}})",
-        "unavailable": "  アクティベーション: アカウント状態を照会できませんでした",
-        "machineId": "  マシン ID: {{machineId}}",
-        "activations": "  アクティベーション数: {{active}}/{{max}}",
-        "active": "  アクティベーション: 有効 (最終確認 {{lastSeenAt}})",
-        "inactive": "  アクティベーション: このマシンは現在アカウント状態で有効ではありません"
-      },
-      "refreshActivation": {
-        "description": "リモートマシン上のマシンアクティベーションを更新"
-      },
-      "refreshRepos": {
-        "description": "リモートマシン上のリポジトリライセンスを一括更新",
-        "refreshing": "リポジトリライセンスを更新しています...",
-        "refreshed": "リポジトリライセンスを更新しました",
-        "success": "リポジトリライセンスの一括更新が完了しました"
-      },
-      "repoStatus": {
-        "description": "マシンにインストールされたリポジトリライセンスを表示",
-        "header": "\nリポジトリライセンス: ({{machineName}})",
-        "empty": "  インストールされたリポジトリライセンスはありません",
-        "entry": "  - リポジトリ {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
-        "hardExpirySuffix": " (完全失効日時: {{effectiveHardExpiry}})",
-        "freshness": {
-          "unknown": "不明",
-          "hardExpired": "完全失効",
-          "refreshRecommended": "更新推奨",
-          "valid": "有効"
-        }
-      },
-      "refreshRepo": {
-        "description": "マシン上の既存リポジトリのリポジトリライセンスを更新",
-        "repoArgument": "リポジトリ名",
-        "refreshing": "リポジトリライセンスを更新しています...",
-        "notFound": "リポジトリが見つかりません: {{repoName}}",
-        "failed": "リポジトリライセンスの更新に失敗しました",
-        "refreshed": "リポジトリライセンスを更新しました",
-        "success": "\"{{repoName}}\" のリポジトリライセンスを更新しました"
+        "remoteStatus": "  ステータス: {{status}}",
+        "sequence": "  シーケンス: {{sequenceNumber}}",
+        "serverMismatch": "開発トークンは {{actualServerUrl}} 用ですが、このワークツリーは {{expectedServerUrl}} を使用しています。`rdc subscription login` を再実行してください。",
+        "statusLabel": "  ステータス: {{status}}",
+        "valid": "  有効（残り {{mins}} 分で期限切れ）"
       }
     },
     "sync": {
@@ -1932,6 +1932,11 @@
     "repositoryRequired": "リポジトリ名が必要です。--repository <name> を使用してください。",
     "resourceNotFound": "{{resource}} が見つかりません",
     "sshKeyNotFound": "SSH キーが見つかりません: {{path}}",
+    "ssh": {
+      "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
+      "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません",
+      "noHostKey": "マシン '{{machine}}' のボルトにホストキーが設定されていません"
+    },
     "subscription": {
       "notLoggedIn": "ログインしていません。先に `rdc subscription login` を実行してください。"
     },

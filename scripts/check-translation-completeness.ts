@@ -32,6 +32,12 @@ const MIN_STRING_LENGTH = 4; // Only check strings longer than this (skip "OK", 
 const ALLOWED_IDENTICAL = new Set([
   // Category names (kept in English across all locales for sidebar grouping)
   'Reference',
+  'Concepts',
+  'Guides',
+  'Tutorials',
+  'Volume',
+  'Downloads',
+  'Professional',
   // Common loanwords used identically in many languages
   'Newsletter',
   // Brand names

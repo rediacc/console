@@ -2,7 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1528
+    "keyCount": 1531,
+    "sourceCommit": "70e064d13e90c8eaa6d370752120b71d82bcdefc"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1318,6 +1319,9 @@
     "errors.repositoryNotFound": "35306727",
     "errors.repositoryRequired": "bce6f01a",
     "errors.resourceNotFound": "4f504881",
+    "errors.ssh.noHostKey": "0512cdf3",
+    "errors.ssh.noIpAddress": "a4d64fb1",
+    "errors.ssh.noPrivateKey": "5ac83b14",
     "errors.sshKeyNotFound": "d963f140",
     "errors.subscription.notLoggedIn": "227ab3be",
     "errors.sync.absolutePathBlocked": "0a961d95",

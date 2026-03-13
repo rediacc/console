@@ -1416,6 +1416,15 @@
       }
     },
     "subscription": {
+      "activationStatus": {
+        "activations": "  Activaciones: {{active}}/{{max}}",
+        "active": "  Activación: activa (última vez vista {{lastSeenAt}})",
+        "description": "Mostrar el estado de activación de una máquina",
+        "header": "\nActivación de la máquina ({{machineName}})",
+        "inactive": "  Activación: la máquina no está activa actualmente en el estado de la cuenta",
+        "machineId": "  ID de máquina: {{machineId}}",
+        "unavailable": "  Activación: no se pudo consultar el estado de la cuenta"
+      },
       "description": "Gestionar licencias de máquina y suscripción",
       "login": {
         "browserFailed": "No se pudo abrir el navegador automáticamente. Por favor, visite la URL anterior.",
@@ -1435,15 +1444,49 @@
       },
       "refresh": {
         "description": "Renovar la licencia de la máquina",
+        "failed": "No se pudo emitir la licencia de la máquina",
         "refreshed": "Licencia renovada",
         "refreshing": "Renovando licencia...",
-        "success": "Licencia renovada e instalada",
-        "failed": "No se pudo emitir la licencia de la máquina"
+        "success": "Licencia renovada e instalada"
+      },
+      "refreshActivation": {
+        "description": "Actualizar la activación de la máquina en una máquina remota"
+      },
+      "refreshRepo": {
+        "description": "Actualizar la licencia del repositorio para un repositorio existente en una máquina",
+        "failed": "No se pudo actualizar la licencia del repositorio",
+        "notFound": "Repositorio no encontrado: {{repoName}}",
+        "refreshed": "Licencia del repositorio actualizada",
+        "refreshing": "Actualizando licencia del repositorio...",
+        "repoArgument": "Nombre del repositorio",
+        "success": "Licencia del repositorio actualizada para \"{{repoName}}\""
+      },
+      "refreshRepos": {
+        "description": "Actualizar en lote las licencias de repositorio en una máquina remota",
+        "refreshed": "Licencias de repositorio actualizadas",
+        "refreshing": "Actualizando licencias de repositorio...",
+        "success": "La actualización por lotes de licencias de repositorio se completó"
+      },
+      "repoStatus": {
+        "description": "Mostrar licencias de repositorio instaladas en una máquina",
+        "empty": "  No hay licencias de repositorio instaladas",
+        "entry": "  - Repositorio {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
+        "freshness": {
+          "hardExpired": "vencido",
+          "refreshRecommended": "se recomienda renovar",
+          "unknown": "desconocido",
+          "valid": "válido"
+        },
+        "hardExpirySuffix": " (vencimiento definitivo: {{effectiveHardExpiry}})",
+        "header": "\nLicencias de repositorio: ({{machineName}})"
       },
       "status": {
         "description": "Mostrar estado de suscripción y licencia",
         "expired": "  La licencia ha EXPIRADO — ejecute `rdc subscription refresh`",
         "expires": "  Expira:    {{expiresAt}}",
+        "issuanceLimitReached": "Se alcanzó el límite mensual de emisión de licencias de repositorio para el mes calendario UTC actual.",
+        "issuanceUsageHigh80": "Las emisiones mensuales de licencias de repositorio superan el 80 % del límite UTC actual.",
+        "issuanceUsageHigh95": "Las emisiones mensuales de licencias de repositorio superan el 95 % del límite UTC actual.",
         "issued": "  Emitida:   {{issuedAt}}",
         "localLicense": "Licencia local:",
         "machine": "  Máquina:  {{machineId}}",
@@ -1452,59 +1495,16 @@
         "plan": "  Plan:      {{plan}}",
         "remote": "\nSuscripción remota:",
         "remoteMachine": "    - {{id}}... (última vez visto: {{lastSeen}})",
+        "remoteMachineActivations": "  Activaciones de máquina: {{active}}/{{max}}",
         "remoteMachines": "  Máquinas: {{active}}/{{max}}",
         "remotePlan": "  Plan:      {{plan}}",
-        "remoteStatus": "  Estado:    {{status}}",
-        "sequence": "  Secuencia: {{sequenceNumber}}",
-        "statusLabel": "  Estado:    {{status}}",
-        "valid": "  Válida (expira en {{mins}} minutos)",
-        "serverMismatch": "El token de desarrollo pertenece a {{actualServerUrl}}, pero este worktree usa {{expectedServerUrl}}. Ejecute `rdc subscription login` de nuevo.",
-        "remoteMachineActivations": "  Activaciones de máquina: {{active}}/{{max}}",
         "remoteRepoLicenseIssuances": "  Solicitudes de licencia flotante: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  Licencias de repositorio: {{totalTrackedRepos}} rastreados, {{validCount}} válidos, {{refreshRecommendedCount}} con renovación recomendada, {{hardExpiredCount}} vencidos",
-        "issuanceLimitReached": "Se alcanzó el límite mensual de emisión de licencias de repositorio para el mes calendario UTC actual.",
-        "issuanceUsageHigh95": "Las emisiones mensuales de licencias de repositorio superan el 95 % del límite UTC actual.",
-        "issuanceUsageHigh80": "Las emisiones mensuales de licencias de repositorio superan el 80 % del límite UTC actual."
-      },
-      "activationStatus": {
-        "description": "Mostrar el estado de activación de una máquina",
-        "header": "\nActivación de la máquina ({{machineName}})",
-        "unavailable": "  Activación: no se pudo consultar el estado de la cuenta",
-        "machineId": "  ID de máquina: {{machineId}}",
-        "activations": "  Activaciones: {{active}}/{{max}}",
-        "active": "  Activación: activa (última vez vista {{lastSeenAt}})",
-        "inactive": "  Activación: la máquina no está activa actualmente en el estado de la cuenta"
-      },
-      "refreshActivation": {
-        "description": "Actualizar la activación de la máquina en una máquina remota"
-      },
-      "refreshRepos": {
-        "description": "Actualizar en lote las licencias de repositorio en una máquina remota",
-        "refreshing": "Actualizando licencias de repositorio...",
-        "refreshed": "Licencias de repositorio actualizadas",
-        "success": "La actualización por lotes de licencias de repositorio se completó"
-      },
-      "repoStatus": {
-        "description": "Mostrar licencias de repositorio instaladas en una máquina",
-        "header": "\nLicencias de repositorio: ({{machineName}})",
-        "empty": "  No hay licencias de repositorio instaladas",
-        "entry": "  - Repositorio {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
-        "hardExpirySuffix": " (vencimiento definitivo: {{effectiveHardExpiry}})",
-        "freshness": {
-          "unknown": "desconocido",
-          "hardExpired": "vencido",
-          "refreshRecommended": "se recomienda renovar",
-          "valid": "válido"
-        }
-      },
-      "refreshRepo": {
-        "description": "Actualizar la licencia del repositorio para un repositorio existente en una máquina",
-        "repoArgument": "Nombre del repositorio",
-        "refreshing": "Actualizando licencia del repositorio...",
-        "notFound": "Repositorio no encontrado: {{repoName}}",
-        "failed": "No se pudo actualizar la licencia del repositorio",
-        "refreshed": "Licencia del repositorio actualizada",
-        "success": "Licencia del repositorio actualizada para \"{{repoName}}\""
+        "remoteStatus": "  Estado:    {{status}}",
+        "sequence": "  Secuencia: {{sequenceNumber}}",
+        "serverMismatch": "El token de desarrollo pertenece a {{actualServerUrl}}, pero este worktree usa {{expectedServerUrl}}. Ejecute `rdc subscription login` de nuevo.",
+        "statusLabel": "  Estado:    {{status}}",
+        "valid": "  Válida (expira en {{mins}} minutos)"
       }
     },
     "sync": {
@@ -1932,6 +1932,11 @@
     "repositoryRequired": "Nombre de repositorio requerido. Use --repository <name>.",
     "resourceNotFound": "{{resource}} no encontrado",
     "sshKeyNotFound": "Clave SSH no encontrada: {{path}}",
+    "ssh": {
+      "noIpAddress": "Máquina '{{machine}}' no tiene dirección IP configurada",
+      "noPrivateKey": "Equipo '{{team}}' no tiene clave privada SSH configurada",
+      "noHostKey": "Máquina '{{machine}}' no tiene clave de host configurada en la bóveda"
+    },
     "subscription": {
       "notLoggedIn": "No ha iniciado sesión. Ejecute primero `rdc subscription login`."
     },

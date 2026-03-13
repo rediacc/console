@@ -68,6 +68,30 @@ export interface MachineActivationStatus {
   maxCount?: number;
 }
 
+export interface RuntimeRepoLicenseStatus {
+  repositoryGuid: string;
+  status:
+    | 'valid'
+    | 'missing'
+    | 'expired'
+    | 'machine_mismatch'
+    | 'repository_mismatch'
+    | 'sequence_regression'
+    | 'invalid_signature'
+    | 'identity_mismatch'
+    | 'unknown';
+  message?: string;
+  runtimeValid: boolean;
+  installed: boolean;
+  issuedAt?: string;
+  refreshRecommendedAt?: string;
+  hardExpiresAt?: string;
+  expiresAt?: string;
+  machineId?: string;
+  kind?: string;
+  grandGuid?: string;
+}
+
 async function readLicenseApiError(resp: Response, fallback: string): Promise<string> {
   const body = (await resp.json().catch(() => null)) as { error?: string; code?: string } | null;
   if (body?.error) {
@@ -152,11 +176,13 @@ async function readRepoSizeGb(
   return Math.max(1, Math.ceil((Number.isFinite(bytes) ? bytes : 0) / (1024 * 1024 * 1024)));
 }
 
+const MACHINE_LICENSE_PATH = `${LICENSE_DIR}/machine.json`;
+
 async function refreshActivation(
   serverUrl: string,
   token: string,
   machineId: string
-): Promise<boolean> {
+): Promise<{ ok: boolean; signedBlob?: unknown }> {
   const resp = await fetch(`${serverUrl}/account/api/v1/licenses/activate`, {
     method: 'POST',
     headers: {
@@ -167,9 +193,21 @@ async function refreshActivation(
   });
 
   if (!resp.ok) {
-    return false;
+    return { ok: false };
   }
-  return true;
+  const body = (await resp.json().catch(() => null)) as {
+    activation?: unknown;
+    signedBlob?: unknown;
+  } | null;
+  return { ok: true, signedBlob: body?.signedBlob };
+}
+
+async function writeMachineLicense(sftp: SFTPClient, signedBlob: unknown): Promise<void> {
+  await sftp.exec(`sudo mkdir -p ${LICENSE_DIR}`);
+  await sftp.execStreaming(`sudo tee ${MACHINE_LICENSE_PATH} > /dev/null`, {
+    stdin: JSON.stringify(signedBlob, null, 2),
+  });
+  await sftp.exec(`sudo chmod 640 ${MACHINE_LICENSE_PATH}`);
 }
 
 export async function refreshMachineActivation(
@@ -192,7 +230,15 @@ export async function refreshMachineActivation(
     const machineId = await readRemoteMachineId(sftp, remoteRenetPath);
     if (!machineId) return false;
 
-    return await refreshActivation(tokenState.serverUrl, tokenState.token.token, machineId);
+    const result = await refreshActivation(tokenState.serverUrl, tokenState.token.token, machineId);
+    if (!result.ok) return false;
+
+    // Write the signed subscription blob to the remote machine for renet to validate
+    if (result.signedBlob) {
+      await writeMachineLicense(sftp, result.signedBlob);
+    }
+
+    return true;
   } finally {
     sftp.close();
   }
@@ -236,7 +282,33 @@ export async function readMachineActivationStatus(
   }
 }
 
-export async function issueRepoLicense(
+export async function readRuntimeRepoLicenseStatuses(
+  machine: MachineConfig,
+  sshPrivateKey: string,
+  remoteRenetPath?: string
+): Promise<RuntimeRepoLicenseStatus[]> {
+  const sftp = new SFTPClient({
+    host: machine.ip,
+    port: machine.port ?? DEFAULTS.SSH.PORT,
+    username: machine.user,
+    privateKey: sshPrivateKey,
+  });
+
+  try {
+    await sftp.connect();
+    const datastore = machine.datastore ?? DEFAULT_DATASTORE;
+    const renetPath = remoteRenetPath ?? DEFAULTS.CONTEXT.RENET_BINARY;
+    const output = await sftp.exec(
+      `sudo ${renetPath} repository license-status --datastore '${datastore}' --output json`
+    );
+    const parsed = JSON.parse(output) as unknown;
+    return Array.isArray(parsed) ? (parsed as RuntimeRepoLicenseStatus[]) : [];
+  } finally {
+    sftp.close();
+  }
+}
+
+async function issueRepoLicense(
   machine: MachineConfig,
   sshPrivateKey: string,
   params: {

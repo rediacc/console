@@ -2630,6 +2630,15 @@ a[target='_blank']::after {
   margin: 0;
 }
 
+a.cf-guarantee-link {
+  text-decoration: none;
+  transition: opacity var(--transition-duration-base);
+}
+
+a.cf-guarantee-link:hover {
+  opacity: 0.8;
+}
+
 /* ===== ANNOUNCEMENT BAR ===== */
 .announcement-bar {
   background: var(--color-brand-primary);

@@ -115,6 +115,16 @@
         "activationCount": {
           "type": "number",
           "jsonKey": "activationCount"
+        },
+        "issuedByEmail": {
+          "type": "string",
+          "jsonKey": "issuedByEmail",
+          "optional": true
+        },
+        "companyName": {
+          "type": "string",
+          "jsonKey": "companyName",
+          "optional": true
         }
       }
     },

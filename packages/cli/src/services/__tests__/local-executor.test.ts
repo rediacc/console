@@ -258,4 +258,27 @@ describe('localExecutorService first-use onboarding', () => {
     expect(result.errorCode).toBe('REPO_LICENSE_INTEGRITY_ERROR');
     expect(result.error).toContain('could not be trusted');
   });
+
+  it('fails fast on identity mismatch without refreshing', async () => {
+    mockExecStreaming.mockImplementationOnce(
+      (_cmd: string, handlers: { onStderr?: (chunk: string) => void }) => {
+        handlers.onStderr?.(
+          '{"code":"LICENSE_REQUIRED","reason":"identity_mismatch","message":"repo identity mismatch"}\n'
+        );
+        return 10;
+      }
+    );
+
+    const result = await localExecutorService.execute({
+      functionName: 'backup_push',
+      machineName: 'hostinger',
+      captureOutput: true,
+    });
+
+    expect(mockRefreshMachineActivation).not.toHaveBeenCalled();
+    expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
+    expect(result.success).toBe(false);
+    expect(result.errorCode).toBe('REPO_LICENSE_IDENTITY_MISMATCH');
+    expect(result.error).toContain('repository identity does not match');
+  });
 });

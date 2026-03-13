@@ -157,9 +157,13 @@ ensure_cli_built() {
     local current_hash
     local saved_hash=""
 
+    # Include shared packages stamp so CLI rebundles when dependencies change
+    local packages_stamp="$LOCAL_ROOT_DIR/.ci/cache/build-packages.stamp"
     current_hash="$(
-        compute_hash_for_package_dirs "$LOCAL_ROOT_DIR" \
-            packages/cli
+        {
+            compute_hash_for_package_dirs "$LOCAL_ROOT_DIR" packages/cli
+            cat "$packages_stamp" 2>/dev/null
+        } | sha256sum | awk '{print $1}'
     )"
 
     saved_hash="$(read_stamp_hash "$stamp_file")"

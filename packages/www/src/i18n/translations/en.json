@@ -24,7 +24,10 @@
         "checkSpelling": "Checking your spelling",
         "browseSolutions": "Browsing our solutions page",
         "contactSupport": "Contacting our support team"
-      }
+      },
+      "results": "Search results",
+      "unavailable": "Search Unavailable",
+      "unavailableMessage": "Unable to load search index. Please try refreshing the page or contact support if the issue persists."
     },
     "aria": {
       "mainNavigation": "Main navigation",
@@ -37,7 +40,13 @@
       "imageViewer": "Image viewer",
       "statusMessage": "Status message",
       "clickToEnlarge": "Click to enlarge image",
-      "opensInNewTab": "opens in new tab"
+      "opensInNewTab": "opens in new tab",
+      "tableOfContents": "Table of contents",
+      "docsSections": "Docs sections",
+      "documentationNavigation": "Documentation navigation",
+      "breadcrumbNavigation": "Breadcrumb navigation",
+      "rediaccHome": "Rediacc home",
+      "selectPlanToCompare": "Select plan to compare"
     },
     "skipNavigation": {
       "skipToMainContent": "Skip to main content",
@@ -97,7 +106,8 @@
         "cta": "See the Docs"
       }
     },
-    "forAiAgents": "For AI Agents"
+    "forAiAgents": "For AI Agents",
+    "account": "Account"
   },
   "footer": {
     "tagline": "Infrastructure Automation Platform for AI-Driven Operations",
@@ -253,6 +263,7 @@
   },
   "integrations": {
     "title": "Works with your stack and beyond",
+    "migrationMessage": "Rediacc turns your stack into a single portable file. If you already run Docker, migration is straightforward.",
     "items": [
       "Docker",
       "PostgreSQL",
@@ -407,8 +418,10 @@
       "cta": "Subscribe & Book Appointment",
       "close": "Close popup",
       "note": "We use your email to send product updates. You can unsubscribe at any time."
-    }
+    },
+    "privacyNote": "We respect your privacy. Unsubscribe at any time."
   },
+  "captchaRequired": "Please complete the captcha verification.",
   "contactModal": {
     "title": "Get in Touch",
     "description": "Have a question or want to discuss a project? Send us a message.",
@@ -639,7 +652,7 @@
             "Unlimited users & teams",
             "Unlimited repositories",
             "500 monthly repo license issuances",
-            "Unlimited machines",
+            "2 concurrent floating licenses",
             "Snapshot restores",
             "Manual scheduling",
             "Community Slack access",
@@ -651,6 +664,7 @@
           "description": "Professional automation and scheduling for growing teams",
           "features": [
             "Everything in Community +",
+            "5 concurrent floating licenses",
             "Unlimited repositories",
             "5,000 monthly repo license issuances",
             "Automated scheduling",
@@ -666,6 +680,7 @@
           "description": "Mission-critical infrastructure with expert onboarding",
           "features": [
             "Everything in Professional +",
+            "20 concurrent floating licenses",
             "Unlimited repositories",
             "20,000 monthly repo license issuances",
             "$9,999 implementation support included (Launch Offer)",
@@ -674,7 +689,6 @@
             "4-hour restore SLA",
             "Role-based access control & audit logs",
             "Compliance-ready reporting",
-            "Dedicated customer success manager",
             "Phone support + collaboration spaces"
           ]
         },
@@ -684,11 +698,13 @@
           "priceNote": "*Starting at",
           "features": [
             "Everything in Business +",
+            "50+ concurrent floating licenses",
             "Unlimited repositories",
-            "100,000 monthly repo license issuances",
+            "100,000+ monthly repo license issuances",
             "Custom SLA with guaranteed restore times",
             "Dedicated infrastructure tenant",
             "24/7/365 white-glove support",
+            "Dedicated customer success manager",
             "Quarterly readiness exercises",
             "Executive escalation hotline",
             "Custom integrations & workflows",
@@ -986,6 +1002,40 @@
         "heading": "Security & Reliability",
         "items": ["AES-256 encryption standard", "99.99% uptime SLA"]
       },
+      "trustSection": {
+        "heading": "Your Infrastructure. Your Rules.",
+        "subtitle": "Rediacc licenses are designed so you're never locked in. Here's what that means in practice.",
+        "rows": [
+          {
+            "title": "Your repos run forever.",
+            "description": "Start, stop, delete, and back up — always works, even years after your subscription ends. These operations never check expiry. Your data is always accessible."
+          },
+          {
+            "title": "Full access to your tools.",
+            "description": "File sync, VS Code remote, SSH terminal, and all management commands work without any license at all. Completely unrestricted, forever."
+          },
+          {
+            "title": "Only new repos need a subscription.",
+            "description": "An active subscription is required to create new repositories or fork existing ones. Resize and expand work for 60 days after expiry. Everything else is permanent."
+          },
+          {
+            "title": "60-day grace for scaling.",
+            "description": "When your subscription ends, resize and expand continue working for 60 more days. Start, stop, delete, and backup are not affected — they work forever."
+          },
+          {
+            "title": "Unlimited machines. Pay-per-create licensing.",
+            "description": "A license slot is only held while creating or forking a repository — your daily operations never consume one. Slots auto-release after 1 hour of inactivity, so a 5-slot plan can serve dozens of machines. No per-machine fees, ever."
+          }
+        ],
+        "svg": {
+          "noLicenseRequired": "No license required — works always",
+          "noLicenseNeeded": "No license needed",
+          "requiredOnlyHere": "Required only here",
+          "allOperations": "All operations",
+          "slotsAutoRelease": "Slots auto-release after 1 hour of inactivity",
+          "slotsCreateFork": "Slots used only for create & fork — daily ops are always free"
+        }
+      },
       "ui": {
         "popular": "Most popular",
         "bestValue": "Best Value",
@@ -999,6 +1049,7 @@
         "keyBenefits": "Key Benefits",
         "monthOrYear": "per month or {{price}} per year",
         "foreverFree": "Forever free",
+        "taxDisclaimer": "All prices are in USD and exclude applicable taxes, levies, and duties.",
         "cta": {
           "community": {
             "primary": "Try Rediacc",
@@ -1031,23 +1082,15 @@
         },
         "billingToggle": {
           "monthly": "Monthly",
-          "annual": "Annual"
+          "annual": "Annual",
+          "annualSavings": "Save 17% — 2 months free",
+          "ariaLabel": "Billing period"
         }
       },
       "technicalSummary": {
         "heading": "Plan comparison",
         "description": "A side-by-side view of key infrastructure limits across all plans.",
         "metrics": [
-          {
-            "key": "jobsPerMonth",
-            "label": "Floating license requests",
-            "tooltip": "Successful activation-backed repo license issuances counted in the current UTC calendar month."
-          },
-          {
-            "key": "floatingLicenses",
-            "label": "Floating Licenses",
-            "tooltip": "How many machines can hold active activation slots at the same time."
-          },
           {
             "key": "repositories",
             "label": "Repositories"
@@ -1056,6 +1099,16 @@
             "key": "repoSize",
             "label": "Repository size",
             "tooltip": "Community users can use up to 10 GB. Larger repositories require a paid plan."
+          },
+          {
+            "key": "floatingLicenses",
+            "label": "Floating Licenses",
+            "tooltip": "How many machines can hold active activation slots at the same time."
+          },
+          {
+            "key": "jobsPerMonth",
+            "label": "Floating license requests",
+            "tooltip": "Successful activation-backed repo license issuances counted in the current UTC calendar month."
           },
           {
             "key": "usersTeams",
@@ -1085,10 +1138,10 @@
             "usersTeams": "Unlimited"
           },
           "enterprise": {
-            "jobsPerMonth": "100,000",
-            "repoSize": "2 TB",
+            "jobsPerMonth": "100,000+",
+            "repoSize": "2 TB+",
             "repositories": "Unlimited",
-            "floatingLicenses": "50",
+            "floatingLicenses": "50+",
             "usersTeams": "Unlimited"
           }
         }
@@ -1105,21 +1158,21 @@
                 "community": "2",
                 "professional": "5",
                 "business": "20",
-                "enterprise": "50"
+                "enterprise": "50+"
               },
               {
                 "label": "Floating license requests",
                 "community": "500",
                 "professional": "5,000",
                 "business": "20,000",
-                "enterprise": "100,000"
+                "enterprise": "100,000+"
               },
               {
                 "label": "Repository size",
                 "community": "10 GB",
                 "professional": "100 GB",
                 "business": "500 GB",
-                "enterprise": "2 TB"
+                "enterprise": "2 TB+"
               }
             ]
           },
@@ -1134,32 +1187,18 @@
                 "enterprise": "✓"
               },
               {
-                "label": "Point-in-Time Restore",
-                "community": "—",
-                "professional": "24 hours",
-                "business": "72 hours",
-                "enterprise": "Custom"
-              },
-              {
                 "label": "Continuous Data Protection",
-                "community": "—",
-                "professional": "—",
+                "community": "✓",
+                "professional": "✓",
                 "business": "✓",
                 "enterprise": "✓"
               },
               {
                 "label": "Geo-Redundant Storage",
-                "community": "—",
-                "professional": "—",
-                "business": "3 regions",
-                "enterprise": "Custom"
-              },
-              {
-                "label": "Restore SLA",
-                "community": "—",
-                "professional": "—",
-                "business": "4 hours",
-                "enterprise": "Custom"
+                "community": "✓",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
               }
             ]
           },
@@ -1168,22 +1207,15 @@
             "rows": [
               {
                 "label": "RBAC & Permission Groups",
-                "community": "—",
+                "community": "✓",
                 "professional": "✓",
                 "business": "✓",
                 "enterprise": "✓"
               },
               {
                 "label": "Audit Logs",
-                "community": "—",
+                "community": "✓",
                 "professional": "✓",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "Compliance Reporting",
-                "community": "—",
-                "professional": "—",
                 "business": "✓",
                 "enterprise": "✓"
               },
@@ -1215,21 +1247,14 @@
               },
               {
                 "label": "Automated Scheduling",
-                "community": "—",
+                "community": "✓",
                 "professional": "✓",
                 "business": "✓",
                 "enterprise": "✓"
               },
               {
-                "label": "Queue Priority",
-                "community": "—",
-                "professional": "—",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
                 "label": "Integrations API",
-                "community": "—",
+                "community": "✓",
                 "professional": "✓",
                 "business": "✓",
                 "enterprise": "✓"
@@ -1283,39 +1308,6 @@
               },
               {
                 "label": "Executive Escalation",
-                "community": "—",
-                "professional": "—",
-                "business": "—",
-                "enterprise": "✓"
-              }
-            ]
-          },
-          "platform": {
-            "label": "Platform",
-            "rows": [
-              {
-                "label": "Custom Branding",
-                "community": "—",
-                "professional": "✓",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "Ceph Storage Pools",
-                "community": "—",
-                "professional": "—",
-                "business": "1",
-                "enterprise": "Unlimited"
-              },
-              {
-                "label": "Advanced Analytics",
-                "community": "—",
-                "professional": "—",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "Dedicated Infrastructure",
                 "community": "—",
                 "professional": "—",
                 "business": "—",
@@ -1519,7 +1511,10 @@
           "solutions": "infrastructure automation solutions",
           "contact": "contact page",
           "getStarted": "Rediacc"
-        }
+        },
+        "goBackPrefix": "Go back to the",
+        "learnAboutPrefix": "Learn about our",
+        "getInTouchPrefix": "Get in touch through our"
       },
       "actions": {
         "homepage": "Go to Homepage",
@@ -1529,6 +1524,16 @@
         "title": "Need Help?",
         "description": "If you believe this is an error or you were expecting to find content here, please contact our support team. We're here to help you find what you're looking for.",
         "link": "contact our support team"
+      }
+    },
+    "checkout": {
+      "success": {
+        "title": "Subscription Confirmed",
+        "description": "Your subscription has been confirmed",
+        "heading": "Subscription Confirmed",
+        "message": "Your subscription is now active. You'll receive an email with your license key and setup instructions shortly.",
+        "getStarted": "Get Started with Installation",
+        "backToHome": "Back to Home"
       }
     },
     "privacyPolicy": {
@@ -2457,7 +2462,7 @@
           "features": [
             "Unlimited users & teams—collaborate freely",
             "Latest snapshot restores—recover from failures in minutes",
-            "10 Repositories, 10 GB each",
+            "Unlimited repositories, 10 GB each",
             "2-hour job timeout, 2 active/1 reserved jobs",
             "7-day audit log retention",
             "Manual backup scheduling",
@@ -2473,7 +2478,7 @@
             "Everything in Community +",
             "Automated backup scheduling—set it and forget it",
             "Point-in-time recovery (24h)",
-            "500 Repositories, 100 GB each",
+            "Unlimited repositories, 100 GB each",
             "24-hour job timeout, 5 active/2 reserved jobs",
             "30-day audit log retention",
             "Email + chat support",
@@ -2509,7 +2514,7 @@
             "Custom SLA (15-60 minute RTO)—your requirements, our commitment",
             "Dedicated infrastructure tenant—maximum security & performance",
             "24/7/365 white-glove support",
-            "Unlimited Repositories, 1TB+ each",
+            "Unlimited repositories, 2 TB+ each",
             "96+ hour job windows with 10+ active/5+ reserved jobs",
             "1 Year+ audit log retention",
             "Quarterly disaster recovery exercises—tested readiness",
@@ -2838,6 +2843,7 @@
         "keyBenefits": "Key Benefits",
         "monthOrYear": "per month or {{price}} per year",
         "foreverFree": "Forever free",
+        "taxDisclaimer": "All prices are in USD and exclude applicable taxes, levies, and duties.",
         "cta": {
           "community": {
             "primary": "Start Free",
@@ -13297,6 +13303,44 @@
       "subscribeTitle": "Get notified of new releases",
       "subscribeDescription": "Receive a short update whenever we ship something new."
     }
+  },
+  "documentation": {
+    "copyAsMarkdown": "Copy as Markdown",
+    "copyFullPageAriaLabel": "Copy full page as markdown",
+    "copied": "Copied!",
+    "shareSection": "Share section",
+    "copySection": "Copy section",
+    "copySectionLink": "Copy section link",
+    "copySectionLinkDesc": "Copy direct URL to clipboard",
+    "copyAsMarkdownSection": "Copy as markdown",
+    "copyAsMarkdownSectionDesc": "Copy section Markdown content",
+    "viewAsMarkdown": "View Page as Markdown",
+    "viewAsMarkdownDesc": "Open the Markdown file in a new tab",
+    "openInNewTab": "Open in new tab",
+    "cliReference": "CLI Reference",
+    "cliReferenceLabel": "CLI reference:",
+    "searchDocs": "Search documentation",
+    "categories": {
+      "tutorials": "Tutorials",
+      "guides": "Guides",
+      "concepts": "Concepts",
+      "reference": "Reference",
+      "useCases": "Use Cases"
+    }
+  },
+  "video": {
+    "playVideo": "Play video",
+    "volume": "Volume",
+    "enableCaptions": "Enable captions",
+    "disableCaptions": "Disable captions",
+    "toggleFullscreen": "Toggle fullscreen"
+  },
+  "tutorial": {
+    "audioControls": "Transcript audio controls",
+    "audioVolume": "Transcript voice volume",
+    "subtitlesControls": "Transcript subtitles controls",
+    "muteAudio": "Mute transcript audio",
+    "unmuteAudio": "Unmute transcript audio"
   },
   "layout": {
     "meta": {

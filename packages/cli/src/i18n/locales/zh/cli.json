@@ -1416,6 +1416,15 @@
       }
     },
     "subscription": {
+      "activationStatus": {
+        "activations": "  激活数: {{active}}/{{max}}",
+        "active": "  激活: 已激活 (上次出现 {{lastSeenAt}})",
+        "description": "显示单台机器的激活状态",
+        "header": "\n机器激活 ({{machineName}})",
+        "inactive": "  激活: 该机器当前未在账户状态中处于激活状态",
+        "machineId": "  机器 ID: {{machineId}}",
+        "unavailable": "  激活: 无法查询账户状态"
+      },
       "description": "管理机器许可证和订阅",
       "login": {
         "browserFailed": "无法自动打开浏览器。请访问上方链接。",
@@ -1435,15 +1444,49 @@
       },
       "refresh": {
         "description": "刷新机器许可证",
+        "failed": "无法签发机器许可证",
         "refreshed": "许可证已刷新",
         "refreshing": "正在刷新许可证...",
-        "success": "许可证已刷新并安装",
-        "failed": "无法签发机器许可证"
+        "success": "许可证已刷新并安装"
+      },
+      "refreshActivation": {
+        "description": "刷新远程机器上的机器激活"
+      },
+      "refreshRepo": {
+        "description": "刷新机器上现有仓库的仓库许可证",
+        "failed": "刷新仓库许可证失败",
+        "notFound": "未找到仓库: {{repoName}}",
+        "refreshed": "仓库许可证已刷新",
+        "refreshing": "正在刷新仓库许可证...",
+        "repoArgument": "仓库名称",
+        "success": "已为 \"{{repoName}}\" 刷新仓库许可证"
+      },
+      "refreshRepos": {
+        "description": "批量刷新远程机器上的仓库许可证",
+        "refreshed": "仓库许可证已刷新",
+        "refreshing": "正在刷新仓库许可证...",
+        "success": "仓库许可证批量刷新已完成"
+      },
+      "repoStatus": {
+        "description": "显示机器上已安装的仓库许可证",
+        "empty": "  未安装仓库许可证",
+        "entry": "  - 仓库 {{repositoryGuid}}：{{freshness}}{{hardExpirySuffix}}",
+        "freshness": {
+          "hardExpired": "彻底过期",
+          "refreshRecommended": "建议刷新",
+          "unknown": "未知",
+          "valid": "有效"
+        },
+        "hardExpirySuffix": "（彻底过期时间: {{effectiveHardExpiry}}）",
+        "header": "\n仓库许可证: ({{machineName}})"
       },
       "status": {
         "description": "显示订阅和许可证状态",
         "expired": "  许可证已过期 — 请运行 `rdc subscription refresh`",
         "expires": "  过期日期: {{expiresAt}}",
+        "issuanceLimitReached": "当前 UTC 自然月的仓库许可证签发额度已用尽。",
+        "issuanceUsageHigh80": "每月仓库许可证签发量已超过当前 UTC 限额的 80%。",
+        "issuanceUsageHigh95": "每月仓库许可证签发量已超过当前 UTC 限额的 95%。",
         "issued": "  颁发日期: {{issuedAt}}",
         "localLicense": "本地许可证:",
         "machine": "  机器:     {{machineId}}",
@@ -1452,59 +1495,16 @@
         "plan": "  计划:     {{plan}}",
         "remote": "\n远程订阅:",
         "remoteMachine": "    - {{id}}...（最后上线: {{lastSeen}}）",
+        "remoteMachineActivations": "  机器激活: {{active}}/{{max}}",
         "remoteMachines": "  机器: {{active}}/{{max}}",
         "remotePlan": "  计划:     {{plan}}",
-        "remoteStatus": "  状态:     {{status}}",
-        "sequence": "  序列号:   {{sequenceNumber}}",
-        "statusLabel": "  状态:     {{status}}",
-        "valid": "  有效（{{mins}} 分钟后过期）",
-        "serverMismatch": "开发令牌属于 {{actualServerUrl}}，但此工作树正在使用 {{expectedServerUrl}}。请重新运行 `rdc subscription login`。",
-        "remoteMachineActivations": "  机器激活: {{active}}/{{max}}",
         "remoteRepoLicenseIssuances": "  浮动许可证请求: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  仓库许可证: 已跟踪 {{totalTrackedRepos}}，有效 {{validCount}}，建议刷新 {{refreshRecommendedCount}}，彻底过期 {{hardExpiredCount}}",
-        "issuanceLimitReached": "当前 UTC 自然月的仓库许可证签发额度已用尽。",
-        "issuanceUsageHigh95": "每月仓库许可证签发量已超过当前 UTC 限额的 95%。",
-        "issuanceUsageHigh80": "每月仓库许可证签发量已超过当前 UTC 限额的 80%。"
-      },
-      "activationStatus": {
-        "description": "显示单台机器的激活状态",
-        "header": "\n机器激活 ({{machineName}})",
-        "unavailable": "  激活: 无法查询账户状态",
-        "machineId": "  机器 ID: {{machineId}}",
-        "activations": "  激活数: {{active}}/{{max}}",
-        "active": "  激活: 已激活 (上次出现 {{lastSeenAt}})",
-        "inactive": "  激活: 该机器当前未在账户状态中处于激活状态"
-      },
-      "refreshActivation": {
-        "description": "刷新远程机器上的机器激活"
-      },
-      "refreshRepos": {
-        "description": "批量刷新远程机器上的仓库许可证",
-        "refreshing": "正在刷新仓库许可证...",
-        "refreshed": "仓库许可证已刷新",
-        "success": "仓库许可证批量刷新已完成"
-      },
-      "repoStatus": {
-        "description": "显示机器上已安装的仓库许可证",
-        "header": "\n仓库许可证: ({{machineName}})",
-        "empty": "  未安装仓库许可证",
-        "entry": "  - 仓库 {{repositoryGuid}}：{{freshness}}{{hardExpirySuffix}}",
-        "hardExpirySuffix": "（彻底过期时间: {{effectiveHardExpiry}}）",
-        "freshness": {
-          "unknown": "未知",
-          "hardExpired": "彻底过期",
-          "refreshRecommended": "建议刷新",
-          "valid": "有效"
-        }
-      },
-      "refreshRepo": {
-        "description": "刷新机器上现有仓库的仓库许可证",
-        "repoArgument": "仓库名称",
-        "refreshing": "正在刷新仓库许可证...",
-        "notFound": "未找到仓库: {{repoName}}",
-        "failed": "刷新仓库许可证失败",
-        "refreshed": "仓库许可证已刷新",
-        "success": "已为 \"{{repoName}}\" 刷新仓库许可证"
+        "remoteStatus": "  状态:     {{status}}",
+        "sequence": "  序列号:   {{sequenceNumber}}",
+        "serverMismatch": "开发令牌属于 {{actualServerUrl}}，但此工作树正在使用 {{expectedServerUrl}}。请重新运行 `rdc subscription login`。",
+        "statusLabel": "  状态:     {{status}}",
+        "valid": "  有效（{{mins}} 分钟后过期）"
       }
     },
     "sync": {
@@ -1932,6 +1932,11 @@
     "repositoryRequired": "需要仓库名称。使用 --repository <name>。",
     "resourceNotFound": "{{resource}} 未找到",
     "sshKeyNotFound": "SSH 密钥未找到：{{path}}",
+    "ssh": {
+      "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
+      "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
+      "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥"
+    },
     "subscription": {
       "notLoggedIn": "未登录。请先运行 `rdc subscription login`。"
     },

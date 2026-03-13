@@ -80,6 +80,12 @@ export interface SubscriptionData {
   maxActivations: number;
   /** Current activation count */
   activationCount: number;
+
+  // Attribution
+  /** Email of the account holder who issued this license */
+  issuedByEmail?: string;
+  /** Company/organization name */
+  companyName?: string;
 }
 
 /**
@@ -113,6 +119,8 @@ export interface RepoLicense {
   issuedAt: string;
   refreshRecommendedAt: string;
   hardExpiresAt: string;
+  issuedByEmail?: string;
+  companyName?: string;
 }
 
 export interface SignedRepoLicense {
@@ -142,6 +150,7 @@ export interface ApiToken {
   expiresAt: string | null;
   lastUsedAt: string | null;
   revokedAt: string | null;
+  createdByUserId?: string | null;
 }
 
 /**

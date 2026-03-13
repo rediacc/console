@@ -27,15 +27,21 @@
   },
   "common": {
     "aria": {
+      "breadcrumbNavigation": "面包屑导航",
       "clickToEnlarge": "点击放大图片",
       "closeImageModal": "关闭图像模态",
+      "docsSections": "文档章节",
+      "documentationNavigation": "文档导航",
       "imageViewer": "图片查看器",
       "mainNavigation": "主导航",
       "nextImage": "下一张图片",
       "opensInNewTab": "在新标签页中打开",
       "previousImage": "上一张图片",
+      "rediaccHome": "Rediacc 首页",
       "resetZoom": "重置变焦",
+      "selectPlanToCompare": "选择要比较的方案",
       "statusMessage": "状态信息",
+      "tableOfContents": "目录",
       "zoomIn": "放大",
       "zoomOut": "缩小"
     },
@@ -60,6 +66,7 @@
       "navigate": "导航",
       "noResults": "没有找到结果",
       "placeholder": "搜索文档、解决方案、功能...",
+      "results": "搜索结果",
       "searching": "正在寻找...",
       "select": "选择",
       "suggestions": {
@@ -68,7 +75,9 @@
         "contactSupport": "联系我们的支持团队",
         "differentKeywords": "不同的关键字或较短的术语",
         "title": "尝试："
-      }
+      },
+      "unavailable": "搜索不可用",
+      "unavailableMessage": "无法加载搜索索引。请尝试刷新页面，如果问题仍然存在，请联系支持团队。"
     },
     "section": "section",
     "siteName": "Rediacc",
@@ -105,6 +114,30 @@
     "submit": "发送消息",
     "success": "消息已发送！我们将在48小时内回复您。",
     "title": "联系我们"
+  },
+  "documentation": {
+    "categories": {
+      "concepts": "概念",
+      "guides": "指南",
+      "reference": "参考",
+      "tutorials": "教程",
+      "useCases": "使用场景"
+    },
+    "cliReference": "CLI 参考",
+    "cliReferenceLabel": "CLI参考：",
+    "copied": "已复制！",
+    "copyAsMarkdown": "复制为Markdown",
+    "copyAsMarkdownSection": "复制为Markdown",
+    "copyAsMarkdownSectionDesc": "复制章节的Markdown内容",
+    "copyFullPageAriaLabel": "将整页复制为Markdown",
+    "copySection": "复制章节",
+    "copySectionLink": "复制章节链接",
+    "copySectionLinkDesc": "将直接链接复制到剪贴板",
+    "openInNewTab": "在新标签页中打开",
+    "searchDocs": "搜索文档",
+    "shareSection": "分享章节",
+    "viewAsMarkdown": "以Markdown查看页面",
+    "viewAsMarkdownDesc": "在新标签页中打开Markdown文件"
   },
   "featureShowcase": {
     "categoryDescriptions": {
@@ -258,6 +291,7 @@
       "LUKS",
       "systemd"
     ],
+    "migrationMessage": "Rediacc将您的技术栈转换为单个可移植文件。如果您已经在使用Docker，迁移非常简单。",
     "title": "与您的技术栈兼容"
   },
   "layout": {
@@ -298,6 +332,7 @@
     ]
   },
   "navigation": {
+    "account": "账户",
     "blog": "博客",
     "builtForYou": "为您打造",
     "builtForYourRole": "为您的角色打造",
@@ -360,6 +395,7 @@
       "note": "我们会使用您的邮箱发送产品更新。您可随时取消订阅。",
       "title": "想要一次引导式演示吗？"
     },
+    "privacyNote": "我们尊重您的隐私。您可以随时取消订阅。",
     "roiGate": {
       "description": "输入您的电子邮件以解锁完整的成本分析和节省报告。",
       "title": "获取详细的投资回报率报告",
@@ -373,6 +409,7 @@
     "title": "订阅通讯",
     "unsubscribed": "您已取消订阅。很遗憾看到您离开。"
   },
+  "captchaRequired": "请完成验证码验证。",
   "pages": {
     "blog": {
       "allArticles": "所有文章",
@@ -406,6 +443,16 @@
       "subscribeTitle": "获取新版本通知",
       "subtitle": "关注最新的更新、改进和修复。",
       "title": "更新日志"
+    },
+    "checkout": {
+      "success": {
+        "backToHome": "返回首页",
+        "description": "您的订阅已确认",
+        "getStarted": "开始安装",
+        "heading": "订阅已确认",
+        "message": "您的订阅现已生效。您将很快收到一封包含许可证密钥和安装说明的电子邮件。",
+        "title": "订阅已确认"
+      }
     },
     "contact": {
       "breadcrumb": {
@@ -647,7 +694,7 @@
           "features": [
             "无限的用户和团队——自由协作",
             "最新快照恢复 - 在几分钟内从故障中恢复",
-            "10 个存储库，每个存储库 10 GB",
+            "无限存储库，每个 10 GB",
             "2 小时作业超时，2 个活动作业/1 个保留作业",
             "手动备份调度",
             "社区 Slack 访问",
@@ -663,7 +710,7 @@
             "定制 SLA（15-60 分钟 RTO）——您的要求，我们的承诺",
             "专用基础设施租户——最高的安全性和性能",
             "24/7/365 白手套支持",
-            "无限存储库，每个存储库 1TB+",
+            "无限存储库，每个 2 TB+",
             "超过 96 小时的作业窗口，其中有 10 多个活动作业/5 个以上预留作业",
             "季度灾难恢复演习——测试准备情况",
             "行政上报热线",
@@ -679,7 +726,7 @@
             "一切尽在社区+",
             "自动备份计划——设置后就不用管了",
             "时间点恢复（24小时）",
-            "500 个存储库，每个存储库 100 GB",
+            "无限存储库，每个 100 GB",
             "24 小时作业超时，5 个活动作业/2 个保留作业",
             "电子邮件+聊天支持",
             "Slack 和 PagerDuty 通知",
@@ -1021,7 +1068,8 @@
         "monthOrYear": "每月或每年 {{price}}",
         "popular": "最受欢迎",
         "startingAt": "*开始于",
-        "whatsIncluded": "包含内容："
+        "whatsIncluded": "包含内容：",
+        "taxDisclaimer": "所有价格以美元计，不包括适用的税费、征费和关税。"
       }
     },
     "docs": {
@@ -1257,6 +1305,8 @@
         "title": "404 - 页面未找到 | Rediacc"
       },
       "suggestions": {
+        "getInTouchPrefix": "通过以下方式联系我们：",
+        "goBackPrefix": "返回到",
         "items": [
           "检查 URL 是否有拼写错误",
           "返回首页",
@@ -1264,6 +1314,7 @@
           "通过我们的联系页面取得联系",
           "立即开始使用 Rediacc"
         ],
+        "learnAboutPrefix": "了解我们的",
         "links": {
           "contact": "联系页面",
           "getStarted": "Rediacc",
@@ -2352,21 +2403,14 @@
               },
               {
                 "label": "自动调度",
-                "community": "—",
+                "community": "✓",
                 "professional": "✓",
                 "business": "✓",
                 "enterprise": "✓"
               },
               {
-                "label": "队列优先级",
-                "community": "—",
-                "professional": "—",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
                 "label": "集成 API",
-                "community": "—",
+                "community": "✓",
                 "professional": "✓",
                 "business": "✓",
                 "enterprise": "✓"
@@ -2391,32 +2435,18 @@
                 "enterprise": "✓"
               },
               {
-                "label": "时间点恢复",
-                "community": "—",
-                "professional": "24 hours",
-                "business": "72 hours",
-                "enterprise": "Custom"
-              },
-              {
                 "label": "持续数据保护",
-                "community": "—",
-                "professional": "—",
+                "community": "✓",
+                "professional": "✓",
                 "business": "✓",
                 "enterprise": "✓"
               },
               {
                 "label": "地理冗余存储",
-                "community": "—",
-                "professional": "—",
-                "business": "3 regions",
-                "enterprise": "Custom"
-              },
-              {
-                "label": "恢复 SLA",
-                "community": "—",
-                "professional": "—",
-                "business": "4 hours",
-                "enterprise": "Custom"
+                "community": "✓",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
               }
             ]
           },
@@ -2428,14 +2458,14 @@
                 "community": "2",
                 "professional": "5",
                 "business": "20",
-                "enterprise": "50"
+                "enterprise": "50+"
               },
               {
                 "label": "每月任务数",
                 "community": "500",
                 "professional": "5,000",
                 "business": "20,000",
-                "enterprise": "100,000"
+                "enterprise": "100,000+"
               },
               {
                 "label": "每个存储库的存储空间",
@@ -2474,60 +2504,20 @@
               }
             ]
           },
-          "platform": {
-            "label": "平台",
-            "rows": [
-              {
-                "label": "自定义品牌",
-                "community": "—",
-                "professional": "✓",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "Ceph 存储池",
-                "community": "—",
-                "professional": "—",
-                "business": "1",
-                "enterprise": "Unlimited"
-              },
-              {
-                "label": "高级分析",
-                "community": "—",
-                "professional": "—",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "专用基础设施",
-                "community": "—",
-                "professional": "—",
-                "business": "—",
-                "enterprise": "✓"
-              }
-            ]
-          },
           "security": {
             "label": "安全与合规",
             "rows": [
               {
                 "label": "RBAC 和权限组",
-                "community": "—",
+                "community": "✓",
                 "professional": "✓",
                 "business": "✓",
                 "enterprise": "✓"
               },
               {
                 "label": "审计日志",
-                "community": "—",
+                "community": "✓",
                 "professional": "✓",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "合规报告",
-                "community": "—",
-                "professional": "—",
                 "business": "✓",
                 "enterprise": "✓"
               },
@@ -2664,6 +2654,7 @@
           "description": "配备专家引导的关键任务基础设施",
           "features": [
             "Professional所有功能+",
+            "20个并发浮动许可证",
             "无限仓库，每个500 GB",
             "20,000个作业/月",
             "包含$9,999实施支持（上市优惠）",
@@ -2672,7 +2663,6 @@
             "4小时恢复SLA",
             "基于角色的访问控制和审计日志",
             "合规就绪报告",
-            "专属客户成功经理",
             "电话支持+协作空间"
           ],
           "name": "商业"
@@ -2683,7 +2673,7 @@
             "无限用户和团队",
             "无限仓库，每个10 GB",
             "500个作业/月",
-            "无限机器",
+            "2个并发浮动许可证",
             "快照恢复",
             "手动调度",
             "社区Slack访问",
@@ -2695,11 +2685,13 @@
           "description": "面向复杂企业基础设施的白手套支持",
           "features": [
             "Business所有功能+",
+            "50+个并发浮动许可证",
             "无限仓库，每个2 TB+",
-            "100,000个作业/月",
+            "100,000+个作业/月",
             "带保证恢复时间的自定义SLA",
             "专用基础设施租户",
             "24/7/365白手套支持",
+            "专属客户成功经理",
             "季度准备演练",
             "高管升级热线",
             "自定义集成和工作流",
@@ -2712,6 +2704,7 @@
           "description": "面向成长团队的专业自动化和调度",
           "features": [
             "Community所有功能+",
+            "5个并发浮动许可证",
             "无限仓库，每个100 GB",
             "5,000个作业/月",
             "自动调度",
@@ -2951,8 +2944,8 @@
         "heading": "计划比较",
         "metrics": [
           {
-            "key": "jobsPerMonth",
-            "label": "每月作业数"
+            "key": "repositories",
+            "label": "仓库"
           },
           {
             "key": "repoSize",
@@ -2963,8 +2956,8 @@
             "label": "浮动许可证"
           },
           {
-            "key": "repositories",
-            "label": "仓库"
+            "key": "jobsPerMonth",
+            "label": "每月作业数"
           },
           {
             "key": "usersTeams",
@@ -2987,8 +2980,8 @@
             "usersTeams": "无限制"
           },
           "enterprise": {
-            "floatingLicenses": "50",
-            "jobsPerMonth": "100,000",
+            "floatingLicenses": "50+",
+            "jobsPerMonth": "100,000+",
             "repositories": "无限制",
             "repoSize": "2 TB+",
             "usersTeams": "无限制"
@@ -3006,12 +2999,48 @@
         "heading": "企业级安全性和可靠性",
         "items": ["银行级加密", "99.9% 正常运行时间承诺"]
       },
+      "trustSection": {
+        "heading": "您的基础设施。您的规则。",
+        "subtitle": "Rediacc 许可证的设计让您永远不会被锁定。以下是这在实际中意味着什么。",
+        "rows": [
+          {
+            "title": "您的 repos 永久运行。",
+            "description": "启动、停止、删除和备份——即使在订阅到期多年后也始终有效。这些操作从不检查到期时间。您的数据始终可以访问。"
+          },
+          {
+            "title": "完全访问您的工具。",
+            "description": "文件同步、VS Code 远程、SSH 终端以及所有管理命令无需任何许可证即可使用。完全不受限制，永久有效。"
+          },
+          {
+            "title": "只有新 repos 需要订阅。",
+            "description": "创建新仓库或 fork 现有仓库需要有效订阅。调整大小和扩展在到期后 60 天内有效。其他一切均为永久功能。"
+          },
+          {
+            "title": "60 天扩容宽限期。",
+            "description": "订阅结束后，调整大小和扩展功能继续运行 60 天。启动、停止、删除和备份不受影响——永久有效。"
+          },
+          {
+            "title": "无限机器。按创建付费授权。",
+            "description": "许可证槽位仅在创建或 fork 仓库时占用——您的日常操作不会消耗任何槽位。槽位在闲置 1 小时后自动释放，因此 5 个槽位的计划可以服务数十台机器。永远不收取每台机器的费用。"
+          }
+        ],
+        "svg": {
+          "noLicenseRequired": "无需许可证 — 始终可用",
+          "noLicenseNeeded": "无需许可证",
+          "requiredOnlyHere": "仅在此处需要",
+          "allOperations": "所有操作",
+          "slotsAutoRelease": "插槽在闲置1小时后自动释放",
+          "slotsCreateFork": "插槽仅用于创建和分叉 — 日常操作始终免费"
+        }
+      },
       "ui": {
         "anchor": "战略锚",
         "bestValue": "最超值",
         "billingToggle": {
           "annual": "年付",
-          "monthly": "月付"
+          "monthly": "月付",
+          "annualSavings": "节省 17% — 免费使用 2 个月",
+          "ariaLabel": "计费周期"
         },
         "contactSales": "联系销售人员",
         "cta": {
@@ -3052,7 +3081,8 @@
         "monthOrYear": "每月或每年 {{price}}",
         "popular": "最受欢迎",
         "startingAt": "*开始于",
-        "whatsIncluded": "包含内容："
+        "whatsIncluded": "包含内容：",
+        "taxDisclaimer": "所有价格以美元计，不包括适用的税费、征费和关税。"
       }
     },
     "privacyPolicy": {
@@ -12344,5 +12374,19 @@
     ],
     "subtitle": "不同角色如何体验 Rediacc",
     "title": "团队怎么说"
+  },
+  "tutorial": {
+    "audioControls": "转录音频控制",
+    "audioVolume": "转录语音音量",
+    "muteAudio": "静音转录音频",
+    "subtitlesControls": "转录字幕控制",
+    "unmuteAudio": "取消静音转录音频"
+  },
+  "video": {
+    "disableCaptions": "关闭字幕",
+    "enableCaptions": "开启字幕",
+    "playVideo": "播放视频",
+    "toggleFullscreen": "切换全屏",
+    "volume": "音量"
   }
 }

@@ -30,7 +30,6 @@ const categoryOrder = [
   'security',
   'automation',
   'support',
-  'platform',
 ];
 
 const planColumns = [
@@ -48,7 +47,7 @@ const planColumns = [
     </div>
 
     <!-- Mobile plan toggle -->
-    <div class="comparison-plan-toggle" role="tablist" aria-label="Select plan to compare">
+    <div class="comparison-plan-toggle" role="tablist" aria-label={t('common.aria.selectPlanToCompare')}>
       {planColumns.map((plan, i) => (
         <button
           type="button"

@@ -74,3 +74,35 @@ export function getRepoLicenseFreshness(entry: {
   }
   return 'valid';
 }
+
+export function formatRuntimeRepoLicenseStatus(entry: {
+  status: string;
+  runtimeValid: boolean;
+  refreshRecommendedAt?: string;
+}): string {
+  if (entry.runtimeValid) {
+    if (entry.refreshRecommendedAt && new Date(entry.refreshRecommendedAt) <= new Date()) {
+      return 'valid (refresh recommended)';
+    }
+    return 'valid';
+  }
+
+  switch (entry.status) {
+    case 'missing':
+      return 'missing';
+    case 'expired':
+      return 'expired';
+    case 'machine_mismatch':
+      return 'machine mismatch';
+    case 'repository_mismatch':
+      return 'repository mismatch';
+    case 'sequence_regression':
+      return 'sequence regression';
+    case 'invalid_signature':
+      return 'invalid signature';
+    case 'identity_mismatch':
+      return 'identity mismatch';
+    default:
+      return 'unknown';
+  }
+}

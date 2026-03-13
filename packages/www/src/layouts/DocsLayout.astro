@@ -144,14 +144,14 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
                     type="button"
                     class="docs-copy-page-md"
                     data-md-href={mdUrl}
-                    aria-label="Copy full page as markdown"
-                    title="Copy full page as Markdown"
+                    aria-label={t('documentation.copyFullPageAriaLabel')}
+                    title={t('documentation.copyAsMarkdown')}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                       <rect x="9" y="9" width="13" height="13" rx="2" />
                       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                     </svg>
-                    <span class="copy-md-label">Copy as Markdown</span>
+                    <span class="copy-md-label">{t('documentation.copyAsMarkdown')}</span>
                   </button>
                 )}
               </div>
@@ -170,7 +170,7 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
 
       {showTOC && toc.length > 0 && (
         <aside class="sidebar-base sidebar-toc toc-sidebar" data-track={shouldTrackTOC ? 'true' : 'false'} data-selector={tocTrackingSelector}>
-          <nav class="sidebar-nav sidebar-nav-with-accent toc-nav" role="navigation" aria-label="Table of contents">
+          <nav class="sidebar-nav sidebar-nav-with-accent toc-nav" role="navigation" aria-label={t('common.aria.tableOfContents')}>
             <h3 class="sidebar-title toc-title">{t('pages.docs.tableOfContents')}</h3>
             <ul class={`sidebar-list toc-list${useGrouped ? ' toc-collapsible' : ''}`}>
               {useGrouped ? (
@@ -201,6 +201,18 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
       )}
     </div>
   </div>
+
+  <div id="docs-i18n" hidden
+    data-copied={t('documentation.copied')}
+    data-share-section={t('documentation.shareSection')}
+    data-copy-section={t('documentation.copySection')}
+    data-copy-section-link={t('documentation.copySectionLink')}
+    data-copy-section-link-desc={t('documentation.copySectionLinkDesc')}
+    data-copy-md={t('documentation.copyAsMarkdownSection')}
+    data-copy-md-desc={t('documentation.copyAsMarkdownSectionDesc')}
+    data-view-md={t('documentation.viewAsMarkdown')}
+    data-view-md-desc={t('documentation.viewAsMarkdownDesc')}
+  ></div>
 
   <script is:inline>
     // Apply embed mode for iframe preview pages via runtime query param detection.
@@ -239,8 +251,10 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
               .then(function() {
                 var label = btn.querySelector('.copy-md-label');
                 var orig = label ? label.textContent : '';
+                var i18nEl = document.getElementById('docs-i18n');
+                var copiedText = i18nEl && i18nEl.dataset.copied || 'Copied!';
                 btn.classList.add('copied');
-                if (label) label.textContent = 'Copied!';
+                if (label) label.textContent = copiedText;
                 setTimeout(function() {
                   btn.classList.remove('copied');
                   if (label) label.textContent = orig;
@@ -395,12 +409,28 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
         return url.toString();
       }
 
+      function getDocsI18n() {
+        const el = document.getElementById('docs-i18n');
+        return {
+          copied: el?.dataset.copied || 'Copied!',
+          shareSection: el?.dataset.shareSection || 'Share section',
+          copySection: el?.dataset.copySection || 'Copy section',
+          copySectionLink: el?.dataset.copySectionLink || 'Copy section link',
+          copySectionLinkDesc: el?.dataset.copySectionLinkDesc || 'Copy direct URL to clipboard',
+          copyMd: el?.dataset.copyMd || 'Copy as markdown',
+          copyMdDesc: el?.dataset.copyMdDesc || 'Copy section Markdown content',
+          viewMd: el?.dataset.viewMd || 'View Page as Markdown',
+          viewMdDesc: el?.dataset.viewMdDesc || 'Open the Markdown file in a new tab',
+        };
+      }
+
       function indicateCopied(button) {
         if (!(button instanceof HTMLElement)) return;
+        const i18n = getDocsI18n();
         button.classList.add('copied');
         const label = button.querySelector('.heading-share-menu-text');
         const previous = button.dataset.defaultLabel || label?.textContent || '';
-        if (label) label.textContent = 'Copied';
+        if (label) label.textContent = i18n.copied;
         window.setTimeout(() => {
           button.classList.remove('copied');
           if (label && previous) label.textContent = previous;
@@ -428,11 +458,12 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
           const trigger = document.createElement('button');
           trigger.type = 'button';
           trigger.className = 'heading-share-trigger';
-          trigger.setAttribute('aria-label', 'Share section');
+          const i18n = getDocsI18n();
+          trigger.setAttribute('aria-label', i18n.shareSection);
           trigger.setAttribute('aria-haspopup', 'menu');
           trigger.setAttribute('aria-expanded', 'false');
           trigger.setAttribute('aria-controls', menuId);
-          trigger.innerHTML = '<span class="heading-share-trigger-main"><span class="heading-share-trigger-label">Copy section</span></span><span class="heading-share-trigger-caret-wrap"><span class="heading-share-trigger-caret" aria-hidden="true">v</span></span>';
+          trigger.innerHTML = '<span class="heading-share-trigger-main"><span class="heading-share-trigger-label">' + i18n.copySection + '</span></span><span class="heading-share-trigger-caret-wrap"><span class="heading-share-trigger-caret" aria-hidden="true">v</span></span>';
 
           const menu = document.createElement('div');
           menu.className = 'heading-share-menu';
@@ -444,8 +475,8 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
           sectionBtn.type = 'button';
           sectionBtn.className = 'heading-share-menu-item';
           sectionBtn.setAttribute('role', 'menuitem');
-          sectionBtn.dataset.defaultLabel = 'Copy section link';
-          sectionBtn.innerHTML = '<span class="heading-share-menu-text">Copy section link</span><span class="heading-share-menu-sub">Copy direct URL to clipboard</span>';
+          sectionBtn.dataset.defaultLabel = i18n.copySectionLink;
+          sectionBtn.innerHTML = '<span class="heading-share-menu-text">' + i18n.copySectionLink + '</span><span class="heading-share-menu-sub">' + i18n.copySectionLinkDesc + '</span>';
           sectionBtn.addEventListener('click', async (event) => {
             event.preventDefault();
             const href = getSectionUrl(id);
@@ -462,8 +493,8 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
           markdownCopyBtn.type = 'button';
           markdownCopyBtn.className = 'heading-share-menu-item';
           markdownCopyBtn.setAttribute('role', 'menuitem');
-          markdownCopyBtn.dataset.defaultLabel = 'Copy as markdown';
-          markdownCopyBtn.innerHTML = '<span class="heading-share-menu-text">Copy as markdown</span><span class="heading-share-menu-sub">Copy section Markdown content</span>';
+          markdownCopyBtn.dataset.defaultLabel = i18n.copyMd;
+          markdownCopyBtn.innerHTML = '<span class="heading-share-menu-text">' + i18n.copyMd + '</span><span class="heading-share-menu-sub">' + i18n.copyMdDesc + '</span>';
           markdownCopyBtn.addEventListener('click', async (event) => {
             event.preventDefault();
             const sectionContent = getSectionMarkdown(heading);
@@ -485,7 +516,7 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
           markdownLink.setAttribute('role', 'menuitem');
           markdownLink.target = '_blank';
           markdownLink.rel = 'noopener noreferrer';
-          markdownLink.innerHTML = '<span class="heading-share-menu-text">View Page as Markdown</span><span class="heading-share-menu-sub">Open the Markdown file in a new tab</span>';
+          markdownLink.innerHTML = '<span class="heading-share-menu-text">' + i18n.viewMd + '</span><span class="heading-share-menu-sub">' + i18n.viewMdDesc + '</span>';
           if (markdownHref) {
             markdownLink.href = markdownHref;
           } else {

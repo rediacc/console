@@ -48,6 +48,20 @@ export function parseRenetLicenseFailure(
   return null;
 }
 
+/**
+ * Repository functions that do NOT require pre-flight license issuance from the CLI.
+ * Operate-tier operations (up/down/delete) are validated by renet with expiry
+ * skipped, so CLI does not need to issue licenses for these. If the repo license
+ * is missing, renet will still report it and CLI recovery kicks in.
+ */
+const REPOSITORY_DENY_LIST = new Set([
+  'repository_up',
+  'repository_up_all',
+  'repository_down',
+  'repository_delete',
+]);
+
 export function isLicensedRenetFunction(functionName: string): boolean {
+  if (REPOSITORY_DENY_LIST.has(functionName)) return false;
   return functionName.startsWith('repository_') || functionName.startsWith('backup_');
 }

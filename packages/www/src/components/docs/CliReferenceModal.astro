@@ -1,18 +1,27 @@
+---
+import { createTranslator } from '../../i18n/utils';
+import type { Language } from '../../i18n/types';
+
+interface Props { lang?: Language; }
+const { lang = 'en' } = Astro.props;
+const { t } = createTranslator(lang);
+---
 <div class="cli-ref-modal" data-cli-ref-modal hidden>
+  <div id="cli-ref-i18n" hidden data-i18n-title={t('documentation.cliReference')}></div>
   <div class="cli-ref-modal-backdrop" data-cli-ref-close></div>
-  <div class="cli-ref-modal-dialog" role="dialog" aria-modal="true" aria-label="CLI reference">
+  <div class="cli-ref-modal-dialog" role="dialog" aria-modal="true" aria-label={t('documentation.cliReference')}>
     <div class="cli-ref-modal-header">
-      <strong class="cli-ref-modal-title" data-cli-ref-title>CLI reference</strong>
+      <strong class="cli-ref-modal-title" data-cli-ref-title>{t('documentation.cliReference')}</strong>
       <div class="cli-ref-modal-actions">
         <a class="cli-ref-open-tab" data-cli-ref-open-tab href="#" target="_blank" rel="noopener noreferrer">
-          Open in new tab
+          {t('documentation.openInNewTab')}
         </a>
-        <button type="button" class="cli-ref-modal-close" data-cli-ref-close aria-label="Close reference">
-          Close
+        <button type="button" class="cli-ref-modal-close" data-cli-ref-close aria-label={t('common.buttons.close')}>
+          {t('common.buttons.close')}
         </button>
       </div>
     </div>
-    <iframe class="cli-ref-modal-frame" data-cli-ref-frame title="CLI reference preview"></iframe>
+    <iframe class="cli-ref-modal-frame" data-cli-ref-frame title={t('documentation.cliReference')}></iframe>
   </div>
 </div>
 
@@ -55,7 +64,8 @@
         document.body.classList.add('cli-ref-modal-open');
         frame.setAttribute('src', embedHref);
         openTab.setAttribute('href', href);
-        title.textContent = linkTitle || 'CLI reference';
+        const cliRefI18n = document.getElementById('cli-ref-i18n');
+        title.textContent = linkTitle || cliRefI18n?.dataset.i18nTitle || 'CLI reference';
         lastTrigger = trigger;
         window.requestAnimationFrame(() => {
           const closeBtn = root.querySelector('.cli-ref-modal-close');
@@ -92,7 +102,8 @@
           }
 
           event.preventDefault();
-          openModal(link.href, link.dataset.cliRefTitle || link.textContent || 'CLI reference', link);
+          const cliRefI18nFallback = document.getElementById('cli-ref-i18n');
+          openModal(link.href, link.dataset.cliRefTitle || link.textContent || cliRefI18nFallback?.dataset.i18nTitle || 'CLI reference', link);
           return;
         }
 

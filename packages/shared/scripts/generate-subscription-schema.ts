@@ -111,6 +111,8 @@ function generateSchema(): SubscriptionSchema {
           features: { type: 'object', jsonKey: 'features', nestedType: 'FeatureFlags' },
           maxActivations: { type: 'number', jsonKey: 'maxActivations' },
           activationCount: { type: 'number', jsonKey: 'activationCount' },
+          issuedByEmail: { type: 'string', jsonKey: 'issuedByEmail', optional: true },
+          companyName: { type: 'string', jsonKey: 'companyName', optional: true },
         },
       },
       SignedSubscriptionBlob: {

@@ -1416,6 +1416,15 @@
       }
     },
     "subscription": {
+      "activationStatus": {
+        "activations": "  Etkinleştirmeler: {{active}}/{{max}}",
+        "active": "  Etkinleştirme: etkin (son görülme {{lastSeenAt}})",
+        "description": "Tek bir makinenin etkinleştirme durumunu göster",
+        "header": "\nMakine etkinleştirmesi ({{machineName}})",
+        "inactive": "  Etkinleştirme: makine şu anda hesap durumunda etkin değil",
+        "machineId": "  Makine Kimliği: {{machineId}}",
+        "unavailable": "  Etkinleştirme: hesap durumu sorgulanamadı"
+      },
       "description": "Makine lisanslama ve abonelik yönetimi",
       "login": {
         "browserFailed": "Tarayıcı otomatik olarak açılamadı. Lütfen yukarıdaki URL'yi ziyaret edin.",
@@ -1435,15 +1444,49 @@
       },
       "refresh": {
         "description": "Makine lisansını yenile",
+        "failed": "Makine lisansı verilemedi",
         "refreshed": "Lisans yenilendi",
         "refreshing": "Lisans yenileniyor...",
-        "success": "Lisans yenilendi ve yüklendi",
-        "failed": "Makine lisansı verilemedi"
+        "success": "Lisans yenilendi ve yüklendi"
+      },
+      "refreshActivation": {
+        "description": "Uzak bir makinede makine etkinleştirmesini yenile"
+      },
+      "refreshRepo": {
+        "description": "Bir makinedeki mevcut depo için depo lisansını yenile",
+        "failed": "Depo lisansı yenilenemedi",
+        "notFound": "Depo bulunamadı: {{repoName}}",
+        "refreshed": "Depo lisansı yenilendi",
+        "refreshing": "Depo lisansı yenileniyor...",
+        "repoArgument": "Depo adı",
+        "success": "\"{{repoName}}\" için depo lisansı yenilendi"
+      },
+      "refreshRepos": {
+        "description": "Uzak bir makinede depo lisanslarını toplu yenile",
+        "refreshed": "Depo lisansları yenilendi",
+        "refreshing": "Depo lisansları yenileniyor...",
+        "success": "Toplu depo lisansı yenilemesi tamamlandı"
+      },
+      "repoStatus": {
+        "description": "Bir makinede kurulu depo lisanslarını göster",
+        "empty": "  Kurulu depo lisansı yok",
+        "entry": "  - Depo {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
+        "freshness": {
+          "hardExpired": "tamamen süresi dolmuş",
+          "refreshRecommended": "yenileme önerilir",
+          "unknown": "bilinmiyor",
+          "valid": "geçerli"
+        },
+        "hardExpirySuffix": " (kesin bitiş: {{effectiveHardExpiry}})",
+        "header": "\nDepo lisansları: ({{machineName}})"
       },
       "status": {
         "description": "Abonelik ve lisans durumunu göster",
         "expired": "  Lisans SÜRESNİ GEÇMİŞ — `rdc subscription refresh` komutunu çalıştırın",
         "expires": "  Bitiyor:   {{expiresAt}}",
+        "issuanceLimitReached": "Geçerli UTC takvim ayı için aylık depo lisansı verme sınırına ulaşıldı.",
+        "issuanceUsageHigh80": "Aylık depo lisansı verimleri mevcut UTC sınırının %80'inin üzerinde.",
+        "issuanceUsageHigh95": "Aylık depo lisansı verimleri mevcut UTC sınırının %95'inin üzerinde.",
         "issued": "  Verildi:   {{issuedAt}}",
         "localLicense": "Yerel lisans:",
         "machine": "  Makine:    {{machineId}}",
@@ -1452,59 +1495,16 @@
         "plan": "  Plan:      {{plan}}",
         "remote": "\nUzak abonelik:",
         "remoteMachine": "    - {{id}}... (son görülme: {{lastSeen}})",
+        "remoteMachineActivations": "  Makine etkinleştirmeleri: {{active}}/{{max}}",
         "remoteMachines": "  Makineler: {{active}}/{{max}}",
         "remotePlan": "  Plan:      {{plan}}",
-        "remoteStatus": "  Durum:     {{status}}",
-        "sequence": "  Sıra:      {{sequenceNumber}}",
-        "statusLabel": "  Durum:     {{status}}",
-        "valid": "  Geçerli ({{mins}} dakika sonra süresi doluyor)",
-        "serverMismatch": "Geliştirme belirteci {{actualServerUrl}} için, ancak bu worktree {{expectedServerUrl}} kullanıyor. `rdc subscription login` komutunu yeniden çalıştırın.",
-        "remoteMachineActivations": "  Makine etkinleştirmeleri: {{active}}/{{max}}",
         "remoteRepoLicenseIssuances": "  Yüzen lisans istekleri: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  Depo lisansları: {{totalTrackedRepos}} izleniyor, {{validCount}} geçerli, {{refreshRecommendedCount}} yenileme öneriliyor, {{hardExpiredCount}} tamamen süresi dolmuş",
-        "issuanceLimitReached": "Geçerli UTC takvim ayı için aylık depo lisansı verme sınırına ulaşıldı.",
-        "issuanceUsageHigh95": "Aylık depo lisansı verimleri mevcut UTC sınırının %95'inin üzerinde.",
-        "issuanceUsageHigh80": "Aylık depo lisansı verimleri mevcut UTC sınırının %80'inin üzerinde."
-      },
-      "activationStatus": {
-        "description": "Tek bir makinenin etkinleştirme durumunu göster",
-        "header": "\nMakine etkinleştirmesi ({{machineName}})",
-        "unavailable": "  Etkinleştirme: hesap durumu sorgulanamadı",
-        "machineId": "  Makine Kimliği: {{machineId}}",
-        "activations": "  Etkinleştirmeler: {{active}}/{{max}}",
-        "active": "  Etkinleştirme: etkin (son görülme {{lastSeenAt}})",
-        "inactive": "  Etkinleştirme: makine şu anda hesap durumunda etkin değil"
-      },
-      "refreshActivation": {
-        "description": "Uzak bir makinede makine etkinleştirmesini yenile"
-      },
-      "refreshRepos": {
-        "description": "Uzak bir makinede depo lisanslarını toplu yenile",
-        "refreshing": "Depo lisansları yenileniyor...",
-        "refreshed": "Depo lisansları yenilendi",
-        "success": "Toplu depo lisansı yenilemesi tamamlandı"
-      },
-      "repoStatus": {
-        "description": "Bir makinede kurulu depo lisanslarını göster",
-        "header": "\nDepo lisansları: ({{machineName}})",
-        "empty": "  Kurulu depo lisansı yok",
-        "entry": "  - Depo {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
-        "hardExpirySuffix": " (kesin bitiş: {{effectiveHardExpiry}})",
-        "freshness": {
-          "unknown": "bilinmiyor",
-          "hardExpired": "tamamen süresi dolmuş",
-          "refreshRecommended": "yenileme önerilir",
-          "valid": "geçerli"
-        }
-      },
-      "refreshRepo": {
-        "description": "Bir makinedeki mevcut depo için depo lisansını yenile",
-        "repoArgument": "Depo adı",
-        "refreshing": "Depo lisansı yenileniyor...",
-        "notFound": "Depo bulunamadı: {{repoName}}",
-        "failed": "Depo lisansı yenilenemedi",
-        "refreshed": "Depo lisansı yenilendi",
-        "success": "\"{{repoName}}\" için depo lisansı yenilendi"
+        "remoteStatus": "  Durum:     {{status}}",
+        "sequence": "  Sıra:      {{sequenceNumber}}",
+        "serverMismatch": "Geliştirme belirteci {{actualServerUrl}} için, ancak bu worktree {{expectedServerUrl}} kullanıyor. `rdc subscription login` komutunu yeniden çalıştırın.",
+        "statusLabel": "  Durum:     {{status}}",
+        "valid": "  Geçerli ({{mins}} dakika sonra süresi doluyor)"
       }
     },
     "sync": {
@@ -1932,6 +1932,11 @@
     "repositoryRequired": "Depo adı gerekli. --repository <name> kullanın.",
     "resourceNotFound": "{{resource}} bulunamadı",
     "sshKeyNotFound": "SSH anahtarı bulunamadı: {{path}}",
+    "ssh": {
+      "noIpAddress": "\"{{machine}}\" makinesinin yapılandırılmış bir IP adresi yok",
+      "noPrivateKey": "\"{{team}}\" takımının yapılandırılmış bir SSH özel anahtarı yok",
+      "noHostKey": "\"{{machine}}\" makinesinin kasada yapılandırılmış bir ana bilgisayar anahtarı yok"
+    },
     "subscription": {
       "notLoggedIn": "Giriş yapılmamış. Önce `rdc subscription login` komutunu çalıştırın."
     },

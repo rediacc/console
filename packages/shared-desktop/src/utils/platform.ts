@@ -1,4 +1,5 @@
-import { existsSync } from 'node:fs';
+import { execSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
 import { homedir, platform as osPlatform, tmpdir } from 'node:os';
 import { getConfigDir } from '@rediacc/shared/paths';
 import type { Platform, PlatformInfo, WindowsSubsystem } from '../types/index.js';
@@ -9,16 +10,15 @@ import type { Platform, PlatformInfo, WindowsSubsystem } from '../types/index.js
 export function isWSL(): boolean {
   if (osPlatform() !== 'linux') return false;
 
-  // Check for WSL-specific indicators
   try {
-    // WSL1 and WSL2 have /proc/version containing "Microsoft" or "microsoft"
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const fs = require('node:fs') as typeof import('node:fs');
-    const version = fs.readFileSync('/proc/version', 'utf8').toLowerCase();
-    return version.includes('microsoft') || version.includes('wsl');
+    if (existsSync('/proc/version')) {
+      const version = readFileSync('/proc/version', 'utf8').toLowerCase();
+      return version.includes('microsoft') || version.includes('wsl');
+    }
   } catch {
     return false;
   }
+  return false;
 }
 
 /**
@@ -61,6 +61,59 @@ export function getWindowsSubsystem(): WindowsSubsystem | undefined {
   if (isMSYS2()) return 'msys2';
   if (isCygwin()) return 'cygwin';
   return 'native';
+}
+
+/**
+ * Gets the Windows user home directory from within WSL.
+ * Returns the WSL-accessible path (e.g., /mnt/c/Users/username).
+ * Caches the result for performance since it shells out to cmd.exe.
+ * Returns null if not in WSL or if detection fails.
+ */
+let _windowsHomeCache: string | null | undefined;
+
+export function getWindowsHomeInWSL(): string | null {
+  if (_windowsHomeCache !== undefined) return _windowsHomeCache;
+
+  if (!isWSL()) {
+    _windowsHomeCache = null;
+    return null;
+  }
+
+  // Try multiple cmd.exe locations — it may not be in PATH inside WSL
+  const cmdPaths = ['cmd.exe', '/mnt/c/Windows/System32/cmd.exe'];
+
+  for (const cmdPath of cmdPaths) {
+    try {
+      const result = execSync(`"${cmdPath}" /C "echo %USERPROFILE%" 2>/dev/null`, {
+        encoding: 'utf8',
+        timeout: 5000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      const winPath = result.trim().replaceAll('\r', '');
+      if (winPath && !winPath.includes('%USERPROFILE%')) {
+        _windowsHomeCache = windowsPathToWSL(winPath);
+        return _windowsHomeCache;
+      }
+    } catch {
+      // Try next path
+    }
+  }
+
+  _windowsHomeCache = null;
+  return null;
+}
+
+/**
+ * Gets the home directory for SSH-related files.
+ * In WSL, returns the Windows user home (accessible as /mnt/c/Users/...)
+ * so that SSH config and keys are accessible to Windows VS Code/SSH.
+ */
+export function getSSHHome(): string {
+  if (isWSL()) {
+    const winHome = getWindowsHomeInWSL();
+    if (winHome) return winHome;
+  }
+  return process.env.HOME ?? process.env.USERPROFILE ?? '';
 }
 
 /**

@@ -87,6 +87,7 @@ describe('buildTermSandboxOptions', () => {
     expect(result!.allowedReadOnly).toContain('/usr');
     expect(result!.allowedReadOnly).toContain('/etc');
     expect(result!.allowedReadOnly).toContain('/var/run/rediacc');
+    expect(result!.allowedReadOnly).toContain('/run/systemd');
     expect(result!.allowedExecute).toContain('/usr');
     expect(result!.allowedExecute).toContain('/bin');
     expect(result!.dockerSocket).toBe('/var/run/rediacc/docker-3200.sock');

@@ -1,5 +1,7 @@
 import type { FC } from 'react';
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../hooks/useLanguage';
+import { useTranslation } from '../i18n/react';
 
 const AUDIO_VOLUME_STORAGE_KEY = 'tutorial-audio-volume';
 const AUDIO_MUTED_STORAGE_KEY = 'tutorial-audio-muted';
@@ -179,20 +181,22 @@ export const AudioVolumeControls: FC<AudioVolumeControlsProps> = ({
   onToggleMuted,
   onVolumeChange,
 }) => {
+  const lang = useLanguage();
+  const { t } = useTranslation(lang);
   return (
-    <span className="terminal-player-audio-controls" aria-label="Transcript audio controls">
+    <span className="terminal-player-audio-controls" aria-label={t('tutorial.audioControls')}>
       <span className="terminal-player-audio-volume-wrap">
         <button
           type="button"
           className="terminal-player-audio-icon-btn terminal-player-audio-toggle"
           onClick={onToggleMuted}
-          aria-label={isAudioMuted ? 'Unmute transcript audio' : 'Mute transcript audio'}
+          aria-label={isAudioMuted ? t('tutorial.unmuteAudio') : t('tutorial.muteAudio')}
           data-track="tutorial-audio-toggle"
         >
           <VolumeIcon muted={isAudioMuted} />
         </button>
         <label className="terminal-player-audio-slider-wrap">
-          <span className="sr-only">Transcript voice volume</span>
+          <span className="sr-only">{t('tutorial.audioVolume')}</span>
           <input
             type="range"
             min="0"
@@ -200,7 +204,7 @@ export const AudioVolumeControls: FC<AudioVolumeControlsProps> = ({
             step="0.05"
             value={audioVolume}
             onChange={(event) => onVolumeChange(Number(event.currentTarget.value))}
-            aria-label="Transcript voice volume"
+            aria-label={t('tutorial.audioVolume')}
           />
         </label>
       </span>
@@ -209,15 +213,17 @@ export const AudioVolumeControls: FC<AudioVolumeControlsProps> = ({
 };
 
 export const AudioCcToggle: FC<AudioCcToggleProps> = ({ isCcEnabled, onToggleCc }) => {
+  const lang = useLanguage();
+  const { t } = useTranslation(lang);
   return (
-    <span className="terminal-player-audio-controls" aria-label="Transcript subtitles controls">
+    <span className="terminal-player-audio-controls" aria-label={t('tutorial.subtitlesControls')}>
       <button
         type="button"
         className={`terminal-player-audio-icon-btn terminal-player-audio-cc-btn${
           isCcEnabled ? ' is-active' : ''
         }`}
         onClick={onToggleCc}
-        aria-label={isCcEnabled ? 'Disable subtitles' : 'Enable subtitles'}
+        aria-label={isCcEnabled ? t('video.disableCaptions') : t('video.enableCaptions')}
         aria-pressed={isCcEnabled}
         data-track="tutorial-audio-cc-toggle"
       >

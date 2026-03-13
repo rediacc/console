@@ -27,15 +27,21 @@
   },
   "common": {
     "aria": {
+      "breadcrumbNavigation": "Brotkrümel-Navigation",
       "clickToEnlarge": "Klicken Sie zum Vergrößern des Bildes",
       "closeImageModal": "Bildmodal schließen",
+      "docsSections": "Dokumentationsabschnitte",
+      "documentationNavigation": "Dokumentationsnavigation",
       "imageViewer": "Bildbetrachter",
       "mainNavigation": "Hauptnavigation",
       "nextImage": "Nächstes Bild",
       "opensInNewTab": "öffnet in neuem Tab",
       "previousImage": "Vorheriges Bild",
+      "rediaccHome": "Rediacc Startseite",
       "resetZoom": "Zoom zurücksetzen",
+      "selectPlanToCompare": "Plan zum Vergleichen auswählen",
       "statusMessage": "Statusmeldung",
+      "tableOfContents": "Inhaltsverzeichnis",
       "zoomIn": "Vergrößern",
       "zoomOut": "Herauszoomen"
     },
@@ -60,6 +66,7 @@
       "navigate": "Navigieren",
       "noResults": "Keine Ergebnisse gefunden",
       "placeholder": "Durchsuchen Sie Dokumentation, Lösungen, Funktionen ...",
+      "results": "Suchergebnisse",
       "searching": "Suche...",
       "select": "Wählen",
       "suggestions": {
@@ -68,7 +75,9 @@
         "contactSupport": "Kontaktieren Sie unser Support-Team",
         "differentKeywords": "Andere Schlüsselwörter oder kürzere Begriffe",
         "title": "Versuchen:"
-      }
+      },
+      "unavailable": "Suche nicht verfügbar",
+      "unavailableMessage": "Der Suchindex konnte nicht geladen werden. Bitte versuchen Sie, die Seite zu aktualisieren, oder kontaktieren Sie den Support, wenn das Problem weiterhin besteht."
     },
     "section": "Abschnitt",
     "siteName": "Rediacc",
@@ -105,6 +114,30 @@
     "submit": "Nachricht senden",
     "success": "Nachricht gesendet! Wir melden uns innerhalb von 48 Stunden.",
     "title": "Kontakt aufnehmen"
+  },
+  "documentation": {
+    "categories": {
+      "concepts": "Konzepte",
+      "guides": "Anleitungen",
+      "reference": "Referenz",
+      "tutorials": "Tutorials",
+      "useCases": "Anwendungsfälle"
+    },
+    "cliReference": "CLI-Referenz",
+    "cliReferenceLabel": "CLI-Referenz:",
+    "copied": "Kopiert!",
+    "copyAsMarkdown": "Als Markdown kopieren",
+    "copyAsMarkdownSection": "Als Markdown kopieren",
+    "copyAsMarkdownSectionDesc": "Abschnitt als Markdown kopieren",
+    "copyFullPageAriaLabel": "Gesamte Seite als Markdown kopieren",
+    "copySection": "Abschnitt kopieren",
+    "copySectionLink": "Abschnittslink kopieren",
+    "copySectionLinkDesc": "Direkt-URL in die Zwischenablage kopieren",
+    "openInNewTab": "In neuem Tab öffnen",
+    "searchDocs": "Dokumentation durchsuchen",
+    "shareSection": "Abschnitt teilen",
+    "viewAsMarkdown": "Seite als Markdown anzeigen",
+    "viewAsMarkdownDesc": "Markdown-Datei in neuem Tab öffnen"
   },
   "featureShowcase": {
     "categoryDescriptions": {
@@ -263,6 +296,7 @@
       "LUKS",
       "systemd"
     ],
+    "migrationMessage": "Rediacc verwandelt Ihren Stack in eine einzige portable Datei. Wenn Sie bereits Docker nutzen, ist die Migration unkompliziert.",
     "title": "Funktioniert mit Ihrem Stack"
   },
   "layout": {
@@ -303,6 +337,7 @@
     ]
   },
   "navigation": {
+    "account": "Konto",
     "blog": "Blog",
     "builtForYou": "Für Sie",
     "builtForYourRole": "Für Ihre Rolle",
@@ -365,6 +400,7 @@
       "note": "Wir verwenden Ihre E-Mail für Produktupdates. Eine Abmeldung ist jederzeit möglich.",
       "title": "Möchten Sie eine geführte Einführung?"
     },
+    "privacyNote": "Wir respektieren Ihre Privatsphäre. Sie können sich jederzeit abmelden.",
     "roiGate": {
       "description": "Geben Sie Ihre E-Mail-Adresse ein, um die vollständige Kostenaufstellung und Einsparungsanalyse freizuschalten.",
       "title": "Erhalten Sie Ihren detaillierten ROI-Bericht",
@@ -378,6 +414,7 @@
     "title": "Newsletter",
     "unsubscribed": "Sie wurden abgemeldet. Schade, dass Sie gehen."
   },
+  "captchaRequired": "Bitte vervollständigen Sie die Captcha-Verifizierung.",
   "pages": {
     "blog": {
       "allArticles": "Alle Artikel",
@@ -411,6 +448,16 @@
       "subscribeTitle": "Über neue Releases benachrichtigt werden",
       "subtitle": "Verfolgen Sie die neuesten Updates, Verbesserungen und Fehlerbehebungen.",
       "title": "Änderungsprotokoll"
+    },
+    "checkout": {
+      "success": {
+        "backToHome": "Zurück zur Startseite",
+        "description": "Ihr Abonnement wurde bestätigt",
+        "getStarted": "Mit der Installation beginnen",
+        "heading": "Abonnement bestätigt",
+        "message": "Ihr Abonnement ist jetzt aktiv. Sie erhalten in Kürze eine E-Mail mit Ihrem Lizenzschlüssel und den Einrichtungsanweisungen.",
+        "title": "Abonnement bestätigt"
+      }
     },
     "contact": {
       "breadcrumb": {
@@ -658,7 +705,7 @@
           "features": [
             "Unbegrenzte Anzahl an Benutzern und Teams – frei zusammenarbeiten",
             "Aktuelle Snapshot-Wiederherstellungen – Wiederherstellung nach Ausfällen in wenigen Minuten",
-            "10 Repositorys, jeweils 10 GB",
+            "Unbegrenzte Repositorys, jeweils 10 GB",
             "2 Stunden Job-Timeout, 2 aktive/1 reservierte Jobs",
             "7-tägige Aufbewahrung des Prüfprotokolls",
             "Manuelle Backup-Planung",
@@ -692,7 +739,7 @@
             "Alles in Community +",
             "Automatisierte Backup-Planung – einrichten und vergessen",
             "Point-in-Time-Wiederherstellung (24 Stunden)",
-            "500 Repositorys, jeweils 100 GB",
+            "Unbegrenzte Repositorys, jeweils 100 GB",
             "24-Stunden-Job-Timeout, 5 aktive/2 reservierte Jobs",
             "30-tägige Aufbewahrung des Prüfprotokolls",
             "E-Mail- und Chat-Support",
@@ -1046,7 +1093,8 @@
         "monthOrYear": "pro Monat oder {{price}} pro Jahr",
         "popular": "Am beliebtesten",
         "startingAt": "*Beginnt um",
-        "whatsIncluded": "Was ist enthalten:"
+        "whatsIncluded": "Was ist enthalten:",
+        "taxDisclaimer": "Alle Preise in USD, zuzüglich anfallender Steuern, Abgaben und Zölle."
       }
     },
     "docs": {
@@ -1282,6 +1330,8 @@
         "title": "404 – Seite nicht gefunden | Rediacc"
       },
       "suggestions": {
+        "getInTouchPrefix": "Kontaktieren Sie uns über unsere",
+        "goBackPrefix": "Zurück zur",
         "items": [
           "Überprüfen Sie die URL auf Tippfehler",
           "Gehen Sie zurück zur Homepage",
@@ -1289,6 +1339,7 @@
           "Kontaktieren Sie uns über unsere Kontaktseite",
           "Beginnen Sie noch heute mit Rediacc"
         ],
+        "learnAboutPrefix": "Erfahren Sie mehr über unsere",
         "links": {
           "contact": "Kontaktseite",
           "getStarted": "Rediacc",
@@ -2377,21 +2428,14 @@
               },
               {
                 "label": "Automatische Planung",
-                "community": "—",
+                "community": "✓",
                 "professional": "✓",
                 "business": "✓",
                 "enterprise": "✓"
               },
               {
-                "label": "Warteschlangenpriorität",
-                "community": "—",
-                "professional": "—",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
                 "label": "Integrations-API",
-                "community": "—",
+                "community": "✓",
                 "professional": "✓",
                 "business": "✓",
                 "enterprise": "✓"
@@ -2416,32 +2460,18 @@
                 "enterprise": "✓"
               },
               {
-                "label": "Point-in-Time-Wiederherstellung",
-                "community": "—",
-                "professional": "24 hours",
-                "business": "72 hours",
-                "enterprise": "Custom"
-              },
-              {
                 "label": "Kontinuierlicher Datenschutz",
-                "community": "—",
-                "professional": "—",
+                "community": "✓",
+                "professional": "✓",
                 "business": "✓",
                 "enterprise": "✓"
               },
               {
                 "label": "Georedundanter Speicher",
-                "community": "—",
-                "professional": "—",
-                "business": "3 regions",
-                "enterprise": "Custom"
-              },
-              {
-                "label": "Wiederherstellungs-SLA",
-                "community": "—",
-                "professional": "—",
-                "business": "4 hours",
-                "enterprise": "Custom"
+                "community": "✓",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
               }
             ]
           },
@@ -2453,14 +2483,14 @@
                 "community": "2",
                 "professional": "5",
                 "business": "20",
-                "enterprise": "50"
+                "enterprise": "50+"
               },
               {
                 "label": "Jobs pro Monat",
                 "community": "500",
                 "professional": "5,000",
                 "business": "20,000",
-                "enterprise": "100,000"
+                "enterprise": "100,000+"
               },
               {
                 "label": "Speicher pro Repository",
@@ -2499,60 +2529,20 @@
               }
             ]
           },
-          "platform": {
-            "label": "Plattform",
-            "rows": [
-              {
-                "label": "Benutzerdefiniertes Branding",
-                "community": "—",
-                "professional": "✓",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "Ceph-Speicherpools",
-                "community": "—",
-                "professional": "—",
-                "business": "1",
-                "enterprise": "Unlimited"
-              },
-              {
-                "label": "Erweiterte Analysen",
-                "community": "—",
-                "professional": "—",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "Dedizierte Infrastruktur",
-                "community": "—",
-                "professional": "—",
-                "business": "—",
-                "enterprise": "✓"
-              }
-            ]
-          },
           "security": {
             "label": "Sicherheit & Compliance",
             "rows": [
               {
                 "label": "RBAC & Berechtigungsgruppen",
-                "community": "—",
+                "community": "✓",
                 "professional": "✓",
                 "business": "✓",
                 "enterprise": "✓"
               },
               {
                 "label": "Audit-Protokolle",
-                "community": "—",
+                "community": "✓",
                 "professional": "✓",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "Compliance-Berichte",
-                "community": "—",
-                "professional": "—",
                 "business": "✓",
                 "enterprise": "✓"
               },
@@ -2689,6 +2679,7 @@
           "description": "Unternehmenskritische Infrastruktur mit Experten-Onboarding",
           "features": [
             "Alles in Professional +",
+            "20 gleichzeitige Floating-Lizenzen",
             "Unbegrenzte Repositories, je 500 GB",
             "20.000 Jobs/Monat",
             "$9.999 Implementierungssupport inklusive (Einführungsangebot)",
@@ -2697,7 +2688,6 @@
             "4-Stunden-Wiederherstellungs-SLA",
             "Rollenbasierte Zugriffskontrolle & Audit-Protokolle",
             "Compliance-fähige Berichte",
-            "Dedizierter Kundenerfolgsmanager",
             "Telefonsupport + Kollaborationsräume"
           ],
           "name": "Geschäft"
@@ -2708,7 +2698,7 @@
             "Unbegrenzte Benutzer & Teams",
             "Unbegrenzte Repositories, je 10 GB",
             "500 Jobs/Monat",
-            "Unbegrenzte Maschinen",
+            "2 gleichzeitige Floating-Lizenzen",
             "Snapshot-Wiederherstellungen",
             "Manuelle Planung",
             "Community Slack-Zugang",
@@ -2720,11 +2710,13 @@
           "description": "White-Glove-Support für komplexe Unternehmensinfrastruktur",
           "features": [
             "Alles in Business +",
+            "50+ gleichzeitige Floating-Lizenzen",
             "Unbegrenzte Repositories, je 2 TB+",
-            "100.000 Jobs/Monat",
+            "100.000+ Jobs/Monat",
             "Benutzerdefinierte SLA mit garantierten Wiederherstellungszeiten",
             "Dedizierter Infrastruktur-Mandant",
             "24/7/365 White-Glove-Support",
+            "Dedizierter Kundenerfolgsmanager",
             "Vierteljährliche Bereitschaftsübungen",
             "Executive Eskalations-Hotline",
             "Benutzerdefinierte Integrationen & Workflows",
@@ -2737,6 +2729,7 @@
           "description": "Professionelle Automatisierung und Planung für wachsende Teams",
           "features": [
             "Alles in Community +",
+            "5 gleichzeitige Floating-Lizenzen",
             "Unbegrenzte Repositories, je 100 GB",
             "5.000 Jobs/Monat",
             "Automatisierte Planung",
@@ -2987,8 +2980,8 @@
         "heading": "Planvergleich",
         "metrics": [
           {
-            "key": "jobsPerMonth",
-            "label": "Jobs pro Monat"
+            "key": "repositories",
+            "label": "Repositories"
           },
           {
             "key": "repoSize",
@@ -2999,8 +2992,8 @@
             "label": "Floating-Lizenzen"
           },
           {
-            "key": "repositories",
-            "label": "Repositories"
+            "key": "jobsPerMonth",
+            "label": "Jobs pro Monat"
           },
           {
             "key": "usersTeams",
@@ -3023,8 +3016,8 @@
             "usersTeams": "Unbegrenzt"
           },
           "enterprise": {
-            "floatingLicenses": "50",
-            "jobsPerMonth": "100,000",
+            "floatingLicenses": "50+",
+            "jobsPerMonth": "100,000+",
             "repositories": "Unbegrenzt",
             "repoSize": "2 TB+",
             "usersTeams": "Unbegrenzt"
@@ -3042,12 +3035,48 @@
         "heading": "Sicherheit und Zuverlässigkeit auf Unternehmensniveau",
         "items": ["Verschlüsselung auf Bankebene", "99,9 % Verfügbarkeitsgarantie"]
       },
+      "trustSection": {
+        "heading": "Deine Infrastruktur. Deine Regeln.",
+        "subtitle": "Rediacc-Lizenzen sind so gestaltet, dass du niemals eingesperrt bist. Das bedeutet das in der Praxis.",
+        "rows": [
+          {
+            "title": "Deine repos laufen für immer.",
+            "description": "Starten, stoppen, löschen und sichern — funktioniert immer, auch Jahre nach Ablauf deines Abonnements. Diese Operationen prüfen niemals das Ablaufdatum. Deine Daten sind immer zugänglich."
+          },
+          {
+            "title": "Voller Zugriff auf deine Tools.",
+            "description": "Dateisynchronisierung, VS Code Remote, SSH-Terminal und alle Verwaltungsbefehle funktionieren ganz ohne Lizenz. Völlig uneingeschränkt, für immer."
+          },
+          {
+            "title": "Nur neue repos benötigen ein Abonnement.",
+            "description": "Ein aktives Abonnement ist erforderlich, um neue Repositories zu erstellen oder bestehende zu forken. Größenänderung und Erweiterung funktionieren 60 Tage nach Ablauf. Alles andere ist dauerhaft."
+          },
+          {
+            "title": "60 Tage Nachfrist für Skalierung.",
+            "description": "Wenn dein Abonnement endet, funktionieren Größenänderung und Erweiterung noch weitere 60 Tage. Starten, stoppen, löschen und Backup sind nicht betroffen — sie funktionieren für immer."
+          },
+          {
+            "title": "Unbegrenzte Maschinen. Pay-per-Create-Lizenzierung.",
+            "description": "Ein Lizenz-Slot wird nur während der Erstellung oder dem Forken eines Repositorys belegt — deine täglichen Operationen verbrauchen keinen. Slots werden nach 1 Stunde Inaktivität automatisch freigegeben, sodass ein Plan mit 5 Slots Dutzende von Maschinen bedienen kann. Keine Gebühren pro Maschine, niemals."
+          }
+        ],
+        "svg": {
+          "noLicenseRequired": "Keine Lizenz erforderlich — funktioniert immer",
+          "noLicenseNeeded": "Keine Lizenz nötig",
+          "requiredOnlyHere": "Nur hier erforderlich",
+          "allOperations": "Alle Operationen",
+          "slotsAutoRelease": "Slots werden nach 1 Stunde Inaktivität automatisch freigegeben",
+          "slotsCreateFork": "Slots werden nur für Erstellen & Forken benötigt — tägliche Operationen sind immer kostenlos"
+        }
+      },
       "ui": {
         "anchor": "Strategischer Anker",
         "bestValue": "Bestes Preis-Leistungs-Verhältnis",
         "billingToggle": {
           "annual": "Jährlich",
-          "monthly": "Monatlich"
+          "monthly": "Monatlich",
+          "annualSavings": "17 % sparen — 2 Monate gratis",
+          "ariaLabel": "Abrechnungszeitraum"
         },
         "contactSales": "Kontaktieren Sie den Vertrieb",
         "cta": {
@@ -3088,7 +3117,8 @@
         "monthOrYear": "pro Monat oder {{price}} pro Jahr",
         "popular": "Am beliebtesten",
         "startingAt": "*Beginnt um",
-        "whatsIncluded": "Was ist enthalten:"
+        "whatsIncluded": "Was ist enthalten:",
+        "taxDisclaimer": "Alle Preise in USD, zuzüglich anfallender Steuern, Abgaben und Zölle."
       }
     },
     "privacyPolicy": {
@@ -12420,5 +12450,19 @@
     ],
     "subtitle": "Wie verschiedene Rollen Rediacc erleben",
     "title": "Was Teams sagen"
+  },
+  "tutorial": {
+    "audioControls": "Audio-Steuerung des Transkripts",
+    "audioVolume": "Sprachlautstärke des Transkripts",
+    "muteAudio": "Transkript-Audio stummschalten",
+    "subtitlesControls": "Untertitel-Steuerung des Transkripts",
+    "unmuteAudio": "Transkript-Audio laut schalten"
+  },
+  "video": {
+    "disableCaptions": "Untertitel deaktivieren",
+    "enableCaptions": "Untertitel aktivieren",
+    "playVideo": "Video abspielen",
+    "toggleFullscreen": "Vollbild umschalten",
+    "volume": "Lautstärke"
   }
 }

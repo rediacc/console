@@ -262,7 +262,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
             <button
               className="search-modal-close"
               onClick={onClose}
-              aria-label="Close search"
+              aria-label={t('common.search.closeModal')}
               type="button"
               data-track="cta_click"
               data-track-label="search-close"
@@ -293,15 +293,12 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
           className="search-modal-results"
           ref={resultsContainerRef}
           role="listbox"
-          aria-label="Search results"
+          aria-label={t('common.search.results')}
         >
           {hasError && (
             <div className="search-modal-error" role="alert" aria-live="assertive">
-              <h3>Search Unavailable</h3>
-              <p>
-                Unable to load search index. Please try refreshing the page or contact support if
-                the issue persists.
-              </p>
+              <h3>{t('common.search.unavailable')}</h3>
+              <p>{t('common.search.unavailableMessage')}</p>
             </div>
           )}
 

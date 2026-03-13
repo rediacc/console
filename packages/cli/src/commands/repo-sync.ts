@@ -1,6 +1,5 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import {
   createTempKnownHostsFile,
   createTempSSHKeyFile,
@@ -26,6 +25,7 @@ import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
 import { assertCommandPolicy, CMD, validateRemotePath } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
+import { getSSHConnectionDetails } from '../services/ssh-connection.js';
 import { withSpinner } from '../utils/spinner.js';
 
 /** Accumulate repeatable option values into an array. */
@@ -59,62 +59,6 @@ interface SyncDownloadOptions {
   exclude?: string[];
   dryRun?: boolean;
   [key: string]: unknown;
-}
-
-interface RsyncConnectionDetails {
-  host: string;
-  user: string;
-  port: number;
-  privateKey: string;
-  remotePath: string;
-  known_hosts: string;
-  universalUser?: string;
-}
-
-async function getRsyncConnectionDetails(
-  teamName: string,
-  machineName: string,
-  repositoryName: string
-): Promise<RsyncConnectionDetails> {
-  const provider = await getStateProvider();
-  const { machineVault, teamVault, repositoryVault } = await provider.vaults.getConnectionVaults(
-    teamName,
-    machineName,
-    repositoryName
-  );
-
-  const host = (machineVault.ip ?? machineVault.host) as string | undefined;
-  const port = (machineVault.port ?? DEFAULTS.SSH.PORT) as number;
-  const privateKey = (teamVault.SSH_PRIVATE_KEY ?? teamVault.sshPrivateKey) as string | undefined;
-  const knownHosts = (machineVault.known_hosts ?? '') as string;
-  const datastore = (machineVault.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH) as string;
-  const universalUser = (machineVault.universalUser ??
-    DEFAULTS.REPOSITORY.UNIVERSAL_USER) as string;
-  const sshUser = (machineVault.user ?? universalUser) as string;
-
-  if (!host) {
-    throw new Error(t('errors.sync.noIpAddress', { machine: machineName }));
-  }
-  if (!privateKey) {
-    throw new Error(t('errors.sync.noPrivateKey', { team: teamName }));
-  }
-  if (!knownHosts) {
-    throw new Error(t('errors.sync.noHostKey', { machine: machineName }));
-  }
-
-  const repoVault = repositoryVault ?? {};
-  const remotePath = (repoVault.workingDirectory ??
-    `${datastore}/mounts/${repoVault.repositoryGuid ?? repositoryName}`) as string;
-
-  return {
-    host,
-    user: sshUser,
-    port,
-    privateKey,
-    remotePath,
-    known_hosts: knownHosts,
-    universalUser,
-  };
 }
 
 function formatBytes(bytes: number): string {
@@ -291,28 +235,28 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
     localPath += '/';
   }
 
-  const connectionDetails = await withSpinner(t('commands.sync.fetchingDetails'), () =>
-    getRsyncConnectionDetails(opts.team!, opts.machine!, opts.repository!)
+  const details = await withSpinner(t('commands.sync.fetchingDetails'), () =>
+    getSSHConnectionDetails(opts.team!, opts.machine!, opts.repository)
   );
 
-  const remotePath = options.remote
-    ? `${connectionDetails.remotePath}/${options.remote}`
-    : connectionDetails.remotePath;
+  const baseRemotePath =
+    details.workingDirectory ?? `${details.datastore}/mounts/${opts.repository}`;
+  const remotePath = options.remote ? `${baseRemotePath}/${options.remote}` : baseRemotePath;
 
-  const keyFilePath = await createTempSSHKeyFile(connectionDetails.privateKey);
-  const knownHostsPath = await createTempKnownHostsFile(connectionDetails.known_hosts);
+  const keyFilePath = await createTempSSHKeyFile(details.privateKey);
+  const knownHostsPath = await createTempKnownHostsFile(details.known_hosts);
 
   try {
-    const sshOptions = `-o StrictHostKeyChecking=yes -o UserKnownHostsFile="${knownHostsPath}" -p ${connectionDetails.port} -i "${keyFilePath}"`;
+    const sshOptions = `-o StrictHostKeyChecking=yes -o UserKnownHostsFile="${knownHostsPath}" -p ${details.port} -i "${keyFilePath}"`;
 
     const rsyncOptions: RsyncExecutorOptions = {
       sshOptions,
       source: localPath,
-      destination: `${connectionDetails.user}@${connectionDetails.host}:${remotePath}`,
+      destination: `${details.user}@${details.host}:${remotePath}`,
       mirror: options.mirror,
       verify: options.verify,
       exclude: options.exclude,
-      universalUser: connectionDetails.universalUser,
+      universalUser: details.universalUser,
     };
 
     const shouldContinue = await handleConfirmMode(rsyncOptions, options);
@@ -349,28 +293,28 @@ async function syncDownload(options: SyncDownloadOptions): Promise<void> {
 
   const localPath = resolve(options.local ?? process.cwd());
 
-  const connectionDetails = await withSpinner(t('commands.sync.fetchingDetails'), () =>
-    getRsyncConnectionDetails(opts.team!, opts.machine!, opts.repository!)
+  const details = await withSpinner(t('commands.sync.fetchingDetails'), () =>
+    getSSHConnectionDetails(opts.team!, opts.machine!, opts.repository)
   );
 
-  const remotePath = options.remote
-    ? `${connectionDetails.remotePath}/${options.remote}/`
-    : `${connectionDetails.remotePath}/`;
+  const baseRemotePath =
+    details.workingDirectory ?? `${details.datastore}/mounts/${opts.repository}`;
+  const remotePath = options.remote ? `${baseRemotePath}/${options.remote}/` : `${baseRemotePath}/`;
 
-  const keyFilePath = await createTempSSHKeyFile(connectionDetails.privateKey);
-  const knownHostsPath = await createTempKnownHostsFile(connectionDetails.known_hosts);
+  const keyFilePath = await createTempSSHKeyFile(details.privateKey);
+  const knownHostsPath = await createTempKnownHostsFile(details.known_hosts);
 
   try {
-    const sshOptions = `-o StrictHostKeyChecking=yes -o UserKnownHostsFile="${knownHostsPath}" -p ${connectionDetails.port} -i "${keyFilePath}"`;
+    const sshOptions = `-o StrictHostKeyChecking=yes -o UserKnownHostsFile="${knownHostsPath}" -p ${details.port} -i "${keyFilePath}"`;
 
     const rsyncOptions: RsyncExecutorOptions = {
       sshOptions,
-      source: `${connectionDetails.user}@${connectionDetails.host}:${remotePath}`,
+      source: `${details.user}@${details.host}:${remotePath}`,
       destination: localPath,
       mirror: options.mirror,
       verify: options.verify,
       exclude: options.exclude,
-      universalUser: connectionDetails.universalUser,
+      universalUser: details.universalUser,
     };
 
     const shouldContinue = await handleConfirmMode(rsyncOptions, options);

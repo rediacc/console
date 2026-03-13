@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import PricingCard from '../../components/PricingCard.astro';
+import CfPricingCard from '../../components/CfPricingCard.astro';
 import PricingComparison from '../../components/PricingComparison.astro';
 import FAQSection from '../../components/FAQSection.astro';
 import { createTranslator } from '../../i18n/utils';
@@ -8,90 +8,53 @@ import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
 import { PLAN_ORDER, PLAN_PRICING } from '@rediacc/shared/subscription';
 import { EXTERNAL_LINKS } from '../../config/constants';
-import { TEAM_MEMBERS } from '../../config/team-videos';
 import LlmsInlineScript from '../../components/LlmsInlineScript.astro';
 import StructuredData from '../../components/StructuredData.astro';
+import PricingTrustSection from '../../components/PricingTrustSection.astro';
 import '../../styles/pricing-page.css';
 
 export const getStaticPaths = getLanguagePaths;
 
 const { lang } = Astro.params as { lang: Language };
 const { t, ta, to } = createTranslator(lang);
-const guarantorData = TEAM_MEMBERS['founder'];
 
 const ns = 'pages.pricing';
 
-const priceFormatter = new Intl.NumberFormat(lang === 'en' ? 'en-US' : lang, {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-});
-
-const formatPrice = (amount: number) => priceFormatter.format(amount);
-
-const buildPlan = ({
-  id,
-  monthlyPrice,
-  isPopular = false,
-  badgeLabel,
-  badgeVariant,
-  priceNote,
-}: {
-  id: string;
-  monthlyPrice: number;
-  isPopular?: boolean;
-  badgeLabel?: string;
-  badgeVariant?: string;
-  priceNote?: string | null;
-}) => {
-  const yearlyPrice = monthlyPrice * 10;
-  const price = formatPrice(monthlyPrice);
-  const yearlyPriceFormatted = formatPrice(yearlyPrice);
-
-  let period = monthlyPrice > 0
-    ? t(`${ns}.ui.monthOrYear`, { price: yearlyPriceFormatted })
-    : t(`${ns}.ui.foreverFree`);
-
-  if (id === 'enterprise' && monthlyPrice > 0) {
-    period = period.replace(yearlyPriceFormatted, `${yearlyPriceFormatted}*`);
-  }
-
-  return {
-    id,
-    name: t(`${ns}.plans.${id}.name`),
-    price,
-    priceNote: priceNote ?? (id === 'enterprise' ? t(`${ns}.plans.enterprise.priceNote`) : undefined),
-    period,
-    description: t(`${ns}.plans.${id}.description`),
-    isPopular,
-    badgeLabel,
-    badgeVariant,
-    features: ta(`${ns}.plans.${id}.features`),
-  };
+const badgeConfig: Record<string, { isPopular?: boolean; badgeLabel?: string; badgeVariant?: string }> = {
+  professional: {
+    isPopular: true,
+    badgeLabel: t(`${ns}.ui.popular`),
+    badgeVariant: 'popular',
+  },
+  business: {
+    badgeLabel: `${t(`${ns}.ui.bestValue`)} · ${t(`${ns}.ui.limitedOffer`)}`,
+    badgeVariant: 'best-value',
+  },
 };
 
 const allPlans = PLAN_ORDER.map((code) => {
   const id = code.toLowerCase();
-  const monthlyPrice = PLAN_PRICING[code].monthlyPriceCents / 100;
-
-  const config: Record<string, { isPopular?: boolean; badgeLabel?: string; badgeVariant?: string }> = {
-    professional: {
-      isPopular: true,
-      badgeLabel: t(`${ns}.ui.popular`),
-      badgeVariant: 'popular',
-    },
-    business: {
-      badgeLabel: `${t(`${ns}.ui.bestValue`)} · ${t(`${ns}.ui.limitedOffer`)}`,
-      badgeVariant: 'best-value',
-    },
-  };
-
-  return buildPlan({
+  const monthly = PLAN_PRICING[code].monthlyPriceCents / 100;
+  const badge = badgeConfig[id];
+  return {
     id,
-    monthlyPrice,
-    ...(config[id] ?? {}),
-  });
+    monthly,
+    annual: monthly * 10,
+    isPopular: badge?.isPopular ?? false,
+    badgeLabel: badge?.badgeLabel,
+    badgeVariant: badge?.badgeVariant,
+  };
 });
+
+const technicalMetrics = ta(`${ns}.technicalSummary.metrics`);
+const technicalValues = to(`${ns}.technicalSummary.values`);
+
+const buildMetrics = (planId: string) =>
+  technicalMetrics.map((metric: any) => ({
+    label: metric.label,
+    tooltip: metric.tooltip,
+    value: technicalValues?.[planId]?.[metric.key] ?? '—',
+  }));
 
 const comparison = to(`${ns}.comparison`);
 
@@ -127,9 +90,9 @@ const faqSchema = faqItems ? {
     type="offer"
     data={{
       plans: allPlans.map((p) => ({
-        name: p.name,
-        price: PLAN_PRICING[p.id.toUpperCase() as keyof typeof PLAN_PRICING]?.monthlyPriceCents / 100 ?? 0,
-        description: p.description,
+        name: t(`${ns}.plans.${p.id}.name`),
+        price: p.monthly,
+        description: t(`${ns}.plans.${p.id}.description`),
       })),
     }}
   />
@@ -145,7 +108,7 @@ const faqSchema = faqItems ? {
 
     <!-- Billing Toggle & Pricing Cards -->
     <section id="plans" class="pricing-content section-light">
-      <div class="container">
+      <div class="cf-pricing-container">
         <!-- Billing Toggle -->
         <div class="billing-toggle-wrapper">
           <div class="billing-toggle" role="radiogroup" aria-label="Billing period">
@@ -168,49 +131,20 @@ const faqSchema = faqItems ? {
               {t(`${ns}.ui.billingToggle.annual`)}
             </button>
           </div>
-          <span class="billing-toggle-savings visible">Save 17% — 2 months free</span>
+          <span class="billing-toggle-savings visible">{t(`${ns}.ui.billingToggle.annualSavings`)}</span>
         </div>
 
         <!-- Pricing Cards -->
-        <div class="pricing-grid active four-up">
+        <div class="cf-pricing-grid">
           {allPlans.map((plan) => (
-            <PricingCard plan={plan} lang={lang} />
+            <CfPricingCard plan={plan} metrics={buildMetrics(plan.id)} lang={lang} useCheckout={true} />
           ))}
         </div>
 
         <!-- All Plans Include Strip -->
         <p class="all-plans-strip">{comparison?.allPlansInclude}</p>
+        <p class="pricing-tax-note">{t(`${ns}.ui.taxDisclaimer`)}</p>
 
-        <!-- Trust Section -->
-        <div class="trust-section">
-          <div class="trust-badges">
-            <div class="trust-item">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
-              </svg>
-              <span>{t(`${ns}.trust.items.0`)}</span>
-            </div>
-            <div class="trust-item">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-              </svg>
-              <span>{t(`${ns}.trust.items.1`)}</span>
-            </div>
-          </div>
-        </div>
-
-        {guarantorData && (
-          <div class="cf-guarantee-strip">
-            <img
-              src={guarantorData.photos.headshot}
-              alt={guarantorData.name}
-              class="cf-guarantee-photo"
-              loading="lazy"
-              decoding="async"
-            />
-            <p class="cf-guarantee-text">{t('team.founder.guarantee')}</p>
-          </div>
-        )}
       </div>
     </section>
 
@@ -228,6 +162,9 @@ const faqSchema = faqItems ? {
         </div>
       </div>
     </section>
+
+    <!-- No Vendor Lock-In Trust Section -->
+    <PricingTrustSection lang={lang} />
 
     <!-- Feature Comparison Table -->
     <PricingComparison lang={lang} />
@@ -293,8 +230,11 @@ const faqSchema = faqItems ? {
 <script>
   // Billing toggle: swap between monthly and annual display
   document.addEventListener('DOMContentLoaded', () => {
-    const toggleBtns = document.querySelectorAll<HTMLButtonElement>('.billing-toggle .billing-toggle-btn');
-    const savingsLabel = document.querySelector<HTMLElement>('.billing-toggle-savings');
+    const section = document.getElementById('plans');
+    if (!section) return;
+
+    const toggleBtns = section.querySelectorAll<HTMLButtonElement>('.billing-toggle .billing-toggle-btn');
+    const savingsLabel = section.querySelector<HTMLElement>('.billing-toggle-savings');
 
     if (!toggleBtns.length) return;
 
@@ -314,6 +254,17 @@ const faqSchema = faqItems ? {
         if (savingsLabel) {
           savingsLabel.classList.toggle('visible', period === 'annual');
         }
+
+        // Update prices
+        section.querySelectorAll<HTMLElement>('.cf-price[data-monthly]').forEach((el) => {
+          el.textContent = period === 'annual' ? el.dataset.annual! : el.dataset.monthly!;
+        });
+        section.querySelectorAll<HTMLElement>('.cf-price-period[data-monthly]').forEach((el) => {
+          el.textContent = period === 'annual' ? el.dataset.annual! : el.dataset.monthly!;
+        });
+        section.querySelectorAll<HTMLElement>('.cf-annual-note[data-monthly]').forEach((el) => {
+          el.textContent = period === 'annual' ? el.dataset.annual! : el.dataset.monthly!;
+        });
       });
     });
   });

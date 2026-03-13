@@ -1828,6 +1828,11 @@
     "resourceNotFound": "{{resource}} not found",
     "repositoryRequired": "Repository name is required. Use --repository <name>.",
     "sshKeyNotFound": "SSH key not found: {{path}}",
+    "ssh": {
+      "noIpAddress": "Machine '{{machine}}' does not have an IP address configured",
+      "noPrivateKey": "Team '{{team}}' does not have an SSH private key configured",
+      "noHostKey": "Machine '{{machine}}' does not have a host key configured in the vault"
+    },
     "sync": {
       "noIpAddress": "Machine '{{machine}}' does not have an IP address configured",
       "noPrivateKey": "Team '{{team}}' does not have an SSH private key configured",

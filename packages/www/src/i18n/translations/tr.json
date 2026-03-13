@@ -27,15 +27,21 @@
   },
   "common": {
     "aria": {
+      "breadcrumbNavigation": "Breadcrumb gezinmesi",
       "clickToEnlarge": "Resmi büyütmek için tıklayın",
       "closeImageModal": "Görüntü modelini kapat",
+      "docsSections": "Doküman bölümleri",
+      "documentationNavigation": "Dokümantasyon gezinmesi",
       "imageViewer": "Resim görüntüleyici",
       "mainNavigation": "Ana gezinme",
       "nextImage": "Sonraki resim",
       "opensInNewTab": "yeni sekmede açılır",
       "previousImage": "Önceki resim",
+      "rediaccHome": "Rediacc ana sayfa",
       "resetZoom": "Yakınlaştırmayı sıfırla",
+      "selectPlanToCompare": "Karşılaştırmak için plan seçin",
       "statusMessage": "Durum mesajı",
+      "tableOfContents": "İçindekiler",
       "zoomIn": "Yakınlaştır",
       "zoomOut": "Uzaklaştır"
     },
@@ -60,6 +66,7 @@
       "navigate": "Gezinti",
       "noResults": "Sonuç bulunamadı",
       "placeholder": "Belgeleri, çözümleri, özellikleri arayın...",
+      "results": "Arama sonuçları",
       "searching": "Aranıyor...",
       "select": "Seç",
       "suggestions": {
@@ -68,7 +75,9 @@
         "contactSupport": "Destek ekibimizle iletişime geçin",
         "differentKeywords": "Farklı anahtar kelimeler veya daha kısa terimler deneyin",
         "title": "Deneyin:"
-      }
+      },
+      "unavailable": "Arama Kullanılamıyor",
+      "unavailableMessage": "Arama dizini yüklenemedi. Lütfen sayfayı yenilemeyi deneyin veya sorun devam ederse destek ile iletişime geçin."
     },
     "section": "section",
     "siteName": "Rediacc",
@@ -105,6 +114,30 @@
     "submit": "Mesaj Gönder",
     "success": "Mesaj gönderildi! 48 saat içinde size dönüş yapacağız.",
     "title": "İletişime Geçin"
+  },
+  "documentation": {
+    "categories": {
+      "concepts": "Kavramlar",
+      "guides": "Kılavuzlar",
+      "reference": "Başvuru",
+      "tutorials": "Öğreticiler",
+      "useCases": "Kullanım Senaryoları"
+    },
+    "cliReference": "CLI Referansı",
+    "cliReferenceLabel": "CLI başvurusu:",
+    "copied": "Kopyalandı!",
+    "copyAsMarkdown": "Markdown olarak kopyala",
+    "copyAsMarkdownSection": "Markdown olarak kopyala",
+    "copyAsMarkdownSectionDesc": "Bölümün Markdown içeriğini kopyala",
+    "copyFullPageAriaLabel": "Tüm sayfayı Markdown olarak kopyala",
+    "copySection": "Bölümü kopyala",
+    "copySectionLink": "Bölüm bağlantısını kopyala",
+    "copySectionLinkDesc": "Doğrudan URL'yi panoya kopyala",
+    "openInNewTab": "Yeni sekmede aç",
+    "searchDocs": "Belgelerde ara",
+    "shareSection": "Bölümü paylaş",
+    "viewAsMarkdown": "Sayfayı Markdown olarak görüntüle",
+    "viewAsMarkdownDesc": "Markdown dosyasını yeni sekmede aç"
   },
   "featureShowcase": {
     "categoryDescriptions": {
@@ -263,6 +296,7 @@
       "LUKS",
       "systemd"
     ],
+    "migrationMessage": "Rediacc, yığınınızı tek bir taşınabilir dosyaya dönüştürür. Zaten Docker kullanıyorsanız, geçiş oldukça kolaydır.",
     "title": "Yığınınızla çalışır"
   },
   "layout": {
@@ -303,6 +337,7 @@
     ]
   },
   "navigation": {
+    "account": "Hesap",
     "blog": "Blog",
     "builtForYou": "Size özel",
     "builtForYourRole": "Rolünüze özel",
@@ -365,6 +400,7 @@
       "note": "E-posta adresinizi ürün güncellemeleri göndermek için kullanırız. İstediğiniz zaman abonelikten çıkabilirsiniz.",
       "title": "Yönlendirmeli bir tanıtım ister misiniz?"
     },
+    "privacyNote": "Gizliliğinize saygı duyuyoruz. İstediğiniz zaman aboneliğinizi iptal edebilirsiniz.",
     "roiGate": {
       "description": "Tam maliyet dökümü ve tasarruf analizini açmak için e-posta adresinizi girin.",
       "title": "Ayrıntılı ROI raporunuzu alın",
@@ -378,6 +414,7 @@
     "title": "Bülten",
     "unsubscribed": "Aboneliğiniz iptal edildi. Gittiğinizi görmek üzücü."
   },
+  "captchaRequired": "Lütfen captcha doğrulamasını tamamlayın.",
   "pages": {
     "blog": {
       "allArticles": "Tüm Makaleler",
@@ -411,6 +448,16 @@
       "subscribeTitle": "Yeni sürümlerden haberdar olun",
       "subtitle": "En son güncellemeleri, iyileştirmeleri ve düzeltmeleri takip edin.",
       "title": "Değişiklik Günlüğü"
+    },
+    "checkout": {
+      "success": {
+        "backToHome": "Ana Sayfaya Dön",
+        "description": "Aboneliğiniz onaylandı",
+        "getStarted": "Kuruluma Başlayın",
+        "heading": "Abonelik Onaylandı",
+        "message": "Aboneliğiniz artık aktif. Lisans anahtarınız ve kurulum talimatlarını içeren bir e-posta kısa süre içinde gönderilecektir.",
+        "title": "Abonelik Onaylandı"
+      }
     },
     "contact": {
       "breadcrumb": {
@@ -656,7 +703,7 @@
           "features": [
             "Sınırsız kullanıcı ve ekip; özgürce işbirliği yapın",
             "En son anlık görüntü geri yüklemeleri; arızalardan dakikalar içinde kurtulma",
-            "10 Depo, her biri 10 GB",
+            "Sınırsız depo, her biri 10 GB",
             "2 saatlik iş zaman aşımı, 2 etkin/1 ayrılmış iş",
             "7 günlük denetim günlüğü saklama",
             "Manuel yedekleme planlama",
@@ -673,7 +720,7 @@
             "Özel SLA (15-60 dakikalık RTO)—sizin gereksinimleriniz, taahhüdümüz",
             "Özel altyapı kiracısı—maksimum güvenlik ve performans",
             "7/24/365 beyaz eldiven desteği",
-            "Sınırsız Depo, her biri 1TB+",
+            "Sınırsız Depo, her biri 2 TB+",
             "10'dan fazla aktif/5'ten fazla rezerve edilmiş iş ile 96+ saatlik iş aralığı",
             "1 Yıldan fazla denetim günlüğü saklama",
             "Üç ayda bir gerçekleşen olağanüstü durum kurtarma çalışmaları – test edilmiş hazırlık",
@@ -690,7 +737,7 @@
             "Topluluktaki her şey +",
             "Otomatik yedekleme planlaması; ayarlayın ve unutun",
             "Belirli bir noktaya kurtarma (24 saat)",
-            "500 Depo, her biri 100 GB",
+            "Sınırsız depo, her biri 100 GB",
             "24 saatlik iş zaman aşımı, 5 etkin/2 ayrılmış iş",
             "30 günlük denetim günlüğü saklama",
             "E-posta + sohbet desteği",
@@ -1044,7 +1091,8 @@
         "monthOrYear": "ayda veya yılda {{price}}",
         "popular": "En popüler",
         "startingAt": "*Başlangıç ​​tarihi:",
-        "whatsIncluded": "Neler dahil:"
+        "whatsIncluded": "Neler dahil:",
+        "taxDisclaimer": "Tüm fiyatlar USD cinsindendir ve geçerli vergiler, harçlar ve gümrük vergileri hariçtir."
       }
     },
     "docs": {
@@ -1280,6 +1328,8 @@
         "title": "404 - Sayfa Bulunamadı | Rediacc"
       },
       "suggestions": {
+        "getInTouchPrefix": "Bizimle iletişime geçin:",
+        "goBackPrefix": "Geri dönün:",
         "items": [
           "Herhangi bir yazım hatası için URL'yi kontrol edin",
           "Ana sayfaya geri dön",
@@ -1287,6 +1337,7 @@
           "İletişim sayfamızdan iletişime geçin",
           "Bugün Rediacc kullanmaya başlayın"
         ],
+        "learnAboutPrefix": "Hakkında bilgi edinin:",
         "links": {
           "contact": "iletişim sayfası",
           "getStarted": "Rediacc",
@@ -2375,21 +2426,14 @@
               },
               {
                 "label": "Otomatik Planlama",
-                "community": "—",
+                "community": "✓",
                 "professional": "✓",
                 "business": "✓",
                 "enterprise": "✓"
               },
               {
-                "label": "Kuyruk Önceliği",
-                "community": "—",
-                "professional": "—",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
                 "label": "Entegrasyon API'si",
-                "community": "—",
+                "community": "✓",
                 "professional": "✓",
                 "business": "✓",
                 "enterprise": "✓"
@@ -2414,32 +2458,18 @@
                 "enterprise": "✓"
               },
               {
-                "label": "Belirli Noktaya Geri Yükleme",
-                "community": "—",
-                "professional": "24 hours",
-                "business": "72 hours",
-                "enterprise": "Custom"
-              },
-              {
                 "label": "Sürekli Veri Koruma",
-                "community": "—",
-                "professional": "—",
+                "community": "✓",
+                "professional": "✓",
                 "business": "✓",
                 "enterprise": "✓"
               },
               {
                 "label": "Coğrafi Yedekli Depolama",
-                "community": "—",
-                "professional": "—",
-                "business": "3 regions",
-                "enterprise": "Custom"
-              },
-              {
-                "label": "Geri Yükleme SLA'sı",
-                "community": "—",
-                "professional": "—",
-                "business": "4 hours",
-                "enterprise": "Custom"
+                "community": "✓",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
               }
             ]
           },
@@ -2451,14 +2481,14 @@
                 "community": "2",
                 "professional": "5",
                 "business": "20",
-                "enterprise": "50"
+                "enterprise": "50+"
               },
               {
                 "label": "Aylık İş Sayısı",
                 "community": "500",
                 "professional": "5,000",
                 "business": "20,000",
-                "enterprise": "100,000"
+                "enterprise": "100,000+"
               },
               {
                 "label": "Depo Başına Depolama",
@@ -2497,60 +2527,20 @@
               }
             ]
           },
-          "platform": {
-            "label": "Platform",
-            "rows": [
-              {
-                "label": "Özel Markalama",
-                "community": "—",
-                "professional": "✓",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "Ceph Depolama Havuzları",
-                "community": "—",
-                "professional": "—",
-                "business": "1",
-                "enterprise": "Unlimited"
-              },
-              {
-                "label": "Gelişmiş Analizler",
-                "community": "—",
-                "professional": "—",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "Özel Altyapı",
-                "community": "—",
-                "professional": "—",
-                "business": "—",
-                "enterprise": "✓"
-              }
-            ]
-          },
           "security": {
             "label": "Güvenlik ve Uyumluluk",
             "rows": [
               {
                 "label": "RBAC ve İzin Grupları",
-                "community": "—",
+                "community": "✓",
                 "professional": "✓",
                 "business": "✓",
                 "enterprise": "✓"
               },
               {
                 "label": "Denetim Günlükleri",
-                "community": "—",
+                "community": "✓",
                 "professional": "✓",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "Uyumluluk Raporlaması",
-                "community": "—",
-                "professional": "—",
                 "business": "✓",
                 "enterprise": "✓"
               },
@@ -2687,6 +2677,7 @@
           "description": "Uzman kurulumu ile kritik görev altyapısı",
           "features": [
             "Professional'daki her şey +",
+            "20 eşzamanlı değişken lisans",
             "Sınırsız depo, her biri 500 GB",
             "20.000 iş/ay",
             "$9.999 uygulama desteği dahil (Lansman Teklifi)",
@@ -2695,7 +2686,6 @@
             "4 saatlik geri yükleme SLA'sı",
             "Rol tabanlı erişim kontrolü ve denetim günlükleri",
             "Uyumluluk hazır raporlama",
-            "Özel müşteri başarı yöneticisi",
             "Telefon desteği + işbirliği alanları"
           ],
           "name": "İşletme"
@@ -2706,7 +2696,7 @@
             "Sınırsız kullanıcı ve takım",
             "Sınırsız depo, her biri 10 GB",
             "500 iş/ay",
-            "Sınırsız makine",
+            "2 eşzamanlı değişken lisans",
             "Anlık görüntü geri yüklemeleri",
             "Manuel zamanlama",
             "Topluluk Slack erişimi",
@@ -2718,11 +2708,13 @@
           "description": "Karmaşık kurumsal altyapı için beyaz eldiven desteği",
           "features": [
             "Business'taki her şey +",
+            "50+ eşzamanlı değişken lisans",
             "Sınırsız depo, her biri 2 TB+",
-            "100.000 iş/ay",
+            "100.000+ iş/ay",
             "Garantili geri yükleme süreleriyle özel SLA",
             "Özel altyapı kiracısı",
             "7/24/365 white-glove destek",
+            "Özel müşteri başarı yöneticisi",
             "Üç aylık hazırlık tatbikatları",
             "Yönetici yükseltme hattı",
             "Özel entegrasyonlar ve iş akışları",
@@ -2735,6 +2727,7 @@
           "description": "Büyüyen ekipler için profesyonel otomasyon ve planlama",
           "features": [
             "Community'deki her şey +",
+            "5 eşzamanlı değişken lisans",
             "Sınırsız depo, her biri 100 GB",
             "5.000 iş/ay",
             "Otomatik zamanlama",
@@ -2985,8 +2978,8 @@
         "heading": "Plan karşılaştırması",
         "metrics": [
           {
-            "key": "jobsPerMonth",
-            "label": "Aylık iş sayısı"
+            "key": "repositories",
+            "label": "Depolar"
           },
           {
             "key": "repoSize",
@@ -2997,8 +2990,8 @@
             "label": "Yüzen Lisanslar"
           },
           {
-            "key": "repositories",
-            "label": "Depolar"
+            "key": "jobsPerMonth",
+            "label": "Aylık iş sayısı"
           },
           {
             "key": "usersTeams",
@@ -3021,8 +3014,8 @@
             "usersTeams": "Sınırsız"
           },
           "enterprise": {
-            "floatingLicenses": "50",
-            "jobsPerMonth": "100,000",
+            "floatingLicenses": "50+",
+            "jobsPerMonth": "100,000+",
             "repositories": "Sınırsız",
             "repoSize": "2 TB+",
             "usersTeams": "Sınırsız"
@@ -3040,12 +3033,48 @@
         "heading": "Kurumsal Düzeyde Güvenlik ve Güvenilirlik",
         "items": ["Banka düzeyinde şifreleme", "%99,9 kesintisiz çalışma taahhüdü"]
       },
+      "trustSection": {
+        "heading": "Altyapınız. Kurallarınız.",
+        "subtitle": "Rediacc lisansları, hiçbir zaman kilitli kalmamanız için tasarlanmıştır. Bunun pratikte ne anlama geldiği aşağıdadır.",
+        "rows": [
+          {
+            "title": "Repos'larınız sonsuza kadar çalışır.",
+            "description": "Başlatma, durdurma, silme ve yedekleme — aboneliğiniz sona erdikten yıllar sonra bile her zaman çalışır. Bu işlemler son kullanma tarihini hiçbir zaman kontrol etmez. Verilerinize her zaman erişilebilir."
+          },
+          {
+            "title": "Araçlarınıza tam erişim.",
+            "description": "Dosya senkronizasyonu, VS Code uzaktan bağlantısı, SSH terminali ve tüm yönetim komutları hiçbir lisans olmadan çalışır. Tamamen kısıtlamasız, sonsuza kadar."
+          },
+          {
+            "title": "Yalnızca yeni repos'lar abonelik gerektirir.",
+            "description": "Yeni depolar oluşturmak veya mevcut olanları çatallayarak kopyalamak için aktif abonelik gereklidir. Yeniden boyutlandırma ve genişletme, süresi dolduktan sonra 60 gün çalışır. Diğer her şey kalıcıdır."
+          },
+          {
+            "title": "Ölçeklendirme için 60 günlük ek süre.",
+            "description": "Aboneliğiniz sona erdiğinde, yeniden boyutlandırma ve genişletme 60 gün daha çalışmaya devam eder. Başlatma, durdurma, silme ve yedekleme etkilenmez — sonsuza kadar çalışır."
+          },
+          {
+            "title": "Sınırsız makine. Oluşturma başına ödeme lisanslaması.",
+            "description": "Lisans slotu yalnızca bir depo oluşturulurken veya çatallanırken kullanılır — günlük operasyonlarınız hiçbir slot tüketmez. Slotlar 1 saatlik etkisizlikten sonra otomatik olarak serbest bırakılır, böylece 5 slotluk bir plan onlarca makineye hizmet verebilir. Makine başına herhangi bir ücret yoktur, asla."
+          }
+        ],
+        "svg": {
+          "noLicenseRequired": "Lisans gerekmez — her zaman çalışır",
+          "noLicenseNeeded": "Lisans gerekmez",
+          "requiredOnlyHere": "Yalnızca burada gerekli",
+          "allOperations": "Tüm işlemler",
+          "slotsAutoRelease": "Slotlar 1 saat hareketsizlik sonrasında otomatik olarak serbest bırakılır",
+          "slotsCreateFork": "Slotlar yalnızca oluşturma ve çatallama için kullanılır — günlük işlemler her zaman ücretsizdir"
+        }
+      },
       "ui": {
         "anchor": "Stratejik çapa",
         "bestValue": "En İyi Değer",
         "billingToggle": {
           "annual": "Yıllık",
-          "monthly": "Aylık"
+          "monthly": "Aylık",
+          "annualSavings": "%17 tasarruf edin — 2 ay ücretsiz",
+          "ariaLabel": "Faturalandırma dönemi"
         },
         "contactSales": "Satış Ekibiyle İletişime Geçin",
         "cta": {
@@ -3086,7 +3115,8 @@
         "monthOrYear": "ayda veya yılda {{price}}",
         "popular": "En popüler",
         "startingAt": "*Başlangıç ​​tarihi:",
-        "whatsIncluded": "Neler dahil:"
+        "whatsIncluded": "Neler dahil:",
+        "taxDisclaimer": "Tüm fiyatlar USD cinsindendir ve geçerli vergiler, harçlar ve gümrük vergileri hariçtir."
       }
     },
     "privacyPolicy": {
@@ -12408,5 +12438,19 @@
     ],
     "subtitle": "Farklı roller Rediacc'ı nasıl deneyimliyor",
     "title": "Ekipler ne diyor"
+  },
+  "tutorial": {
+    "audioControls": "Transkript ses kontrolleri",
+    "audioVolume": "Transkript ses seviyesi",
+    "muteAudio": "Transkript sesini kapat",
+    "subtitlesControls": "Transkript altyazı kontrolleri",
+    "unmuteAudio": "Transkript sesini aç"
+  },
+  "video": {
+    "disableCaptions": "Altyazıları kapat",
+    "enableCaptions": "Altyazıları aç",
+    "playVideo": "Videoyu oynat",
+    "toggleFullscreen": "Tam ekran geçişi",
+    "volume": "Ses"
   }
 }

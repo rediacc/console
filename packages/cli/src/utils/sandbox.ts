@@ -4,8 +4,13 @@
  */
 
 import { DEFAULTS } from '@rediacc/shared/config';
+import {
+  SANDBOX_READ_ONLY,
+  SANDBOX_EXECUTE,
+  SANDBOX_READ_WRITE_SYSTEM,
+} from '@rediacc/shared-desktop/vscode';
 
-export interface SandboxOptions {
+export interface TermSandboxOptions {
   allowedReadWrite: string[];
   allowedReadOnly: string[];
   allowedExecute: string[];
@@ -17,7 +22,7 @@ export interface SandboxOptions {
  * Mirrors Go's BuildSSHSandboxPrefix().
  * Returns empty string if no read-write paths are configured.
  */
-export function buildSandboxPrefix(opts: SandboxOptions, renetBinaryPath: string): string {
+export function buildSandboxPrefix(opts: TermSandboxOptions, renetBinaryPath: string): string {
   if (opts.allowedReadWrite.length === 0) return '';
 
   let prefix = `${shellQuote(renetBinaryPath)} sandbox-exec`;
@@ -47,7 +52,7 @@ export function buildTermSandboxOptions(connectionDetails?: {
   workingDirectory?: string;
   user?: string;
   environment?: Record<string, string>;
-}): SandboxOptions | null {
+}): TermSandboxOptions | null {
   if (!connectionDetails?.workingDirectory) return null;
 
   const workDir = connectionDetails.workingDirectory;
@@ -58,20 +63,9 @@ export function buildTermSandboxOptions(connectionDetails?: {
   const dockerSocket = connectionDetails.environment?.DOCKER_SOCKET;
 
   return {
-    allowedReadWrite: [workDir, '/tmp', '/dev'],
-    allowedReadOnly: [
-      homeDir,
-      '/usr',
-      '/bin',
-      '/sbin',
-      '/lib',
-      '/lib64',
-      '/etc',
-      '/proc',
-      '/sys',
-      '/var/run/rediacc',
-    ],
-    allowedExecute: ['/usr', '/bin', '/sbin'],
+    allowedReadWrite: [workDir, ...SANDBOX_READ_WRITE_SYSTEM],
+    allowedReadOnly: [homeDir, ...SANDBOX_READ_ONLY],
+    allowedExecute: [...SANDBOX_EXECUTE],
     dockerSocket,
   };
 }

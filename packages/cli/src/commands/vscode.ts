@@ -31,15 +31,14 @@ import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
+import { debugLog } from '../utils/debug.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
+import { type ConnectionDetails, getSSHConnectionDetails } from '../services/ssh-connection.js';
 import {
-  type ConnectionDetails,
-  debugLog,
   displayActiveConnections,
   displayConfigurationStatus,
   displayVSCodeInstallation,
-  getSSHConnectionDetails,
 } from './vscode-utils.js';
 
 interface VSCodeConnectOptions {
@@ -118,6 +117,7 @@ async function setupSSHConfig(
       universalUser: connectionDetails.universalUser,
       networkId: connectionDetails.networkId,
       additionalEnv: connectionDetails.environment,
+      workingDirectory: connectionDetails.workingDirectory,
     });
 
     addSSHConfigEntry(sshConfigEntry);
@@ -147,11 +147,8 @@ async function configureVSCodeAndSettings(
     }
 
     if (connectionDetails.datastore) {
-      setHostServerInstallPath(
-        connectionName,
-        `${connectionDetails.datastore}/.vscode-server`,
-        isInsiders
-      );
+      // Note: Do NOT include .vscode-server — VS Code appends it automatically
+      setHostServerInstallPath(connectionName, connectionDetails.datastore, isInsiders);
     }
 
     removeHostFromRemotePlatform(connectionName, isInsiders);

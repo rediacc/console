@@ -6,6 +6,8 @@ import {
   SHELL_FENCE_LANGS,
   TARGET_DOC_CATEGORIES,
 } from '../../scripts/lib/cli-reference-catalog.js';
+import type { Language } from '../i18n/types';
+import { createTranslator } from '../i18n/utils';
 
 interface RemarkFile {
   data: Record<string, unknown>;
@@ -25,6 +27,8 @@ export function remarkDocsCliLinks() {
   return function transformer(tree: Root, file: RemarkFile) {
     const { category, language = 'en' } = getFrontmatter(file);
     if (!category || !TARGET_DOC_CATEGORIES.has(category)) return;
+
+    const { t } = createTranslator(language as Language);
 
     visit(tree, 'code', (node: Code, index, parent) => {
       if (index === undefined || !parent) return;
@@ -56,7 +60,7 @@ export function remarkDocsCliLinks() {
 
       if (commands.length === 0) return;
 
-      const html = `<div class="cli-ref-links"><span class="cli-ref-links-label">CLI reference:</span> ${commands.join(' · ')}</div>`;
+      const html = `<div class="cli-ref-links"><span class="cli-ref-links-label">${t('documentation.cliReferenceLabel')}</span> ${commands.join(' · ')}</div>`;
       parent.children.splice(index + 1, 0, { type: 'html', value: html });
     });
   };

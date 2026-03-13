@@ -9,14 +9,12 @@ interface Props {
 const { lang = 'en' } = Astro.props;
 const { t, to } = createTranslator(lang);
 const items = to('integrations.items') as string[];
-const migrationMessage =
-  'Rediacc turns your stack into a single portable file. If you already run Docker, migration is straightforward.';
 ---
 
 <section class="integrations-strip">
   <div class="container">
     <h3 class="integrations-strip-title reveal">{t('integrations.title')}</h3>
-    <p class="integrations-strip-subtitle reveal">{migrationMessage}</p>
+    <p class="integrations-strip-subtitle reveal">{t('integrations.migrationMessage')}</p>
     <div class="integrations-strip-row reveal">
       {items.map((item) => (
         <span class="integrations-strip-badge">{item}</span>

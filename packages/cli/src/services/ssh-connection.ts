@@ -1,6 +1,12 @@
+/**
+ * Unified SSH connection details service.
+ * Consolidates vault extraction and environment building for term, vscode, and sync commands.
+ */
+
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
-import { getStateProvider } from '../providers/index.js';
 import { t } from '../i18n/index.js';
+import { getStateProvider } from '../providers/index.js';
+import { debugLog } from '../utils/debug.js';
 
 export interface ConnectionDetails {
   host: string;
@@ -8,15 +14,22 @@ export interface ConnectionDetails {
   port: number;
   privateKey: string;
   known_hosts: string;
+  datastore: string;
+  universalUser: string;
   environment?: Record<string, string>;
   workingDirectory?: string;
+  repositoryPath?: string;
+  networkId?: string;
 }
 
-function debugLog(message: string): void {
-  if (process.env.REDIACC_DEBUG || process.env.DEBUG) {
-    // eslint-disable-next-line no-console
-    console.log(`[DEBUG] ${message}`);
-  }
+interface BaseConnectionInfo {
+  host: string;
+  port: number;
+  privateKey: string;
+  knownHosts: string;
+  datastore: string;
+  universalUser: string;
+  sshUser: string;
 }
 
 function extractBaseConnectionInfo(
@@ -24,7 +37,7 @@ function extractBaseConnectionInfo(
   teamVault: Record<string, unknown>,
   machineName: string,
   teamName: string
-) {
+): BaseConnectionInfo {
   const host = (machineVault.ip ?? machineVault.host) as string | undefined;
   const port = (machineVault.port ?? DEFAULTS.SSH.PORT) as number;
   const privateKey = (teamVault.SSH_PRIVATE_KEY ?? teamVault.sshPrivateKey) as string | undefined;
@@ -35,19 +48,19 @@ function extractBaseConnectionInfo(
   const sshUser = (machineVault.user ?? universalUser) as string;
 
   if (!host) {
-    throw new Error(t('errors.term.noIpAddress', { machine: machineName }));
+    throw new Error(t('errors.ssh.noIpAddress', { machine: machineName }));
   }
   if (!privateKey) {
-    throw new Error(t('errors.term.noPrivateKey', { team: teamName }));
+    throw new Error(t('errors.ssh.noPrivateKey', { team: teamName }));
   }
   if (!knownHosts) {
-    throw new Error(t('errors.term.noHostKey', { machine: machineName }));
+    throw new Error(t('errors.ssh.noHostKey', { machine: machineName }));
   }
 
   return { host, port, privateKey, knownHosts, datastore, universalUser, sshUser };
 }
 
-function buildRepositoryEnvironment(
+function buildRepositoryEnvFromVault(
   teamName: string,
   machineName: string,
   repositoryName: string,
@@ -55,7 +68,12 @@ function buildRepositoryEnvironment(
   repoVault: Record<string, unknown>,
   datastore: string,
   universalUser: string
-): { environment: Record<string, string>; workingDirectory: string } {
+): {
+  environment: Record<string, string>;
+  workingDirectory: string;
+  repositoryPath: string;
+  networkId: string;
+} {
   const repositoryPath = (repoVault.path ?? `/home/${repositoryName}`) as string;
   const networkId = (repoVault.networkId ?? '') as string;
   const networkMode = (repoVault.networkMode ??
@@ -90,15 +108,16 @@ function buildRepositoryEnvironment(
     UNIVERSAL_USER_NAME: universalUser,
     UNIVERSAL_USER_ID: (machineVault.universalUserId ??
       DEFAULTS.REPOSITORY.UNIVERSAL_USER_ID) as string,
+    REDIACC_WORKING_DIR: workingDirectory,
     ...(typeof repoVault.environment === 'object' && repoVault.environment !== null
       ? (repoVault.environment as Record<string, string>)
       : {}),
   };
 
-  return { environment, workingDirectory };
+  return { environment, workingDirectory, repositoryPath, networkId };
 }
 
-function buildMachineEnvironment(
+function buildMachineEnvFromVault(
   teamName: string,
   machineName: string,
   datastore: string,
@@ -134,14 +153,19 @@ export async function getSSHConnectionDetails(
 
   const baseInfo = extractBaseConnectionInfo(machineVault, teamVault, machineName, teamName);
 
-  let envData: { environment: Record<string, string>; workingDirectory: string };
+  let envData: {
+    environment: Record<string, string>;
+    workingDirectory: string;
+    repositoryPath?: string;
+    networkId?: string;
+  };
 
   if (repositoryName) {
     debugLog(`Using repository vault for: ${repositoryName}`);
     const repoVault = vaults.repositoryVault ?? {};
     debugLog(`Repository vault fields: ${Object.keys(repoVault).join(', ') || '(empty)'}`);
 
-    envData = buildRepositoryEnvironment(
+    envData = buildRepositoryEnvFromVault(
       teamName,
       machineName,
       repositoryName,
@@ -152,8 +176,8 @@ export async function getSSHConnectionDetails(
     );
     debugLog(`Working directory: ${envData.workingDirectory}`);
   } else {
-    debugLog('Machine-only mode (no repository specified)');
-    envData = buildMachineEnvironment(
+    debugLog('Machine-only connection (no repository specified)');
+    envData = buildMachineEnvFromVault(
       teamName,
       machineName,
       baseInfo.datastore,
@@ -173,7 +197,11 @@ export async function getSSHConnectionDetails(
     port: baseInfo.port,
     privateKey: baseInfo.privateKey,
     known_hosts: baseInfo.knownHosts,
+    datastore: baseInfo.datastore,
+    universalUser: baseInfo.universalUser,
     environment: envData.environment,
     workingDirectory: envData.workingDirectory,
+    repositoryPath: envData.repositoryPath,
+    networkId: envData.networkId,
   };
 }

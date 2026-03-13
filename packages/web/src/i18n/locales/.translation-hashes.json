@@ -2,7 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3379
+    "keyCount": 3379,
+    "sourceCommit": "478bcf6c1106fb8a8c59fbcb06d245445178bf65"
   },
   "hashes": {
     "auth.endpointSelector.addCustom": "c27ca9dd",

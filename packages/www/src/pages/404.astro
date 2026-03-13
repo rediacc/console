@@ -63,9 +63,9 @@ const structuredData = {
             <h2>{t('pages.notFound.suggestions.title')}</h2>
             <ul>
               <li>{t('pages.notFound.suggestions.items.0')}</li>
-              <li>Go back to the <a href="/">{t('pages.notFound.suggestions.links.homepage')}</a></li>
-              <li>Learn about our <a href="/#solutions">{t('pages.notFound.suggestions.links.solutions')}</a></li>
-              <li>Get in touch through our <a href="/contact">{t('pages.notFound.suggestions.links.contact')}</a></li>
+              <li>{t('pages.notFound.suggestions.goBackPrefix')} <a href="/">{t('pages.notFound.suggestions.links.homepage')}</a></li>
+              <li>{t('pages.notFound.suggestions.learnAboutPrefix')} <a href="/#solutions">{t('pages.notFound.suggestions.links.solutions')}</a></li>
+              <li>{t('pages.notFound.suggestions.getInTouchPrefix')} <a href="/contact">{t('pages.notFound.suggestions.links.contact')}</a></li>
             </ul>
           </div>
 
@@ -80,8 +80,6 @@ const structuredData = {
         <h3>{t('pages.notFound.help.title')}</h3>
         <p>
           {t('pages.notFound.help.description')}
-          <a href="/contact">{t('pages.notFound.help.link')}</a>. We're here to help you
-          find what you're looking for.
         </p>
       </div>
     </div>

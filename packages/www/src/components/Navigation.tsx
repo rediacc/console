@@ -240,7 +240,7 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
               data-track-label="nav-login"
               data-track-dest="account"
             >
-              Account
+              {t('navigation.account')}
             </a>
           </div>
         </div>

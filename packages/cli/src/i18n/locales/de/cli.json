@@ -1416,6 +1416,15 @@
       }
     },
     "subscription": {
+      "activationStatus": {
+        "activations": "  Aktivierungen: {{active}}/{{max}}",
+        "active": "  Aktivierung: aktiv (zuletzt gesehen {{lastSeenAt}})",
+        "description": "Aktivierungsstatus für eine Maschine anzeigen",
+        "header": "\nMaschinenaktivierung ({{machineName}})",
+        "inactive": "  Aktivierung: Maschine ist im Kontostatus derzeit nicht aktiv",
+        "machineId": "  Maschinen-ID: {{machineId}}",
+        "unavailable": "  Aktivierung: Kontostatus konnte nicht abgefragt werden"
+      },
       "description": "Maschinenlizenzierung und Abonnement verwalten",
       "login": {
         "browserFailed": "Browser konnte nicht automatisch geöffnet werden. Bitte besuchen Sie die obige URL.",
@@ -1435,15 +1444,49 @@
       },
       "refresh": {
         "description": "Maschinenlizenz erneuern",
+        "failed": "Maschinenlizenz konnte nicht ausgestellt werden",
         "refreshed": "Lizenz erneuert",
         "refreshing": "Lizenz wird erneuert...",
-        "success": "Lizenz erneuert und installiert",
-        "failed": "Maschinenlizenz konnte nicht ausgestellt werden"
+        "success": "Lizenz erneuert und installiert"
+      },
+      "refreshActivation": {
+        "description": "Maschinenaktivierung auf einer Remote-Maschine aktualisieren"
+      },
+      "refreshRepo": {
+        "description": "Repo-Lizenz für ein bestehendes Repository auf einer Maschine aktualisieren",
+        "failed": "Repo-Lizenz konnte nicht aktualisiert werden",
+        "notFound": "Repository nicht gefunden: {{repoName}}",
+        "refreshed": "Repo-Lizenz aktualisiert",
+        "refreshing": "Repo-Lizenz wird aktualisiert...",
+        "repoArgument": "Repository-Name",
+        "success": "Repo-Lizenz für \"{{repoName}}\" aktualisiert"
+      },
+      "refreshRepos": {
+        "description": "Repo-Lizenzen auf einer Remote-Maschine gesammelt aktualisieren",
+        "refreshed": "Repo-Lizenzen aktualisiert",
+        "refreshing": "Repo-Lizenzen werden aktualisiert...",
+        "success": "Stapelaktualisierung der Repo-Lizenzen abgeschlossen"
+      },
+      "repoStatus": {
+        "description": "Installierte Repo-Lizenzen auf einer Maschine anzeigen",
+        "empty": "  Keine Repo-Lizenzen installiert",
+        "entry": "  - Repo {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
+        "freshness": {
+          "hardExpired": "hart abgelaufen",
+          "refreshRecommended": "Aktualisierung empfohlen",
+          "unknown": "unbekannt",
+          "valid": "gültig"
+        },
+        "hardExpirySuffix": " (hartes Ablaufdatum: {{effectiveHardExpiry}})",
+        "header": "\nRepo-Lizenzen: ({{machineName}})"
       },
       "status": {
         "description": "Abonnement- und Lizenzstatus anzeigen",
         "expired": "  Lizenz ist ABGELAUFEN — führen Sie `rdc subscription refresh` aus",
         "expires": "  Läuft ab:   {{expiresAt}}",
+        "issuanceLimitReached": "Das monatliche Kontingent für Repo-Lizenzerteilungen im aktuellen UTC-Kalendermonat ist erreicht.",
+        "issuanceUsageHigh80": "Die monatlichen Repo-Lizenzerteilungen liegen über 80 % des aktuellen UTC-Limits.",
+        "issuanceUsageHigh95": "Die monatlichen Repo-Lizenzerteilungen liegen über 95 % des aktuellen UTC-Limits.",
         "issued": "  Ausgestellt: {{issuedAt}}",
         "localLicense": "Lokale Lizenz:",
         "machine": "  Maschine: {{machineId}}",
@@ -1452,59 +1495,16 @@
         "plan": "  Tarif:    {{plan}}",
         "remote": "\nRemote-Abonnement:",
         "remoteMachine": "    - {{id}}... (zuletzt gesehen: {{lastSeen}})",
+        "remoteMachineActivations": "  Maschinenaktivierungen: {{active}}/{{max}}",
         "remoteMachines": "  Maschinen: {{active}}/{{max}}",
         "remotePlan": "  Tarif:    {{plan}}",
-        "remoteStatus": "  Zustand:  {{status}}",
-        "sequence": "  Sequenz:  {{sequenceNumber}}",
-        "statusLabel": "  Zustand:  {{status}}",
-        "valid": "  Gültig (läuft in {{mins}} Minuten ab)",
-        "serverMismatch": "Das Dev-Token gehört zu {{actualServerUrl}}, aber dieser Worktree verwendet {{expectedServerUrl}}. Führe `rdc subscription login` erneut aus.",
-        "remoteMachineActivations": "  Maschinenaktivierungen: {{active}}/{{max}}",
         "remoteRepoLicenseIssuances": "  Floating-Lizenzanfragen: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  Repo-Lizenzen: {{totalTrackedRepos}} verfolgt, {{validCount}} gültig, {{refreshRecommendedCount}} Aktualisierung empfohlen, {{hardExpiredCount}} hart abgelaufen",
-        "issuanceLimitReached": "Das monatliche Kontingent für Repo-Lizenzerteilungen im aktuellen UTC-Kalendermonat ist erreicht.",
-        "issuanceUsageHigh95": "Die monatlichen Repo-Lizenzerteilungen liegen über 95 % des aktuellen UTC-Limits.",
-        "issuanceUsageHigh80": "Die monatlichen Repo-Lizenzerteilungen liegen über 80 % des aktuellen UTC-Limits."
-      },
-      "activationStatus": {
-        "description": "Aktivierungsstatus für eine Maschine anzeigen",
-        "header": "\nMaschinenaktivierung ({{machineName}})",
-        "unavailable": "  Aktivierung: Kontostatus konnte nicht abgefragt werden",
-        "machineId": "  Maschinen-ID: {{machineId}}",
-        "activations": "  Aktivierungen: {{active}}/{{max}}",
-        "active": "  Aktivierung: aktiv (zuletzt gesehen {{lastSeenAt}})",
-        "inactive": "  Aktivierung: Maschine ist im Kontostatus derzeit nicht aktiv"
-      },
-      "refreshActivation": {
-        "description": "Maschinenaktivierung auf einer Remote-Maschine aktualisieren"
-      },
-      "refreshRepos": {
-        "description": "Repo-Lizenzen auf einer Remote-Maschine gesammelt aktualisieren",
-        "refreshing": "Repo-Lizenzen werden aktualisiert...",
-        "refreshed": "Repo-Lizenzen aktualisiert",
-        "success": "Stapelaktualisierung der Repo-Lizenzen abgeschlossen"
-      },
-      "repoStatus": {
-        "description": "Installierte Repo-Lizenzen auf einer Maschine anzeigen",
-        "header": "\nRepo-Lizenzen: ({{machineName}})",
-        "empty": "  Keine Repo-Lizenzen installiert",
-        "entry": "  - Repo {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
-        "hardExpirySuffix": " (hartes Ablaufdatum: {{effectiveHardExpiry}})",
-        "freshness": {
-          "unknown": "unbekannt",
-          "hardExpired": "hart abgelaufen",
-          "refreshRecommended": "Aktualisierung empfohlen",
-          "valid": "gültig"
-        }
-      },
-      "refreshRepo": {
-        "description": "Repo-Lizenz für ein bestehendes Repository auf einer Maschine aktualisieren",
-        "repoArgument": "Repository-Name",
-        "refreshing": "Repo-Lizenz wird aktualisiert...",
-        "notFound": "Repository nicht gefunden: {{repoName}}",
-        "failed": "Repo-Lizenz konnte nicht aktualisiert werden",
-        "refreshed": "Repo-Lizenz aktualisiert",
-        "success": "Repo-Lizenz für \"{{repoName}}\" aktualisiert"
+        "remoteStatus": "  Zustand:  {{status}}",
+        "sequence": "  Sequenz:  {{sequenceNumber}}",
+        "serverMismatch": "Das Dev-Token gehört zu {{actualServerUrl}}, aber dieser Worktree verwendet {{expectedServerUrl}}. Führe `rdc subscription login` erneut aus.",
+        "statusLabel": "  Zustand:  {{status}}",
+        "valid": "  Gültig (läuft in {{mins}} Minuten ab)"
       }
     },
     "sync": {
@@ -1932,6 +1932,11 @@
     "repositoryRequired": "Repository-Name erforderlich. Verwenden Sie --repository <name>.",
     "resourceNotFound": "{{resource}} nicht gefunden",
     "sshKeyNotFound": "SSH-Schlüssel nicht gefunden: {{path}}",
+    "ssh": {
+      "noIpAddress": "Machine '{{machine}}' hat keine IP-Adresse konfiguriert",
+      "noPrivateKey": "Team '{{team}}' hat keinen SSH-Private-Key konfiguriert",
+      "noHostKey": "Machine '{{machine}}' hat keinen Host-Schlüssel im Vault konfiguriert"
+    },
     "subscription": {
       "notLoggedIn": "Nicht angemeldet. Führen Sie zuerst `rdc subscription login` aus."
     },

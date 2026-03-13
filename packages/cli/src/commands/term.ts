@@ -8,9 +8,10 @@ import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
-import { getSSHConnectionDetails, type ConnectionDetails } from './term-connection.js';
+import { getSSHConnectionDetails, type ConnectionDetails } from '../services/ssh-connection.js';
 import { assertAgentMachineAccess } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
+import { debugLog } from '../utils/debug.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { detectRepoContextCommand } from '../utils/repo-context-guard.js';
 import {
@@ -34,16 +35,6 @@ interface TermConnectOptions {
   follow?: boolean;
   external?: boolean;
   [key: string]: unknown;
-}
-
-/**
- * Debug logging helper - outputs when REDIACC_DEBUG or DEBUG env var is set
- */
-function debugLog(message: string): void {
-  if (process.env.REDIACC_DEBUG || process.env.DEBUG) {
-    // eslint-disable-next-line no-console
-    console.log(`[DEBUG] ${message}`);
-  }
 }
 
 type ContainerAction = 'terminal' | 'logs' | 'stats' | 'exec';
@@ -99,20 +90,23 @@ function buildShellCommand(
   envPrefix: string,
   sandbox: string
 ): string {
-  const ensureBashSetup = `[ -f ~/.bashrc-rediacc ] || { ${generateSetupCommand()}; }`;
+  const ensureBashSetup = generateSetupCommand();
   const sourceCmd = generateSourceCommand();
   const userCmd = options.command;
 
+  // --rcfile sources ~/.bashrc first, then our functions, so PS1 isn't overridden
+  const rcfile = `--rcfile <(echo "source ~/.bashrc 2>/dev/null; ${sourceCmd}")`;
+
   if (sandbox) {
     const setupPart = `${envPrefix}${ensureBashSetup}; `;
-    const inner = userCmd ? `${sourceCmd} && ${userCmd}` : `${sourceCmd} && exec bash`;
+    const inner = userCmd ? `${sourceCmd} && ${userCmd}` : `exec bash ${rcfile}`;
     return `${setupPart}${sandbox} bash -c '${shellEscapeForBashC(inner)}'`;
   }
 
-  const ensureBashFunctions = `${ensureBashSetup}; ${sourceCmd}`;
-  return userCmd
-    ? `${envPrefix}${ensureBashFunctions} && ${userCmd}`
-    : `${envPrefix}${ensureBashFunctions} && exec bash`;
+  if (userCmd) {
+    return `${envPrefix}${ensureBashSetup}; ${sourceCmd} && ${userCmd}`;
+  }
+  return `${envPrefix}${ensureBashSetup}; exec bash ${rcfile}`;
 }
 
 function buildRemoteCommand(

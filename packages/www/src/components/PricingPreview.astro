@@ -2,34 +2,52 @@
 import { createTranslator } from '../i18n/utils';
 import type { Language } from '../i18n/types';
 import { PLAN_ORDER, PLAN_PRICING, PLAN_METADATA } from '@rediacc/shared/subscription';
-import { EXTERNAL_LINKS } from '../config/constants';
-import { TEAM_MEMBERS } from '../config/team-videos';
+import CfPricingCard from './CfPricingCard.astro';
+import FounderGuarantee from './FounderGuarantee.astro';
 import '../styles/pricing-page.css';
 
 interface Props {
   lang?: Language;
-  guaranteeMember?: string;
 }
 
-const { lang = 'en', guaranteeMember = 'founder' } = Astro.props;
+const { lang = 'en' } = Astro.props;
 const { t, ta, to } = createTranslator(lang);
-const guarantorData = TEAM_MEMBERS[guaranteeMember];
-
-const priceFormatter = new Intl.NumberFormat(lang === 'en' ? 'en-US' : lang, {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-});
-const formatPrice = (amount: number) => priceFormatter.format(amount);
 
 const technicalMetrics = ta('pages.pricing.technicalSummary.metrics');
 const technicalValues = to('pages.pricing.technicalSummary.values');
 
-const plans = PLAN_ORDER.map((code) => ({
-  id: code.toLowerCase(),
-  monthly: PLAN_PRICING[code].monthlyPriceCents / 100,
-  featured: PLAN_METADATA[code].featured,
-}));
+const badgeConfig: Record<string, { isPopular?: boolean; badgeLabel?: string; badgeVariant?: string }> = {
+  professional: {
+    isPopular: true,
+    badgeLabel: t('pages.pricing.ui.popular'),
+    badgeVariant: 'popular',
+  },
+  business: {
+    badgeLabel: `${t('pages.pricing.ui.bestValue')} · ${t('pages.pricing.ui.limitedOffer')}`,
+    badgeVariant: 'best-value',
+  },
+};
+
+const plans = PLAN_ORDER.map((code) => {
+  const id = code.toLowerCase();
+  const monthly = PLAN_PRICING[code].monthlyPriceCents / 100;
+  const badge = badgeConfig[id];
+  return {
+    id,
+    monthly,
+    annual: monthly * 10,
+    isPopular: badge?.isPopular ?? false,
+    badgeLabel: badge?.badgeLabel,
+    badgeVariant: badge?.badgeVariant,
+  };
+});
+
+const buildMetrics = (planId: string) =>
+  technicalMetrics.map((metric: any) => ({
+    label: metric.label,
+    tooltip: metric.tooltip,
+    value: technicalValues?.[planId]?.[metric.key] ?? '—',
+  }));
 ---
 
 <section class="cf-pricing-section" id="pricing">
@@ -38,78 +56,77 @@ const plans = PLAN_ORDER.map((code) => ({
       <h2 class="section-title">{t('pricingPreview.title')}</h2>
       <p class="section-subtitle">{t('pricingPreview.subtitle')}</p>
     </div>
+    <div class="billing-toggle-wrapper reveal">
+      <div class="billing-toggle" role="radiogroup" aria-label={t('pages.pricing.ui.billingToggle.ariaLabel')}>
+        <button
+          type="button"
+          role="radio"
+          class="billing-toggle-btn"
+          data-period="monthly"
+          aria-checked="false"
+        >
+          {t('pages.pricing.ui.billingToggle.monthly')}
+        </button>
+        <button
+          type="button"
+          role="radio"
+          class="billing-toggle-btn active"
+          data-period="annual"
+          aria-checked="true"
+        >
+          {t('pages.pricing.ui.billingToggle.annual')}
+        </button>
+      </div>
+      <span class="billing-toggle-savings visible">{t('pages.pricing.ui.billingToggle.annualSavings')}</span>
+    </div>
     <div class="cf-pricing-grid reveal">
       {plans.map(plan => (
-        <div class:list={['cf-pricing-card', { 'cf-featured': plan.featured }]}>
-          <h3 class="cf-plan-name">{t(`pages.pricing.plans.${plan.id}.name`)}</h3>
-          <div class="cf-price-block">
-            {plan.monthly === 0 ? (
-              <>
-                <span class="cf-price">{formatPrice(0)}</span>
-                <div class="cf-price-subtitle">{t('pages.pricing.ui.foreverFree')}</div>
-              </>
-            ) : (
-              <div class="cf-price-line">
-                <span class="cf-price">{formatPrice(plan.monthly)}</span>
-                <span class="cf-price-period">/mo</span>
-              </div>
-            )}
-          </div>
-          <ul class="cf-features">
-            {technicalMetrics.map((metric: any) => (
-              <li>
-                <span
-                  class="cf-feature-info"
-                  data-tooltip={metric.tooltip ?? metric.label}
-                  aria-label={metric.tooltip ?? metric.label}
-                  tabindex="0"
-                >
-                  i
-                </span>
-                <span><strong>{technicalValues?.[plan.id]?.[metric.key] ?? '—'}</strong> {metric.label}</span>
-              </li>
-            ))}
-          </ul>
-          {plan.monthly === 0 ? (
-            <a
-              href={`/${lang}/install`}
-              class:list={['cf-cta-btn', { 'cf-cta-featured': plan.featured }]}
-              data-track="cta_click"
-              data-track-label="pricing-cta"
-              data-track-dest={plan.id}
-            >
-              {t('pages.pricing.ui.cta.community.primary')}
-            </a>
-          ) : (
-            <a
-              href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="cf-cta-btn"
-              data-track="cta_click"
-              data-track-label="pricing-cta"
-              data-track-dest={plan.id}
-            >
-              {t(`pages.pricing.ui.cta.${plan.id}.primary`)}
-            </a>
-          )}
-        </div>
+        <CfPricingCard plan={plan} metrics={buildMetrics(plan.id)} lang={lang} />
       ))}
     </div>
+    <p class="pricing-tax-note">{t('pages.pricing.ui.taxDisclaimer')}</p>
     <a href={`/${lang}/pricing`} class="pricing-preview-compare" data-track="cta_click" data-track-label="pricing-compare">
       {t('pricingPreview.compareAll')} &rarr;
     </a>
-    {guarantorData && (
-      <div class="cf-guarantee-strip">
-        <img
-          src={guarantorData.photos.headshot}
-          alt={guarantorData.name}
-          class="cf-guarantee-photo"
-          loading="lazy"
-          decoding="async"
-        />
-        <p class="cf-guarantee-text">{t(`team.${guaranteeMember}.guarantee`)}</p>
-      </div>
-    )}
+    <FounderGuarantee lang={lang} />
   </div>
 </section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const section = document.getElementById('pricing');
+    if (!section) return;
+
+    const toggleBtns = section.querySelectorAll<HTMLButtonElement>('.billing-toggle .billing-toggle-btn');
+    const savingsLabel = section.querySelector<HTMLElement>('.billing-toggle-savings');
+    if (!toggleBtns.length) return;
+
+    toggleBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const period = btn.dataset.period;
+        if (!period) return;
+
+        toggleBtns.forEach((b) => {
+          const isActive = b === btn;
+          b.classList.toggle('active', isActive);
+          b.setAttribute('aria-checked', isActive ? 'true' : 'false');
+        });
+
+        if (savingsLabel) {
+          savingsLabel.classList.toggle('visible', period === 'annual');
+        }
+
+        // Update prices
+        section.querySelectorAll<HTMLElement>('.cf-price[data-monthly]').forEach((el) => {
+          el.textContent = period === 'annual' ? el.dataset.annual! : el.dataset.monthly!;
+        });
+        section.querySelectorAll<HTMLElement>('.cf-price-period[data-monthly]').forEach((el) => {
+          el.textContent = period === 'annual' ? el.dataset.annual! : el.dataset.monthly!;
+        });
+        section.querySelectorAll<HTMLElement>('.cf-annual-note[data-monthly]').forEach((el) => {
+          el.textContent = period === 'annual' ? el.dataset.annual! : el.dataset.monthly!;
+        });
+      });
+    });
+  });
+</script>

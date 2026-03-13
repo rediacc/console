@@ -13,6 +13,8 @@ import {
   getCaptionPath,
   getMemberVideo,
 } from '../config/team-videos';
+import { useTranslation } from '../i18n/react';
+import type { Language } from '../i18n/types';
 import '../styles/team-video.css';
 
 interface TeamVideoPlayerProps {
@@ -101,6 +103,7 @@ const TeamVideoPlayer: FC<TeamVideoPlayerProps> = ({
   size = 'full',
   className,
 }) => {
+  const { t } = useTranslation(lang as Language);
   const video = getMemberVideo(member, videoKey);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -307,7 +310,7 @@ const TeamVideoPlayer: FC<TeamVideoPlayerProps> = ({
           type="button"
           className="tv-facade"
           onClick={startPlayback}
-          aria-label="Play video"
+          aria-label={t('video.playVideo')}
           data-track="team-video-play-facade"
         >
           <img
@@ -384,7 +387,7 @@ const TeamVideoPlayer: FC<TeamVideoPlayerProps> = ({
               value={volume}
               onChange={(e) => setVolume(Number(e.currentTarget.value))}
               className="tv-volume-slider"
-              aria-label="Volume"
+              aria-label={t('video.volume')}
             />
           </span>
 
@@ -392,7 +395,7 @@ const TeamVideoPlayer: FC<TeamVideoPlayerProps> = ({
             type="button"
             className={`tv-ctrl-btn tv-cc-btn${ccEnabled ? ' is-active' : ''}`}
             onClick={() => setCcEnabled(!ccEnabled)}
-            aria-label={ccEnabled ? 'Disable captions' : 'Enable captions'}
+            aria-label={ccEnabled ? t('video.disableCaptions') : t('video.enableCaptions')}
             aria-pressed={ccEnabled}
             data-track="team-video-toggle-cc"
           >
@@ -403,7 +406,7 @@ const TeamVideoPlayer: FC<TeamVideoPlayerProps> = ({
             type="button"
             className="tv-ctrl-btn"
             onClick={toggleFullscreen}
-            aria-label="Toggle fullscreen"
+            aria-label={t('video.toggleFullscreen')}
             data-track="team-video-toggle-fullscreen"
           >
             <FullscreenIcon />

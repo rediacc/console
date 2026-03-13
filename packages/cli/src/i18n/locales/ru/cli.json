@@ -1416,6 +1416,15 @@
       }
     },
     "subscription": {
+      "activationStatus": {
+        "activations": "  Активации: {{active}}/{{max}}",
+        "active": "  Активация: активна (последний раз замечена {{lastSeenAt}})",
+        "description": "Показать статус активации одной машины",
+        "header": "\nАктивация машины ({{machineName}})",
+        "inactive": "  Активация: машина сейчас не активна в состоянии аккаунта",
+        "machineId": "  Идентификатор машины: {{machineId}}",
+        "unavailable": "  Активация: не удалось запросить состояние аккаунта"
+      },
       "description": "Управление лицензиями машин и подпиской",
       "login": {
         "browserFailed": "Не удалось открыть браузер автоматически. Пожалуйста, перейдите по указанному URL.",
@@ -1435,15 +1444,49 @@
       },
       "refresh": {
         "description": "Обновить лицензию машины",
+        "failed": "Не удалось выдать лицензию машины",
         "refreshed": "Лицензия обновлена",
         "refreshing": "Обновление лицензии...",
-        "success": "Лицензия обновлена и установлена",
-        "failed": "Не удалось выдать лицензию машины"
+        "success": "Лицензия обновлена и установлена"
+      },
+      "refreshActivation": {
+        "description": "Обновить активацию машины на удалённой машине"
+      },
+      "refreshRepo": {
+        "description": "Обновить лицензию репозитория для существующего репозитория на машине",
+        "failed": "Не удалось обновить лицензию репозитория",
+        "notFound": "Репозиторий не найден: {{repoName}}",
+        "refreshed": "Лицензия репозитория обновлена",
+        "refreshing": "Обновление лицензии репозитория...",
+        "repoArgument": "Имя репозитория",
+        "success": "Лицензия репозитория обновлена для \"{{repoName}}\""
+      },
+      "refreshRepos": {
+        "description": "Пакетно обновить лицензии репозиториев на удалённой машине",
+        "refreshed": "Лицензии репозитория обновлены",
+        "refreshing": "Обновление лицензий репозитория...",
+        "success": "Пакетное обновление лицензий репозитория завершено"
+      },
+      "repoStatus": {
+        "description": "Показать установленные лицензии репозитория на машине",
+        "empty": "  Лицензии репозитория не установлены",
+        "entry": "  - Репозиторий {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
+        "freshness": {
+          "hardExpired": "полностью истекла",
+          "refreshRecommended": "рекомендуется обновить",
+          "unknown": "неизвестно",
+          "valid": "действует"
+        },
+        "hardExpirySuffix": " (окончательное истечение: {{effectiveHardExpiry}})",
+        "header": "\nЛицензии репозитория: ({{machineName}})"
       },
       "status": {
         "description": "Показать статус подписки и лицензии",
         "expired": "  Лицензия ИСТЕКЛА — выполните `rdc subscription refresh`",
         "expires": "  Истекает: {{expiresAt}}",
+        "issuanceLimitReached": "Достигнут месячный лимит выдачи лицензий репозитория для текущего календарного месяца UTC.",
+        "issuanceUsageHigh80": "Месячные выдачи лицензий репозитория превысили 80 % текущего лимита UTC.",
+        "issuanceUsageHigh95": "Месячные выдачи лицензий репозитория превысили 95 % текущего лимита UTC.",
         "issued": "  Выдана:   {{issuedAt}}",
         "localLicense": "Локальная лицензия:",
         "machine": "  Машина:  {{machineId}}",
@@ -1452,59 +1495,16 @@
         "plan": "  Тариф:   {{plan}}",
         "remote": "\nУдалённая подписка:",
         "remoteMachine": "    - {{id}}... (последний раз: {{lastSeen}})",
+        "remoteMachineActivations": "  Активации машин: {{active}}/{{max}}",
         "remoteMachines": "  Машины: {{active}}/{{max}}",
         "remotePlan": "  Тариф:   {{plan}}",
-        "remoteStatus": "  Статус:   {{status}}",
-        "sequence": "  Секвенция: {{sequenceNumber}}",
-        "statusLabel": "  Статус:   {{status}}",
-        "valid": "  Действительна (истекает через {{mins}} минут)",
-        "serverMismatch": "Токен разработки принадлежит {{actualServerUrl}}, но этот worktree использует {{expectedServerUrl}}. Снова выполните `rdc subscription login`.",
-        "remoteMachineActivations": "  Активации машин: {{active}}/{{max}}",
         "remoteRepoLicenseIssuances": "  Запросы плавающих лицензий: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  Лицензии репозитория: отслеживается {{totalTrackedRepos}}, действует {{validCount}}, рекомендуется обновить {{refreshRecommendedCount}}, полностью истекло {{hardExpiredCount}}",
-        "issuanceLimitReached": "Достигнут месячный лимит выдачи лицензий репозитория для текущего календарного месяца UTC.",
-        "issuanceUsageHigh95": "Месячные выдачи лицензий репозитория превысили 95 % текущего лимита UTC.",
-        "issuanceUsageHigh80": "Месячные выдачи лицензий репозитория превысили 80 % текущего лимита UTC."
-      },
-      "activationStatus": {
-        "description": "Показать статус активации одной машины",
-        "header": "\nАктивация машины ({{machineName}})",
-        "unavailable": "  Активация: не удалось запросить состояние аккаунта",
-        "machineId": "  Идентификатор машины: {{machineId}}",
-        "activations": "  Активации: {{active}}/{{max}}",
-        "active": "  Активация: активна (последний раз замечена {{lastSeenAt}})",
-        "inactive": "  Активация: машина сейчас не активна в состоянии аккаунта"
-      },
-      "refreshActivation": {
-        "description": "Обновить активацию машины на удалённой машине"
-      },
-      "refreshRepos": {
-        "description": "Пакетно обновить лицензии репозиториев на удалённой машине",
-        "refreshing": "Обновление лицензий репозитория...",
-        "refreshed": "Лицензии репозитория обновлены",
-        "success": "Пакетное обновление лицензий репозитория завершено"
-      },
-      "repoStatus": {
-        "description": "Показать установленные лицензии репозитория на машине",
-        "header": "\nЛицензии репозитория: ({{machineName}})",
-        "empty": "  Лицензии репозитория не установлены",
-        "entry": "  - Репозиторий {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
-        "hardExpirySuffix": " (окончательное истечение: {{effectiveHardExpiry}})",
-        "freshness": {
-          "unknown": "неизвестно",
-          "hardExpired": "полностью истекла",
-          "refreshRecommended": "рекомендуется обновить",
-          "valid": "действует"
-        }
-      },
-      "refreshRepo": {
-        "description": "Обновить лицензию репозитория для существующего репозитория на машине",
-        "repoArgument": "Имя репозитория",
-        "refreshing": "Обновление лицензии репозитория...",
-        "notFound": "Репозиторий не найден: {{repoName}}",
-        "failed": "Не удалось обновить лицензию репозитория",
-        "refreshed": "Лицензия репозитория обновлена",
-        "success": "Лицензия репозитория обновлена для \"{{repoName}}\""
+        "remoteStatus": "  Статус:   {{status}}",
+        "sequence": "  Секвенция: {{sequenceNumber}}",
+        "serverMismatch": "Токен разработки принадлежит {{actualServerUrl}}, но этот worktree использует {{expectedServerUrl}}. Снова выполните `rdc subscription login`.",
+        "statusLabel": "  Статус:   {{status}}",
+        "valid": "  Действительна (истекает через {{mins}} минут)"
       }
     },
     "sync": {
@@ -1932,6 +1932,11 @@
     "repositoryRequired": "Требуется имя репозитория. Используйте --repository <name>.",
     "resourceNotFound": "{{resource}} не найден",
     "sshKeyNotFound": "SSH ключ не найден: {{path}}",
+    "ssh": {
+      "noIpAddress": "Машина '{{machine}}' не имеет настроенного IP-адреса",
+      "noPrivateKey": "Команда '{{team}}' не имеет настроенного SSH приватного ключа",
+      "noHostKey": "Машина '{{machine}}' не имеет настроенного ключа хоста в хранилище"
+    },
     "subscription": {
       "notLoggedIn": "Вы не вошли в систему. Сначала выполните `rdc subscription login`."
     },

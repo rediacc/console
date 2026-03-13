@@ -27,15 +27,21 @@
   },
   "common": {
     "aria": {
+      "breadcrumbNavigation": "パンくずナビゲーション",
       "clickToEnlarge": "クリックして画像を拡大",
       "closeImageModal": "画像モーダルを閉じる",
+      "docsSections": "ドキュメントセクション",
+      "documentationNavigation": "ドキュメントナビゲーション",
       "imageViewer": "画像ビューア",
       "mainNavigation": "メインナビゲーション",
       "nextImage": "次の画像",
       "opensInNewTab": "新しいタブで開きます",
       "previousImage": "前の画像",
+      "rediaccHome": "Rediacc ホーム",
       "resetZoom": "ズームをリセットする",
+      "selectPlanToCompare": "比較するプランを選択",
       "statusMessage": "ステータスメッセージ",
+      "tableOfContents": "目次",
       "zoomIn": "ズームイン",
       "zoomOut": "ズームアウト"
     },
@@ -60,6 +66,7 @@
       "navigate": "ナビゲート",
       "noResults": "結果が見つかりませんでした",
       "placeholder": "ドキュメント、ソリューション、機能を検索...",
+      "results": "検索結果",
       "searching": "検索中...",
       "select": "選択",
       "suggestions": {
@@ -68,7 +75,9 @@
         "contactSupport": "サポートチームへのお問い合わせ",
         "differentKeywords": "異なるキーワードまたは短い用語",
         "title": "試す："
-      }
+      },
+      "unavailable": "検索が利用できません",
+      "unavailableMessage": "検索インデックスを読み込めませんでした。ページを更新するか、問題が続く場合はサポートにお問い合わせください。"
     },
     "section": "section",
     "siteName": "Rediacc",
@@ -105,6 +114,30 @@
     "submit": "メッセージを送信",
     "success": "メッセージが送信されました！48時間以内にご返信いたします。",
     "title": "お問い合わせ"
+  },
+  "documentation": {
+    "categories": {
+      "concepts": "コンセプト",
+      "guides": "ガイド",
+      "reference": "リファレンス",
+      "tutorials": "チュートリアル",
+      "useCases": "ユースケース"
+    },
+    "cliReference": "CLIリファレンス",
+    "cliReferenceLabel": "CLIリファレンス：",
+    "copied": "コピーしました！",
+    "copyAsMarkdown": "Markdownとしてコピー",
+    "copyAsMarkdownSection": "Markdownとしてコピー",
+    "copyAsMarkdownSectionDesc": "セクションのMarkdownコンテンツをコピー",
+    "copyFullPageAriaLabel": "ページ全体をMarkdownとしてコピー",
+    "copySection": "セクションをコピー",
+    "copySectionLink": "セクションリンクをコピー",
+    "copySectionLinkDesc": "ダイレクトURLをクリップボードにコピー",
+    "openInNewTab": "新しいタブで開く",
+    "searchDocs": "ドキュメントを検索",
+    "shareSection": "セクションを共有",
+    "viewAsMarkdown": "Markdownでページを表示",
+    "viewAsMarkdownDesc": "Markdownファイルを新しいタブで開く"
   },
   "featureShowcase": {
     "categoryDescriptions": {
@@ -263,6 +296,7 @@
       "LUKS",
       "systemd"
     ],
+    "migrationMessage": "Rediaccはあなたのスタックを単一のポータブルファイルに変換します。すでにDockerを使用している場合、移行は簡単です。",
     "title": "あなたのスタックと連携"
   },
   "layout": {
@@ -303,6 +337,7 @@
     ]
   },
   "navigation": {
+    "account": "アカウント",
     "blog": "ブログ",
     "builtForYou": "あなたに合わせて",
     "builtForYourRole": "あなたの役割に合わせて",
@@ -365,6 +400,7 @@
       "note": "製品アップデートの配信にメールアドレスを使用します。いつでも配信停止できます。",
       "title": "ガイド付きのご案内をご希望ですか？"
     },
+    "privacyNote": "プライバシーを尊重します。いつでも登録解除できます。",
     "roiGate": {
       "description": "メールアドレスを入力して、詳細なコスト内訳と節約分析をご覧ください。",
       "title": "詳細なROIレポートを取得",
@@ -378,6 +414,7 @@
     "title": "ニュースレター",
     "unsubscribed": "購読が解除されました。ご利用ありがとうございました。"
   },
+  "captchaRequired": "キャプチャ認証を完了してください。",
   "pages": {
     "blog": {
       "allArticles": "すべての記事",
@@ -411,6 +448,16 @@
       "subscribeTitle": "新しいリリースの通知を受け取る",
       "subtitle": "最新のアップデート、改善、修正をご確認ください。",
       "title": "変更履歴"
+    },
+    "checkout": {
+      "success": {
+        "backToHome": "ホームに戻る",
+        "description": "サブスクリプションが確認されました",
+        "getStarted": "インストールを開始する",
+        "heading": "サブスクリプション確認済み",
+        "message": "サブスクリプションが有効になりました。ライセンスキーとセットアップ手順が記載されたメールが間もなく届きます。",
+        "title": "サブスクリプション確認済み"
+      }
     },
     "contact": {
       "breadcrumb": {
@@ -656,7 +703,7 @@
           "features": [
             "無制限のユーザーとチーム - 自由にコラボレーション",
             "最新のスナップショットの復元 - 数分で障害から回復します",
-            "10 個のリポジトリ、それぞれ 10 GB",
+            "無制限のリポジトリ、それぞれ 10 GB",
             "2 時間のジョブ タイムアウト、2 つのアクティブなジョブ/1 つの予約済みジョブ",
             "7 日間の監査ログの保持",
             "手動バックアップのスケジュール設定",
@@ -673,7 +720,7 @@
             "カスタム SLA (15 ～ 60 分の RTO) - お客様の要件と当社の取り組み",
             "専用のインフラストラクチャ テナント - 最大のセキュリティとパフォーマンス",
             "24 時間年中無休の徹底したサポート",
-            "無制限のリポジトリ、それぞれ 1TB 以上",
+            "無制限のリポジトリ、それぞれ 2 TB+",
             "96 時間以上のジョブ ウィンドウ (10 個以上のアクティブなジョブ/5 個以上の予約済みジョブ)",
             "1 年以上の監査ログの保持",
             "四半期ごとの災害復旧演習 - 準備状況をテストする",
@@ -690,7 +737,7 @@
             "コミュニティのすべて +",
             "自動バックアップ スケジュール - 設定すればあとは忘れます",
             "ポイントインタイムリカバリ(24時間)",
-            "500 リポジトリ、それぞれ 100 GB",
+            "無制限のリポジトリ、それぞれ 100 GB",
             "24 時間のジョブ タイムアウト、5 つのアクティブなジョブ/2 つの予約済みジョブ",
             "30 日間の監査ログの保持",
             "メール+チャットサポート",
@@ -1046,7 +1093,8 @@
         "monthOrYear": "月額または年間 {{price}}",
         "popular": "最も人気のある",
         "startingAt": "*開始時間",
-        "whatsIncluded": "含まれるもの:"
+        "whatsIncluded": "含まれるもの:",
+        "taxDisclaimer": "すべての価格は米ドル建てで、適用される税金、課徴金、関税は含まれていません。"
       }
     },
     "docs": {
@@ -1282,6 +1330,8 @@
         "title": "404 - ページが見つかりません | Rediacc"
       },
       "suggestions": {
+        "getInTouchPrefix": "こちらからお問い合わせください：",
+        "goBackPrefix": "こちらに戻る：",
         "items": [
           "URL にタイプミスがないか確認してください",
           "ホームページに戻る",
@@ -1289,6 +1339,7 @@
           "お問い合わせページからご連絡ください",
           "今日からRediaccを使い始めましょう"
         ],
+        "learnAboutPrefix": "詳しくはこちら：",
         "links": {
           "contact": "お問い合わせページ",
           "getStarted": "Rediacc",
@@ -2377,21 +2428,14 @@
               },
               {
                 "label": "自動スケジューリング",
-                "community": "—",
+                "community": "✓",
                 "professional": "✓",
                 "business": "✓",
                 "enterprise": "✓"
               },
               {
-                "label": "キュー優先度",
-                "community": "—",
-                "professional": "—",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
                 "label": "インテグレーションAPI",
-                "community": "—",
+                "community": "✓",
                 "professional": "✓",
                 "business": "✓",
                 "enterprise": "✓"
@@ -2416,32 +2460,18 @@
                 "enterprise": "✓"
               },
               {
-                "label": "ポイントインタイムリストア",
-                "community": "—",
-                "professional": "24 hours",
-                "business": "72 hours",
-                "enterprise": "Custom"
-              },
-              {
                 "label": "継続的データ保護",
-                "community": "—",
-                "professional": "—",
+                "community": "✓",
+                "professional": "✓",
                 "business": "✓",
                 "enterprise": "✓"
               },
               {
                 "label": "地理的冗長ストレージ",
-                "community": "—",
-                "professional": "—",
-                "business": "3 regions",
-                "enterprise": "Custom"
-              },
-              {
-                "label": "復元SLA",
-                "community": "—",
-                "professional": "—",
-                "business": "4 hours",
-                "enterprise": "Custom"
+                "community": "✓",
+                "professional": "✓",
+                "business": "✓",
+                "enterprise": "✓"
               }
             ]
           },
@@ -2453,14 +2483,14 @@
                 "community": "2",
                 "professional": "5",
                 "business": "20",
-                "enterprise": "50"
+                "enterprise": "50+"
               },
               {
                 "label": "月間ジョブ数",
                 "community": "500",
                 "professional": "5,000",
                 "business": "20,000",
-                "enterprise": "100,000"
+                "enterprise": "100,000+"
               },
               {
                 "label": "リポジトリあたりのストレージ",
@@ -2499,60 +2529,20 @@
               }
             ]
           },
-          "platform": {
-            "label": "プラットフォーム",
-            "rows": [
-              {
-                "label": "カスタムブランディング",
-                "community": "—",
-                "professional": "✓",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "Cephストレージプール",
-                "community": "—",
-                "professional": "—",
-                "business": "1",
-                "enterprise": "Unlimited"
-              },
-              {
-                "label": "高度な分析",
-                "community": "—",
-                "professional": "—",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "専用インフラストラクチャ",
-                "community": "—",
-                "professional": "—",
-                "business": "—",
-                "enterprise": "✓"
-              }
-            ]
-          },
           "security": {
             "label": "セキュリティとコンプライアンス",
             "rows": [
               {
                 "label": "RBACと権限グループ",
-                "community": "—",
+                "community": "✓",
                 "professional": "✓",
                 "business": "✓",
                 "enterprise": "✓"
               },
               {
                 "label": "監査ログ",
-                "community": "—",
+                "community": "✓",
                 "professional": "✓",
-                "business": "✓",
-                "enterprise": "✓"
-              },
-              {
-                "label": "コンプライアンスレポート",
-                "community": "—",
-                "professional": "—",
                 "business": "✓",
                 "enterprise": "✓"
               },
@@ -2689,6 +2679,7 @@
           "description": "エキスパートオンボーディング付きミッションクリティカルインフラ",
           "features": [
             "Professionalの全機能+",
+            "20の同時フローティングライセンス",
             "無制限のリポジトリ、各500 GB",
             "20,000ジョブ/月",
             "$9,999の導入サポート込み（ローンチオファー）",
@@ -2697,7 +2688,6 @@
             "4時間復元SLA",
             "ロールベースアクセス制御＆監査ログ",
             "コンプライアンス対応レポート",
-            "専任カスタマーサクセスマネージャー",
             "電話サポート＋コラボレーションスペース"
           ],
           "name": "仕事"
@@ -2708,7 +2698,7 @@
             "無制限のユーザー＆チーム",
             "無制限のリポジトリ、各10 GB",
             "500ジョブ/月",
-            "無制限のマシン",
+            "2つの同時フローティングライセンス",
             "スナップショット復元",
             "手動スケジューリング",
             "コミュニティSlackアクセス",
@@ -2720,11 +2710,13 @@
           "description": "複雑なエンタープライズインフラのためのホワイトグローブサポート",
           "features": [
             "Businessの全機能+",
+            "50+の同時フローティングライセンス",
             "無制限のリポジトリ、各2 TB+",
-            "100,000ジョブ/月",
+            "100,000+ジョブ/月",
             "保証された復元時間のカスタムSLA",
             "専用インフラテナント",
             "24/7/365ホワイトグローブサポート",
+            "専任カスタマーサクセスマネージャー",
             "四半期ごとの準備訓練",
             "エグゼクティブエスカレーションホットライン",
             "カスタムインテグレーション＆ワークフロー",
@@ -2737,6 +2729,7 @@
           "description": "成長するチームのためのプロフェッショナルな自動化とスケジューリング",
           "features": [
             "Communityの全機能+",
+            "5つの同時フローティングライセンス",
             "無制限のリポジトリ、各100 GB",
             "5,000ジョブ/月",
             "自動スケジューリング",
@@ -2989,8 +2982,8 @@
         "heading": "プラン比較",
         "metrics": [
           {
-            "key": "jobsPerMonth",
-            "label": "月間ジョブ数"
+            "key": "repositories",
+            "label": "リポジトリ"
           },
           {
             "key": "repoSize",
@@ -3001,8 +2994,8 @@
             "label": "フローティングライセンス"
           },
           {
-            "key": "repositories",
-            "label": "リポジトリ"
+            "key": "jobsPerMonth",
+            "label": "月間ジョブ数"
           },
           {
             "key": "usersTeams",
@@ -3025,8 +3018,8 @@
             "usersTeams": "無制限"
           },
           "enterprise": {
-            "floatingLicenses": "50",
-            "jobsPerMonth": "100,000",
+            "floatingLicenses": "50+",
+            "jobsPerMonth": "100,000+",
             "repositories": "無制限",
             "repoSize": "2 TB+",
             "usersTeams": "無制限"
@@ -3044,12 +3037,48 @@
         "heading": "エンタープライズグレードのセキュリティと信頼性",
         "items": ["銀行レベルの暗号化", "99.9% の稼働率を約束"]
       },
+      "trustSection": {
+        "heading": "あなたのインフラ。あなたのルール。",
+        "subtitle": "Rediaccのライセンスは、決してロックインされないよう設計されています。それが実際に何を意味するかをご説明します。",
+        "rows": [
+          {
+            "title": "あなたのreposは永遠に動き続けます。",
+            "description": "起動、停止、削除、バックアップ — サブスクリプションが終了して何年後でも常に動作します。これらの操作は有効期限を一切確認しません。データにはいつでもアクセスできます。"
+          },
+          {
+            "title": "ツールへの完全なアクセス。",
+            "description": "ファイル同期、VS Code リモート、SSH ターミナル、すべての管理コマンドはライセンスなしで動作します。完全に無制限、永遠に。"
+          },
+          {
+            "title": "新しいreposだけにサブスクリプションが必要です。",
+            "description": "アクティブなサブスクリプションが必要なのは、新しいリポジトリの作成や既存のものをフォークする場合のみです。サイズ変更と拡張は有効期限後60日間機能します。それ以外はすべて永続的です。"
+          },
+          {
+            "title": "スケーリングのための60日間の猶予。",
+            "description": "サブスクリプションが終了しても、サイズ変更と拡張はさらに60日間機能し続けます。起動、停止、削除、バックアップは影響を受けません — 永遠に機能します。"
+          },
+          {
+            "title": "無制限のマシン。作成時課金ライセンス。",
+            "description": "ライセンススロットはリポジトリの作成またはフォーク時にのみ占有されます — 日常の操作ではスロットを消費しません。スロットは1時間の非アクティブ後に自動解放されるため、5スロットのプランで数十台のマシンに対応できます。マシンごとの料金は一切かかりません。"
+          }
+        ],
+        "svg": {
+          "noLicenseRequired": "ライセンス不要 — 常に動作します",
+          "noLicenseNeeded": "ライセンス不要",
+          "requiredOnlyHere": "ここでのみ必要",
+          "allOperations": "すべての操作",
+          "slotsAutoRelease": "スロットは1時間の非アクティブ後に自動解放されます",
+          "slotsCreateFork": "スロットは作成とフォークにのみ使用されます — 日常操作は常に無料です"
+        }
+      },
       "ui": {
         "anchor": "戦略的アンカー",
         "bestValue": "ベストバリュー",
         "billingToggle": {
           "annual": "年額",
-          "monthly": "月額"
+          "monthly": "月額",
+          "annualSavings": "17%節約 — 2ヶ月無料",
+          "ariaLabel": "請求期間"
         },
         "contactSales": "営業担当者へのお問い合わせ",
         "cta": {
@@ -3090,7 +3119,8 @@
         "monthOrYear": "月額または年間 {{price}}",
         "popular": "最も人気のある",
         "startingAt": "*開始時間",
-        "whatsIncluded": "含まれるもの:"
+        "whatsIncluded": "含まれるもの:",
+        "taxDisclaimer": "すべての価格は米ドル建てで、適用される税金、課徴金、関税は含まれていません。"
       }
     },
     "privacyPolicy": {
@@ -12410,5 +12440,19 @@
     ],
     "subtitle": "さまざまな役割がRediaccをどう体験しているか",
     "title": "チームの声"
+  },
+  "tutorial": {
+    "audioControls": "文字起こし音声コントロール",
+    "audioVolume": "文字起こし音声ボリューム",
+    "muteAudio": "文字起こし音声をミュート",
+    "subtitlesControls": "文字起こし字幕コントロール",
+    "unmuteAudio": "文字起こし音声のミュートを解除"
+  },
+  "video": {
+    "disableCaptions": "字幕を無効にする",
+    "enableCaptions": "字幕を有効にする",
+    "playVideo": "動画を再生",
+    "toggleFullscreen": "フルスクリーン切替",
+    "volume": "音量"
   }
 }
