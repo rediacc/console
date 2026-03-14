@@ -208,7 +208,7 @@ The execution sequence is:
 Start or stop all repositories on a machine at once:
 
 ```bash
-rdc repo up-all -m server-1
+rdc repo up -m server-1
 ```
 
 | Option | Description |

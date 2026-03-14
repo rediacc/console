@@ -1083,7 +1083,10 @@
         "failed": "فشل إيقاف الخدمات",
         "grandOption": "اسم المستودع الرئيسي (يُحلّ تلقائيًا إلى GUID)",
         "starting": "جارٍ إيقاف الخدمات لـ \"{{repository}}\" على \"{{machine}}\"...",
-        "unmountOption": "إلغاء تثبيت المستودع بعد الإيقاف"
+        "unmountOption": "إلغاء تثبيت المستودع بعد الإيقاف",
+        "allCompleted": "تم إيقاف جميع المستودعات",
+        "allFailed": "فشلت عملية إيقاف الكل",
+        "allStarting": "جارٍ إيقاف جميع المستودعات على \"{{machine}}\"..."
       },
       "expand": {
         "completed": "اكتمل التوسيع",
@@ -1249,7 +1252,12 @@
         "description": "التحقق من سلامة المستودع",
         "failed": "فشل التحقق",
         "starting": "جارٍ التحقق من \"{{repository}}\" على \"{{machine}}\"..."
-      }
+      },
+      "batchConfirm": "{{action}} جميع المستودعات {{count}} على \"{{machine}}\"؟ [y/N]",
+      "batchFailed": "فشل {{action}} للمستودع \"{{repo}}\": {{error}}",
+      "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
+      "batchResult": "اكتمل {{action}}: {{succeeded}}/{{total}} نجح",
+      "yesOption": "تخطي التأكيد للعمليات الجماعية"
     },
     "repository": {
       "create": {

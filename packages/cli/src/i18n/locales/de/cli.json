@@ -1083,7 +1083,10 @@
         "failed": "Stoppen der Dienste fehlgeschlagen",
         "grandOption": "Grand-Repository-Name (wird automatisch in GUID aufgelöst)",
         "starting": "Dienste für \"{{repository}}\" auf \"{{machine}}\" werden gestoppt...",
-        "unmountOption": "Repository nach dem Stoppen unmounten"
+        "unmountOption": "Repository nach dem Stoppen unmounten",
+        "allCompleted": "Alle Repositories gestoppt",
+        "allFailed": "Down-all-Vorgang fehlgeschlagen",
+        "allStarting": "Alle Repositories auf \"{{machine}}\" werden gestoppt..."
       },
       "expand": {
         "completed": "Erweiterung abgeschlossen",
@@ -1249,7 +1252,12 @@
         "description": "Repository-Integrität überprüfen",
         "failed": "Überprüfung fehlgeschlagen",
         "starting": "\"{{repository}}\" wird auf \"{{machine}}\" überprüft..."
-      }
+      },
+      "batchConfirm": "{{action}} für alle {{count}} Repos auf \"{{machine}}\"? [y/N]",
+      "batchFailed": "{{action}} fehlgeschlagen für \"{{repo}}\": {{error}}",
+      "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
+      "batchResult": "{{action}} abgeschlossen: {{succeeded}}/{{total}} erfolgreich",
+      "yesOption": "Bestätigung für Stapeloperationen überspringen"
     },
     "repository": {
       "create": {

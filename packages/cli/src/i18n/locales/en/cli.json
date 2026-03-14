@@ -1138,23 +1138,28 @@
     "repo": {
       "description": "Deploy and manage encrypted repositories on machines. Use renet compose (never raw docker compose). Renet auto-injects network_mode:host (compose ports: are ignored), rediacc.* labels, and per-service loopback IPs. Containers MUST bind to their allocated IP (not 0.0.0.0) to avoid port conflicts. STORAGE: Use ${REPOSITORY_PATH}/... bind mounts for all persistent data (e.g. volumes: ['${REPOSITORY_PATH}/data:/data']). Do NOT use Docker named volumes — they live outside the repo and won't be included in forks/backups. HTTPS routing: (1) Auto-route (default, fork-friendly): renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain} — the compose service name becomes the URL prefix (e.g. service 'myapp' in repo 'marketing' → myapp.marketing.hostinger.rediacc.io). Use rediacc.service_port label for non-80 ports. (2) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true + traefik.http.routers/services labels. Rediaccfile lifecycle: up() starts containers (generate IP-dependent configs and pull images here). ENV VARS — two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. OPENCLAW_IP), ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REPOSITORY_NETWORK_ID env vars into each container. Use SERVICE_IP in your app code to bind to the correct IP. Proxy routes take ~3s to become active after deploy",
       "machineOption": "Target machine name",
+      "yesOption": "Skip confirmation for batch operations",
+      "batchConfirm": "{{action}} all {{count}} repos on \"{{machine}}\"? [y/N]",
+      "batchIterating": "{{action}} {{current}}/{{total}}: \"{{repo}}\"...",
+      "batchResult": "{{action}} complete: {{succeeded}}/{{total}} succeeded",
+      "batchFailed": "{{action}} failed for \"{{repo}}\": {{error}}",
       "noCredential": "Warning: Repository \"{{name}}\" has no credential set. Operations on encrypted repos may fail.",
       "mount": {
-        "description": "Mount a repository (decrypt and open the LUKS container, making the filesystem accessible). Needed on first deploy, after 'repo push' to a new machine, or after 'repo unmount'. Can also be done via 'repo up --mount'. The volume stays mounted until explicitly unmounted",
+        "description": "Mount a repository (decrypt and open the LUKS container, making the filesystem accessible). Needed on first deploy, after 'repo push' to a new machine, or after 'repo unmount'. Can also be done via 'repo up --mount'. The volume stays mounted until explicitly unmounted. Omit name to mount all repos on the machine",
         "checkpointOption": "Restore CRIU container checkpoint after mount (resume processes from saved memory state). Used after 'repo push --checkpoint' for live migration",
         "starting": "Mounting \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Mount completed",
         "failed": "Mount failed"
       },
       "unmount": {
-        "description": "Unmount a repository (close the LUKS container, detaching the encrypted filesystem). Services must be stopped first ('repo down'). After unmount, repo data is inaccessible until remounted. Required before 'repo resize'",
+        "description": "Unmount a repository (close the LUKS container, detaching the encrypted filesystem). Services must be stopped first ('repo down'). After unmount, repo data is inaccessible until remounted. Required before 'repo resize'. Omit name to unmount all repos on the machine",
         "checkpointOption": "Create CRIU container checkpoint before unmount (capture running process memory state for later restore)",
         "starting": "Unmounting \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Unmount completed",
         "failed": "Unmount failed"
       },
       "up": {
-        "description": "Deploy or update a repository (mount, run Rediaccfile up which calls renet compose). Proxy routes take ~3s to become active after deploy. Use --mount for first deploy or forked repos. Use --checkpoint to restore containers from a CRIU checkpoint (for live process migration)",
+        "description": "Deploy or update a repository (mount, run Rediaccfile up which calls renet compose). Proxy routes take ~3s to become active after deploy. Use --mount for first deploy or forked repos. Use --checkpoint to restore containers from a CRIU checkpoint (for live process migration). Omit name to deploy all repos on the machine",
         "mountOption": "Mount repository first (required for forked repos on first deploy)",
         "checkpointOption": "Restore containers from CRIU checkpoint after deploy (for live process migration from another machine)",
         "grandOption": "Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent",
@@ -1174,12 +1179,15 @@
         "failed": "Up-all operation failed"
       },
       "down": {
-        "description": "Stop repository Docker containers (runs Rediaccfile down via renet compose). Does NOT unmount the encrypted volume -- the repo stays mounted and can be restarted with 'repo up'. Use --unmount to also close the LUKS container after stopping",
+        "description": "Stop repository Docker containers (runs Rediaccfile down via renet compose). Does NOT unmount the encrypted volume -- the repo stays mounted and can be restarted with 'repo up'. Use --unmount to also close the LUKS container after stopping. Omit name to stop all repos on the machine",
         "unmountOption": "Also unmount (close LUKS container) after stopping. Equivalent to 'repo down' then 'repo unmount'. Required before 'repo resize' or to fully secure the volume",
         "grandOption": "Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent",
         "starting": "Stopping services for \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Services stopped",
-        "failed": "Service stop failed"
+        "failed": "Service stop failed",
+        "allStarting": "Stopping all repositories on \"{{machine}}\"...",
+        "allCompleted": "All repositories stopped",
+        "allFailed": "Down-all operation failed"
       },
       "status": {
         "description": "Get repository status (mount state, Docker daemon running, container count, disk usage)",
@@ -1291,7 +1299,7 @@
         "failed": "Template application failed"
       },
       "push": {
-        "description": "Push repository backup to storage or machine. For machine-to-machine transfer (--to-machine), the encrypted repo image is copied directly with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork on another machine, use 'repo fork' first (gets new GUID/networkId), then push the fork. After push, deploy on the target with: repo up <name> -m <target> --mount",
+        "description": "Push repository backup to storage or machine. Omit name to push all repos. For machine-to-machine transfer (--to-machine), the encrypted repo image is copied directly with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork on another machine, use 'repo fork' first (gets new GUID/networkId), then push the fork. After push, deploy on the target with: repo up <name> -m <target> --mount",
         "optionDest": "Destination filename",
         "optionToStorage": "Destination storage name",
         "optionToMachine": "Destination machine name",
@@ -1304,7 +1312,7 @@
         "pushing": "Pushing backup of \"{{repo}}\" to {{dest}}..."
       },
       "pull": {
-        "description": "Pull repository backup from storage or another machine (restores the encrypted LUKS image). After pull, deploy with 'repo up <name> -m <machine> --mount'. Use --force to overwrite existing",
+        "description": "Pull repository backup from storage or another machine (restores the encrypted LUKS image). Omit name to pull all repos. After pull, deploy with 'repo up <name> -m <machine> --mount'. Use --force to overwrite existing",
         "optionFromStorage": "Source storage name",
         "optionFromMachine": "Source machine name",
         "optionForce": "Force overwrite existing repository",

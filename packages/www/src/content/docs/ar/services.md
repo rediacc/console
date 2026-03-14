@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: ar
-sourceHash: "cd5021a29a7b2a59"
+sourceHash: "abbcebcb89f8fbd0"
 ---
 
 # الخدمات
@@ -209,7 +209,7 @@ rdc repo down my-app -m server-1
 شغّل أو أوقف جميع المستودعات على جهاز دفعة واحدة:
 
 ```bash
-rdc repo up-all -m server-1
+rdc repo up -m server-1
 ```
 
 | الخيار | الوصف |

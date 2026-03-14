@@ -1083,7 +1083,10 @@
         "failed": "服务停止失败",
         "grandOption": "主仓库名称 (自动解析为 GUID)",
         "starting": "正在 \"{{machine}}\" 上停止 \"{{repository}}\" 的服务...",
-        "unmountOption": "停止后卸载仓库"
+        "unmountOption": "停止后卸载仓库",
+        "allCompleted": "所有仓库已停止",
+        "allFailed": "全部停止操作失败",
+        "allStarting": "正在停止 \"{{machine}}\" 上的所有仓库..."
       },
       "expand": {
         "completed": "扩展完成",
@@ -1249,7 +1252,12 @@
         "description": "验证仓库完整性",
         "failed": "验证失败",
         "starting": "正在 \"{{machine}}\" 上验证 \"{{repository}}\"..."
-      }
+      },
+      "batchConfirm": "{{action}} \"{{machine}}\" 上的所有 {{count}} 个仓库？ [y/N]",
+      "batchFailed": "\"{{repo}}\" 的 {{action}} 失败：{{error}}",
+      "batchIterating": "{{action}} {{current}}/{{total}}：\"{{repo}}\"...",
+      "batchResult": "{{action}} 完成：{{succeeded}}/{{total}} 成功",
+      "yesOption": "跳过批量操作确认"
     },
     "repository": {
       "create": {

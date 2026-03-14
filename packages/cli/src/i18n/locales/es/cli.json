@@ -1083,7 +1083,10 @@
         "failed": "Fallo al detener servicios",
         "grandOption": "Nombre del repositorio Grand (se resuelve automáticamente a GUID)",
         "starting": "Deteniendo servicios para \"{{repository}}\" en \"{{machine}}\"...",
-        "unmountOption": "Desmontar repositorio después de detener"
+        "unmountOption": "Desmontar repositorio después de detener",
+        "allCompleted": "Todos los repositorios detenidos",
+        "allFailed": "La operación de detener todo falló",
+        "allStarting": "Deteniendo todos los repositorios en \"{{machine}}\"..."
       },
       "expand": {
         "completed": "Expansión completada",
@@ -1249,7 +1252,12 @@
         "description": "Validar la integridad del repositorio",
         "failed": "Error en la validación",
         "starting": "Validando \"{{repository}}\" en \"{{machine}}\"..."
-      }
+      },
+      "batchConfirm": "¿{{action}} todos los {{count}} repos en \"{{machine}}\"? [y/N]",
+      "batchFailed": "{{action}} falló para \"{{repo}}\": {{error}}",
+      "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
+      "batchResult": "{{action}} completado: {{succeeded}}/{{total}} exitosos",
+      "yesOption": "Omitir confirmación para operaciones por lotes"
     },
     "repository": {
       "create": {

@@ -1083,7 +1083,10 @@
         "failed": "サービスの停止に失敗しました",
         "grandOption": "グランドリポジトリ名 (自動的に GUID に解決)",
         "starting": "\"{{repository}}\" のサービスを \"{{machine}}\" で停止中...",
-        "unmountOption": "停止後にリポジトリをアンマウントする"
+        "unmountOption": "停止後にリポジトリをアンマウントする",
+        "allCompleted": "すべてのリポジトリを停止しました",
+        "allFailed": "全停止操作に失敗しました",
+        "allStarting": "\"{{machine}}\"上のすべてのリポジトリを停止しています..."
       },
       "expand": {
         "completed": "拡張が完了しました",
@@ -1249,7 +1252,12 @@
         "description": "リポジトリの整合性を検証する",
         "failed": "検証に失敗しました",
         "starting": "\"{{machine}}\" で \"{{repository}}\" を検証中..."
-      }
+      },
+      "batchConfirm": "\"{{machine}}\"上のすべての{{count}}リポジトリを{{action}}しますか？ [y/N]",
+      "batchFailed": "\"{{repo}}\"の{{action}}に失敗しました: {{error}}",
+      "batchIterating": "{{action}} {{current}}/{{total}}：「{{repo}}」...",
+      "batchResult": "{{action}}完了: {{succeeded}}/{{total}} 成功",
+      "yesOption": "バッチ操作の確認をスキップ"
     },
     "repository": {
       "create": {

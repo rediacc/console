@@ -1083,7 +1083,10 @@
         "failed": "Échec de l'arrêt des services",
         "grandOption": "Nom du grand dépôt (résolution automatique vers le GUID)",
         "starting": "Arrêt des services pour \"{{repository}}\" sur \"{{machine}}\"...",
-        "unmountOption": "Démonter le dépôt après l'arrêt"
+        "unmountOption": "Démonter le dépôt après l'arrêt",
+        "allCompleted": "Tous les dépôts arrêtés",
+        "allFailed": "L'opération d'arrêt total a échoué",
+        "allStarting": "Arrêt de tous les dépôts sur \"{{machine}}\"..."
       },
       "expand": {
         "completed": "Extension terminée",
@@ -1249,7 +1252,12 @@
         "description": "Valider l'intégrité du dépôt",
         "failed": "Échec de la validation",
         "starting": "Validation de \"{{repository}}\" sur \"{{machine}}\"..."
-      }
+      },
+      "batchConfirm": "{{action}} les {{count}} dépôts sur \"{{machine}}\" ? [y/N]",
+      "batchFailed": "{{action}} échoué pour \"{{repo}}\" : {{error}}",
+      "batchIterating": "{{action}} {{current}}/{{total}} : \"{{repo}}\"...",
+      "batchResult": "{{action}} terminé : {{succeeded}}/{{total}} réussis",
+      "yesOption": "Passer la confirmation pour les opérations par lots"
     },
     "repository": {
       "create": {

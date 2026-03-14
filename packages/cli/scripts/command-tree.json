@@ -1363,6 +1363,12 @@
               "defaultValue": null
             },
             {
+              "flags": "-y, --yes",
+              "descriptionKey": "commands.repo.yesOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -1378,7 +1384,7 @@
           "arguments": [
             {
               "name": "name",
-              "required": true,
+              "required": false,
               "variadic": false,
               "defaultValue": null
             }
@@ -1402,6 +1408,12 @@
               "defaultValue": null
             },
             {
+              "flags": "-y, --yes",
+              "descriptionKey": "commands.repo.yesOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -1417,7 +1429,7 @@
           "arguments": [
             {
               "name": "name",
-              "required": true,
+              "required": false,
               "variadic": false,
               "defaultValue": null
             }
@@ -1453,6 +1465,36 @@
               "defaultValue": null
             },
             {
+              "flags": "--include-forks",
+              "descriptionKey": "commands.repo.upAll.includeForksOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--mount-only",
+              "descriptionKey": "commands.repo.upAll.mountOnlyOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--parallel",
+              "descriptionKey": "commands.repo.upAll.parallelOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--concurrency <n>",
+              "descriptionKey": "commands.repo.upAll.concurrencyOption",
+              "mandatory": false,
+              "defaultValue": "3"
+            },
+            {
+              "flags": "-y, --yes",
+              "descriptionKey": "commands.repo.yesOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -1474,67 +1516,11 @@
           "arguments": [
             {
               "name": "name",
-              "required": true,
+              "required": false,
               "variadic": false,
               "defaultValue": null
             }
           ],
-          "subcommands": []
-        },
-        {
-          "name": "up-all",
-          "descriptionKey": "commands.repo.upAll.description",
-          "options": [
-            {
-              "flags": "-m, --machine <name>",
-              "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
-              "defaultValue": null
-            },
-            {
-              "flags": "--include-forks",
-              "descriptionKey": "commands.repo.upAll.includeForksOption",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
-              "flags": "--mount-only",
-              "descriptionKey": "commands.repo.upAll.mountOnlyOption",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
-              "flags": "--dry-run",
-              "descriptionKey": "commands.repo.upAll.dryRunOption",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
-              "flags": "--parallel",
-              "descriptionKey": "commands.repo.upAll.parallelOption",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
-              "flags": "--concurrency <n>",
-              "descriptionKey": "commands.repo.upAll.concurrencyOption",
-              "mandatory": false,
-              "defaultValue": "3"
-            },
-            {
-              "flags": "--debug",
-              "descriptionKey": "options.debug",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
-              "flags": "--skip-router-restart",
-              "descriptionKey": "options.skipRouterRestart",
-              "mandatory": false,
-              "defaultValue": null
-            }
-          ],
-          "arguments": [],
           "subcommands": []
         },
         {
@@ -1560,6 +1546,12 @@
               "defaultValue": null
             },
             {
+              "flags": "-y, --yes",
+              "descriptionKey": "commands.repo.yesOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -1581,7 +1573,7 @@
           "arguments": [
             {
               "name": "name",
-              "required": true,
+              "required": false,
               "variadic": false,
               "defaultValue": null
             }
@@ -2092,6 +2084,12 @@
               "defaultValue": null
             },
             {
+              "flags": "-y, --yes",
+              "descriptionKey": "commands.repo.yesOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -2107,7 +2105,7 @@
           "arguments": [
             {
               "name": "repo",
-              "required": true,
+              "required": false,
               "variadic": false,
               "defaultValue": null
             }
@@ -2149,6 +2147,12 @@
               "defaultValue": null
             },
             {
+              "flags": "-y, --yes",
+              "descriptionKey": "commands.repo.yesOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -2164,7 +2168,7 @@
           "arguments": [
             {
               "name": "repo",
-              "required": true,
+              "required": false,
               "variadic": false,
               "defaultValue": null
             }

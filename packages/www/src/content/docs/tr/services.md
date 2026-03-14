@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: tr
-sourceHash: "cd5021a29a7b2a59"
+sourceHash: "abbcebcb89f8fbd0"
 ---
 
 # Servisler
@@ -209,7 +209,7 @@ rdc repo down my-app -m server-1
 Bir makinedeki tüm depoları aynı anda başlatın veya durdurun:
 
 ```bash
-rdc repo up-all -m server-1
+rdc repo up -m server-1
 ```
 
 | Seçenek | Açıklama |

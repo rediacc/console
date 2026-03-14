@@ -1083,7 +1083,10 @@
         "failed": "Ошибка остановки сервисов",
         "grandOption": "Имя главного репозитория (автоматически разрешается в GUID)",
         "starting": "Остановка сервисов для \"{{repository}}\" на \"{{machine}}\"...",
-        "unmountOption": "Размонтировать репозиторий после остановки"
+        "unmountOption": "Размонтировать репозиторий после остановки",
+        "allCompleted": "Все репозитории остановлены",
+        "allFailed": "Операция остановки всех не удалась",
+        "allStarting": "Остановка всех репозиториев на \"{{machine}}\"..."
       },
       "expand": {
         "completed": "Расширение завершено",
@@ -1249,7 +1252,12 @@
         "description": "Проверить целостность репозитория",
         "failed": "Ошибка проверки",
         "starting": "Проверка \"{{repository}}\" на \"{{machine}}\"..."
-      }
+      },
+      "batchConfirm": "{{action}} все {{count}} репозиториев на \"{{machine}}\"? [y/N]",
+      "batchFailed": "{{action}} не удалось для \"{{repo}}\": {{error}}",
+      "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
+      "batchResult": "{{action}} завершено: {{succeeded}}/{{total}} успешно",
+      "yesOption": "Пропустить подтверждение для пакетных операций"
     },
     "repository": {
       "create": {

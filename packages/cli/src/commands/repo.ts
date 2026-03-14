@@ -8,19 +8,118 @@ import {
   deployRepoKeyIfNeeded,
   removeRepoKeyFromMachine,
 } from '../services/repo-key-deployment.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
+import { assertCommandPolicy, CMD, type CommandPath } from '../utils/command-policy.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap, resolveGuids } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import { registerRepoBackupCommands } from './repo-backup.js';
+import { handleDownAll, handleUpAll, postRepoUpTasks } from './repo-batch-utils.js';
 import { registerExtendedRepoCommands } from './repo-extended.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
 import { registerRepoSnapshotCommands } from './repo-snapshot.js';
 import { registerRepoSyncCommands } from './repo-sync.js';
+import { registerRepoVolumeCommands } from './repo-volume.js';
 
 function generateCredential(): string {
   return randomBytes(24).toString('base64');
+}
+
+async function handleSingleRepoUp(
+  name: string,
+  options: {
+    machine: string;
+    mount?: boolean;
+    checkpoint?: boolean;
+    grand?: string;
+    dryRun?: boolean;
+    debug?: boolean;
+    skipRouterRestart?: boolean;
+  }
+): Promise<void> {
+  await assertCommandPolicy(CMD.REPO_UP, name);
+
+  const params: Record<string, unknown> = {};
+  if (options.mount) params.mount = true;
+  if (options.checkpoint) params.checkpoint = true;
+  if (options.grand) {
+    const grandRepo = await configService.getRepository(options.grand);
+    params.grand = grandRepo?.repositoryGuid ?? options.grand;
+  }
+
+  if (options.dryRun) {
+    const repo = await configService.getRepository(name);
+    outputService.print(
+      {
+        dryRun: true,
+        repository: name,
+        machine: options.machine,
+        guid: repo?.repositoryGuid,
+        params,
+      },
+      getOutputFormat()
+    );
+    return;
+  }
+
+  await deployRepoKeyIfNeeded(name, options.machine);
+  await executeRepoFunction('repository_up', name, options.machine, params, options, {
+    starting: t('commands.repo.up.starting', { repository: name, machine: options.machine }),
+    completed: t('commands.repo.up.completed'),
+    failed: t('commands.repo.up.failed'),
+  });
+  await postRepoUpTasks(name, options.machine);
+}
+
+/**
+ * Iterate a repo function across all repos in config.
+ * Runs assertCommandPolicy per repo, logs progress, and collects results.
+ */
+async function iterateAllRepos(
+  functionName: string,
+  machineName: string,
+  cmd: CommandPath,
+  params: Record<string, unknown>,
+  options: { debug?: boolean; skipRouterRestart?: boolean },
+  messages: { action: string }
+): Promise<void> {
+  const repos = await configService.listRepositories();
+  let succeeded = 0;
+  for (let i = 0; i < repos.length; i++) {
+    const { name } = repos[i];
+    outputService.info(
+      t('commands.repo.batchIterating', {
+        action: messages.action,
+        current: i + 1,
+        total: repos.length,
+        repo: name,
+      })
+    );
+    try {
+      await assertCommandPolicy(cmd, name);
+      await executeRepoFunction(functionName, name, machineName, params, options, {
+        starting: '',
+        completed: '',
+        failed: '',
+      });
+      succeeded++;
+    } catch (error) {
+      outputService.warn(
+        t('commands.repo.batchFailed', {
+          action: messages.action,
+          repo: name,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      );
+    }
+  }
+  outputService.info(
+    t('commands.repo.batchResult', {
+      action: messages.action,
+      succeeded,
+      total: repos.length,
+    })
+  );
 }
 
 /**
@@ -69,13 +168,7 @@ export function registerRepoCommands(program: Command): void {
 
   repo.addHelpText(
     'after',
-    `
-${t('help.examples')}
-  $ rdc repo create my-app -m server-1 --size 5G   ${t('help.repo.create')}
-  $ rdc repo up my-app -m server-1 --mount          ${t('help.repo.up')}
-  $ rdc repo down my-app -m server-1                ${t('help.repo.down')}
-  $ rdc repo fork my-app my-app-test -m server-1    ${t('help.repo.fork')}
-`
+    `\n${t('help.examples')}\n  $ rdc repo create my-app -m server-1 --size 5G   ${t('help.repo.create')}\n  $ rdc repo up my-app -m server-1 --mount          ${t('help.repo.up')}\n  $ rdc repo down my-app -m server-1                ${t('help.repo.down')}\n  $ rdc repo fork my-app my-app-test -m server-1    ${t('help.repo.fork')}\n`
   );
 
   // repo create <name>
@@ -226,218 +319,47 @@ ${t('help.examples')}
       }
     );
 
-  // repo mount <name>
+  registerRepoVolumeCommands(repo, executeRepoFunction, iterateAllRepos);
+
+  // repo up [name]
   repo
-    .command('mount <name>')
-    .description(t('commands.repo.mount.description'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
-    .option('--checkpoint', t('commands.repo.mount.checkpointOption'))
-    .option('--debug', t('options.debug'))
-    .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(
-      async (
-        name: string,
-        options: {
-          machine: string;
-          checkpoint?: boolean;
-          debug?: boolean;
-          skipRouterRestart?: boolean;
-        }
-      ) => {
-        try {
-          await assertCommandPolicy(CMD.REPO_MOUNT, name);
-
-          const params: Record<string, unknown> = {};
-          if (options.checkpoint) params.checkpoint = true;
-
-          await executeRepoFunction('repository_mount', name, options.machine, params, options, {
-            starting: t('commands.repo.mount.starting', {
-              repository: name,
-              machine: options.machine,
-            }),
-            completed: t('commands.repo.mount.completed'),
-            failed: t('commands.repo.mount.failed'),
-          });
-        } catch (error) {
-          handleError(error);
-        }
-      }
-    );
-
-  // repo unmount <name>
-  repo
-    .command('unmount <name>')
-    .description(t('commands.repo.unmount.description'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
-    .option('--checkpoint', t('commands.repo.unmount.checkpointOption'))
-    .option('--debug', t('options.debug'))
-    .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(
-      async (
-        name: string,
-        options: {
-          machine: string;
-          checkpoint?: boolean;
-          debug?: boolean;
-          skipRouterRestart?: boolean;
-        }
-      ) => {
-        try {
-          await assertCommandPolicy(CMD.REPO_UNMOUNT, name);
-
-          const params: Record<string, unknown> = {};
-          if (options.checkpoint) params.checkpoint = true;
-
-          await executeRepoFunction('repository_unmount', name, options.machine, params, options, {
-            starting: t('commands.repo.unmount.starting', {
-              repository: name,
-              machine: options.machine,
-            }),
-            completed: t('commands.repo.unmount.completed'),
-            failed: t('commands.repo.unmount.failed'),
-          });
-        } catch (error) {
-          handleError(error);
-        }
-      }
-    );
-
-  // repo up <name>
-  repo
-    .command('up <name>')
+    .command('up [name]')
     .description(t('commands.repo.up.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--mount', t('commands.repo.up.mountOption'))
     .option('--checkpoint', t('commands.repo.up.checkpointOption'))
     .option('--grand <name>', t('commands.repo.up.grandOption'))
+    .option('--include-forks', t('commands.repo.upAll.includeForksOption'))
+    .option('--mount-only', t('commands.repo.upAll.mountOnlyOption'))
+    .option('--parallel', t('commands.repo.upAll.parallelOption'))
+    .option('--concurrency <n>', t('commands.repo.upAll.concurrencyOption'), '3')
+    .option('-y, --yes', t('commands.repo.yesOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .option('--dry-run', t('options.dryRun'))
     .action(
       async (
-        name: string,
+        name: string | undefined,
         options: {
           machine: string;
           mount?: boolean;
           checkpoint?: boolean;
           grand?: string;
+          includeForks?: boolean;
+          mountOnly?: boolean;
+          parallel?: boolean;
+          concurrency?: string;
+          yes?: boolean;
           debug?: boolean;
           skipRouterRestart?: boolean;
           dryRun?: boolean;
         }
       ) => {
         try {
-          await assertCommandPolicy(CMD.REPO_UP, name);
-
-          const params: Record<string, unknown> = {};
-          if (options.mount) params.mount = true;
-          if (options.checkpoint) params.checkpoint = true;
-
-          // Resolve grand repo friendly name → GUID
-          if (options.grand) {
-            const grandRepo = await configService.getRepository(options.grand);
-            params.grand = grandRepo?.repositoryGuid ?? options.grand;
-          }
-
-          if (options.dryRun) {
-            const repo = await configService.getRepository(name);
-            outputService.print(
-              {
-                dryRun: true,
-                repository: name,
-                machine: options.machine,
-                guid: repo?.repositoryGuid,
-                params,
-              },
-              getOutputFormat()
-            );
-            return;
-          }
-
-          // Deploy per-repo SSH key to machine for sandbox gateway
-          await deployRepoKeyIfNeeded(name, options.machine);
-
-          await executeRepoFunction('repository_up', name, options.machine, params, options, {
-            starting: t('commands.repo.up.starting', {
-              repository: name,
-              machine: options.machine,
-            }),
-            completed: t('commands.repo.up.completed'),
-            failed: t('commands.repo.up.failed'),
-          });
-
-          // Ensure per-repo wildcard DNS records (non-blocking)
-          try {
-            const machineConfig = await configService.getLocalMachine(options.machine);
-            if (machineConfig.infra?.baseDomain) {
-              const localConfig = await configService.getLocalConfig();
-              const { ensureRepoDnsRecords } = await import('../services/infra-provision.js');
-              await ensureRepoDnsRecords(options.machine, name, machineConfig.infra, localConfig);
-            }
-          } catch {
-            // Non-fatal: DNS record creation failure should not block repo up
-          }
-
-          // Update cert cache after deployment (new wildcard cert may have been issued)
-          try {
-            const { downloadCertCache } = await import('../services/cert-cache.js');
-            await downloadCertCache(options.machine, { silent: true });
-          } catch {
-            // Non-fatal: cert cache failure should not block repo up
-          }
-        } catch (error) {
-          handleError(error);
-        }
-      }
-    );
-
-  // repo up-all
-  repo
-    .command('up-all')
-    .description(t('commands.repo.upAll.description'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
-    .option('--include-forks', t('commands.repo.upAll.includeForksOption'))
-    .option('--mount-only', t('commands.repo.upAll.mountOnlyOption'))
-    .option('--dry-run', t('commands.repo.upAll.dryRunOption'))
-    .option('--parallel', t('commands.repo.upAll.parallelOption'))
-    .option('--concurrency <n>', t('commands.repo.upAll.concurrencyOption'), '3')
-    .option('--debug', t('options.debug'))
-    .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(
-      async (options: {
-        machine: string;
-        includeForks?: boolean;
-        mountOnly?: boolean;
-        dryRun?: boolean;
-        parallel?: boolean;
-        concurrency?: string;
-        debug?: boolean;
-        skipRouterRestart?: boolean;
-      }) => {
-        try {
-          const params: Record<string, unknown> = {};
-          if (options.includeForks) params.include_forks = true;
-          if (options.mountOnly) params.mount_only = true;
-          if (options.dryRun) params.dry_run = true;
-          if (options.parallel) params.parallel = true;
-          if (options.parallel && options.concurrency) {
-            params.concurrency = Number.parseInt(options.concurrency, 10);
-          }
-
-          outputService.info(t('commands.repo.upAll.starting', { machine: options.machine }));
-
-          const result = await localExecutorService.execute({
-            functionName: 'repository_up_all',
-            machineName: options.machine,
-            params,
-            debug: options.debug,
-            skipRouterRestart: options.skipRouterRestart,
-          });
-
-          if (result.success) {
-            outputService.success(t('commands.repo.upAll.completed'));
+          if (name) {
+            await handleSingleRepoUp(name, options);
           } else {
-            renderLocalExecutionFailure(result, t('commands.repo.upAll.failed'));
+            await handleUpAll(options);
           }
         } catch (error) {
           handleError(error);
@@ -445,63 +367,70 @@ ${t('help.examples')}
       }
     );
 
-  // repo down <name>
+  // repo down [name]
   repo
-    .command('down <name>')
+    .command('down [name]')
     .description(t('commands.repo.down.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--unmount', t('commands.repo.down.unmountOption'))
     .option('--grand <name>', t('commands.repo.down.grandOption'))
+    .option('-y, --yes', t('commands.repo.yesOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .option('--dry-run', t('options.dryRun'))
     .action(
       async (
-        name: string,
+        name: string | undefined,
         options: {
           machine: string;
           unmount?: boolean;
           grand?: string;
+          yes?: boolean;
           debug?: boolean;
           skipRouterRestart?: boolean;
           dryRun?: boolean;
         }
       ) => {
         try {
-          await assertCommandPolicy(CMD.REPO_DOWN, name);
+          if (name) {
+            // Single-repo down
+            await assertCommandPolicy(CMD.REPO_DOWN, name);
 
-          const params: Record<string, unknown> = {};
-          if (options.unmount) params.unmount = true;
+            const params: Record<string, unknown> = {};
+            if (options.unmount) params.unmount = true;
 
-          // Resolve grand repo friendly name → GUID
-          if (options.grand) {
-            const grandRepo = await configService.getRepository(options.grand);
-            params.grand = grandRepo?.repositoryGuid ?? options.grand;
-          }
+            // Resolve grand repo friendly name → GUID
+            if (options.grand) {
+              const grandRepo = await configService.getRepository(options.grand);
+              params.grand = grandRepo?.repositoryGuid ?? options.grand;
+            }
 
-          if (options.dryRun) {
-            const repo = await configService.getRepository(name);
-            outputService.print(
-              {
-                dryRun: true,
+            if (options.dryRun) {
+              const repo = await configService.getRepository(name);
+              outputService.print(
+                {
+                  dryRun: true,
+                  repository: name,
+                  machine: options.machine,
+                  guid: repo?.repositoryGuid,
+                  params,
+                },
+                getOutputFormat()
+              );
+              return;
+            }
+
+            await executeRepoFunction('repository_down', name, options.machine, params, options, {
+              starting: t('commands.repo.down.starting', {
                 repository: name,
                 machine: options.machine,
-                guid: repo?.repositoryGuid,
-                params,
-              },
-              getOutputFormat()
-            );
-            return;
+              }),
+              completed: t('commands.repo.down.completed'),
+              failed: t('commands.repo.down.failed'),
+            });
+          } else {
+            await handleDownAll(options);
           }
-
-          await executeRepoFunction('repository_down', name, options.machine, params, options, {
-            starting: t('commands.repo.down.starting', {
-              repository: name,
-              machine: options.machine,
-            }),
-            completed: t('commands.repo.down.completed'),
-            failed: t('commands.repo.down.failed'),
-          });
         } catch (error) {
           handleError(error);
         }
@@ -574,15 +503,8 @@ ${t('help.examples')}
       }
     });
 
-  // Extended commands: fork, resize, expand, validate, autostart, ownership, template
   registerExtendedRepoCommands(repo);
-
-  // Backup commands: push, pull, list-backups
   registerRepoBackupCommands(repo);
-
-  // Sync commands: push-all, pull-all, upload, download, status
   registerRepoSyncCommands(repo);
-
-  // Snapshot commands: create, list, delete
   registerRepoSnapshotCommands(repo);
 }

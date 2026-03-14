@@ -4,11 +4,11 @@ import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
-import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
 import { outputService } from '../services/output.js';
+import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
-import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { handleError, ValidationError } from '../utils/errors.js';
+import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import {
   type CreateActionOptions,
   coerceCliParams,
@@ -16,6 +16,7 @@ import {
   traceAction,
   validateFunctionParams,
 } from './queue.js';
+import { runBatchOperation } from './repo-batch-utils.js';
 
 interface BackupRunOptions {
   machine?: string;
@@ -173,15 +174,87 @@ async function autoProvisionTarget(options: Record<string, unknown>): Promise<vo
 }
 
 /**
+ * Push a single repo backup.
+ */
+async function pushSingleRepo(
+  repo: string,
+  options: Record<string, unknown>,
+  repoCommand: Command
+): Promise<void> {
+  await assertCommandPolicy(CMD.BACKUP_PUSH, repo);
+  const repoConfig = await configService.getRepository(repo);
+  if (!repoConfig) {
+    throw new ValidationError(t('errors.repositoryNotFound', { name: repo }));
+  }
+
+  let params: Record<string, unknown>;
+  let dest: string;
+
+  if (options.to) {
+    ({ params, dest } = buildStoragePushParams(
+      repo,
+      repoConfig.repositoryGuid,
+      options as Parameters<typeof buildStoragePushParams>[2]
+    ));
+  } else if (options.toMachine) {
+    await autoProvisionTarget(options);
+    await deployRepoKeyIfNeeded(repo, options.toMachine as string);
+    ({ params, dest } = buildMachinePushParams(
+      repo,
+      repoConfig.repositoryGuid,
+      options as Parameters<typeof buildMachinePushParams>[2]
+    ));
+  } else {
+    throw new ValidationError(t('commands.repo.push.destRequired'));
+  }
+
+  outputService.info(t('commands.repo.push.pushing', { repo, dest }));
+  await executeFunction('backup_push', params, options as BackupRunOptions, repoCommand);
+}
+
+/**
+ * Pull a single repo backup.
+ */
+async function pullSingleRepo(
+  repo: string,
+  options: Record<string, unknown>,
+  repoCommand: Command
+): Promise<void> {
+  await assertCommandPolicy(CMD.BACKUP_PULL, repo);
+  const params: Record<string, unknown> = { repository: repo };
+
+  if (options.from) {
+    params.sourceType = 'storage';
+    params.from = options.from;
+  } else if (options.fromMachine) {
+    params.sourceType = 'machine';
+    params.from = options.fromMachine;
+  } else {
+    throw new ValidationError(t('commands.repo.pull.sourceRequired'));
+  }
+
+  if (options.force) params.force = true;
+
+  const targetMachine =
+    (options.machine as string | undefined) ?? (await configService.getMachine());
+  if (targetMachine) {
+    await deployRepoKeyIfNeeded(repo, targetMachine);
+  }
+
+  outputService.info(t('commands.repo.pull.pulling', { repo }));
+  await executeFunction('backup_pull', params, options as BackupRunOptions, repoCommand);
+}
+
+/**
  * Register backup-related commands directly on the repo command:
- * - repo push <repo>
- * - repo pull <repo>
+ * - repo push [repo]
+ * - repo pull [repo]
  * - repo list-backups
  */
 export function registerRepoBackupCommands(repoCommand: Command): void {
-  // repo push <repo>
+  // repo push [repo]
   repoCommand
-    .command('push <repo>')
+    .command('push [repo]')
     .description(t('commands.repo.push.description'))
     .option('--dest <filename>', t('commands.repo.push.optionDest'))
     .option('--to <storage>', t('commands.repo.push.optionToStorage'))
@@ -192,73 +265,44 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .option('--tag <tag>', t('commands.repo.push.optionTag'))
     .option('-m, --machine <name>', t('options.machine'))
     .option('-w, --watch', t('options.watch'))
+    .option('-y, --yes', t('commands.repo.yesOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (repo, options) => {
       try {
-        await assertCommandPolicy(CMD.BACKUP_PUSH, repo);
-        const repoConfig = await configService.getRepository(repo);
-        if (!repoConfig) {
-          throw new ValidationError(t('errors.repositoryNotFound', { name: repo }));
-        }
-
-        let params: Record<string, unknown>;
-        let dest: string;
-
-        if (options.to) {
-          ({ params, dest } = buildStoragePushParams(repo, repoConfig.repositoryGuid, options));
-        } else if (options.toMachine) {
-          await autoProvisionTarget(options);
-          // Deploy per-repo SSH key to target machine for sandbox gateway
-          await deployRepoKeyIfNeeded(repo, options.toMachine);
-          ({ params, dest } = buildMachinePushParams(repo, repoConfig.repositoryGuid, options));
+        if (repo) {
+          await pushSingleRepo(repo, options, repoCommand);
         } else {
-          throw new ValidationError(t('commands.repo.push.destRequired'));
+          await runBatchOperation('Push', options.machine ?? 'default', !!options.yes, (name) =>
+            pushSingleRepo(name, options, repoCommand)
+          );
         }
-
-        outputService.info(t('commands.repo.push.pushing', { repo, dest }));
-        await executeFunction(`backup_push`, params, options, repoCommand);
       } catch (error) {
         handleError(error);
       }
     });
 
-  // repo pull <repo>
+  // repo pull [repo]
   repoCommand
-    .command('pull <repo>')
+    .command('pull [repo]')
     .description(t('commands.repo.pull.description'))
     .option('--from <storage>', t('commands.repo.pull.optionFromStorage'))
     .option('--from-machine <machine>', t('commands.repo.pull.optionFromMachine'))
     .option('--force', t('commands.repo.pull.optionForce'))
     .option('-m, --machine <name>', t('options.machine'))
     .option('-w, --watch', t('options.watch'))
+    .option('-y, --yes', t('commands.repo.yesOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (repo, options) => {
       try {
-        await assertCommandPolicy(CMD.BACKUP_PULL, repo);
-        const params: Record<string, unknown> = { repository: repo };
-
-        if (options.from) {
-          params.sourceType = 'storage';
-          params.from = options.from;
-        } else if (options.fromMachine) {
-          params.sourceType = 'machine';
-          params.from = options.fromMachine;
+        if (repo) {
+          await pullSingleRepo(repo, options, repoCommand);
         } else {
-          throw new ValidationError(t('commands.repo.pull.sourceRequired'));
+          await runBatchOperation('Pull', options.machine ?? 'default', !!options.yes, (name) =>
+            pullSingleRepo(name, options, repoCommand)
+          );
         }
-
-        if (options.force) params.force = true;
-
-        // Deploy per-repo SSH key to target machine
-        const targetMachine = options.machine ?? (await configService.getMachine());
-        if (targetMachine) {
-          await deployRepoKeyIfNeeded(repo, targetMachine);
-        }
-
-        outputService.info(t('commands.repo.pull.pulling', { repo }));
-        await executeFunction(`backup_pull`, params, options, repoCommand);
       } catch (error) {
         handleError(error);
       }

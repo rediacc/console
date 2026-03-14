@@ -1083,7 +1083,10 @@
         "failed": "Servis durdurma başarısız",
         "grandOption": "Ana depo adı (GUID'ye otomatik çözümlenir)",
         "starting": "\"{{repository}}\" için servisler \"{{machine}}\" üzerinde durduruluyor...",
-        "unmountOption": "Durdurduktan sonra depoyu ayır"
+        "unmountOption": "Durdurduktan sonra depoyu ayır",
+        "allCompleted": "Tüm depolar durduruldu",
+        "allFailed": "Tümünü durdurma işlemi başarısız oldu",
+        "allStarting": "\"{{machine}}\" üzerindeki tüm depolar durduruluyor..."
       },
       "expand": {
         "completed": "Genişletme tamamlandı",
@@ -1249,7 +1252,12 @@
         "description": "Depo bütünlüğünü doğrula",
         "failed": "Doğrulama başarısız",
         "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" doğrulanıyor..."
-      }
+      },
+      "batchConfirm": "\"{{machine}}\" üzerindeki tüm {{count}} depoyu {{action}} yap? [y/N]",
+      "batchFailed": "\"{{repo}}\" için {{action}} başarısız: {{error}}",
+      "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
+      "batchResult": "{{action}} tamamlandı: {{succeeded}}/{{total}} başarılı",
+      "yesOption": "Toplu işlemler için onayı atla"
     },
     "repository": {
       "create": {

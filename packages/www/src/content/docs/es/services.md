@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: es
-sourceHash: "cd5021a29a7b2a59"
+sourceHash: "abbcebcb89f8fbd0"
 ---
 
 # Servicios
@@ -209,7 +209,7 @@ La secuencia de ejecución es:
 Inicie o detenga todos los repositorios en una máquina a la vez:
 
 ```bash
-rdc repo up-all -m server-1
+rdc repo up -m server-1
 ```
 
 | Opción | Descripción |
