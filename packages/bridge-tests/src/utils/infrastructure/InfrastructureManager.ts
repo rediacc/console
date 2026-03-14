@@ -272,7 +272,7 @@ export class InfrastructureManager {
       // Move to final location and set permissions using SSHExecutor
       const moveResult = await this.sshExecutor.execute(
         ip,
-        `sudo mv /tmp/renet ${VM_RENET_INSTALL_PATH} && sudo chmod +x ${VM_RENET_INSTALL_PATH}`,
+        `sudo mkdir -p $(dirname ${VM_RENET_INSTALL_PATH}) && sudo mv /tmp/renet ${VM_RENET_INSTALL_PATH} && sudo chmod +x ${VM_RENET_INSTALL_PATH}`,
         { execTimeout: 10000 }
       );
 
