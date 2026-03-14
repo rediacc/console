@@ -1708,6 +1708,7 @@
         "fetchingDetails": "正在获取连接详情...",
         "opening": "正在打开 VS Code：{{connection}} → {{path}}",
         "persistingKey": "正在保存 SSH 密钥...",
+        "provisioningRenet": "正在向远程服务器部署 renet...",
         "settingsWarning": "警告：无法配置 VS Code 设置：{{error}}",
         "settingUpEnv": "正在设置远程环境...",
         "success": "VS Code 已成功启动。",
@@ -1931,12 +1932,12 @@
     "repositoryNotFound": "仓库 \"{{name}}:{{tag}}\" 未找到",
     "repositoryRequired": "需要仓库名称。使用 --repository <name>。",
     "resourceNotFound": "{{resource}} 未找到",
-    "sshKeyNotFound": "SSH 密钥未找到：{{path}}",
     "ssh": {
+      "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
-      "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
-      "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥"
+      "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥"
     },
+    "sshKeyNotFound": "SSH 密钥未找到：{{path}}",
     "subscription": {
       "notLoggedIn": "未登录。请先运行 `rdc subscription login`。"
     },
@@ -1977,7 +1978,8 @@
       "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
       "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
-      "notFound": "未找到 VS Code。\n\n请从以下地址安装：https://code.visualstudio.com/\n或设置 REDIACC_VSCODE_PATH 环境变量。"
+      "notFound": "未找到 VS Code。\n\n请从以下地址安装：https://code.visualstudio.com/\n或设置 REDIACC_VSCODE_PATH 环境变量。",
+      "repoNotDeployed": "仓库 \"{{repository}}\" 未部署在 {{machine}} 上。\n\n请先部署：\n  rdc repo up {{repository}} -m <机器名>"
     }
   },
   "help": {
@@ -2113,6 +2115,7 @@
     "repository": "仓库名称（连接到仓库环境）",
     "repositoryShorthand": "仓库名称（--repository 的简写）",
     "repositoryTag": "仓库标签",
+    "resetHome": "重置每个仓库的主目录覆盖层以全新开始",
     "saveAs": "将凭证保存到命名上下文",
     "saveKnownHosts": "测试成功后将 known_hosts 保存到机器保险箱",
     "searchInField": "在 {{field}} 中搜索",

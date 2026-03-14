@@ -3,7 +3,7 @@
  * Opens VS Code with Remote SSH connection to machines and repositories
  */
 
-import { SSHConnection, testSSHConnectivity } from '@rediacc/shared-desktop/ssh';
+import { SSHConnection, spawnSSH, testSSHConnectivity } from '@rediacc/shared-desktop/ssh';
 import {
   addSSHConfigEntry,
   buildVSCodeSSHConfigEntry,
@@ -21,7 +21,7 @@ import {
   listSSHConfigEntries,
   persistKnownHosts,
   persistSSHKey,
-  removeHostFromRemotePlatform,
+  setHostRemotePlatform,
   removePersistedKeys,
   removeSSHConfigEntry,
   setHostServerInstallPath,
@@ -31,6 +31,7 @@ import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
+import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
 import { type ConnectionDetails, getSSHConnectionDetails } from '../services/ssh-connection.js';
 import { debugLog } from '../utils/debug.js';
 import { handleError } from '../utils/errors.js';
@@ -136,7 +137,8 @@ async function configureVSCodeAndSettings(
   connectionName: string,
   connectionDetails: ConnectionDetails,
   vscodeInfo: VSCodeInfo,
-  insidersOption?: boolean
+  insidersOption?: boolean,
+  repositoryName?: string
 ): Promise<void> {
   await withSpinner(t('commands.vscode.connect.configuringVSCode'), () => {
     const isInsiders = insidersOption ?? vscodeInfo.isInsiders;
@@ -147,13 +149,122 @@ async function configureVSCodeAndSettings(
     }
 
     if (connectionDetails.datastore) {
-      // Note: Do NOT include .vscode-server — VS Code appends it automatically
-      setHostServerInstallPath(connectionName, connectionDetails.datastore, isInsiders);
+      // Per-repo server install path so VS Code runs separate server instances.
+      // VS Code shares servers by resolved hostname — without separate paths,
+      // the second repo would reuse the first repo's sandboxed server.
+      const serverPath = repositoryName
+        ? `${connectionDetails.datastore}/.interim/sandbox/${repositoryName}`
+        : connectionDetails.datastore;
+      setHostServerInstallPath(connectionName, serverPath, isInsiders);
     }
 
-    removeHostFromRemotePlatform(connectionName, isInsiders);
+    setHostRemotePlatform(connectionName, isInsiders);
     return Promise.resolve();
   });
+}
+
+async function verifyRepoDeployed(
+  connectionDetails: ConnectionDetails,
+  repositoryName: string
+): Promise<void> {
+  const sshConnection = new SSHConnection(
+    connectionDetails.privateKey,
+    connectionDetails.known_hosts,
+    { port: connectionDetails.port }
+  );
+
+  try {
+    await sshConnection.setup();
+    const destination = `${connectionDetails.user}@${connectionDetails.host}`;
+    const checkCmd = `test -d "${connectionDetails.workingDirectory}" && echo OK || echo MISSING`;
+
+    const child = spawnSSH(destination, sshConnection.sshOptions, checkCmd, {
+      env: process.env,
+      stdio: 'pipe',
+      agentSocketPath: sshConnection.agentSocketPath,
+    });
+
+    const output = await new Promise<string>((resolve) => {
+      let data = '';
+      child.stdout?.on('data', (chunk: Buffer) => {
+        data += chunk.toString();
+      });
+      child.on('exit', () => resolve(data.trim()));
+      child.on('error', () => resolve(''));
+    });
+
+    if (output !== 'OK') {
+      throw new Error(
+        t('errors.vscode.repoNotDeployed', {
+          repository: repositoryName,
+          machine: connectionDetails.host,
+        })
+      );
+    }
+  } finally {
+    await sshConnection.cleanup();
+  }
+}
+
+async function provisionAndPrepare(
+  machineName: string,
+  repositoryName: string | undefined,
+  connectionDetails: ConnectionDetails
+): Promise<void> {
+  const localConfig = await configService.getLocalConfig();
+  const machine = localConfig.machines[machineName];
+  const teamKey = localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
+
+  if (machine) {
+    await withSpinner(t('commands.vscode.connect.provisioningRenet'), () =>
+      provisionRenetToRemote(localConfig, machine, teamKey, {})
+    );
+  }
+
+  if (repositoryName && connectionDetails.datastore) {
+    await preparePerRepoVSCodeServer(connectionDetails, repositoryName, teamKey);
+  }
+}
+
+/**
+ * Prepares a per-repo VS Code server directory on the remote machine.
+ * Copies the shared server installation (if available) and sets ownership
+ * to the universal user so the sandboxed VS Code server can write to it.
+ */
+async function preparePerRepoVSCodeServer(
+  connectionDetails: ConnectionDetails,
+  repositoryName: string,
+  teamKey: string
+): Promise<void> {
+  const sandboxServerPath = `${connectionDetails.datastore}/.interim/sandbox/${repositoryName}/.vscode-server`;
+  const sharedServerPath = `${connectionDetails.datastore}/.vscode-server`;
+  const sshConn = new SSHConnection(teamKey, connectionDetails.known_hosts, {
+    port: connectionDetails.port,
+  });
+
+  try {
+    await sshConn.setup();
+    const dest = `${connectionDetails.user}@${connectionDetails.host}`;
+    const universalUser = connectionDetails.universalUser;
+    const cmd = [
+      `sudo mkdir -p "${sandboxServerPath}"`,
+      `sudo cp -a "${sharedServerPath}/." "${sandboxServerPath}/" 2>/dev/null || true`,
+      `sudo chown -R ${universalUser}:${universalUser} "${sandboxServerPath}"`,
+    ].join(' && ');
+
+    const child = spawnSSH(dest, sshConn.sshOptions, cmd, {
+      env: process.env,
+      stdio: 'pipe',
+      agentSocketPath: sshConn.agentSocketPath,
+    });
+
+    await new Promise<void>((resolve) => {
+      child.on('exit', () => resolve());
+      child.on('error', () => resolve());
+    });
+  } finally {
+    await sshConn.cleanup();
+  }
 }
 
 async function setupRemoteEnvironment(connectionDetails: ConnectionDetails): Promise<void> {
@@ -220,6 +331,14 @@ async function connectVSCode(options: VSCodeConnectOptions): Promise<void> {
 
   await verifySSHConnectivity(connectionDetails);
 
+  // Verify the repo is actually deployed on the machine before proceeding
+  if (repositoryName && connectionDetails.workingDirectory) {
+    await verifyRepoDeployed(connectionDetails, repositoryName);
+  }
+
+  // Provision renet and prepare per-repo VS Code server
+  await provisionAndPrepare(machineName, repositoryName, connectionDetails);
+
   const { connectionName, identityFile, knownHostsFile } = await setupSSHConfig(
     teamName,
     machineName,
@@ -230,7 +349,13 @@ async function connectVSCode(options: VSCodeConnectOptions): Promise<void> {
   debugLog(`Identity file: ${identityFile}`);
   debugLog(`Known hosts file: ${knownHostsFile}`);
 
-  await configureVSCodeAndSettings(connectionName, connectionDetails, vscodeInfo, options.insiders);
+  await configureVSCodeAndSettings(
+    connectionName,
+    connectionDetails,
+    vscodeInfo,
+    options.insiders,
+    repositoryName
+  );
 
   if (!options.skipEnvSetup && connectionDetails.environment) {
     await setupRemoteEnvironment(connectionDetails);

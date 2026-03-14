@@ -7,12 +7,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { getSSHHome } from '../utils/platform.js';
-import {
-  buildMachineEnvironment,
-  buildRemoteCommand,
-  buildRepositoryEnvironment,
-  type SandboxOptions,
-} from './envCompose.js';
+import { buildMachineEnvironment, buildRepositoryEnvironment } from './envCompose.js';
 import type { SSHConfigEntry } from './types.js';
 
 /**
@@ -301,18 +296,9 @@ export function buildVSCodeSSHConfigEntry(options: BuildSSHConfigOptions): SSHCo
     });
   }
 
-  // Build sandbox options for repo-level connections (Landlock isolation)
-  const sandbox: SandboxOptions | undefined = repositoryName
-    ? {
-        workingDirectory: options.workingDirectory ?? '',
-        serverInstallPath: datastore,
-        networkId,
-        renetPath: options.renetPath,
-      }
-    : undefined;
-
-  // Build RemoteCommand for user switching and optional sandbox
-  const { remoteCommand, requestTTY } = buildRemoteCommand(sshUser, universalUser, sandbox);
+  // Sandbox is enforced server-side via ForceCommand in authorized_keys.
+  // No client-side RemoteCommand needed for sandbox — the gateway reads
+  // REDIACC_REPOSITORY from SetEnv to determine which repo to sandbox.
 
   const entry: SSHConfigEntry = {
     host: connectionHost,
@@ -325,12 +311,6 @@ export function buildVSCodeSSHConfigEntry(options: BuildSSHConfigOptions): SSHCo
     serverAliveInterval,
     serverAliveCountMax,
   };
-
-  // Add RemoteCommand if user switching is needed
-  if (remoteCommand) {
-    entry.remoteCommand = remoteCommand;
-    entry.requestTTY = requestTTY as 'yes' | 'no' | 'force';
-  }
 
   return entry;
 }

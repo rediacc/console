@@ -1610,6 +1610,7 @@
         "configuringSSH": "Configuring SSH...",
         "configuringVSCode": "Configuring VS Code settings...",
         "settingsWarning": "Warning: Could not configure VS Code settings: {{error}}",
+        "provisioningRenet": "Provisioning renet to remote...",
         "settingUpEnv": "Setting up remote environment...",
         "opening": "Opening VS Code: {{connection}} → {{path}}",
         "success": "VS Code launched successfully."
@@ -1865,7 +1866,8 @@
       "noHostKey": "Machine '{{machine}}' does not have a host key configured in the vault",
       "noIpAddress": "Machine '{{machine}}' does not have an IP address configured",
       "noPrivateKey": "Team '{{team}}' does not have an SSH private key configured",
-      "notFound": "VS Code not found.\n\nPlease install from: https://code.visualstudio.com/\nOr set REDIACC_VSCODE_PATH environment variable."
+      "notFound": "VS Code not found.\n\nPlease install from: https://code.visualstudio.com/\nOr set REDIACC_VSCODE_PATH environment variable.",
+      "repoNotDeployed": "Repository \"{{repository}}\" is not deployed on {{machine}}.\n\nDeploy it first:\n  rdc repo up {{repository}} -m <machine-name>"
     },
     "tokenExpired": "Token expired. Please login again.",
     "unexpectedError": "Unexpected error: {{message}}",
@@ -1898,6 +1900,7 @@
     "email": "Email address",
     "external": "Force launching in external terminal window",
     "follow": "Follow logs output",
+    "resetHome": "Reset per-repo home overlay for a fresh start",
     "image": "RBD image name",
     "pool": "Ceph pool name",
     "snapshot": "RBD snapshot name",

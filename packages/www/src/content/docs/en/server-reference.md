@@ -108,11 +108,21 @@ DOCKER_HOST=unix:///run/rediacc/docker-{id}.sock docker ps
 # Check Landlock support
 renet sandbox-exec --detect
 
-# Run a command inside a Landlock sandbox (used internally by renet)
+# Run a command inside a Landlock sandbox (used internally)
 renet sandbox-exec --allow-rw /path --allow-ro /usr --allow-exec /bin -- command
 ```
 
-`sandbox-exec` applies Landlock LSM filesystem restrictions to a command. The sandboxed process can only access explicitly allowed paths — all other filesystem access is blocked by the kernel. This is used internally by renet to isolate Rediaccfile execution, compose operations, and SSH commands to their repository's mount path.
+`sandbox-exec` applies Landlock LSM filesystem restrictions, then execs the given command. It is invoked automatically by `sandbox-gateway` (the SSH ForceCommand handler) for all repo-level connections.
+
+**Flags:**
+- `--allow-rw`, `--allow-ro`, `--allow-exec`: Landlock path rules
+- `--home-overlay`: Mount OverlayFS over home dir for per-repo write isolation
+- `--sandbox-dir`: Per-repo workspace (`<datastore>/.interim/sandbox/<name>/`)
+- `--work-dir`: Set working directory and load `.envrc` for repo environment
+- `--run-as`: Drop privileges to target user after setup
+- `--reset-home`: Clear per-repo home overlay for a fresh start
+
+**`sandbox-gateway`** is the SSH ForceCommand handler set via `command=` in `authorized_keys`. Each repo's SSH key triggers the gateway with the repo name baked in — un-fakeable by the client. The gateway builds sandbox-exec arguments and execs via sudo.
 
 ### Proxy & Routing
 

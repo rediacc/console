@@ -25,6 +25,7 @@
     },
     "title": "Der Unterschied"
   },
+  "captchaRequired": "Bitte vervollständigen Sie die Captcha-Verifizierung.",
   "common": {
     "aria": {
       "breadcrumbNavigation": "Brotkrümel-Navigation",
@@ -393,6 +394,7 @@
     "pageDescription": "Erhalten Sie monatliche Updates zu neuen Funktionen, Self-Hosting-Anleitungen und Infrastruktur-Tipps.",
     "pageTitle": "Bleiben Sie auf dem Laufenden",
     "placeholder": "Ihre E-Mail-Adresse",
+    "privacyNote": "Wir respektieren Ihre Privatsphäre. Sie können sich jederzeit abmelden.",
     "returnPopup": {
       "close": "Popup schließen",
       "cta": "Abonnieren & Termin buchen",
@@ -400,7 +402,6 @@
       "note": "Wir verwenden Ihre E-Mail für Produktupdates. Eine Abmeldung ist jederzeit möglich.",
       "title": "Möchten Sie eine geführte Einführung?"
     },
-    "privacyNote": "Wir respektieren Ihre Privatsphäre. Sie können sich jederzeit abmelden.",
     "roiGate": {
       "description": "Geben Sie Ihre E-Mail-Adresse ein, um die vollständige Kostenaufstellung und Einsparungsanalyse freizuschalten.",
       "title": "Erhalten Sie Ihren detaillierten ROI-Bericht",
@@ -414,7 +415,6 @@
     "title": "Newsletter",
     "unsubscribed": "Sie wurden abgemeldet. Schade, dass Sie gehen."
   },
-  "captchaRequired": "Bitte vervollständigen Sie die Captcha-Verifizierung.",
   "pages": {
     "blog": {
       "allArticles": "Alle Artikel",
@@ -1093,8 +1093,8 @@
         "monthOrYear": "pro Monat oder {{price}} pro Jahr",
         "popular": "Am beliebtesten",
         "startingAt": "*Beginnt um",
-        "whatsIncluded": "Was ist enthalten:",
-        "taxDisclaimer": "Alle Preise in USD, zuzüglich anfallender Steuern, Abgaben und Zölle."
+        "taxDisclaimer": "Alle Preise in USD, zuzüglich anfallender Steuern, Abgaben und Zölle.",
+        "whatsIncluded": "Was ist enthalten:"
       }
     },
     "docs": {
@@ -3037,7 +3037,6 @@
       },
       "trustSection": {
         "heading": "Deine Infrastruktur. Deine Regeln.",
-        "subtitle": "Rediacc-Lizenzen sind so gestaltet, dass du niemals eingesperrt bist. Das bedeutet das in der Praxis.",
         "rows": [
           {
             "title": "Deine repos laufen für immer.",
@@ -3060,11 +3059,12 @@
             "description": "Ein Lizenz-Slot wird nur während der Erstellung oder dem Forken eines Repositorys belegt — deine täglichen Operationen verbrauchen keinen. Slots werden nach 1 Stunde Inaktivität automatisch freigegeben, sodass ein Plan mit 5 Slots Dutzende von Maschinen bedienen kann. Keine Gebühren pro Maschine, niemals."
           }
         ],
+        "subtitle": "Rediacc-Lizenzen sind so gestaltet, dass du niemals eingesperrt bist. Das bedeutet das in der Praxis.",
         "svg": {
-          "noLicenseRequired": "Keine Lizenz erforderlich — funktioniert immer",
-          "noLicenseNeeded": "Keine Lizenz nötig",
-          "requiredOnlyHere": "Nur hier erforderlich",
           "allOperations": "Alle Operationen",
+          "noLicenseNeeded": "Keine Lizenz nötig",
+          "noLicenseRequired": "Keine Lizenz erforderlich — funktioniert immer",
+          "requiredOnlyHere": "Nur hier erforderlich",
           "slotsAutoRelease": "Slots werden nach 1 Stunde Inaktivität automatisch freigegeben",
           "slotsCreateFork": "Slots werden nur für Erstellen & Forken benötigt — tägliche Operationen sind immer kostenlos"
         }
@@ -3074,9 +3074,9 @@
         "bestValue": "Bestes Preis-Leistungs-Verhältnis",
         "billingToggle": {
           "annual": "Jährlich",
-          "monthly": "Monatlich",
           "annualSavings": "17 % sparen — 2 Monate gratis",
-          "ariaLabel": "Abrechnungszeitraum"
+          "ariaLabel": "Abrechnungszeitraum",
+          "monthly": "Monatlich"
         },
         "contactSales": "Kontaktieren Sie den Vertrieb",
         "cta": {
@@ -3117,8 +3117,8 @@
         "monthOrYear": "pro Monat oder {{price}} pro Jahr",
         "popular": "Am beliebtesten",
         "startingAt": "*Beginnt um",
-        "whatsIncluded": "Was ist enthalten:",
-        "taxDisclaimer": "Alle Preise in USD, zuzüglich anfallender Steuern, Abgaben und Zölle."
+        "taxDisclaimer": "Alle Preise in USD, zuzüglich anfallender Steuern, Abgaben und Zölle.",
+        "whatsIncluded": "Was ist enthalten:"
       }
     },
     "privacyPolicy": {

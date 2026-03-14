@@ -25,6 +25,7 @@
     },
     "title": "その違い"
   },
+  "captchaRequired": "キャプチャ認証を完了してください。",
   "common": {
     "aria": {
       "breadcrumbNavigation": "パンくずナビゲーション",
@@ -393,6 +394,7 @@
     "pageDescription": "新機能、セルフホスティングガイド、インフラのヒントに関する月次アップデートをお届けします。",
     "pageTitle": "最新情報をお届け",
     "placeholder": "メールアドレス",
+    "privacyNote": "プライバシーを尊重します。いつでも登録解除できます。",
     "returnPopup": {
       "close": "ポップアップを閉じる",
       "cta": "購読して予約する",
@@ -400,7 +402,6 @@
       "note": "製品アップデートの配信にメールアドレスを使用します。いつでも配信停止できます。",
       "title": "ガイド付きのご案内をご希望ですか？"
     },
-    "privacyNote": "プライバシーを尊重します。いつでも登録解除できます。",
     "roiGate": {
       "description": "メールアドレスを入力して、詳細なコスト内訳と節約分析をご覧ください。",
       "title": "詳細なROIレポートを取得",
@@ -414,7 +415,6 @@
     "title": "ニュースレター",
     "unsubscribed": "購読が解除されました。ご利用ありがとうございました。"
   },
-  "captchaRequired": "キャプチャ認証を完了してください。",
   "pages": {
     "blog": {
       "allArticles": "すべての記事",
@@ -1093,8 +1093,8 @@
         "monthOrYear": "月額または年間 {{price}}",
         "popular": "最も人気のある",
         "startingAt": "*開始時間",
-        "whatsIncluded": "含まれるもの:",
-        "taxDisclaimer": "すべての価格は米ドル建てで、適用される税金、課徴金、関税は含まれていません。"
+        "taxDisclaimer": "すべての価格は米ドル建てで、適用される税金、課徴金、関税は含まれていません。",
+        "whatsIncluded": "含まれるもの:"
       }
     },
     "docs": {
@@ -3039,7 +3039,6 @@
       },
       "trustSection": {
         "heading": "あなたのインフラ。あなたのルール。",
-        "subtitle": "Rediaccのライセンスは、決してロックインされないよう設計されています。それが実際に何を意味するかをご説明します。",
         "rows": [
           {
             "title": "あなたのreposは永遠に動き続けます。",
@@ -3062,11 +3061,12 @@
             "description": "ライセンススロットはリポジトリの作成またはフォーク時にのみ占有されます — 日常の操作ではスロットを消費しません。スロットは1時間の非アクティブ後に自動解放されるため、5スロットのプランで数十台のマシンに対応できます。マシンごとの料金は一切かかりません。"
           }
         ],
+        "subtitle": "Rediaccのライセンスは、決してロックインされないよう設計されています。それが実際に何を意味するかをご説明します。",
         "svg": {
-          "noLicenseRequired": "ライセンス不要 — 常に動作します",
-          "noLicenseNeeded": "ライセンス不要",
-          "requiredOnlyHere": "ここでのみ必要",
           "allOperations": "すべての操作",
+          "noLicenseNeeded": "ライセンス不要",
+          "noLicenseRequired": "ライセンス不要 — 常に動作します",
+          "requiredOnlyHere": "ここでのみ必要",
           "slotsAutoRelease": "スロットは1時間の非アクティブ後に自動解放されます",
           "slotsCreateFork": "スロットは作成とフォークにのみ使用されます — 日常操作は常に無料です"
         }
@@ -3076,9 +3076,9 @@
         "bestValue": "ベストバリュー",
         "billingToggle": {
           "annual": "年額",
-          "monthly": "月額",
           "annualSavings": "17%節約 — 2ヶ月無料",
-          "ariaLabel": "請求期間"
+          "ariaLabel": "請求期間",
+          "monthly": "月額"
         },
         "contactSales": "営業担当者へのお問い合わせ",
         "cta": {
@@ -3119,8 +3119,8 @@
         "monthOrYear": "月額または年間 {{price}}",
         "popular": "最も人気のある",
         "startingAt": "*開始時間",
-        "whatsIncluded": "含まれるもの:",
-        "taxDisclaimer": "すべての価格は米ドル建てで、適用される税金、課徴金、関税は含まれていません。"
+        "taxDisclaimer": "すべての価格は米ドル建てで、適用される税金、課徴金、関税は含まれていません。",
+        "whatsIncluded": "含まれるもの:"
       }
     },
     "privacyPolicy": {

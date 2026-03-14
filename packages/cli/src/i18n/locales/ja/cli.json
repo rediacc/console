@@ -1708,6 +1708,7 @@
         "fetchingDetails": "接続詳細を取得中です...",
         "opening": "VS Code を開いています: {{connection}} → {{path}}",
         "persistingKey": "SSH キーを永続化中です...",
+        "provisioningRenet": "リモートサーバーにrenetをプロビジョニング中...",
         "settingsWarning": "警告: VS Code 設定を設定できませんでした: {{error}}",
         "settingUpEnv": "リモート環境をセットアップ中です...",
         "success": "VS Code が正常に起動されました。",
@@ -1931,12 +1932,12 @@
     "repositoryNotFound": "リポジトリ \"{{name}}:{{tag}}\" が見つかりません",
     "repositoryRequired": "リポジトリ名が必要です。--repository <name> を使用してください。",
     "resourceNotFound": "{{resource}} が見つかりません",
-    "sshKeyNotFound": "SSH キーが見つかりません: {{path}}",
     "ssh": {
+      "noHostKey": "マシン '{{machine}}' のボルトにホストキーが設定されていません",
       "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
-      "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません",
-      "noHostKey": "マシン '{{machine}}' のボルトにホストキーが設定されていません"
+      "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません"
     },
+    "sshKeyNotFound": "SSH キーが見つかりません: {{path}}",
     "subscription": {
       "notLoggedIn": "ログインしていません。先に `rdc subscription login` を実行してください。"
     },
@@ -1977,7 +1978,8 @@
       "noHostKey": "マシン '{{machine}}' のボルトにホストキーが設定されていません",
       "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
       "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません",
-      "notFound": "VS Code が見つかりません。\n\nhttps://code.visualstudio.com/ からインストールしてください\nまたは REDIACC_VSCODE_PATH 環境変数を設定してください。"
+      "notFound": "VS Code が見つかりません。\n\nhttps://code.visualstudio.com/ からインストールしてください\nまたは REDIACC_VSCODE_PATH 環境変数を設定してください。",
+      "repoNotDeployed": "リポジトリ \"{{repository}}\" は {{machine}} にデプロイされていません。\n\n先にデプロイしてください：\n  rdc repo up {{repository}} -m <マシン名>"
     }
   },
   "help": {
@@ -2113,6 +2115,7 @@
     "repository": "リポジトリ名 (リポジトリ環境に接続)",
     "repositoryShorthand": "リポジトリ名 (--repository の短縮形)",
     "repositoryTag": "リポジトリタグ",
+    "resetHome": "リポジトリごとのホームオーバーレイをリセットして初期状態にする",
     "saveAs": "認証情報を名前付きコンテキストに保存する",
     "saveKnownHosts": "テスト成功後にマシンボルトに known_hosts を保存する",
     "searchInField": "{{field}}で検索",

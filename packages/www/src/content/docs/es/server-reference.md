@@ -4,7 +4,8 @@ description: "Organización de directorios, comandos de renet, servicios systemd
 category: "Concepts"
 order: 3
 language: es
-sourceHash: "e7380a1d70386a2b"
+sourceHash: "07b8aba408085eab"
+sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 ---
 
 # Server Reference

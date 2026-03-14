@@ -7,6 +7,7 @@ import { configService } from '../services/config-resources.js';
 import { pushInfraConfig } from '../services/infra-provision.js';
 import { outputService } from '../services/output.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
+import { deployAllRepoKeys } from '../services/repo-key-deployment.js';
 import type {
   CloudProviderConfig,
   MachineConfig,
@@ -15,6 +16,30 @@ import type {
 } from '../types/index.js';
 import { assertResourceName, MachineConfigSchema, parseConfig } from '../utils/config-schema.js';
 import { handleError } from '../utils/errors.js';
+
+async function postSetupMachineTasks(name: string, debug?: boolean): Promise<void> {
+  // Deploy all per-repo SSH keys to the newly set up machine
+  try {
+    const deployed = await deployAllRepoKeys(name);
+    if (deployed > 0) {
+      outputService.info(`Deployed ${deployed} repo SSH keys to ${name}`);
+    }
+  } catch {
+    // non-fatal
+  }
+
+  // Auto push-infra if machine has infra configured
+  try {
+    const postSetupConfig = await configService.getLocalConfig();
+    const postSetupMachine = postSetupConfig.machines[name];
+    if (postSetupMachine?.infra?.baseDomain) {
+      outputService.info(t('commands.machine.provision.configuringInfra', { name }));
+      await pushInfraConfig(name, { debug });
+    }
+  } catch {
+    // push-infra failure is non-fatal during setup
+  }
+}
 
 /**
  * Apply custom provider fields from CLI options to a config object.
@@ -287,18 +312,7 @@ export function registerSetupCommands(config: Command, program: Command): void {
 
           if (exitCode === 0) {
             outputService.success(t('commands.config.setupMachine.completed', { machine: name }));
-
-            // Auto push-infra if machine has infra configured
-            try {
-              const postSetupConfig = await configService.getLocalConfig();
-              const postSetupMachine = postSetupConfig.machines[name];
-              if (postSetupMachine?.infra?.baseDomain) {
-                outputService.info(t('commands.machine.provision.configuringInfra', { name }));
-                await pushInfraConfig(name, { debug: options.debug });
-              }
-            } catch {
-              // push-infra failure is non-fatal during setup
-            }
+            await postSetupMachineTasks(name, options.debug);
           } else {
             outputService.error(
               t('commands.config.setupMachine.failed', {

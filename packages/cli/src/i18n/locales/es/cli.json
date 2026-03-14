@@ -1708,6 +1708,7 @@
         "fetchingDetails": "Obteniendo detalles de conexión...",
         "opening": "Abriendo VS Code: {{connection}} → {{path}}",
         "persistingKey": "Persistiendo clave SSH...",
+        "provisioningRenet": "Aprovisionando renet en el servidor remoto...",
         "settingsWarning": "Advertencia: No se pudieron configurar los ajustes de VS Code: {{error}}",
         "settingUpEnv": "Configurando entorno remoto...",
         "success": "VS Code lanzado exitosamente.",
@@ -1931,12 +1932,12 @@
     "repositoryNotFound": "Repositorio \"{{name}}:{{tag}}\" no encontrado",
     "repositoryRequired": "Nombre de repositorio requerido. Use --repository <name>.",
     "resourceNotFound": "{{resource}} no encontrado",
-    "sshKeyNotFound": "Clave SSH no encontrada: {{path}}",
     "ssh": {
+      "noHostKey": "Máquina '{{machine}}' no tiene clave de host configurada en la bóveda",
       "noIpAddress": "Máquina '{{machine}}' no tiene dirección IP configurada",
-      "noPrivateKey": "Equipo '{{team}}' no tiene clave privada SSH configurada",
-      "noHostKey": "Máquina '{{machine}}' no tiene clave de host configurada en la bóveda"
+      "noPrivateKey": "Equipo '{{team}}' no tiene clave privada SSH configurada"
     },
+    "sshKeyNotFound": "Clave SSH no encontrada: {{path}}",
     "subscription": {
       "notLoggedIn": "No ha iniciado sesión. Ejecute primero `rdc subscription login`."
     },
@@ -1977,7 +1978,8 @@
       "noHostKey": "Máquina '{{machine}}' no tiene clave de host configurada en la bóveda",
       "noIpAddress": "Máquina '{{machine}}' no tiene dirección IP configurada",
       "noPrivateKey": "Equipo '{{team}}' no tiene clave privada SSH configurada",
-      "notFound": "VS Code no encontrado.\n\nInstale desde: https://code.visualstudio.com/\nO establezca la variable de entorno REDIACC_VSCODE_PATH."
+      "notFound": "VS Code no encontrado.\n\nInstale desde: https://code.visualstudio.com/\nO establezca la variable de entorno REDIACC_VSCODE_PATH.",
+      "repoNotDeployed": "El repositorio \"{{repository}}\" no está desplegado en {{machine}}.\n\nDespliéguelo primero:\n  rdc repo up {{repository}} -m <nombre-máquina>"
     }
   },
   "help": {
@@ -2113,6 +2115,7 @@
     "repository": "Nombre de repositorio (conecta a entorno de repositorio)",
     "repositoryShorthand": "Nombre de repositorio (atajo para --repository)",
     "repositoryTag": "Etiqueta de repositorio",
+    "resetHome": "Restablecer la capa de inicio por repositorio para empezar de nuevo",
     "saveAs": "Guardar credenciales en un contexto con nombre",
     "saveKnownHosts": "Guardar known_hosts en bóveda de máquina después de prueba exitosa",
     "searchInField": "Buscar en {{field}}",

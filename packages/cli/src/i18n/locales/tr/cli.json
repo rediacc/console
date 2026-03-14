@@ -1708,6 +1708,7 @@
         "fetchingDetails": "Bağlantı ayrıntıları alınıyor...",
         "opening": "VS Code açılıyor: {{connection}} → {{path}}",
         "persistingKey": "SSH anahtarı kalıcı kılınıyor...",
+        "provisioningRenet": "Uzak sunucuya renet sağlanıyor...",
         "settingsWarning": "Uyarı: VS Code ayarları yapılandırılamadı: {{error}}",
         "settingUpEnv": "Uzak ortam ayarlanıyor...",
         "success": "VS Code başarıyla başlatıldı.",
@@ -1931,12 +1932,12 @@
     "repositoryNotFound": "\"{{name}}:{{tag}}\" deposu bulunamadı",
     "repositoryRequired": "Depo adı gerekli. --repository <name> kullanın.",
     "resourceNotFound": "{{resource}} bulunamadı",
-    "sshKeyNotFound": "SSH anahtarı bulunamadı: {{path}}",
     "ssh": {
+      "noHostKey": "\"{{machine}}\" makinesinin kasada yapılandırılmış bir ana bilgisayar anahtarı yok",
       "noIpAddress": "\"{{machine}}\" makinesinin yapılandırılmış bir IP adresi yok",
-      "noPrivateKey": "\"{{team}}\" takımının yapılandırılmış bir SSH özel anahtarı yok",
-      "noHostKey": "\"{{machine}}\" makinesinin kasada yapılandırılmış bir ana bilgisayar anahtarı yok"
+      "noPrivateKey": "\"{{team}}\" takımının yapılandırılmış bir SSH özel anahtarı yok"
     },
+    "sshKeyNotFound": "SSH anahtarı bulunamadı: {{path}}",
     "subscription": {
       "notLoggedIn": "Giriş yapılmamış. Önce `rdc subscription login` komutunu çalıştırın."
     },
@@ -1977,7 +1978,8 @@
       "noHostKey": "\"{{machine}}\" makinesinin kasada yapılandırılmış bir ana bilgisayar anahtarı yok",
       "noIpAddress": "\"{{machine}}\" makinesinin yapılandırılmış bir IP adresi yok",
       "noPrivateKey": "\"{{team}}\" takımının yapılandırılmış bir SSH özel anahtarı yok",
-      "notFound": "VS Code bulunamadı.\n\nLütfen buradan yükleyin: https://code.visualstudio.com/\nVeya REDIACC_VSCODE_PATH ortam değişkenini ayarlayın."
+      "notFound": "VS Code bulunamadı.\n\nLütfen buradan yükleyin: https://code.visualstudio.com/\nVeya REDIACC_VSCODE_PATH ortam değişkenini ayarlayın.",
+      "repoNotDeployed": "Depo \"{{repository}}\" {{machine}} üzerinde dağıtılmamış.\n\nÖnce dağıtın:\n  rdc repo up {{repository}} -m <makine-adı>"
     }
   },
   "help": {
@@ -2113,6 +2115,7 @@
     "repository": "Depo adı (depo ortamına bağlanır)",
     "repositoryShorthand": "Depo adı (--repository kısaltması)",
     "repositoryTag": "Depo etiketi",
+    "resetHome": "Temiz bir başlangıç için repo bazlı home katmanını sıfırla",
     "saveAs": "Kimlik bilgilerini adlandırılmış bir bağlama kaydedin",
     "saveKnownHosts": "Başarılı test sonrası known_hosts'i makine kasasına kaydedin",
     "searchInField": "{{field}} içinde ara",

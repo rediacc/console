@@ -25,6 +25,7 @@
     },
     "title": "La différence"
   },
+  "captchaRequired": "Veuillez compléter la vérification du captcha.",
   "common": {
     "aria": {
       "breadcrumbNavigation": "Navigation par fil d'Ariane",
@@ -393,6 +394,7 @@
     "pageDescription": "Recevez des mises à jour mensuelles sur les nouvelles fonctionnalités, des guides d'auto-hébergement et des conseils d'infrastructure.",
     "pageTitle": "Restez informé",
     "placeholder": "Votre adresse e-mail",
+    "privacyNote": "Nous respectons votre vie privée. Vous pouvez vous désabonner à tout moment.",
     "returnPopup": {
       "close": "Fermer la fenêtre",
       "cta": "S’abonner et réserver",
@@ -411,10 +413,8 @@
     "subscribe": "S'abonner",
     "successMessage": "Vérifiez votre boîte de réception pour confirmer votre abonnement.",
     "title": "Newsletter",
-    "unsubscribed": "Vous avez été désabonné. Nous sommes désolés de vous voir partir.",
-    "privacyNote": "Nous respectons votre vie privée. Vous pouvez vous désabonner à tout moment."
+    "unsubscribed": "Vous avez été désabonné. Nous sommes désolés de vous voir partir."
   },
-  "captchaRequired": "Veuillez compléter la vérification du captcha.",
   "pages": {
     "blog": {
       "allArticles": "Tous les articles",
@@ -1097,8 +1097,8 @@
         "monthOrYear": "par mois ou {{price}} par an",
         "popular": "Le plus populaire",
         "startingAt": "*À partir de",
-        "whatsIncluded": "Ce qui est inclus :",
-        "taxDisclaimer": "Tous les prix sont en USD et n'incluent pas les taxes, prélèvements et droits applicables."
+        "taxDisclaimer": "Tous les prix sont en USD et n'incluent pas les taxes, prélèvements et droits applicables.",
+        "whatsIncluded": "Ce qui est inclus :"
       }
     },
     "docs": {
@@ -3043,7 +3043,6 @@
       },
       "trustSection": {
         "heading": "Votre infrastructure. Vos règles.",
-        "subtitle": "Les licences Rediacc sont conçues pour que vous ne soyez jamais enfermé. Voici ce que cela signifie concrètement.",
         "rows": [
           {
             "title": "Vos repos fonctionnent pour toujours.",
@@ -3066,11 +3065,12 @@
             "description": "Un slot de licence n’est occupé que pendant la création ou le fork d’un dépôt — vos opérations quotidiennes n’en consomment jamais. Les slots se libèrent automatiquement après 1 heure d’inactivité, ainsi un plan à 5 slots peut desservir des dizaines de machines. Aucun frais par machine, jamais."
           }
         ],
+        "subtitle": "Les licences Rediacc sont conçues pour que vous ne soyez jamais enfermé. Voici ce que cela signifie concrètement.",
         "svg": {
-          "noLicenseRequired": "Aucune licence requise — fonctionne toujours",
-          "noLicenseNeeded": "Aucune licence nécessaire",
-          "requiredOnlyHere": "Requis uniquement ici",
           "allOperations": "Toutes les opérations",
+          "noLicenseNeeded": "Aucune licence nécessaire",
+          "noLicenseRequired": "Aucune licence requise — fonctionne toujours",
+          "requiredOnlyHere": "Requis uniquement ici",
           "slotsAutoRelease": "Les slots se libèrent automatiquement après 1 heure d'inactivité",
           "slotsCreateFork": "Les slots ne sont utilisés que pour créer et forker — les opérations quotidiennes sont toujours gratuites"
         }
@@ -3080,9 +3080,9 @@
         "bestValue": "Meilleur rapport qualité-prix",
         "billingToggle": {
           "annual": "Annuel",
-          "monthly": "Mensuel",
           "annualSavings": "Économisez 17% — 2 mois offerts",
-          "ariaLabel": "Période de facturation"
+          "ariaLabel": "Période de facturation",
+          "monthly": "Mensuel"
         },
         "contactSales": "Contacter le service commercial",
         "cta": {
@@ -3123,8 +3123,8 @@
         "monthOrYear": "par mois ou {{price}} par an",
         "popular": "Le plus populaire",
         "startingAt": "*À partir de",
-        "whatsIncluded": "Ce qui est inclus :",
-        "taxDisclaimer": "Tous les prix sont en USD et n'incluent pas les taxes, prélèvements et droits applicables."
+        "taxDisclaimer": "Tous les prix sont en USD et n'incluent pas les taxes, prélèvements et droits applicables.",
+        "whatsIncluded": "Ce qui est inclus :"
       }
     },
     "privacyPolicy": {

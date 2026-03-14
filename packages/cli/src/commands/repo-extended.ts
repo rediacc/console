@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import type { Command } from 'commander';
+import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
+import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
@@ -107,9 +109,10 @@ export function registerExtendedRepoCommands(repo: Command): void {
             throw new Error(t('commands.repo.fork.alreadyExists', { name: forkName }));
           }
 
-          // Generate new GUID and allocate networkId; reuse parent's credential (same LUKS password)
+          // Generate new GUID, SSH key pair, and allocate networkId; reuse parent's credential
           const repositoryGuid = randomUUID();
           const networkId = await configService.allocateNetworkId();
+          const { privateKey: sshPrivateKey, publicKey: sshPublicKey } = generateSSHKeyPair();
 
           await configService.addRepository(forkName, {
             repositoryGuid,
@@ -117,6 +120,8 @@ export function registerExtendedRepoCommands(repo: Command): void {
             credential: parentConfig.credential,
             networkId,
             grandGuid: parentConfig.grandGuid ?? parentConfig.repositoryGuid,
+            sshPrivateKey,
+            sshPublicKey,
           });
 
           outputService.info(
@@ -133,6 +138,9 @@ export function registerExtendedRepoCommands(repo: Command): void {
               machine: options.machine,
             })
           );
+
+          // Deploy per-repo SSH key for the fork
+          await deployRepoKeyIfNeeded(forkName, options.machine);
 
           // Execute fork on remote (repository param = parent, tag = fork's GUID)
           const result = await localExecutorService.execute({

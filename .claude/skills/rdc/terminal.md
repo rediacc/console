@@ -41,6 +41,18 @@ Actions: `terminal`, `logs`, `stats`, `exec`.
 | Backup/push repos | `rdc repo push` | `rdc term -c "rsync ..."` |
 | Checkpoint containers | `rdc repo push --checkpoint` | `rdc term -c "docker checkpoint"` |
 
+## Sandbox isolation
+
+Each repo has its own SSH key. Repo connections are enforced server-side via `sandbox-gateway` (ForceCommand in `authorized_keys`). The sandbox provides:
+
+- **Landlock LSM**: Kernel-level filesystem restriction to the repo's mount path
+- **OverlayFS home**: Writes to `$HOME` captured per-repo, reads fall through to real home
+- **Per-repo TMPDIR**: Isolated temp at `<datastore>/.interim/sandbox/<name>/tmp/`
+- **Docker access**: Repo's isolated Docker socket via `.envrc` auto-loading
+- **`--reset-home`**: Clears per-repo home overlay for a fresh start
+
+Machine-level connections (`rdc term <machine>` without a repo) use the team key and are not sandboxed.
+
 ## Examples
 
 ```bash

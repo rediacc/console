@@ -1708,6 +1708,7 @@
         "fetchingDetails": "Verbindungsdetails werden abgerufen...",
         "opening": "VS Code wird geöffnet: {{connection}} → {{path}}",
         "persistingKey": "SSH-Schlüssel wird beibehalten...",
+        "provisioningRenet": "Renet wird auf dem Remote-Server bereitgestellt...",
         "settingsWarning": "Warnung: Konnte VS Code-Einstellungen nicht konfigurieren: {{error}}",
         "settingUpEnv": "Remote-Umgebung wird eingerichtet...",
         "success": "VS Code erfolgreich gestartet.",
@@ -1931,12 +1932,12 @@
     "repositoryNotFound": "Repository \"{{name}}:{{tag}}\" nicht gefunden",
     "repositoryRequired": "Repository-Name erforderlich. Verwenden Sie --repository <name>.",
     "resourceNotFound": "{{resource}} nicht gefunden",
-    "sshKeyNotFound": "SSH-Schlüssel nicht gefunden: {{path}}",
     "ssh": {
+      "noHostKey": "Machine '{{machine}}' hat keinen Host-Schlüssel im Vault konfiguriert",
       "noIpAddress": "Machine '{{machine}}' hat keine IP-Adresse konfiguriert",
-      "noPrivateKey": "Team '{{team}}' hat keinen SSH-Private-Key konfiguriert",
-      "noHostKey": "Machine '{{machine}}' hat keinen Host-Schlüssel im Vault konfiguriert"
+      "noPrivateKey": "Team '{{team}}' hat keinen SSH-Private-Key konfiguriert"
     },
+    "sshKeyNotFound": "SSH-Schlüssel nicht gefunden: {{path}}",
     "subscription": {
       "notLoggedIn": "Nicht angemeldet. Führen Sie zuerst `rdc subscription login` aus."
     },
@@ -1977,7 +1978,8 @@
       "noHostKey": "Machine '{{machine}}' hat keinen Host-Schlüssel im Vault konfiguriert",
       "noIpAddress": "Machine '{{machine}}' hat keine IP-Adresse konfiguriert",
       "noPrivateKey": "Team '{{team}}' hat keinen SSH-Private-Key konfiguriert",
-      "notFound": "VS Code nicht gefunden.\n\nBitte installieren Sie von: https://code.visualstudio.com/\nOder setzen Sie die REDIACC_VSCODE_PATH-Umgebungsvariable."
+      "notFound": "VS Code nicht gefunden.\n\nBitte installieren Sie von: https://code.visualstudio.com/\nOder setzen Sie die REDIACC_VSCODE_PATH-Umgebungsvariable.",
+      "repoNotDeployed": "Repository \"{{repository}}\" ist auf {{machine}} nicht bereitgestellt.\n\nZuerst bereitstellen:\n  rdc repo up {{repository}} -m <Maschinenname>"
     }
   },
   "help": {
@@ -2113,6 +2115,7 @@
     "repository": "Repository-Name (verbindet sich mit Repository-Umgebung)",
     "repositoryShorthand": "Repository-Name (Kurzform für --repository)",
     "repositoryTag": "Repository-Tag",
+    "resetHome": "Per-Repo Home-Overlay für einen Neustart zurücksetzen",
     "saveAs": "Anmeldedaten unter benanntem Kontext speichern",
     "saveKnownHosts": "known_hosts nach erfolgreichem Test im Machine-Vault speichern",
     "searchInField": "Suchen in {{field}}",

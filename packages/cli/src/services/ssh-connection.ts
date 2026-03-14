@@ -191,11 +191,24 @@ export async function getSSHConnectionDetails(
   );
   debugLog(`Environment variables count: ${Object.keys(envData.environment).length}`);
 
+  // Use per-repo SSH key if available (enables server-side sandbox via authorized_keys command=).
+  // Falls back to team key for repos without per-repo keys.
+  let privateKey = baseInfo.privateKey;
+  if (repositoryName) {
+    // Dynamic import to avoid circular dependency
+    const { configService } = await import('./config-resources.js');
+    const repoConfig = await configService.getRepository(repositoryName);
+    if (repoConfig?.sshPrivateKey) {
+      privateKey = repoConfig.sshPrivateKey;
+      debugLog(`Using per-repo SSH key for ${repositoryName}`);
+    }
+  }
+
   return {
     host: baseInfo.host,
     user: baseInfo.sshUser,
     port: baseInfo.port,
-    privateKey: baseInfo.privateKey,
+    privateKey,
     known_hosts: baseInfo.knownHosts,
     datastore: baseInfo.datastore,
     universalUser: baseInfo.universalUser,

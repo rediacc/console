@@ -4,13 +4,18 @@ import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
+import {
+  deployRepoKeyIfNeeded,
+  removeRepoKeyFromMachine,
+} from '../services/repo-key-deployment.js';
+import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap, resolveGuids } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
-import { parseRepositoryListOutput } from './repo-list-parser.js';
+import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import { registerRepoBackupCommands } from './repo-backup.js';
 import { registerExtendedRepoCommands } from './repo-extended.js';
+import { parseRepositoryListOutput } from './repo-list-parser.js';
 import { registerRepoSnapshotCommands } from './repo-snapshot.js';
 import { registerRepoSyncCommands } from './repo-sync.js';
 
@@ -93,10 +98,11 @@ ${t('help.examples')}
             throw new Error(t('commands.repo.create.alreadyExists', { name }));
           }
 
-          // Generate UUID, credential, and allocate networkId
+          // Generate UUID, credential, SSH key pair, and allocate networkId
           const repositoryGuid = randomUUID();
           const credential = generateCredential();
           const networkId = await configService.allocateNetworkId();
+          const { privateKey: sshPrivateKey, publicKey: sshPublicKey } = generateSSHKeyPair();
 
           // Register in config.json first (so the executor can find it)
           await configService.addRepository(name, {
@@ -104,6 +110,8 @@ ${t('help.examples')}
             tag: 'latest',
             credential,
             networkId,
+            sshPrivateKey,
+            sshPublicKey,
           });
 
           outputService.info(
@@ -200,6 +208,9 @@ ${t('help.examples')}
           });
 
           if (result.success) {
+            // Remove per-repo SSH key from machine
+            await removeRepoKeyFromMachine(name, options.machine);
+
             await configService.archiveRepository(name);
             outputService.info(t('commands.repo.delete.archived', { repository: name }));
             outputService.info(
@@ -342,6 +353,9 @@ ${t('help.examples')}
             );
             return;
           }
+
+          // Deploy per-repo SSH key to machine for sandbox gateway
+          await deployRepoKeyIfNeeded(name, options.machine);
 
           await executeRepoFunction('repository_up', name, options.machine, params, options, {
             starting: t('commands.repo.up.starting', {

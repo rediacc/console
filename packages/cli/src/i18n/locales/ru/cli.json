@@ -1708,6 +1708,7 @@
         "fetchingDetails": "Получение деталей подключения...",
         "opening": "Открытие VS Code: {{connection}} → {{path}}",
         "persistingKey": "Сохранение SSH ключа...",
+        "provisioningRenet": "Развёртывание renet на удалённый сервер...",
         "settingsWarning": "Предупреждение: Не удалось настроить параметры VS Code: {{error}}",
         "settingUpEnv": "Настройка удаленной среды...",
         "success": "VS Code успешно запущен.",
@@ -1931,12 +1932,12 @@
     "repositoryNotFound": "Репозиторий \"{{name}}:{{tag}}\" не найден",
     "repositoryRequired": "Требуется имя репозитория. Используйте --repository <name>.",
     "resourceNotFound": "{{resource}} не найден",
-    "sshKeyNotFound": "SSH ключ не найден: {{path}}",
     "ssh": {
+      "noHostKey": "Машина '{{machine}}' не имеет настроенного ключа хоста в хранилище",
       "noIpAddress": "Машина '{{machine}}' не имеет настроенного IP-адреса",
-      "noPrivateKey": "Команда '{{team}}' не имеет настроенного SSH приватного ключа",
-      "noHostKey": "Машина '{{machine}}' не имеет настроенного ключа хоста в хранилище"
+      "noPrivateKey": "Команда '{{team}}' не имеет настроенного SSH приватного ключа"
     },
+    "sshKeyNotFound": "SSH ключ не найден: {{path}}",
     "subscription": {
       "notLoggedIn": "Вы не вошли в систему. Сначала выполните `rdc subscription login`."
     },
@@ -1977,7 +1978,8 @@
       "noHostKey": "Машина '{{machine}}' не имеет настроенного ключа хоста в хранилище",
       "noIpAddress": "Машина '{{machine}}' не имеет настроенного IP-адреса",
       "noPrivateKey": "Команда '{{team}}' не имеет настроенного SSH приватного ключа",
-      "notFound": "VS Code не найден.\n\nПожалуйста, установите из: https://code.visualstudio.com/\nИли установите переменную окружения REDIACC_VSCODE_PATH."
+      "notFound": "VS Code не найден.\n\nПожалуйста, установите из: https://code.visualstudio.com/\nИли установите переменную окружения REDIACC_VSCODE_PATH.",
+      "repoNotDeployed": "Репозиторий \"{{repository}}\" не развёрнут на {{machine}}.\n\nСначала разверните:\n  rdc repo up {{repository}} -m <имя-машины>"
     }
   },
   "help": {
@@ -2113,6 +2115,7 @@
     "repository": "Имя репозитория (подключается к среде репозитория)",
     "repositoryShorthand": "Имя репозитория (сокращение для --repository)",
     "repositoryTag": "Тег репозитория",
+    "resetHome": "Сбросить оверлей домашнего каталога для нового начала",
     "saveAs": "Сохранить учетные данные в именованный контекст",
     "saveKnownHosts": "Сохранить known_hosts в хранилище машины после успешного теста",
     "searchInField": "Поиск в {{field}}",

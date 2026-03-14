@@ -25,6 +25,7 @@
     },
     "title": "Fark"
   },
+  "captchaRequired": "Lütfen captcha doğrulamasını tamamlayın.",
   "common": {
     "aria": {
       "breadcrumbNavigation": "Breadcrumb gezinmesi",
@@ -393,6 +394,7 @@
     "pageDescription": "Yeni özellikler, kendi sunucunuzda barındırma kılavuzları ve altyapı ipuçları hakkında aylık güncellemeler alın.",
     "pageTitle": "Güncel Kalın",
     "placeholder": "E-posta adresiniz",
+    "privacyNote": "Gizliliğinize saygı duyuyoruz. İstediğiniz zaman aboneliğinizi iptal edebilirsiniz.",
     "returnPopup": {
       "close": "Pencereyi kapat",
       "cta": "Abone Ol ve Randevu Al",
@@ -400,7 +402,6 @@
       "note": "E-posta adresinizi ürün güncellemeleri göndermek için kullanırız. İstediğiniz zaman abonelikten çıkabilirsiniz.",
       "title": "Yönlendirmeli bir tanıtım ister misiniz?"
     },
-    "privacyNote": "Gizliliğinize saygı duyuyoruz. İstediğiniz zaman aboneliğinizi iptal edebilirsiniz.",
     "roiGate": {
       "description": "Tam maliyet dökümü ve tasarruf analizini açmak için e-posta adresinizi girin.",
       "title": "Ayrıntılı ROI raporunuzu alın",
@@ -414,7 +415,6 @@
     "title": "Bülten",
     "unsubscribed": "Aboneliğiniz iptal edildi. Gittiğinizi görmek üzücü."
   },
-  "captchaRequired": "Lütfen captcha doğrulamasını tamamlayın.",
   "pages": {
     "blog": {
       "allArticles": "Tüm Makaleler",
@@ -1091,8 +1091,8 @@
         "monthOrYear": "ayda veya yılda {{price}}",
         "popular": "En popüler",
         "startingAt": "*Başlangıç ​​tarihi:",
-        "whatsIncluded": "Neler dahil:",
-        "taxDisclaimer": "Tüm fiyatlar USD cinsindendir ve geçerli vergiler, harçlar ve gümrük vergileri hariçtir."
+        "taxDisclaimer": "Tüm fiyatlar USD cinsindendir ve geçerli vergiler, harçlar ve gümrük vergileri hariçtir.",
+        "whatsIncluded": "Neler dahil:"
       }
     },
     "docs": {
@@ -3035,7 +3035,6 @@
       },
       "trustSection": {
         "heading": "Altyapınız. Kurallarınız.",
-        "subtitle": "Rediacc lisansları, hiçbir zaman kilitli kalmamanız için tasarlanmıştır. Bunun pratikte ne anlama geldiği aşağıdadır.",
         "rows": [
           {
             "title": "Repos'larınız sonsuza kadar çalışır.",
@@ -3058,11 +3057,12 @@
             "description": "Lisans slotu yalnızca bir depo oluşturulurken veya çatallanırken kullanılır — günlük operasyonlarınız hiçbir slot tüketmez. Slotlar 1 saatlik etkisizlikten sonra otomatik olarak serbest bırakılır, böylece 5 slotluk bir plan onlarca makineye hizmet verebilir. Makine başına herhangi bir ücret yoktur, asla."
           }
         ],
+        "subtitle": "Rediacc lisansları, hiçbir zaman kilitli kalmamanız için tasarlanmıştır. Bunun pratikte ne anlama geldiği aşağıdadır.",
         "svg": {
-          "noLicenseRequired": "Lisans gerekmez — her zaman çalışır",
-          "noLicenseNeeded": "Lisans gerekmez",
-          "requiredOnlyHere": "Yalnızca burada gerekli",
           "allOperations": "Tüm işlemler",
+          "noLicenseNeeded": "Lisans gerekmez",
+          "noLicenseRequired": "Lisans gerekmez — her zaman çalışır",
+          "requiredOnlyHere": "Yalnızca burada gerekli",
           "slotsAutoRelease": "Slotlar 1 saat hareketsizlik sonrasında otomatik olarak serbest bırakılır",
           "slotsCreateFork": "Slotlar yalnızca oluşturma ve çatallama için kullanılır — günlük işlemler her zaman ücretsizdir"
         }
@@ -3072,9 +3072,9 @@
         "bestValue": "En İyi Değer",
         "billingToggle": {
           "annual": "Yıllık",
-          "monthly": "Aylık",
           "annualSavings": "%17 tasarruf edin — 2 ay ücretsiz",
-          "ariaLabel": "Faturalandırma dönemi"
+          "ariaLabel": "Faturalandırma dönemi",
+          "monthly": "Aylık"
         },
         "contactSales": "Satış Ekibiyle İletişime Geçin",
         "cta": {
@@ -3115,8 +3115,8 @@
         "monthOrYear": "ayda veya yılda {{price}}",
         "popular": "En popüler",
         "startingAt": "*Başlangıç ​​tarihi:",
-        "whatsIncluded": "Neler dahil:",
-        "taxDisclaimer": "Tüm fiyatlar USD cinsindendir ve geçerli vergiler, harçlar ve gümrük vergileri hariçtir."
+        "taxDisclaimer": "Tüm fiyatlar USD cinsindendir ve geçerli vergiler, harçlar ve gümrük vergileri hariçtir.",
+        "whatsIncluded": "Neler dahil:"
       }
     },
     "privacyPolicy": {

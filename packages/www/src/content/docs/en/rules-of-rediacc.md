@@ -125,7 +125,7 @@ Renet auto-injects these into every container:
 - **Credentials are stored in the CLI config** (`~/.config/rediacc/rediacc.json`). Losing the config means losing access to encrypted volumes.
 - **Never commit credentials** to version control. Use `env_file` and generate secrets in `up()`.
 - **Repository isolation**: Each repo's Docker daemon, network, and storage are fully isolated from other repos on the same machine.
-- **Agent isolation**: AI agents operate in fork-only mode by default — they can only modify fork repositories, not grand (original) repos. Commands executed via `term_exec` or `rdc term` with a repository context are sandboxed at the kernel level using Landlock LSM, preventing cross-repo filesystem access.
+- **Agent isolation**: AI agents operate in fork-only mode by default. Each repo has its own SSH key with server-side sandbox enforcement (`sandbox-gateway` ForceCommand). All connections are sandboxed with Landlock LSM, OverlayFS home overlay, and per-repo TMPDIR. Cross-repo filesystem access is blocked by the kernel.
 
 ## Deployment
 

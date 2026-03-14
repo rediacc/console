@@ -4,7 +4,8 @@ description: Verknüpfen Sie KI-Agenten über den Model Context Protocol (MCP) S
 category: Guides
 order: 33
 language: de
-sourceHash: "f95b630692519da6"
+sourceHash: "51c5a7f855ead072"
+sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 ---
 
 ## Überblick

@@ -305,24 +305,20 @@ export function configureVSCodeSettings(isInsiders = false): {
 }
 
 /**
- * Removes a host from remote.SSH.remotePlatform to enable RemoteCommand
+ * Sets the remote platform to 'linux' for a host to avoid the platform prompt.
  *
- * RemoteCommand doesn't work when remotePlatform is set for a host.
- *
- * @param host - SSH host name to remove
+ * @param host - SSH host name
  * @param isInsiders - Whether to configure VS Code Insiders
  */
-export function removeHostFromRemotePlatform(host: string, isInsiders = false): void {
+export function setHostRemotePlatform(host: string, isInsiders = false): void {
   const settingsPath = isInsiders ? getVSCodeInsidersSettingsPath() : getVSCodeSettingsPath();
   const settings = readVSCodeSettings(settingsPath);
 
-  const remotePlatform = settings['remote.SSH.remotePlatform'] as
-    | Record<string, string>
-    | undefined;
-  if (remotePlatform && host in remotePlatform) {
-    delete remotePlatform[host];
-    writeVSCodeSettings(settings, settingsPath);
-  }
+  const remotePlatform =
+    (settings['remote.SSH.remotePlatform'] as Record<string, string> | undefined) ?? {};
+  remotePlatform[host] = 'linux';
+  settings['remote.SSH.remotePlatform'] = remotePlatform;
+  writeVSCodeSettings(settings, settingsPath);
 }
 
 /**

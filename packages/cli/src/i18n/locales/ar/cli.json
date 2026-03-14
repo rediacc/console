@@ -1708,6 +1708,7 @@
         "fetchingDetails": "جاري جلب تفاصيل الاتصال...",
         "opening": "جاري فتح VS Code: {{connection}} → {{path}}",
         "persistingKey": "جاري حفظ مفتاح SSH...",
+        "provisioningRenet": "جارٍ تزويد renet إلى الخادم البعيد...",
         "settingsWarning": "تحذير: لم يتمكن من إعدادات VS Code: {{error}}",
         "settingUpEnv": "جاري إعداد البيئة البعيدة...",
         "success": "تم تشغيل VS Code بنجاح.",
@@ -1931,12 +1932,12 @@
     "repositoryNotFound": "لم يتم العثور على المستودع \"{{name}}:{{tag}}\"",
     "repositoryRequired": "اسم المستودع مطلوب. استخدم --repository <name>.",
     "resourceNotFound": "{{resource}} غير موجود",
-    "sshKeyNotFound": "لم يتم العثور على مفتاح SSH: {{path}}",
     "ssh": {
+      "noHostKey": "الآلة '{{machine}}' لا تحتوي على مفتاح مضيف مكون في الخزينة",
       "noIpAddress": "الآلة '{{machine}}' لا تحتوي على عنوان IP مكون",
-      "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون",
-      "noHostKey": "الآلة '{{machine}}' لا تحتوي على مفتاح مضيف مكون في الخزينة"
+      "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون"
     },
+    "sshKeyNotFound": "لم يتم العثور على مفتاح SSH: {{path}}",
     "subscription": {
       "notLoggedIn": "لم يتم تسجيل الدخول. شغّل `rdc subscription login` أولاً."
     },
@@ -1977,7 +1978,8 @@
       "noHostKey": "الآلة '{{machine}}' لا تحتوي على مفتاح مضيف مكون في الخزينة",
       "noIpAddress": "الآلة '{{machine}}' لا تحتوي على عنوان IP مكون",
       "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون",
-      "notFound": "لم يتم العثور على VS Code.\n\nالرجاء التثبيت من: https://code.visualstudio.com/\nأو قم بتعيين متغير البيئة REDIACC_VSCODE_PATH."
+      "notFound": "لم يتم العثور على VS Code.\n\nالرجاء التثبيت من: https://code.visualstudio.com/\nأو قم بتعيين متغير البيئة REDIACC_VSCODE_PATH.",
+      "repoNotDeployed": "المستودع \"{{repository}}\" غير منشور على {{machine}}.\n\nانشره أولاً:\n  rdc repo up {{repository}} -m <اسم-الجهاز>"
     }
   },
   "help": {
@@ -2113,6 +2115,7 @@
     "repository": "اسم المستودع (يتصل ببيئة المستودع)",
     "repositoryShorthand": "اسم المستودع (اختصار --repository)",
     "repositoryTag": "علامة المستودع",
+    "resetHome": "إعادة تعيين طبقة المنزل لكل مستودع للبدء من جديد",
     "saveAs": "حفظ بيانات الاعتماد في سياق باسم",
     "saveKnownHosts": "حفظ known_hosts في خزينة الآلة بعد الاختبار الناجح",
     "searchInField": "البحث في {{field}}",

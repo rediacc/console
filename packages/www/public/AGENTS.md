@@ -67,6 +67,17 @@ rdc sync download -m <machine> -r <repo>  # Download files
 rdc agent capabilities                    # List all commands (for discovery)
 ```
 
+## Security
+
+Each repo has its own SSH key. All repo-level connections (term, VS Code, sync) are sandboxed server-side:
+- **Per-repo SSH keys**: `command="renet sandbox-gateway <name>"` in `authorized_keys` — un-bypassable
+- **Landlock LSM**: Kernel-level filesystem restriction to the repo's own mount path
+- **OverlayFS home**: Writes to `$HOME` captured per-repo — real home never modified
+- **Per-repo TMPDIR**: Isolated temp directory, no shared `/tmp`
+- **Docker access**: Repo's `.envrc` auto-loaded for per-repo Docker socket
+- **VS Code**: Each repo gets its own server installation — multiple repos simultaneously
+- Use `--reset-home` on `rdc term` to clear per-repo home state
+
 ## Terminology
 
 - "local adapter" / "cloud adapter" — never "modes"

@@ -14,11 +14,6 @@ import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { debugLog } from '../utils/debug.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { detectRepoContextCommand } from '../utils/repo-context-guard.js';
-import {
-  buildSandboxPrefix,
-  buildTermSandboxOptions,
-  shellEscapeForBashC,
-} from '../utils/sandbox.js';
 import { withSpinner } from '../utils/spinner.js';
 
 interface TermConnectOptions {
@@ -34,6 +29,7 @@ interface TermConnectOptions {
   /** Follow logs output */
   follow?: boolean;
   external?: boolean;
+  resetHome?: boolean;
   [key: string]: unknown;
 }
 
@@ -72,36 +68,26 @@ function buildEnvPrefix(connectionDetails?: ConnectionDetails): string {
   return parts.length > 0 ? `${parts.join('; ')}; ` : '';
 }
 
-function buildContainerCommand(
-  options: TermConnectOptions,
-  envPrefix: string,
-  sandbox: string
-): string {
+// Sandbox is enforced server-side via ForceCommand in authorized_keys.
+// The CLI just sends the raw command — sandbox-gateway on the remote
+// reads REDIACC_REPOSITORY from env and applies Landlock + OverlayFS.
+
+function buildContainerCommand(options: TermConnectOptions, envPrefix: string): string {
   const containerId = options.container!;
   const containerAction = (options.containerAction ??
     DEFAULTS.REPOSITORY.CONTAINER_ACTION) as ContainerAction;
   const builder = containerCommandBuilders[containerAction];
   const dockerCmd = builder(options, containerId);
-  return sandbox ? `${envPrefix}${sandbox} ${dockerCmd}` : `${envPrefix}${dockerCmd}`;
+  return `${envPrefix}${dockerCmd}`;
 }
 
-function buildShellCommand(
-  options: TermConnectOptions,
-  envPrefix: string,
-  sandbox: string
-): string {
+function buildShellCommand(options: TermConnectOptions, envPrefix: string): string {
   const ensureBashSetup = generateSetupCommand();
   const sourceCmd = generateSourceCommand();
   const userCmd = options.command;
 
   // --rcfile sources ~/.bashrc first, then our functions, so PS1 isn't overridden
   const rcfile = `--rcfile <(echo "source ~/.bashrc 2>/dev/null; ${sourceCmd}")`;
-
-  if (sandbox) {
-    const setupPart = `${envPrefix}${ensureBashSetup}; `;
-    const inner = userCmd ? `${sourceCmd} && ${userCmd}` : `exec bash ${rcfile}`;
-    return `${setupPart}${sandbox} bash -c '${shellEscapeForBashC(inner)}'`;
-  }
 
   if (userCmd) {
     return `${envPrefix}${ensureBashSetup}; ${sourceCmd} && ${userCmd}`;
@@ -111,19 +97,15 @@ function buildShellCommand(
 
 function buildRemoteCommand(
   options: TermConnectOptions,
-  connectionDetails?: ConnectionDetails,
-  remoteRenetPath?: string
+  connectionDetails: ConnectionDetails
 ): string | undefined {
   const envPrefix = buildEnvPrefix(connectionDetails);
-  const sandboxOpts = buildTermSandboxOptions(connectionDetails);
-  const sandbox =
-    sandboxOpts && remoteRenetPath ? buildSandboxPrefix(sandboxOpts, remoteRenetPath) : '';
 
   if (options.container) {
-    return buildContainerCommand(options, envPrefix, sandbox);
+    return buildContainerCommand(options, envPrefix);
   }
 
-  return buildShellCommand(options, envPrefix, sandbox);
+  return buildShellCommand(options, envPrefix);
 }
 
 async function validateAndGetConnectionDetails(opts: {
@@ -242,7 +224,7 @@ async function connectTerminal(options: TermConnectOptions): Promise<void> {
   }
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-  const remoteRenetPath = await provisionRenetToRemote(localConfig, machine, sshPrivateKey, {});
+  await provisionRenetToRemote(localConfig, machine, sshPrivateKey, {});
 
   const sshConnection = new SSHConnection(
     connectionDetails.privateKey,
@@ -258,7 +240,7 @@ async function connectTerminal(options: TermConnectOptions): Promise<void> {
       : `Rediacc - ${teamName}/${machineName}`;
 
     const destination = `${connectionDetails.user}@${connectionDetails.host}`;
-    const remoteCommand = buildRemoteCommand(options, connectionDetails, remoteRenetPath);
+    const remoteCommand = buildRemoteCommand(options, connectionDetails);
 
     await executeSSH(
       sshConnection,
@@ -390,6 +372,7 @@ ${t('help.examples')}
     .option('--log-lines <lines>', t('options.logLines'))
     .option('--follow', t('options.follow'))
     .option('--external', t('options.external'))
+    .option('--reset-home', t('options.resetHome'))
     .action(async (options: TermConnectOptions) => {
       try {
         const provider = await getStateProvider();
@@ -413,6 +396,7 @@ ${t('help.examples')}
     .option('--log-lines <lines>', t('options.logLines'))
     .option('--follow', t('options.follow'))
     .option('--external', t('options.external'))
+    .option('--reset-home', t('options.resetHome'))
     .action(
       async (
         machine: string | undefined,

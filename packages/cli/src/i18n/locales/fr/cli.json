@@ -1708,6 +1708,7 @@
         "fetchingDetails": "Récupération des détails de connexion...",
         "opening": "Ouverture de VS Code : {{connection}} → {{path}}",
         "persistingKey": "Persistance de la clé SSH...",
+        "provisioningRenet": "Provisionnement de renet sur le serveur distant...",
         "settingsWarning": "Avertissement : Impossible de configurer les paramètres VS Code : {{error}}",
         "settingUpEnv": "Configuration de l'environnement distant...",
         "success": "VS Code lancé avec succès.",
@@ -1931,12 +1932,12 @@
     "repositoryNotFound": "Dépôt \"{{name}}:{{tag}}\" non trouvé",
     "repositoryRequired": "Le nom du dépôt est requis. Utilisez --repository <name>.",
     "resourceNotFound": "{{resource}} non trouvé",
-    "sshKeyNotFound": "Clé SSH non trouvée : {{path}}",
     "ssh": {
+      "noHostKey": "La machine '{{machine}}' n'a pas de clé d'hôte configurée dans le coffre",
       "noIpAddress": "La machine '{{machine}}' n'a pas d'adresse IP configurée",
-      "noPrivateKey": "L'équipe '{{team}}' n'a pas de clé privée SSH configurée",
-      "noHostKey": "La machine '{{machine}}' n'a pas de clé d'hôte configurée dans le coffre"
+      "noPrivateKey": "L'équipe '{{team}}' n'a pas de clé privée SSH configurée"
     },
+    "sshKeyNotFound": "Clé SSH non trouvée : {{path}}",
     "subscription": {
       "notLoggedIn": "Non connecté. Exécutez d’abord `rdc subscription login`."
     },
@@ -1977,7 +1978,8 @@
       "noHostKey": "La machine '{{machine}}' n'a pas de clé d'hôte configurée dans le coffre",
       "noIpAddress": "La machine '{{machine}}' n'a pas d'adresse IP configurée",
       "noPrivateKey": "L'équipe '{{team}}' n'a pas de clé privée SSH configurée",
-      "notFound": "VS Code non trouvé.\n\nVeuillez installer depuis : https://code.visualstudio.com/\nOu définir la variable d'environnement REDIACC_VSCODE_PATH."
+      "notFound": "VS Code non trouvé.\n\nVeuillez installer depuis : https://code.visualstudio.com/\nOu définir la variable d'environnement REDIACC_VSCODE_PATH.",
+      "repoNotDeployed": "Le dépôt \"{{repository}}\" n'est pas déployé sur {{machine}}.\n\nDéployez-le d'abord :\n  rdc repo up {{repository}} -m <nom-machine>"
     }
   },
   "help": {
@@ -2113,6 +2115,7 @@
     "repository": "Nom du dépôt (se connecte à l'environnement du dépôt)",
     "repositoryShorthand": "Nom du dépôt (raccourci pour --repository)",
     "repositoryTag": "Étiquette du dépôt",
+    "resetHome": "Réinitialiser la couche de répertoire personnel par dépôt pour un nouveau départ",
     "saveAs": "Enregistrer les identifiants dans un contexte nommé",
     "saveKnownHosts": "Enregistrer known_hosts dans le coffre de la machine après test réussi",
     "searchInField": "Rechercher dans {{field}}",

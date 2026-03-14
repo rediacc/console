@@ -25,6 +25,7 @@
     },
     "title": "La diferencia"
   },
+  "captchaRequired": "Por favor, complete la verificación del captcha.",
   "common": {
     "aria": {
       "breadcrumbNavigation": "Navegación de migas de pan",
@@ -393,6 +394,7 @@
     "pageDescription": "Recibe actualizaciones mensuales sobre nuevas funciones, guías de autoalojamiento y consejos de infraestructura.",
     "pageTitle": "Mantente al día",
     "placeholder": "Tu dirección de correo electrónico",
+    "privacyNote": "Respetamos tu privacidad. Puedes cancelar tu suscripción en cualquier momento.",
     "returnPopup": {
       "close": "Cerrar ventana",
       "cta": "Suscribirme y reservar cita",
@@ -400,7 +402,6 @@
       "note": "Usamos tu correo para enviar actualizaciones del producto. Puedes darte de baja en cualquier momento.",
       "title": "¿Quieres una guía guiada?"
     },
-    "privacyNote": "Respetamos tu privacidad. Puedes cancelar tu suscripción en cualquier momento.",
     "roiGate": {
       "description": "Ingresa tu correo electrónico para desbloquear el desglose completo de costos y el análisis de ahorro.",
       "title": "Obtén tu informe detallado de ROI",
@@ -414,7 +415,6 @@
     "title": "Boletín",
     "unsubscribed": "Te has dado de baja. Lamentamos verte partir."
   },
-  "captchaRequired": "Por favor, complete la verificación del captcha.",
   "pages": {
     "blog": {
       "allArticles": "Todos los artículos",
@@ -1093,8 +1093,8 @@
         "monthOrYear": "por mes o {{price}} por año",
         "popular": "mas popular",
         "startingAt": "*A partir de",
-        "whatsIncluded": "Qué incluye:",
-        "taxDisclaimer": "Todos los precios están en USD y no incluyen impuestos, tasas ni aranceles aplicables."
+        "taxDisclaimer": "Todos los precios están en USD y no incluyen impuestos, tasas ni aranceles aplicables.",
+        "whatsIncluded": "Qué incluye:"
       }
     },
     "docs": {
@@ -3037,7 +3037,6 @@
       },
       "trustSection": {
         "heading": "Tu infraestructura. Tus reglas.",
-        "subtitle": "Las licencias de Rediacc están diseñadas para que nunca estés atrapado. Esto es lo que significa en la práctica.",
         "rows": [
           {
             "title": "Tus repos funcionan para siempre.",
@@ -3060,11 +3059,12 @@
             "description": "Un slot de licencia solo se ocupa mientras se crea o se hace fork de un repositorio — tus operaciones diarias nunca consumen uno. Los slots se liberan automáticamente tras 1 hora de inactividad, por lo que un plan de 5 slots puede atender docenas de máquinas. Sin tarifas por máquina, nunca."
           }
         ],
+        "subtitle": "Las licencias de Rediacc están diseñadas para que nunca estés atrapado. Esto es lo que significa en la práctica.",
         "svg": {
-          "noLicenseRequired": "No se requiere licencia — funciona siempre",
-          "noLicenseNeeded": "No se necesita licencia",
-          "requiredOnlyHere": "Solo se requiere aquí",
           "allOperations": "Todas las operaciones",
+          "noLicenseNeeded": "No se necesita licencia",
+          "noLicenseRequired": "No se requiere licencia — funciona siempre",
+          "requiredOnlyHere": "Solo se requiere aquí",
           "slotsAutoRelease": "Los slots se liberan automáticamente después de 1 hora de inactividad",
           "slotsCreateFork": "Los slots solo se usan para crear y bifurcar — las operaciones diarias son siempre gratuitas"
         }
@@ -3074,9 +3074,9 @@
         "bestValue": "Mejor valor",
         "billingToggle": {
           "annual": "Anual",
-          "monthly": "Mensual",
           "annualSavings": "Ahorra un 17% — 2 meses gratis",
-          "ariaLabel": "Período de facturación"
+          "ariaLabel": "Período de facturación",
+          "monthly": "Mensual"
         },
         "contactSales": "Contacto Ventas",
         "cta": {
@@ -3117,8 +3117,8 @@
         "monthOrYear": "por mes o {{price}} por año",
         "popular": "mas popular",
         "startingAt": "*A partir de",
-        "whatsIncluded": "Qué incluye:",
-        "taxDisclaimer": "Todos los precios están en USD y no incluyen impuestos, tasas ni aranceles aplicables."
+        "taxDisclaimer": "Todos los precios están en USD y no incluyen impuestos, tasas ni aranceles aplicables.",
+        "whatsIncluded": "Qué incluye:"
       }
     },
     "privacyPolicy": {

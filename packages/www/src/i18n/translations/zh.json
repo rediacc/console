@@ -25,6 +25,7 @@
     },
     "title": "区别"
   },
+  "captchaRequired": "请完成验证码验证。",
   "common": {
     "aria": {
       "breadcrumbNavigation": "面包屑导航",
@@ -388,6 +389,7 @@
     "pageDescription": "获取关于新功能、自托管指南和基础设施技巧的每月更新。",
     "pageTitle": "保持关注",
     "placeholder": "您的电子邮件地址",
+    "privacyNote": "我们尊重您的隐私。您可以随时取消订阅。",
     "returnPopup": {
       "close": "关闭弹窗",
       "cta": "订阅并预约",
@@ -395,7 +397,6 @@
       "note": "我们会使用您的邮箱发送产品更新。您可随时取消订阅。",
       "title": "想要一次引导式演示吗？"
     },
-    "privacyNote": "我们尊重您的隐私。您可以随时取消订阅。",
     "roiGate": {
       "description": "输入您的电子邮件以解锁完整的成本分析和节省报告。",
       "title": "获取详细的投资回报率报告",
@@ -409,7 +410,6 @@
     "title": "订阅通讯",
     "unsubscribed": "您已取消订阅。很遗憾看到您离开。"
   },
-  "captchaRequired": "请完成验证码验证。",
   "pages": {
     "blog": {
       "allArticles": "所有文章",
@@ -1068,8 +1068,8 @@
         "monthOrYear": "每月或每年 {{price}}",
         "popular": "最受欢迎",
         "startingAt": "*开始于",
-        "whatsIncluded": "包含内容：",
-        "taxDisclaimer": "所有价格以美元计，不包括适用的税费、征费和关税。"
+        "taxDisclaimer": "所有价格以美元计，不包括适用的税费、征费和关税。",
+        "whatsIncluded": "包含内容："
       }
     },
     "docs": {
@@ -3001,7 +3001,6 @@
       },
       "trustSection": {
         "heading": "您的基础设施。您的规则。",
-        "subtitle": "Rediacc 许可证的设计让您永远不会被锁定。以下是这在实际中意味着什么。",
         "rows": [
           {
             "title": "您的 repos 永久运行。",
@@ -3024,11 +3023,12 @@
             "description": "许可证槽位仅在创建或 fork 仓库时占用——您的日常操作不会消耗任何槽位。槽位在闲置 1 小时后自动释放，因此 5 个槽位的计划可以服务数十台机器。永远不收取每台机器的费用。"
           }
         ],
+        "subtitle": "Rediacc 许可证的设计让您永远不会被锁定。以下是这在实际中意味着什么。",
         "svg": {
-          "noLicenseRequired": "无需许可证 — 始终可用",
-          "noLicenseNeeded": "无需许可证",
-          "requiredOnlyHere": "仅在此处需要",
           "allOperations": "所有操作",
+          "noLicenseNeeded": "无需许可证",
+          "noLicenseRequired": "无需许可证 — 始终可用",
+          "requiredOnlyHere": "仅在此处需要",
           "slotsAutoRelease": "插槽在闲置1小时后自动释放",
           "slotsCreateFork": "插槽仅用于创建和分叉 — 日常操作始终免费"
         }
@@ -3038,9 +3038,9 @@
         "bestValue": "最超值",
         "billingToggle": {
           "annual": "年付",
-          "monthly": "月付",
           "annualSavings": "节省 17% — 免费使用 2 个月",
-          "ariaLabel": "计费周期"
+          "ariaLabel": "计费周期",
+          "monthly": "月付"
         },
         "contactSales": "联系销售人员",
         "cta": {
@@ -3081,8 +3081,8 @@
         "monthOrYear": "每月或每年 {{price}}",
         "popular": "最受欢迎",
         "startingAt": "*开始于",
-        "whatsIncluded": "包含内容：",
-        "taxDisclaimer": "所有价格以美元计，不包括适用的税费、征费和关税。"
+        "taxDisclaimer": "所有价格以美元计，不包括适用的税费、征费和关税。",
+        "whatsIncluded": "包含内容："
       }
     },
     "privacyPolicy": {

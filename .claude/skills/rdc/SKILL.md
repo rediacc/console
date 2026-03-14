@@ -145,7 +145,7 @@ See [config.md](config.md) for full details.
 
 - **Fork-only mode** (default): AI agents can only modify fork repositories. Grand (original) repos are protected. To override, set `REDIACC_ALLOW_GRAND_REPO=<repo-name>` or `REDIACC_ALLOW_GRAND_REPO=*` for all repos.
 - **MCP fork-only mode**: The MCP server (`rdc mcp serve`) runs in fork-only mode by default. Use `--allow-grand` flag to enable grand repo access.
-- **Kernel-level sandbox**: All `rdc term` commands with a repository context run inside a Landlock filesystem sandbox on the remote machine. The sandboxed process can only access the repo's own mount path and required system paths. Cross-repo filesystem access is blocked by the kernel.
+- **Per-repo SSH keys + server-side sandbox**: Each repo has its own SSH key with `command="renet sandbox-gateway <name>"` in `authorized_keys`. Every SSH session (term, VS Code, sync) is sandboxed server-side with Landlock filesystem restrictions, OverlayFS home overlay, and per-repo TMPDIR. Cross-repo access blocked by the kernel. `.envrc` auto-loaded for Docker access.
 - **Machine-level SSH**: Direct machine access (`rdc term <machine>` without a repo) is blocked for agents unless `REDIACC_ALLOW_GRAND_REPO=*` is set.
 
 ## Important conventions

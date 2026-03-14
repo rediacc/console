@@ -4,6 +4,7 @@ import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
+import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
 import { outputService } from '../services/output.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
@@ -208,6 +209,8 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
           ({ params, dest } = buildStoragePushParams(repo, repoConfig.repositoryGuid, options));
         } else if (options.toMachine) {
           await autoProvisionTarget(options);
+          // Deploy per-repo SSH key to target machine for sandbox gateway
+          await deployRepoKeyIfNeeded(repo, options.toMachine);
           ({ params, dest } = buildMachinePushParams(repo, repoConfig.repositoryGuid, options));
         } else {
           throw new ValidationError(t('commands.repo.push.destRequired'));
@@ -247,6 +250,12 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
         }
 
         if (options.force) params.force = true;
+
+        // Deploy per-repo SSH key to target machine
+        const targetMachine = options.machine ?? (await configService.getMachine());
+        if (targetMachine) {
+          await deployRepoKeyIfNeeded(repo, targetMachine);
+        }
 
         outputService.info(t('commands.repo.pull.pulling', { repo }));
         await executeFunction(`backup_pull`, params, options, repoCommand);

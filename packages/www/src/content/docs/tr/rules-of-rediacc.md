@@ -4,7 +4,8 @@ description: "Rediacc platformunda uygulama geliştirmek için temel kurallar ve
 category: "Guides"
 order: 5
 language: tr
-sourceHash: "c276f24c681da0ef"
+sourceHash: "5b62710fe6281f9d"
+sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 ---
 
 # Rediacc Kuralları

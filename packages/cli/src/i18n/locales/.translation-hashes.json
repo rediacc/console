@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1531,
-    "sourceCommit": "70e064d13e90c8eaa6d370752120b71d82bcdefc"
+    "keyCount": 1534,
+    "sourceCommit": "e0a902a08d72d5b775805bb8347b19666b45c7b0"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1168,6 +1168,7 @@
     "commands.vscode.connect.fetchingDetails": "088301ca",
     "commands.vscode.connect.opening": "88c3a161",
     "commands.vscode.connect.persistingKey": "5de3b4de",
+    "commands.vscode.connect.provisioningRenet": "febd301d",
     "commands.vscode.connect.settingsWarning": "b6543d39",
     "commands.vscode.connect.settingUpEnv": "3d1f7a26",
     "commands.vscode.connect.success": "55e94417",
@@ -1357,6 +1358,7 @@
     "errors.vscode.noIpAddress": "a4d64fb1",
     "errors.vscode.noPrivateKey": "5ac83b14",
     "errors.vscode.notFound": "8eefa0af",
+    "errors.vscode.repoNotDeployed": "b103b432",
     "help.cli.machineInfo": "b10dfccd",
     "help.cli.repoUp": "53e83338",
     "help.cli.syncUpload": "fc59726e",
@@ -1469,6 +1471,7 @@
     "options.repository": "1ef7cee9",
     "options.repositoryShorthand": "e18dac3e",
     "options.repositoryTag": "b5ecb969",
+    "options.resetHome": "9efb02f8",
     "options.saveAs": "74539002",
     "options.saveKnownHosts": "c30a8449",
     "options.searchInField": "b09508a0",

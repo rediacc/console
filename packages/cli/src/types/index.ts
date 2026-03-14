@@ -180,6 +180,10 @@ export interface RepositoryConfig {
   networkId?: number;
   /** GUID of the grand (parent) repository. Present on forks; absent on grand repos. */
   grandGuid?: string;
+  /** Per-repo SSH private key (OpenSSH format). Used for sandbox-isolated connections. */
+  sshPrivateKey?: string;
+  /** Per-repo SSH public key. Deployed to remote authorized_keys with sandbox gateway command= prefix. */
+  sshPublicKey?: string;
 }
 
 /**
