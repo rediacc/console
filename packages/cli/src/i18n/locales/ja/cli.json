@@ -1257,7 +1257,8 @@
       "batchFailed": "\"{{repo}}\"の{{action}}に失敗しました: {{error}}",
       "batchIterating": "{{action}} {{current}}/{{total}}：「{{repo}}」...",
       "batchResult": "{{action}}完了: {{succeeded}}/{{total}} 成功",
-      "yesOption": "バッチ操作の確認をスキップ"
+      "yesOption": "バッチ操作の確認をスキップ",
+      "batchStarting": "{{action}}：「{{repo}}」..."
     },
     "repository": {
       "create": {

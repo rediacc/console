@@ -1,4 +1,5 @@
 import readline from 'node:readline';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
@@ -80,14 +81,83 @@ export async function handleUpAll(options: {
   }
 }
 
+class Semaphore {
+  private readonly queue: (() => void)[] = [];
+  private running = 0;
+
+  constructor(private readonly max: number) {}
+
+  async acquire(): Promise<void> {
+    if (this.running < this.max) {
+      this.running++;
+      return;
+    }
+    return new Promise<void>((resolve) => {
+      this.queue.push(resolve);
+    });
+  }
+
+  release(): void {
+    this.running--;
+    const next = this.queue.shift();
+    if (next) {
+      this.running++;
+      next();
+    }
+  }
+}
+
+export async function runBatchParallel(
+  repos: { name: string }[],
+  concurrency: number,
+  action: string,
+  taskFn: (repoName: string) => Promise<void>
+): Promise<void> {
+  const sem = new Semaphore(concurrency);
+  let succeeded = 0;
+
+  await Promise.allSettled(
+    repos.map(async ({ name }) => {
+      await sem.acquire();
+      try {
+        outputService.info(t('commands.repo.batchStarting', { action, repo: name }));
+        await taskFn(name);
+        succeeded++;
+      } catch (error) {
+        outputService.warn(
+          t('commands.repo.batchFailed', {
+            action,
+            repo: name,
+            error: error instanceof Error ? error.message : String(error),
+          })
+        );
+      } finally {
+        sem.release();
+      }
+    })
+  );
+
+  outputService.info(t('commands.repo.batchResult', { action, succeeded, total: repos.length }));
+}
+
 export async function runBatchOperation(
   action: string,
   machine: string,
   skipConfirm: boolean,
-  fn: (repoName: string) => Promise<void>
+  fn: (repoName: string) => Promise<void>,
+  options?: { parallel?: boolean; concurrency?: string }
 ): Promise<void> {
   const repos = await configService.listRepositories();
   if (!skipConfirm && !(await confirmBatch(action, repos.length, machine))) {
+    return;
+  }
+
+  if (options?.parallel) {
+    const concurrency = Number.parseInt(
+      options.concurrency ?? String(DEFAULTS.BATCH.CONCURRENCY),
+      10
+    );
+    await runBatchParallel(repos, concurrency, action, fn);
     return;
   }
 

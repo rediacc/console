@@ -1257,7 +1257,8 @@
       "batchFailed": "{{action}} не удалось для \"{{repo}}\": {{error}}",
       "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
       "batchResult": "{{action}} завершено: {{succeeded}}/{{total}} успешно",
-      "yesOption": "Пропустить подтверждение для пакетных операций"
+      "yesOption": "Пропустить подтверждение для пакетных операций",
+      "batchStarting": "{{action}}: «{{repo}}»..."
     },
     "repository": {
       "create": {

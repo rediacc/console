@@ -265,6 +265,8 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .option('--tag <tag>', t('commands.repo.push.optionTag'))
     .option('-m, --machine <name>', t('options.machine'))
     .option('-w, --watch', t('options.watch'))
+    .option('--parallel', t('commands.repo.upAll.parallelOption'))
+    .option('--concurrency <n>', t('commands.repo.upAll.concurrencyOption'), '3')
     .option('-y, --yes', t('commands.repo.yesOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
@@ -273,8 +275,12 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
         if (repo) {
           await pushSingleRepo(repo, options, repoCommand);
         } else {
-          await runBatchOperation('Push', options.machine ?? 'default', !!options.yes, (name) =>
-            pushSingleRepo(name, options, repoCommand)
+          await runBatchOperation(
+            'Push',
+            options.machine ?? 'default',
+            !!options.yes,
+            (name) => pushSingleRepo(name, options, repoCommand),
+            options
           );
         }
       } catch (error) {
@@ -291,6 +297,8 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .option('--force', t('commands.repo.pull.optionForce'))
     .option('-m, --machine <name>', t('options.machine'))
     .option('-w, --watch', t('options.watch'))
+    .option('--parallel', t('commands.repo.upAll.parallelOption'))
+    .option('--concurrency <n>', t('commands.repo.upAll.concurrencyOption'), '3')
     .option('-y, --yes', t('commands.repo.yesOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
@@ -299,8 +307,12 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
         if (repo) {
           await pullSingleRepo(repo, options, repoCommand);
         } else {
-          await runBatchOperation('Pull', options.machine ?? 'default', !!options.yes, (name) =>
-            pullSingleRepo(name, options, repoCommand)
+          await runBatchOperation(
+            'Pull',
+            options.machine ?? 'default',
+            !!options.yes,
+            (name) => pullSingleRepo(name, options, repoCommand),
+            options
           );
         }
       } catch (error) {

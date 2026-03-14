@@ -1257,7 +1257,8 @@
       "batchFailed": "{{action}} fehlgeschlagen für \"{{repo}}\": {{error}}",
       "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
       "batchResult": "{{action}} abgeschlossen: {{succeeded}}/{{total}} erfolgreich",
-      "yesOption": "Bestätigung für Stapeloperationen überspringen"
+      "yesOption": "Bestätigung für Stapeloperationen überspringen",
+      "batchStarting": "{{action}}: «{{repo}}»..."
     },
     "repository": {
       "create": {

@@ -1257,7 +1257,8 @@
       "batchFailed": "{{action}} falló para \"{{repo}}\": {{error}}",
       "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
       "batchResult": "{{action}} completado: {{succeeded}}/{{total}} exitosos",
-      "yesOption": "Omitir confirmación para operaciones por lotes"
+      "yesOption": "Omitir confirmación para operaciones por lotes",
+      "batchStarting": "{{action}}: «{{repo}}»..."
     },
     "repository": {
       "create": {

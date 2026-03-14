@@ -1257,7 +1257,8 @@
       "batchFailed": "\"{{repo}}\" 的 {{action}} 失败：{{error}}",
       "batchIterating": "{{action}} {{current}}/{{total}}：\"{{repo}}\"...",
       "batchResult": "{{action}} 完成：{{succeeded}}/{{total}} 成功",
-      "yesOption": "跳过批量操作确认"
+      "yesOption": "跳过批量操作确认",
+      "batchStarting": "{{action}}：\"{{repo}}\"..."
     },
     "repository": {
       "create": {

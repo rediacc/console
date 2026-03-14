@@ -258,6 +258,25 @@ rdc repo autostart disable my-app -m server-1
 
 This removes the keyfile and kills LUKS slot 1.
 
+### Keyfile Refresh on Deploy
+
+When autostart is enabled, `rdc repo up` validates the LUKS slot 1 keyfile.
+If the on-disk keyfile still matches the LUKS slot, no changes are made.
+
+After transferring a repository between machines via `repo push` / `repo pull`,
+the keyfile on the new machine won't match. In this case, `repo up` automatically
+regenerates the keyfile and updates LUKS slot 1. You will see log messages:
+
+```
+Refreshing keyfile credential for <guid>
+Killing LUKS slot 1: /mnt/rediacc/repositories/<guid>
+Adding keyfile to LUKS slot 1: /mnt/rediacc/repositories/<guid>
+```
+
+This is safe — slot 0 (your passphrase) is never modified. If autostart is not
+enabled, the check is silently skipped. Failures are non-fatal and do not block
+the deploy.
+
 ### List Status
 
 ```bash

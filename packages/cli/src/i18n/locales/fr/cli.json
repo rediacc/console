@@ -1257,7 +1257,8 @@
       "batchFailed": "{{action}} échoué pour \"{{repo}}\" : {{error}}",
       "batchIterating": "{{action}} {{current}}/{{total}} : \"{{repo}}\"...",
       "batchResult": "{{action}} terminé : {{succeeded}}/{{total}} réussis",
-      "yesOption": "Passer la confirmation pour les opérations par lots"
+      "yesOption": "Passer la confirmation pour les opérations par lots",
+      "batchStarting": "{{action}} : «{{repo}}»..."
     },
     "repository": {
       "create": {

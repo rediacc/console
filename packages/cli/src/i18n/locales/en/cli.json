@@ -1140,6 +1140,7 @@
       "machineOption": "Target machine name",
       "yesOption": "Skip confirmation for batch operations",
       "batchConfirm": "{{action}} all {{count}} repos on \"{{machine}}\"? [y/N]",
+      "batchStarting": "{{action}}: \"{{repo}}\"...",
       "batchIterating": "{{action}} {{current}}/{{total}}: \"{{repo}}\"...",
       "batchResult": "{{action}} complete: {{succeeded}}/{{total}} succeeded",
       "batchFailed": "{{action}} failed for \"{{repo}}\": {{error}}",

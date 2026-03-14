@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1542,
-    "sourceCommit": "0b2b4a3b1f17babdb20a0dcfc780c29f009a6835"
+    "keyCount": 1543,
+    "sourceCommit": "567e30cb7a0ee53d4c4196f271510f1030912257"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -715,6 +715,7 @@
     "commands.repo.batchFailed": "ba0aea89",
     "commands.repo.batchIterating": "8243b5a5",
     "commands.repo.batchResult": "a36da490",
+    "commands.repo.batchStarting": "a3f15902",
     "commands.repo.create.alreadyExists": "d33779f8",
     "commands.repo.create.completed": "3be9b2b5",
     "commands.repo.create.description": "60ae21c7",

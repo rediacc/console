@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
@@ -14,7 +15,12 @@ import { createGuidResolver, loadGuidMap, resolveGuids } from '../utils/guid-res
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import { registerRepoBackupCommands } from './repo-backup.js';
-import { handleDownAll, handleUpAll, postRepoUpTasks } from './repo-batch-utils.js';
+import {
+  handleDownAll,
+  handleUpAll,
+  postRepoUpTasks,
+  runBatchParallel,
+} from './repo-batch-utils.js';
 import { registerExtendedRepoCommands } from './repo-extended.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
 import { registerRepoSnapshotCommands } from './repo-snapshot.js';
@@ -80,10 +86,34 @@ async function iterateAllRepos(
   machineName: string,
   cmd: CommandPath,
   params: Record<string, unknown>,
-  options: { debug?: boolean; skipRouterRestart?: boolean },
+  options: {
+    debug?: boolean;
+    skipRouterRestart?: boolean;
+    parallel?: boolean;
+    concurrency?: string;
+  },
   messages: { action: string }
 ): Promise<void> {
   const repos = await configService.listRepositories();
+
+  const taskFn = async (name: string) => {
+    await assertCommandPolicy(cmd, name);
+    await executeRepoFunction(functionName, name, machineName, params, options, {
+      starting: '',
+      completed: '',
+      failed: '',
+    });
+  };
+
+  if (options.parallel) {
+    const concurrency = Number.parseInt(
+      options.concurrency ?? String(DEFAULTS.BATCH.CONCURRENCY),
+      10
+    );
+    await runBatchParallel(repos, concurrency, messages.action, taskFn);
+    return;
+  }
+
   let succeeded = 0;
   for (let i = 0; i < repos.length; i++) {
     const { name } = repos[i];
@@ -96,12 +126,7 @@ async function iterateAllRepos(
       })
     );
     try {
-      await assertCommandPolicy(cmd, name);
-      await executeRepoFunction(functionName, name, machineName, params, options, {
-        starting: '',
-        completed: '',
-        failed: '',
-      });
+      await taskFn(name);
       succeeded++;
     } catch (error) {
       outputService.warn(

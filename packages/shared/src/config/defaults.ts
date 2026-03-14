@@ -437,8 +437,14 @@ export const SORT_DEFAULTS = {
 /**
  * Aggregated defaults object for convenient access
  */
+export const BATCH_DEFAULTS = {
+  /** Default parallel concurrency for batch operations */
+  CONCURRENCY: 3,
+} as const;
+
 export const DEFAULTS = {
   SSH: SSH_DEFAULTS,
+  BATCH: BATCH_DEFAULTS,
   REPOSITORY: REPOSITORY_DEFAULTS,
   DOCKER: DOCKER_DEFAULTS,
   SHELL: SHELL_DEFAULTS,

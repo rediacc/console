@@ -619,6 +619,8 @@ class RenetProvisionerService {
       `sudo mkdir -p ${escapedCurrentDir}`,
       `if [ "$(hash_remote)" = ${escapedHash} ]; then rm -f ${escapedStagingPath}; else sudo chmod 755 ${escapedStagingPath}; sudo mv -f ${escapedStagingPath} ${escapedInstallPath}; result=UPDATED; fi`,
       `if [ "$(current_target)" != ${escapedInstallPath} ]; then sudo ln -sfn ${escapedInstallPath} ${escapedCurrentTmpPath}; sudo mv -Tf ${escapedCurrentTmpPath} ${escapedCurrentPath}; if [ -n "$result" ]; then result="$result CURRENT_UPDATED"; else result=CURRENT_UPDATED; fi; fi`,
+      // Ensure /usr/bin/renet symlinks to current so "sudo renet" always resolves to the provisioned binary
+      `if [ ! -L /usr/bin/renet ] || [ "$(readlink /usr/bin/renet)" != ${escapedCurrentPath} ]; then sudo ln -sf ${escapedCurrentPath} /usr/bin/renet; fi`,
       'if [ -z "$result" ]; then result=VERIFIED; fi',
       'echo "$result"',
     ].join('; ');

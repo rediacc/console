@@ -1257,7 +1257,8 @@
       "batchFailed": "\"{{repo}}\" için {{action}} başarısız: {{error}}",
       "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
       "batchResult": "{{action}} tamamlandı: {{succeeded}}/{{total}} başarılı",
-      "yesOption": "Toplu işlemler için onayı atla"
+      "yesOption": "Toplu işlemler için onayı atla",
+      "batchStarting": "{{action}}: «{{repo}}»..."
     },
     "repository": {
       "create": {

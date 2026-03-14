@@ -5,7 +5,12 @@ import { assertCommandPolicy, CMD, type CommandPath } from '../utils/command-pol
 import { handleError } from '../utils/errors.js';
 import { confirmBatch } from './repo-batch-utils.js';
 
-type ExecOptions = { debug?: boolean; skipRouterRestart?: boolean };
+type ExecOptions = {
+  debug?: boolean;
+  skipRouterRestart?: boolean;
+  parallel?: boolean;
+  concurrency?: string;
+};
 type Messages = { starting: string; completed: string; failed: string };
 
 export function registerRepoVolumeCommands(
@@ -33,6 +38,8 @@ export function registerRepoVolumeCommands(
     .description(t('commands.repo.mount.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--checkpoint', t('commands.repo.mount.checkpointOption'))
+    .option('--parallel', t('commands.repo.upAll.parallelOption'))
+    .option('--concurrency <n>', t('commands.repo.upAll.concurrencyOption'), '3')
     .option('-y, --yes', t('commands.repo.yesOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
@@ -42,6 +49,8 @@ export function registerRepoVolumeCommands(
         options: {
           machine: string;
           checkpoint?: boolean;
+          parallel?: boolean;
+          concurrency?: string;
           yes?: boolean;
           debug?: boolean;
           skipRouterRestart?: boolean;
@@ -90,6 +99,8 @@ export function registerRepoVolumeCommands(
     .description(t('commands.repo.unmount.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--checkpoint', t('commands.repo.unmount.checkpointOption'))
+    .option('--parallel', t('commands.repo.upAll.parallelOption'))
+    .option('--concurrency <n>', t('commands.repo.upAll.concurrencyOption'), '3')
     .option('-y, --yes', t('commands.repo.yesOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
@@ -99,6 +110,8 @@ export function registerRepoVolumeCommands(
         options: {
           machine: string;
           checkpoint?: boolean;
+          parallel?: boolean;
+          concurrency?: string;
           yes?: boolean;
           debug?: boolean;
           skipRouterRestart?: boolean;

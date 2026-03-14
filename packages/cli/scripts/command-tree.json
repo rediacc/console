@@ -1363,6 +1363,18 @@
               "defaultValue": null
             },
             {
+              "flags": "--parallel",
+              "descriptionKey": "commands.repo.upAll.parallelOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--concurrency <n>",
+              "descriptionKey": "commands.repo.upAll.concurrencyOption",
+              "mandatory": false,
+              "defaultValue": "3"
+            },
+            {
               "flags": "-y, --yes",
               "descriptionKey": "commands.repo.yesOption",
               "mandatory": false,
@@ -1406,6 +1418,18 @@
               "descriptionKey": "commands.repo.unmount.checkpointOption",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--parallel",
+              "descriptionKey": "commands.repo.upAll.parallelOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--concurrency <n>",
+              "descriptionKey": "commands.repo.upAll.concurrencyOption",
+              "mandatory": false,
+              "defaultValue": "3"
             },
             {
               "flags": "-y, --yes",
@@ -2084,6 +2108,18 @@
               "defaultValue": null
             },
             {
+              "flags": "--parallel",
+              "descriptionKey": "commands.repo.upAll.parallelOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--concurrency <n>",
+              "descriptionKey": "commands.repo.upAll.concurrencyOption",
+              "mandatory": false,
+              "defaultValue": "3"
+            },
+            {
               "flags": "-y, --yes",
               "descriptionKey": "commands.repo.yesOption",
               "mandatory": false,
@@ -2145,6 +2181,18 @@
               "descriptionKey": "options.watch",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--parallel",
+              "descriptionKey": "commands.repo.upAll.parallelOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--concurrency <n>",
+              "descriptionKey": "commands.repo.upAll.concurrencyOption",
+              "mandatory": false,
+              "defaultValue": "3"
             },
             {
               "flags": "-y, --yes",

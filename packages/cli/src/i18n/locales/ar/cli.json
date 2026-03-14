@@ -1257,7 +1257,8 @@
       "batchFailed": "فشل {{action}} للمستودع \"{{repo}}\": {{error}}",
       "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
       "batchResult": "اكتمل {{action}}: {{succeeded}}/{{total}} نجح",
-      "yesOption": "تخطي التأكيد للعمليات الجماعية"
+      "yesOption": "تخطي التأكيد للعمليات الجماعية",
+      "batchStarting": "{{action}}: «{{repo}}»..."
     },
     "repository": {
       "create": {
