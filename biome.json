@@ -76,6 +76,7 @@
       "!**/*.min.js",
       "!**/*.min.css",
       "!**/*.generated.ts",
+      "!**/queue-vault/data/*.schema.ts",
       "!**/search-index.json",
       "!**/*.astro",
       "private/account/src/**/*.ts",
