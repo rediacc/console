@@ -4,7 +4,7 @@ description: Guide étape par étape pour configurer Claude Code pour la gestion
 category: Guides
 order: 31
 language: fr
-sourceHash: "faa990e37ee96a23"
+sourceHash: "8b05c6da1e3fc662"
 ---
 
 Claude Code fonctionne nativement avec Rediacc via le CLI `rdc`. Ce guide couvre la configuration, les permissions et les flux de travail courants.
@@ -27,7 +27,7 @@ Placez ceci à la racine de votre projet. Consultez le [modèle AGENTS.md](/fr/d
 ## CLI Tool: rdc
 
 ### Common Operations
-- Status: rdc machine info <machine> -o json
+- Status: rdc machine query <machine> -o json
 - Deploy: rdc repo up <repo> -m <machine> --yes
 - Containers: rdc machine containers <machine> -o json
 - Health: rdc machine health <machine> -o json
@@ -43,10 +43,10 @@ Placez ceci à la racine de votre projet. Consultez le [modèle AGENTS.md](/fr/d
 
 Claude Code demandera la permission d'exécuter les commandes `rdc`. Vous pouvez préautoriser les opérations courantes en les ajoutant à la configuration de Claude Code :
 
-- Autoriser `rdc machine info *` — vérifications d'état en lecture seule
+- Autoriser `rdc machine query *` — vérifications d'état en lecture seule
 - Autoriser `rdc machine containers *` — listage des conteneurs
 - Autoriser `rdc machine health *` — vérifications de santé
-- Autoriser `rdc config repositories` — listage des dépôts
+- Autoriser `rdc config repository list` — listage des dépôts
 
 Pour les opérations destructives (`rdc repo up`, `rdc repo delete`), Claude Code demandera toujours une confirmation sauf si vous les autorisez explicitement.
 
@@ -57,7 +57,7 @@ Pour les opérations destructives (`rdc repo up`, `rdc repo delete`), Claude Cod
 ```
 You: "What's the status of prod-1?"
 
-Claude Code runs: rdc machine info prod-1 -o json
+Claude Code runs: rdc machine query prod-1 -o json
 → Shows machine status, repositories, containers, services
 ```
 

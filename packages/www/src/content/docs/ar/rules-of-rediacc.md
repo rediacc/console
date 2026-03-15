@@ -4,7 +4,7 @@ description: "القواعد والاصطلاحات الأساسية لبناء 
 category: "Guides"
 order: 5
 language: ar
-sourceHash: "5b62710fe6281f9d"
+sourceHash: "9d81373c26d93457"
 sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 ---
 
@@ -103,7 +103,7 @@ down() {
 - **`repo up --mount --checkpoint`** يستعيد الحاويات من نقطة التحقق (بدون بدء جديد).
 - **تصبح اتصالات TCP قديمة بعد الاستعادة** — يجب على التطبيقات التعامل مع `ECONNRESET` وإعادة الاتصال.
 - **وضع Docker التجريبي** يتم تفعيله تلقائياً على أدوات daemon لكل مستودع.
-- **يتم تثبيت CRIU** أثناء `rdc config setup-machine`.
+- **يتم تثبيت CRIU** أثناء `rdc config machine setup`.
 - **`/etc/criu/runc.conf`** يتم تكوينه مع `tcp-established` للحفاظ على اتصالات TCP.
 - **يتم حقن إعدادات أمان الحاويات تلقائياً بواسطة renet** — يضيف `renet compose` تلقائياً ما يلي إلى كل حاوية لتوافق CRIU:
   - `cap_add`: `CHECKPOINT_RESTORE`، `SYS_PTRACE`، `NET_ADMIN` (الحد الأدنى لـ CRIU على النواة 5.9+)

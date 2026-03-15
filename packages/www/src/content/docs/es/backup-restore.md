@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: es
-sourceHash: "9c6ab927c2220db7"
+sourceHash: "2ac1e17539336175"
 ---
 
 # Respaldo y Restauración
@@ -22,7 +22,7 @@ Antes de enviar respaldos, registre un proveedor de almacenamiento. Rediacc sopo
 Si ya tiene un remote de rclone configurado:
 
 ```bash
-rdc config import-storage rclone.conf
+rdc config storage import rclone.conf
 ```
 
 Esto importa configuraciones de almacenamiento desde un archivo de configuración rclone a la configuración actual. Tipos compatibles: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob y Swift.
@@ -30,7 +30,7 @@ Esto importa configuraciones de almacenamiento desde un archivo de configuració
 ### Ver Almacenamientos
 
 ```bash
-rdc config storages
+rdc config storage list
 ```
 
 ## Enviar un Respaldo
@@ -75,7 +75,7 @@ rdc repo pull my-app -m server-1 --from my-storage
 Ver los respaldos disponibles en una ubicación de almacenamiento:
 
 ```bash
-rdc repo list-backups --from my-storage -m server-1
+rdc repo backup list --from my-storage -m server-1
 ```
 
 ## Sincronización Masiva
@@ -85,13 +85,13 @@ Envíe o descargue todos los repositorios a la vez:
 ### Enviar Todos al Almacenamiento
 
 ```bash
-rdc repo sync push-all --to my-storage -m server-1
+rdc repo push --to my-storage -m server-1
 ```
 
 ### Descargar Todos desde el Almacenamiento
 
 ```bash
-rdc repo sync pull-all --from my-storage -m server-1
+rdc repo pull --from my-storage -m server-1
 ```
 
 | Opción | Descripción |

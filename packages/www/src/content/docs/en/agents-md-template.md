@@ -35,7 +35,7 @@ On error: {"success": false, "command": "...", "data": null, "errors": [{"code":
 ### Common Operations
 
 # Machine status
-rdc machine info <machine> -o json
+rdc machine query <machine> -o json
 
 # List containers on a machine
 rdc machine containers <machine> -o json
@@ -66,7 +66,7 @@ rdc repo sync download -m <machine> -r <repo> -l ./local-path
 rdc agent capabilities
 
 # Show schema for a specific command
-rdc agent schema "machine info"
+rdc agent schema "machine query"
 
 ### Architecture
 - **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
@@ -84,16 +84,16 @@ rdc agent schema "machine info"
 
 ## Customization
 
-Replace `<machine>` and `<repo>` with your actual machine and repository names. Run `rdc config repositories` to list available repositories with their name-to-GUID mapping.
+Replace `<machine>` and `<repo>` with your actual machine and repository names. Run `rdc config repository list` to list available repositories with their name-to-GUID mapping.
 
 ### Discovering Your Setup
 
 ```bash
 # List configured machines
-rdc machine info <machine-name>
+rdc machine query <machine-name>
 
 # List repositories with GUIDs
-rdc config repositories
+rdc config repository list
 
 # Check what commands are available
 rdc agent capabilities

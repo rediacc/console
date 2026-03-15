@@ -4,7 +4,7 @@ description: account, rdc ve renet'in makine slotlarını, depo lisanslarını v
 category: Guides
 order: 7
 language: tr
-sourceHash: "e7a65f722fbb1093"
+sourceHash: "41f6d86e9f637b47"
 ---
 
 # Abonelik ve Lisanslama
@@ -161,13 +161,13 @@ rdc subscription status
 Bir makine için makine aktivasyon ayrıntılarını göster:
 
 ```bash
-rdc subscription activation-status -m hostinger
+rdc subscription activation status -m hostinger
 ```
 
 Bir makinede yüklü depo lisansı ayrıntılarını göster:
 
 ```bash
-rdc subscription repo-status -m hostinger
+rdc subscription repo status -m hostinger
 ```
 
 Makine aktivasyonunu yenile ve depo lisanslarını toplu olarak yenile:
@@ -181,7 +181,7 @@ Makinede keşfedilen ancak yerel `rdc` yapılandırmasında bulunmayan depolar t
 Mevcut bir depo için depo lisansı yenilemesini zorla:
 
 ```bash
-rdc subscription refresh-repo my-app -m hostinger
+rdc subscription refresh repo my-app -m hostinger
 ```
 
 İlk kullanımda, kullanılabilir depo lisansı bulamayan lisanslı bir depo veya yedekleme işlemi otomatik olarak hesap yetkilendirme aktarımını tetikleyebilir. CLI bir yetkilendirme URL'si yazdırır, etkileşimli terminallerde tarayıcıyı açmaya çalışır ve yetkilendirme ve düzenleme başarılı olduktan sonra işlemi bir kez yeniden dener.
@@ -232,4 +232,4 @@ Bu metrik, mevcut UTC takvim ayında başarılı hesap destekli depo lisansı d�
 - başarısız düzenleme girişimleri
 - düzenlemeden önce reddedilen izlenmeyen depolar
 
-Kullanım ve son depo lisansı düzenleme geçmişinin müşteri görünümüne ihtiyaç duyuyorsanız hesap portalını kullanın. Makine tarafında incelemeye ihtiyaç duyuyorsanız `rdc subscription activation-status -m` ve `rdc subscription repo-status -m` kullanın.
+Kullanım ve son depo lisansı düzenleme geçmişinin müşteri görünümüne ihtiyaç duyuyorsanız hesap portalını kullanın. Makine tarafında incelemeye ihtiyaç duyuyorsanız `rdc subscription activation status -m` ve `rdc subscription repo status -m` kullanın.

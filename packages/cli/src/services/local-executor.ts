@@ -607,7 +607,7 @@ class LocalExecutorService {
       const machine = await configService.getLocalMachine(options.machineName);
 
       if (options.debug) {
-        outputService.info(`[local] Executing '${options.functionName}' on ${options.machineName}`);
+        outputService.info(`Executing '${options.functionName}' on ${options.machineName}`);
       }
 
       const sshPrivateKey = config.sshPrivateKey ?? (await readSSHKey(config.ssh.privateKeyPath));
@@ -647,7 +647,7 @@ class LocalExecutorService {
       }
 
       if (options.debug) {
-        outputService.info(`[local] Direct SSH to ${machine.ip}, executor=local`);
+        outputService.info(`Direct SSH to ${machine.ip}, executor=local`);
       }
 
       const sftp = new SFTPClient({

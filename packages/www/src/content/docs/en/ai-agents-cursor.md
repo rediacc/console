@@ -37,7 +37,7 @@ Ask Cursor: *"Check the status of my production server"*
 
 Cursor runs in terminal:
 ```bash
-rdc machine info prod-1 -o json
+rdc machine query prod-1 -o json
 ```
 
 ### Deploying Changes

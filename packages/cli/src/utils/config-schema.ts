@@ -93,7 +93,32 @@ export const RepositoryConfigSchema = z.object({
   tag: z.string().optional(),
   credential: z.string().optional(),
   networkId: z.number().int().optional(),
+  grandGuid: z.string().optional(),
+  parentGuid: z.string().optional(),
 });
+
+// ── Repository name:tag utilities ──────────────────────────────────────────
+
+const DEFAULT_TAG = 'latest';
+
+/**
+ * Parse a repository reference into name and tag.
+ * "marketing:staging" → { name: "marketing", tag: "staging" }
+ * "marketing"         → { name: "marketing", tag: "latest" }
+ */
+export function parseRepoRef(ref: string): { name: string; tag: string } {
+  const colonIndex = ref.indexOf(':');
+  if (colonIndex === -1) return { name: ref, tag: DEFAULT_TAG };
+  return { name: ref.slice(0, colonIndex), tag: ref.slice(colonIndex + 1) };
+}
+
+/**
+ * Build a composite config key from name and tag.
+ * ("marketing", "staging") → "marketing:staging"
+ */
+export function compositeKey(name: string, tag: string): string {
+  return `${name}:${tag}`;
+}
 
 export const InfraConfigSchema = z.object({
   publicIPv4: z

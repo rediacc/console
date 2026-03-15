@@ -74,7 +74,7 @@ describe('MCP server', () => {
     await containerHandler!({ name: 'staging' });
 
     expect(executeRdcCommand).toHaveBeenCalledWith(
-      ['machine', 'containers', 'staging'],
+      ['machine', 'query', 'staging', '--containers'],
       expect.objectContaining({ defaultTimeoutMs: 120_000 })
     );
   });
@@ -136,7 +136,7 @@ describe('MCP server', () => {
     registerAllTools(mockServer as never, { defaultTimeoutMs: 120_000 });
 
     // Read tools: readOnly, not destructive, idempotent
-    for (const name of ['machine_info', 'machine_list', 'config_repositories']) {
+    for (const name of ['machine_query', 'machine_list', 'config_repositories']) {
       const { annotations } = configs.get(name)!;
       expect(annotations.readOnlyHint, `${name} readOnlyHint`).toBe(true);
       expect(annotations.destructiveHint, `${name} destructiveHint`).toBe(false);
@@ -163,7 +163,7 @@ describe('MCP server', () => {
     const { executeRdcCommand } = await import('../executor.js');
     vi.mocked(executeRdcCommand).mockResolvedValueOnce({
       success: false,
-      command: 'machine info bad',
+      command: 'machine query bad',
       data: null,
       errors: [{ code: 'NOT_FOUND', message: 'Machine not found' }],
       warnings: [],

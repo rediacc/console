@@ -4,7 +4,7 @@ description: قالب جاهز للنسخ واللصق لتهيئة Claude Code 
 category: Reference
 order: 50
 language: ar
-sourceHash: "872e8796671470d0"
+sourceHash: "7cf4d73659b76ee7"
 ---
 
 استخدم هذا القالب لتهيئة مساعدي البرمجة الذكية (Claude Code، Cursor، Cline، Windsurf) لإدارة بنية Rediacc التحتية بشكل مستقل. انسخ الكتلة أدناه إلى ملف `CLAUDE.md` أو `.cursorrules` أو ملف تهيئة الوكيل المعادل في مشروعك.
@@ -36,7 +36,7 @@ On error: {"success": false, "command": "...", "data": null, "errors": [{"code":
 ### Common Operations
 
 # Machine status
-rdc machine info <machine> -o json
+rdc machine query <machine> -o json
 
 # List containers on a machine
 rdc machine containers <machine> -o json
@@ -67,7 +67,7 @@ rdc repo sync download -m <machine> -r <repo> -l ./local-path
 rdc agent capabilities
 
 # Show schema for a specific command
-rdc agent schema "machine info"
+rdc agent schema "machine query"
 
 ### Architecture
 - **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
@@ -85,16 +85,16 @@ rdc agent schema "machine info"
 
 ## التخصيص
 
-استبدل `<machine>` و`<repo>` بأسماء الأجهزة والمستودعات الفعلية الخاصة بك. شغّل `rdc config repositories` لعرض المستودعات المتاحة مع تعيين الاسم إلى GUID.
+استبدل `<machine>` و`<repo>` بأسماء الأجهزة والمستودعات الفعلية الخاصة بك. شغّل `rdc config repository list` لعرض المستودعات المتاحة مع تعيين الاسم إلى GUID.
 
 ### اكتشاف إعداداتك
 
 ```bash
 # List configured machines
-rdc machine info <machine-name>
+rdc machine query <machine-name>
 
 # List repositories with GUIDs
-rdc config repositories
+rdc config repository list
 
 # Check what commands are available
 rdc agent capabilities

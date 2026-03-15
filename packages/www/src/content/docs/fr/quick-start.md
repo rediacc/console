@@ -4,7 +4,7 @@ description: Lancez un service conteneurisé sur votre serveur en 5 minutes.
 category: Guides
 order: -1
 language: fr
-sourceHash: "ff23efbe832be9bb"
+sourceHash: "a67f1e8442eb492e"
 ---
 
 # Démarrage rapide
@@ -32,13 +32,13 @@ rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ## 3. Ajouter votre serveur
 
 ```bash
-rdc config add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
+rdc config machine add server-1 --ip <your-server-ip> --user <your-ssh-user>
 ```
 
 ## 4. Provisionner le serveur
 
 ```bash
-rdc config setup-machine server-1
+rdc config machine setup server-1
 ```
 
 Cela installe Docker, cryptsetup et le binaire renet sur votre serveur.

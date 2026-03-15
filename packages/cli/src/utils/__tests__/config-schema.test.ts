@@ -15,6 +15,7 @@ vi.mock('../../i18n/index.js', () => ({
 }));
 
 import { configService } from '../../services/config-resources.js';
+import type { RdcConfig } from '../../types/index.js';
 import {
   assertMachineExists,
   assertResourceName,
@@ -33,7 +34,6 @@ import {
   resourceName,
   stringifyConfig,
 } from '../config-schema.js';
-import type { RdcConfig } from '../../types/index.js';
 
 const mockListStorages = vi.mocked(configService.listStorages);
 const mockListMachines = vi.mocked(configService.listMachines);

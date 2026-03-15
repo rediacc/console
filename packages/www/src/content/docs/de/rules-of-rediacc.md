@@ -4,7 +4,7 @@ description: "Wesentliche Regeln und Konventionen für die Entwicklung von Anwen
 category: "Guides"
 order: 5
 language: de
-sourceHash: "5b62710fe6281f9d"
+sourceHash: "9d81373c26d93457"
 sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 ---
 
@@ -103,7 +103,7 @@ Renet injiziert diese automatisch in jeden Container:
 - **`repo up --mount --checkpoint`** stellt Container aus dem Checkpoint wieder her (kein Neustart).
 - **TCP-Verbindungen werden nach der Wiederherstellung ungültig** — Anwendungen müssen `ECONNRESET` behandeln und sich neu verbinden.
 - **Docker Experimental Mode** wird automatisch auf den pro-Repository-Daemons aktiviert.
-- **CRIU wird installiert** während `rdc config setup-machine`.
+- **CRIU wird installiert** während `rdc config machine setup`.
 - **`/etc/criu/runc.conf`** wird mit `tcp-established` für TCP-Verbindungserhaltung konfiguriert.
 - **Container-Sicherheitseinstellungen werden automatisch von renet injiziert** — `renet compose` fügt automatisch Folgendes zu jedem Container für CRIU-Kompatibilität hinzu:
   - `cap_add`: `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` (Minimalsatz für CRIU auf Kernel 5.9+)

@@ -59,9 +59,9 @@ rdc repo up <repo> -m <target> --mount --checkpoint
 
 ```bash
 # Fork locally, then checkpoint + push the fork
-rdc repo fork <parent> -m <source> --tag <fork-name>
-rdc repo push <fork-name> -m <source> --to-machine <target> --checkpoint
-rdc repo up <fork-name> -m <target> --mount --checkpoint --grand <parent>
+rdc repo fork <parent> <tag> -m <source>
+rdc repo push <parent>:<tag> -m <source> --to-machine <target> --checkpoint
+rdc repo up <parent>:<tag> -m <target> --mount --checkpoint --grand <parent>
 ```
 
 ### CRIU troubleshooting
@@ -141,21 +141,21 @@ See [sync.md](sync.md) for full details on file sync options and behavior.
 |------|---------|--------|
 | **Independent copy** on another machine | `repo fork` then `repo push` fork then `repo up --mount` | New GUID, new networkId, new IPs |
 | **Migrate/backup** same repo to another machine | `repo push --to-machine` then `repo up --mount` | Same GUID, same identity |
-| **Test copy** on same machine | `repo fork --tag <name>` then `repo up --mount` | New GUID, shares encryption cred |
+| **Test copy** on same machine | `repo fork <parent> <tag>` then `repo up --mount` | New GUID, shares encryption cred |
 
 ### Cross-machine fork (independent copy)
 
-The fork gets a **different name** (via `--tag`) because it's an independent repo with its own GUID and networkId. Both parent and fork can run simultaneously on different machines.
+The fork uses the name:tag model — `<parent>:<tag>` (e.g., `my-app:staging`). It's an independent repo with its own GUID and networkId. Both parent and fork can run simultaneously on different machines.
 
 ```bash
 # 1. Fork locally (creates new identity — runs on source machine)
-rdc repo fork <parent> -m <source-machine> --tag <fork-name>
+rdc repo fork <parent> <tag> -m <source-machine>
 
 # 2. Push the fork to target
-rdc repo push <fork-name> -m <source-machine> --to-machine <target-machine>
+rdc repo push <parent>:<tag> -m <source-machine> --to-machine <target-machine>
 
 # 3. Deploy on target (--mount + --grand to unlock with parent's credential)
-rdc repo up <fork-name> -m <target-machine> --mount --grand <parent>
+rdc repo up <parent>:<tag> -m <target-machine> --mount --grand <parent>
 ```
 
 **Note**: `--grand <parent>` tells the CLI to use the parent repo's LUKS credential to unlock the fork. This is required because forks inherit the parent's encryption key.
@@ -188,3 +188,45 @@ rdc repo snapshot create <repo> -m <machine>
 rdc repo snapshot list [repo] -m <machine>
 rdc repo snapshot delete <repo> <snapshot-name> -m <machine>
 ```
+
+## Prune — cleanup orphaned resources
+
+Two prune commands remove resources no longer referenced by any config file.
+
+### Storage prune (orphaned backups in cloud/external storage)
+
+```bash
+# Dry-run (default) — preview what would be deleted
+rdc storage prune <storage-name> -m <machine>
+
+# Actually delete
+rdc storage prune <storage-name> -m <machine> --no-dry-run
+
+# Custom grace period (default 7 days)
+rdc storage prune <storage-name> -m <machine> --grace-days 14
+```
+
+Multi-config safe: scans all config files in `~/.config/rediacc/` before deciding a backup is orphaned. Recently archived repos within the grace period are protected.
+
+### Machine prune (datastore + orphaned repo images)
+
+```bash
+# Phase 1 only: clean stale mounts, locks, snapshots
+rdc machine prune <machine>
+
+# Phase 1 + Phase 2: also delete repo images not in any config
+rdc machine prune <machine> --orphaned-repos
+
+# Dry-run (shows what would be removed without deleting)
+rdc machine prune <machine> --orphaned-repos --dry-run
+```
+
+### Grace period configuration
+
+Set a default grace period in config so `--grace-days` is not required each time:
+
+```bash
+rdc config set pruneGraceDays 14
+```
+
+Precedence: `--grace-days` flag > `pruneGraceDays` in config > 7-day default.

@@ -4,7 +4,7 @@ description: "Создание конфигурации, добавление м
 category: "Guides"
 order: 3
 language: ru
-sourceHash: "5256e189c350ee18"
+sourceHash: "ebf1c9967814ec86"
 ---
 
 # Настройка машины
@@ -33,7 +33,7 @@ rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 Зарегистрируйте ваш удаленный сервер как машину в конфигурации:
 
 ```bash
-rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
+rdc config machine add server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | Опция | Обязательно | По умолчанию | Описание |
@@ -46,13 +46,13 @@ rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
 После добавления машины rdc автоматически выполняет `ssh-keyscan` для получения ключей хоста сервера. Вы также можете выполнить это вручную:
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 Для просмотра всех зарегистрированных машин:
 
 ```bash
-rdc config machines
+rdc config machine list
 ```
 
 ## Шаг 3: Настройка машины
@@ -60,7 +60,7 @@ rdc config machines
 Подготовьте удаленный сервер, установив все необходимые зависимости:
 
 ```bash
-rdc config setup-machine server-1
+rdc config machine setup server-1
 ```
 
 Эта команда:
@@ -82,7 +82,7 @@ rdc config setup-machine server-1
 Если SSH-ключи хоста сервера изменились (например, после переустановки), обновите сохраненные ключи:
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 Эта команда обновляет поле `knownHosts` в вашей конфигурации для данной машины.
@@ -112,7 +112,7 @@ rdc doctor
 ### Установка инфраструктуры
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
@@ -134,7 +134,7 @@ rdc config set-infra server-1 \
 ### Просмотр инфраструктуры
 
 ```bash
-rdc config show-infra server-1
+rdc config infra show server-1
 ```
 
 ### Применение на сервере
@@ -142,7 +142,7 @@ rdc config show-infra server-1
 Сгенерируйте и разверните конфигурацию обратного прокси Traefik на сервере:
 
 ```bash
-rdc config push-infra server-1
+rdc config infra push server-1
 ```
 
 Эта команда:
@@ -163,13 +163,13 @@ rdc config push-infra server-1
 Убедитесь, что ваша конфигурация SSH включает публичный ключ:
 
 ```bash
-rdc config set-ssh --private-key ~/.ssh/id_ed25519 --public-key ~/.ssh/id_ed25519.pub
+rdc config set ssh.privateKeyPath ~/.ssh/id_ed25519
 ```
 
 ### Добавление облачного провайдера
 
 ```bash
-rdc config add-provider my-linode \
+rdc config provider add my-linode \
   --provider linode/linode \
   --token $LINODE_API_TOKEN \
   --region us-east \
@@ -222,7 +222,7 @@ rdc machine deprovision prod-2
 ### Список провайдеров
 
 ```bash
-rdc config providers
+rdc config provider list
 ```
 
 ## Установка значений по умолчанию

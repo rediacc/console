@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 4
 language: de
-sourceHash: "8e778715b28247a9"
+sourceHash: "06b8912e9b65b720"
 ---
 
 # Repositories
@@ -78,10 +78,10 @@ rdc repo expand my-app -m server-1 --size 5G      # 5G zur aktuellen Größe hin
 Eine Kopie eines vorhandenen Repositories in seinem aktuellen Zustand erstellen:
 
 ```bash
-rdc repo fork my-app -m server-1 --tag my-app-staging
+rdc repo fork my-app staging -m server-1
 ```
 
-Dies erstellt eine neue verschlüsselte Kopie mit eigener GUID und Netzwerk-ID. Der Fork teilt sich das gleiche LUKS-Credential wie das übergeordnete Repository.
+Forks verwenden das Name:Tag-Modell: Der resultierende Fork heisst `my-app:staging`. Dies erstellt eine neue verschlüsselte Kopie mit eigener GUID und Netzwerk-ID, wobei der Name des übergeordneten Repositories geteilt wird. Der Fork teilt sich das gleiche LUKS-Credential wie das übergeordnete Repository.
 
 ## Validieren
 

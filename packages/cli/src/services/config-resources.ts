@@ -209,12 +209,13 @@ class ConfigService extends ConfigServiceBase {
     await state.setRepositories(repos);
   }
 
-  async removeRepository(repoName: string): Promise<void> {
+  async removeRepository(repoRef: string): Promise<void> {
     await this.requireSelfHosted();
+    const key = await this.getRepositoryKey(repoRef);
+    if (!key) throw new Error(`Repository "${repoRef}" not found`);
     const state = await this.getResourceState();
     const repos = state.getRepositories();
-    if (!(repoName in repos)) throw new Error(`Repository "${repoName}" not found`);
-    delete repos[repoName];
+    delete repos[key];
     await state.setRepositories(repos);
   }
 
@@ -255,12 +256,65 @@ class ConfigService extends ConfigServiceBase {
     return map;
   }
 
-  async getRepository(repoName: string): Promise<RepositoryConfig | undefined> {
+  /**
+   * Resolve a repository reference to its config.
+   * Supports: direct key match, legacy names, and bare names (defaults to :latest).
+   */
+  async getRepository(repoRef: string): Promise<RepositoryConfig | undefined> {
     const config = await this.getCurrent();
     if (!config || hasCloudCredentials(config)) return undefined;
 
     const state = await this.getResourceState();
-    return state.getRepositories()[repoName];
+    const repos = state.getRepositories();
+
+    // 1. Direct match (composite key or legacy key)
+    if (repoRef in repos) return repos[repoRef];
+
+    // 2. If no colon, try name:latest
+    if (!repoRef.includes(':')) {
+      const latestKey = `${repoRef}:latest`;
+      if (latestKey in repos) return repos[latestKey];
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Resolve a repository reference to its actual config dictionary key.
+   * Needed for mutation operations (remove, update networkId, etc.).
+   */
+  async getRepositoryKey(repoRef: string): Promise<string | undefined> {
+    const config = await this.getCurrent();
+    if (!config || hasCloudCredentials(config)) return undefined;
+
+    const state = await this.getResourceState();
+    const repos = state.getRepositories();
+
+    if (repoRef in repos) return repoRef;
+    if (!repoRef.includes(':')) {
+      const latestKey = `${repoRef}:latest`;
+      if (latestKey in repos) return latestKey;
+    }
+    return undefined;
+  }
+
+  /**
+   * List all tags for a given base repository name.
+   */
+  async listRepositoriesByName(
+    baseName: string
+  ): Promise<{ key: string; tag: string; config: RepositoryConfig }[]> {
+    const { parseRepoRef } = await import('../utils/config-schema.js');
+    const repos = await this.listRepositories();
+    return repos
+      .filter((r) => {
+        const { name } = parseRepoRef(r.name);
+        return name === baseName;
+      })
+      .map((r) => {
+        const { tag } = parseRepoRef(r.name);
+        return { key: r.name, tag, config: r.config };
+      });
   }
 
   // ============================================================================
@@ -327,6 +381,19 @@ class ConfigService extends ConfigServiceBase {
     const count = state.getDeletedRepositories().length;
     await state.setDeletedRepositories([]);
     return count;
+  }
+
+  async purgeExpiredArchives(graceDays: number): Promise<ArchivedRepository[]> {
+    await this.requireSelfHosted();
+    const state = await this.getResourceState();
+    const cutoff = Date.now() - graceDays * 86400000;
+    const all = state.getDeletedRepositories();
+    const expired = all.filter((r) => new Date(r.deletedAt).getTime() < cutoff);
+    if (expired.length > 0) {
+      const remaining = all.filter((r) => new Date(r.deletedAt).getTime() >= cutoff);
+      await state.setDeletedRepositories(remaining);
+    }
+    return expired;
   }
 
   // ============================================================================
@@ -450,18 +517,19 @@ class ConfigService extends ConfigServiceBase {
     return allocated;
   }
 
-  async ensureRepositoryNetworkId(repoName: string): Promise<number> {
+  async ensureRepositoryNetworkId(repoRef: string): Promise<number> {
     await this.requireSelfHosted();
+    const key = await this.getRepositoryKey(repoRef);
+    if (!key) throw new Error(`Repository "${repoRef}" not found`);
+
     const state = await this.getResourceState();
     const repos = state.getRepositories();
-
-    if (!(repoName in repos)) throw new Error(`Repository "${repoName}" not found`);
-    const repo = repos[repoName];
+    const repo = repos[key];
 
     if (repo.networkId !== undefined && repo.networkId > 0) return repo.networkId;
 
     const networkId = await this.allocateNetworkId();
-    repos[repoName] = { ...repo, networkId };
+    repos[key] = { ...repo, networkId };
     await state.setRepositories(repos);
     return networkId;
   }

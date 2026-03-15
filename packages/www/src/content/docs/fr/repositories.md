@@ -4,7 +4,7 @@ description: 'Créez, gérez et opérez des dépôts chiffrés LUKS sur des mach
 category: Guides
 order: 4
 language: fr
-sourceHash: "8e778715b28247a9"
+sourceHash: "06b8912e9b65b720"
 ---
 
 # Dépôts
@@ -76,10 +76,10 @@ rdc repo expand my-app -m server-1 --size 5G      # Ajouter 5 Go à la taille ac
 Créez une copie d'un dépôt existant dans son état actuel :
 
 ```bash
-rdc repo fork my-app -m server-1 --tag my-app-staging
+rdc repo fork my-app staging -m server-1
 ```
 
-Ceci crée une nouvelle copie chiffrée avec son propre GUID et ID réseau. La copie partage le même identifiant LUKS que le parent.
+Les forks utilisent le modèle name:tag : le fork résultant est nommé `my-app:staging`. Ceci crée une nouvelle copie chiffrée avec son propre GUID et ID réseau, tout en partageant le nom du parent. La copie partage le même identifiant LUKS que le parent.
 
 ## Valider
 

@@ -4,7 +4,7 @@ description: ربط وكلاء الذكاء الاصطناعي بالبنية ا
 category: Guides
 order: 33
 language: ar
-sourceHash: "51c5a7f855ead072"
+sourceHash: "ac1ed364eb890583"
 sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 ---
 
@@ -56,7 +56,7 @@ sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 
 | الأداة | الوصف |
 |------|-------------|
-| `machine_info` | Get system info, containers, services, and resource usage for a machine |
+| `machine_query` | Get system info, containers, services, and resource usage for a machine |
 | `machine_containers` | List Docker containers with status, health, resource usage, labels, and auto-route domain |
 | `machine_services` | List rediacc-managed systemd services (name, state, sub-state, restart count, memory, owning repository) |
 | `machine_repos` | List deployed repositories (name, GUID, size, mount status, Docker state, container count, disk usage, modified date, Rediaccfile present) |
@@ -89,7 +89,7 @@ sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 **التحقق من حالة الجهاز:**
 > "ما حالة جهاز الإنتاج الخاص بي؟"
 
-يستدعي الوكيل `machine_info` ← يُرجع معلومات النظام والحاويات العاملة والخدمات واستخدام الموارد.
+يستدعي الوكيل `machine_query` ← يُرجع معلومات النظام والحاويات العاملة والخدمات واستخدام الموارد.
 
 **نشر تطبيق:**
 > "انشر gitlab على جهاز الاختبار الخاص بي"

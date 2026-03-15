@@ -4,9 +4,9 @@ Query machine status, containers, services, and health.
 
 ## Commands
 
-### Full machine info
+### Full machine query
 ```
-rdc machine info <name> [--debug]
+rdc machine query <name> [--debug]
 ```
 Shows infrastructure config (base domain, public IPs, TLS), system info, deployed repos, running containers, and systemd services in one view. Use this to check a machine's base domain, public IPs, or any infrastructure setting.
 
@@ -34,11 +34,6 @@ rdc machine health <name> [--output json]
 ```
 Quick health check suitable for CI/CD pipelines.
 
-### Machine status
-```
-rdc machine status <name>
-```
-
 ### Deploy backup schedule to machine
 ```
 rdc machine deploy-backup <name>
@@ -50,7 +45,7 @@ Pushes the configured backup strategy (from `rdc config backup-strategy set`) to
 All machine commands support the global `--output` flag:
 ```
 rdc --output json machine containers server-1
-rdc --output table machine info server-1
+rdc --output table machine query server-1
 ```
 
 ## Container health states
@@ -63,7 +58,7 @@ rdc --output table machine info server-1
 
 ```bash
 # Quick overview of everything on a machine
-rdc machine info server-1
+rdc machine query server-1
 
 # Check if containers are running after deploy
 rdc machine containers server-1

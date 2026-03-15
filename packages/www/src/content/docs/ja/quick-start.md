@@ -4,7 +4,7 @@ description: 5分でサーバー上にコンテナ化されたサービスを実
 category: Guides
 order: -1
 language: ja
-sourceHash: "ff23efbe832be9bb"
+sourceHash: "a67f1e8442eb492e"
 ---
 
 # クイックスタート
@@ -32,13 +32,13 @@ rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ## 3. サーバーの追加
 
 ```bash
-rdc config add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
+rdc config machine add server-1 --ip <your-server-ip> --user <your-ssh-user>
 ```
 
 ## 4. サーバーのプロビジョニング
 
 ```bash
-rdc config setup-machine server-1
+rdc config machine setup server-1
 ```
 
 このコマンドはサーバーにDocker、cryptsetup、renetバイナリをインストールします。

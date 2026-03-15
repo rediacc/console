@@ -35,6 +35,7 @@ export function registerRepoVolumeCommands(
   // repo mount [name]
   repo
     .command('mount [name]')
+    .summary(t('commands.repo.mount.descriptionShort'))
     .description(t('commands.repo.mount.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--checkpoint', t('commands.repo.mount.checkpointOption'))
@@ -96,6 +97,7 @@ export function registerRepoVolumeCommands(
   // repo unmount [name]
   repo
     .command('unmount [name]')
+    .summary(t('commands.repo.unmount.descriptionShort'))
     .description(t('commands.repo.unmount.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--checkpoint', t('commands.repo.unmount.checkpointOption'))

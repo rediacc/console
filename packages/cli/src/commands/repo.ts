@@ -9,6 +9,7 @@ import {
   deployRepoKeyIfNeeded,
   removeRepoKeyFromMachine,
 } from '../services/repo-key-deployment.js';
+import { assertAgentRepoCreate } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD, type CommandPath } from '../utils/command-policy.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap, resolveGuids } from '../utils/guid-resolver.js';
@@ -23,7 +24,6 @@ import {
 } from './repo-batch-utils.js';
 import { registerExtendedRepoCommands } from './repo-extended.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
-import { registerRepoSnapshotCommands } from './repo-snapshot.js';
 import { registerRepoSyncCommands } from './repo-sync.js';
 import { registerRepoVolumeCommands } from './repo-volume.js';
 
@@ -37,7 +37,6 @@ async function handleSingleRepoUp(
     machine: string;
     mount?: boolean;
     checkpoint?: boolean;
-    grand?: string;
     dryRun?: boolean;
     debug?: boolean;
     skipRouterRestart?: boolean;
@@ -48,10 +47,6 @@ async function handleSingleRepoUp(
   const params: Record<string, unknown> = {};
   if (options.mount) params.mount = true;
   if (options.checkpoint) params.checkpoint = true;
-  if (options.grand) {
-    const grandRepo = await configService.getRepository(options.grand);
-    params.grand = grandRepo?.repositoryGuid ?? options.grand;
-  }
 
   if (options.dryRun) {
     const repo = await configService.getRepository(name);
@@ -189,7 +184,10 @@ async function executeRepoFunction(
 }
 
 export function registerRepoCommands(program: Command): void {
-  const repo = program.command('repo').description(t('commands.repo.description'));
+  const repo = program
+    .command('repo')
+    .summary(t('commands.repo.descriptionShort'))
+    .description(t('commands.repo.description'));
 
   repo.addHelpText(
     'after',
@@ -210,6 +208,9 @@ export function registerRepoCommands(program: Command): void {
         options: { machine: string; size: string; debug?: boolean; skipRouterRestart?: boolean }
       ) => {
         try {
+          // Block repo create in agent mode (agents must fork instead)
+          assertAgentRepoCreate(name);
+
           // Validate doesn't already exist
           const existing = await configService.getRepository(name);
           if (existing) {
@@ -223,7 +224,9 @@ export function registerRepoCommands(program: Command): void {
           const { privateKey: sshPrivateKey, publicKey: sshPublicKey } = generateSSHKeyPair();
 
           // Register in config.json first (so the executor can find it)
-          await configService.addRepository(name, {
+          const { compositeKey } = await import('../utils/config-schema.js');
+          const repoKey = compositeKey(name, 'latest');
+          await configService.addRepository(repoKey, {
             repositoryGuid,
             tag: 'latest',
             credential,
@@ -279,15 +282,23 @@ export function registerRepoCommands(program: Command): void {
   // repo delete <name>
   repo
     .command('delete <name>')
+    .summary(t('commands.repo.delete.descriptionShort'))
     .description(t('commands.repo.delete.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--archive-config', t('commands.repo.delete.archiveOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .option('--dry-run', t('options.dryRun'))
     .action(
       async (
         name: string,
-        options: { machine: string; debug?: boolean; skipRouterRestart?: boolean; dryRun?: boolean }
+        options: {
+          machine: string;
+          archiveConfig?: boolean;
+          debug?: boolean;
+          skipRouterRestart?: boolean;
+          dryRun?: boolean;
+        }
       ) => {
         try {
           await assertCommandPolicy(CMD.REPO_DELETE, name);
@@ -307,6 +318,7 @@ export function registerRepoCommands(program: Command): void {
                 repository: name,
                 machine: options.machine,
                 guid: repoConfig.repositoryGuid,
+                archiveConfig: !!options.archiveConfig,
               },
               getOutputFormat()
             );
@@ -329,11 +341,13 @@ export function registerRepoCommands(program: Command): void {
             // Remove per-repo SSH key from machine
             await removeRepoKeyFromMachine(name, options.machine);
 
-            await configService.archiveRepository(name);
-            outputService.info(t('commands.repo.delete.archived', { repository: name }));
-            outputService.info(
-              t('commands.repo.delete.restoreHint', { guid: repoConfig.repositoryGuid })
-            );
+            if (options.archiveConfig) {
+              await configService.archiveRepository(name);
+              outputService.info(t('commands.repo.delete.archived', { repository: name }));
+              outputService.info(
+                t('commands.repo.delete.restoreHint', { guid: repoConfig.repositoryGuid })
+              );
+            }
             outputService.success(t('commands.repo.delete.completed'));
           } else {
             renderLocalExecutionFailure(result, t('commands.repo.delete.failed'));
@@ -349,11 +363,11 @@ export function registerRepoCommands(program: Command): void {
   // repo up [name]
   repo
     .command('up [name]')
+    .summary(t('commands.repo.up.descriptionShort'))
     .description(t('commands.repo.up.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--mount', t('commands.repo.up.mountOption'))
     .option('--checkpoint', t('commands.repo.up.checkpointOption'))
-    .option('--grand <name>', t('commands.repo.up.grandOption'))
     .option('--include-forks', t('commands.repo.upAll.includeForksOption'))
     .option('--mount-only', t('commands.repo.upAll.mountOnlyOption'))
     .option('--parallel', t('commands.repo.upAll.parallelOption'))
@@ -369,7 +383,6 @@ export function registerRepoCommands(program: Command): void {
           machine: string;
           mount?: boolean;
           checkpoint?: boolean;
-          grand?: string;
           includeForks?: boolean;
           mountOnly?: boolean;
           parallel?: boolean;
@@ -395,10 +408,10 @@ export function registerRepoCommands(program: Command): void {
   // repo down [name]
   repo
     .command('down [name]')
+    .summary(t('commands.repo.down.descriptionShort'))
     .description(t('commands.repo.down.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--unmount', t('commands.repo.down.unmountOption'))
-    .option('--grand <name>', t('commands.repo.down.grandOption'))
     .option('-y, --yes', t('commands.repo.yesOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
@@ -409,7 +422,6 @@ export function registerRepoCommands(program: Command): void {
         options: {
           machine: string;
           unmount?: boolean;
-          grand?: string;
           yes?: boolean;
           debug?: boolean;
           skipRouterRestart?: boolean;
@@ -423,12 +435,6 @@ export function registerRepoCommands(program: Command): void {
 
             const params: Record<string, unknown> = {};
             if (options.unmount) params.unmount = true;
-
-            // Resolve grand repo friendly name → GUID
-            if (options.grand) {
-              const grandRepo = await configService.getRepository(options.grand);
-              params.grand = grandRepo?.repositoryGuid ?? options.grand;
-            }
 
             if (options.dryRun) {
               const repo = await configService.getRepository(name);
@@ -515,7 +521,38 @@ export function registerRepoCommands(program: Command): void {
           const guidMap = await loadGuidMap();
           const resolve = createGuidResolver(guidMap);
           const resolved = resolveGuids(repositories, resolve, 'name');
-          outputService.print(resolved, format);
+          if (format === 'table') {
+            const { parseRepoRef } = await import('../utils/config-schema.js');
+            // Build GUID → config lookup from config to determine fork/grand + tag
+            const repoConfigs = await configService.listRepositories().catch(() => []);
+            const configLookup = new Map<string, { grandGuid?: string; tag?: string }>();
+            for (const rc of repoConfigs) {
+              configLookup.set(rc.config.repositoryGuid, {
+                grandGuid: rc.config.grandGuid,
+                tag: rc.config.tag,
+              });
+            }
+            const compact = resolved.map((r) => {
+              const guid = (r.guid ?? r.name) as string;
+              const cfg = configLookup.get(guid);
+              const resolvedName = r.name as string;
+              const { name: baseName, tag: parsedTag } = parseRepoRef(resolvedName);
+              return {
+                name: baseName,
+                tag: cfg?.tag ?? parsedTag,
+                type: cfg?.grandGuid ? 'fork' : 'grand',
+                size: r.size_human,
+                mounted: r.mounted ? 'Yes' : 'No',
+                docker: r.docker_running ? 'Yes' : 'No',
+                containers: r.container_count,
+                services: r.service_count,
+                modified: r.modified_human,
+              };
+            });
+            outputService.print(compact, format);
+          } else {
+            outputService.print(resolved, format);
+          }
           outputService.success(t('commands.repo.list.completed'));
         } else {
           renderLocalExecutionFailure(
@@ -531,5 +568,4 @@ export function registerRepoCommands(program: Command): void {
   registerExtendedRepoCommands(repo);
   registerRepoBackupCommands(repo);
   registerRepoSyncCommands(repo);
-  registerRepoSnapshotCommands(repo);
 }

@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: tr
-sourceHash: "663392a3982ac81b"
+sourceHash: "9331a5f415a76278"
 ---
 
 # Mimari
@@ -73,7 +73,7 @@ Tüm adaptörler aynı CLI komutlarını kullanır. Adaptör yalnızca durumun n
 
 ## rediacc Kullanıcısı
 
-`rdc config setup-machine` komutunu çalıştırdığınızda, renet uzak sunucuda `rediacc` adında bir sistem kullanıcısı oluşturur:
+`rdc config machine setup` komutunu çalıştırdığınızda, renet uzak sunucuda `rediacc` adında bir sistem kullanıcısı oluşturur:
 
 - **UID**: 7111
 - **Kabuk**: `/sbin/nologin` (SSH ile giriş yapılamaz)

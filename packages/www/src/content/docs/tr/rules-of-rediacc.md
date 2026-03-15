@@ -4,7 +4,7 @@ description: "Rediacc platformunda uygulama geliştirmek için temel kurallar ve
 category: "Guides"
 order: 5
 language: tr
-sourceHash: "5b62710fe6281f9d"
+sourceHash: "9d81373c26d93457"
 sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 ---
 
@@ -103,7 +103,7 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 - **`repo up --mount --checkpoint`** konteynerleri checkpoint'ten geri yükler (temiz başlatma yok).
 - **TCP bağlantıları geri yüklemeden sonra geçersiz olur** — uygulamalar `ECONNRESET`'i işlemeli ve yeniden bağlanmalıdır.
 - **Docker deneysel modu** depo başına daemon'larda otomatik olarak etkinleştirilir.
-- **CRIU**, `rdc config setup-machine` sırasında kurulur.
+- **CRIU**, `rdc config machine setup` sırasında kurulur.
 - **`/etc/criu/runc.conf`** TCP bağlantı koruması için `tcp-established` ile yapılandırılır.
 - **Konteyner güvenlik ayarları renet tarafından otomatik enjekte edilir** — `renet compose` CRIU uyumluluğu için her konteynere otomatik olarak şunları ekler:
   - `cap_add`: `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` (çekirdek 5.9+ üzerinde CRIU için minimum set)

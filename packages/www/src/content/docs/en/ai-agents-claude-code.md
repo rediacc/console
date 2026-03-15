@@ -26,7 +26,7 @@ Place this at your project root. See the full [AGENTS.md template](/en/docs/agen
 ## CLI Tool: rdc
 
 ### Common Operations
-- Status: rdc machine info <machine> -o json
+- Status: rdc machine query <machine> -o json
 - Deploy: rdc repo up <repo> -m <machine> --yes
 - Containers: rdc machine containers <machine> -o json
 - Health: rdc machine health <machine> -o json
@@ -42,10 +42,10 @@ Place this at your project root. See the full [AGENTS.md template](/en/docs/agen
 
 Claude Code will request permission to run `rdc` commands. You can pre-authorize common operations by adding to your Claude Code settings:
 
-- Allow `rdc machine info *` — read-only status checks
+- Allow `rdc machine query *` — read-only status checks
 - Allow `rdc machine containers *` — container listing
 - Allow `rdc machine health *` — health checks
-- Allow `rdc config repositories` — repository listing
+- Allow `rdc config repository list` — repository listing
 
 For destructive operations (`rdc repo up`, `rdc repo delete`), Claude Code will always ask for confirmation unless you explicitly authorize them.
 
@@ -56,7 +56,7 @@ For destructive operations (`rdc repo up`, `rdc repo delete`), Claude Code will 
 ```
 You: "What's the status of prod-1?"
 
-Claude Code runs: rdc machine info prod-1 -o json
+Claude Code runs: rdc machine query prod-1 -o json
 → Shows machine status, repositories, containers, services
 ```
 

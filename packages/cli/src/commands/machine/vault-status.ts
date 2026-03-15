@@ -14,7 +14,7 @@ import { configService } from '../../services/config-resources.js';
 import { outputService } from '../../services/output.js';
 import type { OutputFormat } from '../../types/index.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
-import { createGuidResolver, resolveGuids, loadGuidMap } from '../../utils/guid-resolver.js';
+import { createGuidResolver, loadGuidMap, resolveGuids } from '../../utils/guid-resolver.js';
 import { withSpinner } from '../../utils/spinner.js';
 
 function displaySystemInfo(systemInfo: SystemInfo): void {

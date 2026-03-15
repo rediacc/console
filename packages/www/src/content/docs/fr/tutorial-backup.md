@@ -4,7 +4,7 @@ description: "Configurez des planifications de sauvegarde automatisées, gérez 
 category: "Tutorials"
 order: 6
 language: fr
-sourceHash: "26db200e730fff43"
+sourceHash: "14244f699c506ce9"
 ---
 
 # Comment configurer les sauvegardes et le réseau avec Rediacc
@@ -25,7 +25,7 @@ Les sauvegardes automatisées protègent vos dépôts, et le réseau d'infrastru
 Les fournisseurs de stockage (S3, B2, Google Drive, etc.) servent de destinations de sauvegarde. Vérifiez quels fournisseurs sont configurés.
 
 ```bash
-rdc config storages
+rdc config storage list
 ```
 
 Liste tous les fournisseurs de stockage configurés importés depuis les configurations rclone. Si vide, ajoutez d'abord un fournisseur de stockage — voir [Sauvegarde et restauration](/fr/docs/backup-restore).
@@ -62,7 +62,7 @@ Affiche la configuration de sauvegarde actuelle : destination, expression cron e
 Pour les services accessibles publiquement, la machine a besoin de son IP externe, du domaine de base et d'un e-mail de certificat pour Let's Encrypt TLS.
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com
@@ -75,7 +75,7 @@ Rediacc génère une configuration de proxy inverse Traefik à partir de ces par
 Si vos services nécessitent des ports non HTTP (par ex. SMTP, DNS), enregistrez-les comme points d'entrée Traefik.
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 ```
@@ -87,7 +87,7 @@ Ceci crée des points d'entrée Traefik (`tcp-25`, `udp-53`, etc.) que les servi
 Vérifiez la configuration complète de l'infrastructure.
 
 ```bash
-rdc config show-infra server-1
+rdc config infra show server-1
 ```
 
 Affiche les IPs publiques, le domaine, l'e-mail de certificat et tous les ports enregistrés.
@@ -109,10 +109,10 @@ La configuration est conservée et peut être réactivée ultérieurement avec `
 Le format cron est `minute hour day month weekday`. Planifications courantes : `0 2 * * *` (quotidien 2h), `0 */6 * * *` (toutes les 6 heures), `0 0 * * 0` (hebdomadaire dimanche minuit).
 
 **"Storage destination not found"**
-Le nom de destination doit correspondre à un fournisseur de stockage configuré. Exécutez `rdc config storages` pour voir les noms disponibles. Ajoutez de nouveaux fournisseurs via la configuration rclone.
+Le nom de destination doit correspondre à un fournisseur de stockage configuré. Exécutez `rdc config storage list` pour voir les noms disponibles. Ajoutez de nouveaux fournisseurs via la configuration rclone.
 
 **"Infrastructure config incomplete" lors du déploiement**
-Les trois champs sont requis : `--public-ipv4`, `--base-domain` et `--cert-email`. Exécutez `rdc config show-infra <machine>` pour vérifier les champs manquants.
+Les trois champs sont requis : `--public-ipv4`, `--base-domain` et `--cert-email`. Exécutez `rdc config infra show <machine>` pour vérifier les champs manquants.
 
 ## Étapes suivantes
 

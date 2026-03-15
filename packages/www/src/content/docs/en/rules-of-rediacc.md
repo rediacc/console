@@ -101,7 +101,7 @@ Renet auto-injects these into every container:
 - **`repo up --mount --checkpoint`** restores containers from checkpoint (no fresh start).
 - **TCP connections become stale after restore** — apps must handle `ECONNRESET` and reconnect.
 - **Docker experimental mode** is enabled automatically on per-repo daemons.
-- **CRIU is installed** during `rdc config setup-machine`.
+- **CRIU is installed** during `rdc config machine setup`.
 - **`/etc/criu/runc.conf`** is configured with `tcp-established` for TCP connection preservation.
 - **Container security settings are auto-injected by renet** — `renet compose` automatically adds the following to every container for CRIU compatibility:
   - `cap_add`: `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` (minimal set for CRIU on kernel 5.9+)

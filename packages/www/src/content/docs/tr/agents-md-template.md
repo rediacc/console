@@ -4,7 +4,7 @@ description: Claude Code, Cursor ve diğer AI kodlama asistanlarını Rediacc al
 category: Reference
 order: 50
 language: tr
-sourceHash: "872e8796671470d0"
+sourceHash: "7cf4d73659b76ee7"
 ---
 
 Bu şablonu, AI kodlama asistanlarını (Claude Code, Cursor, Cline, Windsurf) otonom Rediacc altyapı yönetimi için yapılandırmak üzere kullanın. Aşağıdaki bloğu projenizin `CLAUDE.md`, `.cursorrules` veya eşdeğer ajan yapılandırma dosyasına kopyalayın.
@@ -36,7 +36,7 @@ On error: {"success": false, "command": "...", "data": null, "errors": [{"code":
 ### Common Operations
 
 # Machine status
-rdc machine info <machine> -o json
+rdc machine query <machine> -o json
 
 # List containers on a machine
 rdc machine containers <machine> -o json
@@ -67,7 +67,7 @@ rdc repo sync download -m <machine> -r <repo> -l ./local-path
 rdc agent capabilities
 
 # Show schema for a specific command
-rdc agent schema "machine info"
+rdc agent schema "machine query"
 
 ### Architecture
 - **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
@@ -85,16 +85,16 @@ rdc agent schema "machine info"
 
 ## Özelleştirme
 
-`<machine>` ve `<repo>` ifadelerini gerçek makine ve depo adlarınızla değiştirin. Mevcut depoları ad-GUID eşlemesiyle listelemek için `rdc config repositories` komutunu çalıştırın.
+`<machine>` ve `<repo>` ifadelerini gerçek makine ve depo adlarınızla değiştirin. Mevcut depoları ad-GUID eşlemesiyle listelemek için `rdc config repository list` komutunu çalıştırın.
 
 ### Kurulumunuzu Keşfetme
 
 ```bash
 # List configured machines
-rdc machine info <machine-name>
+rdc machine query <machine-name>
 
 # List repositories with GUIDs
-rdc config repositories
+rdc config repository list
 
 # Check what commands are available
 rdc agent capabilities

@@ -7,6 +7,7 @@ import { VERSION } from '../version.js';
 interface CommandCapability {
   name: string;
   description: string;
+  summary?: string;
   arguments: { name: string; required: boolean }[];
   options: { flags: string; description: string; default?: unknown }[];
   domain?: string;
@@ -48,6 +49,7 @@ function walkCommands(cmd: Command, prefix = ''): CommandCapability[] {
       results.push({
         name,
         description: sub.description(),
+        ...(sub.summary() && { summary: sub.summary() }),
         arguments: args,
         options,
         ...(def && {

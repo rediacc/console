@@ -40,7 +40,7 @@ function getGuidance(error: CliError): string | undefined {
     [EXIT_CODES.AUTH_REQUIRED]: 'Run "rdc auth login" to authenticate',
     [EXIT_CODES.PERMISSION_DENIED]: 'Check team permissions or contact admin',
     [EXIT_CODES.NOT_FOUND]:
-      'Verify the resource name with "rdc machine info" or "rdc config repositories"',
+      'Verify the resource name with "rdc machine query" or "rdc config repositories"',
     [EXIT_CODES.NETWORK_ERROR]: 'Check network connectivity and retry',
     [EXIT_CODES.RATE_LIMITED]: 'Wait and retry after a brief delay',
     [EXIT_CODES.PAYMENT_REQUIRED]: 'Upgrade subscription or check usage limits',

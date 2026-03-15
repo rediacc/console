@@ -4,7 +4,7 @@ description: 了解 account、rdc 和 renet 如何处理机器槽位、仓库许
 category: Guides
 order: 7
 language: zh
-sourceHash: "e7a65f722fbb1093"
+sourceHash: "41f6d86e9f637b47"
 ---
 
 # 订阅与许可
@@ -161,13 +161,13 @@ rdc subscription status
 显示一台机器的机器激活详情：
 
 ```bash
-rdc subscription activation-status -m hostinger
+rdc subscription activation status -m hostinger
 ```
 
 显示一台机器上已安装的仓库许可证详情：
 
 ```bash
-rdc subscription repo-status -m hostinger
+rdc subscription repo status -m hostinger
 ```
 
 刷新机器激活并批量刷新仓库许可证：
@@ -181,7 +181,7 @@ rdc subscription refresh -m hostinger
 强制刷新现有仓库的仓库许可证：
 
 ```bash
-rdc subscription refresh-repo my-app -m hostinger
+rdc subscription refresh repo my-app -m hostinger
 ```
 
 首次使用时，找不到可用仓库许可证的已授权仓库或备份操作可以自动触发账户授权移交。CLI 打印授权 URL，尝试在交互式终端中打开浏览器，并在授权和发放成功后重试一次操作。
@@ -232,4 +232,4 @@ rdc subscription refresh-repo my-app -m hostinger
 - 失败的发放尝试
 - 在发放前被拒绝的未追踪仓库
 
-如果您需要面向客户的使用情况和近期仓库许可证发放历史视图，请使用账户门户。如果您需要机器端检查，请使用 `rdc subscription activation-status -m` 和 `rdc subscription repo-status -m`。
+如果您需要面向客户的使用情况和近期仓库许可证发放历史视图，请使用账户门户。如果您需要机器端检查，请使用 `rdc subscription activation status -m` 和 `rdc subscription repo status -m`。

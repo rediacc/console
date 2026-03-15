@@ -4,7 +4,7 @@ description: فهم كيفية تعامل الحساب وrdc وrenet مع فتح
 category: Guides
 order: 7
 language: ar
-sourceHash: "e7a65f722fbb1093"
+sourceHash: "41f6d86e9f637b47"
 ---
 
 # الاشتراك والترخيص
@@ -161,13 +161,13 @@ rdc subscription status
 عرض تفاصيل تفعيل الجهاز لجهاز واحد:
 
 ```bash
-rdc subscription activation-status -m hostinger
+rdc subscription activation status -m hostinger
 ```
 
 عرض تفاصيل ترخيص المستودع المثبت على جهاز واحد:
 
 ```bash
-rdc subscription repo-status -m hostinger
+rdc subscription repo status -m hostinger
 ```
 
 تجديد تفعيل الجهاز وتجديد تراخيص المستودع دفعةً واحدة:
@@ -181,7 +181,7 @@ rdc subscription refresh -m hostinger
 إجبار تجديد ترخيص مستودع لمستودع موجود:
 
 ```bash
-rdc subscription refresh-repo my-app -m hostinger
+rdc subscription refresh repo my-app -m hostinger
 ```
 
 عند الاستخدام الأول، يمكن لعملية مستودع أو نسخ احتياطي مرخّصة لا تجد ترخيص مستودع قابلاً للاستخدام أن تُطلق تفويضاً تلقائياً من الحساب. يطبع CLI عنوان URL للتفويض، ويحاول فتح المتصفح في المحطات التفاعلية، ويُعيد المحاولة مرةً واحدة بعد نجاح التفويض والإصدار.
@@ -232,4 +232,4 @@ rdc subscription refresh-repo my-app -m hostinger
 - محاولات الإصدار الفاشلة
 - المستودعات غير المتتبعة المرفوضة قبل الإصدار
 
-إذا كنت بحاجة إلى عرض الاستخدام وسجل إصدار ترخيص المستودع الأخير للعملاء، استخدم بوابة الحساب. وإذا كنت بحاجة إلى فحص من جانب الجهاز، استخدم `rdc subscription activation-status -m` و`rdc subscription repo-status -m`.
+إذا كنت بحاجة إلى عرض الاستخدام وسجل إصدار ترخيص المستودع الأخير للعملاء، استخدم بوابة الحساب. وإذا كنت بحاجة إلى فحص من جانب الجهاز، استخدم `rdc subscription activation status -m` و`rdc subscription repo status -m`.

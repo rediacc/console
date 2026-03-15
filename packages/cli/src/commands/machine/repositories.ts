@@ -1,5 +1,5 @@
-import { parseListResult } from '@rediacc/shared/services/machine';
 import { getContainers, getServices } from '@rediacc/shared/queue-vault/data/list-types.generated';
+import { parseListResult } from '@rediacc/shared/services/machine';
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { getStateProvider } from '../../providers/index.js';
@@ -15,6 +15,7 @@ import { withSpinner } from '../../utils/spinner.js';
 export function registerRepositoriesCommand(machine: Command, program: Command): void {
   machine
     .command('repos <name>')
+    .summary(t('commands.machine.repos.descriptionShort'))
     .description(t('commands.machine.repos.description'))
     .option('-t, --team <name>', t('options.team'))
     .option('--search <text>', t('options.searchRepos'))

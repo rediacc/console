@@ -4,7 +4,7 @@ description: Erfahren Sie, wie Account, rdc und renet Maschinenplätze, Repo-Liz
 category: Guides
 order: 7
 language: de
-sourceHash: "e7a65f722fbb1093"
+sourceHash: "41f6d86e9f637b47"
 ---
 
 # Abonnement & Lizenzierung
@@ -161,13 +161,13 @@ rdc subscription status
 Maschinenaktivierungsdetails für eine Maschine anzeigen:
 
 ```bash
-rdc subscription activation-status -m hostinger
+rdc subscription activation status -m hostinger
 ```
 
 Installierte Repo-Lizenz-Details auf einer Maschine anzeigen:
 
 ```bash
-rdc subscription repo-status -m hostinger
+rdc subscription repo status -m hostinger
 ```
 
 Maschinenaktivierung aktualisieren und Repo-Lizenzen im Batch aktualisieren:
@@ -181,7 +181,7 @@ Repositories, die auf der Maschine entdeckt wurden, aber in der lokalen `rdc`-Ko
 Repo-Lizenz-Aktualisierung für ein vorhandenes Repository erzwingen:
 
 ```bash
-rdc subscription refresh-repo my-app -m hostinger
+rdc subscription refresh repo my-app -m hostinger
 ```
 
 Bei der ersten Verwendung kann eine lizenzierte Repo- oder Backup-Operation, die keine verwendbare Repo-Lizenz findet, automatisch eine Konto-Autorisierungs-Übergabe auslösen. Die CLI gibt eine Autorisierungs-URL aus, versucht den Browser in interaktiven Terminals zu öffnen, und wiederholt die Operation einmal nach erfolgreicher Autorisierung und Ausstellung.
@@ -232,4 +232,4 @@ Nicht dazu gehören:
 - Fehlgeschlagene Ausstellungsversuche
 - Nicht verfolgte Repositories, die vor der Ausstellung abgelehnt wurden
 
-Wenn Sie eine kundenseitige Ansicht der Nutzung und des letzten Repo-Lizenz-Ausstellungsverlaufs benötigen, verwenden Sie das Account-Portal. Wenn Sie maschinenseitige Inspektion benötigen, verwenden Sie `rdc subscription activation-status -m` und `rdc subscription repo-status -m`.
+Wenn Sie eine kundenseitige Ansicht der Nutzung und des letzten Repo-Lizenz-Ausstellungsverlaufs benötigen, verwenden Sie das Account-Portal. Wenn Sie maschinenseitige Inspektion benötigen, verwenden Sie `rdc subscription activation status -m` und `rdc subscription repo status -m`.

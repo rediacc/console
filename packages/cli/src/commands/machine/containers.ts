@@ -81,6 +81,7 @@ function formatContainersForTable(
 export function registerContainersCommand(machine: Command, program: Command): void {
   machine
     .command('containers <name>')
+    .summary(t('commands.machine.containers.descriptionShort'))
     .description(t('commands.machine.containers.description'))
     .option('-t, --team <name>', t('options.team'))
     .option('--health-check', t('commands.machine.containers.healthCheck'))

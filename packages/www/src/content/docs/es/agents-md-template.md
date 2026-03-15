@@ -4,7 +4,7 @@ description: Plantilla lista para copiar y pegar que permite configurar Claude C
 category: Reference
 order: 50
 language: es
-sourceHash: "872e8796671470d0"
+sourceHash: "7cf4d73659b76ee7"
 ---
 
 Utilice esta plantilla para configurar asistentes de programación con IA (Claude Code, Cursor, Cline, Windsurf) para la gestión autónoma de infraestructura Rediacc. Copie el bloque siguiente en el archivo `CLAUDE.md`, `.cursorrules` o el archivo de configuración de agente equivalente de su proyecto.
@@ -36,7 +36,7 @@ On error: {"success": false, "command": "...", "data": null, "errors": [{"code":
 ### Common Operations
 
 # Machine status
-rdc machine info <machine> -o json
+rdc machine query <machine> -o json
 
 # List containers on a machine
 rdc machine containers <machine> -o json
@@ -67,7 +67,7 @@ rdc repo sync download -m <machine> -r <repo> -l ./local-path
 rdc agent capabilities
 
 # Show schema for a specific command
-rdc agent schema "machine info"
+rdc agent schema "machine query"
 
 ### Architecture
 - **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
@@ -85,16 +85,16 @@ rdc agent schema "machine info"
 
 ## Personalización
 
-Reemplace `<machine>` y `<repo>` con los nombres reales de su máquina y repositorio. Ejecute `rdc config repositories` para listar los repositorios disponibles con su mapeo de nombre a GUID.
+Reemplace `<machine>` y `<repo>` con los nombres reales de su máquina y repositorio. Ejecute `rdc config repository list` para listar los repositorios disponibles con su mapeo de nombre a GUID.
 
 ### Descubrir su configuración
 
 ```bash
 # List configured machines
-rdc machine info <machine-name>
+rdc machine query <machine-name>
 
 # List repositories with GUIDs
-rdc config repositories
+rdc config repository list
 
 # Check what commands are available
 rdc agent capabilities

@@ -4,7 +4,7 @@ description: Понять, как account, rdc и renet обрабатывают
 category: Guides
 order: 7
 language: ru
-sourceHash: "e7a65f722fbb1093"
+sourceHash: "41f6d86e9f637b47"
 ---
 
 # Подписка и лицензирование
@@ -161,13 +161,13 @@ rdc subscription status
 Показать детали активации машины для одной машины:
 
 ```bash
-rdc subscription activation-status -m hostinger
+rdc subscription activation status -m hostinger
 ```
 
 Показать установленные детали лицензии репозитория на одной машине:
 
 ```bash
-rdc subscription repo-status -m hostinger
+rdc subscription repo status -m hostinger
 ```
 
 Обновить активацию машины и пакетно обновить лицензии репозитория:
@@ -181,7 +181,7 @@ rdc subscription refresh -m hostinger
 Принудительно обновить лицензию репозитория для существующего репозитория:
 
 ```bash
-rdc subscription refresh-repo my-app -m hostinger
+rdc subscription refresh repo my-app -m hostinger
 ```
 
 При первом использовании лицензированная операция с репозиторием или резервным копированием, которая не находит пригодной лицензии репозитория, может автоматически инициировать передачу авторизации аккаунта. CLI печатает URL авторизации, пытается открыть браузер в интерактивных терминалах и повторяет операцию один раз после успешной авторизации и выдачи.
@@ -232,4 +232,4 @@ rdc subscription refresh-repo my-app -m hostinger
 - неудавшиеся попытки выдачи
 - неотслеживаемые репозитории, отклонённые до выдачи
 
-Если вам нужен клиентский просмотр использования и истории выдачи лицензий репозитория, используйте портал аккаунта. Если вам нужна инспекция на стороне машины, используйте `rdc subscription activation-status -m` и `rdc subscription repo-status -m`.
+Если вам нужен клиентский просмотр использования и истории выдачи лицензий репозитория, используйте портал аккаунта. Если вам нужна инспекция на стороне машины, используйте `rdc subscription activation status -m` и `rdc subscription repo status -m`.

@@ -4,7 +4,7 @@ description: Model Context Protocol (MCP) sunucusunu kullanarak yapay zeka ajanl
 category: Guides
 order: 33
 language: tr
-sourceHash: "51c5a7f855ead072"
+sourceHash: "ac1ed364eb890583"
 sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 ---
 
@@ -56,7 +56,7 @@ Ayarlar → MCP Sunucuları → Sunucu Ekle yolunu izleyin:
 
 | Araç | Açıklama |
 |------|----------|
-| `machine_info` | Get system info, containers, services, and resource usage for a machine |
+| `machine_query` | Get system info, containers, services, and resource usage for a machine |
 | `machine_containers` | List Docker containers with status, health, resource usage, labels, and auto-route domain |
 | `machine_services` | List rediacc-managed systemd services (name, state, sub-state, restart count, memory, owning repository) |
 | `machine_repos` | List deployed repositories (name, GUID, size, mount status, Docker state, container count, disk usage, modified date, Rediaccfile present) |
@@ -89,7 +89,7 @@ Ayarlar → MCP Sunucuları → Sunucu Ekle yolunu izleyin:
 **Makine durumunu kontrol etme:**
 > "Üretim makinemin durumu nedir?"
 
-Ajan `machine_info` aracını çağırır → sistem bilgisi, çalışan konteynerler, servisler ve kaynak kullanımını döndürür.
+Ajan `machine_query` aracını çağırır → sistem bilgisi, çalışan konteynerler, servisler ve kaynak kullanımını döndürür.
 
 **Uygulama dağıtma:**
 > "Gitlab'ı hazırlık makineme dağıt"

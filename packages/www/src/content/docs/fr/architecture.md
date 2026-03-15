@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: fr
-sourceHash: "663392a3982ac81b"
+sourceHash: "9331a5f415a76278"
 ---
 
 # Architecture
@@ -73,7 +73,7 @@ Tous les adaptateurs utilisent les mêmes commandes CLI. L'adaptateur n'affecte 
 
 ## L'utilisateur rediacc
 
-Lorsque vous exécutez `rdc config setup-machine`, renet crée un utilisateur système appelé `rediacc` sur le serveur distant :
+Lorsque vous exécutez `rdc config machine setup`, renet crée un utilisateur système appelé `rediacc` sur le serveur distant :
 
 - **UID** : 7111
 - **Shell** : `/sbin/nologin` (ne peut pas se connecter via SSH)

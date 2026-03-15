@@ -1045,7 +1045,7 @@ ACCOUNT COMMANDS:
   account test             Run account integration tests (vitest)
   account test e2e [opts]  Run account E2E tests (playwright, with Stripe wiring)
   account stop             Stop account Docker containers
-  account setup            Generate .env + start infrastructure
+  account reset            Reset .env + database and regenerate
 
 PROVISION COMMANDS:
   provision start            Provision KVM VMs (bridge + workers)
@@ -1231,11 +1231,11 @@ main() {
                     esac
                     ;;
                 stop) account_stop ;;
-                setup) account_setup ;;
+                reset) account_reset ;;
                 *)
                     log_error "Unknown account command: ${1:-}"
                     echo ""
-                    echo "Usage: ./run.sh account [dev|test|stop|setup]"
+                    echo "Usage: ./run.sh account [dev|test|stop|reset]"
                     exit 1
                     ;;
             esac

@@ -4,7 +4,7 @@ description: "Create, manage, and operate LUKS-encrypted repositories on remote 
 category: "Guides"
 order: 4
 language: en
-sourceHash: "8e778715b28247a9"
+sourceHash: "06b8912e9b65b720"
 ---
 
 # Repositories
@@ -76,10 +76,10 @@ rdc repo expand my-app -m server-1 --size 5G      # Add 5G to current size
 Create a copy of an existing repository at its current state:
 
 ```bash
-rdc repo fork my-app -m server-1 --tag my-app-staging
+rdc repo fork my-app staging -m server-1
 ```
 
-This creates a new encrypted copy with its own GUID and network ID. The fork shares the same LUKS credential as the parent.
+Forks use the name:tag model: the resulting fork is named `my-app:staging`. This creates a new encrypted copy with its own GUID and network ID, while sharing the parent's name. The fork shares the same LUKS credential as the parent.
 
 ## Validate
 
@@ -130,3 +130,17 @@ rdc repo delete my-app -m server-1
 ```
 
 > This permanently destroys the encrypted disk image. This action cannot be undone.
+
+## Prune
+
+After deleting repositories or recovering from failed operations, orphaned mount directories, lock files, and immovable markers may remain. Prune removes these safely:
+
+```bash
+# Preview what would be removed
+rdc machine prune server-1 --dry-run
+
+# Remove orphaned resources
+rdc machine prune server-1
+```
+
+Only resources with no matching repository image are affected. Non-empty mount directories are never removed.

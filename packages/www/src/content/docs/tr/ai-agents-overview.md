@@ -4,7 +4,7 @@ description: Claude Code, Cursor ve Cline gibi AI kodlama asistanlarının otono
 category: Guides
 order: 30
 language: tr
-sourceHash: "3374e0f154375ffb"
+sourceHash: "2d8ab92216666d0e"
 ---
 
 AI kodlama asistanları, `rdc` CLI aracılığıyla Rediacc altyapısını otonom olarak yönetebilir. Bu kılavuz entegrasyon yaklaşımlarını ve nasıl başlayacağınızı kapsar.
@@ -38,7 +38,7 @@ Ajanlar `rdc`'yi bir alt kabukta çağırdığında, çıktı otomatik olarak JS
 ```json
 {
   "success": true,
-  "command": "machine info",
+  "command": "machine query",
   "data": { ... },
   "errors": null,
   "warnings": [],
@@ -55,7 +55,7 @@ Hata yanıtları `retryable` ve `guidance` alanlarını içerir:
     "code": "NOT_FOUND",
     "message": "Machine \"prod-2\" not found",
     "retryable": false,
-    "guidance": "Verify the resource name with \"rdc machine info\" or \"rdc config repositories\""
+    "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
   }]
 }
 ```
@@ -69,10 +69,10 @@ Hata yanıtları `retryable` ve `guidance` alanlarını içerir:
 rdc agent capabilities
 
 # Show detailed schema for a specific command
-rdc agent schema "machine info"
+rdc agent schema "machine query"
 
 # Execute a command with JSON stdin
-echo '{"name": "prod-1"}' | rdc agent exec "machine info"
+echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 ```
 
 ## Ajanlar İçin Temel Bayraklar

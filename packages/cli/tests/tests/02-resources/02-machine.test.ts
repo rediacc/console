@@ -37,15 +37,6 @@ test.describe('Machine Commands @cli @resources', () => {
     });
   });
 
-  test.describe('machine status', () => {
-    test('should show machine status for a team', async () => {
-      const result = await runner.run(['machine', 'status', '--team', teamName]);
-
-      // Machine status may fail if no machines exist or require region
-      expect(result.success || result.stderr.includes('required')).toBe(true);
-    });
-  });
-
   test.describe('machine inspect', () => {
     test('should inspect a machine', async () => {
       const listResult = await runner.machineList(teamName);

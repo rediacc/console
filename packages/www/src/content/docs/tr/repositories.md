@@ -4,7 +4,7 @@ description: 'Uzak makinelerde LUKS ile şifrelenmiş depoları oluşturma, yön
 category: Guides
 order: 4
 language: tr
-sourceHash: "8e778715b28247a9"
+sourceHash: "06b8912e9b65b720"
 ---
 
 # Depolar
@@ -76,10 +76,10 @@ rdc repo expand my-app -m server-1 --size 5G      # Mevcut boyuta 5G ekle
 Mevcut bir deponun güncel durumunun bir kopyasını oluşturun:
 
 ```bash
-rdc repo fork my-app -m server-1 --tag my-app-staging
+rdc repo fork my-app staging -m server-1
 ```
 
-Bu, kendi GUID'i ve ağ kimliğine sahip yeni bir şifrelenmiş kopya oluşturur. Çatal (fork), üst depo ile aynı LUKS kimlik bilgisini paylaşır.
+Çatallar name:tag modelini kullanır: ortaya çıkan çatal `my-app:staging` olarak adlandırılır. Bu, kendi GUID'i ve ağ kimliğine sahip yeni bir şifrelenmiş kopya oluşturur ve üst deponun adını paylaşır. Çatal (fork), üst depo ile aynı LUKS kimlik bilgisini paylaşır.
 
 ## Doğrulama
 

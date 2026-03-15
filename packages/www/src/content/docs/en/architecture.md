@@ -72,7 +72,7 @@ All adapters use the same CLI commands. The adapter only affects where state is 
 
 ## The rediacc User
 
-When you run `rdc config setup-machine`, renet creates a system user called `rediacc` on the remote server:
+When you run `rdc config machine setup`, renet creates a system user called `rediacc` on the remote server:
 
 - **UID**: 7111
 - **Shell**: `/sbin/nologin` (cannot log in via SSH)

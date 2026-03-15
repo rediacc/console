@@ -4,7 +4,7 @@ description: rdc CLI JSON 输出格式、信封模式、错误处理和代理发
 category: Reference
 order: 51
 language: zh
-sourceHash: "a516c49fdaf9a901"
+sourceHash: "49cfcc5e2e4621a9"
 ---
 
 所有 `rdc` 命令都支持结构化 JSON 输出，供 AI 代理和脚本进行程序化消费。
@@ -14,8 +14,8 @@ sourceHash: "a516c49fdaf9a901"
 ### 显式标志
 
 ```bash
-rdc machine info prod-1 --output json
-rdc machine info prod-1 -o json
+rdc machine query prod-1 --output json
+rdc machine query prod-1 -o json
 ```
 
 ### 自动检测
@@ -24,8 +24,8 @@ rdc machine info prod-1 -o json
 
 ```bash
 # These all produce JSON automatically
-result=$(rdc machine info prod-1)
-echo '{}' | rdc agent exec "machine info"
+result=$(rdc machine query prod-1)
+echo '{}' | rdc agent exec "machine query"
 ```
 
 ## JSON 信封
@@ -35,7 +35,7 @@ echo '{}' | rdc agent exec "machine info"
 ```json
 {
   "success": true,
-  "command": "machine info",
+  "command": "machine query",
   "data": {
     "name": "prod-1",
     "status": "running",
@@ -52,7 +52,7 @@ echo '{}' | rdc agent exec "machine info"
 | 字段 | 类型 | 描述 |
 |-------|------|-------------|
 | `success` | `boolean` | 命令是否成功完成 |
-| `command` | `string` | 完整命令路径（例如 `"machine info"`、`"repo up"`） |
+| `command` | `string` | 完整命令路径（例如 `"machine query"`、`"repo up"`） |
 | `data` | `object \| array \| null` | 成功时的命令特定数据，错误时为 `null` |
 | `errors` | `array \| null` | 失败时的错误对象，成功时为 `null` |
 | `warnings` | `string[]` | 执行期间收集的非致命警告 |
@@ -65,14 +65,14 @@ echo '{}' | rdc agent exec "machine info"
 ```json
 {
   "success": false,
-  "command": "machine info",
+  "command": "machine query",
   "data": null,
   "errors": [
     {
       "code": "NOT_FOUND",
       "message": "Machine \"prod-2\" not found",
       "retryable": false,
-      "guidance": "Verify the resource name with \"rdc machine info\" or \"rdc config repositories\""
+      "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
     }
   ],
   "warnings": [],
@@ -157,7 +157,7 @@ rdc agent capabilities
     "version": "1.0.0",
     "commands": [
       {
-        "name": "machine info",
+        "name": "machine query",
         "description": "Show machine status",
         "arguments": [
           { "name": "machine", "description": "Machine name", "required": true }
@@ -174,7 +174,7 @@ rdc agent capabilities
 ### 获取命令模式
 
 ```bash
-rdc agent schema "machine info"
+rdc agent schema "machine query"
 ```
 
 返回单个命令的详细模式，包括所有参数和选项的类型和默认值。
@@ -182,7 +182,7 @@ rdc agent schema "machine info"
 ### 通过 JSON 执行
 
 ```bash
-echo '{"machine": "prod-1"}' | rdc agent exec "machine info"
+echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
 ```
 
 通过 stdin 接受 JSON，将键映射到命令参数和选项，并强制以 JSON 输出执行。适用于无需构建 shell 命令字符串的结构化代理到 CLI 通信。
@@ -192,7 +192,7 @@ echo '{"machine": "prod-1"}' | rdc agent exec "machine info"
 ### Shell (jq)
 
 ```bash
-status=$(rdc machine info prod-1 -o json | jq -r '.data.status')
+status=$(rdc machine query prod-1 -o json | jq -r '.data.status')
 ```
 
 ### Python
@@ -201,7 +201,7 @@ status=$(rdc machine info prod-1 -o json | jq -r '.data.status')
 import subprocess, json
 
 result = subprocess.run(
-    ["rdc", "machine", "info", "prod-1", "-o", "json"],
+    ["rdc", "machine", "query", "prod-1", "-o", "json"],
     capture_output=True, text=True
 )
 envelope = json.loads(result.stdout)
@@ -223,7 +223,7 @@ else:
 ```javascript
 import { execFileSync } from 'child_process';
 
-const raw = execFileSync('rdc', ['machine', 'info', 'prod-1', '-o', 'json'], { encoding: 'utf-8' });
+const raw = execFileSync('rdc', ['machine', 'query', 'prod-1', '-o', 'json'], { encoding: 'utf-8' });
 const { success, data, errors } = JSON.parse(raw);
 
 if (!success) {

@@ -48,7 +48,7 @@ async function executeFunction(
   program?: Command
 ): Promise<void> {
   const provider = await getStateProvider();
-  const machineName = options.machine ?? (await configService.getMachine());
+  const machineName = options.machine;
 
   if (!machineName) {
     throw new ValidationError(t('errors.machineRequiredLocal'));
@@ -154,8 +154,7 @@ async function autoProvisionTarget(options: Record<string, unknown>): Promise<vo
   if (exists) return;
 
   // Inherit infra config from source machine
-  const sourceMachineName =
-    (options.machine as string | undefined) ?? (await configService.getMachine());
+  const sourceMachineName = options.machine as string | undefined;
   let sourceInfra: import('../types/index.js').InfraConfig | undefined;
   if (sourceMachineName) {
     try {
@@ -181,7 +180,7 @@ async function pushSingleRepo(
   options: Record<string, unknown>,
   repoCommand: Command
 ): Promise<void> {
-  await assertCommandPolicy(CMD.BACKUP_PUSH, repo);
+  await assertCommandPolicy(CMD.REPO_PUSH, repo);
   const repoConfig = await configService.getRepository(repo);
   if (!repoConfig) {
     throw new ValidationError(t('errors.repositoryNotFound', { name: repo }));
@@ -208,8 +207,32 @@ async function pushSingleRepo(
     throw new ValidationError(t('commands.repo.push.destRequired'));
   }
 
+  // Auto-resolve CoW seed from lineage (parent first, then grand)
+  const seeds = [repoConfig.parentGuid, repoConfig.grandGuid].filter((g): g is string => !!g);
+  const uniqueSeeds = [...new Set(seeds)];
+  if (uniqueSeeds.length > 0) {
+    params.seed = uniqueSeeds.join(',');
+  }
+
   outputService.info(t('commands.repo.push.pushing', { repo, dest }));
   await executeFunction('backup_push', params, options as BackupRunOptions, repoCommand);
+
+  // Post-push: mount + deploy on target machine
+  if (options.up && options.toMachine) {
+    outputService.info(t('commands.repo.push.deploying', { repo, machine: options.toMachine as string }));
+    await deployRepoKeyIfNeeded(repo, options.toMachine as string);
+    const upResult = await localExecutorService.execute({
+      functionName: 'repository_up',
+      machineName: options.toMachine as string,
+      params: { repository: repo, mount: true },
+      debug: options.debug as boolean | undefined,
+    });
+    if (upResult.success) {
+      outputService.success(t('commands.repo.push.deployed', { repo, machine: options.toMachine as string }));
+    } else {
+      renderLocalExecutionFailure(upResult, t('commands.repo.push.deployFailed', { repo }));
+    }
+  }
 }
 
 /**
@@ -220,7 +243,7 @@ async function pullSingleRepo(
   options: Record<string, unknown>,
   repoCommand: Command
 ): Promise<void> {
-  await assertCommandPolicy(CMD.BACKUP_PULL, repo);
+  await assertCommandPolicy(CMD.REPO_PULL, repo);
   const params: Record<string, unknown> = { repository: repo };
 
   if (options.from) {
@@ -235,8 +258,17 @@ async function pullSingleRepo(
 
   if (options.force) params.force = true;
 
-  const targetMachine =
-    (options.machine as string | undefined) ?? (await configService.getMachine());
+  // Auto-resolve CoW seed from lineage (parent first, then grand)
+  const repoConfig = await configService.getRepository(repo);
+  if (repoConfig) {
+    const seeds = [repoConfig.parentGuid, repoConfig.grandGuid].filter((g): g is string => !!g);
+    const uniqueSeeds = [...new Set(seeds)];
+    if (uniqueSeeds.length > 0) {
+      params.seed = uniqueSeeds.join(',');
+    }
+  }
+
+  const targetMachine = options.machine as string | undefined;
   if (targetMachine) {
     await deployRepoKeyIfNeeded(repo, targetMachine);
   }
@@ -255,6 +287,7 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
   // repo push [repo]
   repoCommand
     .command('push [repo]')
+    .summary(t('commands.repo.push.descriptionShort'))
     .description(t('commands.repo.push.description'))
     .option('--dest <filename>', t('commands.repo.push.optionDest'))
     .option('--to <storage>', t('commands.repo.push.optionToStorage'))
@@ -262,8 +295,9 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .option('--provider <name>', t('commands.repo.push.optionProvider'))
     .option('--checkpoint', t('commands.repo.push.optionCheckpoint'))
     .option('--force', t('commands.repo.push.optionForce'))
+    .option('--up', t('commands.repo.push.optionUp'))
     .option('--tag <tag>', t('commands.repo.push.optionTag'))
-    .option('-m, --machine <name>', t('options.machine'))
+    .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('-w, --watch', t('options.watch'))
     .option('--parallel', t('commands.repo.upAll.parallelOption'))
     .option('--concurrency <n>', t('commands.repo.upAll.concurrencyOption'), '3')
@@ -277,7 +311,7 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
         } else {
           await runBatchOperation(
             'Push',
-            options.machine ?? 'default',
+            options.machine,
             !!options.yes,
             (name) => pushSingleRepo(name, options, repoCommand),
             options
@@ -291,11 +325,12 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
   // repo pull [repo]
   repoCommand
     .command('pull [repo]')
+    .summary(t('commands.repo.pull.descriptionShort'))
     .description(t('commands.repo.pull.description'))
     .option('--from <storage>', t('commands.repo.pull.optionFromStorage'))
     .option('--from-machine <machine>', t('commands.repo.pull.optionFromMachine'))
     .option('--force', t('commands.repo.pull.optionForce'))
-    .option('-m, --machine <name>', t('options.machine'))
+    .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('-w, --watch', t('options.watch'))
     .option('--parallel', t('commands.repo.upAll.parallelOption'))
     .option('--concurrency <n>', t('commands.repo.upAll.concurrencyOption'), '3')
@@ -309,7 +344,7 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
         } else {
           await runBatchOperation(
             'Pull',
-            options.machine ?? 'default',
+            options.machine,
             !!options.yes,
             (name) => pullSingleRepo(name, options, repoCommand),
             options
@@ -320,13 +355,15 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
       }
     });
 
-  // repo list-backups
-  repoCommand
-    .command('list-backups')
-    .description(t('commands.repo.listBackups.description'))
-    .option('--from <storage>', t('commands.repo.listBackups.optionFromStorage'))
-    .option('--from-machine <machine>', t('commands.repo.listBackups.optionFromMachine'))
-    .option('-m, --machine <name>', t('options.machine'))
+  // repo backup (subgroup)
+  const backup = repoCommand.command('backup').description(t('commands.repo.backup.description'));
+
+  backup
+    .command('list')
+    .description(t('commands.repo.backup.list.description'))
+    .option('--from <storage>', t('commands.repo.backup.list.optionFromStorage'))
+    .option('--from-machine <machine>', t('commands.repo.backup.list.optionFromMachine'))
+    .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('-w, --watch', t('options.watch'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
@@ -341,11 +378,25 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
           params.sourceType = 'machine';
           params.from = options.fromMachine;
         } else {
-          throw new ValidationError(t('commands.repo.listBackups.sourceRequired'));
+          throw new ValidationError(t('commands.repo.backup.list.sourceRequired'));
         }
 
-        outputService.info(t('commands.repo.listBackups.listing'));
+        outputService.info(t('commands.repo.backup.list.listing'));
         await executeFunction(`backup_list`, params, options, repoCommand);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // repo backup schedule <machine>
+  backup
+    .command('schedule <machine>')
+    .description(t('commands.backup.schedule.description'))
+    .option('--debug', t('options.debug'))
+    .action(async (machine: string, options: { debug?: boolean }) => {
+      try {
+        const { pushBackupSchedule } = await import('../services/backup-schedule.js');
+        await pushBackupSchedule(machine, options);
       } catch (error) {
         handleError(error);
       }

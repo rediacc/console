@@ -21,9 +21,9 @@ import {
   listSSHConfigEntries,
   persistKnownHosts,
   persistSSHKey,
-  setHostRemotePlatform,
   removePersistedKeys,
   removeSSHConfigEntry,
+  setHostRemotePlatform,
   setHostServerInstallPath,
 } from '@rediacc/shared-desktop/vscode';
 import { Command } from 'commander';
@@ -33,6 +33,8 @@ import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
 import { type ConnectionDetails, getSSHConnectionDetails } from '../services/ssh-connection.js';
+import { assertAgentMachineAccess } from '../utils/agent-guard.js';
+import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { debugLog } from '../utils/debug.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
@@ -302,7 +304,7 @@ async function setupRemoteEnvironment(connectionDetails: ConnectionDetails): Pro
 /**
  * Connects to a machine or repository via VS Code Remote SSH
  */
-async function connectVSCode(options: VSCodeConnectOptions): Promise<void> {
+async function validateVSCodeOptions(options: VSCodeConnectOptions) {
   const opts = await configService.applyDefaults(options);
 
   const provider = await getStateProvider();
@@ -316,6 +318,19 @@ async function connectVSCode(options: VSCodeConnectOptions): Promise<void> {
   const teamName = opts.team ?? '';
   const machineName = opts.machine;
   const repositoryName = opts.repository;
+
+  // Agent guard: enforce fork-only mode for repo access, block machine-level access
+  if (repositoryName) {
+    await assertCommandPolicy(CMD.VSCODE_REPO, repositoryName);
+  } else {
+    assertAgentMachineAccess(machineName);
+  }
+
+  return { teamName, machineName, repositoryName, opts };
+}
+
+async function connectVSCode(options: VSCodeConnectOptions): Promise<void> {
+  const { teamName, machineName, repositoryName } = await validateVSCodeOptions(options);
 
   const vscodeInfo = await detectVSCode();
   debugLog(`Found VS Code: ${vscodeInfo.path}${vscodeInfo.isInsiders ? ' (Insiders)' : ''}`);

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: ar
-sourceHash: "9c6ab927c2220db7"
+sourceHash: "2ac1e17539336175"
 ---
 
 # النسخ الاحتياطي والاستعادة
@@ -22,7 +22,7 @@ sourceHash: "9c6ab927c2220db7"
 إذا كان لديك بالفعل جهاز rclone بعيد مُكوَّن:
 
 ```bash
-rdc config import-storage rclone.conf
+rdc config storage import rclone.conf
 ```
 
 يستورد هذا تكوينات التخزين من ملف إعدادات rclone إلى التكوين الحالي. الأنواع المدعومة: S3 وB2 وGoogle Drive وOneDrive وMega وDropbox وBox وAzure Blob وSwift.
@@ -30,7 +30,7 @@ rdc config import-storage rclone.conf
 ### عرض وحدات التخزين
 
 ```bash
-rdc config storages
+rdc config storage list
 ```
 
 ## إرسال نسخة احتياطية
@@ -75,7 +75,7 @@ rdc repo pull my-app -m server-1 --from my-storage
 عرض النسخ الاحتياطية المتاحة في موقع تخزين:
 
 ```bash
-rdc repo list-backups --from my-storage -m server-1
+rdc repo backup list --from my-storage -m server-1
 ```
 
 ## المزامنة المجمّعة
@@ -85,13 +85,13 @@ rdc repo list-backups --from my-storage -m server-1
 ### إرسال الكل إلى التخزين
 
 ```bash
-rdc repo sync push-all --to my-storage -m server-1
+rdc repo push --to my-storage -m server-1
 ```
 
 ### سحب الكل من التخزين
 
 ```bash
-rdc repo sync pull-all --from my-storage -m server-1
+rdc repo pull --from my-storage -m server-1
 ```
 
 | الخيار | الوصف |

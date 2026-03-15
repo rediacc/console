@@ -5,8 +5,8 @@ import { getStateProvider } from '../providers/index.js';
 import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
-import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { handleError, ValidationError } from '../utils/errors.js';
+import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import {
   type CreateActionOptions,
   coerceCliParams,
@@ -77,7 +77,7 @@ async function executeFunction(
   program?: Command
 ): Promise<void> {
   const provider = await getStateProvider();
-  const machineName = options.machine ?? (await configService.getMachine());
+  const machineName = options.machine ?? configService.getMachine();
 
   if (!machineName) {
     throw new ValidationError(t('errors.machineRequiredLocal'));
@@ -111,7 +111,7 @@ async function resolveCephInitParams(
   let image = options.image;
   let pool = options.pool;
   if (!image) {
-    const machineName = options.machine ?? (await configService.getMachine());
+    const machineName = options.machine ?? configService.getMachine();
     if (machineName) {
       const machine = await configService.getLocalMachine(machineName);
       if (machine.ceph) {
@@ -195,6 +195,7 @@ export function registerDatastoreCommands(program: Command): void {
   // datastore fork
   datastore
     .command('fork')
+    .summary(t('commands.datastore.fork.descriptionShort'))
     .description(t('commands.datastore.fork.description'))
     .requiredOption('-m, --machine <name>', t('commands.datastore.machineOption'))
     .requiredOption('--to <name>', t('commands.datastore.fork.toOption'))
@@ -209,7 +210,7 @@ export function registerDatastoreCommands(program: Command): void {
       ) => {
         try {
           // Read source machine's ceph config
-          const machineName = options.machine ?? (await configService.getMachine());
+          const machineName = options.machine ?? configService.getMachine();
           if (!machineName) {
             throw new ValidationError(t('errors.machineRequiredLocal'));
           }
@@ -271,7 +272,7 @@ export function registerDatastoreCommands(program: Command): void {
         }
       ) => {
         try {
-          const machineName = options.machine ?? (await configService.getMachine());
+          const machineName = options.machine ?? configService.getMachine();
           if (!machineName) {
             throw new ValidationError(t('errors.machineRequiredLocal'));
           }

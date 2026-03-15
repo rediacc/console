@@ -7,7 +7,7 @@ description: >-
 category: Guides
 order: 7
 language: ru
-sourceHash: "9c6ab927c2220db7"
+sourceHash: "2ac1e17539336175"
 ---
 
 # Резервное копирование и восстановление
@@ -23,7 +23,7 @@ Rediacc может создавать резервные копии зашифр
 Если у вас уже настроен удаленный rclone-ресурс:
 
 ```bash
-rdc config import-storage rclone.conf
+rdc config storage import rclone.conf
 ```
 
 Эта команда импортирует конфигурации хранилища из файла конфигурации rclone в текущую конфигурацию. Поддерживаемые типы: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob и Swift.
@@ -31,7 +31,7 @@ rdc config import-storage rclone.conf
 ### Просмотр хранилищ
 
 ```bash
-rdc config storages
+rdc config storage list
 ```
 
 ## Отправка резервной копии
@@ -76,7 +76,7 @@ rdc repo pull my-app -m server-1 --from my-storage
 Просмотрите доступные резервные копии в хранилище:
 
 ```bash
-rdc repo list-backups --from my-storage -m server-1
+rdc repo backup list --from my-storage -m server-1
 ```
 
 ## Массовая синхронизация
@@ -86,13 +86,13 @@ rdc repo list-backups --from my-storage -m server-1
 ### Отправка всех в хранилище
 
 ```bash
-rdc repo sync push-all --to my-storage -m server-1
+rdc repo push --to my-storage -m server-1
 ```
 
 ### Получение всех из хранилища
 
 ```bash
-rdc repo sync pull-all --from my-storage -m server-1
+rdc repo pull --from my-storage -m server-1
 ```
 
 | Опция | Описание |

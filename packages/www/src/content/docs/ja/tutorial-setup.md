@@ -4,7 +4,7 @@ description: "構成プロファイルの作成、リモートマシンの登録
 category: "Tutorials"
 order: 2
 language: ja
-sourceHash: "c85a5f51a95e07bb"
+sourceHash: "04756cddd86e097c"
 ---
 
 # Rediaccでマシンをセットアップする方法
@@ -46,7 +46,7 @@ rdc config list
 IPアドレスとSSHユーザーを指定してマシンを登録します。CLIは`ssh-keyscan`を介してサーバーのホストキーを自動的に取得・保存します。
 
 ```bash
-rdc config add-machine bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
+rdc config machine add bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
 ```
 
 ### ステップ4: マシンを表示
@@ -54,7 +54,7 @@ rdc config add-machine bridge-vm --ip 192.168.111.1 --user muhammed --config tut
 マシンが正しく登録されたことを確認します。
 
 ```bash
-rdc config machines --config tutorial-demo
+rdc config machine list --config tutorial-demo
 ```
 
 現在の構成内のすべてのマシンを接続情報とともに表示します。
@@ -91,7 +91,7 @@ rdc doctor
 公開サービスの場合、マシンにはネットワーク構成が必要です — 外部IP、ベースドメイン、TLS用の証明書メールアドレス。
 
 ```bash
-rdc config set-infra bridge-vm \
+rdc config infra set bridge-vm \
   --public-ipv4 192.168.111.1 \
   --base-domain test.local \
   --cert-email admin@test.local
@@ -100,10 +100,10 @@ rdc config set-infra bridge-vm \
 構成を確認します:
 
 ```bash
-rdc config show-infra bridge-vm
+rdc config infra show bridge-vm
 ```
 
-生成されたTraefikプロキシ構成を`rdc config push-infra bridge-vm`でサーバーにデプロイします。
+生成されたTraefikプロキシ構成を`rdc config infra push bridge-vm`でサーバーにデプロイします。
 
 ## トラブルシューティング
 
@@ -114,7 +114,7 @@ rdc config show-infra bridge-vm
 サーバーが実行中でIPが正しいことを確認してください。ポート22が開いているか確認: `nc -zv <ip> 22`。非標準ポートを使用している場合は、マシン追加時に`--port`を渡してください。
 
 **"Host key verification failed"**
-保存されたホストキーがサーバーの現在のキーと一致しません。これはサーバーの再構築やIPの再割り当て後に発生します。`rdc config scan-keys <machine>`を実行してキーを更新してください。
+保存されたホストキーがサーバーの現在のキーと一致しません。これはサーバーの再構築やIPの再割り当て後に発生します。`rdc config machine scan-keys <machine>`を実行してキーを更新してください。
 
 ## 次のステップ
 

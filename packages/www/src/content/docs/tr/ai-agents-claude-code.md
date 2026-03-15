@@ -4,7 +4,7 @@ description: Claude Code'u otonom Rediacc altyapı yönetimi için yapılandırm
 category: Guides
 order: 31
 language: tr
-sourceHash: "faa990e37ee96a23"
+sourceHash: "8b05c6da1e3fc662"
 ---
 
 Claude Code, `rdc` CLI aracılığıyla Rediacc ile doğal olarak çalışır. Bu kılavuz kurulumu, izinleri ve yaygın iş akışlarını kapsar.
@@ -27,7 +27,7 @@ Bunu proje kök dizininize yerleştirin. Tam sürüm için [AGENTS.md şablonuna
 ## CLI Tool: rdc
 
 ### Common Operations
-- Status: rdc machine info <machine> -o json
+- Status: rdc machine query <machine> -o json
 - Deploy: rdc repo up <repo> -m <machine> --yes
 - Containers: rdc machine containers <machine> -o json
 - Health: rdc machine health <machine> -o json
@@ -43,10 +43,10 @@ Bunu proje kök dizininize yerleştirin. Tam sürüm için [AGENTS.md şablonuna
 
 Claude Code, `rdc` komutlarını çalıştırmak için izin isteyecektir. Claude Code ayarlarınıza ekleyerek yaygın işlemleri önceden yetkilendirebilirsiniz:
 
-- `rdc machine info *` izni verin — salt okunur durum kontrolleri
+- `rdc machine query *` izni verin — salt okunur durum kontrolleri
 - `rdc machine containers *` izni verin — konteyner listeleme
 - `rdc machine health *` izni verin — sağlık kontrolleri
-- `rdc config repositories` izni verin — depo listeleme
+- `rdc config repository list` izni verin — depo listeleme
 
 Yıkıcı işlemler (`rdc repo up`, `rdc repo delete`) için, açıkça yetkilendirmediğiniz sürece Claude Code her zaman onay isteyecektir.
 
@@ -57,7 +57,7 @@ Yıkıcı işlemler (`rdc repo up`, `rdc repo delete`) için, açıkça yetkilen
 ```
 You: "What's the status of prod-1?"
 
-Claude Code runs: rdc machine info prod-1 -o json
+Claude Code runs: rdc machine query prod-1 -o json
 → Shows machine status, repositories, containers, services
 ```
 

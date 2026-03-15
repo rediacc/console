@@ -4,7 +4,7 @@ description: Vollständige Referenz für das JSON-Ausgabeformat der rdc CLI, Env
 category: Reference
 order: 51
 language: de
-sourceHash: "a516c49fdaf9a901"
+sourceHash: "49cfcc5e2e4621a9"
 ---
 
 Alle `rdc`-Befehle unterstützen strukturierte JSON-Ausgabe für die programmatische Nutzung durch KI-Agenten und Skripte.
@@ -14,8 +14,8 @@ Alle `rdc`-Befehle unterstützen strukturierte JSON-Ausgabe für die programmati
 ### Explizites Flag
 
 ```bash
-rdc machine info prod-1 --output json
-rdc machine info prod-1 -o json
+rdc machine query prod-1 --output json
+rdc machine query prod-1 -o json
 ```
 
 ### Automatische Erkennung
@@ -24,8 +24,8 @@ Wenn `rdc` in einer non-TTY-Umgebung laeuft (gepipt, Subshell oder von einem KI-
 
 ```bash
 # These all produce JSON automatically
-result=$(rdc machine info prod-1)
-echo '{}' | rdc agent exec "machine info"
+result=$(rdc machine query prod-1)
+echo '{}' | rdc agent exec "machine query"
 ```
 
 ## JSON-Envelope
@@ -35,7 +35,7 @@ Jede JSON-Antwort verwendet ein einheitliches Envelope-Format:
 ```json
 {
   "success": true,
-  "command": "machine info",
+  "command": "machine query",
   "data": {
     "name": "prod-1",
     "status": "running",
@@ -52,7 +52,7 @@ Jede JSON-Antwort verwendet ein einheitliches Envelope-Format:
 | Feld | Typ | Beschreibung |
 |-------|------|-------------|
 | `success` | `boolean` | Ob der Befehl erfolgreich abgeschlossen wurde |
-| `command` | `string` | Der vollstaendige Befehlspfad (z.B. `"machine info"`, `"repo up"`) |
+| `command` | `string` | Der vollstaendige Befehlspfad (z.B. `"machine query"`, `"repo up"`) |
 | `data` | `object \| array \| null` | Befehlsspezifische Nutzlast bei Erfolg, `null` bei Fehler |
 | `errors` | `array \| null` | Fehlerobjekte bei Misserfolg, `null` bei Erfolg |
 | `warnings` | `string[]` | Nicht-fatale Warnungen, die waehrend der Ausführung gesammelt wurden |
@@ -65,14 +65,14 @@ Fehlgeschlagene Befehle geben strukturierte Fehler mit Wiederherstellungshinweis
 ```json
 {
   "success": false,
-  "command": "machine info",
+  "command": "machine query",
   "data": null,
   "errors": [
     {
       "code": "NOT_FOUND",
       "message": "Machine \"prod-2\" not found",
       "retryable": false,
-      "guidance": "Verify the resource name with \"rdc machine info\" or \"rdc config repositories\""
+      "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
     }
   ],
   "warnings": [],
@@ -157,7 +157,7 @@ Gibt den vollstaendigen Befehlsbaum mit Argumenten, Optionen und Beschreibungen 
     "version": "1.0.0",
     "commands": [
       {
-        "name": "machine info",
+        "name": "machine query",
         "description": "Show machine status",
         "arguments": [
           { "name": "machine", "description": "Machine name", "required": true }
@@ -174,7 +174,7 @@ Gibt den vollstaendigen Befehlsbaum mit Argumenten, Optionen und Beschreibungen 
 ### Befehlsschema abrufen
 
 ```bash
-rdc agent schema "machine info"
+rdc agent schema "machine query"
 ```
 
 Gibt das detaillierte Schema für einen einzelnen Befehl zurück, einschliesslich aller Argumente und Optionen mit ihren Typen und Standardwerten.
@@ -182,7 +182,7 @@ Gibt das detaillierte Schema für einen einzelnen Befehl zurück, einschliesslic
 ### Ausführung über JSON
 
 ```bash
-echo '{"machine": "prod-1"}' | rdc agent exec "machine info"
+echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
 ```
 
 Akzeptiert JSON über stdin, ordnet Schluessel den Befehlsargumenten und -optionen zu und fuehrt mit erzwungener JSON-Ausgabe aus. Nuetzlich für strukturierte Agent-zu-CLI-Kommunikation ohne Shell-Befehlszeichenfolgen erstellen zu müssen.
@@ -192,7 +192,7 @@ Akzeptiert JSON über stdin, ordnet Schluessel den Befehlsargumenten und -option
 ### Shell (jq)
 
 ```bash
-status=$(rdc machine info prod-1 -o json | jq -r '.data.status')
+status=$(rdc machine query prod-1 -o json | jq -r '.data.status')
 ```
 
 ### Python
@@ -201,7 +201,7 @@ status=$(rdc machine info prod-1 -o json | jq -r '.data.status')
 import subprocess, json
 
 result = subprocess.run(
-    ["rdc", "machine", "info", "prod-1", "-o", "json"],
+    ["rdc", "machine", "query", "prod-1", "-o", "json"],
     capture_output=True, text=True
 )
 envelope = json.loads(result.stdout)
@@ -223,7 +223,7 @@ else:
 ```javascript
 import { execFileSync } from 'child_process';
 
-const raw = execFileSync('rdc', ['machine', 'info', 'prod-1', '-o', 'json'], { encoding: 'utf-8' });
+const raw = execFileSync('rdc', ['machine', 'query', 'prod-1', '-o', 'json'], { encoding: 'utf-8' });
 const { success, data, errors } = JSON.parse(raw);
 
 if (!success) {

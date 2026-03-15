@@ -31,6 +31,13 @@ rdc repo delete <name> -m <machine>
 ```
 Destroys containers, volumes, and encrypted image. Credential is archived for recovery via `config restore-archived`. **Warning**: Config mapping is removed globally — if the repo exists on another machine (after `repo push`), re-add with `config add-repository`.
 
+### Prune orphaned resources
+```
+rdc repo prune -m <machine> --dry-run   # preview
+rdc repo prune -m <machine>             # execute
+```
+Removes empty mount dirs, orphan immovable markers, and stale lock files left behind by deleted repos or failed operations. Only removes resources with no matching repository image. Non-empty mount directories are never removed.
+
 ### Status
 ```
 rdc repo status <name> -m <machine>
@@ -46,9 +53,9 @@ rdc repo list -m <machine>
 
 ### Fork (copy-on-write clone)
 ```
-rdc repo fork <parent> -m <machine> --tag <fork-name>
+rdc repo fork <parent> <tag> -m <machine>
 ```
-Creates an independent copy with new GUID, networkId, and IP range. Parent can remain running. Cross-machine fork: fork locally first, then `repo push` to the target.
+Creates an independent copy using the name:tag model — the fork is named `<parent>:<tag>` (e.g., `my-app:staging`). It gets a new GUID, networkId, and IP range while sharing the parent's name. Parent can remain running. Cross-machine fork: fork locally first, then `repo push` to the target.
 
 **Agent guard**: AI agents operate in fork-only mode by default — they can only modify fork repositories. Use `repo fork` to create a fork first, then operate on the fork. Grand repo access requires `REDIACC_ALLOW_GRAND_REPO=<name>` or `--allow-grand` on the MCP server.
 

@@ -190,7 +190,7 @@ export async function verifyMachineSetup(
 
     setupCache.set(cacheKey, Date.now());
     if (options.debug) {
-      outputService.info(`[local] Setup verified on ${machine.ip}`);
+      outputService.info(`Setup verified on ${machine.ip}`);
     }
   } finally {
     sftp.close();

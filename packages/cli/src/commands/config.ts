@@ -6,16 +6,15 @@ import { outputService } from '../services/output.js';
 import type { OutputFormat, RdcConfig } from '../types/index.js';
 import { hasCloudCredentials } from '../types/index.js';
 import {
-  assertMachineExists,
   assertStorageExists,
   BackupDestinationSchema,
   BackupScheduleSchema,
   parseConfig,
 } from '../utils/config-schema.js';
 import { handleError, ValidationError } from '../utils/errors.js';
-import { registerLocalDataCommands } from './config-data.js';
+import { registerRepositoryCommands, registerStorageCommands } from './config-data.js';
 import { registerInfraCommands } from './config-infra.js';
-import { registerSetupCommands } from './config-setup.js';
+import { registerMachineCommands, registerProviderCommands } from './config-setup.js';
 
 /** Resolve enabled state from --enable/--disable flags. */
 function resolveEnabledFlag(enable?: boolean, disable?: boolean): boolean | undefined {
@@ -93,7 +92,6 @@ async function buildSelfHostedDisplay(
     machines: machineCount,
     storages: storageCount,
     repositories: repoCount,
-    defaultMachine: config.machine ?? '-',
   };
 }
 
@@ -223,9 +221,8 @@ export function registerConfigCommands(program: Command): void {
     `
 ${t('help.examples')}
   $ rdc config init production --ssh-key ~/.ssh/id_ed25519   ${t('help.config.init')}
-  $ rdc config add-machine server-1 --ip 10.0.0.1           ${t('help.config.addMachine')}
-  $ rdc config setup-machine server-1                        ${t('help.config.setupMachine')}
-  $ rdc config set machine server-1                          ${t('help.config.setMachine')}
+  $ rdc config machine add server-1 --ip 10.0.0.1           ${t('help.config.addMachine')}
+  $ rdc config machine setup server-1                        ${t('help.config.setupMachine')}
 `
   );
 
@@ -389,14 +386,11 @@ ${t('help.examples')}
     .description(t('commands.config.set.description'))
     .action(async (key, value) => {
       try {
-        const validKeys = ['team', 'region', 'bridge', 'machine'];
+        const validKeys = ['team', 'region', 'bridge'];
         if (!validKeys.includes(key)) {
           throw new ValidationError(t('errors.invalidKey', { keys: validKeys.join(', ') }));
         }
-        if (key === 'machine') {
-          await assertMachineExists(value);
-        }
-        await configService.set(key as 'team' | 'region' | 'bridge' | 'machine', value);
+        await configService.set(key as 'team' | 'region' | 'bridge', value);
         outputService.success(t('commands.config.set.success', { key, value }));
       } catch (error) {
         handleError(error);
@@ -410,11 +404,11 @@ ${t('help.examples')}
     .action(async (key) => {
       try {
         if (key) {
-          const validKeys = ['team', 'region', 'bridge', 'machine'];
+          const validKeys = ['team', 'region', 'bridge'];
           if (!validKeys.includes(key)) {
             throw new ValidationError(t('errors.invalidKey', { keys: validKeys.join(', ') }));
           }
-          await configService.remove(key as 'team' | 'region' | 'bridge' | 'machine');
+          await configService.remove(key as 'team' | 'region' | 'bridge');
           outputService.success(t('commands.config.clear.keyCleared', { key }));
         } else {
           await configService.clearDefaults();
@@ -541,8 +535,10 @@ ${t('help.examples')}
       }
     });
 
-  // Register sub-command groups
-  registerSetupCommands(config, program);
-  registerLocalDataCommands(config, program);
+  // Register nested sub-command groups
+  registerMachineCommands(config, program);
+  registerProviderCommands(config, program);
+  registerRepositoryCommands(config, program);
+  registerStorageCommands(config, program);
   registerInfraCommands(config, program);
 }

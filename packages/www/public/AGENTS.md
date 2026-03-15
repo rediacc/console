@@ -54,7 +54,7 @@ All JSON output uses a consistent envelope:
 ## Common Commands
 
 ```bash
-rdc machine info <machine> -o json       # Machine status and resources
+rdc machine query <machine> -o json       # Machine status and resources
 rdc machine containers <machine> -o json  # List Docker containers
 rdc machine services <machine> -o json    # List systemd services
 rdc machine repos <machine> -o json       # List deployed repositories

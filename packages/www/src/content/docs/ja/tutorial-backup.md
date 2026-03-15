@@ -4,7 +4,7 @@ description: "自動バックアップスケジュールの設定、ストレー
 category: "Tutorials"
 order: 6
 language: ja
-sourceHash: "26db200e730fff43"
+sourceHash: "14244f699c506ce9"
 ---
 
 # Rediaccでバックアップとネットワークを設定する方法
@@ -25,7 +25,7 @@ sourceHash: "26db200e730fff43"
 ストレージプロバイダー（S3、B2、Google Driveなど）はバックアップ先として機能します。設定済みのプロバイダーを確認します。
 
 ```bash
-rdc config storages
+rdc config storage list
 ```
 
 rclone設定からインポートされた全ての設定済みストレージプロバイダーを一覧表示します。空の場合は、まずストレージプロバイダーを追加してください — [バックアップとリストア](/ja/docs/backup-restore)を参照。
@@ -62,7 +62,7 @@ rdc config backup-strategy show
 公開サービスの場合、マシンには外部IP、ベースドメイン、Let's Encrypt TLS用の証明書メールアドレスが必要です。
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com
@@ -75,7 +75,7 @@ Rediaccはこれらの設定からTraefikリバースプロキシ設定を生成
 サービスが非HTTPポート（例：SMTP、DNS）を必要とする場合、Traefikエントリポイントとして登録します。
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 ```
@@ -87,7 +87,7 @@ Traefikエントリポイント（`tcp-25`、`udp-53`など）を作成し、Doc
 インフラストラクチャ設定の全体を確認します。
 
 ```bash
-rdc config show-infra server-1
+rdc config infra show server-1
 ```
 
 パブリックIP、ドメイン、証明書メールアドレス、登録済みの全ポートを表示します。
@@ -109,10 +109,10 @@ rdc config backup-strategy show
 cronのフォーマットは`minute hour day month weekday`です。一般的なスケジュール：`0 2 * * *`（毎日午前2時）、`0 */6 * * *`（6時間ごと）、`0 0 * * 0`（毎週日曜深夜）。
 
 **"Storage destination not found"**
-宛先名は設定済みのストレージプロバイダーと一致する必要があります。`rdc config storages`を実行して利用可能な名前を確認してください。新しいプロバイダーはrclone設定で追加します。
+宛先名は設定済みのストレージプロバイダーと一致する必要があります。`rdc config storage list`を実行して利用可能な名前を確認してください。新しいプロバイダーはrclone設定で追加します。
 
 **デプロイ時の"Infrastructure config incomplete"**
-3つのフィールドすべてが必須です：`--public-ipv4`、`--base-domain`、`--cert-email`。`rdc config show-infra <machine>`を実行して不足しているフィールドを確認してください。
+3つのフィールドすべてが必須です：`--public-ipv4`、`--base-domain`、`--cert-email`。`rdc config infra show <machine>`を実行して不足しているフィールドを確認してください。
 
 ## 次のステップ
 

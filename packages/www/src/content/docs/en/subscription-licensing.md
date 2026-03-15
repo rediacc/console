@@ -160,13 +160,13 @@ rdc subscription status
 Show machine activation details for one machine:
 
 ```bash
-rdc subscription activation-status -m hostinger
+rdc subscription activation status -m hostinger
 ```
 
 Show installed repo-license details on one machine:
 
 ```bash
-rdc subscription repo-status -m hostinger
+rdc subscription repo status -m hostinger
 ```
 
 Refresh machine activation and batch-refresh repo licenses:
@@ -180,7 +180,7 @@ Repositories discovered on the machine but missing from local `rdc` config are r
 Force a repo-license refresh for an existing repository:
 
 ```bash
-rdc subscription refresh-repo my-app -m hostinger
+rdc subscription refresh repo my-app -m hostinger
 ```
 
 On first use, a licensed repo or backup operation that finds no usable repo license can trigger an account-authorization handoff automatically. The CLI prints an authorization URL, tries to open the browser in interactive terminals, and retries the operation once after authorization and issuance succeed.
@@ -232,4 +232,4 @@ It does not include:
 - failed issuance attempts
 - untracked repositories rejected before issuance
 
-If you need a customer-facing view of usage and recent repo-license issuance history, use the account portal. If you need machine-side inspection, use `rdc subscription activation-status -m` and `rdc subscription repo-status -m`.
+If you need a customer-facing view of usage and recent repo-license issuance history, use the account portal. If you need machine-side inspection, use `rdc subscription activation status -m` and `rdc subscription repo status -m`.

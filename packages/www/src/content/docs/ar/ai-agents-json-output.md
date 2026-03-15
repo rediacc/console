@@ -4,7 +4,7 @@ description: مرجع كامل لتنسيق مخرجات JSON لأداة rdc CLI
 category: Reference
 order: 51
 language: ar
-sourceHash: "a516c49fdaf9a901"
+sourceHash: "49cfcc5e2e4621a9"
 ---
 
 تدعم جميع أوامر `rdc` مخرجات JSON المنظمة للاستهلاك البرمجي بواسطة وكلاء الذكاء الاصطناعي والنصوص البرمجية.
@@ -14,8 +14,8 @@ sourceHash: "a516c49fdaf9a901"
 ### العلم الصريح
 
 ```bash
-rdc machine info prod-1 --output json
-rdc machine info prod-1 -o json
+rdc machine query prod-1 --output json
+rdc machine query prod-1 -o json
 ```
 
 ### الاكتشاف التلقائي
@@ -24,8 +24,8 @@ rdc machine info prod-1 -o json
 
 ```bash
 # These all produce JSON automatically
-result=$(rdc machine info prod-1)
-echo '{}' | rdc agent exec "machine info"
+result=$(rdc machine query prod-1)
+echo '{}' | rdc agent exec "machine query"
 ```
 
 ## غلاف JSON
@@ -35,7 +35,7 @@ echo '{}' | rdc agent exec "machine info"
 ```json
 {
   "success": true,
-  "command": "machine info",
+  "command": "machine query",
   "data": {
     "name": "prod-1",
     "status": "running",
@@ -52,7 +52,7 @@ echo '{}' | rdc agent exec "machine info"
 | الحقل | النوع | الوصف |
 |-------|------|-------------|
 | `success` | `boolean` | ما إذا اكتمل الأمر بنجاح |
-| `command` | `string` | مسار الأمر الكامل (مثل `"machine info"`، `"repo up"`) |
+| `command` | `string` | مسار الأمر الكامل (مثل `"machine query"`، `"repo up"`) |
 | `data` | `object \| array \| null` | الحمولة الخاصة بالأمر عند النجاح، `null` عند الخطأ |
 | `errors` | `array \| null` | كائنات الأخطاء عند الفشل، `null` عند النجاح |
 | `warnings` | `string[]` | تحذيرات غير حرجة تم جمعها أثناء التنفيذ |
@@ -65,14 +65,14 @@ echo '{}' | rdc agent exec "machine info"
 ```json
 {
   "success": false,
-  "command": "machine info",
+  "command": "machine query",
   "data": null,
   "errors": [
     {
       "code": "NOT_FOUND",
       "message": "Machine \"prod-2\" not found",
       "retryable": false,
-      "guidance": "Verify the resource name with \"rdc machine info\" or \"rdc config repositories\""
+      "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
     }
   ],
   "warnings": [],
@@ -157,7 +157,7 @@ rdc agent capabilities
     "version": "1.0.0",
     "commands": [
       {
-        "name": "machine info",
+        "name": "machine query",
         "description": "Show machine status",
         "arguments": [
           { "name": "machine", "description": "Machine name", "required": true }
@@ -174,7 +174,7 @@ rdc agent capabilities
 ### الحصول على مخطط الأمر
 
 ```bash
-rdc agent schema "machine info"
+rdc agent schema "machine query"
 ```
 
 يُعيد المخطط التفصيلي لأمر واحد، بما في ذلك جميع الوسائط والخيارات مع أنواعها وقيمها الافتراضية.
@@ -182,7 +182,7 @@ rdc agent schema "machine info"
 ### التنفيذ عبر JSON
 
 ```bash
-echo '{"machine": "prod-1"}' | rdc agent exec "machine info"
+echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
 ```
 
 يقبل JSON عبر stdin، ويربط المفاتيح بوسائط وخيارات الأمر، ويُنفَّذ مع فرض مخرجات JSON. مفيد للاتصال المنظم بين الوكيل وأداة CLI دون إنشاء سلاسل أوامر shell.
@@ -192,7 +192,7 @@ echo '{"machine": "prod-1"}' | rdc agent exec "machine info"
 ### Shell (jq)
 
 ```bash
-status=$(rdc machine info prod-1 -o json | jq -r '.data.status')
+status=$(rdc machine query prod-1 -o json | jq -r '.data.status')
 ```
 
 ### Python
@@ -201,7 +201,7 @@ status=$(rdc machine info prod-1 -o json | jq -r '.data.status')
 import subprocess, json
 
 result = subprocess.run(
-    ["rdc", "machine", "info", "prod-1", "-o", "json"],
+    ["rdc", "machine", "query", "prod-1", "-o", "json"],
     capture_output=True, text=True
 )
 envelope = json.loads(result.stdout)
@@ -223,7 +223,7 @@ else:
 ```javascript
 import { execFileSync } from 'child_process';
 
-const raw = execFileSync('rdc', ['machine', 'info', 'prod-1', '-o', 'json'], { encoding: 'utf-8' });
+const raw = execFileSync('rdc', ['machine', 'query', 'prod-1', '-o', 'json'], { encoding: 'utf-8' });
 const { success, data, errors } = JSON.parse(raw);
 
 if (!success) {

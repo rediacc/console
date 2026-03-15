@@ -4,7 +4,7 @@ description: Полный справочник по формату JSON-выво
 category: Reference
 order: 51
 language: ru
-sourceHash: "a516c49fdaf9a901"
+sourceHash: "49cfcc5e2e4621a9"
 ---
 
 Все команды `rdc` поддерживают структурированный JSON-вывод для программного использования AI-агентами и скриптами.
@@ -14,8 +14,8 @@ sourceHash: "a516c49fdaf9a901"
 ### Явный флаг
 
 ```bash
-rdc machine info prod-1 --output json
-rdc machine info prod-1 -o json
+rdc machine query prod-1 --output json
+rdc machine query prod-1 -o json
 ```
 
 ### Автоопределение
@@ -24,8 +24,8 @@ rdc machine info prod-1 -o json
 
 ```bash
 # These all produce JSON automatically
-result=$(rdc machine info prod-1)
-echo '{}' | rdc agent exec "machine info"
+result=$(rdc machine query prod-1)
+echo '{}' | rdc agent exec "machine query"
 ```
 
 ## JSON-конверт
@@ -35,7 +35,7 @@ echo '{}' | rdc agent exec "machine info"
 ```json
 {
   "success": true,
-  "command": "machine info",
+  "command": "machine query",
   "data": {
     "name": "prod-1",
     "status": "running",
@@ -52,7 +52,7 @@ echo '{}' | rdc agent exec "machine info"
 | Поле | Тип | Описание |
 |-------|------|-------------|
 | `success` | `boolean` | Успешно ли завершилась команда |
-| `command` | `string` | Полный путь команды (например, `"machine info"`, `"repo up"`) |
+| `command` | `string` | Полный путь команды (например, `"machine query"`, `"repo up"`) |
 | `data` | `object \| array \| null` | Полезная нагрузка команды при успехе, `null` при ошибке |
 | `errors` | `array \| null` | Объекты ошибок при сбое, `null` при успехе |
 | `warnings` | `string[]` | Некритичные предупреждения, собранные при выполнении |
@@ -65,14 +65,14 @@ echo '{}' | rdc agent exec "machine info"
 ```json
 {
   "success": false,
-  "command": "machine info",
+  "command": "machine query",
   "data": null,
   "errors": [
     {
       "code": "NOT_FOUND",
       "message": "Machine \"prod-2\" not found",
       "retryable": false,
-      "guidance": "Verify the resource name with \"rdc machine info\" or \"rdc config repositories\""
+      "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
     }
   ],
   "warnings": [],
@@ -157,7 +157,7 @@ rdc agent capabilities
     "version": "1.0.0",
     "commands": [
       {
-        "name": "machine info",
+        "name": "machine query",
         "description": "Show machine status",
         "arguments": [
           { "name": "machine", "description": "Machine name", "required": true }
@@ -174,7 +174,7 @@ rdc agent capabilities
 ### Получение схемы команды
 
 ```bash
-rdc agent schema "machine info"
+rdc agent schema "machine query"
 ```
 
 Возвращает подробную схему для отдельной команды, включая все аргументы и опции с их типами и значениями по умолчанию.
@@ -182,7 +182,7 @@ rdc agent schema "machine info"
 ### Выполнение через JSON
 
 ```bash
-echo '{"machine": "prod-1"}' | rdc agent exec "machine info"
+echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
 ```
 
 Принимает JSON на stdin, сопоставляет ключи с аргументами и опциями команды и выполняет с принудительным JSON-выводом. Удобно для структурированного взаимодействия агента с CLI без построения строк shell-команд.
@@ -192,7 +192,7 @@ echo '{"machine": "prod-1"}' | rdc agent exec "machine info"
 ### Shell (jq)
 
 ```bash
-status=$(rdc machine info prod-1 -o json | jq -r '.data.status')
+status=$(rdc machine query prod-1 -o json | jq -r '.data.status')
 ```
 
 ### Python
@@ -201,7 +201,7 @@ status=$(rdc machine info prod-1 -o json | jq -r '.data.status')
 import subprocess, json
 
 result = subprocess.run(
-    ["rdc", "machine", "info", "prod-1", "-o", "json"],
+    ["rdc", "machine", "query", "prod-1", "-o", "json"],
     capture_output=True, text=True
 )
 envelope = json.loads(result.stdout)
@@ -223,7 +223,7 @@ else:
 ```javascript
 import { execFileSync } from 'child_process';
 
-const raw = execFileSync('rdc', ['machine', 'info', 'prod-1', '-o', 'json'], { encoding: 'utf-8' });
+const raw = execFileSync('rdc', ['machine', 'query', 'prod-1', '-o', 'json'], { encoding: 'utf-8' });
 const { success, data, errors } = JSON.parse(raw);
 
 if (!success) {

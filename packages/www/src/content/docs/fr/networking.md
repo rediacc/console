@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: fr
-sourceHash: "51ec174f68da3b34"
+sourceHash: "911dde41922454ec"
 ---
 
 # Réseau
@@ -111,16 +111,16 @@ Ceux-ci utilisent la syntaxe standard des [labels Traefik v3](https://doc.traefi
 
    ```bash
    # Identifiants partagés (une fois par config, s'applique à toutes les machines)
-   rdc config set-infra server-1 \
+   rdc config infra set server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
    # Paramètres spécifiques à la machine
-   rdc config set-infra server-1 \
+   rdc config infra set server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com
 
-   rdc config push-infra server-1
+   rdc config infra push server-1
    ```
 
 2. Enregistrements DNS pointant votre domaine vers l'IP publique du serveur (voir [Configuration DNS](#configuration-dns) ci-dessous).
@@ -165,7 +165,7 @@ Le `{name}` dans les labels est un identifiant arbitraire — il doit simplement
 Les certificats TLS sont obtenus automatiquement via Let's Encrypt en utilisant le challenge DNS-01 de Cloudflare. Les identifiants sont configurés une fois par config (partagés entre toutes les machines) :
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
@@ -185,11 +185,11 @@ Pour les protocoles non-HTTP (serveurs de messagerie, DNS, bases de données exp
 Ajoutez les ports requis lors de la configuration de l'infrastructure :
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config push-infra server-1
+rdc config infra push server-1
 ```
 
 Ceci crée des points d'entrée Traefik nommés `tcp-{port}` et `udp-{port}`.
@@ -214,7 +214,7 @@ Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
 
 > **Security note:** Exposing a database to the internet is a risk. Use this only when remote clients need direct access. For most setups, keep the database internal and connect through your application.
 
-> Après avoir ajouté ou supprimé des ports, relancez toujours `rdc config push-infra` pour mettre à jour la configuration du proxy.
+> Après avoir ajouté ou supprimé des ports, relancez toujours `rdc config infra push` pour mettre à jour la configuration du proxy.
 
 ### Étape 2 : Ajouter des labels TCP/UDP
 
@@ -268,7 +268,7 @@ Les ports TCP/UDP suivants ont des points d'entrée par défaut (pas besoin de l
 
 ### DNS automatique (Cloudflare)
 
-Lorsque `--cf-dns-token` est configuré, `rdc config push-infra` crée automatiquement les enregistrements DNS nécessaires dans Cloudflare :
+Lorsque `--cf-dns-token` est configuré, `rdc config infra push` crée automatiquement les enregistrements DNS nécessaires dans Cloudflare :
 
 | Enregistrement | Type | Contenu | Créé par |
 |----------------|------|---------|----------|
@@ -370,7 +370,7 @@ Affiche les mappages de ports TCP et UDP pour les ports alloués dynamiquement.
 | Service absent des routes | Conteneur non démarré ou labels manquants | Vérifiez avec `docker ps` sur le démon du dépôt ; vérifiez les labels |
 | Certificat non émis | DNS ne pointant pas vers le serveur, ou jeton Cloudflare invalide | Vérifiez la résolution DNS ; vérifiez les permissions du jeton API Cloudflare |
 | 502 Bad Gateway | L'application n'écoute pas sur le port déclaré | Vérifiez que l'application se lie à son `{SERVICE}_IP` et que le port correspond à `loadbalancer.server.port` |
-| Port TCP non accessible | Port non enregistré dans l'infrastructure | Exécutez `rdc config set-infra --tcp-ports ...` et `push-infra` |
+| Port TCP non accessible | Port non enregistré dans l'infrastructure | Exécutez `rdc config infra set --tcp-ports ...` et `push-infra` |
 | Route server running old version | Binary was updated but service not restarted | Happens automatically on provisioning; manual: `sudo systemctl restart rediacc-router` |
 | STUN/TURN relay not reachable | Relay addresses cached at startup | Recreate the service after DNS or IP changes so it picks up the new network config |
 

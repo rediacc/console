@@ -5,7 +5,7 @@
  * Each machine gets its own work directory for isolated state management.
  */
 
-import { execFile, type ExecFileOptions } from 'node:child_process';
+import { type ExecFileOptions, execFile } from 'node:child_process';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 

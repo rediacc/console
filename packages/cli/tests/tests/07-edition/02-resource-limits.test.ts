@@ -3,7 +3,7 @@ import { SYSTEM_DEFAULTS } from '@rediacc/shared/config';
 import {
   createEditionContext,
   type EditionTestContext,
-  RESOURCE_LIMITS,
+  PLAN_LIMITS,
   type SubscriptionPlan,
   uniqueName,
 } from '../../src/utils/edition';
@@ -11,10 +11,8 @@ import {
 /**
  * Edition Resource Limits Tests
  *
- * Tests that verify resource limits are correctly enforced by subscription edition.
- * Tests both boundary cases (creating up to limit) and exceeding limits.
- *
- * Note: Machine and Repository limits have been removed as they are now unlimited for all plans.
+ * Tests that verify resource limits are correctly defined by subscription edition.
+ * Validates the PLAN_LIMITS constant has correct progressive scaling.
  */
 test.describe('Resource Limits by Edition @cli @edition', () => {
   test.describe('Storage Limits', () => {
@@ -58,21 +56,35 @@ test.describe('Resource Limits by Edition @cli @edition', () => {
 
     for (const plan of editions) {
       test(`should have valid limits for ${plan} edition`, () => {
-        const limits = RESOURCE_LIMITS[plan];
+        const limits = PLAN_LIMITS[plan];
 
-        expect(limits.bridges).toBeGreaterThanOrEqual(0);
+        expect(limits.maxRepositorySizeGb).toBeGreaterThan(0);
+        expect(limits.maxRepoLicenseIssuancesPerMonth).toBeGreaterThan(0);
       });
     }
 
-    test('should have progressively higher bridge limits', () => {
-      expect(RESOURCE_LIMITS.COMMUNITY.bridges).toBe(0);
-      expect(RESOURCE_LIMITS.PROFESSIONAL.bridges).toBeGreaterThan(
-        RESOURCE_LIMITS.COMMUNITY.bridges
+    test('should have progressively higher storage limits', () => {
+      expect(PLAN_LIMITS.PROFESSIONAL.maxRepositorySizeGb).toBeGreaterThan(
+        PLAN_LIMITS.COMMUNITY.maxRepositorySizeGb
       );
-      expect(RESOURCE_LIMITS.BUSINESS.bridges).toBeGreaterThan(
-        RESOURCE_LIMITS.PROFESSIONAL.bridges
+      expect(PLAN_LIMITS.BUSINESS.maxRepositorySizeGb).toBeGreaterThan(
+        PLAN_LIMITS.PROFESSIONAL.maxRepositorySizeGb
       );
-      expect(RESOURCE_LIMITS.ENTERPRISE.bridges).toBeGreaterThan(RESOURCE_LIMITS.BUSINESS.bridges);
+      expect(PLAN_LIMITS.ENTERPRISE.maxRepositorySizeGb).toBeGreaterThan(
+        PLAN_LIMITS.BUSINESS.maxRepositorySizeGb
+      );
+    });
+
+    test('should have progressively higher license issuance limits', () => {
+      expect(PLAN_LIMITS.PROFESSIONAL.maxRepoLicenseIssuancesPerMonth).toBeGreaterThan(
+        PLAN_LIMITS.COMMUNITY.maxRepoLicenseIssuancesPerMonth
+      );
+      expect(PLAN_LIMITS.BUSINESS.maxRepoLicenseIssuancesPerMonth).toBeGreaterThan(
+        PLAN_LIMITS.PROFESSIONAL.maxRepoLicenseIssuancesPerMonth
+      );
+      expect(PLAN_LIMITS.ENTERPRISE.maxRepoLicenseIssuancesPerMonth).toBeGreaterThan(
+        PLAN_LIMITS.BUSINESS.maxRepoLicenseIssuancesPerMonth
+      );
     });
   });
 });

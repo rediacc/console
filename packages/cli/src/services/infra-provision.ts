@@ -43,7 +43,7 @@ function buildInfraPayload(
 
 function logDnsAction(action: DnsAction, type: string, name: string, content: string): void {
   const key =
-    `commands.config.pushInfra.dns${action.charAt(0).toUpperCase() + action.slice(1)}` as const;
+    `commands.config.infra.push.dns${action.charAt(0).toUpperCase() + action.slice(1)}` as const;
   outputService.info(t(key, { type, name, content }));
 }
 
@@ -58,7 +58,7 @@ async function resolveZoneId(
 ): Promise<string> {
   if (cachedZoneId) return cachedZoneId;
 
-  outputService.info(t('commands.config.pushInfra.dnsResolvingZone', { domain: baseDomain }));
+  outputService.info(t('commands.config.infra.push.dnsResolvingZone', { domain: baseDomain }));
   const zoneId = await client.getZoneId(baseDomain);
   await configService.updateConfigFields({ cfDnsZoneId: zoneId });
   return zoneId;
@@ -74,11 +74,11 @@ function shouldSkipDns(
   debug: boolean | undefined
 ): boolean {
   if (!cfDnsApiToken) {
-    if (debug) outputService.warn(t('commands.config.pushInfra.dnsSkipNoToken'));
+    if (debug) outputService.warn(t('commands.config.infra.push.dnsSkipNoToken'));
     return true;
   }
   if (!infra.baseDomain || infra.baseDomain.endsWith('.local')) {
-    if (debug) outputService.info(t('commands.config.pushInfra.dnsSkipLocal'));
+    if (debug) outputService.info(t('commands.config.infra.push.dnsSkipLocal'));
     return true;
   }
   return !infra.publicIPv4;
@@ -131,7 +131,7 @@ async function ensureMachineDnsRecords(
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    outputService.warn(t('commands.config.pushInfra.dnsError', { message }));
+    outputService.warn(t('commands.config.infra.push.dnsError', { message }));
   }
 }
 
@@ -165,7 +165,7 @@ export async function ensureRepoDnsRecords(
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    outputService.warn(t('commands.config.pushInfra.dnsError', { message }));
+    outputService.warn(t('commands.config.infra.push.dnsError', { message }));
   }
 }
 
@@ -230,7 +230,7 @@ async function executeProxySetup(
         debug: options.debug,
       });
       if (uploaded && options.debug) {
-        outputService.info(t('commands.config.pushInfra.certCacheUploaded'));
+        outputService.info(t('commands.config.infra.push.certCacheUploaded'));
       }
     } catch {
       // Non-fatal: cert cache upload failure should not block push-infra

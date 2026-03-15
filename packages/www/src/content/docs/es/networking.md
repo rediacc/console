@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: es
-sourceHash: "51ec174f68da3b34"
+sourceHash: "911dde41922454ec"
 ---
 
 # Red
@@ -111,16 +111,16 @@ Estas usan la [sintaxis estándar de etiquetas de Traefik v3](https://doc.traefi
 
    ```bash
    # Credenciales compartidas (una vez por configuración, aplica a todas las máquinas)
-   rdc config set-infra server-1 \
+   rdc config infra set server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
    # Configuración específica de la máquina
-   rdc config set-infra server-1 \
+   rdc config infra set server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com
 
-   rdc config push-infra server-1
+   rdc config infra push server-1
    ```
 
 2. Registros DNS apuntando su dominio a la IP pública del servidor (consulte [Configuración de DNS](#configuración-de-dns) más abajo).
@@ -165,7 +165,7 @@ El `{name}` en las etiquetas es un identificador arbitrario -- solo necesita ser
 Los certificados TLS se obtienen automáticamente vía Let's Encrypt usando el desafío DNS-01 de Cloudflare. Las credenciales se configuran una vez por configuración (compartidas entre todas las máquinas):
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
@@ -185,11 +185,11 @@ Para protocolos no HTTP (servidores de correo, DNS, bases de datos expuestas ext
 Agregue los puertos requeridos durante la configuración de infraestructura:
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config push-infra server-1
+rdc config infra push server-1
 ```
 
 Esto crea puntos de entrada de Traefik llamados `tcp-{port}` y `udp-{port}`.
@@ -214,7 +214,7 @@ El puerto 5432 está preconfigurado (ver abajo), por lo que no se necesita confi
 
 > **Nota de seguridad:** Exponer una base de datos a internet es un riesgo. Use esto solo cuando los clientes remotos necesiten acceso directo. Para la mayoría de las configuraciones, mantenga la base de datos interna y conéctese a través de su aplicación.
 
-> Después de agregar o eliminar puertos, siempre vuelva a ejecutar `rdc config push-infra` para actualizar la configuración del proxy.
+> Después de agregar o eliminar puertos, siempre vuelva a ejecutar `rdc config infra push` para actualizar la configuración del proxy.
 
 ### Paso 2: Agregar Etiquetas TCP/UDP
 
@@ -268,7 +268,7 @@ Los siguientes puertos TCP/UDP tienen puntos de entrada por defecto (no es neces
 
 ### DNS Automático (Cloudflare)
 
-Cuando `--cf-dns-token` está configurado, `rdc config push-infra` crea automáticamente los registros DNS necesarios en Cloudflare:
+Cuando `--cf-dns-token` está configurado, `rdc config infra push` crea automáticamente los registros DNS necesarios en Cloudflare:
 
 | Registro | Tipo | Contenido | Creado por |
 |----------|------|-----------|------------|
@@ -370,7 +370,7 @@ Muestra los mapeos de puertos TCP y UDP para puertos asignados dinámicamente.
 | Servicio no aparece en las rutas | Contenedor no ejecutándose o sin etiquetas | Verifique con `docker ps` en el daemon del repositorio; revise las etiquetas |
 | Certificado no emitido | DNS no apunta al servidor o token de Cloudflare inválido | Verifique la resolución DNS; revise los permisos del token de la API de Cloudflare |
 | 502 Bad Gateway | La aplicación no escucha en el puerto declarado | Verifique que la aplicación se vincule a su `{SERVICE}_IP` y que el puerto coincida con `loadbalancer.server.port` |
-| Puerto TCP no alcanzable | Puerto no registrado en la infraestructura | Ejecute `rdc config set-infra --tcp-ports ...` y `push-infra` |
+| Puerto TCP no alcanzable | Puerto no registrado en la infraestructura | Ejecute `rdc config infra set --tcp-ports ...` y `push-infra` |
 | Servidor de rutas con versión antigua | El binario se actualizó pero el servicio no se reinició | Ocurre automáticamente al aprovisionar; manual: `sudo systemctl restart rediacc-router` |
 | Relay STUN/TURN no alcanzable | Direcciones de relay cacheadas al inicio | Recree el servicio después de cambios de DNS o IP para que recoja la nueva configuración de red |
 

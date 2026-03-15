@@ -22,16 +22,10 @@ import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
-import { outputService } from '../services/output.js';
 import { getSSHConnectionDetails } from '../services/ssh-connection.js';
 import { assertCommandPolicy, CMD, validateRemotePath } from '../utils/command-policy.js';
-import { handleError, ValidationError } from '../utils/errors.js';
+import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
-
-/** Accumulate repeatable option values into an array. */
-function collect(val: string, prev: string[]): string[] {
-  return [...prev, val];
-}
 
 interface SyncUploadOptions {
   team?: string;
@@ -332,23 +326,8 @@ async function syncDownload(options: SyncDownloadOptions): Promise<void> {
   }
 }
 
-/** Resolve an array of repo names to their corresponding GUIDs. */
-async function resolveRepoGUIDs(repoNames: string[]): Promise<string[]> {
-  const guids: string[] = [];
-  for (const repoName of repoNames) {
-    const repoConfig = await configService.getRepository(repoName);
-    if (!repoConfig) {
-      throw new ValidationError(t('errors.repositoryNotFound', { name: repoName }));
-    }
-    guids.push(repoConfig.repositoryGuid);
-  }
-  return guids;
-}
-
 /**
  * Register sync commands under repo:
- * - repo sync push-all   (bulk push repos to storage)
- * - repo sync pull-all   (bulk pull repos from storage)
  * - repo sync upload      (file transfer upload)
  * - repo sync download    (file transfer download)
  * - repo sync status      (file transfer status)
@@ -360,73 +339,18 @@ export function registerRepoSyncCommands(repoCommand: Command): void {
     'after',
     `
 ${t('help.examples')}
-  $ rdc repo sync push-all --to my-storage -m server-1   ${t('help.repo.sync.pushAll')}
-  $ rdc repo sync pull-all --from my-storage -m server-1  ${t('help.repo.sync.pullAll')}
   $ rdc repo sync upload -m server-1 -r my-app --local ./src  ${t('help.sync.upload')}
   $ rdc repo sync download -m server-1 -r my-app --local ./data  ${t('help.sync.download')}
 `
   );
 
-  // sync push-all
-  sync
-    .command('push-all')
-    .description(t('commands.repo.sync.pushAll.description'))
-    .requiredOption('--to <storage>', t('commands.repo.sync.pushAll.optionTo'))
-    .option('--repo <name>', t('commands.repo.sync.pushAll.optionRepo'), collect, [])
-    .option('-m, --machine <name>', t('options.machine'))
-    .option('--debug', t('options.debug'))
-    .action(async (options) => {
-      try {
-        const repoGUIDs = await resolveRepoGUIDs(options.repo as string[]);
-        const repos = repoGUIDs.length > 0 ? repoGUIDs : undefined;
-
-        const { runBackupSyncPush } = await import('../services/backup-sync.js');
-        await runBackupSyncPush({
-          storageName: options.to,
-          machine: options.machine,
-          repos,
-          debug: options.debug,
-        });
-        outputService.success(t('commands.repo.sync.pushAll.success'));
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  // sync pull-all
-  sync
-    .command('pull-all')
-    .description(t('commands.repo.sync.pullAll.description'))
-    .requiredOption('--from <storage>', t('commands.repo.sync.pullAll.optionFrom'))
-    .option('--repo <name>', t('commands.repo.sync.pullAll.optionRepo'), collect, [])
-    .option('--override', t('commands.repo.sync.pullAll.optionOverride'))
-    .option('-m, --machine <name>', t('options.machine'))
-    .option('--debug', t('options.debug'))
-    .action(async (options) => {
-      try {
-        const repoGUIDs = await resolveRepoGUIDs(options.repo as string[]);
-        const repos = repoGUIDs.length > 0 ? repoGUIDs : undefined;
-
-        const { runBackupSyncPull } = await import('../services/backup-sync.js');
-        await runBackupSyncPull({
-          storageName: options.from,
-          machine: options.machine,
-          repos,
-          override: options.override,
-          debug: options.debug,
-        });
-        outputService.success(t('commands.repo.sync.pullAll.success'));
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
   // sync upload
   sync
     .command('upload')
+    .summary(t('commands.sync.upload.descriptionShort'))
     .description(t('commands.sync.upload.description'))
     .option('-t, --team <name>', t('options.team'))
-    .option('-m, --machine <name>', t('options.machine'))
+    .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('-r, --repository <name>', t('options.repository'))
     .option('-l, --local <path>', t('options.localPath'))
     .option('--remote <path>', t('options.remotePath'))
@@ -450,9 +374,10 @@ ${t('help.examples')}
   // sync download
   sync
     .command('download')
+    .summary(t('commands.sync.download.descriptionShort'))
     .description(t('commands.sync.download.description'))
     .option('-t, --team <name>', t('options.team'))
-    .option('-m, --machine <name>', t('options.machine'))
+    .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('-r, --repository <name>', t('options.repository'))
     .option('-l, --local <path>', t('options.localPath'))
     .option('--remote <path>', t('options.remotePath'))
@@ -476,9 +401,10 @@ ${t('help.examples')}
   // sync status
   sync
     .command('status')
+    .summary(t('commands.sync.status.descriptionShort'))
     .description(t('commands.sync.status.description'))
     .option('-t, --team <name>', t('options.team'))
-    .option('-m, --machine <name>', t('options.machine'))
+    .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('-r, --repository <name>', t('options.repository'))
     .option('-l, --local <path>', t('options.localPath'))
     .option('--remote <path>', t('options.remotePath'))

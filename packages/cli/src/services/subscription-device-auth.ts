@@ -4,8 +4,8 @@ import { outputService } from './output.js';
 import {
   getSubscriptionScopeMismatch,
   getSubscriptionServerUrl,
-  saveStoredSubscriptionToken,
   type StoredSubscriptionToken,
+  saveStoredSubscriptionToken,
 } from './subscription-auth.js';
 
 interface LicenseStatusResponse {

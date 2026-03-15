@@ -1,6 +1,6 @@
 import { DEFAULTS } from '@rediacc/shared/config';
-import { outputService } from '../services/output.js';
 import type { LocalExecuteResult } from '../services/local-executor.js';
+import { outputService } from '../services/output.js';
 import { getOutputFormat } from './errors.js';
 
 const LOCAL_EXECUTION_FAILED_CODE = 'LOCAL_EXECUTION_FAILED';

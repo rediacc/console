@@ -359,10 +359,7 @@ test.describe('Local Context Commands @cli @core', () => {
       if (!result.success) {
         const output = result.stdout + result.stderr;
         const isLocalModeAttempt =
-          output.includes('[local]') ||
-          output.includes('spawn') ||
-          output.includes('renet') ||
-          output.includes('SSH');
+          output.includes('spawn') || output.includes('renet') || output.includes('SSH');
         expect(isLocalModeAttempt).toBe(true);
       }
     });

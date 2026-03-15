@@ -54,7 +54,7 @@ Open Settings → MCP Servers → Add Server:
 
 | Tool | Description |
 |------|-------------|
-| `machine_info` | Get system info, containers, services, and resource usage for a machine |
+| `machine_query` | Get system info, containers, services, and resource usage for a machine |
 | `machine_containers` | List Docker containers with status, health, resource usage, labels, and auto-route domain |
 | `machine_services` | List rediacc-managed systemd services (name, state, sub-state, restart count, memory, owning repository) |
 | `machine_repos` | List deployed repositories (name, GUID, size, mount status, Docker state, container count, disk usage, modified date, Rediaccfile present) |
@@ -87,7 +87,7 @@ Open Settings → MCP Servers → Add Server:
 **Check machine status:**
 > "What's the status of my production machine?"
 
-The agent calls `machine_info` → returns system info, running containers, services, and resource usage.
+The agent calls `machine_query` → returns system info, running containers, services, and resource usage.
 
 **Deploy an application:**
 > "Deploy gitlab on my staging machine"

@@ -4,7 +4,7 @@ description: "配置自动备份计划、管理存储提供商、设置基础设
 category: "Tutorials"
 order: 6
 language: zh
-sourceHash: "26db200e730fff43"
+sourceHash: "14244f699c506ce9"
 ---
 
 # 如何使用 Rediacc 配置备份和网络
@@ -25,7 +25,7 @@ sourceHash: "26db200e730fff43"
 存储提供商（S3、B2、Google Drive 等）用作备份目标。检查已配置的提供商。
 
 ```bash
-rdc config storages
+rdc config storage list
 ```
 
 列出从 rclone 配置导入的所有已配置存储提供商。如果为空，请先添加存储提供商 — 参见[备份与恢复](/zh/docs/backup-restore)。
@@ -62,7 +62,7 @@ rdc config backup-strategy show
 对于面向公众的服务，机器需要其外部 IP、基础域名和用于 Let's Encrypt TLS 的证书电子邮件。
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com
@@ -75,7 +75,7 @@ Rediacc 根据这些设置生成 Traefik 反向代理配置。
 如果您的服务需要非 HTTP 端口（例如 SMTP、DNS），请将它们注册为 Traefik 入口点。
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 ```
@@ -87,7 +87,7 @@ rdc config set-infra server-1 \
 验证完整的基础设施配置。
 
 ```bash
-rdc config show-infra server-1
+rdc config infra show server-1
 ```
 
 显示公共 IP、域名、证书电子邮件和所有已注册端口。
@@ -109,10 +109,10 @@ rdc config backup-strategy show
 Cron 格式为 `minute hour day month weekday`。常见计划：`0 2 * * *`（每天凌晨 2 点）、`0 */6 * * *`（每 6 小时）、`0 0 * * 0`（每周日午夜）。
 
 **"Storage destination not found"**
-目标名称必须与已配置的存储提供商匹配。运行 `rdc config storages` 查看可用名称。通过 rclone 配置添加新提供商。
+目标名称必须与已配置的存储提供商匹配。运行 `rdc config storage list` 查看可用名称。通过 rclone 配置添加新提供商。
 
 **部署时出现 "Infrastructure config incomplete"**
-三个字段全部必填：`--public-ipv4`、`--base-domain` 和 `--cert-email`。运行 `rdc config show-infra <machine>` 检查缺少哪些字段。
+三个字段全部必填：`--public-ipv4`、`--base-domain` 和 `--cert-email`。运行 `rdc config infra show <machine>` 检查缺少哪些字段。
 
 ## 后续步骤
 

@@ -44,58 +44,57 @@ function parseInfraOptions(options: Record<string, string>): ParsedInfraOptions 
 }
 
 export function registerInfraCommands(config: Command, program: Command): void {
-  // config set-infra <machine>
-  config
-    .command('set-infra <machine>')
-    .description(t('commands.config.setInfra.description'))
-    .option('--public-ipv4 <ip>', t('commands.config.setInfra.optionPublicIPv4'))
-    .option('--public-ipv6 <ip>', t('commands.config.setInfra.optionPublicIPv6'))
-    .option('--base-domain <domain>', t('commands.config.setInfra.optionBaseDomain'))
-    .option('--cert-email <email>', t('commands.config.setInfra.optionCertEmail'))
-    .option('--cf-dns-token <token>', t('commands.config.setInfra.optionCfDnsToken'))
-    .option('--tcp-ports <ports>', t('commands.config.setInfra.optionTcpPorts'))
-    .option('--udp-ports <ports>', t('commands.config.setInfra.optionUdpPorts'))
+  const infra = config.command('infra').description(t('commands.config.infra.description'));
+
+  // config infra set <machine>
+  infra
+    .command('set <machine>')
+    .summary(t('commands.config.infra.set.descriptionShort'))
+    .description(t('commands.config.infra.set.description'))
+    .option('--public-ipv4 <ip>', t('commands.config.infra.set.optionPublicIPv4'))
+    .option('--public-ipv6 <ip>', t('commands.config.infra.set.optionPublicIPv6'))
+    .option('--base-domain <domain>', t('commands.config.infra.set.optionBaseDomain'))
+    .option('--cert-email <email>', t('commands.config.infra.set.optionCertEmail'))
+    .option('--cf-dns-token <token>', t('commands.config.infra.set.optionCfDnsToken'))
+    .option('--tcp-ports <ports>', t('commands.config.infra.set.optionTcpPorts'))
+    .option('--udp-ports <ports>', t('commands.config.infra.set.optionUdpPorts'))
     .action(async (machineName, options) => {
       try {
-        const { infra, configLevel } = parseInfraOptions(options);
+        const { infra: infraOpts, configLevel } = parseInfraOptions(options);
 
-        if (Object.keys(infra).length === 0 && Object.keys(configLevel).length === 0) {
-          outputService.warn(t('commands.config.setInfra.noOptions'));
+        if (Object.keys(infraOpts).length === 0 && Object.keys(configLevel).length === 0) {
+          outputService.warn(t('commands.config.infra.set.noOptions'));
           return;
         }
 
-        // Validate infra fields via Zod schema
-        if (Object.keys(infra).length > 0) {
-          parseConfig(InfraConfigSchema, infra, 'infra config');
+        if (Object.keys(infraOpts).length > 0) {
+          parseConfig(InfraConfigSchema, infraOpts, 'infra config');
         }
 
-        // Validate config-level fields
         if (configLevel.certEmail && !isValidEmail(configLevel.certEmail)) {
           throw new ValidationError(
             t('errors.config.invalidEmail', { value: configLevel.certEmail })
           );
         }
 
-        // Set machine-level infra (IPs, domain, ports)
-        if (Object.keys(infra).length > 0) {
-          await configService.setMachineInfra(machineName, infra);
+        if (Object.keys(infraOpts).length > 0) {
+          await configService.setMachineInfra(machineName, infraOpts);
         }
 
-        // Set config-level shared fields (certEmail, cfDnsApiToken)
         if (Object.keys(configLevel).length > 0) {
           await configService.updateConfigFields(configLevel);
         }
 
-        outputService.success(t('commands.config.setInfra.success', { name: machineName }));
+        outputService.success(t('commands.config.infra.set.success', { name: machineName }));
       } catch (error) {
         handleError(error);
       }
     });
 
-  // config show-infra <machine>
-  config
-    .command('show-infra <machine>')
-    .description(t('commands.config.showInfra.description'))
+  // config infra show <machine>
+  infra
+    .command('show <machine>')
+    .description(t('commands.config.infra.show.description'))
     .action(async (machineName) => {
       try {
         const machine = await configService.getLocalMachine(machineName);
@@ -103,7 +102,7 @@ export function registerInfraCommands(config: Command, program: Command): void {
         const format = program.opts().output as OutputFormat;
 
         if (!machine.infra) {
-          outputService.info(t('commands.config.showInfra.noInfra', { name: machineName }));
+          outputService.info(t('commands.config.infra.show.noInfra', { name: machineName }));
           return;
         }
 
@@ -138,30 +137,30 @@ export function registerInfraCommands(config: Command, program: Command): void {
       }
     });
 
-  // config push-infra <machine>
-  config
-    .command('push-infra <machine>')
-    .description(t('commands.config.pushInfra.description'))
+  // config infra push <machine>
+  infra
+    .command('push <machine>')
+    .summary(t('commands.config.infra.push.descriptionShort'))
+    .description(t('commands.config.infra.push.description'))
     .option('--debug', t('options.debug'))
     .action(async (machineName, options) => {
       try {
         const { pushInfraConfig } = await import('../services/infra-provision.js');
         await pushInfraConfig(machineName, { debug: options.debug });
-        outputService.success(t('commands.config.pushInfra.success', { name: machineName }));
+        outputService.success(t('commands.config.infra.push.success', { name: machineName }));
       } catch (error) {
         handleError(error);
       }
     });
 
   // ============================================================================
-  // cert-cache subcommands
+  // cert-cache subcommands (already nested — keep as-is)
   // ============================================================================
 
   const certCache = config
     .command('cert-cache')
     .description(t('commands.config.certCache.description'));
 
-  // config cert-cache pull <machine>
   certCache
     .command('pull <machine>')
     .description(t('commands.config.certCache.pull.description'))
@@ -179,7 +178,6 @@ export function registerInfraCommands(config: Command, program: Command): void {
       }
     });
 
-  // config cert-cache push <machine>
   certCache
     .command('push <machine>')
     .description(t('commands.config.certCache.push.description'))
@@ -195,7 +193,6 @@ export function registerInfraCommands(config: Command, program: Command): void {
       }
     });
 
-  // config cert-cache status
   certCache
     .command('status')
     .description(t('commands.config.certCache.status.description'))
@@ -228,7 +225,6 @@ export function registerInfraCommands(config: Command, program: Command): void {
           );
           outputService.info('');
 
-          // Show cert inventory
           const certData = Object.entries(entry.certs)
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([domain, expiry]) => ({
@@ -249,7 +245,6 @@ export function registerInfraCommands(config: Command, program: Command): void {
       }
     });
 
-  // config cert-cache clear
   certCache
     .command('clear')
     .description(t('commands.config.certCache.clear.description'))

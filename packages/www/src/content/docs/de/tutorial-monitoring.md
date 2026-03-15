@@ -4,7 +4,7 @@ description: "Maschinengesundheit prüfen, Container inspizieren, systemd-Dienst
 category: "Tutorials"
 order: 4
 language: de
-sourceHash: "16ba383dcb05e556"
+sourceHash: "af9f17a05dfb13b9"
 ---
 
 # Infrastruktur mit Rediacc überwachen und diagnostizieren
@@ -69,7 +69,7 @@ Bietet einen Überblick über die Maschine: Hostname, Betriebszeit, Speicher, Fe
 Wenn eine Maschine neu aufgebaut wurde oder sich ihre IP geändert hat, aktualisieren Sie den gespeicherten SSH-Host-Schlüssel.
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 Ruft die aktuellen Host-Schlüssel des Servers ab und aktualisiert Ihre Konfiguration. Dies verhindert Fehler wie "host key verification failed".

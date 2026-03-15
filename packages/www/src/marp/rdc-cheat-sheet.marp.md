@@ -163,7 +163,7 @@ rdc repo mount <repo> -m <machine>
 rdc repo unmount <repo> -m <machine>
 
 # CoW fork (Copy-on-Write), offline resize, online expand
-rdc repo fork <parent> --tag <fork-name> -m <machine>
+rdc repo fork <parent> <tag> -m <machine>
 rdc repo resize <repo> -m <machine> --size 20G
 rdc repo expand <repo> -m <machine> --size 20G
 

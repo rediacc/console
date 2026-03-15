@@ -4,7 +4,7 @@ description: "تكوين جداول النسخ الاحتياطي التلقائ
 category: "Tutorials"
 order: 6
 language: ar
-sourceHash: "26db200e730fff43"
+sourceHash: "14244f699c506ce9"
 ---
 
 # كيفية تكوين النسخ الاحتياطي والشبكات مع Rediacc
@@ -25,7 +25,7 @@ sourceHash: "26db200e730fff43"
 موفرو التخزين (S3، B2، Google Drive، إلخ) يعملون كوجهات للنسخ الاحتياطي. تحقق من الموفرين المُكوّنين.
 
 ```bash
-rdc config storages
+rdc config storage list
 ```
 
 يعرض جميع موفري التخزين المُكوّنين المستوردين من إعدادات rclone. إذا كانت القائمة فارغة، أضف موفر تخزين أولاً — راجع [النسخ الاحتياطي والاستعادة](/ar/docs/backup-restore).
@@ -62,7 +62,7 @@ rdc config backup-strategy show
 للخدمات العامة، يحتاج الجهاز إلى عنوان IP الخارجي والنطاق الأساسي وبريد إلكتروني للشهادات من Let's Encrypt TLS.
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com
@@ -75,7 +75,7 @@ rdc config set-infra server-1 \
 إذا كانت خدماتك تحتاج منافذ غير HTTP (مثل SMTP، DNS)، قم بتسجيلها كنقاط دخول Traefik.
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 ```
@@ -87,7 +87,7 @@ rdc config set-infra server-1 \
 تحقق من تكوين البنية التحتية الكامل.
 
 ```bash
-rdc config show-infra server-1
+rdc config infra show server-1
 ```
 
 يعرض عناوين IP العامة والنطاق والبريد الإلكتروني للشهادات وجميع المنافذ المسجلة.
@@ -109,10 +109,10 @@ rdc config backup-strategy show
 صيغة cron هي `minute hour day month weekday`. الجداول الشائعة: `0 2 * * *` (يومياً 2 صباحاً)، `0 */6 * * *` (كل 6 ساعات)، `0 0 * * 0` (أسبوعياً منتصف ليل الأحد).
 
 **"Storage destination not found"**
-يجب أن يتطابق اسم الوجهة مع موفر تخزين مُكوّن. شغّل `rdc config storages` لرؤية الأسماء المتاحة. أضف موفرين جدد عبر تكوين rclone.
+يجب أن يتطابق اسم الوجهة مع موفر تخزين مُكوّن. شغّل `rdc config storage list` لرؤية الأسماء المتاحة. أضف موفرين جدد عبر تكوين rclone.
 
 **"Infrastructure config incomplete" عند النشر**
-جميع الحقول الثلاثة مطلوبة: `--public-ipv4` و `--base-domain` و `--cert-email`. شغّل `rdc config show-infra <machine>` للتحقق من الحقول المفقودة.
+جميع الحقول الثلاثة مطلوبة: `--public-ipv4` و `--base-domain` و `--cert-email`. شغّل `rdc config infra show <machine>` للتحقق من الحقول المفقودة.
 
 ## الخطوات التالية
 

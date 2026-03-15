@@ -4,7 +4,7 @@ description: Cursor IDE'yi .cursorrules ve terminal entegrasyonu kullanarak Redi
 category: Guides
 order: 32
 language: tr
-sourceHash: "6da857eb870d511e"
+sourceHash: "c6caf89e3bb3f461"
 ---
 
 Cursor, terminal komutları ve `.cursorrules` yapılandırma dosyası aracılığıyla Rediacc ile entegre olur.
@@ -38,7 +38,7 @@ Cursor'a sorun: *"Üretim sunucumun durumunu kontrol et"*
 
 Cursor terminalde çalıştırır:
 ```bash
-rdc machine info prod-1 -o json
+rdc machine query prod-1 -o json
 ```
 
 ### Değişiklikleri Dağıtma

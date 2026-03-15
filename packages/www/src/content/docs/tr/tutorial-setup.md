@@ -4,7 +4,7 @@ description: "Bir yapılandırma profili oluşturun, uzak bir makine kaydedin, S
 category: "Tutorials"
 order: 2
 language: tr
-sourceHash: "c85a5f51a95e07bb"
+sourceHash: "04756cddd86e097c"
 ---
 
 # Rediacc ile Makine Nasıl Kurulur
@@ -46,7 +46,7 @@ Tüm mevcut yapılandırmaları adaptör türü (yerel veya bulut) ve makine say
 IP adresi ve SSH kullanıcısıyla bir makine kaydedin. CLI, sunucunun host anahtarlarını `ssh-keyscan` aracılığıyla otomatik olarak alır ve saklar.
 
 ```bash
-rdc config add-machine bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
+rdc config machine add bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
 ```
 
 ### Adım 4: Makineleri görüntüleyin
@@ -54,7 +54,7 @@ rdc config add-machine bridge-vm --ip 192.168.111.1 --user muhammed --config tut
 Makinenin doğru şekilde kaydedildiğini onaylayın.
 
 ```bash
-rdc config machines --config tutorial-demo
+rdc config machine list --config tutorial-demo
 ```
 
 Mevcut yapılandırmadaki tüm makineleri bağlantı ayrıntılarıyla gösterir.
@@ -91,7 +91,7 @@ Yerel ortamınızı kontrol eder: CLI sürümü, Docker, renet ikili dosyası, y
 Halka açık hizmetler için makinenin ağ yapılandırmasına ihtiyacı vardır — harici IP'si, bir temel alan adı ve TLS için bir sertifika e-postası.
 
 ```bash
-rdc config set-infra bridge-vm \
+rdc config infra set bridge-vm \
   --public-ipv4 192.168.111.1 \
   --base-domain test.local \
   --cert-email admin@test.local
@@ -100,10 +100,10 @@ rdc config set-infra bridge-vm \
 Yapılandırmayı doğrulayın:
 
 ```bash
-rdc config show-infra bridge-vm
+rdc config infra show bridge-vm
 ```
 
-Oluşturulan Traefik proxy yapılandırmasını `rdc config push-infra bridge-vm` ile sunucuya dağıtın.
+Oluşturulan Traefik proxy yapılandırmasını `rdc config infra push bridge-vm` ile sunucuya dağıtın.
 
 ## Sorun Giderme
 
@@ -114,7 +114,7 @@ Oluşturulan Traefik proxy yapılandırmasını `rdc config push-infra bridge-vm
 Sunucunun çalıştığını ve IP'nin doğru olduğunu onaylayın. Port 22'nin açık olduğunu kontrol edin: `nc -zv <ip> 22`. Standart olmayan bir port kullanıyorsanız, makine eklerken `--port` parametresini geçirin.
 
 **"Host key verification failed"**
-Saklanan host anahtarı sunucunun mevcut anahtarıyla eşleşmiyor. Bu, sunucu yeniden oluşturulduktan veya IP yeniden atandıktan sonra gerçekleşir. Anahtarı yenilemek için `rdc config scan-keys <machine>` komutunu çalıştırın.
+Saklanan host anahtarı sunucunun mevcut anahtarıyla eşleşmiyor. Bu, sunucu yeniden oluşturulduktan veya IP yeniden atandıktan sonra gerçekleşir. Anahtarı yenilemek için `rdc config machine scan-keys <machine>` komutunu çalıştırın.
 
 ## Sonraki Adımlar
 

@@ -280,40 +280,6 @@
       }
     },
     "config": {
-      "addMachine": {
-        "description": "Agregar una máquina a la configuración actual",
-        "success": "Máquina \"{{name}}\" agregada ({{user}}@{{ip}})"
-      },
-      "addProvider": {
-        "description": "Agregar un proveedor de nube para el aprovisionamiento automático de máquinas",
-        "optionImage": "Imagen de SO predeterminada",
-        "optionImageAttr": "Personalizado: nombre del atributo para imagen de SO",
-        "optionInstanceType": "Tipo/tamaño de instancia predeterminado",
-        "optionIpv4Output": "Personalizado: atributo de salida para dirección IPv4",
-        "optionIpv6Output": "Personalizado: atributo de salida para dirección IPv6",
-        "optionLabelAttr": "Personalizado: nombre del atributo para etiqueta de VM",
-        "optionProvider": "Fuente de proveedor conocida (ej., linode/linode, hetznercloud/hcloud)",
-        "optionRegion": "Región predeterminada para nuevas máquinas",
-        "optionRegionAttr": "Personalizado: nombre del atributo para región",
-        "optionResource": "Personalizado: tipo de recurso OpenTofu para VM",
-        "optionSizeAttr": "Personalizado: nombre del atributo para tipo de instancia",
-        "optionSource": "Fuente personalizada de proveedor OpenTofu (ej., vultr/vultr)",
-        "optionSshKeyAttr": "Personalizado: nombre del atributo para claves SSH",
-        "optionSshKeyFormat": "Personalizado: formato de clave SSH (inline_list o resource_id)",
-        "optionSshKeyResource": "Personalizado: tipo de recurso OpenTofu para claves SSH",
-        "optionSshUser": "Nombre de usuario SSH para nuevas VMs (predeterminado: root)",
-        "optionToken": "Token API para el proveedor de nube",
-        "success": "Proveedor de nube \"{{name}}\" agregado ({{provider}})"
-      },
-      "addRepository": {
-        "description": "Agregar un mapeo de GUID de repositorio a la configuración actual",
-        "networkIdAssigned": "ID de red: {{networkId}}",
-        "optionCredential": "Credencial del repositorio (frase de contraseña de cifrado)",
-        "optionGuid": "GUID del repositorio (UUID de los nombres de archivo de respaldo de almacenamiento)",
-        "optionNetworkId": "ID de red para aislamiento Docker (2816, 2880, ...). Se asigna automáticamente si se omite",
-        "optionTag": "Etiqueta del repositorio",
-        "success": "Repositorio \"{{name}}\" agregado ({{guid}}, etiqueta: {{tag}})"
-      },
       "backupStrategy": {
         "description": "Gestionar estrategia de respaldo multi-destino",
         "set": {
@@ -378,14 +344,42 @@
         "success": "Configuración \"{{name}}\" eliminada"
       },
       "description": "Gestionar archivos de configuración, máquinas y conexiones SSH",
-      "importStorage": {
-        "description": "Importar almacenamientos desde un archivo de configuración rclone",
-        "imported": "Almacenamiento \"{{name}}\" importado ({{type}})",
-        "noConfigs": "No se encontraron configuraciones de almacenamiento válidas en el archivo",
-        "notFound": "Almacenamiento \"{{name}}\" no encontrado en el archivo de configuración",
-        "optionName": "Importar solo esta sección con nombre",
-        "summary": "{{count}} almacenamiento(s) importado(s)",
-        "unsupported": "Omitiendo \"{{name}}\": tipo de proveedor no soportado \"{{type}}\""
+      "infra": {
+        "description": "Gestionar configuración de infraestructura (proxy, DNS, certificados)",
+        "push": {
+          "certCacheUploaded": "Certificados en caché subidos al remoto",
+          "description": "Enviar configuración de infraestructura a la máquina (proxy Traefik, enrutador, Cloudflare DNS). Ejecuta primero 'config infra set <machine>'",
+          "descriptionShort": "Enviar configuración de infraestructura a la máquina",
+          "dnsCreated": "DNS: {{type}} {{name}} → {{content}} creado",
+          "dnsError": "Advertencia DNS: {{message}} (los registros pueden necesitar configuración manual)",
+          "dnsResolvingZone": "Resolviendo zona de Cloudflare para {{domain}}...",
+          "dnsSkipLocal": "Omitiendo DNS: el dominio .local no usa Cloudflare",
+          "dnsSkipNoToken": "Omitiendo DNS: no hay token de API de Cloudflare. Configura con: rdc config infra set <machine> --cf-dns-token <token>",
+          "dnsUnchanged": "DNS: {{type}} {{name}} ya está correcto",
+          "dnsUpdated": "DNS: {{type}} {{name}} → {{content}} actualizado",
+          "installingProxy": "Instalando e iniciando el proxy...",
+          "proxyInstallWarning": "Falló la instalación del proxy (código {{code}}). Ejecuta manualmente: sudo renet proxy install",
+          "success": "Configuración de infraestructura enviada a \"{{name}}\""
+        },
+        "set": {
+          "description": "Establecer configuración de infraestructura para una máquina (específico de máquina: IPs, dominio, puertos; compartido: email de certificado, token DNS de Cloudflare)",
+          "descriptionShort": "Establecer configuración de infraestructura para una máquina",
+          "invalidIPv4": "Dirección IPv4 inválida: {{ip}}",
+          "invalidIPv6": "Dirección IPv6 inválida: {{ip}}",
+          "noOptions": "No se especificaron opciones. Usa --public-ipv4, --base-domain, etc.",
+          "optionBaseDomain": "Dominio base para aplicaciones (por máquina)",
+          "optionCertEmail": "Correo para notificaciones de certificados TLS (compartido entre máquinas)",
+          "optionCfDnsToken": "Token de Cloudflare DNS API para desafío ACME DNS-01 (compartido entre máquinas)",
+          "optionPublicIPv4": "Dirección IPv4 pública (por máquina)",
+          "optionPublicIPv6": "Dirección IPv6 pública (por máquina)",
+          "optionTcpPorts": "Puertos TCP a reenviar (separados por comas, ej., 25,143,465)",
+          "optionUdpPorts": "Puertos UDP a reenviar (separados por comas, ej., 53)",
+          "success": "Configuración de infraestructura actualizada para \"{{name}}\""
+        },
+        "show": {
+          "description": "Mostrar configuración de infraestructura para una máquina",
+          "noInfra": "No hay configuración de infraestructura para \"{{name}}\""
+        }
       },
       "init": {
         "alreadyExists": "La configuración \"{{name}}\" ya existe",
@@ -408,36 +402,75 @@
         "description": "Listar todos los archivos de configuración",
         "noConfigs": "No se encontraron archivos de configuración. Cree uno con: rdc config init"
       },
-      "listArchived": {
-        "description": "Listar credenciales de repositorios archivados",
-        "noArchived": "No hay repositorios archivados"
+      "machine": {
+        "add": {
+          "description": "Agregar una máquina a la configuración actual",
+          "descriptionShort": "Añadir una máquina a la configuración actual",
+          "success": "Máquina \"{{name}}\" agregada ({{user}}@{{ip}})"
+        },
+        "description": "Gestionar máquinas en la configuración actual",
+        "list": {
+          "description": "Listar máquinas en la configuración actual",
+          "noMachines": "No hay máquinas en la configuración actual"
+        },
+        "remove": {
+          "description": "Eliminar una máquina de la configuración actual",
+          "success": "Máquina \"{{name}}\" eliminada"
+        },
+        "scanKeys": {
+          "completed": "{{count}}/{{total}} máquinas escaneadas",
+          "description": "Escanear claves de host SSH para máquinas en la configuración actual",
+          "keysScanned": "Claves de host escaneadas para \"{{name}}\"",
+          "noKeys": "No se pudieron escanear las claves de host para \"{{name}}\""
+        },
+        "setCeph": {
+          "description": "Establecer configuración de Ceph RBD para una máquina",
+          "optionCluster": "Nombre del clúster de Ceph",
+          "optionImage": "Nombre de imagen RBD (ej., datastore-prod1)",
+          "optionPool": "Nombre del pool de Ceph (ej., rbd)",
+          "success": "Configuración de Ceph establecida para \"{{name}}\": pool={{pool}}, image={{image}}"
+        },
+        "setup": {
+          "completed": "Máquina \"{{machine}}\" configurada exitosamente",
+          "datastoreOption": "Ruta del almacén de datos en la máquina remota",
+          "datastoreSizeOption": "Tamaño del almacén de datos (ej.: 95%, 100G)",
+          "description": "Aprovisionar una máquina remota para repositorios (instala renet, configura Docker, almacén BTRFS). Idempotente. Requerido después de config machine add y antes de repo create",
+          "descriptionShort": "Aprovisionar una máquina remota para repositorios",
+          "failed": "Configuración de máquina \"{{machine}}\" fallida: {{error}}",
+          "starting": "Configurando máquina \"{{machine}}\"..."
+        }
       },
-      "machines": {
-        "description": "Listar máquinas en la configuración actual",
-        "noMachines": "No hay máquinas configuradas. Agregue una con: rdc config add-machine <name> --ip <ip> --user <user>"
-      },
-      "providers": {
-        "description": "Listar proveedores de nube configurados",
-        "noProviders": "No hay proveedores de nube configurados. Agregar con: rdc config add-provider"
-      },
-      "purgeArchived": {
-        "description": "Eliminar permanentemente todas las credenciales archivadas",
-        "noArchived": "No hay repositorios archivados para eliminar",
-        "success": "{{count}} credencial(es) archivada(s) eliminada(s)"
-      },
-      "pushInfra": {
-        "certCacheUploaded": "Certificados en caché subidos al remoto",
-        "description": "Enviar configuración de infraestructura a la máquina (proxy Traefik, router y registros DNS de Cloudflare para subdominio de máquina). Ejecutar 'config set-infra <machine>' primero",
-        "dnsCreated": "DNS: creado {{type}} {{name}} → {{content}}",
-        "dnsError": "Advertencia DNS: {{message}} (los registros pueden necesitar configuración manual)",
-        "dnsResolvingZone": "Resolviendo zona de Cloudflare para {{domain}}...",
-        "dnsSkipLocal": "Omitiendo DNS: el dominio .local no usa Cloudflare",
-        "dnsSkipNoToken": "Omitiendo DNS: no hay token de API de Cloudflare. Configurar con: rdc config set-infra <machine> --cf-dns-token <token>",
-        "dnsUnchanged": "DNS: {{type}} {{name}} ya correcto",
-        "dnsUpdated": "DNS: actualizado {{type}} {{name}} → {{content}}",
-        "installingProxy": "Instalando e iniciando proxy...",
-        "proxyInstallWarning": "Instalación del proxy fallida (código {{code}}). Ejecutar manualmente: sudo renet proxy install",
-        "success": "Configuración de infraestructura enviada a \"{{name}}\""
+      "provider": {
+        "add": {
+          "description": "Añadir un proveedor de nube",
+          "optionImage": "Imagen de SO predeterminada",
+          "optionImageAttr": "Personalizado: nombre del atributo para la imagen del SO",
+          "optionInstanceType": "Tipo/tamaño de instancia predeterminado",
+          "optionIpv4Output": "Personalizado: atributo de salida para la dirección IPv4",
+          "optionIpv6Output": "Personalizado: atributo de salida para la dirección IPv6",
+          "optionLabelAttr": "Personalizado: nombre del atributo para la etiqueta de la VM",
+          "optionProvider": "Fuente de proveedor conocido (ej., linode/linode, hetznercloud/hcloud)",
+          "optionRegion": "Región predeterminada para nuevas máquinas",
+          "optionRegionAttr": "Personalizado: nombre del atributo para la región",
+          "optionResource": "Personalizado: tipo de recurso OpenTofu para VMs",
+          "optionSizeAttr": "Personalizado: nombre del atributo para el tipo de instancia",
+          "optionSource": "Fuente personalizada de proveedor OpenTofu (ej., vultr/vultr)",
+          "optionSshKeyAttr": "Personalizado: nombre del atributo para claves SSH",
+          "optionSshKeyFormat": "Personalizado: formato de clave SSH (inline_list o resource_id)",
+          "optionSshKeyResource": "Personalizado: tipo de recurso OpenTofu para claves SSH",
+          "optionSshUser": "Usuario SSH para nuevas VMs (por defecto: root)",
+          "optionToken": "Token de API para el proveedor de nube",
+          "success": "Proveedor de nube \"{{name}}\" agregado ({{provider}})"
+        },
+        "description": "Gestionar proveedores de nube para aprovisionamiento automático de máquinas",
+        "list": {
+          "description": "Listar proveedores de nube configurados",
+          "noProviders": "No hay proveedores de nube configurados. Agrega con: rdc config provider add"
+        },
+        "remove": {
+          "description": "Eliminar configuración de proveedor de nube",
+          "success": "Proveedor de nube \"{{name}}\" eliminado"
+        }
       },
       "recover": {
         "confirm": "¿Restaurar configuración \"{{name}}\" desde el respaldo?",
@@ -446,61 +479,43 @@
         "noBackup": "No se encontró respaldo para la configuración \"{{name}}\"",
         "success": "Configuración \"{{name}}\" restaurada desde el respaldo (versión {{version}})"
       },
-      "removeMachine": {
-        "description": "Eliminar una máquina de la configuración actual",
-        "success": "Máquina \"{{name}}\" eliminada"
-      },
-      "removeProvider": {
-        "description": "Eliminar configuración de proveedor de nube",
-        "success": "Proveedor de nube \"{{name}}\" eliminado"
-      },
-      "removeRepository": {
-        "description": "Eliminar un mapeo de repositorio de la configuración actual",
-        "success": "Repositorio \"{{name}}\" eliminado"
-      },
-      "removeStorage": {
-        "description": "Eliminar un almacenamiento de la configuración actual",
-        "success": "Almacenamiento \"{{name}}\" eliminado"
-      },
-      "repositories": {
-        "description": "Listar mapeos de GUID de repositorios en la configuración actual",
-        "noRepositories": "No hay repositorios configurados. Agregue uno con: rdc config add-repository <name> --guid <guid>"
-      },
-      "restoreArchived": {
-        "description": "Restaurar credencial de repositorio archivado",
-        "optionName": "Restaurar con un nombre diferente",
-        "success": "\"{{name}}\" ({{guid}}) restaurado"
-      },
-      "scanKeys": {
-        "completed": "Escaneadas {{count}}/{{total}} máquinas",
-        "description": "Escanear claves de host SSH para las máquinas en la configuración actual",
-        "keysScanned": "Claves de host escaneadas para \"{{name}}\"",
-        "noKeys": "No se pudieron escanear las claves de host para \"{{name}}\""
+      "repository": {
+        "add": {
+          "description": "Añadir mapeo de GUID de repositorio a la configuración actual",
+          "networkIdAssigned": "ID de red: {{networkId}}",
+          "optionCredential": "Credencial del repositorio (frase de cifrado)",
+          "optionGuid": "GUID del repositorio (UUID de nombres de archivos de respaldo)",
+          "optionNetworkId": "ID de red para aislamiento Docker (2816, 2880, ...). Se asigna automáticamente si se omite",
+          "optionTag": "Etiqueta del repositorio",
+          "success": "Repositorio \"{{name}}\" agregado ({{guid}}, etiqueta: {{tag}})"
+        },
+        "description": "Gestionar mapeos de repositorios en la configuración actual",
+        "list": {
+          "description": "Listar mapeos de GUID de repositorios en la configuración actual",
+          "noRepositories": "No hay repositorios configurados. Agrega uno con: rdc config repository add <name> --guid <guid>"
+        },
+        "listArchived": {
+          "description": "Listar credenciales de repositorios archivados",
+          "noArchived": "No hay repositorios archivados"
+        },
+        "purgeArchived": {
+          "description": "Eliminar permanentemente todas las credenciales archivadas",
+          "noArchived": "No hay repositorios archivados para purgar",
+          "success": "{{count}} credencial(es) archivada(s) purgada(s)"
+        },
+        "remove": {
+          "description": "Eliminar mapeo de repositorio de la configuración actual",
+          "success": "Repositorio \"{{name}}\" eliminado"
+        },
+        "restoreArchived": {
+          "description": "Restaurar credencial de repositorio archivado",
+          "optionName": "Restaurar con un nombre diferente",
+          "success": "\"{{name}}\" restaurado ({{guid}})"
+        }
       },
       "set": {
         "description": "Establecer un valor predeterminado (equipo, región, puente, máquina)",
         "success": "\"{{key}}\" establecido en \"{{value}}\""
-      },
-      "setCeph": {
-        "description": "Configurar Ceph RBD para una máquina",
-        "optionCluster": "Nombre del clúster Ceph",
-        "optionImage": "Nombre de imagen RBD (ej., datastore-prod1)",
-        "optionPool": "Nombre del pool Ceph (ej., rbd)",
-        "success": "Configuración Ceph establecida para \"{{name}}\": pool={{pool}}, image={{image}}"
-      },
-      "setInfra": {
-        "description": "Establecer configuración de infraestructura para una máquina (machine-specific: IPs, domain, ports; shared: cert email, CF DNS token)",
-        "invalidIPv4": "Dirección IPv4 inválida: {{ip}}",
-        "invalidIPv6": "Dirección IPv6 inválida: {{ip}}",
-        "noOptions": "No se especificaron opciones. Use --public-ipv4, --base-domain, etc.",
-        "optionBaseDomain": "Dominio base para las aplicaciones",
-        "optionCertEmail": "Correo para notificaciones de certificados TLS (shared across machines)",
-        "optionCfDnsToken": "Token de API DNS de Cloudflare para desafío ACME DNS-01 (shared across machines)",
-        "optionPublicIPv4": "Dirección IPv4 pública",
-        "optionPublicIPv6": "Dirección IPv6 pública",
-        "optionTcpPorts": "Puertos TCP a reenviar (separados por coma, ej. 25,143,465)",
-        "optionUdpPorts": "Puertos UDP a reenviar (separados por coma, ej. 53)",
-        "success": "Configuración de infraestructura actualizada para \"{{name}}\""
       },
       "setRenet": {
         "description": "Establecer la ruta al binario renet para modo local",
@@ -510,25 +525,29 @@
         "description": "Actualizar configuración SSH para la configuración actual",
         "success": "Configuración SSH actualizada"
       },
-      "setupMachine": {
-        "completed": "Configuración de la máquina '{{machine}}' completada exitosamente",
-        "datastoreOption": "Ruta del almacén de datos en la máquina remota",
-        "datastoreSizeOption": "Tamaño del almacén de datos (ej. 95%, 100G)",
-        "description": "Ejecutar configuración en una máquina remota (instala btrfs, Docker, etc.)",
-        "failed": "Falló la configuración de la máquina '{{machine}}': {{error}}",
-        "starting": "Configurando máquina '{{machine}}'..."
-      },
       "show": {
         "description": "Mostrar detalles de la configuración actual",
         "noConfig": "No hay configuración activa. Cree una con: rdc config init"
       },
-      "showInfra": {
-        "description": "Mostrar configuración de infraestructura para una máquina",
-        "noInfra": "No hay configuración de infraestructura establecida para \"{{name}}\""
-      },
-      "storages": {
-        "description": "Listar almacenamientos en la configuración actual",
-        "noStorages": "No hay almacenamientos configurados. Importe con: rdc config import-storage <file>"
+      "storage": {
+        "description": "Gestionar backends de almacenamiento en la configuración actual",
+        "import": {
+          "description": "Importar almacenamientos desde un archivo de configuración rclone",
+          "imported": "Almacenamiento \"{{name}}\" importado ({{type}})",
+          "noConfigs": "No se encontraron configuraciones de almacenamiento válidas en el archivo",
+          "notFound": "Almacenamiento \"{{name}}\" no encontrado en el archivo de configuración",
+          "optionName": "Importar solo esta sección nombrada",
+          "summary": "{{count}} almacenamiento(s) importado(s)",
+          "unsupported": "Omitiendo \"{{name}}\": tipo de proveedor no soportado \"{{type}}\""
+        },
+        "list": {
+          "description": "Listar almacenamientos en la configuración actual",
+          "noStorages": "No hay almacenamientos configurados. Importa con: rdc config storage import <file>"
+        },
+        "remove": {
+          "description": "Eliminar un almacenamiento de la configuración actual",
+          "success": "Almacenamiento \"{{name}}\" eliminado"
+        }
       }
     },
     "datastore": {
@@ -537,6 +556,7 @@
         "completed": "Almacén de datos bifurcado con éxito (snapshot: {{snapshot}})",
         "cowSizeOption": "Tamaño del archivo de respaldo COW (predeterminado: auto, crece según demanda)",
         "description": "Crear una copia COW local de un almacén de datos Ceph mediante snapshot + clone RBD (< 2s). Guarde los nombres de snapshot/clone de la salida para unfork. Solo un fork por nombre de destino; ejecute unfork antes de volver a hacer fork",
+        "descriptionShort": "Crear una copia CoW local de un almacén de datos Ceph",
         "failed": "Error al bifurcar el almacén de datos",
         "starting": "Bifurcando almacén de datos en \"{{source}}\" (clon nombrado para \"{{target}}\")...",
         "toOption": "Sufijo del clon (crea un clon llamado <image>-fork-<name>). El fork permanece en la máquina de origen"
@@ -616,9 +636,17 @@
       "title": "Diagnóstico de Rediacc CLI"
     },
     "machine": {
+      "backup": {
+        "description": "Gestión de respaldos de máquina",
+        "schedule": {
+          "description": "Enviar programación de respaldo a una máquina remota (temporizador systemd)",
+          "success": "Programación de respaldo desplegada en {{machine}}"
+        }
+      },
       "containers": {
         "allHealthy": "Todos los contenedores están saludables",
         "description": "Listar contenedores en ejecución en una máquina",
+        "descriptionShort": "Listar contenedores en una máquina",
         "fetched": "Contenedores obtenidos",
         "fetching": "Obteniendo contenedores...",
         "healthCheck": "Modo de verificación de salud - sale con código 2 si hay algún no saludable",
@@ -635,10 +663,6 @@
         "deleting": "Eliminando máquina...",
         "description": "Eliminar una máquina",
         "success": "Máquina \"{{name}}\" eliminada"
-      },
-      "deployBackup": {
-        "description": "Enviar programación de respaldos a máquina remota (temporizador systemd)",
-        "success": "Programación de respaldos enviada a {{machine}}"
       },
       "deprovision": {
         "completed": "Máquina {{name}} destruida y eliminada de la configuración",
@@ -679,9 +703,6 @@
         "systemSection": "\nSistema:",
         "systemUptime": "  Tiempo de actividad: {{uptime}}"
       },
-      "info": {
-        "description": "Mostrar estado completo de la máquina (sistema, repos, contenedores, servicios)"
-      },
       "list": {
         "description": "Listar máquinas",
         "fetching": "Obteniendo máquinas..."
@@ -708,8 +729,41 @@
         "tofuNotInstalled": "OpenTofu (tofu) no está instalado. Instalar desde: https://opentofu.org/docs/intro/install/",
         "waitingSSH": "Esperando conectividad SSH..."
       },
+      "prune": {
+        "checkingActivity": "Verificando actividad de instantáneas...",
+        "completed": "Limpieza completada",
+        "datastoreCompleted": "Limpieza del almacén de datos completada",
+        "datastoreFailed": "Error en la limpieza del almacén de datos",
+        "datastoreOnlyOption": "Solo limpiar recursos huérfanos del almacén de datos",
+        "description": "Eliminar recursos huérfanos del almacén de datos e instantáneas obsoletas de una máquina",
+        "descriptionShort": "Limpiar recursos huérfanos e instantáneas obsoletas",
+        "dryRunOption": "Mostrar lo que se eliminaría sin realizar cambios",
+        "noStaleSnapshots": "No se encontraron instantáneas obsoletas",
+        "snapshotDeleted": "{{name}} eliminado",
+        "snapshotDeleting": "Eliminando {{name}}...",
+        "snapshotInUse": "Omitiendo {{name}} (en uso activo)",
+        "snapshotsCompleted": "Limpieza de instantáneas: {{deleted}} eliminadas, {{skipped}} omitidas",
+        "orphanedReposOption": "También eliminar imágenes de repositorios que no están en ninguna configuración",
+        "orphanedReposStarting": "Buscando repositorios huérfanos en {{machine}}...",
+        "orphanedReposCompleted": "Se limpiaron {{count}} repositorios huérfanos",
+        "noReposFound": "No se encontraron repositorios en la máquina",
+        "snapshotsOnlyOption": "Solo limpiar instantáneas obsoletas",
+        "snapshotStale": "Obsoleta: {{name}} ({{size}})",
+        "startingDatastore": "Buscando recursos huérfanos del almacén de datos en {{machine}}...",
+        "startingSnapshots": "Buscando instantáneas obsoletas en {{machine}}..."
+      },
+      "query": {
+        "connection": "Conexión",
+        "description": "Mostrar estado completo de la máquina (sistema, repos, contenedores, servicios)",
+        "descriptionShort": "Mostrar estado completo de la máquina",
+        "fetched": "Estado obtenido",
+        "fetching": "Obteniendo estado de {{machine}}...",
+        "infrastructure": "Infraestructura",
+        "noData": "No hay datos de estado disponibles"
+      },
       "repos": {
         "description": "Listar repositorios implementados en una máquina",
+        "descriptionShort": "Listar repositorios desplegados en una máquina",
         "fetched": "Máquina obtenida",
         "fetching": "Obteniendo máquina...",
         "noRepos": "No hay repositorios implementados en esta máquina"
@@ -717,18 +771,12 @@
       "services": {
         "allStable": "Todos los servicios están estables",
         "description": "Listar servicios systemd en una máquina",
+        "descriptionShort": "Listar servicios systemd gestionados por rediacc en una máquina",
         "fetched": "Servicios obtenidos",
         "fetching": "Obteniendo servicios...",
         "noServices": "No se encontraron servicios rediacc en esta máquina",
         "stabilityCheck": "Modo de verificación de estabilidad - sale con código 2 si hay algún fallido/reiniciando",
         "unstableFound": "{{count}} servicio(s) inestable(s) encontrado(s)"
-      },
-      "status": {
-        "description": "Mostrar estado completo de la máquina (sistema, repos, contenedores, servicios)",
-        "fetched": "Estado obtenido",
-        "fetching": "Obteniendo estado de {{machine}}...",
-        "infrastructure": "Infraestructura",
-        "noData": "No hay datos de estado disponibles"
       },
       "testConnection": {
         "authMethod": "  Método de Autenticación: {{method}}",
@@ -785,6 +833,12 @@
         "configOption": "Nombre de configuración a usar para todos los comandos",
         "description": "Iniciar servidor MCP (transporte stdio)",
         "timeoutOption": "Tiempo de espera predeterminado de comando en milisegundos"
+      },
+      "tools": {
+        "repo_fork": {
+          "parentDescription": "Nombre del repositorio padre (o nombre:etiqueta) del cual hacer fork",
+          "tagDescription": "Etiqueta para el fork (crea nombre:etiqueta, ej. \"staging\")"
+        }
       }
     },
     "ops": {
@@ -1029,27 +1083,21 @@
         "description": "Gestionar el inicio automático de repositorios al arrancar",
         "disable": {
           "completed": "Inicio automático deshabilitado",
+          "completedAll": "Inicio automático desactivado para todos los repositorios",
           "description": "Deshabilitar inicio automático para un repositorio",
           "failed": "Fallo al deshabilitar inicio automático",
-          "starting": "Deshabilitando inicio automático para \"{{repository}}\" en \"{{machine}}\"..."
-        },
-        "disableAll": {
-          "completed": "Inicio automático deshabilitado para todos los repositorios",
-          "description": "Deshabilitar inicio automático para todos los repositorios",
-          "failed": "Fallo al deshabilitar inicio automático para todos los repositorios",
-          "starting": "Deshabilitando inicio automático para todos los repositorios en \"{{machine}}\"..."
+          "failedAll": "Error al desactivar inicio automático para todos los repositorios",
+          "starting": "Deshabilitando inicio automático para \"{{repository}}\" en \"{{machine}}\"...",
+          "startingAll": "Deshabilitando inicio automático para todos los repositorios en \"{{machine}}\"..."
         },
         "enable": {
           "completed": "Inicio automático habilitado",
+          "completedAll": "Inicio automático activado para todos los repositorios",
           "description": "Habilitar inicio automático para un repositorio",
           "failed": "Fallo al habilitar inicio automático",
-          "starting": "Habilitando inicio automático para \"{{repository}}\" en \"{{machine}}\"..."
-        },
-        "enableAll": {
-          "completed": "Inicio automático habilitado para todos los repositorios",
-          "description": "Habilitar inicio automático para todos los repositorios",
-          "failed": "Fallo al habilitar inicio automático para todos los repositorios",
-          "starting": "Habilitando inicio automático para todos los repositorios en \"{{machine}}\"..."
+          "failedAll": "Error al activar inicio automático para todos los repositorios",
+          "starting": "Habilitando inicio automático para \"{{repository}}\" en \"{{machine}}\"...",
+          "startingAll": "Habilitando inicio automático para todos los repositorios en \"{{machine}}\"..."
         },
         "list": {
           "completed": "Lista de inicio automático obtenida",
@@ -1058,6 +1106,21 @@
           "starting": "Listando repositorios con inicio automático en \"{{machine}}\"..."
         }
       },
+      "backup": {
+        "description": "Gestionar respaldos de repositorios",
+        "list": {
+          "description": "Listar respaldos disponibles en almacenamiento o máquina",
+          "listing": "Listando respaldos...",
+          "optionFromMachine": "Nombre de la máquina de origen",
+          "optionFromStorage": "Nombre del almacenamiento de origen",
+          "sourceRequired": "Especifique --from <storage> o --from-machine <machine>"
+        }
+      },
+      "batchConfirm": "¿{{action}} todos los {{count}} repos en \"{{machine}}\"? [y/N]",
+      "batchFailed": "{{action}} falló para \"{{repo}}\": {{error}}",
+      "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
+      "batchResult": "{{action}} completado: {{succeeded}}/{{total}} exitosos",
+      "batchStarting": "{{action}}: «{{repo}}»...",
       "create": {
         "alreadyExists": "El repositorio \"{{name}}\" ya existe en el contexto",
         "completed": "Repositorio creado",
@@ -1070,27 +1133,32 @@
       },
       "delete": {
         "archived": "Credencial de \"{{repository}}\" archivada",
+        "archiveOption": "Mover entrada de configuración a deletedRepositories para recuperación posterior",
         "completed": "Repositorio eliminado",
-        "description": "Eliminar un repositorio",
+        "description": "Eliminar un repositorio (destruye contenedores, volúmenes e imagen cifrada). La entrada de configuración se conserva. Use --archive-config para mover credenciales a deletedRepositories para recuperación vía 'config restore-archived'",
+        "descriptionShort": "Eliminar un repositorio de una máquina",
         "failed": "Error al eliminar el repositorio",
         "restoreHint": "Restaurar con: rdc config restore-archived {{guid}}",
         "starting": "Eliminando \"{{repository}}\" en \"{{machine}}\"..."
       },
       "description": "Desplegar y gestionar repositorios cifrados en máquinas",
+      "descriptionShort": "Desplegar y gestionar repositorios cifrados en máquinas",
       "down": {
+        "allCompleted": "Todos los repositorios detenidos",
+        "allFailed": "La operación de detener todo falló",
+        "allStarting": "Deteniendo todos los repositorios en \"{{machine}}\"...",
         "completed": "Servicios detenidos",
         "description": "Detener servicios del repositorio",
+        "descriptionShort": "Detener contenedores Docker del repositorio",
         "failed": "Fallo al detener servicios",
         "grandOption": "Nombre del repositorio Grand (se resuelve automáticamente a GUID)",
         "starting": "Deteniendo servicios para \"{{repository}}\" en \"{{machine}}\"...",
-        "unmountOption": "Desmontar repositorio después de detener",
-        "allCompleted": "Todos los repositorios detenidos",
-        "allFailed": "La operación de detener todo falló",
-        "allStarting": "Deteniendo todos los repositorios en \"{{machine}}\"..."
+        "unmountOption": "Desmontar repositorio después de detener"
       },
       "expand": {
         "completed": "Expansión completada",
         "description": "Expandir un repositorio montado en línea (sin tiempo de inactividad)",
+        "descriptionShort": "Expandir un repositorio montado en línea (sin tiempo de inactividad, solo crecimiento)",
         "failed": "Error en la expansión",
         "sizeOption": "Nuevo tamaño del repositorio (ej. 10G, 100G, 1T)",
         "starting": "Expandiendo \"{{repository}}\" a {{size}} en \"{{machine}}\"..."
@@ -1099,11 +1167,13 @@
         "alreadyExists": "El repositorio \"{{name}}\" ya existe en el contexto",
         "completed": "Fork creado. Desplegar localmente: repo up {{repository}} -m {{machine}} --mount. Para migrar el fork a otra máquina: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
         "description": "Crear un fork CoW (Copy-on-Write) de un repositorio",
+        "descriptionShort": "Crear un fork CoW de un repositorio (nuevo GUID, networkId, rango IP)",
         "failed": "Error al crear el fork",
         "registered": "Fork \"{{repository}}\" registrado ({{guid}}, red {{networkId}})",
         "rollback": "Configuración revertida para \"{{repository}}\"",
         "starting": "Creando fork de \"{{parent}}\" como \"{{repository}}\" en \"{{machine}}\"...",
-        "tagOption": "Nombre del fork"
+        "tagOption": "Etiqueta para el fork (crea nombre:etiqueta)",
+        "tagRequired": "La etiqueta es obligatoria para fork. Uso: rdc repo fork <parent> <tag> -m <machine>"
       },
       "list": {
         "completed": "Listado completado",
@@ -1111,18 +1181,12 @@
         "failed": "Error al listar: {{error}}",
         "starting": "Listando repositorios en \"{{machine}}\"..."
       },
-      "listBackups": {
-        "description": "Listar respaldos disponibles en almacenamiento o máquina",
-        "listing": "Listando respaldos...",
-        "optionFromMachine": "Nombre de la máquina de origen",
-        "optionFromStorage": "Nombre del almacenamiento de origen",
-        "sourceRequired": "Especifique --from <storage> o --from-machine <machine>"
-      },
       "machineOption": "Nombre de la máquina de destino",
       "mount": {
         "checkpointOption": "Restaurar desde checkpoint después de montar",
         "completed": "Montaje completado",
         "description": "Montar un repositorio (abrir contenedor LUKS)",
+        "descriptionShort": "Montar un repositorio (descifrar y abrir contenedor LUKS)",
         "failed": "Montaje fallido",
         "starting": "Montando \"{{repository}}\" en \"{{machine}}\"..."
       },
@@ -1130,12 +1194,14 @@
       "ownership": {
         "completed": "Propiedad actualizada",
         "description": "Cambiar propiedad del directorio del repositorio",
+        "descriptionShort": "Cambiar UID de propiedad del directorio del repositorio",
         "failed": "Error al actualizar la propiedad",
         "starting": "Estableciendo propiedad de \"{{repository}}\" en \"{{machine}}\"...",
         "uidOption": "UID del propietario (predeterminado: 7111)"
       },
       "pull": {
         "description": "Obtener respaldo del repositorio desde almacenamiento o máquina",
+        "descriptionShort": "Descargar respaldo del repositorio desde almacenamiento o máquina",
         "optionForce": "Forzar sobrescritura del repositorio existente",
         "optionFromMachine": "Nombre de la máquina de origen",
         "optionFromStorage": "Nombre del almacenamiento de origen",
@@ -1144,6 +1210,7 @@
       },
       "push": {
         "description": "Enviar respaldo del repositorio al almacenamiento o máquina",
+        "descriptionShort": "Subir respaldo del repositorio a almacenamiento o máquina",
         "destIgnoredForStorage": "Ignorando --dest {{provided}}: los respaldos de almacenamiento usan el GUID del repositorio ({{dest}})",
         "destRequired": "Especifique --to <storage> o --to-machine <machine>",
         "optionCheckpoint": "Crear punto de control del contenedor (respaldo en caliente)",
@@ -1153,11 +1220,16 @@
         "optionTag": "Etiqueta de despliegue para versionamiento",
         "optionToMachine": "Nombre de la máquina de destino",
         "optionToStorage": "Nombre del almacenamiento de destino",
-        "pushing": "Enviando respaldo de \"{{repo}}\" a {{dest}}..."
+        "pushing": "Enviando respaldo de \"{{repo}}\" a {{dest}}...",
+        "optionUp": "Después del envío, montar y desplegar el repositorio en la máquina de destino",
+        "deploying": "Desplegando \"{{repo}}\" en {{machine}}...",
+        "deployed": "Repositorio \"{{repo}}\" desplegado en {{machine}}",
+        "deployFailed": "Error al desplegar \"{{repo}}\" después del envío"
       },
       "resize": {
         "completed": "Redimensionamiento completado",
         "description": "Redimensionar un repositorio sin conexión (soporta expandir y reducir)",
+        "descriptionShort": "Redimensionar un repositorio sin montar (ampliar o reducir)",
         "failed": "Error en el redimensionamiento",
         "sizeOption": "Nuevo tamaño del repositorio (ej. 10G, 100G, 1T)",
         "starting": "Redimensionando \"{{repository}}\" a {{size}} en \"{{machine}}\"..."
@@ -1166,6 +1238,7 @@
         "create": {
           "creating": "Creando instantánea de \"{{repo}}\" en {{machine}}...",
           "description": "Crear una instantánea BTRFS de un repositorio",
+          "descriptionShort": "Crear una instantánea BTRFS de un repositorio",
           "optionSnapshotName": "Nombre explícito de la instantánea (generado automáticamente si está vacío)",
           "success": "Instantánea creada: {{name}} ({{path}})"
         },
@@ -1189,31 +1262,35 @@
       "sync": {
         "description": "Sincronizar repositorios y archivos (push/pull masivo, transferencia de archivos)",
         "download": {
-          "description": "Descargar archivos de un repositorio"
+          "description": "Descargar archivos de un repositorio",
+          "descriptionShort": "Descargar archivos de un repositorio vía rsync"
         },
-        "pullAll": {
-          "description": "Enviar/obtener todos los repositorios en masa desde/hacia almacenamiento en la nube",
-          "optionFrom": "Nombre del almacenamiento de origen (modo pull)",
-          "optionOverride": "Sobrescribir repositorios no montados existentes al obtener",
-          "optionRepo": "Filtrar a un repositorio específico (repetible)",
-          "success": "Pull de sincronización completado"
+        "pull": {
+          "description": "Descargar repositorios del almacenamiento en la nube (omitir nombre para descargar todos)",
+          "optionFrom": "Nombre del almacenamiento de origen",
+          "optionOverride": "Sobrescribir repos existentes no montados al descargar",
+          "optionRepo": "Filtrar a repositorio específico (repetible)",
+          "success": "Descarga de sincronización completada"
         },
-        "pushAll": {
-          "description": "Enviar/obtener todos los repositorios en masa desde/hacia almacenamiento en la nube",
-          "optionRepo": "Filtrar a un repositorio específico (repetible)",
-          "optionTo": "Nombre del almacenamiento de destino (modo push)",
-          "success": "Push de sincronización completado"
+        "push": {
+          "description": "Subir repositorios al almacenamiento en la nube (omitir nombre para subir todos)",
+          "optionRepo": "Filtrar a repositorio específico (repetible)",
+          "optionTo": "Nombre del almacenamiento de destino",
+          "success": "Subida de sincronización completada"
         },
         "status": {
-          "description": "Verificar el estado de sincronización y comparar archivos locales/remotos"
+          "description": "Verificar el estado de sincronización y comparar archivos locales/remotos",
+          "descriptionShort": "Comparar archivos locales y remotos (ejecución en seco)"
         },
         "upload": {
-          "description": "Subir archivos a un repositorio"
+          "description": "Subir archivos a un repositorio",
+          "descriptionShort": "Subir archivos a un repositorio vía rsync"
         }
       },
       "template": {
         "completed": "Plantilla aplicada",
         "description": "Aplicar una plantilla a un repositorio",
+        "descriptionShort": "Aplicar una plantilla a un repositorio (docker-compose.yml + Rediaccfile)",
         "failed": "Error al aplicar la plantilla",
         "fileNotFound": "Archivo de plantilla no encontrado: {{path}}",
         "fileOption": "Ruta al archivo de plantilla JSON",
@@ -1224,6 +1301,7 @@
         "checkpointOption": "Crear checkpoint antes de desmontar",
         "completed": "Desmontaje completado",
         "description": "Desmontar un repositorio",
+        "descriptionShort": "Desmontar un repositorio (cerrar contenedor LUKS)",
         "failed": "Desmontaje fallido",
         "starting": "Desmontando \"{{repository}}\" en \"{{machine}}\"..."
       },
@@ -1231,6 +1309,7 @@
         "checkpointOption": "Restaurar contenedores desde checkpoint CRIU después del despliegue (para migración en vivo de procesos desde otra máquina)",
         "completed": "Servicios iniciados",
         "description": "Desplegar o actualizar un repositorio (montar, iniciar servicios)",
+        "descriptionShort": "Desplegar o actualizar un repositorio en una máquina",
         "failed": "Fallo al iniciar servicios",
         "grandOption": "Nombre del repositorio Grand (se resuelve automáticamente a GUID)",
         "mountOption": "Montar repositorio primero",
@@ -1250,30 +1329,26 @@
       "validate": {
         "completed": "Validación completada",
         "description": "Validar la integridad del repositorio",
+        "descriptionShort": "Validar integridad del repositorio",
         "failed": "Error en la validación",
         "starting": "Validando \"{{repository}}\" en \"{{machine}}\"..."
       },
-      "batchConfirm": "¿{{action}} todos los {{count}} repos en \"{{machine}}\"? [y/N]",
-      "batchFailed": "{{action}} falló para \"{{repo}}\": {{error}}",
-      "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
-      "batchResult": "{{action}} completado: {{succeeded}}/{{total}} exitosos",
-      "yesOption": "Omitir confirmación para operaciones por lotes",
-      "batchStarting": "{{action}}: «{{repo}}»..."
+      "yesOption": "Omitir confirmación para operaciones por lotes"
     },
     "repository": {
       "create": {
-        "creating": "Creando repositorio \"{{name}}:{{tag}}\"...",
+        "creating": "Creando repositorio \"{{name}}\"...",
         "description": "Crear un nuevo repositorio",
-        "success": "Repositorio \"{{name}}:{{tag}}\" creado"
+        "success": "Repositorio \"{{name}}\" creado"
       },
       "delete": {
         "checkingRelationships": "Verificando relaciones de repositorio...",
-        "confirm": "¿Eliminar repositorio \"{{name}}:{{tag}}\"? Esto no se puede deshacer.",
-        "deleting": "Eliminando repositorio \"{{name}}:{{tag}}\"...",
+        "confirm": "¿Eliminar repositorio \"{{name}}\"? Esto no se puede deshacer.",
+        "deleting": "Eliminando repositorio \"{{name}}\"...",
         "description": "Eliminar un repositorio",
         "grandRepoWarning": "Este es un repositorio maestro (credencial). Eliminarlo es irreversible.",
         "relationshipsChecked": "Relaciones de repositorio verificadas",
-        "success": "Repositorio \"{{name}}:{{tag}}\" eliminado"
+        "success": "Repositorio \"{{name}}\" eliminado"
       },
       "description": "Comandos de gestión de repositorio",
       "list": {
@@ -1285,11 +1360,11 @@
         "checkingRelationships": "Verificando relaciones de repositorio...",
         "confirmPromote": "\n¿Proceder con la promoción?",
         "description": "Promover una rama a estado maestro",
-        "promoting": "Promoviendo repositorio \"{{name}}:{{tag}}\"...",
+        "promoting": "Promoviendo repositorio \"{{name}}\"...",
         "relationshipsChecked": "Relaciones de repositorio verificadas",
         "separateInfo": "\nEsto separará \"{{name}}\" del repositorio maestro \"{{grandName}}\"",
         "siblingsInfo": "\n{{count}} clon(es) hermano(s) permanecerá(n) vinculado(s) al maestro original:",
-        "success": "Repositorio \"{{name}}:{{tag}}\" promovido a estado maestro"
+        "success": "Repositorio \"{{name}}\" promovido a estado maestro"
       },
       "rename": {
         "description": "Renombrar un repositorio",
@@ -1319,10 +1394,11 @@
         "description": "Reintentar una tarea fallida (atajo para: queue retry)"
       },
       "run": {
-        "completedLocal": "[local] Completado en {{duration}}ms",
+        "completedLocal": "Completado en {{duration}}ms",
         "description": "Ejecutar una función (atajo para: queue create)",
-        "executingLocal": "[local] Ejecutando '{{function}}' en {{machine}}...",
-        "failedLocal": "[local] Falló: {{error}}",
+        "descriptionShort": "Ejecutar función bridge sin procesar en una máquina (solo depuración)",
+        "executingLocal": "Ejecutando '{{function}}' en {{machine}}...",
+        "failedLocal": "Falló: {{error}}",
         "watching": "Observando para completarse..."
       },
       "trace": {
@@ -1339,6 +1415,15 @@
         "listing": "Listando archivos en \"{{name}}\"...",
         "noFiles": "No se encontraron archivos",
         "pathOption": "Ruta del subdirectorio a listar"
+      },
+      "prune": {
+        "description": "Eliminar copias de seguridad huérfanas del almacenamiento que ya no están en ninguna configuración. Seguro con múltiples configuraciones con protección de período de gracia.",
+        "descriptionShort": "Eliminar copias de seguridad huérfanas del almacenamiento",
+        "listing": "Listando copias de seguridad en \"{{storage}}\"...",
+        "listFailed": "Error al listar las copias de seguridad del almacenamiento",
+        "noBackups": "No se encontraron copias de seguridad en el almacenamiento",
+        "found": "Se encontraron {{count}} copias de seguridad en el almacenamiento",
+        "completed": "Se eliminaron {{count}} copias de seguridad huérfanas"
       },
       "description": "Gestionar proveedores de almacenamiento y explorar archivos remotos",
       "list": {
@@ -1425,14 +1510,17 @@
       }
     },
     "subscription": {
-      "activationStatus": {
-        "activations": "  Activaciones: {{active}}/{{max}}",
-        "active": "  Activación: activa (última vez vista {{lastSeenAt}})",
-        "description": "Mostrar el estado de activación de una máquina",
-        "header": "\nActivación de la máquina ({{machineName}})",
-        "inactive": "  Activación: la máquina no está activa actualmente en el estado de la cuenta",
-        "machineId": "  ID de máquina: {{machineId}}",
-        "unavailable": "  Activación: no se pudo consultar el estado de la cuenta"
+      "activation": {
+        "description": "Gestión de activación de máquinas",
+        "status": {
+          "activations": "  Activaciones: {{active}}/{{max}}",
+          "active": "  Activación: activa (visto por última vez {{lastSeenAt}})",
+          "description": "Mostrar estado de activación de una máquina",
+          "header": "\nActivación de máquina ({{machineName}})",
+          "inactive": "  Activación: la máquina no está activa actualmente en el estado de la cuenta",
+          "machineId": "  ID de máquina: {{machineId}}",
+          "unavailable": "  Activación: no se pudo consultar el estado de la cuenta"
+        }
       },
       "description": "Gestionar licencias de máquina y suscripción",
       "login": {
@@ -1452,42 +1540,45 @@
         "waitingApproval": "Esperando la autorización del navegador..."
       },
       "refresh": {
+        "activation": {
+          "description": "Actualizar activación de máquina en una máquina remota"
+        },
         "description": "Renovar la licencia de la máquina",
         "failed": "No se pudo emitir la licencia de la máquina",
         "refreshed": "Licencia renovada",
         "refreshing": "Renovando licencia...",
+        "repo": {
+          "description": "Actualizar la licencia del repositorio para un repositorio específico",
+          "failed": "Error al actualizar licencia del repositorio",
+          "notFound": "Repositorio no encontrado: {{repoName}}",
+          "refreshed": "Licencia del repositorio actualizada",
+          "refreshing": "Actualizando licencia del repositorio...",
+          "repoArgument": "Nombre del repositorio",
+          "success": "Licencia del repositorio actualizada para \"{{repoName}}\""
+        },
+        "repos": {
+          "description": "Actualizar licencias de repositorios por lotes en una máquina remota",
+          "refreshed": "Licencias de repositorios actualizadas",
+          "refreshing": "Actualizando licencias de repositorios...",
+          "success": "Actualización por lotes de licencias de repositorios completada"
+        },
         "success": "Licencia renovada e instalada"
       },
-      "refreshActivation": {
-        "description": "Actualizar la activación de la máquina en una máquina remota"
-      },
-      "refreshRepo": {
-        "description": "Actualizar la licencia del repositorio para un repositorio existente en una máquina",
-        "failed": "No se pudo actualizar la licencia del repositorio",
-        "notFound": "Repositorio no encontrado: {{repoName}}",
-        "refreshed": "Licencia del repositorio actualizada",
-        "refreshing": "Actualizando licencia del repositorio...",
-        "repoArgument": "Nombre del repositorio",
-        "success": "Licencia del repositorio actualizada para \"{{repoName}}\""
-      },
-      "refreshRepos": {
-        "description": "Actualizar en lote las licencias de repositorio en una máquina remota",
-        "refreshed": "Licencias de repositorio actualizadas",
-        "refreshing": "Actualizando licencias de repositorio...",
-        "success": "La actualización por lotes de licencias de repositorio se completó"
-      },
-      "repoStatus": {
-        "description": "Mostrar licencias de repositorio instaladas en una máquina",
-        "empty": "  No hay licencias de repositorio instaladas",
-        "entry": "  - Repositorio {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
-        "freshness": {
-          "hardExpired": "vencido",
-          "refreshRecommended": "se recomienda renovar",
-          "unknown": "desconocido",
-          "valid": "válido"
-        },
-        "hardExpirySuffix": " (vencimiento definitivo: {{effectiveHardExpiry}})",
-        "header": "\nLicencias de repositorio: ({{machineName}})"
+      "repo": {
+        "description": "Gestión de licencias de repositorios",
+        "status": {
+          "description": "Mostrar licencias de repositorios instaladas en una máquina",
+          "empty": "  No hay licencias de repositorios instaladas",
+          "entry": "  - {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
+          "freshness": {
+            "hardExpired": "expirado definitivamente",
+            "refreshRecommended": "se recomienda actualizar",
+            "unknown": "desconocido",
+            "valid": "válido"
+          },
+          "hardExpirySuffix": " (expiración definitiva: {{effectiveHardExpiry}})",
+          "header": "\nLicencias de repositorios: ({{machineName}})"
+        }
       },
       "status": {
         "description": "Mostrar estado de suscripción y licencia",
@@ -1522,6 +1613,7 @@
       "download": {
         "completed": "Descarga completada: {{count}} archivos transferidos",
         "description": "Descargar archivos de un repositorio",
+        "descriptionShort": "Descargar archivos de un repositorio vía rsync",
         "failed": "Descarga fallida",
         "progress": "Descargando: {{percentage}}% - {{file}} ({{speed}})",
         "starting": "Iniciando descarga..."
@@ -1533,12 +1625,14 @@
       "noChanges": "No hay cambios para sincronizar.",
       "previewingChanges": "\nVista previa de cambios...\n",
       "status": {
-        "description": "Verificar estado de sincronización y comparar archivos locales/remotos"
+        "description": "Verificar estado de sincronización y comparar archivos locales/remotos",
+        "descriptionShort": "Comparar archivos locales y remotos (ejecución en seco)"
       },
       "totalSize": "Tamaño total: {{size}}",
       "upload": {
         "completed": "Carga completada: {{count}} archivos transferidos",
         "description": "Cargar archivos a un repositorio",
+        "descriptionShort": "Subir archivos a un repositorio vía rsync",
         "failed": "Carga fallida",
         "progress": "Cargando: {{percentage}}% - {{file}} ({{speed}})",
         "starting": "Iniciando carga..."
@@ -1885,6 +1979,7 @@
     "activationFailed": "Falló la activación",
     "affectedChildClones": ". Clones secundarios afectados: {{clones}}. Primero elimine o promueva clones secundarios.",
     "agent": {
+      "createGuard": "No se puede crear el repositorio \"{{name}}\" en modo agente.\n\nLos agentes de IA operan en modo solo-fork. La creación de un repositorio principal está bloqueada\nporque el agente no puede operar en él después.\n\nUsa un repositorio existente y haz fork en su lugar:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nPara anular: establece REDIACC_ALLOW_GRAND_REPO=*",
       "forkBlocked": "El comando \"{{command}}\" no está disponible en repositorios fork.\n\nLos repos fork son entornos provisionales. Esta operación solo aplica a repositorios grand.",
       "grandGuard": "No se puede modificar el repositorio grand \"{{name}}\" en modo agente.\n\nLos agentes de IA solo pueden operar en repositorios fork.\nPrimero cree un fork:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nLuego opere en el fork.\n\nPara anular: establezca REDIACC_ALLOW_GRAND_REPO={{name}}",
       "machineGuard": "No se puede acceder a la máquina \"{{machine}}\" directamente en modo agente.\n\nLos agentes de IA solo pueden conectarse a contextos de repositorio.\nUse:\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nPara anular: establezca REDIACC_ALLOW_GRAND_REPO=*",
@@ -1938,7 +2033,7 @@
     },
     "regionRequired": "Nombre de región requerido. Use --region o establezca contexto.",
     "registrationFailed": "Falló el registro",
-    "repositoryNotFound": "Repositorio \"{{name}}:{{tag}}\" no encontrado",
+    "repositoryNotFound": "Repositorio \"{{name}}\" no encontrado",
     "repositoryRequired": "Nombre de repositorio requerido. Use --repository <name>.",
     "resourceNotFound": "{{resource}} no encontrado",
     "ssh": {
@@ -1993,7 +2088,7 @@
   },
   "help": {
     "cli": {
-      "machineInfo": "Mostrar estado de la máquina",
+      "machineQuery": "Mostrar estado de la máquina",
       "repoUp": "Desplegar servicios del repositorio",
       "syncUpload": "Subir archivos al repositorio",
       "termRepo": "SSH al repositorio"
@@ -2008,7 +2103,7 @@
     "machine": {
       "containers": "Listar contenedores en ejecución",
       "health": "Verificación de salud para CI/CD",
-      "info": "Mostrar estado completo de la máquina"
+      "query": "Mostrar estado completo de la máquina"
     },
     "repo": {
       "create": "Crear repositorio cifrado",
@@ -2038,6 +2133,7 @@
       "machine": "SSH a la máquina",
       "repo": "SSH al repositorio (DOCKER_HOST automático)"
     },
+    "useHelpAll": "Use --help-all para descripciones extendidas",
     "vscode": {
       "machine": "Abrir máquina en VS Code",
       "repo": "Abrir repositorio en VS Code"
@@ -2060,6 +2156,7 @@
     "datastore": "Ruta de almacén de datos en máquina",
     "debug": "Habilitar salida de depuración (modo local)",
     "dryRun": "Mostrar lo que se haría sin realizar cambios",
+    "graceDays": "Período de gracia en días para repositorios archivados recientemente (predeterminado: 7)",
     "email": "Dirección de correo electrónico",
     "endpoint": "URL de punto final de API",
     "excludePatterns": "Patrones a excluir de sincronización",
@@ -2116,6 +2213,12 @@
     "protocolSystem": "Registrar en todo el sistema (requiere privilegios de administrador)",
     "protocolSystemUnregister": "Desregistrar registro en todo el sistema (requiere privilegios de administrador)",
     "protocolToken": "Token de autenticación",
+    "queryBlockDevices": "Incluir solo dispositivos de bloque",
+    "queryContainers": "Incluir solo contenedores",
+    "queryNetwork": "Incluir solo interfaces de red",
+    "queryRepositories": "Incluir solo repositorios",
+    "queryServices": "Incluir solo servicios",
+    "querySystem": "Incluir solo información del sistema",
     "quiet": "Suprimir salida informativa",
     "rawVault": "JSON de bóveda sin procesar (para scripts/CI)",
     "region": "Nombre de región",
@@ -2201,5 +2304,12 @@
   },
   "table": {
     "noData": "No hay datos para mostrar"
+  },
+  "services": {
+    "prune": {
+      "unreadableConfigs": "No se pueden leer {{count}} configuración(es): {{names}} (cifradas o corruptas)",
+      "refusingPrune": "Se rechaza la limpieza — estas configuraciones pueden contener GUIDs protegidos. Use --force para forzar.",
+      "noOrphaned": "No se encontraron entradas huérfanas"
+    }
   }
 }

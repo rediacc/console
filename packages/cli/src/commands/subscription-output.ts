@@ -31,18 +31,18 @@ export function renderMachineActivationStatus(
   machineName: string,
   activation: MachineActivationStatus | null
 ): void {
-  outputService.info(t('commands.subscription.activationStatus.header', { machineName }));
+  outputService.info(t('commands.subscription.activation.status.header', { machineName }));
   if (!activation) {
-    outputService.warn(t('commands.subscription.activationStatus.unavailable'));
+    outputService.warn(t('commands.subscription.activation.status.unavailable'));
     return;
   }
 
   outputService.info(
-    t('commands.subscription.activationStatus.machineId', { machineId: activation.machineId })
+    t('commands.subscription.activation.status.machineId', { machineId: activation.machineId })
   );
   if (typeof activation.activeCount === 'number' && typeof activation.maxCount === 'number') {
     outputService.info(
-      t('commands.subscription.activationStatus.activations', {
+      t('commands.subscription.activation.status.activations', {
         active: activation.activeCount,
         max: activation.maxCount,
       })
@@ -50,11 +50,11 @@ export function renderMachineActivationStatus(
   }
   if (activation.active) {
     outputService.success(
-      t('commands.subscription.activationStatus.active', { lastSeenAt: activation.lastSeenAt })
+      t('commands.subscription.activation.status.active', { lastSeenAt: activation.lastSeenAt })
     );
     return;
   }
-  outputService.warn(t('commands.subscription.activationStatus.inactive'));
+  outputService.warn(t('commands.subscription.activation.status.inactive'));
 }
 
 export function getRepoLicenseFreshness(entry: {

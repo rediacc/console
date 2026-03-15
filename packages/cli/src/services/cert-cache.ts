@@ -11,7 +11,7 @@
  */
 
 import { X509Certificate } from 'node:crypto';
-import { gzipSync, gunzipSync } from 'node:zlib';
+import { gunzipSync, gzipSync } from 'node:zlib';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { t } from '../i18n/index.js';

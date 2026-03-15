@@ -10,7 +10,7 @@ vi.mock('node:child_process', () => ({
 function makeEnvelope(overrides: Record<string, unknown> = {}) {
   return JSON.stringify({
     success: true,
-    command: 'machine info server-1',
+    command: 'machine query server-1',
     data: { name: 'server-1', status: 'running' },
     errors: null,
     warnings: [],
@@ -61,7 +61,7 @@ describe('executeRdcCommand', () => {
     const result = await executeRdcCommand(['machine', 'info', 'server-1'], baseOptions);
 
     expect(result.success).toBe(true);
-    expect(result.command).toBe('machine info server-1');
+    expect(result.command).toBe('machine query server-1');
     expect(result.data).toEqual({ name: 'server-1', status: 'running' });
     expect(result.errors).toBeNull();
     expect(result.duration_ms).toBe(142);

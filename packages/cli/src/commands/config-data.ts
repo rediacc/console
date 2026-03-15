@@ -11,117 +11,19 @@ import type { OutputFormat, RepositoryConfig } from '../types/index.js';
 import { assertResourceName, parseConfig, RepositoryConfigSchema } from '../utils/config-schema.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 
-export function registerLocalDataCommands(config: Command, program: Command): void {
-  // config import-storage
-  config
-    .command('import-storage <file>')
-    .description(t('commands.config.importStorage.description'))
-    .option('--name <name>', t('commands.config.importStorage.optionName'))
-    .action(async (file, options) => {
-      try {
-        const { parseRcloneConfig, mapRcloneToStorageProvider, PROVIDER_MAPPING } = await import(
-          '@rediacc/shared/queue-vault'
-        );
+export function registerRepositoryCommands(config: Command, program: Command): void {
+  const repository = config
+    .command('repository')
+    .description(t('commands.config.repository.description'));
 
-        const filePath = file.startsWith('~') ? path.join(os.homedir(), file.slice(1)) : file;
-
-        const content = await fs.readFile(filePath, 'utf-8');
-        const configs = parseRcloneConfig(content);
-
-        if (configs.length === 0) {
-          throw new Error(t('commands.config.importStorage.noConfigs'));
-        }
-
-        const toImport = options.name
-          ? configs.filter((c: { name: string }) => c.name === options.name)
-          : configs;
-
-        if (toImport.length === 0) {
-          throw new Error(
-            t('commands.config.importStorage.notFound', {
-              name: options.name,
-            })
-          );
-        }
-
-        let imported = 0;
-        for (const cfg of toImport) {
-          const mapped = mapRcloneToStorageProvider(cfg);
-          if (!mapped) {
-            outputService.warn(
-              t('commands.config.importStorage.unsupported', {
-                name: cfg.name,
-                type: cfg.type,
-              })
-            );
-            continue;
-          }
-
-          await configService.addStorage(cfg.name, {
-            provider: PROVIDER_MAPPING[cfg.type] ?? (mapped.provider as string),
-            vaultContent: mapped,
-          });
-          outputService.success(
-            t('commands.config.importStorage.imported', {
-              name: cfg.name,
-              type: cfg.type,
-            })
-          );
-          imported++;
-        }
-
-        outputService.info(t('commands.config.importStorage.summary', { count: imported }));
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  // config remove-storage
-  config
-    .command('remove-storage <name>')
-    .description(t('commands.config.removeStorage.description'))
-    .action(async (name) => {
-      try {
-        await configService.removeStorage(name);
-        outputService.success(t('commands.config.removeStorage.success', { name }));
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  // config storages
-  config
-    .command('storages')
-    .description(t('commands.config.storages.description'))
-    .action(async () => {
-      try {
-        const storages = await configService.listStorages();
-        const format = program.opts().output as OutputFormat;
-
-        if (storages.length === 0) {
-          outputService.info(t('commands.config.storages.noStorages'));
-          return;
-        }
-
-        const displayData = storages.map((s) => ({
-          name: s.name,
-          provider: s.config.provider,
-        }));
-
-        outputService.print(displayData, format);
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  // config add-repository
-  config
-    .command('add-repository <name>')
-    .description(t('commands.config.addRepository.description'))
-    .requiredOption('--guid <guid>', t('commands.config.addRepository.optionGuid'))
-    .option('--tag <tag>', t('commands.config.addRepository.optionTag'), DEFAULTS.REPOSITORY.TAG)
-    .option('--credential <credential>', t('commands.config.addRepository.optionCredential'))
-    .option('--network-id <id>', t('commands.config.addRepository.optionNetworkId'))
+  // config repository add
+  repository
+    .command('add <name>')
+    .description(t('commands.config.repository.add.description'))
+    .requiredOption('--guid <guid>', t('commands.config.repository.add.optionGuid'))
+    .option('--tag <tag>', t('commands.config.repository.add.optionTag'), DEFAULTS.REPOSITORY.TAG)
+    .option('--credential <credential>', t('commands.config.repository.add.optionCredential'))
+    .option('--network-id <id>', t('commands.config.repository.add.optionNetworkId'))
     .action(async (name, options) => {
       try {
         assertResourceName(name);
@@ -151,52 +53,57 @@ export function registerLocalDataCommands(config: Command, program: Command): vo
 
         await configService.addRepository(name, repoConfig);
         outputService.success(
-          t('commands.config.addRepository.success', {
+          t('commands.config.repository.add.success', {
             name,
             guid: repoConfig.repositoryGuid,
             tag: repoConfig.tag ?? DEFAULTS.REPOSITORY.TAG,
           })
         );
-        outputService.info(t('commands.config.addRepository.networkIdAssigned', { networkId }));
+        outputService.info(t('commands.config.repository.add.networkIdAssigned', { networkId }));
       } catch (error) {
         handleError(error);
       }
     });
 
-  // config remove-repository
-  config
-    .command('remove-repository <name>')
-    .description(t('commands.config.removeRepository.description'))
+  // config repository remove
+  repository
+    .command('remove <name>')
+    .description(t('commands.config.repository.remove.description'))
     .action(async (name) => {
       try {
         await configService.removeRepository(name);
-        outputService.success(t('commands.config.removeRepository.success', { name }));
+        outputService.success(t('commands.config.repository.remove.success', { name }));
       } catch (error) {
         handleError(error);
       }
     });
 
-  // config repositories
-  config
-    .command('repositories')
-    .description(t('commands.config.repositories.description'))
+  // config repository list
+  repository
+    .command('list')
+    .description(t('commands.config.repository.list.description'))
     .action(async () => {
       try {
         const repos = await configService.listRepositories();
         const format = program.opts().output as OutputFormat;
 
         if (repos.length === 0) {
-          outputService.info(t('commands.config.repositories.noRepositories'));
+          outputService.info(t('commands.config.repository.list.noRepositories'));
           return;
         }
 
-        const displayData = repos.map((r) => ({
-          name: r.name,
-          guid: r.config.repositoryGuid,
-          tag: r.config.tag ?? DEFAULTS.REPOSITORY.TAG,
-          credential: r.config.credential ? 'set' : '-',
-          networkId: r.config.networkId ?? '-',
-        }));
+        const { parseRepoRef } = await import('../utils/config-schema.js');
+        const displayData = repos.map((r) => {
+          const { name: baseName, tag: parsedTag } = parseRepoRef(r.name);
+          return {
+            name: baseName,
+            tag: r.config.tag ?? parsedTag,
+            type: r.config.grandGuid ? 'fork' : 'grand',
+            guid: r.config.repositoryGuid,
+            credential: r.config.credential ? 'set' : '-',
+            networkId: r.config.networkId ?? '-',
+          };
+        });
 
         outputService.print(displayData, format);
       } catch (error) {
@@ -204,17 +111,17 @@ export function registerLocalDataCommands(config: Command, program: Command): vo
       }
     });
 
-  // config list-archived
-  config
+  // config repository list-archived
+  repository
     .command('list-archived')
-    .description(t('commands.config.listArchived.description'))
+    .description(t('commands.config.repository.listArchived.description'))
     .action(async () => {
       try {
         const archived = await configService.listArchivedRepositories();
         const format = program.opts().output as OutputFormat;
 
         if (archived.length === 0) {
-          outputService.info(t('commands.config.listArchived.noArchived'));
+          outputService.info(t('commands.config.repository.listArchived.noArchived'));
           return;
         }
 
@@ -232,34 +139,140 @@ export function registerLocalDataCommands(config: Command, program: Command): vo
       }
     });
 
-  // config restore-archived <guid>
-  config
+  // config repository restore-archived
+  repository
     .command('restore-archived <guid>')
-    .description(t('commands.config.restoreArchived.description'))
-    .option('--name <name>', t('commands.config.restoreArchived.optionName'))
+    .description(t('commands.config.repository.restoreArchived.description'))
+    .option('--name <name>', t('commands.config.repository.restoreArchived.optionName'))
     .action(async (guid, options) => {
       try {
         const restoredName = await configService.restoreArchivedRepository(guid, options.name);
         outputService.success(
-          t('commands.config.restoreArchived.success', { name: restoredName, guid })
+          t('commands.config.repository.restoreArchived.success', { name: restoredName, guid })
         );
       } catch (error) {
         handleError(error);
       }
     });
 
-  // config purge-archived
-  config
+  // config repository purge-archived
+  repository
     .command('purge-archived')
-    .description(t('commands.config.purgeArchived.description'))
+    .description(t('commands.config.repository.purgeArchived.description'))
     .action(async () => {
       try {
         const count = await configService.purgeArchivedRepositories();
         if (count === 0) {
-          outputService.info(t('commands.config.purgeArchived.noArchived'));
+          outputService.info(t('commands.config.repository.purgeArchived.noArchived'));
         } else {
-          outputService.success(t('commands.config.purgeArchived.success', { count }));
+          outputService.success(t('commands.config.repository.purgeArchived.success', { count }));
         }
+      } catch (error) {
+        handleError(error);
+      }
+    });
+}
+
+export function registerStorageCommands(config: Command, program: Command): void {
+  const storage = config.command('storage').description(t('commands.config.storage.description'));
+
+  // config storage import
+  storage
+    .command('import <file>')
+    .description(t('commands.config.storage.import.description'))
+    .option('--name <name>', t('commands.config.storage.import.optionName'))
+    .action(async (file, options) => {
+      try {
+        const { parseRcloneConfig, mapRcloneToStorageProvider, PROVIDER_MAPPING } = await import(
+          '@rediacc/shared/queue-vault'
+        );
+
+        const filePath = file.startsWith('~') ? path.join(os.homedir(), file.slice(1)) : file;
+
+        const content = await fs.readFile(filePath, 'utf-8');
+        const configs = parseRcloneConfig(content);
+
+        if (configs.length === 0) {
+          throw new Error(t('commands.config.storage.import.noConfigs'));
+        }
+
+        const toImport = options.name
+          ? configs.filter((c: { name: string }) => c.name === options.name)
+          : configs;
+
+        if (toImport.length === 0) {
+          throw new Error(
+            t('commands.config.storage.import.notFound', {
+              name: options.name,
+            })
+          );
+        }
+
+        let imported = 0;
+        for (const cfg of toImport) {
+          const mapped = mapRcloneToStorageProvider(cfg);
+          if (!mapped) {
+            outputService.warn(
+              t('commands.config.storage.import.unsupported', {
+                name: cfg.name,
+                type: cfg.type,
+              })
+            );
+            continue;
+          }
+
+          await configService.addStorage(cfg.name, {
+            provider: PROVIDER_MAPPING[cfg.type] ?? (mapped.provider as string),
+            vaultContent: mapped,
+          });
+          outputService.success(
+            t('commands.config.storage.import.imported', {
+              name: cfg.name,
+              type: cfg.type,
+            })
+          );
+          imported++;
+        }
+
+        outputService.info(t('commands.config.storage.import.summary', { count: imported }));
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // config storage remove
+  storage
+    .command('remove <name>')
+    .description(t('commands.config.storage.remove.description'))
+    .action(async (name) => {
+      try {
+        await configService.removeStorage(name);
+        outputService.success(t('commands.config.storage.remove.success', { name }));
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // config storage list
+  storage
+    .command('list')
+    .description(t('commands.config.storage.list.description'))
+    .action(async () => {
+      try {
+        const storages = await configService.listStorages();
+        const format = program.opts().output as OutputFormat;
+
+        if (storages.length === 0) {
+          outputService.info(t('commands.config.storage.list.noStorages'));
+          return;
+        }
+
+        const displayData = storages.map((s) => ({
+          name: s.name,
+          provider: s.config.provider,
+        }));
+
+        outputService.print(displayData, format);
       } catch (error) {
         handleError(error);
       }

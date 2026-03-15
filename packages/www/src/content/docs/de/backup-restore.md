@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: de
-sourceHash: "9c6ab927c2220db7"
+sourceHash: "2ac1e17539336175"
 ---
 
 # Backup & Wiederherstellung
@@ -22,7 +22,7 @@ Bevor Sie Backups übertragen, registrieren Sie einen Speicheranbieter. Rediacc 
 Wenn Sie bereits ein rclone-Remote konfiguriert haben:
 
 ```bash
-rdc config import-storage rclone.conf
+rdc config storage import rclone.conf
 ```
 
 Dies importiert Speicherkonfigurationen aus einer rclone-Konfigurationsdatei in die aktuelle Konfiguration. Unterstützte Typen: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob und Swift.
@@ -30,7 +30,7 @@ Dies importiert Speicherkonfigurationen aus einer rclone-Konfigurationsdatei in 
 ### Speicher anzeigen
 
 ```bash
-rdc config storages
+rdc config storage list
 ```
 
 ## Ein Backup erstellen
@@ -75,7 +75,7 @@ rdc repo pull my-app -m server-1 --from my-storage
 Verfügbare Backups an einem Speicherort anzeigen:
 
 ```bash
-rdc repo list-backups --from my-storage -m server-1
+rdc repo backup list --from my-storage -m server-1
 ```
 
 ## Massen-Synchronisation
@@ -85,13 +85,13 @@ Alle Repositories auf einmal übertragen oder abrufen:
 ### Alle zum Speicher übertragen
 
 ```bash
-rdc repo sync push-all --to my-storage -m server-1
+rdc repo push --to my-storage -m server-1
 ```
 
 ### Alle vom Speicher abrufen
 
 ```bash
-rdc repo sync pull-all --from my-storage -m server-1
+rdc repo pull --from my-storage -m server-1
 ```
 
 | Option | Beschreibung |

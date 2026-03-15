@@ -103,9 +103,9 @@ async function scanSingleMachine(machineName: string): Promise<void> {
     await configService.updateMachine(machineName, {
       knownHosts: keyscan,
     });
-    outputService.success(t('commands.config.scanKeys.keysScanned', { name: machineName }));
+    outputService.success(t('commands.config.machine.scanKeys.keysScanned', { name: machineName }));
   } else {
-    outputService.warn(t('commands.config.scanKeys.noKeys', { name: machineName }));
+    outputService.warn(t('commands.config.machine.scanKeys.noKeys', { name: machineName }));
   }
 }
 
@@ -119,26 +119,29 @@ async function scanAllMachines(): Promise<void> {
         await configService.updateMachine(m.name, {
           knownHosts: keyscan,
         });
-        outputService.info(t('commands.config.scanKeys.keysScanned', { name: m.name }));
+        outputService.info(t('commands.config.machine.scanKeys.keysScanned', { name: m.name }));
         scanned++;
       }
     } catch {
-      outputService.warn(t('commands.config.scanKeys.noKeys', { name: m.name }));
+      outputService.warn(t('commands.config.machine.scanKeys.noKeys', { name: m.name }));
     }
   }
   outputService.success(
-    t('commands.config.scanKeys.completed', {
+    t('commands.config.machine.scanKeys.completed', {
       count: scanned,
       total: machines.length,
     })
   );
 }
 
-export function registerSetupCommands(config: Command, program: Command): void {
-  // config add-machine
-  config
-    .command('add-machine <name>')
-    .description(t('commands.config.addMachine.description'))
+export function registerMachineCommands(config: Command, program: Command): void {
+  const machine = config.command('machine').description(t('commands.config.machine.description'));
+
+  // config machine add
+  machine
+    .command('add <name>')
+    .summary(t('commands.config.machine.add.descriptionShort'))
+    .description(t('commands.config.machine.add.description'))
     .requiredOption('--ip <address>', t('options.machineIp'))
     .requiredOption('--user <username>', t('options.sshUser'))
     .option('--port <port>', t('options.sshPort'), '22')
@@ -159,7 +162,7 @@ export function registerSetupCommands(config: Command, program: Command): void {
 
         await configService.addMachine(name, machineConfig);
         outputService.success(
-          t('commands.config.addMachine.success', {
+          t('commands.config.machine.add.success', {
             name,
             user: machineConfig.user,
             ip: machineConfig.ip,
@@ -172,7 +175,7 @@ export function registerSetupCommands(config: Command, program: Command): void {
             await configService.updateMachine(name, {
               knownHosts: keyscan,
             });
-            outputService.info(t('commands.config.scanKeys.keysScanned', { name }));
+            outputService.info(t('commands.config.machine.scanKeys.keysScanned', { name }));
           }
         } catch {
           /* non-fatal */
@@ -182,46 +185,30 @@ export function registerSetupCommands(config: Command, program: Command): void {
       }
     });
 
-  // config scan-keys [machine]
-  config
-    .command('scan-keys [machine]')
-    .description(t('commands.config.scanKeys.description'))
-    .action(async (machineName?: string) => {
-      try {
-        if (machineName) {
-          await scanSingleMachine(machineName);
-        } else {
-          await scanAllMachines();
-        }
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  // config remove-machine
-  config
-    .command('remove-machine <name>')
-    .description(t('commands.config.removeMachine.description'))
+  // config machine remove
+  machine
+    .command('remove <name>')
+    .description(t('commands.config.machine.remove.description'))
     .action(async (name) => {
       try {
         await configService.removeMachine(name);
-        outputService.success(t('commands.config.removeMachine.success', { name }));
+        outputService.success(t('commands.config.machine.remove.success', { name }));
       } catch (error) {
         handleError(error);
       }
     });
 
-  // config machines
-  config
-    .command('machines')
-    .description(t('commands.config.machines.description'))
+  // config machine list
+  machine
+    .command('list')
+    .description(t('commands.config.machine.list.description'))
     .action(async () => {
       try {
         const machines = await configService.listMachines();
         const format = program.opts().output as OutputFormat;
 
         if (machines.length === 0) {
-          outputService.info(t('commands.config.machines.noMachines'));
+          outputService.info(t('commands.config.machine.list.noMachines'));
           return;
         }
 
@@ -239,61 +226,60 @@ export function registerSetupCommands(config: Command, program: Command): void {
       }
     });
 
-  // config set-ssh
-  config
-    .command('set-ssh')
-    .description(t('commands.config.setSsh.description'))
-    .requiredOption('--private-key <path>', t('options.sshPrivateKey'))
-    .option('--public-key <path>', t('options.sshPublicKey'))
-    .action(async (options) => {
+  // config machine scan-keys
+  machine
+    .command('scan-keys [machine]')
+    .description(t('commands.config.machine.scanKeys.description'))
+    .action(async (machineName?: string) => {
       try {
-        await configService.setLocalSSH({
-          privateKeyPath: options.privateKey,
-          publicKeyPath: options.publicKey,
-        });
-        outputService.success(t('commands.config.setSsh.success'));
+        if (machineName) {
+          await scanSingleMachine(machineName);
+        } else {
+          await scanAllMachines();
+        }
       } catch (error) {
         handleError(error);
       }
     });
 
-  // config set-renet
-  config
-    .command('set-renet <path>')
-    .description(t('commands.config.setRenet.description'))
-    .action(async (renetPath) => {
-      try {
-        await configService.setRenetPath(renetPath);
-        outputService.success(t('commands.config.setRenet.success', { path: renetPath }));
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  // config setup-machine
-  config
-    .command('setup-machine <name>')
-    .description(t('commands.config.setupMachine.description'))
-    .option('--datastore <path>', t('commands.config.setupMachine.datastoreOption'), '/mnt/rediacc')
-    .option('--datastore-size <size>', t('commands.config.setupMachine.datastoreSizeOption'), '95%')
+  // config machine setup
+  machine
+    .command('setup <name>')
+    .summary(t('commands.config.machine.setup.descriptionShort'))
+    .description(t('commands.config.machine.setup.description'))
+    .option(
+      '--datastore <path>',
+      t('commands.config.machine.setup.datastoreOption'),
+      '/mnt/rediacc'
+    )
+    .option(
+      '--datastore-size <size>',
+      t('commands.config.machine.setup.datastoreSizeOption'),
+      '95%'
+    )
     .option('--debug', t('options.debug'))
     .action(async (name, options) => {
       try {
         const localConfig = await configService.getLocalConfig();
-        const machine = await configService.getLocalMachine(name);
+        const machineObj = await configService.getLocalMachine(name);
         const sshPrivateKey =
           localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
-        outputService.info(t('commands.config.setupMachine.starting', { machine: name }));
+        outputService.info(t('commands.config.machine.setup.starting', { machine: name }));
 
-        const remoteRenetPath = await provisionRenetToRemote(localConfig, machine, sshPrivateKey, {
-          debug: options.debug,
-        });
+        const remoteRenetPath = await provisionRenetToRemote(
+          localConfig,
+          machineObj,
+          sshPrivateKey,
+          {
+            debug: options.debug,
+          }
+        );
 
         const sftp = new SFTPClient({
-          host: machine.ip,
-          port: machine.port ?? DEFAULTS.SSH.PORT,
-          username: machine.user,
+          host: machineObj.ip,
+          port: machineObj.port ?? DEFAULTS.SSH.PORT,
+          username: machineObj.user,
           privateKey: sshPrivateKey,
         });
         await sftp.connect();
@@ -311,11 +297,11 @@ export function registerSetupCommands(config: Command, program: Command): void {
           });
 
           if (exitCode === 0) {
-            outputService.success(t('commands.config.setupMachine.completed', { machine: name }));
+            outputService.success(t('commands.config.machine.setup.completed', { machine: name }));
             await postSetupMachineTasks(name, options.debug);
           } else {
             outputService.error(
-              t('commands.config.setupMachine.failed', {
+              t('commands.config.machine.setup.failed', {
                 machine: name,
                 error: `exit code ${exitCode}`,
               })
@@ -330,14 +316,14 @@ export function registerSetupCommands(config: Command, program: Command): void {
       }
     });
 
-  // config set-ceph
-  config
+  // config machine set-ceph
+  machine
     .command('set-ceph')
-    .description(t('commands.config.setCeph.description'))
+    .description(t('commands.config.machine.setCeph.description'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
-    .requiredOption('--pool <name>', t('commands.config.setCeph.optionPool'))
-    .requiredOption('--image <name>', t('commands.config.setCeph.optionImage'))
-    .option('--cluster <name>', t('commands.config.setCeph.optionCluster'), 'ceph')
+    .requiredOption('--pool <name>', t('commands.config.machine.setCeph.optionPool'))
+    .requiredOption('--image <name>', t('commands.config.machine.setCeph.optionImage'))
+    .option('--cluster <name>', t('commands.config.machine.setCeph.optionCluster'), 'ceph')
     .action(async (options: { machine: string; pool: string; image: string; cluster: string }) => {
       try {
         await configService.updateMachine(options.machine, {
@@ -348,7 +334,7 @@ export function registerSetupCommands(config: Command, program: Command): void {
           },
         });
         outputService.success(
-          t('commands.config.setCeph.success', {
+          t('commands.config.machine.setCeph.success', {
             name: options.machine,
             pool: options.pool,
             image: options.image,
@@ -358,28 +344,34 @@ export function registerSetupCommands(config: Command, program: Command): void {
         handleError(error);
       }
     });
+}
 
-  // config add-provider <name>
-  config
-    .command('add-provider <name>')
-    .description(t('commands.config.addProvider.description'))
-    .option('--provider <source>', t('commands.config.addProvider.optionProvider'))
-    .option('--source <source>', t('commands.config.addProvider.optionSource'))
-    .requiredOption('--token <token>', t('commands.config.addProvider.optionToken'))
-    .option('--region <region>', t('commands.config.addProvider.optionRegion'))
-    .option('--type <type>', t('commands.config.addProvider.optionInstanceType'))
-    .option('--image <image>', t('commands.config.addProvider.optionImage'))
-    .option('--ssh-user <user>', t('commands.config.addProvider.optionSshUser'))
-    .option('--resource <type>', t('commands.config.addProvider.optionResource'))
-    .option('--label-attr <attr>', t('commands.config.addProvider.optionLabelAttr'))
-    .option('--region-attr <attr>', t('commands.config.addProvider.optionRegionAttr'))
-    .option('--size-attr <attr>', t('commands.config.addProvider.optionSizeAttr'))
-    .option('--image-attr <attr>', t('commands.config.addProvider.optionImageAttr'))
-    .option('--ipv4-output <attr>', t('commands.config.addProvider.optionIpv4Output'))
-    .option('--ipv6-output <attr>', t('commands.config.addProvider.optionIpv6Output'))
-    .option('--ssh-key-attr <attr>', t('commands.config.addProvider.optionSshKeyAttr'))
-    .option('--ssh-key-format <format>', t('commands.config.addProvider.optionSshKeyFormat'))
-    .option('--ssh-key-resource <type>', t('commands.config.addProvider.optionSshKeyResource'))
+export function registerProviderCommands(config: Command, program: Command): void {
+  const provider = config
+    .command('provider')
+    .description(t('commands.config.provider.description'));
+
+  // config provider add
+  provider
+    .command('add <name>')
+    .description(t('commands.config.provider.add.description'))
+    .option('--provider <source>', t('commands.config.provider.add.optionProvider'))
+    .option('--source <source>', t('commands.config.provider.add.optionSource'))
+    .requiredOption('--token <token>', t('commands.config.provider.add.optionToken'))
+    .option('--region <region>', t('commands.config.provider.add.optionRegion'))
+    .option('--type <type>', t('commands.config.provider.add.optionInstanceType'))
+    .option('--image <image>', t('commands.config.provider.add.optionImage'))
+    .option('--ssh-user <user>', t('commands.config.provider.add.optionSshUser'))
+    .option('--resource <type>', t('commands.config.provider.add.optionResource'))
+    .option('--label-attr <attr>', t('commands.config.provider.add.optionLabelAttr'))
+    .option('--region-attr <attr>', t('commands.config.provider.add.optionRegionAttr'))
+    .option('--size-attr <attr>', t('commands.config.provider.add.optionSizeAttr'))
+    .option('--image-attr <attr>', t('commands.config.provider.add.optionImageAttr'))
+    .option('--ipv4-output <attr>', t('commands.config.provider.add.optionIpv4Output'))
+    .option('--ipv6-output <attr>', t('commands.config.provider.add.optionIpv6Output'))
+    .option('--ssh-key-attr <attr>', t('commands.config.provider.add.optionSshKeyAttr'))
+    .option('--ssh-key-format <format>', t('commands.config.provider.add.optionSshKeyFormat'))
+    .option('--ssh-key-resource <type>', t('commands.config.provider.add.optionSshKeyResource'))
     .action(async (name, options) => {
       try {
         assertResourceName(name);
@@ -393,7 +385,7 @@ export function registerSetupCommands(config: Command, program: Command): void {
         const providerConfig = buildProviderConfig(options);
         await configService.addCloudProvider(name, providerConfig);
         outputService.success(
-          t('commands.config.addProvider.success', {
+          t('commands.config.provider.add.success', {
             name,
             provider: options.provider ?? options.source,
           })
@@ -403,30 +395,30 @@ export function registerSetupCommands(config: Command, program: Command): void {
       }
     });
 
-  // config remove-provider <name>
-  config
-    .command('remove-provider <name>')
-    .description(t('commands.config.removeProvider.description'))
+  // config provider remove
+  provider
+    .command('remove <name>')
+    .description(t('commands.config.provider.remove.description'))
     .action(async (name) => {
       try {
         await configService.removeCloudProvider(name);
-        outputService.success(t('commands.config.removeProvider.success', { name }));
+        outputService.success(t('commands.config.provider.remove.success', { name }));
       } catch (error) {
         handleError(error);
       }
     });
 
-  // config providers
-  config
-    .command('providers')
-    .description(t('commands.config.providers.description'))
+  // config provider list
+  provider
+    .command('list')
+    .description(t('commands.config.provider.list.description'))
     .action(async () => {
       try {
         const providers = await configService.listCloudProviders();
         const format = program.opts().output as OutputFormat;
 
         if (providers.length === 0) {
-          outputService.info(t('commands.config.providers.noProviders'));
+          outputService.info(t('commands.config.provider.list.noProviders'));
           return;
         }
 

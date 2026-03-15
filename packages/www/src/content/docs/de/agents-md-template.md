@@ -4,7 +4,7 @@ description: Kopierfertige Vorlage zur Konfiguration von Claude Code, Cursor und
 category: Reference
 order: 50
 language: de
-sourceHash: "872e8796671470d0"
+sourceHash: "7cf4d73659b76ee7"
 ---
 
 Verwenden Sie diese Vorlage, um KI-Coding-Assistenten (Claude Code, Cursor, Cline, Windsurf) für die autonome Verwaltung der Rediacc-Infrastruktur zu konfigurieren. Kopieren Sie den folgenden Block in die Datei `CLAUDE.md`, `.cursorrules` oder die entsprechende Agenten-Konfigurationsdatei Ihres Projekts.
@@ -36,7 +36,7 @@ On error: {"success": false, "command": "...", "data": null, "errors": [{"code":
 ### Common Operations
 
 # Machine status
-rdc machine info <machine> -o json
+rdc machine query <machine> -o json
 
 # List containers on a machine
 rdc machine containers <machine> -o json
@@ -67,7 +67,7 @@ rdc repo sync download -m <machine> -r <repo> -l ./local-path
 rdc agent capabilities
 
 # Show schema for a specific command
-rdc agent schema "machine info"
+rdc agent schema "machine query"
 
 ### Architecture
 - **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
@@ -85,16 +85,16 @@ rdc agent schema "machine info"
 
 ## Anpassung
 
-Ersetzen Sie `<machine>` und `<repo>` durch Ihre tatsaechlichen Maschinen- und Repository-Namen. Fuehren Sie `rdc config repositories` aus, um die verfügbaren Repositories mit ihrer Name-zu-GUID-Zuordnung aufzulisten.
+Ersetzen Sie `<machine>` und `<repo>` durch Ihre tatsaechlichen Maschinen- und Repository-Namen. Fuehren Sie `rdc config repository list` aus, um die verfügbaren Repositories mit ihrer Name-zu-GUID-Zuordnung aufzulisten.
 
 ### Ihre Einrichtung erkunden
 
 ```bash
 # List configured machines
-rdc machine info <machine-name>
+rdc machine query <machine-name>
 
 # List repositories with GUIDs
-rdc config repositories
+rdc config repository list
 
 # Check what commands are available
 rdc agent capabilities

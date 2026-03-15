@@ -4,7 +4,7 @@ description: 5 dakikada sunucunuzda konteynerize bir servis çalıştırın.
 category: Guides
 order: -1
 language: tr
-sourceHash: "ff23efbe832be9bb"
+sourceHash: "a67f1e8442eb492e"
 ---
 
 # Hızlı Başlangıç
@@ -32,13 +32,13 @@ rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ## 3. Sunucu Ekleme
 
 ```bash
-rdc config add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
+rdc config machine add server-1 --ip <your-server-ip> --user <your-ssh-user>
 ```
 
 ## 4. Sunucuyu Hazırlama
 
 ```bash
-rdc config setup-machine server-1
+rdc config machine setup server-1
 ```
 
 Bu komut sunucunuza Docker, cryptsetup ve renet ikili dosyasını kurar.

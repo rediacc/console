@@ -6,25 +6,19 @@ Manage config files, machine inventory, SSH keys, and machine setup.
 
 ### Add a machine
 ```
-rdc config add-machine <name> --ip <address> --user <username> [--port <port>] [--datastore <path>]
+rdc config machine add <name> --ip <address> --user <username> [--port <port>] [--datastore <path>]
 ```
 Registers a machine and auto-scans SSH host keys. Defaults: port 22, datastore `/mnt/rediacc`.
 
 ### List machines
 ```
-rdc config machines
+rdc config machine list
 ```
 
 ### Remove a machine
 ```
-rdc config remove-machine <name>
+rdc config machine remove <name>
 ```
-
-### Set default machine
-```
-rdc config set machine <name>
-```
-Sets the default machine so `-m` flag can be omitted in other commands.
 
 ## SSH configuration
 
@@ -41,7 +35,7 @@ rdc config set-ssh --private-key ~/.renet/staging/.ssh/id_rsa --public-key ~/.re
 
 ### Scan host keys
 ```
-rdc config scan-keys [machine]
+rdc config machine scan-keys [machine]
 ```
 Re-scans SSH host keys. Run after VM re-provisioning if host key changes.
 
@@ -49,7 +43,7 @@ Re-scans SSH host keys. Run after VM re-provisioning if host key changes.
 
 ### Setup a machine
 ```
-rdc config setup-machine <name> [--datastore <path>] [--datastore-size <size>]
+rdc config machine setup <name> [--datastore <path>] [--datastore-size <size>]
 ```
 Provisions everything needed to run repositories. Idempotent — safe to re-run. Defaults: datastore `/mnt/rediacc`, size `95%`. After successful setup, automatically runs `push-infra` if the machine has infrastructure configured.
 
@@ -90,7 +84,7 @@ rdc --config <name> <command>
 
 ### Configure infra
 ```
-rdc config set-infra <machine> [--base-domain <domain>] [--public-ipv4 <ip>] [--public-ipv6 <ip>] [--cert-email <email>] [--cf-dns-token <token>] [--tcp-ports <ports>] [--udp-ports <ports>]
+rdc config infra set <machine> [--base-domain <domain>] [--public-ipv4 <ip>] [--public-ipv6 <ip>] [--cert-email <email>] [--cf-dns-token <token>] [--tcp-ports <ports>] [--udp-ports <ports>]
 ```
 
 - `--base-domain`, `--public-ipv4`, `--public-ipv6`, `--tcp-ports`, `--udp-ports` are per-machine.
@@ -100,13 +94,13 @@ rdc config set-infra <machine> [--base-domain <domain>] [--public-ipv4 <ip>] [--
 
 ### View infra
 ```
-rdc config show-infra <machine>
+rdc config infra show <machine>
 ```
-Shows base domain, public IPs, TLS email, and port forwarding config. Also visible in `rdc machine info <machine>`.
+Shows base domain, public IPs, TLS email, and port forwarding config. Also visible in `rdc machine query <machine>`.
 
 ### Push infra to machine
 ```
-rdc config push-infra <machine>
+rdc config infra push <machine>
 ```
 Installs Traefik reverse proxy and rediacc-router with `--machine-name`. Also creates Cloudflare DNS records (`{machineName}.{baseDomain}` and `*.{machineName}.{baseDomain}`) if `--cf-dns-token` is set. Required for HTTPS routing. Auto-routes use machine subdomains: `{service}-{id}.{machineName}.{baseDomain}`.
 
@@ -114,18 +108,18 @@ Installs Traefik reverse proxy and rediacc-router with `--machine-name`. Also cr
 
 ### Add a cloud provider
 ```
-rdc config add-provider <name> --provider <source> --token <token> [--region <r>] [--type <t>] [--image <i>]
+rdc config provider add <name> --provider <source> --token <token> [--region <r>] [--type <t>] [--image <i>]
 ```
 Registers a cloud provider for automated VM provisioning. Known providers: `linode/linode`, `hetznercloud/hcloud`. Use `--source` instead of `--provider` for custom providers with manual attribute mapping.
 
 ### List cloud providers
 ```
-rdc config providers
+rdc config provider list
 ```
 
 ### Remove a cloud provider
 ```
-rdc config remove-provider <name>
+rdc config provider remove <name>
 ```
 
 ### Provision a machine
@@ -143,7 +137,7 @@ Destroys a cloud-provisioned VM via OpenTofu and removes from config. Only works
 ### Workflow: Cloud-provisioned machine
 ```bash
 rdc config set-ssh --private-key ~/.ssh/id_ed25519 --public-key ~/.ssh/id_ed25519.pub
-rdc config add-provider my-linode --provider linode/linode --token $TOKEN --region us-east
+rdc config provider add my-linode --provider linode/linode --token $TOKEN --region us-east
 rdc machine provision prod-1 --provider my-linode
 # baseDomain auto-detected from sibling machines (or pass --base-domain example.com)
 # Now ready for: rdc repo create <name> -m prod-1 --size 5G
@@ -166,25 +160,25 @@ rdc config backup-strategy show
 
 ### List repositories
 ```
-rdc config repositories
+rdc config repository list
 ```
 
 ### Add repository mapping
 ```
-rdc config add-repository <name> [--guid <guid>] [--network-id <id>]
+rdc config repository add <name> [--guid <guid>] [--network-id <id>]
 ```
 
 ### Remove repository mapping
 ```
-rdc config remove-repository <name>
+rdc config repository remove <name>
 ```
 
 ## Workflow: New machine from scratch
 
 ```bash
-rdc config add-machine myserver --ip 10.0.0.1 --user deploy
+rdc config machine add myserver --ip 10.0.0.1 --user deploy
 rdc config set-ssh --private-key ~/.ssh/id_ed25519
-rdc config setup-machine myserver
+rdc config machine setup myserver
 # Now ready for: rdc repo create <name> -m myserver --size 5G
 ```
 
@@ -192,7 +186,7 @@ rdc config setup-machine myserver
 
 ```bash
 rdc ops up --basic --parallel
-rdc config add-machine rediacc11 --ip 192.168.111.11 --user muhammed
+rdc config machine add rediacc11 --ip 192.168.111.11 --user muhammed
 rdc config set-ssh --private-key ~/.renet/staging/.ssh/id_rsa --public-key ~/.renet/staging/.ssh/id_rsa.pub
-rdc config setup-machine rediacc11
+rdc config machine setup rediacc11
 ```

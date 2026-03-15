@@ -706,4 +706,4 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
 };
 
 export default UnifiedResourceModal;
-export type { ExistingResourceData, ResourceType, ResourceFormValues };
+export type { ExistingResourceData, ResourceFormValues, ResourceType };

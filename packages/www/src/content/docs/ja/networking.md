@@ -4,7 +4,7 @@ description: リバースプロキシ、Dockerラベル、TLS証明書、DNS、T
 category: Guides
 order: 6
 language: ja
-sourceHash: "51ec174f68da3b34"
+sourceHash: "911dde41922454ec"
 ---
 
 # ネットワーキング
@@ -111,16 +111,16 @@ labels:
 
    ```bash
    # 共有資格情報（configごとに一度、すべてのマシンに適用）
-   rdc config set-infra server-1 \
+   rdc config infra set server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
    # マシン固有の設定
-   rdc config set-infra server-1 \
+   rdc config infra set server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com
 
-   rdc config push-infra server-1
+   rdc config infra push server-1
    ```
 
 2. ドメインのDNSレコードがサーバーのパブリックIPを指していること（下記の[DNS設定](#dns設定)を参照）。
@@ -165,7 +165,7 @@ services:
 TLS証明書はCloudflare DNS-01チャレンジを使用してLet's Encrypt経由で自動的に取得されます。資格情報はconfigごとに一度設定します（すべてのマシンで共有）：
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
@@ -185,11 +185,11 @@ Cloudflare DNS APIトークンには、保護したいドメインに対する`Z
 インフラストラクチャ設定時に必要なポートを追加します：
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config push-infra server-1
+rdc config infra push server-1
 ```
 
 これにより`tcp-{port}`と`udp-{port}`という名前のTraefikエントリポイントが作成されます。
@@ -214,7 +214,7 @@ Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
 
 > **Security note:** Exposing a database to the internet is a risk. Use this only when remote clients need direct access. For most setups, keep the database internal and connect through your application.
 
-> ポートの追加または削除後は、プロキシ設定を更新するために常に`rdc config push-infra`を再実行してください。
+> ポートの追加または削除後は、プロキシ設定を更新するために常に`rdc config infra push`を再実行してください。
 
 ### ステップ2：TCP/UDPラベルの追加
 
@@ -268,7 +268,7 @@ services:
 
 ### 自動DNS（Cloudflare）
 
-`--cf-dns-token`が設定されている場合、`rdc config push-infra`はCloudflareに必要なDNSレコードを自動的に作成します：
+`--cf-dns-token`が設定されている場合、`rdc config infra push`はCloudflareに必要なDNSレコードを自動的に作成します：
 
 | レコード | タイプ | 内容 | 作成元 |
 |----------|--------|------|--------|
@@ -370,7 +370,7 @@ curl -s http://127.0.0.1:7111/ports | python3 -m json.tool
 | サービスがルートに表示されない | コンテナが実行されていない、またはラベルが不足 | リポジトリのデーモンで`docker ps`を確認、ラベルを確認 |
 | 証明書が発行されない | DNSがサーバーを指していない、または無効なCloudflareトークン | DNS解決を確認、Cloudflare APIトークンの権限を確認 |
 | 502 Bad Gateway | アプリケーションが宣言されたポートでリッスンしていない | アプリが`{SERVICE}_IP`にバインドし、ポートが`loadbalancer.server.port`と一致していることを確認 |
-| TCPポートに到達できない | インフラストラクチャにポートが登録されていない | `rdc config set-infra --tcp-ports ...`と`push-infra`を実行 |
+| TCPポートに到達できない | インフラストラクチャにポートが登録されていない | `rdc config infra set --tcp-ports ...`と`push-infra`を実行 |
 
 ## 完全な例
 

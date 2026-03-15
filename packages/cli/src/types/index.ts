@@ -178,8 +178,10 @@ export interface RepositoryConfig {
   credential?: string;
   /** Network ID for Docker isolation (2816 + n*64). Auto-assigned if omitted. */
   networkId?: number;
-  /** GUID of the grand (parent) repository. Present on forks; absent on grand repos. */
+  /** GUID of the original ancestor repository. Present on forks; absent on grand repos. */
   grandGuid?: string;
+  /** GUID of the immediate parent repository. Present on forks; absent on grand repos. */
+  parentGuid?: string;
   /** Per-repo SSH private key (OpenSSH format). Used for sandbox-isolated connections. */
   sshPrivateKey?: string;
   /** Per-repo SSH public key. Deployed to remote authorized_keys with sandbox gateway command= prefix. */
@@ -365,6 +367,8 @@ export interface RdcConfig {
   nextNetworkId?: number;
   /** Override the default universal user ("rediacc") for command execution */
   universalUser?: string;
+  /** Days to retain archived repos before prune considers them stale (default: 7) */
+  pruneGraceDays?: number;
 }
 
 /**

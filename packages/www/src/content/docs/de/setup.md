@@ -4,7 +4,7 @@ description: "Konfiguration erstellen, Maschinen hinzufügen, Server provisionie
 category: "Guides"
 order: 3
 language: de
-sourceHash: "5256e189c350ee18"
+sourceHash: "ebf1c9967814ec86"
 ---
 
 # Maschineneinrichtung
@@ -33,7 +33,7 @@ Dies erstellt eine Konfiguration namens `my-infra` und speichert sie in `~/.conf
 Registrieren Sie Ihren entfernten Server als Maschine in der Konfiguration:
 
 ```bash
-rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
+rdc config machine add server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | Option | Erforderlich | Standard | Beschreibung |
@@ -46,13 +46,13 @@ rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
 Nach dem Hinzufügen der Maschine führt rdc automatisch `ssh-keyscan` aus, um die Host-Schlüssel des Servers abzurufen. Sie können dies auch manuell ausführen:
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 Um alle registrierten Maschinen anzuzeigen:
 
 ```bash
-rdc config machines
+rdc config machine list
 ```
 
 ## Schritt 3: Die Maschine einrichten
@@ -60,7 +60,7 @@ rdc config machines
 Provisionieren Sie den entfernten Server mit allen erforderlichen Abhängigkeiten:
 
 ```bash
-rdc config setup-machine server-1
+rdc config machine setup server-1
 ```
 
 Dieser Befehl:
@@ -82,7 +82,7 @@ Dieser Befehl:
 Wenn sich der SSH-Host-Schlüssel eines Servers ändert (z. B. nach einer Neuinstallation), aktualisieren Sie die gespeicherten Schlüssel:
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 Dies aktualisiert das `knownHosts`-Feld in Ihrer Konfiguration für diese Maschine.
@@ -112,7 +112,7 @@ Für Maschinen, die Traffic öffentlich bereitstellen müssen, konfigurieren Sie
 ### Infrastruktur festlegen
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
@@ -134,7 +134,7 @@ Machine-Optionen werden pro Maschine gespeichert. Config-Optionen (`--cert-email
 ### Infrastruktur anzeigen
 
 ```bash
-rdc config show-infra server-1
+rdc config infra show server-1
 ```
 
 ### Auf den Server übertragen
@@ -142,7 +142,7 @@ rdc config show-infra server-1
 Generieren und verteilen Sie die Traefik-Reverse-Proxy-Konfiguration auf den Server:
 
 ```bash
-rdc config push-infra server-1
+rdc config infra push server-1
 ```
 
 Dieser Befehl:
@@ -163,13 +163,13 @@ Installieren Sie OpenTofu: [opentofu.org/docs/intro/install](https://opentofu.or
 Stellen Sie sicher, dass Ihre SSH-Konfiguration einen öffentlichen Schlüssel enthält:
 
 ```bash
-rdc config set-ssh --private-key ~/.ssh/id_ed25519 --public-key ~/.ssh/id_ed25519.pub
+rdc config set ssh.privateKeyPath ~/.ssh/id_ed25519
 ```
 
 ### Einen Cloud-Provider hinzufügen
 
 ```bash
-rdc config add-provider my-linode \
+rdc config provider add my-linode \
   --provider linode/linode \
   --token $LINODE_API_TOKEN \
   --region us-east \
@@ -222,7 +222,7 @@ Zerstört die VM über OpenTofu und entfernt sie aus Ihrer Konfiguration. Erford
 ### Provider auflisten
 
 ```bash
-rdc config providers
+rdc config provider list
 ```
 
 ## Standardwerte festlegen

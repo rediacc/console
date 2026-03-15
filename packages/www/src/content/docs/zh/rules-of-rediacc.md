@@ -4,7 +4,7 @@ description: "在 Rediacc 平台上构建应用程序的基本规则和约定。
 category: "Guides"
 order: 5
 language: zh
-sourceHash: "5b62710fe6281f9d"
+sourceHash: "9d81373c26d93457"
 sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 ---
 
@@ -103,7 +103,7 @@ Renet 会自动将以下变量注入每个容器：
 - **`repo up --mount --checkpoint`** 从检查点恢复容器（无需全新启动）。
 - **TCP 连接在恢复后变得陈旧** — 应用程序必须处理 `ECONNRESET` 并重新连接。
 - **Docker 实验模式**在每个仓库的守护进程上自动启用。
-- **CRIU** 在 `rdc config setup-machine` 期间安装。
+- **CRIU** 在 `rdc config machine setup` 期间安装。
 - **`/etc/criu/runc.conf`** 配置了 `tcp-established` 以保持 TCP 连接。
 - **容器安全设置由 renet 自动注入** — `renet compose` 会自动为每个容器添加以下内容以确保 CRIU 兼容性：
   - `cap_add`：`CHECKPOINT_RESTORE`、`SYS_PTRACE`、`NET_ADMIN`（内核 5.9+ 上 CRIU 的最小集）

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: ar
-sourceHash: "51ec174f68da3b34"
+sourceHash: "911dde41922454ec"
 ---
 
 # الشبكات
@@ -111,16 +111,16 @@ labels:
 
    ```bash
    # بيانات اعتماد مشتركة (مرة واحدة لكل إعداد، تُطبّق على جميع الأجهزة)
-   rdc config set-infra server-1 \
+   rdc config infra set server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
    # إعدادات خاصة بالجهاز
-   rdc config set-infra server-1 \
+   rdc config infra set server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com
 
-   rdc config push-infra server-1
+   rdc config infra push server-1
    ```
 
 2. سجلات DNS تشير إلى نطاقك على عنوان IP العام للخادم (راجع [تكوين DNS](#تكوين-dns) أدناه).
@@ -165,7 +165,7 @@ services:
 يتم الحصول على شهادات TLS تلقائياً عبر Let's Encrypt باستخدام تحدي Cloudflare DNS-01. تُكوَّن بيانات الاعتماد مرة واحدة لكل إعداد (مشتركة عبر جميع الأجهزة):
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
@@ -185,11 +185,11 @@ rdc config set-infra server-1 \
 أضف المنافذ المطلوبة أثناء تكوين البنية التحتية:
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config push-infra server-1
+rdc config infra push server-1
 ```
 
 ينشئ هذا نقاط دخول Traefik باسم `tcp-{port}` و`udp-{port}`.
@@ -214,7 +214,7 @@ Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
 
 > **Security note:** Exposing a database to the internet is a risk. Use this only when remote clients need direct access. For most setups, keep the database internal and connect through your application.
 
-> بعد إضافة أو إزالة المنافذ، قم دائماً بتشغيل `rdc config push-infra` لتحديث تكوين الوكيل.
+> بعد إضافة أو إزالة المنافذ، قم دائماً بتشغيل `rdc config infra push` لتحديث تكوين الوكيل.
 
 ### الخطوة 2: إضافة علامات TCP/UDP
 
@@ -268,7 +268,7 @@ services:
 
 ### DNS التلقائي (Cloudflare)
 
-عند تكوين `--cf-dns-token`، يقوم `rdc config push-infra` تلقائياً بإنشاء سجلات DNS اللازمة في Cloudflare:
+عند تكوين `--cf-dns-token`، يقوم `rdc config infra push` تلقائياً بإنشاء سجلات DNS اللازمة في Cloudflare:
 
 | السجل | النوع | المحتوى | أُنشئ بواسطة |
 |-------|-------|---------|-------------|
@@ -370,7 +370,7 @@ curl -s http://127.0.0.1:7111/ports | python3 -m json.tool
 | الخدمة غير موجودة في المسارات | الحاوية لا تعمل أو العلامات مفقودة | تحقق بـ `docker ps` على daemon المستودع؛ تحقق من العلامات |
 | الشهادة لم تُصدر | DNS لا يشير إلى الخادم، أو رمز Cloudflare غير صالح | تحقق من حل DNS؛ تحقق من أذونات رمز Cloudflare API |
 | 502 Bad Gateway | التطبيق لا يستمع على المنفذ المُعلن | تحقق من أن التطبيق مرتبط بـ `{SERVICE}_IP` وأن المنفذ يتطابق مع `loadbalancer.server.port` |
-| منفذ TCP غير قابل للوصول | المنفذ غير مسجل في البنية التحتية | شغّل `rdc config set-infra --tcp-ports ...` و`push-infra` |
+| منفذ TCP غير قابل للوصول | المنفذ غير مسجل في البنية التحتية | شغّل `rdc config infra set --tcp-ports ...` و`push-infra` |
 | Route server running old version | Binary was updated but service not restarted | Happens automatically on provisioning; manual: `sudo systemctl restart rediacc-router` |
 | STUN/TURN relay not reachable | Relay addresses cached at startup | Recreate the service after DNS or IP changes so it picks up the new network config |
 

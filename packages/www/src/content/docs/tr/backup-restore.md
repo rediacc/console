@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: "9c6ab927c2220db7"
+sourceHash: "2ac1e17539336175"
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -22,7 +22,7 @@ Yedekleri göndermeden önce bir depolama sağlayıcısı kaydedin. Rediacc, rcl
 Zaten yapılandırılmış bir rclone uzak bağlantınız varsa:
 
 ```bash
-rdc config import-storage rclone.conf
+rdc config storage import rclone.conf
 ```
 
 Bu, bir rclone yapılandırma dosyasındaki depolama yapılandırmalarını mevcut yapılandırmaya aktarır. Desteklenen türler: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob ve Swift.
@@ -30,7 +30,7 @@ Bu, bir rclone yapılandırma dosyasındaki depolama yapılandırmalarını mevc
 ### Depolamaları Görüntüleme
 
 ```bash
-rdc config storages
+rdc config storage list
 ```
 
 ## Yedek Gönderme
@@ -75,7 +75,7 @@ rdc repo pull my-app -m server-1 --from my-storage
 Bir depolama konumundaki mevcut yedekleri görüntüleyin:
 
 ```bash
-rdc repo list-backups --from my-storage -m server-1
+rdc repo backup list --from my-storage -m server-1
 ```
 
 ## Toplu Senkronizasyon
@@ -85,13 +85,13 @@ Tüm depoları aynı anda gönderin veya çekin:
 ### Tümünü Depolamaya Gönder
 
 ```bash
-rdc repo sync push-all --to my-storage -m server-1
+rdc repo push --to my-storage -m server-1
 ```
 
 ### Tümünü Depolamadan Çek
 
 ```bash
-rdc repo sync pull-all --from my-storage -m server-1
+rdc repo pull --from my-storage -m server-1
 ```
 
 | Seçenek | Açıklama |

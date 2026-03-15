@@ -4,7 +4,7 @@ description: Entender cómo account, rdc y renet gestionan los slots de máquina
 category: Guides
 order: 7
 language: es
-sourceHash: "e7a65f722fbb1093"
+sourceHash: "41f6d86e9f637b47"
 ---
 
 # Suscripción y licencias
@@ -161,13 +161,13 @@ rdc subscription status
 Mostrar los detalles de activación de máquina para una máquina:
 
 ```bash
-rdc subscription activation-status -m hostinger
+rdc subscription activation status -m hostinger
 ```
 
 Mostrar los detalles de licencia de repositorio instalados en una máquina:
 
 ```bash
-rdc subscription repo-status -m hostinger
+rdc subscription repo status -m hostinger
 ```
 
 Renovar la activación de máquina y actualizar licencias de repositorio en lote:
@@ -181,7 +181,7 @@ Los repositorios descubiertos en la máquina pero que faltan en la configuració
 Forzar una renovación de licencia de repositorio para un repositorio existente:
 
 ```bash
-rdc subscription refresh-repo my-app -m hostinger
+rdc subscription refresh repo my-app -m hostinger
 ```
 
 En el primer uso, una operación de repositorio o copia de seguridad con licencia que no encuentra una licencia de repositorio utilizable puede activar automáticamente una transferencia de autorización de cuenta. El CLI imprime una URL de autorización, intenta abrir el navegador en terminales interactivas y reintenta la operación una vez después de que la autorización y la emisión tengan éxito.
@@ -232,4 +232,4 @@ No incluye:
 - intentos de issuance fallidos
 - repositorios no rastreados rechazados antes de la issuance
 
-Si necesitas una vista de uso e historial reciente de issuance de licencias de repositorio orientada al cliente, usa el portal de cuentas. Si necesitas inspección en el lado de la máquina, usa `rdc subscription activation-status -m` y `rdc subscription repo-status -m`.
+Si necesitas una vista de uso e historial reciente de issuance de licencias de repositorio orientada al cliente, usa el portal de cuentas. Si necesitas inspección en el lado de la máquina, usa `rdc subscription activation status -m` y `rdc subscription repo status -m`.

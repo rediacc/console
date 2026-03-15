@@ -4,7 +4,7 @@ description: Verknüpfen Sie KI-Agenten über den Model Context Protocol (MCP) S
 category: Guides
 order: 33
 language: de
-sourceHash: "51c5a7f855ead072"
+sourceHash: "ac1ed364eb890583"
 sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 ---
 
@@ -56,7 +56,7 @@ Oder mit einer benannten Konfiguration:
 
 | Tool | Beschreibung |
 |------|-------------|
-| `machine_info` | Get system info, containers, services, and resource usage for a machine |
+| `machine_query` | Get system info, containers, services, and resource usage for a machine |
 | `machine_containers` | List Docker containers with status, health, resource usage, labels, and auto-route domain |
 | `machine_services` | List rediacc-managed systemd services (name, state, sub-state, restart count, memory, owning repository) |
 | `machine_repos` | List deployed repositories (name, GUID, size, mount status, Docker state, container count, disk usage, modified date, Rediaccfile present) |
@@ -89,7 +89,7 @@ Oder mit einer benannten Konfiguration:
 **Maschinenstatus prüfen:**
 > „Wie ist der Status meiner Produktionsmaschine?"
 
-Der Agent ruft `machine_info` auf → gibt Systeminformationen, laufende Container, Dienste und Ressourcennutzung zurück.
+Der Agent ruft `machine_query` auf → gibt Systeminformationen, laufende Container, Dienste und Ressourcennutzung zurück.
 
 **Eine Anwendung bereitstellen:**
 > „Stelle GitLab auf meiner Staging-Maschine bereit"

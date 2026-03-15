@@ -4,7 +4,7 @@ description: Cómo los asistentes de programación con IA como Claude Code, Curs
 category: Guides
 order: 30
 language: es
-sourceHash: "3374e0f154375ffb"
+sourceHash: "2d8ab92216666d0e"
 ---
 
 Los asistentes de programación con IA pueden gestionar la infraestructura Rediacc de forma autónoma a través del CLI `rdc`. Esta guía cubre los enfoques de integración y cómo empezar.
@@ -38,7 +38,7 @@ Cuando los agentes llaman a `rdc` en un subshell, la salida cambia automáticame
 ```json
 {
   "success": true,
-  "command": "machine info",
+  "command": "machine query",
   "data": { ... },
   "errors": null,
   "warnings": [],
@@ -55,7 +55,7 @@ Las respuestas de error incluyen los campos `retryable` y `guidance`:
     "code": "NOT_FOUND",
     "message": "Machine \"prod-2\" not found",
     "retryable": false,
-    "guidance": "Verify the resource name with \"rdc machine info\" or \"rdc config repositories\""
+    "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
   }]
 }
 ```
@@ -69,10 +69,10 @@ El subcomando `rdc agent` proporciona introspección estructurada:
 rdc agent capabilities
 
 # Show detailed schema for a specific command
-rdc agent schema "machine info"
+rdc agent schema "machine query"
 
 # Execute a command with JSON stdin
-echo '{"name": "prod-1"}' | rdc agent exec "machine info"
+echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 ```
 
 ## Opciones clave para agentes

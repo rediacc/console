@@ -280,40 +280,6 @@
       }
     },
     "config": {
-      "addMachine": {
-        "description": "Ajouter une machine à la configuration actuelle",
-        "success": "Machine \"{{name}}\" ajoutée ({{user}}@{{ip}})"
-      },
-      "addProvider": {
-        "description": "Ajouter un fournisseur cloud pour le provisionnement automatique de machines",
-        "optionImage": "Image OS par défaut",
-        "optionImageAttr": "Personnalisé : nom d'attribut pour l'image OS",
-        "optionInstanceType": "Type/taille d'instance par défaut",
-        "optionIpv4Output": "Personnalisé : attribut de sortie pour l'adresse IPv4",
-        "optionIpv6Output": "Personnalisé : attribut de sortie pour l'adresse IPv6",
-        "optionLabelAttr": "Personnalisé : nom d'attribut pour le label de VM",
-        "optionProvider": "Source de fournisseur connue (ex. : linode/linode, hetznercloud/hcloud)",
-        "optionRegion": "Région par défaut pour les nouvelles machines",
-        "optionRegionAttr": "Personnalisé : nom d'attribut pour la région",
-        "optionResource": "Personnalisé : type de ressource OpenTofu pour VM",
-        "optionSizeAttr": "Personnalisé : nom d'attribut pour le type d'instance",
-        "optionSource": "Source de fournisseur OpenTofu personnalisée (ex. : vultr/vultr)",
-        "optionSshKeyAttr": "Personnalisé : nom d'attribut pour les clés SSH",
-        "optionSshKeyFormat": "Personnalisé : format de clé SSH (inline_list ou resource_id)",
-        "optionSshKeyResource": "Personnalisé : type de ressource OpenTofu pour les clés SSH",
-        "optionSshUser": "Nom d'utilisateur SSH pour les nouvelles VMs (par défaut : root)",
-        "optionToken": "Jeton API pour le fournisseur cloud",
-        "success": "Fournisseur cloud \"{{name}}\" ajouté ({{provider}})"
-      },
-      "addRepository": {
-        "description": "Ajouter un mappage GUID de dépôt à la configuration actuelle",
-        "networkIdAssigned": "ID réseau : {{networkId}}",
-        "optionCredential": "Identifiant du dépôt (phrase secrète de chiffrement)",
-        "optionGuid": "GUID du dépôt (UUID depuis les noms de fichiers de sauvegarde)",
-        "optionNetworkId": "ID réseau pour l'isolation Docker (2816, 2880, ...). Assigné automatiquement si omis",
-        "optionTag": "Tag du dépôt",
-        "success": "Dépôt \"{{name}}\" ajouté ({{guid}}, tag : {{tag}})"
-      },
       "backupStrategy": {
         "description": "Gérer la stratégie de sauvegarde multi-destination",
         "set": {
@@ -378,14 +344,42 @@
         "success": "Configuration \"{{name}}\" supprimée"
       },
       "description": "Gérer les fichiers de configuration, machines et connexions SSH",
-      "importStorage": {
-        "description": "Importer des stockages depuis un fichier de configuration rclone",
-        "imported": "Stockage \"{{name}}\" importé ({{type}})",
-        "noConfigs": "Aucune configuration de stockage valide trouvée dans le fichier",
-        "notFound": "Stockage \"{{name}}\" non trouvé dans le fichier de configuration",
-        "optionName": "Importer uniquement cette section nommée",
-        "summary": "{{count}} stockage(s) importé(s)",
-        "unsupported": "\"{{name}}\" ignoré : type de fournisseur non pris en charge \"{{type}}\""
+      "infra": {
+        "description": "Gérer la configuration d'infrastructure (proxy, DNS, certificats)",
+        "push": {
+          "certCacheUploaded": "Certificats en cache envoyés vers le distant",
+          "description": "Envoyer la configuration d'infrastructure à la machine (proxy Traefik, routeur, Cloudflare DNS). Exécutez d'abord 'config infra set <machine>'",
+          "descriptionShort": "Envoyer la configuration d'infrastructure vers la machine",
+          "dnsCreated": "DNS : {{type}} {{name}} → {{content}} créé",
+          "dnsError": "Avertissement DNS : {{message}} (les enregistrements peuvent nécessiter une configuration manuelle)",
+          "dnsResolvingZone": "Résolution de la zone Cloudflare pour {{domain}}...",
+          "dnsSkipLocal": "DNS ignoré : le domaine .local n'utilise pas Cloudflare",
+          "dnsSkipNoToken": "DNS ignoré : pas de token API Cloudflare. Définir avec : rdc config infra set <machine> --cf-dns-token <token>",
+          "dnsUnchanged": "DNS : {{type}} {{name}} déjà correct",
+          "dnsUpdated": "DNS : {{type}} {{name}} → {{content}} mis à jour",
+          "installingProxy": "Installation et démarrage du proxy...",
+          "proxyInstallWarning": "Échec de l'installation du proxy (code {{code}}). Exécutez manuellement : sudo renet proxy install",
+          "success": "Configuration d'infrastructure envoyée à \"{{name}}\""
+        },
+        "set": {
+          "description": "Définir la configuration d'infrastructure pour une machine (spécifique à la machine : IPs, domaine, ports ; partagé : email de certificat, token DNS Cloudflare)",
+          "descriptionShort": "Définir la configuration d'infrastructure pour une machine",
+          "invalidIPv4": "Adresse IPv4 invalide : {{ip}}",
+          "invalidIPv6": "Adresse IPv6 invalide : {{ip}}",
+          "noOptions": "Aucune option spécifiée. Utilisez --public-ipv4, --base-domain, etc.",
+          "optionBaseDomain": "Domaine de base pour les applications (par machine)",
+          "optionCertEmail": "E-mail pour les notifications de certificats TLS (partagé entre machines)",
+          "optionCfDnsToken": "Jeton Cloudflare DNS API pour le défi ACME DNS-01 (partagé entre machines)",
+          "optionPublicIPv4": "Adresse IPv4 publique (par machine)",
+          "optionPublicIPv6": "Adresse IPv6 publique (par machine)",
+          "optionTcpPorts": "Ports TCP à rediriger (séparés par des virgules, ex., 25,143,465)",
+          "optionUdpPorts": "Ports UDP à rediriger (séparés par des virgules, ex., 53)",
+          "success": "Configuration d'infrastructure mise à jour pour \"{{name}}\""
+        },
+        "show": {
+          "description": "Afficher la configuration d'infrastructure pour une machine",
+          "noInfra": "Aucune configuration d'infrastructure pour \"{{name}}\""
+        }
       },
       "init": {
         "alreadyExists": "La configuration \"{{name}}\" existe déjà",
@@ -408,36 +402,75 @@
         "description": "Lister tous les fichiers de configuration",
         "noConfigs": "Aucun fichier de configuration trouvé. Créez-en un avec : rdc config init"
       },
-      "listArchived": {
-        "description": "Lister les identifiants de dépôts archivés",
-        "noArchived": "Aucun dépôt archivé"
+      "machine": {
+        "add": {
+          "description": "Ajouter une machine à la configuration actuelle",
+          "descriptionShort": "Ajouter une machine à la configuration actuelle",
+          "success": "Machine \"{{name}}\" ajoutée ({{user}}@{{ip}})"
+        },
+        "description": "Gérer les machines dans la configuration actuelle",
+        "list": {
+          "description": "Lister les machines dans la configuration actuelle",
+          "noMachines": "Aucune machine dans la configuration actuelle"
+        },
+        "remove": {
+          "description": "Supprimer une machine de la configuration actuelle",
+          "success": "Machine \"{{name}}\" supprimée"
+        },
+        "scanKeys": {
+          "completed": "{{count}}/{{total}} machines analysées",
+          "description": "Scanner les clés d'hôte SSH pour les machines de la configuration actuelle",
+          "keysScanned": "Clés d'hôte analysées pour \"{{name}}\"",
+          "noKeys": "Impossible d'analyser les clés d'hôte pour \"{{name}}\""
+        },
+        "setCeph": {
+          "description": "Définir la configuration Ceph RBD pour une machine",
+          "optionCluster": "Nom du cluster Ceph",
+          "optionImage": "Nom de l'image RBD (ex., datastore-prod1)",
+          "optionPool": "Nom du pool Ceph (ex., rbd)",
+          "success": "Configuration Ceph définie pour \"{{name}}\" : pool={{pool}}, image={{image}}"
+        },
+        "setup": {
+          "completed": "Machine \"{{machine}}\" configurée avec succès",
+          "datastoreOption": "Chemin du datastore sur la machine distante",
+          "datastoreSizeOption": "Taille du datastore (ex. : 95%, 100G)",
+          "description": "Provisionner une machine distante pour les dépôts (installe renet, configure Docker, datastore BTRFS). Idempotent. Requis après config machine add et avant repo create",
+          "descriptionShort": "Provisionner une machine distante pour les dépôts",
+          "failed": "Échec de la configuration de la machine \"{{machine}}\" : {{error}}",
+          "starting": "Configuration de la machine \"{{machine}}\"..."
+        }
       },
-      "machines": {
-        "description": "Lister les machines dans la configuration actuelle",
-        "noMachines": "Aucune machine configurée. Ajoutez-en une avec : rdc config add-machine <name> --ip <ip> --user <user>"
-      },
-      "providers": {
-        "description": "Lister les fournisseurs cloud configurés",
-        "noProviders": "Aucun fournisseur cloud configuré. Ajouter avec : rdc config add-provider"
-      },
-      "purgeArchived": {
-        "description": "Supprimer définitivement tous les identifiants archivés",
-        "noArchived": "Aucun dépôt archivé à purger",
-        "success": "{{count}} identifiant(s) archivé(s) supprimé(s)"
-      },
-      "pushInfra": {
-        "certCacheUploaded": "Certificats en cache envoyés vers le distant",
-        "description": "Envoyer la configuration d'infrastructure à la machine (proxy Traefik, routeur et enregistrements DNS Cloudflare pour le sous-domaine machine). Exécuter 'config set-infra <machine>' d'abord",
-        "dnsCreated": "DNS : créé {{type}} {{name}} → {{content}}",
-        "dnsError": "Avertissement DNS : {{message}} (les enregistrements nécessitent peut-être une configuration manuelle)",
-        "dnsResolvingZone": "Résolution de la zone Cloudflare pour {{domain}}...",
-        "dnsSkipLocal": "DNS ignoré : le domaine .local n'utilise pas Cloudflare",
-        "dnsSkipNoToken": "DNS ignoré : pas de token API Cloudflare. Configurer avec : rdc config set-infra <machine> --cf-dns-token <token>",
-        "dnsUnchanged": "DNS : {{type}} {{name}} déjà correct",
-        "dnsUpdated": "DNS : mis à jour {{type}} {{name}} → {{content}}",
-        "installingProxy": "Installation et démarrage du proxy...",
-        "proxyInstallWarning": "Échec de l'installation du proxy (code {{code}}). Exécuter manuellement : sudo renet proxy install",
-        "success": "Configuration d'infrastructure envoyée à \"{{name}}\""
+      "provider": {
+        "add": {
+          "description": "Ajouter un fournisseur cloud",
+          "optionImage": "Image OS par défaut",
+          "optionImageAttr": "Personnalisé : nom d'attribut pour l'image du système d'exploitation",
+          "optionInstanceType": "Type/taille d'instance par défaut",
+          "optionIpv4Output": "Personnalisé : attribut de sortie pour l'adresse IPv4",
+          "optionIpv6Output": "Personnalisé : attribut de sortie pour l'adresse IPv6",
+          "optionLabelAttr": "Personnalisé : nom d'attribut pour le libellé de la VM",
+          "optionProvider": "Source de fournisseur connue (ex., linode/linode, hetznercloud/hcloud)",
+          "optionRegion": "Région par défaut pour les nouvelles machines",
+          "optionRegionAttr": "Personnalisé : nom d'attribut pour la région",
+          "optionResource": "Personnalisé : type de ressource OpenTofu pour les VMs",
+          "optionSizeAttr": "Personnalisé : nom d'attribut pour le type d'instance",
+          "optionSource": "Source personnalisée de fournisseur OpenTofu (ex., vultr/vultr)",
+          "optionSshKeyAttr": "Personnalisé : nom d'attribut pour les clés SSH",
+          "optionSshKeyFormat": "Personnalisé : format de clé SSH (inline_list ou resource_id)",
+          "optionSshKeyResource": "Personnalisé : type de ressource OpenTofu pour les clés SSH",
+          "optionSshUser": "Nom d'utilisateur SSH pour les nouvelles VMs (par défaut : root)",
+          "optionToken": "Jeton API pour le fournisseur cloud",
+          "success": "Fournisseur cloud \"{{name}}\" ajouté ({{provider}})"
+        },
+        "description": "Gérer les fournisseurs cloud pour le provisionnement automatique de machines",
+        "list": {
+          "description": "Lister les fournisseurs cloud configurés",
+          "noProviders": "Aucun fournisseur cloud configuré. Ajoutez avec : rdc config provider add"
+        },
+        "remove": {
+          "description": "Supprimer la configuration d'un fournisseur cloud",
+          "success": "Fournisseur cloud \"{{name}}\" supprimé"
+        }
       },
       "recover": {
         "confirm": "Restaurer la configuration \"{{name}}\" depuis la sauvegarde ?",
@@ -446,61 +479,43 @@
         "noBackup": "Aucune sauvegarde trouvée pour la configuration \"{{name}}\"",
         "success": "Configuration \"{{name}}\" restaurée depuis la sauvegarde (version {{version}})"
       },
-      "removeMachine": {
-        "description": "Retirer une machine de la configuration actuelle",
-        "success": "Machine \"{{name}}\" retirée"
-      },
-      "removeProvider": {
-        "description": "Supprimer la configuration d'un fournisseur cloud",
-        "success": "Fournisseur cloud \"{{name}}\" supprimé"
-      },
-      "removeRepository": {
-        "description": "Retirer un mappage de dépôt de la configuration actuelle",
-        "success": "Dépôt \"{{name}}\" retiré"
-      },
-      "removeStorage": {
-        "description": "Retirer un stockage de la configuration actuelle",
-        "success": "Stockage \"{{name}}\" retiré"
-      },
-      "repositories": {
-        "description": "Lister les mappages GUID de dépôts dans la configuration actuelle",
-        "noRepositories": "Aucun dépôt configuré. Ajoutez-en un avec : rdc config add-repository <name> --guid <guid>"
-      },
-      "restoreArchived": {
-        "description": "Restaurer un identifiant de dépôt archivé",
-        "optionName": "Restaurer avec un nom différent",
-        "success": "\"{{name}}\" ({{guid}}) restauré"
-      },
-      "scanKeys": {
-        "completed": "{{count}}/{{total}} machines analysées",
-        "description": "Analyser les clés d'hôte SSH pour les machines dans la configuration actuelle",
-        "keysScanned": "Clés d'hôte analysées pour \"{{name}}\"",
-        "noKeys": "Impossible d'analyser les clés d'hôte pour \"{{name}}\""
+      "repository": {
+        "add": {
+          "description": "Ajouter un mappage GUID de dépôt à la configuration actuelle",
+          "networkIdAssigned": "ID réseau : {{networkId}}",
+          "optionCredential": "Identifiant du dépôt (phrase de passe de chiffrement)",
+          "optionGuid": "GUID du dépôt (UUID des noms de fichiers de sauvegarde)",
+          "optionNetworkId": "ID réseau pour l'isolation Docker (2816, 2880, ...). Attribué automatiquement si omis",
+          "optionTag": "Tag du dépôt",
+          "success": "Dépôt \"{{name}}\" ajouté ({{guid}}, tag : {{tag}})"
+        },
+        "description": "Gérer les mappages de dépôts dans la configuration actuelle",
+        "list": {
+          "description": "Lister les mappages GUID de dépôts dans la configuration actuelle",
+          "noRepositories": "Aucun dépôt configuré. Ajoutez-en un avec : rdc config repository add <name> --guid <guid>"
+        },
+        "listArchived": {
+          "description": "Lister les identifiants de dépôts archivés",
+          "noArchived": "Aucun dépôt archivé"
+        },
+        "purgeArchived": {
+          "description": "Supprimer définitivement tous les identifiants archivés",
+          "noArchived": "Aucun dépôt archivé à purger",
+          "success": "{{count}} identifiant(s) archivé(s) purgé(s)"
+        },
+        "remove": {
+          "description": "Supprimer un mappage de dépôt de la configuration actuelle",
+          "success": "Dépôt \"{{name}}\" supprimé"
+        },
+        "restoreArchived": {
+          "description": "Restaurer un identifiant de dépôt archivé",
+          "optionName": "Restaurer avec un nom différent",
+          "success": "\"{{name}}\" restauré ({{guid}})"
+        }
       },
       "set": {
         "description": "Définir une valeur par défaut (équipe, région, pont, machine)",
         "success": "\"{{key}}\" défini à \"{{value}}\""
-      },
-      "setCeph": {
-        "description": "Définir la configuration Ceph RBD pour une machine",
-        "optionCluster": "Nom du cluster Ceph",
-        "optionImage": "Nom de l'image RBD (ex. : datastore-prod1)",
-        "optionPool": "Nom du pool Ceph (ex. : rbd)",
-        "success": "Configuration Ceph définie pour \"{{name}}\" : pool={{pool}}, image={{image}}"
-      },
-      "setInfra": {
-        "description": "Définir la configuration d'infrastructure pour une machine (machine-specific: IPs, domain, ports; shared: cert email, CF DNS token)",
-        "invalidIPv4": "Adresse IPv4 invalide : {{ip}}",
-        "invalidIPv6": "Adresse IPv6 invalide : {{ip}}",
-        "noOptions": "Aucune option spécifiée. Utilisez --public-ipv4, --base-domain, etc.",
-        "optionBaseDomain": "Domaine de base pour les applications",
-        "optionCertEmail": "Email pour les notifications de certificats TLS (shared across machines)",
-        "optionCfDnsToken": "Jeton API DNS Cloudflare pour le défi ACME DNS-01 (shared across machines)",
-        "optionPublicIPv4": "Adresse IPv4 publique",
-        "optionPublicIPv6": "Adresse IPv6 publique",
-        "optionTcpPorts": "Ports TCP à rediriger (séparés par des virgules, ex. 25,143,465)",
-        "optionUdpPorts": "Ports UDP à rediriger (séparés par des virgules, ex. 53)",
-        "success": "Configuration d'infrastructure mise à jour pour \"{{name}}\""
       },
       "setRenet": {
         "description": "Définir le chemin vers le binaire renet pour le mode local",
@@ -510,25 +525,29 @@
         "description": "Mettre à jour la configuration SSH pour la configuration actuelle",
         "success": "Configuration SSH mise à jour"
       },
-      "setupMachine": {
-        "completed": "La configuration de la machine '{{machine}}' s'est terminée avec succès",
-        "datastoreOption": "Chemin du magasin de données sur la machine distante",
-        "datastoreSizeOption": "Taille du magasin de données (ex. 95%, 100G)",
-        "description": "Exécuter la configuration sur une machine distante (installe btrfs, Docker, etc.)",
-        "failed": "La configuration de la machine '{{machine}}' a échoué : {{error}}",
-        "starting": "Configuration de la machine '{{machine}}'..."
-      },
       "show": {
         "description": "Afficher les détails de la configuration actuelle",
         "noConfig": "Aucune configuration active. Créez-en une avec : rdc config init"
       },
-      "showInfra": {
-        "description": "Afficher la configuration d'infrastructure pour une machine",
-        "noInfra": "Aucune configuration d'infrastructure définie pour \"{{name}}\""
-      },
-      "storages": {
-        "description": "Lister les stockages dans la configuration actuelle",
-        "noStorages": "Aucun stockage configuré. Importez avec : rdc config import-storage <file>"
+      "storage": {
+        "description": "Gérer les backends de stockage dans la configuration actuelle",
+        "import": {
+          "description": "Importer des stockages depuis un fichier de configuration rclone",
+          "imported": "Stockage \"{{name}}\" importé ({{type}})",
+          "noConfigs": "Aucune configuration de stockage valide trouvée dans le fichier",
+          "notFound": "Stockage \"{{name}}\" non trouvé dans le fichier de configuration",
+          "optionName": "Importer uniquement cette section nommée",
+          "summary": "{{count}} stockage(s) importé(s)",
+          "unsupported": "Ignoré \"{{name}}\" : type de fournisseur non pris en charge \"{{type}}\""
+        },
+        "list": {
+          "description": "Lister les stockages dans la configuration actuelle",
+          "noStorages": "Aucun stockage configuré. Importez avec : rdc config storage import <file>"
+        },
+        "remove": {
+          "description": "Supprimer un stockage de la configuration actuelle",
+          "success": "Stockage \"{{name}}\" supprimé"
+        }
       }
     },
     "datastore": {
@@ -537,6 +556,7 @@
         "completed": "Datastore forké avec succès (snapshot : {{snapshot}})",
         "cowSizeOption": "Taille du fichier de sauvegarde COW (par défaut : auto, croît à la demande)",
         "description": "Créer une copie COW locale d'un datastore Ceph via snapshot + clone RBD (< 2s). Conservez les noms de snapshot/clone de la sortie pour unfork. Un seul fork par nom de cible ; exécutez unfork avant de refaire un fork",
+        "descriptionShort": "Créer une copie CoW locale d'un datastore Ceph",
         "failed": "Échec du fork du datastore",
         "starting": "Fork du datastore sur \"{{source}}\" (clone nommé pour \"{{target}}\")...",
         "toOption": "Suffixe du clone (crée un clone nommé <image>-fork-<name>). Le fork reste sur la machine source"
@@ -616,9 +636,17 @@
       "title": "Diagnostic Rediacc CLI"
     },
     "machine": {
+      "backup": {
+        "description": "Gestion des sauvegardes machine",
+        "schedule": {
+          "description": "Envoyer la planification de sauvegarde vers une machine distante (minuteur systemd)",
+          "success": "Planification de sauvegarde déployée sur {{machine}}"
+        }
+      },
       "containers": {
         "allHealthy": "Tous les conteneurs sont sains",
         "description": "Lister les conteneurs en cours d'exécution sur une machine",
+        "descriptionShort": "Lister les conteneurs sur une machine",
         "fetched": "Conteneurs récupérés",
         "fetching": "Récupération des conteneurs...",
         "healthCheck": "Mode de vérification de santé - sort avec le code 2 si des conteneurs ne sont pas sains",
@@ -635,10 +663,6 @@
         "deleting": "Suppression de la machine en cours...",
         "description": "Supprimer une machine",
         "success": "Machine \"{{name}}\" supprimée"
-      },
-      "deployBackup": {
-        "description": "Pousser la planification des sauvegardes vers la machine distante (timer systemd)",
-        "success": "Planification des sauvegardes poussée vers {{machine}}"
       },
       "deprovision": {
         "completed": "Machine {{name}} détruite et supprimée de la configuration",
@@ -679,9 +703,6 @@
         "systemSection": "\nSystème :",
         "systemUptime": "  Temps de fonctionnement : {{uptime}}"
       },
-      "info": {
-        "description": "Afficher l'état complet de la machine (système, dépôts, conteneurs, services)"
-      },
       "list": {
         "description": "Lister les machines",
         "fetching": "Récupération des machines..."
@@ -708,8 +729,41 @@
         "tofuNotInstalled": "OpenTofu (tofu) n'est pas installé. Installer depuis : https://opentofu.org/docs/intro/install/",
         "waitingSSH": "En attente de la connectivité SSH..."
       },
+      "prune": {
+        "checkingActivity": "Vérification de l'activité des instantanés...",
+        "completed": "Nettoyage terminé",
+        "datastoreCompleted": "Nettoyage du datastore terminé",
+        "datastoreFailed": "Échec du nettoyage du datastore",
+        "datastoreOnlyOption": "Nettoyer uniquement les ressources orphelines du datastore",
+        "description": "Supprimer les ressources orphelines du datastore et les instantanés périmés d'une machine",
+        "descriptionShort": "Nettoyer les ressources orphelines et les instantanés périmés",
+        "dryRunOption": "Afficher ce qui serait supprimé sans effectuer de modifications",
+        "noStaleSnapshots": "Aucun instantané périmé trouvé",
+        "snapshotDeleted": "{{name}} supprimé",
+        "snapshotDeleting": "Suppression de {{name}}...",
+        "snapshotInUse": "{{name}} ignoré (en cours d'utilisation)",
+        "snapshotsCompleted": "Nettoyage des instantanés : {{deleted}} supprimés, {{skipped}} ignorés",
+        "orphanedReposOption": "Supprimer aussi les images de dépôts absents de toute configuration",
+        "orphanedReposStarting": "Recherche des dépôts orphelins sur {{machine}}...",
+        "orphanedReposCompleted": "{{count}} dépôts orphelins supprimés",
+        "noReposFound": "Aucun dépôt trouvé sur la machine",
+        "snapshotsOnlyOption": "Nettoyer uniquement les instantanés périmés",
+        "snapshotStale": "Périmé : {{name}} ({{size}})",
+        "startingDatastore": "Recherche des ressources orphelines du datastore sur {{machine}}...",
+        "startingSnapshots": "Recherche des instantanés périmés sur {{machine}}..."
+      },
+      "query": {
+        "connection": "Connexion",
+        "description": "Afficher l'état complet de la machine (système, dépôts, conteneurs, services)",
+        "descriptionShort": "Afficher l'état complet de la machine",
+        "fetched": "Statut récupéré",
+        "fetching": "Récupération du statut de {{machine}}...",
+        "infrastructure": "Infrastructure",
+        "noData": "Aucune donnée de statut disponible"
+      },
       "repos": {
         "description": "Lister les dépôts déployés sur une machine",
+        "descriptionShort": "Lister les dépôts déployés sur une machine",
         "fetched": "Machine récupérée",
         "fetching": "Récupération de la machine...",
         "noRepos": "Aucun dépôt déployé sur cette machine"
@@ -717,18 +771,12 @@
       "services": {
         "allStable": "Tous les services sont stables",
         "description": "Lister les services systemd sur une machine",
+        "descriptionShort": "Lister les services systemd gérés par rediacc sur une machine",
         "fetched": "Services récupérés",
         "fetching": "Récupération des services...",
         "noServices": "Aucun service rediacc trouvé sur cette machine",
         "stabilityCheck": "Mode de vérification de stabilité - sort avec le code 2 si des services échouent/redémarrent",
         "unstableFound": "{{count}} service(s) instable(s) trouvé(s)"
-      },
-      "status": {
-        "description": "Afficher l'état complet de la machine (système, dépôts, conteneurs, services)",
-        "fetched": "Statut récupéré",
-        "fetching": "Récupération du statut de {{machine}}...",
-        "infrastructure": "Infrastructure",
-        "noData": "Aucune donnée de statut disponible"
       },
       "testConnection": {
         "authMethod": "  Méthode d'authentification : {{method}}",
@@ -785,6 +833,12 @@
         "configOption": "Nom de la configuration à utiliser pour toutes les commandes",
         "description": "Démarrer le serveur MCP (transport stdio)",
         "timeoutOption": "Délai d'expiration par défaut des commandes en millisecondes"
+      },
+      "tools": {
+        "repo_fork": {
+          "parentDescription": "Nom du dépôt parent (ou nom:tag) à partir duquel créer un fork",
+          "tagDescription": "Tag pour le fork (crée nom:tag, ex. \"staging\")"
+        }
       }
     },
     "ops": {
@@ -1029,27 +1083,21 @@
         "description": "Gérer le démarrage automatique des dépôts au démarrage",
         "disable": {
           "completed": "Démarrage automatique désactivé",
+          "completedAll": "Démarrage automatique désactivé pour tous les dépôts",
           "description": "Désactiver le démarrage automatique pour un dépôt",
           "failed": "Échec de la désactivation du démarrage automatique",
-          "starting": "Désactivation du démarrage automatique pour \"{{repository}}\" sur \"{{machine}}\"..."
-        },
-        "disableAll": {
-          "completed": "Démarrage automatique désactivé pour tous les dépôts",
-          "description": "Désactiver le démarrage automatique pour tous les dépôts",
-          "failed": "Échec de la désactivation du démarrage automatique pour tous les dépôts",
-          "starting": "Désactivation du démarrage automatique pour tous les dépôts sur \"{{machine}}\"..."
+          "failedAll": "Échec de la désactivation du démarrage automatique pour tous les dépôts",
+          "starting": "Désactivation du démarrage automatique pour \"{{repository}}\" sur \"{{machine}}\"...",
+          "startingAll": "Désactivation du démarrage automatique pour tous les dépôts sur \"{{machine}}\"..."
         },
         "enable": {
           "completed": "Démarrage automatique activé",
+          "completedAll": "Démarrage automatique activé pour tous les dépôts",
           "description": "Activer le démarrage automatique pour un dépôt",
           "failed": "Échec de l'activation du démarrage automatique",
-          "starting": "Activation du démarrage automatique pour \"{{repository}}\" sur \"{{machine}}\"..."
-        },
-        "enableAll": {
-          "completed": "Démarrage automatique activé pour tous les dépôts",
-          "description": "Activer le démarrage automatique pour tous les dépôts",
-          "failed": "Échec de l'activation du démarrage automatique pour tous les dépôts",
-          "starting": "Activation du démarrage automatique pour tous les dépôts sur \"{{machine}}\"..."
+          "failedAll": "Échec de l'activation du démarrage automatique pour tous les dépôts",
+          "starting": "Activation du démarrage automatique pour \"{{repository}}\" sur \"{{machine}}\"...",
+          "startingAll": "Activation du démarrage automatique pour tous les dépôts sur \"{{machine}}\"..."
         },
         "list": {
           "completed": "Liste de démarrage automatique récupérée",
@@ -1058,6 +1106,21 @@
           "starting": "Listage des dépôts avec démarrage automatique sur \"{{machine}}\"..."
         }
       },
+      "backup": {
+        "description": "Gérer les sauvegardes de dépôts",
+        "list": {
+          "description": "Lister les sauvegardes disponibles sur le stockage ou la machine",
+          "listing": "Listage des sauvegardes...",
+          "optionFromMachine": "Nom de la machine source",
+          "optionFromStorage": "Nom du stockage source",
+          "sourceRequired": "Spécifiez --from <storage> ou --from-machine <machine>"
+        }
+      },
+      "batchConfirm": "{{action}} les {{count}} dépôts sur \"{{machine}}\" ? [y/N]",
+      "batchFailed": "{{action}} échoué pour \"{{repo}}\" : {{error}}",
+      "batchIterating": "{{action}} {{current}}/{{total}} : \"{{repo}}\"...",
+      "batchResult": "{{action}} terminé : {{succeeded}}/{{total}} réussis",
+      "batchStarting": "{{action}} : «{{repo}}»...",
       "create": {
         "alreadyExists": "Le dépôt \"{{name}}\" existe déjà dans le contexte",
         "completed": "Dépôt créé",
@@ -1070,27 +1133,32 @@
       },
       "delete": {
         "archived": "Identifiant de \"{{repository}}\" archivé",
+        "archiveOption": "Déplacer l'entrée de configuration vers deletedRepositories pour récupération ultérieure",
         "completed": "Dépôt supprimé",
-        "description": "Supprimer un dépôt",
+        "description": "Supprimer un dépôt (détruit les conteneurs, volumes et l'image chiffrée). L'entrée de configuration est conservée. Utilisez --archive-config pour déplacer les identifiants vers deletedRepositories pour récupération via 'config restore-archived'",
+        "descriptionShort": "Supprimer un dépôt d'une machine",
         "failed": "Échec de la suppression du dépôt",
         "restoreHint": "Restaurer avec : rdc config restore-archived {{guid}}",
         "starting": "Suppression de \"{{repository}}\" sur \"{{machine}}\"..."
       },
       "description": "Déployer et gérer des dépôts chiffrés sur les machines",
+      "descriptionShort": "Déployer et gérer des dépôts chiffrés sur les machines",
       "down": {
+        "allCompleted": "Tous les dépôts arrêtés",
+        "allFailed": "L'opération d'arrêt total a échoué",
+        "allStarting": "Arrêt de tous les dépôts sur \"{{machine}}\"...",
         "completed": "Services arrêtés",
         "description": "Arrêter les services du dépôt",
+        "descriptionShort": "Arrêter les conteneurs Docker du dépôt",
         "failed": "Échec de l'arrêt des services",
         "grandOption": "Nom du grand dépôt (résolution automatique vers le GUID)",
         "starting": "Arrêt des services pour \"{{repository}}\" sur \"{{machine}}\"...",
-        "unmountOption": "Démonter le dépôt après l'arrêt",
-        "allCompleted": "Tous les dépôts arrêtés",
-        "allFailed": "L'opération d'arrêt total a échoué",
-        "allStarting": "Arrêt de tous les dépôts sur \"{{machine}}\"..."
+        "unmountOption": "Démonter le dépôt après l'arrêt"
       },
       "expand": {
         "completed": "Extension terminée",
         "description": "Étendre un dépôt monté en ligne (sans interruption)",
+        "descriptionShort": "Étendre un dépôt monté en ligne (sans interruption, agrandissement uniquement)",
         "failed": "Échec de l'extension",
         "sizeOption": "Nouvelle taille du dépôt (ex. 10G, 100G, 1T)",
         "starting": "Extension de \"{{repository}}\" à {{size}} sur \"{{machine}}\"..."
@@ -1099,11 +1167,13 @@
         "alreadyExists": "Le dépôt \"{{name}}\" existe déjà dans le contexte",
         "completed": "Fork créé. Déployer localement : repo up {{repository}} -m {{machine}} --mount. Pour migrer le fork vers une autre machine : backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
         "description": "Créer un fork CoW (Copy-on-Write) d'un dépôt",
+        "descriptionShort": "Créer un fork CoW d'un dépôt (nouveau GUID, networkId, plage IP)",
         "failed": "Échec de la création du fork",
         "registered": "Fork \"{{repository}}\" enregistré ({{guid}}, réseau {{networkId}})",
         "rollback": "Configuration annulée pour \"{{repository}}\"",
         "starting": "Création du fork de \"{{parent}}\" en tant que \"{{repository}}\" sur \"{{machine}}\"...",
-        "tagOption": "Nom du fork"
+        "tagOption": "Tag pour le fork (crée nom:tag)",
+        "tagRequired": "Le tag est requis pour le fork. Utilisation : rdc repo fork <parent> <tag> -m <machine>"
       },
       "list": {
         "completed": "Listage terminé",
@@ -1111,18 +1181,12 @@
         "failed": "Échec du listage : {{error}}",
         "starting": "Listage des dépôts sur \"{{machine}}\"..."
       },
-      "listBackups": {
-        "description": "Lister les sauvegardes disponibles sur le stockage ou la machine",
-        "listing": "Listage des sauvegardes...",
-        "optionFromMachine": "Nom de la machine source",
-        "optionFromStorage": "Nom du stockage source",
-        "sourceRequired": "Spécifiez --from <storage> ou --from-machine <machine>"
-      },
       "machineOption": "Nom de la machine cible",
       "mount": {
         "checkpointOption": "Restaurer depuis un point de contrôle après le montage",
         "completed": "Montage terminé",
         "description": "Monter un dépôt (ouvrir le conteneur LUKS)",
+        "descriptionShort": "Monter un dépôt (déchiffrer et ouvrir le conteneur LUKS)",
         "failed": "Échec du montage",
         "starting": "Montage de \"{{repository}}\" sur \"{{machine}}\"..."
       },
@@ -1130,12 +1194,14 @@
       "ownership": {
         "completed": "Propriété mise à jour",
         "description": "Changer la propriété du répertoire du dépôt",
+        "descriptionShort": "Changer l'UID du propriétaire du répertoire du dépôt",
         "failed": "Échec de la mise à jour de la propriété",
         "starting": "Définition de la propriété de \"{{repository}}\" sur \"{{machine}}\"...",
         "uidOption": "UID du propriétaire (par défaut : 7111)"
       },
       "pull": {
         "description": "Récupérer la sauvegarde du dépôt depuis le stockage ou une machine",
+        "descriptionShort": "Récupérer la sauvegarde du dépôt depuis le stockage ou la machine",
         "optionForce": "Forcer l'écrasement du dépôt existant",
         "optionFromMachine": "Nom de la machine source",
         "optionFromStorage": "Nom du stockage source",
@@ -1144,6 +1210,7 @@
       },
       "push": {
         "description": "Pousser la sauvegarde du dépôt vers le stockage ou une machine",
+        "descriptionShort": "Envoyer la sauvegarde du dépôt vers le stockage ou la machine",
         "destIgnoredForStorage": "--dest {{provided}} ignoré : les sauvegardes de stockage utilisent le GUID du dépôt ({{dest}})",
         "destRequired": "Spécifiez --to <storage> ou --to-machine <machine>",
         "optionCheckpoint": "Créer un point de contrôle du conteneur (sauvegarde à chaud)",
@@ -1153,11 +1220,16 @@
         "optionTag": "Tag de déploiement pour le versionnage",
         "optionToMachine": "Nom de la machine de destination",
         "optionToStorage": "Nom du stockage de destination",
-        "pushing": "Envoi de la sauvegarde de \"{{repo}}\" vers {{dest}}..."
+        "pushing": "Envoi de la sauvegarde de \"{{repo}}\" vers {{dest}}...",
+        "optionUp": "Après l'envoi, monter et déployer le dépôt sur la machine cible",
+        "deploying": "Déploiement de \"{{repo}}\" sur {{machine}}...",
+        "deployed": "Dépôt \"{{repo}}\" déployé sur {{machine}}",
+        "deployFailed": "Échec du déploiement de \"{{repo}}\" après l'envoi"
       },
       "resize": {
         "completed": "Redimensionnement terminé",
         "description": "Redimensionner un dépôt hors ligne (supporte l'expansion et la réduction)",
+        "descriptionShort": "Redimensionner un dépôt hors ligne (agrandir ou réduire)",
         "failed": "Échec du redimensionnement",
         "sizeOption": "Nouvelle taille du dépôt (ex. 10G, 100G, 1T)",
         "starting": "Redimensionnement de \"{{repository}}\" à {{size}} sur \"{{machine}}\"..."
@@ -1166,6 +1238,7 @@
         "create": {
           "creating": "Création de l'instantané de \"{{repo}}\" sur {{machine}}...",
           "description": "Créer un instantané BTRFS d'un dépôt",
+          "descriptionShort": "Créer un instantané BTRFS d'un dépôt",
           "optionSnapshotName": "Nom explicite de l'instantané (généré automatiquement si vide)",
           "success": "Instantané créé : {{name}} ({{path}})"
         },
@@ -1189,31 +1262,35 @@
       "sync": {
         "description": "Synchroniser les dépôts et fichiers (push/pull en masse, transfert de fichiers)",
         "download": {
-          "description": "Télécharger des fichiers depuis un dépôt"
+          "description": "Télécharger des fichiers depuis un dépôt",
+          "descriptionShort": "Télécharger des fichiers depuis un dépôt via rsync"
         },
-        "pullAll": {
-          "description": "Pousser/récupérer en masse tous les dépôts depuis/vers le stockage cloud",
-          "optionFrom": "Nom du stockage source (mode pull)",
-          "optionOverride": "Écraser les dépôts non montés existants lors du pull",
+        "pull": {
+          "description": "Récupérer les dépôts depuis le stockage cloud (omettre le nom pour tout récupérer)",
+          "optionFrom": "Nom du stockage source",
+          "optionOverride": "Écraser les dépôts non montés existants lors de la récupération",
           "optionRepo": "Filtrer par dépôt spécifique (répétable)",
-          "success": "Pull de synchronisation terminé"
+          "success": "Récupération de synchronisation terminée"
         },
-        "pushAll": {
-          "description": "Pousser/récupérer en masse tous les dépôts depuis/vers le stockage cloud",
+        "push": {
+          "description": "Envoyer les dépôts vers le stockage cloud (omettre le nom pour tout envoyer)",
           "optionRepo": "Filtrer par dépôt spécifique (répétable)",
-          "optionTo": "Nom du stockage de destination (mode push)",
-          "success": "Push de synchronisation terminé"
+          "optionTo": "Nom du stockage de destination",
+          "success": "Envoi de synchronisation terminé"
         },
         "status": {
-          "description": "Vérifier l'état de synchronisation et comparer les fichiers locaux/distants"
+          "description": "Vérifier l'état de synchronisation et comparer les fichiers locaux/distants",
+          "descriptionShort": "Comparer les fichiers locaux et distants (à blanc)"
         },
         "upload": {
-          "description": "Envoyer des fichiers vers un dépôt"
+          "description": "Envoyer des fichiers vers un dépôt",
+          "descriptionShort": "Envoyer des fichiers vers un dépôt via rsync"
         }
       },
       "template": {
         "completed": "Modèle appliqué",
         "description": "Appliquer un modèle à un dépôt",
+        "descriptionShort": "Appliquer un modèle à un dépôt (docker-compose.yml + Rediaccfile)",
         "failed": "Échec de l'application du modèle",
         "fileNotFound": "Fichier de modèle introuvable : {{path}}",
         "fileOption": "Chemin vers le fichier de modèle JSON",
@@ -1224,6 +1301,7 @@
         "checkpointOption": "Créer un point de contrôle avant le démontage",
         "completed": "Démontage terminé",
         "description": "Démonter un dépôt",
+        "descriptionShort": "Démonter un dépôt (fermer le conteneur LUKS)",
         "failed": "Échec du démontage",
         "starting": "Démontage de \"{{repository}}\" sur \"{{machine}}\"..."
       },
@@ -1231,6 +1309,7 @@
         "checkpointOption": "Restaurer les conteneurs depuis un checkpoint CRIU après le déploiement (pour la migration de processus en direct depuis une autre machine)",
         "completed": "Services démarrés",
         "description": "Déployer ou mettre à jour un dépôt (montage, démarrage des services)",
+        "descriptionShort": "Déployer ou mettre à jour un dépôt sur une machine",
         "failed": "Échec du démarrage des services",
         "grandOption": "Nom du grand dépôt (résolution automatique vers le GUID)",
         "mountOption": "Monter le dépôt d'abord",
@@ -1250,30 +1329,26 @@
       "validate": {
         "completed": "Validation terminée",
         "description": "Valider l'intégrité du dépôt",
+        "descriptionShort": "Valider l'intégrité du dépôt",
         "failed": "Échec de la validation",
         "starting": "Validation de \"{{repository}}\" sur \"{{machine}}\"..."
       },
-      "batchConfirm": "{{action}} les {{count}} dépôts sur \"{{machine}}\" ? [y/N]",
-      "batchFailed": "{{action}} échoué pour \"{{repo}}\" : {{error}}",
-      "batchIterating": "{{action}} {{current}}/{{total}} : \"{{repo}}\"...",
-      "batchResult": "{{action}} terminé : {{succeeded}}/{{total}} réussis",
-      "yesOption": "Passer la confirmation pour les opérations par lots",
-      "batchStarting": "{{action}} : «{{repo}}»..."
+      "yesOption": "Passer la confirmation pour les opérations par lots"
     },
     "repository": {
       "create": {
-        "creating": "Création du dépôt \"{{name}}:{{tag}}\"...",
+        "creating": "Création du dépôt \"{{name}}\"...",
         "description": "Créer un nouveau dépôt",
-        "success": "Dépôt \"{{name}}:{{tag}}\" créé"
+        "success": "Dépôt \"{{name}}\" créé"
       },
       "delete": {
         "checkingRelationships": "Vérification des relations du dépôt...",
-        "confirm": "Supprimer le dépôt \"{{name}}:{{tag}}\" ? Ceci ne peut pas être annulé.",
-        "deleting": "Suppression du dépôt \"{{name}}:{{tag}}\"...",
+        "confirm": "Supprimer le dépôt \"{{name}}\" ? Ceci ne peut pas être annulé.",
+        "deleting": "Suppression du dépôt \"{{name}}\"...",
         "description": "Supprimer un dépôt",
         "grandRepoWarning": "Ceci est un grand dépôt (identifiant). Sa suppression est irréversible.",
         "relationshipsChecked": "Relations du dépôt vérifiées",
-        "success": "Dépôt \"{{name}}:{{tag}}\" supprimé"
+        "success": "Dépôt \"{{name}}\" supprimé"
       },
       "description": "Commandes de gestion du dépôt",
       "list": {
@@ -1285,11 +1360,11 @@
         "checkingRelationships": "Vérification des relations du dépôt...",
         "confirmPromote": "\nProcéder à la promotion ?",
         "description": "Promouvoir une copie au statut de grand dépôt",
-        "promoting": "Promotion du dépôt \"{{name}}:{{tag}}\"...",
+        "promoting": "Promotion du dépôt \"{{name}}\"...",
         "relationshipsChecked": "Relations du dépôt vérifiées",
         "separateInfo": "\nCela séparera \"{{name}}\" du grand dépôt \"{{grandName}}\"",
         "siblingsInfo": "\n{{count}} clone(s) frère/sœur restera(ont) lié(s) au grand dépôt original :",
-        "success": "Dépôt \"{{name}}:{{tag}}\" promu au statut de grand dépôt"
+        "success": "Dépôt \"{{name}}\" promu au statut de grand dépôt"
       },
       "rename": {
         "description": "Renommer un dépôt",
@@ -1319,10 +1394,11 @@
         "description": "Réessayer une tâche échouée (raccourci pour : queue retry)"
       },
       "run": {
-        "completedLocal": "[local] Terminé en {{duration}}ms",
+        "completedLocal": "Terminé en {{duration}}ms",
         "description": "Exécuter une fonction (raccourci pour : queue create)",
-        "executingLocal": "[local] Exécution de '{{function}}' sur {{machine}}...",
-        "failedLocal": "[local] Échoué : {{error}}",
+        "descriptionShort": "Exécuter une fonction bridge brute sur une machine (débogage uniquement)",
+        "executingLocal": "Exécution de '{{function}}' sur {{machine}}...",
+        "failedLocal": "Échoué : {{error}}",
         "watching": "Surveillance de l'achèvement..."
       },
       "trace": {
@@ -1339,6 +1415,15 @@
         "listing": "Listage des fichiers dans \"{{name}}\"...",
         "noFiles": "Aucun fichier trouvé",
         "pathOption": "Chemin du sous-répertoire à lister"
+      },
+      "prune": {
+        "description": "Supprimer les sauvegardes orphelines du stockage qui ne sont plus dans aucune configuration. Sécurisé multi-configuration avec protection par période de grâce.",
+        "descriptionShort": "Supprimer les sauvegardes orphelines du stockage",
+        "listing": "Listage des sauvegardes dans \"{{storage}}\"...",
+        "listFailed": "Échec du listage des sauvegardes du stockage",
+        "noBackups": "Aucune sauvegarde trouvée dans le stockage",
+        "found": "{{count}} sauvegardes trouvées dans le stockage",
+        "completed": "{{count}} sauvegardes orphelines supprimées"
       },
       "description": "Gérer les fournisseurs de stockage et parcourir les fichiers distants",
       "list": {
@@ -1425,14 +1510,17 @@
       }
     },
     "subscription": {
-      "activationStatus": {
-        "activations": "  Activations : {{active}}/{{max}}",
-        "active": "  Activation : active (vue pour la dernière fois {{lastSeenAt}})",
-        "description": "Afficher l’état d’activation d’une machine",
-        "header": "\nActivation de la machine ({{machineName}})",
-        "inactive": "  Activation : la machine n’est actuellement pas active dans l’état du compte",
-        "machineId": "  ID machine : {{machineId}}",
-        "unavailable": "  Activation : impossible d’interroger l’état du compte"
+      "activation": {
+        "description": "Gestion de l'activation des machines",
+        "status": {
+          "activations": "  Activations : {{active}}/{{max}}",
+          "active": "  Activation : active (dernière vue {{lastSeenAt}})",
+          "description": "Afficher l'état d'activation d'une machine",
+          "header": "\nActivation de la machine ({{machineName}})",
+          "inactive": "  Activation : la machine n'est pas actuellement active dans l'état du compte",
+          "machineId": "  ID de la machine : {{machineId}}",
+          "unavailable": "  Activation : impossible de consulter l'état du compte"
+        }
       },
       "description": "Gérer les licences machine et l’abonnement",
       "login": {
@@ -1452,42 +1540,45 @@
         "waitingApproval": "En attente de l’autorisation du navigateur..."
       },
       "refresh": {
+        "activation": {
+          "description": "Actualiser l'activation de la machine sur une machine distante"
+        },
         "description": "Renouveler la licence de la machine",
         "failed": "Impossible de délivrer la licence de la machine",
         "refreshed": "Licence renouvelée",
         "refreshing": "Renouvellement de la licence...",
+        "repo": {
+          "description": "Actualiser la licence du dépôt pour un dépôt spécifique",
+          "failed": "Échec de l'actualisation de la licence du dépôt",
+          "notFound": "Dépôt non trouvé : {{repoName}}",
+          "refreshed": "Licence du dépôt actualisée",
+          "refreshing": "Actualisation de la licence du dépôt...",
+          "repoArgument": "Nom du dépôt",
+          "success": "Licence du dépôt actualisée pour \"{{repoName}}\""
+        },
+        "repos": {
+          "description": "Actualiser les licences de dépôts par lots sur une machine distante",
+          "refreshed": "Licences de dépôts actualisées",
+          "refreshing": "Actualisation des licences des dépôts...",
+          "success": "Actualisation par lots des licences de dépôts terminée"
+        },
         "success": "Licence renouvelée et installée"
       },
-      "refreshActivation": {
-        "description": "Actualiser l’activation de la machine sur une machine distante"
-      },
-      "refreshRepo": {
-        "description": "Actualiser la licence du dépôt pour un dépôt existant sur une machine",
-        "failed": "Impossible d'actualiser la licence du dépôt",
-        "notFound": "Dépôt introuvable : {{repoName}}",
-        "refreshed": "Licence du dépôt actualisée",
-        "refreshing": "Actualisation de la licence du dépôt...",
-        "repoArgument": "Nom du dépôt",
-        "success": "Licence du dépôt actualisée pour \"{{repoName}}\""
-      },
-      "refreshRepos": {
-        "description": "Actualiser en lot les licences de dépôt sur une machine distante",
-        "refreshed": "Licences de dépôt actualisées",
-        "refreshing": "Actualisation des licences de dépôt...",
-        "success": "L’actualisation par lot des licences de dépôt est terminée"
-      },
-      "repoStatus": {
-        "description": "Afficher les licences de dépôt installées sur une machine",
-        "empty": "  Aucune licence de dépôt installée",
-        "entry": "  - {{repositoryGuid}} : {{freshness}}{{hardExpirySuffix}}",
-        "freshness": {
-          "hardExpired": "expiré définitivement",
-          "refreshRecommended": "actualisation recommandée",
-          "unknown": "inconnu",
-          "valid": "valide"
-        },
-        "hardExpirySuffix": " (expiration définitive : {{effectiveHardExpiry}})",
-        "header": "\nLicences de dépôt : ({{machineName}})"
+      "repo": {
+        "description": "Gestion des licences de dépôts",
+        "status": {
+          "description": "Afficher les licences de dépôts installées sur une machine",
+          "empty": "  Aucune licence de dépôt installée",
+          "entry": "  - {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
+          "freshness": {
+            "hardExpired": "expiré définitivement",
+            "refreshRecommended": "actualisation recommandée",
+            "unknown": "inconnu",
+            "valid": "valide"
+          },
+          "hardExpirySuffix": " (expiration définitive : {{effectiveHardExpiry}})",
+          "header": "\nLicences des dépôts : ({{machineName}})"
+        }
       },
       "status": {
         "description": "Afficher l’état de l’abonnement et de la licence",
@@ -1522,6 +1613,7 @@
       "download": {
         "completed": "Téléchargement terminé : {{count}} fichiers transférés",
         "description": "Télécharger des fichiers depuis un dépôt",
+        "descriptionShort": "Télécharger des fichiers depuis un dépôt via rsync",
         "failed": "Téléchargement échoué",
         "progress": "Téléchargement : {{percentage}}% - {{file}} ({{speed}})",
         "starting": "Début du téléchargement..."
@@ -1533,12 +1625,14 @@
       "noChanges": "Aucune modification à synchroniser.",
       "previewingChanges": "\nAperçu des modifications...\n",
       "status": {
-        "description": "Vérifier l'état de synchronisation et comparer les fichiers locaux/distants"
+        "description": "Vérifier l'état de synchronisation et comparer les fichiers locaux/distants",
+        "descriptionShort": "Comparer les fichiers locaux et distants (à blanc)"
       },
       "totalSize": "Taille totale : {{size}}",
       "upload": {
         "completed": "Téléchargement terminé : {{count}} fichiers transférés",
         "description": "Télécharger des fichiers vers un dépôt",
+        "descriptionShort": "Envoyer des fichiers vers un dépôt via rsync",
         "failed": "Téléchargement échoué",
         "progress": "Téléchargement : {{percentage}}% - {{file}} ({{speed}})",
         "starting": "Début du téléchargement..."
@@ -1885,6 +1979,7 @@
     "activationFailed": "L'activation a échoué",
     "affectedChildClones": ". Clones enfants affectés : {{clones}}. Supprimez ou promouvez d'abord les clones enfants.",
     "agent": {
+      "createGuard": "Impossible de créer le dépôt \"{{name}}\" en mode agent.\n\nLes agents IA fonctionnent en mode fork uniquement. La création d'un dépôt principal est bloquée\ncar l'agent ne peut pas y travailler ensuite.\n\nUtilisez un dépôt existant et faites-en un fork à la place :\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nPour contourner : définissez REDIACC_ALLOW_GRAND_REPO=*",
       "forkBlocked": "La commande \"{{command}}\" n'est pas disponible sur les dépôts fork.\n\nLes dépôts fork sont des environnements provisoires. Cette opération ne s'applique qu'aux dépôts grand.",
       "grandGuard": "Impossible de modifier le dépôt grand \"{{name}}\" en mode agent.\n\nLes agents IA ne peuvent opérer que sur les dépôts fork.\nCréez d'abord un fork :\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nEnsuite opérez sur le fork.\n\nPour outrepasser : définissez REDIACC_ALLOW_GRAND_REPO={{name}}",
       "machineGuard": "Impossible d'accéder directement à la machine \"{{machine}}\" en mode agent.\n\nLes agents IA ne peuvent se connecter qu'aux contextes de dépôt.\nUtilisez :\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nPour outrepasser : définissez REDIACC_ALLOW_GRAND_REPO=*",
@@ -1938,7 +2033,7 @@
     },
     "regionRequired": "Le nom de la région est requis. Utilisez --region ou définissez un contexte.",
     "registrationFailed": "L'enregistrement a échoué",
-    "repositoryNotFound": "Dépôt \"{{name}}:{{tag}}\" non trouvé",
+    "repositoryNotFound": "Dépôt \"{{name}}\" non trouvé",
     "repositoryRequired": "Le nom du dépôt est requis. Utilisez --repository <name>.",
     "resourceNotFound": "{{resource}} non trouvé",
     "ssh": {
@@ -1993,7 +2088,7 @@
   },
   "help": {
     "cli": {
-      "machineInfo": "Afficher l'état de la machine",
+      "machineQuery": "Afficher l'état de la machine",
       "repoUp": "Déployer les services du dépôt",
       "syncUpload": "Téléverser des fichiers vers le dépôt",
       "termRepo": "SSH vers le dépôt"
@@ -2008,7 +2103,7 @@
     "machine": {
       "containers": "Lister les conteneurs en cours",
       "health": "Vérification de santé pour CI/CD",
-      "info": "Afficher l'état complet de la machine"
+      "query": "Afficher l'état complet de la machine"
     },
     "repo": {
       "create": "Créer un dépôt chiffré",
@@ -2038,6 +2133,7 @@
       "machine": "SSH vers la machine",
       "repo": "SSH vers le dépôt (DOCKER_HOST automatique)"
     },
+    "useHelpAll": "Utilisez --help-all pour les descriptions détaillées",
     "vscode": {
       "machine": "Ouvrir la machine dans VS Code",
       "repo": "Ouvrir le dépôt dans VS Code"
@@ -2060,6 +2156,7 @@
     "datastore": "Chemin du magasin de données sur la machine",
     "debug": "Activer la sortie de débogage (mode local)",
     "dryRun": "Afficher les actions prévues sans effectuer de modifications",
+    "graceDays": "Période de grâce en jours pour les dépôts récemment archivés (par défaut : 7)",
     "email": "Adresse email",
     "endpoint": "URL du point de terminaison de l'API",
     "excludePatterns": "Motifs à exclure de la synchronisation",
@@ -2116,6 +2213,12 @@
     "protocolSystem": "Enregistrer au niveau du système (nécessite des privilèges administrateur)",
     "protocolSystemUnregister": "Désinscrire l'enregistrement au niveau du système (nécessite des privilèges administrateur)",
     "protocolToken": "Jeton d'authentification",
+    "queryBlockDevices": "Inclure uniquement les périphériques de bloc",
+    "queryContainers": "Inclure uniquement les conteneurs",
+    "queryNetwork": "Inclure uniquement les interfaces réseau",
+    "queryRepositories": "Inclure uniquement les dépôts",
+    "queryServices": "Inclure uniquement les services",
+    "querySystem": "Inclure uniquement les informations système",
     "quiet": "Supprimer la sortie informative",
     "rawVault": "JSON du coffre brut (pour scripts/CI)",
     "region": "Nom de la région",
@@ -2201,5 +2304,12 @@
   },
   "table": {
     "noData": "Aucune donnée à afficher"
+  },
+  "services": {
+    "prune": {
+      "unreadableConfigs": "Impossible de lire {{count}} configuration(s) : {{names}} (chiffrée(s) ou corrompue(s))",
+      "refusingPrune": "Nettoyage refusé — ces configurations peuvent contenir des GUIDs protégés. Utilisez --force pour forcer.",
+      "noOrphaned": "Aucune entrée orpheline trouvée"
+    }
   }
 }

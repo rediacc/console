@@ -1,7 +1,7 @@
+import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
 import { Command } from 'commander';
 import { registerAgentCommands } from './commands/agent.js';
 import { registerAuditCommands } from './commands/audit.js';
-import { registerBackupCommands } from './commands/backup.js';
 import { registerAuthCommands } from './commands/auth.js';
 import { registerBridgeCommands } from './commands/bridge.js';
 import { registerCephCommands } from './commands/ceph/index.js';
@@ -19,7 +19,6 @@ import { registerRegionCommands } from './commands/region.js';
 import { registerRepoCommands } from './commands/repo.js';
 import { registerRepositoryCommands } from './commands/repository.js';
 import { registerShortcuts } from './commands/shortcuts.js';
-import { registerSnapshotCommands } from './commands/snapshot.js';
 import { registerStorageCommands } from './commands/storage.js';
 import { registerStoreCommands } from './commands/store.js';
 import { registerSubscriptionCommands } from './commands/subscription.js';
@@ -37,7 +36,6 @@ import type { OutputFormat } from './types/index.js';
 import { setOutputFormat } from './utils/errors.js';
 import { applyRegistry } from './utils/mode-guard.js';
 import { VERSION } from './version.js';
-import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
 
 // Track if i18n has been initialized
 let i18nInitialized = false;
@@ -85,7 +83,6 @@ cli
   .option('-o, --output <format>', t('options.output'), 'table')
   .option('--config <name>', t('options.config'))
   .option('-l, --lang <code>', t('options.lang', { languages: SUPPORTED_LANGUAGES.join('|') }))
-  .option('-y, --yes', t('options.yes'))
   .option('-q, --quiet', t('options.quiet'))
   .option('--fields <fields>', t('options.fields'))
   .hook('preAction', async (thisCommand, actionCommand) => {
@@ -197,8 +194,6 @@ registerUpdateCommand(cli);
 registerOpsCommands(cli);
 registerDatastoreCommands(cli);
 registerSubscriptionCommands(cli);
-registerBackupCommands(cli);
-registerSnapshotCommands(cli);
 registerAgentCommands(cli);
 registerMcpCommands(cli);
 registerShortcuts(cli);
@@ -211,7 +206,7 @@ cli.addHelpText(
   'after',
   `
 ${t('help.examples')}
-  $ rdc machine info server-1              ${t('help.cli.machineInfo')}
+  $ rdc machine query server-1             ${t('help.cli.machineQuery')}
   $ rdc term server-1 my-app               ${t('help.cli.termRepo')}
   $ rdc repo up my-app -m server-1         ${t('help.cli.repoUp')}
   $ rdc repo sync upload -m server-1 -r my-app  ${t('help.cli.syncUpload')}

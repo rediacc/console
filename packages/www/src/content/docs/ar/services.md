@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: ar
-sourceHash: "e7b2fd0993c0a3c8"
+sourceHash: "5c191d7b8b481b47"
 ---
 
 # الخدمات
@@ -248,7 +248,7 @@ rdc repo autostart enable my-app -m server-1
 ### تفعيل الكل
 
 ```bash
-rdc repo autostart enable-all -m server-1
+rdc repo autostart enable -m server-1
 ```
 
 ### تعطيل
@@ -274,8 +274,8 @@ rdc repo autostart list -m server-1
 ```bash
 curl -fsSL https://www.rediacc.com/install.sh | bash
 rdc config init production --ssh-key ~/.ssh/id_ed25519
-rdc config add-machine prod-1 --ip 203.0.113.50 --user deploy
-rdc config setup-machine prod-1
+rdc config machine add prod-1 --ip 203.0.113.50 --user deploy
+rdc config machine setup prod-1
 rdc repo create webapp -m prod-1 --size 10G
 ```
 

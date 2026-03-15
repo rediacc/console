@@ -37,7 +37,7 @@ When agents call `rdc` in a subshell, output automatically switches to JSON (non
 ```json
 {
   "success": true,
-  "command": "machine info",
+  "command": "machine query",
   "data": { ... },
   "errors": null,
   "warnings": [],
@@ -54,7 +54,7 @@ Error responses include `retryable` and `guidance` fields:
     "code": "NOT_FOUND",
     "message": "Machine \"prod-2\" not found",
     "retryable": false,
-    "guidance": "Verify the resource name with \"rdc machine info\" or \"rdc config repositories\""
+    "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
   }]
 }
 ```
@@ -68,10 +68,10 @@ The `rdc agent` subcommand provides structured introspection:
 rdc agent capabilities
 
 # Show detailed schema for a specific command
-rdc agent schema "machine info"
+rdc agent schema "machine query"
 
 # Execute a command with JSON stdin
-echo '{"name": "prod-1"}' | rdc agent exec "machine info"
+echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 ```
 
 ## Key Flags for Agents

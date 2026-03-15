@@ -247,7 +247,7 @@ You will be prompted for the repository passphrase.
 ### Enable All
 
 ```bash
-rdc repo autostart enable-all -m server-1
+rdc repo autostart enable -m server-1
 ```
 
 ### Disable
@@ -292,8 +292,8 @@ This deploys a web application with PostgreSQL, Redis, and an API server.
 ```bash
 curl -fsSL https://www.rediacc.com/install.sh | bash
 rdc config init production --ssh-key ~/.ssh/id_ed25519
-rdc config add-machine prod-1 --ip 203.0.113.50 --user deploy
-rdc config setup-machine prod-1
+rdc config machine add prod-1 --ip 203.0.113.50 --user deploy
+rdc config machine setup prod-1
 rdc repo create webapp -m prod-1 --size 10G
 ```
 

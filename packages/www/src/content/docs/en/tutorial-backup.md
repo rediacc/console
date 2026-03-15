@@ -24,7 +24,7 @@ Automated backups protect your repositories, and infrastructure networking expos
 Storage providers (S3, B2, Google Drive, etc.) serve as backup destinations. Check which providers are configured.
 
 ```bash
-rdc config storages
+rdc config storage list
 ```
 
 Lists all configured storage providers imported from rclone configs. If empty, add a storage provider first — see [Backup & Restore](/en/docs/backup-restore).
@@ -61,7 +61,7 @@ Shows the current backup configuration: destination, cron expression, and enable
 For public-facing services, the machine needs its external IP, base domain, and a certificate email for Let's Encrypt TLS.
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com
@@ -74,7 +74,7 @@ Rediacc generates a Traefik reverse proxy configuration from these settings.
 If your services need non-HTTP ports (e.g., SMTP, DNS), register them as Traefik entrypoints.
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 ```
@@ -86,7 +86,7 @@ This creates Traefik entrypoints (`tcp-25`, `udp-53`, etc.) that Docker services
 Verify the full infrastructure configuration.
 
 ```bash
-rdc config show-infra server-1
+rdc config infra show server-1
 ```
 
 Displays public IPs, domain, certificate email, and all registered ports.
@@ -108,10 +108,10 @@ The configuration is preserved and can be re-enabled later with `--enable`.
 Cron format is `minute hour day month weekday`. Common schedules: `0 2 * * *` (daily 2 AM), `0 */6 * * *` (every 6 hours), `0 0 * * 0` (weekly Sunday midnight).
 
 **"Storage destination not found"**
-The destination name must match a configured storage provider. Run `rdc config storages` to see available names. Add new providers via rclone configuration.
+The destination name must match a configured storage provider. Run `rdc config storage list` to see available names. Add new providers via rclone configuration.
 
 **"Infrastructure config incomplete" when deploying**
-All three fields are required: `--public-ipv4`, `--base-domain`, and `--cert-email`. Run `rdc config show-infra <machine>` to check which fields are missing.
+All three fields are required: `--public-ipv4`, `--base-domain`, and `--cert-email`. Run `rdc config infra show <machine>` to check which fields are missing.
 
 ## Next Steps
 

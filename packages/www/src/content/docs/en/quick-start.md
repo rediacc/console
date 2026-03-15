@@ -31,13 +31,13 @@ rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ## 3. Add Your Server
 
 ```bash
-rdc config add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
+rdc config machine add server-1 --ip <your-server-ip> --user <your-ssh-user>
 ```
 
 ## 4. Provision the Server
 
 ```bash
-rdc config setup-machine server-1
+rdc config machine setup server-1
 ```
 
 This installs Docker, cryptsetup, and the renet binary on your server.

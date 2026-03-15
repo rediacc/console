@@ -45,7 +45,7 @@ Lists all available configs with their adapter type (local or cloud) and machine
 Register a machine with its IP address and SSH user. The CLI automatically fetches and stores the server's host keys via `ssh-keyscan`.
 
 ```bash
-rdc config add-machine bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
+rdc config machine add bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
 ```
 
 ### Step 4: View machines
@@ -53,7 +53,7 @@ rdc config add-machine bridge-vm --ip 192.168.111.1 --user muhammed --config tut
 Confirm the machine was registered correctly.
 
 ```bash
-rdc config machines --config tutorial-demo
+rdc config machine list --config tutorial-demo
 ```
 
 Shows all machines in the current config with their connection details.
@@ -90,7 +90,7 @@ Checks your local environment: CLI version, Docker, renet binary, config status,
 For public-facing services, the machine needs networking configuration — its external IP, a base domain, and a certificate email for TLS.
 
 ```bash
-rdc config set-infra bridge-vm \
+rdc config infra set bridge-vm \
   --public-ipv4 192.168.111.1 \
   --base-domain test.local \
   --cert-email admin@test.local
@@ -99,10 +99,10 @@ rdc config set-infra bridge-vm \
 Verify the configuration:
 
 ```bash
-rdc config show-infra bridge-vm
+rdc config infra show bridge-vm
 ```
 
-Deploy the generated Traefik proxy config to the server with `rdc config push-infra bridge-vm`.
+Deploy the generated Traefik proxy config to the server with `rdc config infra push bridge-vm`.
 
 ## Troubleshooting
 
@@ -113,7 +113,7 @@ Verify the key path passed to `config init` exists and matches the server's `aut
 Confirm the server is running and the IP is correct. Check that port 22 is open: `nc -zv <ip> 22`. If using a non-standard port, pass `--port` when adding the machine.
 
 **"Host key verification failed"**
-The stored host key doesn't match the server's current key. This happens after a server rebuild or IP reassignment. Run `rdc config scan-keys <machine>` to refresh the key.
+The stored host key doesn't match the server's current key. This happens after a server rebuild or IP reassignment. Run `rdc config machine scan-keys <machine>` to refresh the key.
 
 ## Next Steps
 

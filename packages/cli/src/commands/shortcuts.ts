@@ -2,11 +2,10 @@ import { DEFAULTS } from '@rediacc/shared/config';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
-import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
-import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { handleError, ValidationError } from '../utils/errors.js';
+import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import {
   type CreateActionOptions,
   coerceCliParams,
@@ -25,11 +24,11 @@ interface RunLocalOptions {
 }
 
 /** Resolve machine name and parse+validate function params (shared by local and S3 modes). */
-async function resolveRunParams(
+function resolveRunParams(
   functionName: string,
   options: RunLocalOptions
-): Promise<{ machineName: string; params: Record<string, unknown> }> {
-  const machineName = options.machine ?? (await configService.getMachine());
+): { machineName: string; params: Record<string, unknown> } {
+  const machineName = options.machine;
   if (!machineName) {
     throw new ValidationError(t('errors.machineRequiredLocal'));
   }
@@ -60,7 +59,7 @@ export function handleExecutionResult(result: {
 }
 
 async function runLocalMode(functionName: string, options: RunLocalOptions): Promise<void> {
-  const { machineName, params } = await resolveRunParams(functionName, options);
+  const { machineName, params } = resolveRunParams(functionName, options);
   outputService.info(
     t('commands.shortcuts.run.executingLocal', { function: functionName, machine: machineName })
   );
@@ -132,9 +131,10 @@ export function registerShortcuts(program: Command): void {
   // In local mode, executes directly via renet subprocess
   program
     .command('run <function>')
+    .summary(t('commands.shortcuts.run.descriptionShort'))
     .description(t('commands.shortcuts.run.description'))
     .option('-t, --team <name>', t('options.team'))
-    .option('-m, --machine <name>', t('options.machine'))
+    .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('-b, --bridge <name>', t('options.bridge'))
     .option('-p, --priority <1-5>', t('options.priority'), '3')
     .option(

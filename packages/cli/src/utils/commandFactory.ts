@@ -432,59 +432,6 @@ export function createResourceCommands(program: Command, config: ResourceCommand
 }
 
 /**
- * Add a status command to an existing resource command
- */
-export function addStatusCommand(
-  resourceCommand: Command,
-  config: {
-    resourceName: string;
-    nameField: string;
-    parentOption: 'team' | 'region';
-    fetch: (params: Record<string, unknown>) => Promise<unknown>;
-  }
-): void {
-  const { resourceName, nameField, parentOption, fetch } = config;
-  const parentFlag = getParentFlag(parentOption);
-  const parentDesc = getParentDesc(parentOption);
-  const checkParent = createParentCheck(parentOption);
-
-  resourceCommand
-    .command('status <name>')
-    .description(`Get ${resourceName} status`)
-    .option(parentFlag, parentDesc)
-    .action(async (name, options) => {
-      try {
-        await requireAuthForMode();
-        const opts = await configService.applyDefaults(options);
-
-        if (!(await checkParent(opts))) {
-          process.exit(1);
-        }
-
-        const params = { [getParentKey(parentOption)]: getParentValue(opts, parentOption) };
-
-        const response = await withSpinner(
-          `Fetching ${resourceName} status...`,
-          () => fetch(params),
-          'Status fetched'
-        );
-
-        const items = extractItemsFromResponse(response);
-        const item = items.find((i) => i[nameField] === name);
-        const format = resourceCommand.parent?.opts().output as OutputFormat;
-
-        if (item) {
-          outputService.print(item, format);
-        } else {
-          outputService.error(`${capitalizeFirst(resourceName)} "${name}" not found`);
-        }
-      } catch (error) {
-        handleError(error);
-      }
-    });
-}
-
-/**
  * Add an assign command (e.g., assign-bridge for machines)
  */
 export function addAssignCommand(

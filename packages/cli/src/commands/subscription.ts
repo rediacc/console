@@ -178,9 +178,14 @@ export function registerSubscriptionCommands(program: Command): void {
       }
     });
 
-  sub
-    .command('activation-status')
-    .description(t('commands.subscription.activationStatus.description'))
+  // subscription activation (subgroup)
+  const activation = sub
+    .command('activation')
+    .description(t('commands.subscription.activation.description'));
+
+  activation
+    .command('status')
+    .description(t('commands.subscription.activation.status.description'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
     .action(async (options) => {
       try {
@@ -190,9 +195,12 @@ export function registerSubscriptionCommands(program: Command): void {
       }
     });
 
-  sub
-    .command('repo-status')
-    .description(t('commands.subscription.repoStatus.description'))
+  // subscription repo (subgroup)
+  const repo = sub.command('repo').description(t('commands.subscription.repo.description'));
+
+  repo
+    .command('status')
+    .description(t('commands.subscription.repo.status.description'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
     .action(async (options) => {
       try {
@@ -202,8 +210,8 @@ export function registerSubscriptionCommands(program: Command): void {
       }
     });
 
-  // subscription refresh
-  sub
+  // subscription refresh (subgroup — no subcommand = refresh all)
+  const refresh = sub
     .command('refresh')
     .description(t('commands.subscription.refresh.description'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
@@ -215,9 +223,9 @@ export function registerSubscriptionCommands(program: Command): void {
       }
     });
 
-  sub
-    .command('refresh-activation')
-    .description(t('commands.subscription.refreshActivation.description'))
+  refresh
+    .command('activation')
+    .description(t('commands.subscription.refresh.activation.description'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
     .action(async (options) => {
       try {
@@ -227,9 +235,9 @@ export function registerSubscriptionCommands(program: Command): void {
       }
     });
 
-  sub
-    .command('refresh-repos')
-    .description(t('commands.subscription.refreshRepos.description'))
+  refresh
+    .command('repos')
+    .description(t('commands.subscription.refresh.repos.description'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
     .action(async (options) => {
       try {
@@ -239,40 +247,42 @@ export function registerSubscriptionCommands(program: Command): void {
       }
     });
 
-  sub
-    .command('refresh-repo')
-    .description(t('commands.subscription.refreshRepo.description'))
-    .argument('<repo>', t('commands.subscription.refreshRepo.repoArgument'))
+  refresh
+    .command('repo <repo>')
+    .description(t('commands.subscription.refresh.repo.description'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
     .action(async (repoName, options) => {
       try {
         await withSpinner(
-          t('commands.subscription.refreshRepo.refreshing'),
+          t('commands.subscription.refresh.repo.refreshing'),
           async () => {
             const localConfig = await configService.getLocalConfig();
             const machine = await configService.getLocalMachine(options.machine);
-            const repo = await configService.getRepository(repoName);
-            if (!repo) {
+            const repoConfig = await configService.getRepository(repoName);
+            if (!repoConfig) {
               throw new ValidationError(
-                t('commands.subscription.refreshRepo.notFound', { repoName })
+                t('commands.subscription.refresh.repo.notFound', { repoName })
               );
             }
             const sshPrivateKey =
               localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
             const refreshed = await refreshRepoLicenseIdentity(machine, sshPrivateKey, {
-              repositoryGuid: repo.repositoryGuid,
-              grandGuid: repo.grandGuid,
-              kind: repo.grandGuid && repo.grandGuid !== repo.repositoryGuid ? 'fork' : 'grand',
+              repositoryGuid: repoConfig.repositoryGuid,
+              grandGuid: repoConfig.grandGuid,
+              kind:
+                repoConfig.grandGuid && repoConfig.grandGuid !== repoConfig.repositoryGuid
+                  ? 'fork'
+                  : 'grand',
             });
             if (!refreshed) {
-              throw new ValidationError(t('commands.subscription.refreshRepo.failed'));
+              throw new ValidationError(t('commands.subscription.refresh.repo.failed'));
             }
           },
-          t('commands.subscription.refreshRepo.refreshed')
+          t('commands.subscription.refresh.repo.refreshed')
         );
 
-        outputService.success(t('commands.subscription.refreshRepo.success', { repoName }));
+        outputService.success(t('commands.subscription.refresh.repo.success', { repoName }));
       } catch (error) {
         handleError(error);
       }
@@ -377,20 +387,20 @@ export async function executeRepoStatus(machineName: string): Promise<void> {
   });
   const entries = await readRuntimeRepoLicenseStatuses(machine, sshPrivateKey, remoteRenetPath);
 
-  outputService.info(t('commands.subscription.repoStatus.header', { machineName }));
+  outputService.info(t('commands.subscription.repo.status.header', { machineName }));
   if (entries.length === 0) {
-    outputService.info(t('commands.subscription.repoStatus.empty'));
+    outputService.info(t('commands.subscription.repo.status.empty'));
     return;
   }
 
   for (const entry of entries) {
     const effectiveHardExpiry = entry.hardExpiresAt ?? entry.expiresAt;
     outputService.info(
-      t('commands.subscription.repoStatus.entry', {
+      t('commands.subscription.repo.status.entry', {
         repositoryGuid: entry.repositoryGuid,
         freshness: formatRuntimeRepoLicenseStatus(entry),
         hardExpirySuffix: effectiveHardExpiry
-          ? t('commands.subscription.repoStatus.hardExpirySuffix', {
+          ? t('commands.subscription.repo.status.hardExpirySuffix', {
               effectiveHardExpiry,
             })
           : '',
@@ -471,9 +481,9 @@ export async function runRepoBatchRefresh(
   context: SubscriptionCommandContext
 ): Promise<RepoBatchRefreshResult> {
   return withSpinner(
-    t('commands.subscription.refreshRepos.refreshing'),
+    t('commands.subscription.refresh.repos.refreshing'),
     () => refreshRepoLicensesBatch(context.machine, context.sshPrivateKey, context.remoteRenetPath),
-    t('commands.subscription.refreshRepos.refreshed')
+    t('commands.subscription.refresh.repos.refreshed')
   );
 }
 
@@ -494,6 +504,6 @@ export async function executeActivationRefresh(machineName: string): Promise<voi
 export async function executeRepoRefresh(machineName: string): Promise<void> {
   const context = await resolveSubscriptionCommandContext(machineName);
   const batchSummary = await runRepoBatchRefresh(context);
-  outputService.success(t('commands.subscription.refreshRepos.success'));
+  outputService.success(t('commands.subscription.refresh.repos.success'));
   renderRepoBatchRefreshSummary(batchSummary);
 }

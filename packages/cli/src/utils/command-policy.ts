@@ -9,6 +9,7 @@ import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { isAgentEnvironment } from './agent-guard.js';
 import { ValidationError } from './errors.js';
+import { isOverrideLegitimate } from './process-ancestry.js';
 
 export interface CommandPolicy {
   /** Block grand (non-fork) repos in agent mode. Override: REDIACC_ALLOW_GRAND_REPO */
@@ -31,15 +32,14 @@ export const CMD = {
   REPO_OWNERSHIP: 'repo ownership',
   REPO_SYNC_UPLOAD: 'repo sync upload',
   REPO_SYNC_DOWNLOAD: 'repo sync download',
-  BACKUP_PUSH: 'backup push',
-  BACKUP_PULL: 'backup pull',
-  REPO_SNAPSHOT_CREATE: 'repo snapshot create',
-  REPO_SNAPSHOT_DELETE: 'repo snapshot delete',
+  REPO_PUSH: 'repo push',
+  REPO_PULL: 'repo pull',
   REPO_AUTOSTART_ENABLE: 'repo autostart enable',
   REPO_AUTOSTART_DISABLE: 'repo autostart disable',
   REPO_RESIZE: 'repo resize',
   REPO_EXPAND: 'repo expand',
   TERM_REPO: 'term repo',
+  VSCODE_REPO: 'vscode repo',
 } as const;
 
 export type CommandPath = (typeof CMD)[keyof typeof CMD];
@@ -62,12 +62,11 @@ export const COMMAND_POLICIES: ReadonlyMap<CommandPath, CommandPolicy> = new Map
   [CMD.REPO_OWNERSHIP, { grandGuard: true, forkBlocked: false }],
   [CMD.REPO_SYNC_UPLOAD, { grandGuard: true, forkBlocked: false }],
   [CMD.REPO_SYNC_DOWNLOAD, { grandGuard: true, forkBlocked: false }],
-  [CMD.BACKUP_PUSH, { grandGuard: true, forkBlocked: false }],
-  [CMD.BACKUP_PULL, { grandGuard: true, forkBlocked: false }],
-  [CMD.REPO_SNAPSHOT_CREATE, { grandGuard: true, forkBlocked: false }],
-  [CMD.REPO_SNAPSHOT_DELETE, { grandGuard: true, forkBlocked: false }],
+  [CMD.REPO_PUSH, { grandGuard: true, forkBlocked: false }],
+  [CMD.REPO_PULL, { grandGuard: true, forkBlocked: false }],
 
   [CMD.TERM_REPO, { grandGuard: true, forkBlocked: false }],
+  [CMD.VSCODE_REPO, { grandGuard: true, forkBlocked: false }],
 
   // Fork-blocked — nonsensical on interim fork repos
   [CMD.REPO_AUTOSTART_ENABLE, { grandGuard: true, forkBlocked: true }],
@@ -78,7 +77,11 @@ export const COMMAND_POLICIES: ReadonlyMap<CommandPath, CommandPolicy> = new Map
 
 function isGrandOverridden(repoName: string): boolean {
   const override = process.env.REDIACC_ALLOW_GRAND_REPO;
-  return override === '*' || override === repoName;
+  if (!override) return false;
+  if (override !== '*' && override !== repoName) return false;
+
+  // Verify override was set by user, not injected by agent
+  return isOverrideLegitimate();
 }
 
 /**

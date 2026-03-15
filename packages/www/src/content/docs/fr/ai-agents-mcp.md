@@ -4,7 +4,7 @@ description: Connectez des agents IA à l'infrastructure Rediacc en utilisant le
 category: Guides
 order: 33
 language: fr
-sourceHash: "51c5a7f855ead072"
+sourceHash: "ac1ed364eb890583"
 sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 ---
 
@@ -56,7 +56,7 @@ Ouvrez Paramètres → MCP Servers → Add Server :
 
 | Outil | Description |
 |-------|-------------|
-| `machine_info` | Get system info, containers, services, and resource usage for a machine |
+| `machine_query` | Get system info, containers, services, and resource usage for a machine |
 | `machine_containers` | List Docker containers with status, health, resource usage, labels, and auto-route domain |
 | `machine_services` | List rediacc-managed systemd services (name, state, sub-state, restart count, memory, owning repository) |
 | `machine_repos` | List deployed repositories (name, GUID, size, mount status, Docker state, container count, disk usage, modified date, Rediaccfile present) |
@@ -89,7 +89,7 @@ Ouvrez Paramètres → MCP Servers → Add Server :
 **Vérifier l'état d'une machine :**
 > « Quel est l'état de ma machine de production ? »
 
-L'agent appelle `machine_info` → renvoie les informations système, les conteneurs en cours d'exécution, les services et l'utilisation des ressources.
+L'agent appelle `machine_query` → renvoie les informations système, les conteneurs en cours d'exécution, les services et l'utilisation des ressources.
 
 **Déployer une application :**
 > « Déploie gitlab sur ma machine de staging »

@@ -7,8 +7,14 @@
  * Opt-out: Set REDIACC_TELEMETRY_DISABLED=1 to disable telemetry.
  */
 
-import { type Span, SpanStatusCode, type Tracer, trace } from '@opentelemetry/api';
-import { type Logger, SeverityNumber, logs } from '@opentelemetry/api-logs';
+import {
+  metrics as metricsApi,
+  type Span,
+  SpanStatusCode,
+  type Tracer,
+  trace,
+} from '@opentelemetry/api';
+import { type Logger, logs, SeverityNumber } from '@opentelemetry/api-logs';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
@@ -27,8 +33,6 @@ import {
   generateSessionId,
   TELEMETRY_ATTRIBUTES,
 } from '@rediacc/shared/telemetry';
-
-import { metrics as metricsApi } from '@opentelemetry/api';
 
 import {
   startProfiling as startProfilingImpl,

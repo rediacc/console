@@ -4,7 +4,7 @@ description: 使用模型上下文协议 (MCP) 服务器将 AI 代理连接到 R
 category: Guides
 order: 33
 language: zh
-sourceHash: "51c5a7f855ead072"
+sourceHash: "ac1ed364eb890583"
 sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 ---
 
@@ -56,7 +56,7 @@ sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 
 | 工具 | 描述 |
 |------|------|
-| `machine_info` | Get system info, containers, services, and resource usage for a machine |
+| `machine_query` | Get system info, containers, services, and resource usage for a machine |
 | `machine_containers` | List Docker containers with status, health, resource usage, labels, and auto-route domain |
 | `machine_services` | List rediacc-managed systemd services (name, state, sub-state, restart count, memory, owning repository) |
 | `machine_repos` | List deployed repositories (name, GUID, size, mount status, Docker state, container count, disk usage, modified date, Rediaccfile present) |
@@ -89,7 +89,7 @@ sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 **检查机器状态：**
 > "我的生产机器状态如何？"
 
-代理调用 `machine_info` → 返回系统信息、运行中的容器、服务和资源使用情况。
+代理调用 `machine_query` → 返回系统信息、运行中的容器、服务和资源使用情况。
 
 **部署应用程序：**
 > "在我的预发布机器上部署 gitlab"

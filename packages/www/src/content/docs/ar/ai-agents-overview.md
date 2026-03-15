@@ -4,7 +4,7 @@ description: كيف تتكامل مساعدات البرمجة الذكية مث
 category: Guides
 order: 30
 language: ar
-sourceHash: "3374e0f154375ffb"
+sourceHash: "2d8ab92216666d0e"
 ---
 
 يمكن لمساعدات البرمجة الذكية إدارة بنية Rediacc التحتية بشكل مستقل من خلال أداة `rdc` CLI. يغطي هذا الدليل مناهج التكامل وكيفية البدء.
@@ -38,7 +38,7 @@ sourceHash: "3374e0f154375ffb"
 ```json
 {
   "success": true,
-  "command": "machine info",
+  "command": "machine query",
   "data": { ... },
   "errors": null,
   "warnings": [],
@@ -55,7 +55,7 @@ sourceHash: "3374e0f154375ffb"
     "code": "NOT_FOUND",
     "message": "Machine \"prod-2\" not found",
     "retryable": false,
-    "guidance": "Verify the resource name with \"rdc machine info\" or \"rdc config repositories\""
+    "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
   }]
 }
 ```
@@ -69,10 +69,10 @@ sourceHash: "3374e0f154375ffb"
 rdc agent capabilities
 
 # Show detailed schema for a specific command
-rdc agent schema "machine info"
+rdc agent schema "machine query"
 
 # Execute a command with JSON stdin
-echo '{"name": "prod-1"}' | rdc agent exec "machine info"
+echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 ```
 
 ## أعلام مهمة للوكلاء

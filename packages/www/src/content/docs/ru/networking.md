@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: ru
-sourceHash: "51ec174f68da3b34"
+sourceHash: "911dde41922454ec"
 ---
 
 # Сетевое взаимодействие
@@ -113,16 +113,16 @@ labels:
 
    ```bash
    # Общие учетные данные (один раз на конфигурацию, применяются ко всем машинам)
-   rdc config set-infra server-1 \
+   rdc config infra set server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
    # Настройки конкретной машины
-   rdc config set-infra server-1 \
+   rdc config infra set server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com
 
-   rdc config push-infra server-1
+   rdc config infra push server-1
    ```
 
 2. DNS-записи, указывающие ваш домен на публичный IP сервера (см. [Настройка DNS](#настройка-dns) ниже).
@@ -167,7 +167,7 @@ services:
 TLS-сертификаты получаются автоматически через Let's Encrypt с использованием DNS-01 проверки Cloudflare. Учетные данные настраиваются один раз на конфигурацию (общие для всех машин):
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
@@ -187,11 +187,11 @@ API-токен Cloudflare DNS должен иметь разрешение `Zone
 Добавьте необходимые порты при настройке инфраструктуры:
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config push-infra server-1
+rdc config infra push server-1
 ```
 
 Это создает точки входа Traefik с именами `tcp-{port}` и `udp-{port}`.
@@ -216,7 +216,7 @@ Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
 
 > **Security note:** Exposing a database to the internet is a risk. Use this only when remote clients need direct access. For most setups, keep the database internal and connect through your application.
 
-> После добавления или удаления портов всегда повторно выполняйте `rdc config push-infra` для обновления конфигурации прокси.
+> После добавления или удаления портов всегда повторно выполняйте `rdc config infra push` для обновления конфигурации прокси.
 
 ### Шаг 2: Добавление TCP/UDP-меток
 
@@ -270,7 +270,7 @@ services:
 
 ### Автоматический DNS (Cloudflare)
 
-Когда настроен `--cf-dns-token`, `rdc config push-infra` автоматически создает необходимые DNS-записи в Cloudflare:
+Когда настроен `--cf-dns-token`, `rdc config infra push` автоматически создает необходимые DNS-записи в Cloudflare:
 
 | Запись | Тип | Содержимое | Создано |
 |--------|-----|------------|---------|
@@ -372,7 +372,7 @@ curl -s http://127.0.0.1:7111/ports | python3 -m json.tool
 | Сервис не отображается в маршрутах | Контейнер не запущен или отсутствуют метки | Проверьте с помощью `docker ps` на демоне репозитория; проверьте метки |
 | Сертификат не выпущен | DNS не указывает на сервер или невалидный токен Cloudflare | Проверьте разрешение DNS; проверьте разрешения API-токена Cloudflare |
 | 502 Bad Gateway | Приложение не слушает на объявленном порту | Убедитесь, что приложение привязано к `{SERVICE}_IP` и порт совпадает с `loadbalancer.server.port` |
-| TCP-порт недоступен | Порт не зарегистрирован в инфраструктуре | Выполните `rdc config set-infra --tcp-ports ...` и `push-infra` |
+| TCP-порт недоступен | Порт не зарегистрирован в инфраструктуре | Выполните `rdc config infra set --tcp-ports ...` и `push-infra` |
 
 ## Полный пример
 

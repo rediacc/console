@@ -33,13 +33,18 @@ export function formatAge(minutes: number): string {
  * formatPropertyName('user_name')   // Returns: "User Name"
  */
 export function formatPropertyName(key: string): string {
-  return key
-    .replaceAll(/([A-Z])/g, ' $1')
-    .replaceAll('_', ' ')
-    .replace(/^\s+/, '')
-    .split(' ')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
+  return (
+    key
+      // Split: lowercase/digit → uppercase ("taskId" → "task Id", "publicIPv4" → "public IPv4")
+      .replaceAll(/([a-z\d])([A-Z])/g, '$1 $2')
+      // Split: acronym → word with 2+ lowercase ("SSHKey" → "SSH Key") but not "IPv4" (single lowercase + digit)
+      .replaceAll(/([A-Z]+)([A-Z][a-z]{2,})/g, '$1 $2')
+      .replaceAll('_', ' ')
+      .replace(/^\s+/, '')
+      .split(' ')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+  );
 }
 
 /**

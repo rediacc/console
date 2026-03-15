@@ -85,6 +85,10 @@ const ALLOWED_IDENTICAL = new Set([
   'Windows',
   'Ubuntu',
   'Debian',
+  // CLI command strings (not translatable)
+  'rdc subscription login',
+  // Status line format strings (placeholder-only)
+  '  - {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}',
   // Technical acronyms
   'SSH',
   'API',

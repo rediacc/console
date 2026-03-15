@@ -16,12 +16,12 @@ import {
 import { isValidGuid } from '@rediacc/shared/validation';
 import type { RemoteFile } from './types';
 
-// Re-export shared utilities used directly by the component
-export { cleanJsonOutput };
 export {
   parseFallbackFormats,
   parsePlainTextFileList,
 } from '@rediacc/shared/queue-vault/storage-browser';
+// Re-export shared utilities used directly by the component
+export { cleanJsonOutput };
 
 type RepositoryMapper = (guid: string) => {
   displayName: string;

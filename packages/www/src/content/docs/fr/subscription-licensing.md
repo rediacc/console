@@ -4,7 +4,7 @@ description: Comprendre comment account, rdc et renet gèrent les slots de machi
 category: Guides
 order: 7
 language: fr
-sourceHash: "e7a65f722fbb1093"
+sourceHash: "41f6d86e9f637b47"
 ---
 
 # Abonnement et licences
@@ -161,13 +161,13 @@ rdc subscription status
 Afficher les détails d'activation de machine pour une machine :
 
 ```bash
-rdc subscription activation-status -m hostinger
+rdc subscription activation status -m hostinger
 ```
 
 Afficher les détails de licence de dépôt installés sur une machine :
 
 ```bash
-rdc subscription repo-status -m hostinger
+rdc subscription repo status -m hostinger
 ```
 
 Renouveler l'activation de machine et actualiser les licences de dépôt en lot :
@@ -181,7 +181,7 @@ Les dépôts découverts sur la machine mais absents de la configuration locale 
 Forcer le renouvellement de licence de dépôt pour un dépôt existant :
 
 ```bash
-rdc subscription refresh-repo my-app -m hostinger
+rdc subscription refresh repo my-app -m hostinger
 ```
 
 Lors de la première utilisation, une opération de dépôt ou de sauvegarde sous licence qui ne trouve pas de licence de dépôt utilisable peut déclencher automatiquement un transfert d'autorisation de compte. Le CLI imprime une URL d'autorisation, essaie d'ouvrir le navigateur dans les terminaux interactifs, et retente l'opération une fois après que l'autorisation et l'émission ont réussi.
@@ -232,4 +232,4 @@ Elle n'inclut pas :
 - les tentatives d'émission échouées
 - les dépôts non suivis rejetés avant l'émission
 
-Si vous avez besoin d'une vue de l'utilisation et de l'historique récent d'émission de licences de dépôt orientée client, utilisez le portail de comptes. Si vous avez besoin d'une inspection côté machine, utilisez `rdc subscription activation-status -m` et `rdc subscription repo-status -m`.
+Si vous avez besoin d'une vue de l'utilisation et de l'historique récent d'émission de licences de dépôt orientée client, utilisez le portail de comptes. Si vous avez besoin d'une inspection côté machine, utilisez `rdc subscription activation status -m` et `rdc subscription repo status -m`.

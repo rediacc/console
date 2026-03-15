@@ -36,19 +36,14 @@ const MCP_EXCLUDED: Record<string, string> = {
 
   // ── Covered by sub-operations ─────────────────────────────────────
   run: 'Escape hatch for raw renet functions — agents should use typed tools',
-  snapshot: 'Snapshot operations — future MCP tools planned',
-  storage: 'Storage management — future MCP tools planned',
 
   // ── Subcommands ───────────────────────────────────────────────────
   'storage browse': 'Interactive file browser — requires TTY',
-  'storage pull': 'Downloads to local filesystem — MCP agents have no local FS',
-  'backup sync': 'Bidirectional sync — complex orchestration, agents use push/pull',
-  'backup schedule': 'Cron scheduling — local config concern, not a remote operation',
 };
 
 /**
  * Extract the CLI command path each MCP tool maps to.
- * e.g., repo_up → "repo up", machine_info → "machine info"
+ * e.g., repo_up → "repo up", machine_query → "machine query"
  */
 function getMcpCommandPaths(): Set<string> {
   const paths = new Set<string>();
@@ -61,6 +56,7 @@ function getMcpCommandPaths(): Set<string> {
       parent: 'x',
       tag: 'x',
       repo: 'x',
+      storage: 'x',
     });
     // Take command words before the first argument value 'x'
     const cmdParts: string[] = [];

@@ -250,13 +250,13 @@ describe('subscription command helpers', () => {
 
     expect(mockReadMachineActivationStatus).toHaveBeenCalledTimes(1);
     expect(mockOutputInfo).toHaveBeenCalledWith(
-      'commands.subscription.activationStatus.header:hostinger'
+      'commands.subscription.activation.status.header:hostinger'
     );
     expect(mockOutputInfo).toHaveBeenCalledWith(
-      'commands.subscription.activationStatus.machineId:machine-activation-id'
+      'commands.subscription.activation.status.machineId:machine-activation-id'
     );
     expect(mockOutputSuccess).toHaveBeenCalledWith(
-      'commands.subscription.activationStatus.active:2026-03-12T00:00:00Z'
+      'commands.subscription.activation.status.active:2026-03-12T00:00:00Z'
     );
     expect(mockFetchSubscriptionLicenseReport).not.toHaveBeenCalled();
   });
@@ -293,16 +293,16 @@ describe('subscription command helpers', () => {
       '/usr/bin/renet'
     );
     expect(mockOutputInfo).toHaveBeenCalledWith(
-      'commands.subscription.repoStatus.header:hostinger'
+      'commands.subscription.repo.status.header:hostinger'
     );
     expect(mockOutputInfo).toHaveBeenCalledWith(
-      'commands.subscription.repoStatus.entry:repo-valid:valid:commands.subscription.repoStatus.hardExpirySuffix:2026-05-10T14:29:53.723Z'
+      'commands.subscription.repo.status.entry:repo-valid:valid:commands.subscription.repo.status.hardExpirySuffix:2026-05-10T14:29:53.723Z'
     );
     expect(mockOutputInfo).toHaveBeenCalledWith(
-      'commands.subscription.repoStatus.entry:repo-missing:missing:'
+      'commands.subscription.repo.status.entry:repo-missing:missing:'
     );
     expect(mockOutputInfo).toHaveBeenCalledWith(
-      'commands.subscription.repoStatus.entry:repo-machine:machine mismatch:'
+      'commands.subscription.repo.status.entry:repo-machine:machine mismatch:'
     );
   });
 
@@ -331,7 +331,7 @@ describe('subscription command helpers', () => {
 
     expect(mockRefreshMachineActivation).not.toHaveBeenCalled();
     expect(mockRefreshRepoLicensesBatch).toHaveBeenCalledTimes(1);
-    expect(mockOutputSuccess).toHaveBeenCalledWith('commands.subscription.refreshRepos.success');
+    expect(mockOutputSuccess).toHaveBeenCalledWith('commands.subscription.refresh.repos.success');
   });
 
   it('refresh fails when machine activation refresh is rejected', async () => {

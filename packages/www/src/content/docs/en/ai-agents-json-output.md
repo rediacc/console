@@ -13,8 +13,8 @@ All `rdc` commands support structured JSON output for programmatic consumption b
 ### Explicit Flag
 
 ```bash
-rdc machine info prod-1 --output json
-rdc machine info prod-1 -o json
+rdc machine query prod-1 --output json
+rdc machine query prod-1 -o json
 ```
 
 ### Auto-Detection
@@ -23,8 +23,8 @@ When `rdc` runs in a non-TTY environment (piped, subshell, or spawned by an AI a
 
 ```bash
 # These all produce JSON automatically
-result=$(rdc machine info prod-1)
-echo '{}' | rdc agent exec "machine info"
+result=$(rdc machine query prod-1)
+echo '{}' | rdc agent exec "machine query"
 ```
 
 ## JSON Envelope
@@ -34,7 +34,7 @@ Every JSON response uses a consistent envelope:
 ```json
 {
   "success": true,
-  "command": "machine info",
+  "command": "machine query",
   "data": {
     "name": "prod-1",
     "status": "running",
@@ -51,7 +51,7 @@ Every JSON response uses a consistent envelope:
 | Field | Type | Description |
 |-------|------|-------------|
 | `success` | `boolean` | Whether the command completed successfully |
-| `command` | `string` | The full command path (e.g., `"machine info"`, `"repo up"`) |
+| `command` | `string` | The full command path (e.g., `"machine query"`, `"repo up"`) |
 | `data` | `object \| array \| null` | Command-specific payload on success, `null` on error |
 | `errors` | `array \| null` | Error objects on failure, `null` on success |
 | `warnings` | `string[]` | Non-fatal warnings collected during execution |
@@ -64,14 +64,14 @@ Failed commands return structured errors with recovery hints:
 ```json
 {
   "success": false,
-  "command": "machine info",
+  "command": "machine query",
   "data": null,
   "errors": [
     {
       "code": "NOT_FOUND",
       "message": "Machine \"prod-2\" not found",
       "retryable": false,
-      "guidance": "Verify the resource name with \"rdc machine info\" or \"rdc config repositories\""
+      "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
     }
   ],
   "warnings": [],
@@ -156,7 +156,7 @@ Returns the full command tree with arguments, options, and descriptions:
     "version": "1.0.0",
     "commands": [
       {
-        "name": "machine info",
+        "name": "machine query",
         "description": "Show machine status",
         "arguments": [
           { "name": "machine", "description": "Machine name", "required": true }
@@ -173,7 +173,7 @@ Returns the full command tree with arguments, options, and descriptions:
 ### Get Command Schema
 
 ```bash
-rdc agent schema "machine info"
+rdc agent schema "machine query"
 ```
 
 Returns detailed schema for a single command, including all arguments and options with their types and defaults.
@@ -181,7 +181,7 @@ Returns detailed schema for a single command, including all arguments and option
 ### Execute via JSON
 
 ```bash
-echo '{"machine": "prod-1"}' | rdc agent exec "machine info"
+echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
 ```
 
 Accepts JSON on stdin, maps keys to command arguments and options, and executes with JSON output forced. Useful for structured agent-to-CLI communication without constructing shell command strings.
@@ -191,7 +191,7 @@ Accepts JSON on stdin, maps keys to command arguments and options, and executes 
 ### Shell (jq)
 
 ```bash
-status=$(rdc machine info prod-1 -o json | jq -r '.data.status')
+status=$(rdc machine query prod-1 -o json | jq -r '.data.status')
 ```
 
 ### Python
@@ -200,7 +200,7 @@ status=$(rdc machine info prod-1 -o json | jq -r '.data.status')
 import subprocess, json
 
 result = subprocess.run(
-    ["rdc", "machine", "info", "prod-1", "-o", "json"],
+    ["rdc", "machine", "query", "prod-1", "-o", "json"],
     capture_output=True, text=True
 )
 envelope = json.loads(result.stdout)
@@ -222,7 +222,7 @@ else:
 ```javascript
 import { execFileSync } from 'child_process';
 
-const raw = execFileSync('rdc', ['machine', 'info', 'prod-1', '-o', 'json'], { encoding: 'utf-8' });
+const raw = execFileSync('rdc', ['machine', 'query', 'prod-1', '-o', 'json'], { encoding: 'utf-8' });
 const { success, data, errors } = JSON.parse(raw);
 
 if (!success) {

@@ -15,6 +15,8 @@ import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
 
 interface FetchStatusOptions {
   debug?: boolean;
+  /** When provided, only gather these renet sections (system,repositories,containers,services,network,block). */
+  sections?: string[];
 }
 
 /**
@@ -54,7 +56,11 @@ export async function fetchMachineStatus(
   );
   // Build command
   const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
-  const cmd = `sudo ${remoteRenetPath} list all --datastore ${datastore} --json`;
+  const sectionsFlag =
+    options.sections && options.sections.length > 0
+      ? ` --sections ${options.sections.join(',')}`
+      : '';
+  const cmd = `sudo ${remoteRenetPath} list all --datastore ${datastore} --json${sectionsFlag}`;
 
   if (options.debug) {
     outputService.info(`[status] Running: ${cmd}`);

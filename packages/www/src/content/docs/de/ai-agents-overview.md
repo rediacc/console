@@ -4,7 +4,7 @@ description: Wie KI-Coding-Assistenten wie Claude Code, Cursor und Cline sich mi
 category: Guides
 order: 30
 language: de
-sourceHash: "3374e0f154375ffb"
+sourceHash: "2d8ab92216666d0e"
 ---
 
 KI-Coding-Assistenten können die Rediacc-Infrastruktur über die `rdc` CLI autonom verwalten. Diese Anleitung behandelt die Integrationsansaetze und den Einstieg.
@@ -38,7 +38,7 @@ Wenn Agenten `rdc` in einer Subshell aufrufen, wechselt die Ausgabe automatisch 
 ```json
 {
   "success": true,
-  "command": "machine info",
+  "command": "machine query",
   "data": { ... },
   "errors": null,
   "warnings": [],
@@ -55,7 +55,7 @@ Fehlerantworten enthalten die Felder `retryable` und `guidance`:
     "code": "NOT_FOUND",
     "message": "Machine \"prod-2\" not found",
     "retryable": false,
-    "guidance": "Verify the resource name with \"rdc machine info\" or \"rdc config repositories\""
+    "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
   }]
 }
 ```
@@ -69,10 +69,10 @@ Der `rdc agent`-Unterbefehl bietet strukturierte Introspektion:
 rdc agent capabilities
 
 # Show detailed schema for a specific command
-rdc agent schema "machine info"
+rdc agent schema "machine query"
 
 # Execute a command with JSON stdin
-echo '{"name": "prod-1"}' | rdc agent exec "machine info"
+echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 ```
 
 ## Wichtige Flags für Agenten

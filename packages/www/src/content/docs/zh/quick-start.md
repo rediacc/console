@@ -4,7 +4,7 @@ description: 5分钟内在您的服务器上运行容器化服务。
 category: Guides
 order: -1
 language: zh
-sourceHash: "ff23efbe832be9bb"
+sourceHash: "a67f1e8442eb492e"
 ---
 
 # 快速开始
@@ -32,13 +32,13 @@ rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ## 3. 添加服务器
 
 ```bash
-rdc config add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
+rdc config machine add server-1 --ip <your-server-ip> --user <your-ssh-user>
 ```
 
 ## 4. 配置服务器
 
 ```bash
-rdc config setup-machine server-1
+rdc config machine setup server-1
 ```
 
 此命令会在您的服务器上安装Docker、cryptsetup和renet二进制文件。

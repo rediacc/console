@@ -10,6 +10,10 @@ vi.mock('../agent-guard.js', () => ({
   isAgentEnvironment: vi.fn(),
 }));
 
+vi.mock('../process-ancestry.js', () => ({
+  isOverrideLegitimate: vi.fn(() => true),
+}));
+
 vi.mock('../../i18n/index.js', () => ({
   t: (key: string, params?: Record<string, unknown>) => {
     if (params) return `${key}:${JSON.stringify(params)}`;
@@ -17,15 +21,15 @@ vi.mock('../../i18n/index.js', () => ({
   },
 }));
 
-import type { RepositoryConfig } from '../../types/index.js';
 import { configService } from '../../services/config-resources.js';
+import type { RepositoryConfig } from '../../types/index.js';
 import { isAgentEnvironment } from '../agent-guard.js';
 import {
+  assertCommandPolicy,
   CMD,
   COMMAND_POLICIES,
-  assertCommandPolicy,
-  validateRemotePath,
   type CommandPath,
+  validateRemotePath,
 } from '../command-policy.js';
 
 const mockIsAgent = vi.mocked(isAgentEnvironment);

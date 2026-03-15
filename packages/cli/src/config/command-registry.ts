@@ -45,6 +45,10 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
     subcommands: {
       'assign-bridge': { modes: ['cloud'], experimental: true },
       'test-connection': { modes: ['cloud'], experimental: true },
+      containers: { modes: ALL_MODES, experimental: true },
+      services: { modes: ALL_MODES, experimental: true },
+      repos: { modes: ALL_MODES, experimental: true },
+      health: { modes: ALL_MODES, experimental: true },
     },
   },
   {
@@ -53,7 +57,7 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
     domain: 'INFRASTRUCTURE',
     subcommands: {
       browse: { modes: SELF_HOSTED_MODES },
-      pull: { modes: SELF_HOSTED_MODES },
+      prune: { modes: SELF_HOSTED_MODES },
     },
   },
   { name: 'region', modes: ['cloud'], domain: 'INFRASTRUCTURE', experimental: true },
@@ -64,16 +68,6 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
   // ── Repositories ────────────────────────────────────────────────────
   { name: 'repository', modes: ['cloud'], domain: 'REPOSITORIES', experimental: true },
   { name: 'repo', modes: SELF_HOSTED_MODES, domain: 'REPOSITORIES' },
-  { name: 'snapshot', modes: SELF_HOSTED_MODES, domain: 'REPOSITORIES' },
-  {
-    name: 'backup',
-    modes: ALL_MODES,
-    domain: 'REPOSITORIES',
-    subcommands: {
-      sync: { modes: SELF_HOSTED_MODES },
-      schedule: { modes: SELF_HOSTED_MODES },
-    },
-  },
 
   // ── Execution ───────────────────────────────────────────────────────
   { name: 'run', modes: ALL_MODES, domain: 'EXECUTION' },
@@ -101,7 +95,7 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
   { name: 'store', modes: ALL_MODES, domain: 'TOOLS' },
   { name: 'doctor', modes: ALL_MODES, domain: 'TOOLS' },
   { name: 'update', modes: ALL_MODES, domain: 'TOOLS' },
-  { name: 'protocol', modes: ALL_MODES, domain: 'TOOLS' },
+  { name: 'protocol', modes: ['cloud'], domain: 'TOOLS', experimental: true },
   { name: 'vscode', modes: ALL_MODES, domain: 'TOOLS' },
   { name: 'agent', modes: ALL_MODES, domain: 'TOOLS' },
   { name: 'mcp', modes: ALL_MODES, domain: 'TOOLS' },
@@ -110,14 +104,6 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
 /** Lookup a command definition by name. */
 export function getCommandDef(commandName: string): CommandDef | undefined {
   return COMMAND_REGISTRY.find((c) => c.name === commandName);
-}
-
-/**
- * Format a mode tag for display in help text.
- */
-export function formatModeTag(modes: ModeSet): string {
-  if (modes.length >= ALL_MODES.length) return '';
-  return `[${modes.join('|')}]`;
 }
 
 /**

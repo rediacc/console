@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: ar
-sourceHash: "663392a3982ac81b"
+sourceHash: "9331a5f415a76278"
 ---
 
 # البنية التحتية
@@ -73,7 +73,7 @@ Each repository gets its own Docker daemon, loopback IP subnet (/26 = 64 IPs), a
 
 ## مستخدم rediacc
 
-عند تشغيل `rdc config setup-machine`، يُنشئ renet مستخدم نظام باسم `rediacc` على الخادم البعيد:
+عند تشغيل `rdc config machine setup`، يُنشئ renet مستخدم نظام باسم `rediacc` على الخادم البعيد:
 
 - **UID**: 7111
 - **Shell**: `/sbin/nologin` (لا يمكن تسجيل الدخول عبر SSH)

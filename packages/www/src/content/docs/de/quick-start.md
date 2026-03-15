@@ -4,7 +4,7 @@ description: Führen Sie einen containerisierten Dienst auf Ihrem Server in fün
 category: Guides
 order: -1
 language: de
-sourceHash: "ff23efbe832be9bb"
+sourceHash: "a67f1e8442eb492e"
 ---
 
 # Schnellstart
@@ -32,13 +32,13 @@ rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ## 3. Server hinzufügen
 
 ```bash
-rdc config add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
+rdc config machine add server-1 --ip <your-server-ip> --user <your-ssh-user>
 ```
 
 ## 4. Server einrichten
 
 ```bash
-rdc config setup-machine server-1
+rdc config machine setup server-1
 ```
 
 Dies installiert Docker, cryptsetup und die renet-Binary auf Ihrem Server.

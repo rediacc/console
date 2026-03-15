@@ -1,7 +1,7 @@
 import React from 'react';
+import { TEAM_MEMBERS, type TeamMemberMedia } from '../config/team-videos';
 import { useTranslation } from '../i18n/react';
 import type { Language } from '../i18n/types';
-import { TEAM_MEMBERS, type TeamMemberMedia } from '../config/team-videos';
 
 interface TestimonialItem {
   role: string;

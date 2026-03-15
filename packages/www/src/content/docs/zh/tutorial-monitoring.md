@@ -4,7 +4,7 @@ description: "检查机器健康状况、检查容器、查看 systemd 服务、
 category: "Tutorials"
 order: 4
 language: zh
-sourceHash: "16ba383dcb05e556"
+sourceHash: "af9f17a05dfb13b9"
 ---
 
 # 如何使用 Rediacc 监控和诊断基础设施
@@ -69,7 +69,7 @@ rdc machine vault-status server-1
 如果机器被重建或其 IP 发生变化，请刷新存储的 SSH 主机密钥。
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 获取服务器当前的主机密钥并更新您的配置。这可以防止"host key verification failed"错误。

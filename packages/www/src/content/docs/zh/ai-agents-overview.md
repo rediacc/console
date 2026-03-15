@@ -4,7 +4,7 @@ description: Claude Code、Cursor 和 Cline 等 AI 编程助手如何与 Rediacc
 category: Guides
 order: 30
 language: zh
-sourceHash: "3374e0f154375ffb"
+sourceHash: "2d8ab92216666d0e"
 ---
 
 AI 编程助手可以通过 `rdc` CLI 自主管理 Rediacc 基础设施。本指南涵盖集成方法以及如何开始。
@@ -38,7 +38,7 @@ Rediacc 的架构天然适合代理使用：
 ```json
 {
   "success": true,
-  "command": "machine info",
+  "command": "machine query",
   "data": { ... },
   "errors": null,
   "warnings": [],
@@ -55,7 +55,7 @@ Rediacc 的架构天然适合代理使用：
     "code": "NOT_FOUND",
     "message": "Machine \"prod-2\" not found",
     "retryable": false,
-    "guidance": "Verify the resource name with \"rdc machine info\" or \"rdc config repositories\""
+    "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
   }]
 }
 ```
@@ -69,10 +69,10 @@ Rediacc 的架构天然适合代理使用：
 rdc agent capabilities
 
 # Show detailed schema for a specific command
-rdc agent schema "machine info"
+rdc agent schema "machine query"
 
 # Execute a command with JSON stdin
-echo '{"name": "prod-1"}' | rdc agent exec "machine info"
+echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 ```
 
 ## 代理的关键标志

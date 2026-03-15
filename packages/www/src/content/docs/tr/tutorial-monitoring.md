@@ -4,7 +4,7 @@ description: "Makine sağlığını kontrol edin, konteynerleri inceleyin, syste
 category: "Tutorials"
 order: 4
 language: tr
-sourceHash: "16ba383dcb05e556"
+sourceHash: "af9f17a05dfb13b9"
 ---
 
 # Rediacc ile Altyapıyı İzleme ve Tanılama
@@ -69,7 +69,7 @@ Makinenin üst düzey bir genel görünümünü sağlar: ana bilgisayar adı, ç
 Bir makine yeniden oluşturulduysa veya IP'si değiştiyse, saklanan SSH host anahtarını yenileyin.
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 Sunucunun mevcut host anahtarlarını alır ve yapılandırmanızı günceller. Bu, "host key verification failed" hatalarını önler.

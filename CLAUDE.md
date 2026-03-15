@@ -34,7 +34,7 @@ Self-hosted infrastructure platform. Each machine runs Docker-based repositories
 
 ```bash
 # Machine status (SSH + renet list all)
-rdc machine info <machine>
+rdc machine query <machine>
 
 # List containers on a machine
 rdc machine containers <machine>
@@ -84,9 +84,8 @@ rdc run container_restart -m <machine> --param repository=<repo> --param contain
 ```bash
 # Default config (~/.config/rediacc/rediacc.json) is created automatically on first use
 rdc config init production         # Create named config
-rdc config set machine <name>      # Set default machine
-rdc config repositories            # List repos with name -> GUID mapping
-rdc --config production machine info prod-1  # Use specific config
+rdc config repository list         # List repos with name -> GUID mapping
+rdc --config production machine query prod-1  # Use specific config
 ```
 
 ### CLI Code Structure

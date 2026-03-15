@@ -12,8 +12,8 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { createTempSSHKeyFile, removeTempSSHKeyFile } from '@rediacc/shared-desktop/ssh';
 import { SFTPClient, type SFTPClientConfig } from '@rediacc/shared-desktop/sftp';
+import { createTempSSHKeyFile, removeTempSSHKeyFile } from '@rediacc/shared-desktop/ssh';
 import { executeRsync, getRsyncCommand } from '@rediacc/shared-desktop/sync';
 import { VERSION } from '../version.js';
 import { computeSha256, getEmbeddedRenetBinary, isSEA, type RenetArch } from './embedded-assets.js';
@@ -24,6 +24,8 @@ import { compareVersions } from './updater.js';
 const REMOTE_INSTALL_ROOT = '/usr/lib/rediacc/renet';
 const REMOTE_CURRENT_DIR = `${REMOTE_INSTALL_ROOT}/current`;
 const REMOTE_CURRENT_PATH = `${REMOTE_CURRENT_DIR}/renet`;
+
+const REMOTE_INSTALL_PATH = `${REMOTE_INSTALL_ROOT}/${VERSION}/renet`;
 
 /** Prefix for per-attempt staging uploads (no sudo needed for /tmp) */
 const STAGING_PATH_PREFIX = '/tmp/.rdc-staging-renet';
@@ -194,7 +196,7 @@ class RenetProvisionerService {
       return {
         success: false,
         action: 'failed',
-        remotePath: this.buildRemoteInstallPath(),
+        remotePath: REMOTE_INSTALL_PATH,
         error: `Failed to provision renet: ${errorMessage}`,
       };
     } finally {
@@ -207,7 +209,7 @@ class RenetProvisionerService {
     config: SFTPClientConfig,
     localBinaryPath?: string
   ): Promise<ProvisionContext> {
-    const remoteInstallPath = this.buildRemoteInstallPath();
+    const remoteInstallPath = REMOTE_INSTALL_PATH;
     const arch = await this.detectArch(sftp);
     const binary = await this.getBinary(arch, localBinaryPath);
     return {
@@ -283,7 +285,7 @@ class RenetProvisionerService {
     binary: Buffer,
     localHash: string
   ): Promise<void> {
-    const seedCandidate = await this.findRemoteSeedCandidate(sftp, this.buildRemoteInstallPath());
+    const seedCandidate = await this.findRemoteSeedCandidate(sftp, REMOTE_INSTALL_PATH);
     const remoteRsyncPath = await this.getRemoteRsyncPath(sftp);
     if (
       await this.tryDeltaSyncStage(
@@ -532,23 +534,8 @@ class RenetProvisionerService {
       os.tmpdir(),
       `.rdc-renet-provision-${cacheKey.replaceAll(/[^a-zA-Z0-9_.-]/g, '_')}.lock`
     );
-    const deadline = Date.now() + LOCAL_LOCK_TIMEOUT_MS;
 
-    for (;;) {
-      try {
-        await fs.mkdir(lockPath);
-        break;
-      } catch (error) {
-        if (!isLockAlreadyHeldError(error)) {
-          throw error;
-        }
-        if (Date.now() >= deadline) {
-          throw new Error(`Timed out waiting for local renet provision lock: ${lockPath}`);
-        }
-        await new Promise((resolve) => setTimeout(resolve, LOCAL_LOCK_POLL_MS));
-      }
-    }
-
+    await acquireLocalLock(lockPath, Date.now() + LOCAL_LOCK_TIMEOUT_MS);
     try {
       return await fn();
     } finally {
@@ -604,7 +591,7 @@ class RenetProvisionerService {
     const escapedStagingPath = this.shellEscape(stagingPath);
     const escapedInstallPath = this.shellEscape(remoteInstallPath);
     const escapedLockPath = this.shellEscape(REMOTE_LOCK_PATH);
-    const escapedInstallDir = this.shellEscape(this.remoteInstallDir(remoteInstallPath));
+    const escapedInstallDir = this.shellEscape(path.dirname(remoteInstallPath));
     const escapedCurrentDir = this.shellEscape(REMOTE_CURRENT_DIR);
     const escapedCurrentPath = this.shellEscape(REMOTE_CURRENT_PATH);
     const escapedCurrentTmpPath = this.shellEscape(`${REMOTE_CURRENT_PATH}.tmp`);
@@ -629,22 +616,44 @@ class RenetProvisionerService {
     return `command -v flock >/dev/null 2>&1 || { echo FLOCK_MISSING >&2; exit 127; }; flock -w 120 ${escapedLockPath} sh -c ${quotedBody}`;
   }
 
-  private buildRemoteInstallPath(): string {
-    return `${REMOTE_INSTALL_ROOT}/${VERSION}/renet`;
+  private shellEscape(v: string): string {
+    return `'${v.replaceAll("'", `'\\''`)}'`;
   }
-
-  private remoteInstallDir(remoteInstallPath: string): string {
-    return remoteInstallPath.split('/').slice(0, -1).join('/');
+}
+const isLockAlreadyHeldError = (e: unknown): e is NodeJS.ErrnoException =>
+  e instanceof Error && 'code' in e && e.code === 'EEXIST';
+async function isLockStale(pidPath: string): Promise<boolean> {
+  try {
+    const pid = Number.parseInt((await fs.readFile(pidPath, 'utf-8')).trim(), 10);
+    if (Number.isNaN(pid)) return true;
+    process.kill(pid, 0); // signal 0: existence check, throws ESRCH if dead
+    return false;
+  } catch {
+    return true;
   }
-
-  private shellEscape(value: string): string {
-    return `'${value.replaceAll("'", `'\\''`)}'`;
+}
+async function tryCreateLock(lockPath: string): Promise<boolean> {
+  try {
+    await fs.mkdir(lockPath);
+    await fs.writeFile(path.join(lockPath, 'pid'), String(process.pid));
+    return true;
+  } catch (error) {
+    if (!isLockAlreadyHeldError(error)) throw error;
+    return false;
+  }
+}
+async function acquireLocalLock(lockPath: string, deadline: number): Promise<void> {
+  const pidPath = path.join(lockPath, 'pid');
+  while (!(await tryCreateLock(lockPath))) {
+    if (await isLockStale(pidPath)) {
+      await fs.rm(lockPath, { recursive: true, force: true });
+      continue;
+    }
+    if (Date.now() >= deadline) {
+      throw new Error(`Timed out waiting for local renet provision lock: ${lockPath}`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, LOCAL_LOCK_POLL_MS));
   }
 }
 
-function isLockAlreadyHeldError(error: unknown): error is NodeJS.ErrnoException {
-  return error instanceof Error && 'code' in error && error.code === 'EEXIST';
-}
-
-/** Singleton instance of the renet provisioner */
-export const renetProvisioner = new RenetProvisionerService();
+export const renetProvisioner = new RenetProvisionerService(); // singleton

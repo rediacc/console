@@ -7,9 +7,9 @@
 import { SSH_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { SSHConnection, spawnSSH } from '@rediacc/shared-desktop/ssh';
 import type { MachineConfig } from '../types/index.js';
+import { debugLog } from '../utils/debug.js';
 import { configService } from './config-resources.js';
 import { readSSHKey } from './renet-execution.js';
-import { debugLog } from '../utils/debug.js';
 
 const GATEWAY_BIN = '/usr/lib/rediacc/renet/current/renet';
 

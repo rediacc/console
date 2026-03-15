@@ -4,7 +4,7 @@ description: "Создайте профиль конфигурации, заре
 category: "Tutorials"
 order: 2
 language: ru
-sourceHash: "c85a5f51a95e07bb"
+sourceHash: "04756cddd86e097c"
 ---
 
 # Как настроить машину с Rediacc
@@ -46,7 +46,7 @@ rdc config list
 Зарегистрируйте машину с её IP-адресом и пользователем SSH. CLI автоматически получает и сохраняет ключи хоста сервера через `ssh-keyscan`.
 
 ```bash
-rdc config add-machine bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
+rdc config machine add bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
 ```
 
 ### Шаг 4: Просмотр машин
@@ -54,7 +54,7 @@ rdc config add-machine bridge-vm --ip 192.168.111.1 --user muhammed --config tut
 Убедитесь, что машина зарегистрирована правильно.
 
 ```bash
-rdc config machines --config tutorial-demo
+rdc config machine list --config tutorial-demo
 ```
 
 Показывает все машины в текущей конфигурации с деталями подключения.
@@ -91,7 +91,7 @@ rdc doctor
 Для публичных сервисов машине нужна сетевая конфигурация — внешний IP, базовый домен и email сертификата для TLS.
 
 ```bash
-rdc config set-infra bridge-vm \
+rdc config infra set bridge-vm \
   --public-ipv4 192.168.111.1 \
   --base-domain test.local \
   --cert-email admin@test.local
@@ -100,10 +100,10 @@ rdc config set-infra bridge-vm \
 Проверьте конфигурацию:
 
 ```bash
-rdc config show-infra bridge-vm
+rdc config infra show bridge-vm
 ```
 
-Разверните сгенерированную конфигурацию прокси Traefik на сервере с помощью `rdc config push-infra bridge-vm`.
+Разверните сгенерированную конфигурацию прокси Traefik на сервере с помощью `rdc config infra push bridge-vm`.
 
 ## Устранение неполадок
 
@@ -114,7 +114,7 @@ rdc config show-infra bridge-vm
 Убедитесь, что сервер работает и IP-адрес правильный. Проверьте, что порт 22 открыт: `nc -zv <ip> 22`. При использовании нестандартного порта передайте `--port` при добавлении машины.
 
 **"Host key verification failed"**
-Сохранённый ключ хоста не совпадает с текущим ключом сервера. Это происходит после пересборки сервера или переназначения IP. Запустите `rdc config scan-keys <machine>` для обновления ключа.
+Сохранённый ключ хоста не совпадает с текущим ключом сервера. Это происходит после пересборки сервера или переназначения IP. Запустите `rdc config machine scan-keys <machine>` для обновления ключа.
 
 ## Следующие шаги
 

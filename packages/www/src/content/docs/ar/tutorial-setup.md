@@ -4,7 +4,7 @@ description: "إنشاء ملف تعريف التكوين، تسجيل جهاز 
 category: "Tutorials"
 order: 2
 language: ar
-sourceHash: "c85a5f51a95e07bb"
+sourceHash: "04756cddd86e097c"
 ---
 
 # كيفية إعداد جهاز باستخدام Rediacc
@@ -46,7 +46,7 @@ rdc config list
 سجّل جهازاً بعنوان IP الخاص به ومستخدم SSH. يقوم CLI تلقائياً بجلب وتخزين مفاتيح المضيف للخادم عبر `ssh-keyscan`.
 
 ```bash
-rdc config add-machine bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
+rdc config machine add bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
 ```
 
 ### الخطوة 4: عرض الأجهزة
@@ -54,7 +54,7 @@ rdc config add-machine bridge-vm --ip 192.168.111.1 --user muhammed --config tut
 تأكد من تسجيل الجهاز بشكل صحيح.
 
 ```bash
-rdc config machines --config tutorial-demo
+rdc config machine list --config tutorial-demo
 ```
 
 يعرض جميع الأجهزة في التكوين الحالي مع تفاصيل الاتصال الخاصة بها.
@@ -91,7 +91,7 @@ rdc doctor
 للخدمات العامة، يحتاج الجهاز إلى تكوين الشبكة — عنوان IP الخارجي، ونطاق أساسي، وبريد إلكتروني للشهادة لـ TLS.
 
 ```bash
-rdc config set-infra bridge-vm \
+rdc config infra set bridge-vm \
   --public-ipv4 192.168.111.1 \
   --base-domain test.local \
   --cert-email admin@test.local
@@ -100,10 +100,10 @@ rdc config set-infra bridge-vm \
 تحقق من التكوين:
 
 ```bash
-rdc config show-infra bridge-vm
+rdc config infra show bridge-vm
 ```
 
-انشر تكوين وكيل Traefik المُنشأ إلى الخادم باستخدام `rdc config push-infra bridge-vm`.
+انشر تكوين وكيل Traefik المُنشأ إلى الخادم باستخدام `rdc config infra push bridge-vm`.
 
 ## استكشاف الأخطاء وإصلاحها
 
@@ -114,7 +114,7 @@ rdc config show-infra bridge-vm
 تأكد من تشغيل الخادم وصحة عنوان IP. تحقق من أن المنفذ 22 مفتوح: `nc -zv <ip> 22`. إذا كنت تستخدم منفذاً غير قياسي، مرّر `--port` عند إضافة الجهاز.
 
 **"Host key verification failed"**
-المفتاح المخزن لا يتطابق مع مفتاح الخادم الحالي. يحدث هذا بعد إعادة بناء الخادم أو إعادة تعيين عنوان IP. شغّل `rdc config scan-keys <machine>` لتحديث المفتاح.
+المفتاح المخزن لا يتطابق مع مفتاح الخادم الحالي. يحدث هذا بعد إعادة بناء الخادم أو إعادة تعيين عنوان IP. شغّل `rdc config machine scan-keys <machine>` لتحديث المفتاح.
 
 ## الخطوات التالية
 

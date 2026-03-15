@@ -2,26 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   ALL_MODES,
   COMMAND_REGISTRY,
-  formatModeTag,
   getCommandDef,
   SELF_HOSTED_MODES,
 } from '../command-registry.js';
 
 describe('config/command-registry', () => {
-  describe('formatModeTag', () => {
-    it('returns empty string for all-modes', () => {
-      expect(formatModeTag(ALL_MODES)).toBe('');
-    });
-
-    it('returns [cloud] for cloud-only', () => {
-      expect(formatModeTag(['cloud'])).toBe('[cloud]');
-    });
-
-    it('returns [local] for self-hosted modes', () => {
-      expect(formatModeTag(SELF_HOSTED_MODES)).toBe('[local]');
-    });
-  });
-
   describe('getCommandDef', () => {
     it('finds existing commands', () => {
       expect(getCommandDef('auth')).toBeDefined();
@@ -47,9 +32,10 @@ describe('config/command-registry', () => {
       'ceph',
       'repository',
       'queue',
+      'protocol',
     ];
 
-    const localOnly = ['repo', 'snapshot', 'ops'];
+    const localOnly = ['repo', 'ops'];
 
     const allModes = [
       'machine',
@@ -57,11 +43,9 @@ describe('config/command-registry', () => {
       'run',
       'sync',
       'term',
-      'backup',
       'config',
       'doctor',
       'update',
-      'protocol',
       'vscode',
       'store',
       'agent',
@@ -107,16 +91,6 @@ describe('config/command-registry', () => {
     it('storage browse is local', () => {
       const def = getCommandDef('storage');
       expect(def?.subcommands?.browse.modes).toEqual(SELF_HOSTED_MODES);
-    });
-
-    it('backup sync is local', () => {
-      const def = getCommandDef('backup');
-      expect(def?.subcommands?.sync.modes).toEqual(SELF_HOSTED_MODES);
-    });
-
-    it('backup schedule is local', () => {
-      const def = getCommandDef('backup');
-      expect(def?.subcommands?.schedule.modes).toEqual(SELF_HOSTED_MODES);
     });
   });
 

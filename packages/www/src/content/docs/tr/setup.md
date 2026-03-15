@@ -4,7 +4,7 @@ description: "Yapılandırma oluşturma, makine ekleme, sunucuları hazırlama v
 category: "Guides"
 order: 3
 language: tr
-sourceHash: "5256e189c350ee18"
+sourceHash: "ebf1c9967814ec86"
 ---
 
 # Makine Kurulumu
@@ -33,7 +33,7 @@ Bu komut `my-infra` adında bir yapılandırma oluşturur ve `~/.config/rediacc/
 Uzak sunucunuzu yapılandırmaya makine olarak kaydedin:
 
 ```bash
-rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
+rdc config machine add server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | Seçenek | Gerekli | Varsayılan | Açıklama |
@@ -46,13 +46,13 @@ rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
 Makine eklendikten sonra rdc, sunucunun host anahtarlarını almak için otomatik olarak `ssh-keyscan` çalıştırır. Bunu manuel olarak da çalıştırabilirsiniz:
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 Kayıtlı tüm makineleri görüntülemek için:
 
 ```bash
-rdc config machines
+rdc config machine list
 ```
 
 ## Adım 3: Makineyi Hazırlama
@@ -60,7 +60,7 @@ rdc config machines
 Uzak sunucuyu gerekli tüm bağımlılıklarla hazırlayın:
 
 ```bash
-rdc config setup-machine server-1
+rdc config machine setup server-1
 ```
 
 Bu komut:
@@ -82,7 +82,7 @@ Bu komut:
 Bir sunucunun SSH host anahtarı değiştiyse (ör. yeniden kurulum sonrası), saklanan anahtarları yenileyin:
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 Bu komut, yapılandırmanızdaki ilgili makinenin `knownHosts` alanını günceller.
@@ -112,7 +112,7 @@ Trafiği herkese açık olarak sunması gereken makineler için altyapı ayarlar
 ### Altyapıyı Ayarlama
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
@@ -134,7 +134,7 @@ Machine kapsamlı seçenekler makine başına saklanır. Config kapsamlı seçen
 ### Altyapıyı Görüntüleme
 
 ```bash
-rdc config show-infra server-1
+rdc config infra show server-1
 ```
 
 ### Sunucuya Gönderme
@@ -142,7 +142,7 @@ rdc config show-infra server-1
 Traefik ters proxy yapılandırmasını oluşturun ve sunucuya dağıtın:
 
 ```bash
-rdc config push-infra server-1
+rdc config infra push server-1
 ```
 
 Bu komut:
@@ -163,13 +163,13 @@ OpenTofu'yu kurun: [opentofu.org/docs/intro/install](https://opentofu.org/docs/i
 SSH yapılandırmanızın bir genel anahtar içerdiğinden emin olun:
 
 ```bash
-rdc config set-ssh --private-key ~/.ssh/id_ed25519 --public-key ~/.ssh/id_ed25519.pub
+rdc config set ssh.privateKeyPath ~/.ssh/id_ed25519
 ```
 
 ### Bulut Sağlayıcı Ekleme
 
 ```bash
-rdc config add-provider my-linode \
+rdc config provider add my-linode \
   --provider linode/linode \
   --token $LINODE_API_TOKEN \
   --region us-east \
@@ -222,7 +222,7 @@ VM'yi OpenTofu aracılığıyla yok eder ve yapılandırmanızdan kaldırır. `-
 ### Sağlayıcıları Listeleme
 
 ```bash
-rdc config providers
+rdc config provider list
 ```
 
 ## Varsayılanları Ayarlama

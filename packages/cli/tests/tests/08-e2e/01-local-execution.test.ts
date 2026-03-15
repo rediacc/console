@@ -97,8 +97,7 @@ test.describe('E2E Local Execution @cli @e2e', () => {
       });
 
       const output = result.stdout + result.stderr;
-      const hasDebugOutput =
-        output.includes('[local]') || output.includes('Executing') || output.includes('debug');
+      const hasDebugOutput = output.includes('Executing') || output.includes('debug');
 
       if (result.success) {
         expect(hasDebugOutput).toBe(true);
@@ -261,8 +260,7 @@ test.describe('E2E Context Switching @cli @e2e', () => {
     });
 
     const output = result.stdout + result.stderr;
-    const isLocalAttempt =
-      output.includes('[local]') || output.includes('renet') || output.includes('Executing');
+    const isLocalAttempt = output.includes('renet') || output.includes('Executing');
 
     expect(isLocalAttempt).toBe(true);
   });

@@ -4,7 +4,7 @@ description: "Créez un profil de configuration, enregistrez une machine distant
 category: "Tutorials"
 order: 2
 language: fr
-sourceHash: "c85a5f51a95e07bb"
+sourceHash: "04756cddd86e097c"
 ---
 
 # Comment configurer une machine avec Rediacc
@@ -46,7 +46,7 @@ Liste toutes les configurations disponibles avec leur type d'adaptateur (local o
 Enregistrez une machine avec son adresse IP et son utilisateur SSH. La CLI récupère et stocke automatiquement les clés d'hôte du serveur via `ssh-keyscan`.
 
 ```bash
-rdc config add-machine bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
+rdc config machine add bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
 ```
 
 ### Étape 4 : Voir les machines
@@ -54,7 +54,7 @@ rdc config add-machine bridge-vm --ip 192.168.111.1 --user muhammed --config tut
 Confirmez que la machine a été enregistrée correctement.
 
 ```bash
-rdc config machines --config tutorial-demo
+rdc config machine list --config tutorial-demo
 ```
 
 Affiche toutes les machines dans la configuration actuelle avec leurs détails de connexion.
@@ -91,7 +91,7 @@ Vérifie votre environnement local : version de la CLI, Docker, binaire renet, �
 Pour les services accessibles publiquement, la machine nécessite une configuration réseau — son IP externe, un domaine de base et un email de certificat pour TLS.
 
 ```bash
-rdc config set-infra bridge-vm \
+rdc config infra set bridge-vm \
   --public-ipv4 192.168.111.1 \
   --base-domain test.local \
   --cert-email admin@test.local
@@ -100,10 +100,10 @@ rdc config set-infra bridge-vm \
 Vérifiez la configuration :
 
 ```bash
-rdc config show-infra bridge-vm
+rdc config infra show bridge-vm
 ```
 
-Déployez la configuration du proxy Traefik générée sur le serveur avec `rdc config push-infra bridge-vm`.
+Déployez la configuration du proxy Traefik générée sur le serveur avec `rdc config infra push bridge-vm`.
 
 ## Dépannage
 
@@ -114,7 +114,7 @@ Vérifiez que le chemin de clé passé à `config init` existe et correspond au 
 Confirmez que le serveur fonctionne et que l'IP est correcte. Vérifiez que le port 22 est ouvert : `nc -zv <ip> 22`. Si vous utilisez un port non standard, passez `--port` lors de l'ajout de la machine.
 
 **"Host key verification failed"**
-La clé d'hôte stockée ne correspond pas à la clé actuelle du serveur. Cela se produit après une reconstruction du serveur ou une réattribution d'IP. Exécutez `rdc config scan-keys <machine>` pour actualiser la clé.
+La clé d'hôte stockée ne correspond pas à la clé actuelle du serveur. Cela se produit après une reconstruction du serveur ou une réattribution d'IP. Exécutez `rdc config machine scan-keys <machine>` pour actualiser la clé.
 
 ## Étapes suivantes
 

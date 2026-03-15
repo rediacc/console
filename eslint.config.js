@@ -13,6 +13,7 @@ import { requireTestId } from './eslint-rules/require-testid.js';
 import { requireTranslation } from './eslint-rules/require-translation.js';
 import { noHardcodedText } from './eslint-rules/no-hardcoded-text.js';
 import { noHardcodedCliText } from './eslint-rules/no-hardcoded-cli-text.js';
+import { requireCommandSummary } from './eslint-rules/require-command-summary.js';
 import { noRawApiCalls } from './eslint-rules/no-raw-api-calls.js';
 import { noDuplicateTranslationProps } from './eslint-rules/no-duplicate-translation-props.js';
 import { preferConstArrays } from './eslint-rules/prefer-const-arrays.js';
@@ -212,6 +213,7 @@ export default tseslint.config(
           'require-translation': requireTranslation,
           'no-hardcoded-text': noHardcodedText,
           'no-hardcoded-cli-text': noHardcodedCliText,
+          'require-command-summary': requireCommandSummary,
           'no-raw-api-calls': noRawApiCalls,
           'no-duplicate-translation-props': noDuplicateTranslationProps,
           'prefer-const-arrays': preferConstArrays,
@@ -520,6 +522,7 @@ export default tseslint.config(
     rules: {
       // Enforce t() for CLI-specific patterns
       'custom/no-hardcoded-cli-text': ['error'],
+      'custom/require-command-summary': ['error'],
       // Enforce translation keys exist in locale files
       'custom/require-translation': ['error', {
         localeDir: 'packages/cli/src/i18n/locales/en',
@@ -727,6 +730,7 @@ export default tseslint.config(
       'custom/require-translation': 'off',
       'custom/no-hardcoded-text': 'off',
       'custom/no-hardcoded-cli-text': 'off',
+      'custom/require-command-summary': 'off',
       'custom/no-hardcoded-nullish-defaults': 'off',
       'react/forbid-elements': 'off',
       'custom/require-testid': 'off',

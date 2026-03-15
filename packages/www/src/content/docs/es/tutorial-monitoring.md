@@ -4,7 +4,7 @@ description: "Verificar el estado de la máquina, inspeccionar contenedores, rev
 category: "Tutorials"
 order: 4
 language: es
-sourceHash: "16ba383dcb05e556"
+sourceHash: "af9f17a05dfb13b9"
 ---
 
 # Cómo monitorear y diagnosticar infraestructura con Rediacc
@@ -69,7 +69,7 @@ Proporciona una vista general de alto nivel de la máquina: nombre de host, tiem
 Si una máquina fue reconstruida o su IP cambió, actualice la clave SSH de host almacenada.
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 Obtiene las claves de host actuales del servidor y actualiza su configuración. Esto previene errores de "host key verification failed".

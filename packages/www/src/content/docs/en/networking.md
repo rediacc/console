@@ -108,16 +108,16 @@ These use standard [Traefik v3 label syntax](https://doc.traefik.io/traefik/rout
 
    ```bash
    # Shared credentials (once per config, applies to all machines)
-   rdc config set-infra server-1 \
+   rdc config infra set server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
    # Machine-specific settings
-   rdc config set-infra server-1 \
+   rdc config infra set server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com
 
-   rdc config push-infra server-1
+   rdc config infra push server-1
    ```
 
 2. DNS records pointing your domain to the server's public IP (see [DNS Configuration](#dns-configuration) below).
@@ -162,7 +162,7 @@ The `{name}` in labels is an arbitrary identifier — it just needs to be consis
 TLS certificates are obtained automatically via Let's Encrypt using the Cloudflare DNS-01 challenge. Credentials are configured once per config (shared across all machines):
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
@@ -182,16 +182,16 @@ For non-HTTP protocols (mail servers, DNS, databases exposed externally), use TC
 Add the required ports during infrastructure configuration:
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config push-infra server-1
+rdc config infra push server-1
 ```
 
 This creates Traefik entrypoints named `tcp-{port}` and `udp-{port}`.
 
-> After adding or removing ports, always re-run `rdc config push-infra` to update the proxy configuration.
+> After adding or removing ports, always re-run `rdc config infra push` to update the proxy configuration.
 
 ### Step 2: Add TCP/UDP Labels
 
@@ -265,7 +265,7 @@ The following TCP/UDP ports have entrypoints by default (no need to add via `--t
 
 ### Automatic DNS (Cloudflare)
 
-When `--cf-dns-token` is configured, `rdc config push-infra` automatically creates DNS records for the machine subdomain in Cloudflare:
+When `--cf-dns-token` is configured, `rdc config infra push` automatically creates DNS records for the machine subdomain in Cloudflare:
 
 | Record | Type | Content | Created by |
 |--------|------|---------|------------|
@@ -367,7 +367,7 @@ Shows TCP and UDP port mappings for dynamically allocated ports.
 | Service not in routes | Container not running or missing labels | Verify with `docker ps` on the repository's daemon; check labels |
 | Certificate not issued | DNS not pointing to server, or invalid Cloudflare token | Verify DNS resolution; check Cloudflare API token permissions |
 | 502 Bad Gateway | Application not listening on the declared port | Verify the app binds to its `{SERVICE}_IP` and the port matches `loadbalancer.server.port` |
-| TCP port not reachable | Port not registered in infrastructure | Run `rdc config set-infra --tcp-ports ...` and `push-infra` |
+| TCP port not reachable | Port not registered in infrastructure | Run `rdc config infra set --tcp-ports ...` and `push-infra` |
 | Route server running old version | Binary was updated but service not restarted | Happens automatically on provisioning; manual: `sudo systemctl restart rediacc-router` |
 | STUN/TURN relay not reachable | Relay addresses cached at startup | Recreate the service after DNS or IP changes so it picks up the new network config |
 

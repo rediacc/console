@@ -4,7 +4,7 @@ description: Configure el IDE Cursor para trabajar con la infraestructura Rediac
 category: Guides
 order: 32
 language: es
-sourceHash: "6da857eb870d511e"
+sourceHash: "c6caf89e3bb3f461"
 ---
 
 Cursor se integra con Rediacc a través de comandos de terminal y el archivo de configuración `.cursorrules`.
@@ -38,7 +38,7 @@ Pregunte a Cursor: *"Verifica el estado de mi servidor de producción"*
 
 Cursor ejecuta en el terminal:
 ```bash
-rdc machine info prod-1 -o json
+rdc machine query prod-1 -o json
 ```
 
 ### Desplegar cambios

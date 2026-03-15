@@ -4,7 +4,7 @@ import { TOOLS } from '../tools.js';
 
 describe('MCP tool definitions', () => {
   it('has exactly 16 tools defined', () => {
-    expect(TOOLS.length).toBe(22);
+    expect(TOOLS.length).toBe(24);
   });
 
   it('has no duplicate tool names', () => {
@@ -23,7 +23,7 @@ describe('MCP tool definitions', () => {
 
     it('includes expected read tools', () => {
       const names = readTools.map((t) => t.name);
-      expect(names).toContain('machine_info');
+      expect(names).toContain('machine_query');
       expect(names).toContain('machine_list');
       expect(names).toContain('machine_containers');
       expect(names).toContain('machine_services');
@@ -50,7 +50,7 @@ describe('MCP tool definitions', () => {
       expect(names).toContain('repo_down');
       expect(names).toContain('repo_delete');
       expect(names).toContain('repo_fork');
-      expect(names).toContain('backup_pull');
+      expect(names).toContain('repo_pull');
       expect(names).toContain('term_exec');
     });
 
@@ -67,8 +67,8 @@ describe('MCP tool definitions', () => {
         'repo_down',
         'repo_delete',
         'repo_fork',
-        'backup_push',
-        'backup_pull',
+        'repo_push',
+        'repo_pull',
         'term_exec',
       ]) {
         const tool = TOOLS.find((t) => t.name === name)!;
@@ -80,19 +80,24 @@ describe('MCP tool definitions', () => {
   });
 
   describe('command builders produce valid argv', () => {
-    it('machine_info builds correct argv', () => {
-      const tool = TOOLS.find((t) => t.name === 'machine_info')!;
-      expect(tool.command({ name: 'prod' })).toEqual(['machine', 'info', 'prod']);
+    it('machine_query builds correct argv', () => {
+      const tool = TOOLS.find((t) => t.name === 'machine_query')!;
+      expect(tool.command({ name: 'prod' })).toEqual(['machine', 'query', 'prod']);
     });
 
     it('machine_containers builds correct argv', () => {
       const tool = TOOLS.find((t) => t.name === 'machine_containers')!;
-      expect(tool.command({ name: 'staging' })).toEqual(['machine', 'containers', 'staging']);
+      expect(tool.command({ name: 'staging' })).toEqual([
+        'machine',
+        'query',
+        'staging',
+        '--containers',
+      ]);
     });
 
     it('config_repositories builds correct argv', () => {
       const tool = TOOLS.find((t) => t.name === 'config_repositories')!;
-      expect(tool.command({})).toEqual(['config', 'repositories']);
+      expect(tool.command({})).toEqual(['config', 'repository', 'list']);
     });
 
     it('agent_capabilities builds correct argv', () => {
@@ -187,17 +192,16 @@ describe('MCP tool definitions', () => {
         'repo',
         'fork',
         'webapp',
+        'test',
         '-m',
         'prod',
-        '--tag',
-        'test',
       ]);
     });
 
-    it('backup_push builds correct argv with --to-machine', () => {
-      const tool = TOOLS.find((t) => t.name === 'backup_push')!;
+    it('repo_push builds correct argv with --to-machine', () => {
+      const tool = TOOLS.find((t) => t.name === 'repo_push')!;
       expect(tool.command({ repo: 'webapp', machine: 'prod', to_machine: 'staging' })).toEqual([
-        'backup',
+        'repo',
         'push',
         'webapp',
         '-m',
@@ -207,10 +211,10 @@ describe('MCP tool definitions', () => {
       ]);
     });
 
-    it('backup_pull builds correct argv with --from-machine', () => {
-      const tool = TOOLS.find((t) => t.name === 'backup_pull')!;
+    it('repo_pull builds correct argv with --from-machine', () => {
+      const tool = TOOLS.find((t) => t.name === 'repo_pull')!;
       expect(tool.command({ repo: 'webapp', machine: 'staging', from_machine: 'prod' })).toEqual([
-        'backup',
+        'repo',
         'pull',
         'webapp',
         '-m',
@@ -265,8 +269,8 @@ describe('MCP tool definitions', () => {
         'repo_up',
         'repo_down',
         'repo_delete',
-        'backup_push',
-        'backup_pull',
+        'repo_push',
+        'repo_pull',
         'term_exec',
       ];
       for (const name of guarded) {
@@ -279,7 +283,7 @@ describe('MCP tool definitions', () => {
       const safe = [
         'repo_create',
         'repo_fork',
-        'machine_info',
+        'machine_query',
         'machine_list',
         'config_repositories',
         'machine_provision',
@@ -298,8 +302,8 @@ describe('MCP tool definitions', () => {
     });
 
     it('backup tools use "repo" field', () => {
-      expect(TOOLS.find((t) => t.name === 'backup_push')!.repoArgField).toBe('repo');
-      expect(TOOLS.find((t) => t.name === 'backup_pull')!.repoArgField).toBe('repo');
+      expect(TOOLS.find((t) => t.name === 'repo_push')!.repoArgField).toBe('repo');
+      expect(TOOLS.find((t) => t.name === 'repo_pull')!.repoArgField).toBe('repo');
     });
 
     it('term_exec uses "repository" field', () => {
@@ -324,7 +328,7 @@ describe('MCP tool definitions', () => {
     });
 
     it('schemas with required fields reject missing values', () => {
-      const tool = TOOLS.find((t) => t.name === 'machine_info')!;
+      const tool = TOOLS.find((t) => t.name === 'machine_query')!;
       const schema = z.object(tool.schema);
       const result = schema.safeParse({});
       expect(result.success).toBe(false);

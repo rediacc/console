@@ -4,7 +4,7 @@ description: "設定の作成、マシンの追加、サーバーのプロビジ
 category: "Guides"
 order: 3
 language: ja
-sourceHash: "5256e189c350ee18"
+sourceHash: "ebf1c9967814ec86"
 ---
 
 # マシンセットアップ
@@ -33,7 +33,7 @@ rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 リモートサーバーを設定内のマシンとして登録します：
 
 ```bash
-rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
+rdc config machine add server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | オプション | 必須 | デフォルト | 説明 |
@@ -46,13 +46,13 @@ rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
 マシンを追加すると、rdcは自動的に`ssh-keyscan`を実行してサーバーのホスト鍵を取得します。手動で実行することもできます：
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 登録済みのすべてのマシンを表示するには：
 
 ```bash
-rdc config machines
+rdc config machine list
 ```
 
 ## ステップ3：マシンのセットアップ
@@ -60,7 +60,7 @@ rdc config machines
 リモートサーバーに必要なすべての依存関係をプロビジョニングします：
 
 ```bash
-rdc config setup-machine server-1
+rdc config machine setup server-1
 ```
 
 このコマンドは以下を実行します：
@@ -82,7 +82,7 @@ rdc config setup-machine server-1
 サーバーのSSHホスト鍵が変更された場合（例：再インストール後）、保存されている鍵を更新します：
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 これにより、そのマシンの設定内の`knownHosts`フィールドが更新されます。
@@ -112,7 +112,7 @@ rdc doctor
 ### インフラストラクチャの設定
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
@@ -134,7 +134,7 @@ Machineスコープのオプションはマシンごとに保存されます。C
 ### インフラストラクチャの表示
 
 ```bash
-rdc config show-infra server-1
+rdc config infra show server-1
 ```
 
 ### サーバーへのプッシュ
@@ -142,7 +142,7 @@ rdc config show-infra server-1
 Traefikリバースプロキシ設定を生成してサーバーにデプロイします：
 
 ```bash
-rdc config push-infra server-1
+rdc config infra push server-1
 ```
 
 このコマンドは以下を実行します：
@@ -163,13 +163,13 @@ OpenTofu をインストールしてください: [opentofu.org/docs/intro/insta
 SSH設定に公開鍵が含まれていることを確認してください：
 
 ```bash
-rdc config set-ssh --private-key ~/.ssh/id_ed25519 --public-key ~/.ssh/id_ed25519.pub
+rdc config set ssh.privateKeyPath ~/.ssh/id_ed25519
 ```
 
 ### クラウドプロバイダーの追加
 
 ```bash
-rdc config add-provider my-linode \
+rdc config provider add my-linode \
   --provider linode/linode \
   --token $LINODE_API_TOKEN \
   --region us-east \
@@ -222,7 +222,7 @@ OpenTofu経由でVMを破棄し、設定から削除します。`--force` を使
 ### プロバイダーの一覧表示
 
 ```bash
-rdc config providers
+rdc config provider list
 ```
 
 ## デフォルトの設定

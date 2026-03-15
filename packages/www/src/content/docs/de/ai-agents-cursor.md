@@ -4,7 +4,7 @@ description: Konfiguration der Cursor-IDE für die Arbeit mit der Rediacc-Infras
 category: Guides
 order: 32
 language: de
-sourceHash: "6da857eb870d511e"
+sourceHash: "c6caf89e3bb3f461"
 ---
 
 Cursor integriert sich mit Rediacc über Terminal-Befehle und die Konfigurationsdatei `.cursorrules`.
@@ -38,7 +38,7 @@ Fragen Sie Cursor: *"Pruefe den Status meines Produktionsservers"*
 
 Cursor fuehrt im Terminal aus:
 ```bash
-rdc machine info prod-1 -o json
+rdc machine query prod-1 -o json
 ```
 
 ### Aenderungen bereitstellen

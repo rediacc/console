@@ -7,7 +7,7 @@ import { configService } from '../../services/config-resources.js';
 import { outputService } from '../../services/output.js';
 import type { OutputFormat } from '../../types/index.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
-import { createGuidResolver, resolveGuids, loadGuidMap } from '../../utils/guid-resolver.js';
+import { createGuidResolver, loadGuidMap, resolveGuids } from '../../utils/guid-resolver.js';
 import { withSpinner } from '../../utils/spinner.js';
 
 function isServiceUnstable(service: ServiceInfo): boolean {
@@ -66,6 +66,7 @@ function formatServicesForTable(
 export function registerServicesCommand(machine: Command, program: Command): void {
   machine
     .command('services <name>')
+    .summary(t('commands.machine.services.descriptionShort'))
     .description(t('commands.machine.services.description'))
     .option('-t, --team <name>', t('options.team'))
     .option('--stability-check', t('commands.machine.services.stabilityCheck'))

@@ -68,7 +68,7 @@ Provides a high-level overview of the machine: hostname, uptime, memory, disk, d
 If a machine was rebuilt or its IP changed, refresh the stored SSH host key.
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 Fetches the server's current host keys and updates your config. This prevents "host key verification failed" errors.

@@ -4,7 +4,7 @@ description: "Vérifier l'état de la machine, inspecter les conteneurs, examine
 category: "Tutorials"
 order: 4
 language: fr
-sourceHash: "16ba383dcb05e556"
+sourceHash: "af9f17a05dfb13b9"
 ---
 
 # Comment surveiller et diagnostiquer l'infrastructure avec Rediacc
@@ -69,7 +69,7 @@ Fournit une vue d'ensemble de haut niveau de la machine : nom d'hôte, temps de 
 Si une machine a été reconstruite ou si son IP a changé, actualisez la clé SSH d'hôte stockée.
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 Récupère les clés d'hôte actuelles du serveur et met à jour votre configuration. Cela évite les erreurs "host key verification failed".

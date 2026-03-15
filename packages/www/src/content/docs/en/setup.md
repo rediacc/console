@@ -32,7 +32,7 @@ This creates a config named `my-infra` and stores it in `~/.config/rediacc/my-in
 Register your remote server as a machine in the config:
 
 ```bash
-rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
+rdc config machine add server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | Option | Required | Default | Description |
@@ -45,13 +45,13 @@ rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
 After adding the machine, rdc automatically runs `ssh-keyscan` to fetch the server's host keys. You can also run this manually:
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 To view all registered machines:
 
 ```bash
-rdc config machines
+rdc config machine list
 ```
 
 ## Step 3: Set Up the Machine
@@ -59,7 +59,7 @@ rdc config machines
 Provision the remote server with all required dependencies:
 
 ```bash
-rdc config setup-machine server-1
+rdc config machine setup server-1
 ```
 
 This command:
@@ -81,7 +81,7 @@ This command:
 If a server's SSH host key changes (e.g., after reinstallation), refresh the stored keys:
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 This updates the `knownHosts` field in your config for that machine.
@@ -111,7 +111,7 @@ For machines that need to serve traffic publicly, configure infrastructure setti
 ### Set Infrastructure
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
@@ -133,7 +133,7 @@ Machine-scoped options are stored per-machine. Config-scoped options (`--cert-em
 ### View Infrastructure
 
 ```bash
-rdc config show-infra server-1
+rdc config infra show server-1
 ```
 
 ### Push to Server
@@ -141,7 +141,7 @@ rdc config show-infra server-1
 Generate and deploy the Traefik reverse proxy configuration to the server:
 
 ```bash
-rdc config push-infra server-1
+rdc config infra push server-1
 ```
 
 This command:
@@ -162,13 +162,13 @@ Install OpenTofu: [opentofu.org/docs/intro/install](https://opentofu.org/docs/in
 Ensure your SSH config includes a public key:
 
 ```bash
-rdc config set-ssh --private-key ~/.ssh/id_ed25519 --public-key ~/.ssh/id_ed25519.pub
+rdc config set ssh.privateKeyPath ~/.ssh/id_ed25519
 ```
 
 ### Add a Cloud Provider
 
 ```bash
-rdc config add-provider my-linode \
+rdc config provider add my-linode \
   --provider linode/linode \
   --token $LINODE_API_TOKEN \
   --region us-east \
@@ -221,7 +221,7 @@ Destroys the VM via OpenTofu and removes it from your config. Requires confirmat
 ### List Providers
 
 ```bash
-rdc config providers
+rdc config provider list
 ```
 
 ## Setting Defaults

@@ -84,9 +84,9 @@ rdc repo push <repo> -m <source> --to-machine <target>
 rdc repo up <repo> -m <target> --mount
 
 # Independent fork to another machine (--grand passes parent's encryption key)
-rdc repo fork <repo> -m <source> --tag <fork-name>
-rdc repo push <fork-name> -m <source> --to-machine <target>
-rdc repo up <fork-name> -m <target> --mount --grand <repo>
+rdc repo fork <repo> <tag> -m <source>
+rdc repo push <repo>:<tag> -m <source> --to-machine <target>
+rdc repo up <repo>:<tag> -m <target> --mount --grand <repo>
 ```
 
 ## Quick-start: Live migration with CRIU

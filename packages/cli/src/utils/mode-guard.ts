@@ -9,18 +9,19 @@ import {
   ALL_MODES,
   COMMAND_DOMAINS,
   type CommandCategory,
-  formatModeTag,
   getCommandDef,
   isExperimentalEnabled,
   type ModeSet,
   type SubcommandDef,
 } from '../config/command-registry.js';
+import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
 import { hasCloudIntent } from '../types/index.js';
+import { isAgentEnvironment } from './agent-guard.js';
 
-// Fixed column width for the mode tag (longest tag is "[cloud|local]" = 13 chars + padding)
-const TAG_COL_WIDTH = 16;
+/** Whether to show extended (full) help descriptions instead of summaries. */
+let _extendedHelp = false;
 
 /**
  * Add a preAction hook that blocks the command in unsupported modes.
@@ -34,9 +35,8 @@ export function addModeGuard(command: Command, supportedModes: ModeSet): void {
     const current: CommandCategory = hasCloudIntent(config) ? 'cloud' : 'local';
 
     if (!supportedModes.includes(current)) {
-      const tag = formatModeTag(supportedModes);
       outputService.error(
-        `"${command.name()}" requires the ${supportedModes.join(' or ')} adapter ${tag}. Current adapter: ${current}`
+        `"${command.name()}" requires the ${supportedModes.join(' or ')} adapter. Current adapter: ${current}`
       );
       process.exit(1);
     }
@@ -55,27 +55,6 @@ function addExperimentalGuard(command: Command): void {
       process.exit(1);
     }
   });
-}
-
-/**
- * Resolve the mode tag for a command by checking the registry.
- * Handles both top-level commands and subcommands (via parent lookup).
- */
-function resolveTag(cmd: Command): string {
-  // Top-level command?
-  const def = getCommandDef(cmd.name());
-  if (def) return formatModeTag(def.modes);
-
-  // Subcommand — check parent's subcommand overrides, then inherit parent modes
-  const parentDef = cmd.parent ? getCommandDef(cmd.parent.name()) : undefined;
-  if (parentDef?.subcommands?.[cmd.name()]) {
-    return formatModeTag(parentDef.subcommands[cmd.name()].modes);
-  }
-  if (parentDef) {
-    return formatModeTag(parentDef.modes);
-  }
-
-  return '';
 }
 
 /** Format an argument for display (e.g. `<name>`, `[command]`, `<files...>`). */
@@ -101,11 +80,13 @@ const baseHelpConfig = {
     const argsPart = cmd.registeredArguments.map((a) => ` ${humanReadableArgName(a)}`).join('');
     return paddedName + aliasPart + optionsPart + argsPart;
   },
+  commandDescription(cmd: Command): string {
+    if (_extendedHelp) return cmd.description();
+    return cmd.summary() || cmd.description();
+  },
   subcommandDescription(cmd: Command): string {
-    const tag = resolveTag(cmd);
-    const desc = cmd.description();
-    const tagCol = (tag || '').padEnd(TAG_COL_WIDTH);
-    return `${tagCol}${desc}`;
+    if (_extendedHelp) return cmd.description();
+    return cmd.summary() || cmd.description();
   },
 };
 
@@ -132,8 +113,12 @@ function applyHelpConfig(cmd: Command): void {
   cmd.configureHelp({
     ...baseHelpConfig,
     optionTerm: buildOptionTerm([...cmd.options]),
-    helpWidth: 80,
+    helpWidth: process.stdout.columns || 80,
   });
+  // Hint about --help-all on commands that have subcommands (only in concise mode)
+  if (cmd.commands.length > 0 && !_extendedHelp) {
+    cmd.addHelpText('afterAll', `\n  ${t('help.useHelpAll')}\n`);
+  }
   for (const sub of cmd.commands) {
     applyHelpConfig(sub);
   }
@@ -197,6 +182,18 @@ function applyCommandDef(
  * help formatter that renders mode tags as a separate column.
  */
 export function applyRegistry(cli: Command): void {
+  // Detect --help-all: replace with --help so Commander's built-in help machinery fires
+  const helpAllIdx = process.argv.indexOf('--help-all');
+  if (helpAllIdx !== -1) {
+    _extendedHelp = true;
+    process.argv[helpAllIdx] = '--help';
+  }
+
+  // AI agents always get extended help
+  if (isAgentEnvironment()) {
+    _extendedHelp = true;
+  }
+
   const experimental = isExperimentalEnabled();
 
   for (const cmd of cli.commands) {

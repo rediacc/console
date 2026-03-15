@@ -4,7 +4,7 @@ description: "Información esencial sobre reglas y convenciones para crear aplic
 category: "Guides"
 order: 5
 language: es
-sourceHash: "5b62710fe6281f9d"
+sourceHash: "9d81373c26d93457"
 sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 ---
 
@@ -103,7 +103,7 @@ Renet auto-inyecta estas en cada contenedor:
 - **`repo up --mount --checkpoint`** restaura contenedores desde el checkpoint (sin inicio limpio).
 - **Las conexiones TCP se vuelven obsoletas después de la restauración** — las aplicaciones deben manejar `ECONNRESET` y reconectarse.
 - **El modo experimental de Docker** se habilita automáticamente en los daemons por repositorio.
-- **CRIU se instala** durante `rdc config setup-machine`.
+- **CRIU se instala** durante `rdc config machine setup`.
 - **`/etc/criu/runc.conf`** se configura con `tcp-established` para la preservación de conexiones TCP.
 - **Los ajustes de seguridad de contenedores son auto-inyectados por renet** — `renet compose` agrega automáticamente lo siguiente a cada contenedor para compatibilidad con CRIU:
   - `cap_add`: `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` (conjunto mínimo para CRIU en kernel 5.9+)
