@@ -2,7 +2,7 @@
 // Run: ./build.sh deploy prep
 // Source: renet/pkg/bridge/commands/
 
-import { type ZodSafeParseResult, z } from 'zod';
+import { z, type ZodSafeParseResult } from 'zod';
 import type { BridgeFunctionName, FunctionParamsMap } from './functions.generated';
 
 // ============================================
@@ -34,10 +34,7 @@ export const BackupPullParamsSchema = z.object({
     .default('storage')
     .describe('Source type: machine (SSH) or storage (rclone)'),
   from: z.string().min(1).describe('Source machine or storage name'),
-  seed: z
-    .string()
-    .optional()
-    .describe('Comma-separated repository GUIDs for CoW pre-seeding (closest relative first)'),
+  seed: z.string().optional().describe('Comma-separated repository GUIDs for CoW pre-seeding (closest relative first)'),
 });
 
 /** Push repository to remote destination (machine or storage) */
@@ -54,10 +51,7 @@ export const BackupPushParamsSchema = z.object({
   state: z.enum(['online', 'offline']).optional().describe('Repository state validation'),
   checkpoint: z.boolean().default(false).optional().describe('CRIU hot backup (zero-downtime)'),
   override: z.boolean().optional().describe('Overwrite existing backup'),
-  seed: z
-    .string()
-    .optional()
-    .describe('Comma-separated repository GUIDs for CoW pre-seeding (closest relative first)'),
+  seed: z.string().optional().describe('Comma-separated repository GUIDs for CoW pre-seeding (closest relative first)'),
 });
 
 /** Mount RBD image on client */
