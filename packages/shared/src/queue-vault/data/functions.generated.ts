@@ -6,14 +6,30 @@
 // Type-safe parameter interfaces
 // ============================================
 
+/** Delete a backup from storage or machine */
+export interface BackupDeleteParams {
+  /** Target type: machine or storage */
+  sourceType: string;
+  /** Target machine or storage name */
+  from: string;
+}
+
+/** List available backups on storage or machine */
+export interface BackupListParams {
+  /** Source type: machine or storage */
+  sourceType: string;
+  /** Source machine or storage name */
+  from: string;
+}
+
 /** Pull repository from remote source (machine or storage) */
 export interface BackupPullParams {
   /** Source type: machine (SSH) or storage (rclone) */
   sourceType: string;
   /** Source machine or storage name */
   from: string;
-  /** Grand repository GUID for CoW pre-seeding optimization */
-  grand?: string;
+  /** Comma-separated repository GUIDs for CoW pre-seeding (closest relative first) */
+  seed?: string;
 }
 
 /** Push repository to remote destination (machine or storage) */
@@ -36,8 +52,8 @@ export interface BackupPushParams {
   checkpoint?: boolean;
   /** Overwrite existing backup */
   override?: boolean;
-  /** Grand repository GUID for differential/CoW optimization */
-  grand?: string;
+  /** Comma-separated repository GUIDs for CoW pre-seeding (closest relative first) */
+  seed?: string;
 }
 
 /** Mount RBD image on client */
@@ -486,6 +502,12 @@ export interface RepositoryOwnershipParams {
   force?: string;
 }
 
+/** Remove orphaned datastore resources (empty mounts, stale locks) */
+export interface RepositoryPruneParams {
+  /** Preview only, no changes */
+  dryRun?: boolean;
+}
+
 /** Resize a repository */
 export interface RepositoryResizeParams {
   /** New repository size */
@@ -560,6 +582,8 @@ export interface SetupParams {
 }
 
 export const BRIDGE_FUNCTIONS = [
+  'backup_delete',
+  'backup_list',
   'backup_pull',
   'backup_push',
   'ceph_client_mount',
@@ -614,6 +638,7 @@ export const BRIDGE_FUNCTIONS = [
   'repository_list',
   'repository_mount',
   'repository_ownership',
+  'repository_prune',
   'repository_resize',
   'repository_status',
   'repository_template_apply',
@@ -624,11 +649,13 @@ export const BRIDGE_FUNCTIONS = [
   'setup',
 ] as const;
 
-export const BRIDGE_FUNCTIONS_VERSION = 'v0.6.0-116-gf11dfa9e';
+export const BRIDGE_FUNCTIONS_VERSION = '0.6.0';
 
 export type BridgeFunctionName = (typeof BRIDGE_FUNCTIONS)[number];
 
 export type FunctionParamsMap = {
+  backup_delete: BackupDeleteParams;
+  backup_list: BackupListParams;
   backup_pull: BackupPullParams;
   backup_push: BackupPushParams;
   ceph_client_mount: CephClientMountParams;
@@ -683,6 +710,7 @@ export type FunctionParamsMap = {
   repository_list: RepositoryListParams;
   repository_mount: RepositoryMountParams;
   repository_ownership: RepositoryOwnershipParams;
+  repository_prune: RepositoryPruneParams;
   repository_resize: RepositoryResizeParams;
   repository_status: RepositoryStatusParams;
   repository_template_apply: RepositoryTemplateApplyParams;
@@ -694,6 +722,12 @@ export type FunctionParamsMap = {
 };
 
 export const FUNCTION_REQUIREMENTS: Record<BridgeFunctionName, { requirements: Partial<Record<'machine' | 'team' | 'repository' | 'storage' | 'organization' | 'bridge' | 'network_id', boolean>> }> = {
+  'backup_delete': {
+    requirements: { machine: true, team: true, repository: true, storage: true },
+  },
+  'backup_list': {
+    requirements: { machine: true, team: true, storage: true },
+  },
   'backup_pull': {
     requirements: { machine: true, team: true, repository: true, storage: true },
   },
@@ -856,6 +890,9 @@ export const FUNCTION_REQUIREMENTS: Record<BridgeFunctionName, { requirements: P
   'repository_ownership': {
     requirements: { machine: true, team: true, repository: true },
   },
+  'repository_prune': {
+    requirements: { machine: true },
+  },
   'repository_resize': {
     requirements: { machine: true, team: true, repository: true },
   },
@@ -950,6 +987,52 @@ export interface FunctionDefinition {
 // ============================================
 
 export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition> = {
+  'backup_delete': {
+    name: 'backup_delete',
+    category: 'backup',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true, storage: true },
+    params: {
+      sourceType: {
+        type: 'string',
+        required: true,
+        default: 'storage',
+        help: 'Target type: machine or storage',
+        options: ['machine', 'storage'],
+        ui: 'dropdown',
+        enum: ['machine', 'storage'],
+      },
+      from: {
+        type: 'string',
+        required: true,
+        help: 'Target machine or storage name',
+        minLength: 1,
+      },
+    },
+  },
+  'backup_list': {
+    name: 'backup_list',
+    category: 'backup',
+    showInMenu: true,
+    requirements: { machine: true, team: true, storage: true },
+    params: {
+      sourceType: {
+        type: 'string',
+        required: true,
+        default: 'storage',
+        help: 'Source type: machine or storage',
+        options: ['machine', 'storage'],
+        ui: 'dropdown',
+        enum: ['machine', 'storage'],
+      },
+      from: {
+        type: 'string',
+        required: true,
+        help: 'Source machine or storage name',
+        minLength: 1,
+      },
+    },
+  },
   'backup_pull': {
     name: 'backup_pull',
     category: 'backup',
@@ -973,9 +1056,9 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
         dependsOn: 'sourceType',
         minLength: 1,
       },
-      grand: {
+      seed: {
         type: 'string',
-        help: 'Grand repository GUID for CoW pre-seeding optimization',
+        help: 'Comma-separated repository GUIDs for CoW pre-seeding (closest relative first)',
       },
     },
   },
@@ -1041,9 +1124,9 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
         type: 'bool',
         help: 'Overwrite existing backup',
       },
-      grand: {
+      seed: {
         type: 'string',
-        help: 'Grand repository GUID for differential/CoW optimization',
+        help: 'Comma-separated repository GUIDs for CoW pre-seeding (closest relative first)',
       },
     },
   },
@@ -2058,6 +2141,19 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
       },
     },
   },
+  'repository_prune': {
+    name: 'repository_prune',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true },
+    params: {
+      dryRun: {
+        type: 'bool',
+        help: 'Preview only, no changes',
+        options: ['true', 'false'],
+      },
+    },
+  },
   'repository_resize': {
     name: 'repository_resize',
     category: 'repository',
@@ -2265,6 +2361,8 @@ export type QueueFunctionsType = {
 };
 
 export const queueFunctions: QueueFunctionsType = {
+  backup_delete: (params) => ({ functionName: 'backup_delete', params }),
+  backup_list: (params) => ({ functionName: 'backup_list', params }),
   backup_pull: (params) => ({ functionName: 'backup_pull', params }),
   backup_push: (params) => ({ functionName: 'backup_push', params }),
   ceph_client_mount: (params) => ({ functionName: 'ceph_client_mount', params }),
@@ -2319,6 +2417,7 @@ export const queueFunctions: QueueFunctionsType = {
   repository_list: (params) => ({ functionName: 'repository_list', params }),
   repository_mount: (params) => ({ functionName: 'repository_mount', params }),
   repository_ownership: (params) => ({ functionName: 'repository_ownership', params }),
+  repository_prune: (params) => ({ functionName: 'repository_prune', params }),
   repository_resize: (params) => ({ functionName: 'repository_resize', params }),
   repository_status: (params) => ({ functionName: 'repository_status', params }),
   repository_template_apply: (params) => ({ functionName: 'repository_template_apply', params }),

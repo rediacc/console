@@ -9,6 +9,24 @@ import type { BridgeFunctionName, FunctionParamsMap } from './functions.generate
 // Zod schemas for runtime validation
 // ============================================
 
+/** Delete a backup from storage or machine */
+export const BackupDeleteParamsSchema = z.object({
+  sourceType: z
+    .enum(['machine', 'storage'])
+    .default('storage')
+    .describe('Target type: machine or storage'),
+  from: z.string().min(1).describe('Target machine or storage name'),
+});
+
+/** List available backups on storage or machine */
+export const BackupListParamsSchema = z.object({
+  sourceType: z
+    .enum(['machine', 'storage'])
+    .default('storage')
+    .describe('Source type: machine or storage'),
+  from: z.string().min(1).describe('Source machine or storage name'),
+});
+
 /** Pull repository from remote source (machine or storage) */
 export const BackupPullParamsSchema = z.object({
   sourceType: z
@@ -364,6 +382,11 @@ export const RepositoryOwnershipParamsSchema = z.object({
   force: z.string().optional().describe('Skip Docker volume detection (true/false)'),
 });
 
+/** Remove orphaned datastore resources (empty mounts, stale locks) */
+export const RepositoryPruneParamsSchema = z.object({
+  dryRun: z.boolean().optional().describe('Preview only, no changes'),
+});
+
 /** Resize a repository */
 export const RepositoryResizeParamsSchema = z.object({
   size: z.string().min(1).describe('New repository size'),
@@ -442,6 +465,8 @@ export const SetupParamsSchema = z.object({
 });
 
 export const FUNCTION_SCHEMAS = {
+  backup_delete: BackupDeleteParamsSchema,
+  backup_list: BackupListParamsSchema,
   backup_pull: BackupPullParamsSchema,
   backup_push: BackupPushParamsSchema,
   ceph_client_mount: CephClientMountParamsSchema,
@@ -496,6 +521,7 @@ export const FUNCTION_SCHEMAS = {
   repository_list: RepositoryListParamsSchema,
   repository_mount: RepositoryMountParamsSchema,
   repository_ownership: RepositoryOwnershipParamsSchema,
+  repository_prune: RepositoryPruneParamsSchema,
   repository_resize: RepositoryResizeParamsSchema,
   repository_status: RepositoryStatusParamsSchema,
   repository_template_apply: RepositoryTemplateApplyParamsSchema,
