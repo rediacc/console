@@ -4,7 +4,7 @@ description: Erfahren Sie, wie Account, rdc und renet Maschinenplätze, Repo-Liz
 category: Guides
 order: 7
 language: de
-sourceHash: "41f6d86e9f637b47"
+sourceHash: "fcc4e06609545bf7"
 ---
 
 # Abonnement & Lizenzierung
@@ -72,7 +72,7 @@ Sie wird verwendet für:
 
 - `rdc repo resize` und `rdc repo expand` — vollständige Validierung einschließlich Ablauf
 - `rdc repo up`, `rdc repo down`, `rdc repo delete` — validiert mit **übersprungener Ablaufprüfung**
-- `rdc backup push`, `rdc backup pull`, `rdc backup sync` — validiert mit **übersprungener Ablaufprüfung**
+- `rdc repo push`, `rdc repo pull`, `rdc repo sync` — validiert mit **übersprungener Ablaufprüfung**
 - Repo-Autostart beim Maschinenneustart — validiert mit **übersprungener Ablaufprüfung**
 
 Repo-Lizenzen sind an die Maschine und das Ziel-Repository gebunden, und Rediacc verstärkt diese Bindung durch Repository-Identitätsmetadaten. Bei verschlüsselten Repositories umfasst dies die LUKS-Identität des zugrunde liegenden Volumes.

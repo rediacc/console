@@ -4,7 +4,7 @@ description: Comprendre comment account, rdc et renet gèrent les slots de machi
 category: Guides
 order: 7
 language: fr
-sourceHash: "41f6d86e9f637b47"
+sourceHash: "fcc4e06609545bf7"
 ---
 
 # Abonnement et licences
@@ -72,7 +72,7 @@ Elle est utilisée pour :
 
 - `rdc repo resize` et `rdc repo expand` — validation complète incluant l'expiration
 - `rdc repo up`, `rdc repo down`, `rdc repo delete` — validé avec **expiration ignorée**
-- `rdc backup push`, `rdc backup pull`, `rdc backup sync` — validé avec **expiration ignorée**
+- `rdc repo push`, `rdc repo pull`, `rdc repo sync` — validé avec **expiration ignorée**
 - démarrage automatique du dépôt au redémarrage de la machine — validé avec **expiration ignorée**
 
 Les licences de dépôt sont liées à la machine et au dépôt cible, et Rediacc renforce ce lien avec les métadonnées d'identité du dépôt. Pour les dépôts chiffrés, cela inclut l'identité LUKS du volume sous-jacent.

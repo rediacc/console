@@ -6,7 +6,7 @@ order: 2
 language: ja
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ja/cli.json
-sourceHash: "1737ec7700bb1457"
+sourceHash: "523e74227e45d400"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -1363,6 +1363,7 @@ rdc repo push [repo] [options]
 | `--provider <name>` | {{t:cli.commands.repo.push.optionProvider}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--checkpoint` | {{t:cli.commands.repo.push.optionCheckpoint}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--force` | {{t:cli.commands.repo.push.optionForce}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--up` | {{t:cli.commands.repo.push.optionUp}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--tag <tag>` | {{t:cli.commands.repo.push.optionTag}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-w, --watch` | {{t:cli.options.watch}} | {{t:cli.docs.optionLabels.no}} | - |

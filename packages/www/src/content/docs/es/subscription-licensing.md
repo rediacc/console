@@ -4,7 +4,7 @@ description: Entender cómo account, rdc y renet gestionan los slots de máquina
 category: Guides
 order: 7
 language: es
-sourceHash: "41f6d86e9f637b47"
+sourceHash: "fcc4e06609545bf7"
 ---
 
 # Suscripción y licencias
@@ -72,7 +72,7 @@ Se usa para:
 
 - `rdc repo resize` y `rdc repo expand` — validación completa incluyendo expiración
 - `rdc repo up`, `rdc repo down`, `rdc repo delete` — validado con **expiración omitida**
-- `rdc backup push`, `rdc backup pull`, `rdc backup sync` — validado con **expiración omitida**
+- `rdc repo push`, `rdc repo pull`, `rdc repo sync` — validado con **expiración omitida**
 - autoarranque del repositorio al reiniciar la máquina — validado con **expiración omitida**
 
 Las licencias de repositorio están vinculadas a la máquina y al repositorio de destino, y Rediacc refuerza ese vínculo con metadatos de identidad del repositorio. Para repositorios cifrados, eso incluye la identidad LUKS del volumen subyacente.

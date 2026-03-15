@@ -4,7 +4,7 @@ description: account, rdc ve renet'in makine slotlarını, depo lisanslarını v
 category: Guides
 order: 7
 language: tr
-sourceHash: "41f6d86e9f637b47"
+sourceHash: "fcc4e06609545bf7"
 ---
 
 # Abonelik ve Lisanslama
@@ -72,7 +72,7 @@ Depo lisansı, bir makinedeki bir depo için imzalı bir lisanstır.
 
 - `rdc repo resize` ve `rdc repo expand` — son kullanma tarihi dahil tam doğrulama
 - `rdc repo up`, `rdc repo down`, `rdc repo delete` — **son kullanma tarihi atlanarak** doğrulanır
-- `rdc backup push`, `rdc backup pull`, `rdc backup sync` — **son kullanma tarihi atlanarak** doğrulanır
+- `rdc repo push`, `rdc repo pull`, `rdc repo sync` — **son kullanma tarihi atlanarak** doğrulanır
 - makine yeniden başlatılırken depo otomatik başlatma — **son kullanma tarihi atlanarak** doğrulanır
 
 Depo lisansları makineye ve hedef depoya bağlıdır; Rediacc bu bağlamayı depo kimlik meta verileriyle güçlendirir. Şifrelenmiş depolar için bu, altta yatan birimin LUKS kimliğini içerir.

@@ -4,7 +4,7 @@ description: 了解 account、rdc 和 renet 如何处理机器槽位、仓库许
 category: Guides
 order: 7
 language: zh
-sourceHash: "41f6d86e9f637b47"
+sourceHash: "fcc4e06609545bf7"
 ---
 
 # 订阅与许可
@@ -72,7 +72,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 - `rdc repo resize` 和 `rdc repo expand` — 包括到期在内的完整验证
 - `rdc repo up`、`rdc repo down`、`rdc repo delete` — **跳过到期**验证
-- `rdc backup push`、`rdc backup pull`、`rdc backup sync` — **跳过到期**验证
+- `rdc repo push`、`rdc repo pull`、`rdc repo sync` — **跳过到期**验证
 - 机器重启时的仓库自动启动 — **跳过到期**验证
 
 仓库许可证绑定到机器和目标仓库，Rediacc 通过仓库身份元数据加强该绑定。对于加密仓库，这包括底层卷的 LUKS 身份。

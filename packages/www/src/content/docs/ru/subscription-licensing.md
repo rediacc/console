@@ -4,7 +4,7 @@ description: Понять, как account, rdc и renet обрабатывают
 category: Guides
 order: 7
 language: ru
-sourceHash: "41f6d86e9f637b47"
+sourceHash: "fcc4e06609545bf7"
 ---
 
 # Подписка и лицензирование
@@ -72,7 +72,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 - `rdc repo resize` и `rdc repo expand` — полная проверка, включая срок действия
 - `rdc repo up`, `rdc repo down`, `rdc repo delete` — проверка с **пропуском срока действия**
-- `rdc backup push`, `rdc backup pull`, `rdc backup sync` — проверка с **пропуском срока действия**
+- `rdc repo push`, `rdc repo pull`, `rdc repo sync` — проверка с **пропуском срока действия**
 - автозапуск репозитория при перезапуске машины — проверка с **пропуском срока действия**
 
 Лицензии репозитория привязаны к машине и целевому репозиторию, и Rediacc усиливает эту привязку метаданными идентичности репозитория. Для зашифрованных репозиториев это включает LUKS-идентичность основного тома.

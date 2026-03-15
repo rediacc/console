@@ -4,7 +4,7 @@ description: فهم كيفية تعامل الحساب وrdc وrenet مع فتح
 category: Guides
 order: 7
 language: ar
-sourceHash: "41f6d86e9f637b47"
+sourceHash: "fcc4e06609545bf7"
 ---
 
 # الاشتراك والترخيص
@@ -72,7 +72,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 - `rdc repo resize` و`rdc repo expand` — تحقق كامل بما في ذلك انتهاء الصلاحية
 - `rdc repo up` و`rdc repo down` و`rdc repo delete` — تحقق مع **تخطي انتهاء الصلاحية**
-- `rdc backup push` و`rdc backup pull` و`rdc backup sync` — تحقق مع **تخطي انتهاء الصلاحية**
+- `rdc repo push` و`rdc repo pull` و`rdc repo sync` — تحقق مع **تخطي انتهاء الصلاحية**
 - البدء التلقائي للمستودع عند إعادة تشغيل الجهاز — تحقق مع **تخطي انتهاء الصلاحية**
 
 تراخيص المستودع مرتبطة بالجهاز والمستودع المستهدف، ويعزز Rediacc هذا الارتباط ببيانات هوية المستودع. بالنسبة للمستودعات المشفرة، يشمل ذلك هوية LUKS للحجم الأساسي.

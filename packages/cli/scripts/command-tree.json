@@ -2100,6 +2100,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--up",
+              "descriptionKey": "commands.repo.push.optionUp",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--tag <tag>",
               "descriptionKey": "commands.repo.push.optionTag",
               "mandatory": false,

@@ -71,7 +71,7 @@ It is used for:
 
 - `rdc repo resize` and `rdc repo expand` — full validation including expiry
 - `rdc repo up`, `rdc repo down`, `rdc repo delete` — validated with **expiry skipped**
-- `rdc backup push`, `rdc backup pull`, `rdc backup sync` — validated with **expiry skipped**
+- `rdc repo push`, `rdc repo pull`, `rdc repo sync` — validated with **expiry skipped**
 - repo autostart on machine restart — validated with **expiry skipped**
 
 Repo licenses are bound to the machine and the target repository, and Rediacc hardens that binding with repository identity metadata. For encrypted repositories, that includes the LUKS identity of the underlying volume.
