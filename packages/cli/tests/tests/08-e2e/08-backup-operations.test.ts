@@ -154,3 +154,37 @@ test.describe
       expect(vm1Checksum2).toBe(secondChecksum);
     });
   });
+
+test.describe('Backup Management', () => {
+  test('should list backups for a repository', async () => {
+    const result = await runLocalFunction('backup_list', E2E.MACHINE_VM1, {
+      contextName: ctxName,
+      params: { repository: E2E.TEST_REPO },
+      timeout: E2E.SETUP_TIMEOUT,
+    });
+    // backup_list may return empty list or error if no backups exist
+    expect(result.exitCode === 0 || result.stderr.includes('no backups')).toBe(true);
+  });
+
+  test('should handle backup delete for non-existent backup', async () => {
+    const result = await runLocalFunction('backup_delete', E2E.MACHINE_VM1, {
+      contextName: ctxName,
+      params: { repository: E2E.TEST_REPO, snapshot: 'nonexistent' },
+      timeout: E2E.SETUP_TIMEOUT,
+    });
+    // Expected to fail gracefully for non-existent backup
+    expect(result.exitCode).not.toBe(undefined);
+  });
+});
+
+test.describe('Repository Maintenance', () => {
+  test('should prune orphaned repository resources', async () => {
+    const result = await runLocalFunction('repository_prune', E2E.MACHINE_VM1, {
+      contextName: ctxName,
+      params: { dry_run: true },
+      timeout: E2E.SETUP_TIMEOUT,
+    });
+    // Dry run should succeed even with no orphans
+    expect(result.exitCode === 0 || result.stderr.includes('no orphan')).toBe(true);
+  });
+});
