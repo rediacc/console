@@ -29,3 +29,6 @@ better-sqlite3 # v12.x requires native binding rebuild, potential API changes
 
 # Zod v4 - major rewrite with different API surface
 zod # v4.x requires schema migration, different error handling
+
+# inquirer v13.3.x - npm publishes are broken (missing dist/ directory)
+inquirer # v13.3.1 and v13.3.2 published without dist/ folder
