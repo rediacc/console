@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: de
-sourceHash: "50f5168f0effbc44"
+sourceHash: "9331a5f415a76278"
 ---
 
 # Architektur
@@ -58,7 +58,7 @@ Wird automatisch aktiviert, wenn eine Konfiguration `apiUrl`- und `token`-Felder
 - Web-Konsole für visuelle Verwaltung
 - Eingerichtet mit `rdc auth login`
 
-> **Hinweis:** Cloud-Adapter-Befehle sind experimentell. Aktivieren Sie sie mit `rdc --experimental <befehl>` oder durch Setzen von `REDIACC_EXPERIMENTAL=1`.
+> **Hinweis:** Cloud-Adapter-Befehle sind experimentell. Aktivieren Sie sie durch Setzen von `REDIACC_EXPERIMENTAL=1`.
 
 ### S3-Ressourcenzustand (Optional)
 
@@ -73,7 +73,7 @@ Alle Adapter verwenden die gleichen CLI-Befehle. Der Adapter beeinflusst nur, wo
 
 ## Der rediacc-Benutzer
 
-Wenn Sie `rdc config setup-machine` ausführen, erstellt renet einen Systembenutzer namens `rediacc` auf dem entfernten Server:
+Wenn Sie `rdc config machine setup` ausführen, erstellt renet einen Systembenutzer namens `rediacc` auf dem entfernten Server:
 
 - **UID**: 7111
 - **Shell**: `/sbin/nologin` (kann sich nicht per SSH anmelden)
@@ -83,7 +83,7 @@ Der `rediacc`-Benutzer kann nicht direkt per SSH erreicht werden. Stattdessen ve
 
 1. Ihr SSH-Benutzer benötigt `sudo`-Rechte
 2. Alle Repository-Daten gehören `rediacc`, nicht Ihrem SSH-Benutzer
-3. Rediaccfile-Funktionen (`prep()`, `up()`, `down()`) laufen als `rediacc`
+3. Rediaccfile-Funktionen (`up()`, `down()`) laufen als `rediacc`
 
 Diese Trennung stellt sicher, dass Repository-Daten unabhängig vom verwaltenden SSH-Benutzer eine konsistente Eigentümerschaft haben.
 

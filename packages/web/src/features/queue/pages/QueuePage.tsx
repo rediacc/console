@@ -1,4 +1,8 @@
-import React, { useCallback, useMemo } from 'react';
+import type {
+  GetTeamQueueItems_ResultSet1,
+  QueueFilters,
+  QueueStatistics,
+} from '@rediacc/shared/types';
 import {
   Badge,
   Button,
@@ -12,6 +16,8 @@ import {
   Tooltip,
   Typography,
 } from 'antd';
+import type { Dayjs } from 'dayjs';
+import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueueItemsWithFilters } from '@/api/hooks-queue';
 import { useDropdownData } from '@/api/queries/useDropdownData';
@@ -38,16 +44,10 @@ import {
   RocketOutlined,
 } from '@/utils/optimizedIcons';
 import { getQueueStatusColor } from '@/utils/statusColors';
-import type {
-  GetTeamQueueItems_ResultSet1,
-  QueueFilters,
-  QueueStatistics,
-} from '@rediacc/shared/types';
 import { QueueFilterPanel } from '../components/QueueFilterPanel';
 import { QueueStatisticsBar } from '../components/QueueStatisticsBar';
 import { useQueueActions } from '../hooks/useQueueActions';
 import { useQueueExport } from '../hooks/useQueueExport';
-import type { Dayjs } from 'dayjs';
 
 // Page-level filter state type
 type QueuePageFilters = {

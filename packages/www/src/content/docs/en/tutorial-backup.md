@@ -1,14 +1,14 @@
 ---
 title: "Backup & Networking"
-description: "Watch and follow along as we configure backup schedules, storage providers, and network infrastructure."
+description: "Configure automated backup schedules, manage storage providers, set up infrastructure networking, and register service ports."
 category: "Tutorials"
 order: 6
 language: en
 ---
 
-# Tutorial: Backup & Networking
+# How To Configure Backups and Networking with Rediacc
 
-This tutorial covers backup scheduling, storage configuration, and infrastructure networking setup: the commands you use to protect data and expose services.
+Automated backups protect your repositories, and infrastructure networking exposes services to the outside world. In this tutorial, you configure backup schedules with storage providers, set up public networking with TLS certificates, register service ports, and verify the configuration. When you finish, your machine is ready for production traffic.
 
 ## Prerequisites
 
@@ -19,73 +19,103 @@ This tutorial covers backup scheduling, storage configuration, and infrastructur
 
 ![Tutorial: Backup & Networking](/assets/tutorials/backup-tutorial.cast)
 
-## What You'll See
-
-The recording above walks through each step below. Use the playback bar to navigate between commands.
-
 ### Step 1: View current storages
 
+Storage providers (S3, B2, Google Drive, etc.) serve as backup destinations. Check which providers are configured.
+
 ```bash
-rdc config storages
+rdc config storage list
 ```
 
-Lists all configured storage providers (S3, B2, Google Drive, etc.) imported from rclone configs. Storages are used as backup destinations.
+Lists all configured storage providers imported from rclone configs. If empty, add a storage provider first — see [Backup & Restore](/en/docs/backup-restore).
 
 ### Step 2: Configure backup schedule
 
+Set up automated backups that run on a cron schedule.
+
 ```bash
-rdc backup schedule set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
 ```
 
-Sets an automated backup schedule: push all repositories to the `my-s3` storage every day at 2 AM. The schedule is stored in your config and can be deployed to machines as a systemd timer.
+You can configure multiple destinations with different schedules:
+
+```bash
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
+```
+
+This schedules daily backups at 2 AM to `my-s3` and at 6 AM to `azure-backup`. Each destination gets its own schedule. The schedules are stored in your config and can be deployed to machines as systemd timers.
 
 ### Step 3: View backup schedule
 
+Verify the schedule was applied.
+
 ```bash
-rdc backup schedule show
+rdc config backup-strategy show
 ```
 
-Shows the current backup schedule configuration: destination, cron expression, and enabled status.
+Shows the current backup configuration: destination, cron expression, and enabled status.
 
 ### Step 4: Configure infrastructure
 
+For public-facing services, the machine needs its external IP, base domain, and a certificate email for Let's Encrypt TLS.
+
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com
 ```
 
-Configures the machine's public networking: its external IP, base domain for auto-routes, and email for Let's Encrypt TLS certificates.
+Rediacc generates a Traefik reverse proxy configuration from these settings.
 
 ### Step 5: Add TCP/UDP ports
 
+If your services need non-HTTP ports (e.g., SMTP, DNS), register them as Traefik entrypoints.
+
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 ```
 
-Registers additional TCP/UDP ports for the reverse proxy. These create Traefik entrypoints (`tcp-25`, `udp-53`, etc.) that can be referenced in Docker labels.
+This creates Traefik entrypoints (`tcp-25`, `udp-53`, etc.) that Docker services can reference via labels.
 
 ### Step 6: View infrastructure config
 
+Verify the full infrastructure configuration.
+
 ```bash
-rdc config show-infra server-1
+rdc config infra show server-1
 ```
 
-Displays the full infrastructure configuration for a machine: public IPs, domain, email, and registered ports.
+Displays public IPs, domain, certificate email, and all registered ports.
 
 ### Step 7: Disable backup schedule
 
+To stop automated backups without removing the configuration:
+
 ```bash
-rdc backup schedule set --disable
-rdc backup schedule show
+rdc config backup-strategy set --disable
+rdc config backup-strategy show
 ```
 
-Disables the automated backup schedule. The configuration is preserved so it can be re-enabled later.
+The configuration is preserved and can be re-enabled later with `--enable`.
+
+## Troubleshooting
+
+**"Invalid cron expression"**
+Cron format is `minute hour day month weekday`. Common schedules: `0 2 * * *` (daily 2 AM), `0 */6 * * *` (every 6 hours), `0 0 * * 0` (weekly Sunday midnight).
+
+**"Storage destination not found"**
+The destination name must match a configured storage provider. Run `rdc config storage list` to see available names. Add new providers via rclone configuration.
+
+**"Infrastructure config incomplete" when deploying**
+All three fields are required: `--public-ipv4`, `--base-domain`, and `--cert-email`. Run `rdc config infra show <machine>` to check which fields are missing.
 
 ## Next Steps
+
+You configured automated backups, set up infrastructure networking, registered service ports, and verified the configuration. To manage backups:
 
 - [Backup & Restore](/en/docs/backup-restore) — full reference for push, pull, list, and sync commands
 - [Networking](/en/docs/networking) — Docker labels, TLS certificates, DNS, and TCP/UDP forwarding

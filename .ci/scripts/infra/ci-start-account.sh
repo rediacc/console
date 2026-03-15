@@ -1,7 +1,7 @@
 #!/bin/bash
 # CI Account Server Startup Script
-# Starts the account server on-premise docker-compose stack and waits for health checks
-# Uses RustFS (S3-compatible) for local object storage instead of Cloudflare R2/S3
+# Starts the account server docker-compose stack and waits for health checks
+# Uses SQLite (better-sqlite3) for local storage
 #
 # Usage:
 #   .ci/scripts/infra/ci-start-account.sh
@@ -51,7 +51,7 @@ _PROD_ACCOUNT_SERVER_API_KEY="$ACCOUNT_SERVER_API_KEY"
 # =============================================================================
 # SOURCE BASE ENVIRONMENT
 # =============================================================================
-# ci-env.sh generates RustFS credentials, webhook secret, etc.
+# ci-env.sh generates webhook secret, JWT secret, etc.
 # shellcheck source=ci-env.sh
 source "$SCRIPT_DIR/ci-env.sh"
 
@@ -71,8 +71,6 @@ echo "Writing .env to $CI_DOCKER_DIR..."
     echo "ED25519_PRIVATE_KEY=${ED25519_PRIVATE_KEY}"
     echo "ED25519_PUBLIC_KEY=${ED25519_PUBLIC_KEY}"
     echo "ACCOUNT_SERVER_API_KEY=${ACCOUNT_SERVER_API_KEY}"
-    echo "RUSTFS_ACCESS_KEY=${RUSTFS_ACCESS_KEY}"
-    echo "RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY}"
     echo "STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}"
     echo "JWT_SECRET=${JWT_SECRET}"
 } >"$CI_DOCKER_DIR/.env"
@@ -83,7 +81,7 @@ echo "Writing .env to $CI_DOCKER_DIR..."
 echo "Starting Account Server Docker Compose services..."
 cd "$CI_DOCKER_DIR"
 
-# Start only account-server (auto-pulls dependencies: rustfs, volume-init, bucket-init)
+# Start account-server (uses SQLite, no external storage dependencies)
 docker compose -f docker-compose.yml up -d account-server
 
 # =============================================================================
@@ -121,7 +119,7 @@ wait_for_account_server() {
 
 wait_for_account_server || {
     echo "Account server startup failed"
-    docker compose -f docker-compose.yml logs account-server account-rustfs
+    docker compose -f docker-compose.yml logs account-server
     exit 1
 }
 

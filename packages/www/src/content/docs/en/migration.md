@@ -4,6 +4,7 @@ description: "Migrate existing projects into encrypted Rediacc repositories."
 category: "Guides"
 order: 11
 language: en
+sourceHash: "feb1fcafc824b4b2"
 ---
 
 # Migration Guide
@@ -28,14 +29,14 @@ rdc repo create my-project -m server-1 --size 20G
 
 ## Step 2: Upload Your Files
 
-Use `rdc sync upload` to transfer your project files into the repository.
+Use `rdc repo sync upload` to transfer your project files into the repository.
 
 ```bash
 # Preview what will be transferred (no changes made)
-rdc sync upload -m server-1 -r my-project --local ./my-project --dry-run
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --dry-run
 
 # Upload files
-rdc sync upload -m server-1 -r my-project --local ./my-project
+rdc repo sync upload -m server-1 -r my-project --local ./my-project
 ```
 
 The repository must be mounted before uploading. If it isn't already:
@@ -47,7 +48,7 @@ rdc repo mount my-project -m server-1
 For subsequent syncs where you want the remote to exactly match your local directory:
 
 ```bash
-rdc sync upload -m server-1 -r my-project --local ./my-project --mirror
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 ```
 
 > The `--mirror` flag deletes files on the remote that don't exist locally. Use `--dry-run` first to verify.
@@ -82,7 +83,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 To skip Docker volume detection and chown everything, including container data directories:
 
 ```bash
-rdc repo ownership my-project -m server-1 --force
+rdc repo ownership my-project -m server-1
 ```
 
 > **Warning:** This may break running containers. Stop them first with `rdc repo down` if needed.
@@ -97,33 +98,30 @@ rdc repo ownership my-project -m server-1 --uid 1000
 
 ## Step 4: Set Up Your Rediaccfile
 
-Create a `Rediaccfile` in your project root. This Bash script defines how your services are prepared, started, and stopped.
+Create a `Rediaccfile` in your project root. This Bash script defines how your services are started and stopped.
 
 ```bash
 #!/bin/bash
 
-prep() {
-    docker compose pull
-}
-
 up() {
-    docker compose up -d
+    renet compose -- up -d
 }
 
 down() {
-    docker compose down
+    renet compose -- down
 }
 ```
 
-The three lifecycle functions:
+The two lifecycle functions:
 
 | Function | Purpose | Error behavior |
 |----------|---------|----------------|
-| `prep()` | Pull images, run migrations, install dependencies | Fail-fast: any failure stops everything |
 | `up()` | Start services | Root failure is critical; subdirectory failures are logged and continue |
 | `down()` | Stop services | Best-effort: always attempts all |
 
-> **Important:** Use `docker` directly in your Rediaccfile — never `sudo docker`. The `sudo` command resets environment variables, which causes `DOCKER_HOST` to be lost and containers to be created on the system Docker daemon instead of the repository's isolated daemon. Rediaccfile functions already run with sufficient privileges. See [Services](/en/docs/services#environment-variables) for details.
+> **Important:** Always use `renet compose --` instead of `docker compose` in your Rediaccfile. The `renet compose` wrapper enforces host networking, CRIU checkpoint/restore capabilities, IP allocation, and service discovery required by renet-proxy. Using `docker compose` directly bypasses all of these and will be rejected during validation.
+>
+> Never use `sudo docker` either — `sudo` resets environment variables including `DOCKER_HOST`, which causes containers to be created on the system Docker daemon instead of the repository's isolated daemon. Rediaccfile functions already run with sufficient privileges.
 
 See [Services](/en/docs/services) for full details on Rediaccfiles, multi-service layouts, and execution order.
 
@@ -166,8 +164,6 @@ services:
 services:
   postgres:
     image: postgres:16
-    network_mode: host
-    restart: unless-stopped
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
@@ -176,14 +172,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    network_mode: host
-    restart: unless-stopped
     command: redis-server --bind ${REDIS_IP} --port 6379
 
   app:
     image: my-app:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
       REDIS_URL: redis://${REDIS_IP}:6379
@@ -192,10 +184,11 @@ services:
 
 Key changes:
 
-1. **Add `network_mode: host`** to every service
-2. **Remove `ports:` mappings** (not needed with host networking)
-3. **Bind services to `${SERVICE_IP}`** environment variables (auto-injected by Rediacc)
-4. **Reference other services by their IP** instead of Docker DNS names (e.g., `${POSTGRES_IP}` instead of `postgres`)
+1. **Remove `ports:` mappings** — `renet compose` uses host networking and strips port mappings automatically
+2. **Remove `network_mode: host`** — `renet compose` adds this for you
+3. **Remove `restart: always` or `restart: unless-stopped`** — these conflict with CRIU checkpoint/restore (Docker auto-starts containers before checkpoint restore can run). Use `restart: on-failure` if you need restart behavior, or omit it entirely — Rediaccfile `up()`/`down()` manages the container lifecycle
+4. **Bind services to `${SERVICE_IP}`** environment variables (auto-injected by Rediacc)
+5. **Reference other services by their IP** instead of Docker DNS names (e.g., `${POSTGRES_IP}` instead of `postgres`)
 
 The `{SERVICE}_IP` variables are automatically generated from your compose file's service names. The naming convention: uppercase, hyphens replaced with underscores, suffixed with `_IP`. For example, `listmonk-app` becomes `LISTMONK_APP_IP`.
 
@@ -213,8 +206,7 @@ This will:
 1. Mount the encrypted repository
 2. Start the isolated Docker daemon
 3. Auto-generate `.rediacc.json` with service IP assignments
-4. Run `prep()` from all Rediaccfiles
-5. Run `up()` from all Rediaccfiles
+4. Run `up()` from all Rediaccfiles
 
 Verify your containers are running:
 
@@ -262,7 +254,7 @@ my-api/
 └── redis-data/             # Redis persistence (UID 999 when running)
 ```
 
-1. Upload your project (consider excluding `node_modules` and pulling in `prep()`)
+1. Upload your project (consider excluding `node_modules` and pulling in `up()`)
 2. Run ownership fix after containers have started
 
 ### Custom Docker Project
@@ -303,7 +295,7 @@ Each repository gets unique loopback IPs. If you see port conflicts, verify that
 
 ### Ownership Fix Breaks Containers
 
-If you ran `rdc repo ownership --force` and a container stopped working, the container's data files were chowned. Stop the container, delete its data directory, and restart — the container will recreate it:
+If you ran `rdc repo ownership` and a container stopped working, the container's data files were chowned. Stop the container, delete its data directory, and restart — the container will recreate it:
 
 ```bash
 rdc repo down my-project -m server-1

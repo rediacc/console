@@ -17,19 +17,19 @@ Transfer files between your workstation and a remote repository using rsync over
 ### Upload Files
 
 ```bash
-rdc sync upload -m server-1 -r my-app --local ./src --remote /app/src
+rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
 ```
 
 ### Download Files
 
 ```bash
-rdc sync download -m server-1 -r my-app --remote /app/data --local ./data
+rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
 ```
 
 ### Check Sync Status
 
 ```bash
-rdc sync status -m server-1 -r my-app
+rdc repo sync status -m server-1 -r my-app
 ```
 
 ### Options

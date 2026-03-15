@@ -1,12 +1,13 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import PricingCard from '../../components/PricingCard.astro';
+import CfPricingCard from '../../components/CfPricingCard.astro';
 import FAQSection from '../../components/FAQSection.astro';
 import { createTranslator } from '../../i18n/utils';
 import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
 import { EXTERNAL_LINKS } from '../../config/constants';
 import '../../styles/disaster-recovery-page.css';
+import '../../styles/pricing-page.css';
 
 export const getStaticPaths = getLanguagePaths;
 
@@ -15,94 +16,39 @@ const { t, ta, to } = createTranslator(lang);
 
 const ns = 'pages.disasterRecovery';
 
-const priceFormatter = new Intl.NumberFormat(lang === 'en' ? 'en-US' : lang, {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-});
-
-const formatPrice = (amount: number) => priceFormatter.format(amount);
-
-const buildPlan = ({
-  id,
-  monthlyPrice,
-  description,
-  isPopular = false,
-  badgeLabel,
-  badgeVariant,
-  priceNote,
-}: {
-  id: string;
-  monthlyPrice: number;
-  description: string;
-  isPopular?: boolean;
-  badgeLabel?: string;
-  badgeVariant?: string;
-  priceNote?: string | null;
-}) => {
-  const yearlyPrice = monthlyPrice * 10;
-  const price = formatPrice(monthlyPrice);
-  const yearlyPriceFormatted = formatPrice(yearlyPrice);
-
-  let period = monthlyPrice > 0
-    ? t(`${ns}.ui.monthOrYear`, { price: yearlyPriceFormatted })
-    : t(`${ns}.ui.foreverFree`);
-
-  if (id === 'enterprise' && monthlyPrice > 0) {
-    period = period.replace(yearlyPriceFormatted, `${yearlyPriceFormatted}*`);
-  }
-
-  return {
-    id,
-    name: t(`${ns}.plans.${id}.name`),
-    price,
-    priceNote: priceNote ?? (id === 'enterprise' ? t(`${ns}.plans.enterprise.priceNote`) : undefined),
-    period,
-    description,
-    isPopular,
-    badgeLabel,
-    badgeVariant,
-    features: ta(`${ns}.plans.${id}.features`)
-  };
-};
-
-// Pricing plans data
 const allPlans = [
-  buildPlan({
+  {
     id: 'professional',
-    monthlyPrice: 1299,
-    description: t(`${ns}.plans.professional.description`)
-  }),
-  buildPlan({
+    monthly: 1299,
+    annual: 1299 * 10,
+  },
+  {
     id: 'business',
-    monthlyPrice: 3999,
-    description: t(`${ns}.plans.business.description`),
+    monthly: 3999,
+    annual: 3999 * 10,
     isPopular: true,
     badgeLabel: `${t(`${ns}.ui.bestValue`)} · ${t(`${ns}.ui.limitedOffer`)}`,
-    badgeVariant: 'popular'
-  }),
-  buildPlan({
+    badgeVariant: 'popular',
+  },
+  {
     id: 'enterprise',
-    monthlyPrice: 9999,
-    description: t(`${ns}.plans.enterprise.description`),
+    monthly: 9999,
+    annual: 9999 * 10,
     badgeLabel: t(`${ns}.ui.anchor`),
     badgeVariant: 'anchor',
-    priceNote: t(`${ns}.plans.enterprise.priceNote`)
-  })
+  },
 ];
 
 const technicalMetrics = ta(`${ns}.technicalSummary.metrics`);
 const technicalValues = to(`${ns}.technicalSummary.values`);
 
 type PlanId = 'professional' | 'business' | 'enterprise';
-const technicalCards = allPlans.map(plan => ({
-  id: plan.id,
-  name: plan.name,
-  metrics: technicalMetrics.map((metric: any) => ({
+const buildMetrics = (planId: string) =>
+  technicalMetrics.map((metric: any) => ({
     label: metric.label,
-    value: technicalValues?.[plan.id as PlanId]?.[metric.key as keyof typeof technicalValues[PlanId]] ?? '—'
-  }))
-}));
+    tooltip: metric.tooltip,
+    value: technicalValues?.[planId as PlanId]?.[metric.key as keyof typeof technicalValues[PlanId]] ?? '—',
+  }));
 ---
 
 <BaseLayout
@@ -124,7 +70,7 @@ const technicalCards = allPlans.map(plan => ({
 
     <!-- Pricing Toggle & Cards -->
     <section id="plans" class="pricing-content section-light">
-      <div class="container">
+      <div class="cf-pricing-container">
         <div class="pricing-overview">
           <div class="pricing-overview-copy">
             <h2>{t(`${ns}.strategy.heading`)}</h2>
@@ -137,9 +83,34 @@ const technicalCards = allPlans.map(plan => ({
           </ul>
         </div>
 
-        <div class="pricing-grid active three-up">
+        <!-- Billing Toggle -->
+        <div class="billing-toggle-wrapper">
+          <div class="billing-toggle" role="radiogroup" aria-label={t('pages.pricing.ui.billingToggle.ariaLabel')}>
+            <button
+              type="button"
+              role="radio"
+              class="billing-toggle-btn"
+              data-period="monthly"
+              aria-checked="false"
+            >
+              {t('pages.pricing.ui.billingToggle.monthly')}
+            </button>
+            <button
+              type="button"
+              role="radio"
+              class="billing-toggle-btn active"
+              data-period="annual"
+              aria-checked="true"
+            >
+              {t('pages.pricing.ui.billingToggle.annual')}
+            </button>
+          </div>
+          <span class="billing-toggle-savings visible">{t('pages.pricing.ui.billingToggle.annualSavings')}</span>
+        </div>
+
+        <div class="cf-pricing-grid three-up">
           {allPlans.map(plan => (
-            <PricingCard plan={plan} lang={lang} />
+            <CfPricingCard plan={plan} metrics={buildMetrics(plan.id)} lang={lang} ctaNamespace={ns} />
           ))}
         </div>
 
@@ -221,11 +192,11 @@ const technicalCards = allPlans.map(plan => ({
           </div>
 
           <div class="technical-grid">
-            {technicalCards.map(card => (
+            {allPlans.map(plan => (
               <div class="technical-card">
-                <h3>{card.name}</h3>
+                <h3>{t(`${ns}.plans.${plan.id}.name`)}</h3>
                 <dl class="technical-metrics">
-                  {card.metrics.map(metric => (
+                  {buildMetrics(plan.id).map(metric => (
                     <div class="technical-metric">
                       <dt>{metric.label}</dt>
                       <dd>{metric.value}</dd>
@@ -260,3 +231,43 @@ const technicalCards = allPlans.map(plan => ({
     </section>
   </article>
 </BaseLayout>
+
+<script>
+  // Billing toggle: swap between monthly and annual display
+  document.addEventListener('DOMContentLoaded', () => {
+    const section = document.getElementById('plans');
+    if (!section) return;
+
+    const toggleBtns = section.querySelectorAll<HTMLButtonElement>('.billing-toggle .billing-toggle-btn');
+    const savingsLabel = section.querySelector<HTMLElement>('.billing-toggle-savings');
+
+    if (!toggleBtns.length) return;
+
+    toggleBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const period = btn.dataset.period;
+        if (!period) return;
+
+        toggleBtns.forEach((b) => {
+          const isActive = b === btn;
+          b.classList.toggle('active', isActive);
+          b.setAttribute('aria-checked', isActive ? 'true' : 'false');
+        });
+
+        if (savingsLabel) {
+          savingsLabel.classList.toggle('visible', period === 'annual');
+        }
+
+        section.querySelectorAll<HTMLElement>('.cf-price[data-monthly]').forEach((el) => {
+          el.textContent = period === 'annual' ? el.dataset.annual! : el.dataset.monthly!;
+        });
+        section.querySelectorAll<HTMLElement>('.cf-price-period[data-monthly]').forEach((el) => {
+          el.textContent = period === 'annual' ? el.dataset.annual! : el.dataset.monthly!;
+        });
+        section.querySelectorAll<HTMLElement>('.cf-annual-note[data-monthly]').forEach((el) => {
+          el.textContent = period === 'annual' ? el.dataset.annual! : el.dataset.monthly!;
+        });
+      });
+    });
+  });
+</script>

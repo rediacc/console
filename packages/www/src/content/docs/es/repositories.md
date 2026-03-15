@@ -4,7 +4,7 @@ description: 'Cree, gestione y opere repositorios cifrados con LUKS en máquinas
 category: Guides
 order: 4
 language: es
-sourceHash: 04fe287348176b64
+sourceHash: "06b8912e9b65b720"
 ---
 
 # Repositorios
@@ -76,10 +76,10 @@ rdc repo expand my-app -m server-1 --size 5G      # Agregar 5G al tamaño actual
 Cree una copia de un repositorio existente en su estado actual:
 
 ```bash
-rdc repo fork my-app -m server-1 --tag my-app-staging
+rdc repo fork my-app staging -m server-1
 ```
 
-Esto crea una nueva copia cifrada con su propio GUID e ID de red. La bifurcación comparte la misma credencial LUKS que el repositorio padre.
+Las bifurcaciones usan el modelo name:tag: la bifurcación resultante se llama `my-app:staging`. Esto crea una nueva copia cifrada con su propio GUID e ID de red, compartiendo el nombre del repositorio padre. La bifurcación comparte la misma credencial LUKS que el repositorio padre.
 
 ## Validar
 
@@ -102,16 +102,14 @@ El comando detecta automáticamente los directorios de datos de contenedores Doc
 | Opción | Descripción |
 |--------|-------------|
 | `--uid <uid>` | Establecer un UID personalizado en lugar de 7111 |
-| `--force` | Omitir la detección de volúmenes Docker y cambiar la propiedad de todo |
 | `--skip-router-restart` | Omitir el reinicio del servidor de rutas después de la operación |
 
 Para forzar la propiedad en todos los archivos, incluyendo datos de contenedores:
 
 ```bash
-rdc repo ownership my-app -m server-1 --force
+rdc repo ownership my-app -m server-1
 ```
 
-> **Advertencia:** Usar `--force` en contenedores en ejecución puede romperlos. Detenga los servicios primero con `rdc repo down` si es necesario.
 
 Consulte la [Guía de Migración](/es/docs/migration) para un recorrido completo de cuándo y cómo usar la propiedad durante la migración de proyectos.
 

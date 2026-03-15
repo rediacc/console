@@ -226,17 +226,22 @@ class LocalVaultProvider implements VaultProvider {
     let repositoryVault: VaultData | undefined;
     if (repositoryName) {
       const repoConfig = await configService.getRepository(repositoryName);
-      if (repoConfig) {
-        const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
-        machineVault.dockerHost = `unix:///var/run/rediacc/docker-${repoConfig.networkId}.sock`;
-        machineVault.dockerSocket = `/var/run/rediacc/docker-${repoConfig.networkId}.sock`;
-        repositoryVault = {
-          repositoryGuid: repoConfig.repositoryGuid,
-          networkId: repoConfig.networkId,
-          path: `/home/${repositoryName}`,
-          workingDirectory: `${datastore}/mounts/${repoConfig.repositoryGuid}`,
-        };
+      if (!repoConfig) {
+        const repos = await configService.listRepositories();
+        const available = repos.map((r) => r.name).join(', ');
+        throw new Error(
+          `Repository "${repositoryName}" not found. Available: ${available || '(none)'}`
+        );
       }
+      const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
+      machineVault.dockerHost = `unix:///var/run/rediacc/docker-${repoConfig.networkId}.sock`;
+      machineVault.dockerSocket = `/var/run/rediacc/docker-${repoConfig.networkId}.sock`;
+      repositoryVault = {
+        repositoryGuid: repoConfig.repositoryGuid,
+        networkId: repoConfig.networkId,
+        path: `/home/${repositoryName}`,
+        workingDirectory: `${datastore}/mounts/${repoConfig.repositoryGuid}`,
+      };
     }
 
     return { machineVault, teamVault, repositoryVault };

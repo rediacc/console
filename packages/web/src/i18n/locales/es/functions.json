@@ -26,7 +26,6 @@
   "checkboxOptions": {
     "mountRepoFirst": "Montar el repositorio primero",
     "overrideExistingFile": "Anular el archivo existente",
-    "preparationOnly": "Sólo preparación",
     "unmountAfterStopping": "Desmontar después de parar"
   },
   "configure": "Configurar",

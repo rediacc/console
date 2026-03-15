@@ -177,7 +177,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
       expect(exists).toBe(true);
 
       const content = await ssh.readFile('/opt/rediacc/proxy/config.env');
-      expect(content).toContain('BASE_DOMAIN="test.rediacc.local"');
+      // BASE_DOMAIN lives in router.env (single source of truth), not config.env
       expect(content).toContain('CERTBOT_EMAIL="test@test.com"');
     });
 
@@ -189,6 +189,7 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
 
       const content = await ssh.readFile('/etc/rediacc/router.env');
       expect(content).toContain('BASE_DOMAIN="test.rediacc.local"');
+      expect(content).toContain('MACHINE_NAME="vm1"');
       expect(content).toContain('PORT="7111"');
     });
 
@@ -265,8 +266,8 @@ test.describe('E2E Infrastructure Config @cli @e2e', () => {
 
       expect(result.success, `Partial push failed: ${result.stderr}`).toBe(true);
 
-      // config.env should have the baseDomain with default email
-      const content = await ssh.readFile('/opt/rediacc/proxy/config.env');
+      // router.env should have the baseDomain (BASE_DOMAIN lives in router.env, not config.env)
+      const content = await ssh.readFile('/etc/rediacc/router.env');
       expect(content).toContain('BASE_DOMAIN="partial.local"');
 
       // Cleanup

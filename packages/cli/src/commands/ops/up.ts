@@ -1,9 +1,9 @@
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
+import type { OpsBackend } from '../../services/ops-executor.js';
 import { opsExecutorService } from '../../services/ops-executor.js';
 import { outputService } from '../../services/output.js';
 import { handleError } from '../../utils/errors.js';
-import type { OpsBackend } from '../../services/ops-executor.js';
 
 export function registerOpsUpCommand(ops: Command, _program: Command): void {
   ops

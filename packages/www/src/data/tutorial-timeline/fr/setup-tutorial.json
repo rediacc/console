@@ -1,0 +1,67 @@
+{
+  "cast": "/assets/tutorials/setup-tutorial.cast",
+  "language": "fr",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "360396b870ea285734390660f2b723cd5a11b4af66c456365292f63d35c47d7b",
+  "steps": [
+    {
+      "id": "setup-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.50986,
+      "replayEndSec": 10.605861,
+      "narrationText": "Initialisez un profil de configuration dédié pour cet environnement.",
+      "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-01.4e95a3fa.mp3",
+      "audioDurationSec": 4.04898
+    },
+    {
+      "id": "setup-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.605861,
+      "replayEndSec": 17.961132,
+      "narrationText": "Vérifiez les configurations disponibles et confirmez que le nouveau profil existe.",
+      "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-02.e54b39d7.mp3",
+      "audioDurationSec": 4.440816
+    },
+    {
+      "id": "setup-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 17.961132,
+      "replayEndSec": 31.651331,
+      "narrationText": "Enregistrez une entrée de machine avec les détails du réseau et de l'utilisateur.",
+      "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-03.81d4677d.mp3",
+      "audioDurationSec": 4.832653
+    },
+    {
+      "id": "setup-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 31.651331,
+      "replayEndSec": 40.16275,
+      "narrationText": "Inspectez la liste des machines configurées pour vérifier l’enregistrement.",
+      "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-04.794f4499.mp3",
+      "audioDurationSec": 3.709388
+    },
+    {
+      "id": "setup-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 40.16275,
+      "replayEndSec": 48.29967,
+      "narrationText": "Définissez la machine par défaut pour réduire les indicateurs de ciblage répétés.",
+      "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-05.60fdd1b7.mp3",
+      "audioDurationSec": 4.440816
+    },
+    {
+      "id": "setup-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 48.29967,
+      "replayEndSec": 52.258257,
+      "narrationText": "Exécutez une vérification de base de l’hôte distant pour valider la connectivité.",
+      "audioSrc": "/assets/tutorials/audio/fr/setup-tutorial/setup-tutorial-06.c71236d5.mp3",
+      "audioDurationSec": 5.485714
+    }
+  ]
+}

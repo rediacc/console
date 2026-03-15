@@ -14,7 +14,7 @@ This page covers how to deploy and manage containerized services: Rediaccfiles, 
 
 ## The Rediaccfile
 
-The **Rediaccfile** is a Bash script that defines how your services are prepared, started, and stopped. It is **sourced** (not executed as a separate process), so its functions share the same shell context and have access to all exported environment variables. It must be named `Rediaccfile` or `rediaccfile` (case-insensitive) and placed inside the repository's mounted filesystem.
+The **Rediaccfile** is a Bash script that defines how your services are started and stopped. It is **sourced** (not executed as a separate process), so its functions share the same shell context and have access to all exported environment variables. It must be named `Rediaccfile` or `rediaccfile` (case-insensitive) and placed inside the repository's mounted filesystem.
 
 Rediaccfiles are discovered in two locations:
 1. The **root** of the repository mount path
@@ -24,15 +24,14 @@ Hidden directories (names starting with `.`) are skipped.
 
 ### Lifecycle Functions
 
-A Rediaccfile contains up to three functions:
+A Rediaccfile contains up to two functions:
 
 | Function | When it runs | Purpose | Error behavior |
 |----------|-------------|---------|----------------|
-| `prep()` | Before `up()` | Install dependencies, pull images, run migrations | **Fail-fast** -- if any `prep()` fails, the entire process stops immediately |
-| `up()` | After all `prep()` complete | Start services (e.g., `docker compose up -d`) | Root failure is **critical** (stops everything). Subdirectory failures are **non-critical** (logged, continues) |
-| `down()` | When stopping | Stop services (e.g., `docker compose down`) | **Best-effort** -- failures are logged but all Rediaccfiles are always attempted |
+| `up()` | When starting | Start services (e.g., `renet compose -- up -d`) | Root failure is **critical** (stops everything). Subdirectory failures are **non-critical** (logged, continues) |
+| `down()` | When stopping | Stop services (e.g., `renet compose -- down`) | **Best-effort** -- failures are logged but all Rediaccfiles are always attempted |
 
-All three functions are optional. If a function is not defined, it is silently skipped.
+Both functions are optional. If a function is not defined, it is silently skipped.
 
 ### Execution Order
 
@@ -64,11 +63,6 @@ The `{SERVICE}_IP` variables are auto-generated from the slot mappings in `.redi
 ```bash
 #!/bin/bash
 
-prep() {
-    echo "Pulling latest images..."
-    renet compose -- pull
-}
-
 up() {
     echo "Starting services..."
     renet compose -- up -d
@@ -80,7 +74,7 @@ down() {
 }
 ```
 
-> `docker compose` also works since `DOCKER_HOST` is set automatically, but `renet compose` is preferred because it additionally injects `rediacc.*` labels needed for reverse proxy route discovery. See [Networking](/en/docs/networking) for details.
+> **Important:** Always use `renet compose --` instead of `docker compose`. The `renet compose` wrapper enforces host networking, CRIU checkpoint/restore capabilities, IP allocation, and service discovery labels required by renet-proxy. Direct `docker compose` usage is rejected by Rediaccfile validation. See [Networking](/en/docs/networking) for details.
 
 ### Multi-Service Layout
 
@@ -154,13 +148,12 @@ Each repository supports up to **61 services** (slots 0 through 60).
 
 ### Using Service IPs in Docker Compose
 
-Since each repository runs an isolated Docker daemon, services use `network_mode: host` and bind to their assigned loopback IPs:
+Since each repository runs an isolated Docker daemon, `renet compose` automatically configures `network_mode: host` for all services. Bind services to their assigned loopback IPs:
 
 ```yaml
 services:
   postgres:
     image: postgres:16
-    network_mode: host
     environment:
       PGDATA: /var/lib/postgresql/data
       POSTGRES_PASSWORD: secret
@@ -168,11 +161,12 @@ services:
 
   api:
     image: my-api:latest
-    network_mode: host
     environment:
       DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
       LISTEN_ADDR: ${API_IP}:8080
 ```
+
+> **Note:** Do not add `network_mode: host` manually — `renet compose` injects it automatically. Do not use `restart: always` or `restart: unless-stopped` — these cause Docker to auto-start containers before CRIU checkpoint restore can run. Use `restart: on-failure` if needed, or omit it (Rediaccfile `up()`/`down()` manages the lifecycle).
 
 ## Starting Services
 
@@ -185,15 +179,13 @@ rdc repo up my-app -m server-1 --mount
 | Option | Description |
 |--------|-------------|
 | `--mount` | Mount the repository first if not already mounted |
-| `--prep-only` | Run only `prep()` functions, skip `up()` |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 The execution sequence is:
 1. Mount the LUKS-encrypted repository (if `--mount`)
 2. Start the isolated Docker daemon
 3. Auto-generate `.rediacc.json` from compose files
-4. Run `prep()` in all Rediaccfiles (A-Z order, fail-fast)
-5. Run `up()` in all Rediaccfiles (A-Z order)
+4. Run `up()` in all Rediaccfiles (A-Z order)
 
 ## Stopping Services
 
@@ -216,7 +208,7 @@ The execution sequence is:
 Start or stop all repositories on a machine at once:
 
 ```bash
-rdc repo up-all -m server-1
+rdc repo up -m server-1
 ```
 
 | Option | Description |
@@ -255,7 +247,7 @@ You will be prompted for the repository passphrase.
 ### Enable All
 
 ```bash
-rdc repo autostart enable-all -m server-1
+rdc repo autostart enable -m server-1
 ```
 
 ### Disable
@@ -265,6 +257,25 @@ rdc repo autostart disable my-app -m server-1
 ```
 
 This removes the keyfile and kills LUKS slot 1.
+
+### Keyfile Refresh on Deploy
+
+When autostart is enabled, `rdc repo up` validates the LUKS slot 1 keyfile.
+If the on-disk keyfile still matches the LUKS slot, no changes are made.
+
+After transferring a repository between machines via `repo push` / `repo pull`,
+the keyfile on the new machine won't match. In this case, `repo up` automatically
+regenerates the keyfile and updates LUKS slot 1. You will see log messages:
+
+```
+Refreshing keyfile credential for <guid>
+Killing LUKS slot 1: /mnt/rediacc/repositories/<guid>
+Adding keyfile to LUKS slot 1: /mnt/rediacc/repositories/<guid>
+```
+
+This is safe — slot 0 (your passphrase) is never modified. If autostart is not
+enabled, the check is silently skipped. Failures are non-fatal and do not block
+the deploy.
 
 ### List Status
 
@@ -279,10 +290,10 @@ This deploys a web application with PostgreSQL, Redis, and an API server.
 ### 1. Set Up
 
 ```bash
-curl -fsSL https://get.rediacc.com | sh
+curl -fsSL https://www.rediacc.com/install.sh | bash
 rdc config init production --ssh-key ~/.ssh/id_ed25519
-rdc config add-machine prod-1 --ip 203.0.113.50 --user deploy
-rdc config setup-machine prod-1
+rdc config machine add prod-1 --ip 203.0.113.50 --user deploy
+rdc config machine setup prod-1
 rdc repo create webapp -m prod-1 --size 10G
 ```
 
@@ -302,8 +313,6 @@ Inside the repository, create:
 services:
   postgres:
     image: postgres:16
-    network_mode: host
-    restart: unless-stopped
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
@@ -314,14 +323,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    network_mode: host
-    restart: unless-stopped
     command: redis-server --bind ${REDIS_IP} --port 6379
 
   api:
     image: myregistry/api:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
       REDIS_URL: redis://${REDIS_IP}:6379
@@ -333,17 +338,13 @@ services:
 ```bash
 #!/bin/bash
 
-prep() {
-    mkdir -p data/postgres
-    renet compose -- pull
-}
-
 up() {
+    mkdir -p data/postgres
     renet compose -- up -d
 
     echo "Waiting for PostgreSQL..."
     for i in $(seq 1 30); do
-        if docker compose exec postgres pg_isready -q 2>/dev/null; then
+        if renet compose -- exec postgres pg_isready -q 2>/dev/null; then
             echo "PostgreSQL is ready."
             return 0
         fi

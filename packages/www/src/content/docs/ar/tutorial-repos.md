@@ -1,61 +1,67 @@
 ---
 title: "دورة حياة المستودع"
-description: "شاهد وتابع أثناء إنشاء مستودع مشفر ونشر تطبيق حاوية وفحص الحاويات والتنظيف."
+description: "إنشاء مستودع مشفر ونشر تطبيق حاوية وفحص الحاويات والتنظيف."
 category: "Tutorials"
 order: 3
 language: ar
-sourceHash: "b692ef9f49ac4aa0"
+sourceHash: "0c4edddefa30df1c"
 ---
 
-# درس تعليمي: دورة حياة المستودع
+# كيفية نشر وإدارة المستودعات باستخدام Rediacc
 
-This tutorial walks through the full repository lifecycle: creating an encrypted repository, deploying a containerized application, inspecting running containers, stopping services, and cleaning up.
+المستودعات هي وحدة النشر الأساسية في Rediacc — كل مستودع هو بيئة معزولة ومشفرة مع Docker daemon خاص به ومساحة تخزين مخصصة. في هذا الدرس التعليمي، ستقوم بإنشاء مستودع مشفر ونشر تطبيق حاوية وفحص الحاويات العاملة والتنظيف. عند الانتهاء، ستكون قد أكملت دورة نشر كاملة.
 
 ## المتطلبات الأساسية
 
-- The `rdc` CLI installed with a config initialized
-- A provisioned machine (run `rdc config setup-machine` first — see [Machine Setup](/ar/docs/setup))
-- A simple application with a `Rediaccfile` and `docker-compose.yml`
+- تثبيت `rdc` CLI مع تهيئة الإعدادات
+- جهاز مُجهّز (انظر [الدرس التعليمي: إعداد الجهاز](/ar/docs/tutorial-setup))
+- تطبيق بسيط يحتوي على `Rediaccfile` و `docker-compose.yml`
 
 ## التسجيل التفاعلي
 
-![Tutorial: Repository lifecycle](/assets/tutorials/repos-tutorial.cast)
-
-## ما ستراه في هذا الدرس
-
-The recording above walks through each step below. Use the playback bar to navigate between commands.
+![الدرس التعليمي: دورة حياة المستودع](/assets/tutorials/repos-tutorial.cast)
 
 ### الخطوة 1: إنشاء مستودع مشفر
+
+يحصل كل مستودع على وحدة تخزين مشفرة بـ LUKS خاصة به. حدد الجهاز وحجم التخزين.
 
 ```bash
 rdc repo create test-app -m server-1 --size 2G
 ```
 
-Creates a 2 GB LUKS-encrypted repository on the machine. The repository is automatically mounted and ready for file uploads.
+يقوم Rediacc بإنشاء وحدة تخزين مشفرة بحجم 2 جيجابايت وتهيئتها وتوصيلها تلقائياً. المستودع جاهز لرفع الملفات.
 
 ### الخطوة 2: عرض المستودعات
+
+تأكد من توفر المستودع الجديد.
 
 ```bash
 rdc repo list -m server-1
 ```
 
-Shows all repositories on the machine with their size, mount status, and encryption state.
+يعرض جميع المستودعات على الجهاز مع حجمها وحالة التوصيل وحالة التشفير.
 
-### الخطوة 3: تحميل ملفات التطبيق
+### الخطوة 3: فحص مسار التوصيل
 
-Upload your `Rediaccfile` and `docker-compose.yml` to the repository mount. The `rdc sync upload` command handles this via rsync:
+قبل النشر، تحقق من أن تخزين المستودع موصّل ويمكن الوصول إليه.
 
 ```bash
-rdc sync upload -m server-1 -r test-app --local ./my-app
+rdc term server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 ```
 
+مجلد التوصيل هو المكان الذي تتواجد فيه ملفات التطبيق — `Rediaccfile` و `docker-compose.yml` وأي وحدات تخزين بيانات.
+
 ### الخطوة 4: بدء الخدمات
+
+انشر التطبيق عن طريق توصيل المستودع وبدء خدمات Docker الخاصة به.
 
 ```bash
 rdc repo up test-app -m server-1 --mount
 ```
 
-This mounts the repository (if not already mounted), starts an isolated Docker daemon, pulls images via `prep()`, and starts services via `up()`.
+يقوم هذا بتوصيل المستودع (إذا لم يكن موصّلاً بالفعل)، وبدء Docker daemon معزول، وبدء الخدمات عبر `up()`.
+
+> **ملاحظة:** يستغرق النشر الأول وقتاً أطول لتنزيل صور Docker. عمليات البدء اللاحقة تستخدم الصور المخزنة مؤقتاً.
 
 ### الخطوة 5: عرض الحاويات العاملة
 
@@ -65,26 +71,45 @@ rdc machine containers server-1
 
 يعرض جميع الحاويات العاملة عبر جميع المستودعات على الجهاز، بما في ذلك استخدام المعالج والذاكرة.
 
-### الخطوة 6: الوصول إلى المستودع عبر الطرفية
+### الخطوة 6: الوصول إلى طرفية المستودع
+
+لتشغيل الأوامر داخل بيئة Docker المعزولة للمستودع:
 
 ```bash
 rdc term server-1 test-app -c "docker ps"
 ```
 
-Opens an SSH session with `DOCKER_HOST` set to the repository's isolated Docker daemon. Any Docker command runs against that repo's containers.
+تقوم جلسة الطرفية بتعيين `DOCKER_HOST` إلى مقبس Docker المعزول الخاص بالمستودع. أي أمر Docker يعمل فقط على حاويات ذلك المستودع.
 
 ### الخطوة 7: إيقاف وتنظيف
 
+عندما تنتهي، أوقف الخدمات وأغلق وحدة التخزين المشفرة واحذف المستودع اختيارياً.
+
 ```bash
-rdc repo down test-app -m server-1      # Stop services
-rdc repo unmount test-app -m server-1   # Close encrypted volume
-rdc repo delete test-app -m server-1    # Delete repository permanently
+rdc repo down test-app -m server-1      # إيقاف الخدمات
+rdc repo unmount test-app -m server-1   # إغلاق وحدة التخزين المشفرة
+rdc repo delete test-app -m server-1    # حذف المستودع نهائياً
 ```
 
-`down` stops containers and the Docker daemon. `unmount` closes the LUKS volume. `delete` permanently removes the repository and its encrypted storage.
+`down` يوقف الحاويات و Docker daemon. `unmount` يغلق وحدة LUKS. `delete` يحذف المستودع ومساحة التخزين المشفرة نهائياً.
+
+> **تحذير:** `repo delete` لا يمكن التراجع عنه. يتم تدمير جميع البيانات في المستودع. أنشئ نسخة احتياطية أولاً إذا لزم الأمر.
+
+## استكشاف الأخطاء وإصلاحها
+
+**"مساحة القرص غير كافية" أثناء إنشاء المستودع**
+تحتاج وحدة التخزين المشفرة إلى مساحة حرة متجاورة على المضيف. تحقق من المساحة المتاحة باستخدام `df -h` على الخادم. فكر في استخدام قيمة `--size` أصغر أو تحرير مساحة القرص.
+
+**انتهاء مهلة سحب صورة Docker أثناء `repo up`**
+قد تنتهي مهلة الصور الكبيرة على الاتصالات البطيئة. أعد المحاولة باستخدام `rdc repo up` — يستأنف من حيث توقف. للبيئات المعزولة عن الشبكة، حمّل الصور مسبقاً في Docker daemon الخاص بالمستودع.
+
+**"فشل التوصيل" أو "فشل فتح LUKS"**
+تُشتق عبارة مرور LUKS من الإعدادات. تحقق من أنك تستخدم نفس الإعدادات التي أنشأت المستودع. إذا كانت وحدة التخزين موصّلة بالفعل بواسطة عملية أخرى، افصلها أولاً.
 
 ## الخطوات التالية
 
-- [Services](/ar/docs/services) — Rediaccfile reference, service networking, autostart, and multi-service layouts
-- [Tutorial: Monitoring](/ar/docs/tutorial-monitoring) — health checks, container inspection, and diagnostics
-- [Tools](/ar/docs/tools) — terminal, file sync, and VS Code integration
+لقد أنشأت مستودعاً مشفراً ونشرت تطبيقاً وفحصت الحاويات وقمت بالتنظيف. لمراقبة عمليات النشر الخاصة بك:
+
+- [الخدمات](/ar/docs/services) — مرجع Rediaccfile وشبكات الخدمات والتشغيل التلقائي وتخطيطات الخدمات المتعددة
+- [الدرس التعليمي: المراقبة والتشخيص](/ar/docs/tutorial-monitoring) — فحوصات الصحة وفحص الحاويات والتشخيص
+- [الأدوات](/ar/docs/tools) — الطرفية ومزامنة الملفات وتكامل VS Code

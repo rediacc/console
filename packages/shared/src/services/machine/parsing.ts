@@ -22,7 +22,7 @@ import {
 import { isValidGuid } from '../../validation';
 
 // Re-export list types for CLI consumers
-export type { ListResult, ContainerInfo, ServiceInfo, SystemInfo, BlockDevice, NetworkInterface };
+export type { BlockDevice, ContainerInfo, ListResult, NetworkInterface, ServiceInfo, SystemInfo };
 
 /**
  * Status of the vault status check

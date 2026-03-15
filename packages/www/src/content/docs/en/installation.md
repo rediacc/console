@@ -15,7 +15,7 @@ Install the `rdc` CLI on your workstation. This is the only tool you need to ins
 Run the install script:
 
 ```bash
-curl -fsSL https://get.rediacc.com | sh
+curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 This downloads the `rdc` binary to `$HOME/.local/bin/`. Make sure this directory is in your PATH:

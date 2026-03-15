@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
+import type { SolutionCategory } from '../config/solution-pages';
+import { CATEGORY_ORDER, SOLUTION_PAGES } from '../config/solution-pages';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
+import { CATEGORY_ICONS } from './CategoryIcons';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -9,42 +12,46 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const currentLang = useLanguage();
-  const { t } = useTranslation(currentLang);
+  const { t, to } = useTranslation(currentLang);
   const sidebarRef = useRef<HTMLElement>(null);
   const [currentPath, setCurrentPath] = useState('');
   const [isSolutionsExpanded, setIsSolutionsExpanded] = useState(false);
 
   const topNavItems = [{ href: `/${currentLang}/`, label: t('navigation.home') }];
 
-  const solutionItems = [
-    {
-      href: `/${currentLang}/solutions/disaster-recovery`,
-      label: t('navigation.solutions.disasterRecovery'),
-    },
-    {
-      href: `/${currentLang}/solutions/threat-response`,
-      label: t('navigation.solutions.threatResponse'),
-    },
-    {
-      href: `/${currentLang}/solutions/data-security`,
-      label: t('navigation.solutions.dataSecurity'),
-    },
-    {
-      href: `/${currentLang}/solutions/system-portability`,
-      label: t('navigation.solutions.systemPortability'),
-    },
-    {
-      href: `/${currentLang}/solutions/development-environments`,
-      label: t('navigation.solutions.developmentEnvironments'),
-    },
-    {
-      href: `/${currentLang}/solutions/preemptive-defense`,
-      label: t('navigation.solutions.preemptiveDefense'),
-    },
+  const categories = to('solutions.categories') as Record<string, string>;
+  const solutionCategories = React.useMemo(() => {
+    const slugs = Object.keys(SOLUTION_PAGES);
+    return CATEGORY_ORDER.map((cat) => ({
+      category: cat,
+      label: categories[cat] ?? cat,
+      items: slugs
+        .filter((slug) => SOLUTION_PAGES[slug].category === cat)
+        .map((slug) => {
+          const config = SOLUTION_PAGES[slug];
+          const content = to(`pages.solutionPages.${config.contentKey}`) as
+            | { hero?: { title?: string } }
+            | undefined;
+          return {
+            href: `/${currentLang}/solutions/${slug}`,
+            label: content?.hero?.title ?? slug,
+          };
+        }),
+    }));
+  }, [categories, currentLang, to]);
+
+  const allSolutionItems = solutionCategories.flatMap((cat) => cat.items);
+
+  const personaItems = [
+    { href: `/${currentLang}/for-devops`, label: t('navigation.forDevops') },
+    { href: `/${currentLang}/for-ctos`, label: t('navigation.forCtos') },
+    { href: `/${currentLang}/for-ceos`, label: t('navigation.forCeos') },
+    { href: `/${currentLang}/for-ai-agents`, label: t('navigation.forAiAgents') },
   ];
 
   const bottomNavItems = [
-    { href: `/${currentLang}/#pricing`, label: t('navigation.pricing') },
+    { href: `/${currentLang}/pricing`, label: t('navigation.pricing') },
+    { href: `/${currentLang}/roi-calculator`, label: t('navigation.roiCalculator') },
     { href: `/${currentLang}/disaster-recovery`, label: t('navigation.disasterRecovery') },
     { href: `/${currentLang}/install`, label: t('navigation.install') },
     { href: `/${currentLang}/blog`, label: t('navigation.blog') },
@@ -88,7 +95,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     return normalizedPath === normalizedHref || normalizedPath.startsWith(`${normalizedHref}/`);
   };
 
-  const activeSolutionHref = solutionItems.find((item) => isActive(item.href))?.href;
+  const activeSolutionHref = allSolutionItems.find((item) => isActive(item.href))?.href;
 
   const toggleSolutions = () => setIsSolutionsExpanded((prev) => !prev);
 
@@ -96,6 +103,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     if (isOpen) {
       document.body.classList.add('sidebar-active');
       document.body.style.overflow = 'hidden';
+      window.plausible('sidebar_toggle', { props: { action: 'open' } });
       // Focus the first link when sidebar opens
       const firstLink = sidebarRef.current?.querySelector<HTMLAnchorElement>('.sidebar-link');
       firstLink?.focus();
@@ -163,6 +171,32 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         aria-label={t('common.aria.mainNavigation')}
         aria-hidden={!isOpen}
       >
+        <div className="sidebar-header">
+          <button
+            type="button"
+            className="sidebar-close-btn"
+            onClick={onClose}
+            tabIndex={isOpen ? 0 : -1}
+            aria-label={t('common.buttons.close')}
+            data-track="cta_click"
+            data-track-label="sidebar-close"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
         <nav className="sidebar-nav">
           {/* Home */}
           {topNavItems.map((item) => (
@@ -173,6 +207,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               onClick={handleLinkClick}
               tabIndex={isOpen ? 0 : -1}
               aria-current={isActive(item.href) ? 'page' : undefined}
+              data-track="cta_click"
+              data-track-label="sidebar-nav"
             >
               {item.label}
             </a>
@@ -187,8 +223,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               aria-expanded={isSolutionsExpanded}
               aria-controls="sidebar-solutions-list"
               tabIndex={isOpen ? 0 : -1}
+              data-track="cta_click"
+              data-track-label="sidebar-solutions-toggle"
             >
-              <span>{t('navigation.solutions.title')}</span>
+              <span>{t('navigation.solutions')}</span>
               <svg
                 className={`sidebar-solutions-chevron${isSolutionsExpanded ? ' expanded' : ''}`}
                 width="16"
@@ -207,23 +245,56 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               className={`sidebar-solutions-list${isSolutionsExpanded ? ' expanded' : ''}`}
               role="list"
             >
-              {solutionItems.map((item) => {
-                const active = isActive(item.href);
-                return (
-                  <li key={item.href}>
-                    <a
-                      href={item.href}
-                      className={`sidebar-link sidebar-sublink${active ? ' active' : ''}`}
-                      onClick={handleLinkClick}
-                      tabIndex={isOpen && isSolutionsExpanded ? 0 : -1}
-                      aria-current={active ? 'page' : undefined}
-                    >
-                      {item.label}
-                    </a>
-                  </li>
-                );
-              })}
+              {solutionCategories.map((group) => (
+                <li key={group.label} className="sidebar-category-group">
+                  <span className="sidebar-category-label">
+                    {React.createElement(CATEGORY_ICONS[group.category as SolutionCategory], {
+                      size: 16,
+                      className: 'sidebar-category-icon',
+                    })}
+                    {group.label}
+                  </span>
+                  <ul role="list">
+                    {group.items.map((item) => {
+                      const active = isActive(item.href);
+                      return (
+                        <li key={item.href}>
+                          <a
+                            href={item.href}
+                            className={`sidebar-link sidebar-sublink${active ? ' active' : ''}`}
+                            onClick={handleLinkClick}
+                            tabIndex={isOpen && isSolutionsExpanded ? 0 : -1}
+                            aria-current={active ? 'page' : undefined}
+                            data-track="cta_click"
+                            data-track-label="sidebar-solution"
+                          >
+                            {item.label}
+                          </a>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </li>
+              ))}
             </ul>
+          </div>
+
+          {/* Persona links */}
+          <div className="sidebar-personas-group">
+            <span className="sidebar-personas-label">{t('navigation.builtForYourRole')}</span>
+            {personaItems.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className={`sidebar-link sidebar-persona-link${isActive(item.href) ? ' active' : ''}`}
+                onClick={handleLinkClick}
+                tabIndex={isOpen ? 0 : -1}
+                data-track="cta_click"
+                data-track-label="sidebar-persona"
+              >
+                {item.label}
+              </a>
+            ))}
           </div>
 
           {/* Blog, Docs, Contact */}
@@ -235,6 +306,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               onClick={handleLinkClick}
               tabIndex={isOpen ? 0 : -1}
               aria-current={isActive(item.href) ? 'page' : undefined}
+              data-track="cta_click"
+              data-track-label="sidebar-nav"
             >
               {item.label}
             </a>

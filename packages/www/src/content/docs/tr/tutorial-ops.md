@@ -1,37 +1,35 @@
 ---
 title: "Yerel VM Hazırlama"
-description: "Yerel bir VM kümesi hazırlarken, SSH üzerinden komut çalıştırırken ve her şeyi kaldırırken izleyin ve takip edin."
+description: "CLI kullanarak yerel bir VM kümesi hazırlayın, SSH üzerinden komut çalıştırın ve her şeyi kaldırın."
 category: "Tutorials"
 order: 1
 language: tr
-sourceHash: "990c6fd433c7c847"
+sourceHash: "2fdc49f796b03e18"
 ---
 
-# Öğretici: Yerel VM Hazırlama
+# Rediacc ile Yerel VM'leri Nasıl Hazırlarsınız
 
-This tutorial walks through the complete `rdc ops` workflow: checking system requirements, provisioning a minimal VM cluster, running commands on VMs over SSH, and tearing everything down.
+Üretime dağıtmadan önce altyapıyı yerel olarak test etmek zaman kazandırır ve yapılandırma hatalarını önler. Bu öğreticide, iş istasyonunuzda minimal bir VM kümesi hazırlayacak, bağlantıyı doğrulayacak, SSH üzerinden komut çalıştıracak ve her şeyi kaldıracaksınız. Bitirdiğinizde, tekrarlanabilir bir yerel geliştirme ortamına sahip olacaksınız.
 
 ## Ön Koşullar
 
-- A Linux or macOS workstation with hardware virtualization enabled
-- The `rdc` CLI installed and a config initialized with the local adapter
-- KVM/libvirt (Linux) or QEMU (macOS) installed — see [Experimental VMs](/tr/docs/experimental-vms) for setup instructions
+- Donanım sanallaştırması etkinleştirilmiş bir Linux veya macOS iş istasyonu
+- `rdc` CLI kurulu ve yerel adaptör ile yapılandırma başlatılmış olmalı
+- KVM/libvirt (Linux) veya QEMU (macOS) kurulu olmalı — kurulum talimatları için [Deneysel VM'ler](/tr/docs/experimental-vms) sayfasına bakın
 
 ## Etkileşimli Kayıt
 
 ![Tutorial: rdc ops provisioning](/assets/tutorials/ops-tutorial.cast)
 
-## Neler Göreceksiniz
-
-The recording above walks through each step below. Use the playback bar to navigate between commands.
-
 ### Adım 1: Sistem gereksinimlerini doğrulayın
+
+Hazırlamadan önce, iş istasyonunuzun sanallaştırma desteğine sahip olduğunu ve gerekli paketlerin kurulu olduğunu doğrulayın.
 
 ```bash
 rdc ops check
 ```
 
-Donanım sanallaştırma desteğini, gerekli paketleri (libvirt, QEMU) ve ağ yapılandırmasını kontrol eder. VM hazırlamadan önce bu kontrolün başarılı olması gerekir.
+Rediacc donanım sanallaştırmasını (VT-x/AMD-V), gerekli paketleri (libvirt, QEMU) ve ağ yapılandırmasını kontrol eder. VM oluşturabilmeniz için tüm kontrollerin geçmesi gerekir.
 
 ### Adım 2: Minimal bir VM kümesi hazırlayın
 
@@ -39,7 +37,9 @@ Donanım sanallaştırma desteğini, gerekli paketleri (libvirt, QEMU) ve ağ ya
 rdc ops up --basic --skip-orchestration
 ```
 
-Creates a two-VM cluster: a **bridge** VM (1 CPU, 1024 MB RAM, 8 GB disk) and a **worker** VM (2 CPU, 4096 MB RAM, 16 GB disk). The `--skip-orchestration` flag skips Rediacc platform provisioning, giving you bare VMs with SSH access only.
+İki VM'lik bir küme oluşturur: bir **köprü** VM (1 CPU, 1024 MB RAM, 8 GB disk) ve bir **işçi** VM (2 CPU, 4096 MB RAM, 16 GB disk). `--skip-orchestration` bayrağı Rediacc platform hazırlamasını atlar ve size yalnızca SSH erişimi olan çıplak VM'ler verir.
+
+> **Not:** İlk hazırlama temel imajları indirir, bu nedenle daha uzun sürer. Sonraki çalıştırmalar önbelleğe alınmış imajları yeniden kullanır.
 
 ### Adım 3: Küme durumunu kontrol edin
 
@@ -47,7 +47,7 @@ Creates a two-VM cluster: a **bridge** VM (1 CPU, 1024 MB RAM, 8 GB disk) and a 
 rdc ops status
 ```
 
-Shows the state of each VM in the cluster — IP addresses, resource allocation, and running status.
+Kümedeki her VM'nin durumunu görüntüler — IP adresleri, kaynak tahsisi ve çalışma durumu. Her iki VM de çalışıyor olarak görünmelidir.
 
 ### Adım 4: VM üzerinde komut çalıştırın
 
@@ -60,14 +60,29 @@ Köprü VM'de (ID `1`) SSH üzerinden komut çalıştırır. VM ID'sinden sonra 
 
 ### Adım 5: Kümeyi kaldırın
 
+İşiniz bittiğinde, tüm VM'leri yok edin ve kaynakları serbest bırakın.
+
 ```bash
 rdc ops down
 ```
 
-Destroys all VMs and cleans up resources. The cluster can be reprovisioned at any time with `rdc ops up`.
+Tüm VM'leri kaldırır ve ağı temizler. Küme, `rdc ops up` ile istediğiniz zaman yeniden hazırlanabilir.
+
+## Sorun Giderme
+
+**"KVM not available" veya "hardware virtualization not supported"**
+BIOS/UEFI ayarlarınızda sanallaştırmanın etkin olduğunu doğrulayın. Linux'ta `lscpu | grep Virtualization` ile kontrol edin. WSL2'de iç içe sanallaştırma belirli çekirdek bayrakları gerektirir.
+
+**"libvirt daemon not running"**
+libvirt hizmetini başlatın: `sudo systemctl start libvirtd`. macOS'ta QEMU'nun Homebrew ile kurulu olduğunu doğrulayın: `brew install qemu`.
+
+**"Insufficient memory for VM allocation"**
+Temel küme en az 6 GB boş RAM gerektirir (1 GB köprü + 4 GB işçi + ek yük). Diğer kaynak yoğun uygulamaları kapatın veya VM özelliklerini azaltın.
 
 ## Sonraki Adımlar
 
-- [Experimental VMs](/tr/docs/experimental-vms) — full reference for `rdc ops` commands, VM configuration, and platform support
-- [Machine Setup](/tr/docs/setup) — add remote machines to your config and provision them
-- [Quick Start](/tr/docs/quick-start) — deploy a containerized service end-to-end
+Yerel bir VM kümesi hazırladınız, SSH üzerinden komut çalıştırdınız ve kaldırdınız. Gerçek altyapı dağıtmak için:
+
+- [Deneysel VM'ler](/tr/docs/experimental-vms) — `rdc ops` komutları, VM yapılandırması ve platform desteği için tam referans
+- [Öğretici: Makine Kurulumu](/tr/docs/tutorial-setup) — uzak makineleri kaydedin ve altyapıyı yapılandırın
+- [Hızlı Başlangıç](/tr/docs/quick-start) — konteynerize bir servisi uçtan uca dağıtın

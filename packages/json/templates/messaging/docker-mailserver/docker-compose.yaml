@@ -4,7 +4,7 @@ services:
     container_name: mailserver
     hostname: ${HOSTNAME:-mail.example.com}
     restart: always
-    network_mode: "${NETWORK_MODE:-bridge}"
+    network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
     ports:
       - "25:25"    # SMTP
       - "465:465"  # SMTPS (SMTP over TLS)

@@ -1,0 +1,12 @@
+---
+import BeforeAfter from '../BeforeAfter';
+import type { Language } from '../../i18n/types';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props as Props;
+---
+
+<BeforeAfter client:visible lang={lang} />

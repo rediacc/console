@@ -84,7 +84,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth,generative
 
       # PR Validation (PR events only)
       - name: Validate PR
@@ -95,7 +95,7 @@ jobs:
 
       # Login to GHCR for registry cache check
       - name: Login to GHCR
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -132,7 +132,7 @@ jobs:
           plugins_tag=${{ steps.init.outputs.plugins_tag }}
           web_tag=${{ steps.init.outputs.web_tag }}
           EOF
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: steps.init.outputs.is_bot != 'true'
         with:
           name: ci-tags-${{ github.sha }}
@@ -532,7 +532,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth,generative
 
       - name: Checkout with Submodules
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
@@ -573,7 +573,7 @@ jobs:
           CI_MODE: 'true'
           ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
           ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
-          ACCOUNT_SERVER_URL: "https://account.rediacc.com"
+          ACCOUNT_SERVER_URL: "https://www.rediacc.com/account/"
         run: .ci/scripts/infra/ci-start-elite.sh
 
       - name: Run Health Check
@@ -656,7 +656,7 @@ jobs:
         working-directory: workers/www
 
       - name: Download preview pages artifact
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           name: preview-pages-${{ github.sha }}
           path: workers/www/dist/
@@ -664,6 +664,9 @@ jobs:
       - name: Build account portal
         run: npm install && npx vite build --outDir ../../../workers/www/dist/account
         working-directory: private/account/web
+        env:
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+          VITE_CI_MODE: 'false'
 
       # Inject e2e test videos into pages for documentation embedding
       - name: Inject E2E videos
@@ -699,21 +702,47 @@ jobs:
           SECRET_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
           SECRET_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
           SECRET_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
+          SECRET_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
           SECRET_STRIPE_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
-          SECRET_S3_ENDPOINT: ${{ secrets.ACCOUNT_S3_ENDPOINT }}
-          SECRET_S3_ACCESS_KEY_ID: ${{ secrets.ACCOUNT_S3_ACCESS_KEY_ID }}
-          SECRET_S3_SECRET_ACCESS_KEY: ${{ secrets.ACCOUNT_S3_SECRET_ACCESS_KEY }}
           SECRET_STRIPE_WEBHOOK: ${{ steps.stripe-webhook.outputs.stripe_webhook_secret }}
+          SECRET_ADMIN_EMAIL: ${{ secrets.ACCOUNT_ADMIN_EMAIL }}
+          SECRET_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
+          SECRET_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
+          SECRET_SES_REGION: ${{ secrets.AWS_SES_REGION }}
+          SECRET_TURNSTILE_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          VAR_SES_FROM: ${{ vars.AWS_SES_FROM }}
         run: |
+          # Use secret:bulk to set all secrets in a single API call.
+          # Individual secret put commands each trigger a new worker version,
+          # which disassociates static assets on assets-bound workers.
           WORKER="pr-${PR_NUMBER}"
-          echo "$SECRET_ED25519_PRIVATE_KEY" | npx wrangler secret put ED25519_PRIVATE_KEY --name "$WORKER"
-          echo "$SECRET_ED25519_PUBLIC_KEY" | npx wrangler secret put ED25519_PUBLIC_KEY --name "$WORKER"
-          echo "$SECRET_API_KEY" | npx wrangler secret put API_KEY --name "$WORKER"
-          echo "$SECRET_STRIPE_KEY" | npx wrangler secret put STRIPE_SECRET_KEY --name "$WORKER"
-          echo "$SECRET_S3_ENDPOINT" | npx wrangler secret put S3_ENDPOINT --name "$WORKER"
-          echo "$SECRET_S3_ACCESS_KEY_ID" | npx wrangler secret put S3_ACCESS_KEY_ID --name "$WORKER"
-          echo "$SECRET_S3_SECRET_ACCESS_KEY" | npx wrangler secret put S3_SECRET_ACCESS_KEY --name "$WORKER"
-          echo "$SECRET_STRIPE_WEBHOOK" | npx wrangler secret put STRIPE_WEBHOOK_SECRET --name "$WORKER"
+          jq -n \
+            --arg ed25519_priv "$SECRET_ED25519_PRIVATE_KEY" \
+            --arg ed25519_pub "$SECRET_ED25519_PUBLIC_KEY" \
+            --arg api_key "$SECRET_API_KEY" \
+            --arg jwt "$SECRET_JWT_SECRET" \
+            --arg stripe "$SECRET_STRIPE_KEY" \
+            --arg stripe_wh "$SECRET_STRIPE_WEBHOOK" \
+            --arg admin "$SECRET_ADMIN_EMAIL" \
+            --arg ses_key "$SECRET_SES_ACCESS_KEY_ID" \
+            --arg ses_secret "$SECRET_SES_SECRET_ACCESS_KEY" \
+            --arg ses_region "$SECRET_SES_REGION" \
+            --arg ses_from "$VAR_SES_FROM" \
+            --arg turnstile "$SECRET_TURNSTILE_KEY" \
+            '{
+              ED25519_PRIVATE_KEY: $ed25519_priv,
+              ED25519_PUBLIC_KEY: $ed25519_pub,
+              API_KEY: $api_key,
+              JWT_SECRET: $jwt,
+              STRIPE_SECRET_KEY: $stripe,
+              STRIPE_WEBHOOK_SECRET: $stripe_wh,
+              ADMIN_EMAIL: $admin,
+              AWS_SES_ACCESS_KEY_ID: $ses_key,
+              AWS_SES_SECRET_ACCESS_KEY: $ses_secret,
+              AWS_SES_REGION: $ses_region,
+              AWS_SES_FROM: $ses_from,
+              TURNSTILE_SECRET_KEY: $turnstile
+            }' | npx wrangler secret bulk --name "$WORKER"
 
       - name: Deployment summary
         run: |
@@ -822,5 +851,4 @@ jobs:
             exit 1
           fi
           echo "All CI jobs passed successfully!"
-
 

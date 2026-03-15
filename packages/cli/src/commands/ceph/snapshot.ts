@@ -1,17 +1,17 @@
-import { Command } from 'commander';
 import { parseGetCephRbdSnapshots } from '@rediacc/shared/api';
 import type {
   CreateCephRbdSnapshotParams,
   DeleteCephRbdSnapshotParams,
   GetCephRbdSnapshotsParams,
 } from '@rediacc/shared/types';
+import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { typedApi } from '../../services/api.js';
 import { authService } from '../../services/auth.js';
 import { outputService } from '../../services/output.js';
+import type { OutputFormat } from '../../types/index.js';
 import { handleError } from '../../utils/errors.js';
 import { withSpinner } from '../../utils/spinner.js';
-import type { OutputFormat } from '../../types/index.js';
 
 export function registerSnapshotCommands(ceph: Command, program: Command): void {
   const snapshot = ceph.command('snapshot').description(t('commands.ceph.snapshot.description'));

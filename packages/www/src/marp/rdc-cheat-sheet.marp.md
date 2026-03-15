@@ -31,7 +31,7 @@ rdc term <machine> <repo>
 rdc repo up <repo> -m <machine>
 
 # Upload local files into a repo mount
-rdc sync upload -m <machine> -r <repo> -l ./local-path
+rdc repo sync upload -m <machine> -r <repo> -l ./local-path
 
 # Set defaults so -m / -t flags are optional
 rdc config set machine <alias>
@@ -149,7 +149,6 @@ rdc repo create <repo> -m <machine> --size 10G
 # Start services (Rediaccfile orchestration)
 rdc repo up <repo> -m <machine>
 rdc repo up <repo> -m <machine> --mount        # mount first
-rdc repo up <repo> -m <machine> --prep-only    # prep step only
 
 # Stop services
 rdc repo down <repo> -m <machine>
@@ -164,7 +163,7 @@ rdc repo mount <repo> -m <machine>
 rdc repo unmount <repo> -m <machine>
 
 # CoW fork (Copy-on-Write), offline resize, online expand
-rdc repo fork <parent> --tag <fork-name> -m <machine>
+rdc repo fork <parent> <tag> -m <machine>
 rdc repo resize <repo> -m <machine> --size 20G
 rdc repo expand <repo> -m <machine> --size 20G
 
@@ -184,25 +183,25 @@ rdc repo autostart list -m <machine>
 
 ```bash
 # Upload local directory to repo mount (rsync over SSH)
-rdc sync upload \
+rdc repo sync upload \
   -m <machine> -r <repo> \
   -l ./local-path
 
 # Download from repo mount to local directory
-rdc sync download \
+rdc repo sync download \
   -m <machine> -r <repo> \
   -l ./local-path
 
 # Preview changes without transferring (dry run)
-rdc sync upload -m <machine> -r <repo> \
+rdc repo sync upload -m <machine> -r <repo> \
   -l ./local-path --dry-run
 
 # Interactive confirm before syncing
-rdc sync upload -m <machine> -r <repo> \
+rdc repo sync upload -m <machine> -r <repo> \
   -l ./local-path --confirm
 
 # Compare local vs remote without syncing
-rdc sync status -m <machine> -r <repo>
+rdc repo sync status -m <machine> -r <repo>
 ```
 
 `--remote <path>` — subdirectory within the repo mount
@@ -280,29 +279,29 @@ rdc vscode cleanup --all
 
 ```bash
 # Push repo backup to S3/R2 storage
-rdc backup push <repo> -m <machine> --to <storage>
+rdc repo push <repo> -m <machine> --to <storage>
 
 # Hot backup with container checkpoint (no downtime)
-rdc backup push <repo> -m <machine> \
+rdc repo push <repo> -m <machine> \
   --to <storage> --checkpoint
 
 # Pull backup from storage to a machine
-rdc backup pull <repo> -m <machine> --from <storage>
+rdc repo pull <repo> -m <machine> --from <storage>
 
 # List available backups on storage
-rdc backup list -m <machine> --from <storage>
+rdc repo list-backups -m <machine> --from <storage>
 
 # Configure backup schedule
-rdc backup schedule set \
+rdc config backup-strategy set \
   --cron "0 2 * * *" \
   --destination <storage> \
   --enable
 
 # Push schedule to machine as a systemd timer
-rdc backup schedule push <machine>
+rdc machine deploy-backup <machine>
 
 # Bulk push all repos to storage
-rdc backup sync -m <machine> --to <storage>
+rdc repo sync push-all -m <machine> --to <storage>
 ```
 
 ---
@@ -312,17 +311,17 @@ rdc backup sync -m <machine> --to <storage>
 
 ```bash
 # Create a BTRFS snapshot of a repository
-rdc snapshot create <repo> -m <machine>
+rdc repo snapshot create <repo> -m <machine>
 
 # Create with an explicit snapshot name
-rdc snapshot create <repo> -m <machine> \
+rdc repo snapshot create <repo> -m <machine> \
   --snapshot-name <name>
 
 # List all snapshots on a machine
-rdc snapshot list -m <machine>
+rdc repo snapshot list -m <machine>
 
 # Delete a snapshot
-rdc snapshot delete <snapshot-name> -m <machine>
+rdc repo snapshot delete <snapshot-name> -m <machine>
 ```
 
 > Snapshots are instant BTRFS subvolume snapshots of the repository mount directory — space-efficient and suitable for quick rollbacks.
@@ -351,7 +350,6 @@ rdc snapshot delete <snapshot-name> -m <machine>
 
 ```bash
 # Rediaccfile lifecycle — Bash script sourced by renet:
-# prep()  — called before up(); pull images, write config
 # up()    — start Docker Compose / services
 # down()  — stop services
 # info()  — print service URLs and status

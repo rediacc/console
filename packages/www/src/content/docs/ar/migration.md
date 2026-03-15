@@ -4,7 +4,7 @@ description: "ترحيل المشاريع الحالية إلى مستودعات
 category: "Guides"
 order: 11
 language: ar
-sourceHash: "5064d721c8cf32ff"
+sourceHash: "76165f8884e5edf1"
 ---
 
 # دليل الترحيل
@@ -29,14 +29,14 @@ rdc repo create my-project -m server-1 --size 20G
 
 ## الخطوة 2: رفع الملفات
 
-استخدم `rdc sync upload` لنقل ملفات مشروعك إلى المستودع.
+استخدم `rdc repo sync upload` لنقل ملفات مشروعك إلى المستودع.
 
 ```bash
 # معاينة ما سيتم نقله (بدون إجراء تغييرات)
-rdc sync upload -m server-1 -r my-project --local ./my-project --dry-run
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --dry-run
 
 # رفع الملفات
-rdc sync upload -m server-1 -r my-project --local ./my-project
+rdc repo sync upload -m server-1 -r my-project --local ./my-project
 ```
 
 يجب أن يكون المستودع محمّلاً قبل الرفع. إذا لم يكن محمّلاً بالفعل:
@@ -48,7 +48,7 @@ rdc repo mount my-project -m server-1
 لعمليات المزامنة اللاحقة حيث تريد أن يطابق المحتوى البعيد دليلك المحلي تماماً:
 
 ```bash
-rdc sync upload -m server-1 -r my-project --local ./my-project --mirror
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 ```
 
 > يحذف خيار `--mirror` الملفات على الخادم البعيد التي لا توجد محلياً. استخدم `--dry-run` أولاً للتحقق.
@@ -83,7 +83,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 لتخطي اكتشاف أحجام Docker وتغيير ملكية كل شيء، بما في ذلك أدلة بيانات الحاويات:
 
 ```bash
-rdc repo ownership my-project -m server-1 --force
+rdc repo ownership my-project -m server-1
 ```
 
 > **تحذير:** قد يؤدي هذا إلى تعطيل الحاويات قيد التشغيل. أوقفها أولاً باستخدام `rdc repo down` إذا لزم الأمر.
@@ -98,21 +98,17 @@ rdc repo ownership my-project -m server-1 --uid 1000
 
 ## الخطوة 4: إعداد Rediaccfile
 
-أنشئ ملف `Rediaccfile` في جذر مشروعك. هذا السكربت بلغة Bash يحدد كيفية تحضير خدماتك وبدئها وإيقافها.
+أنشئ ملف `Rediaccfile` في جذر مشروعك. هذا السكربت بلغة Bash يحدد كيفية بدء خدماتك وإيقافها.
 
 ```bash
 #!/bin/bash
 
-prep() {
-    docker compose pull
-}
-
 up() {
-    docker compose up -d
+    renet compose -- up -d
 }
 
 down() {
-    docker compose down
+    renet compose -- down
 }
 ```
 
@@ -120,11 +116,12 @@ down() {
 
 | الدالة | الغرض | سلوك الخطأ |
 |--------|-------|------------|
-| `prep()` | سحب الصور، تشغيل عمليات الترحيل، تثبيت التبعيات | إيقاف فوري: أي فشل يوقف كل شيء |
 | `up()` | بدء الخدمات | فشل الجذر حرج؛ فشل الأدلة الفرعية يُسجّل ويستمر |
 | `down()` | إيقاف الخدمات | بأفضل جهد: يحاول دائماً تنفيذ الكل |
 
-> **مهم:** استخدم `docker` مباشرة في Rediaccfile — لا تستخدم أبداً `sudo docker`. يعيد أمر `sudo` تعيين متغيرات البيئة، مما يؤدي إلى فقدان `DOCKER_HOST` وإنشاء الحاويات على Docker daemon الخاص بالنظام بدلاً من daemon المعزول للمستودع. تعمل دوال Rediaccfile بالفعل بصلاحيات كافية. انظر [الخدمات](/ar/docs/services#environment-variables) للتفاصيل.
+> **مهم:** استخدم دائماً `renet compose --` بدلاً من `docker compose` في Rediaccfile الخاص بك. يفرض غلاف `renet compose` شبكة المضيف، وقدرات CRIU للحفظ/الاستعادة، وتخصيص عناوين IP، واكتشاف الخدمات المطلوب من renet-proxy. استخدام `docker compose` مباشرة يتجاوز كل هذا وسيتم رفضه أثناء التحقق.
+>
+> لا تستخدم أبداً `sudo docker` أيضاً — يعيد `sudo` تعيين متغيرات البيئة بما في ذلك `DOCKER_HOST`، مما يؤدي إلى إنشاء الحاويات على Docker daemon الخاص بالنظام بدلاً من daemon المعزول للمستودع. تعمل دوال Rediaccfile بالفعل بصلاحيات كافية.
 
 انظر [الخدمات](/ar/docs/services) للحصول على تفاصيل كاملة حول ملفات Rediaccfile وتخطيطات الخدمات المتعددة وترتيب التنفيذ.
 
@@ -167,8 +164,6 @@ services:
 services:
   postgres:
     image: postgres:16
-    network_mode: host
-    restart: unless-stopped
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
@@ -177,14 +172,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    network_mode: host
-    restart: unless-stopped
     command: redis-server --bind ${REDIS_IP} --port 6379
 
   app:
     image: my-app:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
       REDIS_URL: redis://${REDIS_IP}:6379
@@ -193,10 +184,11 @@ services:
 
 التغييرات الرئيسية:
 
-1. **إضافة `network_mode: host`** لكل خدمة
-2. **إزالة تعيينات `ports:`** (غير مطلوبة مع شبكة المضيف)
-3. **ربط الخدمات بمتغيرات البيئة `${SERVICE_IP}`** (يتم حقنها تلقائياً بواسطة Rediacc)
-4. **الإشارة إلى الخدمات الأخرى بعنوان IP الخاص بها** بدلاً من أسماء Docker DNS (مثل `${POSTGRES_IP}` بدلاً من `postgres`)
+1. **إزالة تعيينات `ports:`** — `renet compose` يستخدم شبكة المضيف ويزيل تعيينات المنافذ تلقائياً
+2. **إزالة `network_mode: host`** — `renet compose` يضيف هذا تلقائياً
+3. **إزالة `restart: always` أو `restart: unless-stopped`** — تتعارض مع CRIU checkpoint/restore (يقوم Docker بتشغيل الحاويات تلقائياً قبل أن يتمكن checkpoint restore من العمل). استخدم `restart: on-failure` إذا كنت تحتاج سلوك إعادة التشغيل، أو احذفه بالكامل — تدير `up()`/`down()` في Rediaccfile دورة حياة الحاوية
+4. **ربط الخدمات بمتغيرات البيئة `${SERVICE_IP}`** (يتم حقنها تلقائياً بواسطة Rediacc)
+5. **الإشارة إلى الخدمات الأخرى بعنوان IP الخاص بها** بدلاً من أسماء Docker DNS (مثل `${POSTGRES_IP}` بدلاً من `postgres`)
 
 يتم إنشاء متغيرات `{SERVICE}_IP` تلقائياً من أسماء الخدمات في ملف compose الخاص بك. قاعدة التسمية: أحرف كبيرة، استبدال الشرطات بشرطات سفلية، وإضافة لاحقة `_IP`. على سبيل المثال، `listmonk-app` يصبح `LISTMONK_APP_IP`.
 
@@ -214,8 +206,7 @@ rdc repo up my-project -m server-1 --mount
 1. تحميل المستودع المشفر
 2. بدء Docker daemon المعزول
 3. إنشاء `.rediacc.json` تلقائياً مع تعيينات عناوين IP للخدمات
-4. تشغيل `prep()` من جميع ملفات Rediaccfile
-5. تشغيل `up()` من جميع ملفات Rediaccfile
+4. تشغيل `up()` من جميع ملفات Rediaccfile
 
 تحقق من أن الحاويات تعمل:
 
@@ -263,7 +254,7 @@ my-api/
 └── redis-data/             # بيانات Redis المستمرة (UID 999 عند التشغيل)
 ```
 
-1. ارفع مشروعك (فكّر في استثناء `node_modules` وسحبها في `prep()`)
+1. ارفع مشروعك (فكّر في استثناء `node_modules` وسحبها في `up()`)
 2. شغّل إصلاح الملكية بعد بدء الحاويات
 
 ### مشروع Docker مخصص
@@ -304,7 +295,7 @@ rdc term server-1 my-project -c "docker logs <container-name>"
 
 ### إصلاح الملكية يعطّل الحاويات
 
-إذا شغّلت `rdc repo ownership --force` وتوقفت حاوية عن العمل، فقد تم تغيير ملكية ملفات بيانات الحاوية. أوقف الحاوية واحذف دليل بياناتها وأعد تشغيلها — ستعيد الحاوية إنشاءه:
+إذا شغّلت `rdc repo ownership` وتوقفت حاوية عن العمل، فقد تم تغيير ملكية ملفات بيانات الحاوية. أوقف الحاوية واحذف دليل بياناتها وأعد تشغيلها — ستعيد الحاوية إنشاءه:
 
 ```bash
 rdc repo down my-project -m server-1

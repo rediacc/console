@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: es
-sourceHash: 294f92dc32f10c86
+sourceHash: "5c191d7b8b481b47"
 ---
 
 # Servicios
@@ -17,7 +17,7 @@ Esta página cubre cómo desplegar y gestionar servicios en contenedores: Rediac
 
 ## El Rediaccfile
 
-El **Rediaccfile** es un script Bash que define cómo se preparan, inician y detienen sus servicios. Debe llamarse `Rediaccfile` o `rediaccfile` (insensible a mayúsculas) y colocarse dentro del sistema de archivos montado del repositorio.
+El **Rediaccfile** es un script Bash que define cómo se inician y detienen sus servicios. Debe llamarse `Rediaccfile` o `rediaccfile` (insensible a mayúsculas) y colocarse dentro del sistema de archivos montado del repositorio.
 
 Los Rediaccfiles se descubren en dos ubicaciones:
 1. La **raíz** de la ruta de montaje del repositorio
@@ -27,15 +27,14 @@ Los directorios ocultos (nombres que comienzan con `.`) se omiten.
 
 ### Funciones del Ciclo de Vida
 
-Un Rediaccfile contiene hasta tres funciones:
+Un Rediaccfile contiene hasta dos funciones:
 
 | Función | Cuándo se ejecuta | Propósito | Comportamiento en caso de error |
 |---------|-------------------|-----------|--------------------------------|
-| `prep()` | Antes de `up()` | Instalar dependencias, descargar imágenes, ejecutar migraciones | **Fallo rápido** -- si algún `prep()` falla, todo el proceso se detiene inmediatamente |
-| `up()` | Después de que todos los `prep()` se completen | Iniciar servicios (por ejemplo, `docker compose up -d`) | La falla del Rediaccfile raíz es **crítica** (detiene todo). Las fallas en subdirectorios son **no críticas** (se registran, continúa al siguiente) |
-| `down()` | Al detener | Detener servicios (por ejemplo, `docker compose down`) | **Mejor esfuerzo** -- las fallas se registran pero siempre se intentan todos los Rediaccfiles |
+| `up()` | Al iniciar | Iniciar servicios (por ejemplo, `renet compose -- up -d`) | La falla del Rediaccfile raíz es **crítica** (detiene todo). Las fallas en subdirectorios son **no críticas** (se registran, continúa al siguiente) |
+| `down()` | Al detener | Detener servicios (por ejemplo, `renet compose -- down`) | **Mejor esfuerzo** -- las fallas se registran pero siempre se intentan todos los Rediaccfiles |
 
-Las tres funciones son opcionales. Si una función no está definida, se omite silenciosamente.
+Ambas funciones son opcionales. Si una función no está definida, se omite silenciosamente.
 
 ### Orden de Ejecución
 
@@ -65,11 +64,6 @@ Las variables `{SERVICE}_IP` se generan automáticamente a partir de `.rediacc.j
 ```bash
 #!/bin/bash
 
-prep() {
-    echo "Pulling latest images..."
-    renet compose -- pull
-}
-
 up() {
     echo "Starting services..."
     renet compose -- up -d
@@ -81,7 +75,7 @@ down() {
 }
 ```
 
-> `docker compose` también funciona ya que `DOCKER_HOST` se configura automáticamente, pero se prefiere `renet compose` porque adicionalmente inyecta las etiquetas `rediacc.*` necesarias para el descubrimiento de rutas del proxy inverso. Consulte [Red](/es/docs/networking) para más detalles.
+> **Importante:** Use siempre `renet compose --` en lugar de `docker compose`. El wrapper `renet compose` impone la red del host, las capacidades de checkpoint/restauración CRIU, la asignación de IP y las etiquetas de descubrimiento de servicios requeridas por renet-proxy. El uso directo de `docker compose` es rechazado por la validación del Rediaccfile. Consulte [Red](/es/docs/networking) para más detalles.
 
 ### Diseño Multi-Servicio
 
@@ -155,13 +149,12 @@ Cada repositorio soporta hasta **61 servicios** (slots 0 a 60).
 
 ### Uso de IPs de Servicio en Docker Compose
 
-Dado que cada repositorio ejecuta un daemon Docker aislado, los servicios usan `network_mode: host` y se vinculan a sus IPs de loopback asignadas:
+Dado que cada repositorio ejecuta un daemon Docker aislado, `renet compose` configura automáticamente `network_mode: host` para todos los servicios. Vincule los servicios a sus IPs de loopback asignadas:
 
 ```yaml
 services:
   postgres:
     image: postgres:16
-    network_mode: host
     environment:
       PGDATA: /var/lib/postgresql/data
       POSTGRES_PASSWORD: secret
@@ -169,11 +162,12 @@ services:
 
   api:
     image: my-api:latest
-    network_mode: host
     environment:
       DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
       LISTEN_ADDR: ${API_IP}:8080
 ```
+
+> **Nota:** No agregue `network_mode: host` manualmente — `renet compose` lo inyecta automáticamente. No use `restart: always` ni `restart: unless-stopped` — estos hacen que Docker inicie contenedores automáticamente antes de que la restauración de checkpoint CRIU pueda ejecutarse. Use `restart: on-failure` si es necesario, u omítalo (el Rediaccfile `up()`/`down()` gestiona el ciclo de vida).
 
 ## Iniciar Servicios
 
@@ -186,15 +180,13 @@ rdc repo up my-app -m server-1 --mount
 | Opción | Descripción |
 |--------|-------------|
 | `--mount` | Montar el repositorio primero si no está montado |
-| `--prep-only` | Ejecutar solo las funciones `prep()`, omitir `up()` |
 | `--skip-router-restart` | Omitir el reinicio del servidor de rutas después de la operación |
 
 La secuencia de ejecución es:
 1. Montar el repositorio cifrado con LUKS (si se especifica `--mount`)
 2. Iniciar el daemon Docker aislado
 3. Generar automáticamente `.rediacc.json` a partir de archivos compose
-4. Ejecutar `prep()` en todos los Rediaccfiles (orden A-Z, fallo rápido)
-5. Ejecutar `up()` en todos los Rediaccfiles (orden A-Z)
+4. Ejecutar `up()` en todos los Rediaccfiles (orden A-Z)
 
 ## Detener Servicios
 
@@ -217,7 +209,7 @@ La secuencia de ejecución es:
 Inicie o detenga todos los repositorios en una máquina a la vez:
 
 ```bash
-rdc repo up-all -m server-1
+rdc repo up -m server-1
 ```
 
 | Opción | Descripción |
@@ -256,7 +248,7 @@ Se le solicitará la frase de contraseña del repositorio.
 ### Habilitar Todos
 
 ```bash
-rdc repo autostart enable-all -m server-1
+rdc repo autostart enable -m server-1
 ```
 
 ### Deshabilitar
@@ -280,10 +272,10 @@ Este ejemplo despliega una aplicación web con PostgreSQL, Redis y un servidor A
 ### 1. Configurar
 
 ```bash
-curl -fsSL https://get.rediacc.com | sh
+curl -fsSL https://www.rediacc.com/install.sh | bash
 rdc config init production --ssh-key ~/.ssh/id_ed25519
-rdc config add-machine prod-1 --ip 203.0.113.50 --user deploy
-rdc config setup-machine prod-1
+rdc config machine add prod-1 --ip 203.0.113.50 --user deploy
+rdc config machine setup prod-1
 rdc repo create webapp -m prod-1 --size 10G
 ```
 
@@ -303,8 +295,6 @@ Dentro del repositorio, cree:
 services:
   postgres:
     image: postgres:16
-    network_mode: host
-    restart: unless-stopped
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
@@ -315,14 +305,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    network_mode: host
-    restart: unless-stopped
     command: redis-server --bind ${REDIS_IP} --port 6379
 
   api:
     image: myregistry/api:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
       REDIS_URL: redis://${REDIS_IP}:6379
@@ -334,17 +320,13 @@ services:
 ```bash
 #!/bin/bash
 
-prep() {
-    mkdir -p data/postgres
-    renet compose -- pull
-}
-
 up() {
+    mkdir -p data/postgres
     renet compose -- up -d
 
     echo "Waiting for PostgreSQL..."
     for i in $(seq 1 30); do
-        if docker compose exec postgres pg_isready -q 2>/dev/null; then
+        if renet compose -- exec postgres pg_isready -q 2>/dev/null; then
             echo "PostgreSQL is ready."
             return 0
         fi

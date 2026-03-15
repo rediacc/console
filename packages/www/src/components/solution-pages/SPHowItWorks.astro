@@ -1,0 +1,223 @@
+---
+import { getIcon } from './icons';
+
+interface Service {
+  name: string;
+  port: string;
+}
+
+interface ServerCard {
+  title: string;
+  status: string;
+  services: Service[];
+  containerCount: string;
+  size: string;
+}
+
+interface CostCardItem {
+  name: string;
+  detail: string;
+}
+
+interface CostCard {
+  title: string;
+  status: string;
+  items: CostCardItem[];
+  footerLeft: string;
+  footerRight: string;
+}
+
+interface PipelineCard {
+  title: string;
+  status: string;
+  items: string[];
+  footer: string;
+}
+
+interface PipelineArrow {
+  icon: string;
+  label: string;
+}
+
+interface Props {
+  howItWorks: {
+    overline: string;
+    title: string;
+    steps: { title: string; description: string; icon: string }[];
+    cloneVisual?: {
+      production: ServerCard & { cardClass?: string };
+      clone: ServerCard & { cardClass?: string; patchInfo?: string };
+      arrow: { label: string; time: string; icon?: string };
+    };
+    costVisual?: {
+      wasteful: CostCard & { cardClass?: string };
+      efficient: CostCard & { cardClass?: string };
+      arrow: { label: string; detail: string; icon?: string };
+    };
+    pipelineVisual?: {
+      cards: PipelineCard[];
+      arrows: PipelineArrow[];
+    };
+  };
+}
+
+const { howItWorks } = Astro.props;
+---
+
+<section class="sp-how-it-works">
+  <div class="sp-how-it-works-inner">
+    <div class="sp-overline">{howItWorks.overline}</div>
+    <h2>{howItWorks.title}</h2>
+
+    <div class="sp-steps">
+      {howItWorks.steps.map((step, i) => (
+        <div class="sp-step">
+          <div class="sp-step-icon">
+            <Fragment set:html={getIcon(step.icon)} />
+          </div>
+          <div class="sp-step-number">{i + 1}</div>
+          <h3>{step.title}</h3>
+          <p>{step.description}</p>
+        </div>
+      ))}
+    </div>
+
+    {howItWorks.cloneVisual && (
+      <div class="sp-clone-visual">
+        <div class:list={['sp-server-card', howItWorks.cloneVisual.production.cardClass ?? 'production']}>
+          <div class="sp-server-card-header">
+            <span class="sp-server-card-title">{howItWorks.cloneVisual.production.title}</span>
+            <span class="sp-server-card-status">{howItWorks.cloneVisual.production.status}</span>
+          </div>
+          <div class="sp-server-card-body">
+            {howItWorks.cloneVisual.production.services.map((svc) => (
+              <div class="sp-server-service">
+                <span class="sp-server-service-dot"></span>
+                <span class="sp-server-service-name">{svc.name}</span>
+                <span class="sp-server-service-port">{svc.port}</span>
+              </div>
+            ))}
+          </div>
+          <div class="sp-server-card-footer">
+            <span>{howItWorks.cloneVisual.production.containerCount}</span>
+            <span>{howItWorks.cloneVisual.production.size}</span>
+          </div>
+        </div>
+
+        <div class="sp-clone-arrow">
+          <div class="sp-clone-arrow-bolt">
+            <Fragment set:html={getIcon(howItWorks.cloneVisual.arrow.icon ?? 'bolt')} />
+          </div>
+          <div class="sp-clone-arrow-label">{howItWorks.cloneVisual.arrow.label}</div>
+          {howItWorks.cloneVisual.arrow.time && (
+            <div class="sp-clone-arrow-time">{howItWorks.cloneVisual.arrow.time}</div>
+          )}
+        </div>
+
+        <div class:list={['sp-server-card', howItWorks.cloneVisual.clone.cardClass ?? 'clone']}>
+          <div class="sp-server-card-header">
+            <span class="sp-server-card-title">{howItWorks.cloneVisual.clone.title}</span>
+            <span class="sp-server-card-status">{howItWorks.cloneVisual.clone.status}</span>
+          </div>
+          <div class="sp-server-card-body">
+            {howItWorks.cloneVisual.clone.services.map((svc) => (
+              <div class="sp-server-service">
+                <span class="sp-server-service-dot"></span>
+                <span class="sp-server-service-name">{svc.name}</span>
+                <span class="sp-server-service-port">{svc.port}</span>
+              </div>
+            ))}
+          </div>
+          {howItWorks.cloneVisual.clone.patchInfo && (
+            <div class="sp-server-card-patch">{howItWorks.cloneVisual.clone.patchInfo}</div>
+          )}
+          <div class="sp-server-card-footer">
+            <span>{howItWorks.cloneVisual.clone.containerCount}</span>
+            <span>{howItWorks.cloneVisual.clone.size}</span>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {howItWorks.costVisual && (
+      <div class="sp-cost-visual">
+        <div class:list={['sp-cost-card', howItWorks.costVisual.wasteful.cardClass ?? 'wasteful']}>
+          <div class="sp-cost-card-header">
+            <span class="sp-cost-card-title">{howItWorks.costVisual.wasteful.title}</span>
+            <span class="sp-cost-card-status">{howItWorks.costVisual.wasteful.status}</span>
+          </div>
+          <div class="sp-cost-card-body">
+            {howItWorks.costVisual.wasteful.items.map((item) => (
+              <div class="sp-cost-card-row">
+                <span class="sp-cost-card-dot"></span>
+                <span class="sp-cost-card-name">{item.name}</span>
+                <span class="sp-cost-card-detail">{item.detail}</span>
+              </div>
+            ))}
+          </div>
+          <div class="sp-cost-card-footer">
+            <span>{howItWorks.costVisual.wasteful.footerLeft}</span>
+            <span>{howItWorks.costVisual.wasteful.footerRight}</span>
+          </div>
+        </div>
+
+        <div class="sp-clone-arrow">
+          <div class="sp-clone-arrow-bolt">
+            <Fragment set:html={getIcon(howItWorks.costVisual.arrow.icon ?? 'bolt')} />
+          </div>
+          <div class="sp-clone-arrow-label">{howItWorks.costVisual.arrow.label}</div>
+          <div class="sp-clone-arrow-time">{howItWorks.costVisual.arrow.detail}</div>
+        </div>
+
+        <div class:list={['sp-cost-card', howItWorks.costVisual.efficient.cardClass ?? 'efficient']}>
+          <div class="sp-cost-card-header">
+            <span class="sp-cost-card-title">{howItWorks.costVisual.efficient.title}</span>
+            <span class="sp-cost-card-status">{howItWorks.costVisual.efficient.status}</span>
+          </div>
+          <div class="sp-cost-card-body">
+            {howItWorks.costVisual.efficient.items.map((item) => (
+              <div class="sp-cost-card-row">
+                <span class="sp-cost-card-dot"></span>
+                <span class="sp-cost-card-name">{item.name}</span>
+                <span class="sp-cost-card-detail">{item.detail}</span>
+              </div>
+            ))}
+          </div>
+          <div class="sp-cost-card-footer">
+            <span>{howItWorks.costVisual.efficient.footerLeft}</span>
+            <span>{howItWorks.costVisual.efficient.footerRight}</span>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {howItWorks.pipelineVisual && (
+      <div class="sp-pipeline-visual">
+        {howItWorks.pipelineVisual.cards.map((card, i) => (
+          <Fragment>
+            {i > 0 && howItWorks.pipelineVisual!.arrows[i - 1] && (
+              <div class="sp-clone-arrow">
+                <div class="sp-clone-arrow-bolt">
+                  <Fragment set:html={getIcon(howItWorks.pipelineVisual!.arrows[i - 1].icon)} />
+                </div>
+                <div class="sp-clone-arrow-time">{howItWorks.pipelineVisual!.arrows[i - 1].label}</div>
+              </div>
+            )}
+            <div class:list={['sp-pipeline-card', i === 0 ? 'trigger' : i === 1 ? 'clone' : 'result']}>
+              <div class="sp-pipeline-card-header">
+                <span class="sp-pipeline-card-title">{card.title}</span>
+                <span class="sp-pipeline-card-status">{card.status}</span>
+              </div>
+              <div class="sp-pipeline-card-body">
+                {card.items.map((item) => (
+                  <div class="sp-pipeline-card-item">{item}</div>
+                ))}
+              </div>
+              <div class="sp-pipeline-card-footer">{card.footer}</div>
+            </div>
+          </Fragment>
+        ))}
+      </div>
+    )}
+  </div>
+</section>

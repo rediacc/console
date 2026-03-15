@@ -8,6 +8,7 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { windowsPathToWSL } from '@rediacc/shared-desktop/utils/platform';
 import {
   addSSHConfigEntry,
@@ -24,7 +25,6 @@ import {
   type VSCodePreference,
 } from '@rediacc/shared-desktop/vscode';
 import { app, ipcMain } from 'electron';
-import { DEFAULTS } from '@rediacc/shared/config';
 
 /**
  * Path to store VS Code preference

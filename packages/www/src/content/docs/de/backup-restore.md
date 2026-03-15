@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: de
-sourceHash: cf186b18b0c50eba
+sourceHash: "2ac1e17539336175"
 ---
 
 # Backup & Wiederherstellung
@@ -22,7 +22,7 @@ Bevor Sie Backups übertragen, registrieren Sie einen Speicheranbieter. Rediacc 
 Wenn Sie bereits ein rclone-Remote konfiguriert haben:
 
 ```bash
-rdc config import-storage rclone.conf
+rdc config storage import rclone.conf
 ```
 
 Dies importiert Speicherkonfigurationen aus einer rclone-Konfigurationsdatei in die aktuelle Konfiguration. Unterstützte Typen: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob und Swift.
@@ -30,7 +30,7 @@ Dies importiert Speicherkonfigurationen aus einer rclone-Konfigurationsdatei in 
 ### Speicher anzeigen
 
 ```bash
-rdc config storages
+rdc config storage list
 ```
 
 ## Ein Backup erstellen
@@ -38,7 +38,7 @@ rdc config storages
 Ein Repository-Backup auf externen Speicher übertragen:
 
 ```bash
-rdc backup push my-app -m server-1 --to my-storage
+rdc repo push my-app -m server-1 --to my-storage
 ```
 
 | Option | Beschreibung |
@@ -58,7 +58,7 @@ rdc backup push my-app -m server-1 --to my-storage
 Ein Repository-Backup vom externen Speicher abrufen:
 
 ```bash
-rdc backup pull my-app -m server-1 --from my-storage
+rdc repo pull my-app -m server-1 --from my-storage
 ```
 
 | Option | Beschreibung |
@@ -75,7 +75,7 @@ rdc backup pull my-app -m server-1 --from my-storage
 Verfügbare Backups an einem Speicherort anzeigen:
 
 ```bash
-rdc backup list --from my-storage -m server-1
+rdc repo backup list --from my-storage -m server-1
 ```
 
 ## Massen-Synchronisation
@@ -85,13 +85,13 @@ Alle Repositories auf einmal übertragen oder abrufen:
 ### Alle zum Speicher übertragen
 
 ```bash
-rdc backup sync --to my-storage -m server-1
+rdc repo push --to my-storage -m server-1
 ```
 
 ### Alle vom Speicher abrufen
 
 ```bash
-rdc backup sync --from my-storage -m server-1
+rdc repo pull --from my-storage -m server-1
 ```
 
 | Option | Beschreibung |
@@ -110,12 +110,19 @@ Automatisieren Sie Backups mit einem Cron-Zeitplan, der als systemd-Timer auf de
 ### Zeitplan festlegen
 
 ```bash
-rdc backup schedule set --destination my-storage --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination my-storage --cron "0 2 * * *" --enable
+```
+
+Sie können mehrere Ziele mit verschiedenen Zeitplänen konfigurieren:
+
+```bash
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
 ```
 
 | Option | Beschreibung |
 |--------|-------------|
-| `--destination <storage>` | Standard-Backup-Ziel |
+| `--destination <storage>` | Backup-Ziel (kann pro Ziel festgelegt werden) |
 | `--cron <expression>` | Cron-Ausdruck (z. B. `"0 2 * * *"` für täglich um 2 Uhr) |
 | `--enable` | Den Zeitplan aktivieren |
 | `--disable` | Den Zeitplan deaktivieren |
@@ -125,13 +132,13 @@ rdc backup schedule set --destination my-storage --cron "0 2 * * *" --enable
 Die Zeitplan-Konfiguration als systemd-Timer auf eine Maschine verteilen:
 
 ```bash
-rdc backup schedule push server-1
+rdc machine deploy-backup server-1
 ```
 
 ### Zeitplan anzeigen
 
 ```bash
-rdc backup schedule show
+rdc config backup-strategy show
 ```
 
 ## Speicher durchsuchen
@@ -139,7 +146,7 @@ rdc backup schedule show
 Den Inhalt eines Speicherorts durchsuchen:
 
 ```bash
-rdc storage browse my-storage -m server-1
+rdc storage browse my-storage
 ```
 
 ## Bewährte Methoden

@@ -1,0 +1,22 @@
+{
+  "cast": "/assets/tutorials/tools-tutorial.cast",
+  "language": "ru",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "e3160baaf37158a90f971b179bfd4bb3f16bff3272f80a379b89a8531928a859",
+  "steps": [
+    {
+      "id": "tools-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.511459,
+      "replayEndSec": 5.270978,
+      "narrationText": "Откройте команду удаленной оболочки, чтобы проверить личность целевого компьютера.",
+      "audioSrc": "/assets/tutorials/audio/ru/tools-tutorial/tools-tutorial-01.53c79006.mp3",
+      "audioDurationSec": 4.832653
+    }
+  ]
+}

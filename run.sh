@@ -174,6 +174,433 @@ ensure_renet_built() {
     log_info "Renet built successfully"
 }
 
+# Ensure private/generative submodule is initialized
+ensure_generative_submodule() {
+    if [[ ! -d "$ROOT_DIR/private/generative" ]]; then
+        log_error "Missing private/generative directory"
+        exit 1
+    fi
+
+    if [[ ! -f "$ROOT_DIR/private/generative/.git" ]] && [[ ! -d "$ROOT_DIR/private/generative/.git" ]]; then
+        log_step "Initializing private/generative submodule..."
+        git submodule sync -- private/generative >/dev/null 2>&1 || true
+        git submodule update --init --recursive private/generative
+    fi
+}
+
+ensure_python_installed() {
+    if ! command -v python3 &>/dev/null; then
+        log_error "python3 is required for tutorial audio generation"
+        exit 1
+    fi
+}
+
+ensure_audio_system_deps() {
+    local missing=()
+    command -v ffmpeg >/dev/null 2>&1 || missing+=("ffmpeg")
+    command -v ffprobe >/dev/null 2>&1 || missing+=("ffmpeg")
+    command -v sox >/dev/null 2>&1 || missing+=("sox")
+
+    if [[ "${#missing[@]}" -eq 0 ]]; then
+        return 0
+    fi
+
+    if ! command -v apt-get >/dev/null 2>&1; then
+        log_error "Missing system deps: ${missing[*]}"
+        log_info "Install them manually (ffmpeg, sox) and retry."
+        exit 1
+    fi
+
+    log_step "Installing missing system dependencies: ${missing[*]}"
+    if command -v sudo >/dev/null 2>&1; then
+        sudo apt-get update
+        sudo apt-get install -y ffmpeg sox python3-venv python3-dev build-essential
+    else
+        apt-get update
+        apt-get install -y ffmpeg sox python3-venv python3-dev build-essential
+    fi
+}
+
+install_generative_python_deps() {
+    local gen_dir="$1"
+    local stamp_file="$2"
+    local content_hash="$3"
+    local site_packages=""
+
+    site_packages="$(python -c 'import site; print(site.getsitepackages()[0])' 2>/dev/null || true)"
+    if [[ -n "$site_packages" ]] && [[ -d "$site_packages" ]]; then
+        find "$site_packages" -maxdepth 1 -name '~ransformers*' -exec rm -rf {} + 2>/dev/null || true
+    fi
+
+    pip install --upgrade pip
+    pip install -e "$gen_dir"
+    pip install qwen-tts
+    pip install qwen-asr
+    install_flash_attn_if_supported
+    echo "$content_hash" >"$stamp_file"
+}
+
+install_flash_attn_if_supported() {
+    # Best-effort accelerator install. Keep generation working even if unavailable.
+    if python -c "import flash_attn" >/dev/null 2>&1; then
+        log_debug "flash-attn already installed"
+        return 0
+    fi
+
+    local has_cuda="false"
+    has_cuda="$(python -c 'import torch; print("true" if torch.cuda.is_available() else "false")' 2>/dev/null || echo "false")"
+    if [[ "$has_cuda" != "true" ]]; then
+        log_info "Skipping flash-attn install (CUDA not available in torch)."
+        return 0
+    fi
+
+    if ! command -v nvcc >/dev/null 2>&1; then
+        log_info "Skipping flash-attn install (nvcc not found for source build)."
+        return 0
+    fi
+
+    log_step "Installing flash-attn acceleration..."
+    pip install --upgrade packaging ninja >/dev/null 2>&1 || true
+    if ! pip install flash-attn --no-build-isolation; then
+        log_warn "flash-attn install failed; continuing without it."
+    fi
+}
+
+ensure_generative_venv() {
+    local clean_venv="$1"
+    local gen_dir="$ROOT_DIR/private/generative"
+    local venv_dir="$gen_dir/.venv"
+    local stamp_file="$venv_dir/.deps-sha256"
+    local content_hash
+
+    content_hash="$(
+        cd "$gen_dir" &&
+            sha256sum pyproject.toml src/tutorial_tts/*.py src/tutorial_tts/*.json | sha256sum | awk '{print $1}'
+    )"
+
+    if [[ "$clean_venv" == "true" && -d "$venv_dir" ]]; then
+        log_step "Recreating generative Python environment..."
+        rm -rf "$venv_dir"
+    fi
+
+    if [[ ! -d "$venv_dir" ]]; then
+        log_step "Creating generative Python environment..."
+        python3 -m venv "$venv_dir"
+    fi
+
+    # shellcheck disable=SC1091
+    source "$venv_dir/bin/activate"
+
+    if [[ ! -f "$stamp_file" ]] || [[ "$(cat "$stamp_file" 2>/dev/null || true)" != "$content_hash" ]]; then
+        log_step "Installing generative Python dependencies..."
+        if ! install_generative_python_deps "$gen_dir" "$stamp_file" "$content_hash"; then
+            log_warn "Dependency install failed; recreating Python environment and retrying once..."
+            deactivate || true
+            rm -rf "$venv_dir"
+            python3 -m venv "$venv_dir"
+            # shellcheck disable=SC1091
+            source "$venv_dir/bin/activate"
+            install_generative_python_deps "$gen_dir" "$stamp_file" "$content_hash"
+        fi
+    else
+        log_debug "Generative Python dependencies are up-to-date"
+    fi
+}
+
+# Compute hash of a tutorial script + shared helpers for change detection
+_tutorial_script_hash() {
+    local script="$1"
+    local helpers="$ROOT_DIR/.ci/tutorials/lib/tutorial-helpers.sh"
+    cat "$script" "$helpers" 2>/dev/null | sha256sum | awk '{print $1}'
+}
+
+www_tutorials_record() {
+    local force=false
+    local name=""
+    local tutorials_dir="$ROOT_DIR/.ci/tutorials"
+    local output_dir="$ROOT_DIR/packages/www/public/assets/tutorials"
+    local hash_file="$output_dir/.recording-hashes"
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --force)
+                force=true
+                shift
+                ;;
+            *)
+                name="$1"
+                shift
+                ;;
+        esac
+    done
+
+    if ! command -v asciinema &>/dev/null; then
+        log_error "asciinema is not installed. Install with: pip install asciinema"
+        exit 1
+    fi
+
+    ensure_deps
+    ensure_packages_built
+    ensure_renet_built
+    export PATH="$ROOT_DIR/private/renet/bin:$PATH"
+    export TUTORIAL_RDC_CMD="npx tsx $ROOT_DIR/packages/cli/src/index.ts"
+
+    # Load stored hashes
+    local -A stored_hashes
+    if [[ -f "$hash_file" ]]; then
+        while IFS='=' read -r key val; do
+            stored_hashes["$key"]="$val"
+        done <"$hash_file"
+    fi
+
+    # Determine candidate scripts
+    local candidates=()
+    if [[ -n "$name" ]]; then
+        local script="$tutorials_dir/${name}-tutorial.sh"
+        [[ -f "$script" ]] || {
+            log_error "Tutorial not found: $script"
+            exit 1
+        }
+        candidates+=("$script")
+    else
+        for script in "$tutorials_dir"/*-tutorial.sh; do
+            candidates+=("$script")
+        done
+    fi
+
+    # Filter by change detection (unless --force)
+    local scripts_to_record=()
+    for script in "${candidates[@]}"; do
+        local base
+        base="$(basename "$script" .sh)"
+        if [[ "$force" == "true" ]]; then
+            scripts_to_record+=("$script")
+        else
+            local current_hash
+            current_hash="$(_tutorial_script_hash "$script")"
+            if [[ "${stored_hashes[$base]:-}" != "$current_hash" ]]; then
+                scripts_to_record+=("$script")
+            else
+                log_debug "Unchanged: $base (skipping)"
+            fi
+        fi
+    done
+
+    if [[ ${#scripts_to_record[@]} -eq 0 ]]; then
+        log_info "No tutorial scripts changed, skipping recording"
+        return 0
+    fi
+
+    # Auto-provision VMs
+    log_step "Provisioning VMs for tutorial recording..."
+    provision_start
+
+    # Record each changed tutorial
+    for script in "${scripts_to_record[@]}"; do
+        local base
+        base="$(basename "$script" .sh)"
+        log_step "Recording: $base"
+        "$tutorials_dir/record.sh" "$script" "$output_dir/${base}.cast"
+
+        # Update stored hash
+        stored_hashes["$base"]="$(_tutorial_script_hash "$script")"
+    done
+
+    # Teardown VMs
+    log_step "Tearing down VMs..."
+    provision_stop
+
+    # Persist hashes
+    : >"$hash_file"
+    for key in "${!stored_hashes[@]}"; do
+        echo "${key}=${stored_hashes[$key]}" >>"$hash_file"
+    done
+}
+
+www_tutorials_extract() {
+    check_node_version
+    ensure_deps
+    log_step "Extracting cast markers to transcript scaffolds..."
+    npm run transcripts:extract -w @rediacc/www
+}
+
+www_tutorials_scaffold_locales() {
+    check_node_version
+    ensure_deps
+    log_step "Scaffolding locale transcript files..."
+    npm run transcripts:scaffold-locales -w @rediacc/www
+}
+
+www_tutorials_generate() {
+    check_node_version
+    ensure_generative_submodule
+    ensure_python_installed
+    ensure_audio_system_deps
+
+    local clean_venv=false
+    local destroy_venv=false
+    local passthrough=()
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --clean-venv)
+                clean_venv=true
+                shift
+                ;;
+            --destroy-venv)
+                destroy_venv=true
+                shift
+                ;;
+            *)
+                passthrough+=("$1")
+                shift
+                ;;
+        esac
+    done
+
+    ensure_generative_venv "$clean_venv"
+    ensure_deps
+
+    export QWEN_TTS_PYTHON_BIN="$ROOT_DIR/private/generative/.venv/bin/python"
+
+    log_step "Generating tutorial audio assets..."
+    npm run tutorials:tts:generate -w @rediacc/www -- "${passthrough[@]}"
+
+    if [[ "$destroy_venv" == "true" ]]; then
+        log_step "Destroying generative Python environment..."
+        rm -rf "$ROOT_DIR/private/generative/.venv"
+    fi
+}
+
+www_tutorials_validate() {
+    check_node_version
+    ensure_deps
+    log_step "Validating tutorial transcripts..."
+    npm run validate:tutorial-transcripts -w @rediacc/www
+    log_step "Validating tutorial audio..."
+    npm run validate:tutorial-audio -w @rediacc/www
+}
+
+www_tutorials_all() {
+    log_step "Running full tutorial pipeline..."
+    www_tutorials_record "$@"
+    www_tutorials_extract
+    www_tutorials_scaffold_locales
+    www_tutorials_generate "$@"
+    www_tutorials_validate
+    log_info "Tutorial pipeline complete!"
+}
+
+# =============================================================================
+# TEAM VIDEO COMMANDS
+# =============================================================================
+
+www_team_video_extract() {
+    check_node_version
+    ensure_generative_submodule
+    ensure_python_installed
+    ensure_audio_system_deps
+
+    local passthrough=()
+    local clean_venv=false
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --clean-venv)
+                clean_venv=true
+                shift
+                ;;
+            *)
+                passthrough+=("$1")
+                shift
+                ;;
+        esac
+    done
+
+    ensure_generative_venv "$clean_venv"
+    ensure_deps
+
+    export QWEN_TTS_PYTHON_BIN="$ROOT_DIR/private/generative/.venv/bin/python"
+
+    log_step "Extracting team video transcripts via ASR..."
+    npm run team-video:extract -w @rediacc/www -- "${passthrough[@]}"
+}
+
+www_team_video_scaffold_locales() {
+    check_node_version
+    ensure_deps
+    log_step "Scaffolding team video locale transcript files..."
+    npm run team-video:scaffold-locales -w @rediacc/www
+}
+
+www_team_video_generate() {
+    check_node_version
+    ensure_generative_submodule
+    ensure_python_installed
+    ensure_audio_system_deps
+
+    local clean_venv=false
+    local destroy_venv=false
+    local passthrough=()
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --clean-venv)
+                clean_venv=true
+                shift
+                ;;
+            --destroy-venv)
+                destroy_venv=true
+                shift
+                ;;
+            *)
+                passthrough+=("$1")
+                shift
+                ;;
+        esac
+    done
+
+    ensure_generative_venv "$clean_venv"
+    ensure_deps
+
+    export QWEN_TTS_PYTHON_BIN="$ROOT_DIR/private/generative/.venv/bin/python"
+
+    log_step "Generating team video audio assets..."
+    npm run team-video:tts:generate -w @rediacc/www -- "${passthrough[@]}"
+
+    if [[ "$destroy_venv" == "true" ]]; then
+        log_step "Destroying generative Python environment..."
+        rm -rf "$ROOT_DIR/private/generative/.venv"
+    fi
+}
+
+www_team_video_validate() {
+    check_node_version
+    ensure_deps
+    log_step "Validating team video transcripts..."
+    npm run validate:team-video-transcripts -w @rediacc/www
+}
+
+www_team_video_all() {
+    log_step "Running full team video pipeline..."
+    www_team_video_extract "$@"
+    www_team_video_scaffold_locales
+    www_team_video_generate "$@"
+    www_team_video_validate
+    log_info "Team video pipeline complete!"
+}
+
+# =============================================================================
+# WWW ALL
+# =============================================================================
+
+www_all() {
+    log_step "Running full www asset pipeline..."
+    www_tutorials_all "$@"
+    www_team_video_all "$@"
+    log_info "All www assets generated!"
+}
+
 # =============================================================================
 # DEVELOPMENT COMMANDS
 # =============================================================================
@@ -209,32 +636,6 @@ dev() {
 
     # Start dev server
     PORT="$PORT_CONSOLE_DEV" npm run dev
-}
-
-# Run CLI in development mode with renet available
-cli() {
-    check_node_version
-
-    log_step "Preparing CLI development environment"
-
-    # Ensure npm dependencies are installed
-    ensure_deps
-
-    # Ensure shared packages are built
-    ensure_packages_built
-
-    # Ensure renet is built and up-to-date
-    ensure_renet_built
-
-    # Add renet binary directory to PATH so CLI can find it
-    local renet_bin_dir="$ROOT_DIR/private/renet/bin"
-    export PATH="$renet_bin_dir:$PATH"
-
-    log_info "Renet available at: $renet_bin_dir/renet"
-    log_step "Starting CLI (dev mode)"
-
-    # Run CLI via tsx, passing through all arguments
-    npx tsx "$ROOT_DIR/packages/cli/src/index.ts" "$@"
 }
 
 # Sandbox mode (no backend required) - preserved from original
@@ -639,6 +1040,13 @@ SERVICE COMMANDS:
   service status                  Show service status
   service logs [container]        Show logs (web, rustfs, all)
 
+ACCOUNT COMMANDS:
+  account dev              Start account dev gateway (API + portal + www on one port)
+  account test             Run account integration tests (vitest)
+  account test e2e [opts]  Run account E2E tests (playwright, with Stripe wiring)
+  account stop             Stop account Docker containers
+  account reset            Reset .env + database and regenerate
+
 PROVISION COMMANDS:
   provision start            Provision KVM VMs (bridge + workers)
   provision stop             Destroy all VMs
@@ -646,10 +1054,26 @@ PROVISION COMMANDS:
 
 DEVELOPMENT COMMANDS:
   dev                 Start development server (auto-starts backend if needed)
-  rdc [args...]       Run CLI in dev mode (auto-builds renet with embeddings)
+  (rdc)               Use ./rdc.sh instead (standalone CLI runner)
   sandbox             Start in sandbox mode (no backend required)
   worktree <cmd>      Manage git worktrees (create, switch, prune, list)
   setup               Interactive setup wizard
+
+WWW COMMANDS:
+  www all [opts]                    Full pipeline for tutorials + team videos
+
+  www tutorials record [name]       Record .cast files (auto-provision, change-detected)
+  www tutorials extract             Sync cast markers to transcripts (preserves text)
+  www tutorials scaffold-locales    Sync locale transcripts with English
+  www tutorials generate [opts]     Generate TTS audio + timelines (Python venv)
+  www tutorials validate            Validate transcripts + audio integrity
+  www tutorials all [opts]          Full tutorial pipeline (record -> extract -> generate)
+
+  www team-video extract [opts]     ASR: extract English transcripts from video audio
+  www team-video scaffold-locales   Sync locale transcripts with English
+  www team-video generate [opts]    Generate dubbed audio + captions
+  www team-video validate           Validate transcripts + audio integrity
+  www team-video all [opts]         Full team video pipeline
 
 TEST COMMANDS:
   test unit           Run unit tests
@@ -700,7 +1124,7 @@ MAINTENANCE:
 QUICK START:
   ./run.sh setup          # One-time setup
   ./run.sh dev            # Start web development
-  ./run.sh rdc auth login # Run CLI command in dev mode
+  ./rdc.sh auth login     # Run CLI command in dev mode
 
 REQUIREMENTS:
   Node.js v${NODE_VERSION_REQUIRED}.x (https://nodejs.org/)
@@ -788,12 +1212,37 @@ main() {
             esac
             ;;
 
+        # Account server
+        account)
+            shift
+            source "$ROOT_DIR/.ci/lib/account.sh"
+            case "${1:-}" in
+                dev) account_dev ;;
+                test)
+                    shift
+                    case "${1:-}" in
+                        e2e)
+                            shift
+                            account_test_e2e "$@"
+                            ;;
+                        *)
+                            account_test "$@"
+                            ;;
+                    esac
+                    ;;
+                stop) account_stop ;;
+                reset) account_reset ;;
+                *)
+                    log_error "Unknown account command: ${1:-}"
+                    echo ""
+                    echo "Usage: ./run.sh account [dev|test|stop|reset]"
+                    exit 1
+                    ;;
+            esac
+            ;;
+
         # Development
         dev) dev ;;
-        rdc)
-            shift
-            cli "$@"
-            ;;
         sandbox)
             shift
             sandbox "$@"
@@ -803,6 +1252,72 @@ main() {
             "$ROOT_DIR/scripts/dev/worktree.sh" "$@"
             ;;
         setup) setup ;;
+        www)
+            shift
+            case "${1:-}" in
+                tutorials)
+                    shift
+                    case "${1:-}" in
+                        record)
+                            shift
+                            www_tutorials_record "$@"
+                            ;;
+                        extract) www_tutorials_extract ;;
+                        scaffold-locales) www_tutorials_scaffold_locales ;;
+                        generate)
+                            shift
+                            www_tutorials_generate "$@"
+                            ;;
+                        validate) www_tutorials_validate ;;
+                        all)
+                            shift
+                            www_tutorials_all "$@"
+                            ;;
+                        *)
+                            log_error "Unknown tutorials command: ${1:-}"
+                            echo ""
+                            echo "Usage: ./run.sh www tutorials [record|extract|scaffold-locales|generate|validate|all]"
+                            exit 1
+                            ;;
+                    esac
+                    ;;
+                team-video)
+                    shift
+                    case "${1:-}" in
+                        extract)
+                            shift
+                            www_team_video_extract "$@"
+                            ;;
+                        scaffold-locales) www_team_video_scaffold_locales ;;
+                        generate)
+                            shift
+                            www_team_video_generate "$@"
+                            ;;
+                        validate) www_team_video_validate ;;
+                        all)
+                            shift
+                            www_team_video_all "$@"
+                            ;;
+                        *)
+                            log_error "Unknown team-video command: ${1:-}"
+                            echo ""
+                            echo "Usage: ./run.sh www team-video [extract|scaffold-locales|generate|validate|all]"
+                            exit 1
+                            ;;
+                    esac
+                    ;;
+                all)
+                    shift
+                    www_all "$@"
+                    ;;
+                *)
+                    log_error "Unknown www command: ${1:-}"
+                    echo ""
+                    echo "Usage: ./run.sh www [all|tutorials|team-video] ..."
+                    exit 1
+                    ;;
+            esac
+            ;;
 
         # Tests
         test)

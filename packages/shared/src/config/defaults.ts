@@ -107,6 +107,58 @@ export const TELEMETRY_DEFAULTS = {
 
   /** Default metric unit */
   UNIT: 'ms',
+
+  /** Pyroscope profiling endpoint */
+  PROFILING_ENDPOINT: 'https://profiles.rediacc.io',
+} as const;
+
+/**
+ * Ceph RBD storage defaults
+ */
+export const CEPH_DEFAULTS = {
+  /** Default Ceph pool name */
+  POOL: 'rbd',
+
+  /** Default Ceph cluster name */
+  CLUSTER: 'ceph',
+} as const;
+
+/**
+ * Cloud provider defaults (OpenTofu / custom provider config)
+ */
+export const CLOUD_DEFAULTS = {
+  /** Default SSH user for cloud VMs */
+  SSH_USER: 'root',
+
+  /** Default SSH key injection format */
+  SSH_KEY_FORMAT: 'inline_list' as const,
+
+  /** Default provider token attribute name */
+  TOKEN_ATTR: 'token',
+
+  /** Default provider label attribute name */
+  LABEL_ATTR: 'name',
+
+  /** Default provider region attribute name */
+  REGION_ATTR: 'region',
+
+  /** Default provider instance type attribute name */
+  SIZE_ATTR: 'type',
+
+  /** Default provider image attribute name */
+  IMAGE_ATTR: 'image',
+
+  /** Fallback label for unknown providers */
+  UNKNOWN_PROVIDER: 'unknown',
+
+  /** Display placeholder for missing values */
+  DISPLAY_PLACEHOLDER: '-',
+
+  /** Placeholder for unresolved machine name in error messages */
+  MACHINE_PLACEHOLDER: '<machine>',
+
+  /** Default error message fallback */
+  UNKNOWN_ERROR: 'Unknown error',
 } as const;
 
 /**
@@ -315,6 +367,15 @@ export const SUBSCRIPTION_DEFAULTS = {
 
   /** Fallback for unknown machine quota */
   UNKNOWN_QUOTA: '?',
+
+  /** Default account server URL */
+  ACCOUNT_SERVER_URL: 'https://www.rediacc.com/account/',
+
+  /** Device code polling interval (seconds) */
+  DEVICE_CODE_POLL_INTERVAL: 5,
+
+  /** Device code expiry (seconds) */
+  DEVICE_CODE_EXPIRY: 600,
 } as const;
 
 /**
@@ -343,6 +404,9 @@ export const TIMEOUT_DEFAULTS = {
 
   /** Default execution timeout (10 minutes) */
   EXECUTION: 10 * 60 * 1000,
+
+  /** Default MCP command timeout (2 minutes) */
+  MCP_COMMAND: 120_000,
 } as const;
 
 /**
@@ -373,8 +437,14 @@ export const SORT_DEFAULTS = {
 /**
  * Aggregated defaults object for convenient access
  */
+export const BATCH_DEFAULTS = {
+  /** Default parallel concurrency for batch operations */
+  CONCURRENCY: 3,
+} as const;
+
 export const DEFAULTS = {
   SSH: SSH_DEFAULTS,
+  BATCH: BATCH_DEFAULTS,
   REPOSITORY: REPOSITORY_DEFAULTS,
   DOCKER: DOCKER_DEFAULTS,
   SHELL: SHELL_DEFAULTS,
@@ -397,6 +467,8 @@ export const DEFAULTS = {
   PROCESS: PROCESS_DEFAULTS,
   CLI_TEST: CLI_TEST_DEFAULTS,
   SORT: SORT_DEFAULTS,
+  CEPH: CEPH_DEFAULTS,
+  CLOUD: CLOUD_DEFAULTS,
 } as const;
 
 /**

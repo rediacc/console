@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: fr
-sourceHash: cf186b18b0c50eba
+sourceHash: "2ac1e17539336175"
 ---
 
 # Sauvegarde et restauration
@@ -22,7 +22,7 @@ Avant d'envoyer des sauvegardes, enregistrez un fournisseur de stockage. Rediacc
 Si vous avez déjà un remote rclone configuré :
 
 ```bash
-rdc config import-storage rclone.conf
+rdc config storage import rclone.conf
 ```
 
 Ceci importe des configurations de stockage depuis un fichier de configuration rclone dans la configuration actuelle. Types pris en charge : S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob et Swift.
@@ -30,7 +30,7 @@ Ceci importe des configurations de stockage depuis un fichier de configuration r
 ### Afficher les stockages
 
 ```bash
-rdc config storages
+rdc config storage list
 ```
 
 ## Envoyer une sauvegarde
@@ -38,7 +38,7 @@ rdc config storages
 Envoyez une sauvegarde de dépôt vers un stockage externe :
 
 ```bash
-rdc backup push my-app -m server-1 --to my-storage
+rdc repo push my-app -m server-1 --to my-storage
 ```
 
 | Option | Description |
@@ -58,7 +58,7 @@ rdc backup push my-app -m server-1 --to my-storage
 Récupérez une sauvegarde de dépôt depuis un stockage externe :
 
 ```bash
-rdc backup pull my-app -m server-1 --from my-storage
+rdc repo pull my-app -m server-1 --from my-storage
 ```
 
 | Option | Description |
@@ -75,7 +75,7 @@ rdc backup pull my-app -m server-1 --from my-storage
 Affichez les sauvegardes disponibles dans un emplacement de stockage :
 
 ```bash
-rdc backup list --from my-storage -m server-1
+rdc repo backup list --from my-storage -m server-1
 ```
 
 ## Synchronisation en masse
@@ -85,13 +85,13 @@ Envoyez ou récupérez tous les dépôts en une seule fois :
 ### Envoyer tout vers le stockage
 
 ```bash
-rdc backup sync --to my-storage -m server-1
+rdc repo push --to my-storage -m server-1
 ```
 
 ### Récupérer tout depuis le stockage
 
 ```bash
-rdc backup sync --from my-storage -m server-1
+rdc repo pull --from my-storage -m server-1
 ```
 
 | Option | Description |
@@ -110,12 +110,19 @@ Automatisez les sauvegardes avec une planification cron qui s'exécute comme un 
 ### Définir la planification
 
 ```bash
-rdc backup schedule set --destination my-storage --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination my-storage --cron "0 2 * * *" --enable
+```
+
+Vous pouvez configurer plusieurs destinations avec des planifications différentes :
+
+```bash
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--destination <storage>` | Destination de sauvegarde par défaut |
+| `--destination <storage>` | Destination de sauvegarde (configurable par destination) |
 | `--cron <expression>` | Expression cron (par ex., `"0 2 * * *"` pour tous les jours à 2h du matin) |
 | `--enable` | Activer la planification |
 | `--disable` | Désactiver la planification |
@@ -125,13 +132,13 @@ rdc backup schedule set --destination my-storage --cron "0 2 * * *" --enable
 Déployez la configuration de planification sur une machine en tant que timer systemd :
 
 ```bash
-rdc backup schedule push server-1
+rdc machine deploy-backup server-1
 ```
 
 ### Afficher la planification
 
 ```bash
-rdc backup schedule show
+rdc config backup-strategy show
 ```
 
 ## Parcourir le stockage
@@ -139,7 +146,7 @@ rdc backup schedule show
 Parcourez le contenu d'un emplacement de stockage :
 
 ```bash
-rdc storage browse my-storage -m server-1
+rdc storage browse my-storage
 ```
 
 ## Bonnes pratiques

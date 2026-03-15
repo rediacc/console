@@ -3,41 +3,16 @@
  * Manages settings.json configuration for Remote SSH support
  */
 
-import { execSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { getPlatform } from '../utils/platform.js';
+import {
+  getPlatform,
+  getSSHHome,
+  getWindowsHomeInWSL,
+  isWSL,
+  wslPathToWindows,
+} from '../utils/platform.js';
 import type { VSCodeRemoteSettings } from './types.js';
-
-/**
- * Detects if running in WSL (Windows Subsystem for Linux)
- */
-function isWSL(): boolean {
-  if (getPlatform() !== 'linux') {
-    return false;
-  }
-  try {
-    if (existsSync('/proc/version')) {
-      const content = readFileSync('/proc/version', 'utf8');
-      return content.toLowerCase().includes('microsoft');
-    }
-  } catch {
-    // Ignore errors
-  }
-  return false;
-}
-
-/**
- * Converts a Windows path to WSL path using wslpath
- */
-function wslPathFromWindows(windowsPath: string): string | null {
-  try {
-    const result = execSync(`wslpath "${windowsPath}"`, { encoding: 'utf8' });
-    return result.trim();
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Gets WSL-aware VS Code settings paths
@@ -47,13 +22,10 @@ function getWSLVSCodeSettingsPaths(variant: 'Code' | 'Code - Insiders'): string[
   const paths: string[] = [];
   const home = process.env.HOME ?? '';
 
-  // Try Windows user profile first for better VS Code integration
-  const userProfile = process.env.USERPROFILE;
-  if (userProfile) {
-    const wslPath = wslPathFromWindows(userProfile);
-    if (wslPath) {
-      paths.push(join(wslPath, 'AppData', 'Roaming', variant, 'User', 'settings.json'));
-    }
+  // Try Windows user home first — VS Code on Windows reads from AppData
+  const winHome = getWindowsHomeInWSL();
+  if (winHome) {
+    paths.push(join(winHome, 'AppData', 'Roaming', variant, 'User', 'settings.json'));
   }
 
   // Fallback to VS Code Server paths in WSL
@@ -168,17 +140,6 @@ export function writeVSCodeSettings(
 }
 
 /**
- * Expands ~ to home directory in a path
- */
-function expandPath(path: string): string {
-  if (path.startsWith('~')) {
-    const home = process.env.HOME ?? process.env.USERPROFILE ?? '';
-    return join(home, path.slice(1));
-  }
-  return path;
-}
-
-/**
  * Default datastore path for VS Code server installation
  */
 const DEFAULT_DATASTORE_PATH = '/mnt/rediacc';
@@ -201,6 +162,19 @@ export function getServerInstallPath(datastorePath?: string): string {
 }
 
 /**
+ * Gets the SSH config file path for VS Code settings.
+ * In WSL, returns a Windows-format path so Windows SSH can resolve it.
+ */
+function getSSHConfigFileSetting(): string {
+  const home = getSSHHome();
+  const sshPath = join(home, '.ssh', 'config_rediacc');
+  if (isWSL()) {
+    return wslPathToWindows(sshPath).replaceAll('\\', '/');
+  }
+  return sshPath;
+}
+
+/**
  * Required Remote SSH settings for rediacc integration
  *
  * @param datastorePath - Optional datastore path override
@@ -210,7 +184,7 @@ export function getRequiredRemoteSSHSettings(datastorePath?: string): VSCodeRemo
 
   return {
     'remote.SSH.enableRemoteCommand': true,
-    'remote.SSH.configFile': expandPath('~/.ssh/config_rediacc'),
+    'remote.SSH.configFile': getSSHConfigFileSetting(),
     'remote.SSH.serverInstallPath': {
       '*': serverPath,
     },
@@ -331,24 +305,20 @@ export function configureVSCodeSettings(isInsiders = false): {
 }
 
 /**
- * Removes a host from remote.SSH.remotePlatform to enable RemoteCommand
+ * Sets the remote platform to 'linux' for a host to avoid the platform prompt.
  *
- * RemoteCommand doesn't work when remotePlatform is set for a host.
- *
- * @param host - SSH host name to remove
+ * @param host - SSH host name
  * @param isInsiders - Whether to configure VS Code Insiders
  */
-export function removeHostFromRemotePlatform(host: string, isInsiders = false): void {
+export function setHostRemotePlatform(host: string, isInsiders = false): void {
   const settingsPath = isInsiders ? getVSCodeInsidersSettingsPath() : getVSCodeSettingsPath();
   const settings = readVSCodeSettings(settingsPath);
 
-  const remotePlatform = settings['remote.SSH.remotePlatform'] as
-    | Record<string, string>
-    | undefined;
-  if (remotePlatform && host in remotePlatform) {
-    delete remotePlatform[host];
-    writeVSCodeSettings(settings, settingsPath);
-  }
+  const remotePlatform =
+    (settings['remote.SSH.remotePlatform'] as Record<string, string> | undefined) ?? {};
+  remotePlatform[host] = 'linux';
+  settings['remote.SSH.remotePlatform'] = remotePlatform;
+  writeVSCodeSettings(settings, settingsPath);
 }
 
 /**

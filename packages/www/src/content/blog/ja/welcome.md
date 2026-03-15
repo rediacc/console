@@ -9,7 +9,7 @@ tags:
   - welcome
 featured: true
 language: ja
-sourceHash: "1a84feb14d8b2654"
+sourceHash: "a292e24968f4bc9b"
 ---
 
 # Rediaccブログへようこそ
@@ -23,4 +23,4 @@ sourceHash: "1a84feb14d8b2654"
 - **ケーススタディ**: Rediaccの実践例
 - **ベストプラクティス**: チームからのヒントとコツ
 
-今後のコンテンツにご期待ください！
+定期的に新しいコンテンツをチェックしてください！

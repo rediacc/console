@@ -2,8 +2,8 @@ services:
   rethinkdb:
     image: rethinkdb:latest
     container_name: ${CONTAINER_NAME}
-    network_mode: "${NETWORK_MODE:-bridge}"
-    command: rethinkdb --bind all --cache-size ${RETHINKDB_CACHE_SIZE}
+    network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
+    command: ["sh", "-c", "exec rethinkdb --bind $${SERVICE_IP:-all} --cache-size ${RETHINKDB_CACHE_SIZE}"]
     ports:
       - "8080"    # Web admin interface
       - "28015"   # Client driver port

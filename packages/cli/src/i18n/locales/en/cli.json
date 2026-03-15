@@ -1,8 +1,35 @@
 {
   "cli": {
-    "description": "Rediacc CLI - Command line interface for Rediacc operations"
+    "description": "Manage machines, repositories, and deployments over SSH"
   },
   "commands": {
+    "agent": {
+      "description": "Agent-friendly utilities for AI coding assistants",
+      "capabilities": {
+        "description": "List all available commands with arguments and options"
+      },
+      "schema": {
+        "description": "Show detailed schema for a specific command"
+      },
+      "exec": {
+        "description": "Execute a command with JSON input from stdin"
+      }
+    },
+    "mcp": {
+      "description": "Model Context Protocol server for AI agents",
+      "serve": {
+        "description": "Start MCP server (stdio transport)",
+        "configOption": "Config name to use for all commands",
+        "timeoutOption": "Default command timeout in milliseconds",
+        "allowGrandOption": "Allow destructive operations on grand (non-fork) repositories. Default: fork-only mode"
+      },
+      "tools": {
+        "repo_fork": {
+          "parentDescription": "Parent repository name (or name:tag) to fork from",
+          "tagDescription": "Tag for the fork (creates name:tag, e.g. \"staging\")"
+        }
+      }
+    },
     "auth": {
       "description": "Authentication commands",
       "login": {
@@ -302,9 +329,9 @@
       "opsSkipped": "renet not available (skipped)"
     },
     "config": {
-      "description": "Manage CLI configuration files",
+      "description": "Manage config files, machines, and SSH connections",
       "init": {
-        "description": "Initialize a new config file",
+        "description": "Create a new named config file",
         "optionMasterPassword": "Encrypt resources with a master password",
         "optionS3Endpoint": "S3 endpoint URL",
         "optionS3Bucket": "S3 bucket name",
@@ -348,24 +375,6 @@
         "success": "Config \"{{name}}\" restored from backup (version {{version}})",
         "failed": "Failed to restore config \"{{name}}\" from backup"
       },
-      "addMachine": {
-        "description": "Add a machine to the current config",
-        "success": "Machine \"{{name}}\" added ({{user}}@{{ip}})"
-      },
-      "scanKeys": {
-        "description": "Scan SSH host keys for machines in the current config",
-        "keysScanned": "Host keys scanned for \"{{name}}\"",
-        "noKeys": "Could not scan host keys for \"{{name}}\"",
-        "completed": "Scanned {{count}}/{{total}} machines"
-      },
-      "removeMachine": {
-        "description": "Remove a machine from the current config",
-        "success": "Machine \"{{name}}\" removed"
-      },
-      "machines": {
-        "description": "List machines in the current config",
-        "noMachines": "No machines configured. Add one with: rdc config add-machine <name> --ip <ip> --user <user>"
-      },
       "setSsh": {
         "description": "Update SSH configuration for the current config",
         "success": "SSH configuration updated"
@@ -374,71 +383,220 @@
         "description": "Set the path to renet binary for local mode",
         "success": "Renet path set to: {{path}}"
       },
-      "setupMachine": {
-        "description": "Run setup on a remote machine (installs btrfs, Docker, etc.)",
-        "starting": "Setting up machine '{{machine}}'...",
-        "completed": "Machine '{{machine}}' setup completed successfully",
-        "failed": "Machine '{{machine}}' setup failed: {{error}}",
-        "datastoreOption": "Datastore path on remote machine",
-        "datastoreSizeOption": "Datastore size (e.g., 95%, 100G)"
+      "machine": {
+        "description": "Manage machines in the current config",
+        "add": {
+          "description": "Add a machine to the current config. Auto-scans SSH host keys. After adding, run: config machine setup <name>",
+          "descriptionShort": "Add a machine to the current config",
+          "success": "Machine \"{{name}}\" added ({{user}}@{{ip}})"
+        },
+        "remove": {
+          "description": "Remove a machine from the current config",
+          "success": "Machine \"{{name}}\" removed"
+        },
+        "list": {
+          "description": "List machines in the current config",
+          "noMachines": "No machines configured. Add one with: rdc config machine add <name> --ip <ip> --user <user>"
+        },
+        "scanKeys": {
+          "description": "Scan SSH host keys for machines in the current config",
+          "keysScanned": "Host keys scanned for \"{{name}}\"",
+          "noKeys": "Could not scan host keys for \"{{name}}\"",
+          "completed": "Scanned {{count}}/{{total}} machines"
+        },
+        "setup": {
+          "description": "Provision a remote machine for repositories (installs renet, configures Docker, BTRFS datastore). Idempotent. Required after 'config machine add' and before 'repo create'",
+          "descriptionShort": "Provision a remote machine for repositories",
+          "starting": "Setting up machine '{{machine}}'...",
+          "completed": "Machine '{{machine}}' setup completed successfully",
+          "failed": "Machine '{{machine}}' setup failed: {{error}}",
+          "datastoreOption": "Datastore path on remote machine",
+          "datastoreSizeOption": "Datastore size (e.g., 95%, 100G)"
+        },
+        "setCeph": {
+          "description": "Set Ceph RBD configuration for a machine",
+          "optionPool": "Ceph pool name (e.g., rbd)",
+          "optionImage": "RBD image name (e.g., datastore-prod1)",
+          "optionCluster": "Ceph cluster name",
+          "success": "Ceph config set for \"{{name}}\": pool={{pool}}, image={{image}}"
+        }
       },
-      "importStorage": {
-        "description": "Import storages from an rclone config file",
-        "optionName": "Import only this named section",
-        "noConfigs": "No valid storage configurations found in file",
-        "notFound": "Storage \"{{name}}\" not found in config file",
-        "unsupported": "Skipping \"{{name}}\": unsupported provider type \"{{type}}\"",
-        "imported": "Imported storage \"{{name}}\" ({{type}})",
-        "summary": "Imported {{count}} storage(s)"
+      "repository": {
+        "description": "Manage repository mappings in the current config",
+        "add": {
+          "description": "Add a repository GUID mapping to the current config",
+          "optionGuid": "Repository GUID (UUID from storage backup filenames)",
+          "optionTag": "Repository tag",
+          "optionCredential": "Repository credential (encryption passphrase)",
+          "optionNetworkId": "Network ID for Docker isolation (2816, 2880, ...). Auto-assigned if omitted",
+          "success": "Repository \"{{name}}\" added ({{guid}}, tag: {{tag}})",
+          "networkIdAssigned": "Network ID: {{networkId}}"
+        },
+        "remove": {
+          "description": "Remove a repository mapping from the current config",
+          "success": "Repository \"{{name}}\" removed"
+        },
+        "list": {
+          "description": "List repository GUID mappings in the current config",
+          "noRepositories": "No repositories configured. Add one with: rdc config repository add <name> --guid <guid>"
+        },
+        "listArchived": {
+          "description": "List archived repository credentials",
+          "noArchived": "No archived repositories"
+        },
+        "restoreArchived": {
+          "description": "Restore an archived repository credential",
+          "optionName": "Restore with a different name",
+          "success": "Restored \"{{name}}\" ({{guid}})"
+        },
+        "purgeArchived": {
+          "description": "Permanently delete all archived credentials",
+          "noArchived": "No archived repositories to purge",
+          "success": "Purged {{count}} archived credential(s)"
+        }
       },
-      "removeStorage": {
-        "description": "Remove a storage from the current config",
-        "success": "Storage \"{{name}}\" removed"
+      "provider": {
+        "description": "Manage cloud providers for automated machine provisioning",
+        "add": {
+          "description": "Add a cloud provider",
+          "optionProvider": "Known provider source (e.g., linode/linode, hetznercloud/hcloud)",
+          "optionSource": "Custom OpenTofu provider source (e.g., vultr/vultr)",
+          "optionToken": "API token for the cloud provider",
+          "optionRegion": "Default region for new machines",
+          "optionInstanceType": "Default instance type/size",
+          "optionImage": "Default OS image",
+          "optionSshUser": "SSH username for new VMs (default: root)",
+          "optionResource": "Custom: OpenTofu resource type for VM",
+          "optionLabelAttr": "Custom: attribute name for VM label",
+          "optionRegionAttr": "Custom: attribute name for region",
+          "optionSizeAttr": "Custom: attribute name for instance type",
+          "optionImageAttr": "Custom: attribute name for OS image",
+          "optionIpv4Output": "Custom: output attribute for IPv4 address",
+          "optionIpv6Output": "Custom: output attribute for IPv6 address",
+          "optionSshKeyAttr": "Custom: attribute name for SSH keys",
+          "optionSshKeyFormat": "Custom: SSH key format (inline_list or resource_id)",
+          "optionSshKeyResource": "Custom: OpenTofu resource type for SSH keys",
+          "success": "Cloud provider \"{{name}}\" added ({{provider}})"
+        },
+        "remove": {
+          "description": "Remove a cloud provider configuration",
+          "success": "Cloud provider \"{{name}}\" removed"
+        },
+        "list": {
+          "description": "List configured cloud providers",
+          "noProviders": "No cloud providers configured. Add with: rdc config provider add"
+        }
       },
-      "storages": {
-        "description": "List storages in the current config",
-        "noStorages": "No storages configured. Import with: rdc config import-storage <file>"
+      "storage": {
+        "description": "Manage storage backends in the current config",
+        "import": {
+          "description": "Import storages from an rclone config file",
+          "optionName": "Import only this named section",
+          "noConfigs": "No valid storage configurations found in file",
+          "notFound": "Storage \"{{name}}\" not found in config file",
+          "unsupported": "Skipping \"{{name}}\": unsupported provider type \"{{type}}\"",
+          "imported": "Imported storage \"{{name}}\" ({{type}})",
+          "summary": "Imported {{count}} storage(s)"
+        },
+        "remove": {
+          "description": "Remove a storage from the current config",
+          "success": "Storage \"{{name}}\" removed"
+        },
+        "list": {
+          "description": "List storages in the current config",
+          "noStorages": "No storages configured. Import with: rdc config storage import <file>"
+        }
       },
-      "addRepository": {
-        "description": "Add a repository GUID mapping to the current config",
-        "optionGuid": "Repository GUID (UUID from storage backup filenames)",
-        "optionTag": "Repository tag",
-        "optionCredential": "Repository credential (encryption passphrase)",
-        "optionNetworkId": "Network ID for Docker isolation (2816, 2880, ...). Auto-assigned if omitted",
-        "success": "Repository \"{{name}}\" added ({{guid}}, tag: {{tag}})",
-        "networkIdAssigned": "Network ID: {{networkId}}"
+      "infra": {
+        "description": "Manage infrastructure configuration (proxy, DNS, certificates)",
+        "set": {
+          "description": "Set infrastructure configuration for a machine (machine-specific: IPs, domain, ports; shared: cert email, CF DNS token)",
+          "descriptionShort": "Set infrastructure configuration for a machine",
+          "optionPublicIPv4": "Public IPv4 address (per-machine)",
+          "optionPublicIPv6": "Public IPv6 address (per-machine)",
+          "optionBaseDomain": "Base domain for applications (per-machine)",
+          "optionCertEmail": "Email for TLS certificate notifications (shared across machines)",
+          "optionCfDnsToken": "Cloudflare DNS API token for ACME DNS-01 challenge (shared across machines)",
+          "optionTcpPorts": "TCP ports to forward (comma-separated, e.g., 25,143,465)",
+          "optionUdpPorts": "UDP ports to forward (comma-separated, e.g., 53)",
+          "noOptions": "No options specified. Use --public-ipv4, --base-domain, etc.",
+          "invalidIPv4": "Invalid IPv4 address: {{ip}}",
+          "invalidIPv6": "Invalid IPv6 address: {{ip}}",
+          "success": "Infrastructure config updated for \"{{name}}\""
+        },
+        "show": {
+          "description": "Show infrastructure configuration for a machine",
+          "noInfra": "No infrastructure config set for \"{{name}}\""
+        },
+        "push": {
+          "description": "Push infrastructure config to machine (Traefik proxy, router, Cloudflare DNS). Run 'config infra set <machine>' first",
+          "descriptionShort": "Push infrastructure config to machine",
+          "success": "Infrastructure config pushed to \"{{name}}\"",
+          "proxyInstallWarning": "Proxy install failed (code {{code}}). Run manually: sudo renet proxy install",
+          "installingProxy": "Installing and starting proxy...",
+          "dnsSkipNoToken": "Skipping DNS: no Cloudflare API token. Set with: rdc config infra set <machine> --cf-dns-token <token>",
+          "dnsSkipLocal": "Skipping DNS: .local domain does not use Cloudflare",
+          "dnsResolvingZone": "Resolving Cloudflare zone for {{domain}}...",
+          "dnsCreated": "DNS: created {{type}} {{name}} → {{content}}",
+          "dnsUpdated": "DNS: updated {{type}} {{name}} → {{content}}",
+          "dnsUnchanged": "DNS: {{type}} {{name}} already correct",
+          "dnsError": "DNS warning: {{message}} (records may need manual setup)",
+          "certCacheUploaded": "Uploaded cached certificates to remote"
+        }
       },
-      "removeRepository": {
-        "description": "Remove a repository mapping from the current config",
-        "success": "Repository \"{{name}}\" removed"
+      "certCache": {
+        "description": "Manage cached TLS certificates",
+        "noBaseDomain": "Machine has no baseDomain configured",
+        "noCacheForDomain": "No cert cache found for {{domain}}",
+        "pull": {
+          "description": "Download and cache TLS certificates from a machine",
+          "optionNoPrune": "Skip pruning stale network-ID certificates",
+          "downloading": "Downloading certificates from {{machine}}...",
+          "pruned": "Pruned {{count}} stale certificate(s)",
+          "cached": "Cached {{count}} certificate(s) ({{size}})",
+          "merged": "Kept {{count}} certificate(s) from local cache with longer expiry",
+          "noAcmeJson": "No acme.json found on {{machine}}"
+        },
+        "push": {
+          "description": "Upload cached TLS certificates to a machine",
+          "uploading": "Uploading cached certificates to {{machine}}...",
+          "uploaded": "Uploaded {{count}} certificate(s) to {{machine}}",
+          "merged": "Merged {{count}} certificate(s) with longer expiry into {{machine}}",
+          "upToDate": "Certificates on {{machine}} are up to date",
+          "noCache": "No certificate cache found. Run 'rdc config cert-cache pull <machine>' first"
+        },
+        "status": {
+          "description": "Show cached certificate inventory",
+          "noCache": "No certificate cache stored",
+          "header": "Certificate cache for {{baseDomain}}",
+          "updatedAt": "Last updated: {{date}} (from {{machine}})",
+          "certCount": "{{count}} certificate(s), {{size}} compressed"
+        },
+        "clear": {
+          "description": "Remove the certificate cache",
+          "cleared": "Certificate cache cleared",
+          "noCache": "No certificate cache to clear"
+        }
       },
-      "repositories": {
-        "description": "List repository GUID mappings in the current config",
-        "noRepositories": "No repositories configured. Add one with: rdc config add-repository <name> --guid <guid>"
-      },
-      "setInfra": {
-        "description": "Set infrastructure configuration for a machine",
-        "optionPublicIPv4": "Public IPv4 address",
-        "optionPublicIPv6": "Public IPv6 address",
-        "optionBaseDomain": "Base domain for applications",
-        "optionCertEmail": "Email for TLS certificate notifications",
-        "optionCfDnsToken": "Cloudflare DNS API token for ACME DNS-01 challenge",
-        "optionTcpPorts": "TCP ports to forward (comma-separated, e.g., 25,143,465)",
-        "optionUdpPorts": "UDP ports to forward (comma-separated, e.g., 53)",
-        "noOptions": "No options specified. Use --public-ipv4, --base-domain, etc.",
-        "invalidIPv4": "Invalid IPv4 address: {{ip}}",
-        "invalidIPv6": "Invalid IPv6 address: {{ip}}",
-        "success": "Infrastructure config updated for \"{{name}}\""
-      },
-      "showInfra": {
-        "description": "Show infrastructure configuration for a machine",
-        "noInfra": "No infrastructure config set for \"{{name}}\""
-      },
-      "pushInfra": {
-        "description": "Push infrastructure configuration to remote machine",
-        "success": "Infrastructure config pushed to \"{{name}}\"",
-        "proxyInstallWarning": "Proxy install failed (code {{code}}). Run manually: sudo renet proxy install",
-        "installingProxy": "Installing and starting proxy..."
+      "backupStrategy": {
+        "description": "Manage multi-destination backup strategy",
+        "set": {
+          "description": "Configure backup strategy settings",
+          "optionDestination": "Storage destination name",
+          "optionCron": "Cron expression for backup schedule (e.g., \"0 2 * * *\")",
+          "optionEnable": "Enable scheduled backups",
+          "optionDisable": "Disable scheduled backups",
+          "noOptions": "Specify at least one option: --destination, --cron, --enable, or --disable",
+          "saved": "Backup strategy configuration saved"
+        },
+        "show": {
+          "description": "Show current backup strategy configuration",
+          "notConfigured": "No backup strategy configured",
+          "schedule": "Schedule: {{schedule}}",
+          "enabled": "Enabled: {{enabled}}",
+          "noDestinations": "No backup destinations configured",
+          "destinations": "Destinations:"
+        }
       }
     },
     "store": {
@@ -511,7 +669,7 @@
       }
     },
     "machine": {
-      "description": "Machine management",
+      "description": "Manage remote machines (status, containers, services, health)",
       "list": {
         "description": "List machines",
         "fetching": "Fetching machines..."
@@ -560,7 +718,8 @@
         "exitCode": "\nExit Code: {{code}}"
       },
       "containers": {
-        "description": "List Docker containers on a machine",
+        "description": "List containers on a machine with status, health, and domain routing. JSON includes full container details with repository resolved to name (original in repository_guid), domain, and autoRoute",
+        "descriptionShort": "List containers on a machine",
         "fetching": "Fetching containers...",
         "fetched": "Containers fetched",
         "noContainers": "No containers found on this machine",
@@ -569,7 +728,8 @@
         "unhealthyFound": "{{count}} unhealthy container(s) found"
       },
       "services": {
-        "description": "List systemd services on a machine",
+        "description": "List rediacc-managed systemd services on a machine (name, state, sub-state, restart count, memory, repository resolved to name with original in repository_guid). Use --stability-check to exit with code 2 if any failed or restarting (for CI/CD)",
+        "descriptionShort": "List rediacc-managed systemd services on a machine",
         "fetching": "Fetching services...",
         "fetched": "Services fetched",
         "noServices": "No rediacc services found on this machine",
@@ -577,11 +737,14 @@
         "allStable": "All services are stable",
         "unstableFound": "{{count}} unstable service(s) found"
       },
-      "status": {
-        "description": "Show full machine status (system, repos, containers, services)",
+      "query": {
+        "description": "Show full machine status (infra, system, repos with name/guid, containers with repository/repository_guid/domain/autoRoute, services with repository/repository_guid)",
+        "descriptionShort": "Show full machine status",
         "fetching": "Fetching status from {{machine}}...",
         "fetched": "Status fetched",
-        "noData": "No status data available"
+        "noData": "No status data available",
+        "infrastructure": "Infrastructure",
+        "connection": "Connection"
       },
       "vaultStatus": {
         "description": "Show parsed vault status for a machine",
@@ -603,7 +766,8 @@
         "repoDocker": "    Docker: {{status}}"
       },
       "repos": {
-        "description": "List deployed repositories on a machine",
+        "description": "List deployed repositories on a machine (name, GUID, size, mount status, Docker state, container count, disk usage, modified date, Rediaccfile present). JSON nests containers and services under each repo. Use --search to filter by name or GUID",
+        "descriptionShort": "List deployed repositories on a machine",
         "fetching": "Fetching machine...",
         "fetched": "Machine fetched",
         "noRepos": "No repositories deployed on this machine"
@@ -630,6 +794,69 @@
         "message": "  Message: {{message}}",
         "saving": "Saving known_hosts to machine \"{{machine}}\" vault...",
         "saved": "Known hosts saved to machine vault"
+      },
+      "provision": {
+        "description": "Provision a new machine on a cloud provider using OpenTofu",
+        "optionProvider": "Cloud provider name (from config add-provider)",
+        "optionRegion": "Override default region",
+        "optionType": "Override default instance type",
+        "optionImage": "Override default OS image",
+        "optionSshUser": "SSH username for the new VM (default: root)",
+        "optionInfra": "Also configure infrastructure (set-infra + push-infra)",
+        "optionBaseDomain": "Base domain for infrastructure (e.g., example.com). Implies --infra",
+        "optionNoInfra": "Skip infrastructure configuration (proxy + DNS)",
+        "configuringInfra": "Configuring infrastructure (proxy + DNS) for {{name}}...",
+        "infraInherited": "Auto-detected base domain from sibling machine \"{{source}}\"",
+        "noInfraHint": "No base domain configured. Run 'rdc config set-infra <machine> --base-domain <domain>' then 'rdc config push-infra <machine>' to enable DNS and proxy.",
+        "providerRequired": "Cloud provider \"{{name}}\" not found. Add with: rdc config add-provider",
+        "tofuNotInstalled": "OpenTofu (tofu) is not installed. Install from: https://opentofu.org/docs/intro/install/",
+        "provisioning": "Provisioning {{name}} on {{provider}} ({{region}})...",
+        "waitingSSH": "Waiting for SSH connectivity...",
+        "sshReady": "SSH connection established",
+        "settingUp": "Running machine setup...",
+        "completed": "Machine {{name}} provisioned and ready ({{ip}})",
+        "failed": "Machine provisioning failed: {{error}}"
+      },
+      "deprovision": {
+        "description": "Destroy a cloud-provisioned machine and remove from config",
+        "optionForce": "Skip confirmation prompt",
+        "confirm": "This will permanently destroy machine \"{{name}}\" and all its data. Continue?",
+        "destroying": "Destroying {{name}}...",
+        "completed": "Machine {{name}} destroyed and removed from config",
+        "noState": "No OpenTofu state found for \"{{name}}\". Use 'config remove-machine' for manually added machines.",
+        "destroyFailed": "Infrastructure destroy failed for {{name}}: {{error}}. Continuing with config removal (--force).",
+        "dnsDeleted": "Deleted DNS record: {{type}} {{name}}",
+        "dnsCleanedUp": "Removed {{count}} DNS record(s)"
+      },
+      "backup": {
+        "description": "Machine backup management",
+        "schedule": {
+          "description": "Push backup schedule to a remote machine (systemd timer)",
+          "success": "Backup schedule deployed to {{machine}}"
+        }
+      },
+      "prune": {
+        "description": "Remove orphaned datastore resources and stale snapshots from a machine",
+        "descriptionShort": "Prune orphaned resources and stale snapshots",
+        "dryRunOption": "Show what would be removed without making changes",
+        "snapshotsOnlyOption": "Only prune stale snapshots",
+        "datastoreOnlyOption": "Only prune orphaned datastore resources",
+        "startingDatastore": "Scanning for orphaned datastore resources on {{machine}}...",
+        "datastoreCompleted": "Datastore prune completed",
+        "datastoreFailed": "Datastore prune failed",
+        "startingSnapshots": "Scanning for stale snapshots on {{machine}}...",
+        "checkingActivity": "Checking snapshot activity...",
+        "snapshotInUse": "Skipping {{name}} (in active use)",
+        "snapshotStale": "Stale: {{name}} ({{size}})",
+        "snapshotDeleting": "Deleting {{name}}...",
+        "snapshotDeleted": "Deleted {{name}}",
+        "noStaleSnapshots": "No stale snapshots found",
+        "snapshotsCompleted": "Snapshot prune: {{deleted}} deleted, {{skipped}} skipped",
+        "orphanedReposOption": "Also prune repo images not in any config",
+        "orphanedReposStarting": "Scanning for orphaned repositories on {{machine}}...",
+        "orphanedReposCompleted": "Pruned {{count}} orphaned repositories",
+        "noReposFound": "No repositories found on machine",
+        "completed": "Prune completed"
       }
     },
     "organization": {
@@ -730,8 +957,50 @@
         "localFallback": "(using local checks — renet not available)"
       }
     },
+    "datastore": {
+      "description": "Manage Ceph RBD datastore lifecycle (init, fork, unfork, status)",
+      "machineOption": "Machine name (where the Ceph datastore is hosted)",
+      "init": {
+        "description": "Initialize datastore on a machine (local loop-backed or Ceph RBD)",
+        "sizeOption": "Datastore size (e.g., 5G, 50G, 100G)",
+        "backendOption": "Backend type: local (default) or ceph",
+        "poolOption": "Ceph pool name (default: from machine config, or rbd)",
+        "imageOption": "Ceph RBD image name (default: from machine config via set-ceph)",
+        "clusterOption": "Ceph cluster name (default: ceph)",
+        "forceOption": "Force initialization even if datastore already exists (WARNING: reformats storage)",
+        "starting": "Initializing datastore on \"{{machine}}\"...",
+        "completed": "Datastore initialized",
+        "failed": "Datastore initialization failed",
+        "imageRequired": "--image is required for ceph backend (or set via: rdc config set-ceph -m <machine> --image <name>)"
+      },
+      "fork": {
+        "description": "Create a local COW copy of a Ceph datastore via RBD snapshot + clone (< 2s). Save snapshot/clone names from output for unfork. Only one fork per target name; unfork before re-forking",
+        "descriptionShort": "Create a local COW copy of a Ceph datastore",
+        "toOption": "Clone suffix (creates clone named <image>-fork-<name>). The fork stays on the source machine",
+        "cowSizeOption": "COW backing file size (default: auto, grows on demand)",
+        "starting": "Forking datastore on \"{{source}}\" (clone named for \"{{target}}\")...",
+        "completed": "Datastore forked successfully (snapshot: {{snapshot}})",
+        "failed": "Datastore fork failed"
+      },
+      "unfork": {
+        "description": "Clean up a fork: unmount COW, remove clone, remove snapshot",
+        "sourceOption": "Original RBD image that was forked (from config set-ceph --image, e.g. ds-prod)",
+        "snapshotOption": "Snapshot to remove (the \"Snapshot:\" value from fork output, e.g. fork-<timestamp>)",
+        "destOption": "Clone image to remove (the \"Clone:\" value from fork output, e.g. ds-prod-fork-<machine>)",
+        "poolOption": "Ceph pool name (default: from machine config)",
+        "mountPointOption": "Fork mount point to unmount (default: /mnt/rediacc)",
+        "forceOption": "Continue cleanup even if individual steps fail (e.g. unmount, snapshot removal)",
+        "starting": "Cleaning up forked datastore on \"{{machine}}\"...",
+        "completed": "Fork cleaned up successfully",
+        "failed": "Fork cleanup failed"
+      },
+      "status": {
+        "description": "Show datastore backend, size, usage, mount status, and cow_mode (if forked)",
+        "starting": "Checking datastore status on \"{{machine}}\"..."
+      }
+    },
     "protocol": {
-      "description": "Manage {{scheme}}:// protocol handler registration and URL handling",
+      "description": "Register and handle {{scheme}}:// protocol URLs",
       "register": {
         "description": "Register the protocol handler on the system",
         "systemWide": "Registering protocol handler system-wide...",
@@ -878,8 +1147,8 @@
       },
       "create": {
         "description": "Create a new repository",
-        "creating": "Creating repository \"{{name}}:{{tag}}\"...",
-        "success": "Repository \"{{name}}:{{tag}}\" created"
+        "creating": "Creating repository \"{{name}}\"...",
+        "success": "Repository \"{{name}}\" created"
       },
       "rename": {
         "description": "Rename a repository",
@@ -891,9 +1160,9 @@
         "checkingRelationships": "Checking repository relationships...",
         "relationshipsChecked": "Repository relationships checked",
         "grandRepoWarning": "This is a grand repository (credential). Deleting it is irreversible.",
-        "confirm": "Delete repository \"{{name}}:{{tag}}\"? This cannot be undone.",
-        "deleting": "Deleting repository \"{{name}}:{{tag}}\"...",
-        "success": "Repository \"{{name}}:{{tag}}\" deleted"
+        "confirm": "Delete repository \"{{name}}\"? This cannot be undone.",
+        "deleting": "Deleting repository \"{{name}}\"...",
+        "success": "Repository \"{{name}}\" deleted"
       },
       "promote": {
         "description": "Promote a fork to grand status",
@@ -902,8 +1171,8 @@
         "separateInfo": "\nThis will separate \"{{name}}\" from grand repository \"{{grandName}}\"",
         "siblingsInfo": "\n{{count}} sibling clone(s) will remain linked to the original grand:",
         "confirmPromote": "\nProceed with promotion?",
-        "promoting": "Promoting repository \"{{name}}:{{tag}}\"...",
-        "success": "Repository \"{{name}}:{{tag}}\" promoted to grand status"
+        "promoting": "Promoting repository \"{{name}}\"...",
+        "success": "Repository \"{{name}}\" promoted to grand status"
       },
       "vault": {
         "description": "Repository vault management",
@@ -921,34 +1190,44 @@
       }
     },
     "repo": {
-      "description": "Repository lifecycle management",
+      "description": "Deploy and manage encrypted repositories on machines. Use renet compose (never raw docker compose). Renet auto-injects network_mode:host (compose ports: are ignored), rediacc.* labels, and per-service loopback IPs. Containers MUST bind to their allocated IP (not 0.0.0.0) to avoid port conflicts. STORAGE: Use ${REPOSITORY_PATH}/... bind mounts for all persistent data (e.g. volumes: ['${REPOSITORY_PATH}/data:/data']). Do NOT use Docker named volumes — they live outside the repo and won't be included in forks/backups. HTTPS routing: (1) Auto-route (default, fork-friendly): renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain} — the compose service name becomes the URL prefix (e.g. service 'myapp' in repo 'marketing' → myapp.marketing.hostinger.rediacc.io). Use rediacc.service_port label for non-80 ports. (2) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true + traefik.http.routers/services labels. Rediaccfile lifecycle: up() starts containers (generate IP-dependent configs and pull images here). ENV VARS — two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. OPENCLAW_IP), ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REPOSITORY_NETWORK_ID env vars into each container. Use SERVICE_IP in your app code to bind to the correct IP. Proxy routes take ~3s to become active after deploy",
+      "descriptionShort": "Deploy and manage encrypted repositories on machines",
       "machineOption": "Target machine name",
+      "yesOption": "Skip confirmation for batch operations",
+      "batchConfirm": "{{action}} all {{count}} repos on \"{{machine}}\"? [y/N]",
+      "batchStarting": "{{action}}: \"{{repo}}\"...",
+      "batchIterating": "{{action}} {{current}}/{{total}}: \"{{repo}}\"...",
+      "batchResult": "{{action}} complete: {{succeeded}}/{{total}} succeeded",
+      "batchFailed": "{{action}} failed for \"{{repo}}\": {{error}}",
       "noCredential": "Warning: Repository \"{{name}}\" has no credential set. Operations on encrypted repos may fail.",
       "mount": {
-        "description": "Mount a repository (open LUKS container)",
-        "checkpointOption": "Restore from checkpoint after mount",
+        "description": "Mount a repository (decrypt and open the LUKS container, making the filesystem accessible). Needed on first deploy, after 'repo push' to a new machine, or after 'repo unmount'. Can also be done via 'repo up --mount'. The volume stays mounted until explicitly unmounted. Omit name to mount all repos on the machine",
+        "descriptionShort": "Mount a repository (decrypt and open LUKS container)",
+        "checkpointOption": "Restore CRIU container checkpoint after mount (resume processes from saved memory state). Used after 'repo push --checkpoint' for live migration",
         "starting": "Mounting \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Mount completed",
         "failed": "Mount failed"
       },
       "unmount": {
-        "description": "Unmount a repository",
-        "checkpointOption": "Create checkpoint before unmount",
+        "description": "Unmount a repository (close the LUKS container, detaching the encrypted filesystem). Services must be stopped first ('repo down'). After unmount, repo data is inaccessible until remounted. Required before 'repo resize'. Omit name to unmount all repos on the machine",
+        "descriptionShort": "Unmount a repository (close LUKS container)",
+        "checkpointOption": "Create CRIU container checkpoint before unmount (capture running process memory state for later restore)",
         "starting": "Unmounting \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Unmount completed",
         "failed": "Unmount failed"
       },
       "up": {
-        "description": "Start repository services (Rediaccfile orchestration)",
-        "mountOption": "Mount repository first",
-        "prepOnlyOption": "Only run preparation step",
-        "grandOption": "Grand repository name (auto-resolves to GUID)",
+        "description": "Deploy or update a repository (mount, run Rediaccfile up which calls renet compose). Proxy routes take ~3s to become active after deploy. Use --mount for first deploy or forked repos. Use --checkpoint to restore containers from a CRIU checkpoint (for live process migration). Omit name to deploy all repos on the machine",
+        "descriptionShort": "Deploy or update a repository on a machine",
+        "mountOption": "Mount repository first (required for forked repos on first deploy)",
+        "checkpointOption": "Restore containers from CRIU checkpoint after deploy (for live process migration from another machine)",
+        "grandOption": "Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent",
         "starting": "Starting services for \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Services started",
         "failed": "Service start failed"
       },
       "upAll": {
-        "description": "Start all repository services on a machine",
+        "description": "Deploy all repositories on a machine",
         "includeForksOption": "Also mount/start forked repositories",
         "mountOnlyOption": "Only mount, don't start services",
         "dryRunOption": "Show what would be done without executing",
@@ -959,15 +1238,19 @@
         "failed": "Up-all operation failed"
       },
       "down": {
-        "description": "Stop repository services",
-        "unmountOption": "Unmount repository after stopping",
-        "grandOption": "Grand repository name (auto-resolves to GUID)",
+        "description": "Stop repository Docker containers (runs Rediaccfile down via renet compose). Does NOT unmount the encrypted volume -- the repo stays mounted and can be restarted with 'repo up'. Use --unmount to also close the LUKS container after stopping. Omit name to stop all repos on the machine",
+        "descriptionShort": "Stop repository Docker containers",
+        "unmountOption": "Also unmount (close LUKS container) after stopping. Equivalent to 'repo down' then 'repo unmount'. Required before 'repo resize' or to fully secure the volume",
+        "grandOption": "Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent",
         "starting": "Stopping services for \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Services stopped",
-        "failed": "Service stop failed"
+        "failed": "Service stop failed",
+        "allStarting": "Stopping all repositories on \"{{machine}}\"...",
+        "allCompleted": "All repositories stopped",
+        "allFailed": "Down-all operation failed"
       },
       "status": {
-        "description": "Get repository status",
+        "description": "Get repository status (mount state, Docker daemon running, container count, disk usage)",
         "starting": "Getting status of \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Status retrieved",
         "failed": "Status check failed"
@@ -989,38 +1272,46 @@
         "alreadyExists": "Repository \"{{name}}\" already exists in config"
       },
       "delete": {
-        "description": "Delete a repository",
+        "description": "Delete a repository (destroys containers, volumes, and encrypted image). Config entry is preserved. Use --archive-config to move credentials to deletedRepositories for recovery via 'config restore-archived'",
+        "descriptionShort": "Delete a repository from a machine",
+        "archiveOption": "Move config entry to deletedRepositories for later recovery",
         "starting": "Deleting \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Repository deleted",
-        "removed": "Removed \"{{repository}}\" from config",
+        "archived": "Credential for \"{{repository}}\" archived",
+        "restoreHint": "Restore with: rdc config restore-archived {{guid}}",
         "failed": "Repository deletion failed"
       },
       "fork": {
-        "description": "Create a CoW (Copy-on-Write) fork of a repository",
-        "tagOption": "Fork name",
+        "description": "Create a CoW (Copy-on-Write) fork of a repository. Fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}.{forkName}.{machine}.{baseDomain}) — it is a fully independent copy. Online forking is supported — the parent can remain running. Fork inherits the parent's encryption credentials automatically. CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target> --mount. WARNING: Do NOT use 'backup push' alone for forking — it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically",
+        "descriptionShort": "Create a CoW fork of a repository (new GUID, networkId, IP range)",
+        "tagOption": "Tag for the fork (creates name:tag)",
+        "tagRequired": "Tag is required for fork. Usage: rdc repo fork <parent> <tag> -m <machine>",
         "starting": "Forking \"{{parent}}\" as \"{{repository}}\" on \"{{machine}}\"...",
         "registered": "Registered fork \"{{repository}}\" ({{guid}}, network {{networkId}})",
-        "completed": "Fork created",
+        "completed": "Fork created. Deploy locally: repo up {{repository}} -m {{machine}} --mount. To migrate fork to another machine: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
         "failed": "Fork creation failed",
         "rollback": "Rolled back config for \"{{repository}}\"",
         "alreadyExists": "Repository \"{{name}}\" already exists in config"
       },
       "resize": {
-        "description": "Resize a repository offline (supports grow and shrink)",
+        "description": "Resize a repository offline (supports both grow and shrink). Repo must be unmounted first ('repo down --unmount'). For zero-downtime growth without stopping, use 'repo expand' instead",
+        "descriptionShort": "Resize a repository offline (grow or shrink)",
         "sizeOption": "New repository size (e.g., 10G, 100G, 1T)",
         "starting": "Resizing \"{{repository}}\" to {{size}} on \"{{machine}}\"...",
         "completed": "Resize completed",
         "failed": "Resize failed"
       },
       "expand": {
-        "description": "Expand a mounted repository online (zero downtime)",
+        "description": "Expand a mounted repository online (zero downtime, grow-only). Grows the LUKS container and filesystem while containers keep running. Cannot shrink -- use 'repo resize' for that (requires unmount)",
+        "descriptionShort": "Expand a mounted repository online (zero downtime, grow-only)",
         "sizeOption": "New repository size (e.g., 10G, 100G, 1T)",
         "starting": "Expanding \"{{repository}}\" to {{size}} on \"{{machine}}\"...",
         "completed": "Expansion completed",
         "failed": "Expansion failed"
       },
       "validate": {
-        "description": "Validate repository integrity",
+        "description": "Validate repository integrity (LUKS container, filesystem consistency, configuration). Use after unexpected shutdowns or to verify backup health",
+        "descriptionShort": "Validate repository integrity",
         "starting": "Validating \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Validation completed",
         "failed": "Validation failed"
@@ -1028,28 +1319,22 @@
       "autostart": {
         "description": "Manage automatic repository startup on boot",
         "enable": {
-          "description": "Enable autostart for a repository",
+          "description": "Enable autostart for a repository (omit name to enable all)",
           "starting": "Enabling autostart for \"{{repository}}\" on \"{{machine}}\"...",
           "completed": "Autostart enabled",
-          "failed": "Failed to enable autostart"
+          "failed": "Failed to enable autostart",
+          "startingAll": "Enabling autostart for all repositories on \"{{machine}}\"...",
+          "completedAll": "Autostart enabled for all repositories",
+          "failedAll": "Failed to enable autostart for all repositories"
         },
         "disable": {
-          "description": "Disable autostart for a repository",
+          "description": "Disable autostart for a repository (omit name to disable all)",
           "starting": "Disabling autostart for \"{{repository}}\" on \"{{machine}}\"...",
           "completed": "Autostart disabled",
-          "failed": "Failed to disable autostart"
-        },
-        "enableAll": {
-          "description": "Enable autostart for all repositories",
-          "starting": "Enabling autostart for all repositories on \"{{machine}}\"...",
-          "completed": "Autostart enabled for all repositories",
-          "failed": "Failed to enable autostart for all repositories"
-        },
-        "disableAll": {
-          "description": "Disable autostart for all repositories",
-          "starting": "Disabling autostart for all repositories on \"{{machine}}\"...",
-          "completed": "Autostart disabled for all repositories",
-          "failed": "Failed to disable autostart for all repositories"
+          "failed": "Failed to disable autostart",
+          "startingAll": "Disabling autostart for all repositories on \"{{machine}}\"...",
+          "completedAll": "Autostart disabled for all repositories",
+          "failedAll": "Failed to disable autostart for all repositories"
         },
         "list": {
           "description": "List repositories with autostart enabled",
@@ -1059,24 +1344,119 @@
         }
       },
       "ownership": {
-        "description": "Change repository directory ownership",
+        "description": "Change repository directory ownership UID on the mounted volume (default: 7111). Use when containers need a specific UID to access repo files",
+        "descriptionShort": "Change repository directory ownership UID",
         "uidOption": "Owner UID (default: 7111)",
         "starting": "Setting ownership of \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Ownership updated",
         "failed": "Ownership update failed"
       },
       "template": {
-        "description": "Apply a template to a repository",
-        "fileOption": "Path to template JSON file",
-        "grandOption": "Grand repository name (auto-resolves to GUID)",
+        "description": "Apply a template to a repository (writes docker-compose.yml and Rediaccfile). Rediaccfile must use 'renet compose' (not 'docker compose'). Compose must NOT use 'restart: always' or 'restart: unless-stopped'. Renet auto-injects network_mode:host, CRIU capabilities, and rediacc labels",
+        "descriptionShort": "Apply a template to a repository (docker-compose.yml + Rediaccfile)",
+        "fileOption": "Path to template JSON file ({\"version\":\"1\",\"compose\":\"<yaml>\",\"rediaccfile\":\"<bash>\"}). Rediaccfile lifecycle: up() starts containers (pull images, generate configs here), down() stops. Minimal Rediaccfile: up() { renet compose -- pull; renet compose -- up -d; } down() { renet compose -- down; }. IMPORTANT: Rediaccfile MUST use 'renet compose' — 'docker compose' is rejected. ENV VARS — two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. OPENCLAW_IP), ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REPOSITORY_NETWORK_ID env vars. Use SERVICE_IP in your app code to bind to the correct loopback IP. Containers MUST bind to SERVICE_IP:<port> (not 0.0.0.0) since network_mode:host is injected and ports: are ignored. STORAGE: All persistent data MUST use ${REPOSITORY_PATH}/... bind mounts (e.g. volumes: ['${REPOSITORY_PATH}/dbdata:/data']). Do NOT use Docker named volumes — they are outside the repo and excluded from forks/backups. RESTART POLICY: Do NOT use 'restart: always' or 'restart: unless-stopped' — these conflict with CRIU checkpoint/restore. Use 'restart: on-failure' or omit it. Compose: do NOT add network_mode or rediacc.* labels (renet injects them). The compose service name becomes the auto-route URL prefix (e.g. service 'openclaw' in repo 'myapp' → openclaw.myapp.{machineName}.{baseDomain}). HTTPS routing: (A) Auto-route (fork-friendly, recommended): do NOT add traefik.enable. Renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain}. Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique domain. (B) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true, traefik.http.routers.<n>.rule=Host(`domain`), traefik.http.routers.<n>.entrypoints=websecure,websecure-v6, traefik.http.routers.<n>.tls.certresolver=letsencrypt, traefik.http.services.<n>.loadbalancer.server.port=<port>. For TCP/UDP: rediacc.tcp_ports=3306 / rediacc.udp_ports=53",
+        "grandOption": "Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent",
         "fileNotFound": "Template file not found: {{path}}",
         "starting": "Applying template to \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Template applied",
         "failed": "Template application failed"
+      },
+      "push": {
+        "description": "Push repository backup to storage or machine. Omit name to push all repos. For machine-to-machine transfer (--to-machine), the encrypted repo image is copied directly with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork on another machine, use 'repo fork' first (gets new GUID/networkId), then push the fork. After push, deploy on the target with: repo up <name> -m <target> --mount",
+        "descriptionShort": "Push repository backup to storage or machine",
+        "optionDest": "Destination filename",
+        "optionToStorage": "Destination storage name",
+        "optionToMachine": "Destination machine name",
+        "optionProvider": "Cloud provider to auto-provision target machine if it doesn't exist (from config add-provider)",
+        "optionCheckpoint": "Create CRIU container checkpoint before backup (captures process memory state). For live migration: repo push <repo> -m <source> --to-machine <target> --checkpoint, then: repo up <repo> -m <target> --mount --checkpoint (restores process state on target)",
+        "optionForce": "Force overwrite existing backup",
+        "optionTag": "Deployment tag for versioning",
+        "destRequired": "Specify --to <storage> or --to-machine <machine>",
+        "destIgnoredForStorage": "Ignoring --dest {{provided}}: storage backups use repository GUID ({{dest}})",
+        "pushing": "Pushing backup of \"{{repo}}\" to {{dest}}...",
+        "optionUp": "After push, mount and deploy repository on target machine",
+        "deploying": "Deploying \"{{repo}}\" on {{machine}}...",
+        "deployed": "Repository \"{{repo}}\" deployed on {{machine}}",
+        "deployFailed": "Failed to deploy \"{{repo}}\" after push"
+      },
+      "pull": {
+        "description": "Pull repository backup from storage or another machine (restores the encrypted LUKS image). Omit name to pull all repos. After pull, deploy with 'repo up <name> -m <machine> --mount'. Use --force to overwrite existing",
+        "descriptionShort": "Pull repository backup from storage or machine",
+        "optionFromStorage": "Source storage name",
+        "optionFromMachine": "Source machine name",
+        "optionForce": "Force overwrite existing repository",
+        "sourceRequired": "Specify --from <storage> or --from-machine <machine>",
+        "pulling": "Pulling backup of \"{{repo}}\"..."
+      },
+      "backup": {
+        "description": "Manage repository backups",
+        "list": {
+          "description": "List available backups on storage or machine",
+          "optionFromStorage": "Source storage name",
+          "optionFromMachine": "Source machine name",
+          "sourceRequired": "Specify --from <storage> or --from-machine <machine>",
+          "listing": "Listing backups..."
+        }
+      },
+      "sync": {
+        "description": "Sync repositories and files (bulk push/pull, file transfer)",
+        "push": {
+          "description": "Push repositories to cloud storage (omit name to push all)",
+          "optionTo": "Destination storage name",
+          "optionRepo": "Filter to specific repository (repeatable)",
+          "success": "Sync push completed"
+        },
+        "pull": {
+          "description": "Pull repositories from cloud storage (omit name to pull all)",
+          "optionFrom": "Source storage name",
+          "optionRepo": "Filter to specific repository (repeatable)",
+          "optionOverride": "Override existing unmounted repos on pull",
+          "success": "Sync pull completed"
+        },
+        "upload": {
+          "description": "Upload files to a repository via rsync over SSH (delta transfer). Use --mirror to delete extra remote files, --dry-run to preview, --exclude to skip patterns",
+          "descriptionShort": "Upload files to a repository via rsync"
+        },
+        "download": {
+          "description": "Download files from a repository via rsync over SSH (delta transfer). Use --mirror to delete extra local files, --dry-run to preview, --exclude to skip patterns",
+          "descriptionShort": "Download files from a repository via rsync"
+        },
+        "status": {
+          "description": "Dry-run comparison of local and remote files (shows what would be transferred without actually transferring)",
+          "descriptionShort": "Compare local and remote files (dry-run)"
+        }
+      },
+      "snapshot": {
+        "description": "Manage BTRFS snapshots on remote machines",
+        "create": {
+          "description": "Create a point-in-time BTRFS snapshot of a repository (instant, no downtime). Use --snapshot-name for a custom name",
+          "descriptionShort": "Create a BTRFS snapshot of a repository",
+          "optionSnapshotName": "Explicit snapshot name (auto-generated if empty)",
+          "creating": "Creating snapshot of \"{{repo}}\" on {{machine}}...",
+          "success": "Snapshot created: {{name}} ({{path}})"
+        },
+        "list": {
+          "description": "List BTRFS snapshots on a remote machine with name, creation date, and size",
+          "noSnapshots": "No snapshots found.",
+          "header": "{{count}} snapshot(s) in {{path}}:"
+        },
+        "delete": {
+          "description": "Delete a snapshot from a remote machine",
+          "success": "Snapshot deleted: {{name}}"
+        }
+      }
+    },
+    "backup": {
+      "description": "Push, pull, and sync repository backups across storage and machines",
+      "sync": {
+        "description": "Bidirectional sync of repository backups across machines"
+      },
+      "schedule": {
+        "description": "Deploy backup schedules to remote machines"
       }
     },
     "storage": {
-      "description": "Storage management",
+      "description": "Manage storage providers and browse remote files",
       "list": {
         "description": "List storage providers",
         "fetching": "Fetching storage providers..."
@@ -1087,6 +1467,15 @@
         "listing": "Listing files in \"{{name}}\"...",
         "noFiles": "No files found",
         "failed": "Failed to list files: {{error}}"
+      },
+      "prune": {
+        "description": "Delete orphaned backups from storage that are no longer in any config. Multi-config safe with grace period protection.",
+        "descriptionShort": "Delete orphaned backups from storage",
+        "listing": "Listing backups in \"{{storage}}\"...",
+        "listFailed": "Failed to list storage backups",
+        "noBackups": "No backups found in storage",
+        "found": "Found {{count}} backups in storage",
+        "completed": "Pruned {{count}} orphaned backups"
       },
       "pull": {
         "description": "Pull a backup from cloud storage to a machine",
@@ -1099,7 +1488,7 @@
       }
     },
     "sync": {
-      "description": "File synchronization with repositories using rsync",
+      "description": "Transfer files between local and remote repositories via rsync",
       "fetchingDetails": "Fetching connection details...",
       "previewingChanges": "\nPreviewing changes...\n",
       "noChanges": "No changes to sync.",
@@ -1109,66 +1498,122 @@
       "duration": "Duration: {{seconds}}s",
       "errors": "Errors:",
       "upload": {
-        "description": "Upload files to a repository",
+        "description": "Upload files to a repository via rsync over SSH (delta transfer). Use --mirror to delete extra remote files, --dry-run to preview, --exclude to skip patterns",
+        "descriptionShort": "Upload files to a repository via rsync",
         "starting": "Starting upload...",
         "progress": "Uploading: {{percentage}}% - {{file}} ({{speed}})",
         "completed": "Upload completed: {{count}} files transferred",
         "failed": "Upload failed"
       },
       "download": {
-        "description": "Download files from a repository",
+        "description": "Download files from a repository via rsync over SSH (delta transfer). Use --mirror to delete extra local files, --dry-run to preview, --exclude to skip patterns",
+        "descriptionShort": "Download files from a repository via rsync",
         "starting": "Starting download...",
         "progress": "Downloading: {{percentage}}% - {{file}} ({{speed}})",
         "completed": "Download completed: {{count}} files transferred",
         "failed": "Download failed"
       },
       "status": {
-        "description": "Check sync status and compare local/remote files"
+        "description": "Dry-run comparison of local and remote files (shows what would be transferred without actually transferring)",
+        "descriptionShort": "Compare local and remote files (dry-run)"
       }
     },
     "subscription": {
       "description": "Manage machine licensing and subscription",
       "login": {
-        "description": "Authenticate with an API token from the web portal",
+        "description": "Authenticate via browser or API token",
         "tokenPrompt": "Enter your API token (from web portal):",
         "tokenInvalid": "Token must start with rdt_",
         "validating": "Validating token...",
         "validated": "Token validated",
         "success": "Logged in successfully",
         "plan": "Plan: {{plan}}",
-        "machines": "Machines: {{active}}/{{max}}"
-      },
-      "activate": {
-        "description": "Activate this machine and issue a license",
-        "activating": "Activating machine...",
-        "activated": "Machine activated",
-        "installed": "License installed",
-        "licenseFile": "License file: {{path}}"
+        "machines": "Machines: {{active}}/{{max}}",
+        "openBrowser": "Visit this URL to authorize:",
+        "waitingApproval": "Waiting for browser authorization...",
+        "polling": "Waiting for approval (press Ctrl+C to cancel)...",
+        "expired": "Authorization timed out. Please try again.",
+        "browserFailed": "Could not open browser automatically. Please visit the URL above.",
+        "initFailed": "Failed to initiate login. Is the server running?"
       },
       "status": {
-        "description": "Show subscription and license status",
-        "localLicense": "Local license:",
+        "description": "Show subscription, machine activation, and repo license status",
         "plan": "  Plan:     {{plan}}",
         "statusLabel": "  Status:   {{status}}",
         "machine": "  Machine:  {{machineId}}",
         "issued": "  Issued:   {{issuedAt}}",
         "expires": "  Expires:  {{expiresAt}}",
         "sequence": "  Sequence: {{sequenceNumber}}",
-        "expired": "  License has EXPIRED — run `rdc subscription refresh`",
-        "valid": "  Valid (expires in {{mins}} minutes)",
-        "parseFailed": "  Could not parse license file",
-        "noLicense": "No local license installed.",
-        "remote": "\nRemote subscription:",
+        "expired": "  Activation needs refresh — run `rdc subscription refresh -m <machine>`",
+        "valid": "  Activation is current",
+        "parseFailed": "  Could not read remote machine status",
+        "localLicense": "Local activation:",
+        "noLicense": "No local activation installed.",
+        "remote": "\nSubscription:",
         "remotePlan": "  Plan:     {{plan}}",
         "remoteStatus": "  Status:   {{status}}",
         "remoteMachines": "  Machines: {{active}}/{{max}}",
-        "remoteMachine": "    - {{id}}... (last seen: {{lastSeen}})"
+        "remoteMachine": "    - {{id}}... (last seen: {{lastSeen}})",
+        "serverMismatch": "Dev token belongs to {{actualServerUrl}}, but this worktree is using {{expectedServerUrl}}. Run `rdc subscription login` again.",
+        "remoteMachineActivations": "  Machine activations: {{active}}/{{max}}",
+        "remoteRepoLicenseIssuances": "  Monthly repo license issuances: {{used}}/{{limit}}",
+        "remoteRepoLicenses": "  Repo licenses: {{totalTrackedRepos}} tracked, {{validCount}} valid, {{refreshRecommendedCount}} refresh recommended, {{hardExpiredCount}} hard expired",
+        "issuanceLimitReached": "Monthly repo license issuance limit reached for the current UTC calendar month.",
+        "issuanceUsageHigh95": "Monthly repo license issuances are above 95% of the current UTC limit.",
+        "issuanceUsageHigh80": "Monthly repo license issuances are above 80% of the current UTC limit."
+      },
+      "activation": {
+        "description": "Machine activation management",
+        "status": {
+          "description": "Show machine activation status for one machine",
+          "header": "\nMachine activation ({{machineName}})",
+          "unavailable": "  Activation: could not query account state",
+          "machineId": "  Machine ID: {{machineId}}",
+          "activations": "  Activations: {{active}}/{{max}}",
+          "active": "  Activation: active (last seen {{lastSeenAt}})",
+          "inactive": "  Activation: machine is not currently active in account state"
+        }
+      },
+      "repo": {
+        "description": "Repo license management",
+        "status": {
+          "description": "Show installed repo licenses on a machine",
+          "header": "\nRepo licenses: ({{machineName}})",
+          "empty": "  No repo licenses installed",
+          "entry": "  - {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
+          "hardExpirySuffix": " (hard expiry: {{effectiveHardExpiry}})",
+          "freshness": {
+            "unknown": "unknown",
+            "hardExpired": "hard expired",
+            "refreshRecommended": "refresh recommended",
+            "valid": "valid"
+          }
+        }
       },
       "refresh": {
-        "description": "Refresh the machine license",
-        "refreshing": "Refreshing license...",
-        "refreshed": "License refreshed",
-        "success": "License refreshed and installed"
+        "description": "Refresh machine activation and repo licenses on a remote machine",
+        "refreshing": "Refreshing machine activation...",
+        "refreshed": "Machine activation refreshed",
+        "success": "Machine activation refreshed and repo licenses processed",
+        "failed": "Failed to refresh machine activation",
+        "activation": {
+          "description": "Refresh machine activation on a remote machine"
+        },
+        "repos": {
+          "description": "Batch-refresh repo licenses on a remote machine",
+          "refreshing": "Refreshing repo licenses...",
+          "refreshed": "Repo licenses refreshed",
+          "success": "Repo license batch refresh completed"
+        },
+        "repo": {
+          "description": "Refresh the repo license for a specific repository",
+          "repoArgument": "Repository name",
+          "refreshing": "Refreshing repo license...",
+          "notFound": "Repository not found: {{repoName}}",
+          "failed": "Failed to refresh repo license",
+          "refreshed": "Repo license refreshed",
+          "success": "Repo license refreshed for \"{{repoName}}\""
+        }
       }
     },
     "team": {
@@ -1201,94 +1646,13 @@
         }
       }
     },
-    "snapshot": {
-      "description": "Manage BTRFS snapshots on remote machines",
-      "create": {
-        "description": "Create a BTRFS snapshot of a repository",
-        "optionSnapshotName": "Explicit snapshot name (auto-generated if empty)",
-        "creating": "Creating snapshot of \"{{repo}}\" on {{machine}}...",
-        "success": "Snapshot created: {{name}} ({{path}})"
-      },
-      "list": {
-        "description": "List snapshots on a remote machine",
-        "noSnapshots": "No snapshots found.",
-        "header": "{{count}} snapshot(s) in {{path}}:"
-      },
-      "delete": {
-        "description": "Delete a snapshot from a remote machine",
-        "success": "Snapshot deleted: {{name}}"
-      }
-    },
-    "backup": {
-      "description": "Backup and restore repositories",
-      "push": {
-        "description": "Push repository backup to storage or machine",
-        "optionDest": "Destination filename",
-        "optionToStorage": "Destination storage name",
-        "optionToMachine": "Destination machine name",
-        "optionCheckpoint": "Create container checkpoint (hot backup)",
-        "optionForce": "Force overwrite existing backup",
-        "optionTag": "Deployment tag for versioning",
-        "destRequired": "Specify --to <storage> or --to-machine <machine>",
-        "destIgnoredForStorage": "Ignoring --dest {{provided}}: storage backups use repository GUID ({{dest}})",
-        "pushing": "Pushing backup of \"{{repo}}\" to {{dest}}..."
-      },
-      "pull": {
-        "description": "Pull repository backup from storage or machine",
-        "optionFromStorage": "Source storage name",
-        "optionFromMachine": "Source machine name",
-        "optionForce": "Force overwrite existing repository",
-        "sourceRequired": "Specify --from <storage> or --from-machine <machine>",
-        "pulling": "Pulling backup of \"{{repo}}\"..."
-      },
-      "list": {
-        "description": "List available backups on storage or machine",
-        "optionFromStorage": "Source storage name",
-        "optionFromMachine": "Source machine name",
-        "sourceRequired": "Specify --from <storage> or --from-machine <machine>",
-        "listing": "Listing backups..."
-      },
-      "sync": {
-        "description": "Bulk push/pull all repositories to/from cloud storage",
-        "optionTo": "Destination storage name (push mode)",
-        "optionFrom": "Source storage name (pull mode)",
-        "optionRepo": "Filter to specific repository (repeatable)",
-        "optionOverride": "Override existing unmounted repos on pull",
-        "directionRequired": "Specify --to <storage> (push) or --from <storage> (pull)",
-        "directionConflict": "Cannot specify both --to and --from",
-        "pushSuccess": "Sync push completed",
-        "pullSuccess": "Sync pull completed"
-      },
-      "schedule": {
-        "description": "Manage scheduled backup configuration",
-        "set": {
-          "description": "Configure backup schedule settings",
-          "optionDestination": "Default storage destination name",
-          "optionCron": "Cron expression for backup schedule (e.g., \"0 2 * * *\")",
-          "optionEnable": "Enable scheduled backups",
-          "optionDisable": "Disable scheduled backups",
-          "noOptions": "Specify at least one option: --destination, --cron, --enable, or --disable",
-          "saved": "Backup schedule configuration saved"
-        },
-        "show": {
-          "description": "Show current backup schedule configuration",
-          "notConfigured": "No backup schedule configured",
-          "destination": "Destination: {{destination}}",
-          "schedule": "Schedule: {{schedule}}",
-          "enabled": "Enabled: {{enabled}}"
-        },
-        "push": {
-          "description": "Push backup schedule to remote machine (systemd timer)",
-          "success": "Backup schedule pushed to {{machine}}"
-        }
-      }
-    },
     "shortcuts": {
       "run": {
-        "completedLocal": "[local] Completed in {{duration}}ms",
+        "completedLocal": "Completed in {{duration}}ms",
         "description": "WARNING: Low-level command for debugging and experimentation only. Not for production use. Use higher-level commands (repo up, repo down, etc.) instead. Runs a raw bridge function on a machine.",
-        "executingLocal": "[local] Executing '{{function}}' on {{machine}}...",
-        "failedLocal": "[local] Failed: {{error}}",
+        "descriptionShort": "Run a raw bridge function on a machine (debugging only)",
+        "executingLocal": "Executing '{{function}}' on {{machine}}...",
+        "failedLocal": "Failed: {{error}}",
         "watching": "Watching for completion..."
       },
       "trace": {
@@ -1338,7 +1702,7 @@
       "testingConnectivity": "Testing connectivity to {{host}}:{{port}}..."
     },
     "vscode": {
-      "description": "VS Code Remote SSH integration",
+      "description": "Open VS Code Remote SSH to a machine or repository",
       "connect": {
         "description": "Connect to a machine or repository in VS Code",
         "detecting": "Detecting VS Code...",
@@ -1349,6 +1713,7 @@
         "configuringSSH": "Configuring SSH...",
         "configuringVSCode": "Configuring VS Code settings...",
         "settingsWarning": "Warning: Could not configure VS Code settings: {{error}}",
+        "provisioningRenet": "Provisioning renet to remote...",
         "settingUpEnv": "Setting up remote environment...",
         "opening": "Opening VS Code: {{connection}} → {{path}}",
         "success": "VS Code launched successfully."
@@ -1458,7 +1823,63 @@
           "success": "Permission assigned"
         }
       }
+    },
+    "snapshot": {
+      "description": "Manage BTRFS snapshots on remote machines"
     }
+  },
+  "help": {
+    "examples": "Examples:",
+    "cli": {
+      "machineQuery": "Show machine status",
+      "termRepo": "SSH into repository",
+      "repoUp": "Deploy repository services",
+      "syncUpload": "Upload files to repository"
+    },
+    "machine": {
+      "query": "Show full machine status",
+      "containers": "List running containers",
+      "health": "Health check for CI/CD"
+    },
+    "repo": {
+      "create": "Create encrypted repo",
+      "up": "Deploy with auto-mount",
+      "down": "Stop services",
+      "fork": "CoW fork for testing",
+      "push": "Push repo backup to storage",
+      "pull": "Pull repo backup from storage",
+      "listBackups": "List backups on storage",
+      "sync": {
+        "pushAll": "Bulk push all repos to storage",
+        "pullAll": "Bulk pull all repos from storage"
+      }
+    },
+    "term": {
+      "machine": "SSH into machine",
+      "repo": "SSH into repo (DOCKER_HOST auto-set)",
+      "command": "Run command without interactive shell"
+    },
+    "vscode": {
+      "machine": "Open machine in VS Code",
+      "repo": "Open repository in VS Code"
+    },
+    "config": {
+      "init": "Create named config with SSH key",
+      "addMachine": "Add machine to config",
+      "setupMachine": "Run setup on remote machine",
+      "setMachine": "Set default machine"
+    },
+    "store": {
+      "add": "Add S3 store backend",
+      "push": "Push config to all stores",
+      "pull": "Pull config from a store"
+    },
+    "sync": {
+      "upload": "Upload local files to repository",
+      "download": "Download repository files locally",
+      "status": "Show sync status"
+    },
+    "useHelpAll": "Use --help-all for extended descriptions"
   },
   "errors": {
     "activationFailed": "Activation failed",
@@ -1485,7 +1906,7 @@
     "invalidPriorityMin": "Invalid priority-min value. Must be between 1 and 5.",
     "invalidPriorityMax": "Invalid priority-max value. Must be between 1 and 5.",
     "passwordsMismatch": "Passwords do not match",
-    "repositoryNotFound": "Repository \"{{name}}:{{tag}}\" not found",
+    "repositoryNotFound": "Repository \"{{name}}\" not found",
     "cannotDeleteGrandRepo": "Cannot delete grand repository: {{reason}}",
     "affectedChildClones": ". Affected child clones: {{clones}}. Delete or promote child clones first.",
     "cannotPromote": "Cannot promote: {{reason}}",
@@ -1512,16 +1933,21 @@
     "resourceNotFound": "{{resource}} not found",
     "repositoryRequired": "Repository name is required. Use --repository <name>.",
     "sshKeyNotFound": "SSH key not found: {{path}}",
+    "ssh": {
+      "noIpAddress": "Machine '{{machine}}' does not have an IP address configured",
+      "noPrivateKey": "Team '{{team}}' does not have an SSH private key configured",
+      "noHostKey": "Machine '{{machine}}' does not have a host key configured in the vault"
+    },
     "sync": {
       "noIpAddress": "Machine '{{machine}}' does not have an IP address configured",
       "noPrivateKey": "Team '{{team}}' does not have an SSH private key configured",
       "noHostKey": "Machine '{{machine}}' does not have a host key configured in the vault",
-      "localPathNotFound": "Local path does not exist: {{path}}"
+      "localPathNotFound": "Local path does not exist: {{path}}",
+      "absolutePathBlocked": "The --remote path must be relative, not absolute. Use a path relative to the repository root.",
+      "pathTraversalBlocked": "The --remote path must not contain \"..\" path traversal. Use a path within the repository."
     },
     "subscription": {
-      "notLoggedIn": "Not logged in. Run `rdc subscription login` first.",
-      "noMachineId": "Could not determine machine ID. Ensure renet is installed or /etc/machine-id exists.",
-      "writeFailed": "Failed to write license file. Run with sudo or ensure {{path}} is writable."
+      "notLoggedIn": "Not logged in. Humans should run `rdc subscription login`. Automation should run `rdc subscription login --token <token>` or set `REDIACC_SUBSCRIPTION_TOKEN`."
     },
     "teamRequired": "Team name required. Use --team or set default with: rdc config set team <name>",
     "term": {
@@ -1535,6 +1961,7 @@
       "sshCode127": "Command not found on remote machine",
       "sshCode130": "Connection terminated by user (Ctrl+C)",
       "sshCode255": "SSH connection failed - possible causes:\n    - Authentication failed (check SSH key permissions)\n    - Host key verification failed\n    - Network connection dropped\n    - Remote SSH service not running",
+      "repoContextRequired": "Command requires repository context.\n\nDetected \"{{detected}}\" which needs DOCKER_HOST and repository environment variables.\nThese are only available when a repository is specified.\n\nInstead of:\n  rdc term {{machine}} -c \"{{command}}\"\n\nUse:\n  rdc term {{machine}} <repository> -c \"{{command}}\"",
       "sshExitCode": "SSH exited with code {{code}}"
     },
     "vscode": {
@@ -1543,13 +1970,27 @@
       "noHostKey": "Machine '{{machine}}' does not have a host key configured in the vault",
       "noIpAddress": "Machine '{{machine}}' does not have an IP address configured",
       "noPrivateKey": "Team '{{team}}' does not have an SSH private key configured",
-      "notFound": "VS Code not found.\n\nPlease install from: https://code.visualstudio.com/\nOr set REDIACC_VSCODE_PATH environment variable."
+      "notFound": "VS Code not found.\n\nPlease install from: https://code.visualstudio.com/\nOr set REDIACC_VSCODE_PATH environment variable.",
+      "repoNotDeployed": "Repository \"{{repository}}\" is not deployed on {{machine}}.\n\nDeploy it first:\n  rdc repo up {{repository}} -m <machine-name>"
     },
     "tokenExpired": "Token expired. Please login again.",
     "unexpectedError": "Unexpected error: {{message}}",
     "validationError": "Validation error: {{message}}",
     "vaultDataRequired": "Vault data required. Use --vault <json> or pipe JSON via stdin.",
-    "vaultVersionRequired": "Vault version required. Use --vault-version <n>."
+    "vaultVersionRequired": "Vault version required. Use --vault-version <n>.",
+    "agent": {
+      "grandGuard": "Cannot modify grand repository \"{{name}}\" in agent mode.\n\nAI agents can only operate on fork repositories.\nFork it first:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nThen operate on the fork instead.\n\nTo override: set REDIACC_ALLOW_GRAND_REPO={{name}}",
+      "mcpGrandGuard": "Cannot modify grand repository \"{{name}}\" in fork-only mode.\n\nUse repo_fork to create a fork first, then operate on the fork.\nTo allow grand repository access, restart MCP server with --allow-grand",
+      "machineGuard": "Cannot access machine \"{{machine}}\" directly in agent mode.\n\nAI agents can only connect to repository contexts.\nUse:\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nTo override: set REDIACC_ALLOW_GRAND_REPO=*",
+      "mcpMachineGuard": "Cannot access machine directly in fork-only mode.\n\nSpecify a repository to connect to a repository context.\nTo allow direct machine access, restart MCP server with --allow-grand",
+      "forkBlocked": "Command \"{{command}}\" is not available on fork repositories.\n\nFork repos are interim environments. This operation only applies to grand repositories.",
+      "createGuard": "Cannot create repository \"{{name}}\" in agent mode.\n\nAI agents operate in fork-only mode. Creating a grand repo is blocked\nbecause the agent cannot operate on it afterwards.\n\nUse an existing repo and fork it instead:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nTo override: set REDIACC_ALLOW_GRAND_REPO=*"
+    },
+    "config": {
+      "storageNotFound": "Storage \"{{name}}\" not found in config. Available: {{available}}.",
+      "machineNotFound": "Machine \"{{name}}\" not found in config. Available: {{available}}.",
+      "invalidEmail": "Invalid email address: \"{{value}}\"."
+    }
   },
   "options": {
     "activationCode": "Activation code from email",
@@ -1564,6 +2005,7 @@
     "email": "Email address",
     "external": "Force launching in external terminal window",
     "follow": "Follow logs output",
+    "resetHome": "Reset per-repo home overlay for a fresh start",
     "image": "RBD image name",
     "pool": "Ceph pool name",
     "snapshot": "RBD snapshot name",
@@ -1603,9 +2045,17 @@
     "watch": "Watch for changes",
     "watchUpdates": "Watch for updates",
     "yes": "Skip confirmation prompt",
+    "quiet": "Suppress informational output",
+    "fields": "Comma-separated list of fields to include in output",
     "priority": "Priority (1=highest)",
     "param": "Function parameters",
     "debug": "Enable debug output (local mode)",
+    "querySystem": "Include system info only",
+    "queryRepositories": "Include repositories only",
+    "queryContainers": "Include containers only",
+    "queryServices": "Include services only",
+    "queryNetwork": "Include network interfaces only",
+    "queryBlockDevices": "Include block devices only",
     "extraMachine": "Extra machine for multi-machine ops (name:ip:user)",
     "pollInterval": "Poll interval in milliseconds",
     "folder": "Remote folder path to open",
@@ -1634,7 +2084,8 @@
     "verifyChecksum": "Verify files using checksums after sync",
     "confirmSync": "Preview changes and ask for confirmation before syncing",
     "excludePatterns": "Patterns to exclude from sync",
-    "dryRun": "Show what would be transferred without actually syncing",
+    "dryRun": "Show what would be done without making changes",
+    "graceDays": "Grace period in days for recently archived repos (default: 7)",
     "filterStatus": "Filter by status",
     "priorityMin": "Minimum priority (1-5)",
     "priorityMax": "Maximum priority (1-5)",
@@ -1656,7 +2107,6 @@
     "protocolToken": "Authentication token",
     "protocolAction": "Action ({{actions}})",
     "protocolParams": "Additional parameters",
-    "experimental": "Enable experimental cloud commands",
     "skipRouterRestart": "Skip restarting the route server after binary update",
     "opsBackend": "Virtualization backend (kvm|qemu, auto-detected)",
     "opsForce": "Force restart all VMs",
@@ -1780,19 +2230,21 @@
       "repo": "Repository Lifecycle",
       "storage": "Storage Management",
       "queue": "Queue Operations",
-      "sync": "File Synchronization",
       "vscode": "VS Code Integration",
       "term": "SSH Terminal Access",
       "ceph": "Ceph Storage Management",
       "audit": "Audit and Compliance",
       "protocol": "Protocol Handler",
-      "snapshot": "Snapshot Management",
-      "backup": "Backup Management",
       "shortcuts": "Quick Commands (Shortcuts)",
       "update": "CLI Updates",
       "doctor": "System Diagnostics",
       "ops": "Experimental VM Operations",
-      "subscription": "Subscription Management"
+      "subscription": "Subscription Management",
+      "agent": "Agent Utilities",
+      "mcp": "MCP Server",
+      "datastore": "Datastore Management",
+      "sync": "File Sync",
+      "backup": "Backup & Restore"
     },
     "errors": {
       "heading": "Common Error Messages",
@@ -1851,6 +2303,13 @@
           "tip": "Use `--watch` to follow the task in real-time until it completes."
         }
       }
+    }
+  },
+  "services": {
+    "prune": {
+      "unreadableConfigs": "Cannot read {{count}} config(s): {{names}} (encrypted or corrupted)",
+      "refusingPrune": "Refusing to prune — these configs may reference protected GUIDs. Use --force to override.",
+      "noOrphaned": "No orphaned entries found"
     }
   }
 }

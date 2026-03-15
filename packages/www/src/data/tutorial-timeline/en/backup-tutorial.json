@@ -1,0 +1,22 @@
+{
+  "cast": "/assets/tutorials/backup-tutorial.cast",
+  "language": "en",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "7f05db5c8dc89f8c12d242d0bf6387443fa6444734ff8264f4ff86c0d9267629",
+  "steps": [
+    {
+      "id": "backup-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.510362,
+      "replayEndSec": 5.406939,
+      "narrationText": "Protecting repositories requires an external storage destination for incremental backup transfers. We start by checking which storage providers -- S3, B2, or remote machine -- are configured.",
+      "audioSrc": "/assets/tutorials/audio/en/backup-tutorial/backup-tutorial-01.32ba1093.mp3",
+      "audioDurationSec": 15.072653
+    }
+  ]
+}

@@ -3,6 +3,7 @@
  * Provides types and utilities for consistent telemetry across web and CLI.
  */
 
+export { TELEMETRY_ATTRIBUTES, TELEMETRY_SUBSCRIPTION_SOURCES } from './attributes';
 // Types
 export type {
   TelemetryConfig,

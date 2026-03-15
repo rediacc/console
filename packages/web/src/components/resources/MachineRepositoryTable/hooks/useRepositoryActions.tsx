@@ -1,10 +1,10 @@
+import { DEFAULTS } from '@rediacc/shared/config';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import { Alert, Flex, Input, Typography } from 'antd';
 import { preparePromotion } from '@/platform';
 import { showMessage } from '@/utils/messages';
-import { DEFAULTS } from '@rediacc/shared/config';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import { getAxiosErrorMessage } from '../utils';
 import type { Repository } from '../types';
+import { getAxiosErrorMessage } from '../utils';
 
 interface UseRepositoryActionsProps {
   teamName: string;

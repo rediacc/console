@@ -1,15 +1,15 @@
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { prepareRsyncPaths } from './pathConverter.js';
 import {
   findSystemMsys2Path,
   getMsys2Environment,
   getRsyncPath,
   getSshPath,
 } from '../msys2/paths.js';
-import { commandExists, getPlatform } from '../utils/platform.js';
 import type { SyncProgress, SyncResult } from '../types/index.js';
+import { commandExists, getPlatform } from '../utils/platform.js';
+import { prepareRsyncPaths } from './pathConverter.js';
 
 /**
  * MSYS2 subdirectories to check for binaries (kept for backward compatibility)
@@ -201,6 +201,7 @@ export function buildRsyncArgs(
     mirror?: boolean;
     verify?: boolean;
     exclude?: string[];
+    remoteRsyncPath?: string;
   },
   sshCommand: string,
   universalUser?: string,
@@ -222,6 +223,9 @@ export function buildRsyncArgs(
   if (universalUser) {
     args.push('--rsync-path', 'sudo rsync');
     args.push('--numeric-ids');
+    args.push('--no-links'); // prevent symlink exploitation with sudo
+  } else if (options.remoteRsyncPath) {
+    args.push('--rsync-path', options.remoteRsyncPath);
   }
 
   // Mirror mode: delete files not in source
@@ -233,7 +237,7 @@ export function buildRsyncArgs(
   if (options.verify) {
     args.push('--checksum', '--ignore-times');
   } else {
-    args.push('--partial', '--append-verify');
+    args.push('--partial');
   }
 
   // Exclude patterns
@@ -262,6 +266,8 @@ export interface RsyncExecutorOptions {
   verify?: boolean;
   /** Patterns to exclude from sync */
   exclude?: string[];
+  /** Explicit rsync command to run on the remote host */
+  remoteRsyncPath?: string;
   /** Universal user for sudo */
   universalUser?: string;
   /** Verbose logging - outputs full rsync command before execution */
@@ -292,7 +298,12 @@ export async function executeRsync(options: RsyncExecutorOptions): Promise<SyncR
 
   // Build arguments
   const args = buildRsyncArgs(
-    { mirror: options.mirror, verify: options.verify, exclude: options.exclude },
+    {
+      mirror: options.mirror,
+      verify: options.verify,
+      exclude: options.exclude,
+      remoteRsyncPath: options.remoteRsyncPath,
+    },
     sshCommand,
     options.universalUser,
     false
@@ -419,7 +430,12 @@ export async function getRsyncPreview(options: RsyncExecutorOptions): Promise<Rs
   const [source, dest] = prepareRsyncPaths(options.source, options.destination);
 
   const args = buildRsyncArgs(
-    { mirror: options.mirror, verify: options.verify, exclude: options.exclude },
+    {
+      mirror: options.mirror,
+      verify: options.verify,
+      exclude: options.exclude,
+      remoteRsyncPath: options.remoteRsyncPath,
+    },
     sshCommand,
     options.universalUser,
     true // dry-run

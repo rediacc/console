@@ -1,8 +1,8 @@
+import type { QueueFunction } from '@rediacc/shared/types';
 import React from 'react';
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
 import TemplatePreviewModal from '@/components/common/TemplatePreviewModal';
 import VaultEditorModal from '@/components/common/VaultEditorModal';
-import type { QueueFunction } from '@rediacc/shared/types';
 
 type FunctionSubmitPayload = {
   function: QueueFunction;

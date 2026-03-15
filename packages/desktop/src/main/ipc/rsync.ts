@@ -1,3 +1,4 @@
+import type { SyncProgress, SyncResult } from '@rediacc/shared-desktop';
 import {
   executeRsync,
   formatChangesSummary,
@@ -6,7 +7,6 @@ import {
   type RsyncExecutorOptions,
 } from '@rediacc/shared-desktop/sync';
 import { ipcMain } from 'electron';
-import type { SyncProgress, SyncResult } from '@rediacc/shared-desktop';
 
 /**
  * Active rsync operations for tracking

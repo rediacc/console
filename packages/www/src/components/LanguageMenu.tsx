@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getLanguageFlag, getLanguageName, SUPPORTED_LANGUAGES } from '../i18n/language-utils';
-import { setLanguageCookie } from '../utils/language-cookie';
 import type { Language } from '../i18n/types';
+import { setLanguageCookie } from '../utils/language-cookie';
 import '../styles/language-switcher.css';
 
 interface LanguageMenuProps {
@@ -162,6 +162,7 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
   // Handle language selection
   const handleLanguageSelect = (lang: Language) => {
     setLanguageCookie(lang);
+    window.plausible('language_change', { props: { from: currentLang, to: lang } });
 
     if (onLanguageChange) {
       onLanguageChange(lang);
@@ -188,6 +189,8 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
           aria-label={ariaLabel}
           aria-expanded={isOpen}
           aria-haspopup="menu"
+          data-track="cta_click"
+          data-track-label="language-trigger"
         >
           {icon ?? (
             <svg
@@ -218,6 +221,8 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
         aria-label={ariaLabel}
         aria-expanded={isOpen}
         aria-haspopup="menu"
+        data-track="cta_click"
+        data-track-label="language-trigger"
       >
         {variant !== 'full-list' && (
           <span className="language-flag">{getLanguageFlag(currentLang)}</span>
@@ -254,6 +259,8 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
           role="menuitem"
           tabIndex={index === activeIndex ? 0 : -1}
           aria-current={lang === currentLang ? 'true' : undefined}
+          data-track="cta_click"
+          data-track-label="language-option"
         >
           <span className="flag">{getLanguageFlag(lang)}</span>
           <span className="name">{getLanguageName(lang)}</span>
@@ -290,6 +297,8 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
         role="menuitem"
         tabIndex={index === activeIndex ? 0 : -1}
         aria-current={lang === currentLang ? 'true' : undefined}
+        data-track="cta_click"
+        data-track-label="language-option"
       >
         <span className="flag">{getLanguageFlag(lang)}</span>
         <span className="name">{getLanguageName(lang)}</span>

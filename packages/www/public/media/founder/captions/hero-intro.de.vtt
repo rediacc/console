@@ -1,0 +1,37 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:04.000
+What happens when ransomware hits your server at 2 AM?
+
+2
+00:00:04.000 --> 00:00:07.500
+Most teams panic. Their backups haven't been tested.
+
+3
+00:00:07.500 --> 00:00:11.000
+Recovery takes hours. Sometimes it doesn't work at all.
+
+4
+00:00:11.000 --> 00:00:14.000
+I'm Muhammed. I built Rediacc to fix this.
+
+5
+00:00:14.000 --> 00:00:20.000
+Rediacc takes snapshots of your whole stack — databases, Docker services, configs.
+
+6
+00:00:20.000 --> 00:00:22.000
+Immutable. On your hardware.
+
+7
+00:00:22.000 --> 00:00:26.000
+When something breaks, you restore in minutes. Not hours.
+
+8
+00:00:26.000 --> 00:00:28.000
+It's free to start.
+
+9
+00:00:28.000 --> 00:00:31.000
+Install on your server in five minutes. Link's right below.

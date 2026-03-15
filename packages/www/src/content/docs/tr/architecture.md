@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: tr
-sourceHash: "50f5168f0effbc44"
+sourceHash: "9331a5f415a76278"
 ---
 
 # Mimari
@@ -58,7 +58,7 @@ Bir yapılandırma `apiUrl` ve `token` alanları içerdiğinde otomatik olarak e
 - Görsel yönetim için web konsolu
 - `rdc auth login` ile kurulur
 
-> **Not:** Bulut adaptörü komutları deneyseldir. `rdc --experimental <komut>` ile veya `REDIACC_EXPERIMENTAL=1` ayarlayarak etkinleştirin.
+> **Not:** Bulut adaptörü komutları deneyseldir. `REDIACC_EXPERIMENTAL=1` ayarlayarak etkinleştirin.
 
 ### S3 Kaynak Durumu (İsteğe Bağlı)
 
@@ -73,7 +73,7 @@ Tüm adaptörler aynı CLI komutlarını kullanır. Adaptör yalnızca durumun n
 
 ## rediacc Kullanıcısı
 
-`rdc config setup-machine` komutunu çalıştırdığınızda, renet uzak sunucuda `rediacc` adında bir sistem kullanıcısı oluşturur:
+`rdc config machine setup` komutunu çalıştırdığınızda, renet uzak sunucuda `rediacc` adında bir sistem kullanıcısı oluşturur:
 
 - **UID**: 7111
 - **Kabuk**: `/sbin/nologin` (SSH ile giriş yapılamaz)
@@ -83,7 +83,7 @@ Tüm adaptörler aynı CLI komutlarını kullanır. Adaptör yalnızca durumun n
 
 1. SSH kullanıcınızın `sudo` yetkisine sahip olması gerekir
 2. Tüm depo verileri SSH kullanıcınız değil, `rediacc` kullanıcısına aittir
-3. Rediaccfile fonksiyonları (`prep()`, `up()`, `down()`) `rediacc` olarak çalışır
+3. Rediaccfile fonksiyonları (`up()`, `down()`) `rediacc` olarak çalışır
 
 Bu ayrım, depo verilerinin hangi SSH kullanıcısı yönetirse yönetsin tutarlı sahipliğe sahip olmasını sağlar.
 

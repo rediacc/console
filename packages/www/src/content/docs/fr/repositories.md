@@ -4,7 +4,7 @@ description: 'Créez, gérez et opérez des dépôts chiffrés LUKS sur des mach
 category: Guides
 order: 4
 language: fr
-sourceHash: 04fe287348176b64
+sourceHash: "06b8912e9b65b720"
 ---
 
 # Dépôts
@@ -76,10 +76,10 @@ rdc repo expand my-app -m server-1 --size 5G      # Ajouter 5 Go à la taille ac
 Créez une copie d'un dépôt existant dans son état actuel :
 
 ```bash
-rdc repo fork my-app -m server-1 --tag my-app-staging
+rdc repo fork my-app staging -m server-1
 ```
 
-Ceci crée une nouvelle copie chiffrée avec son propre GUID et ID réseau. La copie partage le même identifiant LUKS que le parent.
+Les forks utilisent le modèle name:tag : le fork résultant est nommé `my-app:staging`. Ceci crée une nouvelle copie chiffrée avec son propre GUID et ID réseau, tout en partageant le nom du parent. La copie partage le même identifiant LUKS que le parent.
 
 ## Valider
 
@@ -102,16 +102,14 @@ La commande détecte automatiquement les répertoires de données des conteneurs
 | Option | Description |
 |--------|-------------|
 | `--uid <uid>` | Définir un UID personnalisé au lieu de 7111 |
-| `--force` | Ignorer la détection des volumes Docker et changer la propriété de tout |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 Pour forcer la propriété sur tous les fichiers, y compris les données des conteneurs :
 
 ```bash
-rdc repo ownership my-app -m server-1 --force
+rdc repo ownership my-app -m server-1
 ```
 
-> **Attention :** L'utilisation de `--force` sur des conteneurs en cours d'exécution peut les casser. Arrêtez d'abord les services avec `rdc repo down` si nécessaire.
 
 Consultez le [Guide de migration](/fr/docs/migration) pour un guide complet sur quand et comment utiliser la propriété lors de la migration de projets.
 

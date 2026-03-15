@@ -1,9 +1,9 @@
 export { minifyJSON } from './json';
 export {
   mapRcloneToStorageProvider,
+  PROVIDER_MAPPING,
   parseRcloneConfig,
   processConfigValue,
-  PROVIDER_MAPPING,
   type RcloneConfig,
   type RcloneConfigFields,
   type RcloneConfigFieldValue,

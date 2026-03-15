@@ -1,0 +1,164 @@
+---
+import { EXTERNAL_LINKS } from '../config/constants';
+import { createTranslator } from '../i18n/utils';
+import type { Language } from '../i18n/types';
+
+interface Props {
+  plan: {
+    id: string;
+    monthly: number;
+    annual: number;
+    isPopular?: boolean;
+    badgeLabel?: string;
+    badgeVariant?: string;
+  };
+  metrics: Array<{ label: string; tooltip?: string; value: string }>;
+  lang: Language;
+  ctaNamespace?: string;
+  useCheckout?: boolean;
+}
+
+const { plan, metrics, lang, ctaNamespace = 'pages.pricing', useCheckout = false } = Astro.props;
+const { t } = createTranslator(lang);
+
+const priceFormatter = new Intl.NumberFormat(lang === 'en' ? 'en-US' : lang, {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0,
+});
+const formatPrice = (amount: number) => priceFormatter.format(amount);
+
+const checkoutPlans = useCheckout ? new Set(['professional']) : new Set<string>();
+const usesCheckout = checkoutPlans.has(plan.id);
+---
+
+<div
+  class:list={[
+    'cf-pricing-card',
+    { 'cf-featured': plan.isPopular },
+    plan.badgeVariant ? `cf-badge-${plan.badgeVariant}` : '',
+  ]}
+  data-monthly-price={plan.monthly}
+  data-annual-price={plan.annual}
+>
+  {plan.badgeLabel && (
+    <div class="cf-badge">{plan.badgeLabel}</div>
+  )}
+  <h3 class="cf-plan-name">{t(`${ctaNamespace}.plans.${plan.id}.name`)}</h3>
+  <div class="cf-price-block">
+    {plan.monthly === 0 ? (
+      <>
+        <span class="cf-price">{formatPrice(0)}</span>
+        <div class="cf-price-subtitle">{t(`${ctaNamespace}.ui.foreverFree`)}</div>
+      </>
+    ) : (
+      <>
+        <div class="cf-price-line">
+          <span class="cf-price" data-monthly={formatPrice(plan.monthly)} data-annual={formatPrice(plan.annual)}>{formatPrice(plan.annual)}</span>
+          <span class="cf-price-period" data-monthly="/mo" data-annual="/yr">/yr</span>
+        </div>
+        <div class="cf-price-subtitle cf-annual-note" data-monthly={`or ${formatPrice(plan.annual)}/yr`} data-annual={`or ${formatPrice(plan.monthly)}/mo`}>
+          or {formatPrice(plan.monthly)}/mo
+        </div>
+      </>
+    )}
+  </div>
+  <ul class="cf-features">
+    {metrics.map((metric) => (
+      <li>
+        <span
+          class="cf-feature-info"
+          data-tooltip={metric.tooltip ?? metric.label}
+          aria-label={metric.tooltip ?? metric.label}
+          tabindex="0"
+        >
+          i
+        </span>
+        <span><strong>{metric.value}</strong> {metric.label}</span>
+      </li>
+    ))}
+  </ul>
+  {plan.monthly === 0 ? (
+    <a
+      href={`/${lang}/install`}
+      class="cf-cta-btn cf-cta-featured"
+      data-track="cta_click"
+      data-track-label="pricing-cta"
+      data-track-dest={plan.id}
+    >
+      {t(`${ctaNamespace}.ui.cta.community.primary`)}
+    </a>
+  ) : usesCheckout ? (
+    <button
+      type="button"
+      class="cf-cta-btn"
+      data-checkout={plan.id}
+      data-track="cta_click"
+      data-track-label="pricing-checkout"
+      data-track-dest={plan.id}
+    >
+      {t(`${ctaNamespace}.ui.cta.${plan.id}.primary`)}
+    </button>
+  ) : (
+    <a
+      href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="cf-cta-btn"
+      data-track="cta_click"
+      data-track-label="pricing-cta"
+      data-track-dest={plan.id}
+    >
+      {t(`${ctaNamespace}.ui.cta.${plan.id}.primary`)}
+    </a>
+  )}
+</div>
+
+<script>
+  // Self-contained checkout handler for data-checkout buttons.
+  // Astro deduplicates this script — it runs once regardless of how many cards are rendered.
+  document.addEventListener('DOMContentLoaded', () => {
+    const buttons = document.querySelectorAll<HTMLButtonElement>('[data-checkout]');
+    if (!buttons.length) return;
+
+    const accountServerUrl = `${window.location.origin}/account`;
+
+    buttons.forEach((btn) => {
+      if (btn.dataset.checkoutBound) return;
+      btn.dataset.checkoutBound = 'true';
+
+      const originalText = btn.textContent;
+      btn.addEventListener('click', async () => {
+        const planId = btn.dataset.checkout!;
+        const activeToggle = document.querySelector('.billing-toggle-btn.active') as HTMLElement | null;
+        const billingPeriod = activeToggle?.dataset.period === 'annual' ? 'annual' : 'monthly';
+
+        btn.disabled = true;
+        btn.textContent = '...';
+
+        window.plausible?.('checkout_start', { props: { plan: planId, period: billingPeriod } });
+
+        try {
+          const response = await fetch(`${accountServerUrl}/api/v1/checkout`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              planCode: planId.toUpperCase(),
+              billingPeriod,
+              successUrl: `${window.location.origin}/${document.documentElement.lang}/checkout/success?plan=${planId}`,
+              cancelUrl: window.location.href,
+            }),
+          });
+
+          if (!response.ok) throw new Error('Checkout failed');
+
+          const { url } = await response.json();
+          if (url) window.location.href = url;
+        } catch {
+          btn.disabled = false;
+          btn.textContent = originalText;
+        }
+      });
+    });
+  });
+</script>

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: ar
-sourceHash: 4a0c6a695d72aa55
+sourceHash: "911dde41922454ec"
 ---
 
 # الشبكات
@@ -51,22 +51,40 @@ Internet → Traefik (ports 80/443/TCP/UDP)
 | `rediacc.service_name` | هوية الخدمة | `myapp` |
 | `rediacc.service_ip` | عنوان IP الاسترجاعي المُعيَّن | `127.0.11.2` |
 | `rediacc.network_id` | معرّف Docker daemon الخاص بالمستودع | `2816` |
+| `rediacc.repo_name` | Repository name | `marketing` |
 | `rediacc.tcp_ports` | TCP ports the service listens on | `8080,8443` |
 | `rediacc.udp_ports` | UDP ports the service listens on | `53` |
 
-عندما تحتوي حاوية على علامات `rediacc.*` فقط (بدون `traefik.enable=true`)، يُنشئ خادم التوجيه **مساراً تلقائياً**:
+عندما تحتوي حاوية على علامات `rediacc.*` فقط (بدون `traefik.enable=true`)، يُنشئ خادم التوجيه **مساراً تلقائياً** باستخدام اسم المستودع والنطاق الفرعي للجهاز:
 
 ```
-{service}-{networkID}.{baseDomain}
+{service}.{repoName}.{machineName}.{baseDomain}
 ```
 
-على سبيل المثال، خدمة اسمها `myapp` في مستودع بمعرّف شبكة `2816` ونطاق أساسي `example.com` تحصل على:
+على سبيل المثال، خدمة اسمها `myapp` في مستودع يسمى `marketing` على جهاز `server-1` ونطاق أساسي `example.com` تحصل على:
 
 ```
-myapp-2816.example.com
+myapp.marketing.server-1.example.com
 ```
 
-المسارات التلقائية مفيدة للتطوير والوصول الداخلي. لخدمات الإنتاج ذات النطاقات المخصصة، استخدم علامات المستوى 2.
+لكل مستودع مستوى نطاق فرعي خاص به، لذا لا تتعارض الفروع والمستودعات المختلفة أبداً. عند إنشاء نسخة من مستودع (مثل `marketing-staging`)، تحصل النسخة تلقائياً على مسارات مميزة. لخدمات ذات النطاقات المخصصة، استخدم علامات المستوى 2 أو علامة `rediacc.domain`.
+
+#### نطاق مخصص عبر `rediacc.domain`
+
+يمكنك تعيين نطاق مخصص لخدمة باستخدام علامة `rediacc.domain` في ملف `docker-compose.yml`. يُدعم كل من الأسماء القصيرة والنطاقات الكاملة:
+
+```yaml
+labels:
+  # اسم قصير — يُحل إلى cloud.example.com باستخدام baseDomain الخاص بالجهاز
+  - "rediacc.domain=cloud"
+
+  # نطاق كامل — يُستخدم كما هو
+  - "rediacc.domain=cloud.example.com"
+```
+
+القيمة بدون نقاط تُعامل كاسم قصير ويُضاف إليها `baseDomain` الخاص بالجهاز تلقائياً. القيمة مع نقاط تُستخدم كنطاق كامل.
+
+عند تكوين `machineName`، تحصل خدمات النطاق المخصص على **مسارين**: واحد على النطاق الأساسي (`cloud.example.com`) وآخر على النطاق الفرعي للجهاز (`cloud.server-1.example.com`).
 
 ### المستوى 2: علامات `traefik.*` (مُعرَّفة من المستخدم)
 
@@ -92,13 +110,17 @@ labels:
 1. البنية التحتية مُكوَّنة على الجهاز ([إعداد الجهاز -- تكوين البنية التحتية](/ar/docs/setup#تكوين-البنية-التحتية)):
 
    ```bash
-   rdc config set-infra server-1 \
-     --public-ipv4 203.0.113.50 \
-     --base-domain example.com \
+   # بيانات اعتماد مشتركة (مرة واحدة لكل إعداد، تُطبّق على جميع الأجهزة)
+   rdc config infra set server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
-   rdc config push-infra server-1
+   # إعدادات خاصة بالجهاز
+   rdc config infra set server-1 \
+     --public-ipv4 203.0.113.50 \
+     --base-domain example.com
+
+   rdc config infra push server-1
    ```
 
 2. سجلات DNS تشير إلى نطاقك على عنوان IP العام للخادم (راجع [تكوين DNS](#تكوين-dns) أدناه).
@@ -111,7 +133,6 @@ labels:
 services:
   myapp:
     image: myapp:latest
-    network_mode: host
     environment:
       - LISTEN_ADDR=${MYAPP_IP}:8080
     labels:
@@ -123,7 +144,6 @@ services:
 
   database:
     image: postgres:17
-    network_mode: host
     command: ["-c", "listen_addresses=${DATABASE_IP}"]
     # بدون علامات traefik — قاعدة البيانات داخلية فقط
 ```
@@ -142,21 +162,19 @@ services:
 
 ## شهادات TLS
 
-يتم الحصول على شهادات TLS تلقائياً عبر Let's Encrypt باستخدام تحدي Cloudflare DNS-01. يُكوَّن هذا مرة واحدة أثناء إعداد البنية التحتية:
+يتم الحصول على شهادات TLS تلقائياً عبر Let's Encrypt باستخدام تحدي Cloudflare DNS-01. تُكوَّن بيانات الاعتماد مرة واحدة لكل إعداد (مشتركة عبر جميع الأجهزة):
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
 
-عندما تحتوي خدمة على `traefik.http.routers.{name}.tls.certresolver=letsencrypt`، يقوم Traefik تلقائياً بـ:
-1. طلب شهادة من Let's Encrypt
-2. التحقق من ملكية النطاق عبر Cloudflare DNS
-3. تخزين الشهادة محلياً
-4. تجديدها قبل انتهاء صلاحيتها
+تستخدم المسارات التلقائية **شهادات بدل** على مستوى النطاق الفرعي للمستودع (`*.marketing.server-1.example.com`) بدلاً من شهادات لكل خدمة. هذا يتجنب حدود معدل Let's Encrypt ويُسرّع بدء التشغيل. مسارات النطاق المخصص تستخدم شهادات بدل على مستوى الجهاز (`*.server-1.example.com`).
 
-يحتاج رمز Cloudflare DNS API إلى إذن `Zone:DNS:Edit` للنطاقات التي تريد تأمينها. يعمل هذا النهج لأي نطاق يديره Cloudflare، بما في ذلك شهادات البدل.
+لمسارات المستوى 2 مع `traefik.http.routers.{name}.tls.certresolver=letsencrypt`، يتم حقن أسماء نطاقات البدل SAN تلقائياً بناءً على اسم المضيف للمسار.
+
+يحتاج رمز Cloudflare DNS API إلى إذن `Zone:DNS:Edit` للنطاقات التي تريد تأمينها.
 
 ## توجيه منافذ TCP/UDP
 
@@ -167,11 +185,11 @@ rdc config set-infra server-1 \
 أضف المنافذ المطلوبة أثناء تكوين البنية التحتية:
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config push-infra server-1
+rdc config infra push server-1
 ```
 
 ينشئ هذا نقاط دخول Traefik باسم `tcp-{port}` و`udp-{port}`.
@@ -184,7 +202,6 @@ To expose a database externally without TLS passthrough (Traefik forwards raw TC
 services:
   postgres:
     image: postgres:17
-    network_mode: host
     command: -c listen_addresses=${POSTGRES_IP} -c port=5432
     labels:
       - "traefik.enable=true"
@@ -197,7 +214,7 @@ Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
 
 > **Security note:** Exposing a database to the internet is a risk. Use this only when remote clients need direct access. For most setups, keep the database internal and connect through your application.
 
-> بعد إضافة أو إزالة المنافذ، قم دائماً بتشغيل `rdc config push-infra` لتحديث تكوين الوكيل.
+> بعد إضافة أو إزالة المنافذ، قم دائماً بتشغيل `rdc config infra push` لتحديث تكوين الوكيل.
 
 ### الخطوة 2: إضافة علامات TCP/UDP
 
@@ -207,7 +224,6 @@ Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
 services:
   mail-server:
     image: ghcr.io/docker-mailserver/docker-mailserver:latest
-    network_mode: host
     labels:
       - "traefik.enable=true"
 
@@ -232,7 +248,7 @@ services:
 
 ### المنافذ المُكوَّنة مسبقاً
 
-المنافذ TCP/UDP التالية لها نقاط دخول افتراضياً (لا حاجة لإضافتها عبر `--tcp-ports`):
+المنافذ TCP/UDP التالية لها نقاط دخول افتراضياً (لا حاجة لإضافتها عبر `--tcp-ports`). يتم إنشاء نقاط الدخول فقط لعائلات العناوين المُكوَّنة — نقاط دخول IPv4 تتطلب `--public-ipv4`، ونقاط دخول IPv6 تتطلب `--public-ipv6`:
 
 | المنفذ | البروتوكول | الاستخدام الشائع |
 |--------|-----------|-----------------|
@@ -250,29 +266,41 @@ services:
 
 ## تكوين DNS
 
-وجّه نطاقاتك إلى عناوين IP العامة للخادم المُكوَّنة في `set-infra`:
+### DNS التلقائي (Cloudflare)
 
-### نطاقات الخدمات الفردية
+عند تكوين `--cf-dns-token`، يقوم `rdc config infra push` تلقائياً بإنشاء سجلات DNS اللازمة في Cloudflare:
 
-أنشئ سجلات A (IPv4) و/أو AAAA (IPv6) لكل خدمة:
+| السجل | النوع | المحتوى | أُنشئ بواسطة |
+|-------|-------|---------|-------------|
+| `server-1.example.com` | A / AAAA | عنوان IP العام للجهاز | `push-infra` |
+| `*.server-1.example.com` | A / AAAA | عنوان IP العام للجهاز | `push-infra` |
+| `*.marketing.server-1.example.com` | A / AAAA | عنوان IP العام للجهاز | `repo up` |
+
+سجلات مستوى الجهاز تُنشأ بواسطة `push-infra` وتغطي مسارات النطاق المخصص (`rediacc.domain`). سجلات البدل لكل مستودع تُنشأ تلقائياً بواسطة `repo up` وتغطي المسارات التلقائية لذلك المستودع.
+
+هذه العملية متساوية القوة — يتم تحديث السجلات الموجودة إذا تغير عنوان IP، وتُترك دون تغيير إذا كانت صحيحة بالفعل.
+
+يجب إنشاء سجل البدل للنطاق الأساسي (`*.example.com`) يدوياً إذا كنت تستخدم تسميات نطاق مخصصة مثل `rediacc.domain=erp`.
+
+### DNS اليدوي
+
+إذا لم تكن تستخدم Cloudflare أو تدير DNS يدوياً، أنشئ سجلات A (IPv4) و/أو AAAA (IPv6):
 
 ```
-app.example.com      A     203.0.113.50
-app.example.com      AAAA  2001:db8::1
-gitlab.example.com   A     203.0.113.50
-mail.example.com     A     203.0.113.50
+# النطاق الفرعي للجهاز (لمسارات النطاق المخصص مثل rediacc.domain=erp)
+server-1.example.com           A     203.0.113.50
+*.server-1.example.com         A     203.0.113.50
+*.server-1.example.com         AAAA  2001:db8::1
+
+# سجلات بدل لكل مستودع (للمسارات التلقائية مثل myapp.marketing.server-1.example.com)
+*.marketing.server-1.example.com    A     203.0.113.50
+*.marketing.server-1.example.com    AAAA  2001:db8::1
+
+# سجل بدل النطاق الأساسي (لخدمات النطاق المخصص مثل rediacc.domain=erp)
+*.example.com                  A     203.0.113.50
 ```
 
-### البدل للمسارات التلقائية
-
-إذا كنت تستخدم المسارات التلقائية (المستوى 1)، أنشئ سجل DNS بدل:
-
-```
-*.example.com   A     203.0.113.50
-*.example.com   AAAA  2001:db8::1
-```
-
-يوجّه هذا جميع النطاقات الفرعية إلى خادمك، ويُطابقها Traefik مع الخدمة الصحيحة بناءً على قاعدة `Host()` أو اسم مضيف المسار التلقائي.
+مع تكوين Cloudflare DNS، تُنشأ سجلات البدل لكل مستودع تلقائياً بواسطة `repo up`. مع أجهزة متعددة، يحصل كل جهاز على سجلات DNS خاصة به تشير إلى عنوان IP الخاص به.
 
 ## الوسائط
 
@@ -342,7 +370,7 @@ curl -s http://127.0.0.1:7111/ports | python3 -m json.tool
 | الخدمة غير موجودة في المسارات | الحاوية لا تعمل أو العلامات مفقودة | تحقق بـ `docker ps` على daemon المستودع؛ تحقق من العلامات |
 | الشهادة لم تُصدر | DNS لا يشير إلى الخادم، أو رمز Cloudflare غير صالح | تحقق من حل DNS؛ تحقق من أذونات رمز Cloudflare API |
 | 502 Bad Gateway | التطبيق لا يستمع على المنفذ المُعلن | تحقق من أن التطبيق مرتبط بـ `{SERVICE}_IP` وأن المنفذ يتطابق مع `loadbalancer.server.port` |
-| منفذ TCP غير قابل للوصول | المنفذ غير مسجل في البنية التحتية | شغّل `rdc config set-infra --tcp-ports ...` و`push-infra` |
+| منفذ TCP غير قابل للوصول | المنفذ غير مسجل في البنية التحتية | شغّل `rdc config infra set --tcp-ports ...` و`push-infra` |
 | Route server running old version | Binary was updated but service not restarted | Happens automatically on provisioning; manual: `sudo systemctl restart rediacc-router` |
 | STUN/TURN relay not reachable | Relay addresses cached at startup | Recreate the service after DNS or IP changes so it picks up the new network config |
 
@@ -356,8 +384,6 @@ curl -s http://127.0.0.1:7111/ports | python3 -m json.tool
 services:
   webapp:
     image: myregistry/webapp:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
       LISTEN_ADDR: ${WEBAPP_IP}:3000
@@ -374,8 +400,6 @@ services:
 
   postgres:
     image: postgres:17
-    network_mode: host
-    restart: unless-stopped
     environment:
       POSTGRES_DB: webapp
       POSTGRES_USER: app
@@ -391,12 +415,8 @@ services:
 ```bash
 #!/bin/bash
 
-prep() {
-    mkdir -p data/postgres
-    renet compose -- pull
-}
-
 up() {
+    mkdir -p data/postgres
     renet compose -- up -d
 }
 

@@ -1,4 +1,4 @@
-import { test as setup } from '@playwright/test';
+import { test as setup, expect } from '@playwright/test';
 import { API_DEFAULTS, TEST_CREDENTIALS } from '@rediacc/shared';
 import { saveGlobalState } from '../../src/setup/global-state';
 import { getEnvVarWithDefault } from '../../src/utils/env';
@@ -121,8 +121,9 @@ setup('register user for e2e tests', async ({ page }) => {
     .fill(getEnvVarWithDefault('TEST_VERIFICATION_CODE'));
   await page.locator('[data-testid="registration-verify-button"]').click();
 
-  // Wait briefly for verification to complete (tests will handle their own navigation)
+  // Wait for verification to complete and confirm we left the registration flow
   await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
+  expect(credentials.email).toBeTruthy();
 
   // Save credentials for tests to use
   saveGlobalState({

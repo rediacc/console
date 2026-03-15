@@ -1,14 +1,57 @@
-import { Command } from 'commander';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { registerLocalDataCommands } from './config-data.js';
-import { registerInfraCommands } from './config-infra.js';
-import { registerSetupCommands } from './config-setup.js';
+import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
-import { hasCloudCredentials } from '../types/index.js';
-import { handleError, ValidationError } from '../utils/errors.js';
 import type { OutputFormat, RdcConfig } from '../types/index.js';
+import { hasCloudCredentials } from '../types/index.js';
+import {
+  assertStorageExists,
+  BackupDestinationSchema,
+  BackupScheduleSchema,
+  parseConfig,
+} from '../utils/config-schema.js';
+import { handleError, ValidationError } from '../utils/errors.js';
+import { registerRepositoryCommands, registerStorageCommands } from './config-data.js';
+import { registerInfraCommands } from './config-infra.js';
+import { registerMachineCommands, registerProviderCommands } from './config-setup.js';
+
+/** Resolve enabled state from --enable/--disable flags. */
+function resolveEnabledFlag(enable?: boolean, disable?: boolean): boolean | undefined {
+  if (enable) return true;
+  if (disable) return false;
+  return undefined;
+}
+
+/**
+ * Apply backup-strategy set options: either upsert a destination or update global settings.
+ */
+async function applyBackupStrategyOptions(options: {
+  destination?: string;
+  cron?: string;
+  enable?: boolean;
+  disable?: boolean;
+}): Promise<void> {
+  const hasAnyOption = options.destination ?? options.cron ?? options.enable ?? options.disable;
+  if (!hasAnyOption) {
+    throw new ValidationError(t('commands.config.backupStrategy.set.noOptions'));
+  }
+
+  const enabled = resolveEnabledFlag(options.enable, options.disable);
+
+  if (options.destination) {
+    await assertStorageExists(options.destination);
+    const dest = parseConfig(
+      BackupDestinationSchema,
+      { storage: options.destination, schedule: options.cron, enabled },
+      'backup destination'
+    );
+    await configService.addBackupDestination(dest);
+  } else {
+    parseConfig(BackupScheduleSchema, { schedule: options.cron, enabled }, 'backup schedule');
+    await configService.setBackupStrategy({ schedule: options.cron, enabled });
+  }
+}
 
 /** Build display data for a self-hosted config (local or S3 mode). */
 async function buildSelfHostedDisplay(
@@ -49,7 +92,6 @@ async function buildSelfHostedDisplay(
     machines: machineCount,
     storages: storageCount,
     repositories: repoCount,
-    defaultMachine: config.machine ?? '-',
   };
 }
 
@@ -173,6 +215,16 @@ async function handleS3Setup(options: {
 
 export function registerConfigCommands(program: Command): void {
   const config = program.command('config').description(t('commands.config.description'));
+
+  config.addHelpText(
+    'after',
+    `
+${t('help.examples')}
+  $ rdc config init production --ssh-key ~/.ssh/id_ed25519   ${t('help.config.init')}
+  $ rdc config machine add server-1 --ip 10.0.0.1           ${t('help.config.addMachine')}
+  $ rdc config machine setup server-1                        ${t('help.config.setupMachine')}
+`
+  );
 
   // config init [name] - Initialize a new config file
   config
@@ -334,11 +386,11 @@ export function registerConfigCommands(program: Command): void {
     .description(t('commands.config.set.description'))
     .action(async (key, value) => {
       try {
-        const validKeys = ['team', 'region', 'bridge', 'machine'];
+        const validKeys = ['team', 'region', 'bridge'];
         if (!validKeys.includes(key)) {
           throw new ValidationError(t('errors.invalidKey', { keys: validKeys.join(', ') }));
         }
-        await configService.set(key as 'team' | 'region' | 'bridge' | 'machine', value);
+        await configService.set(key as 'team' | 'region' | 'bridge', value);
         outputService.success(t('commands.config.set.success', { key, value }));
       } catch (error) {
         handleError(error);
@@ -352,11 +404,11 @@ export function registerConfigCommands(program: Command): void {
     .action(async (key) => {
       try {
         if (key) {
-          const validKeys = ['team', 'region', 'bridge', 'machine'];
+          const validKeys = ['team', 'region', 'bridge'];
           if (!validKeys.includes(key)) {
             throw new ValidationError(t('errors.invalidKey', { keys: validKeys.join(', ') }));
           }
-          await configService.remove(key as 'team' | 'region' | 'bridge' | 'machine');
+          await configService.remove(key as 'team' | 'region' | 'bridge');
           outputService.success(t('commands.config.clear.keyCleared', { key }));
         } else {
           await configService.clearDefaults();
@@ -423,8 +475,70 @@ export function registerConfigCommands(program: Command): void {
       }
     });
 
-  // Register sub-command groups
-  registerSetupCommands(config, program);
-  registerLocalDataCommands(config, program);
+  // ── backup-strategy ────────────────────────────────────────────────
+  const backupStrategy = config
+    .command('backup-strategy')
+    .description(t('commands.config.backupStrategy.description'));
+
+  // backup-strategy set
+  backupStrategy
+    .command('set')
+    .description(t('commands.config.backupStrategy.set.description'))
+    .option('--destination <storage>', t('commands.config.backupStrategy.set.optionDestination'))
+    .option('--cron <expression>', t('commands.config.backupStrategy.set.optionCron'))
+    .option('--enable', t('commands.config.backupStrategy.set.optionEnable'))
+    .option('--disable', t('commands.config.backupStrategy.set.optionDisable'))
+    .action(async (options) => {
+      try {
+        await applyBackupStrategyOptions(options);
+        outputService.success(t('commands.config.backupStrategy.set.saved'));
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // backup-strategy show
+  backupStrategy
+    .command('show')
+    .description(t('commands.config.backupStrategy.show.description'))
+    .action(async () => {
+      try {
+        const strategy = await configService.getBackupStrategy();
+        if (!strategy) {
+          outputService.info(t('commands.config.backupStrategy.show.notConfigured'));
+          return;
+        }
+
+        if (strategy.schedule) {
+          outputService.info(
+            t('commands.config.backupStrategy.show.schedule', { schedule: strategy.schedule })
+          );
+        }
+        outputService.info(
+          t('commands.config.backupStrategy.show.enabled', {
+            enabled: String(strategy.enabled !== false),
+          })
+        );
+
+        if (strategy.destinations.length === 0) {
+          outputService.info(t('commands.config.backupStrategy.show.noDestinations'));
+        } else {
+          outputService.info(t('commands.config.backupStrategy.show.destinations'));
+          for (const dest of strategy.destinations) {
+            const schedule = dest.schedule ?? strategy.schedule ?? '-';
+            const enabled = dest.enabled !== false && strategy.enabled !== false;
+            outputService.info(`  ${dest.storage}  schedule=${schedule}  enabled=${enabled}`);
+          }
+        }
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // Register nested sub-command groups
+  registerMachineCommands(config, program);
+  registerProviderCommands(config, program);
+  registerRepositoryCommands(config, program);
+  registerStorageCommands(config, program);
   registerInfraCommands(config, program);
 }

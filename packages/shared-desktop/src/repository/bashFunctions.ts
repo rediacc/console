@@ -73,6 +73,22 @@ rediacc_prompt() {
 }
 export -f rediacc_prompt 2>/dev/null || true
 
+# Set custom prompt showing repo name instead of GUID path
+if [ -n "\${REDIACC_REPOSITORY:-}" ]; then
+  __rediacc_ps1_dir() {
+    local cwd="$PWD"
+    # Try REDIACC_WORKING_DIR (mount path) first, then DOCKER_DATA (named path)
+    local work_dir="\${REDIACC_WORKING_DIR:-\${DOCKER_DATA:-}}"
+    if [ -n "$work_dir" ] && [ "\${cwd#"$work_dir"}" != "$cwd" ]; then
+      local rel="\${cwd#"$work_dir"}"
+      printf '%s' "\${REDIACC_REPOSITORY}\${rel}"
+    else
+      printf '%s' "$cwd"
+    fi
+  }
+  PS1='\\u@\\h:$(__rediacc_ps1_dir)\\$ '
+fi
+
 # Quick container restart
 restart_container() {
   local container="\${1:-}"

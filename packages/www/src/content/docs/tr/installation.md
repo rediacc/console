@@ -4,7 +4,7 @@ description: "Rediacc CLI'ı Linux, macOS veya Windows üzerine kurun."
 category: "Guides"
 order: 1
 language: tr
-sourceHash: "2cb00a8aeec6988c"
+sourceHash: "7710f243d1cde01e"
 ---
 
 # Kurulum
@@ -16,7 +16,7 @@ sourceHash: "2cb00a8aeec6988c"
 Kurulum betiğini çalıştırın:
 
 ```bash
-curl -fsSL https://get.rediacc.com | sh
+curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 Bu komut `rdc` ikili dosyasını `$HOME/.local/bin/` dizinine indirir. Bu dizinin PATH değişkeninizde olduğundan emin olun:

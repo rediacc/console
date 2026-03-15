@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Template Testing Script
-# Tests all Rediaccfile templates by executing prep/up/down lifecycle
+# Tests all Rediaccfile templates by executing up/down lifecycle
 # Monitors health checks and cleans up resources for CI environments
 #
 # Usage: ./test-templates.sh [OPTIONS]
@@ -91,7 +91,7 @@ show_help() {
     cat << 'EOF'
 Template Testing Script
 
-Tests all Rediaccfile templates by executing prep/up/down lifecycle
+Tests all Rediaccfile templates by executing up/down lifecycle
 
 Usage: ./test-templates.sh [OPTIONS]
 
@@ -501,15 +501,14 @@ test_template() {
     local overall_status="passed"
     local error_msg=""
     local first_failure_stage=""
-    local original_network_mode="${NETWORK_MODE:-}"
+    local original_network_mode="${REPOSITORY_NETWORK_MODE:-}"
     local auto_network=""
     local using_auto_network=0
 
     # Check if template directory exists
     if [[ ! -d "$template_dir" ]]; then
         log_error "Template directory not found: $template_dir"
-        result+=',"prep":{"status":"failed","duration":"0s","error":"Directory not found"}'
-        result+=',"overall":"failed","duration":"0s"}'
+        result+=',"overall":"failed","duration":"0s","error":"Directory not found"}'
         TEST_RESULTS+=("$result")
         ((FAILED_TESTS++)) || true
         return 1
@@ -518,8 +517,7 @@ test_template() {
     # Check if Rediaccfile exists
     if [[ ! -f "$template_dir/Rediaccfile" ]]; then
         log_error "Rediaccfile not found in $template_dir"
-        result+=',"prep":{"status":"failed","duration":"0s","error":"Rediaccfile not found"}'
-        result+=',"overall":"failed","duration":"0s"}'
+        result+=',"overall":"failed","duration":"0s","error":"Rediaccfile not found"}'
         TEST_RESULTS+=("$result")
         ((FAILED_TESTS++)) || true
         return 1
@@ -527,8 +525,7 @@ test_template() {
 
     cd "$template_dir" || {
         log_error "Failed to change directory to $template_dir"
-        result+=',"prep":{"status":"failed","duration":"0s","error":"Cannot cd to directory"}'
-        result+=',"overall":"failed","duration":"0s"}'
+        result+=',"overall":"failed","duration":"0s","error":"Cannot cd to directory"}'
         TEST_RESULTS+=("$result")
         ((FAILED_TESTS++)) || true
         return 1
@@ -539,126 +536,97 @@ test_template() {
     # shellcheck source=/dev/null
     if ! source ./Rediaccfile; then
         log_error "Failed to source Rediaccfile"
-        result+=',"prep":{"status":"failed","duration":"0s","error":"Failed to source Rediaccfile"}'
-        result+=',"overall":"failed","duration":"0s"}'
+        result+=',"overall":"failed","duration":"0s","error":"Failed to source Rediaccfile"}'
         TEST_RESULTS+=("$result")
         ((FAILED_TESTS++)) || true
         return 1
     fi
 
-    # Test prep function
-    local prep_start=$(date +%s)
-    log_verbose "Running prep()"
-    if timeout "$TEST_TIMEOUT" bash -c 'source ./Rediaccfile && prep' >/dev/null 2>&1; then
-        local prep_duration=$(($(date +%s) - prep_start))
-        log_verbose "prep() passed (${prep_duration}s)"
-        result+=',"prep":{"status":"passed","duration":"'"${prep_duration}s"'"}'
-    else
-        local prep_exit_code=$?
-        local prep_duration=$(($(date +%s) - prep_start))
-        local prep_error="prep function failed"
-        if [[ $prep_exit_code -eq 124 ]]; then
-            prep_error="prep function timed out after ${TEST_TIMEOUT}s"
-            log_error "prep() timed out"
-        else
-            log_error "prep() failed with exit code $prep_exit_code"
+    # Test up function
+    local up_start=$(date +%s)
+    log_verbose "Running up()"
+
+    if [[ $using_auto_network -eq 0 && -z "$original_network_mode" ]]; then
+        auto_network=$(printf '%s' "$template_path" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '_')
+        auto_network="rediacc_${auto_network}"
+        log_verbose "Auto-configuring REPOSITORY_NETWORK_MODE=${auto_network}"
+        if ! docker network inspect "$auto_network" >/dev/null 2>&1; then
+            docker network create "$auto_network" >/dev/null 2>&1 || true
         fi
-        result+=',"prep":{"status":"failed","duration":"'"${prep_duration}s"'","error":"'"$prep_error"'"}'
-        overall_status="failed"
-        error_msg="prep() failed"
-        if [[ -z "$first_failure_stage" ]]; then
-            first_failure_stage="prep"
-        fi
-        collect_template_artifacts "$template_path" "$template_dir" "prep"
+        export REPOSITORY_NETWORK_MODE="$auto_network"
+        using_auto_network=1
     fi
 
-    # Test up function (only if prep passed or CONTINUE_ON_ERROR is set)
+    if timeout "$TEST_TIMEOUT" bash -c 'source ./Rediaccfile && up' >/dev/null 2>&1; then
+        local up_duration=$(($(date +%s) - up_start))
+        log_verbose "up() passed (${up_duration}s)"
+        result+=',"up":{"status":"passed","duration":"'"${up_duration}s"'"}'
+    else
+        local up_exit_code=$?
+        local up_duration=$(($(date +%s) - up_start))
+        local up_error="up function failed"
+        if [[ $up_exit_code -eq 124 ]]; then
+            up_error="up function timed out after ${TEST_TIMEOUT}s"
+            log_error "up() timed out"
+        else
+            log_error "up() failed with exit code $up_exit_code"
+        fi
+        result+=',"up":{"status":"failed","duration":"'"${up_duration}s"'","error":"'"$up_error"'"}'
+        overall_status="failed"
+        error_msg="up() failed"
+        if [[ -z "$first_failure_stage" ]]; then
+            first_failure_stage="up"
+        fi
+        collect_template_artifacts "$template_path" "$template_dir" "up"
+    fi
+
+    # Check health (only if up passed or CONTINUE_ON_ERROR is set)
     if [[ "$overall_status" == "passed" ]] || [[ $CONTINUE_ON_ERROR -eq 1 ]]; then
-        local up_start=$(date +%s)
-        log_verbose "Running up()"
-
-        if [[ $using_auto_network -eq 0 && -z "$original_network_mode" ]]; then
-            auto_network=$(printf '%s' "$template_path" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '_')
-            auto_network="rediacc_${auto_network}"
-            log_verbose "Auto-configuring NETWORK_MODE=${auto_network}"
-            if ! docker network inspect "$auto_network" >/dev/null 2>&1; then
-                docker network create "$auto_network" >/dev/null 2>&1 || true
-            fi
-            export NETWORK_MODE="$auto_network"
-            using_auto_network=1
-        fi
-
-        if timeout "$TEST_TIMEOUT" bash -c 'source ./Rediaccfile && up' >/dev/null 2>&1; then
-            local up_duration=$(($(date +%s) - up_start))
-            log_verbose "up() passed (${up_duration}s)"
-            result+=',"up":{"status":"passed","duration":"'"${up_duration}s"'"}'
+        local health_start=$(date +%s)
+        log_verbose "Checking health"
+        if check_health "$template_dir"; then
+            local health_duration=$(($(date +%s) - health_start))
+            log_verbose "Health check passed (${health_duration}s)"
+            result+=',"health":{"status":"passed","duration":"'"${health_duration}s"'"}'
         else
-            local up_exit_code=$?
-            local up_duration=$(($(date +%s) - up_start))
-            local up_error="up function failed"
-            if [[ $up_exit_code -eq 124 ]]; then
-                up_error="up function timed out after ${TEST_TIMEOUT}s"
-                log_error "up() timed out"
-            else
-                log_error "up() failed with exit code $up_exit_code"
-            fi
-            result+=',"up":{"status":"failed","duration":"'"${up_duration}s"'","error":"'"$up_error"'"}'
+            local health_duration=$(($(date +%s) - health_start))
+            log_error "Health check failed"
+            result+=',"health":{"status":"failed","duration":"'"${health_duration}s"'","error":"Health check timeout or containers not healthy"}'
             overall_status="failed"
-            error_msg="up() failed"
+            error_msg="Health check failed"
             if [[ -z "$first_failure_stage" ]]; then
-                first_failure_stage="up"
+                first_failure_stage="health"
             fi
-            collect_template_artifacts "$template_path" "$template_dir" "up"
+            collect_template_artifacts "$template_path" "$template_dir" "health"
         fi
+    fi
 
-        # Check health (only if up passed or CONTINUE_ON_ERROR is set)
-        if [[ "$overall_status" == "passed" ]] || [[ $CONTINUE_ON_ERROR -eq 1 ]]; then
-            local health_start=$(date +%s)
-            log_verbose "Checking health"
-            if check_health "$template_dir"; then
-                local health_duration=$(($(date +%s) - health_start))
-                log_verbose "Health check passed (${health_duration}s)"
-                result+=',"health":{"status":"passed","duration":"'"${health_duration}s"'"}'
-            else
-                local health_duration=$(($(date +%s) - health_start))
-                log_error "Health check failed"
-                result+=',"health":{"status":"failed","duration":"'"${health_duration}s"'","error":"Health check timeout or containers not healthy"}'
-                overall_status="failed"
-                error_msg="Health check failed"
-                if [[ -z "$first_failure_stage" ]]; then
-                    first_failure_stage="health"
-                fi
-                collect_template_artifacts "$template_path" "$template_dir" "health"
-            fi
-        fi
-
-        # Always try to run down() for cleanup
-        local down_start=$(date +%s)
-        log_verbose "Running down()"
-        if timeout "$TEST_TIMEOUT" bash -c 'source ./Rediaccfile && down' >/dev/null 2>&1; then
-            local down_duration=$(($(date +%s) - down_start))
-            log_verbose "down() passed (${down_duration}s)"
-            result+=',"down":{"status":"passed","duration":"'"${down_duration}s"'"}'
+    # Always try to run down() for cleanup
+    local down_start=$(date +%s)
+    log_verbose "Running down()"
+    if timeout "$TEST_TIMEOUT" bash -c 'source ./Rediaccfile && down' >/dev/null 2>&1; then
+        local down_duration=$(($(date +%s) - down_start))
+        log_verbose "down() passed (${down_duration}s)"
+        result+=',"down":{"status":"passed","duration":"'"${down_duration}s"'"}'
+    else
+        local down_exit_code=$?
+        local down_duration=$(($(date +%s) - down_start))
+        local down_error="down function failed"
+        if [[ $down_exit_code -eq 124 ]]; then
+            down_error="down function timed out after ${TEST_TIMEOUT}s"
+            log_error "down() timed out"
         else
-            local down_exit_code=$?
-            local down_duration=$(($(date +%s) - down_start))
-            local down_error="down function failed"
-            if [[ $down_exit_code -eq 124 ]]; then
-                down_error="down function timed out after ${TEST_TIMEOUT}s"
-                log_error "down() timed out"
-            else
-                log_error "down() failed with exit code $down_exit_code"
-            fi
-            result+=',"down":{"status":"failed","duration":"'"${down_duration}s"'","error":"'"$down_error"'"}'
-            overall_status="failed"
-            if [[ -z "$error_msg" ]]; then
-                error_msg="down() failed"
-            fi
-            if [[ -z "$first_failure_stage" ]]; then
-                first_failure_stage="down"
-            fi
-            collect_template_artifacts "$template_path" "$template_dir" "down"
+            log_error "down() failed with exit code $down_exit_code"
         fi
+        result+=',"down":{"status":"failed","duration":"'"${down_duration}s"'","error":"'"$down_error"'"}'
+        overall_status="failed"
+        if [[ -z "$error_msg" ]]; then
+            error_msg="down() failed"
+        fi
+        if [[ -z "$first_failure_stage" ]]; then
+            first_failure_stage="down"
+        fi
+        collect_template_artifacts "$template_path" "$template_dir" "down"
     fi
 
     # Cleanup
@@ -671,9 +639,9 @@ test_template() {
     if [[ $using_auto_network -eq 1 && -n "$auto_network" ]]; then
         log_verbose "Removing auto-configured network: $auto_network"
         docker network rm "$auto_network" >/dev/null 2>&1 || true
-        unset NETWORK_MODE
+        unset REPOSITORY_NETWORK_MODE
     elif [[ -n "$original_network_mode" ]]; then
-        export NETWORK_MODE="$original_network_mode"
+        export REPOSITORY_NETWORK_MODE="$original_network_mode"
     fi
 
     local cleanup_duration=$(($(date +%s) - cleanup_start))

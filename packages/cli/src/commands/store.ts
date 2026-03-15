@@ -1,11 +1,11 @@
 import { DEFAULTS } from '@rediacc/shared/config';
+import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
-import { handleError, ValidationError } from '../utils/errors.js';
 import type { OutputFormat } from '../types/index.js';
 import type { StoreType } from '../types/store.js';
-import type { Command } from 'commander';
+import { handleError, ValidationError } from '../utils/errors.js';
 
 const VALID_STORE_TYPES = [
   's3',
@@ -125,6 +125,16 @@ async function syncSingleStore(
 
 export function registerStoreCommands(program: Command): void {
   const store = program.command('store').description(t('commands.store.description'));
+
+  store.addHelpText(
+    'after',
+    `
+${t('help.examples')}
+  $ rdc store add my-backup --type s3 --s3-bucket my-backups  ${t('help.store.add')}
+  $ rdc store push                                            ${t('help.store.push')}
+  $ rdc store pull                                            ${t('help.store.pull')}
+`
+  );
 
   // store add <name>
   store

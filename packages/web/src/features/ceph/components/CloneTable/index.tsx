@@ -1,4 +1,3 @@
-import { useCallback, useMemo, useState } from 'react';
 import {
   CloudUploadOutlined,
   CopyOutlined,
@@ -10,7 +9,15 @@ import {
   SyncOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
+import type {
+  GetCephPools_ResultSet1,
+  GetCephRbdClones_ResultSet1,
+  GetCephRbdImages_ResultSet1,
+  GetCephRbdSnapshots_ResultSet1,
+} from '@rediacc/shared/types';
+import type { MenuProps } from 'antd';
 import { Button, Flex, Space, Tag, Tooltip, Typography } from 'antd';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useCreateCephRbdClone,
@@ -29,16 +36,9 @@ import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState';
 import { useFormModal } from '@/hooks/useFormModal';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import type {
-  GetCephPools_ResultSet1,
-  GetCephRbdClones_ResultSet1,
-  GetCephRbdImages_ResultSet1,
-  GetCephRbdSnapshots_ResultSet1,
-} from '@rediacc/shared/types';
 import { CloneMachineCountBadge } from '../CloneMachineCountBadge';
 import { CloneMachineTable } from '../CloneMachineTable';
 import { buildCloneColumns } from './columns';
-import type { MenuProps } from 'antd';
 
 interface CloneTableProps {
   snapshot: GetCephRbdSnapshots_ResultSet1;

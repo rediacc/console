@@ -1,0 +1,31 @@
+---
+import type { Language } from '../../i18n/types';
+import type { PersonaType } from '../../config/persona-pages';
+
+interface Props {
+  content: {
+    overline: string;
+    title: string;
+    description: string;
+    ctaText: string;
+    ctaSlug: string;
+  };
+  personaType: PersonaType;
+  lang: Language;
+}
+
+const { content, lang } = Astro.props;
+const href = `/${lang}/${content.ctaSlug}`;
+---
+
+<section class="sp-share-with-team">
+  <div class="sp-share-with-team-inner">
+    <span class="sp-share-overline">{content.overline}</span>
+    <h2>{content.title}</h2>
+    <p>{content.description}</p>
+    <a href={href} class="sp-btn-primary sp-share-cta">
+      {content.ctaText}
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+  </div>
+</section>

@@ -1,4 +1,10 @@
 import { Command } from 'commander';
+import { t } from '../i18n/index.js';
+import { getStateProvider } from '../providers/index.js';
+import { authService } from '../services/auth.js';
+import { configService } from '../services/config-resources.js';
+import { outputService } from '../services/output.js';
+import type { OutputFormat } from '../types/index.js';
 import {
   addParentToPayload,
   applySearchFilter,
@@ -19,14 +25,8 @@ import {
   type VaultItem,
   validateJsonVault,
 } from './commandFactory-helpers.js';
-import { handleError } from './errors.js';
+import { getOutputFormat, handleError } from './errors.js';
 import { withSpinner } from './spinner.js';
-import { t } from '../i18n/index.js';
-import { getStateProvider } from '../providers/index.js';
-import { authService } from '../services/auth.js';
-import { configService } from '../services/config-resources.js';
-import { outputService } from '../services/output.js';
-import type { OutputFormat } from '../types/index.js';
 
 /**
  * Mode-aware authentication helper.
@@ -229,34 +229,46 @@ function setupDeleteCommand(
 ): void {
   const deleteCmd = resource.command('delete <name>').description(`Delete a ${ctx.resourceName}`);
   if (ctx.hasParent) deleteCmd.option(ctx.parentFlag, ctx.parentDesc);
-  deleteCmd.option('-f, --force', t('options.force')).action(async (name, options) => {
-    try {
-      await requireAuthForMode();
-      const opts = ctx.hasParent ? await configService.applyDefaults(options) : options;
-      if (!(await ctx.checkParent(opts))) process.exit(1);
-      if (!options.force) {
-        const { askConfirm } = await import('./prompt.js');
-        const confirm = await askConfirm(
-          `Delete ${ctx.resourceName} "${name}"? This cannot be undone.`
-        );
-        if (!confirm) {
-          outputService.info(t('status.cancelled'));
+  deleteCmd
+    .option('-f, --force', t('options.force'))
+    .option('--dry-run', t('options.dryRun'))
+    .action(async (name, options) => {
+      try {
+        await requireAuthForMode();
+        const opts = ctx.hasParent ? await configService.applyDefaults(options) : options;
+        if (!(await ctx.checkParent(opts))) process.exit(1);
+
+        const payload: Record<string, unknown> = { [ctx.nameField]: name };
+        addParentToPayload(payload, ctx.hasParent, ctx.parentOption, opts);
+
+        if (options.dryRun) {
+          outputService.print(
+            { dryRun: true, resource: ctx.resourceName, ...payload },
+            getOutputFormat()
+          );
           return;
         }
+
+        if (!options.force) {
+          const { askConfirm } = await import('./prompt.js');
+          const confirm = await askConfirm(
+            `Delete ${ctx.resourceName} "${name}"? This cannot be undone.`
+          );
+          if (!confirm) {
+            outputService.info(t('status.cancelled'));
+            return;
+          }
+        }
+
+        await withSpinner(
+          `Deleting ${ctx.resourceName} "${name}"...`,
+          () => operations.delete(payload),
+          `${capitalizeFirst(ctx.resourceName)} "${name}" deleted`
+        );
+      } catch (error) {
+        handleError(error);
       }
-
-      const payload: Record<string, unknown> = { [ctx.nameField]: name };
-      addParentToPayload(payload, ctx.hasParent, ctx.parentOption, opts);
-
-      await withSpinner(
-        `Deleting ${ctx.resourceName} "${name}"...`,
-        () => operations.delete(payload),
-        `${capitalizeFirst(ctx.resourceName)} "${name}" deleted`
-      );
-    } catch (error) {
-      handleError(error);
-    }
-  });
+    });
 }
 
 function setupVaultGetCommand(
@@ -408,7 +420,7 @@ export function createResourceCommands(program: Command, config: ResourceCommand
 
   const resource = program
     .command(resourceName)
-    .description(`${capitalizeFirst(resourceName)} management commands`);
+    .description(t(`commands.${resourceName}.description`));
 
   setupListCommand(resource, program, ctx, operations);
   setupCreateCommand(resource, ctx, operations, createOptions, transformCreatePayload);
@@ -417,59 +429,6 @@ export function createResourceCommands(program: Command, config: ResourceCommand
   setupVaultCommands(resource, program, ctx, config);
 
   return resource;
-}
-
-/**
- * Add a status command to an existing resource command
- */
-export function addStatusCommand(
-  resourceCommand: Command,
-  config: {
-    resourceName: string;
-    nameField: string;
-    parentOption: 'team' | 'region';
-    fetch: (params: Record<string, unknown>) => Promise<unknown>;
-  }
-): void {
-  const { resourceName, nameField, parentOption, fetch } = config;
-  const parentFlag = getParentFlag(parentOption);
-  const parentDesc = getParentDesc(parentOption);
-  const checkParent = createParentCheck(parentOption);
-
-  resourceCommand
-    .command('status <name>')
-    .description(`Get ${resourceName} status`)
-    .option(parentFlag, parentDesc)
-    .action(async (name, options) => {
-      try {
-        await requireAuthForMode();
-        const opts = await configService.applyDefaults(options);
-
-        if (!(await checkParent(opts))) {
-          process.exit(1);
-        }
-
-        const params = { [getParentKey(parentOption)]: getParentValue(opts, parentOption) };
-
-        const response = await withSpinner(
-          `Fetching ${resourceName} status...`,
-          () => fetch(params),
-          'Status fetched'
-        );
-
-        const items = extractItemsFromResponse(response);
-        const item = items.find((i) => i[nameField] === name);
-        const format = resourceCommand.parent?.opts().output as OutputFormat;
-
-        if (item) {
-          outputService.print(item, format);
-        } else {
-          outputService.error(`${capitalizeFirst(resourceName)} "${name}" not found`);
-        }
-      } catch (error) {
-        handleError(error);
-      }
-    });
 }
 
 /**

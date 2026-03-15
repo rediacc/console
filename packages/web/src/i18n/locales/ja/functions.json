@@ -26,7 +26,6 @@
   "checkboxOptions": {
     "mountRepoFirst": "最初にリポジトリをマウントします",
     "overrideExistingFile": "既存のファイルを上書きする",
-    "preparationOnly": "準備のみ",
     "unmountAfterStopping": "停止後にアンマウントする"
   },
   "configure": "設定する",

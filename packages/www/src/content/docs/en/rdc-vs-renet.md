@@ -35,7 +35,7 @@ All common tasks go through `rdc` on your workstation:
 
 ```bash
 # Set up a new server
-rdc config setup-machine server-1
+rdc config machine setup server-1
 
 # Create and start a repository
 rdc repo create my-app -m server-1 --size 10G

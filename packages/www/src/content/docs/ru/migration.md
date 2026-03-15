@@ -4,7 +4,7 @@ description: "Миграция существующих проектов в за
 category: "Guides"
 order: 11
 language: ru
-sourceHash: "5064d721c8cf32ff"
+sourceHash: "76165f8884e5edf1"
 ---
 
 # Руководство по миграции
@@ -29,14 +29,14 @@ rdc repo create my-project -m server-1 --size 20G
 
 ## Шаг 2: Загрузка файлов
 
-Используйте `rdc sync upload` для передачи файлов проекта в репозиторий.
+Используйте `rdc repo sync upload` для передачи файлов проекта в репозиторий.
 
 ```bash
 # Предварительный просмотр того, что будет передано (без изменений)
-rdc sync upload -m server-1 -r my-project --local ./my-project --dry-run
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --dry-run
 
 # Загрузка файлов
-rdc sync upload -m server-1 -r my-project --local ./my-project
+rdc repo sync upload -m server-1 -r my-project --local ./my-project
 ```
 
 Перед загрузкой репозиторий должен быть смонтирован. Если он ещё не смонтирован:
@@ -48,7 +48,7 @@ rdc repo mount my-project -m server-1
 Для последующих синхронизаций, когда удалённая копия должна точно соответствовать локальному каталогу:
 
 ```bash
-rdc sync upload -m server-1 -r my-project --local ./my-project --mirror
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 ```
 
 > Флаг `--mirror` удаляет файлы на удалённом сервере, которые не существуют локально. Сначала используйте `--dry-run` для проверки.
@@ -83,7 +83,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 Чтобы пропустить обнаружение Docker-томов и изменить владельца всего, включая каталоги данных контейнеров:
 
 ```bash
-rdc repo ownership my-project -m server-1 --force
+rdc repo ownership my-project -m server-1
 ```
 
 > **Предупреждение:** Это может повредить работающие контейнеры. Сначала остановите их с помощью `rdc repo down`, если необходимо.
@@ -98,21 +98,17 @@ rdc repo ownership my-project -m server-1 --uid 1000
 
 ## Шаг 4: Настройка Rediaccfile
 
-Создайте `Rediaccfile` в корне вашего проекта. Этот Bash-скрипт определяет, как ваши сервисы подготавливаются, запускаются и останавливаются.
+Создайте `Rediaccfile` в корне вашего проекта. Этот Bash-скрипт определяет, как ваши сервисы запускаются и останавливаются.
 
 ```bash
 #!/bin/bash
 
-prep() {
-    docker compose pull
-}
-
 up() {
-    docker compose up -d
+    renet compose -- up -d
 }
 
 down() {
-    docker compose down
+    renet compose -- down
 }
 ```
 
@@ -120,11 +116,12 @@ down() {
 
 | Функция | Назначение | Поведение при ошибке |
 |---------|------------|---------------------|
-| `prep()` | Загрузка образов, выполнение миграций, установка зависимостей | Немедленный сбой: любая ошибка останавливает всё |
 | `up()` | Запуск сервисов | Ошибка в корне критична; ошибки в подкаталогах логируются и продолжаются |
 | `down()` | Остановка сервисов | Максимальное усилие: всегда пытается выполнить всё |
 
-> **Важно:** Используйте `docker` напрямую в вашем Rediaccfile — никогда `sudo docker`. Команда `sudo` сбрасывает переменные окружения, из-за чего теряется `DOCKER_HOST` и контейнеры создаются в системном Docker-демоне, а не в изолированном демоне репозитория. Функции Rediaccfile уже выполняются с достаточными привилегиями. Подробнее см. [Сервисы](/ru/docs/services#environment-variables).
+> **Важно:** Всегда используйте `renet compose --` вместо `docker compose` в вашем Rediaccfile. Обёртка `renet compose` обеспечивает host-сеть, возможности CRIU checkpoint/restore, назначение IP и обнаружение сервисов, необходимые для renet-proxy. Прямое использование `docker compose` обходит всё это и будет отклонено при валидации.
+>
+> Также никогда не используйте `sudo docker` — `sudo` сбрасывает переменные окружения, включая `DOCKER_HOST`, из-за чего контейнеры создаются в системном Docker-демоне, а не в изолированном демоне репозитория. Функции Rediaccfile уже выполняются с достаточными привилегиями.
 
 Подробнее о Rediaccfile, многосервисных конфигурациях и порядке выполнения см. [Сервисы](/ru/docs/services).
 
@@ -167,8 +164,6 @@ services:
 services:
   postgres:
     image: postgres:16
-    network_mode: host
-    restart: unless-stopped
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
@@ -177,14 +172,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    network_mode: host
-    restart: unless-stopped
     command: redis-server --bind ${REDIS_IP} --port 6379
 
   app:
     image: my-app:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
       REDIS_URL: redis://${REDIS_IP}:6379
@@ -193,10 +184,11 @@ services:
 
 Основные изменения:
 
-1. **Добавить `network_mode: host`** к каждому сервису
-2. **Удалить маппинги `ports:`** (не нужны при host-сети)
-3. **Привязать сервисы к переменным окружения `${SERVICE_IP}`** (автоматически внедряются Rediacc)
-4. **Ссылаться на другие сервисы по их IP** вместо Docker DNS-имён (например, `${POSTGRES_IP}` вместо `postgres`)
+1. **Удалить маппинги `ports:`** — `renet compose` использует host-сеть и автоматически удаляет маппинги портов
+2. **Удалить `network_mode: host`** — `renet compose` добавляет это автоматически
+3. **Удалить `restart: always` или `restart: unless-stopped`** — они конфликтуют с CRIU checkpoint/restore (Docker автоматически запускает контейнеры до того, как checkpoint restore сможет выполниться). Используйте `restart: on-failure`, если вам нужно поведение перезапуска, или полностью опустите — Rediaccfile `up()`/`down()` управляет жизненным циклом контейнеров
+4. **Привязать сервисы к переменным окружения `${SERVICE_IP}`** (автоматически внедряются Rediacc)
+5. **Ссылаться на другие сервисы по их IP** вместо Docker DNS-имён (например, `${POSTGRES_IP}` вместо `postgres`)
 
 Переменные `{SERVICE}_IP` автоматически генерируются из имён сервисов вашего compose-файла. Соглашение об именовании: верхний регистр, дефисы заменяются подчёркиваниями, суффикс `_IP`. Например, `listmonk-app` становится `LISTMONK_APP_IP`.
 
@@ -214,8 +206,7 @@ rdc repo up my-project -m server-1 --mount
 1. Монтирование зашифрованного репозитория
 2. Запуск изолированного Docker-демона
 3. Автоматическую генерацию `.rediacc.json` с назначением IP сервисов
-4. Выполнение `prep()` из всех Rediaccfile
-5. Выполнение `up()` из всех Rediaccfile
+4. Выполнение `up()` из всех Rediaccfile
 
 Убедитесь, что ваши контейнеры запущены:
 
@@ -263,7 +254,7 @@ my-api/
 └── redis-data/             # Персистентность Redis (UID 999 при работе)
 ```
 
-1. Загрузите проект (рассмотрите исключение `node_modules` и получение их в `prep()`)
+1. Загрузите проект (рассмотрите исключение `node_modules` и получение их в `up()`)
 2. Выполните исправление владения после запуска контейнеров
 
 ### Пользовательский Docker-проект
@@ -304,7 +295,7 @@ rdc term server-1 my-project -c "docker logs <container-name>"
 
 ### Исправление владения повредило контейнеры
 
-Если вы выполнили `rdc repo ownership --force` и контейнер перестал работать, файлы данных контейнера были изменены. Остановите контейнер, удалите его каталог данных и перезапустите — контейнер пересоздаст его:
+Если вы выполнили `rdc repo ownership` и контейнер перестал работать, файлы данных контейнера были изменены. Остановите контейнер, удалите его каталог данных и перезапустите — контейнер пересоздаст его:
 
 ```bash
 rdc repo down my-project -m server-1

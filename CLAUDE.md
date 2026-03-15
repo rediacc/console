@@ -12,7 +12,7 @@ Self-hosted infrastructure platform. Each machine runs Docker-based repositories
 
 - **Repository**: An isolated application deployment (e.g., `mail`, `gitlab`, `nextcloud`). Each repo has its own Docker daemon at `/var/run/rediacc/docker-<networkId>.sock`, loopback IP range (127.0.x.x/26), and mount at `/mnt/rediacc/mounts/<guid>/`.
 - **Renet**: Network orchestrator on the machine. Manages compose files, loopback IPs, Docker daemon lifecycle. CLI: `sudo renet list all --json`, `sudo renet compose -- up -d`.
-- **Rediaccfile**: Bash script with lifecycle functions (`prep()`, `up()`, `down()`, `info()`) sourced by renet during deployment.
+- **Rediaccfile**: Bash script with lifecycle functions (`up()`, `down()`, `info()`) sourced by renet during deployment.
 - **Config**: CLI configuration file for connecting to machines. Each config is a flat JSON file (~/.config/rediacc/rediacc.json by default) with a unique ID and version number. Adapter auto-detected: local (default) or cloud (experimental, when apiUrl+token present). Multiple named configs supported (e.g., production.json, staging.json).
 - **Store**: External sync backend for config files. Supports S3, local file, Bitwarden, and Git. Credentials stored in ~/.config/rediacc/.credentials.json.
 - **State Provider**: Abstraction layer (`CloudStateProvider`, `LocalStateProvider`) that routes API calls based on adapter detection.
@@ -34,7 +34,7 @@ Self-hosted infrastructure platform. Each machine runs Docker-based repositories
 
 ```bash
 # Machine status (SSH + renet list all)
-rdc machine info <machine>
+rdc machine query <machine>
 
 # List containers on a machine
 rdc machine containers <machine>
@@ -61,8 +61,8 @@ rdc term <machine> -c "command"
 rdc repo up <repo> -m <machine>
 
 # File sync
-rdc sync upload -m <machine> -r <repo> -l ./local-path
-rdc sync download -m <machine> -r <repo> -l ./local-path
+rdc repo sync upload -m <machine> -r <repo> -l ./local-path
+rdc repo sync download -m <machine> -r <repo> -l ./local-path
 
 # VS Code remote
 rdc vscode <machine> [repo]
@@ -84,9 +84,8 @@ rdc run container_restart -m <machine> --param repository=<repo> --param contain
 ```bash
 # Default config (~/.config/rediacc/rediacc.json) is created automatically on first use
 rdc config init production         # Create named config
-rdc config set machine <name>      # Set default machine
-rdc config repositories            # List repos with name -> GUID mapping
-rdc --config production machine info prod-1  # Use specific config
+rdc config repository list         # List repos with name -> GUID mapping
+rdc --config production machine query prod-1  # Use specific config
 ```
 
 ### CLI Code Structure

@@ -1,0 +1,12 @@
+---
+import PricingPreview from '../PricingPreview.astro';
+import type { Language } from '../../i18n/types';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props as Props;
+---
+
+<PricingPreview lang={lang} />

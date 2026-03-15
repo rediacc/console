@@ -8,6 +8,7 @@
 
 import { spawn } from 'node:child_process';
 import { DEFAULTS } from '@rediacc/shared/config';
+import { BASHRC_REDIACC_CONTENT } from '../repository/bashFunctions.js';
 import { formatBashExports, needsUserSwitch } from './envCompose.js';
 
 /**
@@ -47,6 +48,11 @@ export interface RemoteEnvSetupResult {
   envFilePath?: string;
 }
 
+/** Escapes a string for embedding inside a Python triple-quoted string literal. */
+function escapeForPythonString(s: string): string {
+  return s.replaceAll('\\', '\\\\').replaceAll("'", "\\'").replaceAll('\n', '\\n');
+}
+
 /**
  * Generates the Python script for remote environment setup
  * This script is executed on the remote machine via SSH
@@ -61,11 +67,8 @@ function generateSetupScript(
   universalUser: string,
   serverInstallPath: string
 ): string {
-  // Escape the env block for embedding in Python string
-  const escapedEnvBlock = envBlock
-    .replaceAll('\\', '\\\\')
-    .replaceAll("'", "\\'")
-    .replaceAll('\n', '\\n');
+  const escapedEnvBlock = escapeForPythonString(envBlock);
+  const escapedBashFunctions = escapeForPythonString(BASHRC_REDIACC_CONTENT);
 
   return `
 import os
@@ -75,6 +78,7 @@ import grp
 
 # Configuration
 ENV_BLOCK = '''${escapedEnvBlock}'''
+BASH_FUNCTIONS = '''${escapedBashFunctions}'''
 UNIVERSAL_USER = '${universalUser}'
 SERVER_INSTALL_PATH = '${serverInstallPath}'
 MARKER_START = '${REDIACC_MARKER_START}'
@@ -141,14 +145,49 @@ def main():
     # Create directory structure
     ensure_dir(setup_dir, 0o775, uid, gid)
 
-    # Write environment file
+    # Write bash helper functions alongside env file (shared content with rdc term)
+    bash_funcs_file = setup_dir / 'bashrc-rediacc'
+    write_file_atomic(bash_funcs_file, BASH_FUNCTIONS + '\\n', 0o644, uid, gid)
+
+    # Write environment file (includes sourcing bash functions)
+    env_content = ENV_BLOCK + f'\\n\\n# Source bash helper functions\\nsource "{bash_funcs_file}" 2>/dev/null || true\\n'
     env_file = setup_dir / 'rediacc-env.sh'
-    write_file_atomic(env_file, ENV_BLOCK + '\\n', 0o644, uid, gid)
+    write_file_atomic(env_file, env_content, 0o644, uid, gid)
 
     # Write server-env-setup file (sourced by VS Code)
     setup_file = setup_dir / 'server-env-setup'
     setup_content = f'source "{env_file}"'
     update_managed_content(setup_file, setup_content, 0o644, uid, gid)
+
+    # Write terminal init script (sourced via --rcfile so PS1 isn't overridden)
+    terminal_init = setup_dir / 'terminal-init.sh'
+    init_content = f'source /etc/bash.bashrc 2>/dev/null\\nsource "{env_file}" 2>/dev/null\\n'
+    write_file_atomic(terminal_init, init_content, 0o644, uid, gid)
+
+    # Write Machine settings to force /bin/bash with our init as default shell
+    # --rcfile replaces the default ~/.bashrc sourcing, so we source /etc/bash.bashrc
+    # ourselves followed by rediacc-env.sh (which includes PS1 and helper functions)
+    data_dir = setup_dir / 'data'
+    machine_dir = data_dir / 'Machine'
+    ensure_dir(data_dir, 0o775, uid, gid)
+    ensure_dir(machine_dir, 0o775, uid, gid)
+
+    settings_file = machine_dir / 'settings.json'
+    import json
+    machine_settings = {}
+    if settings_file.exists():
+        try:
+            machine_settings = json.loads(settings_file.read_text())
+        except Exception:
+            pass
+    machine_settings['terminal.integrated.defaultProfile.linux'] = 'bash'
+    machine_settings['terminal.integrated.profiles.linux'] = {
+        'bash': {
+            'path': '/bin/bash',
+            'args': ['--rcfile', str(terminal_init)]
+        }
+    }
+    write_file_atomic(settings_file, json.dumps(machine_settings, indent=2) + '\\n', 0o644, uid, gid)
 
     print(f"Environment setup complete: {env_file}")
 

@@ -9,7 +9,7 @@ tags:
   - welcome
 featured: true
 language: zh
-sourceHash: "1a84feb14d8b2654"
+sourceHash: "a292e24968f4bc9b"
 ---
 
 # 欢迎来到Rediacc博客
@@ -23,4 +23,4 @@ sourceHash: "1a84feb14d8b2654"
 - **案例研究**：Rediacc的实际应用示例
 - **最佳实践**：来自我们团队的技巧和建议
 
-敬请期待更多内容！
+定期回来查看新内容！

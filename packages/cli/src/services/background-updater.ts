@@ -11,8 +11,8 @@ import {
   getPlatformKey,
   isSEA,
   isUpdateDisabled,
-  STAGED_UPDATE_DIR,
   type PlatformKey,
+  STAGED_UPDATE_DIR,
 } from '../utils/platform.js';
 import { VERSION } from '../version.js';
 import { telemetryService } from './telemetry.js';

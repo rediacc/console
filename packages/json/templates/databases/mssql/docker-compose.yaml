@@ -1,6 +1,6 @@
 services:
   db:
-    network_mode: "${NETWORK_MODE:-bridge}"
+    network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
     env_file:
       - .env
     environment:
@@ -8,6 +8,7 @@ services:
       - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
       - MSSQL_PID=${MSSQL_PID}
       - MSSQL_AGENT_ENABLED=${MSSQL_AGENT_ENABLED}
+      - MSSQL_IP_ADDRESS=${SERVICE_IP:-0.0.0.0}
     ports:
       - "1433"
     image: mcr.microsoft.com/mssql/server:2022-CU21-ubuntu-22.04

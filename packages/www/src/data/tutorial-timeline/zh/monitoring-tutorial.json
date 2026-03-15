@@ -1,0 +1,40 @@
+{
+  "cast": "/assets/tutorials/monitoring-tutorial.cast",
+  "language": "zh",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "e82da6534867974210bcc77f485d7e193af4bb74f77cfc0f61412623d2987fea",
+  "steps": [
+    {
+      "id": "monitoring-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508759,
+      "replayEndSec": 9.844365,
+      "narrationText": "运行完整的环境诊断以发现基线问题。",
+      "audioSrc": "/assets/tutorials/audio/zh/monitoring-tutorial/monitoring-tutorial-01.2bb35780.mp3",
+      "audioDurationSec": 3.239184
+    },
+    {
+      "id": "monitoring-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 9.844365,
+      "replayEndSec": 18.393678,
+      "narrationText": "检查远程机器健康状况指标。",
+      "audioSrc": "/assets/tutorials/audio/zh/monitoring-tutorial/monitoring-tutorial-02.366bc5af.mp3",
+      "audioDurationSec": 2.925714
+    },
+    {
+      "id": "monitoring-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 18.393678,
+      "replayEndSec": 22.197305,
+      "narrationText": "列出目标机器上的活动容器。",
+      "audioSrc": "/assets/tutorials/audio/zh/monitoring-tutorial/monitoring-tutorial-03.ad0dbb0e.mp3",
+      "audioDurationSec": 2.037551
+    }
+  ]
+}

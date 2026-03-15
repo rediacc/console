@@ -4,7 +4,7 @@ description: "SSH, kurulum, depolar, servisler ve Docker ile ilgili yaygın soru
 category: "Guides"
 order: 10
 language: tr
-sourceHash: 4c3163007e6a3326
+sourceHash: "b392ab73d90c62e1"
 ---
 
 # Sorun Giderme
@@ -14,7 +14,7 @@ Yaygın sorunlar ve çözümleri. Şüphe durumunda, kapsamlı bir tanılama kon
 ## SSH Bağlantısı Başarısız
 
 - Manuel olarak bağlanabildiğinizi doğrulayın: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Host anahtarlarını yenilemek için `rdc config scan-keys server-1` komutunu çalıştırın
+- Host anahtarlarını yenilemek için `rdc config machine scan-keys server-1` komutunu çalıştırın
 - SSH portunun eşleştiğini kontrol edin: `--port 22`
 - Basit bir komutla test edin: `rdc term server-1 -c "hostname"`
 
@@ -23,7 +23,7 @@ Yaygın sorunlar ve çözümleri. Şüphe durumunda, kapsamlı bir tanılama kon
 Bir sunucu yeniden kurulduysa veya SSH anahtarları değiştiyse, "host key verification failed" hatası görürsünüz:
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 Bu komut yeni host anahtarlarını alır ve yapılandırmanızı günceller.
@@ -32,7 +32,7 @@ Bu komut yeni host anahtarlarını alır ve yapılandırmanızı günceller.
 
 - SSH kullanıcısının şifresiz sudo erişimine sahip olduğundan emin olun veya gerekli komutlar için `NOPASSWD` yapılandırın
 - Sunucudaki kullanılabilir disk alanını kontrol edin
-- Ayrıntılı çıktı için `--debug` ile çalıştırın: `rdc config setup-machine server-1 --debug`
+- Ayrıntılı çıktı için `--debug` ile çalıştırın: `rdc config machine setup server-1 --debug`
 
 ## Depo Oluşturma Başarısız
 
@@ -43,8 +43,8 @@ Bu komut yeni host anahtarlarını alır ve yapılandırmanızı günceller.
 ## Servisler Başlatılamıyor
 
 - Rediaccfile sözdizimini kontrol edin: geçerli Bash olmalıdır
-- `docker compose` dosyalarının `network_mode: host` kullandığından emin olun
-- Docker imajlarının erişilebilir olduğunu doğrulayın (`prep()` içinde `docker compose pull` kullanmayı düşünün)
+- Rediaccfile'ınızın `renet compose --` kullandığından emin olun (`docker compose` değil)
+- Docker imajlarının erişilebilir olduğunu doğrulayın (`up()` içinde `renet compose -- pull` kullanmayı düşünün)
 - Deponun Docker soketi üzerinden konteyner günlüklerini kontrol edin:
 
 ```bash

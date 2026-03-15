@@ -7,14 +7,14 @@ import { execSync } from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS, NETWORK_DEFAULTS, PROCESS_DEFAULTS } from '@rediacc/shared/config';
 import type { BridgeFunctionName } from '@rediacc/shared/queue-vault/data/functions.generated';
 import { FUNCTION_REQUIREMENTS } from '@rediacc/shared/queue-vault/data/functions.generated';
+import { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import type { MachineConfig } from '../types/index.js';
 import { extractRenetToLocal, isSEA } from './embedded-assets.js';
 import { outputService } from './output.js';
 import { renetProvisioner } from './renet-provisioner.js';
-import type { MachineConfig } from '../types/index.js';
 
 /** Setup marker file created by `renet setup` on successful completion */
 const SETUP_MARKER_PATH = '/var/lib/rediacc/setup_7111_completed';
@@ -33,7 +33,7 @@ export interface RenetSpawnOptions {
   json?: boolean;
   /** Timeout in milliseconds (default: 10 minutes) */
   timeout?: number;
-  /** Skip restarting the rediacc-router service after binary update */
+  /** Skip restarting machine-managed services after binary update */
   skipRouterRestart?: boolean;
 }
 
@@ -79,7 +79,7 @@ export async function provisionRenetToRemote(
   machine: MachineConfig,
   sshPrivateKey: string,
   options: Pick<RenetSpawnOptions, 'debug' | 'skipRouterRestart'> & { restartServices?: boolean }
-): Promise<void> {
+): Promise<string> {
   let localBinaryPath: string | undefined;
   if (!isSEA()) {
     localBinaryPath = config.renetPath.startsWith('/')
@@ -87,10 +87,11 @@ export async function provisionRenetToRemote(
       : execSync(`which ${config.renetPath}`, { encoding: 'utf-8' }).trim();
   }
 
-  // --skip-router-restart flag or RDC_SKIP_ROUTER_RESTART env var
+  // Service restarts are opt-in for versioned remote installs.
   const skipRestart = options.skipRouterRestart ?? !!process.env.RDC_SKIP_ROUTER_RESTART;
-  const restartServices = skipRestart ? false : options.restartServices;
+  const restartServices = skipRestart ? false : (options.restartServices ?? false);
 
+  const start = Date.now();
   const result = await renetProvisioner.provision(
     {
       host: machine.ip,
@@ -98,21 +99,24 @@ export async function provisionRenetToRemote(
       username: machine.user,
       privateKey: sshPrivateKey,
     },
-    { localBinaryPath, restartServices }
+    { localBinaryPath, restartServices, debug: options.debug }
   );
+  const elapsed = ((Date.now() - start) / 1000).toFixed(1);
 
   if (!result.success) {
     throw new Error(result.error ?? PROCESS_DEFAULTS.RENET_PROVISION_ERROR);
   }
 
   if (result.action === 'uploaded') {
-    if (options.debug) {
-      outputService.info(`[local] Provisioned renet (${result.arch}) to ${machine.ip}`);
-    }
+    outputService.info(`Renet updated on ${machine.ip} (${result.arch}) in ${elapsed}s`);
     if (result.servicesRestarted) {
       outputService.info(`Restarted rediacc-router on ${machine.ip}`);
     }
+  } else if (options.debug) {
+    outputService.info(`Renet verified on ${machine.ip} (${elapsed}s)`);
   }
+
+  return result.remotePath;
 }
 
 /** Check whether a bridge function requires the BTRFS datastore. */
@@ -186,7 +190,7 @@ export async function verifyMachineSetup(
 
     setupCache.set(cacheKey, Date.now());
     if (options.debug) {
-      outputService.info(`[local] Setup verified on ${machine.ip}`);
+      outputService.info(`Setup verified on ${machine.ip}`);
     }
   } finally {
     sftp.close();

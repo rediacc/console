@@ -7,10 +7,10 @@
  * Requires S3_TEST_ENDPOINT, S3_TEST_ACCESS_KEY, S3_TEST_SECRET_KEY, S3_TEST_BUCKET.
  */
 
-import { describe, it, expect, afterAll } from 'vitest';
-import { S3StateService } from '../s3-state.js';
-import { createTestS3Client, cleanupS3Prefix } from './s3-test-config.js';
+import { afterAll, describe, expect, it } from 'vitest';
 import type { S3StateData } from '../../types/index.js';
+import { S3StateService } from '../s3-state.js';
+import { cleanupS3Prefix, createTestS3Client } from './s3-test-config.js';
 
 const MASTER_PASSWORD = 'test-master-password-s3-state';
 

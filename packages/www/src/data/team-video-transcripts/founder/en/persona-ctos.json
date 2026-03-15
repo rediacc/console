@@ -1,0 +1,17 @@
+{
+  "member": "founder",
+  "videoKey": "persona-ctos",
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 5.0,
+      "text": "Your backup vendor charges per terabyte, per socket, per year."
+    },
+    { "start": 5.0, "end": 8.0, "text": "Rediacc runs on your hardware. Flat pricing." },
+    {
+      "start": 8.0,
+      "end": 13.0,
+      "text": "A ten-terabyte restore takes four minutes. Not four hours."
+    }
+  ]
+}

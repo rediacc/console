@@ -65,7 +65,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
-          repositories: console,middleware,renet,account,homebrew-tap,elite,sql,growth
+          repositories: console,middleware,renet,account,homebrew-tap,elite,sql,growth,generative
 
       # Re-checkout with submodules using app token (needed for submodule branch check)
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
@@ -215,7 +215,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
-          repositories: console,middleware,renet,account,homebrew-tap,elite,sql,growth
+          repositories: console,middleware,renet,account,homebrew-tap,elite,sql,growth,generative
 
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
@@ -230,7 +230,7 @@ jobs:
       # Step 1: Promote Docker images (staging -> version + latest)
       # -----------------------------------------------------------------------
       - name: Login to GHCR
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -282,7 +282,7 @@ jobs:
       # Step 2: Bump version & commit (includes all submodules)
       # -----------------------------------------------------------------------
       - name: Download staging release artifact
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           name: staging-release-${{ needs.init.outputs.ci_sha }}
           path: dist/
@@ -374,7 +374,7 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq dpkg-dev createrepo-c gnupg
 
       - name: Download staging pages artifact
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           name: staging-pages-${{ needs.init.outputs.ci_sha }}
           path: dist/pages/
@@ -450,26 +450,46 @@ jobs:
           SECRET_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
           SECRET_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
           SECRET_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
+          SECRET_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
           SECRET_STRIPE_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           SECRET_STRIPE_WEBHOOK: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
-          SECRET_S3_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          SECRET_S3_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          SECRET_S3_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          SECRET_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
+          SECRET_ADMIN_EMAIL: ${{ secrets.ACCOUNT_ADMIN_EMAIL }}
           SECRET_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
           SECRET_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
+          SECRET_SES_REGION: ${{ secrets.AWS_SES_REGION }}
+          SECRET_TURNSTILE_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          VAR_SES_FROM: ${{ vars.AWS_SES_FROM }}
         run: |
-          echo "$SECRET_ED25519_PRIVATE_KEY" | npx wrangler secret put ED25519_PRIVATE_KEY --name rediacc-www
-          echo "$SECRET_ED25519_PUBLIC_KEY" | npx wrangler secret put ED25519_PUBLIC_KEY --name rediacc-www
-          echo "$SECRET_API_KEY" | npx wrangler secret put API_KEY --name rediacc-www
-          echo "$SECRET_JWT_SECRET" | npx wrangler secret put JWT_SECRET --name rediacc-www
-          echo "$SECRET_STRIPE_KEY" | npx wrangler secret put STRIPE_SECRET_KEY --name rediacc-www
-          echo "$SECRET_STRIPE_WEBHOOK" | npx wrangler secret put STRIPE_WEBHOOK_SECRET --name rediacc-www
-          echo "$SECRET_S3_ENDPOINT" | npx wrangler secret put S3_ENDPOINT --name rediacc-www
-          echo "$SECRET_S3_ACCESS_KEY_ID" | npx wrangler secret put S3_ACCESS_KEY_ID --name rediacc-www
-          echo "$SECRET_S3_SECRET_ACCESS_KEY" | npx wrangler secret put S3_SECRET_ACCESS_KEY --name rediacc-www
-          echo "$SECRET_SES_ACCESS_KEY_ID" | npx wrangler secret put AWS_SES_ACCESS_KEY_ID --name rediacc-www
-          echo "$SECRET_SES_SECRET_ACCESS_KEY" | npx wrangler secret put AWS_SES_SECRET_ACCESS_KEY --name rediacc-www
+          # Use secret:bulk to set all secrets in a single API call.
+          # Individual secret put commands each trigger a new worker version,
+          # which disassociates static assets on assets-bound workers.
+          jq -n \
+            --arg ed25519_priv "$SECRET_ED25519_PRIVATE_KEY" \
+            --arg ed25519_pub "$SECRET_ED25519_PUBLIC_KEY" \
+            --arg api_key "$SECRET_API_KEY" \
+            --arg jwt "$SECRET_JWT_SECRET" \
+            --arg stripe "$SECRET_STRIPE_KEY" \
+            --arg stripe_wh "$SECRET_STRIPE_WEBHOOK" \
+            --arg admin "$SECRET_ADMIN_EMAIL" \
+            --arg ses_key "$SECRET_SES_ACCESS_KEY_ID" \
+            --arg ses_secret "$SECRET_SES_SECRET_ACCESS_KEY" \
+            --arg ses_region "$SECRET_SES_REGION" \
+            --arg ses_from "$VAR_SES_FROM" \
+            --arg turnstile "$SECRET_TURNSTILE_KEY" \
+            '{
+              ED25519_PRIVATE_KEY: $ed25519_priv,
+              ED25519_PUBLIC_KEY: $ed25519_pub,
+              API_KEY: $api_key,
+              JWT_SECRET: $jwt,
+              STRIPE_SECRET_KEY: $stripe,
+              STRIPE_WEBHOOK_SECRET: $stripe_wh,
+              ADMIN_EMAIL: $admin,
+              AWS_SES_ACCESS_KEY_ID: $ses_key,
+              AWS_SES_SECRET_ACCESS_KEY: $ses_secret,
+              AWS_SES_REGION: $ses_region,
+              AWS_SES_FROM: $ses_from,
+              TURNSTILE_SECRET_KEY: $turnstile
+            }' | npx wrangler secret bulk --name rediacc-www
 
       # -----------------------------------------------------------------------
       # Step 7: Cleanup staging tags
@@ -566,7 +586,7 @@ jobs:
           repositories: console
 
       - name: Login to GHCR
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}

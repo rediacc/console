@@ -22,10 +22,10 @@ const outputPath = path.join(subscriptionDir, 'schema.generated.json');
 
 // Import subscription constants dynamically to get actual values
 import {
-  SUBSCRIPTION_CONFIG,
   PLAN_FEATURES,
+  PLAN_LIMITS,
   PLAN_ORDER,
-  PLAN_RESOURCES,
+  SUBSCRIPTION_CONFIG,
 } from '../src/subscription/constants.js';
 
 /**
@@ -76,19 +76,6 @@ function generateSchema(): SubscriptionSchema {
         kind: 'enum',
         values: ['ACTIVE', 'INACTIVE', 'EXPIRED', 'SUSPENDED', 'GRACE'],
       },
-      ResourceLimits: {
-        kind: 'struct',
-        fields: {
-          bridges: { type: 'number', jsonKey: 'bridges' },
-          maxReservedJobs: { type: 'number', jsonKey: 'maxReservedJobs' },
-          jobTimeoutHours: { type: 'number', jsonKey: 'jobTimeoutHours' },
-          maxRepositorySizeGb: { type: 'number', jsonKey: 'maxRepositorySizeGb' },
-          maxJobsPerMonth: { type: 'number', jsonKey: 'maxJobsPerMonth' },
-          maxPendingPerUser: { type: 'number', jsonKey: 'maxPendingPerUser' },
-          maxTasksPerMachine: { type: 'number', jsonKey: 'maxTasksPerMachine' },
-          cephPoolsPerTeam: { type: 'number', jsonKey: 'cephPoolsPerTeam' },
-        },
-      },
       FeatureFlags: {
         kind: 'struct',
         fields: {
@@ -116,10 +103,16 @@ function generateSchema(): SubscriptionSchema {
           expiresAt: { type: 'string', jsonKey: 'expiresAt' },
           lastCheckIn: { type: 'string', jsonKey: 'lastCheckIn' },
           gracePeriodEnds: { type: 'string', jsonKey: 'gracePeriodEnds' },
-          resources: { type: 'object', jsonKey: 'resources', nestedType: 'ResourceLimits' },
+          maxRepositorySizeGb: { type: 'number', jsonKey: 'maxRepositorySizeGb' },
+          maxRepoLicenseIssuancesPerMonth: {
+            type: 'number',
+            jsonKey: 'maxRepoLicenseIssuancesPerMonth',
+          },
           features: { type: 'object', jsonKey: 'features', nestedType: 'FeatureFlags' },
           maxActivations: { type: 'number', jsonKey: 'maxActivations' },
           activationCount: { type: 'number', jsonKey: 'activationCount' },
+          issuedByEmail: { type: 'string', jsonKey: 'issuedByEmail', optional: true },
+          companyName: { type: 'string', jsonKey: 'companyName', optional: true },
         },
       },
       SignedSubscriptionBlob: {
@@ -135,7 +128,11 @@ function generateSchema(): SubscriptionSchema {
         fields: {
           planCode: { type: 'string', jsonKey: 'planCode', nestedType: 'PlanCode' },
           status: { type: 'string', jsonKey: 'status', nestedType: 'SubscriptionStatus' },
-          resources: { type: 'object', jsonKey: 'resources', nestedType: 'ResourceLimits' },
+          maxRepositorySizeGb: { type: 'number', jsonKey: 'maxRepositorySizeGb' },
+          maxRepoLicenseIssuancesPerMonth: {
+            type: 'number',
+            jsonKey: 'maxRepoLicenseIssuancesPerMonth',
+          },
           features: { type: 'object', jsonKey: 'features', nestedType: 'FeatureFlags' },
           expiresAt: { type: 'string', jsonKey: 'expiresAt' },
           gracePeriodEnds: { type: 'string', jsonKey: 'gracePeriodEnds' },
@@ -164,7 +161,7 @@ function generateSchema(): SubscriptionSchema {
       degradedPlan: SUBSCRIPTION_CONFIG.degradedPlan,
       schemaVersion: SUBSCRIPTION_CONFIG.schemaVersion,
       checkInIntervalHours: SUBSCRIPTION_CONFIG.checkInIntervalHours,
-      planResources: PLAN_RESOURCES as unknown as Record<string, Record<string, number>>,
+      planResources: PLAN_LIMITS as unknown as Record<string, Record<string, number>>,
       planFeatures: PLAN_FEATURES as unknown as Record<string, Record<string, boolean>>,
     },
   };

@@ -4,7 +4,7 @@ description: 'rdc ne zaman, renet ne zaman kullanılır.'
 category: Concepts
 order: 1
 language: tr
-sourceHash: "d3e2a6750f95b6c1"
+sourceHash: "69cb9c27f7c3afaf"
 ---
 
 # rdc vs renet
@@ -36,7 +36,7 @@ Tüm yaygın görevler iş istasyonunuzdaki `rdc` üzerinden gerçekleştirilir:
 
 ```bash
 # Yeni bir sunucu kur
-rdc config setup-machine server-1
+rdc config machine setup server-1
 
 # Depo oluştur ve başlat
 rdc repo create my-app -m server-1 --size 10G

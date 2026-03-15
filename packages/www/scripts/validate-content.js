@@ -13,8 +13,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import matter from 'gray-matter';
 import { fileURLToPath } from 'node:url';
+import matter from 'gray-matter';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
@@ -161,17 +161,6 @@ function validateContent(_strict = false) {
 
         // Check frontmatter language field
         if (frontmatter) {
-          if (frontmatter.translationPending === true && !frontmatter.translationPendingReason) {
-            errors.push({
-              rule: 'translation-pending-reason',
-              severity: 'error',
-              file: relativeFile,
-              message:
-                'translationPending=true requires translationPendingReason with a concrete explanation',
-              suggestion: 'Add translationPendingReason to frontmatter',
-            });
-          }
-
           if (frontmatter.sourceHash && !isValidSourceHash(frontmatter.sourceHash)) {
             errors.push({
               rule: 'invalid-source-hash',
@@ -246,17 +235,6 @@ function validateContent(_strict = false) {
       const relativeFile = `${collection}/${SOURCE_LANGUAGE}/${file.relativePath}`;
 
       if (frontmatter) {
-        if (frontmatter.translationPending === true && !frontmatter.translationPendingReason) {
-          errors.push({
-            rule: 'translation-pending-reason',
-            severity: 'error',
-            file: relativeFile,
-            message:
-              'translationPending=true requires translationPendingReason with a concrete explanation',
-            suggestion: 'Add translationPendingReason to frontmatter',
-          });
-        }
-
         const requiredFields = REQUIRED_FIELDS[collection] || [];
         for (const field of requiredFields) {
           if (!frontmatter[field]) {

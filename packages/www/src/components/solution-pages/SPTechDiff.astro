@@ -1,0 +1,34 @@
+---
+interface Props {
+  techDiff: {
+    overline: string;
+    title: string;
+    description: string;
+    traditionalLabel: string;
+    rediaccLabel: string;
+    rows: { traditional: string; rediacc: string }[];
+  };
+}
+
+const { techDiff } = Astro.props;
+---
+
+<section class="sp-tech-detail">
+  <div class="sp-tech-detail-inner">
+    <div class="sp-overline">{techDiff.overline}</div>
+    <h2>{techDiff.title}</h2>
+    <p>{techDiff.description}</p>
+
+    <div class="sp-tech-detail-compare">
+      <div class="sp-tech-detail-col-header traditional">{techDiff.traditionalLabel}</div>
+      <div class="sp-tech-detail-col-header rediacc">{techDiff.rediaccLabel}</div>
+
+      {techDiff.rows.map((row) => (
+        <Fragment>
+          <div class="sp-tech-detail-cell">{row.traditional}</div>
+          <div class="sp-tech-detail-cell">{row.rediacc}</div>
+        </Fragment>
+      ))}
+    </div>
+  </div>
+</section>

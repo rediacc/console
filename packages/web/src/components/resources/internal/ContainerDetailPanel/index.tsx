@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { Card, Flex, Progress, Tag, Typography } from 'antd';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   DetailPanelBody,
@@ -23,7 +24,6 @@ import {
   HddOutlined,
   WifiOutlined,
 } from '@/utils/optimizedIcons';
-import { DEFAULTS } from '@rediacc/shared/config';
 
 interface ContainerData {
   id: string;

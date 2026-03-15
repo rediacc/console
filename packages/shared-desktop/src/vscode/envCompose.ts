@@ -14,7 +14,8 @@ export function formatBashExports(envVars: Record<string, string>): string {
 
   for (const [key, value] of Object.entries(envVars)) {
     // Escape single quotes in the value for bash
-    const escapedValue = value.replaceAll("'", "'\\''");
+    const strValue = String(value);
+    const escapedValue = strValue.replaceAll("'", "'\\''");
     lines.push(`export ${key}='${escapedValue}'`);
   }
 
@@ -34,7 +35,8 @@ export function formatSSHSetEnv(envVars: Record<string, string>, indent = '    '
 
   for (const [key, value] of Object.entries(envVars)) {
     // Quote the value if it contains spaces
-    const quotedValue = value.includes(' ') ? `"${value}"` : value;
+    const strValue = String(value);
+    const quotedValue = strValue.includes(' ') ? `"${strValue}"` : strValue;
     lines.push(`${indent}SetEnv ${key}=${quotedValue}`);
   }
 
@@ -108,10 +110,16 @@ export function buildRepositoryEnvironment(options: {
     networkMode = 'bridge',
     tag = 'latest',
     immovable = false,
-    dockerHost = 'unix:///var/run/docker.sock',
-    dockerSocket = '/var/run/docker.sock',
+    dockerHost,
+    dockerSocket,
     additionalEnv = {},
   } = options;
+
+  // Derive Docker socket from networkId (per-repo isolated daemon)
+  const resolvedSocket =
+    dockerSocket ??
+    (networkId ? `/var/run/rediacc/docker-${networkId}.sock` : '/var/run/docker.sock');
+  const resolvedHost = dockerHost ?? `unix://${resolvedSocket}`;
 
   const fullRepoPath = `${datastore}${repositoryPath}`;
 
@@ -125,13 +133,12 @@ export function buildRepositoryEnvironment(options: {
     DOCKER_DATA: fullRepoPath,
     DOCKER_EXEC: `${fullRepoPath}/.docker-exec`,
     DOCKER_FOLDER: fullRepoPath,
-    DOCKER_HOST: dockerHost,
-    DOCKER_SOCKET: dockerSocket,
+    DOCKER_HOST: resolvedHost,
+    DOCKER_SOCKET: resolvedSocket,
 
     // Network and datastore
     REDIACC_DATASTORE: datastore,
     REDIACC_DATASTORE_USER: universalUser,
-    REDIACC_NETWORK_ID: networkId,
     REDIACC_IMMOVABLE: immovable ? 'true' : 'false',
 
     // Repository-specific
@@ -174,23 +181,6 @@ export function buildMachineEnvironment(options: {
 }
 
 /**
- * Generates the sudo command for user switching
- * Matching Python CLI's compose_sudo_env_command()
- *
- * @param targetUser - User to switch to
- * @param envVars - Environment variables to preserve
- * @returns Sudo command string
- */
-export function composeSudoEnvCommand(targetUser: string, envVars: Record<string, string>): string {
-  // Build environment preservation flags
-  const envFlags = Object.keys(envVars)
-    .map((key) => `--preserve-env=${key}`)
-    .join(' ');
-
-  return `sudo ${envFlags} -i -u ${targetUser}`;
-}
-
-/**
  * Determines if user switching is needed
  *
  * @param sshUser - Current SSH user
@@ -205,23 +195,9 @@ export function needsUserSwitch(sshUser: string, universalUser?: string): boolea
 }
 
 /**
- * Builds RemoteCommand for VS Code SSH config
- * Matching Python CLI's user switching logic
- *
- * @param sshUser - Current SSH user
- * @param universalUser - Target universal user for switching
- * @returns Object with remoteCommand and requestTTY settings
+ * Escape a string for safe inclusion inside bash -c '...'.
+ * Replaces single quotes with the '\'' idiom.
  */
-export function buildRemoteCommand(
-  sshUser: string,
-  universalUser?: string
-): { remoteCommand?: string; requestTTY?: string } {
-  if (!needsUserSwitch(sshUser, universalUser)) {
-    return {};
-  }
-
-  return {
-    requestTTY: 'yes',
-    remoteCommand: `sudo -i -u ${universalUser}`,
-  };
+export function shellEscapeForBashC(cmd: string): string {
+  return cmd.replaceAll("'", "'\\''");
 }

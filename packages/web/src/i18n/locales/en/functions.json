@@ -27,7 +27,6 @@
   "checkboxOptions": {
     "mountRepoFirst": "Mount repository first",
     "overrideExistingFile": "Override existing file",
-    "preparationOnly": "Preparation only",
     "unmountAfterStopping": "Unmount after stopping"
   },
   "configure": "Configure",
@@ -535,7 +534,7 @@
       "name": "up",
       "params": {
         "option": {
-          "help": "Options (e.g., prep-only)",
+          "help": "Options (e.g., mount)",
           "label": "Options"
         },
         "repository": {

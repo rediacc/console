@@ -225,7 +225,7 @@ test.describe
     // --- Scenario 2: Create parent and insert unique data ---
 
     test('1. create parent repository', async () => {
-      const result = await runner.repositoryNew(parentRepoName, '1G', TEST_PASSWORD, datastorePath);
+      const result = await runner.repositoryNew(parentRepoName, '2G', TEST_PASSWORD, datastorePath);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
@@ -508,7 +508,7 @@ test.describe
     });
 
     test('1. create parent with PostgreSQL', async () => {
-      await runner.repositoryNew(parentRepoName, '1G', TEST_PASSWORD, datastorePath);
+      await runner.repositoryNew(parentRepoName, '2G', TEST_PASSWORD, datastorePath);
 
       const rediaccfileContent = runner.readFixture('bridge/Rediaccfile.postgresql');
       await runner.writeFileToRepository(
@@ -720,7 +720,7 @@ test.describe
     });
 
     test('1. create parent with PostgreSQL', async () => {
-      await runner.repositoryNew(parentRepoName, '1G', TEST_PASSWORD, datastorePath);
+      await runner.repositoryNew(parentRepoName, '2G', TEST_PASSWORD, datastorePath);
 
       const rediaccfileContent = runner.readFixture('bridge/Rediaccfile.postgresql');
       await runner.writeFileToRepository(

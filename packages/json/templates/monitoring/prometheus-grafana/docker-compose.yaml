@@ -3,7 +3,7 @@ services:
     image: prom/prometheus:latest
     container_name: ${CONTAINER_NAME}-prometheus
     restart: always
-    network_mode: "${NETWORK_MODE:-bridge}"
+    network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
@@ -27,7 +27,7 @@ services:
     image: grafana/grafana:latest
     container_name: ${CONTAINER_NAME}-grafana
     restart: always
-    network_mode: "${NETWORK_MODE:-bridge}"
+    network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
@@ -52,7 +52,7 @@ services:
     image: prom/node-exporter:latest
     container_name: ${CONTAINER_NAME}-node-exporter
     restart: always
-    network_mode: "${NETWORK_MODE:-bridge}"
+    network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
     command:
       - --path.procfs=/host/proc
       - --path.sysfs=/host/sys

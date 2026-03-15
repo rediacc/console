@@ -1,9 +1,9 @@
-import { Command } from 'commander';
 import {
   formatSizeBytes,
-  resolveGuidFileNames,
   type RemoteFile,
+  resolveGuidFileNames,
 } from '@rediacc/shared/queue-vault';
+import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { configService } from '../services/config-resources.js';
@@ -12,6 +12,7 @@ import { outputService } from '../services/output.js';
 import { storageBrowserService } from '../services/storage-browser.js';
 import { createResourceCommands } from '../utils/commandFactory.js';
 import { handleError } from '../utils/errors.js';
+import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { withSpinner } from '../utils/spinner.js';
 
 function formatFileName(f: RemoteFile): string {
@@ -25,6 +26,101 @@ function formatFileType(f: RemoteFile): string {
   if (f.isDirectory) return 'dir';
   if (f.isGuid) return 'backup';
   return 'file';
+}
+
+interface StoragePruneOptions {
+  machine: string;
+  dryRun?: boolean;
+  force?: boolean;
+  graceDays?: number;
+  debug?: boolean;
+  skipRouterRestart?: boolean;
+}
+
+/** Parse backup GUIDs from executor output. */
+function parseBackupGuids(stdout: string): string[] {
+  const rawOutput = stdout
+    .split('\n')
+    .map((line) => line.replace(/^\[.*?\]\s*/, ''))
+    .join('\n');
+  const jsonMatch = /\{[\s\S]*\}/.exec(rawOutput);
+  const parsed = jsonMatch
+    ? (JSON.parse(jsonMatch[0]) as {
+        entries?: { name: string; isDirectory: boolean }[];
+      })
+    : { entries: [] };
+  return (parsed.entries ?? []).filter((e) => !e.isDirectory).map((e) => e.name);
+}
+
+/** Execute the storage prune workflow. */
+async function executeStoragePrune(
+  storageName: string,
+  options: StoragePruneOptions
+): Promise<void> {
+  const { analyzePrune, printPruneAnalysis, purgeExpiredArchives } = await import(
+    '../services/prune.js'
+  );
+
+  // List backups in storage via renet
+  outputService.info(t('commands.storage.prune.listing', { storage: storageName }));
+  const listResult = await localExecutorService.execute({
+    functionName: 'backup_list',
+    machineName: options.machine,
+    params: { sourceType: 'storage', from: storageName },
+    debug: options.debug,
+    captureOutput: true,
+    skipRouterRestart: options.skipRouterRestart,
+  });
+
+  if (!listResult.success) {
+    renderLocalExecutionFailure(listResult, t('commands.storage.prune.listFailed'));
+    return;
+  }
+
+  const remoteGuids = parseBackupGuids(listResult.stdout ?? '');
+
+  if (remoteGuids.length === 0) {
+    outputService.info(t('commands.storage.prune.noBackups'));
+    return;
+  }
+
+  outputService.info(t('commands.storage.prune.found', { count: remoteGuids.length }));
+
+  // Analyze
+  const analysis = await analyzePrune(remoteGuids, {
+    force: options.force,
+    graceDays: options.graceDays,
+  });
+  printPruneAnalysis(analysis, options.dryRun ?? true);
+
+  // Delete orphaned backups
+  if (!options.dryRun && analysis.orphaned.length > 0) {
+    for (const item of analysis.orphaned) {
+      outputService.info(`Deleting ${item.guid.slice(0, 8)}…`);
+      const deleteResult = await localExecutorService.execute({
+        functionName: 'backup_delete',
+        machineName: options.machine,
+        params: {
+          repository: item.guid,
+          sourceType: 'storage',
+          from: storageName,
+        },
+        debug: options.debug,
+        skipRouterRestart: options.skipRouterRestart,
+      });
+      if (!deleteResult.success) {
+        outputService.error(`Failed to delete ${item.guid}: ${deleteResult.error}`);
+      }
+    }
+    outputService.success(
+      t('commands.storage.prune.completed', {
+        count: analysis.orphaned.length,
+      })
+    );
+  }
+
+  // Auto-purge expired archives
+  await purgeExpiredArchives(options.graceDays);
 }
 
 export function registerStorageCommands(program: Command): void {
@@ -106,74 +202,22 @@ export function registerStorageCommands(program: Command): void {
       }
     });
 
-  // Add pull subcommand for pulling a backup from cloud storage to a machine
+  // storage prune <storageName> — remove orphaned backups from storage
   storage
-    .command('pull <storageName>')
-    .description(t('commands.storage.pull.description'))
-    .requiredOption('-r, --repository <name>', t('commands.storage.pull.repositoryOption'))
-    .requiredOption('-m, --machine <name>', t('commands.storage.pull.machineOption'))
+    .command('prune <storageName>')
+    .summary(t('commands.storage.prune.descriptionShort'))
+    .description(t('commands.storage.prune.description'))
+    .requiredOption('-m, --machine <name>', t('options.machine'))
+    .option('--dry-run', t('options.dryRun'))
+    .option('--force', t('options.force'))
+    .option('--grace-days <days>', t('options.graceDays'), Number.parseInt)
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(
-      async (
-        storageName: string,
-        options: {
-          repository: string;
-          machine: string;
-          debug?: boolean;
-          skipRouterRestart?: boolean;
-        }
-      ) => {
-        try {
-          // Validate storage exists in context
-          await configService.getStorage(storageName);
-
-          // Validate repository exists and warn if no credential
-          const repo = await configService.getRepository(options.repository);
-          if (!repo) {
-            throw new Error(`Repository "${options.repository}" not found in context`);
-          }
-          if (!repo.credential) {
-            outputService.warn(
-              t('commands.storage.pull.noCredential', {
-                name: options.repository,
-              })
-            );
-          }
-
-          outputService.info(
-            t('commands.storage.pull.starting', {
-              repository: options.repository,
-              storage: storageName,
-              machine: options.machine,
-            })
-          );
-
-          const result = await localExecutorService.execute({
-            functionName: 'backup_pull',
-            machineName: options.machine,
-            params: {
-              sourceType: 'storage',
-              from: storageName,
-              repository: options.repository,
-            },
-            debug: options.debug,
-            skipRouterRestart: options.skipRouterRestart,
-          });
-
-          if (result.success) {
-            outputService.success(
-              t('commands.storage.pull.completed', {
-                duration: result.durationMs,
-              })
-            );
-          } else {
-            outputService.error(t('commands.storage.pull.failed', { error: result.error }));
-            process.exitCode = result.exitCode;
-          }
-        } catch (error) {
-          handleError(error);
-        }
+    .action(async (storageName: string, options: StoragePruneOptions) => {
+      try {
+        await executeStoragePrune(storageName, options);
+      } catch (error) {
+        handleError(error);
       }
-    );
+    });
 }

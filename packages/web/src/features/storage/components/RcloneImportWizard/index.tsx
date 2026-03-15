@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import { mapRcloneToStorageProvider, parseRcloneConfig } from '@rediacc/shared/queue-vault';
 import { Button, Checkbox, Flex, Modal, Space, Steps, Tag, Tooltip, Typography } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import type { UploadFile } from 'antd/es/upload';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCreateStorage, useGetTeamStorages } from '@/api/api-hooks.generated';
 import {
@@ -16,13 +19,10 @@ import {
   InfoCircleOutlined,
   WarningOutlined,
 } from '@/utils/optimizedIcons';
-import { mapRcloneToStorageProvider, parseRcloneConfig } from '@rediacc/shared/queue-vault';
 import { ConnectionTest } from './ConnectionTest';
 import { ImportProgress } from './ImportProgress';
 import { StepConfigForm } from './StepConfigForm';
 import type { ImportStatus, RcloneConfig, RcloneImportWizardProps } from './types';
-import type { ColumnsType } from 'antd/es/table';
-import type { UploadFile } from 'antd/es/upload';
 
 const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
   open,

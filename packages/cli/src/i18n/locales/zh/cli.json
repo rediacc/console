@@ -1,8 +1,20 @@
 {
   "cli": {
-    "description": "Rediacc 控制台命令行界面 - 用于 Rediacc 操作的命令行接口"
+    "description": "通过 SSH 管理机器、仓库和部署"
   },
   "commands": {
+    "agent": {
+      "capabilities": {
+        "description": "列出所有可用命令及其参数和选项"
+      },
+      "description": "适用于 AI 编程助手的代理工具",
+      "exec": {
+        "description": "通过 stdin 接收 JSON 输入并执行命令"
+      },
+      "schema": {
+        "description": "显示特定命令的详细模式信息"
+      }
+    },
     "audit": {
       "description": "审计日志命令",
       "history": {
@@ -102,67 +114,12 @@
       }
     },
     "backup": {
-      "description": "备份和恢复仓库",
-      "list": {
-        "description": "列出存储或机器上的可用备份",
-        "listing": "正在列出备份...",
-        "optionFromMachine": "源机器名称",
-        "optionFromStorage": "源存储名称",
-        "sourceRequired": "请指定 --from <storage> 或 --from-machine <machine>"
-      },
-      "pull": {
-        "description": "从存储或机器拉取仓库备份",
-        "optionForce": "强制覆盖现有仓库",
-        "optionFromMachine": "源机器名称",
-        "optionFromStorage": "源存储名称",
-        "pulling": "正在拉取 \"{{repo}}\" 的备份...",
-        "sourceRequired": "请指定 --from <storage> 或 --from-machine <machine>"
-      },
-      "push": {
-        "description": "将仓库备份推送到存储或机器",
-        "destIgnoredForStorage": "忽略 --dest {{provided}}：存储备份使用仓库 GUID（{{dest}}）",
-        "destRequired": "请指定 --to <storage> 或 --to-machine <machine>",
-        "optionCheckpoint": "创建容器检查点（热备份）",
-        "optionDest": "目标文件名",
-        "optionForce": "强制覆盖现有备份",
-        "optionTag": "用于版本控制的部署标签",
-        "optionToMachine": "目标机器名称",
-        "optionToStorage": "目标存储名称",
-        "pushing": "正在将 \"{{repo}}\" 的备份推送到 {{dest}}..."
-      },
+      "description": "在存储和机器之间推送、拉取和同步仓库备份",
       "schedule": {
-        "description": "管理计划备份配置",
-        "push": {
-          "description": "将备份计划推送到远程机器（systemd 定时器）",
-          "success": "备份计划已推送到 {{machine}}"
-        },
-        "set": {
-          "description": "配置备份计划设置",
-          "noOptions": "至少指定一个选项: --destination、--cron、--enable 或 --disable",
-          "optionCron": "备份计划的 cron 表达式（例如 \"0 2 * * *\"）",
-          "optionDestination": "默认存储目标名称",
-          "optionDisable": "禁用计划备份",
-          "optionEnable": "启用计划备份",
-          "saved": "备份计划配置已保存"
-        },
-        "show": {
-          "description": "显示当前备份计划配置",
-          "destination": "目标: {{destination}}",
-          "enabled": "已启用: {{enabled}}",
-          "notConfigured": "未配置备份计划",
-          "schedule": "计划: {{schedule}}"
-        }
+        "description": "将备份计划部署到远程机器"
       },
       "sync": {
-        "description": "批量推送/拉取所有仓库到/从云存储",
-        "directionConflict": "不能同时指定 --to 和 --from",
-        "directionRequired": "请指定 --to <storage>（推送）或 --from <storage>（拉取）",
-        "optionFrom": "源存储名称（拉取模式）",
-        "optionOverride": "拉取时覆盖现有未挂载的仓库",
-        "optionRepo": "过滤到特定仓库（可重复）",
-        "optionTo": "目标存储名称（推送模式）",
-        "pullSuccess": "同步拉取完成",
-        "pushSuccess": "同步推送完成"
+        "description": "跨机器双向同步备份"
       }
     },
     "bridge": {
@@ -323,48 +280,110 @@
       }
     },
     "config": {
-      "addMachine": {
-        "description": "向当前配置添加机器",
-        "success": "机器 \"{{name}}\" 已添加（{{user}}@{{ip}}）"
+      "backupStrategy": {
+        "description": "管理多目标备份策略",
+        "set": {
+          "description": "配置备份计划设置",
+          "noOptions": "至少指定一个选项: --destination、--cron、--enable 或 --disable",
+          "optionCron": "备份计划的 cron 表达式（例如 \"0 2 * * *\"）",
+          "optionDestination": "默认存储目标名称",
+          "optionDisable": "禁用计划备份",
+          "optionEnable": "启用计划备份",
+          "saved": "备份计划配置已保存"
+        },
+        "show": {
+          "description": "显示当前备份计划配置",
+          "destinations": "目的地：",
+          "enabled": "已启用: {{enabled}}",
+          "noDestinations": "未配置备份目的地",
+          "notConfigured": "未配置备份计划",
+          "schedule": "计划: {{schedule}}"
+        }
       },
-      "addRepository": {
-        "description": "向当前配置添加仓库 GUID 映射",
-        "networkIdAssigned": "网络 ID：{{networkId}}",
-        "optionCredential": "仓库凭证（加密密码短语）",
-        "optionGuid": "仓库 GUID（来自存储备份文件名的 UUID）",
-        "optionNetworkId": "Docker 隔离的网络 ID（2816、2880 等）。若省略则自动分配",
-        "optionTag": "仓库标签",
-        "success": "仓库 \"{{name}}\" 已添加（{{guid}}，标签：{{tag}}）"
+      "certCache": {
+        "clear": {
+          "cleared": "证书缓存已清除",
+          "description": "移除证书缓存",
+          "noCache": "没有可清除的证书缓存"
+        },
+        "description": "管理缓存的 TLS 证书",
+        "noBaseDomain": "机器未配置 baseDomain",
+        "noCacheForDomain": "未找到 {{domain}} 的证书缓存",
+        "pull": {
+          "cached": "已缓存 {{count}} 个证书 ({{size}})",
+          "description": "从机器下载并缓存 TLS 证书",
+          "downloading": "正在从 {{machine}} 下载证书...",
+          "merged": "从本地缓存保留了 {{count}} 个有效期更长的证书",
+          "noAcmeJson": "在 {{machine}} 上未找到 acme.json",
+          "optionNoPrune": "跳过清理过期的网络 ID 证书",
+          "pruned": "已清理 {{count}} 个过期证书"
+        },
+        "push": {
+          "description": "将缓存的 TLS 证书上传到机器",
+          "merged": "已将 {{count}} 个有效期更长的证书合并到 {{machine}}",
+          "noCache": "未找到证书缓存。请先运行 'rdc config cert-cache pull <machine>'",
+          "uploaded": "已上传 {{count}} 个证书到 {{machine}}",
+          "uploading": "正在将缓存的证书上传到 {{machine}}...",
+          "upToDate": "{{machine}} 上的证书已是最新"
+        },
+        "status": {
+          "certCount": "{{count}} 个证书，{{size}} 压缩",
+          "description": "显示缓存的证书清单",
+          "header": "{{baseDomain}} 的证书缓存",
+          "noCache": "没有已存储的证书缓存",
+          "updatedAt": "最后更新：{{date}}（来自 {{machine}}）"
+        }
       },
       "clear": {
         "allCleared": "已清除所有默认值",
         "description": "清除默认值（全部或特定键）",
         "keyCleared": "已清除 \"{{key}}\""
       },
-      "recover": {
-        "description": "从备份文件 (.bak) 恢复配置",
-        "noBackup": "未找到配置 \"{{name}}\" 的备份",
-        "confirm": "从备份恢复配置 \"{{name}}\"？",
-        "success": "配置 \"{{name}}\" 已从备份恢复（版本 {{version}}）",
-        "failed": "从备份恢复配置 \"{{name}}\" 失败"
-      },
       "delete": {
         "description": "删除配置文件",
         "success": "配置 \"{{name}}\" 已删除"
       },
-      "description": "管理 CLI 配置文件",
-      "importStorage": {
-        "description": "从 rclone 配置文件导入存储",
-        "imported": "已导入存储 \"{{name}}\"（{{type}}）",
-        "noConfigs": "文件中未找到有效的存储配置",
-        "notFound": "配置文件中未找到存储 \"{{name}}\"",
-        "optionName": "仅导入此命名节",
-        "summary": "已导入 {{count}} 个存储",
-        "unsupported": "跳过 \"{{name}}\"：不支持的提供商类型 \"{{type}}\""
+      "description": "管理配置文件、机器和 SSH 连接",
+      "infra": {
+        "description": "管理基础设施配置（代理、DNS、证书）",
+        "push": {
+          "certCacheUploaded": "已将缓存的证书上传到远程服务器",
+          "description": "将基础设施配置推送到机器（Traefik 代理、路由器、Cloudflare DNS）。请先运行 'config infra set <machine>'",
+          "descriptionShort": "将基础设施配置推送到机器",
+          "dnsCreated": "DNS：已创建 {{type}} {{name}} → {{content}}",
+          "dnsError": "DNS 警告：{{message}}（可能需要手动设置记录）",
+          "dnsResolvingZone": "正在解析 {{domain}} 的 Cloudflare 区域...",
+          "dnsSkipLocal": "跳过 DNS：.local 域名不使用 Cloudflare",
+          "dnsSkipNoToken": "跳过 DNS：没有 Cloudflare API 令牌。使用以下命令设置：rdc config infra set <machine> --cf-dns-token <token>",
+          "dnsUnchanged": "DNS：{{type}} {{name}} 已是正确配置",
+          "dnsUpdated": "DNS：已更新 {{type}} {{name}} → {{content}}",
+          "installingProxy": "正在安装并启动代理...",
+          "proxyInstallWarning": "代理安装失败（代码 {{code}}）。请手动运行：sudo renet proxy install",
+          "success": "已将基础设施配置推送到 \"{{name}}\""
+        },
+        "set": {
+          "description": "设置机器的基础设施配置（机器特定：IP、域名、端口；共享：证书邮箱、CF DNS 令牌）",
+          "descriptionShort": "设置机器的基础设施配置",
+          "invalidIPv4": "无效的 IPv4 地址：{{ip}}",
+          "invalidIPv6": "无效的 IPv6 地址：{{ip}}",
+          "noOptions": "未指定选项。请使用 --public-ipv4、--base-domain 等",
+          "optionBaseDomain": "应用程序的基础域名（按机器）",
+          "optionCertEmail": "TLS 证书通知邮箱（跨机器共享）",
+          "optionCfDnsToken": "用于 ACME DNS-01 验证的 Cloudflare DNS API 令牌（跨机器共享）",
+          "optionPublicIPv4": "公共 IPv4 地址（按机器）",
+          "optionPublicIPv6": "公共 IPv6 地址（按机器）",
+          "optionTcpPorts": "要转发的 TCP 端口（逗号分隔，例如 25,143,465）",
+          "optionUdpPorts": "要转发的 UDP 端口（逗号分隔，例如 53）",
+          "success": "已更新 \"{{name}}\" 的基础设施配置"
+        },
+        "show": {
+          "description": "显示机器的基础设施配置",
+          "noInfra": "\"{{name}}\" 未设置基础设施配置"
+        }
       },
       "init": {
         "alreadyExists": "配置 \"{{name}}\" 已存在",
-        "description": "初始化新配置文件",
+        "description": "创建新的命名配置文件",
         "optionMasterPassword": "使用主密码加密资源",
         "optionS3AccessKeyId": "S3 访问密钥 ID",
         "optionS3Bucket": "S3 存储桶名称",
@@ -383,55 +402,120 @@
         "description": "列出所有配置文件",
         "noConfigs": "未找到配置文件。请使用以下命令创建：rdc config init"
       },
-      "machines": {
-        "description": "列出当前配置中的机器",
-        "noMachines": "未配置任何机器。请使用以下命令添加：rdc config add-machine <name> --ip <ip> --user <user>"
+      "machine": {
+        "add": {
+          "description": "将机器添加到当前配置",
+          "descriptionShort": "将机器添加到当前配置",
+          "success": "已添加机器 \"{{name}}\" ({{user}}@{{ip}})"
+        },
+        "description": "管理当前配置中的机器",
+        "list": {
+          "description": "列出当前配置中的机器",
+          "noMachines": "当前配置中没有机器"
+        },
+        "remove": {
+          "description": "从当前配置中移除机器",
+          "success": "已移除机器 \"{{name}}\""
+        },
+        "scanKeys": {
+          "completed": "已扫描 {{count}}/{{total}} 台机器",
+          "description": "扫描当前配置中机器的 SSH 主机密钥",
+          "keysScanned": "已扫描 \"{{name}}\" 的主机密钥",
+          "noKeys": "无法扫描 \"{{name}}\" 的主机密钥"
+        },
+        "setCeph": {
+          "description": "设置机器的 Ceph RBD 配置",
+          "optionCluster": "Ceph 集群名称",
+          "optionImage": "RBD 镜像名称（例如 datastore-prod1）",
+          "optionPool": "Ceph 池名称（例如 rbd）",
+          "success": "已为 \"{{name}}\" 设置 Ceph 配置：pool={{pool}}, image={{image}}"
+        },
+        "setup": {
+          "completed": "机器 \"{{machine}}\" 设置成功",
+          "datastoreOption": "远程机器上的数据存储路径",
+          "datastoreSizeOption": "数据存储大小（例如：95%、100G）",
+          "description": "为仓库配置远程机器（安装 renet、配置 Docker、BTRFS 数据存储）。幂等操作。在 config machine add 之后、repo create 之前需要执行",
+          "descriptionShort": "为仓库准备远程机器",
+          "failed": "机器 \"{{machine}}\" 设置失败：{{error}}",
+          "starting": "正在设置机器 \"{{machine}}\"..."
+        }
       },
-      "pushInfra": {
-        "description": "将基础设施配置推送到远程机器",
-        "installingProxy": "正在安装并启动代理...",
-        "proxyInstallWarning": "代理安装失败（代码 {{code}}）。请手动运行：sudo renet proxy install",
-        "success": "基础设施配置已推送到 \"{{name}}\""
+      "provider": {
+        "add": {
+          "description": "添加云服务提供商",
+          "optionImage": "默认操作系统镜像",
+          "optionImageAttr": "自定义：操作系统镜像的属性名",
+          "optionInstanceType": "默认实例类型/大小",
+          "optionIpv4Output": "自定义：IPv4 地址的输出属性",
+          "optionIpv6Output": "自定义：IPv6 地址的输出属性",
+          "optionLabelAttr": "自定义：虚拟机标签的属性名",
+          "optionProvider": "已知提供商来源（例如 linode/linode, hetznercloud/hcloud）",
+          "optionRegion": "新机器的默认区域",
+          "optionRegionAttr": "自定义：区域的属性名",
+          "optionResource": "自定义：虚拟机的 OpenTofu 资源类型",
+          "optionSizeAttr": "自定义：实例类型的属性名",
+          "optionSource": "自定义 OpenTofu 提供商来源（例如 vultr/vultr）",
+          "optionSshKeyAttr": "自定义：SSH 密钥的属性名",
+          "optionSshKeyFormat": "自定义：SSH 密钥格式（inline_list 或 resource_id）",
+          "optionSshKeyResource": "自定义：SSH 密钥的 OpenTofu 资源类型",
+          "optionSshUser": "新虚拟机的 SSH 用户名（默认：root）",
+          "optionToken": "云服务提供商的 API 令牌",
+          "success": "已添加云提供商 \"{{name}}\"（{{provider}}）"
+        },
+        "description": "管理用于自动配置机器的云服务提供商",
+        "list": {
+          "description": "列出已配置的云服务提供商",
+          "noProviders": "未配置云提供商。使用以下命令添加：rdc config provider add"
+        },
+        "remove": {
+          "description": "移除云服务提供商配置",
+          "success": "已移除云提供商 \"{{name}}\""
+        }
       },
-      "removeMachine": {
-        "description": "从当前配置中移除机器",
-        "success": "机器 \"{{name}}\" 已移除"
+      "recover": {
+        "confirm": "从备份恢复配置 \"{{name}}\"？",
+        "description": "从备份文件 (.bak) 恢复配置",
+        "failed": "从备份恢复配置 \"{{name}}\" 失败",
+        "noBackup": "未找到配置 \"{{name}}\" 的备份",
+        "success": "配置 \"{{name}}\" 已从备份恢复（版本 {{version}}）"
       },
-      "removeRepository": {
-        "description": "从当前配置中移除仓库映射",
-        "success": "仓库 \"{{name}}\" 已移除"
-      },
-      "removeStorage": {
-        "description": "从当前配置中移除存储",
-        "success": "存储 \"{{name}}\" 已移除"
-      },
-      "repositories": {
-        "description": "列出当前配置中的仓库 GUID 映射",
-        "noRepositories": "未配置任何仓库。请使用以下命令添加：rdc config add-repository <name> --guid <guid>"
-      },
-      "scanKeys": {
-        "completed": "已扫描 {{count}}/{{total}} 台机器",
-        "description": "扫描当前配置中机器的 SSH 主机密钥",
-        "keysScanned": "已扫描 \"{{name}}\" 的主机密钥",
-        "noKeys": "无法扫描 \"{{name}}\" 的主机密钥"
+      "repository": {
+        "add": {
+          "description": "将仓库 GUID 映射添加到当前配置",
+          "networkIdAssigned": "网络 ID：{{networkId}}",
+          "optionCredential": "仓库凭据（加密口令）",
+          "optionGuid": "仓库 GUID（来自存储备份文件名的 UUID）",
+          "optionNetworkId": "用于 Docker 隔离的网络 ID（2816, 2880, ...）。省略时自动分配",
+          "optionTag": "仓库标签",
+          "success": "已添加仓库 \"{{name}}\"（{{guid}}，标签：{{tag}}）"
+        },
+        "description": "管理当前配置中的仓库映射",
+        "list": {
+          "description": "列出当前配置中的仓库 GUID 映射",
+          "noRepositories": "未配置仓库。使用以下命令添加：rdc config repository add <name> --guid <guid>"
+        },
+        "listArchived": {
+          "description": "列出已归档的仓库凭据",
+          "noArchived": "没有已归档的仓库"
+        },
+        "purgeArchived": {
+          "description": "永久删除所有已归档的凭据",
+          "noArchived": "没有需要清除的已归档仓库",
+          "success": "已清除 {{count}} 个已归档的凭证"
+        },
+        "remove": {
+          "description": "从当前配置中移除仓库映射",
+          "success": "已移除仓库 \"{{name}}\""
+        },
+        "restoreArchived": {
+          "description": "恢复已归档的仓库凭据",
+          "optionName": "使用其他名称恢复",
+          "success": "已恢复 \"{{name}}\"（{{guid}}）"
+        }
       },
       "set": {
         "description": "设置默认值（team、region、bridge、machine）",
         "success": "已将 \"{{key}}\" 设置为 \"{{value}}\""
-      },
-      "setInfra": {
-        "description": "为机器设置基础设施配置",
-        "invalidIPv4": "无效的 IPv4 地址：{{ip}}",
-        "invalidIPv6": "无效的 IPv6 地址：{{ip}}",
-        "noOptions": "未指定任何选项。请使用 --public-ipv4、--base-domain 等。",
-        "optionBaseDomain": "应用程序的基础域名",
-        "optionCertEmail": "TLS 证书通知的电子邮件",
-        "optionCfDnsToken": "用于 ACME DNS-01 验证的 Cloudflare DNS API 令牌",
-        "optionPublicIPv4": "公共 IPv4 地址",
-        "optionPublicIPv6": "公共 IPv6 地址",
-        "optionTcpPorts": "要转发的 TCP 端口（逗号分隔，例如 25,143,465）",
-        "optionUdpPorts": "要转发的 UDP 端口（逗号分隔，例如 53）",
-        "success": "\"{{name}}\" 的基础设施配置已更新"
       },
       "setRenet": {
         "description": "为本地模式设置 renet 二进制文件路径",
@@ -441,25 +525,71 @@
         "description": "更新当前配置的 SSH 配置",
         "success": "SSH 配置已更新"
       },
-      "setupMachine": {
-        "completed": "机器 '{{machine}}' 设置已成功完成",
-        "datastoreOption": "远程机器上的数据存储路径",
-        "datastoreSizeOption": "数据存储大小（例如 95%、100G）",
-        "description": "在远程机器上运行设置（安装 btrfs、Docker 等）",
-        "failed": "机器 '{{machine}}' 设置失败：{{error}}",
-        "starting": "正在设置机器 '{{machine}}'..."
-      },
       "show": {
         "description": "显示当前配置详情",
         "noConfig": "没有活跃的配置。请使用以下命令创建：rdc config init"
       },
-      "showInfra": {
-        "description": "显示机器的基础设施配置",
-        "noInfra": "未为 \"{{name}}\" 设置基础设施配置"
+      "storage": {
+        "description": "管理当前配置中的存储后端",
+        "import": {
+          "description": "从 rclone 配置文件导入存储",
+          "imported": "已导入存储 \"{{name}}\"（{{type}}）",
+          "noConfigs": "文件中未找到有效的存储配置",
+          "notFound": "在配置文件中未找到存储 \"{{name}}\"",
+          "optionName": "仅导入指定的命名部分",
+          "summary": "已导入 {{count}} 个存储",
+          "unsupported": "跳过 \"{{name}}\"：不支持的提供商类型 \"{{type}}\""
+        },
+        "list": {
+          "description": "列出当前配置中的存储",
+          "noStorages": "未配置存储。使用以下命令导入：rdc config storage import <file>"
+        },
+        "remove": {
+          "description": "从当前配置中移除存储",
+          "success": "已移除存储 \"{{name}}\""
+        }
+      }
+    },
+    "datastore": {
+      "description": "管理Ceph RBD数据存储生命周期（init、fork、unfork、status）",
+      "fork": {
+        "completed": "数据存储分叉成功（快照：{{snapshot}}）",
+        "cowSizeOption": "COW后备文件大小（默认：auto，按需增长）",
+        "description": "通过RBD快照+克隆创建Ceph数据存储的本地COW副本（不到2秒）。保存输出中的快照/克隆名称以便unfork。每个目标名称只能有一个fork；重新fork之前先unfork",
+        "descriptionShort": "创建 Ceph 数据存储的本地 CoW 副本",
+        "failed": "数据存储分叉失败",
+        "starting": "正在\"{{source}}\"上分叉数据存储（为\"{{target}}\"命名的克隆）...",
+        "toOption": "克隆后缀（创建名为<image>-fork-<name>的克隆）。fork保留在源机器上"
       },
-      "storages": {
-        "description": "列出当前配置中的存储",
-        "noStorages": "未配置任何存储。请使用以下命令导入：rdc config import-storage <file>"
+      "init": {
+        "backendOption": "后端类型：local（默认）或ceph",
+        "clusterOption": "Ceph集群名称（默认：ceph）",
+        "completed": "数据存储已初始化",
+        "description": "在机器上初始化数据存储（本地或Ceph RBD）",
+        "failed": "数据存储初始化失败",
+        "forceOption": "即使数据存储已存在也强制初始化（警告：将重新格式化存储）",
+        "imageOption": "Ceph RBD镜像名称（默认：通过set-ceph从机器配置获取）",
+        "imageRequired": "ceph后端需要--image参数（或通过 rdc config set-ceph -m <machine> --image <name> 设置）",
+        "poolOption": "Ceph池名称（默认：来自机器配置，或rbd）",
+        "sizeOption": "数据存储大小（例如5G、50G、100G）",
+        "starting": "正在\"{{machine}}\"上初始化数据存储..."
+      },
+      "machineOption": "机器名称（Ceph数据存储所在位置）",
+      "status": {
+        "description": "显示数据存储后端、大小、使用情况、挂载状态和cow_mode（如果已分叉）",
+        "starting": "正在检查\"{{machine}}\"上的数据存储状态..."
+      },
+      "unfork": {
+        "completed": "fork清理成功",
+        "description": "清理fork：卸载COW、移除克隆、移除快照",
+        "destOption": "要移除的克隆镜像（fork输出中的\"Clone:\"值，例如ds-prod-fork-<machine>）",
+        "failed": "fork清理失败",
+        "forceOption": "即使个别步骤失败（例如卸载、快照移除）也继续清理",
+        "mountPointOption": "要卸载的fork挂载点（默认：/mnt/rediacc）",
+        "poolOption": "Ceph池名称（默认：来自机器配置）",
+        "snapshotOption": "要移除的快照（fork输出中的\"Snapshot:\"值，例如fork-<timestamp>）",
+        "sourceOption": "被分叉的原始RBD镜像（来自config set-ceph --image，例如ds-prod）",
+        "starting": "正在\"{{machine}}\"上清理分叉的数据存储..."
       }
     },
     "doctor": {
@@ -472,7 +602,7 @@
         "dockerAvailable": "Docker",
         "goInstalled": "Go",
         "machines": "机器",
-        "nodeVersion": "Node.js",
+        "nodeVersion": "Node.js版本",
         "opsPrereqs": "OPS 前提条件",
         "renetBinary": "二进制文件",
         "renetCriu": "内置CRIU",
@@ -495,7 +625,7 @@
         "authentication": "身份验证",
         "configuration": "配置",
         "environment": "环境",
-        "renet": "Renet",
+        "renet": "Renet网络",
         "virtualization": "虚拟化"
       },
       "status": {
@@ -506,9 +636,17 @@
       "title": "Rediacc CLI 诊断工具"
     },
     "machine": {
+      "backup": {
+        "description": "机器备份管理",
+        "schedule": {
+          "description": "将备份计划推送到远程机器（systemd 定时器）",
+          "success": "已将备份计划部署到 {{machine}}"
+        }
+      },
       "containers": {
         "allHealthy": "所有容器都健康",
-        "description": "列出机器上的 Docker 容器",
+        "description": "列出机器上正在运行的容器",
+        "descriptionShort": "列出机器上的容器",
         "fetched": "容器已获取",
         "fetching": "正在获取容器...",
         "healthCheck": "健康检查模式 - 如果有不健康的容器，将以代码 2 退出",
@@ -526,7 +664,18 @@
         "description": "删除机器",
         "success": "机器 \"{{name}}\" 已删除"
       },
-      "description": "机器管理",
+      "deprovision": {
+        "completed": "机器 {{name}} 已销毁并从配置中移除",
+        "confirm": "这将永久销毁机器 \"{{name}}\" 及其所有数据。是否继续？",
+        "description": "销毁云配置的机器并从配置中移除",
+        "destroyFailed": "{{name}} 的基础设施销毁失败：{{error}}。继续移除配置 (--force)。",
+        "destroying": "正在销毁 {{name}}...",
+        "dnsCleanedUp": "已移除 {{count}} 条 DNS 记录",
+        "dnsDeleted": "已删除 DNS 记录：{{type}} {{name}}",
+        "noState": "未找到 \"{{name}}\" 的OpenTofu状态。手动添加的机器请使用 'config remove-machine'。",
+        "optionForce": "跳过确认提示"
+      },
+      "description": "管理远程机器（状态、容器、服务、健康检查）",
       "health": {
         "containersSection": "\n容器：",
         "containersSummary": "  {{running}}/{{total}} 正在运行（{{healthy}} 健康，{{unhealthy}} 不健康）",
@@ -558,8 +707,63 @@
         "description": "列出机器",
         "fetching": "正在获取机器..."
       },
+      "provision": {
+        "completed": "机器 {{name}} 已配置完成并就绪 ({{ip}})",
+        "configuringInfra": "正在为 {{name}} 配置基础设施（代理 + DNS）...",
+        "description": "使用OpenTofu在云提供商上配置新机器",
+        "failed": "机器配置失败：{{error}}",
+        "infraInherited": "已从兄弟机器 \"{{source}}\" 自动检测到基础域名",
+        "noInfraHint": "未配置基础域名。运行 'rdc config set-infra <machine> --base-domain <domain>' 然后 'rdc config push-infra <machine>' 以启用 DNS 和代理。",
+        "optionBaseDomain": "基础设施的基础域名（例如 example.com）。隐含 --infra",
+        "optionImage": "覆盖默认操作系统镜像",
+        "optionInfra": "同时配置基础设施（set-infra + push-infra）",
+        "optionNoInfra": "跳过基础设施配置（代理 + DNS）",
+        "optionProvider": "云提供商名称（来自config add-provider）",
+        "optionRegion": "覆盖默认区域",
+        "optionSshUser": "新虚拟机的SSH用户名（默认：root）",
+        "optionType": "覆盖默认实例类型",
+        "providerRequired": "未找到云提供商 \"{{name}}\"。使用以下命令添加：rdc config add-provider",
+        "provisioning": "正在 {{provider}} ({{region}}) 上配置 {{name}}...",
+        "settingUp": "正在运行机器设置...",
+        "sshReady": "SSH连接已建立",
+        "tofuNotInstalled": "OpenTofu (tofu) 未安装。安装地址：https://opentofu.org/docs/intro/install/",
+        "waitingSSH": "正在等待SSH连接..."
+      },
+      "prune": {
+        "checkingActivity": "正在检查快照活动...",
+        "completed": "清理完成",
+        "datastoreCompleted": "数据存储清理完成",
+        "datastoreFailed": "数据存储清理失败",
+        "datastoreOnlyOption": "仅清理孤立的数据存储资源",
+        "description": "从机器中移除孤立的数据存储资源和过期快照",
+        "descriptionShort": "清理孤立资源和过期快照",
+        "dryRunOption": "显示将被移除的内容，但不做实际更改",
+        "noStaleSnapshots": "未找到过期快照",
+        "snapshotDeleted": "已删除 {{name}}",
+        "snapshotDeleting": "正在删除 {{name}}...",
+        "snapshotInUse": "跳过 {{name}}（正在使用中）",
+        "snapshotsCompleted": "快照清理: 已删除 {{deleted}} 个，已跳过 {{skipped}} 个",
+        "orphanedReposOption": "同时清理不在任何配置中的仓库镜像",
+        "orphanedReposStarting": "正在扫描 {{machine}} 上的孤立仓库...",
+        "orphanedReposCompleted": "已清理 {{count}} 个孤立仓库",
+        "noReposFound": "在机器上未找到仓库",
+        "snapshotsOnlyOption": "仅清理过期快照",
+        "snapshotStale": "过期: {{name}} ({{size}})",
+        "startingDatastore": "正在扫描 {{machine}} 上的孤立数据存储资源...",
+        "startingSnapshots": "正在扫描 {{machine}} 上的过期快照..."
+      },
+      "query": {
+        "connection": "连接",
+        "description": "显示完整机器状态（系统、仓库、容器、服务）",
+        "descriptionShort": "显示机器的完整状态",
+        "fetched": "状态已获取",
+        "fetching": "正在从 {{machine}} 获取状态...",
+        "infrastructure": "基础设施",
+        "noData": "无可用状态数据"
+      },
       "repos": {
         "description": "列出机器上已部署的仓库",
+        "descriptionShort": "列出机器上已部署的仓库",
         "fetched": "机器已获取",
         "fetching": "正在获取机器...",
         "noRepos": "此机器上未部署任何仓库"
@@ -567,17 +771,12 @@
       "services": {
         "allStable": "所有服务都稳定",
         "description": "列出机器上的 systemd 服务",
+        "descriptionShort": "列出机器上由 rediacc 管理的 systemd 服务",
         "fetched": "服务已获取",
         "fetching": "正在获取服务...",
         "noServices": "此机器上未找到 rediacc 服务",
         "stabilityCheck": "稳定性检查模式 - 如果有失败/重启的服务，将以代码 2 退出",
         "unstableFound": "找到 {{count}} 个不稳定的服务"
-      },
-      "status": {
-        "description": "显示完整机器状态（系统、仓库、容器、服务）",
-        "fetched": "状态已获取",
-        "fetching": "正在从 {{machine}} 获取状态...",
-        "noData": "无可用状态数据"
       },
       "testConnection": {
         "authMethod": "  认证方法：{{method}}",
@@ -615,7 +814,7 @@
         "fetching": "正在获取机器...",
         "header": "\n{{name}} 的保险箱状态：",
         "mounted": "  已挂载：{{count}}",
-        "repoDocker": "    Docker：{{status}}",
+        "repoDocker": "    Docker状态: {{status}}",
         "repoMounted": "    已挂载：{{mounted}}",
         "status": "  状态：{{status}}",
         "systemDatastore": "  数据存储：{{used}} / {{total}}（{{percent}}）",
@@ -625,6 +824,21 @@
         "systemSection": "\n系统：",
         "systemUptime": "  运行时间：{{uptime}}",
         "totalRepos": "  总仓库数：{{count}}"
+      }
+    },
+    "mcp": {
+      "description": "用于 AI 代理的 Model Context Protocol 服务器",
+      "serve": {
+        "allowGrandOption": "允许对 grand（非 fork）仓库执行破坏性操作。默认：仅 fork 模式",
+        "configOption": "用于所有命令的配置名称",
+        "description": "启动 MCP 服务器（stdio 传输）",
+        "timeoutOption": "默认命令超时时间（毫秒）"
+      },
+      "tools": {
+        "repo_fork": {
+          "parentDescription": "要 fork 的父仓库名称（或 名称:标签）",
+          "tagDescription": "fork 的标签（创建 名称:标签，例如 \"staging\"）"
+        }
       }
     },
     "ops": {
@@ -770,7 +984,7 @@
       "build": {
         "description": "从组件构建 {{scheme}}:// URL"
       },
-      "description": "管理 {{scheme}}:// 协议处理程序注册和 URL 处理",
+      "description": "注册和处理 {{scheme}}:// 协议 URL",
       "open": {
         "action": "操作：",
         "cliCommand": "\n等效的命令行界面命令：",
@@ -869,27 +1083,21 @@
         "description": "管理开机时仓库的自动启动",
         "disable": {
           "completed": "自动启动已禁用",
+          "completedAll": "已禁用所有仓库的自动启动",
           "description": "为仓库禁用自动启动",
           "failed": "禁用自动启动失败",
-          "starting": "正在 \"{{machine}}\" 上为 \"{{repository}}\" 禁用自动启动..."
-        },
-        "disableAll": {
-          "completed": "所有仓库的自动启动已禁用",
-          "description": "为所有仓库禁用自动启动",
-          "failed": "为所有仓库禁用自动启动失败",
-          "starting": "正在 \"{{machine}}\" 上为所有仓库禁用自动启动..."
+          "failedAll": "无法禁用所有仓库的自动启动",
+          "starting": "正在 \"{{machine}}\" 上为 \"{{repository}}\" 禁用自动启动...",
+          "startingAll": "正在为 \"{{machine}}\" 上的所有仓库禁用自动启动..."
         },
         "enable": {
           "completed": "自动启动已启用",
+          "completedAll": "已启用所有仓库的自动启动",
           "description": "为仓库启用自动启动",
           "failed": "启用自动启动失败",
-          "starting": "正在 \"{{machine}}\" 上为 \"{{repository}}\" 启用自动启动..."
-        },
-        "enableAll": {
-          "completed": "所有仓库的自动启动已启用",
-          "description": "为所有仓库启用自动启动",
-          "failed": "为所有仓库启用自动启动失败",
-          "starting": "正在 \"{{machine}}\" 上为所有仓库启用自动启动..."
+          "failedAll": "无法启用所有仓库的自动启动",
+          "starting": "正在 \"{{machine}}\" 上为 \"{{repository}}\" 启用自动启动...",
+          "startingAll": "正在为 \"{{machine}}\" 上的所有仓库启用自动启动..."
         },
         "list": {
           "completed": "自动启动列表已获取",
@@ -898,6 +1106,21 @@
           "starting": "正在列出 \"{{machine}}\" 上的自动启动仓库..."
         }
       },
+      "backup": {
+        "description": "管理仓库备份",
+        "list": {
+          "description": "列出存储或机器上的可用备份",
+          "listing": "正在列出备份...",
+          "optionFromMachine": "源机器名称",
+          "optionFromStorage": "源存储名称",
+          "sourceRequired": "请指定 --from <storage> 或 --from-machine <machine>"
+        }
+      },
+      "batchConfirm": "{{action}} \"{{machine}}\" 上的所有 {{count}} 个仓库？ [y/N]",
+      "batchFailed": "\"{{repo}}\" 的 {{action}} 失败：{{error}}",
+      "batchIterating": "{{action}} {{current}}/{{total}}：\"{{repo}}\"...",
+      "batchResult": "{{action}} 完成：{{succeeded}}/{{total}} 成功",
+      "batchStarting": "{{action}}：\"{{repo}}\"...",
       "create": {
         "alreadyExists": "仓库 \"{{name}}\" 已存在于上下文中",
         "completed": "仓库已创建",
@@ -909,16 +1132,24 @@
         "starting": "正在 \"{{machine}}\" 上创建仓库 \"{{repository}}\"（{{size}}）..."
       },
       "delete": {
+        "archived": "\"{{repository}}\" 的凭据已归档",
+        "archiveOption": "将配置条目移至 deletedRepositories 以便后续恢复",
         "completed": "仓库已删除",
-        "description": "删除仓库",
+        "description": "删除仓库（销毁容器、卷和加密镜像）。配置条目将被保留。使用 --archive-config 将凭据移至 deletedRepositories，可通过 'config restore-archived' 恢复",
+        "descriptionShort": "从机器上删除仓库",
         "failed": "仓库删除失败",
-        "removed": "已从配置中移除 \"{{repository}}\"",
+        "restoreHint": "恢复命令: rdc config restore-archived {{guid}}",
         "starting": "正在 \"{{machine}}\" 上删除 \"{{repository}}\"..."
       },
-      "description": "仓库生命周期管理 (本地模式)",
+      "description": "在机器上部署和管理加密仓库",
+      "descriptionShort": "在机器上部署和管理加密仓库",
       "down": {
+        "allCompleted": "所有仓库已停止",
+        "allFailed": "全部停止操作失败",
+        "allStarting": "正在停止 \"{{machine}}\" 上的所有仓库...",
         "completed": "服务已停止",
         "description": "停止仓库服务",
+        "descriptionShort": "停止仓库的 Docker 容器",
         "failed": "服务停止失败",
         "grandOption": "主仓库名称 (自动解析为 GUID)",
         "starting": "正在 \"{{machine}}\" 上停止 \"{{repository}}\" 的服务...",
@@ -927,19 +1158,22 @@
       "expand": {
         "completed": "扩展完成",
         "description": "在线扩展已挂载的仓库（零停机）",
+        "descriptionShort": "在线扩展已挂载的仓库（零停机，仅扩大）",
         "failed": "扩展失败",
         "sizeOption": "新的仓库大小（例如 10G、100G、1T）",
         "starting": "正在 \"{{machine}}\" 上将 \"{{repository}}\" 扩展为 {{size}}..."
       },
       "fork": {
         "alreadyExists": "仓库 \"{{name}}\" 已存在于上下文中",
-        "completed": "分支已创建",
+        "completed": "分支已创建。本地部署: repo up {{repository}} -m {{machine}} --mount。将分支迁移到另一台机器: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
         "description": "创建仓库的 CoW（写时复制）分支",
+        "descriptionShort": "创建仓库的 CoW 分支（新 GUID、networkId、IP 范围）",
         "failed": "分支创建失败",
         "registered": "已注册分支 \"{{repository}}\"（{{guid}}，网络 {{networkId}}）",
         "rollback": "已回滚 \"{{repository}}\" 的配置",
         "starting": "正在 \"{{machine}}\" 上将 \"{{parent}}\" 分支为 \"{{repository}}\"...",
-        "tagOption": "分支名称"
+        "tagOption": "分支的标签（创建 名称:标签）",
+        "tagRequired": "分支需要标签。用法：rdc repo fork <parent> <tag> -m <machine>"
       },
       "list": {
         "completed": "列表获取完成",
@@ -952,6 +1186,7 @@
         "checkpointOption": "挂载后从检查点恢复",
         "completed": "挂载完成",
         "description": "挂载仓库 (打开 LUKS 容器)",
+        "descriptionShort": "挂载仓库（解密并打开 LUKS 容器）",
         "failed": "挂载失败",
         "starting": "正在将 \"{{repository}}\" 挂载到 \"{{machine}}\"..."
       },
@@ -959,16 +1194,64 @@
       "ownership": {
         "completed": "所有权已更新",
         "description": "更改仓库目录所有权",
+        "descriptionShort": "更改仓库目录的所有权 UID",
         "failed": "所有权更新失败",
         "starting": "正在 \"{{machine}}\" 上设置 \"{{repository}}\" 的所有权...",
         "uidOption": "所有者 UID（默认: 7111）"
       },
+      "pull": {
+        "description": "从存储或机器拉取仓库备份",
+        "descriptionShort": "从存储或机器拉取仓库备份",
+        "optionForce": "强制覆盖现有仓库",
+        "optionFromMachine": "源机器名称",
+        "optionFromStorage": "源存储名称",
+        "pulling": "正在拉取 \"{{repo}}\" 的备份...",
+        "sourceRequired": "请指定 --from <storage> 或 --from-machine <machine>"
+      },
+      "push": {
+        "description": "将仓库备份推送到存储或机器",
+        "descriptionShort": "将仓库备份推送到存储或机器",
+        "destIgnoredForStorage": "忽略 --dest {{provided}}：存储备份使用仓库 GUID（{{dest}}）",
+        "destRequired": "请指定 --to <storage> 或 --to-machine <machine>",
+        "optionCheckpoint": "创建容器检查点（热备份）",
+        "optionDest": "目标文件名",
+        "optionForce": "强制覆盖现有备份",
+        "optionProvider": "如果目标机器不存在，则自动配置的云提供商（来自config add-provider）",
+        "optionTag": "用于版本控制的部署标签",
+        "optionToMachine": "目标机器名称",
+        "optionToStorage": "目标存储名称",
+        "pushing": "正在将 \"{{repo}}\" 的备份推送到 {{dest}}...",
+        "optionUp": "推送后，在目标机器上挂载并部署仓库",
+        "deploying": "正在 {{machine}} 上部署 \"{{repo}}\"...",
+        "deployed": "仓库 \"{{repo}}\" 已部署到 {{machine}}",
+        "deployFailed": "推送后部署 \"{{repo}}\" 失败"
+      },
       "resize": {
         "completed": "大小调整完成",
         "description": "离线调整仓库大小（支持扩展和缩减）",
+        "descriptionShort": "离线调整仓库大小（扩大或缩小）",
         "failed": "大小调整失败",
         "sizeOption": "新的仓库大小（例如 10G、100G、1T）",
         "starting": "正在 \"{{machine}}\" 上将 \"{{repository}}\" 调整为 {{size}}..."
+      },
+      "snapshot": {
+        "create": {
+          "creating": "正在 {{machine}} 上创建 \"{{repo}}\" 的快照...",
+          "description": "创建仓库的 BTRFS 快照",
+          "descriptionShort": "创建仓库的 BTRFS 快照",
+          "optionSnapshotName": "显式快照名称（为空时自动生成）",
+          "success": "快照已创建: {{name}}（{{path}}）"
+        },
+        "delete": {
+          "description": "从远程机器上删除快照",
+          "success": "快照已删除: {{name}}"
+        },
+        "description": "管理远程机器上的 BTRFS 快照",
+        "list": {
+          "description": "列出远程机器上的快照",
+          "header": "{{path}} 中有 {{count}} 个快照:",
+          "noSnapshots": "未找到快照。"
+        }
       },
       "status": {
         "completed": "状态已获取",
@@ -976,9 +1259,38 @@
         "failed": "状态检查失败",
         "starting": "正在获取 \"{{machine}}\" 上 \"{{repository}}\" 的状态..."
       },
+      "sync": {
+        "description": "同步仓库和文件（批量推送/拉取，文件传输）",
+        "download": {
+          "description": "从仓库下载文件",
+          "descriptionShort": "通过 rsync 从仓库下载文件"
+        },
+        "pull": {
+          "description": "从云存储拉取仓库（省略名称则拉取全部）",
+          "optionFrom": "源存储名称",
+          "optionOverride": "拉取时覆盖现有的未挂载仓库",
+          "optionRepo": "筛选特定仓库（可重复）",
+          "success": "同步拉取完成"
+        },
+        "push": {
+          "description": "将仓库推送到云存储（省略名称则推送全部）",
+          "optionRepo": "筛选特定仓库（可重复）",
+          "optionTo": "目标存储名称",
+          "success": "同步推送完成"
+        },
+        "status": {
+          "description": "检查同步状态并比较本地/远程文件",
+          "descriptionShort": "比较本地和远程文件（模拟运行）"
+        },
+        "upload": {
+          "description": "上传文件到仓库",
+          "descriptionShort": "通过 rsync 向仓库上传文件"
+        }
+      },
       "template": {
         "completed": "模板已应用",
         "description": "将模板应用到仓库",
+        "descriptionShort": "将模板应用到仓库（docker-compose.yml + Rediaccfile）",
         "failed": "模板应用失败",
         "fileNotFound": "未找到模板文件: {{path}}",
         "fileOption": "模板 JSON 文件路径",
@@ -989,22 +1301,24 @@
         "checkpointOption": "卸载前创建检查点",
         "completed": "卸载完成",
         "description": "卸载仓库",
+        "descriptionShort": "卸载仓库（关闭 LUKS 容器）",
         "failed": "卸载失败",
         "starting": "正在从 \"{{machine}}\" 卸载 \"{{repository}}\"..."
       },
       "up": {
+        "checkpointOption": "部署后从 CRIU 检查点恢复容器（用于从另一台机器进行实时进程迁移）",
         "completed": "服务已启动",
-        "description": "启动仓库服务 (Rediaccfile 编排)",
+        "description": "部署或更新仓库（挂载、启动服务）",
+        "descriptionShort": "在机器上部署或更新仓库",
         "failed": "服务启动失败",
         "grandOption": "主仓库名称 (自动解析为 GUID)",
         "mountOption": "先挂载仓库",
-        "prepOnlyOption": "仅运行准备步骤",
         "starting": "正在 \"{{machine}}\" 上启动 \"{{repository}}\" 的服务..."
       },
       "upAll": {
         "completed": "所有仓库已启动",
         "concurrencyOption": "最大并发仓库数 (默认: 3)",
-        "description": "启动机器上的所有仓库服务",
+        "description": "部署机器上的所有仓库",
         "dryRunOption": "显示将要执行的操作而不实际执行",
         "failed": "全部启动操作失败",
         "includeForksOption": "同时挂载/启动分叉的仓库",
@@ -1015,24 +1329,26 @@
       "validate": {
         "completed": "验证完成",
         "description": "验证仓库完整性",
+        "descriptionShort": "验证仓库完整性",
         "failed": "验证失败",
         "starting": "正在 \"{{machine}}\" 上验证 \"{{repository}}\"..."
-      }
+      },
+      "yesOption": "跳过批量操作确认"
     },
     "repository": {
       "create": {
-        "creating": "正在创建仓库 \"{{name}}:{{tag}}\"...",
+        "creating": "正在创建仓库 \"{{name}}\"...",
         "description": "创建新仓库",
-        "success": "仓库 \"{{name}}:{{tag}}\" 已创建"
+        "success": "仓库 \"{{name}}\" 已创建"
       },
       "delete": {
         "checkingRelationships": "正在检查仓库关系...",
-        "confirm": "删除仓库 \"{{name}}:{{tag}}\" 吗？无法撤销此操作。",
-        "deleting": "正在删除仓库 \"{{name}}:{{tag}}\"...",
+        "confirm": "删除仓库 \"{{name}}\" 吗？无法撤销此操作。",
+        "deleting": "正在删除仓库 \"{{name}}\"...",
         "description": "删除仓库",
         "grandRepoWarning": "这是一个主仓库（凭证）。删除它不可逆转。",
         "relationshipsChecked": "仓库关系已检查",
-        "success": "仓库 \"{{name}}:{{tag}}\" 已删除"
+        "success": "仓库 \"{{name}}\" 已删除"
       },
       "description": "仓库管理命令",
       "list": {
@@ -1044,11 +1360,11 @@
         "checkingRelationships": "正在检查仓库关系...",
         "confirmPromote": "\n继续提升？",
         "description": "将分叉提升为主状态",
-        "promoting": "正在提升仓库 \"{{name}}:{{tag}}\"...",
+        "promoting": "正在提升仓库 \"{{name}}\"...",
         "relationshipsChecked": "仓库关系已检查",
         "separateInfo": "\n这将把 \"{{name}}\" 与主仓库 \"{{grandName}}\" 分离",
         "siblingsInfo": "\n{{count}} 个兄弟克隆将保持与原始主仓库的链接：",
-        "success": "仓库 \"{{name}}:{{tag}}\" 已提升为主状态"
+        "success": "仓库 \"{{name}}\" 已提升为主状态"
       },
       "rename": {
         "description": "重命名仓库",
@@ -1078,10 +1394,11 @@
         "description": "重试失败的任务 (queue retry 的快捷方式)"
       },
       "run": {
-        "completedLocal": "[本地] 在 {{duration}}ms 内完成",
+        "completedLocal": "在 {{duration}}ms 内完成",
         "description": "运行函数（快捷方式：queue create）",
-        "executingLocal": "[本地] 在 {{machine}} 上执行 '{{function}}'...",
-        "failedLocal": "[本地] 失败：{{error}}",
+        "descriptionShort": "在机器上运行原始桥接函数（仅限调试）",
+        "executingLocal": "在 {{machine}} 上执行 '{{function}}'...",
+        "failedLocal": "失败：{{error}}",
         "watching": "正在监视完成情况..."
       },
       "trace": {
@@ -1089,22 +1406,7 @@
       }
     },
     "snapshot": {
-      "create": {
-        "creating": "正在 {{machine}} 上创建 \"{{repo}}\" 的快照...",
-        "description": "创建仓库的 BTRFS 快照",
-        "optionSnapshotName": "显式快照名称（为空时自动生成）",
-        "success": "快照已创建: {{name}}（{{path}}）"
-      },
-      "delete": {
-        "description": "从远程机器上删除快照",
-        "success": "快照已删除: {{name}}"
-      },
-      "description": "管理远程机器上的 BTRFS 快照",
-      "list": {
-        "description": "列出远程机器上的快照",
-        "header": "{{path}} 中有 {{count}} 个快照:",
-        "noSnapshots": "未找到快照。"
-      }
+      "description": "管理远程机器上的 BTRFS 快照"
     },
     "storage": {
       "browse": {
@@ -1114,7 +1416,16 @@
         "noFiles": "未找到文件",
         "pathOption": "要列出的子目录路径"
       },
-      "description": "存储管理",
+      "prune": {
+        "description": "删除存储中不在任何配置中的孤立备份。多配置安全，带宽限期保护。",
+        "descriptionShort": "删除存储中的孤立备份",
+        "listing": "正在列出 \"{{storage}}\" 中的备份...",
+        "listFailed": "获取存储备份列表失败",
+        "noBackups": "存储中未找到备份",
+        "found": "在存储中找到 {{count}} 个备份",
+        "completed": "已清理 {{count}} 个孤立备份"
+      },
+      "description": "管理存储提供商和浏览远程文件",
       "list": {
         "description": "列出存储提供商",
         "fetching": "正在获取存储提供商..."
@@ -1198,12 +1509,111 @@
         "pushed": "已推送到同步存储 \"{{store}}\""
       }
     },
+    "subscription": {
+      "activation": {
+        "description": "机器激活管理",
+        "status": {
+          "activations": "  激活数：{{active}}/{{max}}",
+          "active": "  激活：已激活（最后活跃 {{lastSeenAt}}）",
+          "description": "显示单台机器的激活状态",
+          "header": "\n机器激活（{{machineName}}）",
+          "inactive": "  激活：机器当前在账户状态中未激活",
+          "machineId": "  机器 ID：{{machineId}}",
+          "unavailable": "  激活：无法查询账户状态"
+        }
+      },
+      "description": "管理机器许可证和订阅",
+      "login": {
+        "browserFailed": "无法自动打开浏览器。请访问上方链接。",
+        "description": "使用Web门户的API令牌进行认证",
+        "expired": "授权已超时。请重试。",
+        "initFailed": "无法启动登录。服务器是否正在运行？",
+        "machines": "机器: {{active}}/{{max}}",
+        "openBrowser": "请访问此链接进行授权：",
+        "plan": "计划: {{plan}}",
+        "polling": "等待批准（按 Ctrl+C 取消）...",
+        "success": "登录成功",
+        "tokenInvalid": "令牌必须以 rdt_ 开头",
+        "tokenPrompt": "请输入您的API令牌（来自Web门户）:",
+        "validated": "令牌已验证",
+        "validating": "正在验证令牌...",
+        "waitingApproval": "等待浏览器授权..."
+      },
+      "refresh": {
+        "activation": {
+          "description": "刷新远程机器的激活状态"
+        },
+        "description": "刷新机器许可证",
+        "failed": "无法签发机器许可证",
+        "refreshed": "许可证已刷新",
+        "refreshing": "正在刷新许可证...",
+        "repo": {
+          "description": "刷新特定仓库的许可证",
+          "failed": "刷新仓库许可证失败",
+          "notFound": "未找到仓库：{{repoName}}",
+          "refreshed": "仓库许可证已刷新",
+          "refreshing": "正在刷新仓库许可证...",
+          "repoArgument": "仓库名称",
+          "success": "已刷新 \"{{repoName}}\" 的仓库许可证"
+        },
+        "repos": {
+          "description": "批量刷新远程机器上的仓库许可证",
+          "refreshed": "仓库许可证已刷新",
+          "refreshing": "正在刷新仓库许可证...",
+          "success": "仓库许可证批量刷新完成"
+        },
+        "success": "许可证已刷新并安装"
+      },
+      "repo": {
+        "description": "仓库许可证管理",
+        "status": {
+          "description": "显示机器上已安装的仓库许可证",
+          "empty": "  未安装仓库许可证",
+          "entry": "  - {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
+          "freshness": {
+            "hardExpired": "已过期",
+            "refreshRecommended": "建议刷新",
+            "unknown": "未知",
+            "valid": "有效"
+          },
+          "hardExpirySuffix": "（到期时间：{{effectiveHardExpiry}}）",
+          "header": "\n仓库许可证：（{{machineName}}）"
+        }
+      },
+      "status": {
+        "description": "显示订阅和许可证状态",
+        "expired": "  许可证已过期 — 请运行 `rdc subscription refresh`",
+        "expires": "  过期日期: {{expiresAt}}",
+        "issuanceLimitReached": "当前 UTC 自然月的仓库许可证签发额度已用尽。",
+        "issuanceUsageHigh80": "每月仓库许可证签发量已超过当前 UTC 限额的 80%。",
+        "issuanceUsageHigh95": "每月仓库许可证签发量已超过当前 UTC 限额的 95%。",
+        "issued": "  颁发日期: {{issuedAt}}",
+        "localLicense": "本地许可证:",
+        "machine": "  机器:     {{machineId}}",
+        "noLicense": "未安装本地许可证。",
+        "parseFailed": "  无法解析许可证文件",
+        "plan": "  计划:     {{plan}}",
+        "remote": "\n远程订阅:",
+        "remoteMachine": "    - {{id}}...（最后上线: {{lastSeen}}）",
+        "remoteMachineActivations": "  机器激活: {{active}}/{{max}}",
+        "remoteMachines": "  机器: {{active}}/{{max}}",
+        "remotePlan": "  计划:     {{plan}}",
+        "remoteRepoLicenseIssuances": "  浮动许可证请求: {{used}}/{{limit}}",
+        "remoteRepoLicenses": "  仓库许可证: 已跟踪 {{totalTrackedRepos}}，有效 {{validCount}}，建议刷新 {{refreshRecommendedCount}}，彻底过期 {{hardExpiredCount}}",
+        "remoteStatus": "  状态:     {{status}}",
+        "sequence": "  序列号:   {{sequenceNumber}}",
+        "serverMismatch": "开发令牌属于 {{actualServerUrl}}，但此工作树正在使用 {{expectedServerUrl}}。请重新运行 `rdc subscription login`。",
+        "statusLabel": "  状态:     {{status}}",
+        "valid": "  有效（{{mins}} 分钟后过期）"
+      }
+    },
     "sync": {
       "cancelled": "同步已取消。",
-      "description": "使用 rsync 与仓库进行文件同步",
+      "description": "通过 rsync 在本地和远程仓库之间传输文件",
       "download": {
         "completed": "下载完成：{{count}} 个文件已传输",
         "description": "从仓库下载文件",
+        "descriptionShort": "通过 rsync 从仓库下载文件",
         "failed": "下载失败",
         "progress": "下载中：{{percentage}}% - {{file}}（{{speed}}）",
         "starting": "正在开始下载..."
@@ -1215,12 +1625,14 @@
       "noChanges": "没有要同步的更改。",
       "previewingChanges": "\n正在预览更改...\n",
       "status": {
-        "description": "检查同步状态并比较本地/远程文件"
+        "description": "检查同步状态并比较本地/远程文件",
+        "descriptionShort": "比较本地和远程文件（模拟运行）"
       },
       "totalSize": "总大小：{{size}}",
       "upload": {
         "completed": "上传完成：{{count}} 个文件已传输",
         "description": "将文件上传到仓库",
+        "descriptionShort": "通过 rsync 向仓库上传文件",
         "failed": "上传失败",
         "progress": "上传中：{{percentage}}% - {{file}}（{{speed}}）",
         "starting": "正在开始上传..."
@@ -1380,7 +1792,7 @@
         "title": "VS Code 设置检查\n",
         "variant": "  变体：Insiders",
         "version": "  版本：{{version}}",
-        "vscodeFound": "  VS Code: {{path}}",
+        "vscodeFound": "  VS Code路径: {{path}}",
         "vscodeNotFound": "  VS Code：未找到",
         "yes": "是"
       },
@@ -1399,12 +1811,13 @@
         "fetchingDetails": "正在获取连接详情...",
         "opening": "正在打开 VS Code：{{connection}} → {{path}}",
         "persistingKey": "正在保存 SSH 密钥...",
+        "provisioningRenet": "正在向远程服务器部署 renet...",
         "settingsWarning": "警告：无法配置 VS Code 设置：{{error}}",
         "settingUpEnv": "正在设置远程环境...",
         "success": "VS Code 已成功启动。",
         "testingConnectivity": "正在测试与 {{host}}:{{port}} 的连接..."
       },
-      "description": "VS Code 远程 SSH 集成",
+      "description": "打开 VS Code Remote SSH 连接到机器或仓库",
       "list": {
         "configFile": "\n配置文件：{{path}}",
         "description": "列出已配置的 VS Code SSH 连接",
@@ -1412,51 +1825,6 @@
         "keyPersisted": "（密钥已保存）",
         "noConnections": "未配置任何 VS Code SSH 连接。",
         "total": "\n总计：{{count}} 个连接"
-      }
-    },
-    "subscription": {
-      "description": "管理机器许可证和订阅",
-      "login": {
-        "description": "使用Web门户的API令牌进行认证",
-        "tokenPrompt": "请输入您的API令牌（来自Web门户）:",
-        "tokenInvalid": "令牌必须以 rdt_ 开头",
-        "validating": "正在验证令牌...",
-        "validated": "令牌已验证",
-        "success": "登录成功",
-        "plan": "计划: {{plan}}",
-        "machines": "机器: {{active}}/{{max}}"
-      },
-      "activate": {
-        "description": "激活此机器并颁发许可证",
-        "activating": "正在激活机器...",
-        "activated": "机器已激活",
-        "installed": "许可证已安装",
-        "licenseFile": "许可证文件: {{path}}"
-      },
-      "status": {
-        "description": "显示订阅和许可证状态",
-        "localLicense": "本地许可证:",
-        "plan": "  计划:     {{plan}}",
-        "statusLabel": "  状态:     {{status}}",
-        "machine": "  机器:     {{machineId}}",
-        "issued": "  颁发日期: {{issuedAt}}",
-        "expires": "  过期日期: {{expiresAt}}",
-        "sequence": "  序列号:   {{sequenceNumber}}",
-        "expired": "  许可证已过期 — 请运行 `rdc subscription refresh`",
-        "valid": "  有效（{{mins}} 分钟后过期）",
-        "parseFailed": "  无法解析许可证文件",
-        "noLicense": "未安装本地许可证。",
-        "remote": "\n远程订阅:",
-        "remotePlan": "  计划:     {{plan}}",
-        "remoteStatus": "  状态:     {{status}}",
-        "remoteMachines": "  机器: {{active}}/{{max}}",
-        "remoteMachine": "    - {{id}}...（最后上线: {{lastSeen}}）"
-      },
-      "refresh": {
-        "description": "刷新机器许可证",
-        "refreshing": "正在刷新许可证...",
-        "refreshed": "许可证已刷新",
-        "success": "许可证已刷新并安装"
       }
     }
   },
@@ -1527,14 +1895,17 @@
     },
     "pageTitle": "Rediacc CLI 参考",
     "sectionTitles": {
+      "agent": "代理工具",
       "audit": "审计与合规",
       "auth": "身份验证",
-      "backup": "备份管理",
+      "backup": "备份与恢复",
       "bridge": "桥接管理",
       "ceph": "Ceph 存储管理",
       "config": "配置管理",
+      "datastore": "数据存储管理",
       "doctor": "系统诊断",
       "machine": "机器管理",
+      "mcp": "MCP 服务器",
       "ops": "实验性 VM 操作",
       "organization": "组织管理",
       "permission": "权限管理",
@@ -1544,7 +1915,6 @@
       "repo": "仓库生命周期",
       "repository": "仓库管理",
       "shortcuts": "快捷命令（快捷方式）",
-      "snapshot": "快照管理",
       "storage": "存储管理",
       "store": "同步存储管理",
       "subscription": "订阅管理",
@@ -1608,12 +1978,25 @@
   "errors": {
     "activationFailed": "激活失败",
     "affectedChildClones": "。受影响的子克隆：{{clones}}。请先删除或提升子克隆。",
+    "agent": {
+      "createGuard": "无法在代理模式下创建仓库 \"{{name}}\"。\n\nAI 代理仅在分叉模式下运行。创建主仓库已被阻止，\n因为代理之后无法对其进行操作。\n\n请使用现有仓库并进行分叉：\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\n要覆盖此限制：设置 REDIACC_ALLOW_GRAND_REPO=*",
+      "forkBlocked": "命令 \"{{command}}\" 在 fork 仓库上不可用。\n\nfork 仓库是临时环境。此操作仅适用于 grand 仓库。",
+      "grandGuard": "无法在代理模式下修改 grand 仓库 \"{{name}}\"。\n\nAI 代理只能在 fork 仓库上操作。\n请先创建 fork：\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\n然后在 fork 上操作。\n\n要覆盖此限制：设置 REDIACC_ALLOW_GRAND_REPO={{name}}",
+      "machineGuard": "无法在代理模式下直接访问机器 \"{{machine}}\"。\n\nAI 代理只能连接到仓库上下文。\n请使用：\n  rdc term {{machine}} <repository> -c \"<command>\"\n\n要覆盖此限制：设置 REDIACC_ALLOW_GRAND_REPO=*",
+      "mcpGrandGuard": "无法在仅 fork 模式下修改 grand 仓库 \"{{name}}\"。\n\n请使用 repo_fork 先创建 fork，然后在 fork 上操作。\n要允许访问 grand 仓库，请使用 --allow-grand 重新启动 MCP 服务器",
+      "mcpMachineGuard": "无法在仅 fork 模式下直接访问机器。\n\n请指定一个仓库以连接到仓库上下文。\n要允许直接访问机器，请使用 --allow-grand 重新启动 MCP 服务器"
+    },
     "authFailed": "身份验证失败",
     "authRequired": "需要身份验证。运行：rdc auth login",
     "bridgeRequired": "需要网桥名称。使用 --bridge 或设置上下文。",
     "cannotDeleteGrandRepo": "无法删除主仓库：{{reason}}",
     "cannotPromote": "无法提升：{{reason}}",
     "clusterNotFound": "Ceph 集群 \"{{name}}\" 未找到",
+    "config": {
+      "invalidEmail": "无效的电子邮件地址: \"{{value}}\"。",
+      "machineNotFound": "机器 \"{{name}}\" 在配置中未找到。可用: {{available}}。",
+      "storageNotFound": "存储 \"{{name}}\" 在配置中未找到。可用: {{available}}。"
+    },
     "contextNotFound": "上下文 \"{{name}}\" 未找到",
     "failedCreateQueueItem": "无法创建队列项",
     "invalidAction": "无效的操作 \"{{action}}\"。使用 \"{{valid}}\"。",
@@ -1650,15 +2033,25 @@
     },
     "regionRequired": "需要区域名称。使用 --region 或设置上下文。",
     "registrationFailed": "注册失败",
-    "repositoryNotFound": "仓库 \"{{name}}:{{tag}}\" 未找到",
+    "repositoryNotFound": "仓库 \"{{name}}\" 未找到",
     "repositoryRequired": "需要仓库名称。使用 --repository <name>。",
     "resourceNotFound": "{{resource}} 未找到",
-    "sshKeyNotFound": "SSH 密钥未找到：{{path}}",
-    "sync": {
-      "localPathNotFound": "本地路径不存在：{{path}}",
+    "ssh": {
       "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
       "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥"
+    },
+    "sshKeyNotFound": "SSH 密钥未找到：{{path}}",
+    "subscription": {
+      "notLoggedIn": "未登录。请先运行 `rdc subscription login`。"
+    },
+    "sync": {
+      "absolutePathBlocked": "--remote 路径必须是相对路径，不能是绝对路径。请使用相对于仓库根目录的路径。",
+      "localPathNotFound": "本地路径不存在：{{path}}",
+      "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
+      "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
+      "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
+      "pathTraversalBlocked": "--remote 路径不得包含 \"..\" 路径遍历。请使用仓库内的路径。"
     },
     "teamRequired": "需要团队名称。使用 --team 或设置上下文。",
     "term": {
@@ -1667,6 +2060,7 @@
       "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
       "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
+      "repoContextRequired": "命令需要仓库上下文。\n\n检测到 \"{{detected}}\"，它需要 DOCKER_HOST 和仓库环境变量。\n这些仅在指定仓库时可用。\n\n不要使用：\n  rdc term {{machine}} -c \"{{command}}\"\n\n请使用：\n  rdc term {{machine}} <repository> -c \"{{command}}\"",
       "sshCode1": "通用错误 - 检查命令语法或远程权限",
       "sshCode126": "权限被拒绝 - 无法在远程执行命令",
       "sshCode127": "在远程机器上找不到命令",
@@ -1688,16 +2082,66 @@
       "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
       "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
-      "notFound": "未找到 VS Code。\n\n请从以下地址安装：https://code.visualstudio.com/\n或设置 REDIACC_VSCODE_PATH 环境变量。"
+      "notFound": "未找到 VS Code。\n\n请从以下地址安装：https://code.visualstudio.com/\n或设置 REDIACC_VSCODE_PATH 环境变量。",
+      "repoNotDeployed": "仓库 \"{{repository}}\" 未部署在 {{machine}} 上。\n\n请先部署：\n  rdc repo up {{repository}} -m <机器名>"
+    }
+  },
+  "help": {
+    "cli": {
+      "machineQuery": "显示机器状态",
+      "repoUp": "部署仓库服务",
+      "syncUpload": "上传文件到仓库",
+      "termRepo": "SSH 连接到仓库"
     },
-    "subscription": {
-      "notLoggedIn": "未登录。请先运行 `rdc subscription login`。",
-      "noMachineId": "无法确定机器ID。请确保renet已安装或/etc/machine-id存在。",
-      "writeFailed": "写入许可证文件失败。请使用sudo运行或确保 {{path}} 可写。"
+    "config": {
+      "addMachine": "向配置添加机器",
+      "init": "使用 SSH 密钥创建命名配置",
+      "setMachine": "设置默认机器",
+      "setupMachine": "在远程机器上运行安装"
+    },
+    "examples": "示例:",
+    "machine": {
+      "containers": "列出运行中的容器",
+      "health": "CI/CD 健康检查",
+      "query": "显示完整机器状态"
+    },
+    "repo": {
+      "create": "创建加密仓库",
+      "down": "停止服务",
+      "fork": "创建 CoW 测试分支",
+      "listBackups": "列出存储上的备份",
+      "pull": "从存储拉取仓库备份",
+      "push": "推送仓库备份到存储",
+      "sync": {
+        "pullAll": "批量从存储拉取所有仓库",
+        "pushAll": "批量推送所有仓库到存储"
+      },
+      "up": "自动挂载部署"
+    },
+    "store": {
+      "add": "添加 S3 存储后端",
+      "pull": "从存储拉取配置",
+      "push": "推送配置到所有存储"
+    },
+    "sync": {
+      "download": "下载仓库文件到本地",
+      "status": "显示同步状态",
+      "upload": "上传本地文件到仓库"
+    },
+    "term": {
+      "command": "无交互式 shell 执行命令",
+      "machine": "SSH 连接到机器",
+      "repo": "SSH 连接到仓库（自动设置 DOCKER_HOST）"
+    },
+    "useHelpAll": "使用 --help-all 查看详细说明",
+    "vscode": {
+      "machine": "在 VS Code 中打开机器",
+      "repo": "在 VS Code 中打开仓库"
     }
   },
   "options": {
     "activationCode": "来自电子邮件的激活码",
+    "apiToken": "API令牌 (rdt_...)",
     "apiUrl": "API 网址",
     "bridge": "网桥名称",
     "cleanupAll": "移除所有 rediacc SSH 配置",
@@ -1711,14 +2155,15 @@
     "containerAction": "容器操作：terminal、logs、stats、exec",
     "datastore": "机器上的数据存储路径",
     "debug": "启用调试输出（本地模式）",
-    "dryRun": "显示将传输的内容而不实际同步",
+    "dryRun": "显示将执行的操作但不进行实际更改",
+    "graceDays": "最近归档仓库的宽限期天数（默认：7）",
     "email": "电子邮件地址",
     "endpoint": "API 端点 URL",
     "excludePatterns": "从同步中排除的模式",
-    "experimental": "启用实验性云命令",
     "expires": "过期时间（小时数，1-720）",
     "external": "强制在外部终端窗口中启动",
     "extraMachine": "用于多机操作的额外机器 (名称:IP:用户)",
+    "fields": "要包含在输出中的字段列表（逗号分隔）",
     "filterStatus": "按状态过滤",
     "folder": "远程文件夹路径以打开",
     "follow": "跟踪日志输出",
@@ -1768,6 +2213,13 @@
     "protocolSystem": "系统范围内注册（需要管理员权限）",
     "protocolSystemUnregister": "注销系统范围的注册（需要管理员权限）",
     "protocolToken": "身份验证令牌",
+    "queryBlockDevices": "仅包含块设备",
+    "queryContainers": "仅包含容器",
+    "queryNetwork": "仅包含网络接口",
+    "queryRepositories": "仅包含仓库",
+    "queryServices": "仅包含服务",
+    "querySystem": "仅包含系统信息",
+    "quiet": "抑制信息性输出",
     "rawVault": "原始保险箱 JSON（用于脚本/CI）",
     "region": "区域名称",
     "remotePath": "仓库内的远程子目录路径",
@@ -1775,11 +2227,13 @@
     "repository": "仓库名称（连接到仓库环境）",
     "repositoryShorthand": "仓库名称（--repository 的简写）",
     "repositoryTag": "仓库标签",
+    "resetHome": "重置每个仓库的主目录覆盖层以全新开始",
     "saveAs": "将凭证保存到命名上下文",
     "saveKnownHosts": "测试成功后将 known_hosts 保存到机器保险箱",
     "searchInField": "在 {{field}} 中搜索",
     "searchQueue": "在任务 ID、团队、机器、网桥中搜索",
     "searchRepos": "按名称过滤仓库",
+    "serverUrl": "账户服务器URL",
     "sessionName": "会话名称",
     "skipEnvSetup": "跳过远程环境设置",
     "skipRouterRestart": "二进制更新后跳过重启路由服务器",
@@ -1808,9 +2262,7 @@
     "verifyChecksum": "同步后使用校验和验证文件",
     "watch": "监视更改",
     "watchUpdates": "监视更新",
-    "yes": "跳过确认提示",
-    "apiToken": "API令牌 (rdt_...)",
-    "serverUrl": "账户服务器URL"
+    "yes": "跳过确认提示"
   },
   "prompts": {
     "apiUrl": "API URL：",
@@ -1852,5 +2304,12 @@
   },
   "table": {
     "noData": "没有要显示的数据"
+  },
+  "services": {
+    "prune": {
+      "unreadableConfigs": "无法读取 {{count}} 个配置文件: {{names}} (已加密或已损坏)",
+      "refusingPrune": "拒绝清理 — 这些配置可能包含受保护的 GUID。使用 --force 强制执行。",
+      "noOrphaned": "未找到孤立的条目"
+    }
   }
 }

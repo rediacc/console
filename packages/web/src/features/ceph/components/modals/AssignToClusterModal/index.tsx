@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Flex, Select, Table, Tag, Typography } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useGetCephClusters,
@@ -13,7 +14,6 @@ import type { Machine } from '@/types';
 import { ModalSize } from '@/types/modal';
 import { showMessage } from '@/utils/messages';
 import { CloudServerOutlined } from '@/utils/optimizedIcons';
-import type { ColumnsType } from 'antd/es/table';
 
 interface AssignToClusterModalProps {
   open: boolean;

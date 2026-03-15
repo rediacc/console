@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: ar
-sourceHash: 294f92dc32f10c86
+sourceHash: "5c191d7b8b481b47"
 ---
 
 # الخدمات
@@ -17,7 +17,7 @@ sourceHash: 294f92dc32f10c86
 
 ## ملف Rediaccfile
 
-**Rediaccfile** هو سكريبت Bash يحدد كيفية تحضير خدماتك وتشغيلها وإيقافها. يجب أن يُسمّى `Rediaccfile` أو `rediaccfile` (غير حساس لحالة الأحرف) ويُوضع داخل نظام ملفات المستودع المحمّل.
+**Rediaccfile** هو سكريبت Bash يحدد كيفية تشغيل خدماتك وإيقافها. يجب أن يُسمّى `Rediaccfile` أو `rediaccfile` (غير حساس لحالة الأحرف) ويُوضع داخل نظام ملفات المستودع المحمّل.
 
 يتم اكتشاف ملفات Rediaccfile في موقعين:
 1. **جذر** مسار تحميل المستودع
@@ -27,15 +27,14 @@ sourceHash: 294f92dc32f10c86
 
 ### دوال دورة الحياة
 
-يحتوي Rediaccfile على ما يصل إلى ثلاث دوال:
+يحتوي Rediaccfile على ما يصل إلى دالتين:
 
 | الدالة | وقت التشغيل | الغرض | سلوك الخطأ |
 |--------|------------|-------|------------|
-| `prep()` | قبل `up()` | تثبيت المتطلبات، سحب الصور، تشغيل عمليات الترحيل | **إيقاف فوري** -- إذا فشلت أي `prep()`، تتوقف العملية بأكملها فوراً |
-| `up()` | بعد اكتمال جميع `prep()` | تشغيل الخدمات (مثل `docker compose up -d`) | فشل الجذر **حرج** (يوقف كل شيء). فشل المجلدات الفرعية **غير حرج** (يُسجّل ويستمر) |
-| `down()` | عند الإيقاف | إيقاف الخدمات (مثل `docker compose down`) | **أفضل جهد** -- يتم تسجيل الأخطاء لكن يتم تنفيذ جميع ملفات Rediaccfile دائماً |
+| `up()` | عند التشغيل | تشغيل الخدمات (مثل `renet compose -- up -d`) | فشل الجذر **حرج** (يوقف كل شيء). فشل المجلدات الفرعية **غير حرج** (يُسجّل ويستمر) |
+| `down()` | عند الإيقاف | إيقاف الخدمات (مثل `renet compose -- down`) | **أفضل جهد** -- يتم تسجيل الأخطاء لكن يتم تنفيذ جميع ملفات Rediaccfile دائماً |
 
-جميع الدوال الثلاث اختيارية. إذا لم تُعرّف دالة في Rediaccfile، يتم تخطيها بصمت.
+كلتا الدالتين اختيارية. إذا لم تُعرّف دالة في Rediaccfile، يتم تخطيها بصمت.
 
 ### ترتيب التنفيذ
 
@@ -65,11 +64,6 @@ sourceHash: 294f92dc32f10c86
 ```bash
 #!/bin/bash
 
-prep() {
-    echo "Pulling latest images..."
-    renet compose -- pull
-}
-
 up() {
     echo "Starting services..."
     renet compose -- up -d
@@ -81,7 +75,7 @@ down() {
 }
 ```
 
-> يعمل `docker compose` أيضاً لأن `DOCKER_HOST` يُعيّن تلقائياً، لكن `renet compose` مفضّل لأنه يحقن أيضاً تسميات `rediacc.*` اللازمة لاكتشاف مسارات الوكيل العكسي. راجع [الشبكات](/ar/docs/networking) للتفاصيل.
+> **هام:** استخدم دائماً `renet compose --` بدلاً من `docker compose`. يفرض غلاف `renet compose` شبكة المضيف، وقدرات نقاط التفتيش/الاستعادة CRIU، وتخصيص عناوين IP، وتسميات اكتشاف الخدمات المطلوبة من renet-proxy. يتم رفض الاستخدام المباشر لـ `docker compose` بواسطة التحقق من صحة Rediaccfile. راجع [الشبكات](/ar/docs/networking) للتفاصيل.
 
 ### تخطيط متعدد الخدمات
 
@@ -155,13 +149,12 @@ down() {
 
 ### استخدام عناوين IP للخدمات في Docker Compose
 
-بما أن كل مستودع يشغّل عملية Docker معزولة، تستخدم الخدمات `network_mode: host` وترتبط بعناوين IP الحلقية المخصصة لها:
+بما أن كل مستودع يشغّل عملية Docker معزولة، يقوم `renet compose` تلقائياً بتهيئة `network_mode: host` لجميع الخدمات. قم بربط الخدمات بعناوين IP الحلقية المخصصة لها:
 
 ```yaml
 services:
   postgres:
     image: postgres:16
-    network_mode: host
     environment:
       PGDATA: /var/lib/postgresql/data
       POSTGRES_PASSWORD: secret
@@ -169,11 +162,12 @@ services:
 
   api:
     image: my-api:latest
-    network_mode: host
     environment:
       DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
       LISTEN_ADDR: ${API_IP}:8080
 ```
+
+> **ملاحظة:** لا تضف `network_mode: host` يدوياً — يقوم `renet compose` بحقنه تلقائياً. لا تستخدم `restart: always` أو `restart: unless-stopped` — فهذه تتسبب في قيام Docker بالتشغيل التلقائي للحاويات قبل أن يتمكن CRIU من تنفيذ استعادة نقطة التفتيش. استخدم `restart: on-failure` إذا لزم الأمر، أو احذفه (Rediaccfile `up()`/`down()` يدير دورة الحياة).
 
 ## تشغيل الخدمات
 
@@ -186,15 +180,13 @@ rdc repo up my-app -m server-1 --mount
 | الخيار | الوصف |
 |--------|-------|
 | `--mount` | تحميل المستودع أولاً إن لم يكن محمّلاً بالفعل |
-| `--prep-only` | تشغيل دوال `prep()` فقط، وتخطي `up()` |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 تسلسل التنفيذ هو:
 1. تحميل المستودع المشفر بـ LUKS (إذا تم تحديد `--mount`)
 2. تشغيل عملية Docker المعزولة
 3. إنشاء `.rediacc.json` تلقائياً من ملفات compose
-4. تشغيل `prep()` في جميع ملفات Rediaccfile (بترتيب A-Z، إيقاف فوري عند الفشل)
-5. تشغيل `up()` في جميع ملفات Rediaccfile (بترتيب A-Z)
+4. تشغيل `up()` في جميع ملفات Rediaccfile (بترتيب A-Z)
 
 ## إيقاف الخدمات
 
@@ -217,7 +209,7 @@ rdc repo down my-app -m server-1
 شغّل أو أوقف جميع المستودعات على جهاز دفعة واحدة:
 
 ```bash
-rdc repo up-all -m server-1
+rdc repo up -m server-1
 ```
 
 | الخيار | الوصف |
@@ -256,7 +248,7 @@ rdc repo autostart enable my-app -m server-1
 ### تفعيل الكل
 
 ```bash
-rdc repo autostart enable-all -m server-1
+rdc repo autostart enable -m server-1
 ```
 
 ### تعطيل
@@ -280,10 +272,10 @@ rdc repo autostart list -m server-1
 ### 1. الإعداد
 
 ```bash
-curl -fsSL https://get.rediacc.com | sh
+curl -fsSL https://www.rediacc.com/install.sh | bash
 rdc config init production --ssh-key ~/.ssh/id_ed25519
-rdc config add-machine prod-1 --ip 203.0.113.50 --user deploy
-rdc config setup-machine prod-1
+rdc config machine add prod-1 --ip 203.0.113.50 --user deploy
+rdc config machine setup prod-1
 rdc repo create webapp -m prod-1 --size 10G
 ```
 
@@ -303,8 +295,6 @@ rdc repo mount webapp -m prod-1
 services:
   postgres:
     image: postgres:16
-    network_mode: host
-    restart: unless-stopped
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
@@ -315,14 +305,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    network_mode: host
-    restart: unless-stopped
     command: redis-server --bind ${REDIS_IP} --port 6379
 
   api:
     image: myregistry/api:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
       REDIS_URL: redis://${REDIS_IP}:6379
@@ -334,17 +320,13 @@ services:
 ```bash
 #!/bin/bash
 
-prep() {
-    mkdir -p data/postgres
-    renet compose -- pull
-}
-
 up() {
+    mkdir -p data/postgres
     renet compose -- up -d
 
     echo "Waiting for PostgreSQL..."
     for i in $(seq 1 30); do
-        if docker compose exec postgres pg_isready -q 2>/dev/null; then
+        if renet compose -- exec postgres pg_isready -q 2>/dev/null; then
             echo "PostgreSQL is ready."
             return 0
         fi

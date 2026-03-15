@@ -1,0 +1,91 @@
+---
+import type { Language } from '../../i18n/types';
+import { createTranslator } from '../../i18n/utils';
+import { TEAM_MEMBERS } from '../../config/team-videos';
+import TeamVideoPlayer from '../TeamVideoPlayer';
+
+interface Props {
+  member: string;
+  videoKey: string;
+  lang: Language;
+}
+
+const { member, videoKey, lang } = Astro.props;
+const { t } = createTranslator(lang);
+const memberData = TEAM_MEMBERS[member];
+---
+
+<section class="sp-team-story" id="story">
+  <div class="sp-team-story-container">
+    <div class="sp-team-story-photo">
+      <img
+        src={memberData?.photos.working ?? `/media/${member}/photos/working.jpg`}
+        alt={memberData?.name ?? ''}
+        class="sp-team-story-img"
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+    <div class="sp-team-story-content">
+      <h2 class="sp-team-story-headline">{t(`team.${member}.story.headline`)}</h2>
+      <p class="sp-team-story-description">{t(`team.${member}.story.description`)}</p>
+      <TeamVideoPlayer
+        client:visible
+        member={member}
+        videoKey={videoKey}
+        lang={lang}
+        size="full"
+      />
+    </div>
+  </div>
+</section>
+
+<style>
+  .sp-team-story {
+    padding: 80px 0;
+    background: var(--sp-bg-dark);
+  }
+
+  .sp-team-story-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 48px;
+    align-items: start;
+  }
+
+  .sp-team-story-img {
+    width: 100%;
+    border-radius: 12px;
+    object-fit: cover;
+    aspect-ratio: 1 / 1;
+  }
+
+  .sp-team-story-headline {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--heading-color, #fff);
+  }
+
+  .sp-team-story-description {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text-muted, #a0a0a0);
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 768px) {
+    .sp-team-story-container {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    .sp-team-story-img {
+      max-width: 200px;
+      margin: 0 auto;
+    }
+  }
+</style>

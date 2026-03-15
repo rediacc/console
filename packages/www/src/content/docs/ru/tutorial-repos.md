@@ -1,61 +1,67 @@
 ---
 title: "Жизненный цикл репозитория"
-description: "Смотрите и повторяйте: создание зашифрованного репозитория, развёртывание контейнерного приложения, инспекция контейнеров и очистка."
+description: "Создание зашифрованного репозитория, развёртывание контейнерного приложения, инспекция контейнеров и очистка."
 category: "Tutorials"
 order: 3
 language: ru
-sourceHash: "b692ef9f49ac4aa0"
+sourceHash: "0c4edddefa30df1c"
 ---
 
-# Руководство: Жизненный цикл репозитория
+# Как развёртывать и управлять репозиториями с Rediacc
 
-This tutorial walks through the full repository lifecycle: creating an encrypted repository, deploying a containerized application, inspecting running containers, stopping services, and cleaning up.
+Репозитории — это основная единица развёртывания в Rediacc. Каждый из них представляет собой изолированную зашифрованную среду с собственным Docker daemon и выделенным хранилищем. В этом руководстве вы создадите зашифрованный репозиторий, развернёте контейнерное приложение, проверите работающие контейнеры и выполните очистку. По завершении вы пройдёте полный цикл развёртывания.
 
 ## Предварительные требования
 
-- The `rdc` CLI installed with a config initialized
-- A provisioned machine (run `rdc config setup-machine` first — see [Machine Setup](/ru/docs/setup))
-- A simple application with a `Rediaccfile` and `docker-compose.yml`
+- Установленный CLI `rdc` с инициализированной конфигурацией
+- Подготовленная машина (см. [Руководство: Настройка машины](/ru/docs/tutorial-setup))
+- Простое приложение с `Rediaccfile` и `docker-compose.yml`
 
 ## Интерактивная запись
 
-![Tutorial: Repository lifecycle](/assets/tutorials/repos-tutorial.cast)
-
-## Что вы увидите
-
-The recording above walks through each step below. Use the playback bar to navigate between commands.
+![Руководство: Жизненный цикл репозитория](/assets/tutorials/repos-tutorial.cast)
 
 ### Шаг 1: Создание зашифрованного репозитория
+
+Каждый репозиторий получает собственный том хранения с шифрованием LUKS. Укажите машину и размер хранилища.
 
 ```bash
 rdc repo create test-app -m server-1 --size 2G
 ```
 
-Creates a 2 GB LUKS-encrypted repository on the machine. The repository is automatically mounted and ready for file uploads.
+Rediacc создаёт зашифрованный том размером 2 ГБ, форматирует его и автоматически монтирует. Репозиторий готов для загрузки файлов.
 
 ### Шаг 2: Список репозиториев
+
+Убедитесь, что новый репозиторий доступен.
 
 ```bash
 rdc repo list -m server-1
 ```
 
-Shows all repositories on the machine with their size, mount status, and encryption state.
+Показывает все репозитории на машине с их размером, состоянием монтирования и состоянием шифрования.
 
-### Шаг 3: Загрузка файлов приложения
+### Шаг 3: Проверка пути монтирования
 
-Upload your `Rediaccfile` and `docker-compose.yml` to the repository mount. The `rdc sync upload` command handles this via rsync:
+Перед развёртыванием убедитесь, что хранилище репозитория смонтировано и доступно.
 
 ```bash
-rdc sync upload -m server-1 -r test-app --local ./my-app
+rdc term server-1 -c "ls -la /mnt/rediacc/mounts/test-app/"
 ```
 
+Каталог монтирования — это место, где находятся файлы приложения: `Rediaccfile`, `docker-compose.yml` и тома данных.
+
 ### Шаг 4: Запуск сервисов
+
+Разверните приложение, смонтировав репозиторий и запустив его Docker-сервисы.
 
 ```bash
 rdc repo up test-app -m server-1 --mount
 ```
 
-This mounts the repository (if not already mounted), starts an isolated Docker daemon, pulls images via `prep()`, and starts services via `up()`.
+Это монтирует репозиторий (если он ещё не смонтирован), запускает изолированный Docker daemon и запускает сервисы через `up()`.
+
+> **Примечание:** Первое развёртывание занимает больше времени из-за загрузки Docker-образов. Последующие запуски используют кэшированные образы.
 
 ### Шаг 5: Просмотр запущенных контейнеров
 
@@ -65,26 +71,45 @@ rdc machine containers server-1
 
 Показывает все запущенные контейнеры во всех репозиториях на машине, включая использование ЦП и памяти.
 
-### Шаг 6: Доступ к репозиторию через терминал
+### Шаг 6: Доступ к терминалу репозитория
+
+Для выполнения команд в изолированной Docker-среде репозитория:
 
 ```bash
 rdc term server-1 test-app -c "docker ps"
 ```
 
-Opens an SSH session with `DOCKER_HOST` set to the repository's isolated Docker daemon. Any Docker command runs against that repo's containers.
+Терминальная сессия устанавливает `DOCKER_HOST` на изолированный Docker-сокет репозитория. Любая команда Docker выполняется только для контейнеров этого репозитория.
 
 ### Шаг 7: Остановка и очистка
 
+Когда закончите, остановите сервисы, закройте зашифрованный том и при необходимости удалите репозиторий.
+
 ```bash
-rdc repo down test-app -m server-1      # Stop services
-rdc repo unmount test-app -m server-1   # Close encrypted volume
-rdc repo delete test-app -m server-1    # Delete repository permanently
+rdc repo down test-app -m server-1      # Остановить сервисы
+rdc repo unmount test-app -m server-1   # Закрыть зашифрованный том
+rdc repo delete test-app -m server-1    # Удалить репозиторий навсегда
 ```
 
-`down` stops containers and the Docker daemon. `unmount` closes the LUKS volume. `delete` permanently removes the repository and its encrypted storage.
+`down` останавливает контейнеры и Docker daemon. `unmount` закрывает том LUKS. `delete` безвозвратно удаляет репозиторий и его зашифрованное хранилище.
+
+> **Предупреждение:** `repo delete` необратим. Все данные в репозитории будут уничтожены. При необходимости сначала создайте резервную копию.
+
+## Устранение неполадок
+
+**«Недостаточно места на диске» при создании репозитория**
+Зашифрованному тому требуется непрерывное свободное пространство на хосте. Проверьте доступное место с помощью `df -h` на сервере. Рассмотрите меньшее значение `--size` или освободите дисковое пространство.
+
+**Тайм-аут загрузки Docker-образа во время `repo up`**
+Большие образы могут превышать время ожидания на медленных соединениях. Повторите попытку с `rdc repo up` — загрузка возобновится с того места, где остановилась. Для изолированных сред предварительно загрузите образы в Docker daemon репозитория.
+
+**«Ошибка монтирования» или «Ошибка открытия LUKS»**
+Парольная фраза LUKS выводится из конфигурации. Убедитесь, что вы используете ту же конфигурацию, которой был создан репозиторий. Если том уже смонтирован другим процессом, сначала размонтируйте его.
 
 ## Следующие шаги
 
-- [Services](/ru/docs/services) — Rediaccfile reference, service networking, autostart, and multi-service layouts
-- [Tutorial: Monitoring](/ru/docs/tutorial-monitoring) — health checks, container inspection, and diagnostics
-- [Tools](/ru/docs/tools) — terminal, file sync, and VS Code integration
+Вы создали зашифрованный репозиторий, развернули приложение, проверили контейнеры и выполнили очистку. Для мониторинга ваших развёртываний:
+
+- [Сервисы](/ru/docs/services) — справочник Rediaccfile, сети сервисов, автозапуск и многосервисные конфигурации
+- [Руководство: Мониторинг и диагностика](/ru/docs/tutorial-monitoring) — проверки работоспособности, инспекция контейнеров и диагностика
+- [Инструменты](/ru/docs/tools) — терминал, синхронизация файлов и интеграция с VS Code

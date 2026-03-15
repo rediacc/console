@@ -214,7 +214,7 @@ Based on industry research across 100+ sources and 65,000+ developer surveys:
 
 * [**Time-Travel Recovery**](/en/docs/time-travel-recovery) - Point-in-time infrastructure restoration
 * [**Risk-Free Upgrades**](/en/docs/risk-free-upgrades) - Test OS migrations without risk
-* [**Disaster Recovery**](/en/solutions/disaster-recovery) - Verified backups that actually work
+* [**Disaster Recovery**](/en/solutions/backup-verification) - Verified backups that actually work
 
 ---
 

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 4
 language: de
-sourceHash: 04fe287348176b64
+sourceHash: "06b8912e9b65b720"
 ---
 
 # Repositories
@@ -78,10 +78,10 @@ rdc repo expand my-app -m server-1 --size 5G      # 5G zur aktuellen Größe hin
 Eine Kopie eines vorhandenen Repositories in seinem aktuellen Zustand erstellen:
 
 ```bash
-rdc repo fork my-app -m server-1 --tag my-app-staging
+rdc repo fork my-app staging -m server-1
 ```
 
-Dies erstellt eine neue verschlüsselte Kopie mit eigener GUID und Netzwerk-ID. Der Fork teilt sich das gleiche LUKS-Credential wie das übergeordnete Repository.
+Forks verwenden das Name:Tag-Modell: Der resultierende Fork heisst `my-app:staging`. Dies erstellt eine neue verschlüsselte Kopie mit eigener GUID und Netzwerk-ID, wobei der Name des übergeordneten Repositories geteilt wird. Der Fork teilt sich das gleiche LUKS-Credential wie das übergeordnete Repository.
 
 ## Validieren
 
@@ -104,16 +104,14 @@ Der Befehl erkennt automatisch Docker-Container-Datenverzeichnisse (beschreibbar
 | Option | Beschreibung |
 |--------|-------------|
 | `--uid <uid>` | Eine benutzerdefinierte UID anstelle von 7111 setzen |
-| `--force` | Docker-Volume-Erkennung überspringen und alles chownen |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 Um die Eigentümerschaft aller Dateien zu erzwingen, einschließlich Container-Daten:
 
 ```bash
-rdc repo ownership my-app -m server-1 --force
+rdc repo ownership my-app -m server-1
 ```
 
-> **Warnung:** Die Verwendung von `--force` bei laufenden Containern kann diese beschädigen. Stoppen Sie Dienste vorher mit `rdc repo down`, falls nötig.
 
 Siehe den [Migrationsleitfaden](/de/docs/migration) für eine vollständige Anleitung, wann und wie die Eigentümerschaft bei der Projektmigration verwendet wird.
 

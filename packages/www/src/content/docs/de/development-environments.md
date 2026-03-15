@@ -7,7 +7,7 @@ description: >-
 category: Use Cases
 order: 10
 language: de
-sourceHash: 6128ad0f1099ba85
+sourceHash: c13b017afc2c8371
 ---
 
 > **Vergängliche Umgebungen. Produktionsparität. Keine DevOps-Tickets.**
@@ -218,7 +218,7 @@ Basierend auf Branchenforschung aus über 100 Quellen und über 65.000 Entwickle
 
 * [**Time-Travel Recovery**](/de/docs/time-travel-recovery) – Wiederherstellung der Infrastruktur zu einem bestimmten Zeitpunkt
 * [**Risikofreie Upgrades**](/de/docs/risk-free-upgrades) – Testen Sie Betriebssystemmigrationen ohne Risiko
-* [**Disaster Recovery**](/de/solutions/disaster-recovery) – Verifizierte Backups, die tatsächlich funktionieren
+* [**Disaster Recovery**](/de/solutions/backup-verification) – Verifizierte Backups, die tatsächlich funktionieren
 
 ---
 

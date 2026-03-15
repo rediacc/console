@@ -5,25 +5,6 @@
  * Used by account-server, middleware, renet, and CLI.
  */
 
-// Types
-export type {
-  ApiToken,
-  ApiTokenScope,
-  BillingPeriod,
-  FeatureFlags,
-  MachineLicense,
-  PlanMetadata,
-  PlanPricing,
-  SignedMachineLicense,
-  SubscriptionData,
-  SubscriptionStatus,
-  SubscriptionValidationResult,
-  OrganizationSubscription,
-  PlanCode,
-  ResourceLimits,
-  SignedSubscriptionBlob,
-} from './types';
-
 // Constants
 export {
   comparePlans,
@@ -32,40 +13,22 @@ export {
   getMaxMachines,
   getPaidPlans,
   getPlanFeatures,
+  getPlanLimit,
+  getPlanLimits,
   getPlanMetadata,
   getPlanPricing,
-  getPlanResources,
-  getResourceLimit,
   getStripeLookupKey,
   hasFeature,
   isValidPlanCode,
   PLAN_FEATURES,
+  PLAN_LIMITS,
   PLAN_MAX_MACHINES,
   PLAN_METADATA,
   PLAN_ORDER,
   PLAN_PRICING,
-  PLAN_RESOURCES,
   PROGRESSIVE_LIMIT_KEYS,
   SUBSCRIPTION_CONFIG,
 } from './constants';
-
-// Validation
-export {
-  calculateGracePeriodEnd,
-  decodeSubscriptionPayload,
-  encodeSubscriptionPayload,
-  getEffectivePlanCode,
-  isGracePeriodExpired,
-  isInGracePeriod,
-  isSubscriptionActive,
-  isSubscriptionExpired,
-  validateSubscription,
-  validateSubscriptionData,
-  validateOrganizationSubscription,
-  validateResourceLimits,
-  validateSignedBlob,
-} from './validation';
-
 // Crypto (Ed25519 signature verification)
 export {
   clearPublicKeys,
@@ -79,3 +42,36 @@ export {
   verifyAndDecodeSubscription,
   verifySignature,
 } from './crypto';
+// Types
+export type {
+  ApiToken,
+  ApiTokenScope,
+  BillingPeriod,
+  FeatureFlags,
+  OrganizationSubscription,
+  PlanCode,
+  PlanMetadata,
+  PlanPricing,
+  RepoLicense,
+  RepoLicenseKind,
+  SignedRepoLicense,
+  SignedSubscriptionBlob,
+  SubscriptionData,
+  SubscriptionStatus,
+  SubscriptionValidationResult,
+} from './types';
+// Validation
+export {
+  calculateGracePeriodEnd,
+  decodeSubscriptionPayload,
+  encodeSubscriptionPayload,
+  getEffectivePlanCode,
+  isGracePeriodExpired,
+  isInGracePeriod,
+  isSubscriptionActive,
+  isSubscriptionExpired,
+  validateOrganizationSubscription,
+  validateSignedBlob,
+  validateSubscription,
+  validateSubscriptionData,
+} from './validation';

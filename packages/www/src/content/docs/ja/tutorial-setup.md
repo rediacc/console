@@ -1,78 +1,82 @@
 ---
 title: "マシンセットアップ"
-description: "設定の作成、マシンの追加、接続テスト、診断の実行、インフラストラクチャの設定を一緒に見ていきましょう。"
+description: "構成プロファイルの作成、リモートマシンの登録、SSH接続の検証、インフラストラクチャ設定の構成を行います。"
 category: "Tutorials"
 order: 2
 language: ja
-sourceHash: "743a5b6abe79a1af"
+sourceHash: "04756cddd86e097c"
 ---
 
-# チュートリアル: マシンセットアップ
+# Rediaccでマシンをセットアップする方法
 
-This tutorial walks through the complete setup workflow: creating a config, registering a remote machine, verifying SSH connectivity, running diagnostics, and configuring infrastructure settings.
+すべてのRediaccデプロイは、構成プロファイルと登録済みマシンから始まります。このチュートリアルでは、構成の作成、リモートサーバーの登録、SSH接続の検証、環境診断の実行、インフラストラクチャネットワークの構成を行います。完了すると、マシンはリポジトリのデプロイに対応できる状態になります。
 
 ## 前提条件
 
-- The `rdc` CLI installed
-- A remote server (or local VM) reachable via SSH
-- An SSH private key that can authenticate to the server
+- `rdc` CLIがインストール済み
+- SSH経由でアクセス可能なリモートサーバー（またはローカルVM）
+- サーバーに認証できるSSH秘密鍵
 
 ## インタラクティブ録画
 
-![Tutorial: Machine setup and configuration](/assets/tutorials/setup-tutorial.cast)
+![チュートリアル: マシンセットアップと構成](/assets/tutorials/setup-tutorial.cast)
 
-## 内容の説明
+### ステップ1: 新しい構成を作成
 
-The recording above walks through each step below. Use the playback bar to navigate between commands.
-
-### ステップ1: 新しい設定を作成
+構成プロファイルは、マシン定義、SSH認証情報、インフラストラクチャ設定を保存します。この環境用に1つ作成します。
 
 ```bash
 rdc config init tutorial-demo --ssh-key ~/.ssh/id_ed25519
 ```
 
-Creates a named config file at `~/.config/rediacc/tutorial-demo.json`. Each config stores machine definitions, SSH credentials, and infrastructure settings.
+これにより、`~/.config/rediacc/tutorial-demo.json`に名前付き構成ファイルが作成されます。
 
-### ステップ2: 設定を表示
+### ステップ2: 構成を表示
+
+新しいプロファイルが構成リストに表示されることを確認します。
 
 ```bash
 rdc config list
 ```
 
-Lists all available configs with their adapter type (local or cloud) and machine count.
+利用可能なすべての構成を、アダプタータイプ（ローカルまたはクラウド）とマシン数とともに一覧表示します。
 
 ### ステップ3: マシンを追加
 
-```bash
-rdc config add-machine bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
-```
+IPアドレスとSSHユーザーを指定してマシンを登録します。CLIは`ssh-keyscan`を介してサーバーのホストキーを自動的に取得・保存します。
 
-Registers a machine in the config. The CLI automatically runs `ssh-keyscan` to fetch and store the server's host keys.
+```bash
+rdc config machine add bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
+```
 
 ### ステップ4: マシンを表示
 
+マシンが正しく登録されたことを確認します。
+
 ```bash
-rdc config machines --config tutorial-demo
+rdc config machine list --config tutorial-demo
 ```
 
-Shows all machines in the current config with their connection details.
+現在の構成内のすべてのマシンを接続情報とともに表示します。
 
 ### ステップ5: デフォルトマシンを設定
+
+デフォルトマシンを設定すると、すべてのコマンドで`-m bridge-vm`を繰り返す必要がなくなります。
 
 ```bash
 rdc config set machine bridge-vm --config tutorial-demo
 ```
 
-デフォルトマシンを設定します。これにより、以降のコマンドで`-m bridge-vm`を省略できます。
-
 ### ステップ6: 接続をテスト
+
+何かをデプロイする前に、マシンがSSH経由でアクセス可能であることを確認します。
 
 ```bash
 rdc term bridge-vm -c "hostname"
 rdc term bridge-vm -c "uptime"
 ```
 
-Runs commands on the machine over SSH to verify connectivity is working.
+両方のコマンドはリモートマシンで実行され、すぐに結果を返します。どちらかが失敗した場合は、SSHキーが正しいこととサーバーにアクセスできることを確認してください。
 
 ### ステップ7: 診断を実行
 
@@ -80,27 +84,42 @@ Runs commands on the machine over SSH to verify connectivity is working.
 rdc doctor
 ```
 
-Checks your environment: CLI version, Docker, renet binary, config status, SSH key, and virtualization prerequisites.
+ローカル環境を確認します: CLIバージョン、Docker、renetバイナリ、構成ステータス、SSHキー、仮想化の前提条件。各チェックは**OK**、**Warning**、または**Error**を報告します。
 
-### ステップ8: インフラストラクチャを設定
+### ステップ8: インフラストラクチャを構成
+
+公開サービスの場合、マシンにはネットワーク構成が必要です — 外部IP、ベースドメイン、TLS用の証明書メールアドレス。
 
 ```bash
-rdc config set-infra bridge-vm \
+rdc config infra set bridge-vm \
   --public-ipv4 192.168.111.1 \
   --base-domain test.local \
   --cert-email admin@test.local
 ```
 
-Sets the infrastructure configuration for public-facing services. After setting infra, view the configuration:
+構成を確認します:
 
 ```bash
-rdc config show-infra bridge-vm
+rdc config infra show bridge-vm
 ```
 
-Deploy the generated Traefik proxy config to the server with `rdc config push-infra bridge-vm`.
+生成されたTraefikプロキシ構成を`rdc config infra push bridge-vm`でサーバーにデプロイします。
+
+## トラブルシューティング
+
+**"SSH key not found"または"Permission denied (publickey)"**
+`config init`に渡したキーパスが存在し、サーバーの`authorized_keys`と一致することを確認してください。権限を確認: 秘密鍵ファイルは`600`である必要があります（`chmod 600 ~/.ssh/id_ed25519`）。
+
+**SSHコマンドで"Connection refused"**
+サーバーが実行中でIPが正しいことを確認してください。ポート22が開いているか確認: `nc -zv <ip> 22`。非標準ポートを使用している場合は、マシン追加時に`--port`を渡してください。
+
+**"Host key verification failed"**
+保存されたホストキーがサーバーの現在のキーと一致しません。これはサーバーの再構築やIPの再割り当て後に発生します。`rdc config machine scan-keys <machine>`を実行してキーを更新してください。
 
 ## 次のステップ
 
-- [Machine Setup](/ja/docs/setup) — full reference for all config and setup commands
-- [Quick Start](/ja/docs/quick-start) — deploy a containerized application end-to-end
-- [Tutorial: Repository Lifecycle](/ja/docs/tutorial-repos) — create, deploy, and manage repositories
+構成プロファイルの作成、マシンの登録、接続の検証、インフラストラクチャネットワークの構成が完了しました。アプリケーションをデプロイするには:
+
+- [マシンセットアップ](/ja/docs/setup) — すべての構成およびセットアップコマンドの完全なリファレンス
+- [チュートリアル: リポジトリライフサイクル](/ja/docs/tutorial-repos) — リポジトリの作成、デプロイ、管理
+- [クイックスタート](/ja/docs/quick-start) — コンテナ化されたアプリケーションをエンドツーエンドでデプロイ

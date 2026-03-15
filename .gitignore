@@ -40,6 +40,8 @@ packages/desktop/out/
 # Environment variables
 .env
 .env.local
+secrets.env
+.rdc-dev/
 
 # Logs
 *.log
@@ -50,9 +52,12 @@ Thumbs.db
 
 # Temporary files
 *.tmp
+.claude/scheduled_tasks.lock
 .backend-state
 .provision-state
 .service-state
+.account-state
+.account-logs/
 .vm-info
 
 # Generated SEA config (platform-specific, created during CI build)
@@ -98,6 +103,12 @@ reports/
 
 # CI backend data (SQL Server volumes)
 .ci/docker/ci/mssql/
+.ci/cache/
 
 # Git worktrees
 .worktrees/
+
+# SQLite databases (account E2E artifacts)
+*.db
+*.db-shm
+*.db-wal

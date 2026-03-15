@@ -35,7 +35,22 @@
         "src/components/app/Terminal/DesktopPrompt.tsx",
         "src/components/app/DirectFileBrowser/index.tsx",
         "src/components/app/DirectFileBrowser/DesktopPrompt.tsx",
-        "src/utils/formatters.ts"
+        "src/utils/formatters.ts",
+        "src/services/telemetryService.ts",
+        "src/api/client.ts",
+        "src/components/layout/MainLayout/index.tsx",
+        "src/components/layout/MainLayout/components/NotificationBell/index.tsx",
+        "src/components/app/ThemedToaster/index.tsx",
+        "src/components/common/LanguageSelector/index.tsx",
+        "src/components/common/QueueItemTraceModal/QueueItemTraceModal.tsx",
+        "src/components/common/TemplatePreviewModal/index.tsx",
+        "src/features/audit/pages/AuditPage.tsx",
+        "src/features/auth/components/EndpointSelector/index.tsx",
+        "src/features/organization/components/UserSessionsTab/index.tsx",
+        "src/features/queue/pages/QueuePage.tsx",
+        "src/features/queue/hooks/useQueueExport.ts",
+        "src/i18n/config.ts",
+        "src/store/store.ts"
       ],
       "project": ["src/**/*.{ts,tsx}"],
       "ignore": [
@@ -57,7 +72,9 @@
         "src/preload/index.ts",
         "src/renderer/main.tsx",
         "electron.vite.config.ts",
-        "src/main/protocol.ts"
+        "src/main/protocol.ts",
+        "src/main/updater/autoUpdater.ts",
+        "src/main/services/telemetry.ts"
       ],
       "project": ["src/**/*.ts", "*.ts"]
     },
@@ -65,7 +82,10 @@
       "entry": [
         "tests/**/*.test.ts",
         "tests/**/*.setup.ts",
-        "pages/**/*.ts"
+        "pages/**/*.ts",
+        "src/utils/report/TestReporter.ts",
+        "src/utils/data/TestDataManager.ts",
+        "src/utils/screenshot/ScreenshotManager.ts"
       ],
       "project": ["**/*.ts"]
     },
@@ -75,7 +95,12 @@
         "tests/**/*.test.ts",
         "src/base/*.ts",
         "src/reporters/*.ts",
-        "src/utils/image/index.ts"
+        "src/utils/image/index.ts",
+        "src/utils/bridge/OpsManager.ts",
+        "src/utils/bridge/OpsRustFSManager.ts",
+        "src/utils/ssh/SSHExecutor.ts",
+        "src/utils/RenetResolver.ts",
+        "src/utils/renetPath.ts"
       ],
       "project": ["**/*.ts"]
     },
@@ -103,12 +128,12 @@
     "@aws-sdk/client-s3",
     "@types/*",
     "@opentelemetry/instrumentation-*",
+    "@pyroscope/nodejs",
     "@opentelemetry/context-zone",
     "@opentelemetry/core",
     "@opentelemetry/sdk-node",
     "@opentelemetry/sdk-trace-web",
     "astro",
-    "dayjs",
     "@electron-toolkit/preload",
     "node-pty",
     "ssh2",
@@ -123,7 +148,7 @@
     "astro-seo",
     "glob",
     "react-i18next",
-    "asciinema-player"
+    "tiny-typed-emitter"
   ],
   "ignoreBinaries": ["rimraf", "vite", "wrangler"]
 }

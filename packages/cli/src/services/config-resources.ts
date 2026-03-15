@@ -6,11 +6,12 @@
 
 import { DEFAULTS } from '@rediacc/shared/config';
 import { MIN_NETWORK_ID, NETWORK_ID_INCREMENT } from '@rediacc/shared/queue-vault';
-import { ConfigServiceBase } from './config-base.js';
 import { configFileStorage } from '../adapters/config-file-storage.js';
-import { hasCloudCredentials } from '../types/index.js';
 import type {
-  BackupConfig,
+  ArchivedRepository,
+  BackupStrategyConfig,
+  BackupStrategyDestination,
+  CloudProviderConfig,
   InfraConfig,
   MachineConfig,
   RdcConfig,
@@ -18,6 +19,8 @@ import type {
   SSHConfig,
   StorageConfig,
 } from '../types/index.js';
+import { hasCloudCredentials } from '../types/index.js';
+import { ConfigServiceBase } from './config-base.js';
 
 class ConfigService extends ConfigServiceBase {
   /**
@@ -42,6 +45,9 @@ class ConfigService extends ConfigServiceBase {
     sshPrivateKey?: string;
     sshPublicKey?: string;
     renetPath: string;
+    cfDnsApiToken?: string;
+    cfDnsZoneId?: string;
+    certEmail?: string;
   }> {
     const config = await this.requireSelfHosted();
     const state = await this.getResourceState();
@@ -63,6 +69,9 @@ class ConfigService extends ConfigServiceBase {
       sshPrivateKey: sshContent?.privateKey,
       sshPublicKey: sshContent?.publicKey,
       renetPath: config.renetPath ?? DEFAULTS.CONTEXT.RENET_BINARY,
+      cfDnsApiToken: config.cfDnsApiToken,
+      cfDnsZoneId: config.cfDnsZoneId,
+      certEmail: config.certEmail,
     };
   }
 
@@ -100,10 +109,9 @@ class ConfigService extends ConfigServiceBase {
   async listMachines(): Promise<{ name: string; config: MachineConfig }[]> {
     await this.requireSelfHosted();
     const state = await this.getResourceState();
-    return Object.entries(state.getMachines()).map(([name, config]) => ({
-      name,
-      config,
-    }));
+    return Object.entries(state.getMachines())
+      .map(([name, config]) => ({ name, config }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   async updateMachine(machineName: string, updates: Partial<MachineConfig>): Promise<void> {
@@ -139,6 +147,16 @@ class ConfigService extends ConfigServiceBase {
     await this.update(name, { renetPath });
   }
 
+  async updateConfigFields(
+    updates: Partial<
+      Pick<RdcConfig, 'cfDnsApiToken' | 'cfDnsZoneId' | 'certEmail' | 'acmeCertCache'>
+    >
+  ): Promise<void> {
+    const name = this.getEffectiveConfigName();
+    await this.requireSelfHosted(name);
+    await this.update(name, updates);
+  }
+
   // ============================================================================
   // Storage CRUD
   // ============================================================================
@@ -163,10 +181,9 @@ class ConfigService extends ConfigServiceBase {
   async listStorages(): Promise<{ name: string; config: StorageConfig }[]> {
     await this.requireSelfHosted();
     const state = await this.getResourceState();
-    return Object.entries(state.getStorages()).map(([name, config]) => ({
-      name,
-      config,
-    }));
+    return Object.entries(state.getStorages())
+      .map(([name, config]) => ({ name, config }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   async getStorage(storageName: string): Promise<StorageConfig> {
@@ -192,22 +209,22 @@ class ConfigService extends ConfigServiceBase {
     await state.setRepositories(repos);
   }
 
-  async removeRepository(repoName: string): Promise<void> {
+  async removeRepository(repoRef: string): Promise<void> {
     await this.requireSelfHosted();
+    const key = await this.getRepositoryKey(repoRef);
+    if (!key) throw new Error(`Repository "${repoRef}" not found`);
     const state = await this.getResourceState();
     const repos = state.getRepositories();
-    if (!(repoName in repos)) throw new Error(`Repository "${repoName}" not found`);
-    delete repos[repoName];
+    delete repos[key];
     await state.setRepositories(repos);
   }
 
   async listRepositories(): Promise<{ name: string; config: RepositoryConfig }[]> {
     await this.requireSelfHosted();
     const state = await this.getResourceState();
-    return Object.entries(state.getRepositories()).map(([name, config]) => ({
-      name,
-      config,
-    }));
+    return Object.entries(state.getRepositories())
+      .map(([name, config]) => ({ name, config }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   async getRepositoryGuidMap(): Promise<Record<string, string>> {
@@ -239,32 +256,225 @@ class ConfigService extends ConfigServiceBase {
     return map;
   }
 
-  async getRepository(repoName: string): Promise<RepositoryConfig | undefined> {
+  /**
+   * Resolve a repository reference to its config.
+   * Supports: direct key match, legacy names, and bare names (defaults to :latest).
+   */
+  async getRepository(repoRef: string): Promise<RepositoryConfig | undefined> {
     const config = await this.getCurrent();
     if (!config || hasCloudCredentials(config)) return undefined;
 
     const state = await this.getResourceState();
-    return state.getRepositories()[repoName];
+    const repos = state.getRepositories();
+
+    // 1. Direct match (composite key or legacy key)
+    if (repoRef in repos) return repos[repoRef];
+
+    // 2. If no colon, try name:latest
+    if (!repoRef.includes(':')) {
+      const latestKey = `${repoRef}:latest`;
+      if (latestKey in repos) return repos[latestKey];
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Resolve a repository reference to its actual config dictionary key.
+   * Needed for mutation operations (remove, update networkId, etc.).
+   */
+  async getRepositoryKey(repoRef: string): Promise<string | undefined> {
+    const config = await this.getCurrent();
+    if (!config || hasCloudCredentials(config)) return undefined;
+
+    const state = await this.getResourceState();
+    const repos = state.getRepositories();
+
+    if (repoRef in repos) return repoRef;
+    if (!repoRef.includes(':')) {
+      const latestKey = `${repoRef}:latest`;
+      if (latestKey in repos) return latestKey;
+    }
+    return undefined;
+  }
+
+  /**
+   * List all tags for a given base repository name.
+   */
+  async listRepositoriesByName(
+    baseName: string
+  ): Promise<{ key: string; tag: string; config: RepositoryConfig }[]> {
+    const { parseRepoRef } = await import('../utils/config-schema.js');
+    const repos = await this.listRepositories();
+    return repos
+      .filter((r) => {
+        const { name } = parseRepoRef(r.name);
+        return name === baseName;
+      })
+      .map((r) => {
+        const { tag } = parseRepoRef(r.name);
+        return { key: r.name, tag, config: r.config };
+      });
   }
 
   // ============================================================================
-  // Backup Configuration
+  // Repository Archive (credential preservation on delete)
   // ============================================================================
 
-  async setBackupConfig(config: Partial<BackupConfig>): Promise<void> {
+  async archiveRepository(repoName: string): Promise<void> {
+    await this.requireSelfHosted();
+    const state = await this.getResourceState();
+    const repos = state.getRepositories();
+    if (!(repoName in repos)) throw new Error(`Repository "${repoName}" not found`);
+
+    const archived: ArchivedRepository = {
+      ...repos[repoName],
+      name: repoName,
+      deletedAt: new Date().toISOString(),
+    };
+
+    const deletedRepos = state.getDeletedRepositories();
+    deletedRepos.push(archived);
+    await state.setDeletedRepositories(deletedRepos);
+
+    delete repos[repoName];
+    await state.setRepositories(repos);
+  }
+
+  async restoreArchivedRepository(guid: string, name?: string): Promise<string> {
+    await this.requireSelfHosted();
+    const state = await this.getResourceState();
+    const deletedRepos = state.getDeletedRepositories();
+    const index = deletedRepos.findIndex((r) => r.repositoryGuid === guid);
+    if (index === -1) throw new Error(`Archived repository with GUID "${guid}" not found`);
+
+    const archived = deletedRepos[index];
+    const restoredName = name ?? archived.name;
+
+    const repos = state.getRepositories();
+    if (restoredName in repos) {
+      throw new Error(
+        `Repository "${restoredName}" already exists. Use --name to specify a different name.`
+      );
+    }
+
+    const { name: originalName, deletedAt, ...repoConfig } = archived;
+    void originalName;
+    void deletedAt;
+    repos[restoredName] = repoConfig;
+    await state.setRepositories(repos);
+
+    deletedRepos.splice(index, 1);
+    await state.setDeletedRepositories(deletedRepos);
+    return restoredName;
+  }
+
+  async listArchivedRepositories(): Promise<ArchivedRepository[]> {
+    await this.requireSelfHosted();
+    const state = await this.getResourceState();
+    return state.getDeletedRepositories();
+  }
+
+  async purgeArchivedRepositories(): Promise<number> {
+    await this.requireSelfHosted();
+    const state = await this.getResourceState();
+    const count = state.getDeletedRepositories().length;
+    await state.setDeletedRepositories([]);
+    return count;
+  }
+
+  async purgeExpiredArchives(graceDays: number): Promise<ArchivedRepository[]> {
+    await this.requireSelfHosted();
+    const state = await this.getResourceState();
+    const cutoff = Date.now() - graceDays * 86400000;
+    const all = state.getDeletedRepositories();
+    const expired = all.filter((r) => new Date(r.deletedAt).getTime() < cutoff);
+    if (expired.length > 0) {
+      const remaining = all.filter((r) => new Date(r.deletedAt).getTime() >= cutoff);
+      await state.setDeletedRepositories(remaining);
+    }
+    return expired;
+  }
+
+  // ============================================================================
+  // Backup Strategy
+  // ============================================================================
+
+  async setBackupStrategy(config: Partial<BackupStrategyConfig>): Promise<void> {
     const name = this.getEffectiveConfigName();
     const current = await this.requireSelfHosted(name);
-    const backup: BackupConfig = {
-      defaultDestination: '',
-      ...current.backup,
+    const backupStrategy: BackupStrategyConfig = {
+      destinations: [],
+      ...current.backupStrategy,
       ...config,
     };
-    await this.update(name, { backup });
+    await this.update(name, { backupStrategy });
   }
 
-  async getBackupConfig(): Promise<BackupConfig | undefined> {
+  async getBackupStrategy(): Promise<BackupStrategyConfig | undefined> {
     const config = await this.requireSelfHosted();
-    return config.backup;
+    return config.backupStrategy;
+  }
+
+  async addBackupDestination(dest: BackupStrategyDestination): Promise<void> {
+    const name = this.getEffectiveConfigName();
+    const current = await this.requireSelfHosted(name);
+    const backupStrategy: BackupStrategyConfig = {
+      destinations: [],
+      ...current.backupStrategy,
+    };
+    const idx = backupStrategy.destinations.findIndex((d) => d.storage === dest.storage);
+    if (idx >= 0) {
+      backupStrategy.destinations[idx] = { ...backupStrategy.destinations[idx], ...dest };
+    } else {
+      backupStrategy.destinations.push(dest);
+    }
+    backupStrategy.destinations.sort((a, b) => a.storage.localeCompare(b.storage));
+    await this.update(name, { backupStrategy });
+  }
+
+  async removeBackupDestination(storageName: string): Promise<void> {
+    const name = this.getEffectiveConfigName();
+    const current = await this.requireSelfHosted(name);
+    const backupStrategy: BackupStrategyConfig = {
+      destinations: [],
+      ...current.backupStrategy,
+    };
+    backupStrategy.destinations = backupStrategy.destinations.filter(
+      (d) => d.storage !== storageName
+    );
+    await this.update(name, { backupStrategy });
+  }
+
+  // ============================================================================
+  // Cloud Provider CRUD
+  // ============================================================================
+
+  async addCloudProvider(name: string, config: CloudProviderConfig): Promise<void> {
+    const configName = this.getEffectiveConfigName();
+    await this.requireSelfHosted(configName);
+    const current = await this.getCurrent();
+    const providers = { ...current?.cloudProviders };
+    providers[name] = config;
+    await this.update(configName, { cloudProviders: providers });
+  }
+
+  async removeCloudProvider(name: string): Promise<void> {
+    const configName = this.getEffectiveConfigName();
+    await this.requireSelfHosted(configName);
+    const current = await this.getCurrent();
+    const providers = { ...current?.cloudProviders };
+    if (!(name in providers)) throw new Error(`Cloud provider "${name}" not found`);
+    delete providers[name];
+    await this.update(configName, { cloudProviders: providers });
+  }
+
+  async listCloudProviders(): Promise<{ name: string; config: CloudProviderConfig }[]> {
+    const config = await this.getCurrent();
+    if (!config?.cloudProviders) return [];
+    return Object.entries(config.cloudProviders)
+      .map(([name, providerConfig]) => ({ name, config: providerConfig }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   // ============================================================================
@@ -307,18 +517,19 @@ class ConfigService extends ConfigServiceBase {
     return allocated;
   }
 
-  async ensureRepositoryNetworkId(repoName: string): Promise<number> {
+  async ensureRepositoryNetworkId(repoRef: string): Promise<number> {
     await this.requireSelfHosted();
+    const key = await this.getRepositoryKey(repoRef);
+    if (!key) throw new Error(`Repository "${repoRef}" not found`);
+
     const state = await this.getResourceState();
     const repos = state.getRepositories();
-
-    if (!(repoName in repos)) throw new Error(`Repository "${repoName}" not found`);
-    const repo = repos[repoName];
+    const repo = repos[key];
 
     if (repo.networkId !== undefined && repo.networkId > 0) return repo.networkId;
 
     const networkId = await this.allocateNetworkId();
-    repos[repoName] = { ...repo, networkId };
+    repos[key] = { ...repo, networkId };
     await state.setRepositories(repos);
     return networkId;
   }

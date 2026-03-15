@@ -1,0 +1,13 @@
+{
+  "cast": "/assets/tutorials/tools-tutorial.cast",
+  "language": "es",
+  "version": 1,
+  "events": [
+    {
+      "id": "tools-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.511459,
+      "text": "Abra un comando de shell remoto para verificar la identidad de la máquina de destino."
+    }
+  ]
+}

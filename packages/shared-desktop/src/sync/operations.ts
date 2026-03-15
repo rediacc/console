@@ -1,4 +1,6 @@
 import { existsSync, mkdirSync } from 'node:fs';
+import { RepositoryConnection } from '../repository/connection.js';
+import type { SyncMode, SyncResult } from '../types/index.js';
 import { ensureTrailingSlash, joinRemotePath } from './pathConverter.js';
 import {
   executeRsync,
@@ -6,8 +8,6 @@ import {
   type RsyncChanges,
   type RsyncExecutorOptions,
 } from './rsync.js';
-import { RepositoryConnection } from '../repository/connection.js';
-import type { SyncMode, SyncResult } from '../types/index.js';
 
 /**
  * Sync operation options

@@ -1,7 +1,7 @@
 import { getCollection } from 'astro:content';
+import type { APIRoute, GetStaticPaths } from 'astro';
 import { SUPPORTED_LANGUAGES } from '../../../i18n/language-utils';
 import { getBaseSlug } from '../../../utils/slug';
-import type { APIRoute, GetStaticPaths } from 'astro';
 
 // Docs excluded from LLM text endpoints (cloud-specific or auto-generated references)
 const EXCLUDED_BASE_SLUGS = [
