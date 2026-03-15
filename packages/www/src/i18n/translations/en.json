@@ -3136,7 +3136,7 @@
           "steps": [
             {
               "title": "Run",
-              "description": "Developer runs rdc repo snapshot create production. No tickets. No approvals.",
+              "description": "Developer runs rdc ceph snapshot create production. No tickets. No approvals.",
               "icon": "terminal"
             },
             {
@@ -3314,7 +3314,7 @@
           "description": "Start with the free Community edition. Clone up to 10 workloads at no cost. No credit card.",
           "primaryCta": "Start Free with Community",
           "tierBadge": "Free forever for up to 10 workloads",
-          "command": "rdc repo snapshot create production --snapshot-name my-first-clone"
+          "command": "rdc repo fork production my-first-clone -m primary"
         },
         "techStrip": {
           "label": "Clone any containerized workload",
@@ -4719,7 +4719,7 @@
           "description": "Start with the free Community edition. Git integration included.",
           "primaryCta": "Start Free",
           "tierBadge": "Free for up to 5 repositories · No credit card required",
-          "command": "rdc repo snapshot create production --snapshot-name ci-build"
+          "command": "rdc repo fork production ci-build -m primary"
         },
         "techStrip": {
           "label": "Clone any containerized workload",
@@ -5743,7 +5743,7 @@
           "description": "Start with the free Community edition. Encrypted migration included.",
           "primaryCta": "Start Free",
           "tierBadge": "Free for up to 5 repositories · No credit card required",
-          "command": "rdc repo sync push-all --to secondary -m primary"
+          "command": "rdc repo push --to secondary -m primary"
         },
         "techStrip": {
           "label": "Encrypt any containerized workload",
@@ -6582,7 +6582,7 @@
           "steps": [
             {
               "title": "Clone",
-              "description": "Run rdc repo snapshot create production. An exact copy spins up in 60 seconds.",
+              "description": "Run rdc ceph snapshot create production. An exact copy spins up in 60 seconds.",
               "icon": "terminal"
             },
             {
@@ -6763,7 +6763,7 @@
           "description": "Start with the free Community edition. Clone, test, and verify at no cost. No credit card.",
           "primaryCta": "Start Free with Community",
           "tierBadge": "Free forever for up to 10 workloads",
-          "command": "rdc repo snapshot create production --snapshot-name patch-test"
+          "command": "rdc repo fork production patch-test -m primary"
         },
         "techStrip": {
           "label": "Protect any containerized workload",
@@ -7818,7 +7818,7 @@
           "description": "Start with the free Community edition. Replicate across locations at no cost. No credit card.",
           "primaryCta": "Start Free with Community",
           "tierBadge": "Free forever for up to 10 workloads",
-          "command": "rdc repo sync push-all --to secondary-dc -m primary"
+          "command": "rdc repo push --to secondary-dc -m primary"
         },
         "techStrip": {
           "label": "Replicate any containerized workload",
@@ -8460,7 +8460,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc repo list-backups",
+              "cmd": "rdc repo backup list",
               "flag": "",
               "value": ""
             },
@@ -8818,7 +8818,7 @@
           "description": "Start with the free Community edition. Verify your first backup in under a minute.",
           "primaryCta": "Start Free with Community",
           "tierBadge": "No credit card required",
-          "command": "rdc repo list-backups --from backup-vault -m primary"
+          "command": "rdc repo backup list --from backup-vault -m primary"
         },
         "techStrip": {
           "label": "Verify any containerized workload",
@@ -11305,7 +11305,7 @@
           "steps": [
             {
               "title": "Detect",
-              "description": "Run rdc repo list-backups --verified to find your last clean snapshot.",
+              "description": "Run rdc repo backup list --verified to find your last clean snapshot.",
               "icon": "eye"
             },
             {
@@ -12233,7 +12233,7 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["rdc repo snapshot create", "52s", "Done"]
+            "newSteps": ["rdc ceph snapshot create", "52s", "Done"]
           }
         },
         "howItWorks": {
@@ -12242,7 +12242,7 @@
           "steps": [
             {
               "title": "Clone",
-              "description": "Run rdc repo snapshot create production. Btrfs CoW creates an instant snapshot — app, database, config, everything.",
+              "description": "Run rdc ceph snapshot create production. Btrfs CoW creates an instant snapshot — app, database, config, everything.",
               "icon": "terminal"
             },
             {

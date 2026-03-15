@@ -2216,7 +2216,7 @@
           "steps": [
             {
               "title": "Klonla",
-              "description": "rdc repo snapshot create production komutunu çalıştırın. Btrfs CoW anında bir anlık görüntü oluşturur — uygulama, veritabanı, yapılandırma, her şey.",
+              "description": "rdc ceph snapshot create production komutunu çalıştırın. Btrfs CoW anında bir anlık görüntü oluşturur — uygulama, veritabanı, yapılandırma, her şey.",
               "icon": "terminal"
             },
             {
@@ -2262,7 +2262,7 @@
           ],
           "timeline": {
             "newLabel": "Rediacc ile",
-            "newSteps": ["rdc repo snapshot create", "52s", "Tamam"],
+            "newSteps": ["rdc ceph snapshot create", "52s", "Tamam"],
             "oldLabel": "Eski yöntem",
             "oldSteps": [
               {
@@ -4362,7 +4362,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc repo list-backups --from backup-vault -m primary",
+          "command": "rdc repo backup list --from backup-vault -m primary",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk yedeklemenizi bir dakikadan kısa sürede doğrulayın.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
           "tierBadge": "Kredi kartı gerekmez",
@@ -4718,7 +4718,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc repo list-backups",
+              "cmd": "rdc repo backup list",
               "flag": "",
               "value": ""
             },
@@ -4816,7 +4816,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc repo sync push-all --to secondary-dc -m primary",
+          "command": "rdc repo push --to secondary-dc -m primary",
           "description": "Ücretsiz Community sürümüyle başlayın. Konumlar arasında ücretsiz çoğaltın. Kredi kartı gerekmez.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
           "tierBadge": "10 iş yüküne kadar sonsuza dek ücretsiz",
@@ -6086,7 +6086,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc repo snapshot create production --snapshot-name my-first-clone",
+          "command": "rdc repo fork production my-first-clone -m primary",
           "description": "Ücretsiz Community sürümüyle başlayın. 10 iş yüküne kadar ücretsiz klonlayın. Kredi kartı gerekmez.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
           "tierBadge": "10 iş yüküne kadar sonsuza dek ücretsiz",
@@ -6287,7 +6287,7 @@
           "steps": [
             {
               "title": "Run",
-              "description": "Developer runs rdc repo snapshot create production. No tickets. No approvals.",
+              "description": "Developer runs rdc ceph snapshot create production. No tickets. No approvals.",
               "icon": "terminal"
             },
             {
@@ -8302,7 +8302,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc repo snapshot create production --snapshot-name ci-build",
+          "command": "rdc repo fork production ci-build -m primary",
           "description": "Ücretsiz Community sürümüyle başlayın. Git entegrasyonu dahil.",
           "primaryCta": "Ücretsiz Başlayın",
           "tierBadge": "5 depoya kadar ücretsiz · Kredi kartı gerekmez",
@@ -8713,7 +8713,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc repo sync push-all --to secondary -m primary",
+          "command": "rdc repo push --to secondary -m primary",
           "description": "Ücretsiz Community sürümüyle başlayın. Şifreli göç dahil.",
           "primaryCta": "Ücretsiz Başlayın",
           "tierBadge": "5 depoya kadar ücretsiz · Kredi kartı gerekmez",
@@ -9812,7 +9812,7 @@
           "steps": [
             {
               "title": "Detect",
-              "description": "Run rdc repo list-backups --verified to find your last clean snapshot.",
+              "description": "Run rdc repo backup list --verified to find your last clean snapshot.",
               "icon": "eye"
             },
             {
@@ -10491,7 +10491,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc repo snapshot create production --snapshot-name patch-test",
+          "command": "rdc repo fork production patch-test -m primary",
           "description": "Ücretsiz Community sürümüyle başlayın. Ücretsiz klonlayın, test edin ve doğrulayın. Kredi kartı gerekmez.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
           "tierBadge": "10 iş yüküne kadar sonsuza dek ücretsiz",
@@ -10692,7 +10692,7 @@
           "steps": [
             {
               "title": "Clone",
-              "description": "Run rdc repo snapshot create production. An exact copy spins up in 60 seconds.",
+              "description": "Run rdc ceph snapshot create production. An exact copy spins up in 60 seconds.",
               "icon": "terminal"
             },
             {

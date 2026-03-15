@@ -2220,7 +2220,7 @@
           "steps": [
             {
               "title": "استنساخ",
-              "description": "شغّل rdc repo snapshot create production. تقنية btrfs CoW تنشئ لقطة فورية — التطبيق وقاعدة البيانات والإعدادات، كل شيء.",
+              "description": "شغّل rdc ceph snapshot create production. تقنية btrfs CoW تنشئ لقطة فورية — التطبيق وقاعدة البيانات والإعدادات، كل شيء.",
               "icon": "terminal"
             },
             {
@@ -2266,7 +2266,7 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["rdc repo snapshot create", "52s", "تم"],
+            "newSteps": ["rdc ceph snapshot create", "52s", "تم"],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -4364,7 +4364,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo list-backups --from backup-vault -m primary",
+          "command": "rdc repo backup list --from backup-vault -m primary",
           "description": "ابدأ مع الإصدار المجاني Community. تحقق من أول نسخة في أقل من دقيقة.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "بدون بطاقة ائتمان",
@@ -4720,7 +4720,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc repo list-backups",
+              "cmd": "rdc repo backup list",
               "flag": "",
               "value": ""
             },
@@ -4818,7 +4818,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo sync push-all --to secondary-dc -m primary",
+          "command": "rdc repo push --to secondary-dc -m primary",
           "description": "ابدأ مع الإصدار المجاني Community. انسخ عبر المواقع بدون تكلفة. بدون بطاقة ائتمان.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "مجاني للأبد حتى 10 أحمال عمل",
@@ -6088,7 +6088,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo snapshot create production --snapshot-name my-first-clone",
+          "command": "rdc repo fork production my-first-clone -m primary",
           "description": "ابدأ مع الإصدار المجاني Community. استنسخ حتى 10 أحمال عمل بدون تكلفة. بدون بطاقة ائتمان.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "مجاني للأبد حتى 10 أحمال عمل",
@@ -6289,7 +6289,7 @@
           "steps": [
             {
               "title": "Run",
-              "description": "Developer runs rdc repo snapshot create production. No tickets. No approvals.",
+              "description": "Developer runs rdc ceph snapshot create production. No tickets. No approvals.",
               "icon": "terminal"
             },
             {
@@ -8304,7 +8304,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo snapshot create production --snapshot-name ci-build",
+          "command": "rdc repo fork production ci-build -m primary",
           "description": "ابدأ مع الإصدار المجاني Community. تكامل Git مُضمّن.",
           "primaryCta": "ابدأ مجاناً",
           "tierBadge": "مجاني حتى 5 مستودعات · بدون بطاقة ائتمان",
@@ -8715,7 +8715,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo sync push-all --to secondary -m primary",
+          "command": "rdc repo push --to secondary -m primary",
           "description": "ابدأ مع الإصدار المجاني Community. الترحيل المشفر مُضمّن.",
           "primaryCta": "ابدأ مجاناً",
           "tierBadge": "مجاني حتى 5 مستودعات · بدون بطاقة ائتمان",
@@ -9814,7 +9814,7 @@
           "steps": [
             {
               "title": "Detect",
-              "description": "Run rdc repo list-backups --verified to find your last clean snapshot.",
+              "description": "Run rdc repo backup list --verified to find your last clean snapshot.",
               "icon": "eye"
             },
             {
@@ -10493,7 +10493,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo snapshot create production --snapshot-name patch-test",
+          "command": "rdc repo fork production patch-test -m primary",
           "description": "ابدأ مع الإصدار المجاني Community. استنسخ واختبر وتحقق بدون تكلفة. بدون بطاقة ائتمان.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "مجاني للأبد حتى 10 أحمال عمل",
@@ -10694,7 +10694,7 @@
           "steps": [
             {
               "title": "Clone",
-              "description": "Run rdc repo snapshot create production. An exact copy spins up in 60 seconds.",
+              "description": "Run rdc ceph snapshot create production. An exact copy spins up in 60 seconds.",
               "icon": "terminal"
             },
             {

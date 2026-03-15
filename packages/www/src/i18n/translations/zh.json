@@ -2193,7 +2193,7 @@
           "steps": [
             {
               "title": "克隆",
-              "description": "运行 rdc repo snapshot create production。Btrfs CoW 创建即时快照 — 应用、数据库、配置，一切就绪。",
+              "description": "运行 rdc ceph snapshot create production。Btrfs CoW 创建即时快照 — 应用、数据库、配置，一切就绪。",
               "icon": "terminal"
             },
             {
@@ -2239,7 +2239,7 @@
           ],
           "timeline": {
             "newLabel": "使用 Rediacc",
-            "newSteps": ["rdc repo snapshot create", "52s", "完成"],
+            "newSteps": ["rdc ceph snapshot create", "52s", "完成"],
             "oldLabel": "传统方式",
             "oldSteps": [
               {
@@ -4312,7 +4312,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo list-backups --from backup-vault -m primary",
+          "command": "rdc repo backup list --from backup-vault -m primary",
           "description": "从免费的社区版开始。一分钟内验证你的第一个备份。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "无需信用卡",
@@ -4668,7 +4668,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc repo list-backups",
+              "cmd": "rdc repo backup list",
               "flag": "",
               "value": ""
             },
@@ -4766,7 +4766,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo sync push-all --to secondary-dc -m primary",
+          "command": "rdc repo push --to secondary-dc -m primary",
           "description": "从免费的社区版开始。免费跨地域复制。无需信用卡。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "最多 10 个工作负载永久免费",
@@ -6036,7 +6036,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo snapshot create production --snapshot-name my-first-clone",
+          "command": "rdc repo fork production my-first-clone -m primary",
           "description": "从免费的社区版开始。免费克隆最多 10 个工作负载。无需信用卡。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "最多 10 个工作负载永久免费",
@@ -6237,7 +6237,7 @@
           "steps": [
             {
               "title": "Run",
-              "description": "Developer runs rdc repo snapshot create production. No tickets. No approvals.",
+              "description": "Developer runs rdc ceph snapshot create production. No tickets. No approvals.",
               "icon": "terminal"
             },
             {
@@ -8252,7 +8252,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo snapshot create production --snapshot-name ci-build",
+          "command": "rdc repo fork production ci-build -m primary",
           "description": "从免费的社区版开始。包含 Git 集成。",
           "primaryCta": "免费开始",
           "tierBadge": "最多 5 个仓库免费 · 无需信用卡",
@@ -8663,7 +8663,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo sync push-all --to secondary -m primary",
+          "command": "rdc repo push --to secondary -m primary",
           "description": "从免费的社区版开始。包含加密迁移功能。",
           "primaryCta": "免费开始",
           "tierBadge": "最多 5 个仓库免费 · 无需信用卡",
@@ -9762,7 +9762,7 @@
           "steps": [
             {
               "title": "Detect",
-              "description": "Run rdc repo list-backups --verified to find your last clean snapshot.",
+              "description": "Run rdc repo backup list --verified to find your last clean snapshot.",
               "icon": "eye"
             },
             {
@@ -10441,7 +10441,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo snapshot create production --snapshot-name patch-test",
+          "command": "rdc repo fork production patch-test -m primary",
           "description": "从免费的社区版开始。免费克隆、测试和验证。无需信用卡。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "最多 10 个工作负载永久免费",
@@ -10642,7 +10642,7 @@
           "steps": [
             {
               "title": "Clone",
-              "description": "Run rdc repo snapshot create production. An exact copy spins up in 60 seconds.",
+              "description": "Run rdc ceph snapshot create production. An exact copy spins up in 60 seconds.",
               "icon": "terminal"
             },
             {

@@ -2218,7 +2218,7 @@
           "steps": [
             {
               "title": "クローン",
-              "description": "rdc repo snapshot create productionを実行。btrfs CoWが瞬時にスナップショットを作成 — アプリ、データベース、設定、すべて。",
+              "description": "rdc ceph snapshot create productionを実行。btrfs CoWが瞬時にスナップショットを作成 — アプリ、データベース、設定、すべて。",
               "icon": "terminal"
             },
             {
@@ -2264,7 +2264,7 @@
           ],
           "timeline": {
             "newLabel": "Rediaccなら",
-            "newSteps": ["rdc repo snapshot create", "52s", "完了"],
+            "newSteps": ["rdc ceph snapshot create", "52s", "完了"],
             "oldLabel": "従来の方法",
             "oldSteps": [
               {
@@ -4364,7 +4364,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo list-backups --from backup-vault -m primary",
+          "command": "rdc repo backup list --from backup-vault -m primary",
           "description": "無料のCommunityエディションから始めましょう。1分以内に最初のバックアップを検証できます。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "クレジットカード不要",
@@ -4720,7 +4720,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc repo list-backups",
+              "cmd": "rdc repo backup list",
               "flag": "",
               "value": ""
             },
@@ -4818,7 +4818,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo sync push-all --to secondary-dc -m primary",
+          "command": "rdc repo push --to secondary-dc -m primary",
           "description": "無料のCommunityエディションから始めましょう。ロケーション間レプリケーションが無料。クレジットカード不要。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "10ワークロードまで永久無料",
@@ -6088,7 +6088,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo snapshot create production --snapshot-name my-first-clone",
+          "command": "rdc repo fork production my-first-clone -m primary",
           "description": "無料のCommunityエディションから始めましょう。最大10ワークロードまで無料でクローン可能。クレジットカード不要。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "10ワークロードまで永久無料",
@@ -6289,7 +6289,7 @@
           "steps": [
             {
               "title": "Run",
-              "description": "Developer runs rdc repo snapshot create production. No tickets. No approvals.",
+              "description": "Developer runs rdc ceph snapshot create production. No tickets. No approvals.",
               "icon": "terminal"
             },
             {
@@ -8304,7 +8304,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo snapshot create production --snapshot-name ci-build",
+          "command": "rdc repo fork production ci-build -m primary",
           "description": "無料のCommunityエディションから始めましょう。Git統合機能付き。",
           "primaryCta": "無料で始める",
           "tierBadge": "5リポジトリまで無料 · クレジットカード不要",
@@ -8715,7 +8715,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo sync push-all --to secondary -m primary",
+          "command": "rdc repo push --to secondary -m primary",
           "description": "無料のCommunityエディションから始めましょう。暗号化移行機能付き。",
           "primaryCta": "無料で始める",
           "tierBadge": "5リポジトリまで無料 · クレジットカード不要",
@@ -9814,7 +9814,7 @@
           "steps": [
             {
               "title": "Detect",
-              "description": "Run rdc repo list-backups --verified to find your last clean snapshot.",
+              "description": "Run rdc repo backup list --verified to find your last clean snapshot.",
               "icon": "eye"
             },
             {
@@ -10493,7 +10493,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo snapshot create production --snapshot-name patch-test",
+          "command": "rdc repo fork production patch-test -m primary",
           "description": "無料のCommunityエディションから始めましょう。クローン、テスト、検証が無料。クレジットカード不要。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "10ワークロードまで永久無料",
@@ -10694,7 +10694,7 @@
           "steps": [
             {
               "title": "Clone",
-              "description": "Run rdc repo snapshot create production. An exact copy spins up in 60 seconds.",
+              "description": "Run rdc ceph snapshot create production. An exact copy spins up in 60 seconds.",
               "icon": "terminal"
             },
             {

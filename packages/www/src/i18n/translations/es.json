@@ -2218,7 +2218,7 @@
           "steps": [
             {
               "title": "Clonar",
-              "description": "Ejecuta rdc repo snapshot create production. Btrfs CoW crea un snapshot instantáneo — aplicación, base de datos, configuración, todo.",
+              "description": "Ejecuta rdc ceph snapshot create production. Btrfs CoW crea un snapshot instantáneo — aplicación, base de datos, configuración, todo.",
               "icon": "terminal"
             },
             {
@@ -2264,7 +2264,7 @@
           ],
           "timeline": {
             "newLabel": "Con Rediacc",
-            "newSteps": ["rdc repo snapshot create", "52s", "Listo"],
+            "newSteps": ["rdc ceph snapshot create", "52s", "Listo"],
             "oldLabel": "La forma antigua",
             "oldSteps": [
               {
@@ -4368,7 +4368,7 @@
           "title": "Lo que obtienes"
         },
         "bottomCta": {
-          "command": "rdc repo list-backups --from backup-vault -m primary",
+          "command": "rdc repo backup list --from backup-vault -m primary",
           "description": "Comienza con la edición Community gratuita. Verifica tu primera copia en menos de un minuto.",
           "primaryCta": "Empieza gratis con Community",
           "tierBadge": "Sin tarjeta de crédito",
@@ -4724,7 +4724,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc repo list-backups",
+              "cmd": "rdc repo backup list",
               "flag": "",
               "value": ""
             },
@@ -4822,7 +4822,7 @@
           "title": "Lo que obtienes"
         },
         "bottomCta": {
-          "command": "rdc repo sync push-all --to secondary-dc -m primary",
+          "command": "rdc repo push --to secondary-dc -m primary",
           "description": "Comienza con la edición Community gratuita. Replica entre ubicaciones sin coste. Sin tarjeta de crédito.",
           "primaryCta": "Empieza gratis con Community",
           "tierBadge": "Gratis para siempre hasta 10 cargas de trabajo",
@@ -6092,7 +6092,7 @@
           "title": "Lo que obtienes"
         },
         "bottomCta": {
-          "command": "rdc repo snapshot create production --snapshot-name my-first-clone",
+          "command": "rdc repo fork production my-first-clone -m primary",
           "description": "Comienza con la edición Community gratuita. Clona hasta 10 cargas de trabajo sin coste. Sin tarjeta de crédito.",
           "primaryCta": "Empieza gratis con Community",
           "tierBadge": "Gratis para siempre hasta 10 cargas de trabajo",
@@ -6293,7 +6293,7 @@
           "steps": [
             {
               "title": "Run",
-              "description": "Developer runs rdc repo snapshot create production. No tickets. No approvals.",
+              "description": "Developer runs rdc ceph snapshot create production. No tickets. No approvals.",
               "icon": "terminal"
             },
             {
@@ -8308,7 +8308,7 @@
           "title": "Lo que obtienes"
         },
         "bottomCta": {
-          "command": "rdc repo snapshot create production --snapshot-name ci-build",
+          "command": "rdc repo fork production ci-build -m primary",
           "description": "Comienza con la edición Community gratuita. Integración con Git incluida.",
           "primaryCta": "Empieza gratis",
           "tierBadge": "Gratis hasta 5 repositorios · Sin tarjeta de crédito",
@@ -8719,7 +8719,7 @@
           "title": "Lo que obtienes"
         },
         "bottomCta": {
-          "command": "rdc repo sync push-all --to secondary -m primary",
+          "command": "rdc repo push --to secondary -m primary",
           "description": "Comienza con la edición Community gratuita. Migración cifrada incluida.",
           "primaryCta": "Empieza gratis",
           "tierBadge": "Gratis hasta 5 repositorios · Sin tarjeta de crédito",
@@ -9818,7 +9818,7 @@
           "steps": [
             {
               "title": "Detect",
-              "description": "Run rdc repo list-backups --verified to find your last clean snapshot.",
+              "description": "Run rdc repo backup list --verified to find your last clean snapshot.",
               "icon": "eye"
             },
             {
@@ -10497,7 +10497,7 @@
           "title": "Lo que obtienes"
         },
         "bottomCta": {
-          "command": "rdc repo snapshot create production --snapshot-name patch-test",
+          "command": "rdc repo fork production patch-test -m primary",
           "description": "Comienza con la edición Community gratuita. Clona, prueba y verifica sin coste. Sin tarjeta de crédito.",
           "primaryCta": "Empieza gratis con Community",
           "tierBadge": "Gratis para siempre hasta 10 cargas de trabajo",
@@ -10698,7 +10698,7 @@
           "steps": [
             {
               "title": "Clone",
-              "description": "Run rdc repo snapshot create production. An exact copy spins up in 60 seconds.",
+              "description": "Run rdc ceph snapshot create production. An exact copy spins up in 60 seconds.",
               "icon": "terminal"
             },
             {
