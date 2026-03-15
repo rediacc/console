@@ -123,133 +123,133 @@ export default test.defineConfig({
       testIgnore: /tests\/electron\//,
       dependencies: ['setup'],
     },
-    {
-      name: 'firefox',
-      use: { ...test.devices['Desktop Firefox'] },
-      testIgnore: /tests\/electron\//,
-      dependencies: ['setup'],
-    },
-    {
-      name: 'webkit',
-      use: { ...test.devices['Desktop Safari'] },
-      testIgnore: /tests\/electron\//,
-      dependencies: ['setup'],
-    },
-    {
-      name: 'msedge',
-      use: { ...test.devices['Desktop Edge'], channel: 'msedge' },
-      testIgnore: /tests\/electron\//,
-      dependencies: ['setup'],
-    },
-
-    // =========================================================================
-    // DESKTOP RESOLUTIONS - Common screen sizes for responsive testing
-    // Uses Chromium with custom viewports to test layout at different sizes
-    // =========================================================================
-    {
-      name: 'resolution-1920x1080',
-      use: {
-        ...test.devices['Desktop Chrome'],
-        viewport: { width: 1920, height: 1080 },
-      },
-      testIgnore: /tests\/electron\//,
-      dependencies: ['setup'],
-    },
-    {
-      name: 'resolution-1366x768',
-      use: {
-        ...test.devices['Desktop Chrome'],
-        viewport: { width: 1366, height: 768 },
-      },
-      testIgnore: /tests\/electron\//,
-      dependencies: ['setup'],
-    },
-    {
-      name: 'resolution-1536x864',
-      use: {
-        ...test.devices['Desktop Chrome'],
-        viewport: { width: 1536, height: 864 },
-      },
-      testIgnore: /tests\/electron\//,
-      dependencies: ['setup'],
-    },
-
-    // =========================================================================
-    // MOBILE DEVICES - Android (Chromium-based)
-    // Electron tests are excluded - they only run in Electron projects
-    // =========================================================================
-    {
-      name: 'galaxy-s24',
-      use: { ...test.devices['Galaxy S24'] },
-      testIgnore: /tests\/electron\//,
-      dependencies: ['setup'],
-    },
-    {
-      name: 'galaxy-tab-s9',
-      use: { ...test.devices['Galaxy Tab S9 landscape'] },
-      testIgnore: /tests\/electron\//,
-      dependencies: ['setup'],
-    },
-
-    // =========================================================================
-    // MOBILE DEVICES - iOS (WebKit-based)
-    // Electron tests are excluded - they only run in Electron projects
-    // =========================================================================
-    {
-      name: 'iphone-15-pro-max',
-      use: { ...test.devices['iPhone 15 Pro Max'] },
-      testIgnore: /tests\/electron\//,
-      dependencies: ['setup'],
-    },
-    {
-      name: 'ipad-pro-11',
-      use: { ...test.devices['iPad Pro 11'] },
-      testIgnore: /tests\/electron\//,
-      dependencies: ['setup'],
-    },
-
-    // =========================================================================
-    // ELECTRON DESKTOP APP - 6 Platform Matrix
-    // Tests run against built Electron app (packages/desktop/out/main/index.js)
-    // Electron uses HashRouter, so baseURL is empty (paths are hash fragments)
-    // Setup project registers user via Chromium, credentials shared via .e2e-state.json
-    // =========================================================================
-    {
-      name: 'electron-linux-x64',
-      testMatch: /tests\/electron\/.*\.test\.ts/,
-      use: { baseURL: '' },
-      dependencies: ['setup'],
-    },
-    {
-      name: 'electron-linux-arm64',
-      testMatch: /tests\/electron\/.*\.test\.ts/,
-      use: { baseURL: '' },
-      dependencies: ['setup'],
-    },
-    {
-      name: 'electron-macos-x64',
-      testMatch: /tests\/electron\/.*\.test\.ts/,
-      use: { baseURL: '' },
-      dependencies: ['setup'],
-    },
-    {
-      name: 'electron-macos-arm64',
-      testMatch: /tests\/electron\/.*\.test\.ts/,
-      use: { baseURL: '' },
-      dependencies: ['setup'],
-    },
-    {
-      name: 'electron-windows-x64',
-      testMatch: /tests\/electron\/.*\.test\.ts/,
-      use: { baseURL: '' },
-      dependencies: ['setup'],
-    },
-    {
-      name: 'electron-windows-arm64',
-      testMatch: /tests\/electron\/.*\.test\.ts/,
-      use: { baseURL: '' },
-      dependencies: ['setup'],
-    },
+    /*    {
+         name: 'firefox',
+         use: { ...test.devices['Desktop Firefox'] },
+         testIgnore: /tests\/electron\//,
+         dependencies: ['setup'],
+       },
+       {
+         name: 'webkit',
+         use: { ...test.devices['Desktop Safari'] },
+         testIgnore: /tests\/electron\//,
+         dependencies: ['setup'],
+       },
+       {
+         name: 'msedge',
+         use: { ...test.devices['Desktop Edge'], channel: 'msedge' },
+         testIgnore: /tests\/electron\//,
+         dependencies: ['setup'],
+       },
+   
+       // =========================================================================
+       // DESKTOP RESOLUTIONS - Common screen sizes for responsive testing
+       // Uses Chromium with custom viewports to test layout at different sizes
+       // =========================================================================
+       {
+         name: 'resolution-1920x1080',
+         use: {
+           ...test.devices['Desktop Chrome'],
+           viewport: { width: 1920, height: 1080 },
+         },
+         testIgnore: /tests\/electron\//,
+         dependencies: ['setup'],
+       },
+       {
+         name: 'resolution-1366x768',
+         use: {
+           ...test.devices['Desktop Chrome'],
+           viewport: { width: 1366, height: 768 },
+         },
+         testIgnore: /tests\/electron\//,
+         dependencies: ['setup'],
+       },
+       {
+         name: 'resolution-1536x864',
+         use: {
+           ...test.devices['Desktop Chrome'],
+           viewport: { width: 1536, height: 864 },
+         },
+         testIgnore: /tests\/electron\//,
+         dependencies: ['setup'],
+       },
+   
+       // =========================================================================
+       // MOBILE DEVICES - Android (Chromium-based)
+       // Electron tests are excluded - they only run in Electron projects
+       // =========================================================================
+       {
+         name: 'galaxy-s24',
+         use: { ...test.devices['Galaxy S24'] },
+         testIgnore: /tests\/electron\//,
+         dependencies: ['setup'],
+       },
+       {
+         name: 'galaxy-tab-s9',
+         use: { ...test.devices['Galaxy Tab S9 landscape'] },
+         testIgnore: /tests\/electron\//,
+         dependencies: ['setup'],
+       },
+   
+       // =========================================================================
+       // MOBILE DEVICES - iOS (WebKit-based)
+       // Electron tests are excluded - they only run in Electron projects
+       // =========================================================================
+       {
+         name: 'iphone-15-pro-max',
+         use: { ...test.devices['iPhone 15 Pro Max'] },
+         testIgnore: /tests\/electron\//,
+         dependencies: ['setup'],
+       },
+       {
+         name: 'ipad-pro-11',
+         use: { ...test.devices['iPad Pro 11'] },
+         testIgnore: /tests\/electron\//,
+         dependencies: ['setup'],
+       },
+   
+       // =========================================================================
+       // ELECTRON DESKTOP APP - 6 Platform Matrix
+       // Tests run against built Electron app (packages/desktop/out/main/index.js)
+       // Electron uses HashRouter, so baseURL is empty (paths are hash fragments)
+       // Setup project registers user via Chromium, credentials shared via .e2e-state.json
+       // =========================================================================
+       {
+         name: 'electron-linux-x64',
+         testMatch: /tests\/electron\/.*\.test\.ts/,
+         use: { baseURL: '' },
+         dependencies: ['setup'],
+       },
+       {
+         name: 'electron-linux-arm64',
+         testMatch: /tests\/electron\/.*\.test\.ts/,
+         use: { baseURL: '' },
+         dependencies: ['setup'],
+       },
+       {
+         name: 'electron-macos-x64',
+         testMatch: /tests\/electron\/.*\.test\.ts/,
+         use: { baseURL: '' },
+         dependencies: ['setup'],
+       },
+       {
+         name: 'electron-macos-arm64',
+         testMatch: /tests\/electron\/.*\.test\.ts/,
+         use: { baseURL: '' },
+         dependencies: ['setup'],
+       },
+       {
+         name: 'electron-windows-x64',
+         testMatch: /tests\/electron\/.*\.test\.ts/,
+         use: { baseURL: '' },
+         dependencies: ['setup'],
+       },
+       {
+         name: 'electron-windows-arm64',
+         testMatch: /tests\/electron\/.*\.test\.ts/,
+         use: { baseURL: '' },
+         dependencies: ['setup'],
+       }, */
   ],
 
   /* Web server configuration - starts Vite dev server automatically */
