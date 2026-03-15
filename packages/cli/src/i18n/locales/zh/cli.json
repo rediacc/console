@@ -738,15 +738,15 @@
         "description": "从机器中移除孤立的数据存储资源和过期快照",
         "descriptionShort": "清理孤立资源和过期快照",
         "dryRunOption": "显示将被移除的内容，但不做实际更改",
+        "noReposFound": "在机器上未找到仓库",
         "noStaleSnapshots": "未找到过期快照",
+        "orphanedReposCompleted": "已清理 {{count}} 个孤立仓库",
+        "orphanedReposOption": "同时清理不在任何配置中的仓库镜像",
+        "orphanedReposStarting": "正在扫描 {{machine}} 上的孤立仓库...",
         "snapshotDeleted": "已删除 {{name}}",
         "snapshotDeleting": "正在删除 {{name}}...",
         "snapshotInUse": "跳过 {{name}}（正在使用中）",
         "snapshotsCompleted": "快照清理: 已删除 {{deleted}} 个，已跳过 {{skipped}} 个",
-        "orphanedReposOption": "同时清理不在任何配置中的仓库镜像",
-        "orphanedReposStarting": "正在扫描 {{machine}} 上的孤立仓库...",
-        "orphanedReposCompleted": "已清理 {{count}} 个孤立仓库",
-        "noReposFound": "在机器上未找到仓库",
         "snapshotsOnlyOption": "仅清理过期快照",
         "snapshotStale": "过期: {{name}} ({{size}})",
         "startingDatastore": "正在扫描 {{machine}} 上的孤立数据存储资源...",
@@ -1209,6 +1209,9 @@
         "sourceRequired": "请指定 --from <storage> 或 --from-machine <machine>"
       },
       "push": {
+        "deployed": "仓库 \"{{repo}}\" 已部署到 {{machine}}",
+        "deployFailed": "推送后部署 \"{{repo}}\" 失败",
+        "deploying": "正在 {{machine}} 上部署 \"{{repo}}\"...",
         "description": "将仓库备份推送到存储或机器",
         "descriptionShort": "将仓库备份推送到存储或机器",
         "destIgnoredForStorage": "忽略 --dest {{provided}}：存储备份使用仓库 GUID（{{dest}}）",
@@ -1220,11 +1223,8 @@
         "optionTag": "用于版本控制的部署标签",
         "optionToMachine": "目标机器名称",
         "optionToStorage": "目标存储名称",
-        "pushing": "正在将 \"{{repo}}\" 的备份推送到 {{dest}}...",
         "optionUp": "推送后，在目标机器上挂载并部署仓库",
-        "deploying": "正在 {{machine}} 上部署 \"{{repo}}\"...",
-        "deployed": "仓库 \"{{repo}}\" 已部署到 {{machine}}",
-        "deployFailed": "推送后部署 \"{{repo}}\" 失败"
+        "pushing": "正在将 \"{{repo}}\" 的备份推送到 {{dest}}..."
       },
       "resize": {
         "completed": "大小调整完成",
@@ -1416,19 +1416,19 @@
         "noFiles": "未找到文件",
         "pathOption": "要列出的子目录路径"
       },
-      "prune": {
-        "description": "删除存储中不在任何配置中的孤立备份。多配置安全，带宽限期保护。",
-        "descriptionShort": "删除存储中的孤立备份",
-        "listing": "正在列出 \"{{storage}}\" 中的备份...",
-        "listFailed": "获取存储备份列表失败",
-        "noBackups": "存储中未找到备份",
-        "found": "在存储中找到 {{count}} 个备份",
-        "completed": "已清理 {{count}} 个孤立备份"
-      },
       "description": "管理存储提供商和浏览远程文件",
       "list": {
         "description": "列出存储提供商",
         "fetching": "正在获取存储提供商..."
+      },
+      "prune": {
+        "completed": "已清理 {{count}} 个孤立备份",
+        "description": "删除存储中不在任何配置中的孤立备份。多配置安全，带宽限期保护。",
+        "descriptionShort": "删除存储中的孤立备份",
+        "found": "在存储中找到 {{count}} 个备份",
+        "listFailed": "获取存储备份列表失败",
+        "listing": "正在列出 \"{{storage}}\" 中的备份...",
+        "noBackups": "存储中未找到备份"
       },
       "pull": {
         "completed": "拉取完成，耗时 {{duration}}ms",
@@ -2156,7 +2156,6 @@
     "datastore": "机器上的数据存储路径",
     "debug": "启用调试输出（本地模式）",
     "dryRun": "显示将执行的操作但不进行实际更改",
-    "graceDays": "最近归档仓库的宽限期天数（默认：7）",
     "email": "电子邮件地址",
     "endpoint": "API 端点 URL",
     "excludePatterns": "从同步中排除的模式",
@@ -2169,6 +2168,7 @@
     "follow": "跟踪日志输出",
     "force": "跳过确认提示",
     "functionName": "要执行的函数名称",
+    "graceDays": "最近归档仓库的宽限期天数（默认：7）",
     "image": "RBD 镜像名称",
     "importMode": "导入模式（merge 或 replace）",
     "insiders": "使用 VS Code Insiders 设置",
@@ -2284,6 +2284,13 @@
     "syncConfirm": "\n继续同步吗？[y/N/d(etails)]",
     "syncConfirmHelp": "请输入 y（是）、n（否）或 d（详情）"
   },
+  "services": {
+    "prune": {
+      "noOrphaned": "未找到孤立的条目",
+      "refusingPrune": "拒绝清理 — 这些配置可能包含受保护的 GUID。使用 --force 强制执行。",
+      "unreadableConfigs": "无法读取 {{count}} 个配置文件: {{names}} (已加密或已损坏)"
+    }
+  },
   "spinners": {
     "connecting": "正在连接...",
     "creating": "正在创建 {{resource}}...",
@@ -2304,12 +2311,5 @@
   },
   "table": {
     "noData": "没有要显示的数据"
-  },
-  "services": {
-    "prune": {
-      "unreadableConfigs": "无法读取 {{count}} 个配置文件: {{names}} (已加密或已损坏)",
-      "refusingPrune": "拒绝清理 — 这些配置可能包含受保护的 GUID。使用 --force 强制执行。",
-      "noOrphaned": "未找到孤立的条目"
-    }
   }
 }

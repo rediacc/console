@@ -738,15 +738,15 @@
         "description": "Eliminar recursos huérfanos del almacén de datos e instantáneas obsoletas de una máquina",
         "descriptionShort": "Limpiar recursos huérfanos e instantáneas obsoletas",
         "dryRunOption": "Mostrar lo que se eliminaría sin realizar cambios",
+        "noReposFound": "No se encontraron repositorios en la máquina",
         "noStaleSnapshots": "No se encontraron instantáneas obsoletas",
+        "orphanedReposCompleted": "Se limpiaron {{count}} repositorios huérfanos",
+        "orphanedReposOption": "También eliminar imágenes de repositorios que no están en ninguna configuración",
+        "orphanedReposStarting": "Buscando repositorios huérfanos en {{machine}}...",
         "snapshotDeleted": "{{name}} eliminado",
         "snapshotDeleting": "Eliminando {{name}}...",
         "snapshotInUse": "Omitiendo {{name}} (en uso activo)",
         "snapshotsCompleted": "Limpieza de instantáneas: {{deleted}} eliminadas, {{skipped}} omitidas",
-        "orphanedReposOption": "También eliminar imágenes de repositorios que no están en ninguna configuración",
-        "orphanedReposStarting": "Buscando repositorios huérfanos en {{machine}}...",
-        "orphanedReposCompleted": "Se limpiaron {{count}} repositorios huérfanos",
-        "noReposFound": "No se encontraron repositorios en la máquina",
         "snapshotsOnlyOption": "Solo limpiar instantáneas obsoletas",
         "snapshotStale": "Obsoleta: {{name}} ({{size}})",
         "startingDatastore": "Buscando recursos huérfanos del almacén de datos en {{machine}}...",
@@ -1209,6 +1209,9 @@
         "sourceRequired": "Especifique --from <storage> o --from-machine <machine>"
       },
       "push": {
+        "deployed": "Repositorio \"{{repo}}\" desplegado en {{machine}}",
+        "deployFailed": "Error al desplegar \"{{repo}}\" después del envío",
+        "deploying": "Desplegando \"{{repo}}\" en {{machine}}...",
         "description": "Enviar respaldo del repositorio al almacenamiento o máquina",
         "descriptionShort": "Subir respaldo del repositorio a almacenamiento o máquina",
         "destIgnoredForStorage": "Ignorando --dest {{provided}}: los respaldos de almacenamiento usan el GUID del repositorio ({{dest}})",
@@ -1220,11 +1223,8 @@
         "optionTag": "Etiqueta de despliegue para versionamiento",
         "optionToMachine": "Nombre de la máquina de destino",
         "optionToStorage": "Nombre del almacenamiento de destino",
-        "pushing": "Enviando respaldo de \"{{repo}}\" a {{dest}}...",
         "optionUp": "Después del envío, montar y desplegar el repositorio en la máquina de destino",
-        "deploying": "Desplegando \"{{repo}}\" en {{machine}}...",
-        "deployed": "Repositorio \"{{repo}}\" desplegado en {{machine}}",
-        "deployFailed": "Error al desplegar \"{{repo}}\" después del envío"
+        "pushing": "Enviando respaldo de \"{{repo}}\" a {{dest}}..."
       },
       "resize": {
         "completed": "Redimensionamiento completado",
@@ -1416,19 +1416,19 @@
         "noFiles": "No se encontraron archivos",
         "pathOption": "Ruta del subdirectorio a listar"
       },
-      "prune": {
-        "description": "Eliminar copias de seguridad huérfanas del almacenamiento que ya no están en ninguna configuración. Seguro con múltiples configuraciones con protección de período de gracia.",
-        "descriptionShort": "Eliminar copias de seguridad huérfanas del almacenamiento",
-        "listing": "Listando copias de seguridad en \"{{storage}}\"...",
-        "listFailed": "Error al listar las copias de seguridad del almacenamiento",
-        "noBackups": "No se encontraron copias de seguridad en el almacenamiento",
-        "found": "Se encontraron {{count}} copias de seguridad en el almacenamiento",
-        "completed": "Se eliminaron {{count}} copias de seguridad huérfanas"
-      },
       "description": "Gestionar proveedores de almacenamiento y explorar archivos remotos",
       "list": {
         "description": "Listar proveedores de almacenamiento",
         "fetching": "Obteniendo proveedores de almacenamiento..."
+      },
+      "prune": {
+        "completed": "Se eliminaron {{count}} copias de seguridad huérfanas",
+        "description": "Eliminar copias de seguridad huérfanas del almacenamiento que ya no están en ninguna configuración. Seguro con múltiples configuraciones con protección de período de gracia.",
+        "descriptionShort": "Eliminar copias de seguridad huérfanas del almacenamiento",
+        "found": "Se encontraron {{count}} copias de seguridad en el almacenamiento",
+        "listFailed": "Error al listar las copias de seguridad del almacenamiento",
+        "listing": "Listando copias de seguridad en \"{{storage}}\"...",
+        "noBackups": "No se encontraron copias de seguridad en el almacenamiento"
       },
       "pull": {
         "completed": "Descarga completada en {{duration}}ms",
@@ -2156,7 +2156,6 @@
     "datastore": "Ruta de almacén de datos en máquina",
     "debug": "Habilitar salida de depuración (modo local)",
     "dryRun": "Mostrar lo que se haría sin realizar cambios",
-    "graceDays": "Período de gracia en días para repositorios archivados recientemente (predeterminado: 7)",
     "email": "Dirección de correo electrónico",
     "endpoint": "URL de punto final de API",
     "excludePatterns": "Patrones a excluir de sincronización",
@@ -2169,6 +2168,7 @@
     "follow": "Seguir salida de logs",
     "force": "Omitir indicadores de confirmación",
     "functionName": "Nombre de función a ejecutar",
+    "graceDays": "Período de gracia en días para repositorios archivados recientemente (predeterminado: 7)",
     "image": "Nombre de imagen RBD",
     "importMode": "Modo de importación (merge o replace)",
     "insiders": "Usar configuración de VS Code Insiders",
@@ -2284,6 +2284,13 @@
     "syncConfirm": "\n¿Proceder con sincronización? [s/n/d(etalles)] ",
     "syncConfirmHelp": "Ingrese s (sí), n (no) o d (detalles)"
   },
+  "services": {
+    "prune": {
+      "noOrphaned": "No se encontraron entradas huérfanas",
+      "refusingPrune": "Se rechaza la limpieza — estas configuraciones pueden contener GUIDs protegidos. Use --force para forzar.",
+      "unreadableConfigs": "No se pueden leer {{count}} configuración(es): {{names}} (cifradas o corruptas)"
+    }
+  },
   "spinners": {
     "connecting": "Conectando...",
     "creating": "Creando {{resource}}...",
@@ -2304,12 +2311,5 @@
   },
   "table": {
     "noData": "No hay datos para mostrar"
-  },
-  "services": {
-    "prune": {
-      "unreadableConfigs": "No se pueden leer {{count}} configuración(es): {{names}} (cifradas o corruptas)",
-      "refusingPrune": "Se rechaza la limpieza — estas configuraciones pueden contener GUIDs protegidos. Use --force para forzar.",
-      "noOrphaned": "No se encontraron entradas huérfanas"
-    }
   }
 }

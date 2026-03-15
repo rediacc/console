@@ -738,15 +738,15 @@
         "description": "Supprimer les ressources orphelines du datastore et les instantanés périmés d'une machine",
         "descriptionShort": "Nettoyer les ressources orphelines et les instantanés périmés",
         "dryRunOption": "Afficher ce qui serait supprimé sans effectuer de modifications",
+        "noReposFound": "Aucun dépôt trouvé sur la machine",
         "noStaleSnapshots": "Aucun instantané périmé trouvé",
+        "orphanedReposCompleted": "{{count}} dépôts orphelins supprimés",
+        "orphanedReposOption": "Supprimer aussi les images de dépôts absents de toute configuration",
+        "orphanedReposStarting": "Recherche des dépôts orphelins sur {{machine}}...",
         "snapshotDeleted": "{{name}} supprimé",
         "snapshotDeleting": "Suppression de {{name}}...",
         "snapshotInUse": "{{name}} ignoré (en cours d'utilisation)",
         "snapshotsCompleted": "Nettoyage des instantanés : {{deleted}} supprimés, {{skipped}} ignorés",
-        "orphanedReposOption": "Supprimer aussi les images de dépôts absents de toute configuration",
-        "orphanedReposStarting": "Recherche des dépôts orphelins sur {{machine}}...",
-        "orphanedReposCompleted": "{{count}} dépôts orphelins supprimés",
-        "noReposFound": "Aucun dépôt trouvé sur la machine",
         "snapshotsOnlyOption": "Nettoyer uniquement les instantanés périmés",
         "snapshotStale": "Périmé : {{name}} ({{size}})",
         "startingDatastore": "Recherche des ressources orphelines du datastore sur {{machine}}...",
@@ -1209,6 +1209,9 @@
         "sourceRequired": "Spécifiez --from <storage> ou --from-machine <machine>"
       },
       "push": {
+        "deployed": "Dépôt \"{{repo}}\" déployé sur {{machine}}",
+        "deployFailed": "Échec du déploiement de \"{{repo}}\" après l'envoi",
+        "deploying": "Déploiement de \"{{repo}}\" sur {{machine}}...",
         "description": "Pousser la sauvegarde du dépôt vers le stockage ou une machine",
         "descriptionShort": "Envoyer la sauvegarde du dépôt vers le stockage ou la machine",
         "destIgnoredForStorage": "--dest {{provided}} ignoré : les sauvegardes de stockage utilisent le GUID du dépôt ({{dest}})",
@@ -1220,11 +1223,8 @@
         "optionTag": "Tag de déploiement pour le versionnage",
         "optionToMachine": "Nom de la machine de destination",
         "optionToStorage": "Nom du stockage de destination",
-        "pushing": "Envoi de la sauvegarde de \"{{repo}}\" vers {{dest}}...",
         "optionUp": "Après l'envoi, monter et déployer le dépôt sur la machine cible",
-        "deploying": "Déploiement de \"{{repo}}\" sur {{machine}}...",
-        "deployed": "Dépôt \"{{repo}}\" déployé sur {{machine}}",
-        "deployFailed": "Échec du déploiement de \"{{repo}}\" après l'envoi"
+        "pushing": "Envoi de la sauvegarde de \"{{repo}}\" vers {{dest}}..."
       },
       "resize": {
         "completed": "Redimensionnement terminé",
@@ -1416,19 +1416,19 @@
         "noFiles": "Aucun fichier trouvé",
         "pathOption": "Chemin du sous-répertoire à lister"
       },
-      "prune": {
-        "description": "Supprimer les sauvegardes orphelines du stockage qui ne sont plus dans aucune configuration. Sécurisé multi-configuration avec protection par période de grâce.",
-        "descriptionShort": "Supprimer les sauvegardes orphelines du stockage",
-        "listing": "Listage des sauvegardes dans \"{{storage}}\"...",
-        "listFailed": "Échec du listage des sauvegardes du stockage",
-        "noBackups": "Aucune sauvegarde trouvée dans le stockage",
-        "found": "{{count}} sauvegardes trouvées dans le stockage",
-        "completed": "{{count}} sauvegardes orphelines supprimées"
-      },
       "description": "Gérer les fournisseurs de stockage et parcourir les fichiers distants",
       "list": {
         "description": "Lister les fournisseurs de stockage",
         "fetching": "Récupération des fournisseurs de stockage..."
+      },
+      "prune": {
+        "completed": "{{count}} sauvegardes orphelines supprimées",
+        "description": "Supprimer les sauvegardes orphelines du stockage qui ne sont plus dans aucune configuration. Sécurisé multi-configuration avec protection par période de grâce.",
+        "descriptionShort": "Supprimer les sauvegardes orphelines du stockage",
+        "found": "{{count}} sauvegardes trouvées dans le stockage",
+        "listFailed": "Échec du listage des sauvegardes du stockage",
+        "listing": "Listage des sauvegardes dans \"{{storage}}\"...",
+        "noBackups": "Aucune sauvegarde trouvée dans le stockage"
       },
       "pull": {
         "completed": "Téléchargement terminé en {{duration}}ms",
@@ -2156,7 +2156,6 @@
     "datastore": "Chemin du magasin de données sur la machine",
     "debug": "Activer la sortie de débogage (mode local)",
     "dryRun": "Afficher les actions prévues sans effectuer de modifications",
-    "graceDays": "Période de grâce en jours pour les dépôts récemment archivés (par défaut : 7)",
     "email": "Adresse email",
     "endpoint": "URL du point de terminaison de l'API",
     "excludePatterns": "Motifs à exclure de la synchronisation",
@@ -2169,6 +2168,7 @@
     "follow": "Suivre la sortie des journaux",
     "force": "Ignorer les invites de confirmation",
     "functionName": "Nom de la fonction à exécuter",
+    "graceDays": "Période de grâce en jours pour les dépôts récemment archivés (par défaut : 7)",
     "image": "Nom de l'image RBD",
     "importMode": "Mode d'importation (fusion ou remplacement)",
     "insiders": "Utiliser les paramètres VS Code Insiders",
@@ -2284,6 +2284,13 @@
     "syncConfirm": "\nProcéder à la synchronisation ? [y/N/d(étails)] ",
     "syncConfirmHelp": "Veuillez entrer y (oui), n (non), ou d (détails)"
   },
+  "services": {
+    "prune": {
+      "noOrphaned": "Aucune entrée orpheline trouvée",
+      "refusingPrune": "Nettoyage refusé — ces configurations peuvent contenir des GUIDs protégés. Utilisez --force pour forcer.",
+      "unreadableConfigs": "Impossible de lire {{count}} configuration(s) : {{names}} (chiffrée(s) ou corrompue(s))"
+    }
+  },
   "spinners": {
     "connecting": "Connexion en cours...",
     "creating": "Création de {{resource}}...",
@@ -2304,12 +2311,5 @@
   },
   "table": {
     "noData": "Aucune donnée à afficher"
-  },
-  "services": {
-    "prune": {
-      "unreadableConfigs": "Impossible de lire {{count}} configuration(s) : {{names}} (chiffrée(s) ou corrompue(s))",
-      "refusingPrune": "Nettoyage refusé — ces configurations peuvent contenir des GUIDs protégés. Utilisez --force pour forcer.",
-      "noOrphaned": "Aucune entrée orpheline trouvée"
-    }
   }
 }

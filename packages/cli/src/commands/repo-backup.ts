@@ -219,7 +219,9 @@ async function pushSingleRepo(
 
   // Post-push: mount + deploy on target machine
   if (options.up && options.toMachine) {
-    outputService.info(t('commands.repo.push.deploying', { repo, machine: options.toMachine as string }));
+    outputService.info(
+      t('commands.repo.push.deploying', { repo, machine: options.toMachine as string })
+    );
     await deployRepoKeyIfNeeded(repo, options.toMachine as string);
     const upResult = await localExecutorService.execute({
       functionName: 'repository_up',
@@ -228,7 +230,9 @@ async function pushSingleRepo(
       debug: options.debug as boolean | undefined,
     });
     if (upResult.success) {
-      outputService.success(t('commands.repo.push.deployed', { repo, machine: options.toMachine as string }));
+      outputService.success(
+        t('commands.repo.push.deployed', { repo, machine: options.toMachine as string })
+      );
     } else {
       renderLocalExecutionFailure(upResult, t('commands.repo.push.deployFailed', { repo }));
     }

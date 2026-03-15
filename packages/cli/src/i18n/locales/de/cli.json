@@ -738,15 +738,15 @@
         "description": "Verwaiste Datenspeicher-Ressourcen und veraltete Snapshots von einer Maschine entfernen",
         "descriptionShort": "Verwaiste Ressourcen und veraltete Snapshots bereinigen",
         "dryRunOption": "Anzeigen, was entfernt würde, ohne Änderungen vorzunehmen",
+        "noReposFound": "Keine Repositories auf dem Rechner gefunden",
         "noStaleSnapshots": "Keine veralteten Snapshots gefunden",
+        "orphanedReposCompleted": "{{count}} verwaiste Repositories bereinigt",
+        "orphanedReposOption": "Auch Repo-Images bereinigen, die in keiner Konfiguration enthalten sind",
+        "orphanedReposStarting": "Suche nach verwaisten Repositories auf {{machine}}...",
         "snapshotDeleted": "{{name}} gelöscht",
         "snapshotDeleting": "{{name}} wird gelöscht...",
         "snapshotInUse": "{{name}} wird übersprungen (aktiv in Verwendung)",
         "snapshotsCompleted": "Snapshot-Bereinigung: {{deleted}} gelöscht, {{skipped}} übersprungen",
-        "orphanedReposOption": "Auch Repo-Images bereinigen, die in keiner Konfiguration enthalten sind",
-        "orphanedReposStarting": "Suche nach verwaisten Repositories auf {{machine}}...",
-        "orphanedReposCompleted": "{{count}} verwaiste Repositories bereinigt",
-        "noReposFound": "Keine Repositories auf dem Rechner gefunden",
         "snapshotsOnlyOption": "Nur veraltete Snapshots bereinigen",
         "snapshotStale": "Veraltet: {{name}} ({{size}})",
         "startingDatastore": "Suche nach verwaisten Datenspeicher-Ressourcen auf {{machine}}...",
@@ -1209,6 +1209,9 @@
         "sourceRequired": "Geben Sie --from <storage> oder --from-machine <machine> an"
       },
       "push": {
+        "deployed": "Repository \"{{repo}}\" auf {{machine}} bereitgestellt",
+        "deployFailed": "Bereitstellung von \"{{repo}}\" nach Push fehlgeschlagen",
+        "deploying": "\"{{repo}}\" wird auf {{machine}} bereitgestellt...",
         "description": "Repository-Backup auf Speicher oder Rechner übertragen",
         "descriptionShort": "Repository-Backup auf Speicher oder Maschine übertragen",
         "destIgnoredForStorage": "--dest {{provided}} ignoriert: Speicher-Backups verwenden Repository-GUID ({{dest}})",
@@ -1220,11 +1223,8 @@
         "optionTag": "Deployment-Tag für Versionierung",
         "optionToMachine": "Name des Zielrechners",
         "optionToStorage": "Name des Zielspeichers",
-        "pushing": "Backup von \"{{repo}}\" wird nach {{dest}} übertragen...",
         "optionUp": "Nach dem Push das Repository auf dem Zielrechner mounten und bereitstellen",
-        "deploying": "\"{{repo}}\" wird auf {{machine}} bereitgestellt...",
-        "deployed": "Repository \"{{repo}}\" auf {{machine}} bereitgestellt",
-        "deployFailed": "Bereitstellung von \"{{repo}}\" nach Push fehlgeschlagen"
+        "pushing": "Backup von \"{{repo}}\" wird nach {{dest}} übertragen..."
       },
       "resize": {
         "completed": "Skalierung abgeschlossen",
@@ -1416,19 +1416,19 @@
         "noFiles": "Keine Dateien gefunden",
         "pathOption": "Unterverzeichnispfad zum Auflisten"
       },
-      "prune": {
-        "description": "Verwaiste Backups aus dem Speicher löschen, die in keiner Konfiguration mehr vorhanden sind. Multi-Config-sicher mit Schonfrist-Schutz.",
-        "descriptionShort": "Verwaiste Backups aus dem Speicher löschen",
-        "listing": "Backups in \"{{storage}}\" werden aufgelistet...",
-        "listFailed": "Fehler beim Auflisten der Speicher-Backups",
-        "noBackups": "Keine Backups im Speicher gefunden",
-        "found": "{{count}} Backups im Speicher gefunden",
-        "completed": "{{count}} verwaiste Backups bereinigt"
-      },
       "description": "Speicheranbieter verwalten und Remote-Dateien durchsuchen",
       "list": {
         "description": "Speicheranbieter auflisten",
         "fetching": "Speicheranbieter werden abgerufen..."
+      },
+      "prune": {
+        "completed": "{{count}} verwaiste Backups bereinigt",
+        "description": "Verwaiste Backups aus dem Speicher löschen, die in keiner Konfiguration mehr vorhanden sind. Multi-Config-sicher mit Schonfrist-Schutz.",
+        "descriptionShort": "Verwaiste Backups aus dem Speicher löschen",
+        "found": "{{count}} Backups im Speicher gefunden",
+        "listFailed": "Fehler beim Auflisten der Speicher-Backups",
+        "listing": "Backups in \"{{storage}}\" werden aufgelistet...",
+        "noBackups": "Keine Backups im Speicher gefunden"
       },
       "pull": {
         "completed": "Download abgeschlossen in {{duration}}ms",
@@ -2156,7 +2156,6 @@
     "datastore": "Datastore-Pfad auf Machine",
     "debug": "Debug-Ausgabe aktivieren (lokaler Modus)",
     "dryRun": "Zeigen, was ausgeführt würde, ohne Änderungen vorzunehmen",
-    "graceDays": "Schonfrist in Tagen für kürzlich archivierte Repos (Standard: 7)",
     "email": "E-Mail-Adresse",
     "endpoint": "API-Endpunkt-URL",
     "excludePatterns": "Von der Synchronisierung auszuschließende Muster",
@@ -2169,6 +2168,7 @@
     "follow": "Logs-Ausgabe folgen",
     "force": "Bestätigungsaufforderungen überspringen",
     "functionName": "Funktionsname zum Ausführen",
+    "graceDays": "Schonfrist in Tagen für kürzlich archivierte Repos (Standard: 7)",
     "image": "RBD-Image-Name",
     "importMode": "Importmodus (merge oder replace)",
     "insiders": "VS Code Insiders-Einstellungen verwenden",
@@ -2284,6 +2284,13 @@
     "syncConfirm": "\nFortfahren mit Synchronisierung? [y/N/d(etails)] ",
     "syncConfirmHelp": "Bitte geben Sie y (ja), n (nein) oder d (details) ein"
   },
+  "services": {
+    "prune": {
+      "noOrphaned": "Keine verwaisten Einträge gefunden",
+      "refusingPrune": "Bereinigung abgelehnt — diese Konfigurationen könnten geschützte GUIDs enthalten. Verwenden Sie --force zum Überschreiben.",
+      "unreadableConfigs": "{{count}} Konfiguration(en) nicht lesbar: {{names}} (verschlüsselt oder beschädigt)"
+    }
+  },
   "spinners": {
     "connecting": "Verbindung wird hergestellt...",
     "creating": "{{resource}} wird erstellt...",
@@ -2304,12 +2311,5 @@
   },
   "table": {
     "noData": "Keine Daten zum Anzeigen"
-  },
-  "services": {
-    "prune": {
-      "unreadableConfigs": "{{count}} Konfiguration(en) nicht lesbar: {{names}} (verschlüsselt oder beschädigt)",
-      "refusingPrune": "Bereinigung abgelehnt — diese Konfigurationen könnten geschützte GUIDs enthalten. Verwenden Sie --force zum Überschreiben.",
-      "noOrphaned": "Keine verwaisten Einträge gefunden"
-    }
   }
 }

@@ -738,15 +738,15 @@
         "description": "Bir makineden sahipsiz veri deposu kaynaklarını ve eski anlık görüntüleri kaldır",
         "descriptionShort": "Sahipsiz kaynakları ve eski anlık görüntüleri temizle",
         "dryRunOption": "Değişiklik yapmadan nelerin kaldırılacağını göster",
+        "noReposFound": "Makinede depo bulunamadı",
         "noStaleSnapshots": "Eski anlık görüntü bulunamadı",
+        "orphanedReposCompleted": "{{count}} sahipsiz depo temizlendi",
+        "orphanedReposOption": "Hiçbir yapılandırmada bulunmayan depo görüntülerini de temizle",
+        "orphanedReposStarting": "{{machine}} üzerinde sahipsiz depolar taranıyor...",
         "snapshotDeleted": "{{name}} silindi",
         "snapshotDeleting": "{{name}} siliniyor...",
         "snapshotInUse": "{{name}} atlanıyor (aktif kullanımda)",
         "snapshotsCompleted": "Anlık görüntü temizliği: {{deleted}} silindi, {{skipped}} atlandı",
-        "orphanedReposOption": "Hiçbir yapılandırmada bulunmayan depo görüntülerini de temizle",
-        "orphanedReposStarting": "{{machine}} üzerinde sahipsiz depolar taranıyor...",
-        "orphanedReposCompleted": "{{count}} sahipsiz depo temizlendi",
-        "noReposFound": "Makinede depo bulunamadı",
         "snapshotsOnlyOption": "Yalnızca eski anlık görüntüleri temizle",
         "snapshotStale": "Eski: {{name}} ({{size}})",
         "startingDatastore": "{{machine}} üzerinde sahipsiz veri deposu kaynakları taranıyor...",
@@ -1209,6 +1209,9 @@
         "sourceRequired": "--from <storage> veya --from-machine <machine> belirtin"
       },
       "push": {
+        "deployed": "\"{{repo}}\" deposu {{machine}} üzerinde dağıtıldı",
+        "deployFailed": "Gönderdikten sonra \"{{repo}}\" dağıtımı başarısız oldu",
+        "deploying": "\"{{repo}}\" {{machine}} üzerinde dağıtılıyor...",
         "description": "Depo yedeğini depolamaya veya makineye gönder",
         "descriptionShort": "Depo yedeğini depolama veya makineye gönder",
         "destIgnoredForStorage": "--dest {{provided}} yoksayıldı: depolama yedekleri depo GUID'sini kullanır ({{dest}})",
@@ -1220,11 +1223,8 @@
         "optionTag": "Sürüm belirleme için dağıtım etiketi",
         "optionToMachine": "Hedef makine adı",
         "optionToStorage": "Hedef depolama adı",
-        "pushing": "\"{{repo}}\" yedeği {{dest}} hedefine gönderiliyor...",
         "optionUp": "Gönderdikten sonra hedef makinede depoyu bağla ve dağıt",
-        "deploying": "\"{{repo}}\" {{machine}} üzerinde dağıtılıyor...",
-        "deployed": "\"{{repo}}\" deposu {{machine}} üzerinde dağıtıldı",
-        "deployFailed": "Gönderdikten sonra \"{{repo}}\" dağıtımı başarısız oldu"
+        "pushing": "\"{{repo}}\" yedeği {{dest}} hedefine gönderiliyor..."
       },
       "resize": {
         "completed": "Yeniden boyutlandırma tamamlandı",
@@ -1416,19 +1416,19 @@
         "noFiles": "Dosya bulunamadı",
         "pathOption": "Listelenecek alt dizin yolu"
       },
-      "prune": {
-        "description": "Hiçbir yapılandırmada bulunmayan sahipsiz yedekleri depolamadan sil. Çoklu yapılandırma güvenli, ek süre korumalı.",
-        "descriptionShort": "Sahipsiz yedekleri depolamadan sil",
-        "listing": "\"{{storage}}\" içindeki yedekler listeleniyor...",
-        "listFailed": "Depolama yedekleri listelenemedi",
-        "noBackups": "Depolamada yedek bulunamadı",
-        "found": "Depolamada {{count}} yedek bulundu",
-        "completed": "{{count}} sahipsiz yedek temizlendi"
-      },
       "description": "Depolama sağlayıcılarını yönetin ve uzak dosyalara göz atın",
       "list": {
         "description": "Depolama sağlayıcılarını listeleyin",
         "fetching": "Depolama sağlayıcıları alınıyor..."
+      },
+      "prune": {
+        "completed": "{{count}} sahipsiz yedek temizlendi",
+        "description": "Hiçbir yapılandırmada bulunmayan sahipsiz yedekleri depolamadan sil. Çoklu yapılandırma güvenli, ek süre korumalı.",
+        "descriptionShort": "Sahipsiz yedekleri depolamadan sil",
+        "found": "Depolamada {{count}} yedek bulundu",
+        "listFailed": "Depolama yedekleri listelenemedi",
+        "listing": "\"{{storage}}\" içindeki yedekler listeleniyor...",
+        "noBackups": "Depolamada yedek bulunamadı"
       },
       "pull": {
         "completed": "İndirme {{duration}}ms içinde tamamlandı",
@@ -2156,7 +2156,6 @@
     "datastore": "Makinedeki depolama yolu",
     "debug": "Hata ayıklama çıkışını etkinleştir (yerel mod)",
     "dryRun": "Değişiklik yapmadan ne yapılacağını göster",
-    "graceDays": "Son arşivlenen depolar için gün cinsinden ek süre (varsayılan: 7)",
     "email": "E-posta adresi",
     "endpoint": "API uç noktası URL'si",
     "excludePatterns": "Senkronizasyondan hariç tutulacak desenler",
@@ -2169,6 +2168,7 @@
     "follow": "Günlük çıkışını izleyin",
     "force": "Onay istemlerini atla",
     "functionName": "Yürütülecek işlev adı",
+    "graceDays": "Son arşivlenen depolar için gün cinsinden ek süre (varsayılan: 7)",
     "image": "RBD görüntü adı",
     "importMode": "İçe aktarma modu (birleştir veya değiştir)",
     "insiders": "VS Code Insiders ayarlarını kullanın",
@@ -2284,6 +2284,13 @@
     "syncConfirm": "\nSenkronizasyon devam edilsin mi? [e/H/d(etails)] ",
     "syncConfirmHelp": "Lütfen e (evet), h (hayır) veya d (ayrıntılar) girin"
   },
+  "services": {
+    "prune": {
+      "noOrphaned": "Sahipsiz giriş bulunamadı",
+      "refusingPrune": "Temizlik reddedildi — bu yapılandırmalar korunan GUID'ler içerebilir. Zorlamak için --force kullanın.",
+      "unreadableConfigs": "{{count}} yapılandırma dosyası okunamadı: {{names}} (şifrelenmiş veya bozuk)"
+    }
+  },
   "spinners": {
     "connecting": "Bağlanılıyor...",
     "creating": "{{resource}} oluşturuluyor...",
@@ -2304,12 +2311,5 @@
   },
   "table": {
     "noData": "Gösterilecek veri yok"
-  },
-  "services": {
-    "prune": {
-      "unreadableConfigs": "{{count}} yapılandırma dosyası okunamadı: {{names}} (şifrelenmiş veya bozuk)",
-      "refusingPrune": "Temizlik reddedildi — bu yapılandırmalar korunan GUID'ler içerebilir. Zorlamak için --force kullanın.",
-      "noOrphaned": "Sahipsiz giriş bulunamadı"
-    }
   }
 }

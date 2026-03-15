@@ -738,15 +738,15 @@
         "description": "孤立したデータストアリソースと古いスナップショットをマシンから削除する",
         "descriptionShort": "孤立したリソースと古いスナップショットを整理する",
         "dryRunOption": "変更を加えずに削除される内容を表示する",
+        "noReposFound": "マシン上にリポジトリが見つかりません",
         "noStaleSnapshots": "古いスナップショットは見つかりませんでした",
+        "orphanedReposCompleted": "{{count}} 件の孤立したリポジトリを削除しました",
+        "orphanedReposOption": "どの設定にも存在しないリポジトリイメージも削除する",
+        "orphanedReposStarting": "{{machine}} 上の孤立したリポジトリをスキャン中...",
         "snapshotDeleted": "{{name}} を削除しました",
         "snapshotDeleting": "{{name}} を削除中...",
         "snapshotInUse": "{{name}} をスキップ (使用中)",
         "snapshotsCompleted": "スナップショット整理: {{deleted}} 件削除、{{skipped}} 件スキップ",
-        "orphanedReposOption": "どの設定にも存在しないリポジトリイメージも削除する",
-        "orphanedReposStarting": "{{machine}} 上の孤立したリポジトリをスキャン中...",
-        "orphanedReposCompleted": "{{count}} 件の孤立したリポジトリを削除しました",
-        "noReposFound": "マシン上にリポジトリが見つかりません",
         "snapshotsOnlyOption": "古いスナップショットのみを整理する",
         "snapshotStale": "古い: {{name}} ({{size}})",
         "startingDatastore": "{{machine}} 上の孤立したデータストアリソースをスキャン中...",
@@ -1209,6 +1209,9 @@
         "sourceRequired": "--from <storage> または --from-machine <machine> を指定してください"
       },
       "push": {
+        "deployed": "リポジトリ \"{{repo}}\" が {{machine}} にデプロイされました",
+        "deployFailed": "プッシュ後の \"{{repo}}\" のデプロイに失敗しました",
+        "deploying": "{{machine}} に \"{{repo}}\" をデプロイ中...",
         "description": "リポジトリのバックアップをストレージまたはマシンにプッシュする",
         "descriptionShort": "ストレージまたはマシンにリポジトリバックアップをプッシュする",
         "destIgnoredForStorage": "--dest {{provided}} を無視: ストレージバックアップはリポジトリGUIDを使用します（{{dest}}）",
@@ -1220,11 +1223,8 @@
         "optionTag": "バージョニング用デプロイタグ",
         "optionToMachine": "宛先マシン名",
         "optionToStorage": "宛先ストレージ名",
-        "pushing": "\"{{repo}}\" のバックアップを {{dest}} にプッシュ中...",
         "optionUp": "プッシュ後、ターゲットマシンにリポジトリをマウントしてデプロイする",
-        "deploying": "{{machine}} に \"{{repo}}\" をデプロイ中...",
-        "deployed": "リポジトリ \"{{repo}}\" が {{machine}} にデプロイされました",
-        "deployFailed": "プッシュ後の \"{{repo}}\" のデプロイに失敗しました"
+        "pushing": "\"{{repo}}\" のバックアップを {{dest}} にプッシュ中..."
       },
       "resize": {
         "completed": "リサイズが完了しました",
@@ -1416,19 +1416,19 @@
         "noFiles": "ファイルが見つかりません",
         "pathOption": "リスト表示するサブディレクトリのパス"
       },
-      "prune": {
-        "description": "どの設定にも存在しなくなった孤立したバックアップをストレージから削除します。マルチ設定対応で猶予期間による保護付き。",
-        "descriptionShort": "ストレージから孤立したバックアップを削除",
-        "listing": "\"{{storage}}\" のバックアップをリスト表示中...",
-        "listFailed": "ストレージバックアップのリスト表示に失敗しました",
-        "noBackups": "ストレージにバックアップが見つかりません",
-        "found": "ストレージに {{count}} 件のバックアップが見つかりました",
-        "completed": "{{count}} 件の孤立したバックアップを削除しました"
-      },
       "description": "ストレージプロバイダーの管理とリモートファイルの参照",
       "list": {
         "description": "ストレージプロバイダーをリスト表示する",
         "fetching": "ストレージプロバイダーを取得中です..."
+      },
+      "prune": {
+        "completed": "{{count}} 件の孤立したバックアップを削除しました",
+        "description": "どの設定にも存在しなくなった孤立したバックアップをストレージから削除します。マルチ設定対応で猶予期間による保護付き。",
+        "descriptionShort": "ストレージから孤立したバックアップを削除",
+        "found": "ストレージに {{count}} 件のバックアップが見つかりました",
+        "listFailed": "ストレージバックアップのリスト表示に失敗しました",
+        "listing": "\"{{storage}}\" のバックアップをリスト表示中...",
+        "noBackups": "ストレージにバックアップが見つかりません"
       },
       "pull": {
         "completed": "{{duration}}ms でプルが完了しました",
@@ -2156,7 +2156,6 @@
     "datastore": "マシン上のデータストアパス",
     "debug": "デバッグ出力を有効化 (ローカルモード)",
     "dryRun": "変更を加えずに実行内容を表示する",
-    "graceDays": "最近アーカイブされたリポジトリの猶予期間（日数、デフォルト: 7）",
     "email": "メールアドレス",
     "endpoint": "API エンドポイント URL",
     "excludePatterns": "同期から除外するパターン",
@@ -2169,6 +2168,7 @@
     "follow": "ログ出力をフォローする",
     "force": "確認プロンプトをスキップする",
     "functionName": "実行する関数名",
+    "graceDays": "最近アーカイブされたリポジトリの猶予期間（日数、デフォルト: 7）",
     "image": "RBD イメージ名",
     "importMode": "インポートモード (merge または replace)",
     "insiders": "VS Code Insiders 設定を使用する",
@@ -2284,6 +2284,13 @@
     "syncConfirm": "\n同期を続行しますか？ [y/N/d(etails)] ",
     "syncConfirmHelp": "y (はい)、n (いいえ)、d (詳細) を入力してください"
   },
+  "services": {
+    "prune": {
+      "noOrphaned": "孤立したエントリは見つかりませんでした",
+      "refusingPrune": "整理を拒否 — これらの設定に保護されたGUIDが含まれている可能性があります。--force を使用して強制実行してください。",
+      "unreadableConfigs": "{{count}} 個の設定ファイルを読み取れません: {{names}} (暗号化済みまたは破損)"
+    }
+  },
   "spinners": {
     "connecting": "接続中です...",
     "creating": "{{resource}} を作成中です...",
@@ -2304,12 +2311,5 @@
   },
   "table": {
     "noData": "表示するデータがありません"
-  },
-  "services": {
-    "prune": {
-      "unreadableConfigs": "{{count}} 個の設定ファイルを読み取れません: {{names}} (暗号化済みまたは破損)",
-      "refusingPrune": "整理を拒否 — これらの設定に保護されたGUIDが含まれている可能性があります。--force を使用して強制実行してください。",
-      "noOrphaned": "孤立したエントリは見つかりませんでした"
-    }
   }
 }
