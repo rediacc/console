@@ -96,6 +96,14 @@ test.describe('Storage Management', () => {
         await expect(traceButton).toBeVisible({ timeout: 15000 });
         await traceButton.click();
 
+        testReporter.startStep('Click export button in audit trace dropdown');
+
+        const exportButton = page.getByTestId('audit-trace-export-button');
+        await expect(exportButton).toBeVisible({ timeout: 10000 });
+        await exportButton.click();
+
+        testReporter.completeStep('Click export button in audit trace dropdown', 'passed');
+
         testReporter.completeStep('Verify credential creation, edit and trace', 'passed');
 
         await testReporter.finalizeTest();
