@@ -22,12 +22,10 @@ cd "$(get_repo_root)"
 
 log_step "Installing npm dependencies..."
 
-# Clean npm cache and stale node_modules to avoid corruption on CI runners
+# Clean npm cache on CI runners
 if [[ "${CI:-false}" == "true" ]]; then
     log_info "Cleaning npm cache (CI environment)"
     npm cache clean --force 2>/dev/null || true
-    # Remove stale node_modules that may have wrong platform binaries
-    rm -rf node_modules 2>/dev/null || true
 fi
 
 # Build npm install command
@@ -58,6 +56,18 @@ fi
 if [[ ! -d "node_modules" ]]; then
     log_error "node_modules directory not created"
     exit 1
+fi
+
+# Verify rollup native binding is present (npm/cli#4828 workaround)
+ROLLUP_VERSION=$(node -e "try{console.log(require('rollup/package.json').version)}catch{}" 2>/dev/null || true)
+if [[ -n "$ROLLUP_VERSION" ]]; then
+    ROLLUP_DIR=$(node -e "const p=process.platform,a=process.arch;const m={'linux-x64':'linux-x64-gnu','linux-arm64':'linux-arm64-gnu','darwin-arm64':'darwin-arm64','darwin-x64':'darwin-x64','win32-x64':'win32-x64-msvc'};console.log('@rollup/rollup-'+(m[p+'-'+a]||'unknown'))" 2>/dev/null)
+    if [[ ! -d "node_modules/$ROLLUP_DIR" ]]; then
+        log_warn "Missing $ROLLUP_DIR — retrying npm install with clean state..."
+        rm -rf node_modules package-lock.json
+        npm install 2>&1 | tail -3
+        git checkout package-lock.json 2>/dev/null || true
+    fi
 fi
 
 # Install account dependencies if submodule is available
