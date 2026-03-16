@@ -37,6 +37,10 @@ if [[ "$CI_OS" == "windows" ]] || [[ "$IGNORE_SCRIPTS" == "true" ]]; then
     log_info "Using --ignore-scripts flag"
 fi
 
+# Workaround for npm bug with optional dependencies on cross-platform CI
+# https://github.com/npm/cli/issues/4828
+NPM_ARGS="$NPM_ARGS --include=optional"
+
 # Run npm ci
 if npm $NPM_ARGS; then
     log_info "Dependencies installed successfully"
