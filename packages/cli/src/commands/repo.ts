@@ -144,10 +144,7 @@ async function iterateAllRepos(
   );
 }
 
-/**
- * Execute a repository lifecycle function on a remote machine.
- * Validates the repository exists in context and runs the function via localExecutorService.
- */
+/** Execute a repository lifecycle function on a remote machine. */
 async function executeRepoFunction(
   functionName: string,
   repoName: string,
@@ -518,7 +515,6 @@ export function registerRepoCommands(program: Command): void {
       try {
         outputService.info(t('commands.repo.list.starting', { machine: options.machine }));
         const format = getOutputFormat();
-
         const result = await localExecutorService.execute({
           functionName: 'repository_list',
           machineName: options.machine,
@@ -530,8 +526,7 @@ export function registerRepoCommands(program: Command): void {
 
         if (result.success) {
           const repositories = parseRepositoryListOutput(result.stdout ?? '[]');
-          const guidMap = await loadGuidMap();
-          const resolve = createGuidResolver(guidMap);
+          const resolve = createGuidResolver(await loadGuidMap());
           const resolved = resolveGuids(repositories, resolve, 'name');
           if (format === 'table') {
             const { parseRepoRef } = await import('../utils/config-schema.js');
@@ -576,7 +571,6 @@ export function registerRepoCommands(program: Command): void {
         handleError(error);
       }
     });
-
   registerExtendedRepoCommands(repo);
   registerRepoBackupCommands(repo);
   registerRepoSyncCommands(repo);

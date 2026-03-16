@@ -33,8 +33,8 @@ import { outputService } from './services/output.js';
 import { getSubscriptionTokenState } from './services/subscription-auth.js';
 import { telemetryService } from './services/telemetry.js';
 import type { OutputFormat } from './types/index.js';
-import { setOutputFormat } from './utils/errors.js';
 import { isAgentEnvironment } from './utils/agent-guard.js';
+import { setOutputFormat } from './utils/errors.js';
 import { applyRegistry } from './utils/mode-guard.js';
 import { VERSION } from './version.js';
 

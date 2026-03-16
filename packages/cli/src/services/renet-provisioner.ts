@@ -17,6 +17,7 @@ import { createTempSSHKeyFile, removeTempSSHKeyFile } from '@rediacc/shared-desk
 import { executeRsync, getRsyncCommand } from '@rediacc/shared-desktop/sync';
 import { VERSION } from '../version.js';
 import { computeSha256, getEmbeddedRenetBinary, isSEA, type RenetArch } from './embedded-assets.js';
+import { acquireLocalLock, releaseLocalLock } from './file-lock.js';
 import { outputService } from './output.js';
 import { compareVersions } from './updater.js';
 
@@ -542,11 +543,11 @@ class RenetProvisionerService {
       `.rdc-renet-provision-${cacheKey.replaceAll(/[^a-zA-Z0-9_.-]/g, '_')}.lock`
     );
 
-    await acquireLocalLock(lockPath, Date.now() + LOCAL_LOCK_TIMEOUT_MS);
+    await acquireLocalLock(lockPath, Date.now() + LOCAL_LOCK_TIMEOUT_MS, LOCAL_LOCK_POLL_MS);
     try {
       return await fn();
     } finally {
-      await fs.rm(lockPath, { recursive: true, force: true });
+      await releaseLocalLock(lockPath);
     }
   }
 
@@ -618,48 +619,11 @@ class RenetProvisionerService {
       'if [ -z "$result" ]; then result=VERIFIED; fi',
       'echo "$result"',
     ].join('; ');
-
     const quotedBody = this.shellEscape(body);
     return `command -v flock >/dev/null 2>&1 || { echo FLOCK_MISSING >&2; exit 127; }; flock -w 120 ${escapedLockPath} sh -c ${quotedBody}`;
   }
-
   private shellEscape(v: string): string {
     return `'${v.replaceAll("'", `'\\''`)}'`;
-  }
-}
-const isLockAlreadyHeldError = (e: unknown): e is NodeJS.ErrnoException =>
-  e instanceof Error && 'code' in e && e.code === 'EEXIST';
-async function isLockStale(pidPath: string): Promise<boolean> {
-  try {
-    const pid = Number.parseInt((await fs.readFile(pidPath, 'utf-8')).trim(), 10);
-    if (Number.isNaN(pid)) return true;
-    process.kill(pid, 0); // signal 0: existence check, throws ESRCH if dead
-    return false;
-  } catch {
-    return true;
-  }
-}
-async function tryCreateLock(lockPath: string): Promise<boolean> {
-  try {
-    await fs.mkdir(lockPath);
-    await fs.writeFile(path.join(lockPath, 'pid'), String(process.pid));
-    return true;
-  } catch (error) {
-    if (!isLockAlreadyHeldError(error)) throw error;
-    return false;
-  }
-}
-async function acquireLocalLock(lockPath: string, deadline: number): Promise<void> {
-  const pidPath = path.join(lockPath, 'pid');
-  while (!(await tryCreateLock(lockPath))) {
-    if (await isLockStale(pidPath)) {
-      await fs.rm(lockPath, { recursive: true, force: true });
-      continue;
-    }
-    if (Date.now() >= deadline) {
-      throw new Error(`Timed out waiting for local renet provision lock: ${lockPath}`);
-    }
-    await new Promise((resolve) => setTimeout(resolve, LOCAL_LOCK_POLL_MS));
   }
 }
 

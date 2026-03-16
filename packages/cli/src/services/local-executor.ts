@@ -17,6 +17,11 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import { t } from '../i18n/index.js';
+import { isAgentEnvironment } from '../utils/agent-guard.js';
+import { ValidationError } from '../utils/errors.js';
+import { formatDuration } from '../utils/format.js';
+import { startSpinner, stopSpinner } from '../utils/spinner.js';
 import { configService } from './config-resources.js';
 import {
   refreshMachineActivation,
@@ -38,11 +43,6 @@ import {
   RENET_LICENSE_REQUIRED_EXIT_CODE,
   type RenetLicenseFailure,
 } from './renet-license-contract.js';
-import { isAgentEnvironment } from '../utils/agent-guard.js';
-import { ValidationError } from '../utils/errors.js';
-import { formatDuration } from '../utils/format.js';
-import { t } from '../i18n/index.js';
-import { startSpinner, stopSpinner } from '../utils/spinner.js';
 
 /** Run a step with spinner + timing. Shows "Loading..." then "✓ Loaded (1.2s)" on the same line. */
 async function timedStep<T>(
@@ -66,6 +66,7 @@ async function timedStep<T>(
     throw error;
   }
 }
+
 import { getSubscriptionTokenState } from './subscription-auth.js';
 import { authorizeSubscriptionViaDeviceCode } from './subscription-device-auth.js';
 
