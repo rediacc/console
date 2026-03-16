@@ -1,4 +1,4 @@
-import { test } from '@/base/BaseTest';
+import { test, expect } from '@/base/BaseTest';
 import { LoginPage } from '@/pages/auth/LoginPage';
 
 test.describe('Login Tests - Empty Fields', () => {
@@ -16,7 +16,8 @@ test.describe('Login Tests - Empty Fields', () => {
     testReporter.startStep('Verify empty form state');
 
     await loginPage.clearForm();
-    await loginPage.isLoginButtonEnabled();
+    const isLoginButtonEnabled = await loginPage.isLoginButtonEnabled();
+    expect(isLoginButtonEnabled).toBe(false);
 
     testReporter.completeStep('Verify empty form state', 'passed');
     await testReporter.finalizeTest();

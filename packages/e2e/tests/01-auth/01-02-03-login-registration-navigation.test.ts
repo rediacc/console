@@ -1,4 +1,4 @@
-import { test } from '@/base/BaseTest';
+import { test, expect } from '@/base/BaseTest';
 import { LoginPage } from '@/pages/auth/LoginPage';
 
 test.describe('Login Tests - Registration Navigation', () => {
@@ -18,9 +18,7 @@ test.describe('Login Tests - Registration Navigation', () => {
     await loginPage.clickRegister();
 
     // Wait for registration form to appear
-    await page
-      .locator('[data-testid="registration-organization-input"]')
-      .waitFor({ state: 'visible' });
+    await expect(page.locator('[data-testid="registration-organization-input"]')).toBeVisible();
 
     testReporter.completeStep('Click register link', 'passed');
 
