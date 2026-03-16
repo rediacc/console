@@ -56,10 +56,12 @@ if [[ ! -d "node_modules" ]]; then
 fi
 
 # Workaround: npm ci may skip platform-specific optional deps (npm/cli#4828)
-# Re-run npm install to ensure all optional native bindings are present.
-# This catches @rollup/rollup-*, lightningcss.*.node, @esbuild/*, etc.
+# Delete package-lock.json temporarily and re-run npm install to force resolution
+# of all platform-specific native bindings (@rollup/*, @esbuild/*, lightningcss-*).
 log_info "Ensuring platform-specific optional dependencies..."
-npm install --include=optional --no-save 2>/dev/null || true
+rm -f package-lock.json
+npm install --prefer-offline 2>/dev/null || npm install 2>/dev/null || true
+git checkout package-lock.json 2>/dev/null || true
 
 # Install account dependencies if submodule is available
 if [[ -f "private/account/package.json" ]]; then
