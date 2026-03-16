@@ -7,7 +7,7 @@ import { waitForTeamRow } from '@/test-helpers/team-helpers';
 import { createUserViaUI } from '@/test-helpers/user-helpers';
 import type { Page } from '@playwright/test';
 
-test.describe('User Team Assignment Tests', () => {
+test.describe('User Team Assignment Tests - Add Specific User', () => {
   test.describe.configure({ timeout: 60000 });
   let dashboardPage: DashboardPage;
   let loginPage: LoginPage;
@@ -168,23 +168,20 @@ test.describe('User Team Assignment Tests', () => {
     }
   };
 
-  test('should add created user to team @system @users @teams @regression', async ({
+  test('should add specific user to team by email @system @users @teams', async ({
     page,
     screenshotManager: _screenshotManager,
     testReporter,
     testDataManager,
   }) => {
-    const createdUser = await createUserViaUI(page, testDataManager);
+    const userToAdd = await createUserViaUI(page, testDataManager);
     await dismissCreateUserModal(page);
-
-    const userEmail = createdUser.email;
     const teamName = 'Private Team';
 
-    await ensureUserActive(page, userEmail);
+    await ensureUserActive(page, userToAdd.email);
 
     testReporter.startStep('Navigate to Teams section');
 
-    // Navigate to Organization > Teams
     await dismissCreateUserModal(page);
     const nav = new NavigationHelper(page);
     await nav.goToOrganizationTeams();
@@ -193,47 +190,38 @@ test.describe('User Team Assignment Tests', () => {
 
     testReporter.completeStep('Navigate to Teams section', 'passed');
 
-    testReporter.startStep('Open team members dialog');
+    testReporter.startStep(`Add user ${userToAdd.email} to team`);
 
-    // Open team members dialog
     await openTeamMembersDialog(page, teamName);
 
-    // Wait for modal to open
     const teamModal = page.locator('.ant-modal').filter({ hasText: 'Manage Team Members' });
     await expect(teamModal).toBeVisible({ timeout: 5000 });
 
-    testReporter.completeStep('Open team members dialog', 'passed');
-
-    testReporter.startStep('Add user to team');
-
-    // Switch to Add Member tab
     const addMemberTab = page.getByRole('tab', { name: 'Add Member' });
     await expect(addMemberTab).toBeVisible();
     await addMemberTab.click();
 
-    await selectUserInAddMemberTab(page, userEmail);
+    await selectUserInAddMemberTab(page, userToAdd.email);
 
     // Wait for API response to complete
     await page.waitForLoadState('networkidle');
 
-    testReporter.completeStep('Add user to team', 'passed');
+    testReporter.completeStep(`Add user ${userToAdd.email} to team`, 'passed');
 
     testReporter.startStep('Verify user in team members');
 
     await expect(teamModal).toBeVisible({ timeout: 5000 });
 
-    // Switch to Current Members tab
     const currentMembersTab = page.getByRole('tab', { name: 'Current Members' });
     await expect(currentMembersTab).toBeVisible();
     await currentMembersTab.click();
 
-    // Verify user appears in members list
     const membersList = teamModal.locator('.ant-list-items');
     await expect(membersList).toBeVisible();
 
     const userInList = membersList
       .locator('.ant-list-item-meta-title')
-      .filter({ hasText: userEmail });
+      .filter({ hasText: userToAdd.email });
     await expect(userInList).toBeVisible({ timeout: 5000 });
 
     testReporter.completeStep('Verify user in team members', 'passed');
