@@ -55,6 +55,13 @@ if [[ ! -d "node_modules" ]]; then
     exit 1
 fi
 
+# Workaround: npm ci may skip platform-specific optional deps (npm/cli#4828)
+# Manually install rollup native bindings if missing on macOS
+if [[ "$CI_OS" == "macos" ]] && [[ ! -d "node_modules/@rollup/rollup-darwin-arm64" ]]; then
+    log_info "Installing missing @rollup/rollup-darwin-arm64..."
+    npm install @rollup/rollup-darwin-arm64 --no-save 2>/dev/null || true
+fi
+
 # Install account dependencies if submodule is available
 if [[ -f "private/account/package.json" ]]; then
     log_step "Installing account dependencies..."
