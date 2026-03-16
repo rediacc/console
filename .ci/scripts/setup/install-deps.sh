@@ -71,7 +71,10 @@ if [[ -n "$NATIVE_PKGS" ]]; then
     log_info "Installing native bindings: $NATIVE_PKGS"
     for pkg in $NATIVE_PKGS; do
         if [[ ! -d "node_modules/$pkg" ]]; then
-            npm install "$pkg" --no-save --ignore-scripts 2>/dev/null || true
+            log_info "  Installing $pkg..."
+            npm install "$pkg" --no-save 2>&1 || log_warn "  Failed to install $pkg (non-fatal)"
+        else
+            log_info "  $pkg already installed"
         fi
     done
 fi
