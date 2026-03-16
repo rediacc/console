@@ -59,9 +59,9 @@ fi
 # Detect the current platform's rollup native binding and install if missing
 ROLLUP_PLATFORM=""
 case "$(uname -s)-$(uname -m)" in
-    Linux-x86_64)  ROLLUP_PLATFORM="linux-x64-gnu" ;;
+    Linux-x86_64) ROLLUP_PLATFORM="linux-x64-gnu" ;;
     Linux-aarch64) ROLLUP_PLATFORM="linux-arm64-gnu" ;;
-    Darwin-arm64)  ROLLUP_PLATFORM="darwin-arm64" ;;
+    Darwin-arm64) ROLLUP_PLATFORM="darwin-arm64" ;;
     Darwin-x86_64) ROLLUP_PLATFORM="darwin-x64" ;;
 esac
 if [[ -n "$ROLLUP_PLATFORM" ]] && [[ ! -d "node_modules/@rollup/rollup-${ROLLUP_PLATFORM}" ]]; then
