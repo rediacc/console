@@ -348,7 +348,10 @@ async function runInlineSSH(
  * Registers the term commands
  */
 export function registerTermCommands(program: Command): void {
-  const term = program.command('term').description(t('commands.term.description'));
+  const term = program
+    .command('term')
+    .summary(t('commands.term.descriptionShort'))
+    .description(t('commands.term.description'));
 
   term.addHelpText(
     'after',

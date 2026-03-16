@@ -5,7 +5,10 @@ import { t } from '../../i18n/index.js';
 const MCP_TIMEOUT_DEFAULT = String(DEFAULTS.TIMEOUT.MCP_COMMAND);
 
 export function registerMcpCommands(program: Command): void {
-  const mcp = program.command('mcp').description(t('commands.mcp.description'));
+  const mcp = program
+    .command('mcp')
+    .summary(t('commands.mcp.descriptionShort'))
+    .description(t('commands.mcp.description'));
 
   mcp
     .command('serve')
@@ -19,6 +22,7 @@ export function registerMcpCommands(program: Command): void {
         configName: options.config,
         defaultTimeoutMs: Number.parseInt(options.timeout ?? MCP_TIMEOUT_DEFAULT, 10),
         allowGrand: options.allowGrand,
+        program,
       });
     });
 }

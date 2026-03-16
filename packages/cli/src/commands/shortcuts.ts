@@ -130,7 +130,7 @@ export function registerShortcuts(program: Command): void {
   // run - shortcut for queue create with optional watch
   // In local mode, executes directly via renet subprocess
   program
-    .command('run <function>')
+    .command('run <function>', { hidden: true })
     .summary(t('commands.shortcuts.run.descriptionShort'))
     .description(t('commands.shortcuts.run.description'))
     .option('-t, --team <name>', t('options.team'))

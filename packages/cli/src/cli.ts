@@ -34,6 +34,7 @@ import { getSubscriptionTokenState } from './services/subscription-auth.js';
 import { telemetryService } from './services/telemetry.js';
 import type { OutputFormat } from './types/index.js';
 import { setOutputFormat } from './utils/errors.js';
+import { isAgentEnvironment } from './utils/agent-guard.js';
 import { applyRegistry } from './utils/mode-guard.js';
 import { VERSION } from './version.js';
 
@@ -42,6 +43,8 @@ let i18nInitialized = false;
 
 // Track command context for telemetry
 const commandContext = new Map<string, { startTime: number }>();
+
+import { formatDuration } from './utils/format.js';
 
 // Initialize telemetry at startup (non-blocking)
 telemetryService.initialize({ serviceVersion: VERSION });
@@ -74,12 +77,42 @@ async function ensureI18n(language: string, explicitLang?: string): Promise<void
   }
 }
 
+async function setUserAndSubscriptionContext(): Promise<void> {
+  try {
+    const email = await configService.getUserEmail();
+    const team = await configService.getTeam();
+    const tokenState = getSubscriptionTokenState();
+
+    if (isAgentEnvironment() && tokenState.kind !== 'ready') {
+      outputService.warn(t('errors.subscription.tokenWarning'));
+    }
+    const subscriptionContext =
+      tokenState.kind === 'ready' && tokenState.token.subscriptionId
+        ? {
+            subscriptionId: tokenState.token.subscriptionId,
+            subscriptionSource: TELEMETRY_SUBSCRIPTION_SOURCES.storedToken,
+          }
+        : {};
+
+    if (email || team || Object.keys(subscriptionContext).length > 0) {
+      telemetryService.setUserContext({
+        email: email ?? undefined,
+        teamName: team ?? undefined,
+        ...subscriptionContext,
+      });
+    }
+  } catch {
+    // Ignore errors getting user context
+  }
+}
+
 export const cli = new Command();
 
 cli
   .name('rdc')
   .description(t('cli.description'))
   .version(VERSION)
+  .showHelpAfterError(true)
   .option('-o, --output <format>', t('options.output'), 'table')
   .option('--config <name>', t('options.config'))
   .option('-l, --lang <code>', t('options.lang', { languages: SUPPORTED_LANGUAGES.join('|') }))
@@ -87,10 +120,10 @@ cli
   .option('--fields <fields>', t('options.fields'))
   .hook('preAction', async (thisCommand, actionCommand) => {
     const opts = thisCommand.opts();
-    // Auto-detect non-TTY: default to JSON when stdout is piped (agent-friendly)
+    // Auto-detect: default to JSON when stdout is piped or running in an AI agent
     const outputSource = thisCommand.getOptionValueSource('output');
     let effectiveFormat = opts.output as OutputFormat;
-    if (outputSource === 'default' && process.stdout.isTTY !== true) {
+    if (outputSource === 'default' && (process.stdout.isTTY !== true || isAgentEnvironment())) {
       effectiveFormat = 'json';
     }
     setOutputFormat(effectiveFormat);
@@ -125,33 +158,24 @@ cli
     });
     telemetryService.startProfiling(commandName);
 
-    // Set user context if available
-    try {
-      const email = await configService.getUserEmail();
-      const team = await configService.getTeam();
-      const tokenState = getSubscriptionTokenState();
-      const subscriptionContext =
-        tokenState.kind === 'ready' && tokenState.token.subscriptionId
-          ? {
-              subscriptionId: tokenState.token.subscriptionId,
-              subscriptionSource: TELEMETRY_SUBSCRIPTION_SOURCES.storedToken,
-            }
-          : {};
-
-      if (email || team || Object.keys(subscriptionContext).length > 0) {
-        telemetryService.setUserContext({
-          email: email ?? undefined,
-          teamName: team ?? undefined,
-          ...subscriptionContext,
-        });
-      }
-    } catch {
-      // Ignore errors getting user context
-    }
+    // Set user context and subscription state (extracted to reduce complexity)
+    await setUserAndSubscriptionContext();
 
     // License auto-refresh is now handled per-operation in services/license.ts
   })
   .hook('postAction', async (_thisCommand, actionCommand) => {
+    // Display operation timing if a remote operation was executed
+    const opDuration = outputService.getOperationDurationMs();
+    const totalDuration = outputService.getDurationMs();
+    if (opDuration != null) {
+      outputService.success(
+        t('timing.completed', {
+          operation: formatDuration(opDuration),
+          total: formatDuration(totalDuration),
+        })
+      );
+    }
+
     // Stop profiling before ending telemetry
     await telemetryService.stopProfiling();
 
@@ -200,6 +224,15 @@ registerShortcuts(cli);
 
 // Apply mode guards, help tags, and domain grouping from the command registry
 applyRegistry(cli);
+
+// Add Key Concepts and Agent Mode sections for extended help (agents + --help-all)
+const showExtendedHelp = isAgentEnvironment() || process.argv.includes('--help-all');
+if (showExtendedHelp) {
+  cli.addHelpText('after', t('help.keyConcepts'));
+  if (isAgentEnvironment()) {
+    cli.addHelpText('after', t('help.agentMode'));
+  }
+}
 
 // Add usage examples to top-level help
 cli.addHelpText(

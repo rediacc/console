@@ -4,7 +4,7 @@ description: "Crear un repositorio cifrado, desplegar una aplicación en contene
 category: "Tutorials"
 order: 3
 language: es
-sourceHash: "0c4edddefa30df1c"
+sourceHash: f28a6f56286d8853
 ---
 
 # Cómo desplegar y gestionar repositorios con Rediacc

@@ -691,6 +691,7 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
       margin: 0 auto;
       padding: calc(var(--nav-height) + var(--space-4)) var(--space-4) var(--space-8) var(--space-4);
       font-family: 'Inter', var(--font-family);
+      --sidebar-top-offset: calc(3rem + var(--space-4) + var(--space-4));
     }
 
     .docs-shell.docs-shell-embed {
@@ -723,6 +724,10 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
     .docs-shell-top {
       display: block;
       margin-bottom: var(--space-4);
+      position: sticky;
+      top: var(--nav-height);
+      z-index: 10;
+      background: var(--color-bg-alt);
     }
 
     .docs-header-row {

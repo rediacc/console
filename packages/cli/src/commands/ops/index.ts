@@ -8,7 +8,10 @@ import { registerOpsStatusCommand } from './status.js';
 import { registerOpsUpCommand } from './up.js';
 
 export function registerOpsCommands(program: Command): void {
-  const ops = program.command('ops').description(t('commands.ops.description'));
+  const ops = program
+    .command('ops')
+    .summary(t('commands.ops.descriptionShort'))
+    .description(t('commands.ops.description'));
 
   registerOpsUpCommand(ops, program);
   registerOpsDownCommand(ops, program);

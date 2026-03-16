@@ -213,20 +213,24 @@ async function writeMachineLicense(sftp: SFTPClient, signedBlob: unknown): Promi
 export async function refreshMachineActivation(
   machine: MachineConfig,
   sshPrivateKey: string,
-  remoteRenetPath?: string
+  remoteRenetPath?: string,
+  sharedSftp?: SFTPClient
 ): Promise<boolean> {
   const tokenState = getSubscriptionTokenState();
   if (tokenState.kind !== 'ready') return false;
 
-  const sftp = new SFTPClient({
-    host: machine.ip,
-    port: machine.port ?? DEFAULTS.SSH.PORT,
-    username: machine.user,
-    privateKey: sshPrivateKey,
-  });
+  const sftp =
+    sharedSftp ??
+    new SFTPClient({
+      host: machine.ip,
+      port: machine.port ?? DEFAULTS.SSH.PORT,
+      username: machine.user,
+      privateKey: sshPrivateKey,
+    });
+  const ownsConnection = !sharedSftp;
 
   try {
-    await sftp.connect();
+    if (ownsConnection) await sftp.connect();
     const machineId = await readRemoteMachineId(sftp, remoteRenetPath);
     if (!machineId) return false;
 
@@ -240,7 +244,7 @@ export async function refreshMachineActivation(
 
     return true;
   } finally {
-    sftp.close();
+    if (ownsConnection) sftp.close();
   }
 }
 

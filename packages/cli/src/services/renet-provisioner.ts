@@ -114,7 +114,8 @@ class RenetProvisionerService {
       /** Restart running services after binary update. Default: false. */
       restartServices?: boolean;
       debug?: boolean;
-    }
+    },
+    sharedSftp?: SFTPClient
   ): Promise<ProvisionResult> {
     const cacheKey = `${config.host}:${config.port ?? DEFAULTS.SSH.PORT}`;
     const inflight = this.inflight.get(cacheKey);
@@ -123,7 +124,7 @@ class RenetProvisionerService {
     }
 
     const provisioningPromise = this.withLocalProvisionLock(cacheKey, () =>
-      this.provisionInternal(config, options)
+      this.provisionInternal(config, options, sharedSftp)
     );
     this.inflight.set(cacheKey, provisioningPromise);
 
@@ -142,55 +143,15 @@ class RenetProvisionerService {
       localBinaryPath?: string;
       restartServices?: boolean;
       debug?: boolean;
-    }
+    },
+    sharedSftp?: SFTPClient
   ): Promise<ProvisionResult> {
-    const sftp = new SFTPClient(config);
+    const sftp = sharedSftp ?? new SFTPClient(config);
+    const ownsConnection = !sharedSftp;
 
     try {
-      await sftp.connect();
-      const context = await this.buildProvisionContext(sftp, config, options?.localBinaryPath);
-      if (this.isCachedProvision(context.cacheKey, context.localHash)) {
-        return this.buildVerifiedResult(context.arch, context.remoteInstallPath);
-      }
-
-      const remote = await this.getRemoteHashAndVersion(sftp, context.remoteInstallPath);
-      const versionRejected = this.buildVersionRejectedResult(remote.version, context);
-      if (versionRejected) {
-        return versionRejected;
-      }
-
-      const stagingPath = this.buildStagingPath();
-      if (remote.hash !== context.localHash) {
-        await this.stageBinary(sftp, config, stagingPath, context.binary, context.localHash);
-      }
-      if (options?.debug) {
-        outputService.info(`Activating remote renet slot ${context.remoteInstallPath}...`);
-      }
-      const installResult = await this.installWithRemoteLock(
-        sftp,
-        stagingPath,
-        context.localHash,
-        context.remoteInstallPath
-      );
-      this.logInstallResult(config.host, installResult, options?.debug === true);
-
-      // Restart the route server so it picks up the new binary.
-      // Safe: the router is only a config provider (not in the data path).
-      // Traefik keeps serving with last-known config during the ~1-2s restart.
-      // Best-effort: don't fail provisioning if restart fails.
-      let servicesRestarted = false;
-      if (options?.restartServices === true && installResult.currentUpdated) {
-        servicesRestarted = await this.restartRunningServices(sftp);
-      }
-
-      this.cache.set(context.cacheKey, { hash: context.localHash, provisionedAt: Date.now() });
-      return {
-        success: true,
-        action: installResult.binaryUpdated ? 'uploaded' : 'verified',
-        arch: context.arch,
-        servicesRestarted,
-        remotePath: context.remoteInstallPath,
-      };
+      if (ownsConnection) await sftp.connect();
+      return await this.doProvision(sftp, config, options);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       return {
@@ -200,8 +161,54 @@ class RenetProvisionerService {
         error: `Failed to provision renet: ${errorMessage}`,
       };
     } finally {
-      sftp.close();
+      if (ownsConnection) sftp.close();
     }
+  }
+
+  /** Core provisioning logic after connection is established. */
+  private async doProvision(
+    sftp: SFTPClient,
+    config: SFTPClientConfig,
+    options?: { localBinaryPath?: string; restartServices?: boolean; debug?: boolean }
+  ): Promise<ProvisionResult> {
+    const context = await this.buildProvisionContext(sftp, config, options?.localBinaryPath);
+    if (this.isCachedProvision(context.cacheKey, context.localHash)) {
+      return this.buildVerifiedResult(context.arch, context.remoteInstallPath);
+    }
+
+    const remote = await this.getRemoteHashAndVersion(sftp, context.remoteInstallPath);
+    const versionRejected = this.buildVersionRejectedResult(remote.version, context);
+    if (versionRejected) return versionRejected;
+
+    const stagingPath = this.buildStagingPath();
+    if (remote.hash !== context.localHash) {
+      await this.stageBinary(sftp, config, stagingPath, context.binary, context.localHash);
+    }
+    if (options?.debug) {
+      outputService.info(`Activating remote renet slot ${context.remoteInstallPath}...`);
+    }
+    const installResult = await this.installWithRemoteLock(
+      sftp,
+      stagingPath,
+      context.localHash,
+      context.remoteInstallPath
+    );
+    this.logInstallResult(config.host, installResult, options?.debug === true);
+
+    // Best-effort: restart route server so it picks up the new binary
+    let servicesRestarted = false;
+    if (options?.restartServices === true && installResult.currentUpdated) {
+      servicesRestarted = await this.restartRunningServices(sftp);
+    }
+
+    this.cache.set(context.cacheKey, { hash: context.localHash, provisionedAt: Date.now() });
+    return {
+      success: true,
+      action: installResult.binaryUpdated ? 'uploaded' : 'verified',
+      arch: context.arch,
+      servicesRestarted,
+      remotePath: context.remoteInstallPath,
+    };
   }
 
   private async buildProvisionContext(

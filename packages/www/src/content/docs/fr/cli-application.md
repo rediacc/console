@@ -6,7 +6,7 @@ order: 2
 language: fr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/fr/cli.json
-sourceHash: "523e74227e45d400"
+sourceHash: "0fb17f2f8cde47d5"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -73,6 +73,15 @@ rdc agent schema <command>
 
 ```bash
 rdc agent exec <command>
+```
+
+<a id="cli-local-agent-generate-reference"></a>
+### 1.4 generate-reference
+
+{{t:cli.commands.agent.generateReference.description}}
+
+```bash
+rdc agent generate-reference
 ```
 
 ---
@@ -785,8 +794,22 @@ rdc machine create <name> [options]
 | `--vault <json>` | {{t:cli.options.vaultJsonMachine}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
+<a id="cli-local-machine-rename"></a>
+### 5.3 rename
+
+{{t:cli.commands.machine.rename.description}}
+
+```bash
+rdc machine rename <oldName> <newName> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 <a id="cli-local-machine-delete"></a>
-### 5.3 delete
+### 5.4 delete
 
 {{t:cli.commands.machine.delete.description}}
 
@@ -801,8 +824,31 @@ rdc machine delete <name> [options]
 | `--dry-run` | {{t:cli.options.dryRun}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
+<a id="cli-local-machine-vault"></a>
+### 5.5 vault
+
+{{t:cli.commands.machine.vault.description}}
+
+```bash
+rdc machine vault
+```
+
+<a id="cli-local-machine-vault-status"></a>
+### 5.6 vault-status
+
+{{t:cli.commands.machine.vault-status.description}}
+
+```bash
+rdc machine vault-status <name> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 <a id="cli-local-machine-update"></a>
-### 5.4 update
+### 5.7 update
 
 {{t:cli.commands.machine.update.description}}
 
@@ -811,7 +857,7 @@ rdc machine update
 ```
 
 <a id="cli-local-machine-health"></a>
-### 5.5 health
+### 5.8 health
 
 {{t:cli.commands.machine.health.description}}
 
@@ -827,7 +873,7 @@ rdc machine health <name> [options]
 
 
 <a id="cli-local-machine-containers"></a>
-### 5.6 containers
+### 5.9 containers
 
 {{t:cli.commands.machine.containers.description}}
 
@@ -842,7 +888,7 @@ rdc machine containers <name> [options]
 
 
 <a id="cli-local-machine-services"></a>
-### 5.7 services
+### 5.10 services
 
 {{t:cli.commands.machine.services.description}}
 
@@ -857,7 +903,7 @@ rdc machine services <name> [options]
 
 
 <a id="cli-local-machine-query"></a>
-### 5.8 query
+### 5.11 query
 
 {{t:cli.commands.machine.query.description}}
 
@@ -877,7 +923,7 @@ rdc machine query <name> [options]
 
 
 <a id="cli-local-machine-vault-status"></a>
-### 5.9 vault-status
+### 5.12 vault-status
 
 {{t:cli.commands.machine.vaultStatus.description}}
 
@@ -891,7 +937,7 @@ rdc machine vault-status <name> [options]
 
 
 <a id="cli-local-machine-repos"></a>
-### 5.10 repos
+### 5.13 repos
 
 {{t:cli.commands.machine.repos.description}}
 
@@ -906,7 +952,7 @@ rdc machine repos <name> [options]
 
 
 <a id="cli-local-machine-test-connection"></a>
-### 5.11 test-connection
+### 5.14 test-connection
 
 {{t:cli.commands.machine.testConnection.description}}
 
@@ -930,7 +976,7 @@ rdc machine test-connection [options]
 > **{{t:cli.docs.admonitions.tip}}**: {{t:cli.docs.supplements.machine.testConnection.tip}}
 
 <a id="cli-local-machine-provision"></a>
-### 5.12 provision
+### 5.15 provision
 
 {{t:cli.commands.machine.provision.description}}
 
@@ -951,7 +997,7 @@ rdc machine provision <name> [options]
 
 
 <a id="cli-local-machine-deprovision"></a>
-### 5.13 deprovision
+### 5.16 deprovision
 
 {{t:cli.commands.machine.deprovision.description}}
 
@@ -966,7 +1012,7 @@ rdc machine deprovision <name> [options]
 
 
 <a id="cli-local-machine-backup"></a>
-### 5.14 backup
+### 5.17 backup
 
 {{t:cli.commands.machine.backup.description}}
 
@@ -985,7 +1031,7 @@ rdc machine backup schedule <machine> [options]
 
 
 <a id="cli-local-machine-prune"></a>
-### 5.15 prune
+### 5.18 prune
 
 {{t:cli.commands.machine.prune.description}}
 
@@ -1086,6 +1132,7 @@ rdc repo up [name] [options]
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--mount` | {{t:cli.commands.repo.up.mountOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--checkpoint` | {{t:cli.commands.repo.up.checkpointOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--tls` | {{t:cli.commands.repo.up.tlsOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--include-forks` | {{t:cli.commands.repo.upAll.includeForksOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--mount-only` | {{t:cli.commands.repo.upAll.mountOnlyOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--parallel` | {{t:cli.commands.repo.upAll.parallelOption}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -1564,8 +1611,61 @@ rdc storage list [options]
 | `--desc` | {{t:cli.options.sortDescending}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
+<a id="cli-local-storage-create"></a>
+### 8.2 create
+
+{{t:cli.commands.storage.create.description}}
+
+```bash
+rdc storage create <name> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-storage-rename"></a>
+### 8.3 rename
+
+{{t:cli.commands.storage.rename.description}}
+
+```bash
+rdc storage rename <oldName> <newName> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-storage-delete"></a>
+### 8.4 delete
+
+{{t:cli.commands.storage.delete.description}}
+
+```bash
+rdc storage delete <name> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-f, --force` | {{t:cli.options.force}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--dry-run` | {{t:cli.options.dryRun}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-storage-vault"></a>
+### 8.5 vault
+
+{{t:cli.commands.storage.vault.description}}
+
+```bash
+rdc storage vault
+```
+
 <a id="cli-local-storage-browse"></a>
-### 8.2 browse
+### 8.6 browse
 
 {{t:cli.commands.storage.browse.description}}
 
@@ -1579,7 +1679,7 @@ rdc storage browse <name> [options]
 
 
 <a id="cli-local-storage-prune"></a>
-### 8.3 prune
+### 8.7 prune
 
 {{t:cli.commands.storage.prune.description}}
 
@@ -1598,7 +1698,7 @@ rdc storage prune <storageName> [options]
 
 
 <a id="cli-local-storage-pull"></a>
-### 8.4 pull
+### 8.8 pull
 
 {{t:cli.commands.storage.pull.description}}
 

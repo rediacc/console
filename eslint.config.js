@@ -522,7 +522,12 @@ export default tseslint.config(
     rules: {
       // Enforce t() for CLI-specific patterns
       'custom/no-hardcoded-cli-text': ['error'],
-      'custom/require-command-summary': ['error'],
+      'custom/require-command-summary': ['error', {
+        excludeFromMinDescription: [
+          'auth', 'audit', 'bridge', 'ceph', 'organization', 'permission',
+          'protocol', 'queue', 'region', 'repository', 'team', 'user', 'snapshot',
+        ],
+      }],
       // Enforce translation keys exist in locale files
       'custom/require-translation': ['error', {
         localeDir: 'packages/cli/src/i18n/locales/en',
@@ -583,6 +588,13 @@ export default tseslint.config(
       '^(Docker|Renet|Go|Node\\.js|Status|Version|Machines|Configuration)$',
       '^rdc\\s',
       '^(Installation|Description|Note|Error|Reference|Infrastructure)$',
+      // Command CRUD descriptions (machine/storage vault, rename, create, delete)
+      '^(Rename|Create|Delete|Show)\\s',
+      'vault management',
+      'vault status',
+      'dedicated TLS cert',
+      'Generate command reference',
+      '^Activation failed$',
     ],
   }),
   ...i18nLocaleConfigs({

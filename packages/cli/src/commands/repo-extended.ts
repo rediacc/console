@@ -157,7 +157,7 @@ export function registerExtendedRepoCommands(repo: Command): void {
           const result = await localExecutorService.execute({
             functionName: 'repository_fork',
             machineName: options.machine,
-            params: { repository: parent, tag: repositoryGuid },
+            params: { repository: parent, tag: repositoryGuid, network_id: networkId },
             debug: options.debug,
             skipRouterRestart: options.skipRouterRestart,
           });

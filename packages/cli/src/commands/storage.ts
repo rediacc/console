@@ -166,6 +166,7 @@ export function registerStorageCommands(program: Command): void {
       vaultFieldName: 'vaultContent',
     },
   });
+  storage.summary(t('commands.storage.descriptionShort'));
 
   // Add browse subcommand for listing files in a storage system
   storage

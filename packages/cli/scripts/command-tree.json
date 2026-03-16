@@ -535,7 +535,7 @@
         },
         {
           "name": "rename",
-          "descriptionKey": null,
+          "descriptionKey": "commands.machine.rename.description",
           "options": [
             {
               "flags": "-t, --team <name>",
@@ -1547,6 +1547,12 @@
             {
               "flags": "--checkpoint",
               "descriptionKey": "commands.repo.up.checkpointOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--tls",
+              "descriptionKey": "commands.repo.up.tlsOption",
               "mandatory": false,
               "defaultValue": null
             },
@@ -6535,6 +6541,13 @@
               "defaultValue": null
             }
           ],
+          "subcommands": []
+        },
+        {
+          "name": "generate-reference",
+          "descriptionKey": "commands.agent.generateReference.description",
+          "options": [],
+          "arguments": [],
           "subcommands": []
         }
       ]

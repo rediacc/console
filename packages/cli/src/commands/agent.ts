@@ -1,8 +1,12 @@
 import { Command } from 'commander';
+import { COMMAND_METADATA, type CommandMeta } from '../config/command-metadata.js';
 import { COMMAND_DOMAINS, getCommandDef } from '../config/command-registry.js';
 import { t } from '../i18n/index.js';
 import { outputService } from '../services/output.js';
 import { VERSION } from '../version.js';
+
+/** Fallback domain label for commands without a registry entry */
+const UNCATEGORIZED_DOMAIN = 'Other';
 
 interface CommandCapability {
   name: string;
@@ -14,49 +18,52 @@ interface CommandCapability {
   modes?: readonly string[];
 }
 
+/** Extract a leaf command's capability from a Commander subcommand. */
+function extractLeafCapability(sub: Command, name: string, prefix: string): CommandCapability {
+  const args = (sub as unknown as { _args: { _name: string; required: boolean }[] })._args.map(
+    (a) => ({
+      name: a._name,
+      required: a.required,
+    })
+  );
+
+  const options = sub.options
+    .filter((o) => o.long !== '--version' && o.long !== '--help')
+    .map((o) => ({
+      flags: o.flags,
+      description: o.description,
+      ...(o.defaultValue !== undefined && { default: o.defaultValue }),
+    }));
+
+  const topLevel = (prefix || sub.name()).split(' ')[0];
+  const def = getCommandDef(topLevel);
+
+  return {
+    name,
+    description: sub.description(),
+    ...(sub.summary() && { summary: sub.summary() }),
+    arguments: args,
+    options,
+    ...(def && {
+      domain: COMMAND_DOMAINS[def.domain],
+      modes: [...def.modes],
+    }),
+  };
+}
+
 function walkCommands(cmd: Command, prefix = ''): CommandCapability[] {
   const results: CommandCapability[] = [];
 
   for (const sub of cmd.commands) {
+    if (sub.name() === 'help') continue;
+    if ((sub as Command & { _hidden?: boolean })._hidden) continue;
+
     const name = prefix ? `${prefix} ${sub.name()}` : sub.name();
 
-    if (sub.name() === 'help') continue;
-
-    // If this command has subcommands, recurse
     if (sub.commands.length > 0) {
       results.push(...walkCommands(sub, name));
     } else {
-      // Leaf command — extract args, options, and registry metadata
-      const args = (sub as unknown as { _args: { _name: string; required: boolean }[] })._args.map(
-        (a) => ({
-          name: a._name,
-          required: a.required,
-        })
-      );
-
-      const options = sub.options
-        .filter((o) => o.long !== '--version' && o.long !== '--help')
-        .map((o) => ({
-          flags: o.flags,
-          description: o.description,
-          ...(o.defaultValue !== undefined && { default: o.defaultValue }),
-        }));
-
-      // Look up registry metadata (extract first word for deeply nested commands)
-      const topLevel = (prefix || sub.name()).split(' ')[0];
-      const def = getCommandDef(topLevel);
-
-      results.push({
-        name,
-        description: sub.description(),
-        ...(sub.summary() && { summary: sub.summary() }),
-        arguments: args,
-        options,
-        ...(def && {
-          domain: COMMAND_DOMAINS[def.domain],
-          modes: [...def.modes],
-        }),
-      });
+      results.push(extractLeafCapability(sub, name, prefix));
     }
   }
 
@@ -77,7 +84,10 @@ function findCommand(root: Command, commandPath: string): Command | undefined {
 }
 
 export function registerAgentCommands(program: Command): void {
-  const agent = program.command('agent').description(t('commands.agent.description'));
+  const agent = program
+    .command('agent')
+    .summary(t('commands.agent.descriptionShort'))
+    .description(t('commands.agent.description'));
 
   // rdc agent capabilities
   agent
@@ -155,6 +165,16 @@ export function registerAgentCommands(program: Command): void {
 
       await program.parseAsync(argv);
     });
+
+  // rdc agent generate-reference
+  agent
+    .command('generate-reference')
+    .description(t('commands.agent.generateReference.description'))
+    .action(() => {
+      const commands = walkCommands(program);
+      const md = generateReferenceMarkdown(commands);
+      process.stdout.write(md);
+    });
 }
 
 function serializeOption(key: string, value: unknown): string[] {
@@ -190,4 +210,93 @@ function buildExecArgv(
   // Force JSON output
   argv.push('--output', 'json');
   return argv;
+}
+
+/** Check whether a command targets the cloud adapter only. */
+function isCloudOnlyCommand(cmd: CommandCapability): boolean {
+  return cmd.modes?.length === 1 && cmd.modes[0] === 'cloud';
+}
+
+/** Group commands by domain, excluding cloud-only entries. */
+function groupByDomain(commands: CommandCapability[]): Map<string, CommandCapability[]> {
+  const grouped = new Map<string, CommandCapability[]>();
+  for (const cmd of commands) {
+    if (isCloudOnlyCommand(cmd)) continue;
+    const domain = cmd.domain ?? UNCATEGORIZED_DOMAIN;
+    const bucket = grouped.get(domain);
+    if (bucket) {
+      bucket.push(cmd);
+    } else {
+      grouped.set(domain, [cmd]);
+    }
+  }
+  return grouped;
+}
+
+/** Render option lines for a command's markdown block. */
+function renderOptions(lines: string[], options: CommandCapability['options']): void {
+  if (options.length === 0) return;
+  // Markdown heading for the options section
+  const MD_OPTIONS_HEADING = '**Options:**';
+  lines.push(MD_OPTIONS_HEADING, '');
+  for (const opt of options) {
+    const def = opt.default === undefined ? '' : ` (default: ${opt.default})`;
+    lines.push(`- \`${opt.flags}\` — ${opt.description}${def}`);
+  }
+  lines.push('');
+}
+
+/** Collect annotation badges for a command based on its metadata. */
+function collectAnnotations(meta: CommandMeta): string[] {
+  const annotations: string[] = [];
+  if (meta.mcp) annotations.push('MCP tool');
+  // Markdown annotation labels (not user-facing CLI text)
+  const FORK_ONLY_LABEL = 'agent: fork-only';
+  if (meta.grandGuard) annotations.push(FORK_ONLY_LABEL);
+  if (meta.forkBlocked) annotations.push('fork-blocked');
+  if (meta.mcpExcludeReason) annotations.push(`MCP excluded: ${meta.mcpExcludeReason}`);
+  return annotations;
+}
+
+/** Render a single command's markdown block into lines. */
+function renderCommandBlock(lines: string[], cmd: CommandCapability): void {
+  const argSyntax = cmd.arguments
+    .map((a) => (a.required ? `<${a.name}>` : `[${a.name}]`))
+    .join(' ');
+  lines.push(`### rdc ${cmd.name}${argSyntax ? ` ${argSyntax}` : ''}`, '');
+
+  if (cmd.description) {
+    lines.push(cmd.description, '');
+  }
+
+  renderOptions(lines, cmd.options);
+
+  const meta = COMMAND_METADATA[cmd.name];
+  const annotations = collectAnnotations(meta);
+  if (annotations.length > 0) {
+    lines.push(`> ${annotations.join(' | ')}`, '');
+  }
+}
+
+/**
+ * Generate a markdown reference of all CLI commands grouped by domain.
+ * Includes MCP exposure status and agent guard annotations.
+ */
+function generateReferenceMarkdown(commands: CommandCapability[]): string {
+  const lines: string[] = [
+    '<!-- AUTO-GENERATED by: rdc agent generate-reference — do not edit -->',
+    '# rdc CLI Reference',
+    '',
+  ];
+
+  const grouped = groupByDomain(commands);
+
+  for (const [domain, cmds] of grouped) {
+    lines.push(`## ${domain}`, '');
+    for (const cmd of cmds) {
+      renderCommandBlock(lines, cmd);
+    }
+  }
+
+  return lines.join('\n');
 }

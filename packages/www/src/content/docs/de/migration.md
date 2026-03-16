@@ -4,7 +4,7 @@ description: "Bestehende Projekte in verschlüsselte Rediacc-Repositories migrie
 category: "Guides"
 order: 11
 language: de
-sourceHash: "76165f8884e5edf1"
+sourceHash: fdecebe5bf7d4a86
 ---
 
 # Migrationsleitfaden

@@ -88,6 +88,26 @@ describe('config/command-registry', () => {
       expect(def?.subcommands?.['test-connection']?.modes).toEqual(['cloud']);
     });
 
+    it('machine vault is cloud-only', () => {
+      const def = getCommandDef('machine');
+      expect(def?.subcommands?.vault?.modes).toEqual(['cloud']);
+    });
+
+    it('machine vault-status is cloud-only', () => {
+      const def = getCommandDef('machine');
+      expect(def?.subcommands?.['vault-status']?.modes).toEqual(['cloud']);
+    });
+
+    it('machine query is local-only', () => {
+      const def = getCommandDef('machine');
+      expect(def?.subcommands?.query?.modes).toEqual(SELF_HOSTED_MODES);
+    });
+
+    it('storage vault is cloud-only', () => {
+      const def = getCommandDef('storage');
+      expect(def?.subcommands?.vault?.modes).toEqual(['cloud']);
+    });
+
     it('storage browse is local', () => {
       const def = getCommandDef('storage');
       expect(def?.subcommands?.browse.modes).toEqual(SELF_HOSTED_MODES);

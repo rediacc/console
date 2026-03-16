@@ -50,7 +50,10 @@ function setSubscriptionTelemetryContext(input: {
 }
 
 export function registerSubscriptionCommands(program: Command): void {
-  const sub = program.command('subscription').description(t('commands.subscription.description'));
+  const sub = program
+    .command('subscription')
+    .summary(t('commands.subscription.descriptionShort'))
+    .description(t('commands.subscription.description'));
 
   // subscription login
   sub

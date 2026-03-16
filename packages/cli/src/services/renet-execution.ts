@@ -78,7 +78,8 @@ export async function provisionRenetToRemote(
   config: { renetPath: string },
   machine: MachineConfig,
   sshPrivateKey: string,
-  options: Pick<RenetSpawnOptions, 'debug' | 'skipRouterRestart'> & { restartServices?: boolean }
+  options: Pick<RenetSpawnOptions, 'debug' | 'skipRouterRestart'> & { restartServices?: boolean },
+  sftp?: SFTPClient
 ): Promise<string> {
   let localBinaryPath: string | undefined;
   if (!isSEA()) {
@@ -99,7 +100,8 @@ export async function provisionRenetToRemote(
       username: machine.user,
       privateKey: sshPrivateKey,
     },
-    { localBinaryPath, restartServices, debug: options.debug }
+    { localBinaryPath, restartServices, debug: options.debug },
+    sftp
   );
   const elapsed = ((Date.now() - start) / 1000).toFixed(1);
 
@@ -138,7 +140,8 @@ function functionRequiresDatastore(functionName: string): boolean {
 export async function verifyMachineSetup(
   machine: MachineConfig,
   sshPrivateKey: string,
-  options: Pick<RenetSpawnOptions, 'debug'> & { functionName?: string }
+  options: Pick<RenetSpawnOptions, 'debug'> & { functionName?: string },
+  sharedSftp?: SFTPClient
 ): Promise<void> {
   if (process.env.RDC_SKIP_SETUP_CHECK) return;
 
@@ -155,15 +158,18 @@ export async function verifyMachineSetup(
   const cached = setupCache.get(cacheKey);
   if (cached && Date.now() - cached < SETUP_CACHE_TTL_MS) return;
 
-  const sftp = new SFTPClient({
-    host: machine.ip,
-    port: machine.port ?? DEFAULTS.SSH.PORT,
-    username: machine.user,
-    privateKey: sshPrivateKey,
-  });
+  const sftp =
+    sharedSftp ??
+    new SFTPClient({
+      host: machine.ip,
+      port: machine.port ?? DEFAULTS.SSH.PORT,
+      username: machine.user,
+      privateKey: sshPrivateKey,
+    });
+  const ownsConnection = !sharedSftp;
 
   try {
-    await sftp.connect();
+    if (ownsConnection) await sftp.connect();
     const result = await sftp.exec(`test -f ${SETUP_MARKER_PATH} && echo OK || echo MISSING`);
     if (result.trim() !== 'OK') {
       throw new Error(
@@ -193,7 +199,7 @@ export async function verifyMachineSetup(
       outputService.info(`Setup verified on ${machine.ip}`);
     }
   } finally {
-    sftp.close();
+    if (ownsConnection) sftp.close();
   }
 }
 

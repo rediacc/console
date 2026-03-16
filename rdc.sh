@@ -5,7 +5,11 @@
 set -euo pipefail
 
 # Root directory
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+
+# Auto-install: ensure `rdc` is globally available, pointing to this worktree
+mkdir -p ~/.local/bin
+ln -sf "$ROOT_DIR/rdc.sh" ~/.local/bin/rdc
 
 # Source configuration and utilities
 source "$ROOT_DIR/.ci/config/constants.sh"
@@ -29,6 +33,14 @@ ensure_cli_built
 
 # Ensure renet is built and up-to-date
 ensure_renet_built
+
+# Regenerate skill reference if CLI has changed
+ref_file="$ROOT_DIR/.claude/skills/rdc/reference.md"
+cli_dist="$ROOT_DIR/packages/cli/dist/cli-bundle.cjs"
+if [[ ! -f "$ref_file" ]] || [[ "$cli_dist" -nt "$ref_file" ]]; then
+    log_step "Regenerating skill reference"
+    node "$cli_dist" agent generate-reference > "$ref_file"
+fi
 
 # Add renet binary directory to PATH so CLI can find it
 renet_bin_dir="$ROOT_DIR/private/renet/bin"

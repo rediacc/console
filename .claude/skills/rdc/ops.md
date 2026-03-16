@@ -2,49 +2,9 @@
 
 Manage local VM clusters for development and testing. Uses KVM (Linux), QEMU (macOS), or Hyper-V (Windows) — auto-detected.
 
-## Commands
-
-### Check prerequisites
-```
-rdc ops check
-```
-Verifies virtualization tools are installed (Docker, virsh, qemu-img, etc.). Returns JSON with pass/fail per tool.
-
-### Install prerequisites
-```
-rdc ops setup
-```
-Installs missing virtualization tools for the detected platform.
-
-### Provision VMs
-```
-rdc ops up [options]
-```
-Options:
-- `--basic` — Minimal cluster: 1 bridge + 1 worker. Use this unless you need Ceph storage nodes.
-- `--parallel` — Create VMs in parallel (faster).
-- `--force` — Destroy and recreate all VMs.
-- `--os <name>` — OS image (e.g., `ubuntu-24.04`, `debian-12`).
+For full command syntax and options, see [reference.md](reference.md).
 
 The bridge VM (ID 1) runs the Docker registry and orchestration. Worker VMs (ID 11, 12, ...) run repositories.
-
-### Show status
-```
-rdc ops status
-```
-Returns JSON array of VMs with `id`, `name`, `ip`, and `status` (running/not found).
-
-### SSH into a VM
-```
-rdc ops ssh <vmId> [command...]
-```
-SSH directly into a VM by ID. For port forwarding, use `--port-forward`.
-
-### Destroy cluster
-```
-rdc ops down
-```
-Destroys all VMs in the cluster.
 
 ## VM naming and IPs
 

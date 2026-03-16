@@ -5,8 +5,10 @@
  * To change which modes a command supports, update its entry here.
  *
  * Commands marked `experimental: true` are hidden by default.
- * Enable with REDIACC_EXPERIMENTAL=1 env var.
+ * Enable with REDIACC_EXPERIMENTAL=1 env var (blocked for AI agents).
  */
+import { isAgentEnvironment } from '../utils/agent-guard.js';
+
 export type CommandCategory = 'cloud' | 'local';
 export type ModeSet = readonly CommandCategory[];
 
@@ -43,12 +45,23 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
     modes: ALL_MODES,
     domain: 'INFRASTRUCTURE',
     subcommands: {
+      list: { modes: ALL_MODES },
+      create: { modes: ALL_MODES },
+      rename: { modes: ALL_MODES },
+      delete: { modes: ALL_MODES },
+      vault: { modes: ['cloud'] },
+      'vault-status': { modes: ['cloud'] },
       'assign-bridge': { modes: ['cloud'], experimental: true },
       'test-connection': { modes: ['cloud'], experimental: true },
+      query: { modes: SELF_HOSTED_MODES },
       containers: { modes: ALL_MODES, experimental: true },
       services: { modes: ALL_MODES, experimental: true },
       repos: { modes: ALL_MODES, experimental: true },
       health: { modes: ALL_MODES, experimental: true },
+      prune: { modes: SELF_HOSTED_MODES },
+      provision: { modes: SELF_HOSTED_MODES },
+      deprovision: { modes: SELF_HOSTED_MODES },
+      backup: { modes: SELF_HOSTED_MODES },
     },
   },
   {
@@ -56,6 +69,11 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
     modes: ALL_MODES,
     domain: 'INFRASTRUCTURE',
     subcommands: {
+      list: { modes: ALL_MODES },
+      create: { modes: ALL_MODES },
+      rename: { modes: ALL_MODES },
+      delete: { modes: ALL_MODES },
+      vault: { modes: ['cloud'] },
       browse: { modes: SELF_HOSTED_MODES },
       prune: { modes: SELF_HOSTED_MODES },
     },
@@ -110,5 +128,6 @@ export function getCommandDef(commandName: string): CommandDef | undefined {
  * Check if experimental mode is enabled via REDIACC_EXPERIMENTAL=1 env var.
  */
 export function isExperimentalEnabled(): boolean {
+  if (isAgentEnvironment()) return false;
   return process.env.REDIACC_EXPERIMENTAL === '1';
 }

@@ -1,31 +1,21 @@
 # rdc config — Machine Registration & SSH
 
+For full command syntax and options, see [reference.md](reference.md).
+
 Manage config files, machine inventory, SSH keys, and machine setup.
 
 ## Machine management
 
 ### Add a machine
-```
-rdc config machine add <name> --ip <address> --user <username> [--port <port>] [--datastore <path>]
-```
 Registers a machine and auto-scans SSH host keys. Defaults: port 22, datastore `/mnt/rediacc`.
 
 ### List machines
-```
-rdc config machine list
-```
 
 ### Remove a machine
-```
-rdc config machine remove <name>
-```
 
 ## SSH configuration
 
 ### Set SSH keys
-```
-rdc config set-ssh --private-key <path> [--public-key <path>]
-```
 Updates the SSH key used by the CLI for all remote operations (SFTP, rsync, provisioning).
 
 **For ops VMs**: VMs created with `rdc ops up` trust a staging key. Set it with:
@@ -34,17 +24,11 @@ rdc config set-ssh --private-key ~/.renet/staging/.ssh/id_rsa --public-key ~/.re
 ```
 
 ### Scan host keys
-```
-rdc config machine scan-keys [machine]
-```
 Re-scans SSH host keys. Run after VM re-provisioning if host key changes.
 
 ## Machine setup
 
 ### Setup a machine
-```
-rdc config machine setup <name> [--datastore <path>] [--datastore-size <size>]
-```
 Provisions everything needed to run repositories. Idempotent — safe to re-run. Defaults: datastore `/mnt/rediacc`, size `95%`. After successful setup, automatically runs `push-infra` if the machine has infrastructure configured.
 
 What it does:
@@ -60,78 +44,42 @@ Required before creating repositories on a machine.
 ## Config management
 
 ### Show current config
-```
-rdc config show
-```
 
 ### Create named config
-```
-rdc config init <name> [--ssh-key <path>]
-```
 Default config at `~/.config/rediacc/rediacc.json` is auto-created on first use. Use `init` only for additional named configs.
 
 ### List configs
-```
-rdc config list
-```
 
 ### Use a specific config
-```
-rdc --config <name> <command>
-```
+Pass `--config <name>` to any `rdc` command.
 
 ## Infrastructure (Traefik proxy)
 
 ### Configure infra
-```
-rdc config infra set <machine> [--base-domain <domain>] [--public-ipv4 <ip>] [--public-ipv6 <ip>] [--cert-email <email>] [--cf-dns-token <token>] [--tcp-ports <ports>] [--udp-ports <ports>]
-```
-
 - `--base-domain`, `--public-ipv4`, `--public-ipv6`, `--tcp-ports`, `--udp-ports` are per-machine.
 - `--cert-email`, `--cf-dns-token` are shared across all machines in the config.
 - Machine name is automatically sent to renet as `machine_name` for subdomain routing (e.g., `*.server-1.example.com`).
 - Proxy entrypoints are only generated for configured address families (IPv4-only machines get no IPv6 entrypoints, and vice versa).
 
 ### View infra
-```
-rdc config infra show <machine>
-```
 Shows base domain, public IPs, TLS email, and port forwarding config. Also visible in `rdc machine query <machine>`.
 
 ### Push infra to machine
-```
-rdc config infra push <machine>
-```
 Installs Traefik reverse proxy and rediacc-router with `--machine-name`. Also creates Cloudflare DNS records (`{machineName}.{baseDomain}` and `*.{machineName}.{baseDomain}`) if `--cf-dns-token` is set. Required for HTTPS routing. Auto-routes use machine subdomains: `{service}-{id}.{machineName}.{baseDomain}`.
 
 ## Cloud provisioning (OpenTofu)
 
 ### Add a cloud provider
-```
-rdc config provider add <name> --provider <source> --token <token> [--region <r>] [--type <t>] [--image <i>]
-```
 Registers a cloud provider for automated VM provisioning. Known providers: `linode/linode`, `hetznercloud/hcloud`. Use `--source` instead of `--provider` for custom providers with manual attribute mapping.
 
 ### List cloud providers
-```
-rdc config provider list
-```
 
 ### Remove a cloud provider
-```
-rdc config provider remove <name>
-```
 
 ### Provision a machine
-```
-rdc machine provision <name> --provider <provider-name> [--region <r>] [--type <t>] [--image <i>] [--base-domain <domain>] [--no-infra] [--debug]
-```
 Creates a VM via OpenTofu, waits for SSH, registers the machine, installs renet, and runs setup. Auto-detects `baseDomain` from sibling machines in the config; use `--base-domain` to override or `--no-infra` to skip infrastructure setup entirely. Requires `tofu` binary on PATH.
 
 ### Deprovision a machine
-```
-rdc machine deprovision <name> [--force] [--debug]
-```
 Destroys a cloud-provisioned VM via OpenTofu and removes from config. Only works for machines created with `machine provision`.
 
 ### Workflow: Cloud-provisioned machine
@@ -146,32 +94,17 @@ rdc machine provision prod-1 --provider my-linode
 ## Backup strategy
 
 ### Configure backup strategy
-```
-rdc config backup-strategy set [--destination <name>] [--cron <expr>] [--enable] [--retention <count>]
-```
 Configures automated backup schedule. Multiple destinations supported.
 
 ### Show backup strategy
-```
-rdc config backup-strategy show
-```
 
 ## Repository GUID mappings
 
 ### List repositories
-```
-rdc config repository list
-```
 
 ### Add repository mapping
-```
-rdc config repository add <name> [--guid <guid>] [--network-id <id>]
-```
 
 ### Remove repository mapping
-```
-rdc config repository remove <name>
-```
 
 ## Workflow: New machine from scratch
 

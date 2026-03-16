@@ -502,7 +502,10 @@ async function checkVSCodeSetup(isInsiders = false): Promise<void> {
  * Registers the VS Code commands
  */
 export function registerVSCodeCommands(program: Command): void {
-  const vscode = program.command('vscode').description(t('commands.vscode.description'));
+  const vscode = program
+    .command('vscode')
+    .summary(t('commands.vscode.descriptionShort'))
+    .description(t('commands.vscode.description'));
 
   vscode.addHelpText(
     'after',

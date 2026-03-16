@@ -41,7 +41,11 @@ function flattenSystem(sys: SystemInfo): Record<string, unknown> {
   };
 }
 
-function getSections(resolve: (guid: string) => string): SectionRenderer[] {
+function getSections(
+  resolve: (guid: string) => string,
+  baseDomain?: string,
+  machineName?: string
+): SectionRenderer[] {
   return [
     {
       title: 'System',
@@ -72,6 +76,8 @@ function getSections(resolve: (guid: string) => string): SectionRenderer[] {
           cpu: c.cpu_percent ?? '-',
           memory: c.memory_usage ?? '-',
           repository: resolve(c.repository),
+          autoRoute: extractAutoRoute(c.labels, baseDomain, machineName),
+          domain: extractCustomDomain(c.labels, baseDomain),
         })),
     },
     {
@@ -189,9 +195,10 @@ function renderTableMode(
   listResult: ListResult,
   machineConfig: MachineConfig | undefined,
   infra: InfraConfig | undefined,
-  resolve: (guid: string) => string
+  resolve: (guid: string) => string,
+  machineName?: string
 ): void {
-  const tableSections = getSections(resolve);
+  const tableSections = getSections(resolve, infra?.baseDomain, machineName);
   printSummary(listResult);
 
   if (machineConfig) {
@@ -261,7 +268,13 @@ export function registerQueryCommand(machine: Command, program: Command): void {
           const enriched = {
             ...listResult,
             connection: machineConfig ? flattenConnection(machineConfig) : null,
-            repositories: resolveGuids(getRepositories(listResult), resolve),
+            repositories: resolveGuids(getRepositories(listResult), resolve).map((repo) => ({
+              ...repo,
+              url:
+                baseDomain && machineName
+                  ? `https://*.${repo.name}.${machineName}.${baseDomain}`
+                  : '-',
+            })),
             containers: getContainers(listResult).map((c) => ({
               ...c,
               repository: resolve(c.repository),
@@ -276,7 +289,7 @@ export function registerQueryCommand(machine: Command, program: Command): void {
           return;
         }
 
-        renderTableMode(listResult, machineConfig, infra, resolve);
+        renderTableMode(listResult, machineConfig, infra, resolve, machineName);
       } catch (error) {
         handleError(error);
       }

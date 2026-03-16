@@ -71,6 +71,10 @@ vi.mock('../subscription-auth.js', () => ({
   getSubscriptionTokenState: mockGetSubscriptionTokenState,
 }));
 
+vi.mock('../../utils/agent-guard.js', () => ({
+  isAgentEnvironment: vi.fn().mockReturnValue(false),
+}));
+
 vi.mock('../renet-execution.js', () => ({
   buildLocalVault: mockBuildLocalVault,
   provisionRenetToRemote: mockProvisionRenetToRemote,

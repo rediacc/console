@@ -8,8 +8,12 @@
         "description": "Список всех доступных команд с аргументами и опциями"
       },
       "description": "Утилиты для AI-ассистентов программирования",
+      "descriptionShort": "Утилиты для AI-ассистентов программирования",
       "exec": {
         "description": "Выполнить команду с JSON-вводом из stdin"
+      },
+      "generateReference": {
+        "description": "Сгенерировать справочник команд в формате Markdown для навыков Claude"
       },
       "schema": {
         "description": "Показать подробную схему конкретной команды"
@@ -344,6 +348,7 @@
         "success": "Конфигурация \"{{name}}\" удалена"
       },
       "description": "Управление файлами конфигурации, машинами и SSH-подключениями",
+      "descriptionShort": "Управление файлами конфигурации, машинами и SSH-подключениями",
       "infra": {
         "description": "Управление конфигурацией инфраструктуры (прокси, DNS, сертификаты)",
         "push": {
@@ -552,6 +557,7 @@
     },
     "datastore": {
       "description": "Управление жизненным циклом хранилища данных Ceph RBD (init, fork, unfork, status)",
+      "descriptionShort": "Управление жизненным циклом хранилища данных Ceph RBD (init, fork, unfork, status)",
       "fork": {
         "completed": "Хранилище данных успешно разветвлено (снимок: {{snapshot}})",
         "cowSizeOption": "Размер резервного файла COW (по умолчанию: auto, увеличивается по мере необходимости)",
@@ -612,6 +618,7 @@
         "sshKey": "SSH-ключ"
       },
       "description": "Диагностика среды CLI и интеграции renet",
+      "descriptionShort": "Диагностика среды CLI и интеграции renet",
       "devMode": "нет (режим разработки)",
       "hasErrors": "{{count}} ошибка(ок)",
       "hasWarnings": "{{count}} предупреждение(й)",
@@ -676,6 +683,7 @@
         "optionForce": "Пропустить запрос подтверждения"
       },
       "description": "Управление удалёнными машинами (статус, контейнеры, сервисы, здоровье)",
+      "descriptionShort": "Управление удалёнными машинами (статус, контейнеры, сервисы, здоровье)",
       "health": {
         "containersSection": "\nКонтейнеры:",
         "containersSummary": "  {{running}}/{{total}} работает ({{healthy}} здоровых, {{unhealthy}} нездоровых)",
@@ -761,6 +769,9 @@
         "infrastructure": "Инфраструктура",
         "noData": "Данные о статусе недоступны"
       },
+      "rename": {
+        "description": "Переименовать машину"
+      },
       "repos": {
         "description": "Список развернутых репозиториев на машине",
         "descriptionShort": "Показать список развёрнутых репозиториев на машине",
@@ -806,6 +817,12 @@
         "success": "Машина \"{{name}}\" обновлена",
         "updating": "Обновление машины..."
       },
+      "vault": {
+        "description": "Управление хранилищем машины (только облачный адаптер)"
+      },
+      "vault-status": {
+        "description": "Показать разобранный статус хранилища машины (только облачный адаптер)"
+      },
       "vaultStatus": {
         "deployedRepos": "\nРазвернутые репозитории:",
         "description": "Показать статус разобранного хранилища для машины",
@@ -828,6 +845,7 @@
     },
     "mcp": {
       "description": "Сервер Model Context Protocol для AI-агентов",
+      "descriptionShort": "Сервер Model Context Protocol для AI-агентов",
       "serve": {
         "allowGrandOption": "Разрешить деструктивные операции над grand-репозиториями (не fork). По умолчанию: режим только fork",
         "configOption": "Имя конфигурации для всех команд",
@@ -850,6 +868,7 @@
         "title": "Проверка предварительных требований OPS"
       },
       "description": "Экспериментальные операции с VM (создание, управление, удаление)",
+      "descriptionShort": "Экспериментальные операции с VM (создание, управление, удаление)",
       "down": {
         "completed": "Кластер VM успешно уничтожен",
         "description": "Уничтожить кластер VM",
@@ -1133,8 +1152,10 @@
       },
       "delete": {
         "archived": "Учётные данные \"{{repository}}\" архивированы",
+        "archiveHint": "Для архивации учётных данных для восстановления: повторите с --archive-config",
         "archiveOption": "Переместить запись конфигурации в deletedRepositories для последующего восстановления",
         "completed": "Репозиторий удалён",
+        "configRetained": "Запись конфигурации для \"{{repository}}\" сохранена (репозиторий может существовать на других машинах). Для удаления: rdc config repository remove {{repository}}",
         "description": "Удалить репозиторий (уничтожает контейнеры, тома и зашифрованный образ). Запись конфигурации сохраняется. Используйте --archive-config для перемещения учётных данных в deletedRepositories для восстановления через 'config restore-archived'",
         "descriptionShort": "Удалить репозиторий с машины",
         "failed": "Ошибка удаления репозитория",
@@ -1313,7 +1334,8 @@
         "failed": "Ошибка запуска сервисов",
         "grandOption": "Имя главного репозитория (автоматически разрешается в GUID)",
         "mountOption": "Сначала смонтировать репозиторий",
-        "starting": "Запуск сервисов для \"{{repository}}\" на \"{{machine}}\"..."
+        "starting": "Запуск сервисов для \"{{repository}}\" на \"{{machine}}\"...",
+        "tlsOption": "Запросить выделенный TLS-сертификат для этого репозитория (форки по умолчанию используют общий сертификат машины)"
       },
       "upAll": {
         "completed": "Все репозитории запущены",
@@ -1416,7 +1438,14 @@
         "noFiles": "Файлы не найдены",
         "pathOption": "Путь к подкаталогу для просмотра"
       },
+      "create": {
+        "description": "Создать нового провайдера хранилища"
+      },
+      "delete": {
+        "description": "Удалить провайдера хранилища"
+      },
       "description": "Управление провайдерами хранилища и просмотр удалённых файлов",
+      "descriptionShort": "Управление провайдерами хранилища и просмотр удалённых файлов",
       "list": {
         "description": "Список поставщиков хранилища",
         "fetching": "Получение поставщиков хранилища..."
@@ -1438,6 +1467,12 @@
         "noCredential": "Предупреждение: у репозитория \"{{name}}\" не заданы учётные данные. Загрузка может завершиться ошибкой, если резервная копия зашифрована.",
         "repositoryOption": "Имя репозитория для загрузки",
         "starting": "Загрузка \"{{repository}}\" из \"{{storage}}\" на \"{{machine}}\"..."
+      },
+      "rename": {
+        "description": "Переименовать провайдера хранилища"
+      },
+      "vault": {
+        "description": "Управление хранилищем хранилища (только облачный адаптер)"
       }
     },
     "store": {
@@ -1475,6 +1510,7 @@
         "vaultTokenRequired": "Необходим токен Vault (передайте --vault-token или задайте переменную VAULT_TOKEN)"
       },
       "description": "Управление хранилищами синхронизации конфигурации (S3, локальный файл, Bitwarden, Git, Vault)",
+      "descriptionShort": "Управление хранилищами синхронизации конфигурации (S3, локальный файл, Bitwarden, Git, Vault)",
       "list": {
         "description": "Список настроенных хранилищ",
         "noStores": "Хранилища не настроены. Добавьте с помощью: rdc store add <name> --type <type>"
@@ -1523,6 +1559,7 @@
         }
       },
       "description": "Управление лицензиями машин и подпиской",
+      "descriptionShort": "Управление лицензиями машин и подпиской",
       "login": {
         "browserFailed": "Не удалось открыть браузер автоматически. Пожалуйста, перейдите по указанному URL.",
         "description": "Аутентификация с помощью API-токена из веб-портала",
@@ -1675,6 +1712,7 @@
       "connecting": "Подключение к {{machine}}...",
       "connectingTo": "Подключение к {{title}}...",
       "description": "SSH терминал доступ к машинам и репозиториям",
+      "descriptionShort": "SSH терминал доступ к машинам и репозиториям",
       "fetchingDetails": "Получение деталей подключения...",
       "launchingTerminal": "Запуск {{type}} терминала...",
       "launchSuccess": "Терминал успешно запущен.",
@@ -1687,6 +1725,7 @@
       "checking": "Проверка обновлений...",
       "checkOnly": "Только проверить обновления без загрузки",
       "description": "Проверить и применить обновления CLI",
+      "descriptionShort": "Проверить и применить обновления CLI",
       "downloading": "Загрузка v{{version}}...",
       "failed": "Ошибка обновления: {{error}}",
       "force": "Принудительное обновление, даже если уже актуально",
@@ -1818,6 +1857,7 @@
         "testingConnectivity": "Тестирование подключения к {{host}}:{{port}}..."
       },
       "description": "Открыть VS Code Remote SSH к машине или репозиторию",
+      "descriptionShort": "Открыть VS Code Remote SSH к машине или репозиторию",
       "list": {
         "configFile": "\nФайл конфигурации: {{path}}",
         "description": "Список настроенных SSH-соединений VS Code",
@@ -1976,7 +2016,7 @@
     }
   },
   "errors": {
-    "activationFailed": "Активация не удалась",
+    "activationFailed": "Ошибка активации",
     "affectedChildClones": ". Затронутые дочерние клоны: {{clones}}. Сначала удалите или повысьте уровень дочерних клонов.",
     "agent": {
       "createGuard": "Невозможно создать репозиторий \"{{name}}\" в режиме агента.\n\nAI-агенты работают только в режиме форка. Создание основного репозитория заблокировано,\nтак как агент не сможет работать с ним после создания.\n\nИспользуйте существующий репозиторий и создайте форк:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nДля переопределения: установите REDIACC_ALLOW_GRAND_REPO=*",
@@ -2043,7 +2083,10 @@
     },
     "sshKeyNotFound": "SSH ключ не найден: {{path}}",
     "subscription": {
-      "notLoggedIn": "Вы не вошли в систему. Сначала выполните `rdc subscription login`."
+      "activationFailed": "Ошибка активации машины. Убедитесь, что ваша подписка активна и слот машины доступен.",
+      "notLoggedIn": "Вы не вошли в систему. Сначала выполните `rdc subscription login`.",
+      "tokenRequired": "Требуется токен подписки. Установите переменную окружения REDIACC_SUBSCRIPTION_TOKEN или выполните `rdc subscription login` в вашем терминале.",
+      "tokenWarning": "Токен подписки не найден. Команды, требующие лицензию (repo create, repo fork), завершатся ошибкой. Установите переменную окружения REDIACC_SUBSCRIPTION_TOKEN или выполните `rdc subscription login` в вашем терминале."
     },
     "sync": {
       "absolutePathBlocked": "Путь --remote должен быть относительным, а не абсолютным. Используйте путь относительно корня репозитория.",
@@ -2087,6 +2130,7 @@
     }
   },
   "help": {
+    "agentMode": "\n  Режим агента\n    • Только форки: создайте форк перед внесением изменений в любой репозиторий\n    • Grand-репозитории (не форки) доступны агентам только для чтения\n    • Рабочий процесс: repo fork <parent> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n",
     "cli": {
       "machineQuery": "Показать статус машины",
       "repoUp": "Развернуть сервисы репозитория",
@@ -2100,15 +2144,18 @@
       "setupMachine": "Запустить установку на удалённой машине"
     },
     "examples": "Примеры:",
+    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REPOSITORY_PATH}/... — never Docker named volumes (excluded from forks/backups)\n    • Containers must bind to SERVICE_IP to avoid port conflicts\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REPOSITORY_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
     "machine": {
       "containers": "Список запущенных контейнеров",
       "health": "Проверка здоровья для CI/CD",
+      "keyConcepts": "\nКлючевые концепции:\n\n  Фильтры запросов\n    • rdc machine query <name> возвращает все разделы по умолчанию\n    • Используйте --system, --repositories, --containers, --services, --network, --block-devices для фильтрации\n    • JSON-вывод обогащает контейнеры полями: repository (разрешённое имя), domain, autoRoute\n\n  Мониторинг и здоровье\n    • machine health возвращает: 0=здоров, 1=предупреждение, 2=ошибка — используйте для CI/CD-шлюзов\n    • containers --health-check возвращает 2, если какой-либо контейнер нездоров\n    • services --stability-check возвращает 2, если какой-либо сервис сбоит, перезапускается или имеет >3 перезапусков\n\n  Структура хранилища данных (/mnt/rediacc/)\n    • repositories/ — зашифрованные образы LUKS (один на GUID репозитория)\n    • mounts/ — расшифрованные точки монтирования (доступны когда репозиторий смонтирован)\n    • immovable/ — данные Docker daemon для каждого репозитория\n",
       "query": "Показать полный статус машины"
     },
     "repo": {
       "create": "Создать зашифрованный репозиторий",
       "down": "Остановить сервисы",
       "fork": "CoW-форк для тестирования",
+      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REPOSITORY_PATH}/data, ${REPOSITORY_PATH}/config, etc.\n    • Example: volumes: ['${REPOSITORY_PATH}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "Список резервных копий в хранилище",
       "pull": "Получить резервную копию из хранилища",
       "push": "Отправить резервную копию в хранилище",
@@ -2311,5 +2358,20 @@
   },
   "table": {
     "noData": "Нет данных для отображения"
+  },
+  "timing": {
+    "completed": "Завершено за {{operation}} (всего: {{total}})",
+    "step": {
+      "activating": "Активация лицензии...",
+      "configLoaded": "Конфигурация загружена ({{duration}})",
+      "connected": "Подключено ({{duration}})",
+      "connecting": "Подключение...",
+      "licenseActivated": "Лицензия активирована ({{duration}})",
+      "loading": "Загрузка конфигурации...",
+      "machineVerified": "Машина проверена ({{duration}})",
+      "provisioning": "Подготовка renet...",
+      "renetProvisioned": "Renet подготовлен ({{duration}})",
+      "verifying": "Проверка машины..."
+    }
   }
 }

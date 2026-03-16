@@ -2,9 +2,25 @@
   "cli": {
     "description": "Manage machines, repositories, and deployments over SSH"
   },
+  "timing": {
+    "completed": "Completed in {{operation}} (total: {{total}})",
+    "step": {
+      "loading": "Loading config...",
+      "configLoaded": "Config loaded ({{duration}})",
+      "connecting": "Connecting...",
+      "connected": "Connected ({{duration}})",
+      "provisioning": "Provisioning renet...",
+      "renetProvisioned": "Renet provisioned ({{duration}})",
+      "verifying": "Verifying machine...",
+      "machineVerified": "Machine verified ({{duration}})",
+      "activating": "Activating license...",
+      "licenseActivated": "License activated ({{duration}})"
+    }
+  },
   "commands": {
     "agent": {
-      "description": "Agent-friendly utilities for AI coding assistants",
+      "descriptionShort": "Agent-friendly utilities for AI coding assistants",
+      "description": "Introspection commands for AI agents. Key subcommands: capabilities (list all commands with args/options as JSON), schema (detailed schema for a single command), exec (execute a command with JSON input from stdin, always returns JSON).",
       "capabilities": {
         "description": "List all available commands with arguments and options"
       },
@@ -13,10 +29,14 @@
       },
       "exec": {
         "description": "Execute a command with JSON input from stdin"
+      },
+      "generateReference": {
+        "description": "Generate command reference markdown for Claude skills"
       }
     },
     "mcp": {
-      "description": "Model Context Protocol server for AI agents",
+      "descriptionShort": "Model Context Protocol server for AI agents",
+      "description": "Expose the CLI as a Model Context Protocol (MCP) server for integration with AI agents. The server wraps CLI commands as MCP tools with structured JSON input/output. Key subcommand: serve (start stdio-based MCP server).",
       "serve": {
         "description": "Start MCP server (stdio transport)",
         "configOption": "Config name to use for all commands",
@@ -286,7 +306,8 @@
       }
     },
     "doctor": {
-      "description": "Diagnose CLI environment and renet integration",
+      "descriptionShort": "Diagnose CLI environment and renet integration",
+      "description": "Run diagnostic checks on the CLI environment: Node.js version, renet binary availability, config file validity, SSH key status, and network connectivity. Outputs a structured health report with pass/fail indicators.",
       "title": "Rediacc CLI Doctor",
       "sections": {
         "environment": "Environment",
@@ -329,7 +350,8 @@
       "opsSkipped": "renet not available (skipped)"
     },
     "config": {
-      "description": "Manage config files, machines, and SSH connections",
+      "descriptionShort": "Manage config files, machines, and SSH connections",
+      "description": "Manage CLI configuration files stored at ~/.config/rediacc/. CRUD operations for machines, repositories, storage backends, and SSH keys within a config. Key subcommands: init (create named config), show, list, set (defaults), recover (from backup). Nested groups: config machine, config repository, config storage, config infra. To sync config across devices, use `store`.",
       "init": {
         "description": "Create a new named config file",
         "optionMasterPassword": "Encrypt resources with a master password",
@@ -380,7 +402,7 @@
         "success": "SSH configuration updated"
       },
       "setRenet": {
-        "description": "Set the path to renet binary for local mode",
+        "description": "Set the path to renet binary",
         "success": "Renet path set to: {{path}}"
       },
       "machine": {
@@ -600,7 +622,8 @@
       }
     },
     "store": {
-      "description": "Manage config sync stores (S3, local file, Bitwarden, Git, Vault)",
+      "descriptionShort": "Manage config sync stores (S3, local file, Bitwarden, Git, Vault)",
+      "description": "Sync CLI config files to external backends for multi-device access. Supported backends: S3, local file, Bitwarden, Git, HashiCorp Vault. Key subcommands: add (register store), list, remove, push (upload config), pull (download config), sync (bidirectional with version awareness). Not to be confused with `storage` which manages backup storage providers.",
       "add": {
         "description": "Add a new sync store",
         "optionType": "Store type (s3, local-file, bitwarden, git, vault)",
@@ -669,7 +692,8 @@
       }
     },
     "machine": {
-      "description": "Manage remote machines (status, containers, services, health)",
+      "descriptionShort": "Manage remote machines (query status, list, create, delete)",
+      "description": "Inspect remote machine state: system resources, running containers, systemd services, deployed repositories, and health diagnostics. Read-only queries — to modify repos use `repo`. Key subcommands: query (full status with --system, --containers, --repositories, --services filters), list, create, rename, delete, prune.",
       "list": {
         "description": "List machines",
         "fetching": "Fetching machines..."
@@ -679,11 +703,20 @@
         "creating": "Creating machine...",
         "success": "Machine \"{{name}}\" created"
       },
+      "rename": {
+        "description": "Rename a machine"
+      },
       "delete": {
         "description": "Delete a machine",
         "deleting": "Deleting machine...",
         "success": "Machine \"{{name}}\" deleted",
         "confirm": "Are you sure you want to delete machine \"{{name}}\"?"
+      },
+      "vault": {
+        "description": "Machine vault management (cloud adapter only)"
+      },
+      "vault-status": {
+        "description": "Show parsed vault status for a machine (cloud adapter only)"
       },
       "update": {
         "description": "Update machine configuration",
@@ -915,7 +948,8 @@
       }
     },
     "ops": {
-      "description": "Experimental VM operations (provision, manage, destroy)",
+      "descriptionShort": "Experimental VM operations (provision, manage, destroy)",
+      "description": "Local VM provisioning and management using KVM/QEMU/Hyper-V (platform auto-detected). Not for remote machines — use `machine` for those. Key subcommands: up (start VMs), down (stop), status (list running VMs), ssh (connect to VM), setup (install prerequisites), check (verify host readiness).",
       "up": {
         "description": "Provision VM cluster locally",
         "starting": "Starting VM cluster provisioning...",
@@ -958,7 +992,8 @@
       }
     },
     "datastore": {
-      "description": "Manage Ceph RBD datastore lifecycle (init, fork, unfork, status)",
+      "descriptionShort": "Manage Ceph RBD datastore lifecycle (init, fork, unfork, status)",
+      "description": "Low-level block storage management for machine datastores (Ceph RBD or local BTRFS). Typically only needed during initial machine setup or cross-machine migration. Key subcommands: init (create datastore), status (health/usage), fork (clone datastore to another machine), unfork (restore from snapshot).",
       "machineOption": "Machine name (where the Ceph datastore is hosted)",
       "init": {
         "description": "Initialize datastore on a machine (local loop-backed or Ceph RBD)",
@@ -1190,7 +1225,7 @@
       }
     },
     "repo": {
-      "description": "Deploy and manage encrypted repositories on machines. Use renet compose (never raw docker compose). Renet auto-injects network_mode:host (compose ports: are ignored), rediacc.* labels, and per-service loopback IPs. Containers MUST bind to their allocated IP (not 0.0.0.0) to avoid port conflicts. STORAGE: Use ${REPOSITORY_PATH}/... bind mounts for all persistent data (e.g. volumes: ['${REPOSITORY_PATH}/data:/data']). Do NOT use Docker named volumes — they live outside the repo and won't be included in forks/backups. HTTPS routing: (1) Auto-route (default, fork-friendly): renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain} — the compose service name becomes the URL prefix (e.g. service 'myapp' in repo 'marketing' → myapp.marketing.hostinger.rediacc.io). Use rediacc.service_port label for non-80 ports. (2) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true + traefik.http.routers/services labels. Rediaccfile lifecycle: up() starts containers (generate IP-dependent configs and pull images here). ENV VARS — two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. OPENCLAW_IP), ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REPOSITORY_NETWORK_ID env vars into each container. Use SERVICE_IP in your app code to bind to the correct IP. Proxy routes take ~3s to become active after deploy",
+      "description": "Deploy and manage encrypted repositories on machines. Key subcommands: create, up (deploy), down (stop), fork (instant CoW clone), delete, push/pull (backup), sync (file transfer). Lifecycle: repo create → repo up --mount → repo down. See Key Concepts in rdc --help for architecture, routing, and environment variable details.",
       "descriptionShort": "Deploy and manage encrypted repositories on machines",
       "machineOption": "Target machine name",
       "yesOption": "Skip confirmation for batch operations",
@@ -1222,6 +1257,7 @@
         "mountOption": "Mount repository first (required for forked repos on first deploy)",
         "checkpointOption": "Restore containers from CRIU checkpoint after deploy (for live process migration from another machine)",
         "grandOption": "Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent",
+        "tlsOption": "Request dedicated TLS cert for this repo (forks use shared machine cert by default)",
         "starting": "Starting services for \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Services started",
         "failed": "Service start failed"
@@ -1277,6 +1313,8 @@
         "archiveOption": "Move config entry to deletedRepositories for later recovery",
         "starting": "Deleting \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Repository deleted",
+        "configRetained": "Config entry for \"{{repository}}\" retained (repo may exist on other machines). To remove: rdc config repository remove {{repository}}",
+        "archiveHint": "To archive credentials for recovery: rerun with --archive-config",
         "archived": "Credential for \"{{repository}}\" archived",
         "restoreHint": "Restore with: rdc config restore-archived {{guid}}",
         "failed": "Repository deletion failed"
@@ -1456,10 +1494,23 @@
       }
     },
     "storage": {
-      "description": "Manage storage providers and browse remote files",
+      "descriptionShort": "Manage storage providers and browse remote files",
+      "description": "Manage remote backup storage providers (S3, rclone-compatible). CRUD operations (list, create, rename, delete), vault configuration, browse remote files, and prune orphaned backups. This is for backup storage — not to be confused with `store` which syncs CLI config files.",
       "list": {
         "description": "List storage providers",
         "fetching": "Fetching storage providers..."
+      },
+      "create": {
+        "description": "Create a new storage provider"
+      },
+      "rename": {
+        "description": "Rename a storage provider"
+      },
+      "delete": {
+        "description": "Delete a storage provider"
+      },
+      "vault": {
+        "description": "Storage vault management (cloud adapter only)"
       },
       "browse": {
         "description": "Browse files in a storage system",
@@ -1519,7 +1570,8 @@
       }
     },
     "subscription": {
-      "description": "Manage machine licensing and subscription",
+      "descriptionShort": "Manage machine licensing and subscription",
+      "description": "Manage machine activation, licensing, and subscription tokens. Key subcommands: login (authenticate with subscription portal), status (show current license state), activation (activate/deactivate machines), repo (manage per-repo licenses).",
       "login": {
         "description": "Authenticate via browser or API token",
         "tokenPrompt": "Enter your API token (from web portal):",
@@ -1666,7 +1718,8 @@
       }
     },
     "update": {
-      "description": "Check for and apply CLI updates",
+      "descriptionShort": "Check for and apply CLI updates",
+      "description": "Check for new CLI versions and apply updates. Supports --check-only to check without installing, and --force to update even if already on the latest version.",
       "force": "Force update even if already up-to-date",
       "checkOnly": "Only check for updates without downloading",
       "notSEA": "Cannot update: not running as a packaged binary. Build with SEA first.",
@@ -1690,7 +1743,8 @@
       "statusDescription": "Show auto-update status and diagnostics"
     },
     "term": {
-      "description": "SSH terminal access to machines and repositories",
+      "descriptionShort": "SSH terminal access to machines and repositories",
+      "description": "Open an SSH terminal to a machine or repository context. Sets up DOCKER_HOST, working directory, and environment automatically. Supports container actions via --container: logs, exec, stats, terminal. Use `-c` to run a single command non-interactively. For VS Code, use `vscode` instead.",
       "connecting": "Connecting to {{machine}}...",
       "connect": {
         "description": "Connect to a machine or repository via SSH"
@@ -1702,7 +1756,8 @@
       "testingConnectivity": "Testing connectivity to {{host}}:{{port}}..."
     },
     "vscode": {
-      "description": "Open VS Code Remote SSH to a machine or repository",
+      "descriptionShort": "Open VS Code Remote SSH to a machine or repository",
+      "description": "Open VS Code with Remote SSH to a machine or repository with sandboxed per-repo environment. Same SSH connection as `term` but launches VS Code instead. Key subcommands: connect (or positional shorthand), list (show configured connections), cleanup (remove SSH config entries), check (verify VS Code installation).",
       "connect": {
         "description": "Connect to a machine or repository in VS Code",
         "detecting": "Detecting VS Code...",
@@ -1829,6 +1884,8 @@
     }
   },
   "help": {
+    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REPOSITORY_PATH}/... — never Docker named volumes (excluded from forks/backups)\n    • Containers must bind to SERVICE_IP to avoid port conflicts\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n    • HTTPS: automatic Let's Encrypt certs via Cloudflare DNS-01. Grand repos get dedicated wildcard certs\n    • Forks share the machine wildcard cert by default (zero cert consumption). Use --tls on repo up for dedicated cert\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REPOSITORY_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
+    "agentMode": "\n  Agent Mode\n    • Fork-only: create a fork before making changes to any repository\n    • Grand (non-fork) repositories are read-only for agents\n    • Workflow: repo fork <parent> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n",
     "examples": "Examples:",
     "cli": {
       "machineQuery": "Show machine status",
@@ -1839,10 +1896,12 @@
     "machine": {
       "query": "Show full machine status",
       "containers": "List running containers",
-      "health": "Health check for CI/CD"
+      "health": "Health check for CI/CD",
+      "keyConcepts": "\nKey Concepts:\n\n  Query Filters\n    • rdc machine query <name> returns all sections by default\n    • Use --system, --repositories, --containers, --services, --network, --block-devices to filter\n    • JSON output enriches containers with: repository (resolved name), domain, autoRoute\n\n  Health & Monitoring\n    • machine health exits with: 0=healthy, 1=warning, 2=error — use for CI/CD gates\n    • containers --health-check exits 2 if any container is unhealthy\n    • services --stability-check exits 2 if any service is failed, restarting, or has >3 restarts\n\n  Datastore Structure (/mnt/rediacc/)\n    • repositories/ — encrypted LUKS images (one per repo GUID)\n    • mounts/ — decrypted mount points (accessible when repo is mounted)\n    • immovable/ — per-repo Docker daemon data\n"
     },
     "repo": {
       "create": "Create encrypted repo",
+      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REPOSITORY_PATH}/data, ${REPOSITORY_PATH}/config, etc.\n    • Example: volumes: ['${REPOSITORY_PATH}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing\n    • Grand repo auto-route: https://{service}.{repo}.{machine}.{baseDomain} (dedicated wildcard cert)\n    • Fork auto-route: https://{service}-{tag}.{machine}.{baseDomain} (shared machine cert, zero rate limit impact)\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • Use --tls on repo up to request a dedicated cert for a fork (50 certs/week limit per domain)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • Custom domains (rediacc.domain label) are ignored on forks — the domain belongs to the grand repo\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n    • Scheduled backups skip fork repos automatically. Use rdc repo push for manual fork backup\n",
       "up": "Deploy with auto-mount",
       "down": "Stop services",
       "fork": "CoW fork for testing",
@@ -1947,7 +2006,10 @@
       "pathTraversalBlocked": "The --remote path must not contain \"..\" path traversal. Use a path within the repository."
     },
     "subscription": {
-      "notLoggedIn": "Not logged in. Humans should run `rdc subscription login`. Automation should run `rdc subscription login --token <token>` or set `REDIACC_SUBSCRIPTION_TOKEN`."
+      "notLoggedIn": "Not logged in. Humans should run `rdc subscription login`. Automation should run `rdc subscription login --token <token>` or set `REDIACC_SUBSCRIPTION_TOKEN`.",
+      "tokenRequired": "Subscription token required. Either set REDIACC_SUBSCRIPTION_TOKEN env var, or run `rdc subscription login` in your terminal.",
+      "activationFailed": "Machine activation failed. Ensure your subscription is active and the machine slot is available.",
+      "tokenWarning": "No subscription token found. License-required commands (repo create, repo fork) will fail. Set REDIACC_SUBSCRIPTION_TOKEN env var or run `rdc subscription login` in your terminal."
     },
     "teamRequired": "Team name required. Use --team or set default with: rdc config set team <name>",
     "term": {
@@ -2049,7 +2111,7 @@
     "fields": "Comma-separated list of fields to include in output",
     "priority": "Priority (1=highest)",
     "param": "Function parameters",
-    "debug": "Enable debug output (local mode)",
+    "debug": "Enable debug output",
     "querySystem": "Include system info only",
     "queryRepositories": "Include repositories only",
     "queryContainers": "Include containers only",
@@ -2276,7 +2338,7 @@
           "tip": "Setting defaults means you don't need to pass `--team`, `--region`, or `--machine` with every command."
         },
         "init": {
-          "afterDescription": "In local mode you can add machines directly:"
+          "afterDescription": "You can add machines directly:"
         }
       },
       "organization": {

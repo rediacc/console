@@ -2,32 +2,7 @@
 
 Transfer files between local machine and remote repositories via rsync over SSH.
 
-## Commands
-
-### Upload to repository
-```
-rdc repo sync upload -m <machine> -r <repository> [--local <path>] [--remote <subdir>] [options]
-```
-Uploads files from local directory to the repository mount on the remote machine.
-- `--local <path>`: Local directory (default: current directory). Trailing slash is auto-added.
-- `--remote <path>`: Subdirectory within the repo to upload into.
-- `--mirror`: Delete remote files not present locally.
-- `--verify`: Use checksums instead of timestamps for change detection.
-- `--confirm`: Preview changes before syncing (interactive).
-- `--exclude <patterns...>`: Glob patterns to exclude.
-- `--dry-run`: Preview without transferring.
-
-### Download from repository
-```
-rdc repo sync download -m <machine> -r <repository> [--local <path>] [--remote <subdir>] [options]
-```
-Same options as upload, reversed direction.
-
-### Check status
-```
-rdc repo sync status -m <machine> -r <repository> [--local <path>]
-```
-Dry-run comparison showing what would change.
+For full command syntax and options, see [reference.md](reference.md).
 
 ## Behavior notes
 

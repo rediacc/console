@@ -38,6 +38,34 @@ import {
   RENET_LICENSE_REQUIRED_EXIT_CODE,
   type RenetLicenseFailure,
 } from './renet-license-contract.js';
+import { isAgentEnvironment } from '../utils/agent-guard.js';
+import { ValidationError } from '../utils/errors.js';
+import { formatDuration } from '../utils/format.js';
+import { t } from '../i18n/index.js';
+import { startSpinner, stopSpinner } from '../utils/spinner.js';
+
+/** Run a step with spinner + timing. Shows "Loading..." then "✓ Loaded (1.2s)" on the same line. */
+async function timedStep<T>(
+  spinnerText: string,
+  successKey: string,
+  fn: () => Promise<T>
+): Promise<T> {
+  const start = Date.now();
+  const spinner = startSpinner(spinnerText);
+  try {
+    const result = await fn();
+    const successText = t(successKey, { duration: formatDuration(Date.now() - start) });
+    if (spinner) {
+      stopSpinner(true, successText);
+    } else {
+      outputService.info(successText);
+    }
+    return result;
+  } catch (error) {
+    if (spinner) stopSpinner(false);
+    throw error;
+  }
+}
 import { getSubscriptionTokenState } from './subscription-auth.js';
 import { authorizeSubscriptionViaDeviceCode } from './subscription-device-auth.js';
 
@@ -77,8 +105,10 @@ export interface LocalExecuteResult {
   errorGuidance?: string;
   /** Structured repo-license reason from renet, when available */
   licenseFailureReason?: string;
-  /** Execution duration in milliseconds */
+  /** Total execution duration in milliseconds (includes SSH, provisioning, etc.) */
   durationMs: number;
+  /** Renet operation duration in milliseconds (just the remote function execution) */
+  operationDurationMs?: number;
   /** Captured stdout, when requested */
   stdout?: string;
   /** Captured stderr, when requested */
@@ -361,41 +391,39 @@ class LocalExecutorService {
     sshPrivateKey: string,
     startTime: number
   ): Promise<LocalExecuteResult> {
-    try {
-      let result = await this.runRemoteExecution(sftp, remoteRenetPath, vault, options);
-      let failure: RenetLicenseFailure | null = null;
-      if (!result.success && result.exitCode === RENET_LICENSE_REQUIRED_EXIT_CODE) {
-        failure = parseRenetLicenseFailure(result.stderr, result.stdout);
-      }
-      if (failure) {
-        const recovered = await this.resolveLicenseFailure(
-          result,
-          failure,
-          options,
-          machine,
-          sshPrivateKey,
-          remoteRenetPath,
-          sftp,
-          startTime
-        );
-        if (recovered === null) {
-          result = await this.runRemoteExecution(sftp, remoteRenetPath, vault, options);
-        } else {
-          return recovered;
-        }
-      }
-
-      if (result.success) {
-        await this.maybeRefreshRepoIdentity(options, machine, sshPrivateKey, remoteRenetPath, sftp);
-      }
-
-      return {
-        ...result,
-        durationMs: Date.now() - startTime,
-      };
-    } finally {
-      sftp.close();
+    let result = await this.runRemoteExecution(sftp, remoteRenetPath, vault, options);
+    let failure: RenetLicenseFailure | null = null;
+    if (!result.success && result.exitCode === RENET_LICENSE_REQUIRED_EXIT_CODE) {
+      failure = parseRenetLicenseFailure(result.stderr, result.stdout);
     }
+    if (failure) {
+      const recovered = await this.resolveLicenseFailure(
+        result,
+        failure,
+        options,
+        machine,
+        sshPrivateKey,
+        remoteRenetPath,
+        sftp,
+        startTime
+      );
+      if (recovered === null) {
+        result = await this.runRemoteExecution(sftp, remoteRenetPath, vault, options);
+      } else {
+        return recovered;
+      }
+    }
+
+    if (result.success) {
+      await this.maybeRefreshRepoIdentity(options, machine, sshPrivateKey, remoteRenetPath, sftp);
+    }
+
+    const operationDurationMs = result.durationMs;
+    return {
+      ...result,
+      durationMs: Date.now() - startTime,
+      operationDurationMs,
+    };
   }
 
   private async maybeIssueLicense(
@@ -403,7 +431,7 @@ class LocalExecutorService {
     machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
     sshPrivateKey: string,
     remoteRenetPath: string,
-    _sftp: SFTPClient
+    sftp: SFTPClient
   ): Promise<boolean> {
     if (!isLicensedRenetFunction(options.functionName)) {
       return false;
@@ -412,7 +440,8 @@ class LocalExecutorService {
     const machineIssued = await refreshMachineActivation(
       machine,
       sshPrivateKey,
-      remoteRenetPath
+      remoteRenetPath,
+      sftp
     ).catch(() => false);
     const batchResult = await refreshRepoLicensesBatch(
       machine,
@@ -430,6 +459,9 @@ class LocalExecutorService {
     if (tokenState.kind === 'ready') {
       return false;
     }
+    if (isAgentEnvironment()) {
+      throw new ValidationError(t('errors.subscription.tokenRequired'));
+    }
     await authorizeSubscriptionViaDeviceCode(undefined, {
       interactive: process.stdin.isTTY && process.stdout.isTTY,
       announceIntro: true,
@@ -445,20 +477,22 @@ class LocalExecutorService {
   private async ensureMachineActivationForProvisioning(
     machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
     sshPrivateKey: string,
-    remoteRenetPath: string
+    remoteRenetPath: string,
+    sftp?: SFTPClient
   ): Promise<void> {
     const tokenState = getSubscriptionTokenState();
     if (tokenState.kind !== 'ready') {
+      if (isAgentEnvironment()) {
+        throw new ValidationError(t('errors.subscription.tokenRequired'));
+      }
       await authorizeSubscriptionViaDeviceCode(undefined, {
         interactive: process.stdin.isTTY && process.stdout.isTTY,
         announceIntro: true,
       });
     }
-    const activated = await refreshMachineActivation(machine, sshPrivateKey, remoteRenetPath);
+    const activated = await refreshMachineActivation(machine, sshPrivateKey, remoteRenetPath, sftp);
     if (!activated) {
-      throw new Error(
-        'Machine activation failed. Ensure your subscription is active and the machine slot is available.'
-      );
+      throw new Error(t('errors.subscription.activationFailed'));
     }
   }
 
@@ -569,6 +603,7 @@ class LocalExecutorService {
         : `sudo ${remoteRenetPath} execute --executor local`;
     let stdout = '';
     let stderr = '';
+    const execStart = Date.now();
     const exitCode = await sftp.execStreaming(command, {
       stdin: vault,
       onStdout: (data) => {
@@ -585,11 +620,19 @@ class LocalExecutorService {
       },
     });
 
+    // Extract renet's own operation duration from its log output (e.g. "duration_ms=1237")
+    // Renet may log to either stdout or stderr depending on configuration
+    const combined = stdout + stderr;
+    const renetDurationMatch = /operation completed.*?duration_ms=(\d+)/.exec(combined);
+    const operationMs = renetDurationMatch
+      ? Number.parseInt(renetDurationMatch[1], 10)
+      : Date.now() - execStart;
+
     return {
       success: exitCode === 0,
       exitCode,
       error: exitCode === 0 ? undefined : `renet exited with code ${exitCode}`,
-      durationMs: 0,
+      durationMs: operationMs,
       stdout,
       stderr,
     };
@@ -601,6 +644,8 @@ class LocalExecutorService {
    */
   async execute(options: LocalExecuteOptions): Promise<LocalExecuteResult> {
     const startTime = Date.now();
+    const stepStart = startTime;
+    const configSpinner = startSpinner(t('timing.step.loading'));
 
     try {
       const config = await configService.getLocalConfig();
@@ -631,42 +676,80 @@ class LocalExecutorService {
         repositoryCredentials,
         repositoryConfigs,
       });
-
-      const remoteRenetPath = await provisionRenetToRemote(config, machine, sshPrivateKey, options);
-      await verifyMachineSetup(machine, sshPrivateKey, {
-        ...options,
-        functionName: options.functionName,
+      const configText = t('timing.step.configLoaded', {
+        duration: formatDuration(Date.now() - stepStart),
       });
-
-      // Pre-flight for create/fork: ensure machine activation (writes machine license to disk)
-      if (
-        options.functionName === 'repository_create' ||
-        options.functionName === 'repository_fork'
-      ) {
-        await this.ensureMachineActivationForProvisioning(machine, sshPrivateKey, remoteRenetPath);
+      if (configSpinner) {
+        stopSpinner(true, configText);
+      } else {
+        outputService.info(configText);
       }
 
-      if (options.debug) {
-        outputService.info(`Direct SSH to ${machine.ip}, executor=local`);
-      }
-
-      const sftp = new SFTPClient({
-        host: machine.ip,
-        port: machine.port ?? DEFAULTS.SSH.PORT,
-        username: machine.user,
-        privateKey: sshPrivateKey,
-      });
-      await sftp.connect();
-
-      return await this.executeWithConnectedSftp(
-        sftp,
-        options,
-        remoteRenetPath,
-        vault,
-        machine,
-        sshPrivateKey,
-        startTime
+      const sftp = await timedStep(
+        t('timing.step.connecting'),
+        'timing.step.connected',
+        async () => {
+          const client = new SFTPClient({
+            host: machine.ip,
+            port: machine.port ?? DEFAULTS.SSH.PORT,
+            username: machine.user,
+            privateKey: sshPrivateKey,
+          });
+          await client.connect();
+          return client;
+        }
       );
+
+      try {
+        const remoteRenetPath = await timedStep(
+          t('timing.step.provisioning'),
+          'timing.step.renetProvisioned',
+          () => provisionRenetToRemote(config, machine, sshPrivateKey, options, sftp)
+        );
+
+        await timedStep(t('timing.step.verifying'), 'timing.step.machineVerified', () =>
+          verifyMachineSetup(
+            machine,
+            sshPrivateKey,
+            {
+              ...options,
+              functionName: options.functionName,
+            },
+            sftp
+          )
+        );
+
+        // Pre-flight for create/fork: ensure machine activation (writes machine license to disk)
+        if (
+          options.functionName === 'repository_create' ||
+          options.functionName === 'repository_fork'
+        ) {
+          await timedStep(t('timing.step.activating'), 'timing.step.licenseActivated', () =>
+            this.ensureMachineActivationForProvisioning(
+              machine,
+              sshPrivateKey,
+              remoteRenetPath,
+              sftp
+            )
+          );
+        }
+
+        const result = await this.executeWithConnectedSftp(
+          sftp,
+          options,
+          remoteRenetPath,
+          vault,
+          machine,
+          sshPrivateKey,
+          startTime
+        );
+        if (result.success) {
+          outputService.setOperationDuration(result.operationDurationMs ?? result.durationMs);
+        }
+        return result;
+      } finally {
+        sftp.close();
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       return {

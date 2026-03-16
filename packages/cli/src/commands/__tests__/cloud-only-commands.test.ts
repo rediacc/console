@@ -70,6 +70,13 @@ vi.mock('../../services/queue.js', () => ({
   queueService: { buildQueueVault: vi.fn() },
 }));
 
+// Disable agent detection so experimental commands are not blocked
+vi.mock('../../utils/agent-guard.js', () => ({
+  isAgentEnvironment: vi.fn().mockReturnValue(false),
+  assertAgentMachineAccess: vi.fn(),
+  assertAgentRepoCreate: vi.fn(),
+}));
+
 // Enable experimental mode so cloud-only commands are visible in help
 process.env.REDIACC_EXPERIMENTAL = '1';
 

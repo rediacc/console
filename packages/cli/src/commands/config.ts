@@ -214,7 +214,10 @@ async function handleS3Setup(options: {
 }
 
 export function registerConfigCommands(program: Command): void {
-  const config = program.command('config').description(t('commands.config.description'));
+  const config = program
+    .command('config')
+    .summary(t('commands.config.descriptionShort'))
+    .description(t('commands.config.description'));
 
   config.addHelpText(
     'after',

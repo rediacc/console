@@ -129,7 +129,10 @@ async function resolveCephInitParams(
 }
 
 export function registerDatastoreCommands(program: Command): void {
-  const datastore = program.command('datastore').description(t('commands.datastore.description'));
+  const datastore = program
+    .command('datastore')
+    .summary(t('commands.datastore.descriptionShort'))
+    .description(t('commands.datastore.description'));
 
   // datastore init
   datastore

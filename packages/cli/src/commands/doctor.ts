@@ -442,6 +442,7 @@ function formatJson(sections: CheckSection[]): string {
 export function registerDoctorCommand(program: Command): void {
   program
     .command('doctor')
+    .summary(t('commands.doctor.descriptionShort'))
     .description(t('commands.doctor.description'))
     .option('--output <format>', t('options.outputFormat'))
     .action(async (options: { output?: string }) => {

@@ -23,6 +23,7 @@ class OutputService {
   private _commandName: string | null = null;
   private _startTime: number | null = null;
   private _warnings: string[] = [];
+  private _operationDurationMs: number | null = null;
 
   constructor() {
     this.colorEnabled = !process.env.REDIACC_NO_COLOR && process.stdout.isTTY !== false;
@@ -52,6 +53,14 @@ class OutputService {
 
   getDurationMs(): number {
     return this._startTime ? Date.now() - this._startTime : 0;
+  }
+
+  setOperationDuration(ms: number): void {
+    this._operationDurationMs = ms;
+  }
+
+  getOperationDurationMs(): number | null {
+    return this._operationDurationMs;
   }
 
   private applyFieldFilter<T extends Record<string, unknown>>(data: T | T[]): T | T[] {
@@ -92,7 +101,12 @@ class OutputService {
       data,
       errors: null,
       warnings: this._warnings,
-      metrics: { duration_ms: this.getDurationMs() },
+      metrics: {
+        duration_ms: this.getDurationMs(),
+        ...(this._operationDurationMs != null && {
+          operation_duration_ms: this._operationDurationMs,
+        }),
+      },
     };
     return JSON.stringify(envelope, null, 2);
   }

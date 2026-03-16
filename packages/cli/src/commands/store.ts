@@ -124,7 +124,10 @@ async function syncSingleStore(
 }
 
 export function registerStoreCommands(program: Command): void {
-  const store = program.command('store').description(t('commands.store.description'));
+  const store = program
+    .command('store')
+    .summary(t('commands.store.descriptionShort'))
+    .description(t('commands.store.description'));
 
   store.addHelpText(
     'after',

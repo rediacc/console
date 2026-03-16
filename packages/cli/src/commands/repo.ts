@@ -9,7 +9,7 @@ import {
   deployRepoKeyIfNeeded,
   removeRepoKeyFromMachine,
 } from '../services/repo-key-deployment.js';
-import { assertAgentRepoCreate } from '../utils/agent-guard.js';
+import { assertAgentRepoCreate, isAgentEnvironment } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD, type CommandPath } from '../utils/command-policy.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap, resolveGuids } from '../utils/guid-resolver.js';
@@ -37,6 +37,7 @@ async function handleSingleRepoUp(
     machine: string;
     mount?: boolean;
     checkpoint?: boolean;
+    tls?: boolean;
     dryRun?: boolean;
     debug?: boolean;
     skipRouterRestart?: boolean;
@@ -47,6 +48,7 @@ async function handleSingleRepoUp(
   const params: Record<string, unknown> = {};
   if (options.mount) params.mount = true;
   if (options.checkpoint) params.checkpoint = true;
+  if (options.tls) params.tls = true;
 
   if (options.dryRun) {
     const repo = await configService.getRepository(name);
@@ -193,6 +195,10 @@ export function registerRepoCommands(program: Command): void {
     'after',
     `\n${t('help.examples')}\n  $ rdc repo create my-app -m server-1 --size 5G   ${t('help.repo.create')}\n  $ rdc repo up my-app -m server-1 --mount          ${t('help.repo.up')}\n  $ rdc repo down my-app -m server-1                ${t('help.repo.down')}\n  $ rdc repo fork my-app my-app-test -m server-1    ${t('help.repo.fork')}\n`
   );
+
+  if (isAgentEnvironment() || process.argv.includes('--help-all')) {
+    repo.addHelpText('after', t('help.repo.keyConcepts'));
+  }
 
   // repo create <name>
   repo
@@ -349,6 +355,10 @@ export function registerRepoCommands(program: Command): void {
               );
             }
             outputService.success(t('commands.repo.delete.completed'));
+            outputService.info(t('commands.repo.delete.configRetained', { repository: name }));
+            if (!options.archiveConfig) {
+              outputService.info(t('commands.repo.delete.archiveHint', { repository: name }));
+            }
           } else {
             renderLocalExecutionFailure(result, t('commands.repo.delete.failed'));
           }
@@ -368,6 +378,7 @@ export function registerRepoCommands(program: Command): void {
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--mount', t('commands.repo.up.mountOption'))
     .option('--checkpoint', t('commands.repo.up.checkpointOption'))
+    .option('--tls', t('commands.repo.up.tlsOption'))
     .option('--include-forks', t('commands.repo.upAll.includeForksOption'))
     .option('--mount-only', t('commands.repo.upAll.mountOnlyOption'))
     .option('--parallel', t('commands.repo.upAll.parallelOption'))
@@ -383,6 +394,7 @@ export function registerRepoCommands(program: Command): void {
           machine: string;
           mount?: boolean;
           checkpoint?: boolean;
+          tls?: boolean;
           includeForks?: boolean;
           mountOnly?: boolean;
           parallel?: boolean;

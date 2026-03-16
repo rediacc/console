@@ -4,7 +4,7 @@ description: "Mevcut projeleri şifrelenmiş Rediacc depolarına taşıyın."
 category: "Guides"
 order: 11
 language: tr
-sourceHash: "76165f8884e5edf1"
+sourceHash: fdecebe5bf7d4a86
 ---
 
 # Geçiş Rehberi

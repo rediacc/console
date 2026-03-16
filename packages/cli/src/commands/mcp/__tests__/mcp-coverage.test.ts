@@ -2,44 +2,18 @@
  * MCP Tool Coverage Test
  *
  * Ensures every non-experimental CLI command group in the command registry
- * has at least one corresponding MCP tool. Also verifies that non-experimental
- * subcommands are covered. Fails CI when a command is added to the registry
- * but not exposed via MCP.
+ * has at least one corresponding MCP tool or an explicit exclusion reason
+ * in COMMAND_METADATA. Fails CI when a command is added to the registry
+ * but not covered.
  */
 import { describe, expect, it } from 'vitest';
+import { cli } from '../../../cli.js';
+import { COMMAND_METADATA, getMcpExclusions } from '../../../config/command-metadata.js';
 import { COMMAND_REGISTRY } from '../../../config/command-registry.js';
-import { TOOLS } from '../tools.js';
+import { buildAllTools } from '../tools.js';
 
-/**
- * Commands intentionally excluded from MCP with documented reasons.
- * To add a new exclusion, add an entry here — the test enforces this is the
- * only place exclusions live.
- *
- * Format: "command" for top-level, "command subcommand" for subcommands.
- */
-const MCP_EXCLUDED: Record<string, string> = {
-  // ── Interactive / GUI ─────────────────────────────────────────────
-  vscode: 'Opens VS Code GUI — not useful for MCP agents',
-  protocol: 'URL protocol handler registration — local desktop concern',
-
-  // ── Local-only tooling ────────────────────────────────────────────
-  ops: 'Local VM provisioning — requires host KVM/QEMU, not remote-operable',
-  datastore: 'Infrastructure datastore management — runs via bridge execution, not direct MCP',
-  doctor: 'Diagnoses local CLI installation — not a remote operation',
-  update: 'CLI self-update — not a remote operation',
-  store: 'Config file sync backends — local credential management',
-  subscription: 'License management — local concern',
-  mcp: 'The MCP server itself — cannot recurse',
-
-  // ── Sync requires local filesystem ────────────────────────────────
-  sync: 'Requires local filesystem paths — MCP agents have no local FS',
-
-  // ── Covered by sub-operations ─────────────────────────────────────
-  run: 'Escape hatch for raw renet functions — agents should use typed tools',
-
-  // ── Subcommands ───────────────────────────────────────────────────
-  'storage browse': 'Interactive file browser — requires TTY',
-};
+const TOOLS = buildAllTools(cli);
+const MCP_EXCLUDED = getMcpExclusions();
 
 /**
  * Extract the CLI command path each MCP tool maps to.
@@ -57,6 +31,7 @@ function getMcpCommandPaths(): Set<string> {
       tag: 'x',
       repo: 'x',
       storage: 'x',
+      storageName: 'x',
     });
     // Take command words before the first argument value 'x'
     const cmdParts: string[] = [];
@@ -98,8 +73,7 @@ describe('MCP tool coverage', () => {
     if (missing.length > 0) {
       const hint = missing
         .map(
-          (name) =>
-            `  - "${name}": add an MCP tool in tools.ts OR add to MCP_EXCLUDED with a reason`
+          (name) => `  - "${name}": add MCP metadata in command-metadata.ts OR add mcpExcludeReason`
         )
         .join('\n');
       expect.fail(`${missing.length} non-experimental command(s) missing from MCP tools:\n${hint}`);
@@ -118,8 +92,7 @@ describe('MCP tool coverage', () => {
     if (missing.length > 0) {
       const hint = missing
         .map(
-          (name) =>
-            `  - "${name}": add an MCP tool in tools.ts OR add to MCP_EXCLUDED with a reason`
+          (name) => `  - "${name}": add MCP metadata in command-metadata.ts OR add mcpExcludeReason`
         )
         .join('\n');
       expect.fail(
@@ -144,7 +117,7 @@ describe('MCP tool coverage', () => {
     );
 
     if (stale.length > 0) {
-      expect.fail(`MCP_EXCLUDED has entries not in the registry: ${stale.join(', ')}`);
+      expect.fail(`MCP exclusions have entries not in the registry: ${stale.join(', ')}`);
     }
   });
 
@@ -155,7 +128,7 @@ describe('MCP tool coverage', () => {
 
     if (redundant.length > 0) {
       expect.fail(
-        `MCP_EXCLUDED has entries that already have MCP tools (remove): ${redundant.join(', ')}`
+        `MCP exclusions overlap with MCP tools (remove mcpExcludeReason): ${redundant.join(', ')}`
       );
     }
   });
@@ -163,6 +136,18 @@ describe('MCP tool coverage', () => {
   it('all exclusions have non-empty reasons', () => {
     for (const [name, reason] of Object.entries(MCP_EXCLUDED)) {
       expect(reason.length, `${name} exclusion has empty reason`).toBeGreaterThan(0);
+    }
+  });
+
+  it('no COMMAND_METADATA entry has both mcp and mcpExcludeReason', () => {
+    const conflicts: string[] = [];
+    for (const [path, meta] of Object.entries(COMMAND_METADATA)) {
+      if (meta.mcp && meta.mcpExcludeReason) {
+        conflicts.push(path);
+      }
+    }
+    if (conflicts.length > 0) {
+      expect.fail(`Entries with both mcp and mcpExcludeReason: ${conflicts.join(', ')}`);
     }
   });
 });

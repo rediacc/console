@@ -186,7 +186,7 @@ Key changes:
 
 1. **Remove `ports:` mappings** — `renet compose` uses host networking and strips port mappings automatically
 2. **Remove `network_mode: host`** — `renet compose` adds this for you
-3. **Remove `restart: always` or `restart: unless-stopped`** — these conflict with CRIU checkpoint/restore (Docker auto-starts containers before checkpoint restore can run). Use `restart: on-failure` if you need restart behavior, or omit it entirely — Rediaccfile `up()`/`down()` manages the container lifecycle
+3. **Restart policies are safe to keep** — renet auto-strips them for CRIU compatibility and the router watchdog auto-recovers stopped containers
 4. **Bind services to `${SERVICE_IP}`** environment variables (auto-injected by Rediacc)
 5. **Reference other services by their IP** instead of Docker DNS names (e.g., `${POSTGRES_IP}` instead of `postgres`)
 
@@ -279,7 +279,7 @@ rdc repo ownership my-project -m server-1
 
 ### Container Won't Start
 
-Check that services bind to their assigned IP, not `0.0.0.0` or `localhost`:
+Check that services bind to their assigned IP, not `localhost`:
 
 ```bash
 # Check assigned IPs
@@ -291,7 +291,7 @@ rdc term server-1 my-project -c "docker logs <container-name>"
 
 ### Port Conflict Between Repositories
 
-Each repository gets unique loopback IPs. If you see port conflicts, verify that your `docker-compose.yml` uses `${SERVICE_IP}` for binding instead of `0.0.0.0`. Services bound to `0.0.0.0` listen on all interfaces and will conflict with other repositories.
+Each repository gets unique loopback IPs. If you see port conflicts, verify that your `docker-compose.yml` uses `${SERVICE_IP}` for binding. Services not bound to `SERVICE_IP` listen on all interfaces and will conflict with other repositories.
 
 ### Ownership Fix Breaks Containers
 

@@ -222,6 +222,7 @@ async function handleStatus(): Promise<void> {
 export function registerUpdateCommand(program: Command): void {
   program
     .command('update')
+    .summary(t('commands.update.descriptionShort'))
     .description(t('commands.update.description'))
     .option('--force', t('commands.update.force'))
     .option('--check-only', t('commands.update.checkOnly'))

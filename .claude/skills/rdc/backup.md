@@ -1,5 +1,7 @@
 # rdc repo — Backup, Restore, Sync & Snapshots
 
+For full command syntax and options, see [reference.md](reference.md).
+
 Backup, restore, transfer, and sync repository images between machines or to/from external storage. All backup and sync operations are subcommands of `rdc repo`.
 
 **Prerequisite**: Both source AND target machines must be registered, set up, and the CLI SSH key must be configured. See "Prerequisites for ops VMs" in [SKILL.md](SKILL.md) and [config.md](config.md).
@@ -7,37 +9,18 @@ Backup, restore, transfer, and sync repository images between machines or to/fro
 ## Backup commands
 
 ### Push to another machine
-```
-rdc repo push <repo> -m <source-machine> --to-machine <target-machine> [--checkpoint] [--force]
-```
-Copies the encrypted repo image directly to the target machine with the **same GUID**. This is a backup/migration, not a fork. After push, deploy on target with:
-```
-rdc repo up <repo> -m <target-machine> --mount
-```
+Copies the encrypted repo image directly to the target machine with the **same GUID**. This is a backup/migration, not a fork. After push, deploy on target with `rdc repo up <repo> -m <target> --mount`.
 
 **Important**: `--mount` is required on first deploy after push — the volume needs to be opened (LUKS decryption). The repo's credential must be in the config. If pushing a fork, use `--grand <parent>` on `repo up` to inherit the parent's credential.
 
 ### Push to storage
-```
-rdc repo push <repo> -m <machine> --to <storage-name> [--dest <filename>] [--tag <tag>]
-```
 Backs up to configured external storage (S3, local file, etc.).
 
 ### Pull from another machine
-```
-rdc repo pull <repo> -m <target-machine> --from-machine <source-machine> [--force]
-```
 
 ### Pull from storage
-```
-rdc repo pull <repo> -m <machine> --from <storage-name> [--force]
-```
 
 ### List backups
-```
-rdc repo list-backups --from-machine <machine>
-rdc repo list-backups --from <storage-name>
-```
 
 ### Live migration with CRIU checkpoint
 
@@ -91,10 +74,6 @@ rdc repo up <parent>:<tag> -m <target> --mount --checkpoint --grand <parent>
 ## Backup scheduling
 
 ### Configure backup strategy
-```
-rdc config backup-strategy set [--destination <name>] [--cron <expr>] [--enable] [--retention <count>]
-```
-
 Multiple destinations can be configured with different schedules:
 ```bash
 rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
@@ -102,38 +81,18 @@ rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --e
 ```
 
 ### Show backup strategy
-```
-rdc config backup-strategy show
-```
 
 ### Deploy backup schedule to machine (systemd timer)
-```
-rdc machine deploy-backup <machine>
-```
 
 ## Bulk sync (push/pull all repos)
 
 ### Push all repos to storage
-```
-rdc repo sync push-all -m <machine> --to <storage-name>
-```
 
 ### Pull all repos from storage
-```
-rdc repo sync pull-all -m <machine> --from <storage-name>
-```
 
 ## File sync (rsync-based file transfer)
 
-File transfer between local machine and remote repositories:
-
-```
-rdc repo sync upload -m <machine> -r <repository> [--local <path>] [--remote <subdir>] [options]
-rdc repo sync download -m <machine> -r <repository> [--local <path>] [--remote <subdir>] [options]
-rdc repo sync status -m <machine> -r <repository> [--local <path>]
-```
-
-See [sync.md](sync.md) for full details on file sync options and behavior.
+File transfer between local machine and remote repositories. See [sync.md](sync.md) for full details on file sync options and behavior.
 
 ## Fork vs Push — when to use which
 
@@ -181,45 +140,17 @@ This makes incremental backups and frequent pushes very fast after the initial f
 
 ## Snapshots (BTRFS)
 
-Local point-in-time snapshots on the same machine:
-
-```
-rdc repo snapshot create <repo> -m <machine>
-rdc repo snapshot list [repo] -m <machine>
-rdc repo snapshot delete <repo> <snapshot-name> -m <machine>
-```
+Local point-in-time snapshots on the same machine.
 
 ## Prune — cleanup orphaned resources
 
 Two prune commands remove resources no longer referenced by any config file.
 
 ### Storage prune (orphaned backups in cloud/external storage)
-
-```bash
-# Dry-run (default) — preview what would be deleted
-rdc storage prune <storage-name> -m <machine>
-
-# Actually delete
-rdc storage prune <storage-name> -m <machine> --no-dry-run
-
-# Custom grace period (default 7 days)
-rdc storage prune <storage-name> -m <machine> --grace-days 14
-```
-
 Multi-config safe: scans all config files in `~/.config/rediacc/` before deciding a backup is orphaned. Recently archived repos within the grace period are protected.
 
 ### Machine prune (datastore + orphaned repo images)
-
-```bash
-# Phase 1 only: clean stale mounts, locks, snapshots
-rdc machine prune <machine>
-
-# Phase 1 + Phase 2: also delete repo images not in any config
-rdc machine prune <machine> --orphaned-repos
-
-# Dry-run (shows what would be removed without deleting)
-rdc machine prune <machine> --orphaned-repos --dry-run
-```
+Phase 1: clean stale mounts, locks, snapshots. Phase 2 (with `--orphaned-repos`): also delete repo images not in any config.
 
 ### Grace period configuration
 

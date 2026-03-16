@@ -4,7 +4,7 @@ description: "Règles et conventions essentielles pour construire des applicatio
 category: "Guides"
 order: 5
 language: fr
-sourceHash: "9d81373c26d93457"
+sourceHash: 166f333b848c718b
 sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 ---
 

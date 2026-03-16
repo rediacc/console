@@ -8,8 +8,12 @@
         "description": "Lister toutes les commandes disponibles avec leurs arguments et options"
       },
       "description": "Utilitaires pour les assistants de codage IA",
+      "descriptionShort": "Utilitaires pour les assistants de codage IA",
       "exec": {
         "description": "Exécuter une commande avec une entrée JSON depuis stdin"
+      },
+      "generateReference": {
+        "description": "Générer la référence des commandes en Markdown pour les compétences Claude"
       },
       "schema": {
         "description": "Afficher le schéma détaillé d'une commande spécifique"
@@ -344,6 +348,7 @@
         "success": "Configuration \"{{name}}\" supprimée"
       },
       "description": "Gérer les fichiers de configuration, machines et connexions SSH",
+      "descriptionShort": "Gérer les fichiers de configuration, machines et connexions SSH",
       "infra": {
         "description": "Gérer la configuration d'infrastructure (proxy, DNS, certificats)",
         "push": {
@@ -552,6 +557,7 @@
     },
     "datastore": {
       "description": "Gérer le cycle de vie du datastore Ceph RBD (init, fork, unfork, status)",
+      "descriptionShort": "Gérer le cycle de vie du datastore Ceph RBD (init, fork, unfork, status)",
       "fork": {
         "completed": "Datastore forké avec succès (snapshot : {{snapshot}})",
         "cowSizeOption": "Taille du fichier de sauvegarde COW (par défaut : auto, croît à la demande)",
@@ -612,6 +618,7 @@
         "sshKey": "Clé SSH"
       },
       "description": "Diagnostiquer l'environnement CLI et l'intégration renet",
+      "descriptionShort": "Diagnostiquer l'environnement CLI et l'intégration renet",
       "devMode": "non (mode développement)",
       "hasErrors": "{{count}} erreur(s)",
       "hasWarnings": "{{count}} avertissement(s)",
@@ -676,6 +683,7 @@
         "optionForce": "Passer l'invite de confirmation"
       },
       "description": "Gérer les machines distantes (état, conteneurs, services, santé)",
+      "descriptionShort": "Gérer les machines distantes (état, conteneurs, services, santé)",
       "health": {
         "containersSection": "\nConteneurs :",
         "containersSummary": "  {{running}}/{{total}} en cours d'exécution ({{healthy}} sains, {{unhealthy}} non sains)",
@@ -761,6 +769,9 @@
         "infrastructure": "Infrastructure",
         "noData": "Aucune donnée de statut disponible"
       },
+      "rename": {
+        "description": "Renommer une machine"
+      },
       "repos": {
         "description": "Lister les dépôts déployés sur une machine",
         "descriptionShort": "Lister les dépôts déployés sur une machine",
@@ -806,6 +817,12 @@
         "success": "Machine \"{{name}}\" mise à jour",
         "updating": "Mise à jour de la machine en cours..."
       },
+      "vault": {
+        "description": "Gestion du coffre-fort machine (adaptateur cloud uniquement)"
+      },
+      "vault-status": {
+        "description": "Afficher l'état analysé du coffre-fort d'une machine (adaptateur cloud uniquement)"
+      },
       "vaultStatus": {
         "deployedRepos": "\nDépôts déployés :",
         "description": "Afficher l'état du coffre analysé pour une machine",
@@ -828,6 +845,7 @@
     },
     "mcp": {
       "description": "Serveur Model Context Protocol pour les agents IA",
+      "descriptionShort": "Serveur Model Context Protocol pour les agents IA",
       "serve": {
         "allowGrandOption": "Autoriser les opérations destructives sur les dépôts grand (non fork). Par défaut : mode fork uniquement",
         "configOption": "Nom de la configuration à utiliser pour toutes les commandes",
@@ -850,6 +868,7 @@
         "title": "Vérification des prérequis OPS"
       },
       "description": "Opérations VM expérimentales (provisionner, gérer, détruire)",
+      "descriptionShort": "Opérations VM expérimentales (provisionner, gérer, détruire)",
       "down": {
         "completed": "Cluster VM détruit avec succès",
         "description": "Détruire le cluster VM",
@@ -1133,8 +1152,10 @@
       },
       "delete": {
         "archived": "Identifiant de \"{{repository}}\" archivé",
+        "archiveHint": "Pour archiver les identifiants pour la récupération : relancez avec --archive-config",
         "archiveOption": "Déplacer l'entrée de configuration vers deletedRepositories pour récupération ultérieure",
         "completed": "Dépôt supprimé",
+        "configRetained": "Entrée de configuration pour \"{{repository}}\" conservée (le dépôt peut exister sur d'autres machines). Pour supprimer : rdc config repository remove {{repository}}",
         "description": "Supprimer un dépôt (détruit les conteneurs, volumes et l'image chiffrée). L'entrée de configuration est conservée. Utilisez --archive-config pour déplacer les identifiants vers deletedRepositories pour récupération via 'config restore-archived'",
         "descriptionShort": "Supprimer un dépôt d'une machine",
         "failed": "Échec de la suppression du dépôt",
@@ -1313,7 +1334,8 @@
         "failed": "Échec du démarrage des services",
         "grandOption": "Nom du grand dépôt (résolution automatique vers le GUID)",
         "mountOption": "Monter le dépôt d'abord",
-        "starting": "Démarrage des services pour \"{{repository}}\" sur \"{{machine}}\"..."
+        "starting": "Démarrage des services pour \"{{repository}}\" sur \"{{machine}}\"...",
+        "tlsOption": "Demander un certificat TLS dédié pour ce dépôt (les forks utilisent le certificat partagé de la machine par défaut)"
       },
       "upAll": {
         "completed": "Tous les dépôts démarrés",
@@ -1416,7 +1438,14 @@
         "noFiles": "Aucun fichier trouvé",
         "pathOption": "Chemin du sous-répertoire à lister"
       },
+      "create": {
+        "description": "Créer un nouveau fournisseur de stockage"
+      },
+      "delete": {
+        "description": "Supprimer un fournisseur de stockage"
+      },
       "description": "Gérer les fournisseurs de stockage et parcourir les fichiers distants",
+      "descriptionShort": "Gérer les fournisseurs de stockage et parcourir les fichiers distants",
       "list": {
         "description": "Lister les fournisseurs de stockage",
         "fetching": "Récupération des fournisseurs de stockage..."
@@ -1438,6 +1467,12 @@
         "noCredential": "Avertissement : Le dépôt \"{{name}}\" n'a pas d'identifiant défini. Le téléchargement peut échouer si la sauvegarde est chiffrée.",
         "repositoryOption": "Nom du dépôt à télécharger",
         "starting": "Téléchargement de \"{{repository}}\" depuis \"{{storage}}\" vers \"{{machine}}\"..."
+      },
+      "rename": {
+        "description": "Renommer un fournisseur de stockage"
+      },
+      "vault": {
+        "description": "Gestion du coffre-fort de stockage (adaptateur cloud uniquement)"
       }
     },
     "store": {
@@ -1475,6 +1510,7 @@
         "vaultTokenRequired": "Le jeton Vault est requis (passez --vault-token ou définissez la variable VAULT_TOKEN)"
       },
       "description": "Gérer les stores de synchronisation de configuration (S3, fichier local, Bitwarden, Git, Vault)",
+      "descriptionShort": "Gérer les stores de synchronisation de configuration (S3, fichier local, Bitwarden, Git, Vault)",
       "list": {
         "description": "Lister les stores configurés",
         "noStores": "Aucun store configuré. Ajoutez-en un avec : rdc store add <name> --type <type>"
@@ -1523,6 +1559,7 @@
         }
       },
       "description": "Gérer les licences machine et l’abonnement",
+      "descriptionShort": "Gérer les licences machine et l’abonnement",
       "login": {
         "browserFailed": "Impossible d’ouvrir le navigateur automatiquement. Veuillez visiter l’URL ci-dessus.",
         "description": "S’authentifier avec un jeton API du portail web",
@@ -1675,6 +1712,7 @@
       "connecting": "Connexion à {{machine}} en cours...",
       "connectingTo": "Connexion à {{title}} en cours...",
       "description": "Accès terminal SSH aux machines et dépôts",
+      "descriptionShort": "Accès terminal SSH aux machines et dépôts",
       "fetchingDetails": "Récupération des détails de connexion...",
       "launchingTerminal": "Lancement du terminal {{type}}...",
       "launchSuccess": "Terminal lancé avec succès.",
@@ -1687,6 +1725,7 @@
       "checking": "Recherche de mises à jour...",
       "checkOnly": "Vérifier les mises à jour sans télécharger",
       "description": "Vérifier et appliquer les mises à jour du CLI",
+      "descriptionShort": "Vérifier et appliquer les mises à jour du CLI",
       "downloading": "Téléchargement de v{{version}}...",
       "failed": "Échec de la mise à jour : {{error}}",
       "force": "Forcer la mise à jour même si déjà à jour",
@@ -1818,6 +1857,7 @@
         "testingConnectivity": "Test de la connectivité à {{host}}:{{port}}..."
       },
       "description": "Ouvrir VS Code Remote SSH vers une machine ou un dépôt",
+      "descriptionShort": "Ouvrir VS Code Remote SSH vers une machine ou un dépôt",
       "list": {
         "configFile": "\nFichier de configuration : {{path}}",
         "description": "Lister les connexions SSH VS Code configurées",
@@ -1976,7 +2016,7 @@
     }
   },
   "errors": {
-    "activationFailed": "L'activation a échoué",
+    "activationFailed": "Échec de l'activation",
     "affectedChildClones": ". Clones enfants affectés : {{clones}}. Supprimez ou promouvez d'abord les clones enfants.",
     "agent": {
       "createGuard": "Impossible de créer le dépôt \"{{name}}\" en mode agent.\n\nLes agents IA fonctionnent en mode fork uniquement. La création d'un dépôt principal est bloquée\ncar l'agent ne peut pas y travailler ensuite.\n\nUtilisez un dépôt existant et faites-en un fork à la place :\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nPour contourner : définissez REDIACC_ALLOW_GRAND_REPO=*",
@@ -2043,7 +2083,10 @@
     },
     "sshKeyNotFound": "Clé SSH non trouvée : {{path}}",
     "subscription": {
-      "notLoggedIn": "Non connecté. Exécutez d’abord `rdc subscription login`."
+      "activationFailed": "Échec de l'activation de la machine. Assurez-vous que votre abonnement est actif et que l'emplacement machine est disponible.",
+      "notLoggedIn": "Non connecté. Exécutez d’abord `rdc subscription login`.",
+      "tokenRequired": "Jeton d'abonnement requis. Définissez la variable d'environnement REDIACC_SUBSCRIPTION_TOKEN ou exécutez `rdc subscription login` dans votre terminal.",
+      "tokenWarning": "Aucun jeton d'abonnement trouvé. Les commandes nécessitant une licence (repo create, repo fork) échoueront. Définissez la variable d'environnement REDIACC_SUBSCRIPTION_TOKEN ou exécutez `rdc subscription login` dans votre terminal."
     },
     "sync": {
       "absolutePathBlocked": "Le chemin --remote doit être relatif, pas absolu. Utilisez un chemin relatif à la racine du dépôt.",
@@ -2087,6 +2130,7 @@
     }
   },
   "help": {
+    "agentMode": "\n  Mode Agent\n    • Fork uniquement : créez un fork avant de modifier un dépôt\n    • Les dépôts grand (non fork) sont en lecture seule pour les agents\n    • Flux de travail : repo fork <parent> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n",
     "cli": {
       "machineQuery": "Afficher l'état de la machine",
       "repoUp": "Déployer les services du dépôt",
@@ -2100,15 +2144,18 @@
       "setupMachine": "Exécuter le setup sur une machine distante"
     },
     "examples": "Exemples :",
+    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REPOSITORY_PATH}/... — never Docker named volumes (excluded from forks/backups)\n    • Containers must bind to SERVICE_IP to avoid port conflicts\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REPOSITORY_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
     "machine": {
       "containers": "Lister les conteneurs en cours",
       "health": "Vérification de santé pour CI/CD",
+      "keyConcepts": "\nConcepts Clés :\n\n  Filtres de Requête\n    • rdc machine query <name> renvoie toutes les sections par défaut\n    • Utilisez --system, --repositories, --containers, --services, --network, --block-devices pour filtrer\n    • La sortie JSON enrichit les conteneurs avec : repository (nom résolu), domain, autoRoute\n\n  Surveillance & Santé\n    • machine health retourne : 0=sain, 1=avertissement, 2=erreur — utilisez pour les portes CI/CD\n    • containers --health-check retourne 2 si un conteneur n'est pas sain\n    • services --stability-check retourne 2 si un service est en échec, redémarre ou a >3 redémarrages\n\n  Structure du Stockage de Données (/mnt/rediacc/)\n    • repositories/ — images LUKS chiffrées (une par GUID de dépôt)\n    • mounts/ — points de montage déchiffrés (accessibles quand le dépôt est monté)\n    • immovable/ — données Docker daemon par dépôt\n",
       "query": "Afficher l'état complet de la machine"
     },
     "repo": {
       "create": "Créer un dépôt chiffré",
       "down": "Arrêter les services",
       "fork": "Fork CoW pour les tests",
+      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REPOSITORY_PATH}/data, ${REPOSITORY_PATH}/config, etc.\n    • Example: volumes: ['${REPOSITORY_PATH}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "Lister les sauvegardes sur le stockage",
       "pull": "Récupérer la sauvegarde depuis le stockage",
       "push": "Pousser la sauvegarde vers le stockage",
@@ -2311,5 +2358,20 @@
   },
   "table": {
     "noData": "Aucune donnée à afficher"
+  },
+  "timing": {
+    "completed": "Terminé en {{operation}} (total : {{total}})",
+    "step": {
+      "activating": "Activation de la licence...",
+      "configLoaded": "Configuration chargée ({{duration}})",
+      "connected": "Connecté ({{duration}})",
+      "connecting": "Connexion en cours...",
+      "licenseActivated": "Licence activée ({{duration}})",
+      "loading": "Chargement de la configuration...",
+      "machineVerified": "Machine vérifiée ({{duration}})",
+      "provisioning": "Provisionnement de renet...",
+      "renetProvisioned": "Renet provisionné ({{duration}})",
+      "verifying": "Vérification de la machine..."
+    }
   }
 }

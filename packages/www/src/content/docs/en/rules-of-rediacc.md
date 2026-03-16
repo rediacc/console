@@ -51,7 +51,7 @@ down() {
 - **Do NOT set `network_mode`** in your compose file — renet forces `network_mode: host` on all services. Any value you set is overwritten.
 - **Do NOT set `rediacc.*` labels** — renet auto-injects `rediacc.network_id`, `rediacc.service_ip`, and `rediacc.service_name`.
 - **`ports:` mappings are ignored** in host networking mode. Use `rediacc.service_port` label for proxy routing to non-80 ports.
-- **Do NOT use `restart: always` or `restart: unless-stopped`** — these conflict with CRIU checkpoint/restore. Use `restart: on-failure` or omit it.
+- **Restart policies (`restart: always`, `on-failure`, etc.) are safe to use** — renet auto-strips them for CRIU compatibility. The router watchdog auto-recovers stopped containers based on the original policy saved in `.rediacc.json`.
 - **Do NOT use Docker named volumes** — they live outside the encrypted repo and won't be included in backups or forks.
 
 ### Environment variables inside containers
@@ -68,12 +68,14 @@ Renet auto-injects these into every container:
 - The compose **service name** becomes the auto-route URL prefix.
 - Example: service `myapp` at networkId 6336 with base domain `example.com` becomes `https://myapp-6336.example.com`.
 - For custom domains, use Traefik labels (but note: custom domains are NOT fork-friendly).
+- Fork repos use flat auto-routes under the machine wildcard cert. Custom domains (`rediacc.domain`) are ignored on forks — the domain belongs to the grand repo.
 
 ## Networking
 
 - **Each repository gets its own Docker daemon** at `/var/run/rediacc/docker-<networkId>.sock`.
 - **Each service gets a unique loopback IP** within a /26 subnet (e.g., `127.0.24.192/26`).
-- **Bind to `SERVICE_IP`**, not `0.0.0.0` — host networking means `0.0.0.0` would conflict with other repos.
+- **Bind to `SERVICE_IP`** — each service gets a unique loopback IP.
+- **Health checks must use `${SERVICE_IP}`**, not `localhost`. Example: `healthcheck: test: ["CMD", "curl", "-f", "http://${SERVICE_IP}:8080/health"]`
 - **Inter-service communication**: Use loopback IPs or `SERVICE_IP` env var. Docker DNS names do NOT work in host mode.
 - **Port conflicts are impossible** between repositories — each has its own Docker daemon and IP range.
 - **TCP/UDP port forwarding**: Add labels to expose non-HTTP ports:
@@ -116,7 +118,7 @@ Renet auto-injects these into every container:
 - Handle `ECONNRESET` on all persistent connections (database pools, websockets, message queues).
 - Use connection pool libraries that support automatic reconnection.
 - Add `process.on("uncaughtException")` safety net for stale socket errors from internal library objects.
-- Avoid `restart: always` — it interferes with CRIU restore.
+- Restart policies are auto-managed by renet (stripped for CRIU, watchdog handles recovery).
 - Avoid relying on Docker DNS — use loopback IPs for inter-service communication.
 
 ## Security
@@ -139,9 +141,9 @@ Renet auto-injects these into every container:
 ## Common mistakes
 
 - Using `docker compose` instead of `renet compose` — containers won't get network isolation.
-- Using `restart: always` — prevents CRIU restore and interferes with `repo down`.
+- Restart policies are safe — renet auto-strips them and the watchdog handles recovery.
 - Using Docker named volumes — data is not encrypted, not backed up, not forked.
-- Binding to `0.0.0.0` — causes port conflicts between repos in host networking mode.
+- Not binding to `SERVICE_IP` — causes port conflicts between repos.
 - Hardcoding IPs — use `SERVICE_IP` env var; IPs are allocated dynamically per networkId.
 - Forgetting `--mount` on first deploy after `backup push` — LUKS volume needs explicit opening.
 - Using `rdc term -c` as a workaround for failed commands — report bugs instead.

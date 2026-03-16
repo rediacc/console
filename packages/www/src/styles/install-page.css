@@ -297,6 +297,12 @@
   font-weight: 500;
 }
 
+/* In rowspan continuation rows (3 cells), first-child is Platform, not Method */
+.arch-table tr:has(td:nth-child(3):last-child) td:first-child {
+  text-align: center;
+  font-weight: normal;
+}
+
 .arch-table tr:last-child td {
   border-bottom: none;
 }

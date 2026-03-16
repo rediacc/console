@@ -1,45 +1,20 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { Command } from 'commander';
+import { COMMAND_METADATA, type CommandMeta } from '../../config/command-metadata.js';
 import { t } from '../../i18n/index.js';
-import { COMMAND_POLICIES, type CommandPath } from '../../utils/command-policy.js';
+import { CUSTOM_TOOLS } from './custom-tools.js';
 import { executeRdcCommand } from './executor.js';
 import type { McpServerOptions } from './server.js';
-import { TOOLS, type ToolDef } from './tool-definitions.js';
+import { buildToolsFromCommander, type ToolDef } from './tool-factory.js';
 
-export { TOOLS, type ToolDef } from './tool-definitions.js';
-
-export function registerAllTools(server: McpServer, options: McpServerOptions): void {
-  for (const tool of TOOLS) {
-    server.registerTool(
-      tool.name,
-      {
-        description: tool.description,
-        inputSchema: tool.schema,
-        annotations: {
-          destructiveHint: tool.isDestructive,
-          readOnlyHint: !tool.isDestructive,
-          idempotentHint: tool.isIdempotent,
-          openWorldHint: true,
-        },
-      },
-      async (args: Record<string, unknown>) => {
-        const guardResult = await applyGrandRepoGuard(tool, args, options);
-        if (guardResult) return guardResult;
-
-        const argv = tool.command(args);
-        const result = await executeRdcCommand(argv, {
-          ...options,
-          timeoutMs: tool.timeoutMs ?? options.defaultTimeoutMs,
-        });
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
-          isError: !result.success,
-        };
-      }
-    );
-  }
-}
+export type { ToolDef } from './tool-factory.js';
 
 type ToolResult = { content: [{ type: 'text'; text: string }]; isError: boolean };
+
+/** Build the complete list of MCP tools (auto-derived + custom). */
+export function buildAllTools(program: Command): ToolDef[] {
+  return [...buildToolsFromCommander(program), ...CUSTOM_TOOLS];
+}
 
 function guardError(msg: string): ToolResult {
   return { content: [{ type: 'text', text: msg }], isError: true };
@@ -58,6 +33,8 @@ function getToolCommandPath(tool: ToolDef): string {
     parent: 'x',
     tag: 'x',
     repo: 'x',
+    storage: 'x',
+    storageName: 'x',
   });
   const cmdParts: string[] = [];
   for (const part of argv) {
@@ -70,51 +47,10 @@ function getToolCommandPath(tool: ToolDef): string {
 /** Check if a fork repo is running a fork-blocked command. */
 function checkForkBlocked(tool: ToolDef): ToolResult | null {
   const cmdPath = getToolCommandPath(tool);
-  const policy = COMMAND_POLICIES.get(cmdPath as CommandPath);
-  if (policy?.forkBlocked) {
+  const meta = COMMAND_METADATA[cmdPath] as CommandMeta | undefined;
+  if (meta?.forkBlocked) {
     return guardError(t('errors.agent.forkBlocked', { command: cmdPath }));
   }
-  return null;
-}
-
-/** Guard a named repo — block grand repos or fork-blocked commands. */
-async function guardNamedRepo(
-  tool: ToolDef,
-  repoName: string,
-  options: McpServerOptions
-): Promise<ToolResult | null> {
-  const envOverride = process.env.REDIACC_ALLOW_GRAND_REPO;
-  const repoInfo = await getRepoInfo(repoName, options.configName);
-  if (!repoInfo) return null;
-
-  const isFork = !!(repoInfo.grandGuid && repoInfo.grandGuid !== repoInfo.repositoryGuid);
-
-  if (!isFork && envOverride !== '*' && envOverride !== repoName) {
-    return guardError(t('errors.agent.mcpGrandGuard', { name: repoName }));
-  }
-  if (isFork) return checkForkBlocked(tool);
-  return null;
-}
-
-/**
- * Block destructive ops on non-fork repos unless --allow-grand or env override.
- * Also blocks fork-incompatible commands on fork repos.
- */
-async function applyGrandRepoGuard(
-  tool: ToolDef,
-  args: Record<string, unknown>,
-  options: McpServerOptions
-): Promise<ToolResult | null> {
-  if (!tool.repoArgField || options.allowGrand) return null;
-
-  const repoName = args[tool.repoArgField] as string | undefined;
-
-  if (repoName) return guardNamedRepo(tool, repoName, options);
-
-  if (tool.name === 'term_exec' && process.env.REDIACC_ALLOW_GRAND_REPO !== '*') {
-    return guardError(t('errors.agent.mcpMachineGuard'));
-  }
-
   return null;
 }
 
@@ -134,5 +70,93 @@ async function getRepoInfo(
     return (await configService.getRepository(repoName)) ?? null;
   } catch {
     return null; // config not available — let the command proceed
+  }
+}
+
+/** Determine if a repo is a fork based on its config. */
+function isForkRepo(repoInfo: { repositoryGuid: string; grandGuid?: string }): boolean {
+  return !!(repoInfo.grandGuid && repoInfo.grandGuid !== repoInfo.repositoryGuid);
+}
+
+/** Guard a named repo — block grand repos or fork-blocked commands. */
+async function guardNamedRepo(
+  tool: ToolDef,
+  repoName: string,
+  options: McpServerOptions
+): Promise<ToolResult | null> {
+  const envOverride = process.env.REDIACC_ALLOW_GRAND_REPO;
+  const repoInfo = await getRepoInfo(repoName, options.configName);
+  if (!repoInfo) return null;
+
+  if (!isForkRepo(repoInfo) && envOverride !== '*' && envOverride !== repoName) {
+    return guardError(t('errors.agent.mcpGrandGuard', { name: repoName }));
+  }
+  if (isForkRepo(repoInfo)) return checkForkBlocked(tool);
+  return null;
+}
+
+/**
+ * Block destructive ops on non-fork repos unless --allow-grand or env override.
+ * Also blocks fork-incompatible commands on fork repos.
+ */
+async function applyGrandRepoGuard(
+  tool: ToolDef,
+  args: Record<string, unknown>,
+  options: McpServerOptions
+): Promise<ToolResult | null> {
+  if (!tool.repoArgField || options.allowGrand) return null;
+
+  const repoName = args[tool.repoArgField] as string | undefined;
+  if (repoName) return guardNamedRepo(tool, repoName, options);
+
+  if (tool.name === 'term_exec' && process.env.REDIACC_ALLOW_GRAND_REPO !== '*') {
+    return guardError(t('errors.agent.mcpMachineGuard'));
+  }
+
+  return null;
+}
+
+/** Execute a tool call via the rdc child process and format the MCP response. */
+async function executeTool(
+  tool: ToolDef,
+  args: Record<string, unknown>,
+  options: McpServerOptions
+): Promise<ToolResult> {
+  const guardResult = await applyGrandRepoGuard(tool, args, options);
+  if (guardResult) return guardResult;
+
+  const argv = tool.command(args);
+  const result = await executeRdcCommand(argv, {
+    ...options,
+    timeoutMs: tool.timeoutMs ?? options.defaultTimeoutMs,
+  });
+  return {
+    content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+    isError: !result.success,
+  };
+}
+
+export function registerAllTools(
+  server: McpServer,
+  program: Command,
+  options: McpServerOptions
+): void {
+  const allTools = buildAllTools(program);
+
+  for (const tool of allTools) {
+    server.registerTool(
+      tool.name,
+      {
+        description: tool.description,
+        inputSchema: tool.schema,
+        annotations: {
+          destructiveHint: tool.isDestructive,
+          readOnlyHint: !tool.isDestructive,
+          idempotentHint: tool.isIdempotent,
+          openWorldHint: true,
+        },
+      },
+      async (args: Record<string, unknown>) => executeTool(tool, args, options)
+    );
   }
 }

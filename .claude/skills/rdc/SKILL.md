@@ -15,12 +15,13 @@ In production: `rdc <command>` directly.
 
 Each `./rdc.sh` invocation has bootstrap overhead. Chain independent commands with `&&` or `;` to minimize total invocations.
 
-## Command discovery
+## Command reference
 
-Every command supports `--help`. When unsure about syntax:
+For complete command syntax and options, see [reference.md](reference.md) (auto-generated from CLI — do not edit manually).
+
+Every command also supports `--help`:
 ```
 ./rdc.sh <command> --help
-./rdc.sh <command> <subcommand> --help
 ```
 
 ## Command groups
@@ -147,6 +148,11 @@ See [config.md](config.md) for full details.
 - **MCP fork-only mode**: The MCP server (`rdc mcp serve`) runs in fork-only mode by default. Use `--allow-grand` flag to enable grand repo access.
 - **Per-repo SSH keys + server-side sandbox**: Each repo has its own SSH key with `command="renet sandbox-gateway <name>"` in `authorized_keys`. Every SSH session (term, VS Code, sync) is sandboxed server-side with Landlock filesystem restrictions, OverlayFS home overlay, and per-repo TMPDIR. Cross-repo access blocked by the kernel. `.envrc` auto-loaded for Docker access.
 - **Machine-level SSH**: Direct machine access (`rdc term <machine>` without a repo) is blocked for agents unless `REDIACC_ALLOW_GRAND_REPO=*` is set.
+
+## Operational details
+
+- **Router watchdog**: The renet router includes a watchdog that auto-recovers stopped containers based on restart policies saved in `.rediacc.json`.
+- **Operation timing**: Remote operations show step-by-step timing (`Completed in X.Xs (total: Y.Ys)`).
 
 ## Important conventions
 

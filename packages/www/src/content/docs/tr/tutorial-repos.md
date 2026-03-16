@@ -4,7 +4,7 @@ description: "Şifreli bir depo oluşturun, konteynerleştirilmiş bir uygulama 
 category: "Tutorials"
 order: 3
 language: tr
-sourceHash: "0c4edddefa30df1c"
+sourceHash: f28a6f56286d8853
 ---
 
 # Rediacc ile Depoları Dağıtma ve Yönetme

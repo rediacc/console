@@ -49,9 +49,13 @@ export function addModeGuard(command: Command, supportedModes: ModeSet): void {
 function addExperimentalGuard(command: Command): void {
   command.hook('preAction', () => {
     if (!isExperimentalEnabled()) {
-      outputService.error(
-        `"${command.name()}" is an experimental command. Enable with REDIACC_EXPERIMENTAL=1 environment variable.`
-      );
+      if (isAgentEnvironment()) {
+        outputService.error(`unknown command "${command.name()}"`);
+      } else {
+        outputService.error(
+          `"${command.name()}" is an experimental command. Enable with REDIACC_EXPERIMENTAL=1 environment variable.`
+        );
+      }
       process.exit(1);
     }
   });
@@ -85,7 +89,7 @@ const baseHelpConfig = {
     return cmd.summary() || cmd.description();
   },
   subcommandDescription(cmd: Command): string {
-    if (_extendedHelp) return cmd.description();
+    if (_extendedHelp) return `${cmd.description()}\n`;
     return cmd.summary() || cmd.description();
   },
 };
@@ -108,6 +112,70 @@ function buildOptionTerm(options: { short?: string; long?: string; flags: string
   };
 }
 
+/** Check if a command is hidden (experimental or otherwise). */
+function isHidden(cmd: Command): boolean {
+  return (cmd as Command & { _hidden?: boolean })._hidden === true;
+}
+
+/** Check if a subcommand is cloud-only based on the registry. */
+function isCloudOnly(parentName: string, subName: string): boolean {
+  const def = getCommandDef(parentName);
+  const subDef = def?.subcommands?.[subName];
+  if (!subDef) return false;
+  return subDef.modes.length === 1 && subDef.modes[0] === 'cloud';
+}
+
+/** Render a leaf subcommand's details (name, description, options) into lines. */
+function renderLeafCommand(lines: string[], fullName: string, sub: Command): void {
+  const argsPart = sub.registeredArguments.map((a) => ` ${humanReadableArgName(a)}`).join('');
+  lines.push(`  ${fullName}${argsPart}`);
+
+  const desc = sub.description();
+  if (desc) {
+    lines.push(`    ${desc}`);
+  }
+
+  const ownOptions = sub.options.filter((o) => o.long !== '--help' && o.long !== '--team');
+  if (ownOptions.length > 0) {
+    lines.push('    Options:');
+    for (const opt of ownOptions) {
+      const req = opt.required ? ' (required)' : '';
+      lines.push(`      ${opt.flags}${req}  ${opt.description}`);
+    }
+  }
+  lines.push('');
+}
+
+/**
+ * Build inline subcommand details for agent-mode help.
+ * Recursively flattens all leaf commands so agents can construct
+ * the exact command from a single --help invocation (2-hop discovery).
+ * Filters out cloud-only subcommands since agents use local adapter.
+ */
+function buildInlineSubcommandDetails(parentCmd: Command): string {
+  const lines: string[] = ['\nSubcommand Details:\n'];
+  const parentName = parentCmd.name();
+
+  function collectCommands(cmd: Command, prefix: string): void {
+    const visibleSubs = cmd.commands.filter(
+      (c) => !isHidden(c) && c.name() !== 'help' && !isCloudOnly(parentName, c.name())
+    );
+
+    for (const sub of visibleSubs) {
+      const fullName = prefix ? `${prefix} ${sub.name()}` : sub.name();
+      const childSubs = sub.commands.filter((c) => !isHidden(c) && c.name() !== 'help');
+      if (childSubs.length > 0) {
+        collectCommands(sub, fullName);
+      } else {
+        renderLeafCommand(lines, fullName, sub);
+      }
+    }
+  }
+
+  collectCommands(parentCmd, '');
+  return lines.join('\n');
+}
+
 /** Recursively apply the help config to a command and all its descendants. */
 function applyHelpConfig(cmd: Command): void {
   cmd.configureHelp({
@@ -115,10 +183,18 @@ function applyHelpConfig(cmd: Command): void {
     optionTerm: buildOptionTerm([...cmd.options]),
     helpWidth: process.stdout.columns || 80,
   });
-  // Hint about --help-all on commands that have subcommands (only in concise mode)
-  if (cmd.commands.length > 0 && !_extendedHelp) {
-    cmd.addHelpText('afterAll', `\n  ${t('help.useHelpAll')}\n`);
+
+  if (cmd.commands.length > 0) {
+    if (_extendedHelp && cmd.parent) {
+      // Agent mode on subcommands: inline all subcommand details (hop 2)
+      // Skip root command — its long descriptions are enough for group selection (hop 1)
+      cmd.addHelpText('after', buildInlineSubcommandDetails(cmd));
+    } else if (!_extendedHelp) {
+      // Human mode: hint about --help-all
+      cmd.addHelpText('after', `\n  ${t('help.useHelpAll')}\n`);
+    }
   }
+
   for (const sub of cmd.commands) {
     applyHelpConfig(sub);
   }

@@ -8,8 +8,12 @@
         "description": "Tüm kullanılabilir komutları argümanları ve seçenekleriyle listele"
       },
       "description": "Yapay zeka kodlama asistanları için agent dostu araçlar",
+      "descriptionShort": "Yapay zeka kodlama asistanları için agent dostu araçlar",
       "exec": {
         "description": "stdin üzerinden JSON girdisiyle bir komut çalıştır"
+      },
+      "generateReference": {
+        "description": "Claude becerileri için komut referansı Markdown dosyası oluştur"
       },
       "schema": {
         "description": "Belirli bir komut için ayrıntılı şemayı göster"
@@ -344,6 +348,7 @@
         "success": "\"{{name}}\" yapılandırması silindi"
       },
       "description": "Yapılandırma dosyalarını, makineleri ve SSH bağlantılarını yönetin",
+      "descriptionShort": "Yapılandırma dosyalarını, makineleri ve SSH bağlantılarını yönetin",
       "infra": {
         "description": "Altyapı yapılandırmasını yönet (proxy, DNS, sertifikalar)",
         "push": {
@@ -552,6 +557,7 @@
     },
     "datastore": {
       "description": "Ceph RBD veri deposu yaşam döngüsünü yönet (init, fork, unfork, status)",
+      "descriptionShort": "Ceph RBD veri deposu yaşam döngüsünü yönet (init, fork, unfork, status)",
       "fork": {
         "completed": "Veri deposu başarıyla çatallandı (anlık görüntü: {{snapshot}})",
         "cowSizeOption": "COW destek dosyası boyutu (varsayılan: auto, talep üzerine büyür)",
@@ -612,6 +618,7 @@
         "sshKey": "SSH anahtarı"
       },
       "description": "CLI ortamını ve renet entegrasyonunu tanıla",
+      "descriptionShort": "CLI ortamını ve renet entegrasyonunu tanıla",
       "devMode": "hayır (geliştirme modu)",
       "hasErrors": "{{count}} hata",
       "hasWarnings": "{{count}} uyarı",
@@ -676,6 +683,7 @@
         "optionForce": "Onay istemini atla"
       },
       "description": "Uzak makineleri yönetin (durum, konteynerler, servisler, sağlık)",
+      "descriptionShort": "Uzak makineleri yönetin (durum, konteynerler, servisler, sağlık)",
       "health": {
         "containersSection": "\nKonteynerler:",
         "containersSummary": "  {{running}}/{{total}} çalışıyor ({{healthy}} sağlıklı, {{unhealthy}} sağlıksız)",
@@ -761,6 +769,9 @@
         "infrastructure": "Altyapı",
         "noData": "Durum verisi mevcut değil"
       },
+      "rename": {
+        "description": "Bir makineyi yeniden adlandır"
+      },
       "repos": {
         "description": "Bir makinede başlatılan depoları listeleyin",
         "descriptionShort": "Bir makinedeki dağıtılmış depoları listele",
@@ -806,6 +817,12 @@
         "success": "\"{{name}}\" makinesi güncellendi",
         "updating": "Makine güncelleniyor..."
       },
+      "vault": {
+        "description": "Makine kasası yönetimi (yalnızca bulut adaptörü)"
+      },
+      "vault-status": {
+        "description": "Bir makinenin ayrıştırılmış kasa durumunu göster (yalnızca bulut adaptörü)"
+      },
       "vaultStatus": {
         "deployedRepos": "\nBaşlatılan Depolar:",
         "description": "Bir makinenin ayrıştırılmış kasa durumunu gösterin",
@@ -828,6 +845,7 @@
     },
     "mcp": {
       "description": "Yapay zeka agentları için Model Context Protocol sunucusu",
+      "descriptionShort": "Yapay zeka agentları için Model Context Protocol sunucusu",
       "serve": {
         "allowGrandOption": "Grand (fork olmayan) depolar üzerinde yıkıcı işlemlere izin ver. Varsayılan: yalnızca fork modu",
         "configOption": "Tüm komutlar için kullanılacak yapılandırma adı",
@@ -850,6 +868,7 @@
         "title": "OPS Ön Koşul Kontrolü"
       },
       "description": "Deneysel VM işlemleri (oluşturma, yönetme, yok etme)",
+      "descriptionShort": "Deneysel VM işlemleri (oluşturma, yönetme, yok etme)",
       "down": {
         "completed": "VM kümesi başarıyla yok edildi",
         "description": "VM kümesini yok et",
@@ -1133,8 +1152,10 @@
       },
       "delete": {
         "archived": "\"{{repository}}\" kimlik bilgisi arşivlendi",
+        "archiveHint": "Kurtarma için kimlik bilgilerini arşivlemek üzere: --archive-config ile tekrar çalıştırın",
         "archiveOption": "Yapılandırma girdisini daha sonra kurtarmak için deletedRepositories'e taşı",
         "completed": "Depo silindi",
+        "configRetained": "\"{{repository}}\" yapılandırma girişi korundu (depo başka makinelerde mevcut olabilir). Kaldırmak için: rdc config repository remove {{repository}}",
         "description": "Bir depoyu sil (konteynerleri, birimleri ve şifreli imajı yok eder). Yapılandırma girdisi korunur. Kimlik bilgilerini deletedRepositories'e taşımak için --archive-config kullanın, 'config restore-archived' ile kurtarılabilir",
         "descriptionShort": "Bir makineden depoyu sil",
         "failed": "Depo silme başarısız",
@@ -1313,7 +1334,8 @@
         "failed": "Servis başlatma başarısız",
         "grandOption": "Ana depo adı (GUID'ye otomatik çözümlenir)",
         "mountOption": "Önce depoyu bağla",
-        "starting": "\"{{repository}}\" için servisler \"{{machine}}\" üzerinde başlatılıyor..."
+        "starting": "\"{{repository}}\" için servisler \"{{machine}}\" üzerinde başlatılıyor...",
+        "tlsOption": "Bu depo için özel TLS sertifikası talep et (fork'lar varsayılan olarak paylaşılan makine sertifikasını kullanır)"
       },
       "upAll": {
         "completed": "Tüm depolar başlatıldı",
@@ -1416,7 +1438,14 @@
         "noFiles": "Dosya bulunamadı",
         "pathOption": "Listelenecek alt dizin yolu"
       },
+      "create": {
+        "description": "Yeni bir depolama sağlayıcısı oluştur"
+      },
+      "delete": {
+        "description": "Bir depolama sağlayıcısını sil"
+      },
       "description": "Depolama sağlayıcılarını yönetin ve uzak dosyalara göz atın",
+      "descriptionShort": "Depolama sağlayıcılarını yönetin ve uzak dosyalara göz atın",
       "list": {
         "description": "Depolama sağlayıcılarını listeleyin",
         "fetching": "Depolama sağlayıcıları alınıyor..."
@@ -1438,6 +1467,12 @@
         "noCredential": "Uyarı: \"{{name}}\" deposunun kimlik bilgisi ayarlanmamış. Yedek şifreliyse indirme başarısız olabilir.",
         "repositoryOption": "İndirilecek depo adı",
         "starting": "\"{{repository}}\" \"{{storage}}\" kaynağından \"{{machine}}\" hedefine indiriliyor..."
+      },
+      "rename": {
+        "description": "Bir depolama sağlayıcısını yeniden adlandır"
+      },
+      "vault": {
+        "description": "Depolama kasası yönetimi (yalnızca bulut adaptörü)"
       }
     },
     "store": {
@@ -1475,6 +1510,7 @@
         "vaultTokenRequired": "Vault token'ı gereklidir (--vault-token ile iletin veya VAULT_TOKEN ortam değişkenini ayarlayın)"
       },
       "description": "Yapılandırma eşitleme depolarını yönetin (S3, yerel dosya, Bitwarden, Git, Vault)",
+      "descriptionShort": "Yapılandırma eşitleme depolarını yönetin (S3, yerel dosya, Bitwarden, Git, Vault)",
       "list": {
         "description": "Yapılandırılmış depoları listeleyin",
         "noStores": "Yapılandırılmış depo yok. Eklemek için: rdc store add <name> --type <type>"
@@ -1523,6 +1559,7 @@
         }
       },
       "description": "Makine lisanslama ve abonelik yönetimi",
+      "descriptionShort": "Makine lisanslama ve abonelik yönetimi",
       "login": {
         "browserFailed": "Tarayıcı otomatik olarak açılamadı. Lütfen yukarıdaki URL'yi ziyaret edin.",
         "description": "Web portaldan alınan API belirteci ile kimlik doğrulama",
@@ -1675,6 +1712,7 @@
       "connecting": "{{machine}} adresine bağlanılıyor...",
       "connectingTo": "{{title}} adresine bağlanılıyor...",
       "description": "Makinelere ve depolara SSH terminal erişimi",
+      "descriptionShort": "Makinelere ve depolara SSH terminal erişimi",
       "fetchingDetails": "Bağlantı ayrıntıları alınıyor...",
       "launchingTerminal": "{{type}} terminali başlatılıyor...",
       "launchSuccess": "Terminal başarıyla başlatıldı.",
@@ -1687,6 +1725,7 @@
       "checking": "Güncellemeler kontrol ediliyor...",
       "checkOnly": "Sadece güncellemeleri kontrol et, indirme",
       "description": "CLI güncellemelerini kontrol et ve uygula",
+      "descriptionShort": "CLI güncellemelerini kontrol et ve uygula",
       "downloading": "v{{version}} indiriliyor...",
       "failed": "Güncelleme başarısız: {{error}}",
       "force": "Güncel olsa bile güncellemeyi zorla",
@@ -1818,6 +1857,7 @@
         "testingConnectivity": "{{host}}:{{port}} adresine bağlantı sınanıyor..."
       },
       "description": "Bir makine veya depoya VS Code Remote SSH ile bağlanın",
+      "descriptionShort": "Bir makine veya depoya VS Code Remote SSH ile bağlanın",
       "list": {
         "configFile": "\nYapılandırma dosyası: {{path}}",
         "description": "Yapılandırılmış VS Code SSH bağlantılarını listeleyin",
@@ -2043,7 +2083,10 @@
     },
     "sshKeyNotFound": "SSH anahtarı bulunamadı: {{path}}",
     "subscription": {
-      "notLoggedIn": "Giriş yapılmamış. Önce `rdc subscription login` komutunu çalıştırın."
+      "activationFailed": "Makine etkinleştirme başarısız. Aboneliğinizin aktif olduğundan ve makine yuvasının mevcut olduğundan emin olun.",
+      "notLoggedIn": "Giriş yapılmamış. Önce `rdc subscription login` komutunu çalıştırın.",
+      "tokenRequired": "Abonelik jetonu gerekli. REDIACC_SUBSCRIPTION_TOKEN ortam değişkenini ayarlayın veya terminalinizde `rdc subscription login` çalıştırın.",
+      "tokenWarning": "Abonelik jetonu bulunamadı. Lisans gerektiren komutlar (repo create, repo fork) başarısız olacak. REDIACC_SUBSCRIPTION_TOKEN ortam değişkenini ayarlayın veya terminalinizde `rdc subscription login` çalıştırın."
     },
     "sync": {
       "absolutePathBlocked": "--remote yolu mutlak değil, göreli olmalıdır. Depo kök dizinine göre göreli bir yol kullanın.",
@@ -2087,6 +2130,7 @@
     }
   },
   "help": {
+    "agentMode": "\n  Ajan Modu\n    • Yalnızca fork: herhangi bir depoda değişiklik yapmadan önce bir fork oluşturun\n    • Grand (fork olmayan) depolar ajanlar için salt okunurdur\n    • İş akışı: repo fork <parent> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n",
     "cli": {
       "machineQuery": "Makine durumunu göster",
       "repoUp": "Depo servislerini dağıt",
@@ -2100,15 +2144,18 @@
       "setupMachine": "Uzak makinede kurulum çalıştır"
     },
     "examples": "Örnekler:",
+    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REPOSITORY_PATH}/... — never Docker named volumes (excluded from forks/backups)\n    • Containers must bind to SERVICE_IP to avoid port conflicts\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REPOSITORY_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
     "machine": {
       "containers": "Çalışan konteynerleri listele",
       "health": "CI/CD için sağlık kontrolü",
+      "keyConcepts": "\nTemel Kavramlar:\n\n  Sorgu Filtreleri\n    • rdc machine query <name> varsayılan olarak tüm bölümleri döndürür\n    • Filtrelemek için --system, --repositories, --containers, --services, --network, --block-devices kullanın\n    • JSON çıktısı konteynerleri şu bilgilerle zenginleştirir: repository (çözülmüş ad), domain, autoRoute\n\n  Sağlık ve İzleme\n    • machine health çıkış kodları: 0=sağlıklı, 1=uyarı, 2=hata — CI/CD kapıları için kullanın\n    • containers --health-check herhangi bir konteyner sağlıksızsa 2 ile çıkar\n    • services --stability-check herhangi bir hizmet başarısız, yeniden başlatılıyor veya >3 yeniden başlatma varsa 2 ile çıkar\n\n  Veri Deposu Yapısı (/mnt/rediacc/)\n    • repositories/ — şifreli LUKS imajları (depo GUID'si başına bir tane)\n    • mounts/ — şifresi çözülmüş bağlama noktaları (depo bağlıyken erişilebilir)\n    • immovable/ — depo başına Docker daemon verileri\n",
       "query": "Tam makine durumunu göster"
     },
     "repo": {
       "create": "Şifreli depo oluştur",
       "down": "Servisleri durdur",
       "fork": "Test için CoW fork",
+      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REPOSITORY_PATH}/data, ${REPOSITORY_PATH}/config, etc.\n    • Example: volumes: ['${REPOSITORY_PATH}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "Depolamadaki yedeklemeleri listele",
       "pull": "Yedeklemeyi depolamadan al",
       "push": "Yedeklemeyi depolamaya gönder",
@@ -2311,5 +2358,20 @@
   },
   "table": {
     "noData": "Gösterilecek veri yok"
+  },
+  "timing": {
+    "completed": "{{operation}} sürede tamamlandı (toplam: {{total}})",
+    "step": {
+      "activating": "Lisans etkinleştiriliyor...",
+      "configLoaded": "Yapılandırma yüklendi ({{duration}})",
+      "connected": "Bağlandı ({{duration}})",
+      "connecting": "Bağlanıyor...",
+      "licenseActivated": "Lisans etkinleştirildi ({{duration}})",
+      "loading": "Yapılandırma yükleniyor...",
+      "machineVerified": "Makine doğrulandı ({{duration}})",
+      "provisioning": "renet sağlanıyor...",
+      "renetProvisioned": "renet sağlandı ({{duration}})",
+      "verifying": "Makine doğrulanıyor..."
+    }
   }
 }

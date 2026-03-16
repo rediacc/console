@@ -4,7 +4,7 @@ description: "创建加密仓库、部署容器化应用、检查容器和清理
 category: "Tutorials"
 order: 3
 language: zh
-sourceHash: "0c4edddefa30df1c"
+sourceHash: f28a6f56286d8853
 ---
 
 # 如何使用 Rediacc 部署和管理仓库

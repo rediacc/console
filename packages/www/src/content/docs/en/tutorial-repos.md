@@ -94,6 +94,8 @@ rdc repo delete test-app -m server-1    # Delete repository permanently
 
 > **Warning:** `repo delete` is irreversible. All data in the repository is destroyed. Create a backup first if needed.
 
+> **Note:** After deletion, the config entry is preserved (the repo may exist on other machines). Use `rdc config repository remove <name>` to remove it, or `--archive-config` to preserve credentials for recovery.
+
 ## Troubleshooting
 
 **"Insufficient disk space" during repository creation**

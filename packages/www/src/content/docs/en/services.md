@@ -166,7 +166,9 @@ services:
       LISTEN_ADDR: ${API_IP}:8080
 ```
 
-> **Note:** Do not add `network_mode: host` manually — `renet compose` injects it automatically. Do not use `restart: always` or `restart: unless-stopped` — these cause Docker to auto-start containers before CRIU checkpoint restore can run. Use `restart: on-failure` if needed, or omit it (Rediaccfile `up()`/`down()` manages the lifecycle).
+> **Note:** Do not add `network_mode: host` manually — `renet compose` injects it automatically. Restart policies (e.g., `restart: always`) are safe to use — renet auto-strips them for CRIU compatibility and the router watchdog handles container recovery.
+
+> **Note:** Fork repos get flat auto-routes: `{service}-{tag}.{machine}.{baseDomain}`. Custom domains are skipped for forks.
 
 ## Starting Services
 

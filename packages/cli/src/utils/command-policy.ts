@@ -1,10 +1,11 @@
 /**
- * Centralized command policy matrix for agent security guards.
+ * Centralized command policy enforcement for agent security guards.
  *
- * Single source of truth for which commands are blocked on grand repos (fork-only mode)
- * and which commands are blocked on fork repos (nonsensical on interim environments).
+ * Policy data (grandGuard, forkBlocked) is defined in command-metadata.ts.
+ * This module provides the runtime enforcement and typed path constants.
  */
 import path from 'node:path';
+import { COMMAND_METADATA } from '../config/command-metadata.js';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { isAgentEnvironment } from './agent-guard.js';
@@ -45,35 +46,38 @@ export const CMD = {
 export type CommandPath = (typeof CMD)[keyof typeof CMD];
 
 /**
- * Policy matrix keyed by command path.
- * Commands not listed here have no agent restrictions.
+ * Look up the policy for a command path from COMMAND_METADATA.
+ * Returns null if no policy is defined.
  */
-export const COMMAND_POLICIES: ReadonlyMap<CommandPath, CommandPolicy> = new Map<
-  CommandPath,
-  CommandPolicy
->([
-  // Standard write commands — grand guard only
-  [CMD.REPO_UP, { grandGuard: true, forkBlocked: false }],
-  [CMD.REPO_DOWN, { grandGuard: true, forkBlocked: false }],
-  [CMD.REPO_DELETE, { grandGuard: true, forkBlocked: false }],
-  [CMD.REPO_MOUNT, { grandGuard: true, forkBlocked: false }],
-  [CMD.REPO_UNMOUNT, { grandGuard: true, forkBlocked: false }],
-  [CMD.REPO_TEMPLATE, { grandGuard: true, forkBlocked: false }],
-  [CMD.REPO_OWNERSHIP, { grandGuard: true, forkBlocked: false }],
-  [CMD.REPO_SYNC_UPLOAD, { grandGuard: true, forkBlocked: false }],
-  [CMD.REPO_SYNC_DOWNLOAD, { grandGuard: true, forkBlocked: false }],
-  [CMD.REPO_PUSH, { grandGuard: true, forkBlocked: false }],
-  [CMD.REPO_PULL, { grandGuard: true, forkBlocked: false }],
+function getPolicy(commandPath: string): CommandPolicy | null {
+  const meta = COMMAND_METADATA[commandPath] as
+    | { grandGuard?: boolean; forkBlocked?: boolean }
+    | undefined;
+  if (!meta || (!meta.grandGuard && !meta.forkBlocked)) return null;
+  return {
+    grandGuard: meta.grandGuard ?? false,
+    forkBlocked: meta.forkBlocked ?? false,
+  };
+}
 
-  [CMD.TERM_REPO, { grandGuard: true, forkBlocked: false }],
-  [CMD.VSCODE_REPO, { grandGuard: true, forkBlocked: false }],
+/**
+ * Backward-compatible Map view of COMMAND_METADATA for consumers that expect a Map.
+ * Constructed lazily from the unified metadata.
+ */
+function buildPoliciesMap(): ReadonlyMap<CommandPath, CommandPolicy> {
+  const entries: [CommandPath, CommandPolicy][] = [];
+  for (const [path, meta] of Object.entries(COMMAND_METADATA)) {
+    if (meta.grandGuard || meta.forkBlocked) {
+      entries.push([
+        path as CommandPath,
+        { grandGuard: meta.grandGuard ?? false, forkBlocked: meta.forkBlocked ?? false },
+      ]);
+    }
+  }
+  return new Map(entries);
+}
 
-  // Fork-blocked — nonsensical on interim fork repos
-  [CMD.REPO_AUTOSTART_ENABLE, { grandGuard: true, forkBlocked: true }],
-  [CMD.REPO_AUTOSTART_DISABLE, { grandGuard: true, forkBlocked: true }],
-  [CMD.REPO_RESIZE, { grandGuard: true, forkBlocked: true }],
-  [CMD.REPO_EXPAND, { grandGuard: true, forkBlocked: true }],
-]);
+export const COMMAND_POLICIES: ReadonlyMap<CommandPath, CommandPolicy> = buildPoliciesMap();
 
 function isGrandOverridden(repoName: string): boolean {
   const override = process.env.REDIACC_ALLOW_GRAND_REPO;
@@ -96,7 +100,7 @@ export async function assertCommandPolicy(
 ): Promise<void> {
   if (!isAgentEnvironment()) return;
 
-  const policy = COMMAND_POLICIES.get(commandPath);
+  const policy = getPolicy(commandPath);
   if (!policy || !repoName) return;
 
   const repo = await configService.getRepository(repoName);

@@ -68,9 +68,9 @@ rdc repo sync download -m <machine> -r <repo> -l ./local-path
 rdc vscode <machine> [repo]
 ```
 
-### Run Functions (escape hatch)
+### Run Functions (escape hatch, debugging only)
 
-`rdc run` executes Rediaccfile functions remotely. Prefer dedicated commands above.
+`rdc run` executes Rediaccfile functions remotely. These are for debugging only — prefer dedicated commands above.
 
 ```bash
 rdc run container_list -m <machine> --param repository=<repo>

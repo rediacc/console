@@ -2,30 +2,7 @@
 
 SSH into machines and repositories. Auto-configures DOCKER_HOST when targeting a repository.
 
-## Commands
-
-### Interactive shell to a machine
-```
-rdc term <machine>
-```
-
-### Interactive shell to a repository
-```
-rdc term <machine> <repository>
-```
-Sets DOCKER_HOST and working directory automatically so `docker` commands target the repo's isolated daemon.
-
-### Run a command (non-interactive)
-```
-rdc term <machine> -c "<command>"
-rdc term <machine> <repository> -c "<command>"
-```
-
-### Container access
-```
-rdc term <machine> --container <id> [--container-action <action>]
-```
-Actions: `terminal`, `logs`, `stats`, `exec`.
+For full command syntax and options, see [reference.md](reference.md).
 
 ## When to use `term` vs other commands
 

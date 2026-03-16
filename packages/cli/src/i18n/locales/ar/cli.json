@@ -8,8 +8,12 @@
         "description": "عرض جميع الأوامر المتاحة مع المعاملات والخيارات"
       },
       "description": "أدوات مساعدة لوكلاء البرمجة بالذكاء الاصطناعي",
+      "descriptionShort": "أدوات مساعدة لوكلاء البرمجة بالذكاء الاصطناعي",
       "exec": {
         "description": "تنفيذ أمر بمدخلات JSON من stdin"
+      },
+      "generateReference": {
+        "description": "إنشاء مرجع الأوامر بتنسيق Markdown لمهارات Claude"
       },
       "schema": {
         "description": "عرض المخطط التفصيلي لأمر معين"
@@ -344,6 +348,7 @@
         "success": "تم حذف الإعدادات \"{{name}}\""
       },
       "description": "إدارة ملفات الإعدادات والأجهزة واتصالات SSH",
+      "descriptionShort": "إدارة ملفات الإعدادات والأجهزة واتصالات SSH",
       "infra": {
         "description": "إدارة تكوين البنية التحتية (الوكيل، DNS، الشهادات)",
         "push": {
@@ -552,6 +557,7 @@
     },
     "datastore": {
       "description": "إدارة دورة حياة مخزن بيانات Ceph RBD (تهيئة، تفريع، إلغاء تفريع، حالة)",
+      "descriptionShort": "إدارة دورة حياة مخزن بيانات Ceph RBD (تهيئة، تفريع، إلغاء تفريع، حالة)",
       "fork": {
         "completed": "تم تفريع مخزن البيانات بنجاح (لقطة: {{snapshot}})",
         "cowSizeOption": "حجم ملف COW الداعم (افتراضي: تلقائي، ينمو حسب الطلب)",
@@ -612,6 +618,7 @@
         "sshKey": "مفتاح SSH"
       },
       "description": "تشخيص بيئة CLI وتكامل renet",
+      "descriptionShort": "تشخيص بيئة CLI وتكامل renet",
       "devMode": "لا (وضع التطوير)",
       "hasErrors": "{{count}} خطأ (أخطاء)",
       "hasWarnings": "{{count}} تحذير(ات)",
@@ -676,6 +683,7 @@
         "optionForce": "تخطي مطالبة التأكيد"
       },
       "description": "إدارة الأجهزة البعيدة (الحالة، الحاويات، الخدمات، الصحة)",
+      "descriptionShort": "إدارة الأجهزة البعيدة (الحالة، الحاويات، الخدمات، الصحة)",
       "health": {
         "containersSection": "\nالحاويات:",
         "containersSummary": "  {{running}}/{{total}} قيد التشغيل ({{healthy}} سليم، {{unhealthy}} غير سليم)",
@@ -761,6 +769,9 @@
         "infrastructure": "البنية التحتية",
         "noData": "لا تتوفر بيانات حالة"
       },
+      "rename": {
+        "description": "إعادة تسمية جهاز"
+      },
       "repos": {
         "description": "قائمة المستودعات المنتشرة على آلة",
         "descriptionShort": "عرض قائمة المستودعات المنشورة على جهاز",
@@ -806,6 +817,12 @@
         "success": "تم تحديث الآلة \"{{name}}\"",
         "updating": "جاري تحديث الآلة..."
       },
+      "vault": {
+        "description": "إدارة خزنة الجهاز (محول السحابة فقط)"
+      },
+      "vault-status": {
+        "description": "عرض حالة الخزنة المحللة لجهاز (محول السحابة فقط)"
+      },
       "vaultStatus": {
         "deployedRepos": "\nالمستودعات المنتشرة:",
         "description": "عرض حالة الخزينة المحللة لآلة",
@@ -828,6 +845,7 @@
     },
     "mcp": {
       "description": "خادم MCP للوكلاء الذكية",
+      "descriptionShort": "خادم MCP للوكلاء الذكية",
       "serve": {
         "allowGrandOption": "السماح بالعمليات المدمرة على المستودعات الرئيسية (غير fork). الافتراضي: وضع fork فقط",
         "configOption": "اسم الإعدادات المستخدمة لجميع الأوامر",
@@ -850,6 +868,7 @@
         "title": "فحص متطلبات OPS"
       },
       "description": "عمليات VM التجريبية (إنشاء، إدارة، حذف)",
+      "descriptionShort": "عمليات VM التجريبية (إنشاء، إدارة، حذف)",
       "down": {
         "completed": "تم تدمير مجموعة VM بنجاح",
         "description": "تدمير مجموعة VM",
@@ -1133,8 +1152,10 @@
       },
       "delete": {
         "archived": "تم أرشفة بيانات اعتماد \"{{repository}}\"",
+        "archiveHint": "لأرشفة بيانات الاعتماد للاسترداد: أعد التشغيل باستخدام --archive-config",
         "archiveOption": "نقل إدخال الإعدادات إلى deletedRepositories للاستعادة لاحقاً",
         "completed": "تم حذف المستودع",
+        "configRetained": "تم الاحتفاظ بإعداد \"{{repository}}\" (قد يكون المستودع موجودًا على أجهزة أخرى). للإزالة: rdc config repository remove {{repository}}",
         "description": "حذف مستودع (يدمّر الحاويات والأقراص والصورة المشفّرة). يتم الاحتفاظ بإدخال الإعدادات. استخدم --archive-config لنقل بيانات الاعتماد إلى deletedRepositories للاستعادة عبر 'config restore-archived'",
         "descriptionShort": "حذف مستودع من جهاز",
         "failed": "فشل حذف المستودع",
@@ -1313,7 +1334,8 @@
         "failed": "فشل بدء الخدمات",
         "grandOption": "اسم المستودع الرئيسي (يُحلّ تلقائيًا إلى GUID)",
         "mountOption": "تثبيت المستودع أولاً",
-        "starting": "جارٍ بدء الخدمات لـ \"{{repository}}\" على \"{{machine}}\"..."
+        "starting": "جارٍ بدء الخدمات لـ \"{{repository}}\" على \"{{machine}}\"...",
+        "tlsOption": "طلب شهادة TLS مخصصة لهذا المستودع (النسخ المتفرعة تستخدم شهادة الجهاز المشتركة افتراضيًا)"
       },
       "upAll": {
         "completed": "تم بدء جميع المستودعات",
@@ -1416,7 +1438,14 @@
         "noFiles": "لم يتم العثور على ملفات",
         "pathOption": "مسار الدليل الفرعي للعرض"
       },
+      "create": {
+        "description": "إنشاء مزود تخزين جديد"
+      },
+      "delete": {
+        "description": "حذف مزود تخزين"
+      },
       "description": "إدارة مزودي التخزين وتصفح الملفات البعيدة",
+      "descriptionShort": "إدارة مزودي التخزين وتصفح الملفات البعيدة",
       "list": {
         "description": "قائمة موفري التخزين",
         "fetching": "جاري جلب موفري التخزين..."
@@ -1438,6 +1467,12 @@
         "noCredential": "تحذير: المستودع \"{{name}}\" لا يحتوي على بيانات اعتماد. قد يفشل السحب إذا كانت النسخة الاحتياطية مشفّرة.",
         "repositoryOption": "اسم المستودع المراد سحبه",
         "starting": "جارٍ سحب \"{{repository}}\" من \"{{storage}}\" إلى \"{{machine}}\"..."
+      },
+      "rename": {
+        "description": "إعادة تسمية مزود تخزين"
+      },
+      "vault": {
+        "description": "إدارة خزنة التخزين (محول السحابة فقط)"
       }
     },
     "store": {
@@ -1475,6 +1510,7 @@
         "vaultTokenRequired": "رمز Vault مطلوب (مرر --vault-token أو عيّن متغير البيئة VAULT_TOKEN)"
       },
       "description": "إدارة متاجر مزامنة الإعدادات (S3، ملف محلي، Bitwarden، Git، Vault)",
+      "descriptionShort": "إدارة متاجر مزامنة الإعدادات (S3، ملف محلي، Bitwarden، Git، Vault)",
       "list": {
         "description": "عرض المتاجر المكونة",
         "noStores": "لا توجد متاجر مكونة. أضف واحداً باستخدام: rdc store add <name> --type <type>"
@@ -1523,6 +1559,7 @@
         }
       },
       "description": "إدارة تراخيص الجهاز والاشتراك",
+      "descriptionShort": "إدارة تراخيص الجهاز والاشتراك",
       "login": {
         "browserFailed": "تعذر فتح المتصفح تلقائياً. يرجى زيارة الرابط أعلاه.",
         "description": "المصادقة باستخدام رمز API من بوابة الويب",
@@ -1675,6 +1712,7 @@
       "connecting": "جاري الاتصال بـ {{machine}}...",
       "connectingTo": "جاري الاتصال بـ {{title}}...",
       "description": "وصول طرفية SSH إلى الآلات والمستودعات",
+      "descriptionShort": "وصول طرفية SSH إلى الآلات والمستودعات",
       "fetchingDetails": "جاري جلب تفاصيل الاتصال...",
       "launchingTerminal": "جاري تشغيل طرفية {{type}}...",
       "launchSuccess": "تم تشغيل الطرفية بنجاح.",
@@ -1687,6 +1725,7 @@
       "checking": "جارٍ البحث عن تحديثات...",
       "checkOnly": "التحقق من التحديثات فقط دون التنزيل",
       "description": "التحقق من تحديثات CLI وتطبيقها",
+      "descriptionShort": "التحقق من تحديثات CLI وتطبيقها",
       "downloading": "جارٍ تنزيل v{{version}}...",
       "failed": "فشل التحديث: {{error}}",
       "force": "فرض التحديث حتى لو كان محدثاً",
@@ -1818,6 +1857,7 @@
         "testingConnectivity": "جاري اختبار الاتصال بـ {{host}}:{{port}}..."
       },
       "description": "فتح VS Code Remote SSH للاتصال بجهاز أو مستودع",
+      "descriptionShort": "فتح VS Code Remote SSH للاتصال بجهاز أو مستودع",
       "list": {
         "configFile": "\nملف الإعدادات: {{path}}",
         "description": "قائمة اتصالات VS Code SSH المكونة",
@@ -2043,7 +2083,10 @@
     },
     "sshKeyNotFound": "لم يتم العثور على مفتاح SSH: {{path}}",
     "subscription": {
-      "notLoggedIn": "لم يتم تسجيل الدخول. شغّل `rdc subscription login` أولاً."
+      "activationFailed": "فشل تفعيل الجهاز. تأكد من أن اشتراكك نشط وأن فتحة الجهاز متاحة.",
+      "notLoggedIn": "لم يتم تسجيل الدخول. شغّل `rdc subscription login` أولاً.",
+      "tokenRequired": "رمز الاشتراك مطلوب. قم بتعيين متغير البيئة REDIACC_SUBSCRIPTION_TOKEN، أو شغّل `rdc subscription login` في طرفيتك.",
+      "tokenWarning": "لم يتم العثور على رمز اشتراك. ستفشل الأوامر التي تتطلب ترخيصًا (repo create، repo fork). قم بتعيين متغير البيئة REDIACC_SUBSCRIPTION_TOKEN أو شغّل `rdc subscription login` في طرفيتك."
     },
     "sync": {
       "absolutePathBlocked": "يجب أن يكون مسار --remote نسبياً وليس مطلقاً. استخدم مساراً نسبياً بالنسبة لجذر المستودع.",
@@ -2087,6 +2130,7 @@
     }
   },
   "help": {
+    "agentMode": "\n  وضع الوكيل\n    • النسخ فقط: أنشئ نسخة متفرعة قبل إجراء أي تغييرات على أي مستودع\n    • المستودعات الرئيسية (غير المتفرعة) للقراءة فقط للوكلاء\n    • سير العمل: repo fork <parent> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n",
     "cli": {
       "machineQuery": "عرض حالة الجهاز",
       "repoUp": "نشر خدمات المستودع",
@@ -2100,15 +2144,18 @@
       "setupMachine": "تشغيل الإعداد على جهاز بعيد"
     },
     "examples": "أمثلة:",
+    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REPOSITORY_PATH}/... — never Docker named volumes (excluded from forks/backups)\n    • Containers must bind to SERVICE_IP to avoid port conflicts\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REPOSITORY_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
     "machine": {
       "containers": "عرض الحاويات قيد التشغيل",
       "health": "فحص صحة الجهاز لـ CI/CD",
+      "keyConcepts": "\nالمفاهيم الأساسية:\n\n  فلاتر الاستعلام\n    • rdc machine query <name> يعرض جميع الأقسام افتراضيًا\n    • استخدم --system أو --repositories أو --containers أو --services أو --network أو --block-devices للتصفية\n    • مخرجات JSON تُثري الحاويات بـ: repository (الاسم المُحلل) و domain و autoRoute\n\n  المراقبة والصحة\n    • machine health يخرج بـ: 0=سليم، 1=تحذير، 2=خطأ — استخدمه لبوابات CI/CD\n    • containers --health-check يخرج بـ 2 إذا كانت أي حاوية غير سليمة\n    • services --stability-check يخرج بـ 2 إذا كانت أي خدمة فاشلة أو تُعيد التشغيل أو لديها أكثر من 3 إعادات تشغيل\n\n  هيكل مخزن البيانات (/mnt/rediacc/)\n    • repositories/ — صور LUKS مشفرة (واحدة لكل GUID مستودع)\n    • mounts/ — نقاط تثبيت مفكوكة التشفير (متاحة عند تثبيت المستودع)\n    • immovable/ — بيانات Docker daemon لكل مستودع\n",
       "query": "عرض حالة الجهاز الكاملة"
     },
     "repo": {
       "create": "إنشاء مستودع مشفر",
       "down": "إيقاف الخدمات",
       "fork": "نسخ CoW للاختبار",
+      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REPOSITORY_PATH}/data, ${REPOSITORY_PATH}/config, etc.\n    • Example: volumes: ['${REPOSITORY_PATH}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "عرض النسخ الاحتياطية على التخزين",
       "pull": "سحب نسخة احتياطية من التخزين",
       "push": "دفع نسخة احتياطية إلى التخزين",
@@ -2311,5 +2358,20 @@
   },
   "table": {
     "noData": "لا توجد بيانات للعرض"
+  },
+  "timing": {
+    "completed": "اكتمل في {{operation}} (الإجمالي: {{total}})",
+    "step": {
+      "activating": "جاري تفعيل الترخيص...",
+      "configLoaded": "تم تحميل الإعدادات ({{duration}})",
+      "connected": "تم الاتصال ({{duration}})",
+      "connecting": "جاري الاتصال...",
+      "licenseActivated": "تم تفعيل الترخيص ({{duration}})",
+      "loading": "جاري تحميل الإعدادات...",
+      "machineVerified": "تم التحقق من الجهاز ({{duration}})",
+      "provisioning": "جاري توفير renet...",
+      "renetProvisioned": "تم توفير renet ({{duration}})",
+      "verifying": "جاري التحقق من الجهاز..."
+    }
   }
 }
