@@ -30,8 +30,11 @@ if [[ "${CI:-false}" == "true" ]]; then
     rm -rf node_modules 2>/dev/null || true
 fi
 
-# Build npm ci command
-NPM_ARGS="ci"
+# Build npm install command
+# Use `npm install` instead of `npm ci` to properly resolve optional
+# platform-specific dependencies (npm/cli#4828). npm ci skips optional
+# deps on cross-platform CI runners.
+NPM_ARGS="install"
 
 # Windows requires --ignore-scripts to avoid electron-builder install-app-deps timeout
 if [[ "$CI_OS" == "windows" ]] || [[ "$IGNORE_SCRIPTS" == "true" ]]; then
@@ -55,28 +58,6 @@ fi
 if [[ ! -d "node_modules" ]]; then
     log_error "node_modules directory not created"
     exit 1
-fi
-
-# Workaround: npm ci may skip platform-specific optional deps (npm/cli#4828)
-# Explicitly install the native bindings for the current platform.
-NATIVE_PKGS=""
-case "${CI_OS}-${CI_ARCH:-x64}" in
-    linux-x64) NATIVE_PKGS="@rollup/rollup-linux-x64-gnu @esbuild/linux-x64 lightningcss-linux-x64-gnu" ;;
-    linux-arm64) NATIVE_PKGS="@rollup/rollup-linux-arm64-gnu @esbuild/linux-arm64 lightningcss-linux-arm64-gnu" ;;
-    macos-arm64) NATIVE_PKGS="@rollup/rollup-darwin-arm64 @esbuild/darwin-arm64 lightningcss-darwin-arm64" ;;
-    macos-x64) NATIVE_PKGS="@rollup/rollup-darwin-x64 @esbuild/darwin-x64 lightningcss-darwin-x64" ;;
-    windows-*) NATIVE_PKGS="@rollup/rollup-win32-x64-msvc @esbuild/win32-x64" ;;
-esac
-if [[ -n "$NATIVE_PKGS" ]]; then
-    log_info "Installing native bindings: $NATIVE_PKGS"
-    for pkg in $NATIVE_PKGS; do
-        if [[ ! -d "node_modules/$pkg" ]]; then
-            log_info "  Installing $pkg..."
-            npm install "$pkg" --no-save 2>&1 || log_warn "  Failed to install $pkg (non-fatal)"
-        else
-            log_info "  $pkg already installed"
-        fi
-    done
 fi
 
 # Install account dependencies if submodule is available
