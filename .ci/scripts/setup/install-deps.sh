@@ -56,12 +56,23 @@ if [[ ! -d "node_modules" ]]; then
 fi
 
 # Workaround: npm ci may skip platform-specific optional deps (npm/cli#4828)
-# Delete package-lock.json temporarily and re-run npm install to force resolution
-# of all platform-specific native bindings (@rollup/*, @esbuild/*, lightningcss-*).
-log_info "Ensuring platform-specific optional dependencies..."
-rm -f package-lock.json
-npm install --prefer-offline 2>/dev/null || npm install 2>/dev/null || true
-git checkout package-lock.json 2>/dev/null || true
+# Explicitly install the native bindings for the current platform.
+NATIVE_PKGS=""
+case "${CI_OS}-${CI_ARCH:-x64}" in
+    linux-x64) NATIVE_PKGS="@rollup/rollup-linux-x64-gnu @esbuild/linux-x64 lightningcss-linux-x64-gnu" ;;
+    linux-arm64) NATIVE_PKGS="@rollup/rollup-linux-arm64-gnu @esbuild/linux-arm64 lightningcss-linux-arm64-gnu" ;;
+    macos-arm64) NATIVE_PKGS="@rollup/rollup-darwin-arm64 @esbuild/darwin-arm64 lightningcss-darwin-arm64" ;;
+    macos-x64) NATIVE_PKGS="@rollup/rollup-darwin-x64 @esbuild/darwin-x64 lightningcss-darwin-x64" ;;
+    windows-*) NATIVE_PKGS="@rollup/rollup-win32-x64-msvc @esbuild/win32-x64" ;;
+esac
+if [[ -n "$NATIVE_PKGS" ]]; then
+    log_info "Installing native bindings: $NATIVE_PKGS"
+    for pkg in $NATIVE_PKGS; do
+        if [[ ! -d "node_modules/$pkg" ]]; then
+            npm install "$pkg" --no-save --ignore-scripts 2>/dev/null || true
+        fi
+    done
+fi
 
 # Install account dependencies if submodule is available
 if [[ -f "private/account/package.json" ]]; then
