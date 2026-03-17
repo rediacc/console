@@ -125,6 +125,7 @@
   },
   "ignore": ["private/**"],
   "ignoreDependencies": [
+    "jsdom",
     "@aws-sdk/client-s3",
     "@types/*",
     "@opentelemetry/instrumentation-*",
