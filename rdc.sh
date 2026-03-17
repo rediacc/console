@@ -39,7 +39,13 @@ ref_file="$ROOT_DIR/.claude/skills/rdc/reference.md"
 cli_dist="$ROOT_DIR/packages/cli/dist/cli-bundle.cjs"
 if [[ ! -f "$ref_file" ]] || [[ "$cli_dist" -nt "$ref_file" ]]; then
     log_step "Regenerating skill reference"
-    node "$cli_dist" agent generate-reference > "$ref_file"
+    ref_tmp="$(mktemp)"
+    if node "$cli_dist" agent generate-reference > "$ref_tmp" 2>/dev/null && grep -q "^#" "$ref_tmp"; then
+        mv "$ref_tmp" "$ref_file"
+    else
+        rm -f "$ref_tmp"
+        log_warn "Skill reference generation failed (keeping existing)"
+    fi
 fi
 
 # Add renet binary directory to PATH so CLI can find it
