@@ -94,6 +94,9 @@ if [[ -n "$PLATFORM_SUFFIX" ]]; then
     ESBUILD_SUFFIX=$(node -e "console.log(process.platform+'-'+process.arch)" 2>/dev/null || true)
     ESBUILD_V=$(node -e "try{console.log(require('esbuild/package.json').version)}catch{}" 2>/dev/null || true)
     [[ -n "$ESBUILD_V" ]] && install_native_fallback "@esbuild/${ESBUILD_SUFFIX}" "$ESBUILD_V"
+
+    # After installing native bindings, rebuild to ensure they're properly linked
+    npm rebuild 2>/dev/null || true
 fi
 
 # Install account dependencies if submodule is available
