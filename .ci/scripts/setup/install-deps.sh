@@ -28,11 +28,12 @@ if [[ "${CI:-false}" == "true" ]]; then
     npm cache clean --force 2>/dev/null || true
 fi
 
-# Build npm install command
-# Use `npm install` instead of `npm ci` to properly resolve optional
-# platform-specific dependencies (npm/cli#4828). npm ci skips optional
-# deps on cross-platform CI runners.
-NPM_ARGS="install"
+# Build npm ci command
+# The lockfile must contain resolved entries for all platform-specific optional
+# deps (rollup, lightningcss, esbuild). If the lockfile was regenerated on a
+# single platform, these entries may be missing — regenerate with `npm install`
+# on the target platform, or restore from a known-good lockfile.
+NPM_ARGS="ci"
 
 # Windows requires --ignore-scripts to avoid electron-builder install-app-deps timeout
 if [[ "$CI_OS" == "windows" ]] || [[ "$IGNORE_SCRIPTS" == "true" ]]; then
