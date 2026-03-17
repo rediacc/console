@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 1671,
-    "sourceCommit": "b4e69ff424dbed814d05d898866b5e3434f60e3e"
+    "sourceCommit": "03146d70eb60c366384546ce3d7e3b4bdb387592"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1483,12 +1483,12 @@
     "help.keyConcepts": "c1ed9c68",
     "help.machine.containers": "fb8b8972",
     "help.machine.health": "122f62a5",
-    "help.machine.keyConcepts": "19ee186e",
+    "help.machine.keyConcepts": "ee732ae0",
     "help.machine.query": "32449d8e",
     "help.repo.create": "6b373ccd",
     "help.repo.down": "3dfcfc73",
     "help.repo.fork": "aa69ca4e",
-    "help.repo.keyConcepts": "a45b46c1",
+    "help.repo.keyConcepts": "9661f017",
     "help.repo.listBackups": "700f2908",
     "help.repo.pull": "5d76e439",
     "help.repo.push": "dccae02c",

@@ -1,5 +1,4 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import { DEFAULTS } from '@rediacc/shared/config';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
@@ -20,7 +19,7 @@ import {
   handleDownAll,
   handleUpAll,
   postRepoUpTasks,
-  runBatchParallel,
+  runBatchOperation,
 } from './repo-batch-utils.js';
 import { registerExtendedRepoCommands } from './repo-extended.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
@@ -91,56 +90,19 @@ async function iterateAllRepos(
   },
   messages: { action: string }
 ): Promise<void> {
-  const repos = await configService.listRepositories();
-
-  const taskFn = async (name: string) => {
-    await assertCommandPolicy(cmd, name);
-    await executeRepoFunction(functionName, name, machineName, params, options, {
-      starting: '',
-      completed: '',
-      failed: '',
-    });
-  };
-
-  if (options.parallel) {
-    const concurrency = Number.parseInt(
-      options.concurrency ?? String(DEFAULTS.BATCH.CONCURRENCY),
-      10
-    );
-    await runBatchParallel(repos, concurrency, messages.action, taskFn);
-    return;
-  }
-
-  let succeeded = 0;
-  for (let i = 0; i < repos.length; i++) {
-    const { name } = repos[i];
-    outputService.info(
-      t('commands.repo.batchIterating', {
-        action: messages.action,
-        current: i + 1,
-        total: repos.length,
-        repo: name,
-      })
-    );
-    try {
-      await taskFn(name);
-      succeeded++;
-    } catch (error) {
-      outputService.warn(
-        t('commands.repo.batchFailed', {
-          action: messages.action,
-          repo: name,
-          error: error instanceof Error ? error.message : String(error),
-        })
-      );
-    }
-  }
-  outputService.info(
-    t('commands.repo.batchResult', {
-      action: messages.action,
-      succeeded,
-      total: repos.length,
-    })
+  await runBatchOperation(
+    messages.action,
+    machineName,
+    true,
+    async (name) => {
+      await assertCommandPolicy(cmd, name);
+      await executeRepoFunction(functionName, name, machineName, params, options, {
+        starting: '',
+        completed: '',
+        failed: '',
+      });
+    },
+    options
   );
 }
 
@@ -257,7 +219,12 @@ export function registerRepoCommands(program: Command): void {
           const result = await localExecutorService.execute({
             functionName: 'repository_create',
             machineName: options.machine,
-            params: { repository: name, size: options.size },
+            params: {
+              repository: name,
+              size: options.size,
+              guid: repositoryGuid,
+              network_id: networkId,
+            },
             debug: options.debug,
             skipRouterRestart: options.skipRouterRestart,
           });

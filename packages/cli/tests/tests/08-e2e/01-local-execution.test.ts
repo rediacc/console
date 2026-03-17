@@ -136,7 +136,8 @@ test.describe('E2E Local Execution @cli @e2e', () => {
       const timeoutRunner = CliTestRunner.withContext(timeoutContext);
       await timeoutRunner.run([
         'config',
-        'add-machine',
+        'machine',
+        'add',
         'timeout-vm',
         '--ip',
         '10.255.255.1',
@@ -219,7 +220,8 @@ test.describe('E2E Context Switching @cli @e2e', () => {
     const localRunner = CliTestRunner.withContext(localContext);
     await localRunner.run([
       'config',
-      'add-machine',
+      'machine',
+      'add',
       'e2e-vm',
       '--ip',
       config.vm1Ip,
@@ -290,7 +292,8 @@ test.describe('E2E Renet Availability @cli @e2e', () => {
     const contextRunner = CliTestRunner.withContext(renetContextName);
     await contextRunner.run([
       'config',
-      'add-machine',
+      'machine',
+      'add',
       'check-vm',
       '--ip',
       config.vm1Ip,

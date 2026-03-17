@@ -4,7 +4,7 @@ description: "在 Rediacc 平台上构建应用程序的基本规则和约定。
 category: "Guides"
 order: 5
 language: zh
-sourceHash: 166f333b848c718b
+sourceHash: "6543e793a10d75a3"
 sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 ---
 

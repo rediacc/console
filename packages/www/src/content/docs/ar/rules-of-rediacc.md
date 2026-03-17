@@ -4,7 +4,7 @@ description: "القواعد والاصطلاحات الأساسية لبناء 
 category: "Guides"
 order: 5
 language: ar
-sourceHash: 166f333b848c718b
+sourceHash: "6543e793a10d75a3"
 sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 ---
 

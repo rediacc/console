@@ -87,7 +87,7 @@ export function addTestMachine(
   }
 ): Promise<CliResult> {
   const runner = CliTestRunner.withContext(contextName);
-  const args = ['config', 'add-machine', name, '--ip', ip, '--user', user];
+  const args = ['config', 'machine', 'add', name, '--ip', ip, '--user', user];
 
   if (options?.port) {
     args.push('--port', String(options.port));

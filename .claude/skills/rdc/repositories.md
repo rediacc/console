@@ -93,6 +93,12 @@ In containers: `SERVICE_IP`, `REPOSITORY_NETWORK_ID` (auto-injected by renet).
 - Custom domains are skipped for forks — the domain belongs to the grand repo
 - Scheduled backups skip forks (use `rdc repo push` for manual backup)
 
+## Cleanup behavior
+
+- `repo delete` cleans: storage, Docker daemon + systemd unit, loopback IPs + systemd unit, iptables rules
+- `repo down` keeps: Docker daemon, loopback IPs, systemd units (for quick restart with `repo up`)
+- `machine prune` removes: orphaned loopback units, unused IPs, stale Docker daemon units from legacy deletions
+
 ## Typical deployment workflow
 
 ```bash

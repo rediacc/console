@@ -161,11 +161,22 @@ async function loadContextRepositories(): Promise<{
       if (r.config.credential) {
         credentials[r.config.repositoryGuid] = r.config.credential;
       }
-      configs[r.name] = {
+      const entry = {
         guid: r.config.repositoryGuid,
         name: r.name,
         networkId: r.config.networkId,
       };
+      configs[r.name] = entry;
+      // Also add bare name alias for :latest repos so lookups by bare name work.
+      // NOTE: Only handles the default ":latest" tag. If custom tags for grand repos
+      // are supported in the future, commands should pass explicit guid/network_id
+      // in params (which buildSingleRepoEntry uses as fallback).
+      if (r.name.endsWith(':latest')) {
+        const bareName = r.name.slice(0, -7);
+        if (!(bareName in configs)) {
+          configs[bareName] = entry;
+        }
+      }
     }
     return { credentials, configs };
   } catch {
@@ -220,10 +231,12 @@ async function resolveRepoLicenseInputs(
   if (!functionName.startsWith('repository_')) return null;
   const repoName = typeof params.repository === 'string' ? params.repository : '';
   if (!repoName && functionName !== 'repository_fork') return null;
-  const [repo, machine] = await Promise.all([
-    configService.getRepository(repoName),
-    configService.getLocalMachine(machineName),
-  ]);
+  // Try bare name first, then composite key (e.g., "my-app" → "my-app:latest")
+  let repo = await configService.getRepository(repoName);
+  if (!repo && !repoName.includes(':')) {
+    repo = await configService.getRepository(`${repoName}:latest`);
+  }
+  const machine = await configService.getLocalMachine(machineName);
   if (!repo && functionName !== 'repository_fork') return null;
   return { repo, machine };
 }

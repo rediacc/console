@@ -284,7 +284,7 @@ function buildSingleRepoEntry(
 ): Record<string, unknown> {
   const repoConfig = repositoryConfigs?.[repoName];
   const repoEntry: Record<string, unknown> = {
-    guid: repoConfig?.guid ?? repoName,
+    guid: repoConfig?.guid ?? (typeof params.guid === 'string' ? params.guid : repoName),
     name: repoName,
   };
   const networkId = repoConfig?.networkId ?? params.network_id;
