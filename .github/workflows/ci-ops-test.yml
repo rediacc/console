@@ -5,6 +5,10 @@ on:
     secrets:
       APP_PRIVATE_KEY:
         required: true
+      DOCKERHUB_USERNAME:
+        required: false
+      DOCKERHUB_TOKEN:
+        required: false
 
 jobs:
   # ── Full VM provisioning test (KVM available) ──────────────────
@@ -44,6 +48,12 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
+      - name: Login to Docker Hub
+        if: secrets.DOCKERHUB_USERNAME != ''
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Enable KVM
         run: |
@@ -68,6 +78,8 @@ jobs:
         run: .ci/scripts/infra/build-renet.sh --nolicense
 
       - name: Build CLI
+        env:
+          OTLP_AUTH_TOKEN: ${{ secrets.OTLP_AUTH_TOKEN }}
         run: npm run build -w @rediacc/cli && npm run build:bundle -w @rediacc/cli
 
       - name: Configure local config

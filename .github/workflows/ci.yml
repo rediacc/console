@@ -508,6 +508,8 @@ jobs:
     uses: ./.github/workflows/ci-ops-test.yml
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   # ============================================================================
   # COLUMN 4C: ELITE RUN TEST
