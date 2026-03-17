@@ -31,6 +31,10 @@ export function addModeGuard(command: Command, supportedModes: ModeSet): void {
   if (supportedModes.length >= ALL_MODES.length) return;
 
   command.hook('preAction', async () => {
+    // Experimental mode bypasses mode guards so bootstrapping flows
+    // (e.g. auth register → login before a cloud config exists) can work.
+    if (isExperimentalEnabled()) return;
+
     const config = await configService.getCurrent();
     const current: CommandCategory = hasCloudIntent(config) ? 'cloud' : 'local';
 
@@ -178,6 +182,13 @@ function buildInlineSubcommandDetails(parentCmd: Command): string {
 
 /** Recursively apply the help config to a command and all its descendants. */
 function applyHelpConfig(cmd: Command): void {
+  // Hide cloud-only options (--team, --region) from help — they're still functional if passed
+  for (const opt of cmd.options) {
+    if (opt.long === '--team' || opt.long === '--region') {
+      (opt as { hidden?: boolean }).hidden = true;
+    }
+  }
+
   cmd.configureHelp({
     ...baseHelpConfig,
     optionTerm: buildOptionTerm([...cmd.options]),
