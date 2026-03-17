@@ -83,8 +83,11 @@ if [[ -n "$PLATFORM_SUFFIX" ]]; then
     ROLLUP_V=$(node -e "try{console.log(require('rollup/package.json').version)}catch{}" 2>/dev/null || true)
     [[ -n "$ROLLUP_V" ]] && install_native_fallback "@rollup/rollup-${PLATFORM_SUFFIX}" "$ROLLUP_V"
 
-    # LightningCSS
-    LCSS_V=$(node -e "try{console.log(require('lightningcss/package.json').version)}catch{}" 2>/dev/null || true)
+    # LightningCSS (may not export package.json, read directly)
+    LCSS_V=""
+    if [[ -f "node_modules/lightningcss/package.json" ]]; then
+        LCSS_V=$(node -e "console.log(require('./node_modules/lightningcss/package.json').version)" 2>/dev/null || true)
+    fi
     [[ -n "$LCSS_V" ]] && install_native_fallback "lightningcss-${PLATFORM_SUFFIX}" "$LCSS_V"
 
     # esbuild (uses different suffix: linux-arm64 not linux-arm64-gnu)
