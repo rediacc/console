@@ -51,7 +51,7 @@ else
     # Step 4: Build
     if [[ "$NOLICENSE" == "true" ]]; then
         log_step "Building renet from source (nolicense)..."
-        (cd "$RENET_SRC" && CGO_ENABLED=0 go build -tags nolicense -o "bin/renet${RENET_EXT}" ./cmd/renet)
+        (cd "$RENET_SRC" && ./build.sh dev --nolicense)
     else
         log_step "Building renet from source..."
         (cd "$RENET_SRC" && ./build.sh dev)
