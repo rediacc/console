@@ -58,22 +58,39 @@ if [[ ! -d "node_modules" ]]; then
     exit 1
 fi
 
-# Verify rollup native binding is present (npm/cli#4828 workaround)
-ROLLUP_VERSION=$(node -e "try{console.log(require('rollup/package.json').version)}catch{}" 2>/dev/null || true)
-if [[ -n "$ROLLUP_VERSION" ]]; then
-    ROLLUP_DIR=$(node -e "const p=process.platform,a=process.arch;const m={'linux-x64':'linux-x64-gnu','linux-arm64':'linux-arm64-gnu','darwin-arm64':'darwin-arm64','darwin-x64':'darwin-x64','win32-x64':'win32-x64-msvc'};console.log('@rollup/rollup-'+(m[p+'-'+a]||'unknown'))" 2>/dev/null)
-    if [[ ! -d "node_modules/$ROLLUP_DIR" ]]; then
-        log_warn "Missing $ROLLUP_DIR — installing via npm pack fallback..."
-        mkdir -p "node_modules/$ROLLUP_DIR"
-        ROLLUP_TARBALL=$(npm pack "$ROLLUP_DIR@$ROLLUP_VERSION" 2>/dev/null) || true
-        if [[ -f "$ROLLUP_TARBALL" ]]; then
-            tar xzf "$ROLLUP_TARBALL" -C "node_modules/$ROLLUP_DIR" --strip-components=1
-            rm -f "$ROLLUP_TARBALL"
-            log_info "Installed $ROLLUP_DIR via tarball fallback"
+# Workaround: npm install may skip platform-specific optional deps (npm/cli#4828)
+# Detect missing native bindings and install via npm pack fallback.
+install_native_fallback() {
+    local pkg_name="$1" pkg_version="$2"
+    if [[ ! -d "node_modules/$pkg_name" ]]; then
+        log_warn "Missing $pkg_name — installing via npm pack..."
+        mkdir -p "node_modules/$pkg_name"
+        local tarball
+        tarball=$(npm pack "${pkg_name}@${pkg_version}" 2>/dev/null) || true
+        if [[ -f "$tarball" ]]; then
+            tar xzf "$tarball" -C "node_modules/$pkg_name" --strip-components=1
+            rm -f "$tarball"
+            log_info "Installed $pkg_name"
         else
-            log_warn "Could not download $ROLLUP_DIR — build may fail"
+            log_warn "Could not install $pkg_name"
         fi
     fi
+}
+
+PLATFORM_SUFFIX=$(node -e "const m={'linux-x64':'linux-x64-gnu','linux-arm64':'linux-arm64-gnu','darwin-arm64':'darwin-arm64','darwin-x64':'darwin-x64','win32-x64':'win32-x64-msvc'};console.log(m[process.platform+'-'+process.arch]||'')" 2>/dev/null || true)
+if [[ -n "$PLATFORM_SUFFIX" ]]; then
+    # Rollup
+    ROLLUP_V=$(node -e "try{console.log(require('rollup/package.json').version)}catch{}" 2>/dev/null || true)
+    [[ -n "$ROLLUP_V" ]] && install_native_fallback "@rollup/rollup-${PLATFORM_SUFFIX}" "$ROLLUP_V"
+
+    # LightningCSS
+    LCSS_V=$(node -e "try{console.log(require('lightningcss/package.json').version)}catch{}" 2>/dev/null || true)
+    [[ -n "$LCSS_V" ]] && install_native_fallback "lightningcss-${PLATFORM_SUFFIX}" "$LCSS_V"
+
+    # esbuild (uses different suffix: linux-arm64 not linux-arm64-gnu)
+    ESBUILD_SUFFIX=$(node -e "console.log(process.platform+'-'+process.arch)" 2>/dev/null || true)
+    ESBUILD_V=$(node -e "try{console.log(require('esbuild/package.json').version)}catch{}" 2>/dev/null || true)
+    [[ -n "$ESBUILD_V" ]] && install_native_fallback "@esbuild/${ESBUILD_SUFFIX}" "$ESBUILD_V"
 fi
 
 # Install account dependencies if submodule is available
