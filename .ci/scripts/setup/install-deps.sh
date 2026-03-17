@@ -63,10 +63,16 @@ ROLLUP_VERSION=$(node -e "try{console.log(require('rollup/package.json').version
 if [[ -n "$ROLLUP_VERSION" ]]; then
     ROLLUP_DIR=$(node -e "const p=process.platform,a=process.arch;const m={'linux-x64':'linux-x64-gnu','linux-arm64':'linux-arm64-gnu','darwin-arm64':'darwin-arm64','darwin-x64':'darwin-x64','win32-x64':'win32-x64-msvc'};console.log('@rollup/rollup-'+(m[p+'-'+a]||'unknown'))" 2>/dev/null)
     if [[ ! -d "node_modules/$ROLLUP_DIR" ]]; then
-        log_warn "Missing $ROLLUP_DIR — retrying npm install with clean state..."
-        rm -rf node_modules package-lock.json
-        npm install 2>&1 | tail -3
-        git checkout package-lock.json 2>/dev/null || true
+        log_warn "Missing $ROLLUP_DIR — installing via npm pack fallback..."
+        mkdir -p "node_modules/$ROLLUP_DIR"
+        ROLLUP_TARBALL=$(npm pack "$ROLLUP_DIR@$ROLLUP_VERSION" 2>/dev/null) || true
+        if [[ -f "$ROLLUP_TARBALL" ]]; then
+            tar xzf "$ROLLUP_TARBALL" -C "node_modules/$ROLLUP_DIR" --strip-components=1
+            rm -f "$ROLLUP_TARBALL"
+            log_info "Installed $ROLLUP_DIR via tarball fallback"
+        else
+            log_warn "Could not download $ROLLUP_DIR — build may fail"
+        fi
     fi
 fi
 
