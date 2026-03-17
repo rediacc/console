@@ -65,7 +65,7 @@ jobs:
       - run: .ci/scripts/setup/build-packages.sh
 
       - name: Build renet
-        run: .ci/scripts/infra/build-renet.sh
+        run: .ci/scripts/infra/build-renet.sh --nolicense
 
       - name: Build CLI
         run: npm run build -w @rediacc/cli && npm run build:bundle -w @rediacc/cli

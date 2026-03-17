@@ -678,7 +678,7 @@ jobs:
         run: .ci/scripts/setup/install-cli-global.sh
 
       - name: Build renet
-        run: .ci/scripts/infra/build-renet.sh
+        run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Install renet
         run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
@@ -750,7 +750,7 @@ jobs:
         run: .ci/scripts/setup/install-cli-global.sh
 
       - name: Build renet
-        run: .ci/scripts/infra/build-renet.sh
+        run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Install renet
         run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
@@ -816,7 +816,7 @@ jobs:
 
       # Renet setup
       - name: Build renet
-        run: .ci/scripts/infra/build-renet.sh
+        run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Add renet to PATH
         run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
@@ -941,7 +941,7 @@ jobs:
 
       # Renet setup
       - name: Build renet
-        run: .ci/scripts/infra/build-renet.sh
+        run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Add renet to PATH
         run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
 

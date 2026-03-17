@@ -15,6 +15,14 @@ CONSOLE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 source "$SCRIPT_DIR/../lib/common.sh"
 
+# Parse arguments
+NOLICENSE=false
+for arg in "$@"; do
+    case "$arg" in
+        --nolicense) NOLICENSE=true ;;
+    esac
+done
+
 RENET_SRC="$CONSOLE_ROOT/private/renet"
 RENET_EXT=""
 case "$(uname -s)" in
@@ -41,8 +49,13 @@ else
     fi
 
     # Step 4: Build
-    log_step "Building renet from source..."
-    (cd "$RENET_SRC" && ./build.sh dev)
+    if [[ "$NOLICENSE" == "true" ]]; then
+        log_step "Building renet from source (nolicense)..."
+        (cd "$RENET_SRC" && CGO_ENABLED=0 go build -tags nolicense -o "bin/renet${RENET_EXT}" ./cmd/renet)
+    else
+        log_step "Building renet from source..."
+        (cd "$RENET_SRC" && ./build.sh dev)
+    fi
 
     # Step 5: Verify binary produced
     if [[ ! -f "$RENET_BIN" ]]; then
