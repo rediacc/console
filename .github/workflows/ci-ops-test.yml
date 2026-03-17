@@ -6,9 +6,9 @@ on:
       APP_PRIVATE_KEY:
         required: true
       DOCKERHUB_USERNAME:
-        required: false
+        required: true
       DOCKERHUB_TOKEN:
-        required: false
+        required: true
 
 jobs:
   # ── Full VM provisioning test (KVM available) ──────────────────
@@ -50,7 +50,6 @@ jobs:
           password: ${{ github.token }}
       - name: Login to Docker Hub
         uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
-        continue-on-error: true
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
