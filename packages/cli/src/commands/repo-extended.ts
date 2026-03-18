@@ -11,9 +11,7 @@ import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 
-/**
- * Execute a machine-level function (no repository context needed).
- */
+/** Execute a machine-level function (no repository context needed). */
 async function executeMachineFunction(
   functionName: string,
   options: { machine: string; debug?: boolean; skipRouterRestart?: boolean },
@@ -36,10 +34,7 @@ async function executeMachineFunction(
   }
 }
 
-/**
- * Execute a repository lifecycle function on a remote machine.
- * Validates the repository exists in context and runs the function via localExecutorService.
- */
+/** Execute a repository lifecycle function on a remote machine. */
 async function executeRepoFunction(
   functionName: string,
   repoName: string,
