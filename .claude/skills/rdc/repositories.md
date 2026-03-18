@@ -59,7 +59,7 @@ The Rediaccfile is a bash script with lifecycle functions. Key rules:
 - Use `renet compose -- "$@"` in Rediaccfiles (no `--network-id` flag — renet passes the network ID automatically via `REPOSITORY_NETWORK_ID` env var).
 - `network_mode` is auto-injected by renet (`network_mode: host` on all services) — do not set it manually.
 - **CRIU security settings are auto-injected**: `cap_add: [CHECKPOINT_RESTORE, SYS_PTRACE, NET_ADMIN]`, `security_opt: [apparmor=unconfined]`, and `userns_mode: host` are added to every container by renet. Default seccomp profile is preserved. Do not set these manually.
-- `ports:` declarations are ignored (host networking). Services bind to allocated IPs.
+- `ports:` declarations are ignored (host networking). Services bind to allocated IPs. Add `rediacc.service_port` label for HTTP routing — services without it don't get HTTP routes.
 - Use healthchecks in compose for dependent services.
 - Persistent data: both `${REPOSITORY_PATH}/...` bind mounts and Docker named volumes are safe (Docker data-root is inside the encrypted LUKS mount).
 - Dangerous settings (`privileged: true`, `pid: host`, `ipc: host`) are blocked by default. Use `renet compose --unsafe` to override.

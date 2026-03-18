@@ -67,10 +67,10 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 
 ### Servis adlandırma ve yönlendirme
 
-- Compose **servis adı** otomatik yönlendirme URL ön eki olur.
-- Örnek: temel alan adı `example.com` ve networkId 6336 olan `myapp` servisi `https://myapp-6336.example.com` olur.
-- Özel alan adları için Traefik etiketleri kullanın (not: özel alan adları fork ile uyumlu DEĞİLDİR).
-- Fork depolar, makinenin wildcard sertifikası altında düz otomatik rotalar kullanır. Özel alan adları (`rediacc.domain`) fork'larda yoksayılır — alan adı grand depoya aittir.
+- The compose **service name** becomes the auto-route URL prefix.
+- **Grand repos**: `https://{service}.{repo}.{machine}.{baseDomain}` (e.g., `https://myapp.marketing.server-1.example.com`).
+- **Fork repos**: `https://{service}-{tag}.{machine}.{baseDomain}` — uses the machine wildcard cert to avoid Let's Encrypt rate limits.
+- For custom domains, use Traefik labels (but note: custom domains are NOT fork-friendly — the domain belongs to the grand repo).
 
 ## Ağ
 

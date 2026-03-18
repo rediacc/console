@@ -4,6 +4,8 @@ services:
     container_name: ${CONTAINER_NAME}
     restart: always
     hostname: ${GITLAB_HOSTNAME}
+    labels:
+      - "rediacc.service_port=80"
     environment:
       GITLAB_OMNIBUS_CONFIG: |
         external_url 'http://${GITLAB_HOSTNAME}:${GITLAB_HTTP_PORT}'

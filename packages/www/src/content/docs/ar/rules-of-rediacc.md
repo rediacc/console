@@ -67,10 +67,10 @@ down() {
 
 ### تسمية الخدمات والتوجيه
 
-- **اسم الخدمة** في compose يصبح بادئة URL للمسار التلقائي.
-- مثال: الخدمة `myapp` مع networkId 6336 ونطاق أساسي `example.com` تصبح `https://myapp-6336.example.com`.
-- للنطاقات المخصصة، استخدم تسميات Traefik (ملاحظة: النطاقات المخصصة غير متوافقة مع الفروع).
-- تستخدم مستودعات fork مسارات تلقائية مسطحة تحت شهادة wildcard للجهاز. يتم تجاهل النطاقات المخصصة (`rediacc.domain`) في الفروع — النطاق ينتمي إلى المستودع grand.
+- The compose **service name** becomes the auto-route URL prefix.
+- **Grand repos**: `https://{service}.{repo}.{machine}.{baseDomain}` (e.g., `https://myapp.marketing.server-1.example.com`).
+- **Fork repos**: `https://{service}-{tag}.{machine}.{baseDomain}` — uses the machine wildcard cert to avoid Let's Encrypt rate limits.
+- For custom domains, use Traefik labels (but note: custom domains are NOT fork-friendly — the domain belongs to the grand repo).
 
 ## الشبكات
 

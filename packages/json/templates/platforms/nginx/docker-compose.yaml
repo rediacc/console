@@ -3,6 +3,9 @@ services:
     image: nginx:latest
     container_name: ${CONTAINER_NAME}
     restart: always
+    labels:
+      - "rediacc.service_port=80"
+    command: ["sh", "-c", "sed -i \"s/listen       80;/listen       $${SERVICE_IP:-0.0.0.0}:80;/\" /etc/nginx/conf.d/default.conf && sed -i '/\\[::\\]:80/d' /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"]
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://$${SERVICE_IP:-localhost}:80 || exit 1"]
       interval: 30s

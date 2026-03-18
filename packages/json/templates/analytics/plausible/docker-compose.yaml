@@ -4,15 +4,16 @@ services:
     image: ghcr.io/plausible/community-edition:v2.1.4
     container_name: plausible
     restart: always
-    networks:
-      - plausible_network
+    labels:
+      - "rediacc.service_port=8000"
     command: sh -c "/entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run"
     environment:
       - BASE_URL=${BASE_URL:-http://localhost:8000}
       - SECRET_KEY_BASE=${SECRET_KEY_BASE}
+      - LISTEN_IP=${SERVICE_IP:-0.0.0.0}
       - DISABLE_REGISTRATION=${DISABLE_REGISTRATION:-invite_only}
-      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD:-postgres}@plausible_db:5432/plausible_db
-      - CLICKHOUSE_DATABASE_URL=http://plausible_events_db:8123/plausible_events_db
+      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD:-postgres}@${PLAUSIBLE_DB_IP}:5432/plausible_db
+      - CLICKHOUSE_DATABASE_URL=http://${PLAUSIBLE_EVENTS_DB_IP}:8123/plausible_events_db
     depends_on:
       plausible_db:
         condition: service_healthy
@@ -23,15 +24,14 @@ services:
     image: postgres:16-alpine
     container_name: plausible_db
     restart: always
-    networks:
-      - plausible_network
+    command: ["sh", "-c", "exec docker-entrypoint.sh postgres -c listen_addresses=$${SERVICE_IP:-0.0.0.0}"]
     environment:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - POSTGRES_DB=plausible_db
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -h $${SERVICE_IP:-localhost}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -41,8 +41,6 @@ services:
     image: clickhouse/clickhouse-server:24.3.3.102-alpine
     container_name: plausible_events_db
     restart: always
-    networks:
-      - plausible_network
     environment:
       - CLICKHOUSE_SKIP_USER_SETUP=1
     volumes:
@@ -59,7 +57,3 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-
-networks:
-  plausible_network:
-    driver: bridge

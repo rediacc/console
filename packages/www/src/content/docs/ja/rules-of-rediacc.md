@@ -67,10 +67,10 @@ Renetはすべてのコンテナに以下を自動注入します:
 
 ### サービスの命名とルーティング
 
-- composeの**サービス名**が自動ルートのURLプレフィックスになります。
-- 例: ベースドメインが`example.com`でnetworkId 6336のサービス`myapp`は`https://myapp-6336.example.com`になります。
-- カスタムドメインにはTraefikラベルを使用してください（注意: カスタムドメインはフォークに対応していません）。
-- フォークリポジトリはマシンのワイルドカード証明書下でフラットな自動ルートを使用します。カスタムドメイン（`rediacc.domain`）はフォークでは無視されます — ドメインはgrandリポジトリに属します。
+- The compose **service name** becomes the auto-route URL prefix.
+- **Grand repos**: `https://{service}.{repo}.{machine}.{baseDomain}` (e.g., `https://myapp.marketing.server-1.example.com`).
+- **Fork repos**: `https://{service}-{tag}.{machine}.{baseDomain}` — uses the machine wildcard cert to avoid Let's Encrypt rate limits.
+- For custom domains, use Traefik labels (but note: custom domains are NOT fork-friendly — the domain belongs to the grand repo).
 
 ## ネットワーク
 

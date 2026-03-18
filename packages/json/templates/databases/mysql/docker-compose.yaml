@@ -19,11 +19,14 @@ services:
   phpmyadmin:
     image: phpmyadmin
     restart: always
+    labels:
+      - "rediacc.service_port=80"
+    command: ["sh", "-c", "sed -i \"s/Listen 80$/Listen $${SERVICE_IP:-0.0.0.0}:80/\" /etc/apache2/ports.conf && exec apache2-foreground"]
     env_file:
       - .env
     environment:
       PMA_ARBITRARY: ${PMA_ARBITRARY}
-      PMA_HOST: ${PMA_HOST}
+      PMA_HOST: ${DB_IP}
       PMA_PORT: ${PMA_PORT}
     depends_on:
       db:

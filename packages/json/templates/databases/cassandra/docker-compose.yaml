@@ -17,7 +17,7 @@ services:
       - ./data:/var/lib/cassandra
       - ./init-cassandra.cql:/docker-entrypoint-initdb.d/init.cql:ro
     healthcheck:
-      test: ["CMD-SHELL", "cqlsh -u cassandra -p cassandra -e 'DESCRIBE KEYSPACES;' || exit 1"]
+      test: ["CMD-SHELL", "cqlsh $${SERVICE_IP:-localhost} -u cassandra -p cassandra -e 'DESCRIBE KEYSPACES;' || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5

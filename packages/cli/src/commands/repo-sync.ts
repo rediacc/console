@@ -23,6 +23,7 @@ import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
 import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
+import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
 import { getSSHConnectionDetails } from '../services/ssh-connection.js';
 import { assertCommandPolicy, CMD, validateRemotePath } from '../utils/command-policy.js';
 import { handleError } from '../utils/errors.js';
@@ -135,6 +136,18 @@ function hasNoChanges(changes: RsyncChanges): boolean {
   );
 }
 
+async function ensureRenetProvisioned(machineName: string): Promise<void> {
+  try {
+    const localConfig = await configService.getLocalConfig();
+    const machine = localConfig.machines[machineName];
+    if (!machine) return;
+    const teamKey = localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
+    await provisionRenetToRemote(localConfig, machine, teamKey, {});
+  } catch {
+    // Non-fatal — sync may still work with existing renet on remote
+  }
+}
+
 async function handleConfirmMode(
   rsyncOptions: RsyncExecutorOptions,
   options: { confirm?: boolean; dryRun?: boolean }
@@ -235,6 +248,8 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
 
   const localPath = resolveUploadLocalPath(options.local);
 
+  await ensureRenetProvisioned(opts.machine!);
+
   if (opts.repository) {
     await deployRepoKeyIfNeeded(opts.repository, opts.machine);
   }
@@ -296,6 +311,8 @@ async function syncDownload(options: SyncDownloadOptions): Promise<void> {
   if (options.remote) validateRemotePath(options.remote);
 
   const localPath = resolve(options.local ?? process.cwd());
+
+  await ensureRenetProvisioned(opts.machine!);
 
   if (opts.repository) {
     await deployRepoKeyIfNeeded(opts.repository, opts.machine);

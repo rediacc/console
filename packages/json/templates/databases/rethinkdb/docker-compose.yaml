@@ -3,6 +3,8 @@ services:
     image: rethinkdb:latest
     container_name: ${CONTAINER_NAME}
     command: ["sh", "-c", "exec rethinkdb --bind $${SERVICE_IP:-all} --cache-size ${RETHINKDB_CACHE_SIZE}"]
+    labels:
+      - "rediacc.service_port=8080"
     volumes:
       - ./data:/data
     healthcheck:

@@ -27,8 +27,10 @@ services:
     image: kibana:8.11.0
     container_name: ${CONTAINER_NAME}-kibana
     restart: always
+    labels:
+      - "rediacc.service_port=5601"
     environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_HOSTS=http://${ELASTICSEARCH_IP}:9200
       - SERVER_NAME=${KIBANA_SERVER_NAME}
       - SERVER_HOST=${SERVICE_IP:-0.0.0.0}
     depends_on:

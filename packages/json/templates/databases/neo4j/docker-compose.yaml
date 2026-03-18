@@ -3,6 +3,8 @@ services:
     image: neo4j:5-community
     container_name: ${CONTAINER_NAME}
     restart: always
+    labels:
+      - "rediacc.service_port=7474"
     environment:
       - NEO4J_AUTH=${NEO4J_AUTH}
       - NEO4J_PLUGINS=${NEO4J_PLUGINS}

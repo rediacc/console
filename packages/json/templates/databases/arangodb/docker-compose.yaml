@@ -3,6 +3,8 @@ services:
     image: arangodb:3.11
     container_name: ${CONTAINER_NAME}
     restart: always
+    labels:
+      - "rediacc.service_port=8529"
     environment:
       ARANGO_ROOT_PASSWORD: ${ARANGO_ROOT_PASSWORD}
       ARANGODB_OVERRIDE_DETECTED_TOTAL_MEMORY: ${ARANGODB_OVERRIDE_DETECTED_TOTAL_MEMORY:-}

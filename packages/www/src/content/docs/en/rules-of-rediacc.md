@@ -50,7 +50,7 @@ down() {
 - **Use `renet compose`, never `docker compose`** — renet injects network isolation, host networking, loopback IPs, and service labels.
 - **Do NOT set `network_mode`** in your compose file — renet forces `network_mode: host` on all services. Any value you set is overwritten.
 - **Do NOT set `rediacc.*` labels** — renet auto-injects `rediacc.network_id`, `rediacc.service_ip`, and `rediacc.service_name`.
-- **`ports:` mappings are ignored** in host networking mode. Use `rediacc.service_port` label for proxy routing to non-80 ports.
+- **`ports:` mappings are ignored** in host networking mode. Add `rediacc.service_port` label for HTTP routing (services without this label don't get HTTP routes). Use `rediacc.tcp_ports`/`rediacc.udp_ports` labels for TCP/UDP forwarding.
 - **Restart policies (`restart: always`, `on-failure`, etc.) are safe to use** — renet auto-strips them for CRIU compatibility. The router watchdog auto-recovers stopped containers based on the original policy saved in `.rediacc.json`.
 - **Dangerous settings are blocked by default** — `privileged: true`, `pid: host`, `ipc: host`, and host bind mounts to system paths are rejected. Use `renet compose --unsafe` to override at your own risk.
 
@@ -66,9 +66,9 @@ Renet auto-injects these into every container:
 ### Service naming and routing
 
 - The compose **service name** becomes the auto-route URL prefix.
-- Example: service `myapp` at networkId 6336 with base domain `example.com` becomes `https://myapp-6336.example.com`.
-- For custom domains, use Traefik labels (but note: custom domains are NOT fork-friendly).
-- Fork repos use flat auto-routes under the machine wildcard cert. Custom domains (`rediacc.domain`) are ignored on forks — the domain belongs to the grand repo.
+- **Grand repos**: `https://{service}.{repo}.{machine}.{baseDomain}` (e.g., `https://myapp.marketing.server-1.example.com`).
+- **Fork repos**: `https://{service}-{tag}.{machine}.{baseDomain}` — uses the machine wildcard cert to avoid Let's Encrypt rate limits.
+- For custom domains, use Traefik labels (but note: custom domains are NOT fork-friendly — the domain belongs to the grand repo).
 
 ## Networking
 

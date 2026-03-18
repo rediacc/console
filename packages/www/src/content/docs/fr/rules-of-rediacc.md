@@ -67,10 +67,10 @@ Renet auto-injecte celles-ci dans chaque conteneur :
 
 ### Nommage des services et routage
 
-- Le **nom du service** compose devient le préfixe URL de la route automatique.
-- Exemple : le service `myapp` avec networkId 6336 et domaine de base `example.com` devient `https://myapp-6336.example.com`.
-- Pour les domaines personnalisés, utilisez les labels Traefik (mais attention : les domaines personnalisés ne sont PAS compatibles avec les forks).
-- Les dépôts fork utilisent des routes automatiques plates sous le certificat wildcard de la machine. Les domaines personnalisés (`rediacc.domain`) sont ignorés sur les forks — le domaine appartient au grand dépôt.
+- The compose **service name** becomes the auto-route URL prefix.
+- **Grand repos**: `https://{service}.{repo}.{machine}.{baseDomain}` (e.g., `https://myapp.marketing.server-1.example.com`).
+- **Fork repos**: `https://{service}-{tag}.{machine}.{baseDomain}` — uses the machine wildcard cert to avoid Let's Encrypt rate limits.
+- For custom domains, use Traefik labels (but note: custom domains are NOT fork-friendly — the domain belongs to the grand repo).
 
 ## Réseau
 

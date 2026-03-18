@@ -3,6 +3,8 @@ services:
     image: crate:latest
     container_name: ${CONTAINER_NAME}
     command: ["sh", "-c", "exec crate -Cnetwork.host=$${SERVICE_IP:-0.0.0.0} -Cdiscovery.type=single-node -Ccluster.name=${CLUSTER_NAME}"]
+    labels:
+      - "rediacc.service_port=4200"
     environment:
       CRATE_HEAP_SIZE: ${CRATE_HEAP_SIZE}
     volumes:

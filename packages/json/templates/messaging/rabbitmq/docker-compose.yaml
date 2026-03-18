@@ -3,6 +3,8 @@ services:
     image: rabbitmq:3-management-alpine
     container_name: ${CONTAINER_NAME}
     restart: always
+    labels:
+      - "rediacc.service_port=15672"
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
