@@ -486,18 +486,11 @@ class LocalExecutorService {
     if (getSubscriptionTokenState().kind !== 'ready') return;
 
     try {
-      const result = await refreshRepoLicensesBatch(
-        machine,
-        sshPrivateKey,
-        remoteRenetPath,
-        sftp
-      );
+      const result = await refreshRepoLicensesBatch(machine, sshPrivateKey, remoteRenetPath, sftp);
       if (result.invalidSignatureDetected > 0) {
         const refreshed = result.issued + result.refreshed;
         if (refreshed > 0) {
-          outputService.info(
-            t('warnings.licenseSignatureRefreshed', { count: refreshed })
-          );
+          outputService.info(t('warnings.licenseSignatureRefreshed', { count: refreshed }));
         } else {
           outputService.warn(
             t('warnings.licenseSignatureRefreshFailed', {
