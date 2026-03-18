@@ -32,7 +32,7 @@
     "validate:content:strict": "node scripts/validate-content.js --strict && npm run validate:tutorial-transcripts && npm run validate:tutorial-audio && npm run validate:team-video-transcripts"
   },
   "dependencies": {
-    "@astrojs/react": "^5.0.0",
+    "@astrojs/react": "^5.0.1",
     "@astrojs/rss": "^4.0.16",
     "@astrojs/sitemap": "^3.7.1",
     "@aws-sdk/client-s3": "^3.982.0",
