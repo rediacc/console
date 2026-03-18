@@ -2,10 +2,6 @@
   "cli": {
     "description": "Gérer les machines, dépôts et déploiements par SSH"
   },
-  "warnings": {
-    "licenseSignatureRefreshed": "{{count}} licence(s) de dépôt avec des signatures invalides actualisée(s) après la mise à jour de renet",
-    "licenseSignatureRefreshFailed": "{{count}} licence(s) de dépôt ont des signatures invalides après la mise à jour de renet. Exécutez : rdc subscription refresh -m <machine>"
-  },
   "commands": {
     "agent": {
       "capabilities": {
@@ -1149,9 +1145,9 @@
         "completed": "Dépôt créé",
         "description": "Créer un nouveau dépôt chiffré",
         "failed": "Échec de la création du dépôt",
+        "noDockerOption": "Ne pas démarrer le démon Docker après la création",
         "registered": "\"{{repository}}\" enregistré ({{guid}}, réseau {{networkId}})",
         "rollback": "Configuration annulée pour \"{{repository}}\"",
-        "noDockerOption": "Ne pas démarrer le démon Docker après la création",
         "sizeOption": "Taille du dépôt (ex. 10G, 100G, 1T)",
         "starting": "Création du dépôt \"{{repository}}\" ({{size}}) sur \"{{machine}}\"..."
       },
@@ -1173,14 +1169,14 @@
         "allCompleted": "Tous les dépôts arrêtés",
         "allFailed": "L'opération d'arrêt total a échoué",
         "allStarting": "Arrêt de tous les dépôts sur \"{{machine}}\"...",
+        "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')",
         "completed": "Services arrêtés",
         "description": "Arrêter les services du dépôt",
         "descriptionShort": "Arrêter les conteneurs Docker du dépôt",
         "failed": "Échec de l'arrêt des services",
         "grandOption": "Nom du grand dépôt (résolution automatique vers le GUID)",
         "starting": "Arrêt des services pour \"{{repository}}\" sur \"{{machine}}\"...",
-        "unmountOption": "Démonter le dépôt après l'arrêt",
-        "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')"
+        "unmountOption": "Démonter le dépôt après l'arrêt"
       },
       "expand": {
         "completed": "Extension terminée",
@@ -1192,6 +1188,7 @@
       },
       "fork": {
         "alreadyExists": "Le dépôt \"{{name}}\" existe déjà dans le contexte",
+        "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)",
         "completed": "Fork créé. Déployer localement : repo up {{repository}} -m {{machine}} --mount. Pour migrer le fork vers une autre machine : backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
         "description": "Créer un fork CoW (Copy-on-Write) d'un dépôt",
         "descriptionShort": "Créer un fork CoW d'un dépôt (nouveau GUID, networkId, plage IP)",
@@ -1200,21 +1197,7 @@
         "rollback": "Configuration annulée pour \"{{repository}}\"",
         "starting": "Création du fork de \"{{parent}}\" en tant que \"{{repository}}\" sur \"{{machine}}\"...",
         "tagOption": "Tag pour le fork (crée nom:tag)",
-        "tagRequired": "Le tag est requis pour le fork. Utilisation : rdc repo fork <parent> <tag> -m <machine>",
-        "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)"
-      },
-      "takeover": {
-        "description": "Remplacer les données du dépôt principal par les données d'un fork. Le principal conserve son identité (GUID, networkId, domaines, démarrage automatique, chaîne de sauvegardes) mais obtient les données mises à jour du fork. Les anciennes données de production sont conservées comme fork de sauvegarde. Utilisation : tester la mise à niveau sur le fork → vérifier → prise de contrôle en production.",
-        "descriptionShort": "Remplacer les données de production par les données du fork",
-        "forceOption": "Ignorer les avertissements de modification",
-        "notAFork": "\"{{name}}\" n'est pas un dépôt fork (parentGuid manquant)",
-        "grandNotFound": "Dépôt principal introuvable pour le fork \"{{name}}\"",
-        "starting": "Prise de contrôle de \"{{grand}}\" avec les données de \"{{fork}}\" sur \"{{machine}}\"...",
-        "completed": "Prise de contrôle terminée. Le dépôt principal contient maintenant les données du fork.",
-        "backupInfo": "Anciennes données de production conservées sous : {{backup}}",
-        "revertHint": "Pour annuler : rdc repo takeover {{backup}} -m {{machine}}",
-        "failed": "Échec de la prise de contrôle",
-        "rollback": "Configuration annulée pour \"{{name}}\""
+        "tagRequired": "Le tag est requis pour le fork. Utilisation : rdc repo fork <parent> <tag> -m <machine>"
       },
       "list": {
         "completed": "Listage terminé",
@@ -1329,6 +1312,19 @@
           "descriptionShort": "Envoyer des fichiers vers un dépôt via rsync"
         }
       },
+      "takeover": {
+        "backupInfo": "Anciennes données de production conservées sous : {{backup}}",
+        "completed": "Prise de contrôle terminée. Le dépôt principal contient maintenant les données du fork.",
+        "description": "Remplacer les données du dépôt principal par les données d'un fork. Le principal conserve son identité (GUID, networkId, domaines, démarrage automatique, chaîne de sauvegardes) mais obtient les données mises à jour du fork. Les anciennes données de production sont conservées comme fork de sauvegarde. Utilisation : tester la mise à niveau sur le fork → vérifier → prise de contrôle en production.",
+        "descriptionShort": "Remplacer les données de production par les données du fork",
+        "failed": "Échec de la prise de contrôle",
+        "forceOption": "Ignorer les avertissements de modification",
+        "grandNotFound": "Dépôt principal introuvable pour le fork \"{{name}}\"",
+        "notAFork": "\"{{name}}\" n'est pas un dépôt fork (parentGuid manquant)",
+        "revertHint": "Pour annuler : rdc repo takeover {{backup}} -m {{machine}}",
+        "rollback": "Configuration annulée pour \"{{name}}\"",
+        "starting": "Prise de contrôle de \"{{grand}}\" avec les données de \"{{fork}}\" sur \"{{machine}}\"..."
+      },
       "template": {
         "completed": "Modèle appliqué",
         "description": "Appliquer un modèle à un dépôt",
@@ -1354,9 +1350,9 @@
         "failed": "Échec du démarrage des services",
         "grandOption": "Nom du grand dépôt (résolution automatique vers le GUID)",
         "mountOption": "Monter le dépôt d'abord",
+        "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)",
         "starting": "Démarrage des services pour \"{{repository}}\" sur \"{{machine}}\"...",
-        "tlsOption": "Demander un certificat TLS dédié pour ce dépôt (les forks utilisent le certificat partagé de la machine par défaut)",
-        "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)"
+        "tlsOption": "Demander un certificat TLS dédié pour ce dépôt (les forks utilisent le certificat partagé de la machine par défaut)"
       },
       "upAll": {
         "completed": "Tous les dépôts démarrés",
@@ -2180,7 +2176,6 @@
       "create": "Créer un dépôt chiffré",
       "down": "Arrêter les services",
       "fork": "Fork CoW pour les tests",
-      "takeover": "Remplacer les données de production par les données du fork",
       "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REPOSITORY_PATH}/data, ${REPOSITORY_PATH}/config, etc.\n    • Example: volumes: ['${REPOSITORY_PATH}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "Lister les sauvegardes sur le stockage",
       "pull": "Récupérer la sauvegarde depuis le stockage",
@@ -2189,6 +2184,7 @@
         "pullAll": "Pull en masse de tous les dépôts depuis le stockage",
         "pushAll": "Push en masse de tous les dépôts vers le stockage"
       },
+      "takeover": "Remplacer les données de production par les données du fork",
       "up": "Déployer avec montage automatique"
     },
     "store": {
@@ -2399,5 +2395,9 @@
       "renetProvisioned": "Renet provisionné ({{duration}})",
       "verifying": "Vérification de la machine..."
     }
+  },
+  "warnings": {
+    "licenseSignatureRefreshed": "{{count}} licence(s) de dépôt avec des signatures invalides actualisée(s) après la mise à jour de renet",
+    "licenseSignatureRefreshFailed": "{{count}} licence(s) de dépôt ont des signatures invalides après la mise à jour de renet. Exécutez : rdc subscription refresh -m <machine>"
   }
 }

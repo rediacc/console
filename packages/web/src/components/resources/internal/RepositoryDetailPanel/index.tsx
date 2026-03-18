@@ -250,7 +250,9 @@ const ExternalVolumeWarning: React.FC<WarningProps> = ({ repository, panelData, 
           </ul>
           <DetailPanelFieldValue>
             <strong>{t('common:important')}:</strong>{' '}
-            {t('resources:repositories.dockerVolumes.orphanWarning', { path: '$REDIACC_WORKING_DIR' })}
+            {t('resources:repositories.dockerVolumes.orphanWarning', {
+              path: '$REDIACC_WORKING_DIR',
+            })}
           </DetailPanelFieldValue>
         </Flex>
       }

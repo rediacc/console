@@ -95,7 +95,7 @@
     "proper-lockfile": "^4.1.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.7",
+    "@biomejs/biome": "^2.4.8",
     "@eslint/js": "^9.39.2",
     "@eslint/json": "^1.1.0",
     "@types/proper-lockfile": "^4.1.4",
@@ -105,7 +105,7 @@
     "eslint": "^9.39.2",
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-playwright": "^2.10.0",
+    "eslint-plugin-playwright": "^2.10.1",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-regexp": "^3.1.0",

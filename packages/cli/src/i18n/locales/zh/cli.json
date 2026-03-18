@@ -2,10 +2,6 @@
   "cli": {
     "description": "通过 SSH 管理机器、仓库和部署"
   },
-  "warnings": {
-    "licenseSignatureRefreshed": "renet 更新后，已刷新 {{count}} 个签名无效的仓库许可证",
-    "licenseSignatureRefreshFailed": "renet 更新后，{{count}} 个仓库许可证签名无效。请运行：rdc subscription refresh -m <machine>"
-  },
   "commands": {
     "agent": {
       "capabilities": {
@@ -1149,9 +1145,9 @@
         "completed": "仓库已创建",
         "description": "创建新的加密仓库",
         "failed": "仓库创建失败",
+        "noDockerOption": "创建后跳过启动 Docker 守护进程",
         "registered": "已注册 \"{{repository}}\"（{{guid}}，网络 {{networkId}}）",
         "rollback": "已回滚 \"{{repository}}\" 的配置",
-        "noDockerOption": "创建后跳过启动 Docker 守护进程",
         "sizeOption": "仓库大小（例如 10G、100G、1T）",
         "starting": "正在 \"{{machine}}\" 上创建仓库 \"{{repository}}\"（{{size}}）..."
       },
@@ -1173,14 +1169,14 @@
         "allCompleted": "所有仓库已停止",
         "allFailed": "全部停止操作失败",
         "allStarting": "正在停止 \"{{machine}}\" 上的所有仓库...",
+        "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')",
         "completed": "服务已停止",
         "description": "停止仓库服务",
         "descriptionShort": "停止仓库的 Docker 容器",
         "failed": "服务停止失败",
         "grandOption": "主仓库名称 (自动解析为 GUID)",
         "starting": "正在 \"{{machine}}\" 上停止 \"{{repository}}\" 的服务...",
-        "unmountOption": "停止后卸载仓库",
-        "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')"
+        "unmountOption": "停止后卸载仓库"
       },
       "expand": {
         "completed": "扩展完成",
@@ -1192,6 +1188,7 @@
       },
       "fork": {
         "alreadyExists": "仓库 \"{{name}}\" 已存在于上下文中",
+        "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)",
         "completed": "分支已创建。本地部署: repo up {{repository}} -m {{machine}} --mount。将分支迁移到另一台机器: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
         "description": "创建仓库的 CoW（写时复制）分支",
         "descriptionShort": "创建仓库的 CoW 分支（新 GUID、networkId、IP 范围）",
@@ -1200,21 +1197,7 @@
         "rollback": "已回滚 \"{{repository}}\" 的配置",
         "starting": "正在 \"{{machine}}\" 上将 \"{{parent}}\" 分支为 \"{{repository}}\"...",
         "tagOption": "分支的标签（创建 名称:标签）",
-        "tagRequired": "分支需要标签。用法：rdc repo fork <parent> <tag> -m <machine>",
-        "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)"
-      },
-      "takeover": {
-        "description": "用分支的数据替换主仓库的数据。主仓库保留其身份（GUID、networkId、域名、自动启动、备份链），但获取分支的升级数据。旧的生产数据作为备份分支保留。用途：在分支上测试升级 → 验证 → 接管到生产环境。",
-        "descriptionShort": "用分支数据替换生产数据",
-        "forceOption": "跳过修改警告",
-        "notAFork": "\"{{name}}\" 不是分支仓库（缺少 parentGuid）",
-        "grandNotFound": "未找到分支 \"{{name}}\" 的主仓库",
-        "starting": "正在用 \"{{fork}}\" 的数据接管 \"{{machine}}\" 上的 \"{{grand}}\"...",
-        "completed": "接管完成。主仓库现在拥有分支的数据。",
-        "backupInfo": "旧的生产数据已保存为：{{backup}}",
-        "revertHint": "要还原：rdc repo takeover {{backup}} -m {{machine}}",
-        "failed": "接管失败",
-        "rollback": "已回滚 \"{{name}}\" 的配置"
+        "tagRequired": "分支需要标签。用法：rdc repo fork <parent> <tag> -m <machine>"
       },
       "list": {
         "completed": "列表获取完成",
@@ -1329,6 +1312,19 @@
           "descriptionShort": "通过 rsync 向仓库上传文件"
         }
       },
+      "takeover": {
+        "backupInfo": "旧的生产数据已保存为：{{backup}}",
+        "completed": "接管完成。主仓库现在拥有分支的数据。",
+        "description": "用分支的数据替换主仓库的数据。主仓库保留其身份（GUID、networkId、域名、自动启动、备份链），但获取分支的升级数据。旧的生产数据作为备份分支保留。用途：在分支上测试升级 → 验证 → 接管到生产环境。",
+        "descriptionShort": "用分支数据替换生产数据",
+        "failed": "接管失败",
+        "forceOption": "跳过修改警告",
+        "grandNotFound": "未找到分支 \"{{name}}\" 的主仓库",
+        "notAFork": "\"{{name}}\" 不是分支仓库（缺少 parentGuid）",
+        "revertHint": "要还原：rdc repo takeover {{backup}} -m {{machine}}",
+        "rollback": "已回滚 \"{{name}}\" 的配置",
+        "starting": "正在用 \"{{fork}}\" 的数据接管 \"{{machine}}\" 上的 \"{{grand}}\"..."
+      },
       "template": {
         "completed": "模板已应用",
         "description": "将模板应用到仓库",
@@ -1354,9 +1350,9 @@
         "failed": "服务启动失败",
         "grandOption": "主仓库名称 (自动解析为 GUID)",
         "mountOption": "先挂载仓库",
+        "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)",
         "starting": "正在 \"{{machine}}\" 上启动 \"{{repository}}\" 的服务...",
-        "tlsOption": "为此仓库请求专用 TLS 证书 (分支默认使用共享机器证书)",
-        "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)"
+        "tlsOption": "为此仓库请求专用 TLS 证书 (分支默认使用共享机器证书)"
       },
       "upAll": {
         "completed": "所有仓库已启动",
@@ -2180,7 +2176,6 @@
       "create": "创建加密仓库",
       "down": "停止服务",
       "fork": "创建 CoW 测试分支",
-      "takeover": "用分支数据替换生产数据",
       "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REPOSITORY_PATH}/data, ${REPOSITORY_PATH}/config, etc.\n    • Example: volumes: ['${REPOSITORY_PATH}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "列出存储上的备份",
       "pull": "从存储拉取仓库备份",
@@ -2189,6 +2184,7 @@
         "pullAll": "批量从存储拉取所有仓库",
         "pushAll": "批量推送所有仓库到存储"
       },
+      "takeover": "用分支数据替换生产数据",
       "up": "自动挂载部署"
     },
     "store": {
@@ -2399,5 +2395,9 @@
       "renetProvisioned": "renet 已配置 ({{duration}})",
       "verifying": "正在验证机器..."
     }
+  },
+  "warnings": {
+    "licenseSignatureRefreshed": "renet 更新后，已刷新 {{count}} 个签名无效的仓库许可证",
+    "licenseSignatureRefreshFailed": "renet 更新后，{{count}} 个仓库许可证签名无效。请运行：rdc subscription refresh -m <machine>"
   }
 }

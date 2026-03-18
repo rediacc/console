@@ -2,10 +2,6 @@
   "cli": {
     "description": "Управление машинами, репозиториями и развёртываниями через SSH"
   },
-  "warnings": {
-    "licenseSignatureRefreshed": "Обновлено {{count}} лицензий репозиториев с недействительными подписями после обновления renet",
-    "licenseSignatureRefreshFailed": "{{count}} лицензий репозиториев имеют недействительные подписи после обновления renet. Выполните: rdc subscription refresh -m <machine>"
-  },
   "commands": {
     "agent": {
       "capabilities": {
@@ -1149,9 +1145,9 @@
         "completed": "Репозиторий создан",
         "description": "Создать новый зашифрованный репозиторий",
         "failed": "Ошибка создания репозитория",
+        "noDockerOption": "Не запускать Docker-демон после создания",
         "registered": "Зарегистрирован \"{{repository}}\" ({{guid}}, сеть {{networkId}})",
         "rollback": "Конфигурация для \"{{repository}}\" откачена",
-        "noDockerOption": "Не запускать Docker-демон после создания",
         "sizeOption": "Размер репозитория (напр. 10G, 100G, 1T)",
         "starting": "Создание репозитория \"{{repository}}\" ({{size}}) на \"{{machine}}\"..."
       },
@@ -1173,14 +1169,14 @@
         "allCompleted": "Все репозитории остановлены",
         "allFailed": "Операция остановки всех не удалась",
         "allStarting": "Остановка всех репозиториев на \"{{machine}}\"...",
+        "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')",
         "completed": "Сервисы остановлены",
         "description": "Остановить сервисы репозитория",
         "descriptionShort": "Остановить Docker-контейнеры репозитория",
         "failed": "Ошибка остановки сервисов",
         "grandOption": "Имя главного репозитория (автоматически разрешается в GUID)",
         "starting": "Остановка сервисов для \"{{repository}}\" на \"{{machine}}\"...",
-        "unmountOption": "Размонтировать репозиторий после остановки",
-        "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')"
+        "unmountOption": "Размонтировать репозиторий после остановки"
       },
       "expand": {
         "completed": "Расширение завершено",
@@ -1192,6 +1188,7 @@
       },
       "fork": {
         "alreadyExists": "Репозиторий \"{{name}}\" уже существует в контексте",
+        "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)",
         "completed": "Форк создан. Развернуть локально: repo up {{repository}} -m {{machine}} --mount. Для миграции форка на другую машину: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
         "description": "Создать CoW-форк (копирование при записи) репозитория",
         "descriptionShort": "Создать CoW-форк репозитория (новый GUID, networkId, диапазон IP)",
@@ -1200,21 +1197,7 @@
         "rollback": "Конфигурация для \"{{repository}}\" откачена",
         "starting": "Создание форка \"{{parent}}\" как \"{{repository}}\" на \"{{machine}}\"...",
         "tagOption": "Тег для форка (создаёт имя:тег)",
-        "tagRequired": "Тег обязателен для форка. Использование: rdc repo fork <parent> <tag> -m <machine>",
-        "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)"
-      },
-      "takeover": {
-        "description": "Заменить данные главного репозитория данными форка. Главный сохраняет свою идентичность (GUID, networkId, домены, автозапуск, цепочку резервных копий), но получает обновлённые данные форка. Старые производственные данные сохраняются как резервный форк. Использование: протестировать обновление на форке → проверить → перенести в продакшн.",
-        "descriptionShort": "Заменить производственные данные данными форка",
-        "forceOption": "Пропустить предупреждения об изменениях",
-        "notAFork": "\"{{name}}\" не является форком (отсутствует parentGuid)",
-        "grandNotFound": "Главный репозиторий для форка \"{{name}}\" не найден",
-        "starting": "Замена данных \"{{grand}}\" данными из \"{{fork}}\" на \"{{machine}}\"...",
-        "completed": "Замена завершена. Главный репозиторий теперь содержит данные форка.",
-        "backupInfo": "Старые производственные данные сохранены как: {{backup}}",
-        "revertHint": "Для отмены: rdc repo takeover {{backup}} -m {{machine}}",
-        "failed": "Ошибка замены данных",
-        "rollback": "Конфигурация для \"{{name}}\" откачена"
+        "tagRequired": "Тег обязателен для форка. Использование: rdc repo fork <parent> <tag> -m <machine>"
       },
       "list": {
         "completed": "Список получен",
@@ -1329,6 +1312,19 @@
           "descriptionShort": "Загрузить файлы в репозиторий через rsync"
         }
       },
+      "takeover": {
+        "backupInfo": "Старые производственные данные сохранены как: {{backup}}",
+        "completed": "Замена завершена. Главный репозиторий теперь содержит данные форка.",
+        "description": "Заменить данные главного репозитория данными форка. Главный сохраняет свою идентичность (GUID, networkId, домены, автозапуск, цепочку резервных копий), но получает обновлённые данные форка. Старые производственные данные сохраняются как резервный форк. Использование: протестировать обновление на форке → проверить → перенести в продакшн.",
+        "descriptionShort": "Заменить производственные данные данными форка",
+        "failed": "Ошибка замены данных",
+        "forceOption": "Пропустить предупреждения об изменениях",
+        "grandNotFound": "Главный репозиторий для форка \"{{name}}\" не найден",
+        "notAFork": "\"{{name}}\" не является форком (отсутствует parentGuid)",
+        "revertHint": "Для отмены: rdc repo takeover {{backup}} -m {{machine}}",
+        "rollback": "Конфигурация для \"{{name}}\" откачена",
+        "starting": "Замена данных \"{{grand}}\" данными из \"{{fork}}\" на \"{{machine}}\"..."
+      },
       "template": {
         "completed": "Шаблон применён",
         "description": "Применить шаблон к репозиторию",
@@ -1354,9 +1350,9 @@
         "failed": "Ошибка запуска сервисов",
         "grandOption": "Имя главного репозитория (автоматически разрешается в GUID)",
         "mountOption": "Сначала смонтировать репозиторий",
+        "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)",
         "starting": "Запуск сервисов для \"{{repository}}\" на \"{{machine}}\"...",
-        "tlsOption": "Запросить выделенный TLS-сертификат для этого репозитория (форки по умолчанию используют общий сертификат машины)",
-        "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)"
+        "tlsOption": "Запросить выделенный TLS-сертификат для этого репозитория (форки по умолчанию используют общий сертификат машины)"
       },
       "upAll": {
         "completed": "Все репозитории запущены",
@@ -2180,7 +2176,6 @@
       "create": "Создать зашифрованный репозиторий",
       "down": "Остановить сервисы",
       "fork": "CoW-форк для тестирования",
-      "takeover": "Заменить производственные данные данными форка",
       "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REPOSITORY_PATH}/data, ${REPOSITORY_PATH}/config, etc.\n    • Example: volumes: ['${REPOSITORY_PATH}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "Список резервных копий в хранилище",
       "pull": "Получить резервную копию из хранилища",
@@ -2189,6 +2184,7 @@
         "pullAll": "Массовый pull всех репозиториев из хранилища",
         "pushAll": "Массовый push всех репозиториев в хранилище"
       },
+      "takeover": "Заменить производственные данные данными форка",
       "up": "Развернуть с автомонтированием"
     },
     "store": {
@@ -2399,5 +2395,9 @@
       "renetProvisioned": "Renet подготовлен ({{duration}})",
       "verifying": "Проверка машины..."
     }
+  },
+  "warnings": {
+    "licenseSignatureRefreshed": "Обновлено {{count}} лицензий репозиториев с недействительными подписями после обновления renet",
+    "licenseSignatureRefreshFailed": "{{count}} лицензий репозиториев имеют недействительные подписи после обновления renet. Выполните: rdc subscription refresh -m <machine>"
   }
 }

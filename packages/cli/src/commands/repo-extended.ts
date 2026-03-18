@@ -91,7 +91,13 @@ export function registerExtendedRepoCommands(repo: Command): void {
       async (
         parent: string,
         tagArg: string | undefined,
-        options: { machine: string; tag?: string; checkpoint?: boolean; debug?: boolean; skipRouterRestart?: boolean }
+        options: {
+          machine: string;
+          tag?: string;
+          checkpoint?: boolean;
+          debug?: boolean;
+          skipRouterRestart?: boolean;
+        }
       ) => {
         const { parseRepoRef, compositeKey } = await import('../utils/config-schema.js');
         const tagName = tagArg ?? options.tag;
