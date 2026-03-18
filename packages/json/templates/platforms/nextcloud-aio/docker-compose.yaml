@@ -4,11 +4,6 @@ services:
     container_name: nextcloud-aio-mastercontainer
     init: true
     restart: always
-    network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
-    ports:
-      - "80"      # HTTP (ACME challenges)
-      - "8080"    # AIO management interface
-      - "8443"    # HTTPS
     volumes:
       - nextcloud_aio_mastercontainer:/mnt/docker-aio-config
       - ${DOCKER_HOST:-/var/run/docker.sock}:/var/run/docker.sock:ro
@@ -17,7 +12,7 @@ services:
       - APACHE_IP_BINDING=${APACHE_IP_BINDING:-}
       - NEXTCLOUD_DATADIR=${NEXTCLOUD_DATADIR:-}
     healthcheck:
-      test: ["CMD", "curl", "-f", "-k", "https://localhost:8080/"]
+      test: ["CMD", "curl", "-f", "-k", "https://$${SERVICE_IP:-localhost}:8080/"]
       interval: 30s
       timeout: 10s
       retries: 3

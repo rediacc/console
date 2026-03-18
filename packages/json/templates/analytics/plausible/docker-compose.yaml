@@ -6,8 +6,6 @@ services:
     restart: always
     networks:
       - plausible_network
-    ports:
-      - "${HTTP_PORT:-8000}"
     command: sh -c "/entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run"
     environment:
       - BASE_URL=${BASE_URL:-http://localhost:8000}

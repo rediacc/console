@@ -56,7 +56,7 @@ services:
       - /sys:/host/sys:ro
       - /:/host:ro
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider --quiet http://localhost:9100/"]
+      test: ["CMD-SHELL", "wget --spider --quiet http://$${SERVICE_IP:-localhost}:9100/"]
       interval: 10s
       timeout: 10s
       retries: 3

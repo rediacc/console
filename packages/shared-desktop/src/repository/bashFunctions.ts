@@ -111,6 +111,28 @@ container_stats() {
   fi
 }
 export -f container_stats 2>/dev/null || true
+
+# Block 'docker compose' — must use 'renet compose' for network isolation
+docker() {
+  case "\$1" in
+    compose)
+      echo "Error: Use 'renet compose' instead of 'docker compose'"
+      echo "  Example: renet compose -- up -d"
+      echo "  Why: renet compose injects network isolation, service IPs, and CRIU capabilities"
+      return 1
+      ;;
+  esac
+  command docker "\$@"
+}
+export -f docker 2>/dev/null || true
+
+# Block legacy 'docker-compose' command
+docker-compose() {
+  echo "Error: Use 'renet compose' instead of 'docker-compose'"
+  echo "  Example: renet compose -- up -d"
+  return 1
+}
+export -f docker-compose 2>/dev/null || true
 `;
 
 /**
