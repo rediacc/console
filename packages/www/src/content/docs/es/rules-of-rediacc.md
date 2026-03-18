@@ -24,9 +24,9 @@ Cada repositorio de Rediacc se ejecuta dentro de un entorno aislado con su propi
 
 | Variable | Ejemplo | Descripción |
 |----------|---------|-------------|
-| `REPOSITORY_PATH` | `/mnt/rediacc/mounts/abc123/` | Ruta raíz del repo montado |
-| `REPOSITORY_NETWORK_ID` | `6336` | Identificador de aislamiento de red |
-| `REPOSITORY_NAME` | `abc123-...` | GUID del repositorio |
+| `REDIACC_WORKING_DIR` | `/mnt/rediacc/mounts/abc123/` | Ruta raíz del repo montado |
+| `REDIACC_NETWORK_ID` | `6336` | Identificador de aislamiento de red |
+| `REDIACC_REPOSITORY` | `abc123-...` | GUID del repositorio |
 | `{SVCNAME}_IP` | `HEARTBEAT_IP=127.0.24.195` | IP de loopback por servicio (nombre del servicio en mayúsculas) |
 
 ### Rediaccfile mínimo
@@ -63,7 +63,7 @@ Renet auto-inyecta estas en cada contenedor:
 | Variable | Descripción |
 |----------|-------------|
 | `SERVICE_IP` | IP de loopback dedicada de este contenedor |
-| `REPOSITORY_NETWORK_ID` | ID de aislamiento de red |
+| `REDIACC_NETWORK_ID` | ID de aislamiento de red |
 
 ### Nombres de servicios y enrutamiento
 
@@ -90,10 +90,10 @@ Renet auto-inyecta estas en cada contenedor:
 ## Almacenamiento
 
 - **Todos los datos Docker se almacenan dentro del repo cifrado** — el `data-root` de Docker está en `{mount}/.rediacc/docker/data` dentro del volumen LUKS. Los volúmenes nombrados, imágenes y capas de contenedores están todos cifrados, respaldados y se forkean automáticamente.
-- **Los bind mounts a `${REPOSITORY_PATH}/...` se recomiendan** por claridad, pero los volúmenes nombrados también funcionan de forma segura.
+- **Los bind mounts a `${REDIACC_WORKING_DIR}/...` se recomiendan** por claridad, pero los volúmenes nombrados también funcionan de forma segura.
   ```yaml
   volumes:
-    - ${REPOSITORY_PATH}/data:/data        # bind mount (recomendado)
+    - ${REDIACC_WORKING_DIR}/data:/data        # bind mount (recomendado)
     - pgdata:/var/lib/postgresql/data      # named volume (también seguro)
   ```
 - El volumen LUKS se monta en `/mnt/rediacc/mounts/<guid>/`.

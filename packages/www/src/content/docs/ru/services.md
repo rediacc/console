@@ -47,9 +47,9 @@ Rediaccfile содержит до двух функций:
 
 | Переменная | Описание | Пример |
 |------------|----------|--------|
-| `REPOSITORY_PATH` | Путь монтирования репозитория | `/mnt/rediacc/repos/abc123` |
-| `REPOSITORY_NAME` | GUID репозитория | `a1b2c3d4-e5f6-...` |
-| `REPOSITORY_NETWORK_ID` | Идентификатор сети (целое число) | `2816` |
+| `REDIACC_WORKING_DIR` | Путь монтирования репозитория | `/mnt/rediacc/repos/abc123` |
+| `REDIACC_REPOSITORY` | GUID репозитория | `a1b2c3d4-e5f6-...` |
+| `REDIACC_NETWORK_ID` | Идентификатор сети (целое число) | `2816` |
 | `DOCKER_HOST` | Docker-сокет для изолированного демона данного репозитория | `unix:///var/run/rediacc/docker-2816.sock` |
 | `{SERVICE}_IP` | Loopback IP для каждого сервиса, определенного в `.rediacc.json` | `POSTGRES_IP=127.0.11.2` |
 

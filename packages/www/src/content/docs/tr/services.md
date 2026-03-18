@@ -47,9 +47,9 @@ Bir Rediaccfile fonksiyonu çalıştığında, aşağıdaki ortam değişkenleri
 
 | Değişken | Açıklama | Örnek |
 |----------|----------|-------|
-| `REPOSITORY_PATH` | Deponun bağlama yolu | `/mnt/rediacc/repos/abc123` |
-| `REPOSITORY_NAME` | Depo GUID'i | `a1b2c3d4-e5f6-...` |
-| `REPOSITORY_NETWORK_ID` | Ağ Kimliği (tamsayı) | `2816` |
+| `REDIACC_WORKING_DIR` | Deponun bağlama yolu | `/mnt/rediacc/repos/abc123` |
+| `REDIACC_REPOSITORY` | Depo GUID'i | `a1b2c3d4-e5f6-...` |
+| `REDIACC_NETWORK_ID` | Ağ Kimliği (tamsayı) | `2816` |
 | `DOCKER_HOST` | Bu deponun izole daemon'u için Docker soketi | `unix:///var/run/rediacc/docker-2816.sock` |
 | `{SERVICE}_IP` | `.rediacc.json` dosyasında tanımlanan her servis için loopback IP | `POSTGRES_IP=127.0.11.2` |
 

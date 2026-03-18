@@ -24,9 +24,9 @@ Jedes Rediacc-Repository läuft in einer isolierten Umgebung mit eigenem Docker-
 
 | Variable | Beispiel | Beschreibung |
 |----------|----------|--------------|
-| `REPOSITORY_PATH` | `/mnt/rediacc/mounts/abc123/` | Wurzelpfad des gemounteten Repos |
-| `REPOSITORY_NETWORK_ID` | `6336` | Netzwerkisolations-Kennung |
-| `REPOSITORY_NAME` | `abc123-...` | Repository-GUID |
+| `REDIACC_WORKING_DIR` | `/mnt/rediacc/mounts/abc123/` | Wurzelpfad des gemounteten Repos |
+| `REDIACC_NETWORK_ID` | `6336` | Netzwerkisolations-Kennung |
+| `REDIACC_REPOSITORY` | `abc123-...` | Repository-GUID |
 | `{SVCNAME}_IP` | `HEARTBEAT_IP=127.0.24.195` | Loopback-IP pro Dienst (Dienstname in Großbuchstaben) |
 
 ### Minimales Rediaccfile
@@ -63,7 +63,7 @@ Renet injiziert diese automatisch in jeden Container:
 | Variable | Beschreibung |
 |----------|--------------|
 | `SERVICE_IP` | Die dedizierte Loopback-IP dieses Containers |
-| `REPOSITORY_NETWORK_ID` | Netzwerkisolations-ID |
+| `REDIACC_NETWORK_ID` | Netzwerkisolations-ID |
 
 ### Dienstnamen und Routing
 
@@ -90,10 +90,10 @@ Renet injiziert diese automatisch in jeden Container:
 ## Speicher
 
 - **Alle Docker-Daten werden im verschlüsselten Repo gespeichert** — Dockers `data-root` befindet sich unter `{mount}/.rediacc/docker/data` innerhalb des LUKS-Volumes. Named Volumes, Images und Container-Layer sind alle verschlüsselt, gesichert und werden automatisch geforkt.
-- **Bind Mounts zu `${REPOSITORY_PATH}/...` werden der Übersichtlichkeit halber empfohlen**, aber Named Volumes funktionieren ebenfalls sicher.
+- **Bind Mounts zu `${REDIACC_WORKING_DIR}/...` werden der Übersichtlichkeit halber empfohlen**, aber Named Volumes funktionieren ebenfalls sicher.
   ```yaml
   volumes:
-    - ${REPOSITORY_PATH}/data:/data        # bind mount (empfohlen)
+    - ${REDIACC_WORKING_DIR}/data:/data        # bind mount (empfohlen)
     - pgdata:/var/lib/postgresql/data      # named volume (ebenfalls sicher)
   ```
 - Das LUKS-Volume wird unter `/mnt/rediacc/mounts/<guid>/` gemountet.

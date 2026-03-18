@@ -192,8 +192,8 @@ mkdir -p tests/fixtures/test-app
 #!/bin/bash
 # Minimal test application for integration testing
 
-_use_renet() { [[ -n "$REPOSITORY_NETWORK_ID" ]] && command -v renet &>/dev/null; }
-_compose() { _use_renet && renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@" || docker compose "$@"; }
+_use_renet() { [[ -n "$REDIACC_NETWORK_ID" ]] && command -v renet &>/dev/null; }
+_compose() { _use_renet && renet compose --network-id "$REDIACC_NETWORK_ID" -- "$@" || docker compose "$@"; }
 
 up() {
     _compose up -d

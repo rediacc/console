@@ -47,9 +47,9 @@ sourceHash: 9cb00d469afd953e
 
 | المتغير | الوصف | مثال |
 |---------|-------|------|
-| `REPOSITORY_PATH` | مسار تحميل المستودع | `/mnt/rediacc/repos/abc123` |
-| `REPOSITORY_NAME` | معرّف المستودع GUID | `a1b2c3d4-e5f6-...` |
-| `REPOSITORY_NETWORK_ID` | معرّف الشبكة (عدد صحيح) | `2816` |
+| `REDIACC_WORKING_DIR` | مسار تحميل المستودع | `/mnt/rediacc/repos/abc123` |
+| `REDIACC_REPOSITORY` | معرّف المستودع GUID | `a1b2c3d4-e5f6-...` |
+| `REDIACC_NETWORK_ID` | معرّف الشبكة (عدد صحيح) | `2816` |
 | `DOCKER_HOST` | مقبس Docker لعملية Docker المعزولة لهذا المستودع | `unix:///var/run/rediacc/docker-2816.sock` |
 | `{SERVICE}_IP` | عنوان IP الحلقي لكل خدمة مُعرّفة في `.rediacc.json` | `POSTGRES_IP=127.0.11.2` |
 

@@ -22,9 +22,9 @@ Every Rediacc repository runs inside an isolated environment with its own Docker
 
 | Variable | Example | Description |
 |----------|---------|-------------|
-| `REPOSITORY_PATH` | `/mnt/rediacc/mounts/abc123/` | Root path of the mounted repo |
-| `REPOSITORY_NETWORK_ID` | `6336` | Network isolation identifier |
-| `REPOSITORY_NAME` | `abc123-...` | Repository GUID |
+| `REDIACC_WORKING_DIR` | `/mnt/rediacc/mounts/abc123/` | Root path of the mounted repo |
+| `REDIACC_NETWORK_ID` | `6336` | Network isolation identifier |
+| `REDIACC_REPOSITORY` | `abc123-...` | Repository GUID |
 | `{SVCNAME}_IP` | `HEARTBEAT_IP=127.0.24.195` | Per-service loopback IP (uppercase service name) |
 
 ### Minimal Rediaccfile
@@ -61,7 +61,7 @@ Renet auto-injects these into every container:
 | Variable | Description |
 |----------|-------------|
 | `SERVICE_IP` | This container's dedicated loopback IP |
-| `REPOSITORY_NETWORK_ID` | Network isolation ID |
+| `REDIACC_NETWORK_ID` | Network isolation ID |
 
 ### Service naming and routing
 
@@ -88,10 +88,10 @@ Renet auto-injects these into every container:
 ## Storage
 
 - **All Docker data is stored inside the encrypted repo** — Docker's `data-root` is at `{mount}/.rediacc/docker/data` inside the LUKS volume. Named volumes, images, and container layers are all encrypted, backed up, and forked automatically.
-- **Bind mounts to `${REPOSITORY_PATH}/...` are recommended** for clarity, but named volumes also work safely.
+- **Bind mounts to `${REDIACC_WORKING_DIR}/...` are recommended** for clarity, but named volumes also work safely.
   ```yaml
   volumes:
-    - ${REPOSITORY_PATH}/data:/data        # bind mount (recommended)
+    - ${REDIACC_WORKING_DIR}/data:/data        # bind mount (recommended)
     - pgdata:/var/lib/postgresql/data      # named volume (also safe)
   ```
 - The LUKS volume is mounted at `/mnt/rediacc/mounts/<guid>/`.

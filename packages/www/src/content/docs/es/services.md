@@ -47,9 +47,9 @@ Cuando se ejecuta una función del Rediaccfile, las siguientes variables de ento
 
 | Variable | Descripción | Ejemplo |
 |----------|-------------|---------|
-| `REPOSITORY_PATH` | Ruta de montaje del repositorio | `/mnt/rediacc/repos/abc123` |
-| `REPOSITORY_NAME` | GUID del repositorio | `a1b2c3d4-e5f6-...` |
-| `REPOSITORY_NETWORK_ID` | ID de red (entero) | `2816` |
+| `REDIACC_WORKING_DIR` | Ruta de montaje del repositorio | `/mnt/rediacc/repos/abc123` |
+| `REDIACC_REPOSITORY` | GUID del repositorio | `a1b2c3d4-e5f6-...` |
+| `REDIACC_NETWORK_ID` | ID de red (entero) | `2816` |
 | `DOCKER_HOST` | Socket Docker del daemon aislado de este repositorio | `unix:///var/run/rediacc/docker-2816.sock` |
 | `{SERVICE}_IP` | IP de loopback para cada servicio definido en `.rediacc.json` | `POSTGRES_IP=127.0.11.2` |
 

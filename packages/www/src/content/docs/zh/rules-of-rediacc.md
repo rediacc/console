@@ -24,9 +24,9 @@ sourceCommit: "ebe4a9b9ea6ace2a0faee3694a632135cd61ef9b"
 
 | 变量 | 示例 | 描述 |
 |------|------|------|
-| `REPOSITORY_PATH` | `/mnt/rediacc/mounts/abc123/` | 已挂载仓库的根路径 |
-| `REPOSITORY_NETWORK_ID` | `6336` | 网络隔离标识符 |
-| `REPOSITORY_NAME` | `abc123-...` | 仓库 GUID |
+| `REDIACC_WORKING_DIR` | `/mnt/rediacc/mounts/abc123/` | 已挂载仓库的根路径 |
+| `REDIACC_NETWORK_ID` | `6336` | 网络隔离标识符 |
+| `REDIACC_REPOSITORY` | `abc123-...` | 仓库 GUID |
 | `{SVCNAME}_IP` | `HEARTBEAT_IP=127.0.24.195` | 每个服务的回环 IP（服务名称大写） |
 
 ### 最小化 Rediaccfile
@@ -63,7 +63,7 @@ Renet 会自动将以下变量注入每个容器：
 | 变量 | 描述 |
 |------|------|
 | `SERVICE_IP` | 此容器的专用回环 IP |
-| `REPOSITORY_NETWORK_ID` | 网络隔离 ID |
+| `REDIACC_NETWORK_ID` | 网络隔离 ID |
 
 ### 服务命名和路由
 
@@ -90,10 +90,10 @@ Renet 会自动将以下变量注入每个容器：
 ## 存储
 
 - **所有 Docker 数据都存储在加密仓库内** — Docker 的 `data-root` 位于 LUKS 卷内的 `{mount}/.rediacc/docker/data`。命名卷、镜像和容器层全部加密、备份，并自动 fork。
-- **推荐使用 `${REPOSITORY_PATH}/...` 绑定挂载**以保持清晰，但命名卷也可以安全使用。
+- **推荐使用 `${REDIACC_WORKING_DIR}/...` 绑定挂载**以保持清晰，但命名卷也可以安全使用。
   ```yaml
   volumes:
-    - ${REPOSITORY_PATH}/data:/data        # 绑定挂载（推荐）
+    - ${REDIACC_WORKING_DIR}/data:/data        # 绑定挂载（推荐）
     - pgdata:/var/lib/postgresql/data      # 命名卷（同样安全）
   ```
 - LUKS 卷挂载在 `/mnt/rediacc/mounts/<guid>/`。

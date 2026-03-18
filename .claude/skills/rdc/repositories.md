@@ -56,12 +56,12 @@ The Rediaccfile is a bash script with lifecycle functions. Key rules:
 - `down()`: Stop and clean up.
 
 ### Compose conventions
-- Use `renet compose -- "$@"` in Rediaccfiles (no `--network-id` flag — renet passes the network ID automatically via `REPOSITORY_NETWORK_ID` env var).
+- Use `renet compose -- "$@"` in Rediaccfiles (no `--network-id` flag — renet passes the network ID automatically via `REDIACC_NETWORK_ID` env var).
 - `network_mode` is auto-injected by renet (`network_mode: host` on all services) — do not set it manually.
 - **CRIU security settings are auto-injected**: `cap_add: [CHECKPOINT_RESTORE, SYS_PTRACE, NET_ADMIN]`, `security_opt: [apparmor=unconfined]`, and `userns_mode: host` are added to every container by renet. Default seccomp profile is preserved. Do not set these manually.
 - `ports:` declarations are ignored (host networking). Services bind to allocated IPs. Add `rediacc.service_port` label for HTTP routing — services without it don't get HTTP routes.
 - Use healthchecks in compose for dependent services.
-- Persistent data: both `${REPOSITORY_PATH}/...` bind mounts and Docker named volumes are safe (Docker data-root is inside the encrypted LUKS mount).
+- Persistent data: both `${REDIACC_WORKING_DIR}/...` bind mounts and Docker named volumes are safe (Docker data-root is inside the encrypted LUKS mount).
 - Dangerous settings (`privileged: true`, `pid: host`, `ipc: host`) are blocked by default. Use `renet compose --unsafe` to override.
 - Restart policies are safe — renet auto-strips them for CRIU compatibility. The router watchdog auto-recovers stopped containers based on the saved policy in `.rediacc.json`.
 
@@ -85,8 +85,8 @@ The Rediaccfile is a bash script with lifecycle functions. Key rules:
 - See the [heartbeat template](https://github.com/rediacc/console/tree/main/packages/json/templates/monitoring/heartbeat) for a reference implementation.
 
 ### Available environment variables
-In Rediaccfile shell: `${SVCNAME_IP}`, `${REPOSITORY_PATH}`, `${REPOSITORY_NETWORK_ID}`.
-In containers: `SERVICE_IP`, `REPOSITORY_NETWORK_ID` (auto-injected by renet).
+In Rediaccfile shell: `${SVCNAME_IP}`, `${REDIACC_WORKING_DIR}`, `${REDIACC_NETWORK_ID}`.
+In containers: `SERVICE_IP`, `REDIACC_NETWORK_ID` (auto-injected by renet).
 
 ## Fork routing and backup behavior
 

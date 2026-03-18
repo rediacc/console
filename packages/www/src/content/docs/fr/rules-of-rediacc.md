@@ -24,9 +24,9 @@ Chaque dépôt Rediacc s'exécute dans un environnement isolé avec son propre d
 
 | Variable | Exemple | Description |
 |----------|---------|-------------|
-| `REPOSITORY_PATH` | `/mnt/rediacc/mounts/abc123/` | Chemin racine du dépôt monté |
-| `REPOSITORY_NETWORK_ID` | `6336` | Identifiant d'isolation réseau |
-| `REPOSITORY_NAME` | `abc123-...` | GUID du dépôt |
+| `REDIACC_WORKING_DIR` | `/mnt/rediacc/mounts/abc123/` | Chemin racine du dépôt monté |
+| `REDIACC_NETWORK_ID` | `6336` | Identifiant d'isolation réseau |
+| `REDIACC_REPOSITORY` | `abc123-...` | GUID du dépôt |
 | `{SVCNAME}_IP` | `HEARTBEAT_IP=127.0.24.195` | IP de loopback par service (nom du service en majuscules) |
 
 ### Rediaccfile minimal
@@ -63,7 +63,7 @@ Renet auto-injecte celles-ci dans chaque conteneur :
 | Variable | Description |
 |----------|-------------|
 | `SERVICE_IP` | IP de loopback dédiée de ce conteneur |
-| `REPOSITORY_NETWORK_ID` | ID d'isolation réseau |
+| `REDIACC_NETWORK_ID` | ID d'isolation réseau |
 
 ### Nommage des services et routage
 
@@ -90,10 +90,10 @@ Renet auto-injecte celles-ci dans chaque conteneur :
 ## Stockage
 
 - **Toutes les données Docker sont stockées dans le dépôt chiffré** — le `data-root` de Docker se trouve à `{mount}/.rediacc/docker/data` dans le volume LUKS. Les volumes nommés, les images et les couches de conteneurs sont tous chiffrés, sauvegardés et forkés automatiquement.
-- **Les bind mounts vers `${REPOSITORY_PATH}/...` sont recommandés** pour la clarté, mais les volumes nommés fonctionnent également en toute sécurité.
+- **Les bind mounts vers `${REDIACC_WORKING_DIR}/...` sont recommandés** pour la clarté, mais les volumes nommés fonctionnent également en toute sécurité.
   ```yaml
   volumes:
-    - ${REPOSITORY_PATH}/data:/data        # bind mount (recommandé)
+    - ${REDIACC_WORKING_DIR}/data:/data        # bind mount (recommandé)
     - pgdata:/var/lib/postgresql/data      # named volume (également sûr)
   ```
 - Le volume LUKS est monté à `/mnt/rediacc/mounts/<guid>/`.

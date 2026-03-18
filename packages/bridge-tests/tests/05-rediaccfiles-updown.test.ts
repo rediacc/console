@@ -27,7 +27,7 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  * ```bash
  * # === Renet Compose (Required) ===
  * _compose() {
- *   renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
+ *   renet compose --network-id "$REDIACC_NETWORK_ID" -- "$@"
  * }
  *
  * up() {

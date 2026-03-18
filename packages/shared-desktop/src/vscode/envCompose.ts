@@ -124,34 +124,20 @@ export function buildRepositoryEnvironment(options: {
   const fullRepoPath = `${datastore}${repositoryPath}`;
 
   return {
-    // Core identifiers
     REDIACC_TEAM: teamName,
     REDIACC_MACHINE: machineName,
     REDIACC_REPOSITORY: repositoryName,
-
-    // Docker-related
-    DOCKER_DATA: fullRepoPath,
-    DOCKER_EXEC: `${fullRepoPath}/.docker-exec`,
-    DOCKER_FOLDER: fullRepoPath,
-    DOCKER_HOST: resolvedHost,
-    DOCKER_SOCKET: resolvedSocket,
-
-    // Network and datastore
+    REDIACC_WORKING_DIR: repositoryPath,
+    REDIACC_NETWORK_ID: networkId,
+    REDIACC_NETWORK_MODE: networkMode,
+    REDIACC_TAG: tag,
     REDIACC_DATASTORE: datastore,
     REDIACC_DATASTORE_USER: universalUser,
     REDIACC_IMMOVABLE: immovable ? 'true' : 'false',
-
-    // Repository-specific
-    REPOSITORY_NETWORK_ID: networkId,
-    REPOSITORY_NETWORK_MODE: networkMode,
-    REPOSITORY_PATH: repositoryPath,
-    REPOSITORY_TAG: tag,
-
-    // System
-    UNIVERSAL_USER_NAME: universalUser,
+    DOCKER_DATA: fullRepoPath,
+    DOCKER_HOST: resolvedHost,
+    DOCKER_SOCKET: resolvedSocket,
     UNIVERSAL_USER_ID: universalUserId,
-
-    // Merge additional environment
     ...additionalEnv,
   };
 }
@@ -176,7 +162,6 @@ export function buildMachineEnvironment(options: {
     REDIACC_MACHINE: machineName,
     REDIACC_DATASTORE: datastore,
     REDIACC_DATASTORE_USER: universalUser,
-    UNIVERSAL_USER_NAME: universalUser,
   };
 }
 

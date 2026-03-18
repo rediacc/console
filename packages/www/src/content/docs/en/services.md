@@ -44,9 +44,9 @@ When a Rediaccfile function executes, the following environment variables are av
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `REPOSITORY_PATH` | Mount path of the repository | `/mnt/rediacc/repos/abc123` |
-| `REPOSITORY_NAME` | Repository GUID | `a1b2c3d4-e5f6-...` |
-| `REPOSITORY_NETWORK_ID` | Network ID (integer) | `2816` |
+| `REDIACC_WORKING_DIR` | Mount path of the repository | `/mnt/rediacc/mounts/abc123` |
+| `REDIACC_REPOSITORY` | Repository GUID | `a1b2c3d4-e5f6-...` |
+| `REDIACC_NETWORK_ID` | Network ID (integer) | `2816` |
 | `DOCKER_HOST` | Docker socket for this repository's isolated daemon | `unix:///var/run/rediacc/docker-2816.sock` |
 | `{SERVICE}_IP` | Loopback IP for each service defined in `.rediacc.json` | `POSTGRES_IP=127.0.11.2` |
 

@@ -47,9 +47,9 @@ Wenn eine Rediaccfile-Funktion ausgeführt wird, stehen folgende Umgebungsvariab
 
 | Variable | Beschreibung | Beispiel |
 |----------|-------------|---------|
-| `REPOSITORY_PATH` | Einbindungspfad des Repositories | `/mnt/rediacc/repos/abc123` |
-| `REPOSITORY_NAME` | Repository-GUID | `a1b2c3d4-e5f6-...` |
-| `REPOSITORY_NETWORK_ID` | Netzwerk-ID (Ganzzahl) | `2816` |
+| `REDIACC_WORKING_DIR` | Einbindungspfad des Repositories | `/mnt/rediacc/repos/abc123` |
+| `REDIACC_REPOSITORY` | Repository-GUID | `a1b2c3d4-e5f6-...` |
+| `REDIACC_NETWORK_ID` | Netzwerk-ID (Ganzzahl) | `2816` |
 | `DOCKER_HOST` | Docker-Socket für den isolierten Daemon dieses Repositories | `unix:///var/run/rediacc/docker-2816.sock` |
 | `{SERVICE}_IP` | Loopback-IP für jeden in `.rediacc.json` definierten Dienst | `POSTGRES_IP=127.0.11.2` |
 

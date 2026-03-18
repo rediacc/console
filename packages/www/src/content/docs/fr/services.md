@@ -47,9 +47,9 @@ Lorsqu'une fonction du Rediaccfile s'exécute, les variables d'environnement sui
 
 | Variable | Description | Exemple |
 |----------|-------------|---------|
-| `REPOSITORY_PATH` | Chemin de montage du dépôt | `/mnt/rediacc/repos/abc123` |
-| `REPOSITORY_NAME` | GUID du dépôt | `a1b2c3d4-e5f6-...` |
-| `REPOSITORY_NETWORK_ID` | ID réseau (entier) | `2816` |
+| `REDIACC_WORKING_DIR` | Chemin de montage du dépôt | `/mnt/rediacc/repos/abc123` |
+| `REDIACC_REPOSITORY` | GUID du dépôt | `a1b2c3d4-e5f6-...` |
+| `REDIACC_NETWORK_ID` | ID réseau (entier) | `2816` |
 | `DOCKER_HOST` | Socket Docker pour le démon isolé de ce dépôt | `unix:///var/run/rediacc/docker-2816.sock` |
 | `{SERVICE}_IP` | IP de bouclage pour chaque service défini dans `.rediacc.json` | `POSTGRES_IP=127.0.11.2` |
 

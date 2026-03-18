@@ -68,7 +68,6 @@ describe('getSSHConnectionDetails', () => {
       REDIACC_MACHINE: 'server-1',
       REDIACC_DATASTORE: '/mnt/rediacc',
       REDIACC_DATASTORE_USER: 'rediacc',
-      UNIVERSAL_USER_NAME: 'rediacc',
     });
     expect(result.workingDirectory).toBe('/mnt/rediacc');
     expect(result.repositoryPath).toBeUndefined();
@@ -94,10 +93,10 @@ describe('getSSHConnectionDetails', () => {
       REDIACC_TEAM: 'team1',
       REDIACC_MACHINE: 'server-1',
       REDIACC_REPOSITORY: 'my-app',
+      REDIACC_NETWORK_ID: 'abc123',
+      REDIACC_WORKING_DIR: '/mnt/rediacc/mounts/guid-1234',
       DOCKER_SOCKET: '/var/run/rediacc/docker-abc123.sock',
       DOCKER_HOST: 'unix:///var/run/rediacc/docker-abc123.sock',
-      REPOSITORY_NETWORK_ID: 'abc123',
-      REPOSITORY_PATH: '/home/my-app',
     });
   });
 

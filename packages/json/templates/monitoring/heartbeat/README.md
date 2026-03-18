@@ -63,7 +63,7 @@ CRIU restores process memory including TCP socket file descriptors, but the unde
 
 ### Storage
 
-- All persistent data **must** use `${REPOSITORY_PATH}/...` bind mounts.
+- All persistent data **must** use `${REDIACC_WORKING_DIR}/...` bind mounts.
 - Do NOT use Docker named volumes — they live outside the LUKS repo and won't be included in backups or forks.
 
 ### Compose conventions

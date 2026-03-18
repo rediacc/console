@@ -45,9 +45,9 @@ Rediaccfile関数の実行時、以下の環境変数が利用可能です：
 
 | 変数 | 説明 | 例 |
 |----------|-------------|---------|
-| `REPOSITORY_PATH` | リポジトリのマウントパス | `/mnt/rediacc/repos/abc123` |
-| `REPOSITORY_NAME` | リポジトリGUID | `a1b2c3d4-e5f6-...` |
-| `REPOSITORY_NETWORK_ID` | ネットワークID（整数） | `2816` |
+| `REDIACC_WORKING_DIR` | リポジトリのマウントパス | `/mnt/rediacc/repos/abc123` |
+| `REDIACC_REPOSITORY` | リポジトリGUID | `a1b2c3d4-e5f6-...` |
+| `REDIACC_NETWORK_ID` | ネットワークID（整数） | `2816` |
 | `DOCKER_HOST` | このリポジトリの隔離デーモン用Dockerソケット | `unix:///var/run/rediacc/docker-2816.sock` |
 | `{SERVICE}_IP` | `.rediacc.json`で定義された各サービスのループバックIP | `POSTGRES_IP=127.0.11.2` |
 

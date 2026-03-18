@@ -24,9 +24,9 @@ sourceCommit: "ebe4a9b9ea6ace2a0faee3694a632135cd61ef9b"
 
 | 変数 | 例 | 説明 |
 |------|----|----|
-| `REPOSITORY_PATH` | `/mnt/rediacc/mounts/abc123/` | マウントされたリポジトリのルートパス |
-| `REPOSITORY_NETWORK_ID` | `6336` | ネットワーク分離識別子 |
-| `REPOSITORY_NAME` | `abc123-...` | リポジトリGUID |
+| `REDIACC_WORKING_DIR` | `/mnt/rediacc/mounts/abc123/` | マウントされたリポジトリのルートパス |
+| `REDIACC_NETWORK_ID` | `6336` | ネットワーク分離識別子 |
+| `REDIACC_REPOSITORY` | `abc123-...` | リポジトリGUID |
 | `{SVCNAME}_IP` | `HEARTBEAT_IP=127.0.24.195` | サービスごとのループバックIP（サービス名は大文字） |
 
 ### 最小限のRediaccfile
@@ -63,7 +63,7 @@ Renetはすべてのコンテナに以下を自動注入します:
 | 変数 | 説明 |
 |------|------|
 | `SERVICE_IP` | このコンテナの専用ループバックIP |
-| `REPOSITORY_NETWORK_ID` | ネットワーク分離ID |
+| `REDIACC_NETWORK_ID` | ネットワーク分離ID |
 
 ### サービスの命名とルーティング
 
@@ -90,10 +90,10 @@ Renetはすべてのコンテナに以下を自動注入します:
 ## ストレージ
 
 - **すべてのDockerデータは暗号化されたリポジトリ内に保存されます** — Dockerの`data-root`はLUKSボリューム内の`{mount}/.rediacc/docker/data`にあります。名前付きボリューム、イメージ、コンテナレイヤーはすべて暗号化され、バックアップされ、自動的にフォークされます。
-- **`${REPOSITORY_PATH}/...`へのバインドマウントは明確さのために推奨されます**が、名前付きボリュームも安全に使用できます。
+- **`${REDIACC_WORKING_DIR}/...`へのバインドマウントは明確さのために推奨されます**が、名前付きボリュームも安全に使用できます。
   ```yaml
   volumes:
-    - ${REPOSITORY_PATH}/data:/data        # バインドマウント（推奨）
+    - ${REDIACC_WORKING_DIR}/data:/data        # バインドマウント（推奨）
     - pgdata:/var/lib/postgresql/data      # 名前付きボリューム（こちらも安全）
   ```
 - LUKSボリュームは`/mnt/rediacc/mounts/<guid>/`にマウントされます。

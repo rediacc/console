@@ -24,9 +24,9 @@ Her Rediacc deposu, kendi Docker daemon'ı, şifrelenmiş LUKS birimi ve ayrılm
 
 | Değişken | Örnek | Açıklama |
 |----------|-------|----------|
-| `REPOSITORY_PATH` | `/mnt/rediacc/mounts/abc123/` | Bağlanmış deponun kök yolu |
-| `REPOSITORY_NETWORK_ID` | `6336` | Ağ izolasyon tanımlayıcısı |
-| `REPOSITORY_NAME` | `abc123-...` | Depo GUID'i |
+| `REDIACC_WORKING_DIR` | `/mnt/rediacc/mounts/abc123/` | Bağlanmış deponun kök yolu |
+| `REDIACC_NETWORK_ID` | `6336` | Ağ izolasyon tanımlayıcısı |
+| `REDIACC_REPOSITORY` | `abc123-...` | Depo GUID'i |
 | `{SVCNAME}_IP` | `HEARTBEAT_IP=127.0.24.195` | Servis başına loopback IP (servis adı büyük harfle) |
 
 ### Minimal Rediaccfile
@@ -63,7 +63,7 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 | Değişken | Açıklama |
 |----------|----------|
 | `SERVICE_IP` | Bu konteynerin ayrılmış loopback IP'si |
-| `REPOSITORY_NETWORK_ID` | Ağ izolasyon ID'si |
+| `REDIACC_NETWORK_ID` | Ağ izolasyon ID'si |
 
 ### Servis adlandırma ve yönlendirme
 
@@ -90,10 +90,10 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 ## Depolama
 
 - **Tüm Docker verileri şifreli depo içinde saklanır** — Docker'ın `data-root`'u LUKS birimi içindeki `{mount}/.rediacc/docker/data` konumundadır. Adlandırılmış birimler, görüntüler ve konteyner katmanlarının tamamı şifrelenir, yedeklenir ve otomatik olarak fork'lanır.
-- **`${REPOSITORY_PATH}/...` bind mount'ları anlaşılırlık açısından önerilir**, ancak adlandırılmış birimler de güvenle çalışır.
+- **`${REDIACC_WORKING_DIR}/...` bind mount'ları anlaşılırlık açısından önerilir**, ancak adlandırılmış birimler de güvenle çalışır.
   ```yaml
   volumes:
-    - ${REPOSITORY_PATH}/data:/data        # bind mount (önerilen)
+    - ${REDIACC_WORKING_DIR}/data:/data        # bind mount (önerilen)
     - pgdata:/var/lib/postgresql/data      # named volume (aynı zamanda güvenli)
   ```
 - LUKS birimi `/mnt/rediacc/mounts/<guid>/` konumuna bağlanır.

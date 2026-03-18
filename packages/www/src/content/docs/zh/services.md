@@ -45,9 +45,9 @@ Rediaccfile 在两个位置被发现：
 
 | 变量 | 描述 | 示例 |
 |------|------|------|
-| `REPOSITORY_PATH` | 仓库的挂载路径 | `/mnt/rediacc/repos/abc123` |
-| `REPOSITORY_NAME` | 仓库 GUID | `a1b2c3d4-e5f6-...` |
-| `REPOSITORY_NETWORK_ID` | 网络 ID（整数） | `2816` |
+| `REDIACC_WORKING_DIR` | 仓库的挂载路径 | `/mnt/rediacc/repos/abc123` |
+| `REDIACC_REPOSITORY` | 仓库 GUID | `a1b2c3d4-e5f6-...` |
+| `REDIACC_NETWORK_ID` | 网络 ID（整数） | `2816` |
 | `DOCKER_HOST` | 此仓库隔离守护进程的 Docker 套接字 | `unix:///var/run/rediacc/docker-2816.sock` |
 | `{SERVICE}_IP` | `.rediacc.json` 中定义的每个服务的回环 IP | `POSTGRES_IP=127.0.11.2` |
 

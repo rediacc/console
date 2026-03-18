@@ -24,9 +24,9 @@ sourceCommit: "ebe4a9b9ea6ace2a0faee3694a632135cd61ef9b"
 
 | المتغير | مثال | الوصف |
 |---------|------|-------|
-| `REPOSITORY_PATH` | `/mnt/rediacc/mounts/abc123/` | المسار الجذري للمستودع المُركّب |
-| `REPOSITORY_NETWORK_ID` | `6336` | معرّف عزل الشبكة |
-| `REPOSITORY_NAME` | `abc123-...` | GUID المستودع |
+| `REDIACC_WORKING_DIR` | `/mnt/rediacc/mounts/abc123/` | المسار الجذري للمستودع المُركّب |
+| `REDIACC_NETWORK_ID` | `6336` | معرّف عزل الشبكة |
+| `REDIACC_REPOSITORY` | `abc123-...` | GUID المستودع |
 | `{SVCNAME}_IP` | `HEARTBEAT_IP=127.0.24.195` | عنوان IP loopback لكل خدمة (اسم الخدمة بأحرف كبيرة) |
 
 ### Rediaccfile الأدنى
@@ -63,7 +63,7 @@ down() {
 | المتغير | الوصف |
 |---------|-------|
 | `SERVICE_IP` | عنوان IP loopback المخصص لهذه الحاوية |
-| `REPOSITORY_NETWORK_ID` | معرّف عزل الشبكة |
+| `REDIACC_NETWORK_ID` | معرّف عزل الشبكة |
 
 ### تسمية الخدمات والتوجيه
 
@@ -90,10 +90,10 @@ down() {
 ## التخزين
 
 - **يتم تخزين جميع بيانات Docker داخل المستودع المشفر** — يقع `data-root` الخاص بـ Docker في `{mount}/.rediacc/docker/data` داخل وحدة تخزين LUKS. وحدات التخزين المسماة والصور وطبقات الحاويات جميعها مشفرة ومنسوخة احتياطياً ومُفرّعة تلقائياً.
-- **يُوصى بالـ bind mounts إلى `${REPOSITORY_PATH}/...`** للوضوح، لكن وحدات التخزين المسماة تعمل أيضاً بأمان.
+- **يُوصى بالـ bind mounts إلى `${REDIACC_WORKING_DIR}/...`** للوضوح، لكن وحدات التخزين المسماة تعمل أيضاً بأمان.
   ```yaml
   volumes:
-    - ${REPOSITORY_PATH}/data:/data        # bind mount (موصى به)
+    - ${REDIACC_WORKING_DIR}/data:/data        # bind mount (موصى به)
     - pgdata:/var/lib/postgresql/data      # named volume (آمن أيضاً)
   ```
 - يتم تركيب وحدة تخزين LUKS في `/mnt/rediacc/mounts/<guid>/`.
