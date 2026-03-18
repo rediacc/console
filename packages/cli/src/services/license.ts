@@ -580,8 +580,10 @@ export async function refreshRepoLicensesBatch(
         scanRemoteLicenseStatuses(sftp, datastore, remoteRenetPath).catch(() => []),
       ]);
 
-    const invalidSigGuids = new Set(
-      licenseStatuses.filter((s) => s.status === 'invalid_signature').map((s) => s.repositoryGuid)
+    const forceReissueGuids = new Set(
+      licenseStatuses
+        .filter((s) => s.status === 'invalid_signature' || s.status === 'machine_mismatch')
+        .map((s) => s.repositoryGuid)
     );
 
     const repoByGuid = new Map(
@@ -603,7 +605,7 @@ export async function refreshRepoLicensesBatch(
         unchanged: 0,
         failed: unknownRepoFailures.length,
         valid: 0,
-        invalidSignatureDetected: invalidSigGuids.size,
+        invalidSignatureDetected: forceReissueGuids.size,
         failures: unknownRepoFailures,
       };
     }
@@ -621,7 +623,7 @@ export async function refreshRepoLicensesBatch(
         machineId,
         clientMachineId,
         repos: knownRemoteRepos.map((repo) => {
-          const forceReissue = invalidSigGuids.has(repo.repositoryGuid);
+          const forceReissue = forceReissueGuids.has(repo.repositoryGuid);
           return {
             machineId,
             clientMachineId,
@@ -654,7 +656,7 @@ export async function refreshRepoLicensesBatch(
       unchanged,
       failed,
       valid: issued + refreshed + unchanged,
-      invalidSignatureDetected: invalidSigGuids.size,
+      invalidSignatureDetected: forceReissueGuids.size,
       failures,
     };
   } finally {
