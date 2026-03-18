@@ -68,9 +68,9 @@ Renet auto-inyecta estas en cada contenedor:
 ### Nombres de servicios y enrutamiento
 
 - The compose **service name** becomes the auto-route URL prefix.
-- **Grand repos**: `https://{service}.{repo}.{machine}.{baseDomain}` (e.g., `https://myapp.marketing.server-1.example.com`).
+- **Grand repos**: `https://{service}.{repo}.{machine}.{baseDomain}` (ej.: `https://myapp.marketing.server-1.example.com`).
 - **Fork repos**: `https://{service}-{tag}.{machine}.{baseDomain}` — uses the machine wildcard cert to avoid Let's Encrypt rate limits.
-- For custom domains, use Traefik labels (but note: custom domains are NOT fork-friendly — the domain belongs to the grand repo).
+- Para dominios personalizados, use etiquetas de Traefik (nota: los dominios personalizados NO son compatibles con fork — el dominio pertenece al grand repo).
 
 ## Redes
 

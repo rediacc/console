@@ -68,9 +68,9 @@ down() {
 ### تسمية الخدمات والتوجيه
 
 - The compose **service name** becomes the auto-route URL prefix.
-- **Grand repos**: `https://{service}.{repo}.{machine}.{baseDomain}` (e.g., `https://myapp.marketing.server-1.example.com`).
+- **Grand repos**: `https://{service}.{repo}.{machine}.{baseDomain}` (مثال: `https://myapp.marketing.server-1.example.com`).
 - **Fork repos**: `https://{service}-{tag}.{machine}.{baseDomain}` — uses the machine wildcard cert to avoid Let's Encrypt rate limits.
-- For custom domains, use Traefik labels (but note: custom domains are NOT fork-friendly — the domain belongs to the grand repo).
+- للنطاقات المخصصة، استخدم تسميات Traefik (ملاحظة: النطاقات المخصصة ليست متوافقة مع fork — النطاق ينتمي إلى grand repo).
 
 ## الشبكات
 

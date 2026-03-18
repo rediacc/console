@@ -68,9 +68,9 @@ Renet 会自动将以下变量注入每个容器：
 ### 服务命名和路由
 
 - The compose **service name** becomes the auto-route URL prefix.
-- **Grand repos**: `https://{service}.{repo}.{machine}.{baseDomain}` (e.g., `https://myapp.marketing.server-1.example.com`).
+- **Grand repos**：`https://{service}.{repo}.{machine}.{baseDomain}`（例如：`https://myapp.marketing.server-1.example.com`）。
 - **Fork repos**: `https://{service}-{tag}.{machine}.{baseDomain}` — uses the machine wildcard cert to avoid Let's Encrypt rate limits.
-- For custom domains, use Traefik labels (but note: custom domains are NOT fork-friendly — the domain belongs to the grand repo).
+- 对于自定义域名，请使用 Traefik 标签（注意：自定义域名不兼容 fork — 域名属于 grand repo）。
 
 ## 网络
 
