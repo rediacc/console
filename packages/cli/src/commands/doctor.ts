@@ -252,7 +252,7 @@ async function addSelfHostedModeChecks(
       name: t('commands.doctor.checks.machines'),
       value: `${machineCount} configured`,
       status: machineCount > 0 ? 'ok' : 'warn',
-      hint: machineCount === 0 ? 'Add machines with: rdc config add-machine' : undefined,
+      hint: machineCount === 0 ? 'Add machines with: rdc config machine add' : undefined,
     });
   } catch {
     checks.push({

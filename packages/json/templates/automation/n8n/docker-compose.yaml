@@ -3,9 +3,6 @@ services:
     image: n8nio/n8n:latest
     container_name: n8n
     restart: always
-    network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
-    ports:
-      - "${N8N_PORT:-5678}"  # Container-only port (Docker assigns random host port)
     volumes:
       - ./n8n-data:/home/node/.n8n
     environment:
@@ -15,7 +12,7 @@ services:
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-UTC}
       - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY:-}
     healthcheck:
-      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:5678/healthz || exit 1"]
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://$${SERVICE_IP:-localhost}:5678/healthz || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

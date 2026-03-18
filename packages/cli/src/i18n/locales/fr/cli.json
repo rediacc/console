@@ -2,6 +2,10 @@
   "cli": {
     "description": "Gérer les machines, dépôts et déploiements par SSH"
   },
+  "warnings": {
+    "licenseSignatureRefreshed": "{{count}} licence(s) de dépôt avec des signatures invalides actualisée(s) après la mise à jour de renet",
+    "licenseSignatureRefreshFailed": "{{count}} licence(s) de dépôt ont des signatures invalides après la mise à jour de renet. Exécutez : rdc subscription refresh -m <machine>"
+  },
   "commands": {
     "agent": {
       "capabilities": {
@@ -721,16 +725,16 @@
         "description": "Provisionner une nouvelle machine chez un fournisseur cloud avec OpenTofu",
         "failed": "Échec du provisionnement de la machine : {{error}}",
         "infraInherited": "Domaine de base détecté automatiquement depuis la machine sœur \"{{source}}\"",
-        "noInfraHint": "Aucun domaine de base configuré. Exécutez 'rdc config set-infra <machine> --base-domain <domain>' puis 'rdc config push-infra <machine>' pour activer DNS et proxy.",
+        "noInfraHint": "Aucun domaine de base configuré. Exécutez 'rdc config infra set <machine> --base-domain <domain>' puis 'rdc config infra push <machine>' pour activer DNS et proxy.",
         "optionBaseDomain": "Domaine de base pour l'infrastructure (ex. example.com). Implique --infra",
         "optionImage": "Remplacer l'image OS par défaut",
-        "optionInfra": "Configurer également l'infrastructure (set-infra + push-infra)",
+        "optionInfra": "Configurer également l'infrastructure (infra set + infra push)",
         "optionNoInfra": "Ignorer la configuration d'infrastructure (proxy + DNS)",
-        "optionProvider": "Nom du fournisseur cloud (depuis config add-provider)",
+        "optionProvider": "Nom du fournisseur cloud (depuis config provider add)",
         "optionRegion": "Remplacer la région par défaut",
         "optionSshUser": "Nom d'utilisateur SSH pour la nouvelle VM (par défaut : root)",
         "optionType": "Remplacer le type d'instance par défaut",
-        "providerRequired": "Fournisseur cloud \"{{name}}\" introuvable. Ajouter avec : rdc config add-provider",
+        "providerRequired": "Fournisseur cloud \"{{name}}\" introuvable. Ajouter avec : rdc config provider add",
         "provisioning": "Provisionnement de {{name}} sur {{provider}} ({{region}})...",
         "settingUp": "Exécution de la configuration de la machine...",
         "sshReady": "Connexion SSH établie",
@@ -1147,6 +1151,7 @@
         "failed": "Échec de la création du dépôt",
         "registered": "\"{{repository}}\" enregistré ({{guid}}, réseau {{networkId}})",
         "rollback": "Configuration annulée pour \"{{repository}}\"",
+        "noDockerOption": "Ne pas démarrer le démon Docker après la création",
         "sizeOption": "Taille du dépôt (ex. 10G, 100G, 1T)",
         "starting": "Création du dépôt \"{{repository}}\" ({{size}}) sur \"{{machine}}\"..."
       },
@@ -1196,6 +1201,19 @@
         "tagOption": "Tag pour le fork (crée nom:tag)",
         "tagRequired": "Le tag est requis pour le fork. Utilisation : rdc repo fork <parent> <tag> -m <machine>"
       },
+      "takeover": {
+        "description": "Remplacer les données du dépôt principal par les données d'un fork. Le principal conserve son identité (GUID, networkId, domaines, démarrage automatique, chaîne de sauvegardes) mais obtient les données mises à jour du fork. Les anciennes données de production sont conservées comme fork de sauvegarde. Utilisation : tester la mise à niveau sur le fork → vérifier → prise de contrôle en production.",
+        "descriptionShort": "Remplacer les données de production par les données du fork",
+        "forceOption": "Ignorer les avertissements de modification",
+        "notAFork": "\"{{name}}\" n'est pas un dépôt fork (parentGuid manquant)",
+        "grandNotFound": "Dépôt principal introuvable pour le fork \"{{name}}\"",
+        "starting": "Prise de contrôle de \"{{grand}}\" avec les données de \"{{fork}}\" sur \"{{machine}}\"...",
+        "completed": "Prise de contrôle terminée. Le dépôt principal contient maintenant les données du fork.",
+        "backupInfo": "Anciennes données de production conservées sous : {{backup}}",
+        "revertHint": "Pour annuler : rdc repo takeover {{backup}} -m {{machine}}",
+        "failed": "Échec de la prise de contrôle",
+        "rollback": "Configuration annulée pour \"{{name}}\""
+      },
       "list": {
         "completed": "Listage terminé",
         "description": "Lister les dépôts sur une machine",
@@ -1209,6 +1227,7 @@
         "description": "Monter un dépôt (ouvrir le conteneur LUKS)",
         "descriptionShort": "Monter un dépôt (déchiffrer et ouvrir le conteneur LUKS)",
         "failed": "Échec du montage",
+        "noDockerOption": "Ne pas démarrer le démon Docker après le montage",
         "starting": "Montage de \"{{repository}}\" sur \"{{machine}}\"..."
       },
       "noCredential": "Avertissement : Le dépôt \"{{name}}\" n'a pas d'identifiant défini. Les opérations sur les dépôts chiffrés peuvent échouer.",
@@ -1240,7 +1259,7 @@
         "optionCheckpoint": "Créer un point de contrôle du conteneur (sauvegarde à chaud)",
         "optionDest": "Nom du fichier de destination",
         "optionForce": "Forcer l'écrasement de la sauvegarde existante",
-        "optionProvider": "Fournisseur cloud pour provisionner automatiquement la machine cible si elle n'existe pas (depuis config add-provider)",
+        "optionProvider": "Fournisseur cloud pour provisionner automatiquement la machine cible si elle n'existe pas (depuis config provider add)",
         "optionTag": "Tag de déploiement pour le versionnage",
         "optionToMachine": "Nom de la machine de destination",
         "optionToStorage": "Nom du stockage de destination",
@@ -1575,6 +1594,10 @@
         "validated": "Jeton validé",
         "validating": "Validation du jeton...",
         "waitingApproval": "En attente de l’autorisation du navigateur..."
+      },
+      "logout": {
+        "description": "Supprimer le jeton d'abonnement stocké",
+        "success": "Jeton d'abonnement supprimé"
       },
       "refresh": {
         "activation": {
@@ -2148,13 +2171,14 @@
     "machine": {
       "containers": "Lister les conteneurs en cours",
       "health": "Vérification de santé pour CI/CD",
-      "keyConcepts": "\nConcepts Clés :\n\n  Filtres de Requête\n    • rdc machine query <name> renvoie toutes les sections par défaut\n    • Utilisez --system, --repositories, --containers, --services, --network, --block-devices pour filtrer\n    • La sortie JSON enrichit les conteneurs avec : repository (nom résolu), domain, autoRoute\n\n  Surveillance & Santé\n    • machine health retourne : 0=sain, 1=avertissement, 2=erreur — utilisez pour les portes CI/CD\n    • containers --health-check retourne 2 si un conteneur n'est pas sain\n    • services --stability-check retourne 2 si un service est en échec, redémarre ou a >3 redémarrages\n\n  Structure du Stockage de Données (/mnt/rediacc/)\n    • repositories/ — images LUKS chiffrées (une par GUID de dépôt)\n    • mounts/ — points de montage déchiffrés (accessibles quand le dépôt est monté)\n    • immovable/ — données Docker daemon par dépôt\n",
+      "keyConcepts": "\nConcepts Clés :\n\n  Filtres de Requête\n    • rdc machine query <name> renvoie toutes les sections par défaut\n    • Utilisez --system, --repositories, --containers, --services, --network, --block-devices pour filtrer\n    • La sortie JSON enrichit les conteneurs avec : repository (nom résolu), domain, autoRoute\n\n  Surveillance & Santé\n    • machine health retourne : 0=sain, 1=avertissement, 2=erreur — utilisez pour les portes CI/CD\n    • containers --health-check retourne 2 si un conteneur n'est pas sain\n    • services --stability-check retourne 2 si un service est en échec, redémarre ou a >3 redémarrages\n\n  Structure du Stockage de Données (/mnt/rediacc/)\n    • repositories/ — images LUKS chiffrées (une par GUID de dépôt)\n    • mounts/ — points de montage déchiffrés (accessibles quand le dépôt est monté)\n    • immovable/ — données Docker daemon par dépôt\n    • Datastore is a BTRFS pool file on the system disk. Effective free space = min(disk free, datastore free). Expand with: rdc datastore resize\n",
       "query": "Afficher l'état complet de la machine"
     },
     "repo": {
       "create": "Créer un dépôt chiffré",
       "down": "Arrêter les services",
       "fork": "Fork CoW pour les tests",
+      "takeover": "Remplacer les données de production par les données du fork",
       "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REPOSITORY_PATH}/data, ${REPOSITORY_PATH}/config, etc.\n    • Example: volumes: ['${REPOSITORY_PATH}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "Lister les sauvegardes sur le stockage",
       "pull": "Récupérer la sauvegarde depuis le stockage",

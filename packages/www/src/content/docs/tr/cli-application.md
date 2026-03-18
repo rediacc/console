@@ -6,7 +6,7 @@ order: 2
 language: tr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/tr/cli.json
-sourceHash: "0fb17f2f8cde47d5"
+sourceHash: "aef56b5e3ce9980a"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -1091,6 +1091,7 @@ rdc repo mount [name] [options]
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--checkpoint` | {{t:cli.commands.repo.mount.checkpointOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--no-docker` | {{t:cli.commands.repo.mount.noDockerOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--parallel` | {{t:cli.commands.repo.upAll.parallelOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--concurrency <n>` | {{t:cli.commands.repo.upAll.concurrencyOption}} | {{t:cli.docs.optionLabels.no}} | `3` |
 | `-y, --yes` | {{t:cli.commands.repo.yesOption}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -1216,6 +1217,7 @@ rdc repo create <name> [options]
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--size <size>` | {{t:cli.commands.repo.create.sizeOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--no-docker` | {{t:cli.commands.repo.create.noDockerOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -1255,8 +1257,25 @@ rdc repo fork <parent> [tag] [options]
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
+<a id="cli-local-repo-takeover"></a>
+### 7.11 takeover
+
+{{t:cli.commands.repo.takeover.description}}
+
+```bash
+rdc repo takeover <fork> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--force` | {{t:cli.commands.repo.takeover.forceOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 <a id="cli-local-repo-resize"></a>
-### 7.11 resize
+### 7.12 resize
 
 {{t:cli.commands.repo.resize.description}}
 
@@ -1273,7 +1292,7 @@ rdc repo resize <name> [options]
 
 
 <a id="cli-local-repo-expand"></a>
-### 7.12 expand
+### 7.13 expand
 
 {{t:cli.commands.repo.expand.description}}
 
@@ -1290,7 +1309,7 @@ rdc repo expand <name> [options]
 
 
 <a id="cli-local-repo-validate"></a>
-### 7.13 validate
+### 7.14 validate
 
 {{t:cli.commands.repo.validate.description}}
 
@@ -1306,7 +1325,7 @@ rdc repo validate <name> [options]
 
 
 <a id="cli-local-repo-autostart"></a>
-### 7.14 autostart
+### 7.15 autostart
 
 {{t:cli.commands.repo.autostart.description}}
 
@@ -1359,7 +1378,7 @@ rdc repo autostart list [options]
 
 
 <a id="cli-local-repo-ownership"></a>
-### 7.15 ownership
+### 7.16 ownership
 
 {{t:cli.commands.repo.ownership.description}}
 
@@ -1376,7 +1395,7 @@ rdc repo ownership <name> [options]
 
 
 <a id="cli-local-repo-template"></a>
-### 7.16 template
+### 7.17 template
 
 {{t:cli.commands.repo.template.description}}
 
@@ -1394,7 +1413,7 @@ rdc repo template <name> [options]
 
 
 <a id="cli-local-repo-push"></a>
-### 7.17 push
+### 7.18 push
 
 {{t:cli.commands.repo.push.description}}
 
@@ -1422,7 +1441,7 @@ rdc repo push [repo] [options]
 
 
 <a id="cli-local-repo-pull"></a>
-### 7.18 pull
+### 7.19 pull
 
 {{t:cli.commands.repo.pull.description}}
 
@@ -1445,7 +1464,7 @@ rdc repo pull [repo] [options]
 
 
 <a id="cli-local-repo-backup"></a>
-### 7.19 backup
+### 7.20 backup
 
 {{t:cli.commands.repo.backup.description}}
 
@@ -1469,7 +1488,7 @@ rdc repo backup list [options]
 
 
 <a id="cli-local-repo-sync"></a>
-### 7.20 sync
+### 7.21 sync
 
 {{t:cli.commands.repo.sync.description}}
 
@@ -1556,7 +1575,7 @@ rdc repo sync status [options]
 
 
 <a id="cli-local-repo-snapshot"></a>
-### 7.21 snapshot
+### 7.22 snapshot
 
 {{t:cli.commands.repo.snapshot.description}}
 
@@ -1947,8 +1966,17 @@ rdc subscription login [options]
 | `--server <url>` | {{t:cli.options.serverUrl}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
+<a id="cli-local-subscription-logout"></a>
+### 13.2 logout
+
+{{t:cli.commands.subscription.logout.description}}
+
+```bash
+rdc subscription logout
+```
+
 <a id="cli-local-subscription-status"></a>
-### 13.2 status
+### 13.3 status
 
 {{t:cli.commands.subscription.status.description}}
 
@@ -1957,7 +1985,7 @@ rdc subscription status
 ```
 
 <a id="cli-local-subscription-activation"></a>
-### 13.3 activation
+### 13.4 activation
 
 {{t:cli.commands.subscription.activation.description}}
 
@@ -1976,7 +2004,7 @@ rdc subscription activation status [options]
 
 
 <a id="cli-local-subscription-repo"></a>
-### 13.4 repo
+### 13.5 repo
 
 {{t:cli.commands.subscription.repo.description}}
 
@@ -1995,7 +2023,7 @@ rdc subscription repo status [options]
 
 
 <a id="cli-local-subscription-refresh"></a>
-### 13.5 refresh
+### 13.6 refresh
 
 {{t:cli.commands.subscription.refresh.description}}
 

@@ -1,7 +1,6 @@
 services:
   db:
     container_name: heartbeat_db
-    network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
     image: postgres:16-alpine
     env_file:
       - .env
@@ -10,8 +9,6 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-heartbeat}
       - POSTGRES_DB=${POSTGRES_DB:-heartbeat}
       - PGDATA=/pgdata
-    ports:
-      - "5432"
     volumes:
       - ./data:/pgdata
     healthcheck:

@@ -39,6 +39,7 @@ export const CMD = {
   REPO_AUTOSTART_DISABLE: 'repo autostart disable',
   REPO_RESIZE: 'repo resize',
   REPO_EXPAND: 'repo expand',
+  REPO_TAKEOVER: 'repo takeover',
   TERM_REPO: 'term repo',
   VSCODE_REPO: 'vscode repo',
 } as const;

@@ -4,8 +4,8 @@ description: "Rediacc platformunda uygulama geliştirmek için temel kurallar ve
 category: "Guides"
 order: 5
 language: tr
-sourceHash: "6543e793a10d75a3"
-sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
+sourceHash: "091701909c0c8d32"
+sourceCommit: "ebe4a9b9ea6ace2a0faee3694a632135cd61ef9b"
 ---
 
 # Rediacc Kuralları
@@ -53,8 +53,8 @@ down() {
 - **Compose dosyanızda `network_mode` ayarlamayın** — renet tüm servislere `network_mode: host` zorlar. Belirlediğiniz her değer üzerine yazılır.
 - **`rediacc.*` etiketleri ayarlamayın** — renet otomatik olarak `rediacc.network_id`, `rediacc.service_ip` ve `rediacc.service_name` enjekte eder.
 - **`ports:` eşlemeleri** host ağ modunda yok sayılır. 80 dışındaki portlara proxy yönlendirmesi için `rediacc.service_port` etiketini kullanın.
-- **`restart: always` veya `restart: unless-stopped` kullanmayın** — bunlar CRIU checkpoint/restore ile çakışır. `restart: on-failure` kullanın veya belirtmeyin.
-- **Docker adlandırılmış birimler kullanmayın** — bunlar şifrelenmiş deponun dışında bulunur ve yedekleme veya fork'lara dahil edilmez.
+- **Yeniden başlatma politikaları (`restart: always`, `on-failure`, vb.) kullanmak güvenlidir** — renet bunları CRIU uyumluluğu için otomatik olarak kaldırır. Router watchdog, `.rediacc.json` içinde kaydedilen orijinal politikaya göre durmuş konteynerleri otomatik olarak kurtarır.
+- **Tehlikeli ayarlar varsayılan olarak engellenir** — `privileged: true`, `pid: host`, `ipc: host` ve sistem yollarına bind mount'lar reddedilir. Kendi sorumluluğunuzda geçersiz kılmak için `renet compose --unsafe` kullanın.
 
 ### Konteyner içindeki ortam değişkenleri
 
@@ -70,12 +70,14 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 - Compose **servis adı** otomatik yönlendirme URL ön eki olur.
 - Örnek: temel alan adı `example.com` ve networkId 6336 olan `myapp` servisi `https://myapp-6336.example.com` olur.
 - Özel alan adları için Traefik etiketleri kullanın (not: özel alan adları fork ile uyumlu DEĞİLDİR).
+- Fork depolar, makinenin wildcard sertifikası altında düz otomatik rotalar kullanır. Özel alan adları (`rediacc.domain`) fork'larda yoksayılır — alan adı grand depoya aittir.
 
 ## Ağ
 
 - **Her depo kendi Docker daemon'ını alır** — `/var/run/rediacc/docker-<networkId>.sock` konumunda.
 - **Her servis bir /26 alt ağ içinde benzersiz bir loopback IP alır** (örn. `127.0.24.192/26`).
-- **`SERVICE_IP`'ye bağlanın**, `0.0.0.0`'a değil — host ağı `0.0.0.0`'ın diğer depolarla çakışacağı anlamına gelir.
+- **`SERVICE_IP`'ye bağlanın** — her servis benzersiz bir loopback IP alır.
+- **Health check'ler `${SERVICE_IP}` kullanmalıdır**, `localhost` değil. Örnek: `healthcheck: test: ["CMD", "curl", "-f", "http://${SERVICE_IP}:8080/health"]`
 - **Servisler arası iletişim**: Loopback IP'leri veya `SERVICE_IP` ortam değişkenini kullanın. Docker DNS adları host modunda ÇALIŞMAZ.
 - **Depolar arasında port çakışmaları imkansızdır** — her birinin kendi Docker daemon'ı ve IP aralığı vardır.
 - **TCP/UDP port yönlendirme**: HTTP dışı portları açmak için etiketler ekleyin:
@@ -87,15 +89,16 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 
 ## Depolama
 
-- **Tüm kalıcı veriler `${REPOSITORY_PATH}/...` bind mount'ları kullanmalıdır.**
+- **Tüm Docker verileri şifreli depo içinde saklanır** — Docker'ın `data-root`'u LUKS birimi içindeki `{mount}/.rediacc/docker/data` konumundadır. Adlandırılmış birimler, görüntüler ve konteyner katmanlarının tamamı şifrelenir, yedeklenir ve otomatik olarak fork'lanır.
+- **`${REPOSITORY_PATH}/...` bind mount'ları anlaşılırlık açısından önerilir**, ancak adlandırılmış birimler de güvenle çalışır.
   ```yaml
   volumes:
-    - ${REPOSITORY_PATH}/data:/data
-    - ${REPOSITORY_PATH}/config:/etc/myapp
+    - ${REPOSITORY_PATH}/data:/data        # bind mount (önerilen)
+    - pgdata:/var/lib/postgresql/data      # named volume (aynı zamanda güvenli)
   ```
-- Docker adlandırılmış birimleri LUKS deposunun dışında bulunur — **şifrelenmemiş**, **yedeklenmemiş** ve **fork'lara dahil değildir**.
 - LUKS birimi `/mnt/rediacc/mounts/<guid>/` konumuna bağlanır.
 - BTRFS anlık görüntüleri, tüm bind mount verileri dahil olmak üzere LUKS destek dosyasının tamamını yakalar.
+- Veri deposu, sistem diskindeki sabit boyutlu bir BTRFS havuz dosyasıdır. Etkin boş alanı görmek için `rdc machine query <name> --system` kullanın. `rdc datastore resize` ile genişletin.
 
 ## CRIU (Canlı Geçiş)
 
@@ -118,7 +121,7 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 - Tüm kalıcı bağlantılarda (veritabanı havuzları, websocket'ler, mesaj kuyrukları) `ECONNRESET`'i işleyin.
 - Otomatik yeniden bağlanmayı destekleyen bağlantı havuzu kütüphaneleri kullanın.
 - Dahili kütüphane nesnelerinden gelen eski soket hataları için güvenlik ağı olarak `process.on("uncaughtException")` ekleyin.
-- `restart: always`'den kaçının — CRIU geri yüklemeyi engeller.
+- Yeniden başlatma politikaları renet tarafından otomatik yönetilir (CRIU için kaldırılır, watchdog kurtarmayı üstlenir).
 - Docker DNS'ine güvenmeyin — servisler arası iletişim için loopback IP'leri kullanın.
 
 ## Güvenlik
@@ -127,7 +130,7 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 - **Kimlik bilgileri CLI yapılandırmasında saklanır** (`~/.config/rediacc/rediacc.json`). Yapılandırmayı kaybetmek, şifreli birimlere erişimi kaybetmek anlamına gelir.
 - **Kimlik bilgilerini asla** sürüm kontrolüne commit etmeyin. `env_file` kullanın ve sırları `up()` içinde oluşturun.
 - **Depo izolasyonu**: Her deponun Docker daemon'ı, ağı ve depolaması aynı makinedeki diğer depolardan tamamen izole edilmiştir.
-- **Ajan izolasyonu**: Yapay zeka ajanları varsayılan olarak yalnızca fork modunda çalışır; grand (orijinal) depoları değil, sadece fork depoları değiştirebilirler. `term_exec` veya depo bağlamıyla `rdc term` üzerinden çalıştırılan komutlar Landlock LSM ile çekirdek düzeyinde sandbox içine alınır ve depolar arası dosya sistemi erişimi engellenir.
+- **Ajan izolasyonu**: Yapay zeka ajanları varsayılan olarak yalnızca fork modunda çalışır. Her deponun, sunucu tarafında sandbox uygulaması (ForceCommand `sandbox-gateway`) olan kendi SSH anahtarı vardır. Tüm bağlantılar Landlock LSM, OverlayFS home overlay ve depo başına TMPDIR ile sandbox içine alınır. Depolar arası dosya sistemi erişimi çekirdek tarafından engellenir.
 
 ## Dağıtım
 
@@ -136,14 +139,16 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 - **`rdc repo down`** `down()` çalıştırır ve Docker daemon'ını durdurur.
 - **`rdc repo down --unmount`** ayrıca LUKS birimini kapatır (şifreli depolamayı kilitler).
 - **Fork'lar** (`rdc repo fork`) yeni GUID ve networkId ile bir CoW (copy-on-write) klon oluşturur. Fork, üst öğenin şifreleme anahtarını paylaşır.
+- **Takeover** (`rdc repo takeover <fork> -m <machine>`) grand deponun verilerini bir fork'un verileriyle değiştirir. Grand kimliğini korur (GUID, networkId, alan adları, otomatik başlatma, yedekleme zinciri). Eski üretim verileri yedekleme fork'u olarak korunur. Kullanım: fork üzerinde yükseltmeyi test edin, doğrulayın, ardından üretime takeover yapın. `rdc repo takeover <backup-fork> -m <machine>` ile geri alın.
 - **Proxy yolları** dağıtımdan sonra yaklaşık 3 saniyede aktif olur. `repo up` sırasında "Proxy is not running" uyarısı ops/dev ortamlarında bilgilendirme amaçlıdır.
 
 ## Yaygın hatalar
 
 - `renet compose` yerine `docker compose` kullanmak — konteynerler ağ izolasyonu alamaz.
-- `restart: always` kullanmak — CRIU geri yüklemeyi engeller ve `repo down` ile çakışır.
-- Docker adlandırılmış birimleri kullanmak — veriler şifrelenmez, yedeklenmez, fork'lanmaz.
-- `0.0.0.0`'a bağlanmak — host ağ modunda depolar arasında port çakışmalarına neden olur.
+- Yeniden başlatma politikaları güvenlidir — renet bunları otomatik olarak kaldırır ve watchdog kurtarmayı üstlenir.
+- `privileged: true` kullanmak — gerekli değildir, renet bunun yerine belirli CRIU capability'lerini enjekte eder.
+- `SERVICE_IP`'ye bağlanmamak — depolar arasında port çakışmalarına neden olur.
 - IP'leri sabit kodlamak — `SERVICE_IP` ortam değişkenini kullanın; IP'ler networkId başına dinamik olarak atanır.
 - `backup push` sonrası ilk dağıtımda `--mount`'u unutmak — LUKS birimi açık bir şekilde açılmalıdır.
 - Başarısız komutlar için geçici çözüm olarak `rdc term -c` kullanmak — bunun yerine hataları bildirin.
+- `repo delete` loopback IP'leri ve systemd birimlerini de dahil ederek tam temizlik yapar. Eski silmelerden kalan artıkları temizlemek için `rdc machine prune <name>` çalıştırın.

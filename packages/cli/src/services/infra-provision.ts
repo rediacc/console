@@ -281,14 +281,14 @@ export async function pushInfraConfig(
 
   if (!machine.infra) {
     throw new Error(
-      `Machine "${machineName}" has no infrastructure config. Set it with: rdc config set-infra ${machineName}`
+      `Machine "${machineName}" has no infrastructure config. Set it with: rdc config infra set ${machineName}`
     );
   }
 
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
-  const remoteRenetPath = await provisionRenetToRemote(
+  const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
     { renetPath: localConfig.renetPath },
     machine,
     sshPrivateKey,

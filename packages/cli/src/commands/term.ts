@@ -8,6 +8,7 @@ import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
+import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
 import { type ConnectionDetails, getSSHConnectionDetails } from '../services/ssh-connection.js';
 import { assertAgentMachineAccess } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
@@ -226,6 +227,10 @@ async function connectTerminal(options: TermConnectOptions): Promise<void> {
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
   await provisionRenetToRemote(localConfig, machine, sshPrivateKey, {});
 
+  if (repositoryName) {
+    await deployRepoKeyIfNeeded(repositoryName, machineName);
+  }
+
   const sshConnection = new SSHConnection(
     connectionDetails.privateKey,
     connectionDetails.known_hosts,
@@ -404,16 +409,27 @@ ${t('help.examples')}
       async (
         machine: string | undefined,
         repository: string | undefined,
-        options: TermConnectOptions
+        options: TermConnectOptions,
+        cmd: Command
       ) => {
         try {
+          const resolvedMachine = machine ?? options.machine;
+          if (resolvedMachine) {
+            options.machine = resolvedMachine;
+          } else {
+            const defaultMachine = configService.getMachine() ?? null;
+            if (!defaultMachine) {
+              cmd.help();
+              return;
+            }
+            options.machine = defaultMachine;
+          }
           const provider = await getStateProvider();
           if (provider.isCloud) {
             await authService.requireAuth();
           }
           await connectTerminal({
             ...options,
-            machine: machine ?? options.machine,
             repository: repository ?? options.repository,
           });
         } catch (error) {

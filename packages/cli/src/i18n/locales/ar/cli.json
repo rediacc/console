@@ -2,6 +2,10 @@
   "cli": {
     "description": "إدارة الأجهزة والمستودعات والنشر عبر SSH"
   },
+  "warnings": {
+    "licenseSignatureRefreshed": "تم تحديث {{count}} ترخيص(تراخيص) مستودع بتوقيعات غير صالحة بعد تحديث renet",
+    "licenseSignatureRefreshFailed": "{{count}} ترخيص(تراخيص) مستودع بتوقيعات غير صالحة بعد تحديث renet. قم بتشغيل: rdc subscription refresh -m <machine>"
+  },
   "commands": {
     "agent": {
       "capabilities": {
@@ -721,16 +725,16 @@
         "description": "توفير جهاز جديد على مزود سحابي باستخدام OpenTofu",
         "failed": "فشل توفير الجهاز: {{error}}",
         "infraInherited": "تم اكتشاف النطاق الأساسي تلقائياً من الجهاز الشقيق \"{{source}}\"",
-        "noInfraHint": "لم يتم تكوين النطاق الأساسي. شغّل 'rdc config set-infra <machine> --base-domain <domain>' ثم 'rdc config push-infra <machine>' لتفعيل DNS والوكيل.",
+        "noInfraHint": "لم يتم تكوين النطاق الأساسي. شغّل 'rdc config infra set <machine> --base-domain <domain>' ثم 'rdc config infra push <machine>' لتفعيل DNS والوكيل.",
         "optionBaseDomain": "النطاق الأساسي للبنية التحتية (مثال: example.com). يتضمن --infra",
         "optionImage": "تجاوز صورة نظام التشغيل الافتراضية",
-        "optionInfra": "تكوين البنية التحتية أيضاً (set-infra + push-infra)",
+        "optionInfra": "تكوين البنية التحتية أيضاً (infra set + infra push)",
         "optionNoInfra": "تخطي تكوين البنية التحتية (الوكيل + DNS)",
-        "optionProvider": "اسم المزود السحابي (من config add-provider)",
+        "optionProvider": "اسم المزود السحابي (من config provider add)",
         "optionRegion": "تجاوز المنطقة الافتراضية",
         "optionSshUser": "اسم مستخدم SSH للجهاز الافتراضي الجديد (الافتراضي: root)",
         "optionType": "تجاوز نوع المثيل الافتراضي",
-        "providerRequired": "المزود السحابي \"{{name}}\" غير موجود. أضفه باستخدام: rdc config add-provider",
+        "providerRequired": "المزود السحابي \"{{name}}\" غير موجود. أضفه باستخدام: rdc config provider add",
         "provisioning": "جاري توفير {{name}} على {{provider}} ({{region}})...",
         "settingUp": "جاري تشغيل إعداد الجهاز...",
         "sshReady": "تم إنشاء اتصال SSH",
@@ -1147,6 +1151,7 @@
         "failed": "فشل إنشاء المستودع",
         "registered": "تم تسجيل \"{{repository}}\" ({{guid}}، شبكة {{networkId}})",
         "rollback": "تم التراجع عن تكوين \"{{repository}}\"",
+        "noDockerOption": "تخطي تشغيل Docker daemon بعد الإنشاء",
         "sizeOption": "حجم المستودع (مثلاً 10G، 100G، 1T)",
         "starting": "جارٍ إنشاء المستودع \"{{repository}}\" ({{size}}) على \"{{machine}}\"..."
       },
@@ -1196,6 +1201,19 @@
         "tagOption": "وسم النسخة (ينشئ اسم:وسم)",
         "tagRequired": "الوسم مطلوب للنسخة. الاستخدام: rdc repo fork <parent> <tag> -m <machine>"
       },
+      "takeover": {
+        "description": "استبدال بيانات المستودع الأصلي ببيانات النسخة المتفرعة. يحتفظ الأصلي بهويته (GUID، networkId، النطاقات، التشغيل التلقائي، سلسلة النسخ الاحتياطي) لكنه يحصل على البيانات المحدّثة من النسخة المتفرعة. يتم حفظ البيانات القديمة للإنتاج كنسخة احتياطية متفرعة. للاستخدام: اختبر الترقية على النسخة المتفرعة → تحقق → استحوذ على بيانات الإنتاج.",
+        "descriptionShort": "استبدال بيانات الإنتاج ببيانات النسخة المتفرعة",
+        "forceOption": "تخطي تحذيرات التعديل",
+        "notAFork": "\"{{name}}\" ليس مستودعاً متفرعاً (parentGuid مفقود)",
+        "grandNotFound": "لم يتم العثور على المستودع الأصلي للنسخة المتفرعة \"{{name}}\"",
+        "starting": "جارٍ الاستحواذ على \"{{grand}}\" بالبيانات من \"{{fork}}\" على \"{{machine}}\"...",
+        "completed": "اكتمل الاستحواذ. المستودع الأصلي يحتوي الآن على بيانات النسخة المتفرعة.",
+        "backupInfo": "تم حفظ بيانات الإنتاج القديمة كـ: {{backup}}",
+        "revertHint": "للتراجع: rdc repo takeover {{backup}} -m {{machine}}",
+        "failed": "فشل الاستحواذ",
+        "rollback": "تم التراجع عن تكوين \"{{name}}\""
+      },
       "list": {
         "completed": "اكتمل العرض",
         "description": "عرض المستودعات على جهاز",
@@ -1209,6 +1227,7 @@
         "description": "تثبيت مستودع (فتح حاوية LUKS)",
         "descriptionShort": "تركيب مستودع (فك التشفير وفتح حاوية LUKS)",
         "failed": "فشل التثبيت",
+        "noDockerOption": "تخطي تشغيل Docker daemon بعد التثبيت",
         "starting": "جارٍ تثبيت \"{{repository}}\" على \"{{machine}}\"..."
       },
       "noCredential": "تحذير: المستودع \"{{name}}\" لا يحتوي على بيانات اعتماد. قد تفشل العمليات على المستودعات المشفّرة.",
@@ -1240,7 +1259,7 @@
         "optionCheckpoint": "إنشاء نقطة فحص للحاوية (نسخ احتياطي ساخن)",
         "optionDest": "اسم ملف الوجهة",
         "optionForce": "فرض الكتابة فوق النسخة الاحتياطية الموجودة",
-        "optionProvider": "مزود السحابة لتوفير الجهاز الهدف تلقائيًا إذا لم يكن موجودًا (من config add-provider)",
+        "optionProvider": "مزود السحابة لتوفير الجهاز الهدف تلقائيًا إذا لم يكن موجودًا (من config provider add)",
         "optionTag": "علامة النشر للإصدارات",
         "optionToMachine": "اسم الجهاز الوجهة",
         "optionToStorage": "اسم التخزين الوجهة",
@@ -1575,6 +1594,10 @@
         "validated": "تم التحقق من الرمز",
         "validating": "جارٍ التحقق من الرمز...",
         "waitingApproval": "في انتظار التفويض من المتصفح..."
+      },
+      "logout": {
+        "description": "مسح رمز الاشتراك المحفوظ",
+        "success": "تم إزالة رمز الاشتراك"
       },
       "refresh": {
         "activation": {
@@ -2148,13 +2171,14 @@
     "machine": {
       "containers": "عرض الحاويات قيد التشغيل",
       "health": "فحص صحة الجهاز لـ CI/CD",
-      "keyConcepts": "\nالمفاهيم الأساسية:\n\n  فلاتر الاستعلام\n    • rdc machine query <name> يعرض جميع الأقسام افتراضيًا\n    • استخدم --system أو --repositories أو --containers أو --services أو --network أو --block-devices للتصفية\n    • مخرجات JSON تُثري الحاويات بـ: repository (الاسم المُحلل) و domain و autoRoute\n\n  المراقبة والصحة\n    • machine health يخرج بـ: 0=سليم، 1=تحذير، 2=خطأ — استخدمه لبوابات CI/CD\n    • containers --health-check يخرج بـ 2 إذا كانت أي حاوية غير سليمة\n    • services --stability-check يخرج بـ 2 إذا كانت أي خدمة فاشلة أو تُعيد التشغيل أو لديها أكثر من 3 إعادات تشغيل\n\n  هيكل مخزن البيانات (/mnt/rediacc/)\n    • repositories/ — صور LUKS مشفرة (واحدة لكل GUID مستودع)\n    • mounts/ — نقاط تثبيت مفكوكة التشفير (متاحة عند تثبيت المستودع)\n    • immovable/ — بيانات Docker daemon لكل مستودع\n",
+      "keyConcepts": "\nالمفاهيم الأساسية:\n\n  فلاتر الاستعلام\n    • rdc machine query <name> يعرض جميع الأقسام افتراضيًا\n    • استخدم --system أو --repositories أو --containers أو --services أو --network أو --block-devices للتصفية\n    • مخرجات JSON تُثري الحاويات بـ: repository (الاسم المُحلل) و domain و autoRoute\n\n  المراقبة والصحة\n    • machine health يخرج بـ: 0=سليم، 1=تحذير، 2=خطأ — استخدمه لبوابات CI/CD\n    • containers --health-check يخرج بـ 2 إذا كانت أي حاوية غير سليمة\n    • services --stability-check يخرج بـ 2 إذا كانت أي خدمة فاشلة أو تُعيد التشغيل أو لديها أكثر من 3 إعادات تشغيل\n\n  هيكل مخزن البيانات (/mnt/rediacc/)\n    • repositories/ — صور LUKS مشفرة (واحدة لكل GUID مستودع)\n    • mounts/ — نقاط تثبيت مفكوكة التشفير (متاحة عند تثبيت المستودع)\n    • immovable/ — بيانات Docker daemon لكل مستودع\n    • Datastore is a BTRFS pool file on the system disk. Effective free space = min(disk free, datastore free). Expand with: rdc datastore resize\n",
       "query": "عرض حالة الجهاز الكاملة"
     },
     "repo": {
       "create": "إنشاء مستودع مشفر",
       "down": "إيقاف الخدمات",
       "fork": "نسخ CoW للاختبار",
+      "takeover": "استبدال بيانات الإنتاج ببيانات النسخة المتفرعة",
       "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REPOSITORY_PATH}/data, ${REPOSITORY_PATH}/config, etc.\n    • Example: volumes: ['${REPOSITORY_PATH}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "عرض النسخ الاحتياطية على التخزين",
       "pull": "سحب نسخة احتياطية من التخزين",

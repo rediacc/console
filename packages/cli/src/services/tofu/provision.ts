@@ -84,9 +84,12 @@ async function bootstrapMachine(machineName: string, options: { debug?: boolean 
   const sshPrivateKey =
     updatedConfig.sshPrivateKey ?? (await readSSHKey(updatedConfig.ssh.privateKeyPath));
 
-  const remoteRenetPath = await provisionRenetToRemote(updatedConfig, machine, sshPrivateKey, {
-    debug: options.debug,
-  });
+  const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
+    updatedConfig,
+    machine,
+    sshPrivateKey,
+    { debug: options.debug }
+  );
 
   const sftp = new SFTPClient({
     host: machine.ip,
@@ -148,7 +151,7 @@ async function loadSSHPublicKey(): Promise<{
   }
   if (!sshPublicKey) {
     throw new Error(
-      'SSH public key required for cloud provisioning. Set with: rdc config set-ssh --private-key <path> --public-key <path>'
+      'SSH public key required for cloud provisioning. Set with: rdc config init <name> --ssh-key <path>'
     );
   }
   return { localConfig, sshPublicKey };

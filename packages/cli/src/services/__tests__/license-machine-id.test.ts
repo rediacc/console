@@ -28,6 +28,18 @@ vi.mock('../subscription-auth.js', () => ({
   })),
 }));
 
+const mockAccountServerFetch = vi.fn();
+vi.mock('../account-client.js', () => ({
+  accountServerFetch: (...args: unknown[]) => mockAccountServerFetch(...args),
+}));
+
+vi.mock('../telemetry.js', () => ({
+  telemetryService: {
+    setUserContext: vi.fn(),
+    trackError: vi.fn(),
+  },
+}));
+
 describe('refreshMachineActivation machine-id resolution', () => {
   const machine: MachineConfig = {
     machineName: 'hostinger',
@@ -38,7 +50,6 @@ describe('refreshMachineActivation machine-id resolution', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    global.fetch = vi.fn();
   });
 
   it('fails when remote machine-id is not renet fingerprint format', async () => {
@@ -47,34 +58,29 @@ describe('refreshMachineActivation machine-id resolution', () => {
     await expect(refreshMachineActivation(machine, 'dummy-key')).rejects.toThrow(
       'Failed to resolve remote renet machine ID'
     );
-    expect(global.fetch).not.toHaveBeenCalled();
+    expect(mockAccountServerFetch).not.toHaveBeenCalled();
   });
 
   it('refreshes activation when remote machine-id is a 64-char fingerprint', async () => {
     mockExec.mockResolvedValueOnce(
       '3a62c0cf8d150bed7ca40e9d6de237eb26b96dee26d7a20eb866e09bd1aca09b\n'
     );
-    vi.mocked(global.fetch).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ activation: { machineId: 'x' } }),
-    } as Response);
+    mockAccountServerFetch.mockResolvedValueOnce({
+      activation: { machineId: 'x' },
+    });
 
     const result = await refreshMachineActivation(machine, 'dummy-key', '/usr/bin/renet');
     expect(result).toBe(true);
-    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(mockAccountServerFetch).toHaveBeenCalledTimes(1);
     expect(mockExecStreaming).not.toHaveBeenCalled();
   });
 
   it('fetches the subscription report when token state is ready', async () => {
-    vi.mocked(global.fetch).mockResolvedValueOnce({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          subscriptionId: 'sub_1',
-          planCode: 'COMMUNITY',
-          status: 'active',
-        }),
-    } as Response);
+    mockAccountServerFetch.mockResolvedValueOnce({
+      subscriptionId: 'sub_1',
+      planCode: 'COMMUNITY',
+      status: 'active',
+    });
 
     await expect(fetchSubscriptionLicenseReport()).resolves.toEqual({
       subscriptionId: 'sub_1',
@@ -87,9 +93,7 @@ describe('refreshMachineActivation machine-id resolution', () => {
     mockExec.mockResolvedValueOnce(
       '3a62c0cf8d150bed7ca40e9d6de237eb26b96dee26d7a20eb866e09bd1aca09b\n'
     );
-    vi.mocked(global.fetch).mockResolvedValueOnce({
-      ok: false,
-    } as Response);
+    mockAccountServerFetch.mockRejectedValueOnce(new Error('HTTP 500'));
 
     const result = await readMachineActivationStatus(machine, 'dummy-key', '/usr/bin/renet');
     expect(result).toBeNull();
@@ -98,32 +102,28 @@ describe('refreshMachineActivation machine-id resolution', () => {
   it('returns active machine activation details when report contains the machine', async () => {
     const machineId = '3a62c0cf8d150bed7ca40e9d6de237eb26b96dee26d7a20eb866e09bd1aca09b';
     mockExec.mockResolvedValueOnce(`${machineId}\n`);
-    vi.mocked(global.fetch).mockResolvedValueOnce({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          subscriptionId: 'sub_1',
-          planCode: 'COMMUNITY',
-          status: 'active',
-          machineSlots: {
-            active: 1,
-            max: 2,
-            machines: [{ machineId, lastSeenAt: '2026-03-12T00:00:00Z' }],
-          },
-          repoLicenseIssuances: {
-            used: 1,
-            limit: 500,
-            windowStart: '2026-03-01T00:00:00Z',
-            windowEnd: '2026-04-01T00:00:00Z',
-          },
-          repoLicenses: {
-            totalTrackedRepos: 0,
-            validCount: 0,
-            refreshRecommendedCount: 0,
-            hardExpiredCount: 0,
-          },
-        }),
-    } as Response);
+    mockAccountServerFetch.mockResolvedValueOnce({
+      subscriptionId: 'sub_1',
+      planCode: 'COMMUNITY',
+      status: 'active',
+      machineSlots: {
+        active: 1,
+        max: 2,
+        machines: [{ machineId, lastSeenAt: '2026-03-12T00:00:00Z' }],
+      },
+      repoLicenseIssuances: {
+        used: 1,
+        limit: 500,
+        windowStart: '2026-03-01T00:00:00Z',
+        windowEnd: '2026-04-01T00:00:00Z',
+      },
+      repoLicenses: {
+        totalTrackedRepos: 0,
+        validCount: 0,
+        refreshRecommendedCount: 0,
+        hardExpiredCount: 0,
+      },
+    });
 
     await expect(
       readMachineActivationStatus(machine, 'dummy-key', '/usr/bin/renet')

@@ -4,10 +4,13 @@ import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
+import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
+import { telemetryService } from '../services/telemetry.js';
 import {
-  deployRepoKeyIfNeeded,
-  removeRepoKeyFromMachine,
-} from '../services/repo-key-deployment.js';
+  generateConnectionName,
+  removePersistedKeys,
+  removeSSHConfigEntry,
+} from '@rediacc/shared-desktop/vscode';
 import { assertAgentRepoCreate, isAgentEnvironment } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD, type CommandPath } from '../utils/command-policy.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
@@ -21,6 +24,14 @@ import {
   postRepoUpTasks,
   runBatchOperation,
 } from './repo-batch-utils.js';
+
+/** Clean up local VS Code SSH artifacts after a repo delete. Non-fatal. */
+async function cleanupDeletedRepoSSH(machineName: string, repoName: string): Promise<void> {
+  const teamName = (await configService.applyDefaults({})).team ?? '';
+  const connectionName = generateConnectionName(teamName, machineName, repoName);
+  removeSSHConfigEntry(connectionName);
+  removePersistedKeys(teamName, machineName, repoName);
+}
 import { registerExtendedRepoCommands } from './repo-extended.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
 import { registerRepoSyncCommands } from './repo-sync.js';
@@ -165,12 +176,19 @@ export function registerRepoCommands(program: Command): void {
     .description(t('commands.repo.create.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .requiredOption('--size <size>', t('commands.repo.create.sizeOption'))
+    .option('--no-docker', t('commands.repo.create.noDockerOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
       async (
         name: string,
-        options: { machine: string; size: string; debug?: boolean; skipRouterRestart?: boolean }
+        options: {
+          machine: string;
+          size: string;
+          noDocker?: boolean;
+          debug?: boolean;
+          skipRouterRestart?: boolean;
+        }
       ) => {
         try {
           // Block repo create in agent mode (agents must fork instead)
@@ -224,6 +242,7 @@ export function registerRepoCommands(program: Command): void {
               size: options.size,
               guid: repositoryGuid,
               network_id: networkId,
+              ...(options.noDocker ? { start_docker: false } : {}),
             },
             debug: options.debug,
             skipRouterRestart: options.skipRouterRestart,
@@ -308,8 +327,9 @@ export function registerRepoCommands(program: Command): void {
           });
 
           if (result.success) {
-            // Remove per-repo SSH key from machine
-            await removeRepoKeyFromMachine(name, options.machine);
+            // Remote cleanup (authorized_keys + sandbox dir) is handled by renet.
+            // Clean up local VS Code SSH artifacts (idempotent, non-fatal)
+            await cleanupDeletedRepoSSH(options.machine, name).catch(() => {});
 
             if (options.archiveConfig) {
               await configService.archiveRepository(name);
@@ -498,7 +518,10 @@ export function registerRepoCommands(program: Command): void {
           if (format === 'table') {
             const { parseRepoRef } = await import('../utils/config-schema.js');
             // Build GUID → config lookup from config to determine fork/grand + tag
-            const repoConfigs = await configService.listRepositories().catch(() => []);
+            const repoConfigs = await configService.listRepositories().catch((err: unknown) => {
+              telemetryService.trackError(err, { operation: 'repo.list_repositories' });
+              return [];
+            });
             const configLookup = new Map<string, { grandGuid?: string; tag?: string }>();
             for (const rc of repoConfigs) {
               configLookup.set(rc.config.repositoryGuid, {

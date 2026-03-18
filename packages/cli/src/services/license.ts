@@ -3,6 +3,7 @@ import { DEFAULTS } from '@rediacc/shared/config';
 import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import type { MachineConfig } from '../types/index.js';
+import { accountServerFetch } from './account-client.js';
 import { configService } from './config-resources.js';
 import { getSubscriptionTokenState } from './subscription-auth.js';
 import { telemetryService } from './telemetry.js';
@@ -28,6 +29,7 @@ export interface RepoBatchRefreshResult {
   unchanged: number;
   failed: number;
   valid: number;
+  invalidSignatureDetected: number;
   failures: { repositoryGuid: string; error: string }[];
 }
 
@@ -92,14 +94,6 @@ export interface RuntimeRepoLicenseStatus {
   grandGuid?: string;
 }
 
-async function readLicenseApiError(resp: Response, fallback: string): Promise<string> {
-  const body = (await resp.json().catch(() => null)) as { error?: string; code?: string } | null;
-  if (body?.error) {
-    return body.error;
-  }
-  return fallback;
-}
-
 async function readRemoteMachineId(sftp: SFTPClient, remoteRenetPath?: string): Promise<string> {
   const command = remoteRenetPath
     ? `sudo ${remoteRenetPath} machine-id 2>/dev/null`
@@ -119,22 +113,21 @@ export async function fetchSubscriptionLicenseReport(): Promise<SubscriptionLice
     return null;
   }
 
-  const resp = await fetch(`${tokenState.serverUrl}/account/api/v1/licenses/report`, {
-    headers: { Authorization: `Bearer ${tokenState.token.token}` },
-  });
-  if (!resp.ok) {
+  try {
+    const report = await accountServerFetch<SubscriptionLicenseReport>(
+      '/account/api/v1/licenses/report'
+    );
+    telemetryService.setUserContext({
+      subscriptionId: report.subscriptionId,
+      subscriptionPlanCode: report.planCode,
+      subscriptionStatus: report.status,
+      subscriptionSource: TELEMETRY_SUBSCRIPTION_SOURCES.licenseReport,
+    });
+    return report;
+  } catch (error) {
+    telemetryService.trackError(error, { operation: 'license.fetch_report' });
     return null;
   }
-
-  const report = (await resp.json()) as SubscriptionLicenseReport;
-  telemetryService.setUserContext({
-    subscriptionId: report.subscriptionId,
-    subscriptionPlanCode: report.planCode,
-    subscriptionStatus: report.status,
-    subscriptionSource: TELEMETRY_SUBSCRIPTION_SOURCES.licenseReport,
-  });
-
-  return report;
 }
 
 async function readLocalMachineId(): Promise<string> {
@@ -179,27 +172,20 @@ async function readRepoSizeGb(
 const MACHINE_LICENSE_PATH = `${LICENSE_DIR}/machine.json`;
 
 async function refreshActivation(
-  serverUrl: string,
-  token: string,
+  _serverUrl: string,
+  _token: string,
   machineId: string
 ): Promise<{ ok: boolean; signedBlob?: unknown }> {
-  const resp = await fetch(`${serverUrl}/account/api/v1/licenses/activate`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ machineId }),
-  });
-
-  if (!resp.ok) {
+  try {
+    const body = await accountServerFetch<{ activation?: unknown; signedBlob?: unknown }>(
+      '/account/api/v1/licenses/activate',
+      { method: 'POST', body: { machineId } }
+    );
+    return { ok: true, signedBlob: body.signedBlob };
+  } catch (error) {
+    telemetryService.trackError(error, { operation: 'license.refresh_activation' });
     return { ok: false };
   }
-  const body = (await resp.json().catch(() => null)) as {
-    activation?: unknown;
-    signedBlob?: unknown;
-  } | null;
-  return { ok: true, signedBlob: body?.signedBlob };
 }
 
 async function writeMachineLicense(sftp: SFTPClient, signedBlob: unknown): Promise<void> {
@@ -286,29 +272,41 @@ export async function readMachineActivationStatus(
   }
 }
 
+async function scanRemoteLicenseStatuses(
+  sftp: SFTPClient,
+  datastore: string,
+  remoteRenetPath?: string
+): Promise<RuntimeRepoLicenseStatus[]> {
+  const renetPath = remoteRenetPath ?? DEFAULTS.CONTEXT.RENET_BINARY;
+  const output = await sftp.exec(
+    `sudo ${renetPath} repository license-status --datastore '${datastore}' --output json`
+  );
+  const parsed = JSON.parse(output) as unknown;
+  return Array.isArray(parsed) ? (parsed as RuntimeRepoLicenseStatus[]) : [];
+}
+
 export async function readRuntimeRepoLicenseStatuses(
   machine: MachineConfig,
   sshPrivateKey: string,
-  remoteRenetPath?: string
+  remoteRenetPath?: string,
+  sharedSftp?: SFTPClient
 ): Promise<RuntimeRepoLicenseStatus[]> {
-  const sftp = new SFTPClient({
-    host: machine.ip,
-    port: machine.port ?? DEFAULTS.SSH.PORT,
-    username: machine.user,
-    privateKey: sshPrivateKey,
-  });
+  const sftp =
+    sharedSftp ??
+    new SFTPClient({
+      host: machine.ip,
+      port: machine.port ?? DEFAULTS.SSH.PORT,
+      username: machine.user,
+      privateKey: sshPrivateKey,
+    });
+  const ownsConnection = !sharedSftp;
 
   try {
-    await sftp.connect();
+    if (ownsConnection) await sftp.connect();
     const datastore = machine.datastore ?? DEFAULT_DATASTORE;
-    const renetPath = remoteRenetPath ?? DEFAULTS.CONTEXT.RENET_BINARY;
-    const output = await sftp.exec(
-      `sudo ${renetPath} repository license-status --datastore '${datastore}' --output json`
-    );
-    const parsed = JSON.parse(output) as unknown;
-    return Array.isArray(parsed) ? (parsed as RuntimeRepoLicenseStatus[]) : [];
+    return await scanRemoteLicenseStatuses(sftp, datastore, remoteRenetPath);
   } finally {
-    sftp.close();
+    if (ownsConnection) sftp.close();
   }
 }
 
@@ -343,31 +341,22 @@ async function issueRepoLicense(
     ]);
     if (!machineId || !clientMachineId) return false;
 
-    const resp = await fetch(`${tokenState.serverUrl}/account/api/v1/licenses/activate-repo`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${tokenState.token.token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        machineId,
-        clientMachineId,
-        repositoryGuid: params.repositoryGuid,
-        grandGuid: params.grandGuid,
-        kind: params.kind,
-        requestedSizeGb: params.requestedSizeGb,
-        luksUuid: params.luksUuid,
-        storageFingerprint: params.storageFingerprint,
-      }),
-    });
-
-    if (!resp.ok) {
-      throw new Error(
-        await readLicenseApiError(resp, `Repo license issuance failed: HTTP ${resp.status}`)
-      );
-    }
-
-    const { license } = (await resp.json()) as { license: unknown };
+    const { license } = await accountServerFetch<{ license: unknown }>(
+      '/account/api/v1/licenses/activate-repo',
+      {
+        method: 'POST',
+        body: {
+          machineId,
+          clientMachineId,
+          repositoryGuid: params.repositoryGuid,
+          grandGuid: params.grandGuid,
+          kind: params.kind,
+          requestedSizeGb: params.requestedSizeGb,
+          luksUuid: params.luksUuid,
+          storageFingerprint: params.storageFingerprint,
+        },
+      }
+    );
     await sftp.exec(`sudo mkdir -p ${REPO_LICENSE_DIR}`);
     const repoLicenseFile = `${REPO_LICENSE_DIR}/${params.repositoryGuid}.json`;
     await sftp.execStreaming(`sudo tee ${repoLicenseFile} > /dev/null`, {
@@ -549,7 +538,8 @@ function resolveRepoBatchKind(
 export async function refreshRepoLicensesBatch(
   machine: MachineConfig,
   sshPrivateKey: string,
-  remoteRenetPath?: string
+  remoteRenetPath?: string,
+  sharedSftp?: SFTPClient
 ): Promise<RepoBatchRefreshResult> {
   const tokenState = getSubscriptionTokenState();
   if (tokenState.kind !== 'ready') {
@@ -560,26 +550,39 @@ export async function refreshRepoLicensesBatch(
       unchanged: 0,
       failed: 0,
       valid: 0,
+      invalidSignatureDetected: 0,
       failures: [{ repositoryGuid: '*', error: 'Subscription token is not ready' }],
     };
   }
 
-  const sftp = new SFTPClient({
-    host: machine.ip,
-    port: machine.port ?? DEFAULTS.SSH.PORT,
-    username: machine.user,
-    privateKey: sshPrivateKey,
-  });
+  const sftp =
+    sharedSftp ??
+    new SFTPClient({
+      host: machine.ip,
+      port: machine.port ?? DEFAULTS.SSH.PORT,
+      username: machine.user,
+      privateKey: sshPrivateKey,
+    });
+  const ownsConnection = !sharedSftp;
 
   try {
-    await sftp.connect();
+    if (ownsConnection) await sftp.connect();
     const datastore = machine.datastore ?? DEFAULT_DATASTORE;
-    const [machineId, clientMachineId, remoteRepos, localRepos] = await Promise.all([
-      readRemoteMachineId(sftp, remoteRenetPath),
-      readLocalMachineId(),
-      scanRemoteRepoLicenses(sftp, datastore, remoteRenetPath),
-      configService.listRepositories().catch(() => []),
-    ]);
+    const [machineId, clientMachineId, remoteRepos, localRepos, licenseStatuses] =
+      await Promise.all([
+        readRemoteMachineId(sftp, remoteRenetPath),
+        readLocalMachineId(),
+        scanRemoteRepoLicenses(sftp, datastore, remoteRenetPath),
+        configService.listRepositories().catch((err: unknown) => {
+          telemetryService.trackError(err, { operation: 'license.list_repositories' });
+          return [];
+        }),
+        scanRemoteLicenseStatuses(sftp, datastore, remoteRenetPath).catch(() => []),
+      ]);
+
+    const invalidSigGuids = new Set(
+      licenseStatuses.filter((s) => s.status === 'invalid_signature').map((s) => s.repositoryGuid)
+    );
 
     const repoByGuid = new Map(
       localRepos.map((entry) => [
@@ -600,22 +603,26 @@ export async function refreshRepoLicensesBatch(
         unchanged: 0,
         failed: unknownRepoFailures.length,
         valid: 0,
+        invalidSignatureDetected: invalidSigGuids.size,
         failures: unknownRepoFailures,
       };
     }
 
-    const resp = await fetch(
-      `${tokenState.serverUrl}/account/api/v1/licenses/activate-repo-batch`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${tokenState.token.token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          machineId,
-          clientMachineId,
-          repos: knownRemoteRepos.map((repo) => ({
+    const body = await accountServerFetch<{
+      results: {
+        repositoryGuid: string;
+        status: 'issued' | 'refreshed' | 'unchanged' | 'failed';
+        license?: unknown;
+        error?: string;
+      }[];
+    }>('/account/api/v1/licenses/activate-repo-batch', {
+      method: 'POST',
+      body: {
+        machineId,
+        clientMachineId,
+        repos: knownRemoteRepos.map((repo) => {
+          const forceReissue = invalidSigGuids.has(repo.repositoryGuid);
+          return {
             machineId,
             clientMachineId,
             repositoryGuid: repo.repositoryGuid,
@@ -624,27 +631,14 @@ export async function refreshRepoLicensesBatch(
             requestedSizeGb: repo.requestedSizeGb,
             luksUuid: repo.luksUuid,
             storageFingerprint: repo.storageFingerprint,
-            currentRefreshRecommendedAt: repo.currentRefreshRecommendedAt,
-            currentHardExpiresAt: repo.currentHardExpiresAt,
-          })),
+            currentRefreshRecommendedAt: forceReissue
+              ? undefined
+              : repo.currentRefreshRecommendedAt,
+            currentHardExpiresAt: forceReissue ? undefined : repo.currentHardExpiresAt,
+          };
         }),
-      }
-    );
-
-    if (!resp.ok) {
-      throw new Error(
-        await readLicenseApiError(resp, `Repo license batch refresh failed: HTTP ${resp.status}`)
-      );
-    }
-
-    const body = (await resp.json()) as {
-      results: {
-        repositoryGuid: string;
-        status: 'issued' | 'refreshed' | 'unchanged' | 'failed';
-        license?: unknown;
-        error?: string;
-      }[];
-    };
+      },
+    });
 
     const failures: { repositoryGuid: string; error: string }[] = [...unknownRepoFailures];
     const { issued, refreshed, unchanged, failed } = await applyBatchRefreshResults(
@@ -660,9 +654,10 @@ export async function refreshRepoLicensesBatch(
       unchanged,
       failed,
       valid: issued + refreshed + unchanged,
+      invalidSignatureDetected: invalidSigGuids.size,
       failures,
     };
   } finally {
-    sftp.close();
+    if (ownsConnection) sftp.close();
   }
 }

@@ -114,6 +114,14 @@
       "types": "./dist/encryption/*.d.ts",
       "default": "./dist/encryption/*.js"
     },
+    "./e2e": {
+      "types": "./dist/e2e/index.d.ts",
+      "default": "./dist/e2e/index.js"
+    },
+    "./e2e/*": {
+      "types": "./dist/e2e/*.d.ts",
+      "default": "./dist/e2e/*.js"
+    },
     "./validation": {
       "types": "./dist/validation/index.d.ts",
       "default": "./dist/validation/index.js"

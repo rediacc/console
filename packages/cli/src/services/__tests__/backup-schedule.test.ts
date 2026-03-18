@@ -5,7 +5,9 @@ const mockConnect = vi.fn().mockResolvedValue(undefined);
 const mockClose = vi.fn();
 const mockBuildRcloneArgs = vi.fn();
 
-const mockProvisionRenetToRemote = vi.fn().mockResolvedValue('/usr/bin/renet');
+const mockProvisionRenetToRemote = vi
+  .fn()
+  .mockResolvedValue({ remotePath: '/usr/bin/renet', uploaded: false });
 const mockReadSSHKey = vi.fn().mockResolvedValue('PRIVATE_KEY');
 const mockRefreshRepoLicensesBatch = vi.fn();
 

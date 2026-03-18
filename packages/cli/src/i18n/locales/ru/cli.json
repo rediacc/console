@@ -2,6 +2,10 @@
   "cli": {
     "description": "Управление машинами, репозиториями и развёртываниями через SSH"
   },
+  "warnings": {
+    "licenseSignatureRefreshed": "Обновлено {{count}} лицензий репозиториев с недействительными подписями после обновления renet",
+    "licenseSignatureRefreshFailed": "{{count}} лицензий репозиториев имеют недействительные подписи после обновления renet. Выполните: rdc subscription refresh -m <machine>"
+  },
   "commands": {
     "agent": {
       "capabilities": {
@@ -721,16 +725,16 @@
         "description": "Создать новую машину у облачного провайдера с помощью OpenTofu",
         "failed": "Ошибка создания машины: {{error}}",
         "infraInherited": "Базовый домен автоматически определён от соседней машины \"{{source}}\"",
-        "noInfraHint": "Базовый домен не настроен. Выполните 'rdc config set-infra <machine> --base-domain <domain>', затем 'rdc config push-infra <machine>' для включения DNS и прокси.",
+        "noInfraHint": "Базовый домен не настроен. Выполните 'rdc config infra set <machine> --base-domain <domain>', затем 'rdc config infra push <machine>' для включения DNS и прокси.",
         "optionBaseDomain": "Базовый домен для инфраструктуры (напр. example.com). Подразумевает --infra",
         "optionImage": "Переопределить образ ОС по умолчанию",
-        "optionInfra": "Также настроить инфраструктуру (set-infra + push-infra)",
+        "optionInfra": "Также настроить инфраструктуру (infra set + infra push)",
         "optionNoInfra": "Пропустить настройку инфраструктуры (прокси + DNS)",
-        "optionProvider": "Имя облачного провайдера (из config add-provider)",
+        "optionProvider": "Имя облачного провайдера (из config provider add)",
         "optionRegion": "Переопределить регион по умолчанию",
         "optionSshUser": "Имя пользователя SSH для новой ВМ (по умолчанию: root)",
         "optionType": "Переопределить тип инстанса по умолчанию",
-        "providerRequired": "Облачный провайдер \"{{name}}\" не найден. Добавьте с помощью: rdc config add-provider",
+        "providerRequired": "Облачный провайдер \"{{name}}\" не найден. Добавьте с помощью: rdc config provider add",
         "provisioning": "Создание {{name}} на {{provider}} ({{region}})...",
         "settingUp": "Запуск настройки машины...",
         "sshReady": "SSH-соединение установлено",
@@ -1147,6 +1151,7 @@
         "failed": "Ошибка создания репозитория",
         "registered": "Зарегистрирован \"{{repository}}\" ({{guid}}, сеть {{networkId}})",
         "rollback": "Конфигурация для \"{{repository}}\" откачена",
+        "noDockerOption": "Не запускать Docker-демон после создания",
         "sizeOption": "Размер репозитория (напр. 10G, 100G, 1T)",
         "starting": "Создание репозитория \"{{repository}}\" ({{size}}) на \"{{machine}}\"..."
       },
@@ -1196,6 +1201,19 @@
         "tagOption": "Тег для форка (создаёт имя:тег)",
         "tagRequired": "Тег обязателен для форка. Использование: rdc repo fork <parent> <tag> -m <machine>"
       },
+      "takeover": {
+        "description": "Заменить данные главного репозитория данными форка. Главный сохраняет свою идентичность (GUID, networkId, домены, автозапуск, цепочку резервных копий), но получает обновлённые данные форка. Старые производственные данные сохраняются как резервный форк. Использование: протестировать обновление на форке → проверить → перенести в продакшн.",
+        "descriptionShort": "Заменить производственные данные данными форка",
+        "forceOption": "Пропустить предупреждения об изменениях",
+        "notAFork": "\"{{name}}\" не является форком (отсутствует parentGuid)",
+        "grandNotFound": "Главный репозиторий для форка \"{{name}}\" не найден",
+        "starting": "Замена данных \"{{grand}}\" данными из \"{{fork}}\" на \"{{machine}}\"...",
+        "completed": "Замена завершена. Главный репозиторий теперь содержит данные форка.",
+        "backupInfo": "Старые производственные данные сохранены как: {{backup}}",
+        "revertHint": "Для отмены: rdc repo takeover {{backup}} -m {{machine}}",
+        "failed": "Ошибка замены данных",
+        "rollback": "Конфигурация для \"{{name}}\" откачена"
+      },
       "list": {
         "completed": "Список получен",
         "description": "Список репозиториев на машине",
@@ -1209,6 +1227,7 @@
         "description": "Смонтировать репозиторий (открыть контейнер LUKS)",
         "descriptionShort": "Смонтировать репозиторий (расшифровать и открыть LUKS-контейнер)",
         "failed": "Ошибка монтирования",
+        "noDockerOption": "Не запускать Docker-демон после монтирования",
         "starting": "Монтирование \"{{repository}}\" на \"{{machine}}\"..."
       },
       "noCredential": "Предупреждение: у репозитория \"{{name}}\" не заданы учётные данные. Операции с зашифрованными репозиториями могут завершиться ошибкой.",
@@ -1240,7 +1259,7 @@
         "optionCheckpoint": "Создать контрольную точку контейнера (горячее резервное копирование)",
         "optionDest": "Имя файла назначения",
         "optionForce": "Принудительно перезаписать существующую резервную копию",
-        "optionProvider": "Облачный провайдер для автоматического создания целевой машины, если она не существует (из config add-provider)",
+        "optionProvider": "Облачный провайдер для автоматического создания целевой машины, если она не существует (из config provider add)",
         "optionTag": "Тег развёртывания для управления версиями",
         "optionToMachine": "Имя целевой машины",
         "optionToStorage": "Имя целевого хранилища",
@@ -1575,6 +1594,10 @@
         "validated": "Токен проверен",
         "validating": "Проверка токена...",
         "waitingApproval": "Ожидание авторизации в браузере..."
+      },
+      "logout": {
+        "description": "Удалить сохранённый токен подписки",
+        "success": "Токен подписки удалён"
       },
       "refresh": {
         "activation": {
@@ -2148,13 +2171,14 @@
     "machine": {
       "containers": "Список запущенных контейнеров",
       "health": "Проверка здоровья для CI/CD",
-      "keyConcepts": "\nКлючевые концепции:\n\n  Фильтры запросов\n    • rdc machine query <name> возвращает все разделы по умолчанию\n    • Используйте --system, --repositories, --containers, --services, --network, --block-devices для фильтрации\n    • JSON-вывод обогащает контейнеры полями: repository (разрешённое имя), domain, autoRoute\n\n  Мониторинг и здоровье\n    • machine health возвращает: 0=здоров, 1=предупреждение, 2=ошибка — используйте для CI/CD-шлюзов\n    • containers --health-check возвращает 2, если какой-либо контейнер нездоров\n    • services --stability-check возвращает 2, если какой-либо сервис сбоит, перезапускается или имеет >3 перезапусков\n\n  Структура хранилища данных (/mnt/rediacc/)\n    • repositories/ — зашифрованные образы LUKS (один на GUID репозитория)\n    • mounts/ — расшифрованные точки монтирования (доступны когда репозиторий смонтирован)\n    • immovable/ — данные Docker daemon для каждого репозитория\n",
+      "keyConcepts": "\nКлючевые концепции:\n\n  Фильтры запросов\n    • rdc machine query <name> возвращает все разделы по умолчанию\n    • Используйте --system, --repositories, --containers, --services, --network, --block-devices для фильтрации\n    • JSON-вывод обогащает контейнеры полями: repository (разрешённое имя), domain, autoRoute\n\n  Мониторинг и здоровье\n    • machine health возвращает: 0=здоров, 1=предупреждение, 2=ошибка — используйте для CI/CD-шлюзов\n    • containers --health-check возвращает 2, если какой-либо контейнер нездоров\n    • services --stability-check возвращает 2, если какой-либо сервис сбоит, перезапускается или имеет >3 перезапусков\n\n  Структура хранилища данных (/mnt/rediacc/)\n    • repositories/ — зашифрованные образы LUKS (один на GUID репозитория)\n    • mounts/ — расшифрованные точки монтирования (доступны когда репозиторий смонтирован)\n    • immovable/ — данные Docker daemon для каждого репозитория\n    • Datastore is a BTRFS pool file on the system disk. Effective free space = min(disk free, datastore free). Expand with: rdc datastore resize\n",
       "query": "Показать полный статус машины"
     },
     "repo": {
       "create": "Создать зашифрованный репозиторий",
       "down": "Остановить сервисы",
       "fork": "CoW-форк для тестирования",
+      "takeover": "Заменить производственные данные данными форка",
       "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REPOSITORY_PATH}/data, ${REPOSITORY_PATH}/config, etc.\n    • Example: volumes: ['${REPOSITORY_PATH}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "Список резервных копий в хранилище",
       "pull": "Получить резервную копию из хранилища",

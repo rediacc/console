@@ -1347,6 +1347,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--no-docker",
+              "descriptionKey": "commands.repo.create.noDockerOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -1427,6 +1433,12 @@
             {
               "flags": "--checkpoint",
               "descriptionKey": "commands.repo.mount.checkpointOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--no-docker",
+              "descriptionKey": "commands.repo.mount.noDockerOption",
               "mandatory": false,
               "defaultValue": null
             },
@@ -1764,6 +1776,45 @@
             {
               "name": "tag",
               "required": false,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "takeover",
+          "descriptionKey": "commands.repo.takeover.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--force",
+              "descriptionKey": "commands.repo.takeover.forceOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "fork",
+              "required": true,
               "variadic": false,
               "defaultValue": null
             }
@@ -6382,6 +6433,13 @@
               "defaultValue": null
             }
           ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "logout",
+          "descriptionKey": "commands.subscription.logout.description",
+          "options": [],
           "arguments": [],
           "subcommands": []
         },

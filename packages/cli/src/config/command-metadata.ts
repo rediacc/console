@@ -278,6 +278,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'repo sync download': { grandGuard: true },
   'repo autostart enable': { grandGuard: true, forkBlocked: true },
   'repo autostart disable': { grandGuard: true, forkBlocked: true },
+  'repo takeover': { grandGuard: true },
   'repo resize': { grandGuard: true, forkBlocked: true },
   'repo expand': { grandGuard: true, forkBlocked: true },
   'term repo': { grandGuard: true },

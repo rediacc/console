@@ -22,6 +22,7 @@ import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
+import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
 import { getSSHConnectionDetails } from '../services/ssh-connection.js';
 import { assertCommandPolicy, CMD, validateRemotePath } from '../utils/command-policy.js';
 import { handleError } from '../utils/errors.js';
@@ -113,6 +114,17 @@ async function interactiveConfirmation(changes: RsyncChanges): Promise<boolean> 
 
   rl.close();
   return proceed;
+}
+
+function resolveUploadLocalPath(local: string | undefined): string {
+  let localPath = resolve(local ?? process.cwd());
+  if (!existsSync(localPath)) {
+    throw new Error(t('errors.sync.localPathNotFound', { path: localPath }));
+  }
+  if (!localPath.endsWith('/')) {
+    localPath += '/';
+  }
+  return localPath;
 }
 
 function hasNoChanges(changes: RsyncChanges): boolean {
@@ -221,12 +233,10 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
   await assertCommandPolicy(CMD.REPO_SYNC_UPLOAD, opts.repository);
   if (options.remote) validateRemotePath(options.remote);
 
-  let localPath = resolve(options.local ?? process.cwd());
-  if (!existsSync(localPath)) {
-    throw new Error(t('errors.sync.localPathNotFound', { path: localPath }));
-  }
-  if (!localPath.endsWith('/')) {
-    localPath += '/';
+  const localPath = resolveUploadLocalPath(options.local);
+
+  if (opts.repository) {
+    await deployRepoKeyIfNeeded(opts.repository, opts.machine);
   }
 
   const details = await withSpinner(t('commands.sync.fetchingDetails'), () =>
@@ -286,6 +296,10 @@ async function syncDownload(options: SyncDownloadOptions): Promise<void> {
   if (options.remote) validateRemotePath(options.remote);
 
   const localPath = resolve(options.local ?? process.cwd());
+
+  if (opts.repository) {
+    await deployRepoKeyIfNeeded(opts.repository, opts.machine);
+  }
 
   const details = await withSpinner(t('commands.sync.fetchingDetails'), () =>
     getSSHConnectionDetails(opts.team!, opts.machine!, opts.repository)

@@ -4,8 +4,8 @@ description: "在 Rediacc 平台上构建应用程序的基本规则和约定。
 category: "Guides"
 order: 5
 language: zh
-sourceHash: "6543e793a10d75a3"
-sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
+sourceHash: "091701909c0c8d32"
+sourceCommit: "ebe4a9b9ea6ace2a0faee3694a632135cd61ef9b"
 ---
 
 # Rediacc 规则
@@ -53,8 +53,8 @@ down() {
 - **不要在 compose 文件中设置 `network_mode`** — renet 会对所有服务强制设置 `network_mode: host`。您设置的任何值都会被覆盖。
 - **不要设置 `rediacc.*` 标签** — renet 会自动注入 `rediacc.network_id`、`rediacc.service_ip` 和 `rediacc.service_name`。
 - **`ports:` 映射在主机网络模式下被忽略**。使用 `rediacc.service_port` 标签将代理路由到非 80 端口。
-- **不要使用 `restart: always` 或 `restart: unless-stopped`** — 这些与 CRIU 的 checkpoint/restore 冲突。使用 `restart: on-failure` 或省略它。
-- **不要使用 Docker 命名卷** — 它们位于加密仓库之外，不会包含在备份或 fork 中。
+- **重启策略（`restart: always`、`on-failure` 等）可以安全使用** — renet 会自动剥离它们以兼容 CRIU。路由器 watchdog 会根据保存在 `.rediacc.json` 中的原始策略自动恢复已停止的容器。
+- **危险设置默认被阻止** — `privileged: true`、`pid: host`、`ipc: host` 以及对系统路径的绑定挂载会被拒绝。使用 `renet compose --unsafe` 可自行承担风险覆盖此行为。
 
 ### 容器内的环境变量
 
@@ -70,12 +70,14 @@ Renet 会自动将以下变量注入每个容器：
 - compose 中的**服务名称**会成为自动路由的 URL 前缀。
 - 示例：基础域名为 `example.com`、networkId 为 6336 的服务 `myapp` 变为 `https://myapp-6336.example.com`。
 - 对于自定义域名，使用 Traefik 标签（注意：自定义域名与 fork 不兼容）。
+- Fork 仓库在机器通配符证书下使用扁平的自动路由。自定义域名（`rediacc.domain`）在 fork 上被忽略 — 域名属于 grand 仓库。
 
 ## 网络
 
 - **每个仓库获得自己的 Docker 守护进程**，位于 `/var/run/rediacc/docker-<networkId>.sock`。
 - **每个服务在 /26 子网内获得唯一的回环 IP**（例如 `127.0.24.192/26`）。
-- **绑定到 `SERVICE_IP`**，而不是 `0.0.0.0` — 主机网络意味着 `0.0.0.0` 会与其他仓库冲突。
+- **绑定到 `SERVICE_IP`** — 每个服务获得唯一的回环 IP。
+- **健康检查必须使用 `${SERVICE_IP}`**，而不是 `localhost`。示例：`healthcheck: test: ["CMD", "curl", "-f", "http://${SERVICE_IP}:8080/health"]`
 - **服务间通信**：使用回环 IP 或 `SERVICE_IP` 环境变量。Docker DNS 名称在主机模式下不起作用。
 - **仓库之间不可能发生端口冲突** — 每个仓库都有自己的 Docker 守护进程和 IP 范围。
 - **TCP/UDP 端口转发**：添加标签以公开非 HTTP 端口：
@@ -87,15 +89,16 @@ Renet 会自动将以下变量注入每个容器：
 
 ## 存储
 
-- **所有持久数据必须使用 `${REPOSITORY_PATH}/...` 绑定挂载。**
+- **所有 Docker 数据都存储在加密仓库内** — Docker 的 `data-root` 位于 LUKS 卷内的 `{mount}/.rediacc/docker/data`。命名卷、镜像和容器层全部加密、备份，并自动 fork。
+- **推荐使用 `${REPOSITORY_PATH}/...` 绑定挂载**以保持清晰，但命名卷也可以安全使用。
   ```yaml
   volumes:
-    - ${REPOSITORY_PATH}/data:/data
-    - ${REPOSITORY_PATH}/config:/etc/myapp
+    - ${REPOSITORY_PATH}/data:/data        # 绑定挂载（推荐）
+    - pgdata:/var/lib/postgresql/data      # 命名卷（同样安全）
   ```
-- Docker 命名卷位于 LUKS 仓库之外 — 它们**未加密**、**未备份**且**不包含在 fork 中**。
 - LUKS 卷挂载在 `/mnt/rediacc/mounts/<guid>/`。
 - BTRFS 快照捕获整个 LUKS 后备文件，包括所有绑定挂载的数据。
+- 数据存储是系统磁盘上固定大小的 BTRFS 池文件。使用 `rdc machine query <name> --system` 查看有效可用空间。使用 `rdc datastore resize` 扩容。
 
 ## CRIU（实时迁移）
 
@@ -118,7 +121,7 @@ Renet 会自动将以下变量注入每个容器：
 - 在所有持久连接（数据库连接池、WebSocket、消息队列）上处理 `ECONNRESET`。
 - 使用支持自动重连的连接池库。
 - 添加 `process.on("uncaughtException")` 作为内部库对象产生的陈旧套接字错误的安全网。
-- 避免使用 `restart: always` — 它会干扰 CRIU 恢复。
+- 重启策略由 renet 自动管理（为 CRIU 剥离，watchdog 处理恢复）。
 - 避免依赖 Docker DNS — 使用回环 IP 进行服务间通信。
 
 ## 安全
@@ -127,7 +130,7 @@ Renet 会自动将以下变量注入每个容器：
 - **凭据存储在 CLI 配置中**（`~/.config/rediacc/rediacc.json`）。丢失配置意味着失去对加密卷的访问权限。
 - **永远不要将凭据提交**到版本控制。使用 `env_file` 并在 `up()` 中生成密钥。
 - **仓库隔离**：每个仓库的 Docker 守护进程、网络和存储与同一台机器上的其他仓库完全隔离。
-- **代理隔离**：AI 代理默认以仅 fork 模式运行，只能修改 fork 仓库，不能修改 grand（原始）仓库。通过 `term_exec` 或带仓库上下文的 `rdc term` 执行的命令会使用 Landlock LSM 在内核级进行沙箱隔离，从而阻止跨仓库文件系统访问。
+- **代理隔离**：AI 代理默认以仅 fork 模式运行。每个仓库都有自己的 SSH 密钥，带有服务器端沙箱执行（ForceCommand `sandbox-gateway`）。所有连接都通过 Landlock LSM、OverlayFS home 覆盖层和每仓库 TMPDIR 进行沙箱隔离。跨仓库的文件系统访问被内核阻止。
 
 ## 部署
 
@@ -136,14 +139,16 @@ Renet 会自动将以下变量注入每个容器：
 - **`rdc repo down`** 执行 `down()` 并停止 Docker 守护进程。
 - **`rdc repo down --unmount`** 还会关闭 LUKS 卷（锁定加密存储）。
 - **Fork**（`rdc repo fork`）创建具有新 GUID 和 networkId 的 CoW（写时复制）克隆。Fork 共享父级的加密密钥。
+- **接管**（`rdc repo takeover <fork> -m <machine>`）将 grand 仓库的数据替换为 fork 的数据。Grand 保留其身份（GUID、networkId、域名、自动启动、备份链）。旧的生产数据作为备份 fork 保留。用途：在 fork 上测试升级，验证后接管到生产。使用 `rdc repo takeover <backup-fork> -m <machine>` 回滚。
 - **代理路由**在部署后约 3 秒后变为活跃。`repo up` 期间的 "Proxy is not running" 警告在 ops/dev 环境中是信息性的。
 
 ## 常见错误
 
 - 使用 `docker compose` 而不是 `renet compose` — 容器将无法获得网络隔离。
-- 使用 `restart: always` — 阻止 CRIU 恢复并干扰 `repo down`。
-- 使用 Docker 命名卷 — 数据未加密、未备份、不会被 fork。
-- 绑定到 `0.0.0.0` — 在主机网络模式下导致仓库之间的端口冲突。
+- 重启策略是安全的 — renet 自动剥离它们，watchdog 处理恢复。
+- 使用 `privileged: true` — 没有必要，renet 会改为注入特定的 CRIU capabilities。
+- 不绑定到 `SERVICE_IP` — 会导致仓库之间的端口冲突。
 - 硬编码 IP — 使用 `SERVICE_IP` 环境变量；IP 按 networkId 动态分配。
 - 在 `backup push` 后首次部署时忘记 `--mount` — LUKS 卷需要显式打开。
 - 使用 `rdc term -c` 作为失败命令的变通方法 — 请改为报告 bug。
+- `repo delete` 执行完整清理，包括回环 IP 和 systemd 单元。运行 `rdc machine prune <name>` 清理旧版删除操作遗留的残余。

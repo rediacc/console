@@ -3,10 +3,7 @@ services:
     image: redis:7-alpine
     container_name: ${CONTAINER_NAME}
     restart: always
-    network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
     command: ["sh", "-c", "exec redis-server --bind $${SERVICE_IP:-0.0.0.0} --requirepass ${REDIS_PASSWORD} --maxmemory ${REDIS_MAXMEMORY} --maxmemory-policy ${REDIS_MAXMEMORY_POLICY}"]
-    ports:
-      - "6379"
     volumes:
       - ./data:/data
     healthcheck:

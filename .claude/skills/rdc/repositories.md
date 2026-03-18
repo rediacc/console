@@ -61,7 +61,8 @@ The Rediaccfile is a bash script with lifecycle functions. Key rules:
 - **CRIU security settings are auto-injected**: `cap_add: [CHECKPOINT_RESTORE, SYS_PTRACE, NET_ADMIN]`, `security_opt: [apparmor=unconfined]`, and `userns_mode: host` are added to every container by renet. Default seccomp profile is preserved. Do not set these manually.
 - `ports:` declarations are ignored (host networking). Services bind to allocated IPs.
 - Use healthchecks in compose for dependent services.
-- Persistent data: use `${REPOSITORY_PATH}/...` bind mounts, NOT Docker named volumes.
+- Persistent data: both `${REPOSITORY_PATH}/...` bind mounts and Docker named volumes are safe (Docker data-root is inside the encrypted LUKS mount).
+- Dangerous settings (`privileged: true`, `pid: host`, `ipc: host`) are blocked by default. Use `renet compose --unsafe` to override.
 - Restart policies are safe — renet auto-strips them for CRIU compatibility. The router watchdog auto-recovers stopped containers based on the saved policy in `.rediacc.json`.
 
 ### SERVICE_IP binding
@@ -92,6 +93,22 @@ In containers: `SERVICE_IP`, `REPOSITORY_NETWORK_ID` (auto-injected by renet).
 - Fork auto-route URL pattern: `{service}-{tag}.{machine}.{baseDomain}` (shared machine cert)
 - Custom domains are skipped for forks — the domain belongs to the grand repo
 - Scheduled backups skip forks (use `rdc repo push` for manual backup)
+
+## Takeover workflow (fork to production)
+
+1. Fork: `rdc repo fork jfrog --tag upgrade-test -m hostinger`
+2. Deploy fork: `rdc repo up jfrog:upgrade-test -m hostinger --mount`
+3. Test upgrade in fork (SSH, apply changes, verify)
+4. Takeover: `rdc repo takeover jfrog:upgrade-test -m hostinger`
+5. Production now has upgraded data. Old data preserved as backup fork.
+6. To revert: `rdc repo takeover jfrog:pre-takeover-20260317 -m hostinger`
+
+## Storage architecture
+
+- The datastore is a BTRFS pool file hosted on the system disk (`/mnt/rediacc.pool`)
+- `rdc machine query <name> --system` shows both disk and datastore stats plus effective free space
+- Effective free = min(disk free, datastore free) — the actual limit for new repos
+- Expand with: `rdc datastore resize <machine>`
 
 ## Cleanup behavior
 

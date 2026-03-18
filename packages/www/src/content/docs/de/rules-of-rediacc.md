@@ -4,8 +4,8 @@ description: "Wesentliche Regeln und Konventionen für die Entwicklung von Anwen
 category: "Guides"
 order: 5
 language: de
-sourceHash: "6543e793a10d75a3"
-sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
+sourceHash: "091701909c0c8d32"
+sourceCommit: "ebe4a9b9ea6ace2a0faee3694a632135cd61ef9b"
 ---
 
 # Regeln von Rediacc
@@ -53,8 +53,8 @@ down() {
 - **Setzen Sie KEIN `network_mode`** in Ihrer Compose-Datei — renet erzwingt `network_mode: host` für alle Dienste. Jeder von Ihnen gesetzte Wert wird überschrieben.
 - **Setzen Sie KEINE `rediacc.*`-Labels** — renet injiziert automatisch `rediacc.network_id`, `rediacc.service_ip` und `rediacc.service_name`.
 - **`ports:`-Mappings werden ignoriert** im Host-Networking-Modus. Verwenden Sie das Label `rediacc.service_port` für Proxy-Routing zu Nicht-80-Ports.
-- **Verwenden Sie NICHT `restart: always` oder `restart: unless-stopped`** — diese kollidieren mit CRIU Checkpoint/Restore. Verwenden Sie `restart: on-failure` oder lassen Sie es weg.
-- **Verwenden Sie KEINE Docker Named Volumes** — diese befinden sich außerhalb des verschlüsselten Repos und werden nicht in Backups oder Forks einbezogen.
+- **Restart-Richtlinien (`restart: always`, `on-failure` usw.) sind sicher zu verwenden** — renet entfernt sie automatisch für CRIU-Kompatibilität. Der Router-Watchdog stellt gestoppte Container automatisch wieder her, basierend auf der in `.rediacc.json` gespeicherten ursprünglichen Richtlinie.
+- **Gefährliche Einstellungen sind standardmäßig blockiert** — `privileged: true`, `pid: host`, `ipc: host` und Bind-Mounts zu System-Pfaden werden abgelehnt. Verwenden Sie `renet compose --unsafe`, um dies auf eigenes Risiko zu überschreiben.
 
 ### Umgebungsvariablen innerhalb von Containern
 
@@ -70,12 +70,14 @@ Renet injiziert diese automatisch in jeden Container:
 - Der **Dienstname** in der Compose-Datei wird zum URL-Präfix der automatischen Route.
 - Beispiel: Dienst `myapp` mit networkId 6336 und Basisdomain `example.com` wird zu `https://myapp-6336.example.com`.
 - Für benutzerdefinierte Domains verwenden Sie Traefik-Labels (beachten Sie: benutzerdefinierte Domains sind NICHT fork-freundlich).
+- Fork-Repos verwenden flache Auto-Routen unter dem Wildcard-Zertifikat der Maschine. Benutzerdefinierte Domains (`rediacc.domain`) werden bei Forks ignoriert — die Domain gehört zum grand Repo.
 
 ## Netzwerk
 
 - **Jedes Repository erhält seinen eigenen Docker-Daemon** unter `/var/run/rediacc/docker-<networkId>.sock`.
 - **Jeder Dienst erhält eine eindeutige Loopback-IP** innerhalb eines /26-Subnetzes (z.B. `127.0.24.192/26`).
-- **Binden Sie an `SERVICE_IP`**, nicht an `0.0.0.0` — Host-Networking bedeutet, dass `0.0.0.0` mit anderen Repos kollidieren würde.
+- **Binden Sie an `SERVICE_IP`** — jeder Dienst erhält eine eindeutige Loopback-IP.
+- **Health Checks müssen `${SERVICE_IP}` verwenden**, nicht `localhost`. Beispiel: `healthcheck: test: ["CMD", "curl", "-f", "http://${SERVICE_IP}:8080/health"]`
 - **Inter-Service-Kommunikation**: Verwenden Sie Loopback-IPs oder die Umgebungsvariable `SERVICE_IP`. Docker-DNS-Namen funktionieren im Host-Modus NICHT.
 - **Portkonflikte sind unmöglich** zwischen Repositories — jedes hat seinen eigenen Docker-Daemon und IP-Bereich.
 - **TCP/UDP-Portweiterleitung**: Fügen Sie Labels hinzu, um Nicht-HTTP-Ports freizugeben:
@@ -87,15 +89,16 @@ Renet injiziert diese automatisch in jeden Container:
 
 ## Speicher
 
-- **Alle persistenten Daten müssen `${REPOSITORY_PATH}/...` Bind Mounts verwenden.**
+- **Alle Docker-Daten werden im verschlüsselten Repo gespeichert** — Dockers `data-root` befindet sich unter `{mount}/.rediacc/docker/data` innerhalb des LUKS-Volumes. Named Volumes, Images und Container-Layer sind alle verschlüsselt, gesichert und werden automatisch geforkt.
+- **Bind Mounts zu `${REPOSITORY_PATH}/...` werden der Übersichtlichkeit halber empfohlen**, aber Named Volumes funktionieren ebenfalls sicher.
   ```yaml
   volumes:
-    - ${REPOSITORY_PATH}/data:/data
-    - ${REPOSITORY_PATH}/config:/etc/myapp
+    - ${REPOSITORY_PATH}/data:/data        # bind mount (empfohlen)
+    - pgdata:/var/lib/postgresql/data      # named volume (ebenfalls sicher)
   ```
-- Docker Named Volumes befinden sich außerhalb des LUKS-Repos — sie sind **nicht verschlüsselt**, **nicht gesichert** und **nicht in Forks enthalten**.
 - Das LUKS-Volume wird unter `/mnt/rediacc/mounts/<guid>/` gemountet.
 - BTRFS-Snapshots erfassen die gesamte LUKS-Backing-Datei, einschließlich aller bind-gemounteten Daten.
+- Der Datenspeicher ist eine fest dimensionierte BTRFS-Pool-Datei auf der Systemfestplatte. Verwenden Sie `rdc machine query <name> --system`, um den effektiven freien Speicher zu sehen. Erweitern Sie mit `rdc datastore resize`.
 
 ## CRIU (Live-Migration)
 
@@ -118,7 +121,7 @@ Renet injiziert diese automatisch in jeden Container:
 - Behandeln Sie `ECONNRESET` bei allen persistenten Verbindungen (Datenbank-Pools, WebSockets, Message Queues).
 - Verwenden Sie Connection-Pool-Bibliotheken, die automatische Neuverbindung unterstützen.
 - Fügen Sie `process.on("uncaughtException")` als Sicherheitsnetz für veraltete Socket-Fehler von internen Bibliotheksobjekten hinzu.
-- Vermeiden Sie `restart: always` — es stört die CRIU-Wiederherstellung.
+- Restart-Richtlinien werden automatisch von renet verwaltet (für CRIU entfernt, Watchdog übernimmt die Wiederherstellung).
 - Verlassen Sie sich nicht auf Docker-DNS — verwenden Sie Loopback-IPs für die Inter-Service-Kommunikation.
 
 ## Sicherheit
@@ -127,7 +130,7 @@ Renet injiziert diese automatisch in jeden Container:
 - **Anmeldeinformationen werden in der CLI-Konfiguration gespeichert** (`~/.config/rediacc/rediacc.json`). Der Verlust der Konfiguration bedeutet den Verlust des Zugangs zu verschlüsselten Volumes.
 - **Committen Sie niemals Anmeldeinformationen** in die Versionskontrolle. Verwenden Sie `env_file` und generieren Sie Secrets in `up()`.
 - **Repository-Isolation**: Docker-Daemon, Netzwerk und Speicher jedes Repos sind vollständig von anderen Repos auf derselben Maschine isoliert.
-- **Agenten-Isolation**: KI-Agenten arbeiten standardmäßig im fork-only-Modus. Sie können nur Fork-Repositories ändern, nicht grand (ursprüngliche) Repositories. Befehle, die über `term_exec` oder `rdc term` mit Repository-Kontext ausgeführt werden, werden mit Landlock LSM auf Kernel-Ebene sandboxed und verhindern dateisystemweiten Zugriff zwischen Repositories.
+- **Agenten-Isolation**: KI-Agenten arbeiten standardmäßig im fork-only-Modus. Jedes Repo hat seinen eigenen SSH-Schlüssel mit serverseitiger Sandbox-Durchsetzung (`sandbox-gateway` ForceCommand). Alle Verbindungen werden mit Landlock LSM, OverlayFS Home-Overlay und repo-eigenem TMPDIR sandboxed. Dateisystemzugriff zwischen Repos wird durch den Kernel blockiert.
 
 ## Deployment
 
@@ -136,14 +139,16 @@ Renet injiziert diese automatisch in jeden Container:
 - **`rdc repo down`** führt `down()` aus und stoppt den Docker-Daemon.
 - **`rdc repo down --unmount`** schließt zusätzlich das LUKS-Volume (sperrt den verschlüsselten Speicher).
 - **Forks** (`rdc repo fork`) erstellen einen CoW-Klon (Copy-on-Write) mit neuer GUID und networkId. Der Fork teilt den Verschlüsselungsschlüssel des Elternteils.
+- **Takeover** (`rdc repo takeover <fork> -m <machine>`) ersetzt die Daten des grand Repos durch die Daten eines Forks. Das grand Repo behält seine Identität (GUID, networkId, Domains, Autostart, Backup-Kette). Alte Produktionsdaten werden als Backup-Fork gesichert. Verwendung: Upgrade auf Fork testen, verifizieren, dann Takeover zur Produktion. Rückgängig machen mit `rdc repo takeover <backup-fork> -m <machine>`.
 - **Proxy-Routen** werden ca. 3 Sekunden nach dem Deploy aktiv. Die Warnung „Proxy is not running" während `repo up` ist informativ in Ops/Dev-Umgebungen.
 
 ## Häufige Fehler
 
 - `docker compose` statt `renet compose` verwenden — Container erhalten keine Netzwerkisolation.
-- `restart: always` verwenden — verhindert CRIU-Wiederherstellung und stört `repo down`.
-- Docker Named Volumes verwenden — Daten sind nicht verschlüsselt, nicht gesichert, nicht geforkt.
-- An `0.0.0.0` binden — verursacht Portkonflikte zwischen Repos im Host-Networking-Modus.
+- Restart-Richtlinien sind sicher — renet entfernt sie automatisch und der Watchdog übernimmt die Wiederherstellung.
+- `privileged: true` verwenden — nicht nötig, renet injiziert stattdessen spezifische CRIU-Capabilities.
+- Nicht an `SERVICE_IP` binden — verursacht Portkonflikte zwischen Repos.
 - IPs hardcoden — verwenden Sie die Umgebungsvariable `SERVICE_IP`; IPs werden dynamisch pro networkId zugewiesen.
 - `--mount` beim ersten Deploy nach `backup push` vergessen — das LUKS-Volume muss explizit geöffnet werden.
 - `rdc term -c` als Workaround für fehlgeschlagene Befehle verwenden — melden Sie stattdessen Bugs.
+- `repo delete` führt eine vollständige Bereinigung durch, einschließlich Loopback-IPs und systemd-Units. Führen Sie `rdc machine prune <name>` aus, um Überreste aus alten Löschvorgängen zu bereinigen.

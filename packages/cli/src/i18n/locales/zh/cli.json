@@ -2,6 +2,10 @@
   "cli": {
     "description": "通过 SSH 管理机器、仓库和部署"
   },
+  "warnings": {
+    "licenseSignatureRefreshed": "renet 更新后，已刷新 {{count}} 个签名无效的仓库许可证",
+    "licenseSignatureRefreshFailed": "renet 更新后，{{count}} 个仓库许可证签名无效。请运行：rdc subscription refresh -m <machine>"
+  },
   "commands": {
     "agent": {
       "capabilities": {
@@ -721,16 +725,16 @@
         "description": "使用OpenTofu在云提供商上配置新机器",
         "failed": "机器配置失败：{{error}}",
         "infraInherited": "已从兄弟机器 \"{{source}}\" 自动检测到基础域名",
-        "noInfraHint": "未配置基础域名。运行 'rdc config set-infra <machine> --base-domain <domain>' 然后 'rdc config push-infra <machine>' 以启用 DNS 和代理。",
+        "noInfraHint": "未配置基础域名。运行 'rdc config infra set <machine> --base-domain <domain>' 然后 'rdc config infra push <machine>' 以启用 DNS 和代理。",
         "optionBaseDomain": "基础设施的基础域名（例如 example.com）。隐含 --infra",
         "optionImage": "覆盖默认操作系统镜像",
-        "optionInfra": "同时配置基础设施（set-infra + push-infra）",
+        "optionInfra": "同时配置基础设施（infra set + infra push）",
         "optionNoInfra": "跳过基础设施配置（代理 + DNS）",
-        "optionProvider": "云提供商名称（来自config add-provider）",
+        "optionProvider": "云提供商名称（来自config provider add）",
         "optionRegion": "覆盖默认区域",
         "optionSshUser": "新虚拟机的SSH用户名（默认：root）",
         "optionType": "覆盖默认实例类型",
-        "providerRequired": "未找到云提供商 \"{{name}}\"。使用以下命令添加：rdc config add-provider",
+        "providerRequired": "未找到云提供商 \"{{name}}\"。使用以下命令添加：rdc config provider add",
         "provisioning": "正在 {{provider}} ({{region}}) 上配置 {{name}}...",
         "settingUp": "正在运行机器设置...",
         "sshReady": "SSH连接已建立",
@@ -1147,6 +1151,7 @@
         "failed": "仓库创建失败",
         "registered": "已注册 \"{{repository}}\"（{{guid}}，网络 {{networkId}}）",
         "rollback": "已回滚 \"{{repository}}\" 的配置",
+        "noDockerOption": "创建后跳过启动 Docker 守护进程",
         "sizeOption": "仓库大小（例如 10G、100G、1T）",
         "starting": "正在 \"{{machine}}\" 上创建仓库 \"{{repository}}\"（{{size}}）..."
       },
@@ -1196,6 +1201,19 @@
         "tagOption": "分支的标签（创建 名称:标签）",
         "tagRequired": "分支需要标签。用法：rdc repo fork <parent> <tag> -m <machine>"
       },
+      "takeover": {
+        "description": "用分支的数据替换主仓库的数据。主仓库保留其身份（GUID、networkId、域名、自动启动、备份链），但获取分支的升级数据。旧的生产数据作为备份分支保留。用途：在分支上测试升级 → 验证 → 接管到生产环境。",
+        "descriptionShort": "用分支数据替换生产数据",
+        "forceOption": "跳过修改警告",
+        "notAFork": "\"{{name}}\" 不是分支仓库（缺少 parentGuid）",
+        "grandNotFound": "未找到分支 \"{{name}}\" 的主仓库",
+        "starting": "正在用 \"{{fork}}\" 的数据接管 \"{{machine}}\" 上的 \"{{grand}}\"...",
+        "completed": "接管完成。主仓库现在拥有分支的数据。",
+        "backupInfo": "旧的生产数据已保存为：{{backup}}",
+        "revertHint": "要还原：rdc repo takeover {{backup}} -m {{machine}}",
+        "failed": "接管失败",
+        "rollback": "已回滚 \"{{name}}\" 的配置"
+      },
       "list": {
         "completed": "列表获取完成",
         "description": "列出机器上的仓库",
@@ -1209,6 +1227,7 @@
         "description": "挂载仓库 (打开 LUKS 容器)",
         "descriptionShort": "挂载仓库（解密并打开 LUKS 容器）",
         "failed": "挂载失败",
+        "noDockerOption": "挂载后跳过启动 Docker 守护进程",
         "starting": "正在将 \"{{repository}}\" 挂载到 \"{{machine}}\"..."
       },
       "noCredential": "警告: 仓库 \"{{name}}\" 未设置凭证。对加密仓库的操作可能会失败。",
@@ -1240,7 +1259,7 @@
         "optionCheckpoint": "创建容器检查点（热备份）",
         "optionDest": "目标文件名",
         "optionForce": "强制覆盖现有备份",
-        "optionProvider": "如果目标机器不存在，则自动配置的云提供商（来自config add-provider）",
+        "optionProvider": "如果目标机器不存在，则自动配置的云提供商（来自config provider add）",
         "optionTag": "用于版本控制的部署标签",
         "optionToMachine": "目标机器名称",
         "optionToStorage": "目标存储名称",
@@ -1575,6 +1594,10 @@
         "validated": "令牌已验证",
         "validating": "正在验证令牌...",
         "waitingApproval": "等待浏览器授权..."
+      },
+      "logout": {
+        "description": "清除已存储的订阅令牌",
+        "success": "订阅令牌已删除"
       },
       "refresh": {
         "activation": {
@@ -2148,13 +2171,14 @@
     "machine": {
       "containers": "列出运行中的容器",
       "health": "CI/CD 健康检查",
-      "keyConcepts": "\n关键概念:\n\n  查询过滤器\n    • rdc machine query <name> 默认返回所有部分\n    • 使用 --system、--repositories、--containers、--services、--network、--block-devices 进行过滤\n    • JSON 输出为容器补充: repository (解析后的名称)、domain、autoRoute\n\n  健康监控\n    • machine health 退出码: 0=健康、1=警告、2=错误 — 用于 CI/CD 门控\n    • containers --health-check 如果任何容器不健康则退出码为 2\n    • services --stability-check 如果任何服务失败、正在重启或重启超过 3 次则退出码为 2\n\n  数据存储结构 (/mnt/rediacc/)\n    • repositories/ — 加密的 LUKS 镜像 (每个仓库 GUID 一个)\n    • mounts/ — 解密的挂载点 (仓库挂载时可访问)\n    • immovable/ — 每个仓库的 Docker daemon 数据\n",
+      "keyConcepts": "\n关键概念:\n\n  查询过滤器\n    • rdc machine query <name> 默认返回所有部分\n    • 使用 --system、--repositories、--containers、--services、--network、--block-devices 进行过滤\n    • JSON 输出为容器补充: repository (解析后的名称)、domain、autoRoute\n\n  健康监控\n    • machine health 退出码: 0=健康、1=警告、2=错误 — 用于 CI/CD 门控\n    • containers --health-check 如果任何容器不健康则退出码为 2\n    • services --stability-check 如果任何服务失败、正在重启或重启超过 3 次则退出码为 2\n\n  数据存储结构 (/mnt/rediacc/)\n    • repositories/ — 加密的 LUKS 镜像 (每个仓库 GUID 一个)\n    • mounts/ — 解密的挂载点 (仓库挂载时可访问)\n    • immovable/ — 每个仓库的 Docker daemon 数据\n    • Datastore is a BTRFS pool file on the system disk. Effective free space = min(disk free, datastore free). Expand with: rdc datastore resize\n",
       "query": "显示完整机器状态"
     },
     "repo": {
       "create": "创建加密仓库",
       "down": "停止服务",
       "fork": "创建 CoW 测试分支",
+      "takeover": "用分支数据替换生产数据",
       "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REPOSITORY_PATH}/data, ${REPOSITORY_PATH}/config, etc.\n    • Example: volumes: ['${REPOSITORY_PATH}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "列出存储上的备份",
       "pull": "从存储拉取仓库备份",

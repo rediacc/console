@@ -92,13 +92,20 @@ def get_uid_gid(username):
     except KeyError:
         return None, None
 
+def safe_chown(path, uid, gid):
+    """chown that gracefully degrades when running without root (e.g., inside sandbox)"""
+    try:
+        os.chown(path, uid, gid)
+    except OSError:
+        pass
+
 def ensure_dir(path, mode=0o755, uid=None, gid=None):
     """Create directory with proper permissions and ownership"""
     path = pathlib.Path(path)
     if not path.exists():
         path.mkdir(parents=True, mode=mode)
     if uid is not None and gid is not None:
-        os.chown(path, uid, gid)
+        safe_chown(path, uid, gid)
 
 def write_file_atomic(path, content, mode=0o644, uid=None, gid=None):
     """Write file atomically with proper permissions"""
@@ -107,7 +114,7 @@ def write_file_atomic(path, content, mode=0o644, uid=None, gid=None):
     temp_path.write_text(content)
     os.chmod(temp_path, mode)
     if uid is not None and gid is not None:
-        os.chown(temp_path, uid, gid)
+        safe_chown(temp_path, uid, gid)
     temp_path.rename(path)
 
 def update_managed_content(path, new_content, mode=0o644, uid=None, gid=None):
@@ -160,8 +167,9 @@ def main():
     update_managed_content(setup_file, setup_content, 0o644, uid, gid)
 
     # Write terminal init script (sourced via --rcfile so PS1 isn't overridden)
+    # --rcfile replaces ~/.bashrc, so we source it explicitly after our env setup
     terminal_init = setup_dir / 'terminal-init.sh'
-    init_content = f'source /etc/bash.bashrc 2>/dev/null\\nsource "{env_file}" 2>/dev/null\\n'
+    init_content = f'source /etc/bash.bashrc 2>/dev/null\\nsource "{env_file}" 2>/dev/null\\nsource ~/.bashrc 2>/dev/null\\n'
     write_file_atomic(terminal_init, init_content, 0o644, uid, gid)
 
     # Write Machine settings to force /bin/bash with our init as default shell

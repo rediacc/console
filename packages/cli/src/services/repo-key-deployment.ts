@@ -23,9 +23,11 @@ export async function deployRepoKey(
   teamKey: string,
   knownHosts: string,
   repoName: string,
-  sshPublicKey: string
+  sshPublicKey: string,
+  repositoryGuid?: string
 ): Promise<void> {
-  const keyLine = `command="${GATEWAY_BIN} sandbox-gateway ${repoName}" ${sshPublicKey}`;
+  const guidFlag = repositoryGuid ? ` --guid ${repositoryGuid}` : '';
+  const keyLine = `command="${GATEWAY_BIN} sandbox-gateway ${repoName}${guidFlag}" ${sshPublicKey}`;
   const keyPrefix = sshPublicKey.slice(0, 50);
 
   // Atomic deployment script: check if exists → replace or append
@@ -36,11 +38,7 @@ export async function deployRepoKey(
     'mkdir -p "$SSH_DIR" && chmod 700 "$SSH_DIR"',
     `KEY_PREFIX="${keyPrefix}"`,
     // Remove old version if exists (by key prefix match)
-    `if [ -f "$AUTH_KEYS" ] && grep -qF "$KEY_PREFIX" "$AUTH_KEYS"; then`,
-    `  TEMP=$(mktemp)`,
-    `  grep -vF "$KEY_PREFIX" "$AUTH_KEYS" > "$TEMP" 2>/dev/null || true`,
-    `  mv "$TEMP" "$AUTH_KEYS"`,
-    `fi`,
+    `if [ -f "$AUTH_KEYS" ] && grep -qF "$KEY_PREFIX" "$AUTH_KEYS"; then TEMP=$(mktemp) && grep -vF "$KEY_PREFIX" "$AUTH_KEYS" > "$TEMP" 2>/dev/null || true && mv "$TEMP" "$AUTH_KEYS"; fi`,
     // Append new key
     `echo '${keyLine}' >> "$AUTH_KEYS"`,
     'chmod 600 "$AUTH_KEYS"',
@@ -51,69 +49,55 @@ export async function deployRepoKey(
 }
 
 /**
- * Remove a repo's SSH key from a machine's authorized_keys.
- */
-export async function removeRepoKey(
-  machine: MachineConfig,
-  teamKey: string,
-  knownHosts: string,
-  sshPublicKey: string
-): Promise<void> {
-  const keyPrefix = sshPublicKey.slice(0, 50);
-
-  const script = [
-    'AUTH_KEYS="$HOME/.ssh/authorized_keys"',
-    `if [ -f "$AUTH_KEYS" ]; then`,
-    `  TEMP=$(mktemp)`,
-    `  grep -vF "${keyPrefix}" "$AUTH_KEYS" > "$TEMP" 2>/dev/null || true`,
-    `  mv "$TEMP" "$AUTH_KEYS"`,
-    `  chmod 600 "$AUTH_KEYS"`,
-    `fi`,
-  ].join('; ');
-
-  await execSSHCommand(machine, teamKey, knownHosts, script);
-  debugLog(`Removed SSH key from ${machine.ip}`);
-}
-
-/**
  * Deploy a repo's key if it has one. Resolves machine config and team key automatically.
  * Non-fatal — logs warning on failure.
  */
 export async function deployRepoKeyIfNeeded(repoName: string, machineName: string): Promise<void> {
   try {
     const repo = await configService.getRepository(repoName);
-    if (!repo?.sshPublicKey) return;
+    if (!repo?.sshPublicKey) {
+      debugLog(`deployRepoKey: no sshPublicKey for ${repoName} (repo found: ${!!repo})`);
+      return;
+    }
 
     const localConfig = await configService.getLocalConfig();
     const machine = localConfig.machines[machineName];
-    if (!machine) return;
+    if (!machine) {
+      debugLog(`deployRepoKey: machine ${machineName} not found`);
+      return;
+    }
 
     const teamKey = localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-    await deployRepoKey(machine, teamKey, machine.knownHosts ?? '', repoName, repo.sshPublicKey);
+    await deployRepoKey(
+      machine,
+      teamKey,
+      machine.knownHosts ?? '',
+      repoName,
+      repo.sshPublicKey,
+      repo.repositoryGuid
+    );
+    debugLog(`Deployed SSH key for ${repoName} to ${machineName}`);
   } catch (error) {
-    debugLog(`Warning: failed to deploy SSH key for ${repoName} to ${machineName}: ${error}`);
+    // Log visibly — silent failures here cause hard-to-debug connection issues
+    console.warn(
+      `Warning: failed to deploy SSH key for ${repoName}: ${error instanceof Error ? error.message : error}`
+    );
   }
 }
 
 /**
- * Remove a repo's key from a machine. Non-fatal.
- */
-export async function removeRepoKeyFromMachine(
-  repoName: string,
-  machineName: string
-): Promise<void> {
   try {
-    const repo = await configService.getRepository(repoName);
-    if (!repo?.sshPublicKey) return;
-
     const localConfig = await configService.getLocalConfig();
     const machine = localConfig.machines[machineName];
     if (!machine) return;
 
     const teamKey = localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-    await removeRepoKey(machine, teamKey, machine.knownHosts ?? '', repo.sshPublicKey);
+    const sandboxPath = `/mnt/rediacc/.interim/sandbox/${repoName}`;
+    const script = `if [ -d "${sandboxPath}" ]; then rm -rf "${sandboxPath}"; fi`;
+    await execSSHCommand(machine, teamKey, machine.knownHosts ?? '', script);
+    debugLog(`Removed sandbox dir for ${repoName} on ${machine.ip}`);
   } catch (error) {
-    debugLog(`Warning: failed to remove SSH key for ${repoName} from ${machineName}: ${error}`);
+    debugLog(`Warning: failed to cleanup sandbox dir for ${repoName}: ${error}`);
   }
 }
 
@@ -132,7 +116,14 @@ export async function deployAllRepoKeys(machineName: string): Promise<number> {
   for (const { name, config } of repos) {
     if (config.sshPublicKey) {
       try {
-        await deployRepoKey(machine, teamKey, machine.knownHosts ?? '', name, config.sshPublicKey);
+        await deployRepoKey(
+          machine,
+          teamKey,
+          machine.knownHosts ?? '',
+          name,
+          config.sshPublicKey,
+          config.repositoryGuid
+        );
         deployed++;
       } catch (error) {
         debugLog(`Warning: failed to deploy key for ${name}: ${error}`);
@@ -162,10 +153,18 @@ async function execSSHCommand(
       agentSocketPath: sshConnection.agentSocketPath,
     });
 
+    let stderr = '';
+    child.stderr?.on('data', (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
+
     await new Promise<void>((resolve, reject) => {
       child.on('exit', (code: number | null) => {
         if (code === 0 || code === null) resolve();
-        else reject(new Error(`SSH command failed with code ${code}`));
+        else
+          reject(
+            new Error(`SSH command failed with code ${code}${stderr ? `: ${stderr.trim()}` : ''}`)
+          );
       });
       child.on('error', reject);
     });

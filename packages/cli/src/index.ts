@@ -47,6 +47,17 @@ if (process.argv.includes('mcp') && process.argv.includes('serve')) {
     .then(() => process.exit(0))
     .catch(() => process.exit(1));
 } else {
+  // Catch unhandled errors that escape the main try-catch
+  process.on('uncaughtException', (error) => {
+    telemetryService.trackError(error, { source: 'uncaughtException' });
+    void telemetryService.shutdown().finally(() => process.exit(1));
+  });
+  process.on('unhandledRejection', (reason) => {
+    telemetryService.trackError(reason instanceof Error ? reason : new Error(String(reason)), {
+      source: 'unhandledRejection',
+    });
+  });
+
   // Normal CLI flow: apply pending update + spawn background check
   const applyPromise = applyPendingUpdate().catch(() => {});
   const spawnPromise = maybeSpawnBackgroundUpdate().catch(() => {});
@@ -65,7 +76,10 @@ if (process.argv.includes('mcp') && process.argv.includes('serve')) {
       await telemetryService.stopProfiling();
       await Promise.race([
         telemetryService.shutdown(),
-        new Promise((resolve) => setTimeout(resolve, 500)),
+        new Promise((resolve) => {
+          const t = setTimeout(resolve, 500);
+          if (typeof t === 'object' && 'unref' in t) t.unref();
+        }),
       ]);
     } catch (error) {
       handleError(error);

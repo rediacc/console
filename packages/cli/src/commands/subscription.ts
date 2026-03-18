@@ -2,6 +2,7 @@ import { SUBSCRIPTION_DEFAULTS } from '@rediacc/shared/config';
 import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
+import { accountServerFetch } from '../services/account-client.js';
 import { configService } from '../services/config-resources.js';
 import {
   fetchSubscriptionLicenseReport,
@@ -15,6 +16,7 @@ import {
 import { outputService } from '../services/output.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
 import {
+  deleteStoredSubscriptionToken,
   getSubscriptionScopeMismatch,
   getSubscriptionServerUrl,
   getSubscriptionTokenState,
@@ -70,40 +72,29 @@ export function registerSubscriptionCommands(program: Command): void {
           const token = options.token;
           const status = await withSpinner(
             t('commands.subscription.login.validating'),
-            async () => {
-              const resp = await fetch(`${serverUrl}/account/api/v1/licenses/status`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              if (!resp.ok) {
-                const body = await resp.json().catch(() => ({ error: 'Unknown error' }));
-                throw new ValidationError(
-                  (body as { error?: string }).error ?? `HTTP ${resp.status}`
-                );
-              }
-              return resp.json();
-            },
+            () =>
+              accountServerFetch<{
+                subscriptionId?: string;
+                orgId?: string;
+                orgName?: string;
+                planCode?: string;
+                status?: string;
+                activeMachineCount?: number;
+                maxMachines?: number;
+                teamId?: string;
+                teamName?: string;
+              }>('/account/api/v1/licenses/status', { token, serverUrl }),
             t('commands.subscription.login.validated')
           );
           const currentTeamName = await configService.getTeam();
-          const typedStatus = status as {
-            subscriptionId?: string;
-            orgId?: string;
-            orgName?: string;
-            planCode?: string;
-            status?: string;
-            activeMachineCount?: number;
-            maxMachines?: number;
-            teamId?: string;
-            teamName?: string;
-          };
           const storedToken = {
             token,
             serverUrl,
-            subscriptionId: typedStatus.subscriptionId,
-            orgId: typedStatus.orgId,
-            orgName: typedStatus.orgName,
-            teamId: typedStatus.teamId,
-            teamName: typedStatus.teamName ?? currentTeamName,
+            subscriptionId: status.subscriptionId,
+            orgId: status.orgId,
+            orgName: status.orgName,
+            teamId: status.teamId,
+            teamName: status.teamName ?? currentTeamName,
           };
           const mismatch = getSubscriptionScopeMismatch(storedToken, currentTeamName);
           if (mismatch) {
@@ -112,7 +103,7 @@ export function registerSubscriptionCommands(program: Command): void {
 
           saveStoredSubscriptionToken(storedToken);
 
-          const s = typedStatus;
+          const s = status;
           setSubscriptionTelemetryContext({
             subscriptionId: s.subscriptionId,
             planCode: s.planCode,
@@ -164,6 +155,19 @@ export function registerSubscriptionCommands(program: Command): void {
             })
           );
         }
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // subscription logout
+  sub
+    .command('logout')
+    .description(t('commands.subscription.logout.description'))
+    .action(() => {
+      try {
+        deleteStoredSubscriptionToken();
+        outputService.success(t('commands.subscription.logout.success'));
       } catch (error) {
         handleError(error);
       }
@@ -385,9 +389,12 @@ export async function executeRepoStatus(machineName: string): Promise<void> {
   const machine = await configService.getLocalMachine(machineName);
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-  const remoteRenetPath = await provisionRenetToRemote(localConfig, machine, sshPrivateKey, {
-    skipRouterRestart: true,
-  });
+  const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
+    localConfig,
+    machine,
+    sshPrivateKey,
+    { skipRouterRestart: true }
+  );
   const entries = await readRuntimeRepoLicenseStatuses(machine, sshPrivateKey, remoteRenetPath);
 
   outputService.info(t('commands.subscription.repo.status.header', { machineName }));
@@ -445,9 +452,12 @@ export async function resolveSubscriptionCommandContext(
   const machine = await configService.getLocalMachine(machineName);
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-  const remoteRenetPath = await provisionRenetToRemote(localConfig, machine, sshPrivateKey, {
-    skipRouterRestart: true,
-  });
+  const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
+    localConfig,
+    machine,
+    sshPrivateKey,
+    { skipRouterRestart: true }
+  );
   return { machine, sshPrivateKey, remoteRenetPath };
 }
 

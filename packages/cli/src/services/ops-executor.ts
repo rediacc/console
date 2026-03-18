@@ -78,8 +78,7 @@ class OpsExecutorService {
       return execSync(whichCmd, { encoding: 'utf-8' }).trim().split('\n')[0];
     } catch {
       throw new Error(
-        'renet binary not found. Set a renet path with "rdc config set-renet <path>" ' +
-          'or ensure renet is in your PATH.'
+        'renet binary not found. Ensure renet is in your PATH or set renetPath in the config file.'
       );
     }
   }

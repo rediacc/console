@@ -52,7 +52,7 @@ down() {
 - **Do NOT set `rediacc.*` labels** — renet auto-injects `rediacc.network_id`, `rediacc.service_ip`, and `rediacc.service_name`.
 - **`ports:` mappings are ignored** in host networking mode. Use `rediacc.service_port` label for proxy routing to non-80 ports.
 - **Restart policies (`restart: always`, `on-failure`, etc.) are safe to use** — renet auto-strips them for CRIU compatibility. The router watchdog auto-recovers stopped containers based on the original policy saved in `.rediacc.json`.
-- **Do NOT use Docker named volumes** — they live outside the encrypted repo and won't be included in backups or forks.
+- **Dangerous settings are blocked by default** — `privileged: true`, `pid: host`, `ipc: host`, and host bind mounts to system paths are rejected. Use `renet compose --unsafe` to override at your own risk.
 
 ### Environment variables inside containers
 
@@ -87,15 +87,16 @@ Renet auto-injects these into every container:
 
 ## Storage
 
-- **All persistent data must use `${REPOSITORY_PATH}/...` bind mounts.**
+- **All Docker data is stored inside the encrypted repo** — Docker's `data-root` is at `{mount}/.rediacc/docker/data` inside the LUKS volume. Named volumes, images, and container layers are all encrypted, backed up, and forked automatically.
+- **Bind mounts to `${REPOSITORY_PATH}/...` are recommended** for clarity, but named volumes also work safely.
   ```yaml
   volumes:
-    - ${REPOSITORY_PATH}/data:/data
-    - ${REPOSITORY_PATH}/config:/etc/myapp
+    - ${REPOSITORY_PATH}/data:/data        # bind mount (recommended)
+    - pgdata:/var/lib/postgresql/data      # named volume (also safe)
   ```
-- Docker named volumes live outside the LUKS repo — they are **not encrypted**, **not backed up**, and **not included in forks**.
 - The LUKS volume is mounted at `/mnt/rediacc/mounts/<guid>/`.
 - BTRFS snapshots capture the entire LUKS backing file, including all bind-mounted data.
+- The datastore is a fixed-size BTRFS pool file on the system disk. Use `rdc machine query <name> --system` to see effective free space. Expand with `rdc datastore resize`.
 
 ## CRIU (Live Migration)
 
@@ -136,13 +137,14 @@ Renet auto-injects these into every container:
 - **`rdc repo down`** runs `down()` and stops the Docker daemon.
 - **`rdc repo down --unmount`** also closes the LUKS volume (locks the encrypted storage).
 - **Forks** (`rdc repo fork`) create a CoW (copy-on-write) clone with a new GUID and networkId. The fork shares the parent's encryption key.
+- **Takeover** (`rdc repo takeover <fork> -m <machine>`) replaces the grand repo's data with a fork's data. The grand keeps its identity (GUID, networkId, domains, autostart, backup chain). Old production data is preserved as a backup fork. Use for: test upgrade on fork, verify, then takeover to production. Revert with `rdc repo takeover <backup-fork> -m <machine>`.
 - **Proxy routes** take ~3 seconds to become active after deploy. The "Proxy is not running" warning during `repo up` is informational in ops/dev environments.
 
 ## Common mistakes
 
 - Using `docker compose` instead of `renet compose` — containers won't get network isolation.
 - Restart policies are safe — renet auto-strips them and the watchdog handles recovery.
-- Using Docker named volumes — data is not encrypted, not backed up, not forked.
+- Using `privileged: true` — not needed, renet injects specific CRIU capabilities instead.
 - Not binding to `SERVICE_IP` — causes port conflicts between repos.
 - Hardcoding IPs — use `SERVICE_IP` env var; IPs are allocated dynamically per networkId.
 - Forgetting `--mount` on first deploy after `backup push` — LUKS volume needs explicit opening.

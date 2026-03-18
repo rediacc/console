@@ -271,8 +271,7 @@ function renderCommandBlock(lines: string[], cmd: CommandCapability): void {
 
   renderOptions(lines, cmd.options);
 
-  const meta = COMMAND_METADATA[cmd.name];
-  const annotations = collectAnnotations(meta);
+  const annotations = collectAnnotations(COMMAND_METADATA[cmd.name]);
   if (annotations.length > 0) {
     lines.push(`> ${annotations.join(' | ')}`, '');
   }

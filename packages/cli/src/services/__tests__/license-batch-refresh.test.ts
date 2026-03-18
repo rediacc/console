@@ -39,6 +39,11 @@ vi.mock('../config-resources.js', () => ({
   },
 }));
 
+const mockAccountServerFetch = vi.fn();
+vi.mock('../account-client.js', () => ({
+  accountServerFetch: (...args: unknown[]) => mockAccountServerFetch(...args),
+}));
+
 describe('refreshRepoLicensesBatch', () => {
   const machine: MachineConfig = {
     ip: '127.0.0.1',
@@ -49,7 +54,6 @@ describe('refreshRepoLicensesBatch', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    global.fetch = vi.fn();
     mockListRepositories.mockResolvedValue([
       {
         name: 'mail',
@@ -75,29 +79,26 @@ describe('refreshRepoLicensesBatch', () => {
             currentHardExpiresAt: '2099-02-01T00:00:00.000Z',
           },
         ])
-      );
+      )
+      .mockResolvedValueOnce(JSON.stringify([])); // license-status (no invalid signatures)
     mockExecStreaming.mockResolvedValue(0);
   });
 
   it('writes only issued/refreshed licenses and reports mixed batch result', async () => {
-    vi.mocked(global.fetch).mockResolvedValueOnce({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          results: [
-            {
-              repositoryGuid: '550e8400-e29b-41d4-a716-446655440000',
-              status: 'issued',
-              license: { payload: 'a', signature: 'b', publicKeyId: 'c' },
-            },
-            {
-              repositoryGuid: '550e8400-e29b-41d4-a716-446655440003',
-              status: 'failed',
-              error: 'size limit exceeded',
-            },
-          ],
-        }),
-    } as Response);
+    mockAccountServerFetch.mockResolvedValueOnce({
+      results: [
+        {
+          repositoryGuid: '550e8400-e29b-41d4-a716-446655440000',
+          status: 'issued',
+          license: { payload: 'a', signature: 'b', publicKeyId: 'c' },
+        },
+        {
+          repositoryGuid: '550e8400-e29b-41d4-a716-446655440003',
+          status: 'failed',
+          error: 'size limit exceeded',
+        },
+      ],
+    });
 
     const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
 
@@ -108,6 +109,7 @@ describe('refreshRepoLicensesBatch', () => {
       unchanged: 0,
       failed: 2,
       valid: 1,
+      invalidSignatureDetected: 0,
       failures: [
         {
           repositoryGuid: '550e8400-e29b-41d4-a716-446655440002',
@@ -119,7 +121,7 @@ describe('refreshRepoLicensesBatch', () => {
         },
       ],
     });
-    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(mockAccountServerFetch).toHaveBeenCalledTimes(1);
     expect(mockExecStreaming).toHaveBeenCalledTimes(1);
   });
 
@@ -135,6 +137,7 @@ describe('refreshRepoLicensesBatch', () => {
       unchanged: 0,
       failed: 2,
       valid: 0,
+      invalidSignatureDetected: 0,
       failures: [
         {
           repositoryGuid: '550e8400-e29b-41d4-a716-446655440000',
@@ -146,23 +149,19 @@ describe('refreshRepoLicensesBatch', () => {
         },
       ],
     });
-    expect(global.fetch).not.toHaveBeenCalled();
+    expect(mockAccountServerFetch).not.toHaveBeenCalled();
     expect(mockExecStreaming).not.toHaveBeenCalled();
   });
 
   it('does not write unchanged entries returned by the server', async () => {
-    vi.mocked(global.fetch).mockResolvedValueOnce({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          results: [
-            {
-              repositoryGuid: '550e8400-e29b-41d4-a716-446655440000',
-              status: 'unchanged',
-            },
-          ],
-        }),
-    } as Response);
+    mockAccountServerFetch.mockResolvedValueOnce({
+      results: [
+        {
+          repositoryGuid: '550e8400-e29b-41d4-a716-446655440000',
+          status: 'unchanged',
+        },
+      ],
+    });
 
     const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
 
@@ -171,18 +170,96 @@ describe('refreshRepoLicensesBatch', () => {
   });
 
   it('surfaces parsed batch request failures from the account server', async () => {
-    vi.mocked(global.fetch).mockResolvedValueOnce({
-      ok: false,
-      status: 403,
-      json: () =>
-        Promise.resolve({
-          error: 'Monthly repo license issuance limit reached',
-          code: 'REPO_LICENSE_ISSUANCE_LIMIT_REACHED',
-        }),
-    } as Response);
+    const error = new Error('Monthly repo license issuance limit reached');
+    (error as Record<string, unknown>).status = 403;
+    mockAccountServerFetch.mockRejectedValueOnce(error);
 
     await expect(refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet')).rejects.toThrow(
       'Monthly repo license issuance limit reached'
     );
+  });
+
+  it('detects invalid_signature repos and omits their dates to force re-issuance', async () => {
+    // Override the license-status mock (3rd exec call) to report invalid_signature
+    mockExec.mockReset();
+    mockExec
+      .mockResolvedValueOnce('3a62c0cf8d150bed7ca40e9d6de237eb26b96dee26d7a20eb866e09bd1aca09b\n')
+      .mockResolvedValueOnce(
+        JSON.stringify([
+          {
+            repositoryGuid: '550e8400-e29b-41d4-a716-446655440000',
+            requestedSizeGb: 4,
+            luksUuid: '550e8400-e29b-41d4-a716-446655440001',
+            currentRefreshRecommendedAt: '2099-01-01T00:00:00.000Z',
+            currentHardExpiresAt: '2099-02-01T00:00:00.000Z',
+          },
+        ])
+      )
+      .mockResolvedValueOnce(
+        JSON.stringify([
+          {
+            repositoryGuid: '550e8400-e29b-41d4-a716-446655440000',
+            status: 'invalid_signature',
+            message: 'invalid license signature',
+            runtimeValid: false,
+            installed: true,
+          },
+        ])
+      );
+
+    mockAccountServerFetch.mockResolvedValueOnce({
+      results: [
+        {
+          repositoryGuid: '550e8400-e29b-41d4-a716-446655440000',
+          status: 'refreshed',
+          license: { payload: 'new-a', signature: 'new-b', publicKeyId: 'default' },
+        },
+      ],
+    });
+
+    const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+
+    expect(result.invalidSignatureDetected).toBe(1);
+    expect(result.refreshed).toBe(1);
+    expect(result.unchanged).toBe(0);
+
+    // Verify the batch request omitted dates for the invalid-signature repo
+    const batchBody = mockAccountServerFetch.mock.calls[0][1].body;
+    const repo = batchBody.repos[0];
+    expect(repo.currentRefreshRecommendedAt).toBeUndefined();
+    expect(repo.currentHardExpiresAt).toBeUndefined();
+  });
+
+  it('gracefully degrades when license-status command fails', async () => {
+    // Override: license-status throws (e.g., old renet binary)
+    mockExec.mockReset();
+    mockExec
+      .mockResolvedValueOnce('3a62c0cf8d150bed7ca40e9d6de237eb26b96dee26d7a20eb866e09bd1aca09b\n')
+      .mockResolvedValueOnce(
+        JSON.stringify([
+          {
+            repositoryGuid: '550e8400-e29b-41d4-a716-446655440000',
+            requestedSizeGb: 4,
+            luksUuid: '550e8400-e29b-41d4-a716-446655440001',
+          },
+        ])
+      )
+      .mockRejectedValueOnce(new Error('unknown command "repository license-status"'));
+
+    mockAccountServerFetch.mockResolvedValueOnce({
+      results: [
+        {
+          repositoryGuid: '550e8400-e29b-41d4-a716-446655440000',
+          status: 'issued',
+          license: { payload: 'a', signature: 'b', publicKeyId: 'c' },
+        },
+      ],
+    });
+
+    const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+
+    // Should still work — dates are sent normally when license-status fails
+    expect(result.invalidSignatureDetected).toBe(0);
+    expect(result.issued).toBe(1);
   });
 });

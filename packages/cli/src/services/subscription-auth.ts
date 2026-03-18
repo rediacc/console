@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { SUBSCRIPTION_DEFAULTS } from '@rediacc/shared/config';
 import { getConfigDir } from '@rediacc/shared/paths';
@@ -85,6 +85,15 @@ export function saveStoredSubscriptionToken(token: StoredSubscriptionToken): voi
     ),
     { mode: 0o600 }
   );
+}
+
+export function deleteStoredSubscriptionToken(): void {
+  const tokenFile = getSubscriptionTokenFile();
+  try {
+    unlinkSync(tokenFile);
+  } catch {
+    // File doesn't exist or can't be deleted — that's OK
+  }
 }
 
 export function getSubscriptionScopeMismatch(

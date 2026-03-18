@@ -24,6 +24,9 @@ const result = await esbuild.build({
   external: [],
   plugins: [nativeModulesPlugin],
   logLevel: 'silent',
+  define: {
+    '__OTLP_AUTH_TOKEN__': JSON.stringify(process.env.OTLP_AUTH_TOKEN || ''),
+  },
 });
 
 if (result.warnings.length > 0) {

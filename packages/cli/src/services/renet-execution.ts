@@ -71,6 +71,11 @@ export async function getLocalRenetPath(config: { renetPath: string }): Promise<
   return extractRenetToLocal();
 }
 
+export interface RenetProvisionResult {
+  remotePath: string;
+  uploaded: boolean;
+}
+
 /**
  * Provision renet binary to the remote machine.
  */
@@ -80,7 +85,7 @@ export async function provisionRenetToRemote(
   sshPrivateKey: string,
   options: Pick<RenetSpawnOptions, 'debug' | 'skipRouterRestart'> & { restartServices?: boolean },
   sftp?: SFTPClient
-): Promise<string> {
+): Promise<RenetProvisionResult> {
   let localBinaryPath: string | undefined;
   if (!isSEA()) {
     localBinaryPath = config.renetPath.startsWith('/')
@@ -118,7 +123,7 @@ export async function provisionRenetToRemote(
     outputService.info(`Renet verified on ${machine.ip} (${elapsed}s)`);
   }
 
-  return result.remotePath;
+  return { remotePath: result.remotePath, uploaded: result.action === 'uploaded' };
 }
 
 /** Check whether a bridge function requires the BTRFS datastore. */
@@ -174,7 +179,7 @@ export async function verifyMachineSetup(
     if (result.trim() !== 'OK') {
       throw new Error(
         `Machine '${machine.ip}' has not been set up. ` +
-          `Run 'rdc config setup-machine <name>' or 'sudo renet setup --auto' directly on the machine.`
+          `Run 'rdc config machine setup <name>' or 'sudo renet setup --auto' directly on the machine.`
       );
     }
 
@@ -190,7 +195,7 @@ export async function verifyMachineSetup(
     if (fsCheck.trim() !== 'btrfs') {
       throw new Error(
         `Machine '${machine.ip}' datastore at ${datastorePath} is not BTRFS (found: ${fsCheck.trim()}). ` +
-          `Run 'rdc config setup-machine <name>' to initialize the BTRFS datastore.`
+          `Run 'rdc config machine setup <name>' to initialize the BTRFS datastore.`
       );
     }
 

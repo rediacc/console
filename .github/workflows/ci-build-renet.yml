@@ -145,6 +145,9 @@ jobs:
         run: ls -la binaries/
 
       - name: Build full renet with embedded assets (release)
+        env:
+          LICENSE_ED25519_PUBLIC_KEY: ${{ secrets.LICENSE_ED25519_PUBLIC_KEY }}
+          OTLP_AUTH_TOKEN: ${{ secrets.OTLP_AUTH_TOKEN }}
         run: |
           .ci/scripts/build/build-renet.sh \
             --version "${{ inputs.next_version }}" \

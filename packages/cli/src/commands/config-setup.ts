@@ -267,7 +267,7 @@ export function registerMachineCommands(config: Command, program: Command): void
 
         outputService.info(t('commands.config.machine.setup.starting', { machine: name }));
 
-        const remoteRenetPath = await provisionRenetToRemote(
+        const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
           localConfig,
           machineObj,
           sshPrivateKey,

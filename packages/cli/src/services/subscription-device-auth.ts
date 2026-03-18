@@ -1,5 +1,6 @@
 import { t } from '../i18n/index.js';
 import { ValidationError } from '../utils/errors.js';
+import { accountServerFetch } from './account-client.js';
 import { outputService } from './output.js';
 import {
   getSubscriptionScopeMismatch,
@@ -35,20 +36,19 @@ export async function authorizeSubscriptionViaDeviceCode(
   options: DeviceCodeLoginOptions = {}
 ): Promise<DeviceCodeAuthorizationResult> {
   const serverUrl = getSubscriptionServerUrl(preferredServerUrl);
-  const initResp = await fetch(`${serverUrl}/account/api/v1/device-codes`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-  });
-  if (!initResp.ok) {
-    throw new ValidationError(t('commands.subscription.login.initFailed'));
-  }
 
-  const { deviceCode, verificationUrl, interval, expiresIn } = (await initResp.json()) as {
+  const initResult = await accountServerFetch<{
     deviceCode: string;
     verificationUrl: string;
     interval: number;
     expiresIn: number;
-  };
+  }>('/account/api/v1/device-codes', {
+    method: 'POST',
+    noAuth: true,
+    serverUrl,
+  });
+
+  const { deviceCode, verificationUrl, interval, expiresIn } = initResult;
 
   if (options.announceIntro) {
     outputService.warn(t('commands.subscription.login.waitingApproval'));
@@ -86,6 +86,27 @@ export async function authorizeSubscriptionViaDeviceCode(
   return { storedToken, status };
 }
 
+/** Single poll attempt. Returns token string on success, null to continue polling. */
+async function attemptDeviceCodePoll(
+  serverUrl: string,
+  deviceCode: string
+): Promise<string | null> {
+  try {
+    const result = await accountServerFetch<{ status: string; token?: string }>(
+      `/account/api/v1/device-codes/${deviceCode}`,
+      { noAuth: true, serverUrl }
+    );
+    if (result.status === 'complete' && result.token) return result.token;
+    if (result.status === 'expired') {
+      throw new ValidationError(t('commands.subscription.login.expired'));
+    }
+  } catch (error) {
+    if (error instanceof ValidationError) throw error;
+    // Non-OK responses during polling are expected (pending state)
+  }
+  return null;
+}
+
 async function pollForDeviceCodeToken(
   serverUrl: string,
   deviceCode: string,
@@ -97,21 +118,8 @@ async function pollForDeviceCodeToken(
 
   for (let i = 0; i < maxAttempts; i++) {
     await new Promise((resolve) => setTimeout(resolve, pollInterval));
-
-    const pollResp = await fetch(`${serverUrl}/account/api/v1/device-codes/${deviceCode}`);
-    if (!pollResp.ok) continue;
-
-    const result = (await pollResp.json()) as {
-      status: string;
-      token?: string;
-    };
-
-    if (result.status === 'complete' && result.token) {
-      return result.token;
-    }
-    if (result.status === 'expired') {
-      throw new ValidationError(t('commands.subscription.login.expired'));
-    }
+    const token = await attemptDeviceCodePoll(serverUrl, deviceCode);
+    if (token) return token;
   }
 
   throw new ValidationError(t('commands.subscription.login.expired'));
@@ -121,14 +129,10 @@ async function fetchLicenseStatus(
   serverUrl: string,
   token: string
 ): Promise<LicenseStatusResponse> {
-  const resp = await fetch(`${serverUrl}/account/api/v1/licenses/status`, {
-    headers: { Authorization: `Bearer ${token}` },
+  return accountServerFetch<LicenseStatusResponse>('/account/api/v1/licenses/status', {
+    token,
+    serverUrl,
   });
-  if (!resp.ok) {
-    const body = await resp.json().catch(() => ({ error: 'Unknown error' }));
-    throw new ValidationError((body as { error?: string }).error ?? `HTTP ${resp.status}`);
-  }
-  return (await resp.json()) as LicenseStatusResponse;
 }
 
 async function tryOpenBrowser(url: string): Promise<void> {

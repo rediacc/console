@@ -2,6 +2,10 @@
   "cli": {
     "description": "SSH üzerinden makineleri, depoları ve dağıtımları yönetin"
   },
+  "warnings": {
+    "licenseSignatureRefreshed": "renet güncellemesinden sonra geçersiz imzalı {{count}} depo lisansı yenilendi",
+    "licenseSignatureRefreshFailed": "renet güncellemesinden sonra {{count}} depo lisansının imzası geçersiz. Çalıştırın: rdc subscription refresh -m <machine>"
+  },
   "commands": {
     "agent": {
       "capabilities": {
@@ -721,16 +725,16 @@
         "description": "OpenTofu kullanarak bir bulut sağlayıcıda yeni makine oluştur",
         "failed": "Makine oluşturma başarısız: {{error}}",
         "infraInherited": "Temel alan adı kardeş makineden otomatik algılandı: \"{{source}}\"",
-        "noInfraHint": "Temel alan adı yapılandırılmamış. DNS ve proxy'yi etkinleştirmek için 'rdc config set-infra <machine> --base-domain <domain>' ardından 'rdc config push-infra <machine>' komutunu çalıştırın.",
+        "noInfraHint": "Temel alan adı yapılandırılmamış. DNS ve proxy'yi etkinleştirmek için 'rdc config infra set <machine> --base-domain <domain>' ardından 'rdc config infra push <machine>' komutunu çalıştırın.",
         "optionBaseDomain": "Altyapı için temel alan adı (ör. example.com). --infra'yı içerir",
         "optionImage": "Varsayılan işletim sistemi imajını geçersiz kıl",
-        "optionInfra": "Altyapıyı da yapılandır (set-infra + push-infra)",
+        "optionInfra": "Altyapıyı da yapılandır (infra set + infra push)",
         "optionNoInfra": "Altyapı yapılandırmasını atla (proxy + DNS)",
-        "optionProvider": "Bulut sağlayıcı adı (config add-provider'dan)",
+        "optionProvider": "Bulut sağlayıcı adı (config provider add'dan)",
         "optionRegion": "Varsayılan bölgeyi geçersiz kıl",
         "optionSshUser": "Yeni VM için SSH kullanıcı adı (varsayılan: root)",
         "optionType": "Varsayılan örnek türünü geçersiz kıl",
-        "providerRequired": "Bulut sağlayıcı \"{{name}}\" bulunamadı. Eklemek için: rdc config add-provider",
+        "providerRequired": "Bulut sağlayıcı \"{{name}}\" bulunamadı. Eklemek için: rdc config provider add",
         "provisioning": "{{provider}} ({{region}}) üzerinde {{name}} oluşturuluyor...",
         "settingUp": "Makine kurulumu çalıştırılıyor...",
         "sshReady": "SSH bağlantısı kuruldu",
@@ -1147,6 +1151,7 @@
         "failed": "Depo oluşturma başarısız",
         "registered": "\"{{repository}}\" kaydedildi ({{guid}}, ağ {{networkId}})",
         "rollback": "\"{{repository}}\" yapılandırması geri alındı",
+        "noDockerOption": "Oluşturmadan sonra Docker daemon'ı başlatmayı atla",
         "sizeOption": "Depo boyutu (ör. 10G, 100G, 1T)",
         "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" ({{size}}) deposu oluşturuluyor..."
       },
@@ -1196,6 +1201,19 @@
         "tagOption": "Çatal için etiket (isim:etiket oluşturur)",
         "tagRequired": "Çatal için etiket gereklidir. Kullanım: rdc repo fork <parent> <tag> -m <machine>"
       },
+      "takeover": {
+        "description": "Grand deponun verilerini bir çatalın verileriyle değiştir. Grand, kimliğini (GUID, networkId, alan adları, otomatik başlatma, yedekleme zinciri) korur ancak çatalın güncellenmiş verilerini alır. Eski üretim verileri yedek çatal olarak saklanır. Kullanım: çatalda yükseltmeyi test et → doğrula → üretime devir.",
+        "descriptionShort": "Üretim verilerini çatal verileriyle değiştir",
+        "forceOption": "Değişiklik uyarılarını atla",
+        "notAFork": "\"{{name}}\" bir çatal depo değil (parentGuid eksik)",
+        "grandNotFound": "\"{{name}}\" çatalı için grand depo bulunamadı",
+        "starting": "\"{{machine}}\" üzerinde \"{{fork}}\" verisiyle \"{{grand}}\" devralınıyor...",
+        "completed": "Devralma tamamlandı. Grand depo artık çatalın verilerine sahip.",
+        "backupInfo": "Eski üretim verileri şu şekilde saklandı: {{backup}}",
+        "revertHint": "Geri almak için: rdc repo takeover {{backup}} -m {{machine}}",
+        "failed": "Devralma başarısız",
+        "rollback": "\"{{name}}\" yapılandırması geri alındı"
+      },
       "list": {
         "completed": "Listeleme tamamlandı",
         "description": "Bir makinedeki depoları listele",
@@ -1209,6 +1227,7 @@
         "description": "Bir depoyu bağla (LUKS kapsayıcısını aç)",
         "descriptionShort": "Depoyu bağla (LUKS konteynerini çöz ve aç)",
         "failed": "Bağlama başarısız",
+        "noDockerOption": "Bağlamadan sonra Docker daemon'ı başlatmayı atla",
         "starting": "\"{{repository}}\" \"{{machine}}\" üzerinde bağlanıyor..."
       },
       "noCredential": "Uyarı: \"{{name}}\" deposunun kimlik bilgisi ayarlanmamış. Şifreli depolardaki işlemler başarısız olabilir.",
@@ -1240,7 +1259,7 @@
         "optionCheckpoint": "Konteyner kontrol noktası oluştur (canlı yedekleme)",
         "optionDest": "Hedef dosya adı",
         "optionForce": "Mevcut yedeğin üzerine yazmaya zorla",
-        "optionProvider": "Hedef makine mevcut değilse otomatik olarak sağlamak için bulut sağlayıcı (config add-provider'dan)",
+        "optionProvider": "Hedef makine mevcut değilse otomatik olarak sağlamak için bulut sağlayıcı (config provider add'dan)",
         "optionTag": "Sürüm belirleme için dağıtım etiketi",
         "optionToMachine": "Hedef makine adı",
         "optionToStorage": "Hedef depolama adı",
@@ -1575,6 +1594,10 @@
         "validated": "Belirteç doğrulandı",
         "validating": "Belirteç doğrulanıyor...",
         "waitingApproval": "Tarayıcı yetkilendirmesi bekleniyor..."
+      },
+      "logout": {
+        "description": "Kayıtlı abonelik jetonunu temizle",
+        "success": "Abonelik jetonu kaldırıldı"
       },
       "refresh": {
         "activation": {
@@ -2148,13 +2171,14 @@
     "machine": {
       "containers": "Çalışan konteynerleri listele",
       "health": "CI/CD için sağlık kontrolü",
-      "keyConcepts": "\nTemel Kavramlar:\n\n  Sorgu Filtreleri\n    • rdc machine query <name> varsayılan olarak tüm bölümleri döndürür\n    • Filtrelemek için --system, --repositories, --containers, --services, --network, --block-devices kullanın\n    • JSON çıktısı konteynerleri şu bilgilerle zenginleştirir: repository (çözülmüş ad), domain, autoRoute\n\n  Sağlık ve İzleme\n    • machine health çıkış kodları: 0=sağlıklı, 1=uyarı, 2=hata — CI/CD kapıları için kullanın\n    • containers --health-check herhangi bir konteyner sağlıksızsa 2 ile çıkar\n    • services --stability-check herhangi bir hizmet başarısız, yeniden başlatılıyor veya >3 yeniden başlatma varsa 2 ile çıkar\n\n  Veri Deposu Yapısı (/mnt/rediacc/)\n    • repositories/ — şifreli LUKS imajları (depo GUID'si başına bir tane)\n    • mounts/ — şifresi çözülmüş bağlama noktaları (depo bağlıyken erişilebilir)\n    • immovable/ — depo başına Docker daemon verileri\n",
+      "keyConcepts": "\nTemel Kavramlar:\n\n  Sorgu Filtreleri\n    • rdc machine query <name> varsayılan olarak tüm bölümleri döndürür\n    • Filtrelemek için --system, --repositories, --containers, --services, --network, --block-devices kullanın\n    • JSON çıktısı konteynerleri şu bilgilerle zenginleştirir: repository (çözülmüş ad), domain, autoRoute\n\n  Sağlık ve İzleme\n    • machine health çıkış kodları: 0=sağlıklı, 1=uyarı, 2=hata — CI/CD kapıları için kullanın\n    • containers --health-check herhangi bir konteyner sağlıksızsa 2 ile çıkar\n    • services --stability-check herhangi bir hizmet başarısız, yeniden başlatılıyor veya >3 yeniden başlatma varsa 2 ile çıkar\n\n  Veri Deposu Yapısı (/mnt/rediacc/)\n    • repositories/ — şifreli LUKS imajları (depo GUID'si başına bir tane)\n    • mounts/ — şifresi çözülmüş bağlama noktaları (depo bağlıyken erişilebilir)\n    • immovable/ — depo başına Docker daemon verileri\n    • Datastore is a BTRFS pool file on the system disk. Effective free space = min(disk free, datastore free). Expand with: rdc datastore resize\n",
       "query": "Tam makine durumunu göster"
     },
     "repo": {
       "create": "Şifreli depo oluştur",
       "down": "Servisleri durdur",
       "fork": "Test için CoW fork",
+      "takeover": "Üretim verilerini çatal verileriyle değiştir",
       "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REPOSITORY_PATH}/data, ${REPOSITORY_PATH}/config, etc.\n    • Example: volumes: ['${REPOSITORY_PATH}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "Depolamadaki yedeklemeleri listele",
       "pull": "Yedeklemeyi depolamadan al",

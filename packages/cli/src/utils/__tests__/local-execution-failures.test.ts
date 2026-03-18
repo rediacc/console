@@ -65,7 +65,7 @@ describe('renderLocalExecutionFailure', () => {
       {
         error: 'repo license refresh required',
         errorCode: 'REPO_LICENSE_REFRESH_REQUIRED',
-        errorGuidance: 'Run: rdc subscription refresh-repos -m hostinger',
+        errorGuidance: 'Run: rdc subscription refresh -m hostinger',
         exitCode: 10,
       },
       'fallback'
@@ -80,7 +80,7 @@ describe('renderLocalExecutionFailure', () => {
     expect(payload.errors[0]).toEqual({
       code: 'REPO_LICENSE_REFRESH_REQUIRED',
       message: 'repo license refresh required',
-      guidance: 'Run: rdc subscription refresh-repos -m hostinger',
+      guidance: 'Run: rdc subscription refresh -m hostinger',
       retryable: false,
     });
     expect(process.exitCode).toBe(10);

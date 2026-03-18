@@ -13,6 +13,72 @@ type ExecOptions = {
 };
 type Messages = { starting: string; completed: string; failed: string };
 
+type MountOptions = ExecOptions & {
+  machine: string;
+  checkpoint?: boolean;
+  noDocker?: boolean;
+  yes?: boolean;
+};
+
+function buildMountParams(options: MountOptions): Record<string, unknown> {
+  const params: Record<string, unknown> = {};
+  if (options.checkpoint) params.checkpoint = true;
+  if (options.noDocker) params.start_docker = false;
+  return params;
+}
+
+async function executeMountAction(
+  name: string | undefined,
+  options: MountOptions,
+  executeRepoFunction: (
+    fn: string,
+    name: string,
+    machine: string,
+    params: Record<string, unknown>,
+    options: ExecOptions,
+    messages: Messages
+  ) => Promise<void>,
+  iterateAllRepos: (
+    fn: string,
+    machine: string,
+    policy: CommandPath,
+    params: Record<string, unknown>,
+    options: ExecOptions,
+    meta: { action: string }
+  ) => Promise<void>
+): Promise<void> {
+  if (name) {
+    await assertCommandPolicy(CMD.REPO_MOUNT, name);
+    await executeRepoFunction(
+      'repository_mount',
+      name,
+      options.machine,
+      buildMountParams(options),
+      options,
+      {
+        starting: t('commands.repo.mount.starting', { repository: name, machine: options.machine }),
+        completed: t('commands.repo.mount.completed'),
+        failed: t('commands.repo.mount.failed'),
+      }
+    );
+  } else {
+    const repos = await configService.listRepositories();
+    if (!options.yes && !(await confirmBatch('Mount', repos.length, options.machine))) {
+      return;
+    }
+    await iterateAllRepos(
+      'repository_mount',
+      options.machine,
+      CMD.REPO_MOUNT,
+      buildMountParams(options),
+      options,
+      {
+        action: 'Mount',
+      }
+    );
+  }
+}
+
 export function registerRepoVolumeCommands(
   repo: Command,
   executeRepoFunction: (
@@ -39,60 +105,19 @@ export function registerRepoVolumeCommands(
     .description(t('commands.repo.mount.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--checkpoint', t('commands.repo.mount.checkpointOption'))
+    .option('--no-docker', t('commands.repo.mount.noDockerOption'))
     .option('--parallel', t('commands.repo.upAll.parallelOption'))
     .option('--concurrency <n>', t('commands.repo.upAll.concurrencyOption'), '3')
     .option('-y, --yes', t('commands.repo.yesOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(
-      async (
-        name: string | undefined,
-        options: {
-          machine: string;
-          checkpoint?: boolean;
-          parallel?: boolean;
-          concurrency?: string;
-          yes?: boolean;
-          debug?: boolean;
-          skipRouterRestart?: boolean;
-        }
-      ) => {
-        try {
-          if (name) {
-            await assertCommandPolicy(CMD.REPO_MOUNT, name);
-
-            const params: Record<string, unknown> = {};
-            if (options.checkpoint) params.checkpoint = true;
-
-            await executeRepoFunction('repository_mount', name, options.machine, params, options, {
-              starting: t('commands.repo.mount.starting', {
-                repository: name,
-                machine: options.machine,
-              }),
-              completed: t('commands.repo.mount.completed'),
-              failed: t('commands.repo.mount.failed'),
-            });
-          } else {
-            const repos = await configService.listRepositories();
-            if (!options.yes && !(await confirmBatch('Mount', repos.length, options.machine))) {
-              return;
-            }
-            const params: Record<string, unknown> = {};
-            if (options.checkpoint) params.checkpoint = true;
-            await iterateAllRepos(
-              'repository_mount',
-              options.machine,
-              CMD.REPO_MOUNT,
-              params,
-              options,
-              { action: 'Mount' }
-            );
-          }
-        } catch (error) {
-          handleError(error);
-        }
+    .action(async (name: string | undefined, options: MountOptions) => {
+      try {
+        await executeMountAction(name, options, executeRepoFunction, iterateAllRepos);
+      } catch (error) {
+        handleError(error);
       }
-    );
+    });
 
   // repo unmount [name]
   repo

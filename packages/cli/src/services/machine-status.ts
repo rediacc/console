@@ -46,7 +46,7 @@ export async function fetchMachineStatus(
   if (options.debug) {
     outputService.info(`Provisioning renet to ${machine.ip}...`);
   }
-  const remoteRenetPath = await provisionRenetToRemote(
+  const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
     { renetPath: localConfig.renetPath },
     machine,
     sshPrivateKey,

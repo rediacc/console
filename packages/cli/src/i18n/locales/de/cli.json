@@ -2,6 +2,10 @@
   "cli": {
     "description": "Maschinen, Repositories und Deployments per SSH verwalten"
   },
+  "warnings": {
+    "licenseSignatureRefreshed": "{{count}} Repo-Lizenz(en) mit ungültigen Signaturen nach renet-Update aktualisiert",
+    "licenseSignatureRefreshFailed": "{{count}} Repo-Lizenz(en) haben ungültige Signaturen nach renet-Update. Ausführen: rdc subscription refresh -m <machine>"
+  },
   "commands": {
     "agent": {
       "capabilities": {
@@ -721,16 +725,16 @@
         "description": "Neue Maschine bei einem Cloud-Anbieter mit OpenTofu bereitstellen",
         "failed": "Maschinenbereitstellung fehlgeschlagen: {{error}}",
         "infraInherited": "Basisdomain automatisch von Schwestermaschine \"{{source}}\" erkannt",
-        "noInfraHint": "Keine Basisdomain konfiguriert. Führen Sie 'rdc config set-infra <machine> --base-domain <domain>' und dann 'rdc config push-infra <machine>' aus, um DNS und Proxy zu aktivieren.",
+        "noInfraHint": "Keine Basisdomain konfiguriert. Führen Sie 'rdc config infra set <machine> --base-domain <domain>' und dann 'rdc config infra push <machine>' aus, um DNS und Proxy zu aktivieren.",
         "optionBaseDomain": "Basisdomain für Infrastruktur (z.B. example.com). Impliziert --infra",
         "optionImage": "Standard-Betriebssystem-Image überschreiben",
-        "optionInfra": "Auch Infrastruktur konfigurieren (set-infra + push-infra)",
+        "optionInfra": "Auch Infrastruktur konfigurieren (infra set + infra push)",
         "optionNoInfra": "Infrastrukturkonfiguration überspringen (Proxy + DNS)",
-        "optionProvider": "Name des Cloud-Anbieters (aus config add-provider)",
+        "optionProvider": "Name des Cloud-Anbieters (aus config provider add)",
         "optionRegion": "Standard-Region überschreiben",
         "optionSshUser": "SSH-Benutzername für die neue VM (Standard: root)",
         "optionType": "Standard-Instanztyp überschreiben",
-        "providerRequired": "Cloud-Anbieter \"{{name}}\" nicht gefunden. Hinzufügen mit: rdc config add-provider",
+        "providerRequired": "Cloud-Anbieter \"{{name}}\" nicht gefunden. Hinzufügen mit: rdc config provider add",
         "provisioning": "{{name}} wird auf {{provider}} ({{region}}) bereitgestellt...",
         "settingUp": "Maschineneinrichtung wird ausgeführt...",
         "sshReady": "SSH-Verbindung hergestellt",
@@ -1147,6 +1151,7 @@
         "failed": "Repository-Erstellung fehlgeschlagen",
         "registered": "\"{{repository}}\" registriert ({{guid}}, Netzwerk {{networkId}})",
         "rollback": "Konfiguration für \"{{repository}}\" zurückgesetzt",
+        "noDockerOption": "Docker-Daemon nach der Erstellung nicht starten",
         "sizeOption": "Repository-Größe (z.B. 10G, 100G, 1T)",
         "starting": "Repository \"{{repository}}\" ({{size}}) wird auf \"{{machine}}\" erstellt..."
       },
@@ -1196,6 +1201,19 @@
         "tagOption": "Tag für den Fork (erstellt Name:Tag)",
         "tagRequired": "Tag ist für Fork erforderlich. Verwendung: rdc repo fork <parent> <tag> -m <machine>"
       },
+      "takeover": {
+        "description": "Daten des Grand-Repositorys durch Daten eines Forks ersetzen. Das Grand-Repository behält seine Identität (GUID, networkId, Domains, Autostart, Backup-Kette), erhält aber die aktualisierten Daten des Forks. Die alten Produktionsdaten werden als Backup-Fork gespeichert. Verwendung: Upgrade im Fork testen → prüfen → Übernahme in die Produktion.",
+        "descriptionShort": "Produktionsdaten durch Fork-Daten ersetzen",
+        "forceOption": "Änderungswarnungen überspringen",
+        "notAFork": "\"{{name}}\" ist kein Fork-Repository (parentGuid fehlt)",
+        "grandNotFound": "Grand-Repository für Fork \"{{name}}\" nicht gefunden",
+        "starting": "\"{{grand}}\" wird mit Daten aus \"{{fork}}\" auf \"{{machine}}\" übernommen...",
+        "completed": "Übernahme abgeschlossen. Grand-Repository hat jetzt die Fork-Daten.",
+        "backupInfo": "Alte Produktionsdaten gespeichert als: {{backup}}",
+        "revertHint": "Zum Zurücksetzen: rdc repo takeover {{backup}} -m {{machine}}",
+        "failed": "Übernahme fehlgeschlagen",
+        "rollback": "Konfiguration für \"{{name}}\" zurückgesetzt"
+      },
       "list": {
         "completed": "Auflistung abgeschlossen",
         "description": "Repositories auf einer Maschine auflisten",
@@ -1209,6 +1227,7 @@
         "description": "Repository mounten (LUKS-Container öffnen)",
         "descriptionShort": "Repository mounten (LUKS-Container entschlüsseln und öffnen)",
         "failed": "Mounten fehlgeschlagen",
+        "noDockerOption": "Docker-Daemon nach dem Mounten nicht starten",
         "starting": "\"{{repository}}\" auf \"{{machine}}\" wird gemountet..."
       },
       "noCredential": "Warnung: Repository \"{{name}}\" hat keine Zugangsdaten. Operationen auf verschlüsselten Repositories können fehlschlagen.",
@@ -1240,7 +1259,7 @@
         "optionCheckpoint": "Container-Checkpoint erstellen (Hot Backup)",
         "optionDest": "Zieldateiname",
         "optionForce": "Vorhandenes Backup überschreiben erzwingen",
-        "optionProvider": "Cloud-Anbieter zur automatischen Bereitstellung des Zielrechners, falls er nicht existiert (aus config add-provider)",
+        "optionProvider": "Cloud-Anbieter zur automatischen Bereitstellung des Zielrechners, falls er nicht existiert (aus config provider add)",
         "optionTag": "Deployment-Tag für Versionierung",
         "optionToMachine": "Name des Zielrechners",
         "optionToStorage": "Name des Zielspeichers",
@@ -1575,6 +1594,10 @@
         "validated": "Token überprüft",
         "validating": "Token wird überprüft...",
         "waitingApproval": "Warte auf Browser-Autorisierung..."
+      },
+      "logout": {
+        "description": "Gespeichertes Abonnement-Token löschen",
+        "success": "Abonnement-Token entfernt"
       },
       "refresh": {
         "activation": {
@@ -2148,13 +2171,14 @@
     "machine": {
       "containers": "Laufende Container auflisten",
       "health": "Maschinenprüfung für CI/CD",
-      "keyConcepts": "\nSchlüsselkonzepte:\n\n  Abfragefilter\n    • rdc machine query <name> gibt standardmäßig alle Abschnitte zurück\n    • Verwenden Sie --system, --repositories, --containers, --services, --network, --block-devices zum Filtern\n    • JSON-Ausgabe ergänzt Container mit: repository (aufgelöster Name), domain, autoRoute\n\n  Überwachung & Gesundheit\n    • machine health gibt zurück: 0=gesund, 1=Warnung, 2=Fehler — für CI/CD-Gates verwenden\n    • containers --health-check gibt 2 zurück, wenn ein Container ungesund ist\n    • services --stability-check gibt 2 zurück, wenn ein Dienst fehlgeschlagen ist, neu startet oder >3 Neustarts hat\n\n  Datenspeicher-Struktur (/mnt/rediacc/)\n    • repositories/ — verschlüsselte LUKS-Images (eines pro Repository-GUID)\n    • mounts/ — entschlüsselte Einhängepunkte (zugänglich wenn Repository eingehängt ist)\n    • immovable/ — Docker-Daemon-Daten pro Repository\n",
+      "keyConcepts": "\nSchlüsselkonzepte:\n\n  Abfragefilter\n    • rdc machine query <name> gibt standardmäßig alle Abschnitte zurück\n    • Verwenden Sie --system, --repositories, --containers, --services, --network, --block-devices zum Filtern\n    • JSON-Ausgabe ergänzt Container mit: repository (aufgelöster Name), domain, autoRoute\n\n  Überwachung & Gesundheit\n    • machine health gibt zurück: 0=gesund, 1=Warnung, 2=Fehler — für CI/CD-Gates verwenden\n    • containers --health-check gibt 2 zurück, wenn ein Container ungesund ist\n    • services --stability-check gibt 2 zurück, wenn ein Dienst fehlgeschlagen ist, neu startet oder >3 Neustarts hat\n\n  Datenspeicher-Struktur (/mnt/rediacc/)\n    • repositories/ — verschlüsselte LUKS-Images (eines pro Repository-GUID)\n    • mounts/ — entschlüsselte Einhängepunkte (zugänglich wenn Repository eingehängt ist)\n    • immovable/ — Docker-Daemon-Daten pro Repository\n    • Datastore is a BTRFS pool file on the system disk. Effective free space = min(disk free, datastore free). Expand with: rdc datastore resize\n",
       "query": "Vollständigen Maschinenstatus anzeigen"
     },
     "repo": {
       "create": "Verschlüsseltes Repository erstellen",
       "down": "Dienste stoppen",
       "fork": "CoW-Fork zum Testen",
+      "takeover": "Produktionsdaten durch Fork-Daten ersetzen",
       "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REPOSITORY_PATH}/data, ${REPOSITORY_PATH}/config, etc.\n    • Example: volumes: ['${REPOSITORY_PATH}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "Backups auf Speicher auflisten",
       "pull": "Repo-Backup vom Speicher abrufen",

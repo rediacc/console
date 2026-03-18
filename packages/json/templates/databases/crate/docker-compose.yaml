@@ -2,18 +2,13 @@ services:
   cratedb:
     image: crate:latest
     container_name: ${CONTAINER_NAME}
-    network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
     command: ["sh", "-c", "exec crate -Cnetwork.host=$${SERVICE_IP:-0.0.0.0} -Cdiscovery.type=single-node -Ccluster.name=${CLUSTER_NAME}"]
     environment:
       CRATE_HEAP_SIZE: ${CRATE_HEAP_SIZE}
-    ports:
-      - "4200"  # Admin UI and HTTP API
-      - "5432"  # PostgreSQL wire protocol
-      - "4300"  # Transport protocol
     volumes:
       - ./data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4200"]
+      test: ["CMD", "curl", "-f", "http://$${SERVICE_IP:-localhost}:4200"]
       interval: 30s
       timeout: 10s
       retries: 3

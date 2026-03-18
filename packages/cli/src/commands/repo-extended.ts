@@ -185,6 +185,88 @@ export function registerExtendedRepoCommands(repo: Command): void {
       }
     );
 
+  // repo takeover <fork>
+  repo
+    .command('takeover <fork>')
+    .summary(t('commands.repo.takeover.descriptionShort'))
+    .description(t('commands.repo.takeover.description'))
+    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--force', t('commands.repo.takeover.forceOption'))
+    .option('--debug', t('options.debug'))
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .action(
+      async (
+        forkRef: string,
+        options: { machine: string; force?: boolean; debug?: boolean; skipRouterRestart?: boolean }
+      ) => {
+        try {
+          // 1. Get fork config — validate it's a fork (has parentGuid)
+          const forkConfig = await configService.getRepository(forkRef);
+          if (!forkConfig) {
+            throw new Error(`Repository "${forkRef}" not found in context`);
+          }
+          if (!forkConfig.parentGuid) {
+            throw new Error(t('commands.repo.takeover.notAFork', { name: forkRef }));
+          }
+
+          const grandGuid = forkConfig.grandGuid ?? forkConfig.parentGuid;
+          const grandEntry = (await configService.listRepositories()).find(
+            (r) => r.config.repositoryGuid === grandGuid
+          );
+          if (!grandEntry) {
+            throw new Error(t('commands.repo.takeover.grandNotFound', { name: forkRef }));
+          }
+
+          await assertCommandPolicy(CMD.REPO_TAKEOVER, grandEntry.name);
+          // Execute takeover on remote machine
+          outputService.info(
+            t('commands.repo.takeover.starting', {
+              grand: grandEntry.name,
+              fork: forkRef,
+              machine: options.machine,
+            })
+          );
+
+          const result = await localExecutorService.execute({
+            functionName: 'repository_takeover',
+            machineName: options.machine,
+            params: {
+              parent: grandEntry.config.repositoryGuid,
+              fork: forkConfig.repositoryGuid,
+            },
+            debug: options.debug,
+            skipRouterRestart: options.skipRouterRestart,
+          });
+
+          if (result.success) {
+            // 4. Rename fork config to "{name}:pre-takeover-{YYYYMMDD}"
+            const { parseRepoRef } = await import('../utils/config-schema.js');
+            const d = new Date();
+            const backupName = `${parseRepoRef(forkRef).name}:pre-takeover-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+            // Move fork config to backup name
+            const forkCfg = await configService.getRepository(forkRef);
+            if (forkCfg) {
+              await configService.addRepository(backupName, forkCfg);
+              await configService.removeRepository(forkRef);
+            }
+
+            outputService.success(t('commands.repo.takeover.completed'));
+            outputService.info(t('commands.repo.takeover.backupInfo', { backup: backupName }));
+            outputService.info(
+              t('commands.repo.takeover.revertHint', {
+                backup: backupName,
+                machine: options.machine,
+              })
+            );
+          } else {
+            renderLocalExecutionFailure(result, t('commands.repo.takeover.failed'));
+          }
+        } catch (error) {
+          handleError(error);
+        }
+      }
+    );
+
   // repo resize <name>
   repo
     .command('resize <name>')

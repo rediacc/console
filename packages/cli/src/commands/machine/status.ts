@@ -19,6 +19,18 @@ import { handleError } from '../../utils/errors.js';
 import { createGuidResolver, loadGuidMap, resolveGuids } from '../../utils/guid-resolver.js';
 import { withSpinner } from '../../utils/spinner.js';
 
+/** Parse size strings like "71.9G", "180.3G" into GB numbers. */
+function parseSizeToGb(size: string | undefined): number {
+  if (!size) return 0;
+  const match = /^([\d.]+)\s*(G|T|M)/i.exec(size);
+  if (!match) return 0;
+  const val = Number.parseFloat(match[1]);
+  const unit = match[2].toUpperCase();
+  if (unit === 'T') return val * 1024;
+  if (unit === 'M') return val / 1024;
+  return val;
+}
+
 /**
  * Section renderer for table output.
  * Each section maps a ListResult section to a header + flat table rows.
@@ -191,6 +203,19 @@ interface QueryOptions {
   blockDevices?: boolean;
 }
 
+function printStorageSummary(sys: SystemInfo | undefined): void {
+  if (!sys?.disk.available || !sys.datastore.available) return;
+  const diskFree = parseSizeToGb(sys.disk.available);
+  const dsFree = parseSizeToGb(sys.datastore.available);
+  const effectiveFree = Math.min(diskFree, dsFree);
+  const limitedBy = dsFree <= diskFree ? 'datastore' : 'disk';
+  const lowStorageWarning =
+    effectiveFree < 10 ? ' Low storage — expand with: rdc datastore resize' : '';
+  outputService.info(
+    `\nStorage: ${effectiveFree.toFixed(1)}G effective free (limited by ${limitedBy}). Datastore pool: ${sys.datastore.total}.${lowStorageWarning}`
+  );
+}
+
 function renderTableMode(
   listResult: ListResult,
   machineConfig: MachineConfig | undefined,
@@ -215,6 +240,59 @@ function renderTableMode(
     outputService.info(`\n${section.title}`);
     process.stdout.write(`${outputService.formatTable(data)}\n`);
   }
+
+  printStorageSummary(listResult.system);
+}
+
+function buildEnrichedJson(
+  listResult: ListResult,
+  machineConfig: MachineConfig | undefined,
+  infra: InfraConfig | undefined,
+  resolve: (guid: string) => string,
+  machineName: string
+): Record<string, unknown> {
+  const baseDomain = infra?.baseDomain;
+  const system = listResult.system;
+  const diskFreeGb = parseSizeToGb(system?.disk.available);
+  const dsFreeGb = parseSizeToGb(system?.datastore.available);
+  const effectiveFreeGb = Math.min(diskFreeGb, dsFreeGb);
+  const limitedBy = dsFreeGb <= diskFreeGb ? 'datastore' : 'disk';
+  return {
+    ...listResult,
+    connection: machineConfig ? flattenConnection(machineConfig) : null,
+    repositories: resolveGuids(getRepositories(listResult), resolve).map((repo) => ({
+      ...repo,
+      url:
+        baseDomain && machineName
+          ? `https://*.${repo.name}.${machineName}.${baseDomain}`
+          : DEFAULTS.CLOUD.DISPLAY_PLACEHOLDER,
+    })),
+    containers: getContainers(listResult).map((c) => ({
+      ...c,
+      repository: resolve(c.repository),
+      repository_guid: c.repository,
+      domain: extractCustomDomain(c.labels, baseDomain),
+      autoRoute: extractAutoRoute(c.labels, baseDomain, machineName),
+    })),
+    services: resolveGuids(getServices(listResult), resolve, 'repository'),
+    infra: infra ?? null,
+    storage: {
+      effectiveFree: `${effectiveFreeGb.toFixed(1)}G`,
+      limitedBy,
+      datastorePool: system?.datastore.total ?? DEFAULTS.CLOUD.DISPLAY_PLACEHOLDER,
+      datastorePath: system?.datastore.path ?? NETWORK_DEFAULTS.DATASTORE_PATH,
+      recommendation:
+        effectiveFreeGb < 10 ? 'Low storage. Expand with: rdc datastore resize' : null,
+    },
+  };
+}
+
+function collectSections(options: QueryOptions): string[] {
+  const sections: string[] = [];
+  for (const { flag, section } of SECTION_FLAGS) {
+    if (options[flag]) sections.push(section);
+  }
+  return sections;
 }
 
 export function registerQueryCommand(machine: Command, program: Command): void {
@@ -236,11 +314,7 @@ export function registerQueryCommand(machine: Command, program: Command): void {
           throw new Error(t('errors.machineRequiredLocal'));
         }
 
-        // Collect requested sections from flags
-        const sections: string[] = [];
-        for (const { flag, section } of SECTION_FLAGS) {
-          if (options[flag]) sections.push(section);
-        }
+        const sections = collectSections(options);
 
         const { fetchMachineStatus } = await import('../../services/machine-status.js');
 
@@ -260,31 +334,16 @@ export function registerQueryCommand(machine: Command, program: Command): void {
 
         const infra = machineConfig?.infra;
         const format = program.opts().output as OutputFormat;
-
         const resolve = createGuidResolver(guidMap);
 
         if (format === 'json') {
-          const baseDomain = infra?.baseDomain;
-          const enriched = {
-            ...listResult,
-            connection: machineConfig ? flattenConnection(machineConfig) : null,
-            repositories: resolveGuids(getRepositories(listResult), resolve).map((repo) => ({
-              ...repo,
-              url:
-                baseDomain && machineName
-                  ? `https://*.${repo.name}.${machineName}.${baseDomain}`
-                  : '-',
-            })),
-            containers: getContainers(listResult).map((c) => ({
-              ...c,
-              repository: resolve(c.repository),
-              repository_guid: c.repository,
-              domain: extractCustomDomain(c.labels, baseDomain),
-              autoRoute: extractAutoRoute(c.labels, baseDomain, machineName),
-            })),
-            services: resolveGuids(getServices(listResult), resolve, 'repository'),
-            infra: infra ?? null,
-          };
+          const enriched = buildEnrichedJson(
+            listResult,
+            machineConfig,
+            infra,
+            resolve,
+            machineName
+          );
           outputService.print(enriched, format);
           return;
         }

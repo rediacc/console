@@ -3,19 +3,16 @@ services:
     image: arangodb:3.11
     container_name: ${CONTAINER_NAME}
     restart: always
-    network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
     environment:
       ARANGO_ROOT_PASSWORD: ${ARANGO_ROOT_PASSWORD}
       ARANGODB_OVERRIDE_DETECTED_TOTAL_MEMORY: ${ARANGODB_OVERRIDE_DETECTED_TOTAL_MEMORY:-}
       ARANGODB_OVERRIDE_DETECTED_NUMBER_OF_CORES: ${ARANGODB_OVERRIDE_DETECTED_NUMBER_OF_CORES:-}
     command: ["sh", "-c", "exec arangod --server.endpoint tcp://$${SERVICE_IP:-0.0.0.0}:8529"]
-    ports:
-      - "8529"
     volumes:
       - ./data:/var/lib/arangodb3
       - ./apps:/var/lib/arangodb3-apps
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider http://127.0.0.1:8529/_api/version 2>&1 | grep -q '401\\|200' || exit 1"]
+      test: ["CMD-SHELL", "wget --spider http://$${SERVICE_IP:-localhost}:8529/_api/version 2>&1 | grep -q '401\\|200' || exit 1"]
       interval: 10s
       timeout: 10s
       retries: 5

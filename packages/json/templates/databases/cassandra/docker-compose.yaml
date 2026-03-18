@@ -3,7 +3,6 @@ services:
     image: cassandra:5.0
     container_name: ${CONTAINER_NAME}
     restart: always
-    network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
     environment:
       CASSANDRA_CLUSTER_NAME: ${CASSANDRA_CLUSTER_NAME}
       CASSANDRA_DC: ${CASSANDRA_DC}
@@ -14,8 +13,6 @@ services:
       CASSANDRA_AUTHORIZER: ${CASSANDRA_AUTHORIZER}
       CASSANDRA_LISTEN_ADDRESS: ${SERVICE_IP:-}
       CASSANDRA_RPC_ADDRESS: ${SERVICE_IP:-0.0.0.0}
-    ports:
-      - "9042"
     volumes:
       - ./data:/var/lib/cassandra
       - ./init-cassandra.cql:/docker-entrypoint-initdb.d/init.cql:ro

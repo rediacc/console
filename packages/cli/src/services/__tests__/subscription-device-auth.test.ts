@@ -7,6 +7,7 @@ const {
   mockGetSubscriptionServerUrl,
   mockGetSubscriptionScopeMismatch,
   mockExecFile,
+  mockAccountServerFetch,
 } = vi.hoisted(() => ({
   mockOutputInfo: vi.fn(),
   mockOutputWarn: vi.fn(),
@@ -19,6 +20,7 @@ const {
     return null;
   }),
   mockExecFile: vi.fn(),
+  mockAccountServerFetch: vi.fn(),
 }));
 
 vi.mock('../../i18n/index.js', () => ({
@@ -42,26 +44,25 @@ vi.mock('node:child_process', () => ({
   execFile: mockExecFile,
 }));
 
+vi.mock('../account-client.js', () => ({
+  accountServerFetch: mockAccountServerFetch,
+}));
+
 const { authorizeSubscriptionViaDeviceCode } = await import('../subscription-device-auth.js');
 
 describe('authorizeSubscriptionViaDeviceCode', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useRealTimers();
-    global.fetch = vi.fn();
   });
 
   it('prints the verification URL and errors immediately in non-interactive mode', async () => {
-    vi.mocked(global.fetch).mockResolvedValueOnce({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          deviceCode: 'device-1',
-          verificationUrl: 'http://localhost:4800/account/authorize?code=ABCD-EFGH-IJ',
-          interval: 5,
-          expiresIn: 300,
-        }),
-    } as Response);
+    mockAccountServerFetch.mockResolvedValueOnce({
+      deviceCode: 'device-1',
+      verificationUrl: 'http://localhost:4800/account/authorize?code=ABCD-EFGH-IJ',
+      interval: 5,
+      expiresIn: 300,
+    });
 
     await expect(
       authorizeSubscriptionViaDeviceCode(undefined, { interactive: false, announceIntro: true })
@@ -76,39 +77,30 @@ describe('authorizeSubscriptionViaDeviceCode', () => {
 
   it('polls, validates, and stores the token in interactive mode', async () => {
     vi.useFakeTimers();
-    vi.mocked(global.fetch)
+    mockAccountServerFetch
+      // 1. POST /device-codes
       .mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            deviceCode: 'device-1',
-            verificationUrl: 'http://localhost:4800/account/authorize?code=ABCD-EFGH-IJ',
-            interval: 1,
-            expiresIn: 60,
-          }),
-      } as Response)
+        deviceCode: 'device-1',
+        verificationUrl: 'http://localhost:4800/account/authorize?code=ABCD-EFGH-IJ',
+        interval: 1,
+        expiresIn: 60,
+      })
+      // 2. GET /device-codes/{code} (poll)
       .mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            status: 'complete',
-            token: 'rdt_new',
-          }),
-      } as Response)
+        status: 'complete',
+        token: 'rdt_new',
+      })
+      // 3. GET /licenses/status
       .mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            subscriptionId: 'sub_1',
-            orgId: 'org_1',
-            orgName: 'Acme',
-            planCode: 'COMMUNITY',
-            activeMachineCount: 1,
-            maxMachines: 2,
-            teamId: 'team_1',
-            teamName: 'Platform',
-          }),
-      } as Response);
+        subscriptionId: 'sub_1',
+        orgId: 'org_1',
+        orgName: 'Acme',
+        planCode: 'COMMUNITY',
+        activeMachineCount: 1,
+        maxMachines: 2,
+        teamId: 'team_1',
+        teamName: 'Platform',
+      });
 
     const promise = authorizeSubscriptionViaDeviceCode(undefined, {
       interactive: true,
@@ -151,39 +143,27 @@ describe('authorizeSubscriptionViaDeviceCode', () => {
 
   it('fails hard when the approved token team differs from the local config team', async () => {
     vi.useFakeTimers();
-    vi.mocked(global.fetch)
+    mockAccountServerFetch
       .mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            deviceCode: 'device-1',
-            verificationUrl: 'http://localhost:4800/account/authorize?code=ABCD-EFGH-IJ',
-            interval: 1,
-            expiresIn: 60,
-          }),
-      } as Response)
+        deviceCode: 'device-1',
+        verificationUrl: 'http://localhost:4800/account/authorize?code=ABCD-EFGH-IJ',
+        interval: 1,
+        expiresIn: 60,
+      })
       .mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            status: 'complete',
-            token: 'rdt_new',
-          }),
-      } as Response)
+        status: 'complete',
+        token: 'rdt_new',
+      })
       .mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            subscriptionId: 'sub_1',
-            orgId: 'org_1',
-            orgName: 'Acme',
-            planCode: 'COMMUNITY',
-            activeMachineCount: 1,
-            maxMachines: 2,
-            teamId: 'team_1',
-            teamName: 'Platform',
-          }),
-      } as Response);
+        subscriptionId: 'sub_1',
+        orgId: 'org_1',
+        orgName: 'Acme',
+        planCode: 'COMMUNITY',
+        activeMachineCount: 1,
+        maxMachines: 2,
+        teamId: 'team_1',
+        teamName: 'Platform',
+      });
 
     const promise = authorizeSubscriptionViaDeviceCode(undefined, {
       interactive: true,

@@ -32,7 +32,7 @@ const {
   mockAuthorizeSubscriptionViaDeviceCode: vi.fn(),
   mockGetSubscriptionTokenState: vi.fn(),
   mockBuildLocalVault: vi.fn(() => '{"vault":"ok"}'),
-  mockProvisionRenetToRemote: vi.fn(() => '/usr/bin/renet'),
+  mockProvisionRenetToRemote: vi.fn(() => ({ remotePath: '/usr/bin/renet', uploaded: false })),
   mockReadSSHKey: vi.fn(() => 'PRIVATE_KEY'),
   mockReadOptionalSSHKey: vi.fn(() => 'PUBLIC_KEY'),
   mockVerifyMachineSetup: vi.fn(),

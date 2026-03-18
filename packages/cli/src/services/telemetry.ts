@@ -7,6 +7,9 @@
  * Opt-out: Set REDIACC_TELEMETRY_DISABLED=1 to disable telemetry.
  */
 
+/** Injected at compile time by esbuild (see bundle.mjs). Empty string in dev/unbundled. */
+declare const __OTLP_AUTH_TOKEN__: string;
+
 import {
   metrics as metricsApi,
   type Span,
@@ -117,11 +120,15 @@ class CliTelemetryService implements TelemetryHandler {
   /**
    * Get the telemetry auth token (Base64-encoded username:password).
    */
-  private getAuthToken(): string {
-    if (process.env.REDIACC_TELEMETRY_AUTH_TOKEN) {
-      return process.env.REDIACC_TELEMETRY_AUTH_TOKEN;
+  private getAuthToken(): string | null {
+    // Production: embedded at compile time by esbuild define (non-overridable)
+    const embedded = typeof __OTLP_AUTH_TOKEN__ !== 'undefined' && __OTLP_AUTH_TOKEN__;
+    if (embedded) return embedded;
+    // Development: rdc.sh sources account .env which sets this
+    if (this.detectEnvironment() === 'development') {
+      return process.env.REDIACC_TELEMETRY_AUTH_TOKEN ?? null;
     }
-    return 'b3RscDpKM0VQaU42OW9jMWtPRjBfS0ROVDhtVURJb0ZJSTlLMGU4ZTF6ZzRVWTNV';
+    return null;
   }
 
   /**
@@ -145,12 +152,11 @@ class CliTelemetryService implements TelemetryHandler {
    * Get the telemetry endpoint based on environment.
    */
   private getEndpoint(): string {
-    // Use environment variable if set
-    if (process.env.REDIACC_TELEMETRY_ENDPOINT) {
+    // Allow endpoint override only in development
+    if (this.detectEnvironment() === 'development' && process.env.REDIACC_TELEMETRY_ENDPOINT) {
       return process.env.REDIACC_TELEMETRY_ENDPOINT;
     }
 
-    // Default to production endpoint
     return 'https://otlp.rediacc.io';
   }
 
@@ -158,10 +164,14 @@ class CliTelemetryService implements TelemetryHandler {
    * Common OTLP exporter headers.
    */
   private getExporterHeaders(): Record<string, string> {
-    return {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      Authorization: `Basic ${this.getAuthToken()}`,
     };
+    const authToken = this.getAuthToken();
+    if (authToken) {
+      headers['Authorization'] = `Basic ${authToken}`;
+    }
+    return headers;
   }
 
   /**
@@ -612,13 +622,19 @@ class CliTelemetryService implements TelemetryHandler {
         // Force-flush metrics before SDK shutdown (CLI is short-lived)
         await Promise.race([
           this.metricReader?.forceFlush(),
-          new Promise((resolve) => setTimeout(resolve, 3000)),
+          new Promise((resolve) => {
+            const t = setTimeout(resolve, 3000);
+            if (typeof t === 'object' && 'unref' in t) t.unref();
+          }),
         ]);
 
         // Shutdown SDK with timeout to avoid delaying CLI exit
         await Promise.race([
           this.sdk?.shutdown(),
-          new Promise((resolve) => setTimeout(resolve, 3000)),
+          new Promise((resolve) => {
+            const t = setTimeout(resolve, 3000);
+            if (typeof t === 'object' && 'unref' in t) t.unref();
+          }),
         ]);
       } catch {
         // Fail silently

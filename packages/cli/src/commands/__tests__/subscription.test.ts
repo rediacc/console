@@ -129,7 +129,7 @@ describe('subscription command helpers', () => {
     });
     mockGetTeam.mockResolvedValue('Platform');
     mockReadSSHKey.mockResolvedValue('PRIVATE_KEY');
-    mockProvisionRenetToRemote.mockResolvedValue('/usr/bin/renet');
+    mockProvisionRenetToRemote.mockResolvedValue({ remotePath: '/usr/bin/renet', uploaded: false });
     mockGetSubscriptionTokenState.mockReturnValue({
       kind: 'ready',
       serverUrl: 'http://localhost:4800',

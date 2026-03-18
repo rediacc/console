@@ -60,6 +60,8 @@ jobs:
       - run: .ci/scripts/setup/install-deps.sh
       - run: .ci/scripts/setup/build-packages.sh
       - run: .ci/scripts/build/build-cli.sh
+        env:
+          OTLP_AUTH_TOKEN: ${{ secrets.OTLP_AUTH_TOKEN }}
 
       - name: Prepare CLI bundle artifact
         run: |

@@ -324,7 +324,7 @@ export async function pushBackupSchedule(
 
   // Provision renet binary to remote
   outputService.info(`Provisioning renet to ${machine.ip}...`);
-  const remoteRenetPath = await provisionRenetToRemote(
+  const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
     { renetPath: localConfig.renetPath },
     machine,
     sshPrivateKey,
