@@ -187,6 +187,43 @@ export function parseRsyncChanges(dryRunOutput: string): RsyncChanges {
   return changes;
 }
 
+/** Add remote rsync path and permission args. */
+function addRemoteRsyncArgs(
+  args: string[],
+  options: { isUpload?: boolean; remoteRsyncPath?: string },
+  universalUser?: string
+): void {
+  if (universalUser) {
+    args.push('--rsync-path', 'sudo rsync');
+    if (options.isUpload) {
+      args.push('--chown', `${universalUser}:${universalUser}`);
+    }
+    args.push('--numeric-ids', '--no-links');
+  } else if (options.remoteRsyncPath) {
+    args.push('--rsync-path', options.remoteRsyncPath);
+  }
+}
+
+/** Add sync mode args (mirror, verify, excludes). */
+function addSyncModeArgs(
+  args: string[],
+  options: { mirror?: boolean; verify?: boolean; exclude?: string[] }
+): void {
+  if (options.mirror) {
+    args.push('--delete', '--exclude', '*.sock');
+  }
+  if (options.verify) {
+    args.push('--checksum', '--ignore-times');
+  } else {
+    args.push('--partial');
+  }
+  if (options.exclude?.length) {
+    for (const pattern of options.exclude) {
+      args.push('--exclude', pattern);
+    }
+  }
+}
+
 /**
  * Builds rsync command arguments
  *
@@ -219,38 +256,8 @@ export function buildRsyncArgs(
 
   args.push('-e', sshCommand);
 
-  // Run remote rsync as root via sudo for full permission handling.
-  // Root can read/write all files (container UIDs, lost+found, etc.)
-  // On upload: --chown ensures files are owned by the universal user (not root).
-  if (universalUser) {
-    args.push('--rsync-path', 'sudo rsync');
-    if (options.isUpload) {
-      args.push('--chown', `${universalUser}:${universalUser}`);
-    }
-    args.push('--numeric-ids');
-    args.push('--no-links'); // prevent symlink exploitation with sudo
-  } else if (options.remoteRsyncPath) {
-    args.push('--rsync-path', options.remoteRsyncPath);
-  }
-
-  // Mirror mode: delete files not in source
-  if (options.mirror) {
-    args.push('--delete', '--exclude', '*.sock');
-  }
-
-  // Verify mode: use checksums
-  if (options.verify) {
-    args.push('--checksum', '--ignore-times');
-  } else {
-    args.push('--partial');
-  }
-
-  // Exclude patterns
-  if (options.exclude?.length) {
-    for (const pattern of options.exclude) {
-      args.push('--exclude', pattern);
-    }
-  }
+  addRemoteRsyncArgs(args, options, universalUser);
+  addSyncModeArgs(args, options);
 
   return args;
 }

@@ -248,7 +248,7 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
 
   const localPath = resolveUploadLocalPath(options.local);
 
-  await ensureRenetProvisioned(opts.machine!);
+  await ensureRenetProvisioned(opts.machine);
 
   if (opts.repository) {
     await deployRepoKeyIfNeeded(opts.repository, opts.machine);
@@ -313,7 +313,7 @@ async function syncDownload(options: SyncDownloadOptions): Promise<void> {
 
   const localPath = resolve(options.local ?? process.cwd());
 
-  await ensureRenetProvisioned(opts.machine!);
+  await ensureRenetProvisioned(opts.machine);
 
   if (opts.repository) {
     await deployRepoKeyIfNeeded(opts.repository, opts.machine);
