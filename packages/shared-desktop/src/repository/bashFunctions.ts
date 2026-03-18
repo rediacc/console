@@ -114,7 +114,7 @@ export -f container_stats 2>/dev/null || true
 
 # Block 'docker compose' — must use 'renet compose' for network isolation
 docker() {
-  case "\$1" in
+  case "$1" in
     compose)
       echo "Error: Use 'renet compose' instead of 'docker compose'"
       echo "  Example: renet compose -- up -d"
@@ -122,7 +122,7 @@ docker() {
       return 1
       ;;
   esac
-  command docker "\$@"
+  command docker "$@"
 }
 export -f docker 2>/dev/null || true
 

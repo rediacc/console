@@ -554,7 +554,6 @@ export function registerExtendedRepoCommands(repo: Command): void {
             throw new Error(t('commands.repo.template.fileNotFound', { path: options.file }));
           }
           const tmpl = Buffer.from(fileContent).toString('base64');
-
           const params: Record<string, unknown> = { tmpl };
 
           // Resolve grand repo friendly name -> GUID
