@@ -27,13 +27,14 @@ import { SSHValidator } from '../../src/utils/SSHValidator';
  * 6. backup_pull from vm2 back to vm1
  * 7. Verify files restored
  */
+const ctxName = `e2e-phase7-${Date.now()}`;
+
 test.describe
   .serial('Phase 7: Backup Operations @e2e', () => {
     const config = getE2EConfig();
     let ssh1: SSHValidator;
     let ssh2: SSHValidator;
     let cleanup: (() => Promise<void>) | null = null;
-    const ctxName = `e2e-phase7-${Date.now()}`;
     const repoMountPath = `${E2E.REPO_MOUNTS_BASE}/${E2E.TEST_REPO}`;
     let originalChecksum: string;
     let secondChecksum: string;

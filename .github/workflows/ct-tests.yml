@@ -796,6 +796,7 @@ jobs:
     env:
       CI: 'true'
       VM_NET_BASE: '192.168.111'
+      REDIACC_SKIP_MACHINE_ACTIVATION: '1'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
       - uses: ./.github/actions/app-token

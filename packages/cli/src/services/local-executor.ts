@@ -29,6 +29,7 @@ import {
   refreshRepoLicensesBatch,
 } from './license.js';
 import { outputService } from './output.js';
+import { telemetryService } from './telemetry.js';
 import {
   buildLocalVault,
   getLocalRenetPath,
@@ -407,7 +408,11 @@ class LocalExecutorService {
   ): Promise<LocalExecuteResult> {
     let result = await this.runRemoteExecution(sftp, remoteRenetPath, vault, options);
     let failure: RenetLicenseFailure | null = null;
-    if (!result.success && result.exitCode === RENET_LICENSE_REQUIRED_EXIT_CODE) {
+    if (
+      !result.success &&
+      result.exitCode === RENET_LICENSE_REQUIRED_EXIT_CODE &&
+      process.env.REDIACC_SKIP_MACHINE_ACTIVATION !== '1'
+    ) {
       failure = parseRenetLicenseFailure(result.stderr, result.stdout);
     }
     if (failure) {
@@ -456,13 +461,54 @@ class LocalExecutorService {
       sshPrivateKey,
       remoteRenetPath,
       sftp
-    ).catch(() => false);
+    ).catch((err: unknown) => {
+      telemetryService.trackError(err, { operation: 'executor.refresh_activation' });
+      return false;
+    });
     const batchResult = await refreshRepoLicensesBatch(
       machine,
       sshPrivateKey,
-      remoteRenetPath
-    ).catch(() => null);
+      remoteRenetPath,
+      sftp
+    ).catch((err: unknown) => {
+      telemetryService.trackError(err, { operation: 'executor.batch_refresh' });
+      return null;
+    });
     return machineIssued || Boolean(batchResult && batchResult.valid > 0);
+  }
+
+  private async maybeRefreshInvalidSignatures(
+    machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
+    sshPrivateKey: string,
+    remoteRenetPath: string,
+    sftp: SFTPClient
+  ): Promise<void> {
+    if (getSubscriptionTokenState().kind !== 'ready') return;
+
+    try {
+      const result = await refreshRepoLicensesBatch(
+        machine,
+        sshPrivateKey,
+        remoteRenetPath,
+        sftp
+      );
+      if (result.invalidSignatureDetected > 0) {
+        const refreshed = result.issued + result.refreshed;
+        if (refreshed > 0) {
+          outputService.info(
+            t('warnings.licenseSignatureRefreshed', { count: refreshed })
+          );
+        } else {
+          outputService.warn(
+            t('warnings.licenseSignatureRefreshFailed', {
+              count: result.invalidSignatureDetected,
+            })
+          );
+        }
+      }
+    } catch {
+      // Non-blocking: license check failure should not prevent command execution
+    }
   }
 
   private async maybeOnboardSubscription(reason: string): Promise<boolean> {
@@ -494,6 +540,11 @@ class LocalExecutorService {
     remoteRenetPath: string,
     sftp?: SFTPClient
   ): Promise<void> {
+    // Allow bypassing activation for nolicense/CI builds where no subscription server exists
+    if (process.env.REDIACC_SKIP_MACHINE_ACTIVATION === '1') {
+      return;
+    }
+
     const tokenState = getSubscriptionTokenState();
     if (tokenState.kind !== 'ready') {
       if (isAgentEnvironment()) {
@@ -523,58 +574,58 @@ class LocalExecutorService {
       case 'missing':
         return {
           errorCode: 'REPO_LICENSE_ISSUANCE_REQUIRED',
-          guidance: `Issue repo licenses explicitly with: rdc subscription refresh-repos -m ${machineName}`,
+          guidance: `Issue repo licenses explicitly with: rdc subscription refresh -m ${machineName}`,
           recoveryFailedMessage:
             `A repo license is required for this operation, and automatic issuance did not succeed. ` +
-            `Run: rdc subscription refresh-repos -m ${machineName}`,
+            `Run: rdc subscription refresh -m ${machineName}`,
         };
       case 'expired':
         return {
           errorCode: 'REPO_LICENSE_REFRESH_REQUIRED',
-          guidance: `Refresh repo licenses explicitly with: rdc subscription refresh-repos -m ${machineName}`,
+          guidance: `Refresh repo licenses explicitly with: rdc subscription refresh -m ${machineName}`,
           recoveryFailedMessage:
             `The installed repo license must be refreshed before this operation can continue. ` +
-            `Run: rdc subscription refresh-repos -m ${machineName}`,
+            `Run: rdc subscription refresh -m ${machineName}`,
         };
       case 'machine_mismatch':
         return {
           errorCode: 'REPO_LICENSE_MACHINE_MISMATCH',
-          guidance: `Reissue repo licenses from this machine context with: rdc subscription refresh-repos -m ${machineName}`,
+          guidance: `Reissue repo licenses from this machine context with: rdc subscription refresh -m ${machineName}`,
           failFastMessage:
             `The installed repo license belongs to a different machine. ` +
-            `Reissue it from this machine context with: rdc subscription refresh-repos -m ${machineName}`,
+            `Reissue it from this machine context with: rdc subscription refresh -m ${machineName}`,
         };
       case 'repository_mismatch':
         return {
           errorCode: 'REPO_LICENSE_REPOSITORY_MISMATCH',
-          guidance: `Refresh repo licenses explicitly with: rdc subscription refresh-repos -m ${machineName}`,
+          guidance: `Refresh repo licenses explicitly with: rdc subscription refresh -m ${machineName}`,
           failFastMessage:
             `The installed repo license does not match the target repository. ` +
-            `Refresh repo licenses explicitly with: rdc subscription refresh-repos -m ${machineName}`,
+            `Refresh repo licenses explicitly with: rdc subscription refresh -m ${machineName}`,
         };
       case 'sequence_regression':
         return {
           errorCode: 'REPO_LICENSE_INTEGRITY_ERROR',
-          guidance: `Replace the installed repo license with: rdc subscription refresh-repos -m ${machineName}`,
+          guidance: `Replace the installed repo license with: rdc subscription refresh -m ${machineName}`,
           failFastMessage:
             `The installed repo license is older than the latest accepted sequence. ` +
-            `Replace it with a newer repo license using: rdc subscription refresh-repos -m ${machineName}`,
+            `Replace it with a newer repo license using: rdc subscription refresh -m ${machineName}`,
         };
       case 'invalid_signature':
         return {
           errorCode: 'REPO_LICENSE_INTEGRITY_ERROR',
-          guidance: `Replace the installed repo license with: rdc subscription refresh-repos -m ${machineName}`,
+          guidance: `Replace the installed repo license with: rdc subscription refresh -m ${machineName}`,
           failFastMessage:
             `The installed repo license could not be trusted. ` +
-            `Replace it with a newly issued repo license using: rdc subscription refresh-repos -m ${machineName}`,
+            `Replace it with a newly issued repo license using: rdc subscription refresh -m ${machineName}`,
         };
       case 'identity_mismatch':
         return {
           errorCode: 'REPO_LICENSE_IDENTITY_MISMATCH',
-          guidance: `Reissue repo licenses with: rdc subscription refresh-repos -m ${machineName}`,
+          guidance: `Reissue repo licenses with: rdc subscription refresh -m ${machineName}`,
           failFastMessage:
             `The repository identity does not match the installed repo license. ` +
-            `Reissue repo licenses with: rdc subscription refresh-repos -m ${machineName}`,
+            `Reissue repo licenses with: rdc subscription refresh -m ${machineName}`,
         };
       default:
         return {};
@@ -715,7 +766,7 @@ class LocalExecutorService {
       );
 
       try {
-        const remoteRenetPath = await timedStep(
+        const { remotePath: remoteRenetPath, uploaded: renetUploaded } = await timedStep(
           t('timing.step.provisioning'),
           'timing.step.renetProvisioned',
           () => provisionRenetToRemote(config, machine, sshPrivateKey, options, sftp)
@@ -732,6 +783,11 @@ class LocalExecutorService {
             sftp
           )
         );
+
+        // Auto-refresh repo licenses with invalid signatures after renet binary update
+        if (renetUploaded) {
+          await this.maybeRefreshInvalidSignatures(machine, sshPrivateKey, remoteRenetPath, sftp);
+        }
 
         // Pre-flight for create/fork: ensure machine activation (writes machine license to disk)
         if (
