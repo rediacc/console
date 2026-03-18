@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1691,
+    "keyCount": 1692,
     "sourceCommit": "493a17c7b3fe064e5ac63f06f6274cce05325173"
   },
   "hashes": {
@@ -922,6 +922,7 @@
     "commands.repo.unmount.descriptionShort": "30b863dc",
     "commands.repo.unmount.failed": "bff8b509",
     "commands.repo.unmount.starting": "fcd64360",
+    "commands.repo.up.checkpointOption": "715e5a66",
     "commands.repo.up.completed": "3f22a56c",
     "commands.repo.up.description": "38cd7240",
     "commands.repo.up.descriptionShort": "c728eb10",

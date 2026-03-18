@@ -1169,7 +1169,7 @@
         "allCompleted": "Все репозитории остановлены",
         "allFailed": "Операция остановки всех не удалась",
         "allStarting": "Остановка всех репозиториев на \"{{machine}}\"...",
-        "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')",
+        "checkpointOption": "Создать checkpoint CRIU перед остановкой (сохранить состояние памяти процессов для последующего восстановления через 'repo up')",
         "completed": "Сервисы остановлены",
         "description": "Остановить сервисы репозитория",
         "descriptionShort": "Остановить Docker-контейнеры репозитория",
@@ -1188,7 +1188,7 @@
       },
       "fork": {
         "alreadyExists": "Репозиторий \"{{name}}\" уже существует в контексте",
-        "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)",
+        "checkpointOption": "Создать checkpoint CRIU на источнике перед fork (захватить состояние памяти процессов для восстановления в fork)",
         "completed": "Форк создан. Развернуть локально: repo up {{repository}} -m {{machine}} --mount. Для миграции форка на другую машину: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
         "description": "Создать CoW-форк (копирование при записи) репозитория",
         "descriptionShort": "Создать CoW-форк репозитория (новый GUID, networkId, диапазон IP)",
@@ -1350,9 +1350,10 @@
         "failed": "Ошибка запуска сервисов",
         "grandOption": "Имя главного репозитория (автоматически разрешается в GUID)",
         "mountOption": "Сначала смонтировать репозиторий",
-        "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)",
+        "skipCheckpointOption": "Пропустить восстановление из checkpoint CRIU, даже если данные checkpoint существуют (принудительный чистый запуск)",
         "starting": "Запуск сервисов для \"{{repository}}\" на \"{{machine}}\"...",
-        "tlsOption": "Запросить выделенный TLS-сертификат для этого репозитория (форки по умолчанию используют общий сертификат машины)"
+        "tlsOption": "Запросить выделенный TLS-сертификат для этого репозитория (форки по умолчанию используют общий сертификат машины)",
+        "checkpointOption": "Восстановить контрольную точку CRIU при запуске (возобновить процессы из сохранённого состояния памяти)"
       },
       "upAll": {
         "completed": "Все репозитории запущены",

@@ -1169,7 +1169,7 @@
         "allCompleted": "Alle Repositories gestoppt",
         "allFailed": "Down-all-Vorgang fehlgeschlagen",
         "allStarting": "Alle Repositories auf \"{{machine}}\" werden gestoppt...",
-        "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')",
+        "checkpointOption": "CRIU checkpoint vor dem Stoppen erstellen (Prozessspeicherzustand für spätere Wiederherstellung via 'repo up' sichern)",
         "completed": "Dienste gestoppt",
         "description": "Repository-Dienste stoppen",
         "descriptionShort": "Docker-Container des Repositorys stoppen",
@@ -1188,7 +1188,7 @@
       },
       "fork": {
         "alreadyExists": "Repository \"{{name}}\" existiert bereits im Kontext",
-        "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)",
+        "checkpointOption": "CRIU checkpoint auf der Quelle vor dem fork erstellen (Prozessspeicherzustand für Wiederherstellung beim fork erfassen)",
         "completed": "Fork erstellt. Lokal deployen: repo up {{repository}} -m {{machine}} --mount. Fork auf eine andere Maschine migrieren: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
         "description": "CoW-Fork (Copy-on-Write) eines Repositorys erstellen",
         "descriptionShort": "CoW-Fork eines Repositorys erstellen (neue GUID, networkId, IP-Bereich)",
@@ -1350,9 +1350,10 @@
         "failed": "Starten der Dienste fehlgeschlagen",
         "grandOption": "Grand-Repository-Name (wird automatisch in GUID aufgelöst)",
         "mountOption": "Repository vorher mounten",
-        "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)",
+        "skipCheckpointOption": "CRIU checkpoint-Wiederherstellung überspringen, auch wenn checkpoint-Daten vorhanden sind (Neustart erzwingen)",
         "starting": "Dienste für \"{{repository}}\" auf \"{{machine}}\" werden gestartet...",
-        "tlsOption": "Dediziertes TLS-Zertifikat für dieses Repository anfordern (Forks verwenden standardmäßig das gemeinsame Maschinenzertifikat)"
+        "tlsOption": "Dediziertes TLS-Zertifikat für dieses Repository anfordern (Forks verwenden standardmäßig das gemeinsame Maschinenzertifikat)",
+        "checkpointOption": "CRIU-Checkpoint beim Start wiederherstellen (Prozesse aus gespeichertem Speicherzustand fortsetzen)"
       },
       "upAll": {
         "completed": "Alle Repositories gestartet",

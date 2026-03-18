@@ -1265,7 +1265,8 @@
         "tlsOption": "Request dedicated TLS cert for this repo (forks use shared machine cert by default)",
         "starting": "Starting services for \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Services started",
-        "failed": "Service start failed"
+        "failed": "Service start failed",
+        "checkpointOption": "Restore CRIU checkpoint on start (resume processes from saved memory state)"
       },
       "upAll": {
         "description": "Deploy all repositories on a machine",

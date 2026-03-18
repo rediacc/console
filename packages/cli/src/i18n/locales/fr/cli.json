@@ -1169,7 +1169,7 @@
         "allCompleted": "Tous les dépôts arrêtés",
         "allFailed": "L'opération d'arrêt total a échoué",
         "allStarting": "Arrêt de tous les dépôts sur \"{{machine}}\"...",
-        "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')",
+        "checkpointOption": "Créer un checkpoint CRIU avant l'arrêt (sauvegarder l'état mémoire des processus pour restauration ultérieure via 'repo up')",
         "completed": "Services arrêtés",
         "description": "Arrêter les services du dépôt",
         "descriptionShort": "Arrêter les conteneurs Docker du dépôt",
@@ -1188,7 +1188,7 @@
       },
       "fork": {
         "alreadyExists": "Le dépôt \"{{name}}\" existe déjà dans le contexte",
-        "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)",
+        "checkpointOption": "Créer un checkpoint CRIU sur la source avant le fork (capturer l'état mémoire des processus pour restauration sur le fork)",
         "completed": "Fork créé. Déployer localement : repo up {{repository}} -m {{machine}} --mount. Pour migrer le fork vers une autre machine : backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
         "description": "Créer un fork CoW (Copy-on-Write) d'un dépôt",
         "descriptionShort": "Créer un fork CoW d'un dépôt (nouveau GUID, networkId, plage IP)",
@@ -1350,9 +1350,10 @@
         "failed": "Échec du démarrage des services",
         "grandOption": "Nom du grand dépôt (résolution automatique vers le GUID)",
         "mountOption": "Monter le dépôt d'abord",
-        "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)",
+        "skipCheckpointOption": "Ignorer la restauration du checkpoint CRIU même si des données de checkpoint existent (forcer un démarrage propre)",
         "starting": "Démarrage des services pour \"{{repository}}\" sur \"{{machine}}\"...",
-        "tlsOption": "Demander un certificat TLS dédié pour ce dépôt (les forks utilisent le certificat partagé de la machine par défaut)"
+        "tlsOption": "Demander un certificat TLS dédié pour ce dépôt (les forks utilisent le certificat partagé de la machine par défaut)",
+        "checkpointOption": "Restaurer le checkpoint CRIU au démarrage (reprendre les processus depuis l'état mémoire sauvegardé)"
       },
       "upAll": {
         "completed": "Tous les dépôts démarrés",

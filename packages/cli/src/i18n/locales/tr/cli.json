@@ -1169,7 +1169,7 @@
         "allCompleted": "Tüm depolar durduruldu",
         "allFailed": "Tümünü durdurma işlemi başarısız oldu",
         "allStarting": "\"{{machine}}\" üzerindeki tüm depolar durduruluyor...",
-        "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')",
+        "checkpointOption": "Durdurmadan önce CRIU checkpoint oluştur (işlem bellek durumunu 'repo up' ile geri yüklemek üzere kaydet)",
         "completed": "Servisler durduruldu",
         "description": "Depo servislerini durdur",
         "descriptionShort": "Deponun Docker konteynerlerini durdur",
@@ -1188,7 +1188,7 @@
       },
       "fork": {
         "alreadyExists": "\"{{name}}\" deposu bağlamda zaten mevcut",
-        "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)",
+        "checkpointOption": "fork öncesinde kaynakta CRIU checkpoint oluştur (fork üzerinde geri yükleme için işlem bellek durumunu yakala)",
         "completed": "Çatal oluşturuldu. Yerel olarak dağıtın: repo up {{repository}} -m {{machine}} --mount. Çatalı başka bir makineye taşımak için: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
         "description": "Bir deponun CoW (Copy-on-Write) çatalını oluştur",
         "descriptionShort": "Deponun CoW çatalını oluştur (yeni GUID, networkId, IP aralığı)",
@@ -1350,9 +1350,10 @@
         "failed": "Servis başlatma başarısız",
         "grandOption": "Ana depo adı (GUID'ye otomatik çözümlenir)",
         "mountOption": "Önce depoyu bağla",
-        "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)",
+        "skipCheckpointOption": "Checkpoint verileri mevcut olsa bile CRIU checkpoint geri yüklemesini atla (temiz başlatmayı zorla)",
         "starting": "\"{{repository}}\" için servisler \"{{machine}}\" üzerinde başlatılıyor...",
-        "tlsOption": "Bu depo için özel TLS sertifikası talep et (fork'lar varsayılan olarak paylaşılan makine sertifikasını kullanır)"
+        "tlsOption": "Bu depo için özel TLS sertifikası talep et (fork'lar varsayılan olarak paylaşılan makine sertifikasını kullanır)",
+        "checkpointOption": "Başlangıçta CRIU kontrol noktasını geri yükle (kaydedilmiş bellek durumundan işlemleri sürdür)"
       },
       "upAll": {
         "completed": "Tüm depolar başlatıldı",

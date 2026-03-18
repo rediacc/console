@@ -1169,7 +1169,7 @@
         "allCompleted": "所有仓库已停止",
         "allFailed": "全部停止操作失败",
         "allStarting": "正在停止 \"{{machine}}\" 上的所有仓库...",
-        "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')",
+        "checkpointOption": "停止前创建 CRIU checkpoint（保存进程内存状态，以便后续通过 'repo up' 恢复）",
         "completed": "服务已停止",
         "description": "停止仓库服务",
         "descriptionShort": "停止仓库的 Docker 容器",
@@ -1188,7 +1188,7 @@
       },
       "fork": {
         "alreadyExists": "仓库 \"{{name}}\" 已存在于上下文中",
-        "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)",
+        "checkpointOption": "fork 前在源上创建 CRIU checkpoint（捕获进程内存状态以便在 fork 上恢复）",
         "completed": "分支已创建。本地部署: repo up {{repository}} -m {{machine}} --mount。将分支迁移到另一台机器: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
         "description": "创建仓库的 CoW（写时复制）分支",
         "descriptionShort": "创建仓库的 CoW 分支（新 GUID、networkId、IP 范围）",
@@ -1350,9 +1350,10 @@
         "failed": "服务启动失败",
         "grandOption": "主仓库名称 (自动解析为 GUID)",
         "mountOption": "先挂载仓库",
-        "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)",
+        "skipCheckpointOption": "即使存在 checkpoint 数据也跳过 CRIU checkpoint 恢复（强制全新启动）",
         "starting": "正在 \"{{machine}}\" 上启动 \"{{repository}}\" 的服务...",
-        "tlsOption": "为此仓库请求专用 TLS 证书 (分支默认使用共享机器证书)"
+        "tlsOption": "为此仓库请求专用 TLS 证书 (分支默认使用共享机器证书)",
+        "checkpointOption": "启动时恢复 CRIU 检查点（从保存的内存状态恢复进程）"
       },
       "upAll": {
         "completed": "所有仓库已启动",

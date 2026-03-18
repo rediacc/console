@@ -1557,8 +1557,8 @@
               "defaultValue": null
             },
             {
-              "flags": "--checkpoint",
-              "descriptionKey": "commands.repo.up.checkpointOption",
+              "flags": "--skip-checkpoint",
+              "descriptionKey": "commands.repo.up.skipCheckpointOption",
               "mandatory": false,
               "defaultValue": null
             },
@@ -1640,6 +1640,12 @@
             {
               "flags": "--unmount",
               "descriptionKey": "commands.repo.down.unmountOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--checkpoint",
+              "descriptionKey": "commands.repo.down.checkpointOption",
               "mandatory": false,
               "defaultValue": null
             },
@@ -1750,6 +1756,12 @@
             {
               "flags": "--tag <name>",
               "descriptionKey": "commands.repo.fork.tagOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--checkpoint",
+              "descriptionKey": "commands.repo.fork.checkpointOption",
               "mandatory": false,
               "defaultValue": null
             },

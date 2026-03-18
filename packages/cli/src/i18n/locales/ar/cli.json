@@ -1169,7 +1169,7 @@
         "allCompleted": "تم إيقاف جميع المستودعات",
         "allFailed": "فشلت عملية إيقاف الكل",
         "allStarting": "جارٍ إيقاف جميع المستودعات على \"{{machine}}\"...",
-        "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')",
+        "checkpointOption": "إنشاء نقطة تفتيش CRIU قبل الإيقاف (حفظ حالة ذاكرة العمليات للاستعادة لاحقًا عبر 'repo up')",
         "completed": "تم إيقاف الخدمات",
         "description": "إيقاف خدمات المستودع",
         "descriptionShort": "إيقاف حاويات Docker للمستودع",
@@ -1188,7 +1188,7 @@
       },
       "fork": {
         "alreadyExists": "المستودع \"{{name}}\" موجود بالفعل في السياق",
-        "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)",
+        "checkpointOption": "إنشاء نقطة تفتيش CRIU على المصدر قبل التفريع (التقاط حالة ذاكرة العمليات للاستعادة عند fork)",
         "completed": "تم إنشاء النسخة. للنشر محلياً: repo up {{repository}} -m {{machine}} --mount. لترحيل النسخة إلى جهاز آخر: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
         "description": "إنشاء نسخة CoW (نسخ عند الكتابة) من مستودع",
         "descriptionShort": "إنشاء نسخة CoW من مستودع (GUID جديد، networkId، نطاق IP)",
@@ -1350,9 +1350,10 @@
         "failed": "فشل بدء الخدمات",
         "grandOption": "اسم المستودع الرئيسي (يُحلّ تلقائيًا إلى GUID)",
         "mountOption": "تثبيت المستودع أولاً",
-        "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)",
+        "skipCheckpointOption": "تخطي استعادة نقطة تفتيش CRIU حتى لو كانت بيانات checkpoint موجودة (فرض بدء جديد)",
         "starting": "جارٍ بدء الخدمات لـ \"{{repository}}\" على \"{{machine}}\"...",
-        "tlsOption": "طلب شهادة TLS مخصصة لهذا المستودع (النسخ المتفرعة تستخدم شهادة الجهاز المشتركة افتراضيًا)"
+        "tlsOption": "طلب شهادة TLS مخصصة لهذا المستودع (النسخ المتفرعة تستخدم شهادة الجهاز المشتركة افتراضيًا)",
+        "checkpointOption": "استعادة نقطة CRIU عند البدء (استئناف العمليات من حالة الذاكرة المحفوظة)"
       },
       "upAll": {
         "completed": "تم بدء جميع المستودعات",

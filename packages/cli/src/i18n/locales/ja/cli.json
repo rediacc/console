@@ -1169,7 +1169,7 @@
         "allCompleted": "すべてのリポジトリを停止しました",
         "allFailed": "全停止操作に失敗しました",
         "allStarting": "\"{{machine}}\"上のすべてのリポジトリを停止しています...",
-        "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')",
+        "checkpointOption": "停止前に CRIU checkpoint を作成する（プロセスメモリ状態を保存し、後で 'repo up' で復元）",
         "completed": "サービスが停止されました",
         "description": "リポジトリサービスを停止する",
         "descriptionShort": "リポジトリの Docker コンテナを停止する",
@@ -1188,7 +1188,7 @@
       },
       "fork": {
         "alreadyExists": "リポジトリ \"{{name}}\" はコンテキスト内に既に存在します",
-        "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)",
+        "checkpointOption": "fork 前にソースで CRIU checkpoint を作成する（fork 先での復元用にプロセスメモリ状態を取得）",
         "completed": "フォークを作成しました。ローカルにデプロイ: repo up {{repository}} -m {{machine}} --mount。フォークを別のマシンに移行: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
         "description": "リポジトリのCoW（コピーオンライト）フォークを作成する",
         "descriptionShort": "リポジトリの CoW フォークを作成する（新規 GUID、networkId、IP 範囲）",
@@ -1350,9 +1350,10 @@
         "failed": "サービスの開始に失敗しました",
         "grandOption": "グランドリポジトリ名 (自動的に GUID に解決)",
         "mountOption": "最初にリポジトリをマウントする",
-        "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)",
+        "skipCheckpointOption": "checkpoint データが存在しても CRIU checkpoint の復元をスキップする（強制的に新規起動）",
         "starting": "\"{{repository}}\" のサービスを \"{{machine}}\" で開始中...",
-        "tlsOption": "このリポジトリ用の専用 TLS 証明書をリクエスト (フォークはデフォルトで共有マシン証明書を使用)"
+        "tlsOption": "このリポジトリ用の専用 TLS 証明書をリクエスト (フォークはデフォルトで共有マシン証明書を使用)",
+        "checkpointOption": "起動時にCRIUチェックポイントを復元（保存されたメモリ状態からプロセスを再開）"
       },
       "upAll": {
         "completed": "すべてのリポジトリが開始されました",
