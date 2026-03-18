@@ -98,9 +98,7 @@ export function registerExtendedRepoCommands(repo: Command): void {
           throw new Error(t('commands.repo.fork.tagRequired'));
         }
 
-        const parentRef = parseRepoRef(parent);
-        const forkKey = compositeKey(parentRef.name, tagName);
-
+        const forkKey = compositeKey(parseRepoRef(parent).name, tagName);
         try {
           // Validate parent exists
           const parentConfig = await configService.getRepository(parent);
@@ -236,8 +234,7 @@ export function registerExtendedRepoCommands(repo: Command): void {
           if (result.success) {
             // 4. Rename fork config to "{name}:pre-takeover-{YYYYMMDD}"
             const { parseRepoRef } = await import('../utils/config-schema.js');
-            const d = new Date();
-            const backupName = `${parseRepoRef(forkRef).name}:pre-takeover-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+            const backupName = `${parseRepoRef(forkRef).name}:pre-takeover-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}`;
             // Move fork config to backup name
             const forkCfg = await configService.getRepository(forkRef);
             if (forkCfg) {
