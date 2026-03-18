@@ -1179,7 +1179,8 @@
         "failed": "サービスの停止に失敗しました",
         "grandOption": "グランドリポジトリ名 (自動的に GUID に解決)",
         "starting": "\"{{repository}}\" のサービスを \"{{machine}}\" で停止中...",
-        "unmountOption": "停止後にリポジトリをアンマウントする"
+        "unmountOption": "停止後にリポジトリをアンマウントする",
+        "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')"
       },
       "expand": {
         "completed": "拡張が完了しました",
@@ -1199,7 +1200,8 @@
         "rollback": "\"{{repository}}\" の設定をロールバックしました",
         "starting": "\"{{machine}}\" で \"{{parent}}\" を \"{{repository}}\" としてフォーク中...",
         "tagOption": "フォークのタグ（名前:タグを作成）",
-        "tagRequired": "フォークにはタグが必要です。使用法: rdc repo fork <parent> <tag> -m <machine>"
+        "tagRequired": "フォークにはタグが必要です。使用法: rdc repo fork <parent> <tag> -m <machine>",
+        "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)"
       },
       "takeover": {
         "description": "グランドリポジトリのデータをフォークのデータで置き換えます。グランドはその ID（GUID、networkId、ドメイン、自動起動、バックアップチェーン）を保持しつつ、フォークの更新されたデータを取得します。古い本番データはバックアップフォークとして保存されます。使用方法: フォークでアップグレードをテスト → 確認 → 本番への引き継ぎ。",
@@ -1346,7 +1348,6 @@
         "starting": "\"{{repository}}\" を \"{{machine}}\" でアンマウント中..."
       },
       "up": {
-        "checkpointOption": "デプロイ後にCRIUチェックポイントからコンテナを復元する（別のマシンからのライブプロセス移行用）",
         "completed": "サービスが開始されました",
         "description": "リポジトリをデプロイまたは更新する (マウント、サービス起動)",
         "descriptionShort": "マシン上にリポジトリをデプロイまたは更新する",
@@ -1354,7 +1355,8 @@
         "grandOption": "グランドリポジトリ名 (自動的に GUID に解決)",
         "mountOption": "最初にリポジトリをマウントする",
         "starting": "\"{{repository}}\" のサービスを \"{{machine}}\" で開始中...",
-        "tlsOption": "このリポジトリ用の専用 TLS 証明書をリクエスト (フォークはデフォルトで共有マシン証明書を使用)"
+        "tlsOption": "このリポジトリ用の専用 TLS 証明書をリクエスト (フォークはデフォルトで共有マシン証明書を使用)",
+        "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)"
       },
       "upAll": {
         "completed": "すべてのリポジトリが開始されました",

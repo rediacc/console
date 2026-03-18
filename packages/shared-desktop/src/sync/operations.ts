@@ -75,6 +75,7 @@ export async function uploadToRepository(
       mirror,
       verify,
       universalUser: connection.connection?.universalUser,
+      isUpload: true,
       onStdout: onOutput,
       onStderr: onOutput,
     };
@@ -204,6 +205,7 @@ export async function getSyncPreview(options: SyncOperationOptions): Promise<Rsy
       mirror,
       verify,
       universalUser: connection.connection?.universalUser,
+      isUpload: mode === 'upload',
     };
 
     return await getRsyncPreview(rsyncOptions);

@@ -1179,7 +1179,8 @@
         "failed": "Ошибка остановки сервисов",
         "grandOption": "Имя главного репозитория (автоматически разрешается в GUID)",
         "starting": "Остановка сервисов для \"{{repository}}\" на \"{{machine}}\"...",
-        "unmountOption": "Размонтировать репозиторий после остановки"
+        "unmountOption": "Размонтировать репозиторий после остановки",
+        "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')"
       },
       "expand": {
         "completed": "Расширение завершено",
@@ -1199,7 +1200,8 @@
         "rollback": "Конфигурация для \"{{repository}}\" откачена",
         "starting": "Создание форка \"{{parent}}\" как \"{{repository}}\" на \"{{machine}}\"...",
         "tagOption": "Тег для форка (создаёт имя:тег)",
-        "tagRequired": "Тег обязателен для форка. Использование: rdc repo fork <parent> <tag> -m <machine>"
+        "tagRequired": "Тег обязателен для форка. Использование: rdc repo fork <parent> <tag> -m <machine>",
+        "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)"
       },
       "takeover": {
         "description": "Заменить данные главного репозитория данными форка. Главный сохраняет свою идентичность (GUID, networkId, домены, автозапуск, цепочку резервных копий), но получает обновлённые данные форка. Старые производственные данные сохраняются как резервный форк. Использование: протестировать обновление на форке → проверить → перенести в продакшн.",
@@ -1346,7 +1348,6 @@
         "starting": "Размонтирование \"{{repository}}\" на \"{{machine}}\"..."
       },
       "up": {
-        "checkpointOption": "Восстановить контейнеры из контрольной точки CRIU после развёртывания (для миграции процессов с другой машины)",
         "completed": "Сервисы запущены",
         "description": "Развернуть или обновить репозиторий (монтирование, запуск сервисов)",
         "descriptionShort": "Развернуть или обновить репозиторий на машине",
@@ -1354,7 +1355,8 @@
         "grandOption": "Имя главного репозитория (автоматически разрешается в GUID)",
         "mountOption": "Сначала смонтировать репозиторий",
         "starting": "Запуск сервисов для \"{{repository}}\" на \"{{machine}}\"...",
-        "tlsOption": "Запросить выделенный TLS-сертификат для этого репозитория (форки по умолчанию используют общий сертификат машины)"
+        "tlsOption": "Запросить выделенный TLS-сертификат для этого репозитория (форки по умолчанию используют общий сертификат машины)",
+        "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)"
       },
       "upAll": {
         "completed": "Все репозитории запущены",

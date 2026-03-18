@@ -96,13 +96,27 @@ rdc repo up <repo>:<tag> -m <target> --mount --grand <repo>
 # Checkpoint + push (captures process memory + disk state, source keeps running)
 rdc repo push <repo> -m <source> --to-machine <target> --checkpoint
 
-# Restore on target (process resumes from saved state — no fresh start)
-rdc repo up <repo> -m <target> --mount --checkpoint
+# Restore on target (auto-detects checkpoint, resumes process state)
+rdc repo up <repo> -m <target> --mount
 ```
 
-After restore, in-memory state continues (counters, variables, timers). TCP connections become stale — apps must handle `ECONNRESET` and `ECONNREFUSED` (dependent services may need seconds to accept connections after restore). See [backup.md](backup.md) for full CRIU details and troubleshooting.
+## Quick-start: Same-machine fork with CRIU
 
-See [backup.md](backup.md) for full details.
+```bash
+# Fork with live state — app continues from checkpoint, DB starts fresh
+rdc repo fork <repo> <tag> -m <machine> --checkpoint
+rdc repo mount <repo>:<tag> -m <machine>
+rdc repo up <repo>:<tag> -m <machine>
+```
+
+## Quick-start: Save/restore (stop and resume later)
+
+```bash
+rdc repo down <repo> -m <machine> --checkpoint    # Saves state, stops
+rdc repo up <repo> -m <machine>                    # Auto-restores
+```
+
+Requires `rediacc.checkpoint=true` label on containers to checkpoint. See [backup.md](backup.md) for full CRIU details, label setup, and troubleshooting.
 
 ## Quick-start: Instant fork with Ceph (zero data transfer)
 

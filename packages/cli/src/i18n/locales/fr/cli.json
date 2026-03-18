@@ -1179,7 +1179,8 @@
         "failed": "Échec de l'arrêt des services",
         "grandOption": "Nom du grand dépôt (résolution automatique vers le GUID)",
         "starting": "Arrêt des services pour \"{{repository}}\" sur \"{{machine}}\"...",
-        "unmountOption": "Démonter le dépôt après l'arrêt"
+        "unmountOption": "Démonter le dépôt après l'arrêt",
+        "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')"
       },
       "expand": {
         "completed": "Extension terminée",
@@ -1199,7 +1200,8 @@
         "rollback": "Configuration annulée pour \"{{repository}}\"",
         "starting": "Création du fork de \"{{parent}}\" en tant que \"{{repository}}\" sur \"{{machine}}\"...",
         "tagOption": "Tag pour le fork (crée nom:tag)",
-        "tagRequired": "Le tag est requis pour le fork. Utilisation : rdc repo fork <parent> <tag> -m <machine>"
+        "tagRequired": "Le tag est requis pour le fork. Utilisation : rdc repo fork <parent> <tag> -m <machine>",
+        "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)"
       },
       "takeover": {
         "description": "Remplacer les données du dépôt principal par les données d'un fork. Le principal conserve son identité (GUID, networkId, domaines, démarrage automatique, chaîne de sauvegardes) mais obtient les données mises à jour du fork. Les anciennes données de production sont conservées comme fork de sauvegarde. Utilisation : tester la mise à niveau sur le fork → vérifier → prise de contrôle en production.",
@@ -1346,7 +1348,6 @@
         "starting": "Démontage de \"{{repository}}\" sur \"{{machine}}\"..."
       },
       "up": {
-        "checkpointOption": "Restaurer les conteneurs depuis un checkpoint CRIU après le déploiement (pour la migration de processus en direct depuis une autre machine)",
         "completed": "Services démarrés",
         "description": "Déployer ou mettre à jour un dépôt (montage, démarrage des services)",
         "descriptionShort": "Déployer ou mettre à jour un dépôt sur une machine",
@@ -1354,7 +1355,8 @@
         "grandOption": "Nom du grand dépôt (résolution automatique vers le GUID)",
         "mountOption": "Monter le dépôt d'abord",
         "starting": "Démarrage des services pour \"{{repository}}\" sur \"{{machine}}\"...",
-        "tlsOption": "Demander un certificat TLS dédié pour ce dépôt (les forks utilisent le certificat partagé de la machine par défaut)"
+        "tlsOption": "Demander un certificat TLS dédié pour ce dépôt (les forks utilisent le certificat partagé de la machine par défaut)",
+        "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)"
       },
       "upAll": {
         "completed": "Tous les dépôts démarrés",

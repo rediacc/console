@@ -202,6 +202,8 @@ export function buildRsyncArgs(
     verify?: boolean;
     exclude?: string[];
     remoteRsyncPath?: string;
+    /** True when syncing local → remote (upload). Enables --chown on remote. */
+    isUpload?: boolean;
   },
   sshCommand: string,
   universalUser?: string,
@@ -219,9 +221,12 @@ export function buildRsyncArgs(
 
   // Run remote rsync as root via sudo for full permission handling.
   // Root can read/write all files (container UIDs, lost+found, etc.)
-  // and preserve exact ownership during transfer.
+  // On upload: --chown ensures files are owned by the universal user (not root).
   if (universalUser) {
     args.push('--rsync-path', 'sudo rsync');
+    if (options.isUpload) {
+      args.push('--chown', `${universalUser}:${universalUser}`);
+    }
     args.push('--numeric-ids');
     args.push('--no-links'); // prevent symlink exploitation with sudo
   } else if (options.remoteRsyncPath) {
@@ -270,6 +275,8 @@ export interface RsyncExecutorOptions {
   remoteRsyncPath?: string;
   /** Universal user for sudo */
   universalUser?: string;
+  /** True when syncing local → remote (upload). Enables --chown on remote. */
+  isUpload?: boolean;
   /** Verbose logging - outputs full rsync command before execution */
   verbose?: boolean;
   /** Callback for progress updates */
@@ -303,6 +310,7 @@ export async function executeRsync(options: RsyncExecutorOptions): Promise<SyncR
       verify: options.verify,
       exclude: options.exclude,
       remoteRsyncPath: options.remoteRsyncPath,
+      isUpload: options.isUpload,
     },
     sshCommand,
     options.universalUser,
@@ -435,6 +443,7 @@ export async function getRsyncPreview(options: RsyncExecutorOptions): Promise<Rs
       verify: options.verify,
       exclude: options.exclude,
       remoteRsyncPath: options.remoteRsyncPath,
+      isUpload: options.isUpload,
     },
     sshCommand,
     options.universalUser,

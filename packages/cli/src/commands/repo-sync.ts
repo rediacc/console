@@ -276,6 +276,7 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
       verify: options.verify,
       exclude: options.exclude,
       universalUser: details.universalUser,
+      isUpload: true,
     };
 
     const shouldContinue = await handleConfirmMode(rsyncOptions, options);

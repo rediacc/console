@@ -1179,7 +1179,8 @@
         "failed": "Stoppen der Dienste fehlgeschlagen",
         "grandOption": "Grand-Repository-Name (wird automatisch in GUID aufgelöst)",
         "starting": "Dienste für \"{{repository}}\" auf \"{{machine}}\" werden gestoppt...",
-        "unmountOption": "Repository nach dem Stoppen unmounten"
+        "unmountOption": "Repository nach dem Stoppen unmounten",
+        "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')"
       },
       "expand": {
         "completed": "Erweiterung abgeschlossen",
@@ -1199,7 +1200,8 @@
         "rollback": "Konfiguration für \"{{repository}}\" zurückgesetzt",
         "starting": "Fork von \"{{parent}}\" als \"{{repository}}\" auf \"{{machine}}\" wird erstellt...",
         "tagOption": "Tag für den Fork (erstellt Name:Tag)",
-        "tagRequired": "Tag ist für Fork erforderlich. Verwendung: rdc repo fork <parent> <tag> -m <machine>"
+        "tagRequired": "Tag ist für Fork erforderlich. Verwendung: rdc repo fork <parent> <tag> -m <machine>",
+        "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)"
       },
       "takeover": {
         "description": "Daten des Grand-Repositorys durch Daten eines Forks ersetzen. Das Grand-Repository behält seine Identität (GUID, networkId, Domains, Autostart, Backup-Kette), erhält aber die aktualisierten Daten des Forks. Die alten Produktionsdaten werden als Backup-Fork gespeichert. Verwendung: Upgrade im Fork testen → prüfen → Übernahme in die Produktion.",
@@ -1346,13 +1348,13 @@
         "starting": "\"{{repository}}\" auf \"{{machine}}\" wird unmountet..."
       },
       "up": {
-        "checkpointOption": "Container aus CRIU-Checkpoint nach dem Deployen wiederherstellen (für Live-Prozessmigration von einer anderen Maschine)",
         "completed": "Dienste gestartet",
         "description": "Repository deployen oder aktualisieren (Mount, Dienste starten)",
         "descriptionShort": "Repository auf einer Maschine bereitstellen oder aktualisieren",
         "failed": "Starten der Dienste fehlgeschlagen",
         "grandOption": "Grand-Repository-Name (wird automatisch in GUID aufgelöst)",
         "mountOption": "Repository vorher mounten",
+        "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)",
         "starting": "Dienste für \"{{repository}}\" auf \"{{machine}}\" werden gestartet...",
         "tlsOption": "Dediziertes TLS-Zertifikat für dieses Repository anfordern (Forks verwenden standardmäßig das gemeinsame Maschinenzertifikat)"
       },

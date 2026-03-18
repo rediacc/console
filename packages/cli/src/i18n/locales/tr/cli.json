@@ -1179,7 +1179,8 @@
         "failed": "Servis durdurma başarısız",
         "grandOption": "Ana depo adı (GUID'ye otomatik çözümlenir)",
         "starting": "\"{{repository}}\" için servisler \"{{machine}}\" üzerinde durduruluyor...",
-        "unmountOption": "Durdurduktan sonra depoyu ayır"
+        "unmountOption": "Durdurduktan sonra depoyu ayır",
+        "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')"
       },
       "expand": {
         "completed": "Genişletme tamamlandı",
@@ -1199,7 +1200,8 @@
         "rollback": "\"{{repository}}\" yapılandırması geri alındı",
         "starting": "\"{{machine}}\" üzerinde \"{{parent}}\" deposunun \"{{repository}}\" olarak çatallanıyor...",
         "tagOption": "Çatal için etiket (isim:etiket oluşturur)",
-        "tagRequired": "Çatal için etiket gereklidir. Kullanım: rdc repo fork <parent> <tag> -m <machine>"
+        "tagRequired": "Çatal için etiket gereklidir. Kullanım: rdc repo fork <parent> <tag> -m <machine>",
+        "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)"
       },
       "takeover": {
         "description": "Grand deponun verilerini bir çatalın verileriyle değiştir. Grand, kimliğini (GUID, networkId, alan adları, otomatik başlatma, yedekleme zinciri) korur ancak çatalın güncellenmiş verilerini alır. Eski üretim verileri yedek çatal olarak saklanır. Kullanım: çatalda yükseltmeyi test et → doğrula → üretime devir.",
@@ -1346,7 +1348,6 @@
         "starting": "\"{{repository}}\" \"{{machine}}\" üzerinden ayrılıyor..."
       },
       "up": {
-        "checkpointOption": "Dağıtımdan sonra CRIU kontrol noktasından kapsayıcıları geri yükle (başka bir makineden canlı süreç geçişi için)",
         "completed": "Servisler başlatıldı",
         "description": "Bir depoyu dağıtın veya güncelleyin (bağlama, servisleri başlatma)",
         "descriptionShort": "Bir makinede depoyu dağıt veya güncelle",
@@ -1354,7 +1355,8 @@
         "grandOption": "Ana depo adı (GUID'ye otomatik çözümlenir)",
         "mountOption": "Önce depoyu bağla",
         "starting": "\"{{repository}}\" için servisler \"{{machine}}\" üzerinde başlatılıyor...",
-        "tlsOption": "Bu depo için özel TLS sertifikası talep et (fork'lar varsayılan olarak paylaşılan makine sertifikasını kullanır)"
+        "tlsOption": "Bu depo için özel TLS sertifikası talep et (fork'lar varsayılan olarak paylaşılan makine sertifikasını kullanır)",
+        "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)"
       },
       "upAll": {
         "completed": "Tüm depolar başlatıldı",

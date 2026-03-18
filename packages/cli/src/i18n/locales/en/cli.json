@@ -1257,10 +1257,10 @@
         "failed": "Unmount failed"
       },
       "up": {
-        "description": "Deploy or update a repository (mount, run Rediaccfile up which calls renet compose). Proxy routes take ~3s to become active after deploy. Use --mount for first deploy or forked repos. Use --checkpoint to restore containers from a CRIU checkpoint (for live process migration). Omit name to deploy all repos on the machine",
+        "description": "Deploy or update a repository (mount, run Rediaccfile up which calls renet compose). Proxy routes take ~3s to become active after deploy. Use --mount for first deploy or forked repos. CRIU checkpoint restore is auto-detected — use --skip-checkpoint to force fresh start. Omit name to deploy all repos on the machine",
         "descriptionShort": "Deploy or update a repository on a machine",
         "mountOption": "Mount repository first (required for forked repos on first deploy)",
-        "checkpointOption": "Restore containers from CRIU checkpoint after deploy (for live process migration from another machine)",
+        "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)",
         "grandOption": "Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent",
         "tlsOption": "Request dedicated TLS cert for this repo (forks use shared machine cert by default)",
         "starting": "Starting services for \"{{repository}}\" on \"{{machine}}\"...",
@@ -1279,9 +1279,10 @@
         "failed": "Up-all operation failed"
       },
       "down": {
-        "description": "Stop repository Docker containers (runs Rediaccfile down via renet compose). Does NOT unmount the encrypted volume -- the repo stays mounted and can be restarted with 'repo up'. Use --unmount to also close the LUKS container after stopping. Omit name to stop all repos on the machine",
+        "description": "Stop repository Docker containers (runs Rediaccfile down via renet compose). Does NOT unmount the encrypted volume -- the repo stays mounted and can be restarted with 'repo up'. Use --unmount to also close the LUKS container after stopping. Use --checkpoint to save CRIU process state before stopping (next 'repo up' auto-restores). Omit name to stop all repos on the machine",
         "descriptionShort": "Stop repository Docker containers",
         "unmountOption": "Also unmount (close LUKS container) after stopping. Equivalent to 'repo down' then 'repo unmount'. Required before 'repo resize' or to fully secure the volume",
+        "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')",
         "grandOption": "Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent",
         "starting": "Stopping services for \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Services stopped",
@@ -1326,9 +1327,10 @@
         "failed": "Repository deletion failed"
       },
       "fork": {
-        "description": "Create a CoW (Copy-on-Write) fork of a repository. Fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}.{forkName}.{machine}.{baseDomain}) — it is a fully independent copy. Online forking is supported — the parent can remain running. Fork inherits the parent's encryption credentials automatically. CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target> --mount. WARNING: Do NOT use 'backup push' alone for forking — it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically",
+        "description": "Create a CoW (Copy-on-Write) fork of a repository. Fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}.{forkName}.{machine}.{baseDomain}) — it is a fully independent copy. Online forking is supported — the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking — the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target> --mount. WARNING: Do NOT use 'backup push' alone for forking — it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically",
         "descriptionShort": "Create a CoW fork of a repository (new GUID, networkId, IP range)",
         "tagOption": "Tag for the fork (creates name:tag)",
+        "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)",
         "tagRequired": "Tag is required for fork. Usage: rdc repo fork <parent> <tag> -m <machine>",
         "starting": "Forking \"{{parent}}\" as \"{{repository}}\" on \"{{machine}}\"...",
         "registered": "Registered fork \"{{repository}}\" ({{guid}}, network {{networkId}})",

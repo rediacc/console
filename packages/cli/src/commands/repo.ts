@@ -46,7 +46,7 @@ async function handleSingleRepoUp(
   options: {
     machine: string;
     mount?: boolean;
-    checkpoint?: boolean;
+    skipCheckpoint?: boolean;
     tls?: boolean;
     dryRun?: boolean;
     debug?: boolean;
@@ -57,7 +57,7 @@ async function handleSingleRepoUp(
 
   const params: Record<string, unknown> = {};
   if (options.mount) params.mount = true;
-  if (options.checkpoint) params.checkpoint = true;
+  if (options.skipCheckpoint) params.skip_checkpoint = true;
   if (options.tls) params.tls = true;
 
   if (options.dryRun) {
@@ -361,7 +361,7 @@ export function registerRepoCommands(program: Command): void {
     .description(t('commands.repo.up.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--mount', t('commands.repo.up.mountOption'))
-    .option('--checkpoint', t('commands.repo.up.checkpointOption'))
+    .option('--skip-checkpoint', t('commands.repo.up.skipCheckpointOption'))
     .option('--tls', t('commands.repo.up.tlsOption'))
     .option('--include-forks', t('commands.repo.upAll.includeForksOption'))
     .option('--mount-only', t('commands.repo.upAll.mountOnlyOption'))
@@ -377,7 +377,7 @@ export function registerRepoCommands(program: Command): void {
         options: {
           machine: string;
           mount?: boolean;
-          checkpoint?: boolean;
+          skipCheckpoint?: boolean;
           tls?: boolean;
           includeForks?: boolean;
           mountOnly?: boolean;
@@ -408,6 +408,7 @@ export function registerRepoCommands(program: Command): void {
     .description(t('commands.repo.down.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--unmount', t('commands.repo.down.unmountOption'))
+    .option('--checkpoint', t('commands.repo.down.checkpointOption'))
     .option('-y, --yes', t('commands.repo.yesOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
@@ -418,6 +419,7 @@ export function registerRepoCommands(program: Command): void {
         options: {
           machine: string;
           unmount?: boolean;
+          checkpoint?: boolean;
           yes?: boolean;
           debug?: boolean;
           skipRouterRestart?: boolean;
@@ -431,6 +433,7 @@ export function registerRepoCommands(program: Command): void {
 
             const params: Record<string, unknown> = {};
             if (options.unmount) params.unmount = true;
+            if (options.checkpoint) params.checkpoint = true;
 
             if (options.dryRun) {
               const repo = await configService.getRepository(name);

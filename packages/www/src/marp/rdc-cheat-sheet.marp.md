@@ -285,6 +285,9 @@ rdc repo push <repo> -m <machine> --to <storage>
 rdc repo push <repo> -m <machine> \
   --to <storage> --checkpoint
 
+# Fork with live state (CRIU checkpoint + CoW clone)
+rdc repo fork <parent> <tag> -m <machine> --checkpoint
+
 # Pull backup from storage to a machine
 rdc repo pull <repo> -m <machine> --from <storage>
 

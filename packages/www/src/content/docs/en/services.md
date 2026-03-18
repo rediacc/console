@@ -74,7 +74,7 @@ down() {
 }
 ```
 
-> **Important:** Always use `renet compose --` instead of `docker compose`. The `renet compose` wrapper enforces host networking, CRIU checkpoint/restore capabilities, IP allocation, and service discovery labels required by renet-proxy. Direct `docker compose` usage is rejected by Rediaccfile validation. See [Networking](/en/docs/networking) for details.
+> **Important:** Always use `renet compose --` instead of `docker compose`. The `renet compose` wrapper enforces host networking, IP allocation, and service discovery labels required by renet-proxy. CRIU checkpoint/restore capabilities are added to containers with the `rediacc.checkpoint=true` label. Direct `docker compose` usage is rejected by Rediaccfile validation. See [Networking](/en/docs/networking) for details.
 
 ### Multi-Service Layout
 

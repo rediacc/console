@@ -22,29 +22,65 @@ Backs up to configured external storage (S3, local file, etc.).
 
 ### List backups
 
+### CRIU checkpoint label
+
+Only containers with the `rediacc.checkpoint=true` label are checkpointed. Containers without it (databases, caches) start fresh and recover via their own mechanisms (WAL, LDF, AOF). CRIU capabilities (`CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN`) are only injected for labeled containers.
+
+```yaml
+services:
+  db:
+    image: postgres:16-alpine
+    # No label — starts fresh, recovers via WAL
+
+  app:
+    image: node:20-alpine
+    labels:
+      - "rediacc.checkpoint=true"   # Opt-in to CRIU
+    depends_on:
+      db:
+        condition: service_healthy
+```
+
 ### Live migration with CRIU checkpoint
 
 CRIU (Checkpoint/Restore In Userspace) captures running process memory state. The process resumes on the target exactly where it left off — in-memory variables, open connections, counters all preserved.
 
 ```bash
-# On source: checkpoint all containers + push (captures process memory + disk state)
+# On source: checkpoint labeled containers + push (captures process memory + disk state)
 rdc repo push <repo> -m <source> --to-machine <target> --checkpoint
 
-# On target: restore with checkpoint (process resumes from saved state)
-rdc repo up <repo> -m <target> --mount --checkpoint
+# On target: restore (auto-detects checkpoint data, restores process state)
+rdc repo up <repo> -m <target> --mount
 ```
 
 **What's preserved**: Process memory, open file descriptors, in-memory variables, timers. The app continues from the exact instruction where it was checkpointed.
 
-**What to expect**: After restore, the app doesn't re-run up() lifecycle — containers resume directly from checkpoint. Logs will continue from where they left off (no "Starting..." messages).
+**What to expect**: After restore, the app doesn't re-run up() lifecycle — checkpoint containers resume directly. Non-checkpoint containers (DBs) start fresh and recover from disk. Restore is dependency-aware (uses `depends_on` to start DBs first, wait for healthy, then CRIU restore apps).
 
-### Fork + CRIU (independent copy with live state)
+### Same-machine fork with CRIU (instant clone with live state)
 
 ```bash
-# Fork locally, then checkpoint + push the fork
-rdc repo fork <parent> <tag> -m <source>
-rdc repo push <parent>:<tag> -m <source> --to-machine <target> --checkpoint
-rdc repo up <parent>:<tag> -m <target> --mount --checkpoint --grand <parent>
+# Fork with checkpoint — captures process state, then CoW clones
+rdc repo fork <parent> <tag> -m <machine> --checkpoint
+rdc repo mount <parent>:<tag> -m <machine>
+rdc repo up <parent>:<tag> -m <machine>
+# Auto-detects checkpoint → DB starts fresh → app CRIU restores (counter continues)
+```
+
+### Cross-machine fork with CRIU
+
+```bash
+# Fork with checkpoint, then push to target
+rdc repo fork <parent> <tag> -m <source> --checkpoint
+rdc repo push <parent>:<tag> -m <source> --to-machine <target>
+rdc repo up <parent>:<tag> -m <target> --mount --grand <parent>
+```
+
+### Save/restore cycle (stop and resume later)
+
+```bash
+rdc repo down <repo> -m <machine> --checkpoint    # Saves process state, then stops
+rdc repo up <repo> -m <machine>                    # Auto-detects checkpoint, resumes
 ```
 
 ### CRIU troubleshooting
@@ -52,12 +88,12 @@ rdc repo up <parent>:<tag> -m <target> --mount --checkpoint --grand <parent>
 - **Docker experimental is auto-enabled**: Per-repo Docker daemons have `"experimental": true` in their generated daemon.json. System Docker is configured during `rdc config setup-machine`. You don't need to enable this manually.
 - **CRIU must be installed on VMs**: `rdc config setup-machine` installs CRIU from system packages and writes `/etc/criu/runc.conf` with `tcp-established`. If checkpoint fails with "CRIU is not installed", re-run setup-machine.
 - **Host networking is forced by renet**: `renet compose` overwrites all services to `network_mode: host` regardless of what the compose file says. This is required for CRIU compatibility.
-- **CRIU security settings are auto-injected**: `renet compose` adds `cap_add: [CHECKPOINT_RESTORE, SYS_PTRACE, NET_ADMIN]`, `security_opt: [apparmor=unconfined]`, and `userns_mode: host` to every container. Docker's default seccomp profile is preserved (CRIU suspends it via `PTRACE_O_SUSPEND_SECCOMP`). Do not set these manually.
-- **TCP connections break after cross-machine restore**: Apps with persistent connections (database pools, websockets) must handle both `ECONNRESET` (stale socket) and `ECONNREFUSED` (service not yet accepting connections). After restore, dependent services like databases may need a few seconds to become ready even though their containers show as "running". See the [heartbeat template](https://github.com/rediacc/console/tree/main/packages/json/templates/monitoring/heartbeat) for a CRIU-safe reconnection pattern.
+- **CRIU security settings are auto-injected for labeled containers**: `renet compose` adds `cap_add: [CHECKPOINT_RESTORE, SYS_PTRACE, NET_ADMIN]`, `security_opt: [apparmor=unconfined]`, and `userns_mode: host` to containers with `rediacc.checkpoint=true`. Containers without the label run with a cleaner security posture. Docker's default seccomp profile is preserved (CRIU suspends it via `PTRACE_O_SUSPEND_SECCOMP`).
+- **TCP connections break after cross-machine restore**: Apps with persistent connections (database pools, websockets) must handle both `ECONNRESET` (stale socket) and `ECONNREFUSED` (service not yet accepting connections). After restore, dependent services like databases may need a few seconds to become ready even though their containers show as "running". See the [heartbeat template](https://github.com/rediacc/console/tree/main/packages/json/templates/monitoring/heartbeat) for a CRIU-safe reference implementation.
 - **`restart: always` conflicts with CRIU**: Use `restart: on-failure` or omit it.
 - CRIU captures kernel-specific state (cgroup paths, mount IDs, container IDs). Cross-machine restore works best with compatible Docker versions.
-- **Do NOT attempt manual workarounds** (raw `docker checkpoint`, `runc`, or `rdc term -c "..."` with Docker commands). Always use `rdc repo push --checkpoint` and `rdc repo up --checkpoint`.
-- If checkpoint fails, the push/deploy still succeeds — it falls back to a fresh start (no process memory preservation).
+- **Checkpoint restore is auto-detected**: `repo up` automatically checks for checkpoint data and restores if found. Use `--skip-checkpoint` to force a fresh start instead.
+- If checkpoint fails, the deploy still succeeds — it falls back to a fresh start (no process memory preservation).
 
 ### CRIU performance (tested)
 

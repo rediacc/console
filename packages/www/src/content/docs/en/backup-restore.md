@@ -44,7 +44,7 @@ rdc repo push my-app -m server-1 --to my-storage
 | `--to <storage>` | Target storage location |
 | `--to-machine <machine>` | Target machine for machine-to-machine backup |
 | `--dest <filename>` | Custom destination filename |
-| `--checkpoint` | Create a checkpoint before pushing |
+| `--checkpoint` | Create a CRIU checkpoint before pushing (for containers with `rediacc.checkpoint=true` label). Target auto-restores on `repo up` |
 | `--force` | Override an existing backup |
 | `--tag <tag>` | Tag the backup |
 | `-w, --watch` | Watch the operation progress |

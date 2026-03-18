@@ -1179,7 +1179,8 @@
         "failed": "Fallo al detener servicios",
         "grandOption": "Nombre del repositorio Grand (se resuelve automáticamente a GUID)",
         "starting": "Deteniendo servicios para \"{{repository}}\" en \"{{machine}}\"...",
-        "unmountOption": "Desmontar repositorio después de detener"
+        "unmountOption": "Desmontar repositorio después de detener",
+        "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')"
       },
       "expand": {
         "completed": "Expansión completada",
@@ -1199,7 +1200,8 @@
         "rollback": "Configuración revertida para \"{{repository}}\"",
         "starting": "Creando fork de \"{{parent}}\" como \"{{repository}}\" en \"{{machine}}\"...",
         "tagOption": "Etiqueta para el fork (crea nombre:etiqueta)",
-        "tagRequired": "La etiqueta es obligatoria para fork. Uso: rdc repo fork <parent> <tag> -m <machine>"
+        "tagRequired": "La etiqueta es obligatoria para fork. Uso: rdc repo fork <parent> <tag> -m <machine>",
+        "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)"
       },
       "takeover": {
         "description": "Reemplazar los datos del repositorio principal con los datos de un fork. El principal conserva su identidad (GUID, networkId, dominios, inicio automático, cadena de respaldos) pero obtiene los datos actualizados del fork. Los datos de producción anteriores se conservan como fork de respaldo. Uso: probar la actualización en el fork → verificar → tomar el control en producción.",
@@ -1346,7 +1348,6 @@
         "starting": "Desmontando \"{{repository}}\" en \"{{machine}}\"..."
       },
       "up": {
-        "checkpointOption": "Restaurar contenedores desde checkpoint CRIU después del despliegue (para migración en vivo de procesos desde otra máquina)",
         "completed": "Servicios iniciados",
         "description": "Desplegar o actualizar un repositorio (montar, iniciar servicios)",
         "descriptionShort": "Desplegar o actualizar un repositorio en una máquina",
@@ -1354,7 +1355,8 @@
         "grandOption": "Nombre del repositorio Grand (se resuelve automáticamente a GUID)",
         "mountOption": "Montar repositorio primero",
         "starting": "Iniciando servicios para \"{{repository}}\" en \"{{machine}}\"...",
-        "tlsOption": "Solicitar certificado TLS dedicado para este repositorio (los forks usan el certificado compartido de la máquina por defecto)"
+        "tlsOption": "Solicitar certificado TLS dedicado para este repositorio (los forks usan el certificado compartido de la máquina por defecto)",
+        "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)"
       },
       "upAll": {
         "completed": "Todos los repositorios iniciados",

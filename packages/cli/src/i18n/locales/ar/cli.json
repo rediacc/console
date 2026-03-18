@@ -1179,7 +1179,8 @@
         "failed": "فشل إيقاف الخدمات",
         "grandOption": "اسم المستودع الرئيسي (يُحلّ تلقائيًا إلى GUID)",
         "starting": "جارٍ إيقاف الخدمات لـ \"{{repository}}\" على \"{{machine}}\"...",
-        "unmountOption": "إلغاء تثبيت المستودع بعد الإيقاف"
+        "unmountOption": "إلغاء تثبيت المستودع بعد الإيقاف",
+        "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')"
       },
       "expand": {
         "completed": "اكتمل التوسيع",
@@ -1199,6 +1200,7 @@
         "rollback": "تم التراجع عن تكوين \"{{repository}}\"",
         "starting": "جارٍ إنشاء نسخة من \"{{parent}}\" باسم \"{{repository}}\" على \"{{machine}}\"...",
         "tagOption": "وسم النسخة (ينشئ اسم:وسم)",
+        "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)",
         "tagRequired": "الوسم مطلوب للنسخة. الاستخدام: rdc repo fork <parent> <tag> -m <machine>"
       },
       "takeover": {
@@ -1346,13 +1348,13 @@
         "starting": "جارٍ إلغاء تثبيت \"{{repository}}\" على \"{{machine}}\"..."
       },
       "up": {
-        "checkpointOption": "استعادة الحاويات من نقطة تفتيش CRIU بعد النشر (لترحيل العمليات الحية من جهاز آخر)",
         "completed": "تم بدء الخدمات",
         "description": "نشر أو تحديث مستودع (تحميل، بدء الخدمات)",
         "descriptionShort": "نشر أو تحديث مستودع على جهاز",
         "failed": "فشل بدء الخدمات",
         "grandOption": "اسم المستودع الرئيسي (يُحلّ تلقائيًا إلى GUID)",
         "mountOption": "تثبيت المستودع أولاً",
+        "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)",
         "starting": "جارٍ بدء الخدمات لـ \"{{repository}}\" على \"{{machine}}\"...",
         "tlsOption": "طلب شهادة TLS مخصصة لهذا المستودع (النسخ المتفرعة تستخدم شهادة الجهاز المشتركة افتراضيًا)"
       },

@@ -30,7 +30,7 @@ Shows mount state, Docker daemon, container count, disk usage.
 ## Advanced operations
 
 ### Fork (copy-on-write clone)
-Creates an independent copy using the name:tag model — the fork is named `<parent>:<tag>` (e.g., `my-app:staging`). It gets a new GUID, networkId, and IP range while sharing the parent's name. Parent can remain running. Cross-machine fork: fork locally first, then `repo push` to the target.
+Creates an independent copy using the name:tag model — the fork is named `<parent>:<tag>` (e.g., `my-app:staging`). It gets a new GUID, networkId, and IP range while sharing the parent's name. Parent can remain running. Use `--checkpoint` to capture CRIU process state before forking — the fork auto-restores on first `repo up` (in-memory state preserved for containers with `rediacc.checkpoint=true` label). Cross-machine fork: fork locally first, then `repo push` to the target.
 
 **Agent guard**: AI agents operate in fork-only mode by default — they can only modify fork repositories. Use `repo fork` to create a fork first, then operate on the fork. Grand repo access requires `REDIACC_ALLOW_GRAND_REPO=<name>` or `--allow-grand` on the MCP server.
 

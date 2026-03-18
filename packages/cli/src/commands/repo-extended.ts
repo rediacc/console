@@ -84,13 +84,14 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .description(t('commands.repo.fork.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--tag <name>', t('commands.repo.fork.tagOption'))
+    .option('--checkpoint', t('commands.repo.fork.checkpointOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
       async (
         parent: string,
         tagArg: string | undefined,
-        options: { machine: string; tag?: string; debug?: boolean; skipRouterRestart?: boolean }
+        options: { machine: string; tag?: string; checkpoint?: boolean; debug?: boolean; skipRouterRestart?: boolean }
       ) => {
         const { parseRepoRef, compositeKey } = await import('../utils/config-schema.js');
         const tagName = tagArg ?? options.tag;
@@ -150,7 +151,12 @@ export function registerExtendedRepoCommands(repo: Command): void {
           const result = await localExecutorService.execute({
             functionName: 'repository_fork',
             machineName: options.machine,
-            params: { repository: parent, tag: repositoryGuid, network_id: networkId },
+            params: {
+              repository: parent,
+              tag: repositoryGuid,
+              network_id: networkId,
+              ...(options.checkpoint ? { checkpoint: true } : {}),
+            },
             debug: options.debug,
             skipRouterRestart: options.skipRouterRestart,
           });

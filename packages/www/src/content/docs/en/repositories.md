@@ -45,7 +45,7 @@ rdc repo unmount my-app -m server-1     # Unmount and re-encrypt
 
 | Option | Description |
 |--------|-------------|
-| `--checkpoint` | Create a checkpoint before mount/unmount |
+| `--checkpoint` | Create a CRIU checkpoint before mount/unmount (for containers with `rediacc.checkpoint=true` label) |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Check Status

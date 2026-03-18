@@ -100,18 +100,23 @@ Renet auto-injects these into every container:
 
 ## CRIU (Live Migration)
 
-- **`backup push --checkpoint`** captures running process memory + disk state.
-- **`repo up --mount --checkpoint`** restores containers from checkpoint (no fresh start).
+- **Opt-in via label**: Add `rediacc.checkpoint=true` to containers you want to checkpoint. Containers without it (databases, caches) start fresh and recover via their own mechanisms (WAL, LDF, AOF).
+- **`backup push --checkpoint`** captures running process memory + disk state for labeled containers.
+- **`repo fork --checkpoint`** captures process state before forking — the fork auto-restores on `repo up`.
+- **`repo down --checkpoint`** saves process state before stopping — next `repo up` auto-restores.
+- **`repo up`** auto-detects checkpoint data and restores if found. Use `--skip-checkpoint` to force fresh start.
+- **Dependency-aware restore**: Uses compose `depends_on` to start databases first (wait for healthy), then CRIU-restore app containers.
 - **TCP connections become stale after restore** — apps must handle `ECONNRESET` and reconnect.
 - **Docker experimental mode** is enabled automatically on per-repo daemons.
 - **CRIU is installed** during `rdc config machine setup`.
 - **`/etc/criu/runc.conf`** is configured with `tcp-established` for TCP connection preservation.
-- **Container security settings are auto-injected by renet** — `renet compose` automatically adds the following to every container for CRIU compatibility:
+- **Container security settings are auto-injected for labeled containers** — `renet compose` adds the following to containers with `rediacc.checkpoint=true`:
   - `cap_add`: `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` (minimal set for CRIU on kernel 5.9+)
   - `security_opt`: `apparmor=unconfined` (CRIU's AppArmor support is not yet stable upstream)
   - `userns_mode: host` (CRIU requires init namespace access for `/proc/pid/map_files`)
+- Containers without the label run with a cleaner security posture (no extra capabilities).
 - Docker's default seccomp profile is preserved — CRIU uses `PTRACE_O_SUSPEND_SECCOMP` (kernel 4.3+) to temporarily suspend filters during checkpoint/restore.
-- **Do NOT set these manually** in your compose file — renet handles it. Setting them yourself risks duplicates or conflicts.
+- **Do NOT set CRIU capabilities manually** in your compose file — renet handles it based on the label.
 - See the [heartbeat template](https://github.com/rediacc/console/tree/main/packages/json/templates/monitoring/heartbeat) for a CRIU-compatible reference implementation.
 
 ### CRIU-compatible application patterns

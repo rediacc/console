@@ -1179,7 +1179,8 @@
         "failed": "服务停止失败",
         "grandOption": "主仓库名称 (自动解析为 GUID)",
         "starting": "正在 \"{{machine}}\" 上停止 \"{{repository}}\" 的服务...",
-        "unmountOption": "停止后卸载仓库"
+        "unmountOption": "停止后卸载仓库",
+        "checkpointOption": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')"
       },
       "expand": {
         "completed": "扩展完成",
@@ -1199,7 +1200,8 @@
         "rollback": "已回滚 \"{{repository}}\" 的配置",
         "starting": "正在 \"{{machine}}\" 上将 \"{{parent}}\" 分支为 \"{{repository}}\"...",
         "tagOption": "分支的标签（创建 名称:标签）",
-        "tagRequired": "分支需要标签。用法：rdc repo fork <parent> <tag> -m <machine>"
+        "tagRequired": "分支需要标签。用法：rdc repo fork <parent> <tag> -m <machine>",
+        "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)"
       },
       "takeover": {
         "description": "用分支的数据替换主仓库的数据。主仓库保留其身份（GUID、networkId、域名、自动启动、备份链），但获取分支的升级数据。旧的生产数据作为备份分支保留。用途：在分支上测试升级 → 验证 → 接管到生产环境。",
@@ -1346,7 +1348,6 @@
         "starting": "正在从 \"{{machine}}\" 卸载 \"{{repository}}\"..."
       },
       "up": {
-        "checkpointOption": "部署后从 CRIU 检查点恢复容器（用于从另一台机器进行实时进程迁移）",
         "completed": "服务已启动",
         "description": "部署或更新仓库（挂载、启动服务）",
         "descriptionShort": "在机器上部署或更新仓库",
@@ -1354,7 +1355,8 @@
         "grandOption": "主仓库名称 (自动解析为 GUID)",
         "mountOption": "先挂载仓库",
         "starting": "正在 \"{{machine}}\" 上启动 \"{{repository}}\" 的服务...",
-        "tlsOption": "为此仓库请求专用 TLS 证书 (分支默认使用共享机器证书)"
+        "tlsOption": "为此仓库请求专用 TLS 证书 (分支默认使用共享机器证书)",
+        "skipCheckpointOption": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)"
       },
       "upAll": {
         "completed": "所有仓库已启动",
