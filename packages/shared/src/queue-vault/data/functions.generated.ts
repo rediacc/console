@@ -463,6 +463,12 @@ export interface RepositoryDownParams {
   grand?: string;
 }
 
+/** Stop all repository services */
+export interface RepositoryDownAllParams {
+  /** Also unmount after stopping */
+  unmount?: boolean;
+}
+
 /** Expand a repository */
 export interface RepositoryExpandParams {
   /** Size to add */
@@ -517,6 +523,14 @@ export interface RepositoryResizeParams {
 /** Get repository status */
 export interface RepositoryStatusParams {}
 
+/** Swap data between grand repo and fork */
+export interface RepositoryTakeoverParams {
+  /** Grand repository GUID */
+  parent: string;
+  /** Fork repository GUID */
+  fork: string;
+}
+
 /** Apply template to repository */
 export interface RepositoryTemplateApplyParams {
   /** Base64 encoded template JSON */
@@ -537,6 +551,8 @@ export interface RepositoryUpParams {
   option?: string;
   /** Grand repository GUID */
   grand?: string;
+  /** Request dedicated TLS cert */
+  tls?: boolean;
 }
 
 /** Start all repository services */
@@ -632,6 +648,7 @@ export const BRIDGE_FUNCTIONS = [
   'repository_create',
   'repository_delete',
   'repository_down',
+  'repository_down_all',
   'repository_expand',
   'repository_fork',
   'repository_info',
@@ -641,6 +658,7 @@ export const BRIDGE_FUNCTIONS = [
   'repository_prune',
   'repository_resize',
   'repository_status',
+  'repository_takeover',
   'repository_template_apply',
   'repository_unmount',
   'repository_up',
@@ -649,7 +667,7 @@ export const BRIDGE_FUNCTIONS = [
   'setup',
 ] as const;
 
-export const BRIDGE_FUNCTIONS_VERSION = '0.6.0';
+export const BRIDGE_FUNCTIONS_VERSION = 'dev';
 
 export type BridgeFunctionName = (typeof BRIDGE_FUNCTIONS)[number];
 
@@ -704,6 +722,7 @@ export type FunctionParamsMap = {
   repository_create: RepositoryCreateParams;
   repository_delete: RepositoryDeleteParams;
   repository_down: RepositoryDownParams;
+  repository_down_all: RepositoryDownAllParams;
   repository_expand: RepositoryExpandParams;
   repository_fork: RepositoryForkParams;
   repository_info: RepositoryInfoParams;
@@ -713,6 +732,7 @@ export type FunctionParamsMap = {
   repository_prune: RepositoryPruneParams;
   repository_resize: RepositoryResizeParams;
   repository_status: RepositoryStatusParams;
+  repository_takeover: RepositoryTakeoverParams;
   repository_template_apply: RepositoryTemplateApplyParams;
   repository_unmount: RepositoryUnmountParams;
   repository_up: RepositoryUpParams;
@@ -872,6 +892,9 @@ export const FUNCTION_REQUIREMENTS: Record<BridgeFunctionName, { requirements: P
   'repository_down': {
     requirements: { machine: true, team: true, repository: true },
   },
+  'repository_down_all': {
+    requirements: { machine: true },
+  },
   'repository_expand': {
     requirements: { machine: true, team: true, repository: true },
   },
@@ -898,6 +921,9 @@ export const FUNCTION_REQUIREMENTS: Record<BridgeFunctionName, { requirements: P
   },
   'repository_status': {
     requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_takeover': {
+    requirements: { machine: true },
   },
   'repository_template_apply': {
     requirements: { machine: true, team: true, repository: true },
@@ -2054,6 +2080,18 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
       },
     },
   },
+  'repository_down_all': {
+    name: 'repository_down_all',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true },
+    params: {
+      unmount: {
+        type: 'bool',
+        help: 'Also unmount after stopping',
+      },
+    },
+  },
   'repository_expand': {
     name: 'repository_expand',
     category: 'repository',
@@ -2177,6 +2215,24 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
     params: {
     },
   },
+  'repository_takeover': {
+    name: 'repository_takeover',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true },
+    params: {
+      parent: {
+        type: 'string',
+        required: true,
+        help: 'Grand repository GUID',
+      },
+      fork: {
+        type: 'string',
+        required: true,
+        help: 'Fork repository GUID',
+      },
+    },
+  },
   'repository_template_apply': {
     name: 'repository_template_apply',
     category: 'repository',
@@ -2227,6 +2283,10 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
       grand: {
         type: 'string',
         help: 'Grand repository GUID',
+      },
+      tls: {
+        type: 'bool',
+        help: 'Request dedicated TLS cert',
       },
     },
   },
@@ -2411,6 +2471,7 @@ export const queueFunctions: QueueFunctionsType = {
   repository_create: (params) => ({ functionName: 'repository_create', params }),
   repository_delete: (params) => ({ functionName: 'repository_delete', params }),
   repository_down: (params) => ({ functionName: 'repository_down', params }),
+  repository_down_all: (params) => ({ functionName: 'repository_down_all', params }),
   repository_expand: (params) => ({ functionName: 'repository_expand', params }),
   repository_fork: (params) => ({ functionName: 'repository_fork', params }),
   repository_info: (params) => ({ functionName: 'repository_info', params }),
@@ -2420,6 +2481,7 @@ export const queueFunctions: QueueFunctionsType = {
   repository_prune: (params) => ({ functionName: 'repository_prune', params }),
   repository_resize: (params) => ({ functionName: 'repository_resize', params }),
   repository_status: (params) => ({ functionName: 'repository_status', params }),
+  repository_takeover: (params) => ({ functionName: 'repository_takeover', params }),
   repository_template_apply: (params) => ({ functionName: 'repository_template_apply', params }),
   repository_unmount: (params) => ({ functionName: 'repository_unmount', params }),
   repository_up: (params) => ({ functionName: 'repository_up', params }),

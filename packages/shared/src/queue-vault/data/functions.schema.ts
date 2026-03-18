@@ -345,6 +345,11 @@ export const RepositoryDownParamsSchema = z.object({
   grand: z.string().optional().describe('Grand repository GUID'),
 });
 
+/** Stop all repository services */
+export const RepositoryDownAllParamsSchema = z.object({
+  unmount: z.boolean().optional().describe('Also unmount after stopping'),
+});
+
 /** Expand a repository */
 export const RepositoryExpandParamsSchema = z.object({
   size: z.string().min(1).describe('Size to add'),
@@ -389,6 +394,12 @@ export const RepositoryResizeParamsSchema = z.object({
 /** Get repository status */
 export const RepositoryStatusParamsSchema = z.object({});
 
+/** Swap data between grand repo and fork */
+export const RepositoryTakeoverParamsSchema = z.object({
+  parent: z.string().min(1).describe('Grand repository GUID'),
+  fork: z.string().min(1).describe('Fork repository GUID'),
+});
+
 /** Apply template to repository */
 export const RepositoryTemplateApplyParamsSchema = z.object({
   tmpl: z.string().min(1).describe('Base64 encoded template JSON'),
@@ -404,6 +415,7 @@ export const RepositoryUnmountParamsSchema = z.object({
 export const RepositoryUpParamsSchema = z.object({
   option: z.string().optional().describe('Startup options'),
   grand: z.string().optional().describe('Grand repository GUID'),
+  tls: z.boolean().optional().describe('Request dedicated TLS cert'),
 });
 
 /** Start all repository services */
@@ -509,6 +521,7 @@ export const FUNCTION_SCHEMAS = {
   repository_create: RepositoryCreateParamsSchema,
   repository_delete: RepositoryDeleteParamsSchema,
   repository_down: RepositoryDownParamsSchema,
+  repository_down_all: RepositoryDownAllParamsSchema,
   repository_expand: RepositoryExpandParamsSchema,
   repository_fork: RepositoryForkParamsSchema,
   repository_info: RepositoryInfoParamsSchema,
@@ -518,6 +531,7 @@ export const FUNCTION_SCHEMAS = {
   repository_prune: RepositoryPruneParamsSchema,
   repository_resize: RepositoryResizeParamsSchema,
   repository_status: RepositoryStatusParamsSchema,
+  repository_takeover: RepositoryTakeoverParamsSchema,
   repository_template_apply: RepositoryTemplateApplyParamsSchema,
   repository_unmount: RepositoryUnmountParamsSchema,
   repository_up: RepositoryUpParamsSchema,
