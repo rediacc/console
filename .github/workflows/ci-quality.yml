@@ -17,6 +17,10 @@ on:
         required: false
       ACCOUNT_ED25519_PUBLIC_KEY:
         required: false
+      ACCOUNT_X25519_PRIVATE_KEY:
+        required: false
+      ACCOUNT_X25519_PUBLIC_KEY:
+        required: false
       ACCOUNT_SERVER_API_KEY:
         required: false
       ACCOUNT_JWT_SECRET:
