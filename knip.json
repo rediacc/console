@@ -136,6 +136,7 @@
     "@opentelemetry/sdk-trace-web",
     "astro",
     "fast-xml-parser",
+    "rcedit",
     "@electron-toolkit/preload",
     "node-pty",
     "ssh2",
