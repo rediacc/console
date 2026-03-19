@@ -60,6 +60,14 @@ async function handleSingleRepoUp(
   if (options.skipCheckpoint) params.skip_checkpoint = true;
   if (options.tls) params.tls = true;
 
+  // Pass grandGuid so renet can mark forks after mount
+  {
+    const repo = await configService.getRepository(name);
+    if (repo?.grandGuid && repo.grandGuid !== repo.repositoryGuid) {
+      params.grand = repo.grandGuid;
+    }
+  }
+
   if (options.dryRun) {
     const repo = await configService.getRepository(name);
     outputService.print(

@@ -49,11 +49,17 @@ async function executeMountAction(
 ): Promise<void> {
   if (name) {
     await assertCommandPolicy(CMD.REPO_MOUNT, name);
+    const mountParams = buildMountParams(options);
+    // Pass grandGuid so renet can mark forks after mount
+    const repo = await configService.getRepository(name);
+    if (repo?.grandGuid && repo.grandGuid !== repo.repositoryGuid) {
+      mountParams.grand = repo.grandGuid;
+    }
     await executeRepoFunction(
       'repository_mount',
       name,
       options.machine,
-      buildMountParams(options),
+      mountParams,
       options,
       {
         starting: t('commands.repo.mount.starting', { repository: name, machine: options.machine }),
