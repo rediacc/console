@@ -115,6 +115,10 @@ if [[ -z "${ED25519_PRIVATE_KEY:-}" ]]; then
 fi
 export ED25519_PRIVATE_KEY ED25519_PUBLIC_KEY
 
+# X25519 key pair for e2e encryption (from GitHub secrets, no fallback)
+export X25519_PRIVATE_KEY="${X25519_PRIVATE_KEY:-}"
+export X25519_PUBLIC_KEY="${X25519_PUBLIC_KEY:-}"
+
 # Account server API key (generate if not provided)
 export ACCOUNT_SERVER_API_KEY="${ACCOUNT_SERVER_API_KEY:-$(openssl rand -base64 48 | tr -d '/+=' | cut -c1-64)}"
 export ACCOUNT_SERVER_URL="${ACCOUNT_SERVER_URL:-http://account-server:3000}"
@@ -125,12 +129,18 @@ export JWT_SECRET="${JWT_SECRET:-$(openssl rand -base64 48 | tr -d '/+=' | cut -
 # Stripe webhook secret for account-server integration tests
 export STRIPE_WEBHOOK_SECRET="${STRIPE_WEBHOOK_SECRET:-whsec_test_$(openssl rand -hex 32)}"
 
-# Mask sensitive values in GitHub Actions logs
+# Mask all sensitive values in GitHub Actions logs
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
     echo "::add-mask::$ED25519_PRIVATE_KEY"
+    echo "::add-mask::$ED25519_PUBLIC_KEY"
+    echo "::add-mask::$X25519_PRIVATE_KEY"
+    echo "::add-mask::$X25519_PUBLIC_KEY"
     echo "::add-mask::$ACCOUNT_SERVER_API_KEY"
     echo "::add-mask::$STRIPE_WEBHOOK_SECRET"
     echo "::add-mask::$JWT_SECRET"
+    echo "::add-mask::$MSSQL_SA_PASSWORD"
+    echo "::add-mask::$MSSQL_RA_PASSWORD"
+    echo "::add-mask::$CONNECTION_STRING"
 fi
 
 # =============================================================================
@@ -193,6 +203,8 @@ ACCOUNT_SERVER_URL=${ACCOUNT_SERVER_URL}
 ACCOUNT_SERVER_API_KEY=${ACCOUNT_SERVER_API_KEY}
 ED25519_PRIVATE_KEY=${ED25519_PRIVATE_KEY}
 ED25519_PUBLIC_KEY=${ED25519_PUBLIC_KEY}
+X25519_PRIVATE_KEY=${X25519_PRIVATE_KEY}
+X25519_PUBLIC_KEY=${X25519_PUBLIC_KEY}
 STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
 JWT_SECRET=${JWT_SECRET}
 ENVBLOCK
