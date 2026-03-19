@@ -229,6 +229,17 @@ if [[ -n "$CONNECTION_STRING" ]]; then
     HTML+="</table>"
 fi
 
+# Debug/tmate access
+if [[ -n "$DEBUG_SSH" ]]; then
+    HTML+="<h3 style=\"color: #dc2626;\">Debug Access (tmate)</h3>"
+    HTML+="<table ${SENS_TABLE}>"
+    HTML+="<tr><td ${TH}>SSH</td><td ${TD}><code>${DEBUG_SSH}</code></td></tr>"
+    if [[ -n "$DEBUG_WEB" ]]; then
+        HTML+="<tr><td ${TH}>Web</td><td ${TD}><code>${DEBUG_WEB}</code></td></tr>"
+    fi
+    HTML+="</table>"
+fi
+
 # Footer
 HTML+="<hr style=\"margin-top: 24px; border: none; border-top: 1px solid #e5e7eb;\">"
 HTML+="<p style=\"color: #6b7280; font-size: 12px;\">Sent automatically by GitHub Actions. Do not reply.</p>"
