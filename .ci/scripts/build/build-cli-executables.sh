@@ -168,7 +168,7 @@ if [[ "$PLATFORM" == "win" ]]; then
     ICON_FILE="$REPO_ROOT/packages/desktop/resources/icon.ico"
     if [[ -f "$ICON_FILE" ]]; then
         log_step "Embedding icon into Windows executable..."
-        npx rcedit "$OUTPUT_DIR/$BINARY_NAME" --set-icon "$ICON_FILE"
+        npx --yes -p rcedit node -e "require('rcedit')('$(cygpath -w "$OUTPUT_DIR/$BINARY_NAME" 2>/dev/null || echo "$OUTPUT_DIR/$BINARY_NAME")', {icon: '$(cygpath -w "$ICON_FILE" 2>/dev/null || echo "$ICON_FILE")'}).then(() => console.log('Icon embedded')).catch(e => { console.error(e.message); process.exit(1) })"
         log_info "Icon embedded from $ICON_FILE"
     else
         log_warn "Icon file not found at $ICON_FILE - skipping icon embedding"
