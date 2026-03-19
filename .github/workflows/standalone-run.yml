@@ -203,12 +203,6 @@ jobs:
         env:
           TAG: ${{ env.TAG }}
           CI_MODE: ${{ inputs.ci-mode && 'true' || 'false' }}
-          ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
-          ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
-          X25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_X25519_PRIVATE_KEY }}
-          X25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_X25519_PUBLIC_KEY }}
-          ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
-          JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
 
       # VM Provisioning (optional - builds renet from source and image on-demand)
       - name: Provision VMs

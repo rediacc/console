@@ -115,9 +115,22 @@ if [[ -z "${ED25519_PRIVATE_KEY:-}" ]]; then
 fi
 export ED25519_PRIVATE_KEY ED25519_PUBLIC_KEY
 
-# X25519 key pair for e2e encryption (from GitHub secrets or ./run.sh account reset)
-export X25519_PRIVATE_KEY="${X25519_PRIVATE_KEY:-}"
-export X25519_PUBLIC_KEY="${X25519_PUBLIC_KEY:-}"
+# Generate X25519 key pair for e2e encryption if not provided
+# Production keys come from GitHub secrets (cd-v2.yml only).
+# CI/test workflows generate throwaway keys here.
+if [[ -z "${X25519_PRIVATE_KEY:-}" ]]; then
+    X25519_KEYS=$(node -e "
+        const crypto = require('crypto');
+        const { privateKey, publicKey } = crypto.generateKeyPairSync('x25519');
+        console.log(JSON.stringify({
+            private: privateKey.export({type:'pkcs8',format:'der'}).toString('base64'),
+            public: publicKey.export({type:'spki',format:'der'}).toString('base64')
+        }));
+    ")
+    X25519_PRIVATE_KEY=$(echo "$X25519_KEYS" | jq -r '.private')
+    X25519_PUBLIC_KEY=$(echo "$X25519_KEYS" | jq -r '.public')
+fi
+export X25519_PRIVATE_KEY X25519_PUBLIC_KEY
 
 # Account server API key (generate if not provided)
 export ACCOUNT_SERVER_API_KEY="${ACCOUNT_SERVER_API_KEY:-$(openssl rand -base64 48 | tr -d '/+=' | cut -c1-64)}"

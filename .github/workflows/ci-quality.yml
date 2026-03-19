@@ -17,10 +17,6 @@ on:
         required: false
       ACCOUNT_ED25519_PUBLIC_KEY:
         required: false
-      ACCOUNT_X25519_PRIVATE_KEY:
-        required: false
-      ACCOUNT_X25519_PUBLIC_KEY:
-        required: false
       ACCOUNT_SERVER_API_KEY:
         required: false
       ACCOUNT_JWT_SECRET:
@@ -469,8 +465,6 @@ jobs:
         env:
           ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
           ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
-          X25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_X25519_PRIVATE_KEY }}
-          X25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_X25519_PUBLIC_KEY }}
           API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
           JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
           ADMIN_EMAIL: ${{ secrets.ACCOUNT_ADMIN_EMAIL }}
