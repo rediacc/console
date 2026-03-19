@@ -135,6 +135,16 @@ if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
     echo "account_server_url=http://localhost:3000" >>"$GITHUB_OUTPUT"
 fi
 
+# Verify container is still running (not in restart loop)
+sleep 2
+CONTAINER_STATUS=$(docker inspect rediacc-account-server --format='{{.State.Status}}' 2>/dev/null || echo "missing")
+if [[ "$CONTAINER_STATUS" != "running" ]]; then
+    echo "Account server container is not running (status: $CONTAINER_STATUS)"
+    echo "Container logs:"
+    docker logs rediacc-account-server --tail 50 2>&1 || true
+    exit 1
+fi
+
 # Show running containers
 echo ""
 echo "Running containers:"
