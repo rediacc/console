@@ -146,3 +146,48 @@ cd packages/www && npm run build
 # Dev server (website)
 cd packages/www && npm run dev
 ```
+
+## Quality Gates (`npm run ci`)
+
+`npm run ci` runs 23 checks that mirror CI. Run locally before pushing to catch issues early. The checks cover: version consistency, dependency freshness, ESLint, biome formatting, i18n completeness, TypeScript types, unit tests, security audit, shell linting, Go lint (renet), E2E coverage, and more.
+
+### Quick fixes for common failures
+
+| Check | Fix |
+|-------|-----|
+| `check:deps` | `npx tsx scripts/check-deps.ts --upgrade` |
+| `check:format` | `npx biome format --write packages/ private/account/` |
+| `check:i18n` | `npm run i18n:generate-hashes && npm run i18n:sync`, then translate missing keys |
+| `check:ci-renet` | `cd private/renet && go fmt ./...`, then fix golangci-lint issues |
+| `lint` / `check:lint` | Fix ESLint errors properly (never suppress with comments) |
+| `lint:unused` | Add to `ignoreDependencies` in `knip.json` if it's a transitive/runtime dep |
+| `check:ci-e2e-coverage` | Add test stubs for new bridge functions in `packages/cli/tests/tests/08-e2e/` |
+| `check:ci-renet` (types) | `private/renet/bin/renet bridge generate-types --output packages/shared/src/queue-vault/data --version dev` |
+
+### CI fix cycle
+
+When fixing CI failures, follow this loop:
+
+1. **Run locally first**: Run `npm run ci` sub-commands locally before pushing to avoid costly CI round-trips. Use parallel sub-agents for independent checks.
+2. **Push and watch**: After pushing, watch CI with `gh run watch <id> --repo rediacc/console --exit-status` in the background.
+3. **Fix on notification**: When the background watch completes, check for failures with `gh run view <id> --json jobs --jq '.jobs[] | select(.conclusion == "failure") | {name}'`.
+4. **Fix, commit, push, repeat**: Fix the issue, commit, push, and watch again. Continue until green.
+
+### Submodule commit order
+
+Always commit submodules before the parent repo:
+
+```bash
+# 1. Commit in submodule(s)
+cd private/renet && git add -A && git commit -m "fix: ..." && git push origin <branch>
+cd private/account && git add -A && git commit -m "fix: ..." && git push origin HEAD
+
+# 2. Commit in parent (updates submodule pointer)
+cd /path/to/console && git add -A && git commit -m "fix: ..." && git push
+```
+
+### Secrets in CI vs CD
+
+- **CI workflows** (`ci.yml`, `ci-quality.yml`, `ct-tests.yml`, `standalone-run.yml`): Use **generated throwaway keys** via `ci-env.sh`. Never pass production secrets.
+- **CD workflows** (`cd-v2.yml`): Use **real org secrets** from GitHub for production deployment.
+- Generated secrets are masked via `::add-mask::` in `ci-env.sh`.
