@@ -314,6 +314,14 @@ jobs:
               echo "🔑 SSH ACCESS: [sent via email]"
               echo ""
             fi
+            echo "🐳 LOCAL SERVICES:"
+            echo "   • Web UI:  http://localhost"
+            echo "   • API:     http://localhost/api"
+            if [ "${{ inputs.desktop-environment }}" != "none" ]; then
+              echo "   • Desktop: http://localhost:6080/vnc.html"
+              echo "   • Gateway: http://localhost:8080"
+            fi
+            echo ""
             echo "🗄️  DATABASE: [sent via email]"
             echo ""
             if [ "${{ inputs.enable-debug }}" == "true" ]; then

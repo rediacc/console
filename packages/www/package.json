@@ -55,7 +55,7 @@
     "@vitest/utils": "^4.0.18",
     "asciinema-player": "^3.15.1",
     "astro": "^5.17.3",
-    "fast-xml-parser": "^5.5.6",
+    "fast-xml-parser": "^5.5.7",
     "fuse.js": "^7.1.0",
     "gray-matter": "^4.0.3",
     "jszip": "^3.10.1",
