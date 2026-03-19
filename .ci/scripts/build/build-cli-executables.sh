@@ -171,7 +171,7 @@ if [[ "$PLATFORM" == "win" ]]; then
         npm install --no-save rcedit@latest 2>/dev/null
         EXE_PATH="$(cygpath -w "$OUTPUT_DIR/$BINARY_NAME" 2>/dev/null || echo "$OUTPUT_DIR/$BINARY_NAME")"
         ICO_PATH="$(cygpath -w "$ICON_FILE" 2>/dev/null || echo "$ICON_FILE")"
-        node -e "require('rcedit')('$EXE_PATH', {icon: '$ICO_PATH'}).then(() => console.log('Icon embedded')).catch(e => { console.error(e.message); process.exit(1) })"
+        node -e "require('rcedit').rcedit('$EXE_PATH', {icon: '$ICO_PATH'}).then(() => console.log('Icon embedded')).catch(e => { console.error(e.message); process.exit(1) })"
         log_info "Icon embedded from $ICON_FILE"
     else
         log_warn "Icon file not found at $ICON_FILE - skipping icon embedding"
