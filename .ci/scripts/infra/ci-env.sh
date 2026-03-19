@@ -129,13 +129,8 @@ export JWT_SECRET="${JWT_SECRET:-$(openssl rand -base64 48 | tr -d '/+=' | cut -
 # Stripe webhook secret for account-server integration tests
 export STRIPE_WEBHOOK_SECRET="${STRIPE_WEBHOOK_SECRET:-whsec_test_$(openssl rand -hex 32)}"
 
-# Mask all sensitive values in GitHub Actions logs
+# Mask runtime-generated secrets (GitHub auto-masks ${{ secrets.* }} values)
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-    echo "::add-mask::$ED25519_PRIVATE_KEY"
-    echo "::add-mask::$ED25519_PUBLIC_KEY"
-    echo "::add-mask::$X25519_PRIVATE_KEY"
-    echo "::add-mask::$X25519_PUBLIC_KEY"
-    echo "::add-mask::$ACCOUNT_SERVER_API_KEY"
     echo "::add-mask::$STRIPE_WEBHOOK_SECRET"
     echo "::add-mask::$JWT_SECRET"
     echo "::add-mask::$MSSQL_SA_PASSWORD"
