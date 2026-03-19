@@ -43,7 +43,7 @@ jobs:
           - os: windows-latest
             platform: win
             arch: x64
-            timeout: 20
+            timeout: 30
           - os: windows-11-arm
             platform: win
             arch: arm64
