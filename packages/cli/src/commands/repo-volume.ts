@@ -37,7 +37,7 @@ async function executeMountAction(
     params: Record<string, unknown>,
     options: ExecOptions,
     messages: Messages
-  ) => Promise<void>,
+  ) => Promise<unknown>,
   iterateAllRepos: (
     fn: string,
     machine: string,
@@ -55,18 +55,11 @@ async function executeMountAction(
     if (repo?.grandGuid && repo.grandGuid !== repo.repositoryGuid) {
       mountParams.grand = repo.grandGuid;
     }
-    await executeRepoFunction(
-      'repository_mount',
-      name,
-      options.machine,
-      mountParams,
-      options,
-      {
-        starting: t('commands.repo.mount.starting', { repository: name, machine: options.machine }),
-        completed: t('commands.repo.mount.completed'),
-        failed: t('commands.repo.mount.failed'),
-      }
-    );
+    await executeRepoFunction('repository_mount', name, options.machine, mountParams, options, {
+      starting: t('commands.repo.mount.starting', { repository: name, machine: options.machine }),
+      completed: t('commands.repo.mount.completed'),
+      failed: t('commands.repo.mount.failed'),
+    });
   } else {
     const repos = await configService.listRepositories();
     if (!options.yes && !(await confirmBatch('Mount', repos.length, options.machine))) {
@@ -94,7 +87,7 @@ export function registerRepoVolumeCommands(
     params: Record<string, unknown>,
     options: ExecOptions,
     messages: Messages
-  ) => Promise<void>,
+  ) => Promise<unknown>,
   iterateAllRepos: (
     fn: string,
     machine: string,

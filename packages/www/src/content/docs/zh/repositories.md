@@ -4,7 +4,7 @@ description: 在远程机器上创建、管理和操作 LUKS 加密仓库。
 category: Guides
 order: 4
 language: zh
-sourceHash: "06b8912e9b65b720"
+sourceHash: "5faf701157696057"
 ---
 
 # 仓库
@@ -45,7 +45,7 @@ rdc repo unmount my-app -m server-1     # 卸载并重新加密
 
 | 选项 | 描述 |
 |------|------|
-| `--checkpoint` | 挂载/卸载前创建检查点 |
+| `--checkpoint` | 挂载/卸载前创建CRIU检查点（用于带有`rediacc.checkpoint=true`标签的容器） |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## 检查状态

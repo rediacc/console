@@ -1128,11 +1128,10 @@
       "backup": {
         "description": "Depo yedeklerini yönet",
         "list": {
-          "description": "Depolama veya makinedeki mevcut yedekleri listele",
+          "description": "Uzak hedefteki (makine veya depolama) mevcut yedekleri listele",
           "listing": "Yedekler listeleniyor...",
-          "optionFromMachine": "Kaynak makine adı",
-          "optionFromStorage": "Kaynak depolama adı",
-          "sourceRequired": "--from <storage> veya --from-machine <machine> belirtin"
+          "optionFrom": "Kaynak makine veya depolama adı (yapılandırmadan otomatik algılanır)",
+          "sourceRequired": "--from <remote> belirtin (yapılandırmadaki makine veya depolama adı)"
         }
       },
       "batchConfirm": "\"{{machine}}\" üzerindeki tüm {{count}} depoyu {{action}} yap? [y/N]",
@@ -1189,7 +1188,7 @@
       "fork": {
         "alreadyExists": "\"{{name}}\" deposu bağlamda zaten mevcut",
         "checkpointOption": "fork öncesinde kaynakta CRIU checkpoint oluştur (fork üzerinde geri yükleme için işlem bellek durumunu yakala)",
-        "completed": "Çatal oluşturuldu. Yerel olarak dağıtın: repo up {{repository}} -m {{machine}} --mount. Çatalı başka bir makineye taşımak için: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
+        "completed": "Fork oluşturuldu. Yerel olarak dağıt: repo up {{repository}} -m {{machine}} --mount. Fork'u başka bir makineye taşımak için: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "Bir deponun CoW (Copy-on-Write) çatalını oluştur",
         "descriptionShort": "Deponun CoW çatalını oluştur (yeni GUID, networkId, IP aralığı)",
         "failed": "Çatal oluşturma başarısız",
@@ -1197,7 +1196,8 @@
         "rollback": "\"{{repository}}\" yapılandırması geri alındı",
         "starting": "\"{{machine}}\" üzerinde \"{{parent}}\" deposunun \"{{repository}}\" olarak çatallanıyor...",
         "tagOption": "Çatal için etiket (isim:etiket oluşturur)",
-        "tagRequired": "Çatal için etiket gereklidir. Kullanım: rdc repo fork <parent> <tag> -m <machine>"
+        "tagRequired": "Çatal için etiket gereklidir. Kullanım: rdc repo fork <parent> <tag> -m <machine>",
+        "upOption": "Fork sonrası bağlayıp servisleri başlat (fork + mount + up tek komutta)"
       },
       "list": {
         "completed": "Listeleme tamamlandı",
@@ -1225,29 +1225,29 @@
         "uidOption": "Sahip UID'si (varsayılan: 7111)"
       },
       "pull": {
-        "description": "Depo yedeğini depolamadan veya makineden al",
-        "descriptionShort": "Depolama veya makineden depo yedeğini çek",
+        "deployed": "\"{{repo}}\" deposu {{machine}} üzerinde dağıtıldı",
+        "deployFailed": "Pull sonrası \"{{repo}}\" dağıtımı başarısız oldu",
+        "deploying": "\"{{repo}}\" {{machine}} üzerinde dağıtılıyor...",
+        "description": "Depoyu uzak kaynaktan (makine veya depolama) çek. Tüm depoları çekmek için adı atlayın. Kaynak türü yapılandırmadan otomatik algılanır. Pull sonrası dağıtım için --up kullanın",
+        "descriptionShort": "Depoyu uzak kaynaktan (makine veya depolama) çek",
         "optionForce": "Mevcut deponun üzerine yazmaya zorla",
-        "optionFromMachine": "Kaynak makine adı",
-        "optionFromStorage": "Kaynak depolama adı",
+        "optionFrom": "Kaynak makine veya depolama adı (yapılandırmadan otomatik algılanır)",
+        "optionUp": "Pull sonrası bu makinede depoyu bağla ve dağıt",
         "pulling": "\"{{repo}}\" yedeği alınıyor...",
-        "sourceRequired": "--from <storage> veya --from-machine <machine> belirtin"
+        "sourceRequired": "--from <remote> belirtin (yapılandırmadaki makine veya depolama adı)"
       },
       "push": {
         "deployed": "\"{{repo}}\" deposu {{machine}} üzerinde dağıtıldı",
         "deployFailed": "Gönderdikten sonra \"{{repo}}\" dağıtımı başarısız oldu",
         "deploying": "\"{{repo}}\" {{machine}} üzerinde dağıtılıyor...",
-        "description": "Depo yedeğini depolamaya veya makineye gönder",
-        "descriptionShort": "Depo yedeğini depolama veya makineye gönder",
-        "destIgnoredForStorage": "--dest {{provided}} yoksayıldı: depolama yedekleri depo GUID'sini kullanır ({{dest}})",
-        "destRequired": "--to <storage> veya --to-machine <machine> belirtin",
-        "optionCheckpoint": "Konteyner kontrol noktası oluştur (canlı yedekleme)",
-        "optionDest": "Hedef dosya adı",
+        "description": "Depoyu uzak hedefe (makine veya depolama) gönder. Tüm depoları göndermek için adı atlayın. Hedef türü yapılandırmadan otomatik algılanır. Makineler arası transferde şifrelenmiş depo görüntüsü aynı GUID ile kopyalanır — bu yedekleme/taşımadır, fork değildir. Bağımsız fork oluşturmak için önce 'repo fork' kullanın, sonra push yapın. Push sonrası dağıtım için --up kullanın",
+        "descriptionShort": "Depoyu uzak hedefe (makine veya depolama) gönder",
+        "destRequired": "--to <remote> belirtin (yapılandırmadaki makine veya depolama adı)",
+        "optionCheckpoint": "Yedekleme öncesi CRIU checkpoint oluştur (canlı taşıma için işlem bellek durumunu yakalar)",
         "optionForce": "Mevcut yedeğin üzerine yazmaya zorla",
-        "optionProvider": "Hedef makine mevcut değilse otomatik olarak sağlamak için bulut sağlayıcı (config provider add'dan)",
+        "optionProvision": "Hedef makine yoksa bulut sağlayıcısı üzerinden otomatik olarak oluştur",
         "optionTag": "Sürüm belirleme için dağıtım etiketi",
-        "optionToMachine": "Hedef makine adı",
-        "optionToStorage": "Hedef depolama adı",
+        "optionTo": "Hedef makine veya depolama adı (yapılandırmadan otomatik algılanır)",
         "optionUp": "Gönderdikten sonra hedef makinede depoyu bağla ve dağıt",
         "pushing": "\"{{repo}}\" yedeği {{dest}} hedefine gönderiliyor..."
       },
@@ -1344,6 +1344,7 @@
         "starting": "\"{{repository}}\" \"{{machine}}\" üzerinden ayrılıyor..."
       },
       "up": {
+        "checkpointOption": "Başlangıçta CRIU kontrol noktasını geri yükle (kaydedilmiş bellek durumundan işlemleri sürdür)",
         "completed": "Servisler başlatıldı",
         "description": "Bir depoyu dağıtın veya güncelleyin (bağlama, servisleri başlatma)",
         "descriptionShort": "Bir makinede depoyu dağıt veya güncelle",
@@ -1352,8 +1353,7 @@
         "mountOption": "Önce depoyu bağla",
         "skipCheckpointOption": "Checkpoint verileri mevcut olsa bile CRIU checkpoint geri yüklemesini atla (temiz başlatmayı zorla)",
         "starting": "\"{{repository}}\" için servisler \"{{machine}}\" üzerinde başlatılıyor...",
-        "tlsOption": "Bu depo için özel TLS sertifikası talep et (fork'lar varsayılan olarak paylaşılan makine sertifikasını kullanır)",
-        "checkpointOption": "Başlangıçta CRIU kontrol noktasını geri yükle (kaydedilmiş bellek durumundan işlemleri sürdür)"
+        "tlsOption": "Bu depo için özel TLS sertifikası talep et (fork'lar varsayılan olarak paylaşılan makine sertifikasını kullanır)"
       },
       "upAll": {
         "completed": "Tüm depolar başlatıldı",
@@ -2042,11 +2042,16 @@
     "affectedChildClones": ". Etkilenen alt klonlar: {{clones}}. Önce alt klonları silin veya yükseltin.",
     "agent": {
       "createGuard": "Agent modunda \"{{name}}\" deposu oluşturulamaz.\n\nAI agentları yalnızca çatallama modunda çalışır. Ana depo oluşturma engellenmiştir\nçünkü agent sonrasında üzerinde işlem yapamaz.\n\nMevcut bir depoyu çatallayın:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nGeçersiz kılmak için: REDIACC_ALLOW_GRAND_REPO=* ayarlayın",
+      "createGuardOverride": "Depo oluşturma koruması bir yapay zeka ajanı tarafından geçersiz kılınamaz.\n\nRDC, REDIACC_ALLOW_GRAND_REPO değişkeninin kullanıcı tarafından yetkilendirilmediğini tespit etti. Bu değişkeni kendiniz ayarlamaya çalışmayın — yalnızca kullanıcı depo oluşturmayı yetkilendirebilir.\n\nMevcut bir depoyu kullanın ve bunun yerine fork oluşturun:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
       "forkBlocked": "\"{{command}}\" komutu fork depolarında kullanılamaz.\n\nFork depoları geçici ortamlardır. Bu işlem yalnızca grand depolar için geçerlidir.",
       "grandGuard": "Agent modunda grand depo \"{{name}}\" değiştirilemez.\n\nYapay zeka agentları yalnızca fork depolarında çalışabilir.\nÖnce fork oluşturun:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nArdından fork üzerinde çalışın.\n\nGeçersiz kılmak için: REDIACC_ALLOW_GRAND_REPO={{name}} ayarlayın",
+      "grandGuardOverride": "\"{{name}}\" için grand depo koruması bir yapay zeka ajanı tarafından geçersiz kılınamaz.\n\nRDC, REDIACC_ALLOW_GRAND_REPO değişkeninin kullanıcı tarafından yetkilendirilmediğini tespit etti. Bu değişkeni kendiniz ayarlamaya çalışmayın — yalnızca kullanıcı grand depo erişimini yetkilendirebilir.\n\nÖnce fork oluşturun:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nSonra fork üzerinde çalışın.",
       "machineGuard": "Agent modunda makine \"{{machine}}\" üzerine doğrudan erişilemez.\n\nYapay zeka agentları yalnızca depo bağlamlarına bağlanabilir.\nŞunu kullanın:\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nGeçersiz kılmak için: REDIACC_ALLOW_GRAND_REPO=* ayarlayın",
+      "machineGuardOverride": "\"{{machine}}\" için makine erişim koruması bir yapay zeka ajanı tarafından geçersiz kılınamaz.\n\nRDC, REDIACC_ALLOW_GRAND_REPO değişkeninin kullanıcı tarafından yetkilendirilmediğini tespit etti. Bu değişkeni kendiniz ayarlamaya çalışmayın — yalnızca kullanıcı doğrudan makine erişimini yetkilendirebilir.\n\nBunun yerine bir depo bağlamına bağlanın:\n  rdc term {{machine}} <repository> -c \"<command>\"",
       "mcpGrandGuard": "Yalnızca fork modunda grand depo \"{{name}}\" değiştirilemez.\n\nÖnce bir fork oluşturmak için repo_fork kullanın, ardından fork üzerinde çalışın.\nGrand depo erişimine izin vermek için MCP sunucusunu --allow-grand ile yeniden başlatın",
-      "mcpMachineGuard": "Yalnızca fork modunda makineye doğrudan erişilemez.\n\nBir depo bağlamına bağlanmak için bir depo belirtin.\nDoğrudan makine erişimine izin vermek için MCP sunucusunu --allow-grand ile yeniden başlatın"
+      "mcpGrandGuardOverride": "\"{{name}}\" için grand depo koruması bir yapay zeka ajanı tarafından geçersiz kılınamaz.\n\nRDC, REDIACC_ALLOW_GRAND_REPO değişkeninin kullanıcı tarafından yetkilendirilmediğini tespit etti. Bu değişkeni ayarlamaya çalışmayın.\n\nÖnce fork oluşturmak için repo_fork kullanın, sonra fork üzerinde çalışın.",
+      "mcpMachineGuard": "Yalnızca fork modunda makineye doğrudan erişilemez.\n\nBir depo bağlamına bağlanmak için bir depo belirtin.\nDoğrudan makine erişimine izin vermek için MCP sunucusunu --allow-grand ile yeniden başlatın",
+      "mcpMachineGuardOverride": "Makine erişim koruması bir yapay zeka ajanı tarafından geçersiz kılınamaz.\n\nRDC, REDIACC_ALLOW_GRAND_REPO değişkeninin kullanıcı tarafından yetkilendirilmediğini tespit etti. Bu değişkeni ayarlamaya çalışmayın.\n\nBir depo bağlamına bağlanmak için bir depo belirtin."
     },
     "authFailed": "Kimlik doğrulama başarısız",
     "authRequired": "Kimlik doğrulama gerekli. Çalıştırın: rdc auth login",
@@ -2095,6 +2100,7 @@
     },
     "regionRequired": "Bölge adı gerekli. --region kullanın veya bağlamı ayarlayın.",
     "registrationFailed": "Kayıt başarısız",
+    "remoteNotFound": "\"{{name}}\" bilinen bir makine veya depolama değil. Makineler: {{machines}}. Depolamalar: {{storages}}",
     "repositoryNotFound": "\"{{name}}\" deposu bulunamadı",
     "repositoryRequired": "Depo adı gerekli. --repository <name> kullanın.",
     "resourceNotFound": "{{resource}} bulunamadı",
@@ -2166,7 +2172,7 @@
       "setupMachine": "Uzak makinede kurulum çalıştır"
     },
     "examples": "Örnekler:",
-    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REPOSITORY_PATH}/... — never Docker named volumes (excluded from forks/backups)\n    • Containers must bind to SERVICE_IP to avoid port conflicts\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REPOSITORY_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
+    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REDIACC_WORKING_DIR}/... — never Docker named volumes (excluded from forks/backups)\n    • Containers must bind to SERVICE_IP to avoid port conflicts\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REDIACC_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
     "machine": {
       "containers": "Çalışan konteynerleri listele",
       "health": "CI/CD için sağlık kontrolü",
@@ -2177,7 +2183,7 @@
       "create": "Şifreli depo oluştur",
       "down": "Servisleri durdur",
       "fork": "Test için CoW fork",
-      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REPOSITORY_PATH}/data, ${REPOSITORY_PATH}/config, etc.\n    • Example: volumes: ['${REPOSITORY_PATH}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
+      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "Depolamadaki yedeklemeleri listele",
       "pull": "Yedeklemeyi depolamadan al",
       "push": "Yedeklemeyi depolamaya gönder",

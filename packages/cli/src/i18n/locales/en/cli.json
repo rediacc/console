@@ -1332,10 +1332,11 @@
         "descriptionShort": "Create a CoW fork of a repository (new GUID, networkId, IP range)",
         "tagOption": "Tag for the fork (creates name:tag)",
         "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)",
+        "upOption": "Mount and start services after forking (fork + mount + up in one command)",
         "tagRequired": "Tag is required for fork. Usage: rdc repo fork <parent> <tag> -m <machine>",
         "starting": "Forking \"{{parent}}\" as \"{{repository}}\" on \"{{machine}}\"...",
         "registered": "Registered fork \"{{repository}}\" ({{guid}}, network {{networkId}})",
-        "completed": "Fork created. Deploy locally: repo up {{repository}} -m {{machine}} --mount. To migrate fork to another machine: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
+        "completed": "Fork created. Deploy locally: repo up {{repository}} -m {{machine}} --mount. To migrate fork to another machine: repo push {{repository}} -m {{machine}} --to <target> --up",
         "failed": "Fork creation failed",
         "rollback": "Rolled back config for \"{{repository}}\"",
         "alreadyExists": "Repository \"{{name}}\" already exists in config"
@@ -1414,7 +1415,7 @@
       "template": {
         "description": "Apply a template to a repository (writes docker-compose.yml and Rediaccfile). Rediaccfile must use 'renet compose' (not 'docker compose'). Restart policies are safe (auto-managed by renet watchdog). Renet auto-injects network_mode:host, CRIU capabilities, and rediacc labels. Dangerous settings (privileged, pid:host) blocked unless --unsafe",
         "descriptionShort": "Apply a template to a repository (docker-compose.yml + Rediaccfile)",
-        "fileOption": "Path to template JSON file ({\"version\":\"1\",\"compose\":\"<yaml>\",\"rediaccfile\":\"<bash>\"}). Rediaccfile lifecycle: up() starts containers (pull images, generate configs here), down() stops. Minimal Rediaccfile: up() { renet compose -- pull; renet compose -- up -d; } down() { renet compose -- down; }. IMPORTANT: Rediaccfile MUST use 'renet compose' — 'docker compose' is rejected. ENV VARS — two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. OPENCLAW_IP), ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REPOSITORY_NETWORK_ID env vars. Use SERVICE_IP in your app code to bind to the correct loopback IP. Containers MUST bind to SERVICE_IP:<port> (not 0.0.0.0) since network_mode:host is injected and ports: are ignored. STORAGE: Both ${REPOSITORY_PATH}/... bind mounts and Docker named volumes are safe — Docker data-root is inside the encrypted LUKS mount. RESTART POLICY: Restart policies are safe — renet auto-strips them for CRIU compatibility and the watchdog handles recovery. Compose: do NOT add network_mode or rediacc.* labels (renet injects them). The compose service name becomes the auto-route URL prefix (e.g. service 'openclaw' in repo 'myapp' → openclaw.myapp.{machineName}.{baseDomain}). HTTPS routing: (A) Auto-route (fork-friendly, recommended): do NOT add traefik.enable. Renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain}. Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique domain. (B) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true, traefik.http.routers.<n>.rule=Host(`domain`), traefik.http.routers.<n>.entrypoints=websecure,websecure-v6, traefik.http.routers.<n>.tls.certresolver=letsencrypt, traefik.http.services.<n>.loadbalancer.server.port=<port>. For TCP/UDP: rediacc.tcp_ports=3306 / rediacc.udp_ports=53",
+        "fileOption": "Path to template JSON file ({\"version\":\"1\",\"compose\":\"<yaml>\",\"rediaccfile\":\"<bash>\"}). Rediaccfile lifecycle: up() starts containers (pull images, generate configs here), down() stops. Minimal Rediaccfile: up() { renet compose -- pull; renet compose -- up -d; } down() { renet compose -- down; }. IMPORTANT: Rediaccfile MUST use 'renet compose' — 'docker compose' is rejected. ENV VARS — two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. OPENCLAW_IP), ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REDIACC_NETWORK_ID env vars. Use SERVICE_IP in your app code to bind to the correct loopback IP. Containers MUST bind to SERVICE_IP:<port> (not 0.0.0.0) since network_mode:host is injected and ports: are ignored. STORAGE: Both ${REDIACC_WORKING_DIR}/... bind mounts and Docker named volumes are safe — Docker data-root is inside the encrypted LUKS mount. RESTART POLICY: Restart policies are safe — renet auto-strips them for CRIU compatibility and the watchdog handles recovery. Compose: do NOT add network_mode or rediacc.* labels (renet injects them). The compose service name becomes the auto-route URL prefix (e.g. service 'openclaw' in repo 'myapp' → openclaw.myapp.{machineName}.{baseDomain}). HTTPS routing: (A) Auto-route (fork-friendly, recommended): do NOT add traefik.enable. Renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain}. Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique domain. (B) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true, traefik.http.routers.<n>.rule=Host(`domain`), traefik.http.routers.<n>.entrypoints=websecure,websecure-v6, traefik.http.routers.<n>.tls.certresolver=letsencrypt, traefik.http.services.<n>.loadbalancer.server.port=<port>. For TCP/UDP: rediacc.tcp_ports=3306 / rediacc.udp_ports=53",
         "grandOption": "Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent",
         "fileNotFound": "Template file not found: {{path}}",
         "starting": "Applying template to \"{{repository}}\" on \"{{machine}}\"...",
@@ -1422,17 +1423,14 @@
         "failed": "Template application failed"
       },
       "push": {
-        "description": "Push repository backup to storage or machine. Omit name to push all repos. For machine-to-machine transfer (--to-machine), the encrypted repo image is copied directly with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork on another machine, use 'repo fork' first (gets new GUID/networkId), then push the fork. After push, deploy on the target with: repo up <name> -m <target> --mount",
-        "descriptionShort": "Push repository backup to storage or machine",
-        "optionDest": "Destination filename",
-        "optionToStorage": "Destination storage name",
-        "optionToMachine": "Destination machine name",
-        "optionProvider": "Cloud provider to auto-provision target machine if it doesn't exist (from config provider add)",
-        "optionCheckpoint": "Create CRIU container checkpoint before backup (captures process memory state). For live migration: repo push <repo> -m <source> --to-machine <target> --checkpoint, then: repo up <repo> -m <target> --mount --checkpoint (restores process state on target)",
+        "description": "Push repository to a remote (machine or storage). Omit name to push all repos. The target type is auto-detected from config. For machine-to-machine transfer, the encrypted repo image is copied with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork, use 'repo fork' first, then push. Use --up to deploy after push",
+        "descriptionShort": "Push repository to a remote (machine or storage)",
+        "optionTo": "Destination machine or storage name (auto-detected from config)",
+        "optionProvision": "Auto-provision target machine via cloud provider if it doesn't exist",
+        "optionCheckpoint": "Create CRIU checkpoint before backup (captures process memory state for live migration)",
         "optionForce": "Force overwrite existing backup",
         "optionTag": "Deployment tag for versioning",
-        "destRequired": "Specify --to <storage> or --to-machine <machine>",
-        "destIgnoredForStorage": "Ignoring --dest {{provided}}: storage backups use repository GUID ({{dest}})",
+        "destRequired": "Specify --to <remote> (machine or storage name from config)",
         "pushing": "Pushing backup of \"{{repo}}\" to {{dest}}...",
         "optionUp": "After push, mount and deploy repository on target machine",
         "deploying": "Deploying \"{{repo}}\" on {{machine}}...",
@@ -1440,21 +1438,23 @@
         "deployFailed": "Failed to deploy \"{{repo}}\" after push"
       },
       "pull": {
-        "description": "Pull repository backup from storage or another machine (restores the encrypted LUKS image). Omit name to pull all repos. After pull, deploy with 'repo up <name> -m <machine> --mount'. Use --force to overwrite existing",
-        "descriptionShort": "Pull repository backup from storage or machine",
-        "optionFromStorage": "Source storage name",
-        "optionFromMachine": "Source machine name",
+        "description": "Pull repository from a remote (machine or storage). Omit name to pull all repos. The source type is auto-detected from config. Use --up to deploy after pull",
+        "descriptionShort": "Pull repository from a remote (machine or storage)",
+        "optionFrom": "Source machine or storage name (auto-detected from config)",
         "optionForce": "Force overwrite existing repository",
-        "sourceRequired": "Specify --from <storage> or --from-machine <machine>",
-        "pulling": "Pulling backup of \"{{repo}}\"..."
+        "optionUp": "After pull, mount and deploy repository on this machine",
+        "sourceRequired": "Specify --from <remote> (machine or storage name from config)",
+        "pulling": "Pulling backup of \"{{repo}}\"...",
+        "deploying": "Deploying \"{{repo}}\" on {{machine}}...",
+        "deployed": "Repository \"{{repo}}\" deployed on {{machine}}",
+        "deployFailed": "Failed to deploy \"{{repo}}\" after pull"
       },
       "backup": {
         "description": "Manage repository backups",
         "list": {
-          "description": "List available backups on storage or machine",
-          "optionFromStorage": "Source storage name",
-          "optionFromMachine": "Source machine name",
-          "sourceRequired": "Specify --from <storage> or --from-machine <machine>",
+          "description": "List available backups on a remote (machine or storage)",
+          "optionFrom": "Source machine or storage name (auto-detected from config)",
+          "sourceRequired": "Specify --from <remote> (machine or storage name from config)",
           "listing": "Listing backups..."
         }
       },
@@ -1910,8 +1910,8 @@
     }
   },
   "help": {
-    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REPOSITORY_PATH}/... — never Docker named volumes (excluded from forks/backups)\n    • Containers must bind to SERVICE_IP to avoid port conflicts\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n    • HTTPS: automatic Let's Encrypt certs via Cloudflare DNS-01. Grand repos get dedicated wildcard certs\n    • Forks share the machine wildcard cert by default (zero cert consumption). Use --tls on repo up for dedicated cert\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REPOSITORY_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
-    "agentMode": "\n  Agent Mode\n    • Fork-only: create a fork before making changes to any repository\n    • Grand (non-fork) repositories are read-only for agents\n    • Workflow: repo fork <parent> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n",
+    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REDIACC_WORKING_DIR}/... — never Docker named volumes (excluded from forks/backups)\n    • Containers must bind to SERVICE_IP to avoid port conflicts\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n    • HTTPS: automatic Let's Encrypt certs via Cloudflare DNS-01. Grand repos get dedicated wildcard certs\n    • Forks share the machine wildcard cert by default (zero cert consumption). Use --tls on repo up for dedicated cert\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REDIACC_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
+    "agentMode": "\n  Agent Mode\n    • Fork-only: create a fork before making changes to any repository\n    • Grand (non-fork) repositories are read-only for agents\n    • Workflow: repo fork <parent> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n    • JSON output is automatic — all commands return { success, data, errors, metrics }\n    • Always parse full JSON — never use tail/head/grep on JSON output\n    • Use filter flags (e.g., --repositories, --containers) to reduce response size\n    • Discover command schema: rdc agent schema \"<command>\"\n",
     "examples": "Examples:",
     "cli": {
       "machineQuery": "Show machine status",
@@ -1927,7 +1927,7 @@
     },
     "repo": {
       "create": "Create encrypted repo",
-      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REPOSITORY_PATH}/data, ${REPOSITORY_PATH}/config, etc.\n    • Example: volumes: ['${REPOSITORY_PATH}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing\n    • Grand repo auto-route: https://{service}.{repo}.{machine}.{baseDomain} (dedicated wildcard cert)\n    • Fork auto-route: https://{service}-{tag}.{machine}.{baseDomain} (shared machine cert, zero rate limit impact)\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • Use --tls on repo up to request a dedicated cert for a fork (50 certs/week limit per domain)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • Custom domains (rediacc.domain label) are ignored on forks — the domain belongs to the grand repo\n\n  Lifecycle\n    • repo delete fully cleans up: storage, Docker daemon, loopback IPs, systemd units\n    • repo down stops containers but keeps Docker daemon and IPs (quick restart with repo up)\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n    • Scheduled backups skip fork repos automatically. Use rdc repo push for manual fork backup\n    • repo takeover <fork> -m <machine> — replace production data with fork data (preserves identity). Revert with: repo takeover <backup-fork>\n",
+      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing\n    • Grand repo auto-route: https://{service}.{repo}.{machine}.{baseDomain} (dedicated wildcard cert)\n    • Fork auto-route: https://{service}-{tag}.{machine}.{baseDomain} (shared machine cert, zero rate limit impact)\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • Use --tls on repo up to request a dedicated cert for a fork (50 certs/week limit per domain)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • Custom domains (rediacc.domain label) are ignored on forks — the domain belongs to the grand repo\n\n  Lifecycle\n    • repo delete fully cleans up: storage, Docker daemon, loopback IPs, systemd units\n    • repo down stops containers but keeps Docker daemon and IPs (quick restart with repo up)\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n    • Scheduled backups skip fork repos automatically. Use rdc repo push for manual fork backup\n    • repo takeover <fork> -m <machine> — replace production data with fork data (preserves identity). Revert with: repo takeover <backup-fork>\n",
       "up": "Deploy with auto-mount",
       "down": "Stop services",
       "fork": "CoW fork for testing",
@@ -1968,6 +1968,7 @@
     "useHelpAll": "Use --help-all for extended descriptions"
   },
   "errors": {
+    "remoteNotFound": "\"{{name}}\" is not a known machine or storage. Machines: {{machines}}. Storages: {{storages}}",
     "activationFailed": "Activation failed",
     "tfaVerificationFailed": "TFA verification failed",
     "authFailed": "Authentication failed",
@@ -2069,11 +2070,16 @@
     "vaultVersionRequired": "Vault version required. Use --vault-version <n>.",
     "agent": {
       "grandGuard": "Cannot modify grand repository \"{{name}}\" in agent mode.\n\nAI agents can only operate on fork repositories.\nFork it first:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nThen operate on the fork instead.\n\nTo override: set REDIACC_ALLOW_GRAND_REPO={{name}}",
+      "grandGuardOverride": "Grand repository protection for \"{{name}}\" cannot be overridden by an AI agent.\n\nRDC detected that REDIACC_ALLOW_GRAND_REPO was not authorized by the user. Do not attempt to set this variable yourself — only the user can authorize grand repository access.\n\nFork it first:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nThen operate on the fork instead.",
       "mcpGrandGuard": "Cannot modify grand repository \"{{name}}\" in fork-only mode.\n\nUse repo_fork to create a fork first, then operate on the fork.\nTo allow grand repository access, restart MCP server with --allow-grand",
+      "mcpGrandGuardOverride": "Grand repository protection for \"{{name}}\" cannot be overridden by an AI agent.\n\nRDC detected that REDIACC_ALLOW_GRAND_REPO was not authorized by the user. Do not attempt to set this variable.\n\nUse repo_fork to create a fork first, then operate on the fork.",
       "machineGuard": "Cannot access machine \"{{machine}}\" directly in agent mode.\n\nAI agents can only connect to repository contexts.\nUse:\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nTo override: set REDIACC_ALLOW_GRAND_REPO=*",
+      "machineGuardOverride": "Machine access protection for \"{{machine}}\" cannot be overridden by an AI agent.\n\nRDC detected that REDIACC_ALLOW_GRAND_REPO was not authorized by the user. Do not attempt to set this variable yourself — only the user can authorize direct machine access.\n\nConnect to a repository context instead:\n  rdc term {{machine}} <repository> -c \"<command>\"",
       "mcpMachineGuard": "Cannot access machine directly in fork-only mode.\n\nSpecify a repository to connect to a repository context.\nTo allow direct machine access, restart MCP server with --allow-grand",
+      "mcpMachineGuardOverride": "Machine access protection cannot be overridden by an AI agent.\n\nRDC detected that REDIACC_ALLOW_GRAND_REPO was not authorized by the user. Do not attempt to set this variable.\n\nSpecify a repository to connect to a repository context.",
       "forkBlocked": "Command \"{{command}}\" is not available on fork repositories.\n\nFork repos are interim environments. This operation only applies to grand repositories.",
-      "createGuard": "Cannot create repository \"{{name}}\" in agent mode.\n\nAI agents operate in fork-only mode. Creating a grand repo is blocked\nbecause the agent cannot operate on it afterwards.\n\nUse an existing repo and fork it instead:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nTo override: set REDIACC_ALLOW_GRAND_REPO=*"
+      "createGuard": "Cannot create repository \"{{name}}\" in agent mode.\n\nAI agents operate in fork-only mode. Creating a grand repo is blocked\nbecause the agent cannot operate on it afterwards.\n\nUse an existing repo and fork it instead:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nTo override: set REDIACC_ALLOW_GRAND_REPO=*",
+      "createGuardOverride": "Repository creation protection cannot be overridden by an AI agent.\n\nRDC detected that REDIACC_ALLOW_GRAND_REPO was not authorized by the user. Do not attempt to set this variable yourself — only the user can authorize repository creation.\n\nUse an existing repo and fork it instead:\n  rdc repo fork <parent> -m <machine> --tag {{name}}"
     },
     "config": {
       "storageNotFound": "Storage \"{{name}}\" not found in config. Available: {{available}}.",

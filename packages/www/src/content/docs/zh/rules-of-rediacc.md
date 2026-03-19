@@ -4,8 +4,8 @@ description: "在 Rediacc 平台上构建应用程序的基本规则和约定。
 category: "Guides"
 order: 5
 language: zh
-sourceHash: "091701909c0c8d32"
-sourceCommit: "ebe4a9b9ea6ace2a0faee3694a632135cd61ef9b"
+sourceHash: "f7ca177c604f0ff7"
+sourceCommit: "c4820684802963ecf645e56c87e13815deb84688"
 ---
 
 # Rediacc 规则
@@ -102,18 +102,23 @@ Renet 会自动将以下变量注入每个容器：
 
 ## CRIU（实时迁移）
 
-- **`backup push --checkpoint`** 捕获运行中进程的内存 + 磁盘状态。
-- **`repo up --mount --checkpoint`** 从检查点恢复容器（无需全新启动）。
-- **TCP 连接在恢复后变得陈旧** — 应用程序必须处理 `ECONNRESET` 并重新连接。
-- **Docker 实验模式**在每个仓库的守护进程上自动启用。
-- **CRIU** 在 `rdc config machine setup` 期间安装。
-- **`/etc/criu/runc.conf`** 配置了 `tcp-established` 以保持 TCP 连接。
-- **容器安全设置由 renet 自动注入** — `renet compose` 会自动为每个容器添加以下内容以确保 CRIU 兼容性：
-  - `cap_add`：`CHECKPOINT_RESTORE`、`SYS_PTRACE`、`NET_ADMIN`（内核 5.9+ 上 CRIU 的最小集）
-  - `security_opt`：`apparmor=unconfined`（CRIU 的 AppArmor 支持在上游尚不稳定）
-  - `userns_mode: host`（CRIU 需要 init 命名空间访问权限以访问 `/proc/pid/map_files`）
-- Docker 的默认 seccomp 配置文件被保留 — CRIU 使用 `PTRACE_O_SUSPEND_SECCOMP`（内核 4.3+）在 checkpoint/restore 期间临时暂停过滤器。
-- **不要在 compose 文件中手动设置这些** — renet 会处理。自行设置有重复或冲突的风险。
+- **通过标签选择性启用**: 为需要创建检查点的容器添加`rediacc.checkpoint=true`。没有此标签的容器（数据库、缓存）将全新启动并通过自身机制（WAL、LDF、AOF）恢复。
+- **`backup push --checkpoint`** 捕获标记容器的运行进程内存状态 + 磁盘状态。
+- **`repo fork --checkpoint`** 在fork前捕获进程状态 — fork在`repo up`时自动恢复。
+- **`repo down --checkpoint`** 在停止前保存进程状态 — 下次`repo up`自动恢复。
+- **`repo up`** 自动检测检查点数据并在找到时恢复。使用`--skip-checkpoint`强制全新启动。
+- **依赖感知恢复**: 使用compose的`depends_on`先启动数据库（等待healthy），然后CRIU恢复应用容器。
+- **TCP连接在恢复后变为过期** — 应用程序必须处理`ECONNRESET`并重新连接。
+- **Docker实验模式**在每个仓库的守护进程上自动启用。
+- **CRIU在** `rdc config machine setup` 期间安装。
+- **`/etc/criu/runc.conf`** 配置了`tcp-established`用于TCP连接保持。
+- **容器安全设置为标记容器自动注入** — `renet compose`为带有`rediacc.checkpoint=true`的容器添加以下内容：
+  - `cap_add`: `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN`（内核5.9+上CRIU的最小集合）
+  - `security_opt`: `apparmor=unconfined`（CRIU的AppArmor支持在上游尚不稳定）
+  - `userns_mode: host`（CRIU需要init命名空间访问`/proc/pid/map_files`）
+- 没有标签的容器以更干净的安全姿态运行（无额外capabilities）。
+- Docker的默认seccomp配置文件被保留 — CRIU使用`PTRACE_O_SUSPEND_SECCOMP`（内核4.3+）在checkpoint/restore期间临时暂停过滤器。
+- **不要在compose文件中手动设置CRIU capabilities** — renet会根据标签进行处理。
 - 参见 [heartbeat 模板](https://github.com/rediacc/console/tree/main/packages/json/templates/monitoring/heartbeat) 了解 CRIU 兼容的参考实现。
 
 ### CRIU 兼容的应用模式

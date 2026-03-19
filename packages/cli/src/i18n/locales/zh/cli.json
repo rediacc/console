@@ -1128,11 +1128,10 @@
       "backup": {
         "description": "管理仓库备份",
         "list": {
-          "description": "列出存储或机器上的可用备份",
+          "description": "列出远程（机器或存储）上的可用备份",
           "listing": "正在列出备份...",
-          "optionFromMachine": "源机器名称",
-          "optionFromStorage": "源存储名称",
-          "sourceRequired": "请指定 --from <storage> 或 --from-machine <machine>"
+          "optionFrom": "源机器或存储名称（从配置中自动检测）",
+          "sourceRequired": "请指定 --from <remote>（配置中的机器或存储名称）"
         }
       },
       "batchConfirm": "{{action}} \"{{machine}}\" 上的所有 {{count}} 个仓库？ [y/N]",
@@ -1189,7 +1188,7 @@
       "fork": {
         "alreadyExists": "仓库 \"{{name}}\" 已存在于上下文中",
         "checkpointOption": "fork 前在源上创建 CRIU checkpoint（捕获进程内存状态以便在 fork 上恢复）",
-        "completed": "分支已创建。本地部署: repo up {{repository}} -m {{machine}} --mount。将分支迁移到另一台机器: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
+        "completed": "Fork已创建。本地部署: repo up {{repository}} -m {{machine}} --mount。将fork迁移到另一台机器: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "创建仓库的 CoW（写时复制）分支",
         "descriptionShort": "创建仓库的 CoW 分支（新 GUID、networkId、IP 范围）",
         "failed": "分支创建失败",
@@ -1197,7 +1196,8 @@
         "rollback": "已回滚 \"{{repository}}\" 的配置",
         "starting": "正在 \"{{machine}}\" 上将 \"{{parent}}\" 分支为 \"{{repository}}\"...",
         "tagOption": "分支的标签（创建 名称:标签）",
-        "tagRequired": "分支需要标签。用法：rdc repo fork <parent> <tag> -m <machine>"
+        "tagRequired": "分支需要标签。用法：rdc repo fork <parent> <tag> -m <machine>",
+        "upOption": "fork后挂载并启动服务（fork + mount + up 一条命令完成）"
       },
       "list": {
         "completed": "列表获取完成",
@@ -1225,29 +1225,29 @@
         "uidOption": "所有者 UID（默认: 7111）"
       },
       "pull": {
-        "description": "从存储或机器拉取仓库备份",
-        "descriptionShort": "从存储或机器拉取仓库备份",
+        "deployed": "仓库\"{{repo}}\"已部署到{{machine}}",
+        "deployFailed": "pull后部署\"{{repo}}\"失败",
+        "deploying": "正在将\"{{repo}}\"部署到{{machine}}...",
+        "description": "从远程（机器或存储）拉取仓库。省略名称以拉取所有仓库。源类型从配置中自动检测。使用--up在pull后部署",
+        "descriptionShort": "从远程（机器或存储）拉取仓库",
         "optionForce": "强制覆盖现有仓库",
-        "optionFromMachine": "源机器名称",
-        "optionFromStorage": "源存储名称",
+        "optionFrom": "源机器或存储名称（从配置中自动检测）",
+        "optionUp": "pull后，在此机器上挂载并部署仓库",
         "pulling": "正在拉取 \"{{repo}}\" 的备份...",
-        "sourceRequired": "请指定 --from <storage> 或 --from-machine <machine>"
+        "sourceRequired": "请指定 --from <remote>（配置中的机器或存储名称）"
       },
       "push": {
         "deployed": "仓库 \"{{repo}}\" 已部署到 {{machine}}",
         "deployFailed": "推送后部署 \"{{repo}}\" 失败",
         "deploying": "正在 {{machine}} 上部署 \"{{repo}}\"...",
-        "description": "将仓库备份推送到存储或机器",
-        "descriptionShort": "将仓库备份推送到存储或机器",
-        "destIgnoredForStorage": "忽略 --dest {{provided}}：存储备份使用仓库 GUID（{{dest}}）",
-        "destRequired": "请指定 --to <storage> 或 --to-machine <machine>",
-        "optionCheckpoint": "创建容器检查点（热备份）",
-        "optionDest": "目标文件名",
+        "description": "将仓库推送到远程（机器或存储）。省略名称以推送所有仓库。目标类型从配置中自动检测。机器间传输时，加密的仓库映像使用相同的GUID复制 — 这是备份/迁移，不是fork。要创建独立的fork，请先使用'repo fork'，然后push。使用--up在push后部署",
+        "descriptionShort": "将仓库推送到远程（机器或存储）",
+        "destRequired": "请指定 --to <remote>（配置中的机器或存储名称）",
+        "optionCheckpoint": "备份前创建CRIU检查点（捕获进程内存状态用于实时迁移）",
         "optionForce": "强制覆盖现有备份",
-        "optionProvider": "如果目标机器不存在，则自动配置的云提供商（来自config provider add）",
+        "optionProvision": "如果目标机器不存在，通过云提供商自动配置",
         "optionTag": "用于版本控制的部署标签",
-        "optionToMachine": "目标机器名称",
-        "optionToStorage": "目标存储名称",
+        "optionTo": "目标机器或存储名称（从配置中自动检测）",
         "optionUp": "推送后，在目标机器上挂载并部署仓库",
         "pushing": "正在将 \"{{repo}}\" 的备份推送到 {{dest}}..."
       },
@@ -1344,6 +1344,7 @@
         "starting": "正在从 \"{{machine}}\" 卸载 \"{{repository}}\"..."
       },
       "up": {
+        "checkpointOption": "启动时恢复 CRIU 检查点（从保存的内存状态恢复进程）",
         "completed": "服务已启动",
         "description": "部署或更新仓库（挂载、启动服务）",
         "descriptionShort": "在机器上部署或更新仓库",
@@ -1352,8 +1353,7 @@
         "mountOption": "先挂载仓库",
         "skipCheckpointOption": "即使存在 checkpoint 数据也跳过 CRIU checkpoint 恢复（强制全新启动）",
         "starting": "正在 \"{{machine}}\" 上启动 \"{{repository}}\" 的服务...",
-        "tlsOption": "为此仓库请求专用 TLS 证书 (分支默认使用共享机器证书)",
-        "checkpointOption": "启动时恢复 CRIU 检查点（从保存的内存状态恢复进程）"
+        "tlsOption": "为此仓库请求专用 TLS 证书 (分支默认使用共享机器证书)"
       },
       "upAll": {
         "completed": "所有仓库已启动",
@@ -2042,11 +2042,16 @@
     "affectedChildClones": "。受影响的子克隆：{{clones}}。请先删除或提升子克隆。",
     "agent": {
       "createGuard": "无法在代理模式下创建仓库 \"{{name}}\"。\n\nAI 代理仅在分叉模式下运行。创建主仓库已被阻止，\n因为代理之后无法对其进行操作。\n\n请使用现有仓库并进行分叉：\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\n要覆盖此限制：设置 REDIACC_ALLOW_GRAND_REPO=*",
+      "createGuardOverride": "仓库创建保护不能被AI代理覆盖。\n\nRDC检测到REDIACC_ALLOW_GRAND_REPO未经用户授权。请勿尝试自行设置此变量 — 只有用户才能授权创建仓库。\n\n请使用现有仓库并创建fork:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
       "forkBlocked": "命令 \"{{command}}\" 在 fork 仓库上不可用。\n\nfork 仓库是临时环境。此操作仅适用于 grand 仓库。",
       "grandGuard": "无法在代理模式下修改 grand 仓库 \"{{name}}\"。\n\nAI 代理只能在 fork 仓库上操作。\n请先创建 fork：\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\n然后在 fork 上操作。\n\n要覆盖此限制：设置 REDIACC_ALLOW_GRAND_REPO={{name}}",
+      "grandGuardOverride": "\"{{name}}\"的主仓库保护不能被AI代理覆盖。\n\nRDC检测到REDIACC_ALLOW_GRAND_REPO未经用户授权。请勿尝试自行设置此变量 — 只有用户才能授权主仓库访问。\n\n请先创建fork:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\n然后在fork上操作。",
       "machineGuard": "无法在代理模式下直接访问机器 \"{{machine}}\"。\n\nAI 代理只能连接到仓库上下文。\n请使用：\n  rdc term {{machine}} <repository> -c \"<command>\"\n\n要覆盖此限制：设置 REDIACC_ALLOW_GRAND_REPO=*",
+      "machineGuardOverride": "\"{{machine}}\"的机器访问保护不能被AI代理覆盖。\n\nRDC检测到REDIACC_ALLOW_GRAND_REPO未经用户授权。请勿尝试自行设置此变量 — 只有用户才能授权直接机器访问。\n\n请改为连接到仓库上下文:\n  rdc term {{machine}} <repository> -c \"<command>\"",
       "mcpGrandGuard": "无法在仅 fork 模式下修改 grand 仓库 \"{{name}}\"。\n\n请使用 repo_fork 先创建 fork，然后在 fork 上操作。\n要允许访问 grand 仓库，请使用 --allow-grand 重新启动 MCP 服务器",
-      "mcpMachineGuard": "无法在仅 fork 模式下直接访问机器。\n\n请指定一个仓库以连接到仓库上下文。\n要允许直接访问机器，请使用 --allow-grand 重新启动 MCP 服务器"
+      "mcpGrandGuardOverride": "\"{{name}}\"的主仓库保护不能被AI代理覆盖。\n\nRDC检测到REDIACC_ALLOW_GRAND_REPO未经用户授权。请勿尝试设置此变量。\n\n请先使用repo_fork创建fork，然后在fork上操作。",
+      "mcpMachineGuard": "无法在仅 fork 模式下直接访问机器。\n\n请指定一个仓库以连接到仓库上下文。\n要允许直接访问机器，请使用 --allow-grand 重新启动 MCP 服务器",
+      "mcpMachineGuardOverride": "机器访问保护不能被AI代理覆盖。\n\nRDC检测到REDIACC_ALLOW_GRAND_REPO未经用户授权。请勿尝试设置此变量。\n\n请指定一个仓库以连接到仓库上下文。"
     },
     "authFailed": "身份验证失败",
     "authRequired": "需要身份验证。运行：rdc auth login",
@@ -2095,6 +2100,7 @@
     },
     "regionRequired": "需要区域名称。使用 --region 或设置上下文。",
     "registrationFailed": "注册失败",
+    "remoteNotFound": "\"{{name}}\"不是已知的机器或存储。机器: {{machines}}。存储: {{storages}}",
     "repositoryNotFound": "仓库 \"{{name}}\" 未找到",
     "repositoryRequired": "需要仓库名称。使用 --repository <name>。",
     "resourceNotFound": "{{resource}} 未找到",
@@ -2166,7 +2172,7 @@
       "setupMachine": "在远程机器上运行安装"
     },
     "examples": "示例:",
-    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REPOSITORY_PATH}/... — never Docker named volumes (excluded from forks/backups)\n    • Containers must bind to SERVICE_IP to avoid port conflicts\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REPOSITORY_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
+    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REDIACC_WORKING_DIR}/... — never Docker named volumes (excluded from forks/backups)\n    • Containers must bind to SERVICE_IP to avoid port conflicts\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REDIACC_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
     "machine": {
       "containers": "列出运行中的容器",
       "health": "CI/CD 健康检查",
@@ -2177,7 +2183,7 @@
       "create": "创建加密仓库",
       "down": "停止服务",
       "fork": "创建 CoW 测试分支",
-      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REPOSITORY_PATH}/data, ${REPOSITORY_PATH}/config, etc.\n    • Example: volumes: ['${REPOSITORY_PATH}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
+      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "列出存储上的备份",
       "pull": "从存储拉取仓库备份",
       "push": "推送仓库备份到存储",

@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { Command } from 'commander';
 import { COMMAND_METADATA, type CommandMeta } from '../../config/command-metadata.js';
 import { t } from '../../i18n/index.js';
+import { isOverrideLegitimate } from '../../utils/process-ancestry.js';
 import { CUSTOM_TOOLS } from './custom-tools.js';
 import { executeRdcCommand } from './executor.js';
 import type { McpServerOptions } from './server.js';
@@ -88,8 +89,15 @@ async function guardNamedRepo(
   const repoInfo = await getRepoInfo(repoName, options.configName);
   if (!repoInfo) return null;
 
-  if (!isForkRepo(repoInfo) && envOverride !== '*' && envOverride !== repoName) {
-    return guardError(t('errors.agent.mcpGrandGuard', { name: repoName }));
+  if (!isForkRepo(repoInfo)) {
+    if (envOverride === '*' || envOverride === repoName) {
+      if (!isOverrideLegitimate()) {
+        return guardError(t('errors.agent.mcpGrandGuardOverride', { name: repoName }));
+      }
+      // Legitimate override — allow through
+    } else {
+      return guardError(t('errors.agent.mcpGrandGuard', { name: repoName }));
+    }
   }
   if (isForkRepo(repoInfo)) return checkForkBlocked(tool);
   return null;
@@ -109,8 +117,15 @@ async function applyGrandRepoGuard(
   const repoName = args[tool.repoArgField] as string | undefined;
   if (repoName) return guardNamedRepo(tool, repoName, options);
 
-  if (tool.name === 'term_exec' && process.env.REDIACC_ALLOW_GRAND_REPO !== '*') {
-    return guardError(t('errors.agent.mcpMachineGuard'));
+  if (tool.name === 'term_exec') {
+    if (process.env.REDIACC_ALLOW_GRAND_REPO === '*') {
+      if (!isOverrideLegitimate()) {
+        return guardError(t('errors.agent.mcpMachineGuardOverride'));
+      }
+      // Legitimate override — allow through
+    } else {
+      return guardError(t('errors.agent.mcpMachineGuard'));
+    }
   }
 
   return null;

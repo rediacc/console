@@ -80,13 +80,26 @@ function buildPoliciesMap(): ReadonlyMap<CommandPath, CommandPolicy> {
 
 export const COMMAND_POLICIES: ReadonlyMap<CommandPath, CommandPolicy> = buildPoliciesMap();
 
-function isGrandOverridden(repoName: string): boolean {
+type OverrideResult = 'allowed' | 'not-set' | 'agent-injected';
+
+function checkGrandOverride(repoName: string): OverrideResult {
   const override = process.env.REDIACC_ALLOW_GRAND_REPO;
-  if (!override) return false;
-  if (override !== '*' && override !== repoName) return false;
+  if (!override) return 'not-set';
+  if (override !== '*' && override !== repoName) return 'not-set';
 
   // Verify override was set by user, not injected by agent
-  return isOverrideLegitimate();
+  return isOverrideLegitimate() ? 'allowed' : 'agent-injected';
+}
+
+/** Enforce the grand-guard policy: block grand repos in agent mode unless overridden. */
+function enforceGrandGuard(repoName: string): void {
+  const override = checkGrandOverride(repoName);
+  if (override === 'agent-injected') {
+    throw new ValidationError(t('errors.agent.grandGuardOverride', { name: repoName }));
+  }
+  if (override !== 'allowed') {
+    throw new ValidationError(t('errors.agent.grandGuard', { name: repoName }));
+  }
 }
 
 /**
@@ -108,8 +121,8 @@ export async function assertCommandPolicy(
   if (!repo) return;
   const isFork = !!(repo.grandGuid && repo.grandGuid !== repo.repositoryGuid);
 
-  if (policy.grandGuard && !isFork && !isGrandOverridden(repoName)) {
-    throw new ValidationError(t('errors.agent.grandGuard', { name: repoName }));
+  if (policy.grandGuard && !isFork) {
+    enforceGrandGuard(repoName);
   }
 
   if (policy.forkBlocked && isFork) {

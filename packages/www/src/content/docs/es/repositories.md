@@ -4,7 +4,7 @@ description: 'Cree, gestione y opere repositorios cifrados con LUKS en máquinas
 category: Guides
 order: 4
 language: es
-sourceHash: "06b8912e9b65b720"
+sourceHash: "5faf701157696057"
 ---
 
 # Repositorios
@@ -45,7 +45,7 @@ rdc repo unmount my-app -m server-1     # Desmontar y re-cifrar
 
 | Opción | Descripción |
 |--------|-------------|
-| `--checkpoint` | Crear un punto de control antes de montar/desmontar |
+| `--checkpoint` | Crear un checkpoint CRIU antes de montar/desmontar (para contenedores con etiqueta `rediacc.checkpoint=true`) |
 | `--skip-router-restart` | Omitir el reinicio del servidor de rutas después de la operación |
 
 ## Verificar Estado

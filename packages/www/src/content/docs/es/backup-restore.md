@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: es
-sourceHash: "2ac1e17539336175"
+sourceHash: "bd53047cef737088"
 ---
 
 # Respaldo y Restauración
@@ -46,7 +46,7 @@ rdc repo push my-app -m server-1 --to my-storage
 | `--to <storage>` | Ubicación de almacenamiento destino |
 | `--to-machine <machine>` | Máquina destino para respaldo de máquina a máquina |
 | `--dest <filename>` | Nombre de archivo de destino personalizado |
-| `--checkpoint` | Crear un punto de control antes de enviar |
+| `--checkpoint` | Crear un checkpoint CRIU antes de enviar (para contenedores con etiqueta `rediacc.checkpoint=true`). El destino se restaura automáticamente con `repo up` |
 | `--force` | Sobreescribir un respaldo existente |
 | `--tag <tag>` | Etiquetar el respaldo |
 | `-w, --watch` | Observar el progreso de la operación |

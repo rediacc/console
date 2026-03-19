@@ -1128,11 +1128,10 @@
       "backup": {
         "description": "リポジトリバックアップを管理する",
         "list": {
-          "description": "ストレージまたはマシン上の利用可能なバックアップをリスト表示する",
+          "description": "リモート（マシンまたはストレージ）の利用可能なバックアップを一覧表示",
           "listing": "バックアップを一覧表示中...",
-          "optionFromMachine": "ソースマシン名",
-          "optionFromStorage": "ソースストレージ名",
-          "sourceRequired": "--from <storage> または --from-machine <machine> を指定してください"
+          "optionFrom": "ソースマシンまたはストレージ名（設定から自動検出）",
+          "sourceRequired": "--from <remote> を指定してください（設定からのマシンまたはストレージ名）"
         }
       },
       "batchConfirm": "\"{{machine}}\"上のすべての{{count}}リポジトリを{{action}}しますか？ [y/N]",
@@ -1189,7 +1188,7 @@
       "fork": {
         "alreadyExists": "リポジトリ \"{{name}}\" はコンテキスト内に既に存在します",
         "checkpointOption": "fork 前にソースで CRIU checkpoint を作成する（fork 先での復元用にプロセスメモリ状態を取得）",
-        "completed": "フォークを作成しました。ローカルにデプロイ: repo up {{repository}} -m {{machine}} --mount。フォークを別のマシンに移行: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
+        "completed": "Forkが作成されました。ローカルでデプロイ: repo up {{repository}} -m {{machine}} --mount。別のマシンにforkを移行: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "リポジトリのCoW（コピーオンライト）フォークを作成する",
         "descriptionShort": "リポジトリの CoW フォークを作成する（新規 GUID、networkId、IP 範囲）",
         "failed": "フォークの作成に失敗しました",
@@ -1197,7 +1196,8 @@
         "rollback": "\"{{repository}}\" の設定をロールバックしました",
         "starting": "\"{{machine}}\" で \"{{parent}}\" を \"{{repository}}\" としてフォーク中...",
         "tagOption": "フォークのタグ（名前:タグを作成）",
-        "tagRequired": "フォークにはタグが必要です。使用法: rdc repo fork <parent> <tag> -m <machine>"
+        "tagRequired": "フォークにはタグが必要です。使用法: rdc repo fork <parent> <tag> -m <machine>",
+        "upOption": "fork後にマウントしてサービスを開始（fork + mount + upを1コマンドで）"
       },
       "list": {
         "completed": "リスト表示が完了しました",
@@ -1225,29 +1225,29 @@
         "uidOption": "所有者UID（デフォルト: 7111）"
       },
       "pull": {
-        "description": "ストレージまたはマシンからリポジトリのバックアップをプルする",
-        "descriptionShort": "ストレージまたはマシンからリポジトリバックアップをプルする",
+        "deployed": "リポジトリ\"{{repo}}\"が{{machine}}にデプロイされました",
+        "deployFailed": "pull後の\"{{repo}}\"のデプロイに失敗しました",
+        "deploying": "\"{{repo}}\"を{{machine}}にデプロイ中...",
+        "description": "リモート（マシンまたはストレージ）からリポジトリをプル。名前を省略するとすべてのリポジトリをプル。ソースタイプは設定から自動検出。pull後にデプロイするには--upを使用",
+        "descriptionShort": "リモート（マシンまたはストレージ）からリポジトリをプル",
         "optionForce": "既存のリポジトリを強制的に上書きする",
-        "optionFromMachine": "ソースマシン名",
-        "optionFromStorage": "ソースストレージ名",
+        "optionFrom": "ソースマシンまたはストレージ名（設定から自動検出）",
+        "optionUp": "pull後、このマシンでリポジトリをマウントしてデプロイ",
         "pulling": "\"{{repo}}\" のバックアップをプル中...",
-        "sourceRequired": "--from <storage> または --from-machine <machine> を指定してください"
+        "sourceRequired": "--from <remote> を指定してください（設定からのマシンまたはストレージ名）"
       },
       "push": {
         "deployed": "リポジトリ \"{{repo}}\" が {{machine}} にデプロイされました",
         "deployFailed": "プッシュ後の \"{{repo}}\" のデプロイに失敗しました",
         "deploying": "{{machine}} に \"{{repo}}\" をデプロイ中...",
-        "description": "リポジトリのバックアップをストレージまたはマシンにプッシュする",
-        "descriptionShort": "ストレージまたはマシンにリポジトリバックアップをプッシュする",
-        "destIgnoredForStorage": "--dest {{provided}} を無視: ストレージバックアップはリポジトリGUIDを使用します（{{dest}}）",
-        "destRequired": "--to <storage> または --to-machine <machine> を指定してください",
-        "optionCheckpoint": "コンテナチェックポイントを作成（ホットバックアップ）",
-        "optionDest": "宛先ファイル名",
+        "description": "リポジトリをリモート（マシンまたはストレージ）にプッシュ。名前を省略するとすべてのリポジトリをプッシュ。ターゲットタイプは設定から自動検出。マシン間転送では、暗号化されたリポジトリイメージが同じGUIDでコピーされます — これはバックアップ/移行であり、forkではありません。独立したforkを作成するには、まず'repo fork'を使用してからpush。push後にデプロイするには--upを使用",
+        "descriptionShort": "リポジトリをリモート（マシンまたはストレージ）にプッシュ",
+        "destRequired": "--to <remote> を指定してください（設定からのマシンまたはストレージ名）",
+        "optionCheckpoint": "バックアップ前にCRIUチェックポイントを作成（ライブマイグレーション用にプロセスメモリ状態をキャプチャ）",
         "optionForce": "既存のバックアップを強制的に上書きする",
-        "optionProvider": "ターゲットマシンが存在しない場合に自動プロビジョニングするクラウドプロバイダー（config provider addから）",
+        "optionProvision": "ターゲットマシンが存在しない場合、クラウドプロバイダー経由で自動プロビジョニング",
         "optionTag": "バージョニング用デプロイタグ",
-        "optionToMachine": "宛先マシン名",
-        "optionToStorage": "宛先ストレージ名",
+        "optionTo": "宛先マシンまたはストレージ名（設定から自動検出）",
         "optionUp": "プッシュ後、ターゲットマシンにリポジトリをマウントしてデプロイする",
         "pushing": "\"{{repo}}\" のバックアップを {{dest}} にプッシュ中..."
       },
@@ -1344,6 +1344,7 @@
         "starting": "\"{{repository}}\" を \"{{machine}}\" でアンマウント中..."
       },
       "up": {
+        "checkpointOption": "起動時にCRIUチェックポイントを復元（保存されたメモリ状態からプロセスを再開）",
         "completed": "サービスが開始されました",
         "description": "リポジトリをデプロイまたは更新する (マウント、サービス起動)",
         "descriptionShort": "マシン上にリポジトリをデプロイまたは更新する",
@@ -1352,8 +1353,7 @@
         "mountOption": "最初にリポジトリをマウントする",
         "skipCheckpointOption": "checkpoint データが存在しても CRIU checkpoint の復元をスキップする（強制的に新規起動）",
         "starting": "\"{{repository}}\" のサービスを \"{{machine}}\" で開始中...",
-        "tlsOption": "このリポジトリ用の専用 TLS 証明書をリクエスト (フォークはデフォルトで共有マシン証明書を使用)",
-        "checkpointOption": "起動時にCRIUチェックポイントを復元（保存されたメモリ状態からプロセスを再開）"
+        "tlsOption": "このリポジトリ用の専用 TLS 証明書をリクエスト (フォークはデフォルトで共有マシン証明書を使用)"
       },
       "upAll": {
         "completed": "すべてのリポジトリが開始されました",
@@ -2042,11 +2042,16 @@
     "affectedChildClones": "。影響を受ける子クローン: {{clones}}。子クローンを最初に削除するか昇格させてください。",
     "agent": {
       "createGuard": "エージェントモードではリポジトリ \"{{name}}\" を作成できません。\n\nAI エージェントはフォーク専用で動作します。グランドリポジトリの作成はブロックされています。\nエージェントは作成後に操作できないためです。\n\n既存のリポジトリをフォークしてください:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\n上書きするには: REDIACC_ALLOW_GRAND_REPO=* を設定してください",
+      "createGuardOverride": "リポジトリ作成保護はAIエージェントによってオーバーライドできません。\n\nRDCはREDIACC_ALLOW_GRAND_REPOがユーザーによって承認されていないことを検出しました。この変数を自分で設定しようとしないでください — リポジトリの作成を承認できるのはユーザーのみです。\n\n既存のリポジトリを使用してforkを作成してください:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
       "forkBlocked": "コマンド \"{{command}}\" は fork リポジトリでは使用できません。\n\nfork リポジトリは一時的な環境です。この操作は grand リポジトリにのみ適用されます。",
       "grandGuard": "エージェントモードでは grand リポジトリ \"{{name}}\" を変更できません。\n\nAI エージェントは fork リポジトリでのみ操作できます。\nまず fork を作成してください:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nその後、fork で操作してください。\n\nオーバーライドするには: REDIACC_ALLOW_GRAND_REPO={{name}} を設定",
+      "grandGuardOverride": "\"{{name}}\"のグランドリポジトリ保護はAIエージェントによってオーバーライドできません。\n\nRDCはREDIACC_ALLOW_GRAND_REPOがユーザーによって承認されていないことを検出しました。この変数を自分で設定しようとしないでください — グランドリポジトリへのアクセスを承認できるのはユーザーのみです。\n\nまずforkを作成してください:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nその後、forkで操作してください。",
       "machineGuard": "エージェントモードではマシン \"{{machine}}\" に直接アクセスできません。\n\nAI エージェントはリポジトリコンテキストにのみ接続できます。\n次を使用してください:\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nオーバーライドするには: REDIACC_ALLOW_GRAND_REPO=* を設定",
+      "machineGuardOverride": "\"{{machine}}\"のマシンアクセス保護はAIエージェントによってオーバーライドできません。\n\nRDCはREDIACC_ALLOW_GRAND_REPOがユーザーによって承認されていないことを検出しました。この変数を自分で設定しようとしないでください — 直接マシンアクセスを承認できるのはユーザーのみです。\n\n代わりにリポジトリコンテキストに接続してください:\n  rdc term {{machine}} <repository> -c \"<command>\"",
       "mcpGrandGuard": "fork 専用モードでは grand リポジトリ \"{{name}}\" を変更できません。\n\nrepo_fork を使用してまず fork を作成し、その後 fork で操作してください。\ngrand リポジトリへのアクセスを許可するには、--allow-grand を付けて MCP サーバーを再起動してください",
-      "mcpMachineGuard": "fork 専用モードではマシンに直接アクセスできません。\n\nリポジトリを指定してリポジトリコンテキストに接続してください。\n直接マシンアクセスを許可するには、--allow-grand を付けて MCP サーバーを再起動してください"
+      "mcpGrandGuardOverride": "\"{{name}}\"のグランドリポジトリ保護はAIエージェントによってオーバーライドできません。\n\nRDCはREDIACC_ALLOW_GRAND_REPOがユーザーによって承認されていないことを検出しました。この変数を設定しようとしないでください。\n\nrepo_forkを使用してまずforkを作成し、その後forkで操作してください。",
+      "mcpMachineGuard": "fork 専用モードではマシンに直接アクセスできません。\n\nリポジトリを指定してリポジトリコンテキストに接続してください。\n直接マシンアクセスを許可するには、--allow-grand を付けて MCP サーバーを再起動してください",
+      "mcpMachineGuardOverride": "マシンアクセス保護はAIエージェントによってオーバーライドできません。\n\nRDCはREDIACC_ALLOW_GRAND_REPOがユーザーによって承認されていないことを検出しました。この変数を設定しようとしないでください。\n\nリポジトリコンテキストに接続するにはリポジトリを指定してください。"
     },
     "authFailed": "認証に失敗しました",
     "authRequired": "認証が必要です。実行してください: rdc auth login",
@@ -2095,6 +2100,7 @@
     },
     "regionRequired": "リージョン名が必要です。--region を使用するか、コンテキストを設定してください。",
     "registrationFailed": "登録に失敗しました",
+    "remoteNotFound": "\"{{name}}\"は既知のマシンまたはストレージではありません。マシン: {{machines}}。ストレージ: {{storages}}",
     "repositoryNotFound": "リポジトリ \"{{name}}\" が見つかりません",
     "repositoryRequired": "リポジトリ名が必要です。--repository <name> を使用してください。",
     "resourceNotFound": "{{resource}} が見つかりません",
@@ -2166,7 +2172,7 @@
       "setupMachine": "リモートマシンでセットアップを実行"
     },
     "examples": "例:",
-    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REPOSITORY_PATH}/... — never Docker named volumes (excluded from forks/backups)\n    • Containers must bind to SERVICE_IP to avoid port conflicts\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REPOSITORY_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
+    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REDIACC_WORKING_DIR}/... — never Docker named volumes (excluded from forks/backups)\n    • Containers must bind to SERVICE_IP to avoid port conflicts\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REDIACC_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
     "machine": {
       "containers": "実行中のコンテナを一覧表示",
       "health": "CI/CD用ヘルスチェック",
@@ -2177,7 +2183,7 @@
       "create": "暗号化リポジトリを作成",
       "down": "サービスを停止",
       "fork": "テスト用CoWフォーク",
-      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REPOSITORY_PATH}/data, ${REPOSITORY_PATH}/config, etc.\n    • Example: volumes: ['${REPOSITORY_PATH}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
+      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "ストレージ上のバックアップを一覧表示",
       "pull": "ストレージからバックアップをプル",
       "push": "バックアップをストレージにプッシュ",

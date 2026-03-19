@@ -358,7 +358,6 @@ ${t('help.examples')}
               team: cfg.team ?? '-',
               region: cfg.region ?? '-',
               bridge: cfg.bridge ?? '-',
-              machine: cfg.machine ?? '-',
               authenticated: cfg.token ? 'yes' : 'no',
             }
           : await buildSelfHostedDisplay(cfg, name);

@@ -4,7 +4,7 @@ description: 'Uzak makinelerde LUKS ile şifrelenmiş depoları oluşturma, yön
 category: Guides
 order: 4
 language: tr
-sourceHash: "06b8912e9b65b720"
+sourceHash: "5faf701157696057"
 ---
 
 # Depolar

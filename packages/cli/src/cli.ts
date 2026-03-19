@@ -44,7 +44,7 @@ let i18nInitialized = false;
 // Track command context for telemetry
 const commandContext = new Map<string, { startTime: number }>();
 
-import { formatDuration } from './utils/format.js';
+// formatDuration removed — timeline handles all timing display
 
 // Initialize telemetry at startup (non-blocking)
 telemetryService.initialize({ serviceVersion: VERSION });
@@ -164,17 +164,8 @@ cli
     // License auto-refresh is now handled per-operation in services/license.ts
   })
   .hook('postAction', async (_thisCommand, actionCommand) => {
-    // Display operation timing if a remote operation was executed
-    const opDuration = outputService.getOperationDurationMs();
-    const totalDuration = outputService.getDurationMs();
-    if (opDuration != null) {
-      outputService.success(
-        t('timing.completed', {
-          operation: formatDuration(opDuration),
-          total: formatDuration(totalDuration),
-        })
-      );
-    }
+    // Timeline rendering handles timing display for executor commands.
+    // No additional "Completed in X (total: Y)" message needed.
 
     // Stop profiling before ending telemetry
     await telemetryService.stopProfiling();

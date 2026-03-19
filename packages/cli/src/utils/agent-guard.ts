@@ -54,8 +54,10 @@ function isOverrideAllowed(): boolean {
  */
 export function assertAgentMachineAccess(machineName: string): void {
   if (!isAgentEnvironment()) return;
-  if (process.env.REDIACC_ALLOW_GRAND_REPO === '*' && isOverrideAllowed()) return;
-
+  if (process.env.REDIACC_ALLOW_GRAND_REPO === '*') {
+    if (isOverrideAllowed()) return;
+    throw new ValidationError(t('errors.agent.machineGuardOverride', { machine: machineName }));
+  }
   throw new ValidationError(t('errors.agent.machineGuard', { machine: machineName }));
 }
 
@@ -67,8 +69,10 @@ export function assertAgentMachineAccess(machineName: string): void {
  */
 export function assertAgentRepoCreate(repoName: string): void {
   if (!isAgentEnvironment()) return;
-  if (process.env.REDIACC_ALLOW_GRAND_REPO === '*' && isOverrideAllowed()) return;
-
+  if (process.env.REDIACC_ALLOW_GRAND_REPO === '*') {
+    if (isOverrideAllowed()) return;
+    throw new ValidationError(t('errors.agent.createGuardOverride', { name: repoName }));
+  }
   throw new ValidationError(t('errors.agent.createGuard', { name: repoName }));
 }
 

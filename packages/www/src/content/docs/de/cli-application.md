@@ -6,7 +6,7 @@ order: 2
 language: de
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/de/cli.json
-sourceHash: "7a05d2528e21dfca"
+sourceHash: "4bda0e2c4c0cf0c1"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -1255,6 +1255,7 @@ rdc repo fork <parent> [tag] [options]
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--tag <name>` | {{t:cli.commands.repo.fork.tagOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--checkpoint` | {{t:cli.commands.repo.fork.checkpointOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--up` | {{t:cli.commands.repo.fork.upOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -1425,10 +1426,9 @@ rdc repo push [repo] [options]
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--dest <filename>` | {{t:cli.commands.repo.push.optionDest}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--to <storage>` | {{t:cli.commands.repo.push.optionToStorage}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--to-machine <machine>` | {{t:cli.commands.repo.push.optionToMachine}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--provider <name>` | {{t:cli.commands.repo.push.optionProvider}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--to <remote>` | {{t:cli.commands.repo.push.optionTo}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--to-machine <machine>` | — | {{t:cli.docs.optionLabels.no}} | - |
+| `--provision <provider>` | {{t:cli.commands.repo.push.optionProvision}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--checkpoint` | {{t:cli.commands.repo.push.optionCheckpoint}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--force` | {{t:cli.commands.repo.push.optionForce}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--up` | {{t:cli.commands.repo.push.optionUp}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -1453,9 +1453,10 @@ rdc repo pull [repo] [options]
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--from <storage>` | {{t:cli.commands.repo.pull.optionFromStorage}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--from-machine <machine>` | {{t:cli.commands.repo.pull.optionFromMachine}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--from <remote>` | {{t:cli.commands.repo.pull.optionFrom}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--from-machine <machine>` | — | {{t:cli.docs.optionLabels.no}} | - |
 | `--force` | {{t:cli.commands.repo.pull.optionForce}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--up` | {{t:cli.commands.repo.pull.optionUp}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-w, --watch` | {{t:cli.options.watch}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--parallel` | {{t:cli.commands.repo.upAll.parallelOption}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -1481,8 +1482,8 @@ rdc repo backup list [options]
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--from <storage>` | {{t:cli.commands.repo.pull.optionFromStorage}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--from-machine <machine>` | {{t:cli.commands.repo.pull.optionFromMachine}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--from <remote>` | {{t:cli.commands.repo.pull.optionFrom}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--from-machine <machine>` | — | {{t:cli.docs.optionLabels.no}} | - |
 | `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-w, --watch` | {{t:cli.options.watch}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |

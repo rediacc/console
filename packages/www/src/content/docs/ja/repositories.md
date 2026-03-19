@@ -4,7 +4,7 @@ description: リモートマシン上のLUKS暗号化リポジトリの作成、
 category: Guides
 order: 4
 language: ja
-sourceHash: "06b8912e9b65b720"
+sourceHash: "5faf701157696057"
 ---
 
 # リポジトリ
@@ -45,7 +45,7 @@ rdc repo unmount my-app -m server-1     # アンマウントして再暗号化
 
 | オプション | 説明 |
 |--------|-------------|
-| `--checkpoint` | マウント/アンマウント前にチェックポイントを作成 |
+| `--checkpoint` | マウント/アンマウント前にCRIUチェックポイントを作成（`rediacc.checkpoint=true`ラベル付きコンテナ用） |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## ステータスの確認

@@ -16,6 +16,8 @@ import { assertCommandPolicy, CMD, type CommandPath } from '../utils/command-pol
 import { getOutputFormat, handleError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap, resolveGuids } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { executeRepoFunction } from '../utils/repo-executor.js';
+import { formatStepDuration } from '../utils/timeline.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import { registerRepoBackupCommands } from './repo-backup.js';
 import {
@@ -39,6 +41,185 @@ import { registerRepoVolumeCommands } from './repo-volume.js';
 
 function generateCredential(): string {
   return randomBytes(24).toString('base64');
+}
+
+/** Log total step duration and mark timeline as rendered. */
+function renderTimelineTotal(steps: { duration_ms: number }[]): void {
+  const totalMs = steps.reduce((sum, s) => sum + s.duration_ms, 0);
+  process.stdout.write(`\nTotal: ${formatStepDuration(totalMs)}\n`);
+  outputService.setTimelineRendered();
+}
+
+/** Rollback a created repo registration if it exists. */
+async function rollbackCreateRepo(name: string): Promise<void> {
+  const exists = await configService.getRepository(name);
+  if (exists) {
+    await configService.removeRepository(name);
+    outputService.warn(t('commands.repo.create.rollback', { repository: name }));
+  }
+}
+
+/** Handle the repo create action body. */
+async function handleRepoCreate(
+  name: string,
+  options: {
+    machine: string;
+    size: string;
+    noDocker?: boolean;
+    debug?: boolean;
+    skipRouterRestart?: boolean;
+  }
+): Promise<void> {
+  try {
+    assertAgentRepoCreate(name);
+
+    const existing = await configService.getRepository(name);
+    if (existing) {
+      throw new Error(t('commands.repo.create.alreadyExists', { name }));
+    }
+
+    const repositoryGuid = randomUUID();
+    const credential = generateCredential();
+    const networkId = await configService.allocateNetworkId();
+    const { privateKey: sshPrivateKey, publicKey: sshPublicKey } = generateSSHKeyPair();
+
+    const { compositeKey } = await import('../utils/config-schema.js');
+    const repoKey = compositeKey(name, 'latest');
+    await configService.addRepository(repoKey, {
+      repositoryGuid,
+      tag: 'latest',
+      credential,
+      networkId,
+      sshPrivateKey,
+      sshPublicKey,
+    });
+
+    outputService.info(
+      t('commands.repo.create.registered', {
+        repository: name,
+        guid: repositoryGuid.slice(0, 8),
+        networkId,
+      })
+    );
+    outputService.info(
+      t('commands.repo.create.starting', {
+        repository: name,
+        size: options.size,
+        machine: options.machine,
+      })
+    );
+
+    const result = await localExecutorService.execute({
+      functionName: 'repository_create',
+      machineName: options.machine,
+      params: {
+        repository: name,
+        size: options.size,
+        guid: repositoryGuid,
+        network_id: networkId,
+        ...(options.noDocker ? { start_docker: false } : {}),
+      },
+      debug: options.debug,
+      skipRouterRestart: options.skipRouterRestart,
+    });
+
+    if (result.success) {
+      if (result.allSteps && result.allSteps.length > 0) {
+        renderTimelineTotal(result.allSteps);
+      } else {
+        outputService.success(t('commands.repo.create.completed'));
+      }
+    } else {
+      await rollbackCreateRepo(name);
+      renderLocalExecutionFailure(result, t('commands.repo.create.failed'));
+    }
+  } catch (error) {
+    await rollbackCreateRepo(name);
+    handleError(error);
+  }
+}
+
+/** Handle post-delete success: cleanup, archiving, timeline, hints. */
+async function handleDeleteSuccess(
+  name: string,
+  machineName: string,
+  repoConfig: { repositoryGuid: string },
+  archiveConfig: boolean,
+  result: import('../services/local-executor.js').LocalExecuteResult
+): Promise<void> {
+  await cleanupDeletedRepoSSH(machineName, name).catch(() => {});
+
+  if (archiveConfig) {
+    await configService.archiveRepository(name);
+    outputService.info(t('commands.repo.delete.archived', { repository: name }));
+    outputService.info(t('commands.repo.delete.restoreHint', { guid: repoConfig.repositoryGuid }));
+  }
+  if (result.allSteps && result.allSteps.length > 0) {
+    renderTimelineTotal(result.allSteps);
+  } else {
+    outputService.success(t('commands.repo.delete.completed'));
+  }
+  outputService.info(t('commands.repo.delete.configRetained', { repository: name }));
+  if (!archiveConfig) {
+    outputService.info(t('commands.repo.delete.archiveHint', { repository: name }));
+  }
+}
+
+/** Handle the repo delete action body. */
+async function handleRepoDelete(
+  name: string,
+  options: {
+    machine: string;
+    archiveConfig?: boolean;
+    debug?: boolean;
+    skipRouterRestart?: boolean;
+    dryRun?: boolean;
+  }
+): Promise<void> {
+  try {
+    await assertCommandPolicy(CMD.REPO_DELETE, name);
+
+    const repoConfig = await configService.getRepository(name);
+    if (!repoConfig) {
+      throw new Error(`Repository "${name}" not found in context`);
+    }
+
+    await configService.ensureRepositoryNetworkId(name);
+
+    if (options.dryRun) {
+      outputService.print(
+        {
+          dryRun: true,
+          repository: name,
+          machine: options.machine,
+          guid: repoConfig.repositoryGuid,
+          archiveConfig: !!options.archiveConfig,
+        },
+        getOutputFormat()
+      );
+      return;
+    }
+
+    outputService.info(
+      t('commands.repo.delete.starting', { repository: name, machine: options.machine })
+    );
+
+    const result = await localExecutorService.execute({
+      functionName: 'repository_delete',
+      machineName: options.machine,
+      params: { repository: name },
+      debug: options.debug,
+      skipRouterRestart: options.skipRouterRestart,
+    });
+
+    if (result.success) {
+      await handleDeleteSuccess(name, options.machine, repoConfig, !!options.archiveConfig, result);
+    } else {
+      renderLocalExecutionFailure(result, t('commands.repo.delete.failed'));
+    }
+  } catch (error) {
+    handleError(error);
+  }
 }
 
 async function handleSingleRepoUp(
@@ -125,43 +306,7 @@ async function iterateAllRepos(
   );
 }
 
-/** Execute a repository lifecycle function on a remote machine. */
-async function executeRepoFunction(
-  functionName: string,
-  repoName: string,
-  machineName: string,
-  params: Record<string, unknown>,
-  options: { debug?: boolean; skipRouterRestart?: boolean },
-  messages: { starting: string; completed: string; failed: string }
-): Promise<void> {
-  // Validate repository exists in context
-  const repo = await configService.getRepository(repoName);
-  if (!repo) {
-    throw new Error(`Repository "${repoName}" not found in context`);
-  }
-  if (!repo.credential) {
-    outputService.warn(t('commands.repo.noCredential', { name: repoName }));
-  }
-
-  // Ensure network_id is assigned (auto-allocates for legacy repos without one)
-  await configService.ensureRepositoryNetworkId(repoName);
-
-  outputService.info(messages.starting);
-
-  const result = await localExecutorService.execute({
-    functionName,
-    machineName,
-    params: { repository: repoName, ...params },
-    debug: options.debug,
-    skipRouterRestart: options.skipRouterRestart,
-  });
-
-  if (result.success) {
-    outputService.success(messages.completed);
-  } else {
-    renderLocalExecutionFailure(result, result.error ?? messages.failed);
-  }
-}
+// executeRepoFunction imported from ../utils/repo-executor.js
 
 export function registerRepoCommands(program: Command): void {
   const repo = program
@@ -187,94 +332,9 @@ export function registerRepoCommands(program: Command): void {
     .option('--no-docker', t('commands.repo.create.noDockerOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(
-      async (
-        name: string,
-        options: {
-          machine: string;
-          size: string;
-          noDocker?: boolean;
-          debug?: boolean;
-          skipRouterRestart?: boolean;
-        }
-      ) => {
-        try {
-          // Block repo create in agent mode (agents must fork instead)
-          assertAgentRepoCreate(name);
-
-          // Validate doesn't already exist
-          const existing = await configService.getRepository(name);
-          if (existing) {
-            throw new Error(t('commands.repo.create.alreadyExists', { name }));
-          }
-
-          // Generate UUID, credential, SSH key pair, and allocate networkId
-          const repositoryGuid = randomUUID();
-          const credential = generateCredential();
-          const networkId = await configService.allocateNetworkId();
-          const { privateKey: sshPrivateKey, publicKey: sshPublicKey } = generateSSHKeyPair();
-
-          // Register in config.json first (so the executor can find it)
-          const { compositeKey } = await import('../utils/config-schema.js');
-          const repoKey = compositeKey(name, 'latest');
-          await configService.addRepository(repoKey, {
-            repositoryGuid,
-            tag: 'latest',
-            credential,
-            networkId,
-            sshPrivateKey,
-            sshPublicKey,
-          });
-
-          outputService.info(
-            t('commands.repo.create.registered', {
-              repository: name,
-              guid: repositoryGuid.slice(0, 8),
-              networkId,
-            })
-          );
-          outputService.info(
-            t('commands.repo.create.starting', {
-              repository: name,
-              size: options.size,
-              machine: options.machine,
-            })
-          );
-
-          // Execute on remote
-          const result = await localExecutorService.execute({
-            functionName: 'repository_create',
-            machineName: options.machine,
-            params: {
-              repository: name,
-              size: options.size,
-              guid: repositoryGuid,
-              network_id: networkId,
-              ...(options.noDocker ? { start_docker: false } : {}),
-            },
-            debug: options.debug,
-            skipRouterRestart: options.skipRouterRestart,
-          });
-
-          if (result.success) {
-            outputService.success(t('commands.repo.create.completed'));
-          } else {
-            // Rollback: remove from config.json
-            await configService.removeRepository(name);
-            outputService.warn(t('commands.repo.create.rollback', { repository: name }));
-            renderLocalExecutionFailure(result, t('commands.repo.create.failed'));
-          }
-        } catch (error) {
-          // Rollback on unexpected error
-          const exists = await configService.getRepository(name);
-          if (exists) {
-            await configService.removeRepository(name);
-            outputService.warn(t('commands.repo.create.rollback', { repository: name }));
-          }
-          handleError(error);
-        }
-      }
-    );
+    .action(async (name: string, options) => {
+      await handleRepoCreate(name, options);
+    });
 
   // repo delete <name>
   repo
@@ -286,79 +346,9 @@ export function registerRepoCommands(program: Command): void {
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .option('--dry-run', t('options.dryRun'))
-    .action(
-      async (
-        name: string,
-        options: {
-          machine: string;
-          archiveConfig?: boolean;
-          debug?: boolean;
-          skipRouterRestart?: boolean;
-          dryRun?: boolean;
-        }
-      ) => {
-        try {
-          await assertCommandPolicy(CMD.REPO_DELETE, name);
-
-          // Validate exists
-          const repoConfig = await configService.getRepository(name);
-          if (!repoConfig) {
-            throw new Error(`Repository "${name}" not found in context`);
-          }
-
-          await configService.ensureRepositoryNetworkId(name);
-
-          if (options.dryRun) {
-            outputService.print(
-              {
-                dryRun: true,
-                repository: name,
-                machine: options.machine,
-                guid: repoConfig.repositoryGuid,
-                archiveConfig: !!options.archiveConfig,
-              },
-              getOutputFormat()
-            );
-            return;
-          }
-
-          outputService.info(
-            t('commands.repo.delete.starting', { repository: name, machine: options.machine })
-          );
-
-          const result = await localExecutorService.execute({
-            functionName: 'repository_delete',
-            machineName: options.machine,
-            params: { repository: name },
-            debug: options.debug,
-            skipRouterRestart: options.skipRouterRestart,
-          });
-
-          if (result.success) {
-            // Remote cleanup (authorized_keys + sandbox dir) is handled by renet.
-            // Clean up local VS Code SSH artifacts (idempotent, non-fatal)
-            await cleanupDeletedRepoSSH(options.machine, name).catch(() => {});
-
-            if (options.archiveConfig) {
-              await configService.archiveRepository(name);
-              outputService.info(t('commands.repo.delete.archived', { repository: name }));
-              outputService.info(
-                t('commands.repo.delete.restoreHint', { guid: repoConfig.repositoryGuid })
-              );
-            }
-            outputService.success(t('commands.repo.delete.completed'));
-            outputService.info(t('commands.repo.delete.configRetained', { repository: name }));
-            if (!options.archiveConfig) {
-              outputService.info(t('commands.repo.delete.archiveHint', { repository: name }));
-            }
-          } else {
-            renderLocalExecutionFailure(result, t('commands.repo.delete.failed'));
-          }
-        } catch (error) {
-          handleError(error);
-        }
-      }
-    );
+    .action(async (name: string, options) => {
+      await handleRepoDelete(name, options);
+    });
 
   registerRepoVolumeCommands(repo, executeRepoFunction, iterateAllRepos);
 

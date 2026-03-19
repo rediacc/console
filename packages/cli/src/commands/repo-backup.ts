@@ -1,5 +1,5 @@
 import { DEFAULTS } from '@rediacc/shared/config';
-import type { Command } from 'commander';
+import { Option, type Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { configService } from '../services/config-resources.js';
@@ -8,6 +8,7 @@ import { outputService } from '../services/output.js';
 import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
+import { resolveRemoteName } from '../utils/remote-resolve.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import {
   type CreateActionOptions,
@@ -28,14 +29,30 @@ interface BackupRunOptions {
 /** Resolve extra machines needed for multi-machine operations (e.g., backup push --to-machine). */
 async function resolveExtraMachines(
   params: Record<string, unknown>
-): Promise<Record<string, { ip: string; port?: number; user: string }> | undefined> {
+): Promise<
+  Record<string, { ip: string; port?: number; user: string; datastore?: string }> | undefined
+> {
   if (params.destinationType === 'machine' && typeof params.to === 'string') {
     const machine = await configService.getLocalMachine(params.to);
-    return { [params.to]: { ip: machine.ip, port: machine.port, user: machine.user } };
+    return {
+      [params.to]: {
+        ip: machine.ip,
+        port: machine.port,
+        user: machine.user,
+        datastore: machine.datastore,
+      },
+    };
   }
   if (params.sourceType === 'machine' && typeof params.from === 'string') {
     const machine = await configService.getLocalMachine(params.from);
-    return { [params.from]: { ip: machine.ip, port: machine.port, user: machine.user } };
+    return {
+      [params.from]: {
+        ip: machine.ip,
+        port: machine.port,
+        user: machine.user,
+        datastore: machine.datastore,
+      },
+    };
   }
   return undefined;
 }
@@ -105,40 +122,20 @@ function applyPushFlags(
   if (options.tag) params.tag = options.tag;
 }
 
-/** Build params for a storage-targeted backup push. */
-function buildStoragePushParams(
+/** Build params for a backup push (unified for machine and storage targets). */
+function buildPushParams(
   repo: string,
   repositoryGuid: string,
-  options: { dest?: string; to: string; checkpoint?: boolean; force?: boolean; tag?: string }
+  resolvedType: 'machine' | 'storage',
+  targetName: string,
+  options: { checkpoint?: boolean; force?: boolean; tag?: string }
 ): { params: Record<string, unknown>; dest: string } {
   const dest = repositoryGuid;
-  if (options.dest && options.dest !== dest) {
-    outputService.warn(
-      t('commands.repo.push.destIgnoredForStorage', { dest, provided: options.dest })
-    );
-  }
   const params: Record<string, unknown> = {
     repository: repo,
     dest,
-    destinationType: 'storage',
-    to: options.to,
-  };
-  applyPushFlags(params, options);
-  return { params, dest };
-}
-
-/** Build params for a machine-targeted backup push. */
-function buildMachinePushParams(
-  repo: string,
-  repositoryGuid: string,
-  options: { dest?: string; toMachine: string; checkpoint?: boolean; force?: boolean; tag?: string }
-): { params: Record<string, unknown>; dest: string } {
-  const dest = options.dest ?? repositoryGuid;
-  const params: Record<string, unknown> = {
-    repository: repo,
-    dest,
-    destinationType: 'machine',
-    to: options.toMachine,
+    destinationType: resolvedType,
+    to: targetName,
   };
   applyPushFlags(params, options);
   return { params, dest };
@@ -147,14 +144,15 @@ function buildMachinePushParams(
 /**
  * Auto-provision target machine if it doesn't exist and --provider is given.
  */
-async function autoProvisionTarget(options: Record<string, unknown>): Promise<void> {
-  if (!options.provider) return;
+async function autoProvisionTarget(
+  targetName: string,
+  providerName: string,
+  sourceMachineName?: string,
+  debug?: boolean
+): Promise<void> {
   const machines = await configService.listMachines();
-  const exists = machines.some((m) => m.name === options.toMachine);
-  if (exists) return;
+  if (machines.some((m) => m.name === targetName)) return;
 
-  // Inherit infra config from source machine
-  const sourceMachineName = options.machine as string | undefined;
   let sourceInfra: import('../types/index.js').InfraConfig | undefined;
   if (sourceMachineName) {
     try {
@@ -166,10 +164,56 @@ async function autoProvisionTarget(options: Record<string, unknown>): Promise<vo
   }
 
   const { createCloudMachine } = await import('../services/tofu/index.js');
-  await createCloudMachine(options.toMachine as string, options.provider as string, {
+  await createCloudMachine(targetName, providerName, {
     inheritInfra: sourceInfra,
-    debug: options.debug as boolean,
+    debug: debug ?? false,
   });
+}
+
+/** Resolve backup target from CLI options. */
+async function resolvePushTarget(
+  options: Record<string, unknown>
+): Promise<{ type: 'machine' | 'storage'; name: string }> {
+  if (options.toMachine) {
+    return { type: 'machine', name: options.toMachine as string };
+  }
+  if (options.to) {
+    return resolveRemoteName(options.to as string);
+  }
+  throw new ValidationError(t('commands.repo.push.destRequired'));
+}
+
+/** Deploy repo on target machine after a backup push. */
+async function postPushDeploy(
+  repo: string,
+  targetName: string,
+  options: Record<string, unknown>
+): Promise<void> {
+  outputService.info(t('commands.repo.push.deploying', { repo, machine: targetName }));
+  await deployRepoKeyIfNeeded(repo, targetName);
+  const upResult = await localExecutorService.execute({
+    functionName: 'repository_up',
+    machineName: targetName,
+    params: { repository: repo, mount: true },
+    debug: options.debug as boolean | undefined,
+  });
+  if (upResult.success) {
+    outputService.success(t('commands.repo.push.deployed', { repo, machine: targetName }));
+  } else {
+    renderLocalExecutionFailure(upResult, t('commands.repo.push.deployFailed', { repo }));
+  }
+}
+
+/** Attach CoW seed lineage to params if available. */
+function attachSeedLineage(
+  params: Record<string, unknown>,
+  repoConfig: { parentGuid?: string; grandGuid?: string }
+): void {
+  const seeds = [repoConfig.parentGuid, repoConfig.grandGuid].filter((g): g is string => !!g);
+  const uniqueSeeds = [...new Set(seeds)];
+  if (uniqueSeeds.length > 0) {
+    params.seed = uniqueSeeds.join(',');
+  }
 }
 
 /**
@@ -186,56 +230,70 @@ async function pushSingleRepo(
     throw new ValidationError(t('errors.repositoryNotFound', { name: repo }));
   }
 
-  let params: Record<string, unknown>;
-  let dest: string;
+  const { type: resolvedType, name: targetName } = await resolvePushTarget(options);
 
-  if (options.to) {
-    ({ params, dest } = buildStoragePushParams(
-      repo,
-      repoConfig.repositoryGuid,
-      options as Parameters<typeof buildStoragePushParams>[2]
-    ));
-  } else if (options.toMachine) {
-    await autoProvisionTarget(options);
-    await deployRepoKeyIfNeeded(repo, options.toMachine as string);
-    ({ params, dest } = buildMachinePushParams(
-      repo,
-      repoConfig.repositoryGuid,
-      options as Parameters<typeof buildMachinePushParams>[2]
-    ));
-  } else {
-    throw new ValidationError(t('commands.repo.push.destRequired'));
+  if (options.provision) {
+    await autoProvisionTarget(
+      targetName,
+      options.provision as string,
+      options.machine as string,
+      options.debug as boolean
+    );
   }
 
-  // Auto-resolve CoW seed from lineage (parent first, then grand)
-  const seeds = [repoConfig.parentGuid, repoConfig.grandGuid].filter((g): g is string => !!g);
-  const uniqueSeeds = [...new Set(seeds)];
-  if (uniqueSeeds.length > 0) {
-    params.seed = uniqueSeeds.join(',');
+  if (resolvedType === 'machine') {
+    await deployRepoKeyIfNeeded(repo, targetName);
   }
+
+  const { params, dest } = buildPushParams(
+    repo,
+    repoConfig.repositoryGuid,
+    resolvedType,
+    targetName,
+    options as { checkpoint?: boolean; force?: boolean; tag?: string }
+  );
+
+  attachSeedLineage(params, repoConfig);
 
   outputService.info(t('commands.repo.push.pushing', { repo, dest }));
   await executeFunction('backup_push', params, options as BackupRunOptions, repoCommand);
 
-  // Post-push: mount + deploy on target machine
-  if (options.up && options.toMachine) {
-    outputService.info(
-      t('commands.repo.push.deploying', { repo, machine: options.toMachine as string })
-    );
-    await deployRepoKeyIfNeeded(repo, options.toMachine as string);
-    const upResult = await localExecutorService.execute({
-      functionName: 'repository_up',
-      machineName: options.toMachine as string,
-      params: { repository: repo, mount: true },
-      debug: options.debug as boolean | undefined,
-    });
-    if (upResult.success) {
-      outputService.success(
-        t('commands.repo.push.deployed', { repo, machine: options.toMachine as string })
-      );
-    } else {
-      renderLocalExecutionFailure(upResult, t('commands.repo.push.deployFailed', { repo }));
-    }
+  if (options.up && resolvedType === 'machine') {
+    await postPushDeploy(repo, targetName, options);
+  }
+}
+
+/** Resolve backup source from CLI options. */
+async function resolvePullSource(
+  options: Record<string, unknown>
+): Promise<{ type: 'machine' | 'storage'; name: string }> {
+  if (options.fromMachine) {
+    return { type: 'machine', name: options.fromMachine as string };
+  }
+  if (options.from) {
+    return resolveRemoteName(options.from as string);
+  }
+  throw new ValidationError(t('commands.repo.pull.sourceRequired'));
+}
+
+/** Deploy repo on target machine after a backup pull. */
+async function postPullDeploy(
+  repo: string,
+  targetMachine: string,
+  options: Record<string, unknown>
+): Promise<void> {
+  outputService.info(t('commands.repo.pull.deploying', { repo, machine: targetMachine }));
+  await deployRepoKeyIfNeeded(repo, targetMachine);
+  const upResult = await localExecutorService.execute({
+    functionName: 'repository_up',
+    machineName: targetMachine,
+    params: { repository: repo, mount: true },
+    debug: options.debug as boolean | undefined,
+  });
+  if (upResult.success) {
+    outputService.success(t('commands.repo.pull.deployed', { repo, machine: targetMachine }));
+  } else {
+    renderLocalExecutionFailure(upResult, t('commands.repo.pull.deployFailed', { repo }));
   }
 }
 
@@ -250,26 +308,15 @@ async function pullSingleRepo(
   await assertCommandPolicy(CMD.REPO_PULL, repo);
   const params: Record<string, unknown> = { repository: repo };
 
-  if (options.from) {
-    params.sourceType = 'storage';
-    params.from = options.from;
-  } else if (options.fromMachine) {
-    params.sourceType = 'machine';
-    params.from = options.fromMachine;
-  } else {
-    throw new ValidationError(t('commands.repo.pull.sourceRequired'));
-  }
+  const { type: resolvedType, name: sourceName } = await resolvePullSource(options);
 
+  params.sourceType = resolvedType;
+  params.from = sourceName;
   if (options.force) params.force = true;
 
-  // Auto-resolve CoW seed from lineage (parent first, then grand)
   const repoConfig = await configService.getRepository(repo);
   if (repoConfig) {
-    const seeds = [repoConfig.parentGuid, repoConfig.grandGuid].filter((g): g is string => !!g);
-    const uniqueSeeds = [...new Set(seeds)];
-    if (uniqueSeeds.length > 0) {
-      params.seed = uniqueSeeds.join(',');
-    }
+    attachSeedLineage(params, repoConfig);
   }
 
   const targetMachine = options.machine as string | undefined;
@@ -279,6 +326,10 @@ async function pullSingleRepo(
 
   outputService.info(t('commands.repo.pull.pulling', { repo }));
   await executeFunction('backup_pull', params, options as BackupRunOptions, repoCommand);
+
+  if (options.up && targetMachine) {
+    await postPullDeploy(repo, targetMachine, options);
+  }
 }
 
 /**
@@ -293,10 +344,9 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .command('push [repo]')
     .summary(t('commands.repo.push.descriptionShort'))
     .description(t('commands.repo.push.description'))
-    .option('--dest <filename>', t('commands.repo.push.optionDest'))
-    .option('--to <storage>', t('commands.repo.push.optionToStorage'))
-    .option('--to-machine <machine>', t('commands.repo.push.optionToMachine'))
-    .option('--provider <name>', t('commands.repo.push.optionProvider'))
+    .option('--to <remote>', t('commands.repo.push.optionTo'))
+    .addOption(new Option('--to-machine <machine>').hideHelp())
+    .option('--provision <provider>', t('commands.repo.push.optionProvision'))
     .option('--checkpoint', t('commands.repo.push.optionCheckpoint'))
     .option('--force', t('commands.repo.push.optionForce'))
     .option('--up', t('commands.repo.push.optionUp'))
@@ -331,9 +381,10 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .command('pull [repo]')
     .summary(t('commands.repo.pull.descriptionShort'))
     .description(t('commands.repo.pull.description'))
-    .option('--from <storage>', t('commands.repo.pull.optionFromStorage'))
-    .option('--from-machine <machine>', t('commands.repo.pull.optionFromMachine'))
+    .option('--from <remote>', t('commands.repo.pull.optionFrom'))
+    .addOption(new Option('--from-machine <machine>').hideHelp())
     .option('--force', t('commands.repo.pull.optionForce'))
+    .option('--up', t('commands.repo.pull.optionUp'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('-w, --watch', t('options.watch'))
     .option('--parallel', t('commands.repo.upAll.parallelOption'))
@@ -365,8 +416,8 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
   backup
     .command('list')
     .description(t('commands.repo.backup.list.description'))
-    .option('--from <storage>', t('commands.repo.backup.list.optionFromStorage'))
-    .option('--from-machine <machine>', t('commands.repo.backup.list.optionFromMachine'))
+    .option('--from <remote>', t('commands.repo.backup.list.optionFrom'))
+    .addOption(new Option('--from-machine <machine>').hideHelp())
     .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('-w, --watch', t('options.watch'))
     .option('--debug', t('options.debug'))
@@ -375,12 +426,13 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
       try {
         const params: Record<string, unknown> = {};
 
-        if (options.from) {
-          params.sourceType = 'storage';
-          params.from = options.from;
-        } else if (options.fromMachine) {
+        if (options.fromMachine) {
           params.sourceType = 'machine';
           params.from = options.fromMachine;
+        } else if (options.from) {
+          const resolved = await resolveRemoteName(options.from as string);
+          params.sourceType = resolved.type;
+          params.from = resolved.name;
         } else {
           throw new ValidationError(t('commands.repo.backup.list.sourceRequired'));
         }

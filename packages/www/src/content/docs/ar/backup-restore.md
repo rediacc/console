@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: ar
-sourceHash: "2ac1e17539336175"
+sourceHash: "bd53047cef737088"
 ---
 
 # النسخ الاحتياطي والاستعادة
@@ -46,7 +46,7 @@ rdc repo push my-app -m server-1 --to my-storage
 | `--to <storage>` | موقع التخزين الهدف |
 | `--to-machine <machine>` | الجهاز الهدف للنسخ الاحتياطي من جهاز إلى جهاز |
 | `--dest <filename>` | اسم ملف الوجهة المخصص |
-| `--checkpoint` | إنشاء نقطة تحقق قبل الإرسال |
+| `--checkpoint` | إنشاء نقطة تحقق CRIU قبل الإرسال (للحاويات التي تحمل تسمية `rediacc.checkpoint=true`). الهدف يستعيد تلقائياً عند `repo up` |
 | `--force` | استبدال نسخة احتياطية موجودة |
 | `--tag <tag>` | وسم النسخة الاحتياطية |
 | `-w, --watch` | مراقبة تقدم العملية |

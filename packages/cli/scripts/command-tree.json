@@ -1766,6 +1766,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--up",
+              "descriptionKey": "commands.repo.fork.upOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -2133,26 +2139,20 @@
           "descriptionKey": "commands.repo.push.description",
           "options": [
             {
-              "flags": "--dest <filename>",
-              "descriptionKey": "commands.repo.push.optionDest",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
-              "flags": "--to <storage>",
-              "descriptionKey": "commands.repo.push.optionToStorage",
+              "flags": "--to <remote>",
+              "descriptionKey": "commands.repo.push.optionTo",
               "mandatory": false,
               "defaultValue": null
             },
             {
               "flags": "--to-machine <machine>",
-              "descriptionKey": "commands.repo.push.optionToMachine",
+              "descriptionKey": null,
               "mandatory": false,
               "defaultValue": null
             },
             {
-              "flags": "--provider <name>",
-              "descriptionKey": "commands.repo.push.optionProvider",
+              "flags": "--provision <provider>",
+              "descriptionKey": "commands.repo.push.optionProvision",
               "mandatory": false,
               "defaultValue": null
             },
@@ -2238,20 +2238,26 @@
           "descriptionKey": "commands.repo.pull.description",
           "options": [
             {
-              "flags": "--from <storage>",
-              "descriptionKey": "commands.repo.pull.optionFromStorage",
+              "flags": "--from <remote>",
+              "descriptionKey": "commands.repo.pull.optionFrom",
               "mandatory": false,
               "defaultValue": null
             },
             {
               "flags": "--from-machine <machine>",
-              "descriptionKey": "commands.repo.pull.optionFromMachine",
+              "descriptionKey": null,
               "mandatory": false,
               "defaultValue": null
             },
             {
               "flags": "--force",
               "descriptionKey": "commands.repo.pull.optionForce",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--up",
+              "descriptionKey": "commands.repo.pull.optionUp",
               "mandatory": false,
               "defaultValue": null
             },
@@ -2319,14 +2325,14 @@
               "descriptionKey": "commands.repo.backup.list.description",
               "options": [
                 {
-                  "flags": "--from <storage>",
-                  "descriptionKey": "commands.repo.pull.optionFromStorage",
+                  "flags": "--from <remote>",
+                  "descriptionKey": "commands.repo.pull.optionFrom",
                   "mandatory": false,
                   "defaultValue": null
                 },
                 {
                   "flags": "--from-machine <machine>",
-                  "descriptionKey": "commands.repo.pull.optionFromMachine",
+                  "descriptionKey": null,
                   "mandatory": false,
                   "defaultValue": null
                 },

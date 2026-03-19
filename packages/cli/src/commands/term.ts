@@ -417,12 +417,8 @@ ${t('help.examples')}
           if (resolvedMachine) {
             options.machine = resolvedMachine;
           } else {
-            const defaultMachine = configService.getMachine() ?? null;
-            if (!defaultMachine) {
-              cmd.help();
-              return;
-            }
-            options.machine = defaultMachine;
+            cmd.help();
+            return;
           }
           const provider = await getStateProvider();
           if (provider.isCloud) {

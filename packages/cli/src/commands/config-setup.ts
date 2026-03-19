@@ -285,7 +285,11 @@ export function registerMachineCommands(config: Command, program: Command): void
         await sftp.connect();
 
         try {
-          const cmd = `sudo ${remoteRenetPath} setup --auto --datastore ${options.datastore} --datastore-size ${options.datastoreSize}`;
+          const datastoreSize =
+            options.datastoreSize === NETWORK_DEFAULTS.DATASTORE_SIZE
+              ? (localConfig.datastoreSize ?? NETWORK_DEFAULTS.DATASTORE_SIZE)
+              : options.datastoreSize;
+          const cmd = `sudo ${remoteRenetPath} setup --auto --datastore ${options.datastore} --datastore-size ${datastoreSize}`;
 
           if (options.debug) {
             outputService.info(`[setup] Running: ${cmd}`);

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: es
-sourceHash: 9cb00d469afd953e
+sourceHash: "a555a8192fdb3b7c"
 ---
 
 # Servicios
@@ -47,7 +47,7 @@ Cuando se ejecuta una función del Rediaccfile, las siguientes variables de ento
 
 | Variable | Descripción | Ejemplo |
 |----------|-------------|---------|
-| `REDIACC_WORKING_DIR` | Ruta de montaje del repositorio | `/mnt/rediacc/repos/abc123` |
+| `REDIACC_WORKING_DIR` | Ruta de montaje del repositorio | `/mnt/rediacc/mounts/abc123` |
 | `REDIACC_REPOSITORY` | GUID del repositorio | `a1b2c3d4-e5f6-...` |
 | `REDIACC_NETWORK_ID` | ID de red (entero) | `2816` |
 | `DOCKER_HOST` | Socket Docker del daemon aislado de este repositorio | `unix:///var/run/rediacc/docker-2816.sock` |
@@ -75,14 +75,14 @@ down() {
 }
 ```
 
-> **Importante:** Use siempre `renet compose --` en lugar de `docker compose`. El wrapper `renet compose` impone la red del host, las capacidades de checkpoint/restauración CRIU, la asignación de IP y las etiquetas de descubrimiento de servicios requeridas por renet-proxy. El uso directo de `docker compose` es rechazado por la validación del Rediaccfile. Consulte [Red](/es/docs/networking) para más detalles.
+> **Importante:** Use siempre `renet compose --` en lugar de `docker compose`. El wrapper `renet compose` impone la red del host, la asignación de IP y las etiquetas de descubrimiento de servicios requeridas por renet-proxy. Las capacidades de checkpoint/restauración CRIU se añaden a los contenedores con la etiqueta `rediacc.checkpoint=true`. El uso directo de `docker compose` es rechazado por la validación del Rediaccfile. Consulte [Red](/es/docs/networking) para más detalles.
 
 ### Diseño Multi-Servicio
 
 Para proyectos con múltiples grupos de servicios independientes, use subdirectorios:
 
 ```
-/mnt/rediacc/repos/my-app/
+/mnt/rediacc/mounts/my-app/
 ├── Rediaccfile              # Raíz: configuración compartida
 ├── docker-compose.yml
 ├── database/
@@ -167,7 +167,9 @@ services:
       LISTEN_ADDR: ${API_IP}:8080
 ```
 
-> **Nota:** No agregue `network_mode: host` manualmente — `renet compose` lo inyecta automáticamente. No use `restart: always` ni `restart: unless-stopped` — estos hacen que Docker inicie contenedores automáticamente antes de que la restauración de checkpoint CRIU pueda ejecutarse. Use `restart: on-failure` si es necesario, u omítalo (el Rediaccfile `up()`/`down()` gestiona el ciclo de vida).
+> **Nota:** No agregue `network_mode: host` manualmente — `renet compose` lo inyecta automáticamente. Las políticas de reinicio (p.ej., `restart: always`) son seguras de usar — renet las elimina automáticamente para compatibilidad CRIU y el watchdog del router maneja la recuperación de contenedores.
+
+> **Nota:** Los repos fork obtienen rutas automáticas planas: `{service}-{tag}.{machine}.{baseDomain}`. Los dominios personalizados se omiten para forks.
 
 ## Iniciar Servicios
 

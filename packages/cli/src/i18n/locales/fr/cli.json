@@ -1128,11 +1128,10 @@
       "backup": {
         "description": "Gérer les sauvegardes de dépôts",
         "list": {
-          "description": "Lister les sauvegardes disponibles sur le stockage ou la machine",
+          "description": "Lister les sauvegardes disponibles sur un distant (machine ou stockage)",
           "listing": "Listage des sauvegardes...",
-          "optionFromMachine": "Nom de la machine source",
-          "optionFromStorage": "Nom du stockage source",
-          "sourceRequired": "Spécifiez --from <storage> ou --from-machine <machine>"
+          "optionFrom": "Nom de la machine ou du stockage source (détecté automatiquement depuis la configuration)",
+          "sourceRequired": "Spécifiez --from <remote> (nom de machine ou stockage depuis la configuration)"
         }
       },
       "batchConfirm": "{{action}} les {{count}} dépôts sur \"{{machine}}\" ? [y/N]",
@@ -1189,7 +1188,7 @@
       "fork": {
         "alreadyExists": "Le dépôt \"{{name}}\" existe déjà dans le contexte",
         "checkpointOption": "Créer un checkpoint CRIU sur la source avant le fork (capturer l'état mémoire des processus pour restauration sur le fork)",
-        "completed": "Fork créé. Déployer localement : repo up {{repository}} -m {{machine}} --mount. Pour migrer le fork vers une autre machine : backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
+        "completed": "Fork créé. Déployer localement : repo up {{repository}} -m {{machine}} --mount. Pour migrer le fork vers une autre machine : repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "Créer un fork CoW (Copy-on-Write) d'un dépôt",
         "descriptionShort": "Créer un fork CoW d'un dépôt (nouveau GUID, networkId, plage IP)",
         "failed": "Échec de la création du fork",
@@ -1197,7 +1196,8 @@
         "rollback": "Configuration annulée pour \"{{repository}}\"",
         "starting": "Création du fork de \"{{parent}}\" en tant que \"{{repository}}\" sur \"{{machine}}\"...",
         "tagOption": "Tag pour le fork (crée nom:tag)",
-        "tagRequired": "Le tag est requis pour le fork. Utilisation : rdc repo fork <parent> <tag> -m <machine>"
+        "tagRequired": "Le tag est requis pour le fork. Utilisation : rdc repo fork <parent> <tag> -m <machine>",
+        "upOption": "Monter et démarrer les services après le fork (fork + mount + up en une seule commande)"
       },
       "list": {
         "completed": "Listage terminé",
@@ -1225,29 +1225,29 @@
         "uidOption": "UID du propriétaire (par défaut : 7111)"
       },
       "pull": {
-        "description": "Récupérer la sauvegarde du dépôt depuis le stockage ou une machine",
-        "descriptionShort": "Récupérer la sauvegarde du dépôt depuis le stockage ou la machine",
+        "deployed": "Dépôt \"{{repo}}\" déployé sur {{machine}}",
+        "deployFailed": "Échec du déploiement de \"{{repo}}\" après le pull",
+        "deploying": "Déploiement de \"{{repo}}\" sur {{machine}}...",
+        "description": "Tirer un dépôt depuis un distant (machine ou stockage). Omettre le nom pour tirer tous les dépôts. Le type de source est détecté automatiquement depuis la configuration. Utilisez --up pour déployer après le pull",
+        "descriptionShort": "Tirer un dépôt depuis un distant (machine ou stockage)",
         "optionForce": "Forcer l'écrasement du dépôt existant",
-        "optionFromMachine": "Nom de la machine source",
-        "optionFromStorage": "Nom du stockage source",
+        "optionFrom": "Nom de la machine ou du stockage source (détecté automatiquement depuis la configuration)",
+        "optionUp": "Après le pull, monter et déployer le dépôt sur cette machine",
         "pulling": "Récupération de la sauvegarde de \"{{repo}}\"...",
-        "sourceRequired": "Spécifiez --from <storage> ou --from-machine <machine>"
+        "sourceRequired": "Spécifiez --from <remote> (nom de machine ou stockage depuis la configuration)"
       },
       "push": {
         "deployed": "Dépôt \"{{repo}}\" déployé sur {{machine}}",
         "deployFailed": "Échec du déploiement de \"{{repo}}\" après l'envoi",
         "deploying": "Déploiement de \"{{repo}}\" sur {{machine}}...",
-        "description": "Pousser la sauvegarde du dépôt vers le stockage ou une machine",
-        "descriptionShort": "Envoyer la sauvegarde du dépôt vers le stockage ou la machine",
-        "destIgnoredForStorage": "--dest {{provided}} ignoré : les sauvegardes de stockage utilisent le GUID du dépôt ({{dest}})",
-        "destRequired": "Spécifiez --to <storage> ou --to-machine <machine>",
-        "optionCheckpoint": "Créer un point de contrôle du conteneur (sauvegarde à chaud)",
-        "optionDest": "Nom du fichier de destination",
+        "description": "Pousser un dépôt vers un distant (machine ou stockage). Omettre le nom pour pousser tous les dépôts. Le type de cible est détecté automatiquement depuis la configuration. Pour un transfert machine-à-machine, l'image chiffrée du dépôt est copiée avec le MÊME GUID — c'est une sauvegarde/migration, pas un fork. Pour créer un fork indépendant, utilisez d'abord 'repo fork', puis push. Utilisez --up pour déployer après le push",
+        "descriptionShort": "Pousser un dépôt vers un distant (machine ou stockage)",
+        "destRequired": "Spécifiez --to <remote> (nom de machine ou stockage depuis la configuration)",
+        "optionCheckpoint": "Créer un checkpoint CRIU avant la sauvegarde (capture l'état de la mémoire des processus pour la migration à chaud)",
         "optionForce": "Forcer l'écrasement de la sauvegarde existante",
-        "optionProvider": "Fournisseur cloud pour provisionner automatiquement la machine cible si elle n'existe pas (depuis config provider add)",
+        "optionProvision": "Provisionner automatiquement la machine cible via le fournisseur cloud si elle n'existe pas",
         "optionTag": "Tag de déploiement pour le versionnage",
-        "optionToMachine": "Nom de la machine de destination",
-        "optionToStorage": "Nom du stockage de destination",
+        "optionTo": "Nom de la machine ou du stockage de destination (détecté automatiquement depuis la configuration)",
         "optionUp": "Après l'envoi, monter et déployer le dépôt sur la machine cible",
         "pushing": "Envoi de la sauvegarde de \"{{repo}}\" vers {{dest}}..."
       },
@@ -1344,6 +1344,7 @@
         "starting": "Démontage de \"{{repository}}\" sur \"{{machine}}\"..."
       },
       "up": {
+        "checkpointOption": "Restaurer le checkpoint CRIU au démarrage (reprendre les processus depuis l'état mémoire sauvegardé)",
         "completed": "Services démarrés",
         "description": "Déployer ou mettre à jour un dépôt (montage, démarrage des services)",
         "descriptionShort": "Déployer ou mettre à jour un dépôt sur une machine",
@@ -1352,8 +1353,7 @@
         "mountOption": "Monter le dépôt d'abord",
         "skipCheckpointOption": "Ignorer la restauration du checkpoint CRIU même si des données de checkpoint existent (forcer un démarrage propre)",
         "starting": "Démarrage des services pour \"{{repository}}\" sur \"{{machine}}\"...",
-        "tlsOption": "Demander un certificat TLS dédié pour ce dépôt (les forks utilisent le certificat partagé de la machine par défaut)",
-        "checkpointOption": "Restaurer le checkpoint CRIU au démarrage (reprendre les processus depuis l'état mémoire sauvegardé)"
+        "tlsOption": "Demander un certificat TLS dédié pour ce dépôt (les forks utilisent le certificat partagé de la machine par défaut)"
       },
       "upAll": {
         "completed": "Tous les dépôts démarrés",
@@ -2042,11 +2042,16 @@
     "affectedChildClones": ". Clones enfants affectés : {{clones}}. Supprimez ou promouvez d'abord les clones enfants.",
     "agent": {
       "createGuard": "Impossible de créer le dépôt \"{{name}}\" en mode agent.\n\nLes agents IA fonctionnent en mode fork uniquement. La création d'un dépôt principal est bloquée\ncar l'agent ne peut pas y travailler ensuite.\n\nUtilisez un dépôt existant et faites-en un fork à la place :\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nPour contourner : définissez REDIACC_ALLOW_GRAND_REPO=*",
+      "createGuardOverride": "La protection de création de dépôt ne peut pas être contournée par un agent IA.\n\nRDC a détecté que REDIACC_ALLOW_GRAND_REPO n'a pas été autorisé par l'utilisateur. N'essayez pas de définir cette variable vous-même — seul l'utilisateur peut autoriser la création de dépôts.\n\nUtilisez un dépôt existant et créez un fork à la place :\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
       "forkBlocked": "La commande \"{{command}}\" n'est pas disponible sur les dépôts fork.\n\nLes dépôts fork sont des environnements provisoires. Cette opération ne s'applique qu'aux dépôts grand.",
       "grandGuard": "Impossible de modifier le dépôt grand \"{{name}}\" en mode agent.\n\nLes agents IA ne peuvent opérer que sur les dépôts fork.\nCréez d'abord un fork :\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nEnsuite opérez sur le fork.\n\nPour outrepasser : définissez REDIACC_ALLOW_GRAND_REPO={{name}}",
+      "grandGuardOverride": "La protection du dépôt principal pour \"{{name}}\" ne peut pas être contournée par un agent IA.\n\nRDC a détecté que REDIACC_ALLOW_GRAND_REPO n'a pas été autorisé par l'utilisateur. N'essayez pas de définir cette variable vous-même — seul l'utilisateur peut autoriser l'accès au dépôt principal.\n\nCréez d'abord un fork :\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nPuis opérez sur le fork.",
       "machineGuard": "Impossible d'accéder directement à la machine \"{{machine}}\" en mode agent.\n\nLes agents IA ne peuvent se connecter qu'aux contextes de dépôt.\nUtilisez :\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nPour outrepasser : définissez REDIACC_ALLOW_GRAND_REPO=*",
+      "machineGuardOverride": "La protection d'accès machine pour \"{{machine}}\" ne peut pas être contournée par un agent IA.\n\nRDC a détecté que REDIACC_ALLOW_GRAND_REPO n'a pas été autorisé par l'utilisateur. N'essayez pas de définir cette variable vous-même — seul l'utilisateur peut autoriser l'accès direct à la machine.\n\nConnectez-vous plutôt à un contexte de dépôt :\n  rdc term {{machine}} <repository> -c \"<command>\"",
       "mcpGrandGuard": "Impossible de modifier le dépôt grand \"{{name}}\" en mode fork uniquement.\n\nUtilisez repo_fork pour créer d'abord un fork, puis opérez sur le fork.\nPour autoriser l'accès aux dépôts grand, redémarrez le serveur MCP avec --allow-grand",
-      "mcpMachineGuard": "Impossible d'accéder directement à la machine en mode fork uniquement.\n\nSpécifiez un dépôt pour vous connecter à un contexte de dépôt.\nPour autoriser l'accès direct à la machine, redémarrez le serveur MCP avec --allow-grand"
+      "mcpGrandGuardOverride": "La protection du dépôt principal pour \"{{name}}\" ne peut pas être contournée par un agent IA.\n\nRDC a détecté que REDIACC_ALLOW_GRAND_REPO n'a pas été autorisé par l'utilisateur. N'essayez pas de définir cette variable.\n\nUtilisez repo_fork pour créer d'abord un fork, puis opérez sur le fork.",
+      "mcpMachineGuard": "Impossible d'accéder directement à la machine en mode fork uniquement.\n\nSpécifiez un dépôt pour vous connecter à un contexte de dépôt.\nPour autoriser l'accès direct à la machine, redémarrez le serveur MCP avec --allow-grand",
+      "mcpMachineGuardOverride": "La protection d'accès machine ne peut pas être contournée par un agent IA.\n\nRDC a détecté que REDIACC_ALLOW_GRAND_REPO n'a pas été autorisé par l'utilisateur. N'essayez pas de définir cette variable.\n\nSpécifiez un dépôt pour vous connecter à un contexte de dépôt."
     },
     "authFailed": "L'authentification a échoué",
     "authRequired": "L'authentification est requise. Exécutez : rdc auth login",
@@ -2095,6 +2100,7 @@
     },
     "regionRequired": "Le nom de la région est requis. Utilisez --region ou définissez un contexte.",
     "registrationFailed": "L'enregistrement a échoué",
+    "remoteNotFound": "\"{{name}}\" n'est ni une machine ni un stockage connu. Machines : {{machines}}. Stockages : {{storages}}",
     "repositoryNotFound": "Dépôt \"{{name}}\" non trouvé",
     "repositoryRequired": "Le nom du dépôt est requis. Utilisez --repository <name>.",
     "resourceNotFound": "{{resource}} non trouvé",
@@ -2166,7 +2172,7 @@
       "setupMachine": "Exécuter le setup sur une machine distante"
     },
     "examples": "Exemples :",
-    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REPOSITORY_PATH}/... — never Docker named volumes (excluded from forks/backups)\n    • Containers must bind to SERVICE_IP to avoid port conflicts\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REPOSITORY_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
+    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REDIACC_WORKING_DIR}/... — never Docker named volumes (excluded from forks/backups)\n    • Containers must bind to SERVICE_IP to avoid port conflicts\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REDIACC_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
     "machine": {
       "containers": "Lister les conteneurs en cours",
       "health": "Vérification de santé pour CI/CD",
@@ -2177,7 +2183,7 @@
       "create": "Créer un dépôt chiffré",
       "down": "Arrêter les services",
       "fork": "Fork CoW pour les tests",
-      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REPOSITORY_PATH}/data, ${REPOSITORY_PATH}/config, etc.\n    • Example: volumes: ['${REPOSITORY_PATH}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
+      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "Lister les sauvegardes sur le stockage",
       "pull": "Récupérer la sauvegarde depuis le stockage",
       "push": "Pousser la sauvegarde vers le stockage",

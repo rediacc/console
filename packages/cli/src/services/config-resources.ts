@@ -48,6 +48,7 @@ class ConfigService extends ConfigServiceBase {
     cfDnsApiToken?: string;
     cfDnsZoneId?: string;
     certEmail?: string;
+    datastoreSize?: string;
   }> {
     const config = await this.requireSelfHosted();
     const state = await this.getResourceState();
@@ -72,6 +73,7 @@ class ConfigService extends ConfigServiceBase {
       cfDnsApiToken: config.cfDnsApiToken,
       cfDnsZoneId: config.cfDnsZoneId,
       certEmail: config.certEmail,
+      datastoreSize: config.datastoreSize,
     };
   }
 

@@ -11,7 +11,7 @@ import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
-import { DEFAULTS } from '@rediacc/shared/config';
+import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { t } from '../../i18n/index.js';
 import { configService } from '../config-resources.js';
@@ -100,7 +100,9 @@ async function bootstrapMachine(machineName: string, options: { debug?: boolean 
   await sftp.connect();
 
   try {
-    const cmd = `sudo ${remoteRenetPath} setup --auto --datastore /mnt/rediacc --datastore-size 95%`;
+    const datastorePath = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
+    const datastoreSize = updatedConfig.datastoreSize ?? NETWORK_DEFAULTS.DATASTORE_SIZE;
+    const cmd = `sudo ${remoteRenetPath} setup --auto --datastore ${datastorePath} --datastore-size ${datastoreSize}`;
     const exitCode = await sftp.execStreaming(cmd, {
       onStdout: (data) => {
         if (options.debug) process.stdout.write(data);

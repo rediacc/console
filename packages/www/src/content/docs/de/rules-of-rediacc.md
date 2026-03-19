@@ -4,8 +4,8 @@ description: "Wesentliche Regeln und Konventionen für die Entwicklung von Anwen
 category: "Guides"
 order: 5
 language: de
-sourceHash: "091701909c0c8d32"
-sourceCommit: "ebe4a9b9ea6ace2a0faee3694a632135cd61ef9b"
+sourceHash: "f7ca177c604f0ff7"
+sourceCommit: "c4820684802963ecf645e56c87e13815deb84688"
 ---
 
 # Regeln von Rediacc
@@ -102,18 +102,23 @@ Renet injiziert diese automatisch in jeden Container:
 
 ## CRIU (Live-Migration)
 
-- **`backup push --checkpoint`** erfasst den Arbeitsspeicher laufender Prozesse + Festplattenzustand.
-- **`repo up --mount --checkpoint`** stellt Container aus dem Checkpoint wieder her (kein Neustart).
+- **Opt-in per Label**: Fügen Sie `rediacc.checkpoint=true` zu Containern hinzu, die Sie checkpointen möchten. Container ohne dieses Label (Datenbanken, Caches) starten frisch und erholen sich über eigene Mechanismen (WAL, LDF, AOF).
+- **`backup push --checkpoint`** erfasst den Arbeitsspeicher laufender Prozesse + Festplattenzustand für markierte Container.
+- **`repo fork --checkpoint`** erfasst den Prozesszustand vor dem Forken — der Fork stellt automatisch bei `repo up` wieder her.
+- **`repo down --checkpoint`** speichert den Prozesszustand vor dem Stoppen — beim nächsten `repo up` wird automatisch wiederhergestellt.
+- **`repo up`** erkennt Checkpoint-Daten automatisch und stellt wieder her, wenn vorhanden. Verwenden Sie `--skip-checkpoint` für einen Neustart.
+- **Abhängigkeitsbewusste Wiederherstellung**: Nutzt compose `depends_on`, um Datenbanken zuerst zu starten (auf healthy warten), dann CRIU-Wiederherstellung der App-Container.
 - **TCP-Verbindungen werden nach der Wiederherstellung ungültig** — Anwendungen müssen `ECONNRESET` behandeln und sich neu verbinden.
 - **Docker Experimental Mode** wird automatisch auf den pro-Repository-Daemons aktiviert.
 - **CRIU wird installiert** während `rdc config machine setup`.
 - **`/etc/criu/runc.conf`** wird mit `tcp-established` für TCP-Verbindungserhaltung konfiguriert.
-- **Container-Sicherheitseinstellungen werden automatisch von renet injiziert** — `renet compose` fügt automatisch Folgendes zu jedem Container für CRIU-Kompatibilität hinzu:
+- **Container-Sicherheitseinstellungen werden automatisch für markierte Container injiziert** — `renet compose` fügt Folgendes zu Containern mit `rediacc.checkpoint=true` hinzu:
   - `cap_add`: `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` (Minimalsatz für CRIU auf Kernel 5.9+)
   - `security_opt`: `apparmor=unconfined` (CRIUs AppArmor-Unterstützung ist upstream noch nicht stabil)
   - `userns_mode: host` (CRIU benötigt Init-Namespace-Zugriff für `/proc/pid/map_files`)
+- Container ohne Label laufen mit saubererem Sicherheitsprofil (keine zusätzlichen Capabilities).
 - Das Standard-Seccomp-Profil von Docker wird beibehalten — CRIU verwendet `PTRACE_O_SUSPEND_SECCOMP` (Kernel 4.3+), um Filter während Checkpoint/Restore vorübergehend auszusetzen.
-- **Setzen Sie diese NICHT manuell** in Ihrer Compose-Datei — renet übernimmt das. Eigenhändiges Setzen riskiert Duplikate oder Konflikte.
+- **Setzen Sie CRIU-Capabilities NICHT manuell** in Ihrer Compose-Datei — renet übernimmt das basierend auf dem Label.
 - Siehe die [Heartbeat-Vorlage](https://github.com/rediacc/console/tree/main/packages/json/templates/monitoring/heartbeat) für eine CRIU-kompatible Referenzimplementierung.
 
 ### CRIU-kompatible Anwendungsmuster

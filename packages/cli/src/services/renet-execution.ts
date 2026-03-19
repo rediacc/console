@@ -216,14 +216,16 @@ interface BuildLocalVaultOptions {
   sshPublicKey: string;
   sshKnownHosts: string;
   params: Record<string, unknown>;
-  extraMachines?: Record<string, { ip: string; port?: number; user: string }>;
+  extraMachines?: Record<string, { ip: string; port?: number; user: string; datastore?: string }>;
   storages?: Record<string, { vaultContent: Record<string, unknown> }>;
   repositoryCredentials?: Record<string, string>;
   repositoryConfigs?: Record<string, { guid: string; name: string; networkId?: number }>;
 }
 
 function buildExtraMachines(
-  machines: Record<string, { ip: string; port?: number; user: string }> | undefined,
+  machines:
+    | Record<string, { ip: string; port?: number; user: string; datastore?: string }>
+    | undefined,
   sshKnownHosts: string,
   sshPrivateKey: string,
   sshPublicKey: string
@@ -235,7 +237,7 @@ function buildExtraMachines(
       ip: cfg.ip,
       user: cfg.user,
       port: cfg.port ?? DEFAULTS.SSH.PORT,
-      datastore: NETWORK_DEFAULTS.DATASTORE_PATH,
+      datastore: cfg.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH,
       known_hosts: sshKnownHosts,
       ssh: {
         private_key: sshPrivateKey,

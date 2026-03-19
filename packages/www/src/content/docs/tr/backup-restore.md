@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: "2ac1e17539336175"
+sourceHash: "bd53047cef737088"
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -46,7 +46,7 @@ rdc repo push my-app -m server-1 --to my-storage
 | `--to <storage>` | Hedef depolama konumu |
 | `--to-machine <machine>` | Makineden makineye yedekleme için hedef makine |
 | `--dest <filename>` | Özel hedef dosya adı |
-| `--checkpoint` | Göndermeden önce bir kontrol noktası oluştur |
+| `--checkpoint` | Göndermeden önce CRIU checkpoint oluştur (`rediacc.checkpoint=true` etiketli konteynerler için). Hedef `repo up` ile otomatik geri yüklenir |
 | `--force` | Mevcut bir yedeği geçersiz kıl |
 | `--tag <tag>` | Yedeği etiketle |
 | `-w, --watch` | İşlem ilerlemesini izle |

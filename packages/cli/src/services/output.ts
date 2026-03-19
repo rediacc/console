@@ -24,6 +24,7 @@ class OutputService {
   private _startTime: number | null = null;
   private _warnings: string[] = [];
   private _operationDurationMs: number | null = null;
+  private _timelineRendered = false;
 
   constructor() {
     this.colorEnabled = !process.env.REDIACC_NO_COLOR && process.stdout.isTTY !== false;
@@ -61,6 +62,15 @@ class OutputService {
 
   getOperationDurationMs(): number | null {
     return this._operationDurationMs;
+  }
+
+  /** Mark that a timeline was rendered — suppresses the postAction "Completed" line */
+  setTimelineRendered(): void {
+    this._timelineRendered = true;
+  }
+
+  isTimelineRendered(): boolean {
+    return this._timelineRendered;
   }
 
   private applyFieldFilter<T extends Record<string, unknown>>(data: T | T[]): T | T[] {

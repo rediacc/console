@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: ar
-sourceHash: 9cb00d469afd953e
+sourceHash: "a555a8192fdb3b7c"
 ---
 
 # الخدمات
@@ -47,7 +47,7 @@ sourceHash: 9cb00d469afd953e
 
 | المتغير | الوصف | مثال |
 |---------|-------|------|
-| `REDIACC_WORKING_DIR` | مسار تحميل المستودع | `/mnt/rediacc/repos/abc123` |
+| `REDIACC_WORKING_DIR` | مسار تحميل المستودع | `/mnt/rediacc/mounts/abc123` |
 | `REDIACC_REPOSITORY` | معرّف المستودع GUID | `a1b2c3d4-e5f6-...` |
 | `REDIACC_NETWORK_ID` | معرّف الشبكة (عدد صحيح) | `2816` |
 | `DOCKER_HOST` | مقبس Docker لعملية Docker المعزولة لهذا المستودع | `unix:///var/run/rediacc/docker-2816.sock` |
@@ -75,14 +75,14 @@ down() {
 }
 ```
 
-> **هام:** استخدم دائماً `renet compose --` بدلاً من `docker compose`. يفرض غلاف `renet compose` شبكة المضيف، وقدرات نقاط التفتيش/الاستعادة CRIU، وتخصيص عناوين IP، وتسميات اكتشاف الخدمات المطلوبة من renet-proxy. يتم رفض الاستخدام المباشر لـ `docker compose` بواسطة التحقق من صحة Rediaccfile. راجع [الشبكات](/ar/docs/networking) للتفاصيل.
+> **هام:** استخدم دائماً `renet compose --` بدلاً من `docker compose`. يفرض غلاف `renet compose` شبكة المضيف، وتخصيص عناوين IP، وتسميات اكتشاف الخدمات المطلوبة من renet-proxy. تُضاف قدرات CRIU checkpoint/restore للحاويات التي تحمل تسمية `rediacc.checkpoint=true`. يتم رفض الاستخدام المباشر لـ `docker compose` بواسطة التحقق من صحة Rediaccfile. راجع [الشبكات](/ar/docs/networking) للتفاصيل.
 
 ### تخطيط متعدد الخدمات
 
 للمشاريع التي تحتوي على مجموعات خدمات مستقلة متعددة، استخدم المجلدات الفرعية:
 
 ```
-/mnt/rediacc/repos/my-app/
+/mnt/rediacc/mounts/my-app/
 ├── Rediaccfile              # Root: shared setup
 ├── docker-compose.yml
 ├── database/
@@ -167,7 +167,9 @@ services:
       LISTEN_ADDR: ${API_IP}:8080
 ```
 
-> **ملاحظة:** لا تضف `network_mode: host` يدوياً — يقوم `renet compose` بحقنه تلقائياً. لا تستخدم `restart: always` أو `restart: unless-stopped` — فهذه تتسبب في قيام Docker بالتشغيل التلقائي للحاويات قبل أن يتمكن CRIU من تنفيذ استعادة نقطة التفتيش. استخدم `restart: on-failure` إذا لزم الأمر، أو احذفه (Rediaccfile `up()`/`down()` يدير دورة الحياة).
+> **ملاحظة:** لا تضف `network_mode: host` يدوياً — يقوم `renet compose` بحقنه تلقائياً. سياسات إعادة التشغيل (مثل `restart: always`) آمنة للاستخدام — يزيلها renet تلقائياً لتوافق CRIU ويتولى watchdog استعادة الحاويات.
+
+> **ملاحظة:** مستودعات fork تحصل على مسارات تلقائية مسطحة: `{service}-{tag}.{machine}.{baseDomain}`. يتم تخطي النطاقات المخصصة لمستودعات fork.
 
 ## تشغيل الخدمات
 

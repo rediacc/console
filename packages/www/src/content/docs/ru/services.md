@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: ru
-sourceHash: 9cb00d469afd953e
+sourceHash: "a555a8192fdb3b7c"
 ---
 
 # Сервисы
@@ -47,7 +47,7 @@ Rediaccfile содержит до двух функций:
 
 | Переменная | Описание | Пример |
 |------------|----------|--------|
-| `REDIACC_WORKING_DIR` | Путь монтирования репозитория | `/mnt/rediacc/repos/abc123` |
+| `REDIACC_WORKING_DIR` | Путь монтирования репозитория | `/mnt/rediacc/mounts/abc123` |
 | `REDIACC_REPOSITORY` | GUID репозитория | `a1b2c3d4-e5f6-...` |
 | `REDIACC_NETWORK_ID` | Идентификатор сети (целое число) | `2816` |
 | `DOCKER_HOST` | Docker-сокет для изолированного демона данного репозитория | `unix:///var/run/rediacc/docker-2816.sock` |
@@ -75,14 +75,14 @@ down() {
 }
 ```
 
-> **Важно:** Всегда используйте `renet compose --` вместо `docker compose`. Обёртка `renet compose` обеспечивает host-сеть, возможности CRIU checkpoint/restore, распределение IP-адресов и метки обнаружения сервисов, необходимые для renet-proxy. Прямое использование `docker compose` отклоняется валидацией Rediaccfile. Подробнее см. в разделе [Сетевое взаимодействие](/ru/docs/networking).
+> **Важно:** Всегда используйте `renet compose --` вместо `docker compose`. Обёртка `renet compose` обеспечивает host-сеть, распределение IP-адресов и метки обнаружения сервисов, необходимые для renet-proxy. Возможности CRIU checkpoint/restore добавляются к контейнерам с меткой `rediacc.checkpoint=true`. Прямое использование `docker compose` отклоняется валидацией Rediaccfile. Подробнее см. в разделе [Сетевое взаимодействие](/ru/docs/networking).
 
 ### Пример с несколькими сервисами
 
 Для проектов с несколькими независимыми группами сервисов используйте поддиректории:
 
 ```
-/mnt/rediacc/repos/my-app/
+/mnt/rediacc/mounts/my-app/
 ├── Rediaccfile              # Корневой: общая настройка
 ├── docker-compose.yml
 ├── database/
@@ -167,7 +167,9 @@ services:
       LISTEN_ADDR: ${API_IP}:8080
 ```
 
-> **Примечание:** Не добавляйте `network_mode: host` вручную — `renet compose` внедряет его автоматически. Не используйте `restart: always` или `restart: unless-stopped` — они заставляют Docker автоматически запускать контейнеры до того, как CRIU сможет выполнить восстановление из контрольной точки. При необходимости используйте `restart: on-failure` или опустите его (Rediaccfile `up()`/`down()` управляет жизненным циклом).
+> **Примечание:** Не добавляйте `network_mode: host` вручную — `renet compose` внедряет его автоматически. Политики перезапуска (например, `restart: always`) безопасны для использования — renet автоматически удаляет их для совместимости с CRIU, а watchdog маршрутизатора управляет восстановлением контейнеров.
+
+> **Примечание:** Форк-репозитории получают плоские автоматические маршруты: `{service}-{tag}.{machine}.{baseDomain}`. Пользовательские домены для форков пропускаются.
 
 ## Запуск сервисов
 

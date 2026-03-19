@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 4
 language: ru
-sourceHash: "06b8912e9b65b720"
+sourceHash: "5faf701157696057"
 ---
 
 # Репозитории
@@ -47,7 +47,7 @@ rdc repo unmount my-app -m server-1     # Размонтировать и заш
 
 | Опция | Описание |
 |-------|----------|
-| `--checkpoint` | Создать контрольную точку перед монтированием/размонтированием |
+| `--checkpoint` | Создать контрольную точку CRIU перед монтированием/размонтированием (для контейнеров с меткой `rediacc.checkpoint=true`) |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Проверка статуса

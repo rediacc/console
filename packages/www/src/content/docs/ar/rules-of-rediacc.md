@@ -4,8 +4,8 @@ description: "القواعد والاصطلاحات الأساسية لبناء 
 category: "Guides"
 order: 5
 language: ar
-sourceHash: "091701909c0c8d32"
-sourceCommit: "ebe4a9b9ea6ace2a0faee3694a632135cd61ef9b"
+sourceHash: "f7ca177c604f0ff7"
+sourceCommit: "c4820684802963ecf645e56c87e13815deb84688"
 ---
 
 # قواعد Rediacc
@@ -102,18 +102,23 @@ down() {
 
 ## CRIU (الترحيل الحي)
 
-- **`backup push --checkpoint`** يلتقط ذاكرة العمليات الجارية + حالة القرص.
-- **`repo up --mount --checkpoint`** يستعيد الحاويات من نقطة التحقق (بدون بدء جديد).
+- **الاشتراك عبر التسمية**: أضف `rediacc.checkpoint=true` للحاويات التي تريد إنشاء نقاط تحقق لها. الحاويات بدون هذه التسمية (قواعد البيانات، الذاكرة المؤقتة) تبدأ من جديد وتتعافى عبر آلياتها الخاصة (WAL، LDF، AOF).
+- **`backup push --checkpoint`** يلتقط حالة ذاكرة العمليات الجارية + حالة القرص للحاويات المُعلَّمة.
+- **`repo fork --checkpoint`** يلتقط حالة العمليات قبل التفريع — يستعيد fork تلقائياً عند `repo up`.
+- **`repo down --checkpoint`** يحفظ حالة العمليات قبل التوقف — يستعيد تلقائياً عند `repo up` التالي.
+- **`repo up`** يكتشف بيانات checkpoint تلقائياً ويستعيدها إن وُجدت. استخدم `--skip-checkpoint` للبدء من جديد.
+- **استعادة مدركة للتبعيات**: يستخدم `depends_on` في compose لبدء قواعد البيانات أولاً (انتظار healthy)، ثم استعادة CRIU لحاويات التطبيق.
 - **تصبح اتصالات TCP قديمة بعد الاستعادة** — يجب على التطبيقات التعامل مع `ECONNRESET` وإعادة الاتصال.
 - **وضع Docker التجريبي** يتم تفعيله تلقائياً على أدوات daemon لكل مستودع.
 - **يتم تثبيت CRIU** أثناء `rdc config machine setup`.
 - **`/etc/criu/runc.conf`** يتم تكوينه مع `tcp-established` للحفاظ على اتصالات TCP.
-- **يتم حقن إعدادات أمان الحاويات تلقائياً بواسطة renet** — يضيف `renet compose` تلقائياً ما يلي إلى كل حاوية لتوافق CRIU:
+- **يتم حقن إعدادات أمان الحاويات تلقائياً للحاويات المُعلَّمة** — يضيف `renet compose` ما يلي للحاويات التي تحمل `rediacc.checkpoint=true`:
   - `cap_add`: `CHECKPOINT_RESTORE`، `SYS_PTRACE`، `NET_ADMIN` (الحد الأدنى لـ CRIU على النواة 5.9+)
   - `security_opt`: `apparmor=unconfined` (دعم AppArmor في CRIU ليس مستقراً بعد في المنبع)
   - `userns_mode: host` (يتطلب CRIU الوصول إلى مساحة اسم init لـ `/proc/pid/map_files`)
+- الحاويات بدون التسمية تعمل بوضع أمان أنظف (بدون capabilities إضافية).
 - يتم الحفاظ على ملف تعريف seccomp الافتراضي لـ Docker — يستخدم CRIU `PTRACE_O_SUSPEND_SECCOMP` (النواة 4.3+) لتعليق المرشحات مؤقتاً أثناء checkpoint/restore.
-- **لا تقم بتعيين هذه يدوياً** في ملف compose — يتولى renet ذلك. تعيينها بنفسك يخاطر بالتكرار أو التعارض.
+- **لا تقم بتعيين capabilities CRIU يدوياً** في ملف compose — يتولى renet ذلك بناءً على التسمية.
 - راجع [قالب heartbeat](https://github.com/rediacc/console/tree/main/packages/json/templates/monitoring/heartbeat) للحصول على تطبيق مرجعي متوافق مع CRIU.
 
 ### أنماط التطبيقات المتوافقة مع CRIU

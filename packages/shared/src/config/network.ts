@@ -13,6 +13,9 @@ export const NETWORK_DEFAULTS = {
 
   /** Default datastore mount path */
   DATASTORE_PATH: '/mnt/rediacc',
+
+  /** Default datastore size (percentage of available disk) */
+  DATASTORE_SIZE: '95%',
 } as const;
 
 /**

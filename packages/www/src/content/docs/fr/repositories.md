@@ -4,7 +4,7 @@ description: 'Créez, gérez et opérez des dépôts chiffrés LUKS sur des mach
 category: Guides
 order: 4
 language: fr
-sourceHash: "06b8912e9b65b720"
+sourceHash: "5faf701157696057"
 ---
 
 # Dépôts
@@ -45,7 +45,7 @@ rdc repo unmount my-app -m server-1     # Démonter et re-chiffrer
 
 | Option | Description |
 |--------|-------------|
-| `--checkpoint` | Créer un point de contrôle avant le montage/démontage |
+| `--checkpoint` | Créer un checkpoint CRIU avant le montage/démontage (pour les conteneurs avec le label `rediacc.checkpoint=true`) |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Vérifier le statut

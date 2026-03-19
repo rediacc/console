@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: tr
-sourceHash: 9cb00d469afd953e
+sourceHash: "a555a8192fdb3b7c"
 ---
 
 # Servisler
@@ -47,7 +47,7 @@ Bir Rediaccfile fonksiyonu çalıştığında, aşağıdaki ortam değişkenleri
 
 | Değişken | Açıklama | Örnek |
 |----------|----------|-------|
-| `REDIACC_WORKING_DIR` | Deponun bağlama yolu | `/mnt/rediacc/repos/abc123` |
+| `REDIACC_WORKING_DIR` | Deponun bağlama yolu | `/mnt/rediacc/mounts/abc123` |
 | `REDIACC_REPOSITORY` | Depo GUID'i | `a1b2c3d4-e5f6-...` |
 | `REDIACC_NETWORK_ID` | Ağ Kimliği (tamsayı) | `2816` |
 | `DOCKER_HOST` | Bu deponun izole daemon'u için Docker soketi | `unix:///var/run/rediacc/docker-2816.sock` |
@@ -75,14 +75,14 @@ down() {
 }
 ```
 
-> **Önemli:** `docker compose` yerine her zaman `renet compose --` kullanın. `renet compose` sarmalayıcısı, host ağını, CRIU checkpoint/restore yeteneklerini, IP tahsisini ve renet-proxy tarafından gerekli olan servis keşif etiketlerini zorunlu kılar. Doğrudan `docker compose` kullanımı Rediaccfile doğrulaması tarafından reddedilir. Ayrıntılar için [Ağ Yapılandırması](/tr/docs/networking) sayfasına bakın.
+> **Önemli:** `docker compose` yerine her zaman `renet compose --` kullanın. `renet compose` sarmalayıcısı, host ağını, IP tahsisini ve renet-proxy tarafından gerekli olan servis keşif etiketlerini zorunlu kılar. CRIU checkpoint/restore yetenekleri `rediacc.checkpoint=true` etiketli konteynerlere eklenir. Doğrudan `docker compose` kullanımı Rediaccfile doğrulaması tarafından reddedilir. Ayrıntılar için [Ağ Yapılandırması](/tr/docs/networking) sayfasına bakın.
 
 ### Çoklu Servis Düzeni
 
 Birden fazla bağımsız servis grubu olan projeler için alt dizinler kullanın:
 
 ```
-/mnt/rediacc/repos/my-app/
+/mnt/rediacc/mounts/my-app/
 ├── Rediaccfile              # Kök: paylaşılan kurulum
 ├── docker-compose.yml
 ├── database/
@@ -167,7 +167,9 @@ services:
       LISTEN_ADDR: ${API_IP}:8080
 ```
 
-> **Not:** `network_mode: host` ifadesini manuel olarak eklemeyin — `renet compose` bunu otomatik olarak enjekte eder. `restart: always` veya `restart: unless-stopped` kullanmayın — bunlar, CRIU checkpoint restore çalışmadan önce Docker'ın konteynerleri otomatik başlatmasına neden olur. Gerekiyorsa `restart: on-failure` kullanın veya tamamen kaldırın (Rediaccfile `up()`/`down()` yaşam döngüsünü yönetir).
+> **Not:** `network_mode: host` ifadesini manuel olarak eklemeyin — `renet compose` bunu otomatik olarak enjekte eder. Yeniden başlatma politikaları (örn., `restart: always`) güvenle kullanılabilir — renet CRIU uyumluluğu için bunları otomatik olarak kaldırır ve yönlendirici watchdog konteyner kurtarmasını yönetir.
+
+> **Not:** Fork depoları düz otomatik rotalar alır: `{service}-{tag}.{machine}.{baseDomain}`. Fork'lar için özel alan adları atlanır.
 
 ## Servisleri Başlatma
 

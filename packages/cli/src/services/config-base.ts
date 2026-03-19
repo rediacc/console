@@ -210,19 +210,12 @@ export class ConfigServiceBase {
     return config?.bridge;
   }
 
-  getMachine(): string | undefined {
-    // Machine default removed — require explicit -m flag.
-    // Only env var override kept for scripting.
-    if (process.env.REDIACC_MACHINE) return process.env.REDIACC_MACHINE;
-    return undefined;
-  }
-
-  async set(key: 'team' | 'region' | 'bridge', value: string): Promise<void> {
+  async set(key: 'team' | 'region' | 'bridge' | 'datastoreSize', value: string): Promise<void> {
     const name = this.getEffectiveConfigName();
     await this.update(name, { [key]: value });
   }
 
-  async remove(key: 'team' | 'region' | 'bridge'): Promise<void> {
+  async remove(key: 'team' | 'region' | 'bridge' | 'datastoreSize'): Promise<void> {
     const name = this.getEffectiveConfigName();
     await this.update(name, { [key]: undefined });
   }

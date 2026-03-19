@@ -1,15 +1,14 @@
-import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
-import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
-import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
+import { executeRepoFunction } from '../utils/repo-executor.js';
+import { handleForkAction } from './repo-fork.js';
 import { registerRepoTakeoverCommand } from './repo-takeover.js';
 
 /** Execute a machine-level function (no repository context needed). */
@@ -35,44 +34,6 @@ async function executeMachineFunction(
   }
 }
 
-/** Execute a repository lifecycle function on a remote machine. */
-async function executeRepoFunction(
-  functionName: string,
-  repoName: string,
-  machineName: string,
-  params: Record<string, unknown>,
-  options: { debug?: boolean; skipRouterRestart?: boolean },
-  messages: { starting: string; completed: string; failed: string }
-): Promise<void> {
-  // Validate repository exists in context
-  const repo = await configService.getRepository(repoName);
-  if (!repo) {
-    throw new Error(`Repository "${repoName}" not found in context`);
-  }
-  if (!repo.credential) {
-    outputService.warn(t('commands.repo.noCredential', { name: repoName }));
-  }
-
-  // Ensure network_id is assigned (auto-allocates for legacy repos without one)
-  await configService.ensureRepositoryNetworkId(repoName);
-
-  outputService.info(messages.starting);
-
-  const result = await localExecutorService.execute({
-    functionName,
-    machineName,
-    params: { repository: repoName, ...params },
-    debug: options.debug,
-    skipRouterRestart: options.skipRouterRestart,
-  });
-
-  if (result.success) {
-    outputService.success(messages.completed);
-  } else {
-    renderLocalExecutionFailure(result, result.error ?? messages.failed);
-  }
-}
-
 /**
  * Register extended repo commands: fork, resize, expand, validate,
  * autostart, ownership, and template.
@@ -86,6 +47,7 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--tag <name>', t('commands.repo.fork.tagOption'))
     .option('--checkpoint', t('commands.repo.fork.checkpointOption'))
+    .option('--up', t('commands.repo.fork.upOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
@@ -96,98 +58,16 @@ export function registerExtendedRepoCommands(repo: Command): void {
           machine: string;
           tag?: string;
           checkpoint?: boolean;
+          up?: boolean;
           debug?: boolean;
           skipRouterRestart?: boolean;
         }
       ) => {
-        const { parseRepoRef, compositeKey } = await import('../utils/config-schema.js');
         const tagName = tagArg ?? options.tag;
         if (!tagName) {
           throw new Error(t('commands.repo.fork.tagRequired'));
         }
-
-        const forkKey = compositeKey(parseRepoRef(parent).name, tagName);
-        try {
-          // Validate parent exists
-          const parentConfig = await configService.getRepository(parent);
-          if (!parentConfig) {
-            throw new Error(`Repository "${parent}" not found in context`);
-          }
-
-          // Validate fork doesn't already exist
-          const existing = await configService.getRepository(forkKey);
-          if (existing) {
-            throw new Error(t('commands.repo.fork.alreadyExists', { name: forkKey }));
-          }
-
-          // Generate new GUID, SSH key pair, and allocate networkId; reuse parent's credential
-          const repositoryGuid = randomUUID();
-          const networkId = await configService.allocateNetworkId();
-          const { privateKey: sshPrivateKey, publicKey: sshPublicKey } = generateSSHKeyPair();
-
-          await configService.addRepository(forkKey, {
-            repositoryGuid,
-            tag: tagName,
-            credential: parentConfig.credential,
-            networkId,
-            grandGuid: parentConfig.grandGuid ?? parentConfig.repositoryGuid,
-            parentGuid: parentConfig.repositoryGuid,
-            sshPrivateKey,
-            sshPublicKey,
-          });
-
-          outputService.info(
-            t('commands.repo.fork.registered', {
-              repository: forkKey,
-              guid: repositoryGuid.slice(0, 8),
-              networkId,
-            })
-          );
-          outputService.info(
-            t('commands.repo.fork.starting', {
-              parent,
-              repository: forkKey,
-              machine: options.machine,
-            })
-          );
-
-          // Deploy per-repo SSH key for the fork
-          await deployRepoKeyIfNeeded(forkKey, options.machine);
-
-          // Execute fork on remote (repository param = parent, tag = fork's GUID)
-          const result = await localExecutorService.execute({
-            functionName: 'repository_fork',
-            machineName: options.machine,
-            params: {
-              repository: parent,
-              tag: repositoryGuid,
-              network_id: networkId,
-              ...(options.checkpoint ? { checkpoint: true } : {}),
-            },
-            debug: options.debug,
-            skipRouterRestart: options.skipRouterRestart,
-          });
-
-          if (result.success) {
-            outputService.success(
-              t('commands.repo.fork.completed', {
-                repository: forkKey,
-                machine: options.machine,
-              })
-            );
-          } else {
-            await configService.removeRepository(forkKey);
-            outputService.warn(t('commands.repo.fork.rollback', { repository: forkKey }));
-            renderLocalExecutionFailure(result, t('commands.repo.fork.failed'));
-          }
-        } catch (error) {
-          const exists = await configService.getRepository(forkKey);
-          if (exists) {
-            await configService.removeRepository(forkKey);
-            outputService.warn(t('commands.repo.fork.rollback', { repository: forkKey }));
-          }
-          handleError(error);
-        }
+        await handleForkAction(parent, tagName, options);
       }
     );
 

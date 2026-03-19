@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: de
-sourceHash: "2ac1e17539336175"
+sourceHash: "bd53047cef737088"
 ---
 
 # Backup & Wiederherstellung
@@ -46,7 +46,7 @@ rdc repo push my-app -m server-1 --to my-storage
 | `--to <storage>` | Ziel-Speicherort |
 | `--to-machine <machine>` | Zielmaschine für Maschine-zu-Maschine-Backup |
 | `--dest <filename>` | Benutzerdefinierter Zieldateiname |
-| `--checkpoint` | Einen Checkpoint vor dem Übertragen erstellen |
+| `--checkpoint` | CRIU-Checkpoint vor dem Pushen erstellen (für Container mit Label `rediacc.checkpoint=true`). Ziel stellt automatisch bei `repo up` wieder her |
 | `--force` | Ein vorhandenes Backup überschreiben |
 | `--tag <tag>` | Das Backup markieren |
 | `-w, --watch` | Den Fortschritt der Operation beobachten |

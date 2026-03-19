@@ -570,12 +570,8 @@ ${t('help.examples')}
       ) => {
         try {
           if (!machine) {
-            const defaultMachine = configService.getMachine() ?? null;
-            if (!defaultMachine) {
-              cmd.help();
-              return;
-            }
-            machine = defaultMachine;
+            cmd.help();
+            return;
           }
           const provider = await getStateProvider();
           if (provider.isCloud) {

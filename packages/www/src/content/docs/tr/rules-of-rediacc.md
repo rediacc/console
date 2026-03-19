@@ -4,8 +4,8 @@ description: "Rediacc platformunda uygulama geliştirmek için temel kurallar ve
 category: "Guides"
 order: 5
 language: tr
-sourceHash: "091701909c0c8d32"
-sourceCommit: "ebe4a9b9ea6ace2a0faee3694a632135cd61ef9b"
+sourceHash: "f7ca177c604f0ff7"
+sourceCommit: "c4820684802963ecf645e56c87e13815deb84688"
 ---
 
 # Rediacc Kuralları
@@ -102,18 +102,23 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 
 ## CRIU (Canlı Geçiş)
 
-- **`backup push --checkpoint`** çalışan işlem belleğini + disk durumunu yakalar.
-- **`repo up --mount --checkpoint`** konteynerleri checkpoint'ten geri yükler (temiz başlatma yok).
-- **TCP bağlantıları geri yüklemeden sonra geçersiz olur** — uygulamalar `ECONNRESET`'i işlemeli ve yeniden bağlanmalıdır.
-- **Docker deneysel modu** depo başına daemon'larda otomatik olarak etkinleştirilir.
-- **CRIU**, `rdc config machine setup` sırasında kurulur.
+- **Etiketle etkinleştirme**: Checkpoint almak istediğiniz konteynerlere `rediacc.checkpoint=true` ekleyin. Bu etiketi olmayan konteynerler (veritabanları, önbellekler) temiz başlar ve kendi mekanizmalarıyla (WAL, LDF, AOF) kurtarılır.
+- **`backup push --checkpoint`** etiketli konteynerler için çalışan süreçlerin bellek durumunu + disk durumunu yakalar.
+- **`repo fork --checkpoint`** fork öncesi süreç durumunu yakalar — fork `repo up` ile otomatik geri yüklenir.
+- **`repo down --checkpoint`** durdurmadan önce süreç durumunu kaydeder — sonraki `repo up` otomatik geri yükler.
+- **`repo up`** checkpoint verilerini otomatik algılar ve bulunursa geri yükler. Temiz başlatma için `--skip-checkpoint` kullanın.
+- **Bağımlılık farkındalıklı geri yükleme**: Compose `depends_on` kullanarak veritabanlarını önce başlatır (healthy bekler), ardından uygulama konteynerlerini CRIU ile geri yükler.
+- **TCP bağlantıları geri yüklemeden sonra eski olur** — uygulamalar `ECONNRESET` hatasını ele almalı ve yeniden bağlanmalıdır.
+- **Docker deneysel modu** repo başına daemonlarda otomatik olarak etkinleştirilir.
+- **CRIU yüklenir** `rdc config machine setup` sırasında.
 - **`/etc/criu/runc.conf`** TCP bağlantı koruması için `tcp-established` ile yapılandırılır.
-- **Konteyner güvenlik ayarları renet tarafından otomatik enjekte edilir** — `renet compose` CRIU uyumluluğu için her konteynere otomatik olarak şunları ekler:
-  - `cap_add`: `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` (çekirdek 5.9+ üzerinde CRIU için minimum set)
-  - `security_opt`: `apparmor=unconfined` (CRIU'nun AppArmor desteği upstream'de henüz kararlı değil)
+- **Konteyner güvenlik ayarları etiketli konteynerler için otomatik enjekte edilir** — `renet compose`, `rediacc.checkpoint=true` etiketli konteynerlere şunları ekler:
+  - `cap_add`: `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` (çekirdek 5.9+ için minimum CRIU seti)
+  - `security_opt`: `apparmor=unconfined` (CRIU'nun AppArmor desteği henüz kararlı değil)
   - `userns_mode: host` (CRIU, `/proc/pid/map_files` için init namespace erişimi gerektirir)
+- Etiketi olmayan konteynerler daha temiz bir güvenlik profiliyle çalışır (ek capability yok).
 - Docker'ın varsayılan seccomp profili korunur — CRIU, checkpoint/restore sırasında filtreleri geçici olarak askıya almak için `PTRACE_O_SUSPEND_SECCOMP` (çekirdek 4.3+) kullanır.
-- **Bunları compose dosyanızda manuel olarak ayarlamayın** — renet bunu halleder. Kendiniz ayarlamak tekrarlama veya çakışma riski oluşturur.
+- **CRIU capability'lerini compose dosyanızda manuel olarak ayarlamayın** — renet etikete göre bununla ilgilenir.
 - CRIU uyumlu referans uygulama için [heartbeat şablonuna](https://github.com/rediacc/console/tree/main/packages/json/templates/monitoring/heartbeat) bakın.
 
 ### CRIU uyumlu uygulama kalıpları

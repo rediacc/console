@@ -24,7 +24,9 @@ interface DatastoreRunOptions {
 /** Resolve extra machines for fork operations. */
 async function resolveExtraMachines(
   coerced: Record<string, unknown>
-): Promise<Record<string, { ip: string; port?: number; user: string }> | undefined> {
+): Promise<
+  Record<string, { ip: string; port?: number; user: string; datastore?: string }> | undefined
+> {
   if (!coerced.to || typeof coerced.to !== 'string') return undefined;
   const toValue = coerced.to;
   const targetMachine = await configService.getLocalMachine(toValue);
@@ -33,6 +35,7 @@ async function resolveExtraMachines(
       ip: targetMachine.ip,
       port: targetMachine.port,
       user: targetMachine.user,
+      datastore: targetMachine.datastore,
     },
   };
 }
@@ -77,7 +80,7 @@ async function executeFunction(
   program?: Command
 ): Promise<void> {
   const provider = await getStateProvider();
-  const machineName = options.machine ?? configService.getMachine();
+  const machineName = options.machine;
 
   if (!machineName) {
     throw new ValidationError(t('errors.machineRequiredLocal'));
@@ -111,7 +114,7 @@ async function resolveCephInitParams(
   let image = options.image;
   let pool = options.pool;
   if (!image) {
-    const machineName = options.machine ?? configService.getMachine();
+    const machineName = options.machine;
     if (machineName) {
       const machine = await configService.getLocalMachine(machineName);
       if (machine.ceph) {
@@ -213,7 +216,7 @@ export function registerDatastoreCommands(program: Command): void {
       ) => {
         try {
           // Read source machine's ceph config
-          const machineName = options.machine ?? configService.getMachine();
+          const machineName = options.machine;
           if (!machineName) {
             throw new ValidationError(t('errors.machineRequiredLocal'));
           }
@@ -275,7 +278,7 @@ export function registerDatastoreCommands(program: Command): void {
         }
       ) => {
         try {
-          const machineName = options.machine ?? configService.getMachine();
+          const machineName = options.machine;
           if (!machineName) {
             throw new ValidationError(t('errors.machineRequiredLocal'));
           }

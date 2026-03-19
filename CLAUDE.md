@@ -33,20 +33,16 @@ Self-hosted infrastructure platform. Each machine runs Docker-based repositories
 ### Common Commands
 
 ```bash
-# Machine status (SSH + renet list all)
+# Full machine status (SSH + renet list all)
 rdc machine query <machine>
 
-# List containers on a machine
-rdc machine containers <machine>
-
-# List services (systemd) on a machine
-rdc machine services <machine>
-
-# List deployed repositories
-rdc machine repos <machine>
-
-# Machine health check
-rdc machine health <machine>
+# Filter by section
+rdc machine query <machine> --system
+rdc machine query <machine> --containers
+rdc machine query <machine> --services
+rdc machine query <machine> --repositories
+rdc machine query <machine> --network
+rdc machine query <machine> --block-devices
 
 # SSH terminal to machine
 rdc term <machine>
@@ -93,7 +89,7 @@ rdc --config production machine query prod-1  # Use specific config
 ```
 packages/cli/src/
 ├── commands/           # Command implementations
-│   ├── machine/        # machine subcommands (containers, services, repos, health, vault-status)
+│   ├── machine/        # machine subcommands (query with --system/--containers/--repositories/--services filters, vault-status)
 │   ├── config.ts        # Config management (replaces context)
 │   ├── store.ts         # Store sync management
 │   ├── term.ts          # SSH terminal

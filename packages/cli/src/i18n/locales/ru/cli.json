@@ -1128,11 +1128,10 @@
       "backup": {
         "description": "Управление резервными копиями репозиториев",
         "list": {
-          "description": "Показать список доступных резервных копий в хранилище или на машине",
+          "description": "Показать доступные резервные копии на удалённом ресурсе (машине или хранилище)",
           "listing": "Получение списка резервных копий...",
-          "optionFromMachine": "Имя исходной машины",
-          "optionFromStorage": "Имя исходного хранилища",
-          "sourceRequired": "Укажите --from <storage> или --from-machine <machine>"
+          "optionFrom": "Имя исходной машины или хранилища (определяется автоматически из конфигурации)",
+          "sourceRequired": "Укажите --from <remote> (имя машины или хранилища из конфигурации)"
         }
       },
       "batchConfirm": "{{action}} все {{count}} репозиториев на \"{{machine}}\"? [y/N]",
@@ -1189,7 +1188,7 @@
       "fork": {
         "alreadyExists": "Репозиторий \"{{name}}\" уже существует в контексте",
         "checkpointOption": "Создать checkpoint CRIU на источнике перед fork (захватить состояние памяти процессов для восстановления в fork)",
-        "completed": "Форк создан. Развернуть локально: repo up {{repository}} -m {{machine}} --mount. Для миграции форка на другую машину: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
+        "completed": "Форк создан. Развернуть локально: repo up {{repository}} -m {{machine}} --mount. Для миграции форка на другую машину: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "Создать CoW-форк (копирование при записи) репозитория",
         "descriptionShort": "Создать CoW-форк репозитория (новый GUID, networkId, диапазон IP)",
         "failed": "Ошибка создания форка",
@@ -1197,7 +1196,8 @@
         "rollback": "Конфигурация для \"{{repository}}\" откачена",
         "starting": "Создание форка \"{{parent}}\" как \"{{repository}}\" на \"{{machine}}\"...",
         "tagOption": "Тег для форка (создаёт имя:тег)",
-        "tagRequired": "Тег обязателен для форка. Использование: rdc repo fork <parent> <tag> -m <machine>"
+        "tagRequired": "Тег обязателен для форка. Использование: rdc repo fork <parent> <tag> -m <machine>",
+        "upOption": "Монтировать и запустить сервисы после форка (fork + mount + up одной командой)"
       },
       "list": {
         "completed": "Список получен",
@@ -1225,29 +1225,29 @@
         "uidOption": "UID владельца (по умолчанию: 7111)"
       },
       "pull": {
-        "description": "Получить резервную копию репозитория из хранилища или с машины",
-        "descriptionShort": "Получить резервную копию репозитория из хранилища или с машины",
+        "deployed": "Репозиторий \"{{repo}}\" развёрнут на {{machine}}",
+        "deployFailed": "Не удалось развернуть \"{{repo}}\" после pull",
+        "deploying": "Развёртывание \"{{repo}}\" на {{machine}}...",
+        "description": "Получить репозиторий с удалённого ресурса (машины или хранилища). Опустите имя для получения всех репозиториев. Тип источника определяется автоматически из конфигурации. Используйте --up для развёртывания после pull",
+        "descriptionShort": "Получить репозиторий с удалённого ресурса (машины или хранилища)",
         "optionForce": "Принудительно перезаписать существующий репозиторий",
-        "optionFromMachine": "Имя исходной машины",
-        "optionFromStorage": "Имя исходного хранилища",
+        "optionFrom": "Имя исходной машины или хранилища (определяется автоматически из конфигурации)",
+        "optionUp": "После pull смонтировать и развернуть репозиторий на этой машине",
         "pulling": "Получение резервной копии \"{{repo}}\"...",
-        "sourceRequired": "Укажите --from <storage> или --from-machine <machine>"
+        "sourceRequired": "Укажите --from <remote> (имя машины или хранилища из конфигурации)"
       },
       "push": {
         "deployed": "Репозиторий \"{{repo}}\" развёрнут на {{machine}}",
         "deployFailed": "Не удалось развернуть \"{{repo}}\" после отправки",
         "deploying": "Развёртывание \"{{repo}}\" на {{machine}}...",
-        "description": "Отправить резервную копию репозитория в хранилище или на машину",
-        "descriptionShort": "Отправить резервную копию репозитория в хранилище или на машину",
-        "destIgnoredForStorage": "Игнорируется --dest {{provided}}: резервные копии хранилища используют GUID репозитория ({{dest}})",
-        "destRequired": "Укажите --to <storage> или --to-machine <machine>",
-        "optionCheckpoint": "Создать контрольную точку контейнера (горячее резервное копирование)",
-        "optionDest": "Имя файла назначения",
+        "description": "Отправить репозиторий на удалённый ресурс (машину или хранилище). Опустите имя для отправки всех репозиториев. Тип цели определяется автоматически из конфигурации. При передаче между машинами зашифрованный образ репозитория копируется с тем же GUID — это резервное копирование/миграция, а не форк. Для создания независимого форка сначала используйте 'repo fork', затем push. Используйте --up для развёртывания после push",
+        "descriptionShort": "Отправить репозиторий на удалённый ресурс (машину или хранилище)",
+        "destRequired": "Укажите --to <remote> (имя машины или хранилища из конфигурации)",
+        "optionCheckpoint": "Создать контрольную точку CRIU перед резервным копированием (захват состояния памяти процессов для живой миграции)",
         "optionForce": "Принудительно перезаписать существующую резервную копию",
-        "optionProvider": "Облачный провайдер для автоматического создания целевой машины, если она не существует (из config provider add)",
+        "optionProvision": "Автоматически создать целевую машину через облачного провайдера, если она не существует",
         "optionTag": "Тег развёртывания для управления версиями",
-        "optionToMachine": "Имя целевой машины",
-        "optionToStorage": "Имя целевого хранилища",
+        "optionTo": "Имя целевой машины или хранилища (определяется автоматически из конфигурации)",
         "optionUp": "После отправки смонтировать и развернуть репозиторий на целевой машине",
         "pushing": "Отправка резервной копии \"{{repo}}\" в {{dest}}..."
       },
@@ -1344,6 +1344,7 @@
         "starting": "Размонтирование \"{{repository}}\" на \"{{machine}}\"..."
       },
       "up": {
+        "checkpointOption": "Восстановить контрольную точку CRIU при запуске (возобновить процессы из сохранённого состояния памяти)",
         "completed": "Сервисы запущены",
         "description": "Развернуть или обновить репозиторий (монтирование, запуск сервисов)",
         "descriptionShort": "Развернуть или обновить репозиторий на машине",
@@ -1352,8 +1353,7 @@
         "mountOption": "Сначала смонтировать репозиторий",
         "skipCheckpointOption": "Пропустить восстановление из checkpoint CRIU, даже если данные checkpoint существуют (принудительный чистый запуск)",
         "starting": "Запуск сервисов для \"{{repository}}\" на \"{{machine}}\"...",
-        "tlsOption": "Запросить выделенный TLS-сертификат для этого репозитория (форки по умолчанию используют общий сертификат машины)",
-        "checkpointOption": "Восстановить контрольную точку CRIU при запуске (возобновить процессы из сохранённого состояния памяти)"
+        "tlsOption": "Запросить выделенный TLS-сертификат для этого репозитория (форки по умолчанию используют общий сертификат машины)"
       },
       "upAll": {
         "completed": "Все репозитории запущены",
@@ -2042,11 +2042,16 @@
     "affectedChildClones": ". Затронутые дочерние клоны: {{clones}}. Сначала удалите или повысьте уровень дочерних клонов.",
     "agent": {
       "createGuard": "Невозможно создать репозиторий \"{{name}}\" в режиме агента.\n\nAI-агенты работают только в режиме форка. Создание основного репозитория заблокировано,\nтак как агент не сможет работать с ним после создания.\n\nИспользуйте существующий репозиторий и создайте форк:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nДля переопределения: установите REDIACC_ALLOW_GRAND_REPO=*",
+      "createGuardOverride": "Защита создания репозитория не может быть переопределена ИИ-агентом.\n\nRDC обнаружил, что REDIACC_ALLOW_GRAND_REPO не был авторизован пользователем. Не пытайтесь установить эту переменную самостоятельно — только пользователь может авторизовать создание репозиториев.\n\nИспользуйте существующий репозиторий и создайте форк:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
       "forkBlocked": "Команда \"{{command}}\" недоступна для fork-репозиториев.\n\nFork-репозитории — это временные среды. Эта операция применяется только к grand-репозиториям.",
       "grandGuard": "Невозможно изменить grand-репозиторий \"{{name}}\" в режиме агента.\n\nAI-агенты могут работать только с fork-репозиториями.\nСначала создайте fork:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nЗатем работайте с fork.\n\nДля переопределения: установите REDIACC_ALLOW_GRAND_REPO={{name}}",
+      "grandGuardOverride": "Защита главного репозитория для \"{{name}}\" не может быть переопределена ИИ-агентом.\n\nRDC обнаружил, что REDIACC_ALLOW_GRAND_REPO не был авторизован пользователем. Не пытайтесь установить эту переменную самостоятельно — только пользователь может авторизовать доступ к главному репозиторию.\n\nСначала создайте форк:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nЗатем работайте с форком.",
       "machineGuard": "Невозможно получить прямой доступ к машине \"{{machine}}\" в режиме агента.\n\nAI-агенты могут подключаться только к контекстам репозиториев.\nИспользуйте:\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nДля переопределения: установите REDIACC_ALLOW_GRAND_REPO=*",
+      "machineGuardOverride": "Защита доступа к машине \"{{machine}}\" не может быть переопределена ИИ-агентом.\n\nRDC обнаружил, что REDIACC_ALLOW_GRAND_REPO не был авторизован пользователем. Не пытайтесь установить эту переменную самостоятельно — только пользователь может авторизовать прямой доступ к машине.\n\nПодключитесь к контексту репозитория вместо этого:\n  rdc term {{machine}} <repository> -c \"<command>\"",
       "mcpGrandGuard": "Невозможно изменить grand-репозиторий \"{{name}}\" в режиме только fork.\n\nИспользуйте repo_fork для создания fork, затем работайте с fork.\nДля доступа к grand-репозиториям перезапустите MCP-сервер с --allow-grand",
-      "mcpMachineGuard": "Невозможно получить прямой доступ к машине в режиме только fork.\n\nУкажите репозиторий для подключения к контексту репозитория.\nДля прямого доступа к машине перезапустите MCP-сервер с --allow-grand"
+      "mcpGrandGuardOverride": "Защита главного репозитория для \"{{name}}\" не может быть переопределена ИИ-агентом.\n\nRDC обнаружил, что REDIACC_ALLOW_GRAND_REPO не был авторизован пользователем. Не пытайтесь установить эту переменную.\n\nИспользуйте repo_fork для создания форка, затем работайте с форком.",
+      "mcpMachineGuard": "Невозможно получить прямой доступ к машине в режиме только fork.\n\nУкажите репозиторий для подключения к контексту репозитория.\nДля прямого доступа к машине перезапустите MCP-сервер с --allow-grand",
+      "mcpMachineGuardOverride": "Защита доступа к машине не может быть переопределена ИИ-агентом.\n\nRDC обнаружил, что REDIACC_ALLOW_GRAND_REPO не был авторизован пользователем. Не пытайтесь установить эту переменную.\n\nУкажите репозиторий для подключения к контексту репозитория."
     },
     "authFailed": "Аутентификация не удалась",
     "authRequired": "Требуется аутентификация. Выполните: rdc auth login",
@@ -2095,6 +2100,7 @@
     },
     "regionRequired": "Требуется имя региона. Используйте --region или установите контекст.",
     "registrationFailed": "Регистрация не удалась",
+    "remoteNotFound": "\"{{name}}\" не является известной машиной или хранилищем. Машины: {{machines}}. Хранилища: {{storages}}",
     "repositoryNotFound": "Репозиторий \"{{name}}\" не найден",
     "repositoryRequired": "Требуется имя репозитория. Используйте --repository <name>.",
     "resourceNotFound": "{{resource}} не найден",
@@ -2166,7 +2172,7 @@
       "setupMachine": "Запустить установку на удалённой машине"
     },
     "examples": "Примеры:",
-    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REPOSITORY_PATH}/... — never Docker named volumes (excluded from forks/backups)\n    • Containers must bind to SERVICE_IP to avoid port conflicts\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REPOSITORY_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
+    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REDIACC_WORKING_DIR}/... — never Docker named volumes (excluded from forks/backups)\n    • Containers must bind to SERVICE_IP to avoid port conflicts\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REDIACC_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
     "machine": {
       "containers": "Список запущенных контейнеров",
       "health": "Проверка здоровья для CI/CD",
@@ -2177,7 +2183,7 @@
       "create": "Создать зашифрованный репозиторий",
       "down": "Остановить сервисы",
       "fork": "CoW-форк для тестирования",
-      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REPOSITORY_PATH}/data, ${REPOSITORY_PATH}/config, etc.\n    • Example: volumes: ['${REPOSITORY_PATH}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
+      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "Список резервных копий в хранилище",
       "pull": "Получить резервную копию из хранилища",
       "push": "Отправить резервную копию в хранилище",

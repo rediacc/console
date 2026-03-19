@@ -30,6 +30,7 @@ import {
 } from './license.js';
 import { outputService } from './output.js';
 import { telemetryService } from './telemetry.js';
+import { getActiveLabel, getDoneLabel, formatStepDuration } from '../utils/timeline.js';
 import {
   buildLocalVault,
   getLocalRenetPath,
@@ -80,7 +81,7 @@ interface LocalExecuteOptions {
   /** Parameters to pass to the function */
   params?: Record<string, unknown>;
   /** Extra machines for multi-machine operations (e.g. backup) */
-  extraMachines?: Record<string, { ip: string; port?: number; user: string }>;
+  extraMachines?: Record<string, { ip: string; port?: number; user: string; datastore?: string }>;
   /** Timeout in milliseconds (default: 10 minutes) */
   timeout?: number;
   /** Enable debug output */
@@ -91,6 +92,12 @@ interface LocalExecuteOptions {
   skipRouterRestart?: boolean;
   /** Capture stdout/stderr instead of streaming them directly */
   captureOutput?: boolean;
+  /** Enable NDJSON events mode — renet emits structured events instead of text */
+  eventsMode?: boolean;
+  /** Callback for handling NDJSON events in real-time */
+  onEvent?: (event: RenetEvent) => void;
+  /** Suppress CLI step spinners (steps still recorded for timeline) */
+  quietSpinners?: boolean;
 }
 
 /** Result of local execution */
@@ -115,6 +122,10 @@ export interface LocalExecuteResult {
   stdout?: string;
   /** Captured stderr, when requested */
   stderr?: string;
+  /** Step timing from renet (parsed from JSON output) */
+  steps?: { name: string; duration_ms: number; detail?: string }[];
+  /** All steps combined (CLI overhead + renet execution) */
+  allSteps?: { name: string; duration_ms: number; detail?: string }[];
 }
 
 interface RepoLicenseContext {
@@ -326,6 +337,122 @@ async function resolveRepoIdentity(
  * Uses direct SSH to the target machine and runs `renet execute --executor local`
  * with vault JSON piped via stdin. This avoids double-SSH (CLI→renet→machine).
  */
+/** Structured event from renet's NDJSON events protocol. */
+export interface RenetEvent {
+  type: 'log' | 'step_start' | 'step_done' | 'output' | 'result';
+  ts?: string;
+  name?: string;
+  msg?: string;
+  level?: string;
+  duration_ms?: number;
+  detail?: string;
+  data?: unknown;
+}
+
+type StepEntry = { name: string; duration_ms: number; detail?: string };
+
+/** Try to extract steps from a single parsed JSON object. */
+function collectStepsFromParsed(parsed: Record<string, unknown>, steps: StepEntry[]): void {
+  if (parsed.step_done && typeof parsed.step_done === 'object') {
+    const step = parsed.step_done as StepEntry;
+    if (step.name && typeof step.duration_ms === 'number') {
+      steps.push(step);
+    }
+  }
+  if (Array.isArray(parsed.steps) && parsed.steps.length > 0) {
+    steps.push(...(parsed.steps as StepEntry[]));
+  }
+}
+
+/** Extract step timing from renet's combined stdout+stderr output. */
+function extractStepsFromOutput(output: string): StepEntry[] | undefined {
+  const steps: StepEntry[] = [];
+
+  for (const rawLine of output.split('\n')) {
+    const line = rawLine.trim();
+    const jsonStart = line.indexOf('{');
+    if (jsonStart < 0) continue;
+    try {
+      const parsed = JSON.parse(line.slice(jsonStart)) as Record<string, unknown>;
+      collectStepsFromParsed(parsed, steps);
+    } catch {
+      // Not valid JSON, continue
+    }
+  }
+
+  return steps.length > 0 ? steps : undefined;
+}
+
+type StdoutHandler = (data: Buffer) => void;
+
+/** Handle NDJSON events from renet in events mode. */
+function handleEventsStdout(onEvent: (event: RenetEvent) => void): StdoutHandler {
+  let lineBuffer = '';
+  return (data: Buffer) => {
+    lineBuffer += data.toString();
+    const lines = lineBuffer.split('\n');
+    lineBuffer = lines.pop() ?? '';
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      try {
+        const event = JSON.parse(trimmed) as RenetEvent;
+        onEvent(event);
+      } catch {
+        process.stdout.write(`${line}\n`);
+      }
+    }
+  };
+}
+
+/** Render real-time step events from a single parsed JSON object. */
+function renderStepEvent(parsed: Record<string, unknown>): void {
+  if (parsed.step_start && typeof parsed.step_start === 'object') {
+    const s = parsed.step_start as { name?: string };
+    if (s.name) process.stdout.write(`⠋ ${getActiveLabel(s.name)}...`);
+  } else if (parsed.step_done && typeof parsed.step_done === 'object') {
+    const s = parsed.step_done as { name?: string; duration_ms?: number };
+    if (s.name && s.duration_ms != null) {
+      process.stdout.write(`\r✔ ${getDoneLabel(s.name)} (${formatStepDuration(s.duration_ms)})\n`);
+    }
+  }
+}
+
+/** Handle stdout in non-events, non-capture mode: detect step events and render them. */
+function handleStepDetectionStdout(): StdoutHandler {
+  let stepLineBuffer = '';
+  return (data: Buffer) => {
+    stepLineBuffer += data.toString();
+    const stepLines = stepLineBuffer.split('\n');
+    stepLineBuffer = stepLines.pop() ?? '';
+    for (const sl of stepLines) {
+      const trimmed = sl.trim();
+      const jsonIdx = trimmed.indexOf('{');
+      if (jsonIdx < 0) continue;
+      try {
+        const p = JSON.parse(trimmed.slice(jsonIdx)) as Record<string, unknown>;
+        renderStepEvent(p);
+      } catch {
+        /* not JSON, ignore */
+      }
+    }
+  };
+}
+
+/** Create the appropriate stdout handler based on execution options. */
+function createStdoutHandler(options: LocalExecuteOptions): StdoutHandler {
+  if (options.eventsMode && options.onEvent) {
+    return handleEventsStdout(options.onEvent);
+  }
+  if (options.captureOutput) {
+    return () => {};
+  }
+  if (options.debug) {
+    return (data: Buffer) => process.stdout.write(data);
+  }
+  return handleStepDetectionStdout();
+}
+
 class LocalExecutorService {
   private async resolveLicenseFailure(
     result: LocalExecuteResult,
@@ -649,42 +776,57 @@ class LocalExecutorService {
     }
   }
 
+  /**
+   * Build the remote renet command string.
+   */
+  private buildRemoteCommand(remoteRenetPath: string, eventsMode?: boolean): string {
+    const eventsFlag = eventsMode ? ' --events' : '';
+    return this.detectEnvironment() === 'development'
+      ? `sudo env REDIACC_ENVIRONMENT=development ${remoteRenetPath} execute --executor local${eventsFlag}`
+      : `sudo ${remoteRenetPath} execute --executor local${eventsFlag}`;
+  }
+
   private async runRemoteExecution(
     sftp: SFTPClient,
     remoteRenetPath: string,
     vault: string,
     options: LocalExecuteOptions
   ): Promise<LocalExecuteResult> {
-    const command =
-      this.detectEnvironment() === 'development'
-        ? `sudo env REDIACC_ENVIRONMENT=development ${remoteRenetPath} execute --executor local`
-        : `sudo ${remoteRenetPath} execute --executor local`;
+    const command = this.buildRemoteCommand(remoteRenetPath, options.eventsMode);
     let stdout = '';
     let stderr = '';
+    const stdoutHandler = createStdoutHandler(options);
     const execStart = Date.now();
     const exitCode = await sftp.execStreaming(command, {
       stdin: vault,
       onStdout: (data) => {
         stdout += data;
-        if (!options.captureOutput) {
-          process.stdout.write(data);
-        }
+        stdoutHandler(data);
       },
       onStderr: (data) => {
         stderr += data;
-        if (!options.captureOutput) {
+        if (options.debug && !options.captureOutput && !options.eventsMode) {
           process.stderr.write(data);
         }
       },
     });
 
-    // Extract renet's own operation duration from its log output (e.g. "duration_ms=1237")
-    // Renet may log to either stdout or stderr depending on configuration
     const combined = stdout + stderr;
     const renetDurationMatch = /operation completed.*?duration_ms=(\d+)/.exec(combined);
     const operationMs = renetDurationMatch
       ? Number.parseInt(renetDurationMatch[1], 10)
       : Date.now() - execStart;
+
+    const steps = extractStepsFromOutput(combined);
+
+    if (exitCode !== 0 && !options.debug && !options.captureOutput) {
+      const output = combined.trim();
+      if (output) {
+        process.stderr.write(`\n--- renet output (exit code ${exitCode}) ---\n`);
+        process.stderr.write(`${output}\n`);
+        process.stderr.write('---\n\n');
+      }
+    }
 
     return {
       success: exitCode === 0,
@@ -693,7 +835,61 @@ class LocalExecutorService {
       durationMs: operationMs,
       stdout,
       stderr,
+      steps,
     };
+  }
+
+  /**
+   * Provision renet, verify machine setup, and handle pre-flight licensing.
+   * Returns the remote renet path and whether the binary was uploaded.
+   */
+  private async provisionAndVerify(
+    config: Awaited<ReturnType<typeof configService.getLocalConfig>>,
+    machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
+    sshPrivateKey: string,
+    options: LocalExecuteOptions,
+    sftp: SFTPClient,
+    cliSteps: { name: string; duration_ms: number }[],
+    quiet: boolean
+  ): Promise<{ remoteRenetPath: string; renetUploaded: boolean }> {
+    const provStart = Date.now();
+    const provisionFn = () => provisionRenetToRemote(config, machine, sshPrivateKey, options, sftp);
+    const { remotePath: remoteRenetPath, uploaded: renetUploaded } = quiet
+      ? await provisionFn()
+      : await timedStep(t('timing.step.provisioning'), 'timing.step.renetProvisioned', provisionFn);
+    cliSteps.push({ name: 'renet_provision', duration_ms: Date.now() - provStart });
+
+    const verifyStart = Date.now();
+    const verifyFn = () =>
+      verifyMachineSetup(
+        machine,
+        sshPrivateKey,
+        { ...options, functionName: options.functionName },
+        sftp
+      );
+    if (quiet) {
+      await verifyFn();
+    } else {
+      await timedStep(t('timing.step.verifying'), 'timing.step.machineVerified', verifyFn);
+    }
+    cliSteps.push({ name: 'machine_verify', duration_ms: Date.now() - verifyStart });
+
+    if (renetUploaded) {
+      await this.maybeRefreshInvalidSignatures(machine, sshPrivateKey, remoteRenetPath, sftp);
+    }
+
+    if (
+      options.functionName === 'repository_create' ||
+      options.functionName === 'repository_fork'
+    ) {
+      const licStart = Date.now();
+      await timedStep(t('timing.step.activating'), 'timing.step.licenseActivated', () =>
+        this.ensureMachineActivationForProvisioning(machine, sshPrivateKey, remoteRenetPath, sftp)
+      );
+      cliSteps.push({ name: 'license', duration_ms: Date.now() - licStart });
+    }
+
+    return { remoteRenetPath, renetUploaded };
   }
 
   /**
@@ -702,8 +898,8 @@ class LocalExecutorService {
    */
   async execute(options: LocalExecuteOptions): Promise<LocalExecuteResult> {
     const startTime = Date.now();
-    const stepStart = startTime;
-    const configSpinner = startSpinner(t('timing.step.loading'));
+    const configSpinner = options.quietSpinners ? null : startSpinner(t('timing.step.loading'));
+    const cliSteps: { name: string; duration_ms: number }[] = [];
 
     try {
       const config = await configService.getLocalConfig();
@@ -734,68 +930,34 @@ class LocalExecutorService {
         repositoryCredentials,
         repositoryConfigs,
       });
-      const configText = t('timing.step.configLoaded', {
-        duration: formatDuration(Date.now() - stepStart),
-      });
+      const configMs = Date.now() - startTime;
+      cliSteps.push({ name: 'config', duration_ms: configMs });
+      const configText = t('timing.step.configLoaded', { duration: formatDuration(configMs) });
       if (configSpinner) {
         stopSpinner(true, configText);
-      } else {
+      } else if (!options.quietSpinners) {
         outputService.info(configText);
       }
 
-      const sftp = await timedStep(
-        t('timing.step.connecting'),
-        'timing.step.connected',
-        async () => {
-          const client = new SFTPClient({
-            host: machine.ip,
-            port: machine.port ?? DEFAULTS.SSH.PORT,
-            username: machine.user,
-            privateKey: sshPrivateKey,
-          });
-          await client.connect();
-          return client;
-        }
-      );
+      const quiet = options.quietSpinners ?? false;
+      const sshStart = Date.now();
+      const sftp = quiet
+        ? await this.connectSftp(machine, sshPrivateKey)
+        : await timedStep(t('timing.step.connecting'), 'timing.step.connected', () =>
+            this.connectSftp(machine, sshPrivateKey)
+          );
+      cliSteps.push({ name: 'ssh_connect', duration_ms: Date.now() - sshStart });
 
       try {
-        const { remotePath: remoteRenetPath, uploaded: renetUploaded } = await timedStep(
-          t('timing.step.provisioning'),
-          'timing.step.renetProvisioned',
-          () => provisionRenetToRemote(config, machine, sshPrivateKey, options, sftp)
+        const { remoteRenetPath } = await this.provisionAndVerify(
+          config,
+          machine,
+          sshPrivateKey,
+          options,
+          sftp,
+          cliSteps,
+          quiet
         );
-
-        await timedStep(t('timing.step.verifying'), 'timing.step.machineVerified', () =>
-          verifyMachineSetup(
-            machine,
-            sshPrivateKey,
-            {
-              ...options,
-              functionName: options.functionName,
-            },
-            sftp
-          )
-        );
-
-        // Auto-refresh repo licenses with invalid signatures after renet binary update
-        if (renetUploaded) {
-          await this.maybeRefreshInvalidSignatures(machine, sshPrivateKey, remoteRenetPath, sftp);
-        }
-
-        // Pre-flight for create/fork: ensure machine activation (writes machine license to disk)
-        if (
-          options.functionName === 'repository_create' ||
-          options.functionName === 'repository_fork'
-        ) {
-          await timedStep(t('timing.step.activating'), 'timing.step.licenseActivated', () =>
-            this.ensureMachineActivationForProvisioning(
-              machine,
-              sshPrivateKey,
-              remoteRenetPath,
-              sftp
-            )
-          );
-        }
 
         const result = await this.executeWithConnectedSftp(
           sftp,
@@ -806,6 +968,8 @@ class LocalExecutorService {
           sshPrivateKey,
           startTime
         );
+        result.allSteps = [...cliSteps, ...(result.steps ?? [])];
+
         if (result.success) {
           outputService.setOperationDuration(result.operationDurationMs ?? result.durationMs);
         }
@@ -822,6 +986,20 @@ class LocalExecutorService {
         durationMs: Date.now() - startTime,
       };
     }
+  }
+
+  private async connectSftp(
+    machine: { ip: string; port?: number; user: string },
+    sshPrivateKey: string
+  ): Promise<SFTPClient> {
+    const client = new SFTPClient({
+      host: machine.ip,
+      port: machine.port ?? DEFAULTS.SSH.PORT,
+      username: machine.user,
+      privateKey: sshPrivateKey,
+    });
+    await client.connect();
+    return client;
   }
 
   /**

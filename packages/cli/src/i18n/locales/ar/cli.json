@@ -1128,11 +1128,10 @@
       "backup": {
         "description": "إدارة النسخ الاحتياطي للمستودعات",
         "list": {
-          "description": "عرض قائمة النسخ الاحتياطية المتاحة على التخزين أو الجهاز",
+          "description": "عرض قائمة النسخ الاحتياطية المتاحة على جهاز بعيد (جهاز أو تخزين)",
           "listing": "جارٍ سرد النسخ الاحتياطية...",
-          "optionFromMachine": "اسم الجهاز المصدر",
-          "optionFromStorage": "اسم التخزين المصدر",
-          "sourceRequired": "حدد --from <storage> أو --from-machine <machine>"
+          "optionFrom": "اسم الجهاز أو التخزين المصدر (يتم الكشف تلقائياً من الإعدادات)",
+          "sourceRequired": "حدد --from <remote> (اسم جهاز أو تخزين من الإعدادات)"
         }
       },
       "batchConfirm": "{{action}} جميع المستودعات {{count}} على \"{{machine}}\"؟ [y/N]",
@@ -1189,7 +1188,7 @@
       "fork": {
         "alreadyExists": "المستودع \"{{name}}\" موجود بالفعل في السياق",
         "checkpointOption": "إنشاء نقطة تفتيش CRIU على المصدر قبل التفريع (التقاط حالة ذاكرة العمليات للاستعادة عند fork)",
-        "completed": "تم إنشاء النسخة. للنشر محلياً: repo up {{repository}} -m {{machine}} --mount. لترحيل النسخة إلى جهاز آخر: backup push {{repository}} -m {{machine}} --to-machine <target> && repo up {{repository}} -m <target> --mount",
+        "completed": "تم إنشاء النسخة. للنشر محلياً: repo up {{repository}} -m {{machine}} --mount. لترحيل النسخة إلى جهاز آخر: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "إنشاء نسخة CoW (نسخ عند الكتابة) من مستودع",
         "descriptionShort": "إنشاء نسخة CoW من مستودع (GUID جديد، networkId، نطاق IP)",
         "failed": "فشل إنشاء النسخة",
@@ -1197,7 +1196,8 @@
         "rollback": "تم التراجع عن تكوين \"{{repository}}\"",
         "starting": "جارٍ إنشاء نسخة من \"{{parent}}\" باسم \"{{repository}}\" على \"{{machine}}\"...",
         "tagOption": "وسم النسخة (ينشئ اسم:وسم)",
-        "tagRequired": "الوسم مطلوب للنسخة. الاستخدام: rdc repo fork <parent> <tag> -m <machine>"
+        "tagRequired": "الوسم مطلوب للنسخة. الاستخدام: rdc repo fork <parent> <tag> -m <machine>",
+        "upOption": "تركيب وبدء الخدمات بعد التفريع (fork + mount + up في أمر واحد)"
       },
       "list": {
         "completed": "اكتمل العرض",
@@ -1225,29 +1225,29 @@
         "uidOption": "معرّف المالك UID (افتراضي: 7111)"
       },
       "pull": {
-        "description": "سحب نسخة احتياطية للمستودع من التخزين أو جهاز",
-        "descriptionShort": "سحب نسخة احتياطية للمستودع من التخزين أو الجهاز",
+        "deployed": "تم نشر المستودع \"{{repo}}\" على {{machine}}",
+        "deployFailed": "فشل نشر \"{{repo}}\" بعد السحب",
+        "deploying": "جارٍ نشر \"{{repo}}\" على {{machine}}...",
+        "description": "سحب مستودع من جهاز بعيد (جهاز أو تخزين). احذف الاسم لسحب جميع المستودعات. يتم الكشف عن نوع المصدر تلقائياً من الإعدادات. استخدم --up للنشر بعد السحب",
+        "descriptionShort": "سحب مستودع من جهاز بعيد (جهاز أو تخزين)",
         "optionForce": "فرض الكتابة فوق المستودع الموجود",
-        "optionFromMachine": "اسم الجهاز المصدر",
-        "optionFromStorage": "اسم التخزين المصدر",
+        "optionFrom": "اسم الجهاز أو التخزين المصدر (يتم الكشف تلقائياً من الإعدادات)",
+        "optionUp": "بعد السحب، قم بتركيب ونشر المستودع على هذا الجهاز",
         "pulling": "جارٍ سحب نسخة احتياطية لـ \"{{repo}}\"...",
-        "sourceRequired": "حدد --from <storage> أو --from-machine <machine>"
+        "sourceRequired": "حدد --from <remote> (اسم جهاز أو تخزين من الإعدادات)"
       },
       "push": {
         "deployed": "تم نشر المستودع \"{{repo}}\" على {{machine}}",
         "deployFailed": "فشل نشر \"{{repo}}\" بعد الدفع",
         "deploying": "جارٍ نشر \"{{repo}}\" على {{machine}}...",
-        "description": "دفع نسخة احتياطية للمستودع إلى التخزين أو جهاز",
-        "descriptionShort": "دفع نسخة احتياطية للمستودع إلى التخزين أو الجهاز",
-        "destIgnoredForStorage": "تم تجاهل --dest {{provided}}: النسخ الاحتياطية للتخزين تستخدم GUID المستودع ({{dest}})",
-        "destRequired": "حدد --to <storage> أو --to-machine <machine>",
-        "optionCheckpoint": "إنشاء نقطة فحص للحاوية (نسخ احتياطي ساخن)",
-        "optionDest": "اسم ملف الوجهة",
+        "description": "دفع مستودع إلى جهاز بعيد (جهاز أو تخزين). احذف الاسم لدفع جميع المستودعات. يتم الكشف عن نوع الهدف تلقائياً من الإعدادات. للنقل بين الأجهزة، يتم نسخ صورة المستودع المشفرة بنفس GUID — هذا نسخ احتياطي/ترحيل، وليس fork. لإنشاء fork مستقل، استخدم 'repo fork' أولاً، ثم ادفع. استخدم --up للنشر بعد الدفع",
+        "descriptionShort": "دفع مستودع إلى جهاز بعيد (جهاز أو تخزين)",
+        "destRequired": "حدد --to <remote> (اسم جهاز أو تخزين من الإعدادات)",
+        "optionCheckpoint": "إنشاء نقطة فحص CRIU قبل النسخ الاحتياطي (التقاط حالة ذاكرة العمليات للترحيل المباشر)",
         "optionForce": "فرض الكتابة فوق النسخة الاحتياطية الموجودة",
-        "optionProvider": "مزود السحابة لتوفير الجهاز الهدف تلقائيًا إذا لم يكن موجودًا (من config provider add)",
+        "optionProvision": "تزويد الجهاز الهدف تلقائياً عبر مزود السحابة إذا لم يكن موجوداً",
         "optionTag": "علامة النشر للإصدارات",
-        "optionToMachine": "اسم الجهاز الوجهة",
-        "optionToStorage": "اسم التخزين الوجهة",
+        "optionTo": "اسم الجهاز أو التخزين الوجهة (يتم الكشف تلقائياً من الإعدادات)",
         "optionUp": "بعد الدفع، قم بتركيب ونشر المستودع على الجهاز الهدف",
         "pushing": "جارٍ دفع نسخة احتياطية لـ \"{{repo}}\" إلى {{dest}}..."
       },
@@ -1344,6 +1344,7 @@
         "starting": "جارٍ إلغاء تثبيت \"{{repository}}\" على \"{{machine}}\"..."
       },
       "up": {
+        "checkpointOption": "استعادة نقطة CRIU عند البدء (استئناف العمليات من حالة الذاكرة المحفوظة)",
         "completed": "تم بدء الخدمات",
         "description": "نشر أو تحديث مستودع (تحميل، بدء الخدمات)",
         "descriptionShort": "نشر أو تحديث مستودع على جهاز",
@@ -1352,8 +1353,7 @@
         "mountOption": "تثبيت المستودع أولاً",
         "skipCheckpointOption": "تخطي استعادة نقطة تفتيش CRIU حتى لو كانت بيانات checkpoint موجودة (فرض بدء جديد)",
         "starting": "جارٍ بدء الخدمات لـ \"{{repository}}\" على \"{{machine}}\"...",
-        "tlsOption": "طلب شهادة TLS مخصصة لهذا المستودع (النسخ المتفرعة تستخدم شهادة الجهاز المشتركة افتراضيًا)",
-        "checkpointOption": "استعادة نقطة CRIU عند البدء (استئناف العمليات من حالة الذاكرة المحفوظة)"
+        "tlsOption": "طلب شهادة TLS مخصصة لهذا المستودع (النسخ المتفرعة تستخدم شهادة الجهاز المشتركة افتراضيًا)"
       },
       "upAll": {
         "completed": "تم بدء جميع المستودعات",
@@ -2042,11 +2042,16 @@
     "affectedChildClones": ". النسخ المتأثرة: {{clones}}. احذف أو ارقِ النسخ الفرعية أولاً.",
     "agent": {
       "createGuard": "لا يمكن إنشاء المستودع \"{{name}}\" في وضع الوكيل.\n\nوكلاء الذكاء الاصطناعي يعملون في وضع التفريع فقط. إنشاء مستودع رئيسي محظور\nلأن الوكيل لا يستطيع العمل عليه بعد ذلك.\n\nاستخدم مستودعًا موجودًا وفرّعه بدلاً من ذلك:\n  rdc repo fork <parent> -m <machine> --tag {{name}}\n\nللتجاوز: عيّن REDIACC_ALLOW_GRAND_REPO=*",
+      "createGuardOverride": "لا يمكن لوكيل الذكاء الاصطناعي تجاوز حماية إنشاء المستودعات.\n\nاكتشف RDC أن REDIACC_ALLOW_GRAND_REPO لم يتم تفويضه من قبل المستخدم. لا تحاول تعيين هذا المتغير بنفسك — فقط المستخدم يمكنه تفويض إنشاء المستودعات.\n\nاستخدم مستودعاً موجوداً وقم بتفريعه بدلاً من ذلك:\n  rdc repo fork <parent> -m <machine> --tag {{name}}",
       "forkBlocked": "الأمر \"{{command}}\" غير متاح على مستودعات fork.\n\nمستودعات fork هي بيئات مؤقتة. هذه العملية تنطبق فقط على المستودعات الرئيسية.",
       "grandGuard": "لا يمكن تعديل المستودع الرئيسي \"{{name}}\" في وضع الوكيل.\n\nوكلاء الذكاء الاصطناعي يمكنهم العمل فقط على مستودعات fork.\nأنشئ fork أولاً:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nثم قم بالعمل على fork بدلاً من ذلك.\n\nللتجاوز: عيّن REDIACC_ALLOW_GRAND_REPO={{name}}",
+      "grandGuardOverride": "لا يمكن لوكيل الذكاء الاصطناعي تجاوز حماية المستودع الرئيسي لـ \"{{name}}\".\n\nاكتشف RDC أن REDIACC_ALLOW_GRAND_REPO لم يتم تفويضه من قبل المستخدم. لا تحاول تعيين هذا المتغير بنفسك — فقط المستخدم يمكنه تفويض الوصول إلى المستودع الرئيسي.\n\nقم بإنشاء fork أولاً:\n  rdc repo fork {{name}} -m <machine> --tag <tag-name>\n\nثم قم بالعمل على fork بدلاً من ذلك.",
       "machineGuard": "لا يمكن الوصول إلى الآلة \"{{machine}}\" مباشرة في وضع الوكيل.\n\nوكلاء الذكاء الاصطناعي يمكنهم الاتصال فقط بسياقات المستودعات.\nاستخدم:\n  rdc term {{machine}} <repository> -c \"<command>\"\n\nللتجاوز: عيّن REDIACC_ALLOW_GRAND_REPO=*",
+      "machineGuardOverride": "لا يمكن لوكيل الذكاء الاصطناعي تجاوز حماية الوصول إلى الجهاز \"{{machine}}\".\n\nاكتشف RDC أن REDIACC_ALLOW_GRAND_REPO لم يتم تفويضه من قبل المستخدم. لا تحاول تعيين هذا المتغير بنفسك — فقط المستخدم يمكنه تفويض الوصول المباشر إلى الجهاز.\n\nاتصل بسياق مستودع بدلاً من ذلك:\n  rdc term {{machine}} <repository> -c \"<command>\"",
       "mcpGrandGuard": "لا يمكن تعديل المستودع الرئيسي \"{{name}}\" في وضع fork فقط.\n\nاستخدم repo_fork لإنشاء fork أولاً، ثم قم بالعمل على fork.\nللسماح بالوصول إلى المستودع الرئيسي، أعد تشغيل خادم MCP مع --allow-grand",
-      "mcpMachineGuard": "لا يمكن الوصول إلى الآلة مباشرة في وضع fork فقط.\n\nحدد مستودعاً للاتصال بسياق المستودع.\nللسماح بالوصول المباشر إلى الآلة، أعد تشغيل خادم MCP مع --allow-grand"
+      "mcpGrandGuardOverride": "لا يمكن لوكيل الذكاء الاصطناعي تجاوز حماية المستودع الرئيسي لـ \"{{name}}\".\n\nاكتشف RDC أن REDIACC_ALLOW_GRAND_REPO لم يتم تفويضه من قبل المستخدم. لا تحاول تعيين هذا المتغير.\n\nاستخدم repo_fork لإنشاء fork أولاً، ثم قم بالعمل على fork.",
+      "mcpMachineGuard": "لا يمكن الوصول إلى الآلة مباشرة في وضع fork فقط.\n\nحدد مستودعاً للاتصال بسياق المستودع.\nللسماح بالوصول المباشر إلى الآلة، أعد تشغيل خادم MCP مع --allow-grand",
+      "mcpMachineGuardOverride": "لا يمكن لوكيل الذكاء الاصطناعي تجاوز حماية الوصول إلى الجهاز.\n\nاكتشف RDC أن REDIACC_ALLOW_GRAND_REPO لم يتم تفويضه من قبل المستخدم. لا تحاول تعيين هذا المتغير.\n\nحدد مستودعاً للاتصال بسياق المستودع."
     },
     "authFailed": "فشلت المصادقة",
     "authRequired": "المصادقة مطلوبة. قم بتشغيل: rdc auth login",
@@ -2095,6 +2100,7 @@
     },
     "regionRequired": "اسم المنطقة مطلوب. استخدم --region أو اضبط السياق.",
     "registrationFailed": "فشل التسجيل",
+    "remoteNotFound": "\"{{name}}\" ليس جهازاً أو تخزيناً معروفاً. الأجهزة: {{machines}}. التخزينات: {{storages}}",
     "repositoryNotFound": "لم يتم العثور على المستودع \"{{name}}\"",
     "repositoryRequired": "اسم المستودع مطلوب. استخدم --repository <name>.",
     "resourceNotFound": "{{resource}} غير موجود",
@@ -2166,7 +2172,7 @@
       "setupMachine": "تشغيل الإعداد على جهاز بعيد"
     },
     "examples": "أمثلة:",
-    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REPOSITORY_PATH}/... — never Docker named volumes (excluded from forks/backups)\n    • Containers must bind to SERVICE_IP to avoid port conflicts\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REPOSITORY_PATH}, ${REPOSITORY_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REPOSITORY_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
+    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REDIACC_WORKING_DIR}/... — never Docker named volumes (excluded from forks/backups)\n    • Containers must bind to SERVICE_IP to avoid port conflicts\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REDIACC_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
     "machine": {
       "containers": "عرض الحاويات قيد التشغيل",
       "health": "فحص صحة الجهاز لـ CI/CD",
@@ -2177,7 +2183,7 @@
       "create": "إنشاء مستودع مشفر",
       "down": "إيقاف الخدمات",
       "fork": "نسخ CoW للاختبار",
-      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REPOSITORY_PATH}/data, ${REPOSITORY_PATH}/config, etc.\n    • Example: volumes: ['${REPOSITORY_PATH}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
+      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
       "listBackups": "عرض النسخ الاحتياطية على التخزين",
       "pull": "سحب نسخة احتياطية من التخزين",
       "push": "دفع نسخة احتياطية إلى التخزين",

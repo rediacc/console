@@ -359,8 +359,6 @@ export interface RdcConfig {
   // Defaults & Global Settings
   // ============================================================================
 
-  /** Default machine for commands */
-  machine?: string;
   /** Preferred language code (en, de, es, fr, ja, ar, ru, tr, zh) */
   language?: string;
   /** Network ID counter. Monotonically increasing. */
@@ -369,6 +367,8 @@ export interface RdcConfig {
   universalUser?: string;
   /** Days to retain archived repos before prune considers them stale (default: 7) */
   pruneGraceDays?: number;
+  /** Default datastore size for new provisions and machine setup (e.g., "95%", "500G") */
+  datastoreSize?: string;
 }
 
 /**
@@ -378,6 +378,8 @@ export function createEmptyRdcConfig(): RdcConfig {
   return {
     id: randomUUID(),
     version: 1,
+    language: 'en',
+    datastoreSize: '95%',
   };
 }
 
