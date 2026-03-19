@@ -168,7 +168,6 @@ if [[ "$PLATFORM" == "win" ]]; then
     ICON_FILE="$REPO_ROOT/packages/desktop/resources/icon.ico"
     if [[ -f "$ICON_FILE" ]]; then
         log_step "Embedding icon into Windows executable..."
-        npm install --no-save rcedit@latest 2>/dev/null
         node -e "require('rcedit').rcedit(process.argv[1], {icon: process.argv[2]}).then(() => console.log('Icon embedded')).catch(e => { console.error(e.message); process.exit(1) })" "$OUTPUT_DIR/$BINARY_NAME" "$ICON_FILE"
         log_info "Icon embedded from $ICON_FILE"
     else
