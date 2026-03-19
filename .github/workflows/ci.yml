@@ -492,6 +492,9 @@ jobs:
       vm-os-list: '["none", "ubuntu-24.04", "debian-12"]'
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+      AWS_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
+      AWS_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
+      AWS_SES_REGION: ${{ secrets.AWS_SES_REGION }}
 
   # ============================================================================
   # COLUMN 4D: OPS VM TESTS
