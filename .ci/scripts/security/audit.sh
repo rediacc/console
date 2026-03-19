@@ -73,9 +73,32 @@ main() {
     prod_critical=$(jq '.metadata.vulnerabilities.critical // 0' audit-prod.json)
 
     if [[ "$prod_total" -gt 0 ]]; then
-        ci_error "Production vulnerabilities: $prod_critical critical, $prod_high high, $prod_total total — cannot be allowlisted"
-        log_info "See audit-prod.json for details"
-        exit 1
+        # Check if all production advisories are in .audit-prod-allowlist (upstream issues only)
+        local prod_advisories_list
+        prod_advisories_list=$(get_advisories audit-prod.json)
+        local prod_allowed=()
+        if [[ -f ".audit-prod-allowlist" ]]; then
+            while IFS= read -r line; do
+                line="${line%%#*}"; line="${line// /}"
+                [[ -n "$line" ]] && prod_allowed+=("$line")
+            done <.audit-prod-allowlist
+        fi
+        local prod_unallowed=""
+        for advisory in $prod_advisories_list; do
+            local found=false
+            for allowed in "${prod_allowed[@]+"${prod_allowed[@]}"}"; do
+                [[ "$advisory" == "$allowed" ]] && found=true && break
+            done
+            [[ "$found" == "false" ]] && prod_unallowed="$prod_unallowed $advisory"
+        done
+        if [[ -n "$prod_unallowed" ]]; then
+            ci_error "Production vulnerabilities: $prod_critical critical, $prod_high high, $prod_total total"
+            log_info "Unallowed advisories:$prod_unallowed"
+            log_info "See audit-prod.json for details"
+            log_info "For upstream issues with no fix, add advisory ID to .audit-prod-allowlist"
+            exit 1
+        fi
+        ci_warn "Allowed production vulnerabilities: $prod_total (see .audit-prod-allowlist)"
     fi
 
     log_success "No production vulnerabilities"

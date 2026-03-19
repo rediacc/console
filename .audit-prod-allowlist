@@ -1,0 +1,9 @@
+# Production dependency vulnerability allowlist
+# Only for upstream issues with no available fix.
+# Each line: advisory source ID (from npm audit --json)
+# Review periodically and remove when upstream publishes a fix.
+
+# fast-xml-parser <=5.5.5 (used by @astrojs/rss build tool, not runtime-exposed)
+# @astrojs/rss pins exact version 5.4.1, no override possible
+# Tracking: https://github.com/nicbarker/fast-xml-parser/issues
+1114772
