@@ -7,3 +7,5 @@
 # @astrojs/rss pins exact version 5.4.1, no override possible
 # Tracking: https://github.com/nicbarker/fast-xml-parser/issues
 1114772
+# fast-xml-parser entity expansion bypass (same root cause, extended range <=5.5.6)
+1114952

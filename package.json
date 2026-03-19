@@ -129,7 +129,7 @@
     "inflight": "npm:@isaacs/inflight@^1.0.1",
     "@npmcli/move-file": "npm:@npmcli/fs@^3.1.0",
     "rollup": "^4.59.0",
-    "fast-xml-parser": "5.5.6",
+    "fast-xml-parser": "5.5.7",
     "lodash": ">=4.17.22",
     "svgo": "^4.0.1",
     "devalue": "^5.6.4",
