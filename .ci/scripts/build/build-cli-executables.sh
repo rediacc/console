@@ -168,7 +168,7 @@ if [[ "$PLATFORM" == "win" ]]; then
     ICON_FILE="$REPO_ROOT/packages/desktop/resources/icon.ico"
     if [[ -f "$ICON_FILE" ]]; then
         log_step "Embedding icon into Windows executable..."
-        npx @electron/rcedit "$OUTPUT_DIR/$BINARY_NAME" --set-icon "$ICON_FILE"
+        npx rcedit "$OUTPUT_DIR/$BINARY_NAME" --set-icon "$ICON_FILE"
         log_info "Icon embedded from $ICON_FILE"
     else
         log_warn "Icon file not found at $ICON_FILE - skipping icon embedding"
