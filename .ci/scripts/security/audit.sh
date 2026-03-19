@@ -79,7 +79,8 @@ main() {
         local prod_allowed=()
         if [[ -f ".audit-prod-allowlist" ]]; then
             while IFS= read -r line; do
-                line="${line%%#*}"; line="${line// /}"
+                line="${line%%#*}"
+                line="${line// /}"
                 [[ -n "$line" ]] && prod_allowed+=("$line")
             done <.audit-prod-allowlist
         fi
