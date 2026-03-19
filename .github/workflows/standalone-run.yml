@@ -296,8 +296,14 @@ jobs:
           echo ""
 
           if [ "${EMAIL_SENT}" == "true" ]; then
-            # Redacted output — all sensitive info sent via email
-            echo "🌐 WEB ACCESS: [sent via email]"
+            # Show tunnel URLs in logs, redact credentials
+            echo "🌐 WEB ACCESS:"
+            echo "   • Cloudflare Tunnel: ${TUNNEL_URL}"
+            if [ "${{ inputs.desktop-environment }}" != "none" ]; then
+              echo "   • Desktop (noVNC): ${TUNNEL_URL}/desktop"
+              echo "   • Environment: ${{ inputs.desktop-environment }}"
+              echo "   • Resolution: ${{ inputs.desktop-resolution }}"
+            fi
             echo ""
             if [ "${{ matrix.vm-os }}" != "none" ] && [ "${{ steps.vms.outputs.kvm-available }}" == "true" ]; then
               echo "🖥️  VM INFRASTRUCTURE:"
@@ -314,7 +320,7 @@ jobs:
               echo "🔧 DEBUG ACCESS: [sent via email]"
               echo ""
             fi
-            echo "📧 All access details have been sent to your email."
+            echo "📧 Sensitive details have been sent to your email."
           else
             # Full output — fallback when email was not sent
             echo "🌐 WEB ACCESS:"

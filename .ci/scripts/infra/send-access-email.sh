@@ -185,80 +185,47 @@ log_step "Sending access information email to ${RECIPIENT}..."
 # BUILD HTML EMAIL
 # =============================================================================
 
-# General info table rows
+# Email contains ONLY sensitive data — no URLs that could trigger spam filters
+TD="style=\"padding: 6px 12px;\""
+TH="style=\"padding: 6px 12px; font-weight: bold;\""
+SENS_TABLE="style=\"border-collapse: collapse; width: 100%; background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px;\""
+
 HTML="<html><body style=\"font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 700px; margin: 0 auto; color: #1a1a1a;\">"
 HTML+="<h2 style=\"border-bottom: 2px solid #556b2f; padding-bottom: 8px;\">Access Information — ${RUN_NAME}</h2>"
 HTML+="<table style=\"border-collapse: collapse; width: 100%;\">"
-HTML+="<tr><td style=\"padding: 6px 12px; font-weight: bold;\">Image Version</td><td style=\"padding: 6px 12px;\">${TAG}</td></tr>"
-HTML+="<tr><td style=\"padding: 6px 12px; font-weight: bold;\">Duration</td><td style=\"padding: 6px 12px;\">${DURATION} minutes</td></tr>"
+HTML+="<tr><td ${TH}>Image Version</td><td ${TD}>${TAG}</td></tr>"
+HTML+="<tr><td ${TH}>Duration</td><td ${TD}>${DURATION} minutes</td></tr>"
 
 if [[ -n "$RUN_URL" ]]; then
-    HTML+="<tr><td style=\"padding: 6px 12px; font-weight: bold;\">Workflow Run</td><td style=\"padding: 6px 12px;\"><a href=\"${RUN_URL}\">View in GitHub</a></td></tr>"
-fi
-
-if [[ -n "$TUNNEL_URL" ]]; then
-    HTML+="<tr><td style=\"padding: 6px 12px; font-weight: bold;\">Tunnel URL</td><td style=\"padding: 6px 12px;\"><a href=\"${TUNNEL_URL}\">${TUNNEL_URL}</a></td></tr>"
+    HTML+="<tr><td ${TH}>Workflow Run</td><td ${TD}><a href=\"${RUN_URL}\">View in GitHub</a></td></tr>"
 fi
 
 HTML+="</table>"
+HTML+="<p style=\"color: #6b7280; font-size: 13px;\">Tunnel URLs and other non-sensitive details are available in the workflow logs.</p>"
 
-# Desktop section
-if [[ "$DESKTOP_ENV" != "none" ]] && [[ -n "$TUNNEL_URL" ]]; then
-    HTML+="<h3>Desktop Access</h3><table style=\"border-collapse: collapse; width: 100%;\">"
-    HTML+="<tr><td style=\"padding: 6px 12px; font-weight: bold;\">noVNC</td><td style=\"padding: 6px 12px;\"><a href=\"${TUNNEL_URL}/desktop\">${TUNNEL_URL}/desktop</a></td></tr>"
-    HTML+="<tr><td style=\"padding: 6px 12px; font-weight: bold;\">Environment</td><td style=\"padding: 6px 12px;\">${DESKTOP_ENV}</td></tr>"
-    HTML+="<tr><td style=\"padding: 6px 12px; font-weight: bold;\">Resolution</td><td style=\"padding: 6px 12px;\">${DESKTOP_RES}</td></tr>"
-    HTML+="</table>"
-fi
-
-# VM section
+# VM credentials + SSH access
 if [[ "$VM_OS" != "none" ]] && [[ "$VM_KVM" == "true" ]]; then
-    HTML+="<h3>VM Infrastructure</h3><table style=\"border-collapse: collapse; width: 100%;\">"
-    HTML+="<tr><td style=\"padding: 6px 12px; font-weight: bold;\">Provider</td><td style=\"padding: 6px 12px;\">KVM</td></tr>"
-    HTML+="<tr><td style=\"padding: 6px 12px; font-weight: bold;\">OS</td><td style=\"padding: 6px 12px;\">${VM_OS}</td></tr>"
-    HTML+="<tr><td style=\"padding: 6px 12px; font-weight: bold;\">Bridge IP</td><td style=\"padding: 6px 12px;\">${BRIDGE_IP}</td></tr>"
-    HTML+="<tr><td style=\"padding: 6px 12px; font-weight: bold;\">Worker IPs</td><td style=\"padding: 6px 12px;\">${WORKER_IPS}</td></tr>"
-    HTML+="</table>"
-
-    HTML+="<h3>VM Service URLs</h3><table style=\"border-collapse: collapse; width: 100%;\">"
-    HTML+="<tr><td style=\"padding: 6px 12px; font-weight: bold;\">API</td><td style=\"padding: 6px 12px;\">http://${BRIDGE_IP}</td></tr>"
-    HTML+="<tr><td style=\"padding: 6px 12px; font-weight: bold;\">Web UI</td><td style=\"padding: 6px 12px;\">http://${BRIDGE_IP}</td></tr>"
-    HTML+="<tr><td style=\"padding: 6px 12px; font-weight: bold;\">Registry</td><td style=\"padding: 6px 12px;\">${BRIDGE_IP}:5000</td></tr>"
-    HTML+="</table>"
-
     HTML+="<h3 style=\"color: #dc2626;\">VM Credentials</h3>"
-    HTML+="<table style=\"border-collapse: collapse; width: 100%; background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px;\">"
-    HTML+="<tr><td style=\"padding: 6px 12px; font-weight: bold;\">Username</td><td style=\"padding: 6px 12px;\"><code>${VM_USER}</code></td></tr>"
-    HTML+="<tr><td style=\"padding: 6px 12px; font-weight: bold;\">Password</td><td style=\"padding: 6px 12px;\"><code>${VM_PASS}</code></td></tr>"
+    HTML+="<table ${SENS_TABLE}>"
+    HTML+="<tr><td ${TH}>Username</td><td ${TD}><code>${VM_USER}</code></td></tr>"
+    HTML+="<tr><td ${TH}>Password</td><td ${TD}><code>${VM_PASS}</code></td></tr>"
     HTML+="</table>"
 
     HTML+="<h3>SSH Access</h3><table style=\"border-collapse: collapse; width: 100%;\">"
-    HTML+="<tr><td style=\"padding: 6px 12px; font-weight: bold;\">Bridge</td><td style=\"padding: 6px 12px;\"><code>ssh ${VM_USER}@${BRIDGE_IP}</code></td></tr>"
+    HTML+="<tr><td ${TH}>Bridge</td><td ${TD}><code>ssh ${VM_USER}@${BRIDGE_IP}</code></td></tr>"
 
     IFS=',' read -ra WORKER_ARRAY <<<"${WORKER_IPS}"
     for i in "${!WORKER_ARRAY[@]}"; do
-        HTML+="<tr><td style=\"padding: 6px 12px; font-weight: bold;\">Worker $((i + 1))</td><td style=\"padding: 6px 12px;\"><code>ssh ${VM_USER}@${WORKER_ARRAY[$i]}</code></td></tr>"
+        HTML+="<tr><td ${TH}>Worker $((i + 1))</td><td ${TD}><code>ssh ${VM_USER}@${WORKER_ARRAY[$i]}</code></td></tr>"
     done
     HTML+="</table>"
 fi
 
-# Database section
+# Database connection string
 if [[ -n "$CONNECTION_STRING" ]]; then
-    # Connection string is injected safely via jq below (PLACEHOLDER_CONNSTR)
     HTML+="<h3 style=\"color: #dc2626;\">Database</h3>"
-    HTML+="<table style=\"border-collapse: collapse; width: 100%; background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px;\">"
-    HTML+="<tr><td style=\"padding: 6px 12px; font-weight: bold;\">Connection String</td><td style=\"padding: 6px 12px;\"><code style=\"word-break: break-all; font-size: 12px;\">PLACEHOLDER_CONNSTR</code></td></tr>"
-    HTML+="</table>"
-fi
-
-# Debug section
-if [[ -n "$DEBUG_SSH" ]]; then
-    HTML+="<h3 style=\"color: #dc2626;\">Debug Access</h3>"
-    HTML+="<table style=\"border-collapse: collapse; width: 100%; background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px;\">"
-    HTML+="<tr><td style=\"padding: 6px 12px; font-weight: bold;\">SSH</td><td style=\"padding: 6px 12px;\"><code>${DEBUG_SSH}</code></td></tr>"
-    if [[ -n "$DEBUG_WEB" ]]; then
-        HTML+="<tr><td style=\"padding: 6px 12px; font-weight: bold;\">Web</td><td style=\"padding: 6px 12px;\"><a href=\"${DEBUG_WEB}\">${DEBUG_WEB}</a></td></tr>"
-    fi
+    HTML+="<table ${SENS_TABLE}>"
+    HTML+="<tr><td ${TH}>Connection String</td><td ${TD}><code style=\"word-break: break-all; font-size: 12px;\">PLACEHOLDER_CONNSTR</code></td></tr>"
     HTML+="</table>"
 fi
 
