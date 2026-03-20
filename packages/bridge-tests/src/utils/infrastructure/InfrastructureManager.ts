@@ -269,10 +269,10 @@ export class InfrastructureManager {
         throw new Error(`SCP failed: ${copyResult.stderr}`);
       }
 
-      // Move to final location and set permissions using SSHExecutor
+      // Move to final location, set permissions, and symlink /usr/bin/renet
       const moveResult = await this.sshExecutor.execute(
         ip,
-        `sudo mkdir -p $(dirname ${VM_RENET_INSTALL_PATH}) && sudo mv /tmp/renet ${VM_RENET_INSTALL_PATH} && sudo chmod +x ${VM_RENET_INSTALL_PATH}`,
+        `sudo mkdir -p $(dirname ${VM_RENET_INSTALL_PATH}) && sudo mv /tmp/renet ${VM_RENET_INSTALL_PATH} && sudo chmod +x ${VM_RENET_INSTALL_PATH} && sudo ln -sf ${VM_RENET_INSTALL_PATH} /usr/bin/renet`,
         { execTimeout: 10000 }
       );
 
