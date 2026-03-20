@@ -268,42 +268,8 @@ test.describe('Local Context Commands @cli @core', () => {
     });
   });
 
-  test.describe('config set-ssh', () => {
-    test('should update SSH configuration', async () => {
-      const result = await runner.run(
-        [
-          '--config',
-          testLocalContext,
-          'config',
-          'set-ssh',
-          '--private-key',
-          '~/.ssh/id_ed25519',
-          '--public-key',
-          '~/.ssh/id_ed25519.pub',
-        ],
-        { skipJsonParse: true }
-      );
-
-      expect(result.success).toBe(true);
-      expect(result.stdout).toContain('updated');
-    });
-  });
-
-  test.describe('config set-renet', () => {
-    test('should update renet path', async () => {
-      const result = await runner.run(
-        ['--config', testLocalContext, 'config', 'set-renet', '/usr/bin/renet'],
-        { skipJsonParse: true }
-      );
-
-      expect(result.success).toBe(true);
-      expect(result.stdout).toContain('set to');
-
-      // Verify in show
-      const showResult = await runner.run(['--config', testLocalContext, 'config', 'show']);
-      expect((showResult.json as { renetPath: string }).renetPath).toBe('/usr/bin/renet');
-    });
-  });
+  // Note: config set-ssh and config set-renet commands were removed.
+  // SSH keys and renet path are now set via: config init --ssh-key ... --renet-path ...
 
   test.describe('config machine remove', () => {
     test('should remove a machine', async () => {
