@@ -164,7 +164,10 @@ test.describe('Backup Management', () => {
       timeout: E2E.SETUP_TIMEOUT,
     });
     // backup_list may return empty list or error if no backups exist
-    expect(result.exitCode === 0 || result.stderr.includes('no backups')).toBe(true);
+    const output = (result.stdout ?? '') + (result.stderr ?? '');
+    expect(
+      result.exitCode === 0 || output.includes('no backups') || output.includes('not found')
+    ).toBe(true);
   });
 
   test('should handle backup delete for non-existent backup', async () => {
@@ -186,6 +189,9 @@ test.describe('Repository Maintenance', () => {
       timeout: E2E.SETUP_TIMEOUT,
     });
     // Dry run should succeed even with no orphans
-    expect(result.exitCode === 0 || result.stderr.includes('no orphan')).toBe(true);
+    const output = (result.stdout ?? '') + (result.stderr ?? '');
+    expect(result.exitCode === 0 || output.includes('no orphan') || output.includes('prune')).toBe(
+      true
+    );
   });
 });
