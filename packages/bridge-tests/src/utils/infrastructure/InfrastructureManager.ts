@@ -270,9 +270,10 @@ export class InfrastructureManager {
       }
 
       // Move to final location, set permissions, and symlink /usr/bin/renet
+      const installDir = VM_RENET_INSTALL_PATH.substring(0, VM_RENET_INSTALL_PATH.lastIndexOf('/'));
       const moveResult = await this.sshExecutor.execute(
         ip,
-        `sudo mkdir -p $(dirname ${VM_RENET_INSTALL_PATH}) && sudo mv /tmp/renet ${VM_RENET_INSTALL_PATH} && sudo chmod +x ${VM_RENET_INSTALL_PATH} && sudo ln -sf ${VM_RENET_INSTALL_PATH} /usr/bin/renet`,
+        `sudo mkdir -p ${installDir} && sudo mv /tmp/renet ${VM_RENET_INSTALL_PATH} && sudo chmod +x ${VM_RENET_INSTALL_PATH} && sudo ln -sf ${VM_RENET_INSTALL_PATH} /usr/bin/renet`,
         { execTimeout: 10000 }
       );
 
