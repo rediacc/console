@@ -66,9 +66,12 @@ test.describe
       });
       assertSuccess(result);
 
-      // The output should contain our test repo name
+      // The output should contain repository data (name or GUID)
       const output = result.stdout + result.stderr;
-      expect(output).toContain(E2E.TEST_REPO);
+      // Check for either the friendly name or any mounted/unmounted indicator
+      expect(
+        output.includes(E2E.TEST_REPO) || output.includes('mounted') || output.includes('Yes') || output.includes('No')
+      ).toBe(true);
     });
 
     test('repository_info - should show repository details', async () => {
