@@ -19,6 +19,9 @@ packages/*/src/**/*.js
 packages/*/src/**/*.js.map
 packages/*/src/**/*.d.ts
 !packages/*/src/**/*.generated.ts
+# Bridge-tests uses dual .ts/.js files (noEmit tsconfig, manually maintained JS)
+!packages/bridge-tests/src/**/*.js
+!packages/bridge-tests/src/**/*.d.ts
 
 # Desktop package compiled config
 packages/desktop/*.js
