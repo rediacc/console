@@ -70,7 +70,10 @@ test.describe
       const output = result.stdout + result.stderr;
       // Check for either the friendly name or any mounted/unmounted indicator
       expect(
-        output.includes(E2E.TEST_REPO) || output.includes('mounted') || output.includes('Yes') || output.includes('No')
+        output.includes(E2E.TEST_REPO) ||
+          output.includes('mounted') ||
+          output.includes('Yes') ||
+          output.includes('No')
       ).toBe(true);
     });
 
