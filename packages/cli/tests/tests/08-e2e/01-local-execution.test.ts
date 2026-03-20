@@ -120,6 +120,13 @@ test.describe('E2E Local Execution @cli @e2e', () => {
 
       const result = await runLocalFunction('unknown_function_xyz_123', 'vm1', { contextName });
 
+      // Unknown functions should fail with a non-zero exit code from renet.
+      // Log diagnostics if this unexpectedly succeeds (for debugging flaky runs).
+      if (result.success) {
+        console.warn(`[DIAG] unknown function returned exit ${result.exitCode}`);
+        console.warn(`[DIAG] stdout: ${result.stdout.slice(0, 500)}`);
+        console.warn(`[DIAG] stderr: ${result.stderr.slice(0, 500)}`);
+      }
       expect(result.success).toBe(false);
     });
 

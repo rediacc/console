@@ -40,6 +40,7 @@ test.describe
     let secondChecksum: string;
 
     test.beforeAll(async () => {
+      test.setTimeout(E2E.SETUP_TIMEOUT);
       test.skip(!config.enabled || !config.vm2Ip, 'E2E VMs not configured or VM2 not available');
       ssh1 = new SSHValidator(config.vm1Ip, config.sshUser, config.sshKeyPath);
       ssh2 = new SSHValidator(config.vm2Ip, config.sshUser, config.sshKeyPath);
@@ -47,9 +48,12 @@ test.describe
     });
 
     test.afterAll(async () => {
-      // Cleanup repos on both VMs
-      await safeDeleteRepo(E2E.MACHINE_VM1, E2E.TEST_REPO, ctxName);
-      await safeDeleteRepo(E2E.MACHINE_VM2, E2E.TEST_REPO, ctxName);
+      test.setTimeout(E2E.TEST_TIMEOUT);
+      // Cleanup repos on both VMs (parallel to stay within hook timeout)
+      await Promise.allSettled([
+        safeDeleteRepo(E2E.MACHINE_VM1, E2E.TEST_REPO, ctxName),
+        safeDeleteRepo(E2E.MACHINE_VM2, E2E.TEST_REPO, ctxName),
+      ]);
       await cleanup?.();
     });
 
