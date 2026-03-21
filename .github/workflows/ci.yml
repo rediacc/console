@@ -790,6 +790,7 @@ jobs:
           echo "CLI_VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Upload CLI to R2 staging
+        if: env.R2_ACCESS_KEY_ID != ''
         run: |
           RELEASES_BASE_URL="https://releases.rediacc.com/staging/pr-${PR_NUMBER}" \
             bash .ci/scripts/build/generate-cli-manifest.sh \
@@ -802,17 +803,23 @@ jobs:
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
 
       - name: Test Binary Install
+        if: env.R2_ACCESS_KEY_ID != ''
         run: |
           RELEASES_BASE_URL="https://releases.rediacc.com/staging/pr-${PR_NUMBER}" \
             .ci/scripts/test/test-install-methods.sh \
             --method binary --version "$CLI_VERSION" --platform linux --arch x64
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
 
       - name: Test Quick Install
+        if: env.R2_ACCESS_KEY_ID != ''
         run: |
           SITE_URL="https://pr-${PR_NUMBER}.rediacc.workers.dev" \
           RELEASES_BASE_URL="https://releases.rediacc.com/staging/pr-${PR_NUMBER}" \
             .ci/scripts/test/test-install-methods.sh \
             --method quick --version "$CLI_VERSION" --platform linux --arch x64
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
 
   # ============================================================================
   # CI COMPLETE - Gate for merge queue
