@@ -15,7 +15,12 @@ import {
 } from '@rediacc/shared/e2e';
 import { t } from '../i18n/index.js';
 import { ValidationError } from '../utils/errors.js';
-import { getSubscriptionServerUrl, getSubscriptionTokenState } from './subscription-auth.js';
+import {
+  getSubscriptionServerUrl,
+  getSubscriptionTokenState,
+  loadServerConfig,
+  saveServerConfig,
+} from './subscription-auth.js';
 
 /** Cached server key material (imported once per process). */
 let serverKeyCache: {
@@ -25,17 +30,69 @@ let serverKeyCache: {
 
 async function getServerKeyMaterial() {
   if (!serverKeyCache) {
+    // 1. Explicit env var override (development mode)
     const envKey = process.env.X25519_PUBLIC_KEY;
     if (process.env.REDIACC_ENVIRONMENT === 'development' && envKey) {
       serverKeyCache = { key: await importX25519PublicKey(envKey), keyId: 'dev' };
-    } else {
-      serverKeyCache = {
-        key: await importX25519PublicKey(CURRENT_SERVER_E2E_KEY.publicKeySpki),
-        keyId: CURRENT_SERVER_E2E_KEY.keyId,
-      };
+      return serverKeyCache;
     }
+
+    // 2. server.json (written by install script or `subscription login --server`)
+    const serverConfig = loadServerConfig();
+    if (serverConfig?.e2ePublicKey) {
+      serverKeyCache = {
+        key: await importX25519PublicKey(serverConfig.e2ePublicKey),
+        keyId: 'discovered',
+      };
+      return serverKeyCache;
+    }
+
+    // 3. Runtime discovery from server's .well-known endpoint
+    const discoveredKey = await discoverServerKey();
+    if (discoveredKey) {
+      serverKeyCache = {
+        key: await importX25519PublicKey(discoveredKey.publicKeySpki),
+        keyId: discoveredKey.keyId,
+      };
+      return serverKeyCache;
+    }
+
+    // 4. Hardcoded production key (fallback)
+    serverKeyCache = {
+      key: await importX25519PublicKey(CURRENT_SERVER_E2E_KEY.publicKeySpki),
+      keyId: CURRENT_SERVER_E2E_KEY.keyId,
+    };
   }
   return serverKeyCache;
+}
+
+/** Fetch the server's E2E public key from its .well-known endpoint. */
+async function discoverServerKey(): Promise<{
+  keyId: string;
+  publicKeySpki: string;
+} | null> {
+  try {
+    const serverUrl = getSubscriptionServerUrl();
+    const resp = await fetch(`${serverUrl}/account/api/v1/.well-known/server-info`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!resp.ok) return null;
+    const info = (await resp.json()) as {
+      e2e?: { keys?: { keyId: string; publicKeySpki: string }[] };
+    };
+    const key = info.e2e?.keys?.[0];
+    if (!key?.publicKeySpki) return null;
+
+    // Cache in server.json for next startup
+    const serverConfig = loadServerConfig();
+    if (serverConfig && !serverConfig.e2ePublicKey) {
+      saveServerConfig({ ...serverConfig, e2ePublicKey: key.publicKeySpki });
+    }
+
+    return key;
+  } catch {
+    return null;
+  }
 }
 
 /** Default HTTP method for account server requests. */

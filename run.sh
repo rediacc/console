@@ -854,6 +854,170 @@ build_all() {
 }
 
 # =============================================================================
+# PR COMMANDS
+# =============================================================================
+
+pr_publish() {
+    check_node_version
+    require_var CLOUDFLARE_API_TOKEN
+
+    if ! command -v gh &>/dev/null; then
+        log_error "GitHub CLI (gh) is not installed"
+        log_info "Install from: https://cli.github.com/"
+        exit 1
+    fi
+
+    # Auto-discover Cloudflare account ID from GitHub repo variables
+    if [[ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+        log_step "Fetching CLOUDFLARE_ACCOUNT_ID from repo variables..."
+        CLOUDFLARE_ACCOUNT_ID=$(gh variable get CLOUDFLARE_ACCOUNT_ID 2>/dev/null) || {
+            log_error "Failed to fetch CLOUDFLARE_ACCOUNT_ID from repo variables"
+            log_info "Set CLOUDFLARE_ACCOUNT_ID env var or check 'gh auth status'"
+            exit 1
+        }
+        export CLOUDFLARE_ACCOUNT_ID
+    fi
+
+    log_step "Discovering PR number..."
+    local pr_number
+    pr_number=$(gh pr view --json number -q .number 2>/dev/null) || {
+        log_error "No PR found for current branch"
+        log_info "Push your branch and open a PR first"
+        exit 1
+    }
+    log_info "PR #${pr_number} → https://pr-${pr_number}.rediacc.workers.dev"
+
+    # Source private/account/.env for secrets and R2 credentials
+    local account_env="$ROOT_DIR/private/account/.env"
+    local env_vars=""
+    if [[ -f "$account_env" ]]; then
+        env_vars=$(set -a && source "$account_env" && set +a && env)
+    fi
+    _env() { echo "$env_vars" | grep "^$1=" | head -1 | cut -d= -f2-; }
+
+    # Build shared packages
+    log_step "Building shared packages..."
+    build_packages
+
+    # Build static sites (set PUBLIC_SITE_URL so install commands point to the preview)
+    local preview_url="https://pr-${pr_number}.rediacc.workers.dev"
+
+    log_step "Building www (marketing site)..."
+    PUBLIC_SITE_URL="$preview_url" npm run build:www
+
+    log_step "Building web (console)..."
+    VITE_BASE_PATH=/console/ npm run build:web
+
+    log_step "Building json (template catalog)..."
+    npm run build:json
+
+    # Build CLI binary (linux-x64) and upload to R2 staging via wrangler
+    local cli_version
+    cli_version=$(node -p "require('./packages/cli/package.json').version")
+    local staging_prefix="staging/pr-${pr_number}"
+
+    log_step "Building CLI binary (linux-x64)..."
+    "$ROOT_DIR/.ci/scripts/build/build-cli-executables.sh" --platform linux --arch x64
+
+    log_step "Generating CLI manifest..."
+    env RELEASES_BASE_URL="https://releases.rediacc.com/${staging_prefix}" \
+        bash "$ROOT_DIR/.ci/scripts/build/generate-cli-manifest.sh" \
+        --version "$cli_version" --input dist/cli/
+
+    log_step "Uploading CLI binary to R2 (${staging_prefix})..."
+    local r2_bucket="rediacc-releases"
+    for f in dist/cli/rdc-*; do
+        [[ -f "$f" ]] || continue
+        local fname
+        fname="$(basename "$f")"
+        npx wrangler r2 object put "${r2_bucket}/${staging_prefix}/cli/v${cli_version}/${fname}" --file "$f" --content-type application/octet-stream --remote
+        npx wrangler r2 object put "${r2_bucket}/${staging_prefix}/cli/latest/${fname}" --file "$f" --content-type application/octet-stream --remote
+    done
+    if [[ -f "dist/cli/manifest.json" ]]; then
+        npx wrangler r2 object put "${r2_bucket}/${staging_prefix}/cli/manifest.json" --file dist/cli/manifest.json --content-type application/json --remote
+    fi
+    echo "{\"version\":\"${cli_version}\"}" >/tmp/latest.json
+    npx wrangler r2 object put "${r2_bucket}/${staging_prefix}/cli/latest.json" --file /tmp/latest.json --content-type application/json --remote
+    rm -f /tmp/latest.json
+    log_info "CLI binary uploaded to R2 staging"
+
+    # Assemble pages into workers/www/dist/
+    log_step "Assembling pages..."
+    "$ROOT_DIR/.ci/scripts/build/build-pages.sh" --output dist/pages
+
+    # Rewrite install scripts for preview: releases URL + server URL
+    if [[ -n "${staging_prefix:-}" ]]; then
+        local staging_url="https://releases.rediacc.com/${staging_prefix}"
+        # Rewrite RELEASES_URL default
+        sed -i "s|REDIACC_RELEASES_URL:-https://releases.rediacc.com|REDIACC_RELEASES_URL:-${staging_url}|" \
+            "$ROOT_DIR/workers/www/dist/install.sh"
+        sed -i "s|REDIACC_RELEASES_URL:-https://releases.rediacc.com|REDIACC_RELEASES_URL:-${staging_url}|" \
+            "$ROOT_DIR/workers/www/dist/install.ps1" 2>/dev/null || true
+        # Rewrite SERVER_URL default so CLI auto-connects to the preview
+        sed -i "s|REDIACC_SERVER_URL:-}|REDIACC_SERVER_URL:-${preview_url}}|" \
+            "$ROOT_DIR/workers/www/dist/install.sh"
+        log_info "Rewrote install scripts for preview"
+    fi
+
+    # Build account portal
+    log_step "Building account portal..."
+    (cd "$ROOT_DIR/private/account/web" && npm install && npx vite build --outDir ../../../workers/www/dist/account)
+
+    # Install www worker deps
+    (cd "$ROOT_DIR/workers/www" && npm install)
+
+    # Deploy
+    log_step "Deploying pr-${pr_number}..."
+    "$ROOT_DIR/.ci/scripts/deploy/deploy-www.sh" --name "pr-${pr_number}"
+
+    # Set worker secrets from private/account/.env (secrets persist across deploys)
+    local worker_name="pr-${pr_number}"
+    if [[ -f "$account_env" ]] && [[ -n "$(_env ED25519_PRIVATE_KEY)" ]]; then
+        log_step "Setting worker secrets for ${worker_name} (from private/account/.env)..."
+
+        # Build secrets JSON, omitting empty values to avoid zod .min(1) failures
+        jq -n \
+            --arg ed25519_priv "$(_env ED25519_PRIVATE_KEY)" \
+            --arg ed25519_pub "$(_env ED25519_PUBLIC_KEY)" \
+            --arg x25519_priv "$(_env X25519_PRIVATE_KEY)" \
+            --arg x25519_pub "$(_env X25519_PUBLIC_KEY)" \
+            --arg api_key "$(_env API_KEY)" \
+            --arg jwt "$(_env JWT_SECRET)" \
+            --arg stripe "$(_env STRIPE_SANDBOX_SECRET_KEY)" \
+            --arg stripe_wh "$(_env STRIPE_WEBHOOK_SECRET)" \
+            --arg admin "$(_env ADMIN_EMAIL)" \
+            --arg ses_key "$(_env AWS_SES_ACCESS_KEY_ID)" \
+            --arg ses_secret "$(_env AWS_SES_SECRET_ACCESS_KEY)" \
+            --arg ses_region "$(_env AWS_SES_REGION)" \
+            --arg ses_from "$(_env AWS_SES_FROM)" \
+            --arg turnstile "$(_env TURNSTILE_SECRET_KEY)" \
+            '{
+              ED25519_PRIVATE_KEY: $ed25519_priv,
+              ED25519_PUBLIC_KEY: $ed25519_pub,
+              X25519_PRIVATE_KEY: $x25519_priv,
+              X25519_PUBLIC_KEY: $x25519_pub,
+              API_KEY: $api_key,
+              JWT_SECRET: $jwt,
+              STRIPE_SECRET_KEY: $stripe,
+              STRIPE_WEBHOOK_SECRET: $stripe_wh,
+              ADMIN_EMAIL: $admin,
+              AWS_SES_ACCESS_KEY_ID: $ses_key,
+              AWS_SES_SECRET_ACCESS_KEY: $ses_secret,
+              AWS_SES_REGION: $ses_region,
+              AWS_SES_FROM: $ses_from,
+              TURNSTILE_SECRET_KEY: $turnstile
+            } | with_entries(select(.value != ""))' | npx wrangler secret bulk --name "$worker_name"
+
+        log_info "Secrets set for ${worker_name}"
+    else
+        log_warn "Skipping secrets (private/account/.env missing or empty)"
+        log_info "Secrets persist across deploys. Run './run.sh account reset' to generate .env."
+    fi
+
+    log_info "Published to https://pr-${pr_number}.rediacc.workers.dev"
+}
+
+# =============================================================================
 # QUALITY COMMANDS
 # =============================================================================
 
@@ -1111,6 +1275,12 @@ FIX COMMANDS:
   fix lint            Auto-fix linting issues
   fix shell           Auto-fix shell script formatting (shfmt)
   fix all             Auto-fix all issues
+
+PR COMMANDS:
+  pr publish          Build and deploy to PR preview (pr-N.rediacc.workers.dev)
+                      Auto-discovers PR number and Cloudflare account ID via gh CLI.
+                      Sets worker secrets from private/account/.env if present.
+                      Requires: CLOUDFLARE_API_TOKEN
 
 CHECK COMMANDS (PRE-PUSH):
   check quick         Fast checks (lint, format, types)
@@ -1417,6 +1587,20 @@ main() {
                     log_error "Unknown check command: ${1:-}"
                     echo ""
                     echo "Usage: ./run.sh check [quick|full]"
+                    exit 1
+                    ;;
+            esac
+            ;;
+
+        # PR commands
+        pr)
+            shift
+            case "${1:-}" in
+                publish) pr_publish ;;
+                *)
+                    log_error "Unknown pr command: ${1:-}"
+                    echo ""
+                    echo "Usage: ./run.sh pr [publish]"
                     exit 1
                     ;;
             esac

@@ -31,6 +31,12 @@ packages/desktop/out/
 # Astro cache
 .astro/
 
+# Wrangler local state
+.wrangler/
+
+# Workers staging builds
+workers/www/staging/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

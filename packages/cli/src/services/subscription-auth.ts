@@ -6,6 +6,33 @@ import { getConfigDir } from '@rediacc/shared/paths';
 const TOKEN_FILE_ENV = 'REDIACC_SUBSCRIPTION_TOKEN_FILE';
 const SUBSCRIPTION_TOKEN_ENV = 'REDIACC_SUBSCRIPTION_TOKEN';
 const DEV_ENV = 'development';
+const SERVER_CONFIG_FILE = 'server.json';
+
+export interface ServerConfig {
+  accountServer: string;
+  e2ePublicKey?: string;
+}
+
+export function getServerConfigFile(): string {
+  return join(getConfigDir(), SERVER_CONFIG_FILE);
+}
+
+export function loadServerConfig(): ServerConfig | null {
+  const configFile = getServerConfigFile();
+  if (!existsSync(configFile)) return null;
+
+  try {
+    return JSON.parse(readFileSync(configFile, 'utf-8')) as ServerConfig;
+  } catch {
+    return null;
+  }
+}
+
+export function saveServerConfig(config: ServerConfig): void {
+  const configFile = getServerConfigFile();
+  mkdirSync(dirname(configFile), { recursive: true, mode: 0o700 });
+  writeFileSync(configFile, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
+}
 
 export interface StoredSubscriptionToken {
   token: string;
@@ -41,6 +68,7 @@ export function getSubscriptionServerUrl(preferredServerUrl?: string): string {
   return normalizeServerUrl(
     preferredServerUrl ??
       process.env.REDIACC_ACCOUNT_SERVER ??
+      loadServerConfig()?.accountServer ??
       SUBSCRIPTION_DEFAULTS.ACCOUNT_SERVER_URL
   );
 }
