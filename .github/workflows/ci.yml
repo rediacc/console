@@ -771,6 +771,8 @@ jobs:
       always() &&
       needs.deploy-preview.result == 'success' &&
       needs.build-cli.result == 'success'
+    environment:
+      name: pr-${{ github.event.pull_request.number }}
     env:
       PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
