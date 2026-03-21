@@ -9,16 +9,8 @@ on:
     types: [checks_requested]
   schedule:
     - cron: '0 1 * * *'  # Nightly at 1:00 UTC (2:00 CET)
-  workflow_dispatch:
-    inputs:
-      browsers:
-        description: 'E2E browsers to test'
-        required: false
-        type: choice
-        default: 'chromium-only'
-        options:
-          - 'chromium-only'
-          - 'all-browsers'
+  # workflow_dispatch removed: manual triggers don't satisfy PR checks and waste CI budget.
+  # Use empty commits (git commit --allow-empty) to retrigger PR CI instead.
 
 # Minimal default permissions — jobs that need more declare their own
 permissions:
