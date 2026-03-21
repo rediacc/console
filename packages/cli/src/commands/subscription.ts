@@ -20,6 +20,7 @@ import {
   getSubscriptionScopeMismatch,
   getSubscriptionServerUrl,
   getSubscriptionTokenState,
+  saveServerConfig,
   saveStoredSubscriptionToken,
 } from '../services/subscription-auth.js';
 import { authorizeSubscriptionViaDeviceCode } from '../services/subscription-device-auth.js';
@@ -65,6 +66,10 @@ export function registerSubscriptionCommands(program: Command): void {
     .option('--server <url>', t('options.serverUrl'))
     .action(async (options) => {
       try {
+        // Persist server config when --server is explicitly provided
+        if (options.server) {
+          saveServerConfig({ accountServer: options.server });
+        }
         const serverUrl = getSubscriptionServerUrl(options.server);
 
         if (options.token) {

@@ -104,7 +104,7 @@ head_sampling_rate = 1
 directory = "./dist"
 binding = "ASSETS"
 not_found_handling = "404-page"
-run_worker_first = ["/account", "/account/*"]
+run_worker_first = ["/*"]
 
 [[d1_databases]]
 binding = "DB"

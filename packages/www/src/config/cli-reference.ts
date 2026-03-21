@@ -4,8 +4,10 @@
  * flags, or the JSON envelope format change.
  */
 
+import { SITE_URL } from './constants';
+
 export const CLI_TOOL = 'rdc';
-export const CLI_INSTALL = 'curl -fsSL https://www.rediacc.com/install.sh | bash';
+export const CLI_INSTALL = `curl -fsSL ${SITE_URL}/install.sh | bash`;
 
 export const CLI_FLAGS = [
   { flag: '--output json', alias: '-o json', description: 'machine-readable JSON output' },

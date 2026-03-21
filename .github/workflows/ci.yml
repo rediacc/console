@@ -707,6 +707,8 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           SECRET_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
           SECRET_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
+          SECRET_X25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_X25519_PRIVATE_KEY }}
+          SECRET_X25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_X25519_PUBLIC_KEY }}
           SECRET_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
           SECRET_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
           SECRET_STRIPE_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
@@ -725,6 +727,8 @@ jobs:
           jq -n \
             --arg ed25519_priv "$SECRET_ED25519_PRIVATE_KEY" \
             --arg ed25519_pub "$SECRET_ED25519_PUBLIC_KEY" \
+            --arg x25519_priv "$SECRET_X25519_PRIVATE_KEY" \
+            --arg x25519_pub "$SECRET_X25519_PUBLIC_KEY" \
             --arg api_key "$SECRET_API_KEY" \
             --arg jwt "$SECRET_JWT_SECRET" \
             --arg stripe "$SECRET_STRIPE_KEY" \
@@ -738,6 +742,8 @@ jobs:
             '{
               ED25519_PRIVATE_KEY: $ed25519_priv,
               ED25519_PUBLIC_KEY: $ed25519_pub,
+              X25519_PRIVATE_KEY: $x25519_priv,
+              X25519_PUBLIC_KEY: $x25519_pub,
               API_KEY: $api_key,
               JWT_SECRET: $jwt,
               STRIPE_SECRET_KEY: $stripe,
