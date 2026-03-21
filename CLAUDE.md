@@ -173,6 +173,10 @@ When fixing CI failures, follow this loop:
 3. **Fix on notification**: When the background watch completes, check for failures with `gh run view <id> --json jobs --jq '.jobs[] | select(.conclusion == "failure") | {name}'`.
 4. **Fix, commit, push, repeat**: Fix the issue, commit, push, and watch again. Continue until green.
 
+### No-auto-retry: cancelled runs are intentional
+
+A CI watchdog automatically cancels in-progress runs when a new push arrives on the same branch. This enables fast iteration — only the latest push matters. **Never re-run a cancelled CI run** — cancelled means superseded, not failed. Always find the latest run from the most recent push. Re-running is only appropriate for transient errors (network failures, flaky infrastructure) on failed — not cancelled — runs.
+
 ### Submodule commit order
 
 Always commit submodules before the parent repo:

@@ -758,13 +758,68 @@ jobs:
           echo "**PR:** #${PR_NUMBER}" >> $GITHUB_STEP_SUMMARY
 
   # ============================================================================
+  # TEST PREVIEW INSTALL - Verify CLI install methods work against PR preview
+  # Downloads linux-x64 binary from build-cli, uploads to R2 staging,
+  # then tests binary download and quick install against the preview deployment.
+  # ============================================================================
+  test-preview-install:
+    name: Test Preview Install
+    needs: [initialize, deploy-preview, build-cli]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: >-
+      always() &&
+      needs.deploy-preview.result == 'success' &&
+      needs.build-cli.result == 'success'
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+
+      - name: Download linux-x64 CLI binary
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+        with:
+          name: build-cli-linux-x64-${{ github.sha }}
+          path: dist/cli/
+
+      - name: Resolve CLI version
+        run: |
+          VERSION=$(jq -r '.version' packages/cli/package.json)
+          echo "CLI_VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Upload CLI to R2 staging
+        run: |
+          RELEASES_BASE_URL="https://releases.rediacc.com/staging/pr-${PR_NUMBER}" \
+            bash .ci/scripts/build/generate-cli-manifest.sh \
+            --version "$CLI_VERSION" --input dist/cli/
+          .ci/scripts/deploy/upload-to-r2.sh \
+            --version "$CLI_VERSION" --staging "pr-${PR_NUMBER}" --cli-dir dist/cli/
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+
+      - name: Test Binary Install
+        run: |
+          RELEASES_BASE_URL="https://releases.rediacc.com/staging/pr-${PR_NUMBER}" \
+            .ci/scripts/test/test-install-methods.sh \
+            --method binary --version "$CLI_VERSION" --platform linux --arch x64
+
+      - name: Test Quick Install
+        run: |
+          SITE_URL="https://pr-${PR_NUMBER}.rediacc.workers.dev" \
+          RELEASES_BASE_URL="https://releases.rediacc.com/staging/pr-${PR_NUMBER}" \
+            .ci/scripts/test/test-install-methods.sh \
+            --method quick --version "$CLI_VERSION" --platform linux --arch x64
+
+  # ============================================================================
   # CI COMPLETE - Gate for merge queue
   # This job only succeeds if ALL CI jobs pass
   # ============================================================================
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-desktop, build-cli, package-tests, deploy-dryrun, tests, standalone-run-test, elite-run-test, ops-tests, deploy-preview]
+    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-desktop, build-cli, package-tests, deploy-dryrun, tests, standalone-run-test, elite-run-test, ops-tests, deploy-preview, test-preview-install]
     if: always() && !cancelled()
     steps:
       - name: Check all jobs passed
@@ -785,6 +840,12 @@ jobs:
           DEPLOY_PREVIEW_OK="false"
           if [[ "${{ needs.deploy-preview.result }}" == "success" ]] || [[ "${{ needs.deploy-preview.result }}" == "skipped" ]]; then
             DEPLOY_PREVIEW_OK="true"
+          fi
+
+          # test-preview-install can be skipped when deploy-preview is skipped
+          PREVIEW_INSTALL_OK="false"
+          if [[ "${{ needs.test-preview-install.result }}" == "success" ]] || [[ "${{ needs.test-preview-install.result }}" == "skipped" ]]; then
+            PREVIEW_INSTALL_OK="true"
           fi
 
           # stripe-sandbox can be skipped for non-PR events or fork PRs
@@ -836,7 +897,8 @@ jobs:
              [[ "$STANDALONE_RUN_OK" != "true" ]] || \
              [[ "$ELITE_RUN_OK" != "true" ]] || \
              [[ "$OPS_TESTS_OK" != "true" ]] || \
-             [[ "$DEPLOY_PREVIEW_OK" != "true" ]]; then
+             [[ "$DEPLOY_PREVIEW_OK" != "true" ]] || \
+             [[ "$PREVIEW_INSTALL_OK" != "true" ]]; then
             echo "One or more jobs failed:"
             echo "  initialize: ${{ needs.initialize.result }}"
             echo "  quality: ${{ needs.quality.result }}"
@@ -852,6 +914,7 @@ jobs:
             echo "  elite-run-test: ${{ needs.elite-run-test.result }}"
             echo "  ops-tests: ${{ needs.ops-tests.result }}"
             echo "  deploy-preview: ${{ needs.deploy-preview.result }}"
+            echo "  test-preview-install: ${{ needs.test-preview-install.result }}"
             exit 1
           fi
           echo "All CI jobs passed successfully!"
