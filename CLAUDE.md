@@ -173,9 +173,24 @@ When fixing CI failures, follow this loop:
 3. **Fix on notification**: When the background watch completes, check for failures with `gh run view <id> --json jobs --jq '.jobs[] | select(.conclusion == "failure") | {name}'`.
 4. **Fix, commit, push, repeat**: Fix the issue, commit, push, and watch again. Continue until green.
 
-### No-auto-retry: cancelled runs are intentional
+### CI watchdog and auto-retry
 
-A CI watchdog automatically cancels in-progress runs when a new push arrives on the same branch. This enables fast iteration — only the latest push matters. **Never re-run a cancelled CI run** — cancelled means superseded, not failed. Always find the latest run from the most recent push. Re-running is only appropriate for transient errors (network failures, flaky infrastructure) on failed — not cancelled — runs.
+The CI has a watchdog (`watchdog-monitor.cjs`) and cancellation script (`cancel-older-runs.sh`) that manage run lifecycle:
+
+- **New push → old runs cancelled**: `cancel-older-runs.sh` force-cancels all older in-progress runs on the same branch. **Never re-run a cancelled run** — cancelled means superseded.
+- **Job failure (attempt 1)**: Watchdog auto-retries only the failed jobs via `rerun-failed.yml`.
+- **Job failure (attempt 2+)**: Watchdog force-cancels the entire run — no infinite retry loops.
+- **Quality / Review Gate failures**: Never auto-retry. Fail immediately and force-cancel.
+
+**PR labels** to control behavior:
+
+| Label | Effect |
+|-------|--------|
+| `no-cancel-push` | Don't cancel older runs on new pushes |
+| `no-cancel-failure` | Don't cancel run when jobs fail |
+| `no-auto-retry` | Skip retry, force-cancel immediately on failure |
+
+Re-running (`gh run rerun`) is only appropriate for transient errors (network, flaky infra) on failed — not cancelled — runs.
 
 ### Submodule commit order
 
