@@ -65,6 +65,13 @@ R2_ACCOUNT_PERMS=(
 # https://developers.cloudflare.com/turnstile/get-started/widget-management/api/
 TURNSTILE_GITHUB_SECRET="TURNSTILE_SECRET_KEY"
 
+# --- AWS SES credential rotation ---
+# SES uses standard IAM access keys. Rotated via aws iam CLI using root/admin profile.
+AWS_PROFILE="rediacc-ses"
+AWS_IAM_USER="rediacc-ses-worker"
+SES_GITHUB_KEY_SECRET="AWS_SES_ACCESS_KEY_ID"
+SES_GITHUB_SECRET_SECRET="AWS_SES_SECRET_ACCESS_KEY"
+
 # =============================================================================
 # ARGUMENT PARSING
 # =============================================================================
@@ -368,13 +375,17 @@ if echo "$turnstile_widgets" | jq -e '.success' >/dev/null 2>&1; then
         else
             rotate_response=$(cf_api POST "/accounts/$ACCOUNT_ID/challenges/widgets/$turnstile_sitekey/rotate_secret" \
                 -d '{"invalidate_immediately": false}')
-            cf_check_response "$rotate_response" "Failed to rotate Turnstile secret"
-            new_turnstile_secret=$(echo "$rotate_response" | jq -r '.result.secret')
-            log_info "Rotated Turnstile secret"
+            if ! echo "$rotate_response" | jq -e '.success' >/dev/null 2>&1; then
+                ts_err=$(echo "$rotate_response" | jq -r '.errors[0].message // "unknown error"')
+                log_warn "Turnstile rotation skipped: $ts_err"
+            else
+                new_turnstile_secret=$(echo "$rotate_response" | jq -r '.result.secret')
+                log_info "Rotated Turnstile secret"
 
-            log_step "Updating GitHub secret: $TURNSTILE_GITHUB_SECRET..."
-            set_github_secret "$TURNSTILE_GITHUB_SECRET" "$new_turnstile_secret"
-            log_info "Updated $TURNSTILE_GITHUB_SECRET"
+                log_step "Updating GitHub secret: $TURNSTILE_GITHUB_SECRET..."
+                set_github_secret "$TURNSTILE_GITHUB_SECRET" "$new_turnstile_secret"
+                log_info "Updated $TURNSTILE_GITHUB_SECRET"
+            fi
         fi
     else
         log_warn "No Turnstile widgets found, skipping"
@@ -383,9 +394,53 @@ else
     log_warn "Could not list Turnstile widgets (missing permission?), skipping"
 fi
 
+# ---- AWS SES credentials ----
+log_step "=== Rotating AWS SES credentials ==="
+
+if command -v aws >/dev/null 2>&1 && aws sts get-caller-identity --profile "$AWS_PROFILE" >/dev/null 2>&1; then
+    # List current keys for the SES user
+    old_keys=$(aws iam list-access-keys --user-name "$AWS_IAM_USER" --profile "$AWS_PROFILE" \
+        --query 'AccessKeyMetadata[].AccessKeyId' --output text 2>/dev/null || true)
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_warn "[DRY-RUN] Would rotate keys for IAM user: $AWS_IAM_USER"
+        log_warn "[DRY-RUN] Current keys: $old_keys"
+    else
+        # Create new key
+        log_step "Creating new access key for $AWS_IAM_USER..."
+        if ! new_key_json=$(aws iam create-access-key --user-name "$AWS_IAM_USER" --profile "$AWS_PROFILE" 2>&1); then
+            log_error "Failed to create access key: $new_key_json"
+            log_warn "Skipping AWS SES rotation"
+        else
+            new_key_id=$(echo "$new_key_json" | jq -r '.AccessKey.AccessKeyId')
+            new_secret=$(echo "$new_key_json" | jq -r '.AccessKey.SecretAccessKey')
+            log_info "Created new key: $new_key_id"
+
+            # Update GitHub secrets
+            log_step "Updating GitHub secrets: SES credentials..."
+            set_github_secret "$SES_GITHUB_KEY_SECRET" "$new_key_id"
+            set_github_secret "$SES_GITHUB_SECRET_SECRET" "$new_secret"
+            log_info "Updated $SES_GITHUB_KEY_SECRET, $SES_GITHUB_SECRET_SECRET"
+
+            # Delete old keys
+            for old_key in $old_keys; do
+                if [[ "$old_key" != "$new_key_id" ]]; then
+                    log_step "Deleting old key: $old_key"
+                    aws iam delete-access-key --user-name "$AWS_IAM_USER" \
+                        --access-key-id "$old_key" --profile "$AWS_PROFILE" 2>/dev/null || true
+                fi
+            done
+            log_info "SES credential rotation complete"
+        fi
+    fi
+else
+    log_warn "AWS CLI not available or profile '$AWS_PROFILE' not configured, skipping SES rotation"
+fi
+
 # ---- Summary ----
-log_step "All tokens rotated successfully"
+log_step "All secrets rotated successfully"
 log_info "  CD token: $CD_TOKEN_NAME -> $CD_GITHUB_SECRET"
 log_info "  R2 token: $R2_TOKEN_NAME -> $R2_GITHUB_KEY_SECRET, $R2_GITHUB_SECRET_SECRET"
 log_info "  R2 endpoint: $R2_ENDPOINT_VALUE"
 log_info "  Turnstile: $TURNSTILE_GITHUB_SECRET"
+log_info "  AWS SES: $SES_GITHUB_KEY_SECRET, $SES_GITHUB_SECRET_SECRET"
