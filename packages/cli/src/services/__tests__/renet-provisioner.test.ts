@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { VERSION } from '../../version.js';
 import { compareVersions } from '../updater.js';
 
 const readFileMock = vi.fn();
@@ -88,7 +89,7 @@ function shouldRestartServices(
   return action === 'uploaded' && restartServices !== false;
 }
 
-const remoteInstallPath = '/usr/lib/rediacc/renet/0.6.0/renet';
+const remoteInstallPath = `/usr/lib/rediacc/renet/${VERSION}/renet`;
 
 function configureExec(
   instance: MockSFTPClient,
