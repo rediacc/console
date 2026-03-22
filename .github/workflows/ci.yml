@@ -55,6 +55,9 @@ jobs:
       cli_tag: ${{ steps.init.outputs.cli_tag }}
       cli_exists: ${{ steps.init.outputs.cli_exists }}
       image_tag: ${{ steps.init.outputs.image_tag }}
+      # full_suite: run all jobs on PR, merge queue, and nightly. Skip expensive
+      # jobs (quality, standalone, elite) on push-to-main since PR already validated.
+      full_suite: ${{ github.event_name != 'push' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
         with:
@@ -171,7 +174,7 @@ jobs:
   quality:
     name: Quality
     needs: [initialize]
-    if: needs.initialize.outputs.is_bot != 'true'
+    if: needs.initialize.outputs.is_bot != 'true' && needs.initialize.outputs.full_suite == 'true'
     uses: ./.github/workflows/ci-quality.yml
     with:
       is_bot: ${{ needs.initialize.outputs.is_bot }}
@@ -471,7 +474,12 @@ jobs:
   standalone-run-test:
     name: Standalone Run
     needs: [initialize, build-docker]
-    if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success'
+    if: >-
+      always() &&
+      needs.initialize.outputs.is_fork != 'true' &&
+      needs.initialize.outputs.full_suite == 'true' &&
+      needs.initialize.result == 'success' &&
+      needs.build-docker.result == 'success'
     uses: ./.github/workflows/standalone-run.yml
     with:
       run-name: 'CI Validation'
@@ -486,7 +494,7 @@ jobs:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
       AWS_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
       AWS_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
-      AWS_SES_REGION: ${{ secrets.AWS_SES_REGION }}
+      AWS_SES_REGION: ${{ vars.AWS_SES_REGION }}
 
   # ============================================================================
   # COLUMN 4D: OPS VM TESTS
@@ -499,7 +507,7 @@ jobs:
     if: >-
       always() &&
       needs.initialize.result == 'success' &&
-      needs.quality.result == 'success' &&
+      (needs.quality.result == 'success' || needs.quality.result == 'skipped') &&
       (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     uses: ./.github/workflows/ci-ops-test.yml
     secrets:
@@ -516,7 +524,12 @@ jobs:
   elite-run-test:
     name: Elite Run
     needs: [initialize, build-docker]
-    if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success'
+    if: >-
+      always() &&
+      needs.initialize.outputs.is_fork != 'true' &&
+      needs.initialize.outputs.full_suite == 'true' &&
+      needs.initialize.result == 'success' &&
+      needs.build-docker.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -708,7 +721,7 @@ jobs:
           SECRET_ADMIN_EMAIL: ${{ secrets.ACCOUNT_ADMIN_EMAIL }}
           SECRET_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
           SECRET_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
-          SECRET_SES_REGION: ${{ secrets.AWS_SES_REGION }}
+          SECRET_SES_REGION: ${{ vars.AWS_SES_REGION }}
           SECRET_TURNSTILE_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
           VAR_SES_FROM: ${{ vars.AWS_SES_FROM }}
         run: |
@@ -832,6 +845,12 @@ jobs:
     steps:
       - name: Check all jobs passed
         run: |
+          # quality can be skipped on push-to-main (full suite already ran in PR)
+          QUALITY_OK="false"
+          if [[ "${{ needs.quality.result }}" == "success" ]] || [[ "${{ needs.quality.result }}" == "skipped" ]]; then
+            QUALITY_OK="true"
+          fi
+
           # review-gate can be skipped for non-PR events or bots
           REVIEW_GATE_OK="false"
           if [[ "${{ needs.review-gate.result }}" == "success" ]] || [[ "${{ needs.review-gate.result }}" == "skipped" ]]; then
@@ -893,7 +912,7 @@ jobs:
           fi
 
           if [[ "${{ needs.initialize.result }}" != "success" ]] || \
-             [[ "${{ needs.quality.result }}" != "success" ]] || \
+             [[ "$QUALITY_OK" != "true" ]] || \
              [[ "$REVIEW_GATE_OK" != "true" ]] || \
              [[ "$STRIPE_SANDBOX_OK" != "true" ]] || \
              [[ "${{ needs.build-docker.result }}" != "success" ]] || \
@@ -909,7 +928,7 @@ jobs:
              [[ "$PREVIEW_INSTALL_OK" != "true" ]]; then
             echo "One or more jobs failed:"
             echo "  initialize: ${{ needs.initialize.result }}"
-            echo "  quality: ${{ needs.quality.result }}"
+            echo "  quality: ${{ needs.quality.result }} (QUALITY_OK=$QUALITY_OK)"
             echo "  review-gate: ${{ needs.review-gate.result }}"
             echo "  stripe-sandbox: ${{ needs.stripe-sandbox.result }}"
             echo "  build-docker: ${{ needs.build-docker.result }}"
