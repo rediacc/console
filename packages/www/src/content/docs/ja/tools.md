@@ -4,7 +4,7 @@ description: ファイル同期、ターミナルアクセス、VS Code統合、
 category: Guides
 order: 9
 language: ja
-sourceHash: 80ca3cd3e1a55d4b
+sourceHash: "b9aa7cdcf088b645"
 ---
 
 # ツール
@@ -18,19 +18,19 @@ rsync over SSHを使用して、ワークステーションとリモートリポ
 ### ファイルのアップロード
 
 ```bash
-rdc sync upload -m server-1 -r my-app --local ./src --remote /app/src
+rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
 ```
 
 ### ファイルのダウンロード
 
 ```bash
-rdc sync download -m server-1 -r my-app --remote /app/data --local ./data
+rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
 ```
 
 ### 同期ステータスの確認
 
 ```bash
-rdc sync status -m server-1 -r my-app
+rdc repo sync status -m server-1 -r my-app
 ```
 
 ### オプション

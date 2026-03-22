@@ -1,8 +1,8 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import { S3ClientService } from '../services/s3-client.js';
-import type { IStoreAdapter, PullResult, PushResult } from './types.js';
 import type { RdcConfig } from '../types/index.js';
 import type { StoreEntry } from '../types/store.js';
+import type { IStoreAdapter, PullResult, PushResult } from './types.js';
 
 /**
  * S3 store adapter. Stores config files as JSON objects in an S3/R2 bucket.

@@ -1,77 +1,83 @@
 ---
 title: "الأدوات"
-description: "شاهد وتابع أثناء استخدام الطرفية ومزامنة الملفات وتكامل VS Code وأوامر تحديث CLI."
+description: "استخدم الوصول إلى الطرفية عبر SSH ومزامنة الملفات وتكامل VS Code وأوامر تحديث CLI."
 category: "Tutorials"
 order: 5
 language: ar
-sourceHash: "6cf8e14712148f7f"
+sourceHash: "9391a34dfb244942"
 ---
 
-# درس تعليمي: الأدوات
+# كيفية استخدام أدوات الطرفية والمزامنة وVS Code مع Rediacc
 
-This tutorial demonstrates the productivity tools built into `rdc`: SSH terminal access, file synchronization, VS Code integration, and CLI updates.
+يتضمن CLI أدوات إنتاجية للعمليات اليومية: الوصول إلى الطرفية عبر SSH، ومزامنة الملفات عبر rsync، والتطوير عن بُعد باستخدام VS Code، وتحديثات CLI. في هذا الدرس، ستقوم بتشغيل أوامر عن بُعد، ومزامنة الملفات إلى مستودع، والتحقق من تكامل VS Code، والتحقق من إصدار CLI الخاص بك.
 
 ## المتطلبات الأساسية
 
-- The `rdc` CLI installed with a config initialized
-- A provisioned machine with a running repository (see [Tutorial: Repository Lifecycle](/ar/docs/tutorial-repos))
+- تثبيت `rdc` CLI مع تهيئة الإعدادات
+- جهاز مُجهّز مع مستودع قيد التشغيل (انظر [درس: دورة حياة المستودع](/ar/docs/tutorial-repos))
 
 ## التسجيل التفاعلي
 
 ![Tutorial: Tools](/assets/tutorials/tools-tutorial.cast)
 
-## ما ستراه في هذا الدرس
-
-The recording above walks through each step below. Use the playback bar to navigate between commands.
-
 ### الخطوة 1: الاتصال بجهاز
+
+قم بتشغيل أوامر مضمّنة على جهاز بعيد عبر SSH دون فتح جلسة تفاعلية.
 
 ```bash
 rdc term server-1 -c "hostname"
 rdc term server-1 -c "uptime"
 ```
 
-Run inline commands on a remote machine via SSH. The `-c` flag executes a single command and returns the output without opening an interactive session.
+يقوم العلم `-c` بتنفيذ أمر واحد وإرجاع الناتج. احذف `-c` لفتح جلسة SSH تفاعلية.
 
 ### الخطوة 2: الاتصال بمستودع
+
+لتشغيل الأوامر داخل بيئة Docker المعزولة للمستودع:
 
 ```bash
 rdc term server-1 my-app -c "docker ps"
 ```
 
-When connecting to a repository, `DOCKER_HOST` is automatically set to the repository's isolated Docker socket. Any Docker command runs against that repository's containers only.
+عند الاتصال بمستودع، يتم تعيين `DOCKER_HOST` تلقائيًا إلى مقبس Docker المعزول الخاص بالمستودع. أي أمر Docker يعمل فقط على حاويات ذلك المستودع.
 
 ### الخطوة 3: معاينة مزامنة الملفات (تجريبي)
 
+قبل نقل الملفات، قم بمعاينة التغييرات المتوقعة.
+
 ```bash
-rdc sync upload -m server-1 -r my-app --local ./src --dry-run
+rdc repo sync upload -m server-1 -r my-app --local ./src --dry-run
 ```
 
-The `--dry-run` flag previews what would be transferred without actually uploading files. Shows new files, changed files, and total transfer size.
+يعرض العلم `--dry-run` الملفات الجديدة والملفات المتغيرة وحجم النقل الإجمالي دون تحميل أي شيء فعليًا.
 
 ### الخطوة 4: تحميل الملفات
 
+انقل الملفات من جهازك المحلي إلى نقطة تحميل المستودع البعيد.
+
 ```bash
-rdc sync upload -m server-1 -r my-app --local ./src
+rdc repo sync upload -m server-1 -r my-app --local ./src
 ```
 
-Transfers files from your local machine to the remote repository mount via rsync over SSH.
+يتم نقل الملفات عبر rsync من خلال SSH. يتم إرسال الملفات المتغيرة فقط في عمليات التحميل اللاحقة.
 
-### الخطوة 5: التحقق من الملفات المحملة
+### الخطوة 5: التحقق من الملفات المحمّلة
+
+تأكد من وصول الملفات عن طريق عرض محتويات دليل تحميل المستودع.
 
 ```bash
 rdc term server-1 my-app -c "ls -la"
 ```
 
-Confirm the files arrived by listing the repository's mount directory.
-
 ### الخطوة 6: فحص تكامل VS Code
+
+للتطوير عن بُعد باستخدام VS Code، تحقق من تثبيت المكونات المطلوبة.
 
 ```bash
 rdc vscode check
 ```
 
-Verifies your VS Code installation, Remote SSH extension, and SSH configuration for remote development. Shows which settings need to be configured.
+يتحقق من تثبيت VS Code وإضافة Remote SSH وتهيئة SSH. اتبع الناتج لحل أي متطلبات مفقودة، ثم اتصل باستخدام `rdc vscode <machine> [repo]`.
 
 ### الخطوة 7: التحقق من تحديثات CLI
 
@@ -79,10 +85,23 @@ Verifies your VS Code installation, Remote SSH extension, and SSH configuration 
 rdc update --check-only
 ```
 
-Checks if a newer version of the `rdc` CLI is available without applying it. Use `rdc update` (without `--check-only`) to install the update.
+يُبلغ عما إذا كان إصدار أحدث من CLI متاحًا. لتثبيت التحديث، قم بتشغيل `rdc update` بدون `--check-only`.
+
+## استكشاف الأخطاء وإصلاحها
+
+**"rsync: command not found" أثناء مزامنة الملفات**
+قم بتثبيت rsync على كل من جهازك المحلي والخادم البعيد. على Debian/Ubuntu: `sudo apt install rsync`. على macOS: rsync مضمّن افتراضيًا.
+
+**"Permission denied" أثناء تحميل المزامنة**
+تحقق من أن مستخدم SSH لديه صلاحيات الكتابة على دليل تحميل المستودع. نقاط تحميل المستودعات مملوكة للمستخدم المحدد أثناء تسجيل الجهاز.
+
+**"VS Code Remote SSH extension not found"**
+قم بتثبيت الإضافة من سوق VS Code: ابحث عن "Remote - SSH" من Microsoft. بعد التثبيت، أعد تشغيل VS Code وقم بتشغيل `rdc vscode check` مرة أخرى.
 
 ## الخطوات التالية
 
-- [Tools](/ar/docs/tools) — full reference for terminal, sync, VS Code, and update commands
-- [Tutorial: Backup & Restore](/ar/docs/tutorial-backup) — backup, restore, and scheduled sync
-- [Services](/ar/docs/services) — Rediaccfile reference and service networking
+لقد قمت بتشغيل أوامر عن بُعد، ومزامنة الملفات، والتحقق من تكامل VS Code، والتحقق من تحديثات CLI. لحماية بياناتك:
+
+- [Tools](/ar/docs/tools) — مرجع كامل لأوامر الطرفية والمزامنة وVS Code والتحديث
+- [درس: النسخ الاحتياطي والشبكات](/ar/docs/tutorial-backup) — جدولة النسخ الاحتياطي وتهيئة الشبكة
+- [الخدمات](/ar/docs/services) — مرجع Rediaccfile وشبكات الخدمات

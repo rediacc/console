@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import LanguageMenu from './LanguageMenu';
-import SearchModal from './SearchModal';
-import Sidebar from './Sidebar';
-import { getConsoleUrl } from '../config/constants';
+import { getAccountUrl } from '../config/constants';
 import { useLanguage } from '../hooks/useLanguage';
 import { SUPPORTED_LANGUAGES } from '../i18n/language-utils';
 import { useTranslation } from '../i18n/react';
+import LanguageMenu from './LanguageMenu';
+import MegaMenu from './MegaMenu';
+import PersonaMegaMenu from './PersonaMegaMenu';
+import SearchModal from './SearchModal';
+import Sidebar from './Sidebar';
+import ThemeToggle from './ThemeToggle';
 
 interface NavigationProps {
   origin?: string;
@@ -14,12 +17,13 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = ({ origin }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
+  const [isPersonaMenuOpen, setIsPersonaMenuOpen] = useState(false);
   const currentLang = useLanguage();
   const [isVisible, setIsVisible] = useState(true);
   const { t } = useTranslation(currentLang);
 
-  // Get console URL (use origin from server-side if provided)
-  const consoleUrl = getConsoleUrl(origin);
+  const accountUrl = getAccountUrl(origin);
 
   // Handle scroll to show/hide navigation on solutions pages:
   // Hide when scrolling down past threshold, show when scrolling up
@@ -37,6 +41,8 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
         document.documentElement.style.setProperty('--nav-offset', 'var(--nav-height)');
       } else if (scrollTop > lastScrollTop) {
         setIsVisible(false);
+        setIsMegaMenuOpen(false);
+        setIsPersonaMenuOpen(false);
         document.documentElement.style.setProperty('--nav-offset', '0px');
       } else {
         setIsVisible(true);
@@ -51,6 +57,8 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
+    setIsMegaMenuOpen(false);
+    setIsPersonaMenuOpen(false);
   };
 
   const closeSidebar = () => {
@@ -59,11 +67,34 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
 
   const openSearch = () => {
     setIsSearchOpen(true);
+    setIsMegaMenuOpen(false);
+    setIsPersonaMenuOpen(false);
   };
 
   const closeSearch = () => {
     setIsSearchOpen(false);
   };
+
+  const toggleMegaMenu = () => {
+    setIsMegaMenuOpen((prev) => !prev);
+    setIsPersonaMenuOpen(false);
+  };
+  const closeMegaMenu = () => setIsMegaMenuOpen(false);
+  const togglePersonaMenu = () => {
+    setIsPersonaMenuOpen((prev) => !prev);
+    setIsMegaMenuOpen(false);
+  };
+  const closePersonaMenu = () => setIsPersonaMenuOpen(false);
+
+  // Close menus on Astro page navigation
+  useEffect(() => {
+    const handleNavigation = () => {
+      setIsMegaMenuOpen(false);
+      setIsPersonaMenuOpen(false);
+    };
+    document.addEventListener('astro:after-swap', handleNavigation);
+    return () => document.removeEventListener('astro:after-swap', handleNavigation);
+  }, []);
 
   // Listen for global search hotkey event
   useEffect(() => {
@@ -95,25 +126,74 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
             aria-label={t('navigation.toggleMenu')}
             aria-expanded={isSidebarOpen}
             aria-controls="navigation-sidebar"
+            data-track="cta_click"
+            data-track-label="nav-hamburger"
           >
             <span className="hamburger-icon" />
           </button>
-          <a href={`/${currentLang}/`} className="nav-icon-link" aria-label={t('common.logoAlt')}>
+          <a
+            href={`/${currentLang}/`}
+            className="nav-icon-link"
+            aria-label={t('common.logoAlt')}
+            data-track="cta_click"
+            data-track-label="nav-logo"
+          >
             <img
               src="/assets/images/icon-rediacc.svg"
               alt=""
               className="logo-icon"
               loading="eager"
               decoding="async"
+              fetchPriority="high"
               width="36"
               height="36"
             />
           </a>
-          <a href={`/${currentLang}/`} className="nav-brand">
+          <a
+            href={`/${currentLang}/`}
+            className="nav-brand"
+            data-track="cta_click"
+            data-track-label="nav-brand"
+          >
             <span className="nav-wordmark" aria-label={t('common.logoAlt')}>
               rediacc
             </span>
           </a>
+          <div className="nav-links">
+            <MegaMenu isOpen={isMegaMenuOpen} onToggle={toggleMegaMenu} onClose={closeMegaMenu} />
+            <PersonaMegaMenu
+              isOpen={isPersonaMenuOpen}
+              onToggle={togglePersonaMenu}
+              onClose={closePersonaMenu}
+            />
+            <a
+              href={`/${currentLang}/pricing`}
+              className="nav-link"
+              data-track="cta_click"
+              data-track-label="nav-link"
+              data-track-dest="pricing"
+            >
+              {t('navigation.pricing')}
+            </a>
+            <a
+              href={`/${currentLang}/docs/quick-start`}
+              className="nav-link"
+              data-track="cta_click"
+              data-track-label="nav-link"
+              data-track-dest="docs"
+            >
+              {t('navigation.docs')}
+            </a>
+            <a
+              href={`/${currentLang}/blog`}
+              className="nav-link"
+              data-track="cta_click"
+              data-track-label="nav-link"
+              data-track-dest="blog"
+            >
+              {t('navigation.blog')}
+            </a>
+          </div>
           <div className="nav-right">
             <button
               type="button"
@@ -122,6 +202,8 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
               aria-label={t('navigation.search')}
               aria-expanded={isSearchOpen}
               aria-controls="search-modal"
+              data-track="cta_click"
+              data-track-label="nav-search"
             >
               <svg
                 width="20"
@@ -139,6 +221,7 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
                 />
               </svg>
             </button>
+            <ThemeToggle label={t('navigation.toggleTheme')} />
             <LanguageMenu
               variant="icon-only"
               currentLang={currentLang}
@@ -148,13 +231,16 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
               ariaLabel={t('navigation.selectLanguage')}
             />
             <a
-              href={consoleUrl}
-              className="login-btn"
+              href={accountUrl}
+              className="nav-cta-btn nav-account-btn"
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`${t('navigation.login')} (${t('common.aria.opensInNewTab')})`}
+              data-track="cta_click"
+              data-track-label="nav-login"
+              data-track-dest="account"
             >
-              {t('navigation.login')}
+              {t('navigation.account')}
             </a>
           </div>
         </div>

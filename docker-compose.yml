@@ -1,0 +1,177 @@
+services:
+  observability-alloy:
+    image: grafana/alloy:v1.10.1
+    container_name: observability-alloy
+    hostname: alloy.rediacc.io
+    pid: host
+    volumes:
+    - /etc/localtime:/etc/localtime:ro
+    - ./config/alloy:/etc/alloy
+    - ./data/alloy:/var/lib/alloy/data
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - /var/log:/var/log:ro
+    - /proc:/host/proc:ro
+    - /sys:/host/sys:ro
+    command:
+    - run
+    - --server.http.listen-addr=${ALLOY_IP}:12345
+    - --storage.path=/var/lib/alloy/data
+    - --disable-reporting
+    - /etc/alloy/config.alloy
+    env_file:
+    - ./secrets.env
+    environment:
+    - TZ=Europe/Berlin
+    - ALLOY_IP=${ALLOY_IP}
+    - PROMETHEUS_IP=${PROMETHEUS_IP}
+    - GRAFANA_IP=${GRAFANA_IP}
+    - LOKI_IP=${LOKI_IP}
+    - TEMPO_IP=${TEMPO_IP}
+    - PYROSCOPE_IP=${PYROSCOPE_IP}
+    - CADVISOR_IP=${CADVISOR_IP}
+    restart: on-failure
+    labels:
+    - rediacc.service_name=observability-alloy
+    - rediacc.service_ip=${ALLOY_IP}
+    - com.rediacc.service=alloy
+    - com.rediacc.description=Grafana Alloy Data Collector
+    - traefik.enable=true
+    - traefik.http.middlewares.telemetry-auth.basicauth.users=${OTLP_BASIC_AUTH}
+    - traefik.http.routers.otlp.rule=Host(`otlp.rediacc.io`) || Host(`otlp.rediacc.com`)
+    - traefik.http.routers.otlp.entrypoints=websecure
+    - traefik.http.routers.otlp.tls=true
+    - traefik.http.routers.otlp.middlewares=telemetry-auth
+    - traefik.http.services.otlp.loadbalancer.server.port=4318
+    - traefik.http.routers.profiles.rule=Host(`profiles.rediacc.io`) || Host(`profiles.rediacc.com`)
+    - traefik.http.routers.profiles.entrypoints=websecure
+    - traefik.http.routers.profiles.tls=true
+    - traefik.http.routers.profiles.middlewares=telemetry-auth
+    - traefik.http.services.profiles.loadbalancer.server.port=4319
+  observability-prometheus:
+    image: prom/prometheus:v3.5.0
+    container_name: observability-prometheus
+    hostname: prometheus.rediacc.io
+    volumes:
+    - /etc/localtime:/etc/localtime:ro
+    - ./config/prometheus:/etc/prometheus
+    - ./data/prometheus:/prometheus
+    command:
+    - --config.file=/etc/prometheus/prometheus.yml
+    - --storage.tsdb.path=/prometheus
+    - --storage.tsdb.retention.time=30d
+    - --storage.tsdb.retention.size=50GB
+    - --web.console.libraries=/etc/prometheus/console_libraries
+    - --web.console.templates=/etc/prometheus/consoles
+    - --web.enable-lifecycle
+    - --web.enable-admin-api
+    - --web.enable-remote-write-receiver
+    - --web.listen-address=${PROMETHEUS_IP}:9090
+    environment:
+    - TZ=Europe/Berlin
+    restart: on-failure
+    labels:
+    - rediacc.service_name=observability-prometheus
+    - rediacc.service_ip=${PROMETHEUS_IP}
+    - com.rediacc.service=prometheus
+    - com.rediacc.description=Prometheus Metrics Storage
+  observability-grafana:
+    image: grafana/grafana:12.1.1
+    container_name: observability-grafana
+    hostname: grafana.rediacc.io
+    volumes:
+    - /etc/localtime:/etc/localtime:ro
+    - ./config/grafana:/etc/grafana
+    - ./data/grafana:/var/lib/grafana
+    env_file:
+    - ./secrets.env
+    environment:
+    - GF_INSTALL_PLUGINS=grafana-pyroscope-app
+    - GF_SERVER_HTTP_ADDR=${GRAFANA_IP}
+    - TZ=Europe/Berlin
+    restart: on-failure
+    labels:
+    - rediacc.service_name=observability-grafana
+    - rediacc.service_ip=${GRAFANA_IP}
+    - rediacc.domain=grafana
+    - rediacc.service_port=3000
+  observability-loki:
+    image: grafana/loki:3.5.5
+    container_name: observability-loki
+    hostname: loki.rediacc.io
+    volumes:
+    - /etc/localtime:/etc/localtime:ro
+    - ./config/loki:/etc/loki
+    - ./data/loki:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    environment:
+    - TZ=Europe/Berlin
+    restart: on-failure
+    labels:
+    - rediacc.service_name=observability-loki
+    - rediacc.service_ip=${LOKI_IP}
+    - com.rediacc.service=loki
+    - com.rediacc.description=Loki Log Aggregation
+  observability-tempo:
+    image: grafana/tempo:2.8.2
+    container_name: observability-tempo
+    hostname: tempo.rediacc.io
+    volumes:
+    - /etc/localtime:/etc/localtime:ro
+    - ./config/tempo:/etc/tempo
+    - ./data/tempo:/tmp/tempo
+    command: -config.file=/etc/tempo/tempo.yaml
+    environment:
+    - TZ=Europe/Berlin
+    restart: on-failure
+    labels:
+    - rediacc.service_name=observability-tempo
+    - rediacc.service_ip=${TEMPO_IP}
+    - com.rediacc.service=tempo
+    - com.rediacc.description=Tempo Distributed Tracing
+  observability-pyroscope:
+    image: grafana/pyroscope:1.14.1
+    container_name: observability-pyroscope
+    hostname: pyroscope.rediacc.io
+    volumes:
+    - /etc/localtime:/etc/localtime:ro
+    - ./config/pyroscope:/etc/pyroscope
+    - ./data/pyroscope:/var/lib/pyroscope
+    command: -config.file=/etc/pyroscope/pyroscope.yaml
+    environment:
+    - TZ=Europe/Berlin
+    restart: on-failure
+    labels:
+    - rediacc.service_name=observability-pyroscope
+    - rediacc.service_ip=${PYROSCOPE_IP}
+    - com.rediacc.service=pyroscope
+    - com.rediacc.description=Pyroscope Continuous Profiling
+  observability-cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.50.0
+    container_name: observability-cadvisor
+    hostname: cadvisor.rediacc.io
+    privileged: true
+    devices:
+    - /dev/kmsg:/dev/kmsg
+    volumes:
+    - /etc/localtime:/etc/localtime:ro
+    - /:/rootfs:ro
+    - /var/run:/var/run:ro
+    - /sys:/sys:ro
+    - /var/lib/docker/:/var/lib/docker:ro
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - /etc/machine-id:/etc/machine-id:ro
+    - /var/lib/dbus/machine-id:/var/lib/dbus/machine-id:ro
+    command:
+    - --housekeeping_interval=10s
+    - --docker_only=true
+    - --store_container_labels=false
+    - --whitelisted_container_labels=name,maintainer,version
+    - --listen_ip=${CADVISOR_IP}
+    environment:
+    - TZ=Europe/Berlin
+    restart: on-failure
+    labels:
+    - rediacc.service_name=observability-cadvisor
+    - rediacc.service_ip=${CADVISOR_IP}
+    - com.rediacc.service=cadvisor
+    - com.rediacc.description=cAdvisor Container Metrics

@@ -4,7 +4,7 @@ description: Rediacc'ı çalıştırmak için sistem gereksinimleri ve desteklen
 category: Guides
 order: 0
 language: tr
-sourceHash: 40a59ab9c9625911
+sourceHash: "dd2ac2df883a3d1b"
 ---
 
 # Gereksinimler
@@ -53,7 +53,7 @@ Bunlar CI'da test edilen dağıtımlardır. systemd, Docker desteği ve cryptset
 
 ### Otomatik Olarak Kurulanlar
 
-`rdc config setup-machine` komutu aşağıdakileri uzak sunucuya kurar:
+`rdc config machine setup` komutu aşağıdakileri uzak sunucuya kurar:
 
 - **Docker** ve **containerd** (konteyner çalışma zamanı)
 - **cryptsetup** (LUKS disk şifreleme)

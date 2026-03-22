@@ -1,5 +1,5 @@
-import { tokenService } from '@/services/auth/tokenService';
 import type { TokenAdapter } from '@rediacc/shared/api';
+import { tokenService } from '@/services/auth/tokenService';
 
 /**
  * Web token adapter wrapping the tokenService.

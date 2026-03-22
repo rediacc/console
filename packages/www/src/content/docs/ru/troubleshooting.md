@@ -4,7 +4,7 @@ description: "Решения распространённых проблем с 
 category: "Guides"
 order: 10
 language: ru
-sourceHash: 4c3163007e6a3326
+sourceHash: "b392ab73d90c62e1"
 ---
 
 # Устранение неполадок
@@ -14,7 +14,7 @@ sourceHash: 4c3163007e6a3326
 ## Ошибка подключения SSH
 
 - Убедитесь, что можете подключиться вручную: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Выполните `rdc config scan-keys server-1` для обновления ключей хоста
+- Выполните `rdc config machine scan-keys server-1` для обновления ключей хоста
 - Проверьте соответствие порта SSH: `--port 22`
 - Проверьте простой командой: `rdc term server-1 -c "hostname"`
 
@@ -23,7 +23,7 @@ sourceHash: 4c3163007e6a3326
 Если сервер был переустановлен или его SSH-ключи изменились, вы увидите "host key verification failed":
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 Эта команда получает новые ключи хоста и обновляет вашу конфигурацию.
@@ -32,7 +32,7 @@ rdc config scan-keys server-1
 
 - Убедитесь, что SSH-пользователь имеет доступ sudo без пароля, или настройте `NOPASSWD` для необходимых команд
 - Проверьте доступное дисковое пространство на сервере
-- Запустите с `--debug` для подробного вывода: `rdc config setup-machine server-1 --debug`
+- Запустите с `--debug` для подробного вывода: `rdc config machine setup server-1 --debug`
 
 ## Ошибка создания репозитория
 
@@ -43,8 +43,8 @@ rdc config scan-keys server-1
 ## Сервисы не запускаются
 
 - Проверьте синтаксис Rediaccfile: он должен быть корректным Bash
-- Убедитесь, что файлы `docker compose` используют `network_mode: host`
-- Проверьте доступность Docker-образов (рассмотрите `docker compose pull` в `prep()`)
+- Убедитесь, что ваш Rediaccfile использует `renet compose --` (а не `docker compose`)
+- Проверьте доступность Docker-образов (рассмотрите `renet compose -- pull` в `up()`)
 - Просмотрите логи контейнеров через Docker-сокет репозитория:
 
 ```bash

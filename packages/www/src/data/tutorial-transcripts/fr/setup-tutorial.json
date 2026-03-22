@@ -1,0 +1,43 @@
+{
+  "cast": "/assets/tutorials/setup-tutorial.cast",
+  "language": "fr",
+  "version": 1,
+  "events": [
+    {
+      "id": "setup-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.50986,
+      "text": "Initialisez un profil de configuration dédié pour cet environnement."
+    },
+    {
+      "id": "setup-tutorial-02",
+      "markerIndex": 1,
+      "at": 10.605861,
+      "text": "Vérifiez les configurations disponibles et confirmez que le nouveau profil existe."
+    },
+    {
+      "id": "setup-tutorial-03",
+      "markerIndex": 2,
+      "at": 17.961132,
+      "text": "Enregistrez une entrée de machine avec les détails du réseau et de l'utilisateur."
+    },
+    {
+      "id": "setup-tutorial-04",
+      "markerIndex": 3,
+      "at": 31.651331,
+      "text": "Inspectez la liste des machines configurées pour vérifier l’enregistrement."
+    },
+    {
+      "id": "setup-tutorial-05",
+      "markerIndex": 4,
+      "at": 40.16275,
+      "text": "Définissez la machine par défaut pour réduire les indicateurs de ciblage répétés."
+    },
+    {
+      "id": "setup-tutorial-06",
+      "markerIndex": 5,
+      "at": 48.29967,
+      "text": "Exécutez une vérification de base de l’hôte distant pour valider la connectivité."
+    }
+  ]
+}

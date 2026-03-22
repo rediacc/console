@@ -3,6 +3,10 @@ services:
     image: postgres:16-alpine
     container_name: ${CONTAINER_NAME}
     network_mode: "${REPOSITORY_NETWORK_MODE:-bridge}"
+    # Listen only on the assigned SERVICE_IP (injected by renet) to avoid
+    # port conflicts when multiple repositories run PostgreSQL on host network.
+    # Use shell form so the container's environment variable gets expanded.
+    command: ["sh", "-c", "exec docker-entrypoint.sh postgres -c listen_addresses=$${SERVICE_IP:-0.0.0.0}"]
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: testpass123
@@ -11,7 +15,7 @@ services:
       - ./pgdata:/var/lib/postgresql/data
       - ./init-postgres.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -h $${SERVICE_IP:-localhost}"]
       interval: 5s
       timeout: 3s
       retries: 10

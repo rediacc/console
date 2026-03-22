@@ -1,13 +1,13 @@
-import React from 'react';
 import { Button, Dropdown, Flex, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
+import React from 'react';
 import 'dayjs/locale/es';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useUpdateUserLanguage } from '@/api/api-hooks.generated';
 import type { RootState } from '@/store/store';
 import { GlobalOutlined } from '@/utils/optimizedIcons';
-import { DEFAULTS } from '@rediacc/shared/config';
 
 interface Language {
   code: string;

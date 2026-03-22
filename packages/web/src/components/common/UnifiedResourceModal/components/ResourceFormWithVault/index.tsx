@@ -1,5 +1,6 @@
-import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Col, Divider, Flex, Form, Row, theme } from 'antd';
+import type { UploadFile } from 'antd/es/upload/interface';
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import VaultEditor from '@/components/common/VaultEditor';
 import { FORM_LAYOUTS } from '@/config/formLayouts';
@@ -12,7 +13,6 @@ import type {
   ResourceFormWithVaultProps,
   ResourceFormWithVaultRef,
 } from './types';
-import type { UploadFile } from 'antd/es/upload/interface';
 
 const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormWithVaultProps>(
   (

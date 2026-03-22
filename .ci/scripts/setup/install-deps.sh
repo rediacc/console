@@ -4,6 +4,12 @@
 #
 # On Windows, --ignore-scripts is added automatically to avoid
 # native module rebuild issues with electron-builder.
+#
+# IMPORTANT: The lockfile (package-lock.json) must contain resolved entries
+# for ALL platform-specific optional deps (rollup, lightningcss, esbuild).
+# Never regenerate the lockfile by deleting it on a single platform — this
+# drops entries for other platforms. Instead, use `npm install <pkg>` to
+# update individual packages while preserving cross-platform entries.
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -37,11 +43,15 @@ if [[ "$CI_OS" == "windows" ]] || [[ "$IGNORE_SCRIPTS" == "true" ]]; then
     log_info "Using --ignore-scripts flag"
 fi
 
-# Run npm ci
-if npm $NPM_ARGS; then
+# Run npm ci with retry for network failures (Electron downloads can 504)
+run_npm_ci() {
+    npm $NPM_ARGS
+}
+
+if retry_with_backoff 3 10 run_npm_ci; then
     log_info "Dependencies installed successfully"
 else
-    log_error "Failed to install dependencies"
+    log_error "Failed to install dependencies after retries"
     exit 1
 fi
 
@@ -54,7 +64,8 @@ fi
 # Install account dependencies if submodule is available
 if [[ -f "private/account/package.json" ]]; then
     log_step "Installing account dependencies..."
-    (cd private/account && npm ci)
+    run_account_ci() { (cd private/account && npm ci); }
+    retry_with_backoff 3 10 run_account_ci
 fi
 
 log_info "npm install complete"

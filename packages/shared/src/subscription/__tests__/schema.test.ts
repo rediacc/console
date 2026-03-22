@@ -3,41 +3,35 @@ import {
   comparePlans,
   exceedsLimit,
   getPlanFeatures,
-  getPlanResources,
-  getResourceLimit,
+  getPlanLimit,
+  getPlanLimits,
   hasFeature,
   isValidPlanCode,
-  SUBSCRIPTION_CONFIG,
   PLAN_FEATURES,
+  PLAN_LIMITS,
   PLAN_ORDER,
-  PLAN_RESOURCES,
   PROGRESSIVE_LIMIT_KEYS,
+  SUBSCRIPTION_CONFIG,
 } from '../constants.js';
-import type { FeatureFlags, PlanCode, ResourceLimits } from '../types.js';
+import type { FeatureFlags, PlanCode } from '../types.js';
 
 describe('Subscription Schema Constants', () => {
-  describe('PLAN_RESOURCES', () => {
+  describe('PLAN_LIMITS', () => {
     it('should have all plan codes defined', () => {
       const planCodes: PlanCode[] = ['COMMUNITY', 'PROFESSIONAL', 'BUSINESS', 'ENTERPRISE'];
       for (const code of planCodes) {
-        expect(PLAN_RESOURCES[code]).toBeDefined();
+        expect(PLAN_LIMITS[code]).toBeDefined();
       }
     });
 
     it('should have all required resource limit keys for each plan', () => {
-      const requiredKeys: (keyof ResourceLimits)[] = [
-        'bridges',
-        'maxReservedJobs',
-        'jobTimeoutHours',
+      const requiredKeys: (keyof (typeof PLAN_LIMITS)[PlanCode])[] = [
         'maxRepositorySizeGb',
-        'maxJobsPerMonth',
-        'maxPendingPerUser',
-        'maxTasksPerMachine',
-        'cephPoolsPerTeam',
+        'maxRepoLicenseIssuancesPerMonth',
       ];
 
       for (const planCode of PLAN_ORDER) {
-        const resources = PLAN_RESOURCES[planCode];
+        const resources = PLAN_LIMITS[planCode];
         for (const key of requiredKeys) {
           expect(resources[key], `${planCode} should have ${key} defined`).toBeDefined();
           expect(typeof resources[key], `${planCode}.${key} should be a number`).toBe('number');
@@ -49,8 +43,8 @@ describe('Subscription Schema Constants', () => {
       for (let i = 1; i < PLAN_ORDER.length; i++) {
         const lowerPlan = PLAN_ORDER[i - 1];
         const higherPlan = PLAN_ORDER[i];
-        const lower = PLAN_RESOURCES[lowerPlan];
-        const higher = PLAN_RESOURCES[higherPlan];
+        const lower = PLAN_LIMITS[lowerPlan];
+        const higher = PLAN_LIMITS[higherPlan];
 
         for (const key of PROGRESSIVE_LIMIT_KEYS) {
           expect(
@@ -61,21 +55,9 @@ describe('Subscription Schema Constants', () => {
       }
     });
 
-    it('should have COMMUNITY with 0 bridges', () => {
-      expect(PLAN_RESOURCES.COMMUNITY.bridges).toBe(0);
-    });
-
     it('should have ENTERPRISE with highest limits', () => {
-      expect(PLAN_RESOURCES.ENTERPRISE.maxRepositorySizeGb).toBe(1024);
-      expect(PLAN_RESOURCES.ENTERPRISE.maxJobsPerMonth).toBe(100000);
-    });
-
-    it('should have ENTERPRISE with unlimited Ceph pools (-1)', () => {
-      expect(PLAN_RESOURCES.ENTERPRISE.cephPoolsPerTeam).toBe(-1);
-    });
-
-    it('should have BUSINESS with exactly 1 Ceph pool per team', () => {
-      expect(PLAN_RESOURCES.BUSINESS.cephPoolsPerTeam).toBe(1);
+      expect(PLAN_LIMITS.ENTERPRISE.maxRepositorySizeGb).toBe(2048);
+      expect(PLAN_LIMITS.ENTERPRISE.maxRepoLicenseIssuancesPerMonth).toBe(100000);
     });
   });
 
@@ -183,15 +165,15 @@ describe('Subscription Schema Constants', () => {
 });
 
 describe('Subscription Schema Helper Functions', () => {
-  describe('getPlanResources', () => {
-    it('should return correct resources for valid plan', () => {
-      const resources = getPlanResources('PROFESSIONAL');
-      expect(resources.bridges).toBe(1);
+  describe('getPlanLimits', () => {
+    it('should return correct limits for valid plan', () => {
+      const limits = getPlanLimits('PROFESSIONAL');
+      expect(limits.maxRepoLicenseIssuancesPerMonth).toBe(5000);
     });
 
-    it('should return COMMUNITY resources for invalid plan', () => {
-      const resources = getPlanResources('INVALID' as PlanCode);
-      expect(resources.bridges).toBe(0);
+    it('should return COMMUNITY limits for invalid plan', () => {
+      const limits = getPlanLimits('INVALID' as PlanCode);
+      expect(limits.maxRepoLicenseIssuancesPerMonth).toBe(500);
     });
   });
 
@@ -220,13 +202,13 @@ describe('Subscription Schema Helper Functions', () => {
     });
   });
 
-  describe('getResourceLimit', () => {
+  describe('getPlanLimit', () => {
     it('should return correct limit', () => {
-      expect(getResourceLimit('COMMUNITY', 'bridges')).toBe(0);
+      expect(getPlanLimit('COMMUNITY', 'maxRepoLicenseIssuancesPerMonth')).toBe(500);
     });
 
     it('should return 0 for invalid plan', () => {
-      expect(getResourceLimit('INVALID' as PlanCode, 'bridges')).toBe(0);
+      expect(getPlanLimit('INVALID' as PlanCode, 'maxRepoLicenseIssuancesPerMonth')).toBe(500);
     });
   });
 

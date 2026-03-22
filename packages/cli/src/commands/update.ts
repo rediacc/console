@@ -1,9 +1,9 @@
 import { spawnSync } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { Command } from 'commander';
 import { STATUS_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { isCooldownExpired } from '@rediacc/shared/update';
+import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { applyPendingUpdate } from '../services/background-updater.js';
 import { outputService } from '../services/output.js';
@@ -222,6 +222,7 @@ async function handleStatus(): Promise<void> {
 export function registerUpdateCommand(program: Command): void {
   program
     .command('update')
+    .summary(t('commands.update.descriptionShort'))
     .description(t('commands.update.description'))
     .option('--force', t('commands.update.force'))
     .option('--check-only', t('commands.update.checkOnly'))

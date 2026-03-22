@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import type { GetCephClusterMachines_ResultSet1 as CephClusterMachine } from '@rediacc/shared/types';
 import { Button, Empty, Flex, Modal, Space, Table, Tabs, Tag, Typography } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useGetAvailableMachinesForClone,
@@ -26,8 +28,6 @@ import {
   DesktopOutlined,
   PlusOutlined,
 } from '@/utils/optimizedIcons';
-import type { GetCephClusterMachines_ResultSet1 as CephClusterMachine } from '@rediacc/shared/types';
-import type { ColumnsType } from 'antd/es/table';
 
 interface ManageClusterMachinesModalProps {
   open: boolean;

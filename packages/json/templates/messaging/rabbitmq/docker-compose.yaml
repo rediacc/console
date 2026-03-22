@@ -3,14 +3,13 @@ services:
     image: rabbitmq:3-management-alpine
     container_name: ${CONTAINER_NAME}
     restart: always
-    network_mode: "${NETWORK_MODE:-bridge}"
+    labels:
+      - "rediacc.service_port=15672"
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
       RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_DEFAULT_VHOST}
-    ports:
-      - "5672"
-      - "15672"
+      RABBITMQ_NODE_IP_ADDRESS: ${SERVICE_IP:-0.0.0.0}
     volumes:
       - ./data:/var/lib/rabbitmq
       - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro

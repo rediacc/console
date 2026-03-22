@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: tr
-sourceHash: 294f92dc32f10c86
+sourceHash: "a555a8192fdb3b7c"
 ---
 
 # Servisler
@@ -17,7 +17,7 @@ Bu sayfa, konteynerleştirilmiş servislerin nasıl dağıtılacağını ve yön
 
 ## Rediaccfile
 
-**Rediaccfile**, servislerinizin nasıl hazırlandığını, başlatıldığını ve durdurulduğunu tanımlayan bir Bash betiğidir. Dosya adı `Rediaccfile` veya `rediaccfile` (büyük/küçük harf duyarsız) olmalı ve deponun bağlı dosya sistemi içine yerleştirilmelidir.
+**Rediaccfile**, servislerinizin nasıl başlatıldığını ve durdurulduğunu tanımlayan bir Bash betiğidir. Dosya adı `Rediaccfile` veya `rediaccfile` (büyük/küçük harf duyarsız) olmalı ve deponun bağlı dosya sistemi içine yerleştirilmelidir.
 
 Rediaccfile'lar iki konumda aranır:
 1. Depo bağlama yolunun **kök dizini**
@@ -27,15 +27,14 @@ Gizli dizinler (`.` ile başlayan adlar) atlanır.
 
 ### Yaşam Döngüsü Fonksiyonları
 
-Bir Rediaccfile en fazla üç fonksiyon içerir:
+Bir Rediaccfile en fazla iki fonksiyon içerir:
 
 | Fonksiyon | Ne zaman çalışır | Amacı | Hata davranışı |
 |-----------|-------------------|-------|----------------|
-| `prep()` | `up()` öncesinde | Bağımlılıkları yükleme, imajları çekme, migrasyonları çalıştırma | **Hızlı başarısızlık** -- herhangi bir `prep()` başarısız olursa, tüm süreç derhal durur |
-| `up()` | Tüm `prep()` tamamlandıktan sonra | Servisleri başlatma (ör. `docker compose up -d`) | Kök hatası **kritiktir** (her şeyi durdurur). Alt dizin hataları **kritik değildir** (günlüğe kaydedilir, devam eder) |
-| `down()` | Durdurma sırasında | Servisleri durdurma (ör. `docker compose down`) | **En iyi çaba** -- hatalar günlüğe kaydedilir ancak tüm Rediaccfile'lar her zaman denenir |
+| `up()` | Başlatma sırasında | Servisleri başlatma (ör. `renet compose -- up -d`) | Kök hatası **kritiktir** (her şeyi durdurur). Alt dizin hataları **kritik değildir** (günlüğe kaydedilir, devam eder) |
+| `down()` | Durdurma sırasında | Servisleri durdurma (ör. `renet compose -- down`) | **En iyi çaba** -- hatalar günlüğe kaydedilir ancak tüm Rediaccfile'lar her zaman denenir |
 
-Her üç fonksiyon da isteğe bağlıdır. Tanımlanmamış fonksiyonlar sessizce atlanır.
+Her iki fonksiyon da isteğe bağlıdır. Tanımlanmamış fonksiyonlar sessizce atlanır.
 
 ### Çalıştırma Sırası
 
@@ -48,9 +47,9 @@ Bir Rediaccfile fonksiyonu çalıştığında, aşağıdaki ortam değişkenleri
 
 | Değişken | Açıklama | Örnek |
 |----------|----------|-------|
-| `REPOSITORY_PATH` | Deponun bağlama yolu | `/mnt/rediacc/repos/abc123` |
-| `REPOSITORY_NAME` | Depo GUID'i | `a1b2c3d4-e5f6-...` |
-| `REPOSITORY_NETWORK_ID` | Ağ Kimliği (tamsayı) | `2816` |
+| `REDIACC_WORKING_DIR` | Deponun bağlama yolu | `/mnt/rediacc/mounts/abc123` |
+| `REDIACC_REPOSITORY` | Depo GUID'i | `a1b2c3d4-e5f6-...` |
+| `REDIACC_NETWORK_ID` | Ağ Kimliği (tamsayı) | `2816` |
 | `DOCKER_HOST` | Bu deponun izole daemon'u için Docker soketi | `unix:///var/run/rediacc/docker-2816.sock` |
 | `{SERVICE}_IP` | `.rediacc.json` dosyasında tanımlanan her servis için loopback IP | `POSTGRES_IP=127.0.11.2` |
 
@@ -65,11 +64,6 @@ Bir Rediaccfile fonksiyonu çalıştığında, aşağıdaki ortam değişkenleri
 ```bash
 #!/bin/bash
 
-prep() {
-    echo "Pulling latest images..."
-    renet compose -- pull
-}
-
 up() {
     echo "Starting services..."
     renet compose -- up -d
@@ -81,14 +75,14 @@ down() {
 }
 ```
 
-> `DOCKER_HOST` otomatik olarak ayarlandığı için `docker compose` de çalışır, ancak `renet compose` ters proxy yönlendirme keşfi için gereken `rediacc.*` etiketlerini de enjekte ettiği için tercih edilir. Ayrıntılar için [Ağ Yapılandırması](/tr/docs/networking) sayfasına bakın.
+> **Önemli:** `docker compose` yerine her zaman `renet compose --` kullanın. `renet compose` sarmalayıcısı, host ağını, IP tahsisini ve renet-proxy tarafından gerekli olan servis keşif etiketlerini zorunlu kılar. CRIU checkpoint/restore yetenekleri `rediacc.checkpoint=true` etiketli konteynerlere eklenir. Doğrudan `docker compose` kullanımı Rediaccfile doğrulaması tarafından reddedilir. Ayrıntılar için [Ağ Yapılandırması](/tr/docs/networking) sayfasına bakın.
 
 ### Çoklu Servis Düzeni
 
 Birden fazla bağımsız servis grubu olan projeler için alt dizinler kullanın:
 
 ```
-/mnt/rediacc/repos/my-app/
+/mnt/rediacc/mounts/my-app/
 ├── Rediaccfile              # Kök: paylaşılan kurulum
 ├── docker-compose.yml
 ├── database/
@@ -155,13 +149,12 @@ Her depo en fazla **61 servisi** destekler (slot 0'dan 60'a kadar).
 
 ### Docker Compose'da Servis IP'lerini Kullanma
 
-Her depo izole bir Docker daemon'u çalıştırdığından, servisler `network_mode: host` kullanır ve atanan loopback IP'lerine bağlanır:
+Her depo izole bir Docker daemon'u çalıştırdığından, `renet compose` tüm servisler için otomatik olarak `network_mode: host` yapılandırır. Servisleri atanan loopback IP'lerine bağlayın:
 
 ```yaml
 services:
   postgres:
     image: postgres:16
-    network_mode: host
     environment:
       PGDATA: /var/lib/postgresql/data
       POSTGRES_PASSWORD: secret
@@ -169,11 +162,14 @@ services:
 
   api:
     image: my-api:latest
-    network_mode: host
     environment:
       DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
       LISTEN_ADDR: ${API_IP}:8080
 ```
+
+> **Not:** `network_mode: host` ifadesini manuel olarak eklemeyin — `renet compose` bunu otomatik olarak enjekte eder. Yeniden başlatma politikaları (örn., `restart: always`) güvenle kullanılabilir — renet CRIU uyumluluğu için bunları otomatik olarak kaldırır ve yönlendirici watchdog konteyner kurtarmasını yönetir.
+
+> **Not:** Fork depoları düz otomatik rotalar alır: `{service}-{tag}.{machine}.{baseDomain}`. Fork'lar için özel alan adları atlanır.
 
 ## Servisleri Başlatma
 
@@ -186,15 +182,13 @@ rdc repo up my-app -m server-1 --mount
 | Seçenek | Açıklama |
 |---------|----------|
 | `--mount` | Henüz bağlanmamışsa önce depoyu bağla |
-| `--prep-only` | Yalnızca `prep()` fonksiyonlarını çalıştır, `up()` atla |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 Çalıştırma sırası:
 1. LUKS ile şifrelenmiş depoyu bağla (`--mount` belirtilmişse)
 2. İzole Docker daemon'unu başlat
 3. Compose dosyalarından `.rediacc.json` dosyasını otomatik oluştur
-4. Tüm Rediaccfile'larda `prep()` çalıştır (A-Z sırası, hızlı başarısızlık)
-5. Tüm Rediaccfile'larda `up()` çalıştır (A-Z sırası)
+4. Tüm Rediaccfile'larda `up()` çalıştır (A-Z sırası)
 
 ## Servisleri Durdurma
 
@@ -217,7 +211,7 @@ rdc repo down my-app -m server-1
 Bir makinedeki tüm depoları aynı anda başlatın veya durdurun:
 
 ```bash
-rdc repo up-all -m server-1
+rdc repo up -m server-1
 ```
 
 | Seçenek | Açıklama |
@@ -256,7 +250,7 @@ Depo parolası sorulacaktır.
 ### Tümünü Etkinleştirme
 
 ```bash
-rdc repo autostart enable-all -m server-1
+rdc repo autostart enable -m server-1
 ```
 
 ### Devre Dışı Bırakma
@@ -280,10 +274,10 @@ Bu örnek, PostgreSQL, Redis ve bir API sunucusu içeren bir web uygulamasını 
 ### 1. Ortamı Hazırlama
 
 ```bash
-curl -fsSL https://get.rediacc.com | sh
+curl -fsSL https://www.rediacc.com/install.sh | bash
 rdc config init production --ssh-key ~/.ssh/id_ed25519
-rdc config add-machine prod-1 --ip 203.0.113.50 --user deploy
-rdc config setup-machine prod-1
+rdc config machine add prod-1 --ip 203.0.113.50 --user deploy
+rdc config machine setup prod-1
 rdc repo create webapp -m prod-1 --size 10G
 ```
 
@@ -303,8 +297,6 @@ Depo içinde aşağıdaki dosyaları oluşturun:
 services:
   postgres:
     image: postgres:16
-    network_mode: host
-    restart: unless-stopped
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
@@ -315,14 +307,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    network_mode: host
-    restart: unless-stopped
     command: redis-server --bind ${REDIS_IP} --port 6379
 
   api:
     image: myregistry/api:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
       REDIS_URL: redis://${REDIS_IP}:6379
@@ -334,17 +322,13 @@ services:
 ```bash
 #!/bin/bash
 
-prep() {
-    mkdir -p data/postgres
-    renet compose -- pull
-}
-
 up() {
+    mkdir -p data/postgres
     renet compose -- up -d
 
     echo "Waiting for PostgreSQL..."
     for i in $(seq 1 30); do
-        if docker compose exec postgres pg_isready -q 2>/dev/null; then
+        if renet compose -- exec postgres pg_isready -q 2>/dev/null; then
             echo "PostgreSQL is ready."
             return 0
         fi

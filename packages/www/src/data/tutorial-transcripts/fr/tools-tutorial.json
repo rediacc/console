@@ -1,0 +1,13 @@
+{
+  "cast": "/assets/tutorials/tools-tutorial.cast",
+  "language": "fr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tools-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.511459,
+      "text": "Ouvrez une commande shell distante pour vérifier l'identité de la machine cible."
+    }
+  ]
+}

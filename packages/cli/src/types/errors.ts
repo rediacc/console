@@ -18,4 +18,6 @@ export interface CliError {
   message: string;
   details?: string[];
   exitCode: number;
+  retryable?: boolean;
+  guidance?: string;
 }

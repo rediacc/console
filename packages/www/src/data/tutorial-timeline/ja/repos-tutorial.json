@@ -1,0 +1,22 @@
+{
+  "cast": "/assets/tutorials/repos-tutorial.cast",
+  "language": "ja",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "08c2b401bfb77edb9555b80da7ff28453d323d79ddee3072b2b7a3a6ea194068",
+  "steps": [
+    {
+      "id": "repos-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508464,
+      "replayEndSec": 6.646665,
+      "narrationText": "定義されたストレージ サイズで暗号化されたリポジトリを作成します。",
+      "audioSrc": "/assets/tutorials/audio/ja/repos-tutorial/repos-tutorial-01.10d129bb.mp3",
+      "audioDurationSec": 4.675918
+    }
+  ]
+}

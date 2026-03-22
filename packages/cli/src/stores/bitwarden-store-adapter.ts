@@ -1,8 +1,8 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import type { IStoreAdapter, PullResult, PushResult } from './types.js';
 import type { RdcConfig } from '../types/index.js';
 import type { StoreEntry } from '../types/store.js';
+import type { IStoreAdapter, PullResult, PushResult } from './types.js';
 
 const execFileAsync = promisify(execFile);
 

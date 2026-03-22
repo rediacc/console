@@ -1,0 +1,67 @@
+{
+  "cast": "/assets/tutorials/ops-tutorial.cast",
+  "language": "ja",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "c88a9b2a73f50bc277fba17682c8702f690cc882db7cfa31968ec7dba5d88995",
+  "steps": [
+    {
+      "id": "ops-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508295,
+      "replayEndSec": 8.986537,
+      "narrationText": "プロビジョニングの前に、ローカル仮想化要件を確認してください。",
+      "audioSrc": "/assets/tutorials/audio/ja/ops-tutorial/ops-tutorial-01.a5707a2d.mp3",
+      "audioDurationSec": 4.205714
+    },
+    {
+      "id": "ops-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 8.986537,
+      "replayEndSec": 17.752282,
+      "narrationText": "実験用に最小限の VM クラスターを起動します。",
+      "audioSrc": "/assets/tutorials/audio/ja/ops-tutorial/ops-tutorial-02.a996b2fe.mp3",
+      "audioDurationSec": 3.787755
+    },
+    {
+      "id": "ops-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 17.752282,
+      "replayEndSec": 25.263372,
+      "narrationText": "クラスターの状態とマシンの可用性を確認します。",
+      "audioSrc": "/assets/tutorials/audio/ja/ops-tutorial/ops-tutorial-03.93437685.mp3",
+      "audioDurationSec": 3.787755
+    },
+    {
+      "id": "ops-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 25.263372,
+      "replayEndSec": 31.160484,
+      "narrationText": "選択した VM でホスト名のクイック チェックを実行します。",
+      "audioSrc": "/assets/tutorials/audio/ja/ops-tutorial/ops-tutorial-04.7594c302.mp3",
+      "audioDurationSec": 3.866122
+    },
+    {
+      "id": "ops-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 31.160484,
+      "replayEndSec": 39.121485,
+      "narrationText": "VM 環境内からシステムの詳細を検査します。",
+      "audioSrc": "/assets/tutorials/audio/ja/ops-tutorial/ops-tutorial-05.baa73c0d.mp3",
+      "audioDurationSec": 2.925714
+    },
+    {
+      "id": "ops-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 39.121485,
+      "replayEndSec": 46.501637,
+      "narrationText": "一時的な VM クラスターをシャットダウンしてクリーンアップします。",
+      "audioSrc": "/assets/tutorials/audio/ja/ops-tutorial/ops-tutorial-06.e775754e.mp3",
+      "audioDurationSec": 4.127347
+    }
+  ]
+}

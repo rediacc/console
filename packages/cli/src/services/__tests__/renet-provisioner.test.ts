@@ -1,37 +1,118 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { compareVersions } from '../updater.js';
 
-/**
- * Version guard logic tests.
- *
- * These test the decision logic used by RenetProvisionerService.provision()
- * to prevent accidental renet downgrades on remote machines.
- *
- * Integration testing of the full provisioning flow (including SSH, binary
- * upload, and version checking against real VMs) is covered in:
- *   packages/cli/tests/tests/08-e2e/01-local-execution.test.ts
- */
+const readFileMock = vi.fn();
+const writeFileMock = vi.fn();
+const mkdirMock = vi.fn();
+const mkdtempMock = vi.fn();
+const rmMock = vi.fn();
+const computeSha256Mock = vi.fn();
+const mockInstances: MockSFTPClient[] = [];
+const connectDelegate = vi.fn(() => Promise.resolve());
+const executeRsyncMock = vi.fn();
+const getRsyncCommandMock = vi.fn();
+const createTempSSHKeyFileMock = vi.fn();
+const removeTempSSHKeyFileMock = vi.fn();
 
-/**
- * Parse a renet version from its localized output.
- * Mirrors the regex used in RenetProvisionerService.getRemoteVersion().
- */
+class MockSFTPClient {
+  connect = vi.fn(() => connectDelegate());
+  exec = vi.fn<(command: string) => Promise<string>>((command: string) => {
+    if (command === 'uname -m') return 'x86_64\n';
+    if (command.includes('flock -w 120')) return 'UPDATED CURRENT_UPDATED\n';
+    if (command.includes(' version 2>/dev/null')) return 'remote-hash\n';
+    if (command.includes('command -v rsync')) return '';
+    if (command.startsWith('readlink ')) return '';
+    if (command.includes('find ')) return '';
+    if (command.includes('sha256sum')) return 'remote-hash\n';
+    if (command.includes('systemctl is-active --quiet rediacc-router')) return 'RESTARTED\n';
+    if (command.startsWith('rm -f ')) return '';
+    throw new Error(`Unexpected command: ${command}`);
+  });
+  writeFile = vi.fn((_path: string, _data: Buffer) => Promise.resolve());
+  exists = vi.fn((_path: string) => Promise.resolve(false));
+  close = vi.fn();
+
+  constructor(_config: unknown) {
+    mockInstances.push(this);
+  }
+}
+
+vi.mock('node:fs/promises', () => ({
+  default: {
+    readFile: readFileMock,
+    writeFile: writeFileMock,
+    mkdir: mkdirMock,
+    mkdtemp: mkdtempMock,
+    rm: rmMock,
+  },
+  readFile: readFileMock,
+  writeFile: writeFileMock,
+  mkdir: mkdirMock,
+  mkdtemp: mkdtempMock,
+  rm: rmMock,
+}));
+
+vi.mock('@rediacc/shared-desktop/sftp', () => ({
+  SFTPClient: MockSFTPClient,
+}));
+
+vi.mock('../embedded-assets.js', () => ({
+  isSEA: () => false,
+  getEmbeddedRenetBinary: vi.fn(),
+  computeSha256: computeSha256Mock,
+}));
+
+vi.mock('@rediacc/shared-desktop/sync', () => ({
+  executeRsync: executeRsyncMock,
+  getRsyncCommand: getRsyncCommandMock,
+}));
+
+vi.mock('@rediacc/shared-desktop/ssh', () => ({
+  createTempSSHKeyFile: createTempSSHKeyFileMock,
+  removeTempSSHKeyFile: removeTempSSHKeyFileMock,
+}));
+
 function parseVersionFromOutput(output: string): string | null {
   const match = /\d+\.\d+\.\d+/.exec(output);
   return match ? match[0] : null;
 }
 
-/**
- * Determine if a downgrade would occur.
- * Returns true if localVersion is older than remoteVersion.
- */
 function wouldDowngrade(localVersion: string, remoteVersion: string): boolean {
   return compareVersions(localVersion, remoteVersion) < 0;
 }
 
-// ============================================
-// Version Parsing Tests
-// ============================================
+function shouldRestartServices(
+  action: 'uploaded' | 'verified' | 'failed' | 'version_rejected',
+  restartServices?: boolean
+): boolean {
+  return action === 'uploaded' && restartServices !== false;
+}
+
+const remoteInstallPath = '/usr/lib/rediacc/renet/0.6.0/renet';
+
+function configureExec(
+  instance: MockSFTPClient,
+  options?: { remoteHash?: string; lockResult?: string }
+) {
+  const remoteHash = options?.remoteHash ?? 'remote-hash';
+  const lockResult = options?.lockResult ?? 'UPDATED CURRENT_UPDATED\n';
+  instance.exec.mockImplementation((command: string) => {
+    if (command === 'uname -m') return 'x86_64\n';
+    if (command.includes('flock -w 120')) return lockResult;
+    if (command.includes(' version 2>/dev/null')) return `${remoteHash}\n`;
+    if (command.includes('command -v rsync')) return '';
+    if (command.startsWith('readlink ')) return '';
+    if (command.includes('find ')) return '';
+    if (command.includes('sha256sum')) return `${remoteHash}\n`;
+    if (command.includes('systemctl is-active --quiet rediacc-router')) return 'RESTARTED\n';
+    if (command.startsWith('rm -f ')) return '';
+    throw new Error(`Unexpected command: ${command}`);
+  });
+}
+
+function getMockInstance(index: number): MockSFTPClient {
+  return mockInstances[index];
+}
 
 describe('renet version parsing', () => {
   it('should parse English output', () => {
@@ -79,10 +160,6 @@ describe('renet version parsing', () => {
   });
 });
 
-// ============================================
-// Downgrade Detection Tests
-// ============================================
-
 describe('downgrade detection', () => {
   it('should detect downgrade (remote newer)', () => {
     expect(wouldDowngrade('0.4.90', '0.5.0')).toBe(true);
@@ -109,21 +186,6 @@ describe('downgrade detection', () => {
   });
 });
 
-// ============================================
-// Service Restart Decision Tests
-// ============================================
-
-/**
- * Mirrors the restart decision logic in RenetProvisionerService.provision().
- * After a binary upload, services should be restarted unless explicitly opted out.
- */
-function shouldRestartServices(
-  action: 'uploaded' | 'verified' | 'failed' | 'version_rejected',
-  restartServices?: boolean
-): boolean {
-  return action === 'uploaded' && restartServices !== false;
-}
-
 describe('service restart decision', () => {
   it('should restart after upload by default', () => {
     expect(shouldRestartServices('uploaded')).toBe(true);
@@ -147,5 +209,346 @@ describe('service restart decision', () => {
 
   it('should not restart on version rejected', () => {
     expect(shouldRestartServices('version_rejected')).toBe(false);
+  });
+});
+
+describe('RenetProvisionerService', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    mockInstances.length = 0;
+    connectDelegate.mockResolvedValue(undefined);
+    readFileMock.mockResolvedValue(Buffer.from('renet-binary'));
+    writeFileMock.mockResolvedValue(undefined);
+    mkdirMock.mockResolvedValue(undefined);
+    mkdtempMock.mockResolvedValue('/tmp/rdc-renet-local');
+    rmMock.mockResolvedValue(undefined);
+    computeSha256Mock.mockReturnValue('local-hash');
+    executeRsyncMock.mockResolvedValue({
+      success: true,
+      filesTransferred: 1,
+      bytesTransferred: 123,
+      errors: [],
+      duration: 10,
+    });
+    getRsyncCommandMock.mockResolvedValue('rsync');
+    createTempSSHKeyFileMock.mockResolvedValue('/tmp/key');
+    removeTempSSHKeyFileMock.mockResolvedValue(undefined);
+  });
+
+  it('coalesces concurrent provisioning calls for the same host', async () => {
+    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const firstConnectGate = Promise.withResolvers<void>();
+    let connectCalls = 0;
+    connectDelegate.mockImplementation(async () => {
+      connectCalls += 1;
+      if (connectCalls === 1) {
+        await firstConnectGate.promise;
+      }
+    });
+
+    const provisionPromise1 = renetProvisioner.provision(
+      { host: 'hostinger', username: 'muhammed', privateKey: 'key' },
+      { localBinaryPath: '/tmp/renet' }
+    );
+    const provisionPromise2 = renetProvisioner.provision(
+      { host: 'hostinger', username: 'muhammed', privateKey: 'key' },
+      { localBinaryPath: '/tmp/renet' }
+    );
+
+    await vi.waitFor(() => expect(mockInstances).toHaveLength(1));
+    configureExec(getMockInstance(0));
+    firstConnectGate.resolve();
+
+    const [result1, result2] = await Promise.all([provisionPromise1, provisionPromise2]);
+    expect(result1.action).toBe('uploaded');
+    expect(result2.action).toBe('uploaded');
+    expect(result1.remotePath).toBe(remoteInstallPath);
+    expect(mockInstances).toHaveLength(1);
+    expect(getMockInstance(0).writeFile).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows different hosts to provision in parallel with distinct staging paths', async () => {
+    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const firstConnectGate = Promise.withResolvers<void>();
+    const secondConnectGate = Promise.withResolvers<void>();
+    let connectCalls = 0;
+    connectDelegate.mockImplementation(async () => {
+      connectCalls += 1;
+      if (connectCalls === 1) {
+        await firstConnectGate.promise;
+        return;
+      }
+      await secondConnectGate.promise;
+    });
+
+    const promise1 = renetProvisioner.provision(
+      { host: 'host-1', username: 'muhammed', privateKey: 'key' },
+      { localBinaryPath: '/tmp/renet' }
+    );
+    const promise2 = renetProvisioner.provision(
+      { host: 'host-2', username: 'muhammed', privateKey: 'key' },
+      { localBinaryPath: '/tmp/renet' }
+    );
+
+    await vi.waitFor(() => expect(mockInstances).toHaveLength(2));
+    configureExec(getMockInstance(0));
+    configureExec(getMockInstance(1));
+    firstConnectGate.resolve();
+    secondConnectGate.resolve();
+
+    const [result1, result2] = await Promise.all([promise1, promise2]);
+    expect(result1.action).toBe('uploaded');
+    expect(result2.action).toBe('uploaded');
+    expect(result1.remotePath).toBe(remoteInstallPath);
+    expect(result2.remotePath).toBe(remoteInstallPath);
+
+    const stagingPath1 = String(getMockInstance(0).writeFile.mock.calls[0]?.[0] ?? '');
+    const stagingPath2 = String(getMockInstance(1).writeFile.mock.calls[0]?.[0] ?? '');
+    expect(stagingPath1).not.toBe(stagingPath2);
+  });
+
+  it('returns verified when the lock-holder recheck sees the binary already updated', async () => {
+    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const connectGate = Promise.withResolvers<void>();
+    connectDelegate.mockImplementation(async () => {
+      await connectGate.promise;
+    });
+    const provisionPromise = renetProvisioner.provision(
+      { host: 'hostinger', username: 'muhammed', privateKey: 'key' },
+      { localBinaryPath: '/tmp/renet' }
+    );
+
+    await vi.waitFor(() => expect(mockInstances).toHaveLength(1));
+    configureExec(getMockInstance(0), { lockResult: 'VERIFIED\n' });
+    connectGate.resolve();
+
+    const result = await provisionPromise;
+    expect(result.action).toBe('verified');
+    expect(result.remotePath).toBe(remoteInstallPath);
+    expect(
+      getMockInstance(0).exec.mock.calls.some(([command]) =>
+        String(command).includes('systemctl is-active --quiet rediacc-router')
+      )
+    ).toBe(false);
+  });
+
+  it('uses delta sync from the current slot when rsync is available', async () => {
+    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const connectGate = Promise.withResolvers<void>();
+    connectDelegate.mockImplementation(async () => {
+      await connectGate.promise;
+    });
+    const provisionPromise = renetProvisioner.provision(
+      { host: 'hostinger', username: 'muhammed', privateKey: 'key' },
+      { localBinaryPath: '/tmp/renet' }
+    );
+
+    await vi.waitFor(() => expect(mockInstances).toHaveLength(1));
+    getMockInstance(0).exec.mockImplementation((command: string) => {
+      if (command === 'uname -m') return 'x86_64\n';
+      if (command.includes('flock -w 120')) return 'UPDATED CURRENT_UPDATED\n';
+      if (command.includes(' version 2>/dev/null')) return 'remote-hash\n';
+      if (command.includes('command -v rsync')) return '/usr/bin/rsync\n';
+      if (command.startsWith('readlink ')) return '/usr/lib/rediacc/renet/0.5.9/renet\n';
+      if (command.startsWith('cp -f ')) return '';
+      if (command.includes('sha256sum')) return 'local-hash\n';
+      throw new Error(`Unexpected command: ${command}`);
+    });
+    connectGate.resolve();
+
+    const result = await provisionPromise;
+    expect(result.success).toBe(true);
+    expect(result.action).toBe('uploaded');
+    expect(executeRsyncMock).toHaveBeenCalledTimes(1);
+    expect(executeRsyncMock.mock.calls[0]?.[0]).toMatchObject({
+      destination: expect.stringContaining('hostinger:/tmp/.rdc-staging-renet'),
+      remoteRsyncPath: '/usr/bin/rsync',
+    });
+    expect(getMockInstance(0).writeFile).not.toHaveBeenCalled();
+  });
+
+  it('uses the current slot as delta seed even when it matches the target path', async () => {
+    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const connectGate = Promise.withResolvers<void>();
+    connectDelegate.mockImplementation(async () => {
+      await connectGate.promise;
+    });
+    const provisionPromise = renetProvisioner.provision(
+      { host: 'hostinger', username: 'muhammed', privateKey: 'key' },
+      { localBinaryPath: '/tmp/renet' }
+    );
+
+    await vi.waitFor(() => expect(mockInstances).toHaveLength(1));
+    getMockInstance(0).exec.mockImplementation((command: string) => {
+      if (command === 'uname -m') return 'x86_64\n';
+      if (command.includes('flock -w 120')) return 'UPDATED CURRENT_UPDATED\n';
+      if (command.includes(' version 2>/dev/null')) return 'remote-hash\n';
+      if (command.includes('command -v rsync')) return '/usr/bin/rsync\n';
+      if (command.startsWith('readlink ')) return `${remoteInstallPath}\n`;
+      if (command.startsWith('cp -f ')) return '';
+      if (command.includes('sha256sum')) return 'local-hash\n';
+      throw new Error(`Unexpected command: ${command}`);
+    });
+    connectGate.resolve();
+
+    const result = await provisionPromise;
+    expect(result.success).toBe(true);
+    expect(result.action).toBe('uploaded');
+    expect(executeRsyncMock).toHaveBeenCalledTimes(1);
+    expect(getMockInstance(0).writeFile).not.toHaveBeenCalled();
+  });
+
+  it('updates current to the newly activated slot for mixed-version installs', async () => {
+    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const remoteInstallPathNext = '/usr/lib/rediacc/renet/0.6.1/renet';
+    const command = (
+      renetProvisioner as unknown as {
+        buildLockedInstallCommand: (
+          stagingPath: string,
+          localHash: string,
+          remoteInstallPath: string
+        ) => string;
+      }
+    ).buildLockedInstallCommand('/tmp/staging-renet', 'local-hash', remoteInstallPathNext);
+
+    expect(command).toContain('/usr/lib/rediacc/renet/current/renet');
+    expect(command).toContain('/usr/lib/rediacc/renet/0.6.1/renet');
+    expect(command).toContain('/usr/lib/rediacc/renet/current/renet.tmp');
+    expect(command).toContain('ln -sfn');
+    expect(command).toContain('mv -Tf');
+  });
+
+  it('falls back to SFTP upload when delta sync is unavailable', async () => {
+    getRsyncCommandMock.mockRejectedValue(new Error('rsync missing'));
+    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const connectGate = Promise.withResolvers<void>();
+    connectDelegate.mockImplementation(async () => {
+      await connectGate.promise;
+    });
+    const provisionPromise = renetProvisioner.provision(
+      { host: 'hostinger', username: 'muhammed', privateKey: 'key' },
+      { localBinaryPath: '/tmp/renet' }
+    );
+
+    await vi.waitFor(() => expect(mockInstances).toHaveLength(1));
+    getMockInstance(0).exec.mockImplementation((command: string) => {
+      if (command === 'uname -m') return 'x86_64\n';
+      if (command.includes('flock -w 120')) return 'UPDATED CURRENT_UPDATED\n';
+      if (command.includes(' version 2>/dev/null')) return 'remote-hash\n';
+      if (command.includes('command -v rsync')) return '/usr/bin/rsync\n';
+      if (command.startsWith('readlink ')) return '/usr/lib/rediacc/renet/0.5.9/renet\n';
+      throw new Error(`Unexpected command: ${command}`);
+    });
+    connectGate.resolve();
+
+    const result = await provisionPromise;
+    expect(result.success).toBe(true);
+    expect(result.action).toBe('uploaded');
+    expect(executeRsyncMock).not.toHaveBeenCalled();
+    expect(getMockInstance(0).writeFile).toHaveBeenCalledTimes(1);
+  });
+
+  it('prefers embedded remote rsync when system rsync is missing', async () => {
+    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const connectGate = Promise.withResolvers<void>();
+    connectDelegate.mockImplementation(async () => {
+      await connectGate.promise;
+    });
+    const provisionPromise = renetProvisioner.provision(
+      { host: 'hostinger', username: 'muhammed', privateKey: 'key' },
+      { localBinaryPath: '/tmp/renet' }
+    );
+
+    await vi.waitFor(() => expect(mockInstances).toHaveLength(1));
+    getMockInstance(0).exec.mockImplementation((command: string) => {
+      if (command === 'uname -m') return 'x86_64\n';
+      if (command.includes('flock -w 120')) return 'UPDATED CURRENT_UPDATED\n';
+      if (command.includes(' version 2>/dev/null')) return 'remote-hash\n';
+      if (command.includes('command -v rsync')) return '/usr/local/bin/rsync-renet\n';
+      if (command.startsWith('readlink ')) return '';
+      if (command.includes('find ')) return '/usr/lib/rediacc/renet/0.5.8/renet\n';
+      if (command.startsWith('cp -f ')) return '';
+      if (command.includes('sha256sum')) return 'local-hash\n';
+      throw new Error(`Unexpected command: ${command}`);
+    });
+    connectGate.resolve();
+
+    const result = await provisionPromise;
+    expect(result.success).toBe(true);
+    expect(executeRsyncMock.mock.calls[0]?.[0]).toMatchObject({
+      remoteRsyncPath: '/usr/local/bin/rsync-renet',
+    });
+  });
+
+  it('surfaces a clear error when flock is unavailable remotely', async () => {
+    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const connectGate = Promise.withResolvers<void>();
+    connectDelegate.mockImplementation(async () => {
+      await connectGate.promise;
+    });
+    const provisionPromise = renetProvisioner.provision(
+      { host: 'hostinger', username: 'muhammed', privateKey: 'key' },
+      { localBinaryPath: '/tmp/renet' }
+    );
+
+    await vi.waitFor(() => expect(mockInstances).toHaveLength(1));
+    getMockInstance(0).exec.mockImplementation((command: string) => {
+      if (command === 'uname -m') return 'x86_64\n';
+      if (command.includes('flock -w 120'))
+        throw new Error('Command exited with code 127: FLOCK_MISSING');
+      if (command.includes(' version 2>/dev/null')) return 'remote-hash\n';
+      if (command.includes('command -v rsync')) return '';
+      if (command.startsWith('readlink ')) return '';
+      if (command.includes('find ')) return '';
+      if (command.startsWith('rm -f ')) return '';
+      throw new Error(`Unexpected command: ${command}`);
+    });
+    connectGate.resolve();
+
+    const result = await provisionPromise;
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("missing 'flock'");
+  });
+
+  it('builds a lock command that is safe for POSIX sh', async () => {
+    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const command = (
+      renetProvisioner as unknown as {
+        buildLockedInstallCommand: (
+          stagingPath: string,
+          localHash: string,
+          remoteInstallPath: string
+        ) => string;
+      }
+    ).buildLockedInstallCommand('/tmp/staging-renet', 'local-hash', remoteInstallPath);
+
+    expect(command).toContain("flock -w 120 '/tmp/.rdc-renet-provision.lock' sh -c");
+    expect(command).toContain("'set -eu;");
+    expect(command).not.toContain('pipefail');
+    expect(command).toContain('/usr/lib/rediacc/renet/current/renet');
+  });
+
+  it('marks verified when only the current pointer changes', async () => {
+    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const connectGate = Promise.withResolvers<void>();
+    connectDelegate.mockImplementation(async () => {
+      await connectGate.promise;
+    });
+    const provisionPromise = renetProvisioner.provision(
+      { host: 'hostinger', username: 'muhammed', privateKey: 'key' },
+      { localBinaryPath: '/tmp/renet', restartServices: true }
+    );
+
+    await vi.waitFor(() => expect(mockInstances).toHaveLength(1));
+    configureExec(getMockInstance(0), {
+      remoteHash: 'local-hash',
+      lockResult: 'CURRENT_UPDATED\n',
+    });
+    connectGate.resolve();
+
+    const result = await provisionPromise;
+    expect(result.action).toBe('verified');
+    expect(result.servicesRestarted).toBe(true);
   });
 });

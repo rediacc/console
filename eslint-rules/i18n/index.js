@@ -12,6 +12,7 @@ import { noUnusedKeys } from './no-unused-keys.js';
 import { crossLanguageConsistency } from './cross-language-consistency.js';
 import { translationCoverage } from './translation-coverage.js';
 import { noUntranslatedValues } from './no-untranslated-values.js';
+import { noUntranslatedTutorialTranscriptValues } from './no-untranslated-tutorial-transcript-values.js';
 import { interpolationConsistency } from './interpolation-consistency.js';
 import { translationStaleness } from './translation-staleness.js';
 
@@ -27,6 +28,7 @@ export const i18nJsonPlugin = {
     'cross-language-consistency': crossLanguageConsistency,
     'translation-coverage': translationCoverage,
     'no-untranslated-values': noUntranslatedValues,
+    'no-untranslated-tutorial-transcript-values': noUntranslatedTutorialTranscriptValues,
     'interpolation-consistency': interpolationConsistency,
     'translation-staleness': translationStaleness,
   },
@@ -50,6 +52,7 @@ export { noUnusedKeys } from './no-unused-keys.js';
 export { crossLanguageConsistency } from './cross-language-consistency.js';
 export { translationCoverage } from './translation-coverage.js';
 export { noUntranslatedValues } from './no-untranslated-values.js';
+export { noUntranslatedTutorialTranscriptValues } from './no-untranslated-tutorial-transcript-values.js';
 export { interpolationConsistency } from './interpolation-consistency.js';
 export { translationStaleness } from './translation-staleness.js';
 

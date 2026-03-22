@@ -1,6 +1,8 @@
 ---
 import BaseLayout from './BaseLayout.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
+import NewsletterSignup from '../components/NewsletterSignup';
+import BlogStickyBar from '../components/BlogStickyBar';
 import type { Language } from '../i18n/types';
 import { createTranslator } from '../i18n/utils';
 import { generateTOCFromMarkdown } from '../utils/sidebar-behavior';
@@ -124,8 +126,8 @@ const toc = frontmatter.toc !== false ? generateTOCFromMarkdown(await Astro.slot
     <div class="article-container">
       {toc.length > 0 && (
         <aside class="sidebar-base sidebar-toc toc-sidebar">
-          <nav class="sidebar-nav sidebar-nav-with-accent toc-nav" role="navigation" aria-label="Table of contents">
-            <h3 class="sidebar-title toc-title">On this page</h3>
+          <nav class="sidebar-nav sidebar-nav-with-accent toc-nav" role="navigation" aria-label={t('common.aria.tableOfContents')}>
+            <h3 class="sidebar-title toc-title">{t('pages.docs.tableOfContents')}</h3>
             <ul class="sidebar-list toc-list">
               {toc.map(heading => (
                 <li class={`sidebar-item toc-item toc-level-${heading.level}`}>
@@ -139,9 +141,25 @@ const toc = frontmatter.toc !== false ? generateTOCFromMarkdown(await Astro.slot
 
       <main class="article-content">
         <slot />
+
+        {isBlogPost && (
+          <div class="blog-newsletter-cta">
+            <NewsletterSignup
+              client:visible
+              variant="inline"
+              source="blog-cta"
+              title={t('newsletter.blogCta.title')}
+              description={t('newsletter.blogCta.description')}
+            />
+          </div>
+        )}
       </main>
     </div>
   </article>
+
+  {isBlogPost && (
+    <BlogStickyBar client:visible source="blog-sticky" />
+  )}
 
   <style is:global>
     .content-article {

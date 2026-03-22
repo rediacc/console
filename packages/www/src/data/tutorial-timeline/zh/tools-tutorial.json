@@ -1,0 +1,22 @@
+{
+  "cast": "/assets/tutorials/tools-tutorial.cast",
+  "language": "zh",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "4ccf847322e085810d9065b312a7e11076925459009fc82c5aa7460f829e9813",
+  "steps": [
+    {
+      "id": "tools-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.511459,
+      "replayEndSec": 5.270978,
+      "narrationText": "打开远程 shell 命令来验证目标计算机身份。",
+      "audioSrc": "/assets/tutorials/audio/zh/tools-tutorial/tools-tutorial-01.5c4d7204.mp3",
+      "audioDurationSec": 3.970612
+    }
+  ]
+}

@@ -1,8 +1,8 @@
-import React from 'react';
+import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 import { Alert } from 'antd';
+import React from 'react';
 import { normalizeToNumber, normalizeToString } from '@/platform';
 import { CloseCircleOutlined, RetweetOutlined } from '@/utils/optimizedIcons';
-import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
 
 interface FailureReasonAlertProps {
   queueDetails: GetTeamQueueItems_ResultSet1 | null | undefined;

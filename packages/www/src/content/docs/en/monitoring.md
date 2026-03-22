@@ -48,6 +48,8 @@ Options:
 - `--health-check` — Perform active health checks on containers
 - `--output json` — Machine-readable JSON output
 
+JSON output includes full container details (`labels`, `port_mappings`, `image`, `id`) plus `repository` (resolved name), `repository_guid` (original GUID), `domain`, and `autoRoute`.
+
 ## List Services
 
 View systemd services related to Rediacc on a machine:
@@ -68,6 +70,8 @@ rdc machine services server-1
 Options:
 - `--stability-check` — Flag unstable services (failed, >3 restarts, auto-restart)
 - `--output json` — Machine-readable JSON output
+
+JSON output includes full service details with `repository` (resolved name) and `repository_guid` (original GUID).
 
 ## List Repositories
 
@@ -90,6 +94,8 @@ rdc machine repos server-1
 Options:
 - `--search <text>` — Filter by name or mount path
 - `--output json` — Machine-readable JSON output
+
+JSON output includes `name` (resolved) and `guid` (original GUID), and nests each repository's `containers` (with `domain`, `autoRoute`, `repository`/`repository_guid`) and `services` arrays.
 
 ## Vault Status
 

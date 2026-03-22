@@ -4,7 +4,7 @@ description: "Установка CLI Rediacc на Linux, macOS или Windows."
 category: "Guides"
 order: 1
 language: ru
-sourceHash: "2cb00a8aeec6988c"
+sourceHash: "7710f243d1cde01e"
 ---
 
 # Установка
@@ -16,7 +16,7 @@ sourceHash: "2cb00a8aeec6988c"
 Запустите скрипт установки:
 
 ```bash
-curl -fsSL https://get.rediacc.com | sh
+curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 Эта команда загружает бинарный файл `rdc` в `$HOME/.local/bin/`. Убедитесь, что эта директория добавлена в PATH:

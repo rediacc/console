@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
 import { Button, Checkbox, Flex, Radio, Space, Typography } from 'antd';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SizedModal } from '@/components/common/SizedModal';
 import type { VSCodeInstallations } from '@/types/electron';

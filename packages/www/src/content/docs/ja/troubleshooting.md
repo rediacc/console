@@ -4,7 +4,7 @@ description: "SSH、セットアップ、リポジトリ、サービス、Docker
 category: "Guides"
 order: 10
 language: ja
-sourceHash: 4c3163007e6a3326
+sourceHash: "b392ab73d90c62e1"
 ---
 
 # トラブルシューティング
@@ -14,7 +14,7 @@ sourceHash: 4c3163007e6a3326
 ## SSH接続の失敗
 
 - 手動で接続できるか確認してください: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- `rdc config scan-keys server-1` を実行してホストキーを更新してください
+- `rdc config machine scan-keys server-1` を実行してホストキーを更新してください
 - SSHポートが一致しているか確認してください: `--port 22`
 - 簡単なコマンドでテストしてください: `rdc term server-1 -c "hostname"`
 
@@ -23,7 +23,7 @@ sourceHash: 4c3163007e6a3326
 サーバーが再インストールされた場合やSSHキーが変更された場合、「host key verification failed」というエラーが表示されます:
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 このコマンドは新しいホストキーを取得し、設定を更新します。
@@ -32,7 +32,7 @@ rdc config scan-keys server-1
 
 - SSHユーザーがパスワードなしのsudoアクセスを持っているか確認するか、必要なコマンドに `NOPASSWD` を設定してください
 - サーバーの空きディスク容量を確認してください
-- `--debug` を付けて詳細な出力を取得してください: `rdc config setup-machine server-1 --debug`
+- `--debug` を付けて詳細な出力を取得してください: `rdc config machine setup server-1 --debug`
 
 ## リポジトリの作成失敗
 
@@ -43,8 +43,8 @@ rdc config scan-keys server-1
 ## サービスが起動しない
 
 - Rediaccfileの構文を確認してください: 有効なBashである必要があります
-- `docker compose` ファイルが `network_mode: host` を使用しているか確認してください
-- Dockerイメージにアクセスできるか確認してください（`prep()` 内で `docker compose pull` の実行を検討してください）
+- Rediaccfileが `renet compose --` を使用しているか確認してください（`docker compose` ではなく）
+- Dockerイメージにアクセスできるか確認してください（`up()` 内で `renet compose -- pull` の実行を検討してください）
 - リポジトリのDockerソケットを使用してコンテナログを確認してください:
 
 ```bash

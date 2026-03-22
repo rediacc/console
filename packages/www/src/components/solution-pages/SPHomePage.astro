@@ -1,0 +1,61 @@
+---
+import type { Language } from '../../i18n/types';
+import { createTranslator } from '../../i18n/utils';
+import SPHero from './SPHero.astro';
+import SPHomeLogoWall from './SPHomeLogoWall.astro';
+import SPHomeFeatureShowcase from './SPHomeFeatureShowcase.astro';
+import SPHomeTeamStory from './SPHomeTeamStory.astro';
+import SPHomeBeforeAfter from './SPHomeBeforeAfter.astro';
+import SPHomeMetricsBar from './SPHomeMetricsBar.astro';
+import SPHomeTestimonials from './SPHomeTestimonials.astro';
+import SPHomeIntegrationsStrip from './SPHomeIntegrationsStrip.astro';
+import SPHomePricingPreview from './SPHomePricingPreview.astro';
+import SPHomeBottomCta from './SPHomeBottomCta.astro';
+
+interface TerminalLine {
+  type: 'command' | 'check' | 'spacer' | 'success' | 'summary';
+  prompt?: string;
+  cmd?: string;
+  flag?: string;
+  value?: string;
+  text?: string;
+  result?: string;
+  pairs?: { label: string; value: string }[];
+}
+
+interface Props {
+  lang: Language;
+  heroTerminalLines: TerminalLine[];
+}
+
+const { lang, heroTerminalLines } = Astro.props as Props;
+const { t } = createTranslator(lang);
+
+const homeHero = {
+  badge: t('hero.eyebrow'),
+  title: `${t('hero.title')}${t('hero.titleHighlight')}`,
+  subtitle: t('hero.subtitle'),
+  primaryCta: t('hero.cta.getStarted'),
+  secondaryCta: t('hero.cta.readDocs'),
+};
+---
+
+<div class="sp-page">
+  <SPHero
+    lang={lang}
+    hero={homeHero}
+    ctaHref={`/${lang}/install`}
+    secondaryCtaHref={`/${lang}/docs/quick-start`}
+    terminal={{ lines: heroTerminalLines }}
+    teamVideo={{ member: 'founder', videoKey: 'hero-intro', durationLabel: '0:30' }}
+  />
+  <SPHomeLogoWall lang={lang} />
+  <SPHomeFeatureShowcase lang={lang} />
+  <SPHomeTeamStory member="founder" videoKey="our-story" lang={lang} />
+  <SPHomeBeforeAfter lang={lang} />
+  <SPHomeMetricsBar lang={lang} />
+  <SPHomeTestimonials lang={lang} />
+  <SPHomeIntegrationsStrip lang={lang} />
+  <SPHomePricingPreview lang={lang} />
+  <SPHomeBottomCta lang={lang} />
+</div>

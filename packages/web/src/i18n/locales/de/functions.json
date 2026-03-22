@@ -26,7 +26,6 @@
   "checkboxOptions": {
     "mountRepoFirst": "Mounten Sie zuerst das Repository",
     "overrideExistingFile": "Vorhandene Datei überschreiben",
-    "preparationOnly": "Nur Vorbereitung",
     "unmountAfterStopping": "Nach dem Anhalten aushängen"
   },
   "configure": "Konfigurieren",

@@ -1,7 +1,7 @@
-import { typedApi } from '@/api/client';
-import i18n from '@/i18n/config';
 import { parseGetQueueItemTrace } from '@rediacc/shared/api';
 import type { GetTeamQueueItems_ResultSet1, QueueTrace } from '@rediacc/shared/types';
+import { typedApi } from '@/api/client';
+import i18n from '@/i18n/config';
 
 interface HelloResponseData {
   result?: string;

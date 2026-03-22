@@ -1,0 +1,13 @@
+{
+  "cast": "/assets/tutorials/backup-tutorial.cast",
+  "language": "ar",
+  "version": 1,
+  "events": [
+    {
+      "id": "backup-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.510362,
+      "text": ".ﺎﻴًﻟﺎﺣ ﺎﻬﻨﻳﻮﻜﺗ ﻢﺗ ﻲﺘﻟﺍ ﻲﻃﺎﻴﺘﺣﻻ﻿ﺍ ﺦﺴﻨﻟﺍ ﺕﺎﻬﺟﻭ ﺺﺤﻓﺍ"
+    }
+  ]
+}

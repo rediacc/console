@@ -9,16 +9,8 @@ on:
     types: [checks_requested]
   schedule:
     - cron: '0 1 * * *'  # Nightly at 1:00 UTC (2:00 CET)
-  workflow_dispatch:
-    inputs:
-      browsers:
-        description: 'E2E browsers to test'
-        required: false
-        type: choice
-        default: 'chromium-only'
-        options:
-          - 'chromium-only'
-          - 'all-browsers'
+  # workflow_dispatch removed: manual triggers don't satisfy PR checks and waste CI budget.
+  # Use empty commits (git commit --allow-empty) to retrigger PR CI instead.
 
 # Minimal default permissions — jobs that need more declare their own
 permissions:
@@ -84,7 +76,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth,generative
 
       # PR Validation (PR events only)
       - name: Validate PR
@@ -95,7 +87,7 @@ jobs:
 
       # Login to GHCR for registry cache check
       - name: Login to GHCR
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2  # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -132,7 +124,7 @@ jobs:
           plugins_tag=${{ steps.init.outputs.plugins_tag }}
           web_tag=${{ steps.init.outputs.web_tag }}
           EOF
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7
         if: steps.init.outputs.is_bot != 'true'
         with:
           name: ci-tags-${{ github.sha }}
@@ -312,6 +304,7 @@ jobs:
           ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
           ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
           ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
+          JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
 
       - name: Verify account server health
         run: curl -sf http://localhost:3000/health
@@ -491,6 +484,9 @@ jobs:
       vm-os-list: '["none", "ubuntu-24.04", "debian-12"]'
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+      AWS_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
+      AWS_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
+      AWS_SES_REGION: ${{ secrets.AWS_SES_REGION }}
 
   # ============================================================================
   # COLUMN 4D: OPS VM TESTS
@@ -508,6 +504,8 @@ jobs:
     uses: ./.github/workflows/ci-ops-test.yml
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   # ============================================================================
   # COLUMN 4C: ELITE RUN TEST
@@ -532,7 +530,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth,generative
 
       - name: Checkout with Submodules
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
@@ -573,7 +571,7 @@ jobs:
           CI_MODE: 'true'
           ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
           ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
-          ACCOUNT_SERVER_URL: "https://account.rediacc.com"
+          ACCOUNT_SERVER_URL: "https://www.rediacc.com/account/"
         run: .ci/scripts/infra/ci-start-elite.sh
 
       - name: Run Health Check
@@ -656,7 +654,7 @@ jobs:
         working-directory: workers/www
 
       - name: Download preview pages artifact
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
         with:
           name: preview-pages-${{ github.sha }}
           path: workers/www/dist/
@@ -664,6 +662,9 @@ jobs:
       - name: Build account portal
         run: npm install && npx vite build --outDir ../../../workers/www/dist/account
         working-directory: private/account/web
+        env:
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+          VITE_CI_MODE: 'false'
 
       # Inject e2e test videos into pages for documentation embedding
       - name: Inject E2E videos
@@ -698,22 +699,54 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           SECRET_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
           SECRET_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
+          SECRET_X25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_X25519_PRIVATE_KEY }}
+          SECRET_X25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_X25519_PUBLIC_KEY }}
           SECRET_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
+          SECRET_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
           SECRET_STRIPE_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
-          SECRET_S3_ENDPOINT: ${{ secrets.ACCOUNT_S3_ENDPOINT }}
-          SECRET_S3_ACCESS_KEY_ID: ${{ secrets.ACCOUNT_S3_ACCESS_KEY_ID }}
-          SECRET_S3_SECRET_ACCESS_KEY: ${{ secrets.ACCOUNT_S3_SECRET_ACCESS_KEY }}
           SECRET_STRIPE_WEBHOOK: ${{ steps.stripe-webhook.outputs.stripe_webhook_secret }}
+          SECRET_ADMIN_EMAIL: ${{ secrets.ACCOUNT_ADMIN_EMAIL }}
+          SECRET_SES_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
+          SECRET_SES_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
+          SECRET_SES_REGION: ${{ secrets.AWS_SES_REGION }}
+          SECRET_TURNSTILE_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          VAR_SES_FROM: ${{ vars.AWS_SES_FROM }}
         run: |
+          # Use secret:bulk to set all secrets in a single API call.
+          # Individual secret put commands each trigger a new worker version,
+          # which disassociates static assets on assets-bound workers.
           WORKER="pr-${PR_NUMBER}"
-          echo "$SECRET_ED25519_PRIVATE_KEY" | npx wrangler secret put ED25519_PRIVATE_KEY --name "$WORKER"
-          echo "$SECRET_ED25519_PUBLIC_KEY" | npx wrangler secret put ED25519_PUBLIC_KEY --name "$WORKER"
-          echo "$SECRET_API_KEY" | npx wrangler secret put API_KEY --name "$WORKER"
-          echo "$SECRET_STRIPE_KEY" | npx wrangler secret put STRIPE_SECRET_KEY --name "$WORKER"
-          echo "$SECRET_S3_ENDPOINT" | npx wrangler secret put S3_ENDPOINT --name "$WORKER"
-          echo "$SECRET_S3_ACCESS_KEY_ID" | npx wrangler secret put S3_ACCESS_KEY_ID --name "$WORKER"
-          echo "$SECRET_S3_SECRET_ACCESS_KEY" | npx wrangler secret put S3_SECRET_ACCESS_KEY --name "$WORKER"
-          echo "$SECRET_STRIPE_WEBHOOK" | npx wrangler secret put STRIPE_WEBHOOK_SECRET --name "$WORKER"
+          jq -n \
+            --arg ed25519_priv "$SECRET_ED25519_PRIVATE_KEY" \
+            --arg ed25519_pub "$SECRET_ED25519_PUBLIC_KEY" \
+            --arg x25519_priv "$SECRET_X25519_PRIVATE_KEY" \
+            --arg x25519_pub "$SECRET_X25519_PUBLIC_KEY" \
+            --arg api_key "$SECRET_API_KEY" \
+            --arg jwt "$SECRET_JWT_SECRET" \
+            --arg stripe "$SECRET_STRIPE_KEY" \
+            --arg stripe_wh "$SECRET_STRIPE_WEBHOOK" \
+            --arg admin "$SECRET_ADMIN_EMAIL" \
+            --arg ses_key "$SECRET_SES_ACCESS_KEY_ID" \
+            --arg ses_secret "$SECRET_SES_SECRET_ACCESS_KEY" \
+            --arg ses_region "$SECRET_SES_REGION" \
+            --arg ses_from "$VAR_SES_FROM" \
+            --arg turnstile "$SECRET_TURNSTILE_KEY" \
+            '{
+              ED25519_PRIVATE_KEY: $ed25519_priv,
+              ED25519_PUBLIC_KEY: $ed25519_pub,
+              X25519_PRIVATE_KEY: $x25519_priv,
+              X25519_PUBLIC_KEY: $x25519_pub,
+              API_KEY: $api_key,
+              JWT_SECRET: $jwt,
+              STRIPE_SECRET_KEY: $stripe,
+              STRIPE_WEBHOOK_SECRET: $stripe_wh,
+              ADMIN_EMAIL: $admin,
+              AWS_SES_ACCESS_KEY_ID: $ses_key,
+              AWS_SES_SECRET_ACCESS_KEY: $ses_secret,
+              AWS_SES_REGION: $ses_region,
+              AWS_SES_FROM: $ses_from,
+              TURNSTILE_SECRET_KEY: $turnstile
+            }' | npx wrangler secret bulk --name "$WORKER"
 
       - name: Deployment summary
         run: |
@@ -725,13 +758,76 @@ jobs:
           echo "**PR:** #${PR_NUMBER}" >> $GITHUB_STEP_SUMMARY
 
   # ============================================================================
+  # TEST PREVIEW INSTALL - Verify CLI install methods work against PR preview
+  # Downloads linux-x64 binary from build-cli, uploads to R2 staging,
+  # then tests binary download and quick install against the preview deployment.
+  # ============================================================================
+  test-preview-install:
+    name: Test Preview Install
+    needs: [initialize, deploy-preview, build-cli]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: >-
+      always() &&
+      needs.deploy-preview.result == 'success' &&
+      needs.build-cli.result == 'success'
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+
+      - name: Download linux-x64 CLI binary
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # v8
+        with:
+          name: build-cli-linux-x64-${{ github.sha }}
+          path: dist/cli/
+
+      - name: Resolve CLI version
+        run: |
+          VERSION=$(jq -r '.version' packages/cli/package.json)
+          echo "CLI_VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Upload CLI to R2 staging
+        id: r2-upload
+        run: |
+          RELEASES_BASE_URL="https://releases.rediacc.com/staging/pr-${PR_NUMBER}" \
+            bash .ci/scripts/build/generate-cli-manifest.sh \
+            --version "$CLI_VERSION" --input dist/cli/
+          if .ci/scripts/deploy/upload-to-r2.sh \
+            --version "$CLI_VERSION" --staging "pr-${PR_NUMBER}" --cli-dir dist/cli/; then
+            echo "uploaded=true" >> $GITHUB_OUTPUT
+          else
+            echo "::warning::R2 upload failed (credentials may not have staging access), skipping install tests"
+            echo "uploaded=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+
+      - name: Test Binary Install
+        if: steps.r2-upload.outputs.uploaded == 'true'
+        run: |
+          RELEASES_BASE_URL="https://releases.rediacc.com/staging/pr-${PR_NUMBER}" \
+            .ci/scripts/test/test-install-methods.sh \
+            --method binary --version "$CLI_VERSION" --platform linux --arch x64
+
+      - name: Test Quick Install
+        if: steps.r2-upload.outputs.uploaded == 'true'
+        run: |
+          SITE_URL="https://pr-${PR_NUMBER}.rediacc.workers.dev" \
+          RELEASES_BASE_URL="https://releases.rediacc.com/staging/pr-${PR_NUMBER}" \
+            .ci/scripts/test/test-install-methods.sh \
+            --method quick --version "$CLI_VERSION" --platform linux --arch x64
+
+  # ============================================================================
   # CI COMPLETE - Gate for merge queue
   # This job only succeeds if ALL CI jobs pass
   # ============================================================================
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-desktop, build-cli, package-tests, deploy-dryrun, tests, standalone-run-test, elite-run-test, ops-tests, deploy-preview]
+    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-desktop, build-cli, package-tests, deploy-dryrun, tests, standalone-run-test, elite-run-test, ops-tests, deploy-preview, test-preview-install]
     if: always() && !cancelled()
     steps:
       - name: Check all jobs passed
@@ -752,6 +848,12 @@ jobs:
           DEPLOY_PREVIEW_OK="false"
           if [[ "${{ needs.deploy-preview.result }}" == "success" ]] || [[ "${{ needs.deploy-preview.result }}" == "skipped" ]]; then
             DEPLOY_PREVIEW_OK="true"
+          fi
+
+          # test-preview-install can be skipped when deploy-preview is skipped
+          PREVIEW_INSTALL_OK="false"
+          if [[ "${{ needs.test-preview-install.result }}" == "success" ]] || [[ "${{ needs.test-preview-install.result }}" == "skipped" ]]; then
+            PREVIEW_INSTALL_OK="true"
           fi
 
           # stripe-sandbox can be skipped for non-PR events or fork PRs
@@ -803,7 +905,8 @@ jobs:
              [[ "$STANDALONE_RUN_OK" != "true" ]] || \
              [[ "$ELITE_RUN_OK" != "true" ]] || \
              [[ "$OPS_TESTS_OK" != "true" ]] || \
-             [[ "$DEPLOY_PREVIEW_OK" != "true" ]]; then
+             [[ "$DEPLOY_PREVIEW_OK" != "true" ]] || \
+             [[ "$PREVIEW_INSTALL_OK" != "true" ]]; then
             echo "One or more jobs failed:"
             echo "  initialize: ${{ needs.initialize.result }}"
             echo "  quality: ${{ needs.quality.result }}"
@@ -819,8 +922,8 @@ jobs:
             echo "  elite-run-test: ${{ needs.elite-run-test.result }}"
             echo "  ops-tests: ${{ needs.ops-tests.result }}"
             echo "  deploy-preview: ${{ needs.deploy-preview.result }}"
+            echo "  test-preview-install: ${{ needs.test-preview-install.result }}"
             exit 1
           fi
           echo "All CI jobs passed successfully!"
-
 

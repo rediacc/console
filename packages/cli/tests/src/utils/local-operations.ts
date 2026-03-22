@@ -70,7 +70,7 @@ export async function safeDeleteRepo(
     await runLocalFunction('repository_down', machine, {
       contextName,
       params: { repository: repoName },
-      timeout: 120_000,
+      timeout: 60_000,
     });
   } catch {
     // ignore
@@ -79,7 +79,7 @@ export async function safeDeleteRepo(
     await runLocalFunction('repository_delete', machine, {
       contextName,
       params: { repository: repoName },
-      timeout: 120_000,
+      timeout: 60_000,
     });
   } catch {
     // ignore

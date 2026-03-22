@@ -1,0 +1,33 @@
+#!/bin/bash
+
+up() {
+  mkdir -p data app
+
+  # Generate .env with credentials on first run
+  if [[ ! -f .env ]]; then
+    local pg_pass
+    pg_pass=$(openssl rand -hex 16)
+    cat > .env <<EOF
+PGPASSWORD=${pg_pass}
+POSTGRES_USER=heartbeat
+POSTGRES_DB=heartbeat
+HEARTBEAT_INTERVAL_MS=5000
+EOF
+    echo "Generated .env with database credentials"
+  fi
+
+  renet compose -- up -d
+}
+
+down() {
+  renet compose -- down -v
+}
+
+info() {
+  echo "=== Heartbeat Status ==="
+  renet compose -- ps
+  echo ""
+  echo "=== Last 10 heartbeats ==="
+  renet compose -- exec -T db psql -U heartbeat -d heartbeat \
+    -c "SELECT id, counter, recorded_at FROM heartbeats ORDER BY id DESC LIMIT 10;" 2>/dev/null || echo "(db not ready)"
+}

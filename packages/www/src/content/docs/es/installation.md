@@ -4,7 +4,7 @@ description: "Instale la CLI de Rediacc en Linux, macOS o Windows."
 category: "Guides"
 order: 1
 language: es
-sourceHash: "2cb00a8aeec6988c"
+sourceHash: "7710f243d1cde01e"
 ---
 
 # Instalación
@@ -16,7 +16,7 @@ Instale la CLI `rdc` en su estación de trabajo. Esta es la única herramienta q
 Ejecute el script de instalación:
 
 ```bash
-curl -fsSL https://get.rediacc.com | sh
+curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 Esto descarga el binario `rdc` en `$HOME/.local/bin/`. Asegúrese de que este directorio esté en su PATH:

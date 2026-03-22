@@ -4,7 +4,7 @@ description: "設定の作成、マシンの追加、サーバーのプロビジ
 category: "Guides"
 order: 3
 language: ja
-sourceHash: "0c725f9eb65e6c0f"
+sourceHash: "ebf1c9967814ec86"
 ---
 
 # マシンセットアップ
@@ -33,7 +33,7 @@ rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 リモートサーバーを設定内のマシンとして登録します：
 
 ```bash
-rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
+rdc config machine add server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | オプション | 必須 | デフォルト | 説明 |
@@ -46,13 +46,13 @@ rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
 マシンを追加すると、rdcは自動的に`ssh-keyscan`を実行してサーバーのホスト鍵を取得します。手動で実行することもできます：
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 登録済みのすべてのマシンを表示するには：
 
 ```bash
-rdc config machines
+rdc config machine list
 ```
 
 ## ステップ3：マシンのセットアップ
@@ -60,7 +60,7 @@ rdc config machines
 リモートサーバーに必要なすべての依存関係をプロビジョニングします：
 
 ```bash
-rdc config setup-machine server-1
+rdc config machine setup server-1
 ```
 
 このコマンドは以下を実行します：
@@ -82,7 +82,7 @@ rdc config setup-machine server-1
 サーバーのSSHホスト鍵が変更された場合（例：再インストール後）、保存されている鍵を更新します：
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 これにより、そのマシンの設定内の`knownHosts`フィールドが更新されます。
@@ -112,27 +112,29 @@ rdc doctor
 ### インフラストラクチャの設定
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
 
-| オプション | 説明 |
-|--------|-------------|
-| `--public-ipv4 <ip>` | 外部アクセス用のパブリックIPv4アドレス |
-| `--public-ipv6 <ip>` | 外部アクセス用のパブリックIPv6アドレス |
-| `--base-domain <domain>` | アプリケーション用のベースドメイン（例：`example.com`） |
-| `--cert-email <email>` | Let's Encrypt TLS証明書用のメールアドレス |
-| `--cf-dns-token <token>` | ACME DNS-01チャレンジ用のCloudflare DNS APIトークン |
-| `--tcp-ports <ports>` | 転送する追加TCPポートのカンマ区切りリスト（例：`25,143,465,587,993`） |
-| `--udp-ports <ports>` | 転送する追加UDPポートのカンマ区切りリスト（例：`53`） |
+| オプション | スコープ | 説明 |
+|--------|-------|-------------|
+| `--public-ipv4 <ip>` | Machine | Public IPv4 address — proxy entrypoints are only created for configured address families |
+| `--public-ipv6 <ip>` | Machine | Public IPv6 address — proxy entrypoints are only created for configured address families |
+| `--base-domain <domain>` | Machine | アプリケーション用のベースドメイン（例：`example.com`） |
+| `--cert-email <email>` | Config | Let's Encrypt TLS証明書用のメールアドレス（マシン間で共有） |
+| `--cf-dns-token <token>` | Config | ACME DNS-01チャレンジ用のCloudflare DNS APIトークン（マシン間で共有） |
+| `--tcp-ports <ports>` | Machine | 転送する追加TCPポートのカンマ区切りリスト（例：`25,143,465,587,993`） |
+| `--udp-ports <ports>` | Machine | 転送する追加UDPポートのカンマ区切りリスト（例：`53`） |
+
+Machineスコープのオプションはマシンごとに保存されます。Configスコープのオプション（`--cert-email`、`--cf-dns-token`）は設定内のすべてのマシンで共有されます。一度設定すればすべてに適用されます。
 
 ### インフラストラクチャの表示
 
 ```bash
-rdc config show-infra server-1
+rdc config infra show server-1
 ```
 
 ### サーバーへのプッシュ
@@ -140,10 +142,88 @@ rdc config show-infra server-1
 Traefikリバースプロキシ設定を生成してサーバーにデプロイします：
 
 ```bash
-rdc config push-infra server-1
+rdc config infra push server-1
 ```
 
-これにより、インフラストラクチャ設定に基づいてプロキシ設定がプッシュされます。TraefikはTLS終端、ルーティング、ポートフォワーディングを処理します。
+このコマンドは以下を実行します：
+1. renetバイナリをリモートマシンにデプロイ
+2. Traefikリバースプロキシ、ルーター、systemdサービスを設定
+3. `--cf-dns-token` が設定されている場合、マシンサブドメイン（`server-1.example.com` および `*.server-1.example.com`）のCloudflare DNSレコードを作成
+
+DNSステップは自動的かつ冪等です — 不足しているレコードを作成し、IPが変更されたレコードを更新し、既に正しいレコードはスキップします。Cloudflareトークンが設定されていない場合、DNSは警告付きでスキップされます。 Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
+
+## クラウドプロビジョニング
+
+VMを手動で作成する代わりに、クラウドプロバイダーを設定して、[OpenTofu](https://opentofu.org/) を使用して `rdc` にマシンを自動的にプロビジョニングさせることができます。
+
+### 前提条件
+
+OpenTofu をインストールしてください: [opentofu.org/docs/intro/install](https://opentofu.org/docs/intro/install/)
+
+SSH設定に公開鍵が含まれていることを確認してください：
+
+```bash
+rdc config set ssh.privateKeyPath ~/.ssh/id_ed25519
+```
+
+### クラウドプロバイダーの追加
+
+```bash
+rdc config provider add my-linode \
+  --provider linode/linode \
+  --token $LINODE_API_TOKEN \
+  --region us-east \
+  --type g6-standard-2
+```
+
+| オプション | 必須 | 説明 |
+|--------|----------|-------------|
+| `--provider <source>` | はい* | 既知のプロバイダーソース（例：`linode/linode`、`hetznercloud/hcloud`） |
+| `--source <source>` | はい* | カスタムOpenTofuプロバイダーソース（未知のプロバイダー用） |
+| `--token <token>` | はい | クラウドプロバイダーのAPIトークン |
+| `--region <region>` | いいえ | 新しいマシンのデフォルトリージョン |
+| `--type <type>` | いいえ | デフォルトのインスタンスタイプ/サイズ |
+| `--image <image>` | いいえ | デフォルトのOSイメージ |
+| `--ssh-user <user>` | いいえ | SSHユーザー名（デフォルト: `root`） |
+
+\* `--provider` または `--source` のいずれかが必要です。既知のプロバイダー（組み込みデフォルト）には `--provider` を使用します。カスタムプロバイダーには `--source` と追加の `--resource`、`--ipv4-output`、`--ssh-key-attr` フラグを使用します。
+
+### マシンのプロビジョニング
+
+```bash
+rdc machine provision prod-2 --provider my-linode
+```
+
+この単一コマンドで以下を実行します：
+1. OpenTofu経由でクラウドプロバイダーにVMを作成
+2. SSH接続を待機
+3. マシンを設定に登録
+4. renetとすべての依存関係をインストール
+5. Configures Traefik proxy and Cloudflare DNS (auto-detects base domain from sibling machines, or pass `--base-domain` explicitly)
+
+| オプション | 説明 |
+|--------|-------------|
+| `--provider <name>` | クラウドプロバイダー名（`add-provider` から） |
+| `--region <region>` | プロバイダーのデフォルトリージョンを上書き |
+| `--type <type>` | デフォルトのインスタンスタイプを上書き |
+| `--image <image>` | デフォルトのOSイメージを上書き |
+| `--base-domain <domain>` | Base domain for infrastructure. Auto-detected from sibling machines if not specified |
+| `--no-infra` | Skip infrastructure configuration (proxy + DNS) entirely |
+| `--debug` | 詳細なプロビジョニング出力を表示 |
+
+### マシンのデプロビジョニング
+
+```bash
+rdc machine deprovision prod-2
+```
+
+OpenTofu経由でVMを破棄し、設定から削除します。`--force` を使用しない限り確認が必要です。`machine provision` で作成されたマシンのみ動作します。
+
+### プロバイダーの一覧表示
+
+```bash
+rdc config provider list
+```
 
 ## デフォルトの設定
 

@@ -37,9 +37,6 @@ CONTAINERS=(
     rediacc-api
     rediacc-sql
     rediacc-account-server
-    rediacc-account-rustfs
-    rediacc-account-rustfs-init
-    rediacc-account-rustfs-volume-init
 )
 
 for container in "${CONTAINERS[@]}"; do

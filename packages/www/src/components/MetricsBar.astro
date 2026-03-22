@@ -1,0 +1,23 @@
+---
+import { createTranslator } from '../i18n/utils';
+import type { Language } from '../i18n/types';
+
+interface Props {
+  lang?: Language;
+}
+
+const { lang = 'en' } = Astro.props;
+const { to } = createTranslator(lang);
+const items = to('metrics.items') as { number: string; label: string }[];
+---
+
+<section class="metrics-bar">
+  <div class="metrics-bar-inner reveal">
+    {items.map((item) => (
+      <div class="metric">
+        <span class="metric-number">{item.number}</span>
+        <span class="metric-label">{item.label}</span>
+      </div>
+    ))}
+  </div>
+</section>

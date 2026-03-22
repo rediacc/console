@@ -5,7 +5,7 @@
 
 import { existsSync, mkdirSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getPlatform } from '../utils/platform.js';
+import { getPlatform, getSSHHome, isWSL, wslPathToWindows } from '../utils/platform.js';
 import type { KeyPersistencePaths } from './types.js';
 
 /**
@@ -16,6 +16,11 @@ function normalizePathForSSH(path: string): string {
   if (getPlatform() === 'windows') {
     return path.replaceAll('\\', '/');
   }
+  if (isWSL()) {
+    // Convert WSL path (/mnt/c/Users/...) to Windows path (C:/Users/...)
+    // so Windows SSH can resolve IdentityFile and UserKnownHostsFile
+    return wslPathToWindows(path).replaceAll('\\', '/');
+  }
   return path;
 }
 
@@ -23,7 +28,7 @@ function normalizePathForSSH(path: string): string {
  * Gets the directory for persisted rediacc keys
  */
 function getKeysDirectory(): string {
-  const home = process.env.HOME ?? process.env.USERPROFILE ?? '';
+  const home = getSSHHome();
   return join(home, '.ssh', 'rediacc_keys');
 }
 

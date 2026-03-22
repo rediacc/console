@@ -1,0 +1,22 @@
+{
+  "cast": "/assets/tutorials/repos-tutorial.cast",
+  "language": "fr",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "54faa7109cd94e56d9bccca68e73a5887e5ec8e4d3b3a3d1e7c6f30fb98eda9a",
+  "steps": [
+    {
+      "id": "repos-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508464,
+      "replayEndSec": 6.646665,
+      "narrationText": "Créez un référentiel chiffré avec une taille de stockage définie.",
+      "audioSrc": "/assets/tutorials/audio/fr/repos-tutorial/repos-tutorial-01.d4625828.mp3",
+      "audioDurationSec": 4.91102
+    }
+  ]
+}

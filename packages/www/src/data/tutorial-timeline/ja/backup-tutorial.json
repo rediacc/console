@@ -1,0 +1,22 @@
+{
+  "cast": "/assets/tutorials/backup-tutorial.cast",
+  "language": "ja",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "f4bfea8d254ed1db19eb588efabe08060cfe0de40f34dfb08c6fb60c094aa6d4",
+  "steps": [
+    {
+      "id": "backup-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.510362,
+      "replayEndSec": 5.406939,
+      "narrationText": "現在構成されているバックアップ先を検査します。",
+      "audioSrc": "/assets/tutorials/audio/ja/backup-tutorial/backup-tutorial-01.86595fa7.mp3",
+      "audioDurationSec": 3.004082
+    }
+  ]
+}

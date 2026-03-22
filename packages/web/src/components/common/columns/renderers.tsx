@@ -1,6 +1,6 @@
-import React from 'react';
 import { Tag, Tooltip, Typography } from 'antd';
 import dayjs from 'dayjs';
+import React from 'react';
 
 /**
  * Styled status icon wrapper

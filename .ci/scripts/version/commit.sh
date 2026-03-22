@@ -162,7 +162,7 @@ stage_files() {
     # Count staged submodule pointers (staged by bump-submodules.sh --stage-only
     # and update-homebrew-tap.sh --stage-only)
     if [[ "$INCLUDE_SUBMODULES" == "true" ]]; then
-        for submodule in private/middleware private/renet private/homebrew-tap; do
+        for submodule in private/middleware private/renet private/homebrew-tap private/generative; do
             if ! git diff --cached --quiet -- "$submodule" 2>/dev/null; then
                 log_info "Including staged submodule: $submodule" >&2
                 ((staged++)) || true
@@ -210,7 +210,7 @@ main() {
     if [[ "$INCLUDE_SUBMODULES" == "true" ]]; then
         # Only add note if submodules were actually staged
         local has_staged_submodules=false
-        for submodule in private/middleware private/renet private/homebrew-tap; do
+        for submodule in private/middleware private/renet private/homebrew-tap private/generative; do
             if ! git diff --cached --quiet -- "$submodule" 2>/dev/null; then
                 has_staged_submodules=true
                 break

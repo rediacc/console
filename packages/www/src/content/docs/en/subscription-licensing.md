@@ -1,6 +1,6 @@
 ---
 title: "Subscription & Licensing"
-description: "Activate a subscription, issue machine licenses, and manage plan enforcement in local deployments."
+description: "Understand how account, rdc, and renet handle machine slots, repo licenses, and plan limits."
 category: "Guides"
 order: 7
 language: en
@@ -8,112 +8,228 @@ language: en
 
 # Subscription & Licensing
 
-Machines running in local deployments need a subscription license to enforce plan-based resource limits. The CLI delivers signed license blobs directly to each machine — no cloud API connection required after initial activation.
+Rediacc licensing has three moving parts:
 
-## Overview
+- `account` signs entitlements and tracks usage
+- `rdc` authenticates, requests licenses, delivers them to machines, and enforces them at runtime
+- `renet` (the on-machine runtime) validates installed licenses locally without calling the account server
 
-The licensing flow has four steps:
+This page explains how those pieces fit together for local deployments.
 
-1. Create an API token in the account web portal
-2. Login on the machine with `rdc subscription login`
-3. Activate the machine with `rdc subscription activate`
-4. Licenses auto-refresh in the background during normal CLI usage
+## What Licensing Does
 
-Licenses are short-lived (1 hour), Ed25519-signed blobs that the CLI refreshes automatically. A 3-day grace period ensures continuity if a check-in is temporarily missed.
+Licensing controls two different things:
 
-## Step 1: Get an API Token
+- **Machine access accounting** through **Floating Licenses**
+- **Repository runtime authorization** through **repo licenses**
 
-Log into the account portal at `https://account.rediacc.com`. Navigate to your subscription settings and create an API token with the following scopes:
+These are related, but they are not the same artifact.
 
-- `license:read` — check subscription and license status
-- `license:activate` — activate machines and issue licenses
+## How Licensing Works
 
-Copy the token — it is only shown once.
+`account` is the source of truth for plans, contract overrides, machine activation state, and monthly repo license issuances.
 
-## Step 2: Login
+`rdc` runs on your workstation. It logs you into the account server, requests the licenses it needs, and installs them on remote machines over SSH. When you run a repository command, `rdc` ensures the required licenses are in place and validates them on the machine at runtime.
 
-```bash
-rdc subscription login --token <your-token>
-```
+The normal flow looks like this:
 
-| Option | Required | Default | Description |
-|--------|----------|---------|-------------|
-| `-t, --token <token>` | No | - | API token. Prompts interactively if omitted. |
-| `--server <url>` | No | `https://account.rediacc.com` | Account server URL |
+1. You authenticate with `rdc subscription login`
+2. You run a repository command such as `rdc repo create`, `rdc repo up`, or `rdc repo down`
+3. If the required license is missing or expired, `rdc` requests it from `account`
+4. `rdc` writes the signed license to the machine
+5. The license is validated locally on the machine and the operation continues
 
-This validates the token against the account server and stores it locally at `~/.config/rediacc/api-token.json`. On success, it displays your plan name and machine quota.
+See [rdc vs renet](/en/docs/rdc-vs-renet) for the workstation-vs-server split, and [Repositories](/en/docs/repositories) for the repository lifecycle itself.
 
-## Step 3: Activate
+For automation and AI agents, use a scoped subscription token instead of browser login:
 
 ```bash
-rdc subscription activate
+rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
 ```
 
-This reads the machine's hardware ID, calls the account server to issue a license, and stores it at `/var/lib/rediacc/license/license.json`. If the CLI cannot write to that path directly, it will retry with `sudo`.
+You can also inject the token directly through the environment so the CLI can issue and refresh repo licenses without any interactive login step:
 
-Each activation consumes one machine slot in your subscription. To free a slot, deactivate a machine from the account portal.
+```bash
+export REDIACC_SUBSCRIPTION_TOKEN="rdt_..."
+export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
+```
 
-## Checking Status
+## Machine Licenses vs Repo Licenses
+
+### Machine activation
+
+Machine activation serves a dual role:
+
+- **Server-side**: floating machine-slot accounting, machine-level activation checks, bridging account-backed repo issuance to a specific machine
+- **On-disk**: `rdc` writes a signed subscription blob to `/var/lib/rediacc/license/machine.json` during activation. This blob is validated locally for provisioning operations (`rdc repo create`, `rdc repo fork`). The machine license is valid for 1 hour from the last activation.
+
+### Repo license
+
+A repo license is a signed license for one repository on one machine.
+
+It is used for:
+
+- `rdc repo resize` and `rdc repo expand` — full validation including expiry
+- `rdc repo up`, `rdc repo down`, `rdc repo delete` — validated with **expiry skipped**
+- `rdc repo push`, `rdc repo pull`, `rdc repo sync` — validated with **expiry skipped**
+- repo autostart on machine restart — validated with **expiry skipped**
+
+Repo licenses are bound to the machine and the target repository, and Rediacc hardens that binding with repository identity metadata. For encrypted repositories, that includes the LUKS identity of the underlying volume.
+
+In practice:
+
+- machine activation answers: "can this machine provision new repositories?"
+- repo license answers: "can this specific repo run on this specific machine?"
+
+## Default Limits
+
+Repository size depends on the entitlement level:
+
+- Community: up to `10 GB`
+- paid plans: plan or contract limit
+
+Default paid-plan limits are:
+
+| Plan | Floating Licenses | Repository Size | Monthly repo license issuances |
+|------|-------------------|-----------------|-------------------------------|
+| Community | 2 | 10 GB | 500 |
+| Professional | 5 | 100 GB | 5,000 |
+| Business | 20 | 500 GB | 20,000 |
+| Enterprise | 50 | 2048 GB | 100,000 |
+
+Contract-specific limits can raise or lower these values for a specific customer.
+
+## What Happens During Repo Create, Up, Down, and Restart
+
+### Repo create and fork
+
+When you create or fork a repository:
+
+1. `rdc` ensures your subscription token is available (triggers device-code auth if needed)
+2. `rdc` activates the machine and writes the signed subscription blob to the remote machine
+3. The machine license is validated locally (it must be within 1 hour of activation) — the machine license also enforces the plan's repository size limit, blocking creation if the requested size exceeds the limit
+4. After successful creation, `rdc` issues the repo license for the new repository
+
+That account-backed issuance counts toward your monthly **repo license issuances** usage. Each license contains the account holder's email and company name, which is logged when renet validates the license.
+
+### Repo up, down, and delete
+
+`rdc` validates the installed repo license on the machine but **skips the expiry check**. Signature, machine ID, repository GUID, and identity are still verified. Users are never locked out of operating their repositories, even with an expired subscription.
+
+### Repo resize and expand
+
+`rdc` performs full repo license validation including expiry and size limits.
+
+### Machine restart and autostart
+
+Autostart uses the same rules as `rdc repo up` — expiry is skipped, so repositories always restart freely.
+
+Repo licenses use a long-lived validity model:
+
+- `refreshRecommendedAt` is the soft refresh point
+- `hardExpiresAt` is the blocking point
+
+If the repo license is stale but still before hard expiry, runtime can continue. Once it reaches hard expiry, `rdc` must refresh it for resize/expand operations.
+
+### Other repository operations
+
+Operations like listing repos, inspecting repo info, and mounting do not require any license validation.
+
+## Checking Status and Refreshing Licenses
+
+Human login:
+
+```bash
+rdc subscription login
+```
+
+Automation or AI-agent login:
+
+```bash
+rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+```
+
+For non-interactive environments, setting `REDIACC_SUBSCRIPTION_TOKEN` is the simplest option. The token should be scoped only for the subscription and repo-license operations the agent needs.
+
+Show account-backed subscription status:
 
 ```bash
 rdc subscription status
 ```
 
-Shows both local license info and remote subscription details:
-
-- **Local**: plan, status, machine ID, issued/expiry times, sequence number
-- **Remote**: plan, subscription status, active machines and their last-seen timestamps
-
-## Refreshing a License
+Show machine activation details for one machine:
 
 ```bash
-rdc subscription refresh
+rdc subscription activation status -m hostinger
 ```
 
-Manually reissues the license for this machine. This is normally not needed — see auto-refresh below.
+Show installed repo-license details on one machine:
 
-## Auto-Refresh
+```bash
+rdc subscription repo status -m hostinger
+```
 
-Every CLI command automatically checks the local license age. If the license is older than 50 minutes, it refreshes in the background without blocking the command. No user action is required.
+Refresh machine activation and batch-refresh repo licenses:
 
-If the machine is offline, the current license remains valid until its 1-hour expiry. After that, the grace period begins.
+```bash
+rdc subscription refresh -m hostinger
+```
 
-## Grace Period & Degradation
+Repositories discovered on the machine but missing from local `rdc` config are rejected during batch refresh. They are reported as failures and are not auto-classified.
 
-If a license expires and cannot be refreshed within the 3-day grace period, the machine's resource limits degrade to Community plan defaults. Once the license is refreshed (by restoring connectivity and running any `rdc` command), the original plan limits are restored immediately.
+Force a repo-license refresh for an existing repository:
 
-## Plan Limits
+```bash
+rdc subscription refresh repo my-app -m hostinger
+```
 
-### Machine Limits
+On first use, a licensed repo or backup operation that finds no usable repo license can trigger an account-authorization handoff automatically. The CLI prints an authorization URL, tries to open the browser in interactive terminals, and retries the operation once after authorization and issuance succeed.
 
-| Plan | Max Machines |
-|------|-------------|
-| Community | 2 |
-| Professional | 5 |
-| Business | 20 |
-| Enterprise | 50 |
+In non-interactive environments, the CLI does not wait for browser approval. Instead, it tells you to supply a scoped token with `rdc subscription login --token ...` or `REDIACC_SUBSCRIPTION_TOKEN`.
 
-### Resource Limits
+For first-time machine setup, see [Machine Setup](/en/docs/setup).
 
-| Resource | Community | Professional | Business | Enterprise |
-|----------|-----------|--------------|----------|------------|
-| Bridges | 0 | 1 | 2 | 10 |
-| Max reserved jobs | 1 | 2 | 3 | 5 |
-| Job timeout (hours) | 2 | 24 | 72 | 96 |
-| Repository size (GB) | 10 | 100 | 500 | 1,024 |
-| Jobs per month | 500 | 5,000 | 20,000 | 100,000 |
-| Pending per user | 5 | 10 | 20 | 50 |
-| Tasks per machine | 1 | 2 | 3 | 5 |
+## Offline Behavior and Expiry
 
-### Feature Availability
+License validation happens locally on the machine — it does not require live connectivity to the account server.
 
-| Feature | Community | Professional | Business | Enterprise |
-|---------|-----------|--------------|----------|------------|
-| Permission groups | - | Yes | Yes | Yes |
-| Queue priority | - | - | Yes | Yes |
-| Advanced analytics | - | - | Yes | Yes |
-| Priority support | - | Yes | Yes | Yes |
-| Audit log | - | Yes | Yes | Yes |
-| Advanced queue | - | - | Yes | Yes |
-| Custom branding | - | Yes | Yes | Yes |
-| Dedicated account | - | - | - | Yes |
+That means:
+
+- a running environment does not need live account connectivity on every command
+- all repos can always start, stop, and be deleted even with expired licenses — users are never locked out of operating their own repositories
+- provisioning operations (`create`, `fork`) require a valid machine license, and growth operations (`resize`, `expand`) require a valid repo license
+- truly expired repo licenses must be refreshed through `rdc` before resize/expand
+- license signatures are verified against an embedded public key — signature verification cannot be disabled
+
+Machine activation and repo runtime licenses are separate surfaces. A machine can be inactive in account state while some repositories still have valid installed repo licenses. When that happens, inspect both surfaces separately instead of assuming they mean the same thing.
+
+## Recovery Behavior
+
+Automatic recovery is intentionally narrow:
+
+- `missing`: `rdc` may authorize account access if needed, batch-refresh repo licenses, and retry once
+- `expired`: `rdc` may batch-refresh repo licenses and retry once
+- `machine_mismatch`: fails fast and tells you to reissue from the current machine context
+- `repository_mismatch`: fails fast and tells you to refresh repo licenses explicitly
+- `sequence_regression`: fails fast as a repo-license integrity/state problem
+- `invalid_signature`: fails fast as a repo-license integrity/state problem
+- `identity_mismatch`: fails fast — the repository identity does not match the installed license
+
+These fail-fast cases do not automatically consume account-backed refresh or issuance calls.
+
+## Monthly Repo License Issuances
+
+This metric counts successful account-backed repo-license issuance activity in the current UTC calendar month.
+
+It includes:
+
+- first-time repo-license issuance
+- successful repo-license refresh that returns a newly signed license
+
+It does not include:
+
+- unchanged batch entries
+- failed issuance attempts
+- untracked repositories rejected before issuance
+
+If you need a customer-facing view of usage and recent repo-license issuance history, use the account portal. If you need machine-side inspection, use `rdc subscription activation status -m` and `rdc subscription repo status -m`.

@@ -1,4 +1,3 @@
-import { type Key, useCallback, useMemo, useState } from 'react';
 import {
   CameraOutlined,
   CheckCircleOutlined,
@@ -15,7 +14,13 @@ import {
   SettingOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
+import type {
+  GetCephRbdImages_ResultSet1 as CephImage,
+  GetCephPools_ResultSet1 as CephPool,
+  CreateCephRbdImageParams,
+} from '@rediacc/shared/types';
 import { Button, Flex, type MenuProps, Space, Tag, Tooltip, Typography } from 'antd';
+import { type Key, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useCreateCephRbdImage,
@@ -33,11 +38,6 @@ import { ImageMachineReassignmentModal } from '@/features/ceph/components/modals
 import { useDialogState, useExpandableTable, useMessage, useQueueTraceModal } from '@/hooks';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import type {
-  GetCephRbdImages_ResultSet1 as CephImage,
-  GetCephPools_ResultSet1 as CephPool,
-  CreateCephRbdImageParams,
-} from '@rediacc/shared/types';
 import SnapshotTable from '../SnapshotTable';
 import { buildRbdImageColumns } from './columns';
 

@@ -1,5 +1,5 @@
-import React from 'react';
 import { Alert, Card, Collapse, Descriptions, Flex, Space, Tag, Typography } from 'antd';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SimpleJsonEditor } from '@/components/common/VaultEditor/components/SimpleJsonEditor';
 import {

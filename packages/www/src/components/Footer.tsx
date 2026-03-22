@@ -1,12 +1,16 @@
 declare const __APP_VERSION__: string;
 
 import React from 'react';
-import LanguageMenu from './LanguageMenu';
 import { COMPANY_LEGAL_NAME, COMPANY_REGISTRY_CODE, COMPANY_VAT_NUMBER } from '../config/constants';
+import { TEAM_MEMBERS } from '../config/team-videos';
 import { useLanguage } from '../hooks/useLanguage';
 import { SUPPORTED_LANGUAGES } from '../i18n/language-utils';
 import { useTranslation } from '../i18n/react';
+import LanguageMenu from './LanguageMenu';
+import NewsletterSignup from './NewsletterSignup';
 import '../styles/language-switcher.css';
+
+const founderData = TEAM_MEMBERS['founder'] as (typeof TEAM_MEMBERS)[string] | undefined;
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -19,7 +23,13 @@ const Footer: React.FC = () => {
         <div className="footer-columns">
           {/* Logo Column */}
           <div className="footer-column footer-logo-column">
-            <a href={`/${currentLang}/`} className="footer-logo-link" aria-label="Rediacc home">
+            <a
+              href={`/${currentLang}/`}
+              className="footer-logo-link"
+              aria-label={t('common.aria.rediaccHome')}
+              data-track="cta_click"
+              data-track-label="footer-logo"
+            >
               <img
                 src="/assets/icon-rediacc.svg"
                 alt="Rediacc"
@@ -34,22 +44,46 @@ const Footer: React.FC = () => {
           <nav className="footer-column footer-nav" aria-label={t('navigation.footerNavigation')}>
             <ul className="footer-list">
               <li>
-                <a href={`/${currentLang}/`} className="footer-link">
+                <a
+                  href={`/${currentLang}/`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-nav"
+                  data-track-dest="home"
+                >
                   {t('navigation.home')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/blog`} className="footer-link">
+                <a
+                  href={`/${currentLang}/blog`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-nav"
+                  data-track-dest="blog"
+                >
                   {t('navigation.blog')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/docs/quick-start`} className="footer-link">
+                <a
+                  href={`/${currentLang}/docs/quick-start`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-nav"
+                  data-track-dest="docs"
+                >
                   {t('navigation.docs')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/contact`} className="footer-link">
+                <a
+                  href={`/${currentLang}/contact`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-nav"
+                  data-track-dest="contact"
+                >
                   {t('navigation.contact')}
                 </a>
               </li>
@@ -63,27 +97,57 @@ const Footer: React.FC = () => {
             </h4>
             <ul className="footer-list">
               <li>
-                <a href={`/${currentLang}/#solutions`} className="footer-link">
+                <a
+                  href={`/${currentLang}/#solutions`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-product"
+                  data-track-dest="solutions"
+                >
                   {t('footer.productLinks.solutions')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/#problem`} className="footer-link">
+                <a
+                  href={`/${currentLang}/#problem`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-product"
+                  data-track-dest="overview"
+                >
                   {t('footer.productLinks.overview')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/#pricing`} className="footer-link">
+                <a
+                  href={`/${currentLang}/#pricing`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-product"
+                  data-track-dest="pricing"
+                >
                   {t('footer.productLinks.pricing')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/disaster-recovery`} className="footer-link">
+                <a
+                  href={`/${currentLang}/disaster-recovery`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-product"
+                  data-track-dest="disaster-recovery"
+                >
                   {t('footer.productLinks.disasterRecovery')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/professional-services`} className="footer-link">
+                <a
+                  href={`/${currentLang}/professional-services`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-product"
+                  data-track-dest="pro-services"
+                >
                   {t('footer.productLinks.professionalServices')}
                 </a>
               </li>
@@ -97,41 +161,45 @@ const Footer: React.FC = () => {
             </h4>
             <ul className="footer-list">
               <li>
-                <a href={`/${currentLang}/contact`} className="footer-link">
+                <a
+                  href={`/${currentLang}/contact`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-org"
+                  data-track-dest="about"
+                >
                   {t('footer.organizationLinks.aboutUs')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/team`} className="footer-link">
+                <a
+                  href={`/${currentLang}/team`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-org"
+                  data-track-dest="team"
+                >
                   {t('footer.organizationLinks.team')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/contact`} className="footer-link">
+                <a
+                  href={`/${currentLang}/contact`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-org"
+                  data-track-dest="contact"
+                >
                   {t('footer.organizationLinks.contact')}
                 </a>
               </li>
             </ul>
           </nav>
 
-          {/* Support Column */}
-          <nav className="footer-column" aria-labelledby="footer-support-heading">
-            <h4 className="footer-heading" id="footer-support-heading">
-              {t('footer.columns.support')}
-            </h4>
-            <ul className="footer-list">
-              <li>
-                <a href={`/${currentLang}/contact`} className="footer-link">
-                  {t('footer.supportLinks.helpCenter')}
-                </a>
-              </li>
-              <li>
-                <a href={`/${currentLang}/contact`} className="footer-link">
-                  {t('footer.supportLinks.contactSupport')}
-                </a>
-              </li>
-            </ul>
-          </nav>
+          {/* Newsletter Column */}
+          <div className="footer-column footer-newsletter-column">
+            <NewsletterSignup variant="footer" source="footer" />
+          </div>
 
           {/* Legal Column */}
           <nav className="footer-column" aria-labelledby="footer-legal-heading">
@@ -140,37 +208,68 @@ const Footer: React.FC = () => {
             </h4>
             <ul className="footer-list">
               <li>
-                <a href={`/${currentLang}/terms-of-service`} className="footer-link">
+                <a
+                  href={`/${currentLang}/terms-of-service`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-legal"
+                  data-track-dest="tos"
+                >
                   {t('footer.legalLinks.termsOfService')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/privacy-policy`} className="footer-link">
+                <a
+                  href={`/${currentLang}/privacy-policy`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-legal"
+                  data-track-dest="privacy"
+                >
                   {t('footer.legalLinks.privacyPolicy')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/cookie-policy`} className="footer-link">
+                <a
+                  href={`/${currentLang}/cookie-policy`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-legal"
+                  data-track-dest="cookie"
+                >
                   {t('footer.legalLinks.cookiePolicy')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/acceptable-use-policy`} className="footer-link">
-                  {t('footer.legalLinks.acceptableUsePolicy')}
-                </a>
-              </li>
-              <li>
-                <a href={`/${currentLang}/refund-policy`} className="footer-link">
+                <a
+                  href={`/${currentLang}/refund-policy`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-legal"
+                  data-track-dest="refund"
+                >
                   {t('footer.legalLinks.refundPolicy')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/telemetry-policy`} className="footer-link">
+                <a
+                  href={`/${currentLang}/telemetry-policy`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-legal"
+                  data-track-dest="telemetry"
+                >
                   {t('footer.legalLinks.telemetryPolicy')}
                 </a>
               </li>
               <li>
-                <a href={`/${currentLang}/legal-information`} className="footer-link">
+                <a
+                  href={`/${currentLang}/legal-information`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-legal"
+                  data-track-dest="legal-info"
+                >
                   {t('footer.legalLinks.legalInformation')}
                 </a>
               </li>
@@ -189,6 +288,9 @@ const Footer: React.FC = () => {
                 aria-label={`GitHub (${t('common.aria.opensInNewTab')})`}
                 target="_blank"
                 rel="noopener noreferrer"
+                data-track="cta_click"
+                data-track-label="footer-social"
+                data-track-dest="github"
               >
                 <svg
                   width="20"
@@ -206,6 +308,9 @@ const Footer: React.FC = () => {
                 aria-label={`LinkedIn (${t('common.aria.opensInNewTab')})`}
                 target="_blank"
                 rel="noopener noreferrer"
+                data-track="cta_click"
+                data-track-label="footer-social"
+                data-track-dest="linkedin"
               >
                 <svg
                   width="20"
@@ -218,6 +323,22 @@ const Footer: React.FC = () => {
                 </svg>
               </a>
             </div>
+            {founderData && (
+              <a
+                href={`/${currentLang}/team`}
+                className="footer-founder"
+                data-track="cta_click"
+                data-track-label="footer-founder"
+              >
+                <img
+                  src={founderData.photos['headshot-xs'] ?? founderData.photos.headshot}
+                  alt={founderData.name}
+                  className="footer-founder-photo"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </a>
+            )}
             <p className="footer-copyright">Rediacc &copy; 2023-{currentYear}</p>
             <p className="footer-version">v{__APP_VERSION__}</p>
           </div>
@@ -239,7 +360,13 @@ const Footer: React.FC = () => {
               registryCode: COMPANY_REGISTRY_CODE,
               vatNumber: COMPANY_VAT_NUMBER,
             })}{' '}
-            <a href={`/${currentLang}/legal-information`} className="footer-link">
+            <a
+              href={`/${currentLang}/legal-information`}
+              className="footer-link"
+              data-track="cta_click"
+              data-track-label="footer-legal"
+              data-track-dest="legal-disclosure"
+            >
               {t('footer.legalDisclosure.fullLegalInformation')}
             </a>
           </p>

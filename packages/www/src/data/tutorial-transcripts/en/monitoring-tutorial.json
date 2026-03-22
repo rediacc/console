@@ -1,0 +1,25 @@
+{
+  "cast": "/assets/tutorials/monitoring-tutorial.cast",
+  "language": "en",
+  "version": 1,
+  "events": [
+    {
+      "id": "monitoring-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.508759,
+      "text": "Healthy infrastructure starts with a healthy workstation. We scan the local environment for configuration issues -- Node.js version, SSH key presence, and KVM virtualization readiness."
+    },
+    {
+      "id": "monitoring-tutorial-02",
+      "markerIndex": 1,
+      "at": 9.844365,
+      "text": "Local environment clear. Now we check the remote machine over SSH. You'll see uptime, disk and memory usage, SMART disk health, container counts, and service status."
+    },
+    {
+      "id": "monitoring-tutorial-03",
+      "markerIndex": 2,
+      "at": 18.393678,
+      "text": "To see every running container across all isolated Docker daemons on the machine, we pull a unified view -- with state, health checks, CPU, and memory per container."
+    }
+  ]
+}

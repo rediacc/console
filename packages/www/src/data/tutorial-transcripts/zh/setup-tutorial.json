@@ -1,0 +1,43 @@
+{
+  "cast": "/assets/tutorials/setup-tutorial.cast",
+  "language": "zh",
+  "version": 1,
+  "events": [
+    {
+      "id": "setup-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.50986,
+      "text": "为此环境初始化专用配置文件。"
+    },
+    {
+      "id": "setup-tutorial-02",
+      "markerIndex": 1,
+      "at": 10.605861,
+      "text": "查看可用配置并确认新配置文件存在。"
+    },
+    {
+      "id": "setup-tutorial-03",
+      "markerIndex": 2,
+      "at": 17.961132,
+      "text": "使用网络和用户详细信息注册机器条目。"
+    },
+    {
+      "id": "setup-tutorial-04",
+      "markerIndex": 3,
+      "at": 31.651331,
+      "text": "检查配置的计算机列表以验证注册。"
+    },
+    {
+      "id": "setup-tutorial-05",
+      "markerIndex": 4,
+      "at": 40.16275,
+      "text": "设置默认机器以减少重复的定位标记。"
+    },
+    {
+      "id": "setup-tutorial-06",
+      "markerIndex": 5,
+      "at": 48.29967,
+      "text": "运行基本的远程主机检查以验证连接。"
+    }
+  ]
+}

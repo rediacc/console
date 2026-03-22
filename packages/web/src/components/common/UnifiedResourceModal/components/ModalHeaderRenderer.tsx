@@ -1,6 +1,6 @@
-import React from 'react';
-import { Space, Typography } from 'antd';
 import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import { Space, Typography } from 'antd';
+import React from 'react';
 import type { ResourceType } from '../index';
 
 type ExistingResourceData = Record<string, unknown>;

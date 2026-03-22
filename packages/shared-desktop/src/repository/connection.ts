@@ -5,7 +5,6 @@ import { SSHConnection, type SSHSetupResult, testSSHConnectivity } from '../ssh/
  * Folder name constants (must match bridge/cli/scripts/internal.sh)
  */
 export const FOLDER_NAMES = {
-  INTERIM: 'interim',
   MOUNTS: 'mounts',
   REPOSITORIES: 'repositories',
   IMMOVABLE: 'immovable',
@@ -44,7 +43,7 @@ export interface RepositoryPaths {
  */
 export function getRepositoryPaths(repositoryGuid: string, datastore: string): RepositoryPaths {
   const basePath = datastore;
-  const dockerBase = `${basePath}/${FOLDER_NAMES.INTERIM}/${repositoryGuid}/docker`;
+  const dockerBase = `${basePath}/${FOLDER_NAMES.MOUNTS}/${repositoryGuid}/.rediacc/docker`;
 
   // Runtime paths are flattened: /var/run/rediacc/{repository_guid}
   const runtimeBase = `/var/run/rediacc/${repositoryGuid}`;

@@ -1,0 +1,487 @@
+{
+  "cast": "/assets/tutorials/repos-tutorial.cast",
+  "language": "en",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "c89e6e28e283be391bef1223179ca79547bd82ab7b54dedf7f97d009c1103fa4",
+  "events": [
+    {
+      "id": "repos-01",
+      "markerIndex": 0,
+      "at": 1.507995,
+      "textHash": "6c686ea8ffc04e4a59cd390b852d410d12e731c3512b9cd854d61929aae73b44",
+      "audioSrc": "/assets/tutorials/audio/en/repos-tutorial/repos-01.6c686ea8.mp3",
+      "duration": 3.866122,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.56,
+          "startChar": 7,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.04,
+          "startChar": 10,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 2.0,
+          "startChar": 20,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.24,
+          "startChar": 31,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.32,
+          "startChar": 36,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.88,
+          "startChar": 38,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.28,
+          "startChar": 46,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.84,
+          "startChar": 54,
+          "endChar": 58
+        }
+      ]
+    },
+    {
+      "id": "repos-02",
+      "markerIndex": 1,
+      "at": 21.785373,
+      "textHash": "5b770918a394cccf8d0323727deb16727a50d64a5be2183325c30fd70999d58e",
+      "audioSrc": "/assets/tutorials/audio/en/repos-tutorial/repos-02.5b770918.mp3",
+      "duration": 3.317551,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 1.28,
+          "startChar": 5,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.84,
+          "startChar": 21,
+          "endChar": 28
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 1.92,
+          "startChar": 29,
+          "endChar": 32
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.08,
+          "startChar": 33,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.72,
+          "startChar": 37,
+          "endChar": 46
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.8,
+          "startChar": 47,
+          "endChar": 49
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.28,
+          "startChar": 50,
+          "endChar": 59
+        }
+      ]
+    },
+    {
+      "id": "repos-03",
+      "markerIndex": 2,
+      "at": 31.11554,
+      "textHash": "f3ed51399e5a2843851b960182bf9060223f9945b9fd3dd3fa7c1108eb06a706",
+      "audioSrc": "/assets/tutorials/audio/en/repos-tutorial/repos-03.f3ed5139.mp3",
+      "duration": 3.160816,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.72,
+          "startChar": 8,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.52,
+          "startChar": 12,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.84,
+          "startChar": 23,
+          "endChar": 28
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.24,
+          "startChar": 29,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.56,
+          "startChar": 34,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.12,
+          "startChar": 41,
+          "endChar": 51
+        }
+      ]
+    },
+    {
+      "id": "repos-04",
+      "markerIndex": 3,
+      "at": 41.275171,
+      "textHash": "40b046a877346bb53b8bac85168fd969d21c9f5242a1cba1f43439b1e51a55ab",
+      "audioSrc": "/assets/tutorials/audio/en/repos-tutorial/repos-04.40b046a8.mp3",
+      "duration": 3.970612,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 1.2,
+          "startChar": 6,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.92,
+          "startChar": 17,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.32,
+          "startChar": 26,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.72,
+          "startChar": 30,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 36,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.44,
+          "startChar": 40,
+          "endChar": 49
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.92,
+          "startChar": 50,
+          "endChar": 56
+        }
+      ]
+    },
+    {
+      "id": "repos-05",
+      "markerIndex": 4,
+      "at": 59.588726,
+      "textHash": "c43cea3c04c42b0c3120bde9ebb4487754aa0bac939430e933521050b4e7906b",
+      "audioSrc": "/assets/tutorials/audio/en/repos-tutorial/repos-05.c43cea3c.mp3",
+      "duration": 2.429388,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.72,
+          "startChar": 6,
+          "endChar": 13
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.2,
+          "startChar": 14,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.6,
+          "startChar": 24,
+          "endChar": 29
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.84,
+          "startChar": 30,
+          "endChar": 35
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.32,
+          "startChar": 36,
+          "endChar": 43
+        }
+      ]
+    },
+    {
+      "id": "repos-06",
+      "markerIndex": 5,
+      "at": 68.725808,
+      "textHash": "ece17265b1180e3aad550e0efd90e076824a076b517b79402414cbb1a5b2c51b",
+      "audioSrc": "/assets/tutorials/audio/en/repos-tutorial/repos-06.ece17265.mp3",
+      "duration": 4.362449,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.96,
+          "startChar": 8,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.6,
+          "startChar": 15,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.84,
+          "startChar": 26,
+          "endChar": 30
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 1.92,
+          "startChar": 31,
+          "endChar": 34
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.8,
+          "startChar": 35,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.6,
+          "startChar": 46,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.24,
+          "startChar": 56,
+          "endChar": 63
+        }
+      ]
+    },
+    {
+      "id": "repos-07",
+      "markerIndex": 6,
+      "at": 78.086569,
+      "textHash": "8475b97ffb9770683ad6d059de72cd18583b8c6af15cb9d905de6cd1bcae2b3c",
+      "audioSrc": "/assets/tutorials/audio/en/repos-tutorial/repos-07.8475b97f.mp3",
+      "duration": 2.690612,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.56,
+          "startChar": 5,
+          "endChar": 12
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.36,
+          "startChar": 13,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.92,
+          "startChar": 24,
+          "endChar": 32
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.08,
+          "startChar": 33,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.56,
+          "startChar": 37,
+          "endChar": 44
+        }
+      ]
+    },
+    {
+      "id": "repos-08",
+      "markerIndex": 7,
+      "at": 85.461712,
+      "textHash": "02e05210fb0457a360a1f6fc3bc92899781f7c176d547ca7a9b88699624fb045",
+      "audioSrc": "/assets/tutorials/audio/en/repos-tutorial/repos-08.02e05210.mp3",
+      "duration": 3.004082,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.12,
+          "startChar": 11,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.2,
+          "startChar": 17,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.76,
+          "startChar": 21,
+          "endChar": 30
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.48,
+          "startChar": 31,
+          "endChar": 41
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.88,
+          "startChar": 42,
+          "endChar": 47
+        }
+      ]
+    },
+    {
+      "id": "repos-09",
+      "markerIndex": 8,
+      "at": 93.028308,
+      "textHash": "122e2b6509ea266d54c79e3140b7eb5ba1328af2cc9da1a9b77def5f4653b649",
+      "audioSrc": "/assets/tutorials/audio/en/repos-tutorial/repos-09.122e2b65.mp3",
+      "duration": 3.239184,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.28,
+          "startChar": 11,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.44,
+          "startChar": 22,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.92,
+          "startChar": 25,
+          "endChar": 33
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.56,
+          "startChar": 34,
+          "endChar": 43
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.04,
+          "startChar": 44,
+          "endChar": 52
+        }
+      ]
+    }
+  ]
+}

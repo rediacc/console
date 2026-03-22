@@ -4,13 +4,13 @@
  */
 
 import {
+  CopyObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadBucketCommand,
   ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
-  CopyObjectCommand,
 } from '@aws-sdk/client-s3';
 import type { S3Config } from '../types/index.js';
 

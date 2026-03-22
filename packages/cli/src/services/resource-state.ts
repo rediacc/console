@@ -12,6 +12,7 @@
 import { configFileStorage } from '../adapters/config-file-storage.js';
 import { nodeCryptoProvider } from '../adapters/crypto.js';
 import type {
+  ArchivedRepository,
   MachineConfig,
   RdcConfig,
   RepositoryConfig,
@@ -44,6 +45,8 @@ export interface ResourceState {
   setStorages(storages: Record<string, StorageConfig>): Promise<void>;
   getRepositories(): Record<string, RepositoryConfig>;
   setRepositories(repos: Record<string, RepositoryConfig>): Promise<void>;
+  getDeletedRepositories(): ArchivedRepository[];
+  setDeletedRepositories(repos: ArchivedRepository[]): Promise<void>;
   getSSH(): SSHContent | null;
   setSSH(ssh: SSHContent): Promise<void>;
 }
@@ -56,6 +59,7 @@ interface LocalState {
   machines: Record<string, MachineConfig>;
   storages: Record<string, StorageConfig>;
   repositories: Record<string, RepositoryConfig>;
+  deletedRepositories: ArchivedRepository[];
   sshContent: SSHContent | null;
 }
 
@@ -92,6 +96,7 @@ export class LocalResourceState implements ResourceState {
         machines: Record<string, MachineConfig>;
         storages: Record<string, StorageConfig>;
         repositories: Record<string, RepositoryConfig>;
+        deletedRepositories?: ArchivedRepository[];
         sshContent?: SSHContent | null;
       }>(config.encryptedResources, masterPassword);
 
@@ -99,6 +104,7 @@ export class LocalResourceState implements ResourceState {
         machines: decrypted.machines,
         storages: decrypted.storages,
         repositories: decrypted.repositories,
+        deletedRepositories: decrypted.deletedRepositories ?? [],
         sshContent: decrypted.sshContent ?? null,
       };
     } else {
@@ -107,6 +113,7 @@ export class LocalResourceState implements ResourceState {
         machines: config.machines ?? {},
         storages: config.storages ?? {},
         repositories: config.repositories ?? {},
+        deletedRepositories: config.deletedRepositories ?? [],
         sshContent: config.sshContent ?? null,
       };
     }
@@ -128,6 +135,10 @@ export class LocalResourceState implements ResourceState {
 
   getRepositories(): Record<string, RepositoryConfig> {
     return this.state.repositories;
+  }
+
+  getDeletedRepositories(): ArchivedRepository[] {
+    return this.state.deletedRepositories;
   }
 
   getSSH(): SSHContent | null {
@@ -153,6 +164,11 @@ export class LocalResourceState implements ResourceState {
     await this.persist();
   }
 
+  async setDeletedRepositories(repos: ArchivedRepository[]): Promise<void> {
+    this.state.deletedRepositories = repos;
+    await this.persist();
+  }
+
   async setSSH(ssh: SSHContent): Promise<void> {
     this.state.sshContent = ssh;
     await this.persist();
@@ -172,6 +188,7 @@ export class LocalResourceState implements ResourceState {
           machines: this.state.machines,
           storages: this.state.storages,
           repositories: this.state.repositories,
+          deletedRepositories: this.state.deletedRepositories,
           sshContent: this.state.sshContent,
         },
         this.masterPassword
@@ -193,6 +210,8 @@ export class LocalResourceState implements ResourceState {
         machines: this.state.machines,
         storages: this.state.storages,
         repositories: this.state.repositories,
+        deletedRepositories:
+          this.state.deletedRepositories.length > 0 ? this.state.deletedRepositories : undefined,
         sshContent: this.state.sshContent ?? undefined,
         encrypted: undefined,
         encryptedResources: undefined,

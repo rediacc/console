@@ -1,8 +1,8 @@
-import React from 'react';
+import type { QueuePositionEntry } from '@rediacc/shared/types';
 import { Card, Col, Empty, Flex, Row, Space, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { QueuePositionEntry } from '@rediacc/shared/types';
 
 interface RelatedQueueItemsProps {
   queuePosition: QueuePositionEntry[];

@@ -1,13 +1,14 @@
-import { Command } from 'commander';
 import { getMachineServices, type ServiceInfo } from '@rediacc/shared/services/machine';
+import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { getStateProvider } from '../../providers/index.js';
 import { authService } from '../../services/auth.js';
 import { configService } from '../../services/config-resources.js';
 import { outputService } from '../../services/output.js';
-import { handleError, ValidationError } from '../../utils/errors.js';
-import { withSpinner } from '../../utils/spinner.js';
 import type { OutputFormat } from '../../types/index.js';
+import { handleError, ValidationError } from '../../utils/errors.js';
+import { createGuidResolver, loadGuidMap, resolveGuids } from '../../utils/guid-resolver.js';
+import { withSpinner } from '../../utils/spinner.js';
 
 function isServiceUnstable(service: ServiceInfo): boolean {
   return (
@@ -17,41 +18,55 @@ function isServiceUnstable(service: ServiceInfo): boolean {
   );
 }
 
-function displayUnstableServices(unstable: ServiceInfo[], format: OutputFormat): void {
+function displayUnstableServices(
+  unstable: ServiceInfo[],
+  format: OutputFormat,
+  resolve: (guid: string) => string = (g) => g
+): void {
   outputService.error(t('commands.machine.services.unstableFound', { count: unstable.length }));
   if (format === 'json') {
-    outputService.print(unstable, format);
+    outputService.print(resolveGuids(unstable, resolve, 'repository'), format);
   } else {
     for (const s of unstable) {
-      outputService.info(`  - ${s.service_name} (${s.active_state}, ${s.restart_count} restarts)`);
+      outputService.info(
+        `  - ${s.service_name} (${s.active_state}, ${s.restart_count} restarts, ${resolve(s.repository)})`
+      );
     }
   }
   process.exitCode = 2;
 }
 
-function handleStabilityCheck(services: ServiceInfo[], format: OutputFormat): void {
+function handleStabilityCheck(
+  services: ServiceInfo[],
+  format: OutputFormat,
+  resolve: (guid: string) => string = (g) => g
+): void {
   const unstable = services.filter(isServiceUnstable);
   if (unstable.length > 0) {
-    displayUnstableServices(unstable, format);
+    displayUnstableServices(unstable, format, resolve);
   } else {
     outputService.success(t('commands.machine.services.allStable'));
   }
 }
 
-function formatServicesForTable(services: ServiceInfo[]) {
+function formatServicesForTable(
+  services: ServiceInfo[],
+  resolve: (guid: string) => string = (g) => g
+) {
   return services.map((s) => ({
     name: s.service_name,
     state: s.active_state,
     subState: s.sub_state,
     restarts: s.restart_count,
     memory: s.memory_human,
-    repository: s.repository,
+    repository: resolve(s.repository),
   }));
 }
 
 export function registerServicesCommand(machine: Command, program: Command): void {
   machine
     .command('services <name>')
+    .summary(t('commands.machine.services.descriptionShort'))
     .description(t('commands.machine.services.description'))
     .option('-t, --team <name>', t('options.team'))
     .option('--stability-check', t('commands.machine.services.stabilityCheck'))
@@ -67,25 +82,29 @@ export function registerServicesCommand(machine: Command, program: Command): voi
           throw new ValidationError(t('errors.teamRequired'));
         }
 
-        const machine = await withSpinner(
-          t('commands.machine.services.fetching'),
-          () =>
-            provider.machines.getWithVaultStatus({
-              teamName: opts.team as string,
-              machineName: name,
-            }),
-          t('commands.machine.services.fetched')
-        );
+        const [machine, guidMap] = await Promise.all([
+          withSpinner(
+            t('commands.machine.services.fetching'),
+            () =>
+              provider.machines.getWithVaultStatus({
+                teamName: opts.team as string,
+                machineName: name,
+              }),
+            t('commands.machine.services.fetched')
+          ),
+          loadGuidMap(),
+        ]);
 
         if (!machine) {
           throw new ValidationError(t('errors.machineNotFound', { name }));
         }
 
+        const resolve = createGuidResolver(guidMap);
         const services = getMachineServices(machine);
         const format = program.opts().output as OutputFormat;
 
         if (options.stabilityCheck) {
-          handleStabilityCheck(services, format);
+          handleStabilityCheck(services, format, resolve);
           return;
         }
 
@@ -94,8 +113,12 @@ export function registerServicesCommand(machine: Command, program: Command): voi
           return;
         }
 
-        const tableData = formatServicesForTable(services);
-        outputService.print(tableData, format);
+        if (format === 'json') {
+          outputService.print(resolveGuids(services, resolve, 'repository'), format);
+        } else {
+          const tableData = formatServicesForTable(services, resolve);
+          outputService.print(tableData, format);
+        }
       } catch (error) {
         handleError(error);
       }

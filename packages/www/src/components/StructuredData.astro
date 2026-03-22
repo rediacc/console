@@ -10,7 +10,7 @@ import {
 } from '../config/constants';
 
 export interface Props {
-  type?: 'organization' | 'website' | 'service' | 'breadcrumb' | 'sitenavigation' | 'blogposting';
+  type?: 'organization' | 'website' | 'service' | 'software' | 'breadcrumb' | 'sitenavigation' | 'blogposting' | 'faq' | 'techarticle' | 'offer' | 'video';
   data?: any;
 }
 
@@ -34,7 +34,8 @@ const getStructuredData = (type: string, customData: any = {}) => {
         description: 'Infrastructure Automation Platform designed for accelerated development operations',
         logo: `${baseUrl}/favicon.svg`,
         sameAs: [
-          // Add social media URLs when available
+          'https://github.com/orgs/rediacc/',
+          'https://www.linkedin.com/company/rediacc/'
         ],
         contactPoint: {
           '@type': 'ContactPoint',
@@ -96,7 +97,7 @@ const getStructuredData = (type: string, customData: any = {}) => {
         offers: {
           '@type': 'Offer',
           availability: 'https://schema.org/PreOrder',
-          priceValidUntil: '2025-12-31',
+          priceValidUntil: '2026-12-31',
           description: 'Early access program available'
         },
         ...customData
@@ -171,6 +172,111 @@ const getStructuredData = (type: string, customData: any = {}) => {
         keywords: customData.tags ? customData.tags.join(', ') : '',
         articleSection: customData.category,
         ...customData.additionalData
+      };
+
+    case 'faq':
+      return {
+        ...commonData,
+        '@type': 'FAQPage',
+        mainEntity: (customData.items || []).map((item: { question: string; answer: string }) => ({
+          '@type': 'Question',
+          name: item.question,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: item.answer
+          }
+        })),
+        ...customData.additionalData
+      };
+
+    case 'software':
+      return {
+        ...commonData,
+        '@type': 'SoftwareApplication',
+        name: 'Rediacc',
+        description: 'Infrastructure Automation Platform designed for accelerated development operations',
+        url: baseUrl,
+        applicationCategory: 'DeveloperApplication',
+        operatingSystem: 'Linux',
+        offers: {
+          '@type': 'AggregateOffer',
+          lowPrice: '0',
+          priceCurrency: 'USD',
+          availability: 'https://schema.org/InStock',
+          offerCount: customData.offerCount || '4'
+        },
+        publisher: {
+          '@type': 'Organization',
+          name: 'Rediacc',
+          url: baseUrl
+        },
+        ...customData
+      };
+
+    case 'techarticle':
+      return {
+        ...commonData,
+        '@type': 'TechArticle',
+        headline: customData.title,
+        description: customData.description,
+        articleSection: customData.category,
+        author: {
+          '@type': 'Organization',
+          name: 'Rediacc',
+          url: baseUrl,
+        },
+        publisher: {
+          '@type': 'Organization',
+          name: 'Rediacc',
+          url: baseUrl,
+          logo: {
+            '@type': 'ImageObject',
+            url: `${baseUrl}/favicon.svg`,
+          },
+        },
+        url: customData.url || baseUrl,
+        inLanguage: customData.language || 'en',
+        ...customData.additionalData,
+      };
+
+    case 'video':
+      return {
+        ...commonData,
+        '@type': 'VideoObject',
+        name: customData.name ?? '',
+        description: customData.description ?? '',
+        thumbnailUrl: customData.thumbnailUrl ? `${baseUrl}${customData.thumbnailUrl}` : undefined,
+        uploadDate: customData.uploadDate ?? '',
+        duration: customData.duration ?? '',
+        contentUrl: customData.contentUrl ? `${baseUrl}${customData.contentUrl}` : undefined,
+        ...customData.additionalData,
+      };
+
+    case 'offer':
+      return {
+        ...commonData,
+        '@type': 'Product',
+        name: 'Rediacc',
+        description: 'Self-hosted infrastructure platform with encrypted repositories, container isolation, and automated disaster recovery.',
+        brand: {
+          '@type': 'Organization',
+          name: 'Rediacc',
+        },
+        offers: (customData.plans || []).map((plan: { name: string; price: number; description: string }) => ({
+          '@type': 'Offer',
+          name: plan.name,
+          price: String(plan.price),
+          priceCurrency: 'USD',
+          description: plan.description,
+          availability: 'https://schema.org/InStock',
+          priceSpecification: {
+            '@type': 'UnitPriceSpecification',
+            price: String(plan.price),
+            priceCurrency: 'USD',
+            billingDuration: 'P1M',
+          },
+        })),
+        ...customData.additionalData,
       };
 
     default:

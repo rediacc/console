@@ -1,12 +1,12 @@
-import { cryptoService } from '@/services/crypto';
 import {
   analyzeVaultProtocolState,
   isEncrypted,
   VaultProtocolState,
 } from '@rediacc/shared/encryption';
+import { cryptoService } from '@/services/crypto';
 
 // Re-export shared utilities for backward compatibility
-export { isEncrypted, VaultProtocolState, analyzeVaultProtocolState };
+export { analyzeVaultProtocolState, isEncrypted, VaultProtocolState };
 
 /**
  * Validate master password by attempting to decrypt VaultOrganization

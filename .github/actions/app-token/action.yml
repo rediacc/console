@@ -37,7 +37,8 @@ runs:
       id: perms
       shell: bash
       run: |
-        case "${{ inputs.preset }}" in
+        preset="$(echo "${{ inputs.preset }}" | tr '[:upper:]' '[:lower:]' | xargs)"
+        case "$preset" in
           readonly)
             echo "perm-contents=read" >> "$GITHUB_OUTPUT"
             ;;
@@ -57,7 +58,7 @@ runs:
             echo "perm-actions=write" >> "$GITHUB_OUTPUT"
             ;;
           *)
-            echo "::error::Unknown preset: ${{ inputs.preset }}"
+            echo "::error::Unknown preset: $preset"
             exit 1
             ;;
         esac

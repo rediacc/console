@@ -67,6 +67,11 @@ else
     exit 1
 fi
 
+# Remove stale compiled .test.js files that may contain old command names.
+# The .ts sources are authoritative; Playwright compiles them on the fly.
+find "$CLI_DIR/tests" -name "*.test.js" -delete 2>/dev/null || true
+find "$CLI_DIR/tests" -name "*.test.js.map" -delete 2>/dev/null || true
+
 log_step "Running CLI integration tests..."
 
 CMD=("npm" "test")

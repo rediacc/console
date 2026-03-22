@@ -1,9 +1,9 @@
-import React, { useMemo } from 'react';
-import { Empty, Flex } from 'antd';
-import { useTranslation } from 'react-i18next';
 import { parseLogOutput, unescapeLogOutput } from '@rediacc/shared/utils';
-import { StructuredLogView } from './StructuredLogView';
+import { Empty, Flex } from 'antd';
+import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ConsoleOutputProps } from '../types';
+import { StructuredLogView } from './StructuredLogView';
 
 export const ConsoleOutput: React.FC<ConsoleOutputProps> = ({
   content,

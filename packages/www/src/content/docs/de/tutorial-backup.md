@@ -1,93 +1,123 @@
 ---
 title: "Backup & Netzwerk"
-description: "Sehen Sie zu und machen Sie mit, während wir Backup-Zeitpläne, Speicheranbieter und Netzwerkinfrastruktur konfigurieren."
+description: "Automatische Backup-Zeitpläne konfigurieren, Speicheranbieter verwalten, Infrastruktur-Netzwerk einrichten und Service-Ports registrieren."
 category: "Tutorials"
 order: 6
 language: de
-sourceHash: "d611f5597b819085"
+sourceHash: "14244f699c506ce9"
 ---
 
-# Tutorial: Backup & Netzwerk
+# So konfigurieren Sie Backups und Netzwerk mit Rediacc
 
-This tutorial covers backup scheduling, storage configuration, and infrastructure networking setup: the commands you use to protect data and expose services.
+Automatische Backups schützen Ihre Repositories, und Infrastruktur-Netzwerk macht Services nach außen verfügbar. In diesem Tutorial konfigurieren Sie Backup-Zeitpläne mit Speicheranbietern, richten öffentliches Netzwerk mit TLS-Zertifikaten ein, registrieren Service-Ports und überprüfen die Konfiguration. Nach Abschluss ist Ihre Maschine bereit für Produktionsbetrieb.
 
 ## Voraussetzungen
 
-- The `rdc` CLI installed with a config initialized
-- A provisioned machine (see [Tutorial: Machine Setup](/de/docs/tutorial-setup))
+- Die `rdc` CLI installiert mit einer initialisierten Konfiguration
+- Eine bereitgestellte Maschine (siehe [Tutorial: Maschine einrichten](/de/docs/tutorial-setup))
 
 ## Interaktive Aufzeichnung
 
 ![Tutorial: Backup & Networking](/assets/tutorials/backup-tutorial.cast)
 
-## Was Sie sehen werden
-
-The recording above walks through each step below. Use the playback bar to navigate between commands.
-
 ### Schritt 1: Aktuelle Speicher anzeigen
 
+Speicheranbieter (S3, B2, Google Drive, etc.) dienen als Backup-Ziele. Prüfen Sie, welche Anbieter konfiguriert sind.
+
 ```bash
-rdc config storages
+rdc config storage list
 ```
 
-Lists all configured storage providers (S3, B2, Google Drive, etc.) imported from rclone configs. Storages are used as backup destinations.
+Listet alle konfigurierten Speicheranbieter auf, die aus rclone-Konfigurationen importiert wurden. Falls leer, fügen Sie zuerst einen Speicheranbieter hinzu — siehe [Backup & Restore](/de/docs/backup-restore).
 
 ### Schritt 2: Backup-Zeitplan konfigurieren
 
+Richten Sie automatische Backups ein, die nach einem Cron-Zeitplan ausgeführt werden.
+
 ```bash
-rdc backup schedule set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
 ```
 
-Sets an automated backup schedule: push all repositories to the `my-s3` storage every day at 2 AM. The schedule is stored in your config and can be deployed to machines as a systemd timer.
+Sie können mehrere Ziele mit verschiedenen Zeitplänen konfigurieren:
+
+```bash
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
+```
+
+Dies plant tägliche Backups um 2 Uhr morgens zu `my-s3` und um 6 Uhr morgens zu `azure-backup`. Jedes Ziel erhält seinen eigenen Zeitplan. Die Zeitpläne werden in Ihrer Konfiguration gespeichert und können als systemd-Timer auf Maschinen bereitgestellt werden.
 
 ### Schritt 3: Backup-Zeitplan anzeigen
 
+Überprüfen Sie, ob der Zeitplan angewendet wurde.
+
 ```bash
-rdc backup schedule show
+rdc config backup-strategy show
 ```
 
-Shows the current backup schedule configuration: destination, cron expression, and enabled status.
+Zeigt die aktuelle Backup-Konfiguration: Ziel, Cron-Ausdruck und Aktivierungsstatus.
 
 ### Schritt 4: Infrastruktur konfigurieren
 
+Für öffentlich zugängliche Services benötigt die Maschine ihre externe IP, Basisdomain und eine Zertifikats-E-Mail für Let's Encrypt TLS.
+
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com
 ```
 
-Configures the machine's public networking: its external IP, base domain for auto-routes, and email for Let's Encrypt TLS certificates.
+Rediacc generiert eine Traefik-Reverse-Proxy-Konfiguration aus diesen Einstellungen.
 
 ### Schritt 5: TCP/UDP-Ports hinzufügen
 
+Wenn Ihre Services Nicht-HTTP-Ports benötigen (z.B. SMTP, DNS), registrieren Sie diese als Traefik-Einstiegspunkte.
+
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 ```
 
-Registers additional TCP/UDP ports for the reverse proxy. These create Traefik entrypoints (`tcp-25`, `udp-53`, etc.) that can be referenced in Docker labels.
+Dies erstellt Traefik-Einstiegspunkte (`tcp-25`, `udp-53`, etc.), auf die Docker-Services über Labels verweisen können.
 
 ### Schritt 6: Infrastrukturkonfiguration anzeigen
 
+Überprüfen Sie die vollständige Infrastrukturkonfiguration.
+
 ```bash
-rdc config show-infra server-1
+rdc config infra show server-1
 ```
 
-Displays the full infrastructure configuration for a machine: public IPs, domain, email, and registered ports.
+Zeigt öffentliche IPs, Domain, Zertifikats-E-Mail und alle registrierten Ports an.
 
 ### Schritt 7: Backup-Zeitplan deaktivieren
 
+Um automatische Backups zu stoppen, ohne die Konfiguration zu entfernen:
+
 ```bash
-rdc backup schedule set --disable
-rdc backup schedule show
+rdc config backup-strategy set --disable
+rdc config backup-strategy show
 ```
 
-Disables the automated backup schedule. The configuration is preserved so it can be re-enabled later.
+Die Konfiguration bleibt erhalten und kann später mit `--enable` wieder aktiviert werden.
+
+## Fehlerbehebung
+
+**"Invalid cron expression"**
+Das Cron-Format ist `minute hour day month weekday`. Gängige Zeitpläne: `0 2 * * *` (täglich 2 Uhr), `0 */6 * * *` (alle 6 Stunden), `0 0 * * 0` (wöchentlich Sonntag Mitternacht).
+
+**"Storage destination not found"**
+Der Zielname muss mit einem konfigurierten Speicheranbieter übereinstimmen. Führen Sie `rdc config storage list` aus, um verfügbare Namen zu sehen. Fügen Sie neue Anbieter über die rclone-Konfiguration hinzu.
+
+**"Infrastructure config incomplete" beim Deployment**
+Alle drei Felder sind erforderlich: `--public-ipv4`, `--base-domain` und `--cert-email`. Führen Sie `rdc config infra show <machine>` aus, um fehlende Felder zu prüfen.
 
 ## Nächste Schritte
 
-- [Backup & Restore](/de/docs/backup-restore) — full reference for push, pull, list, and sync commands
-- [Networking](/de/docs/networking) — Docker labels, TLS certificates, DNS, and TCP/UDP forwarding
-- [Tutorial: Machine Setup](/de/docs/tutorial-setup) — initial configuration and provisioning
+Sie haben automatische Backups konfiguriert, Infrastruktur-Netzwerk eingerichtet, Service-Ports registriert und die Konfiguration überprüft. Zur Verwaltung von Backups:
+
+- [Backup & Restore](/de/docs/backup-restore) — Vollständige Referenz für Push-, Pull-, List- und Sync-Befehle
+- [Networking](/de/docs/networking) — Docker-Labels, TLS-Zertifikate, DNS und TCP/UDP-Weiterleitung
+- [Tutorial: Maschine einrichten](/de/docs/tutorial-setup) — Ersteinrichtung und Bereitstellung

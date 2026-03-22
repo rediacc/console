@@ -1,0 +1,16 @@
+{
+  "entries": [
+    {
+      "sourceId": "solution:auditTrail:line:0",
+      "simulatedCommand": "rdc audit --from 2026-02-01 --to 2026-02-27",
+      "status": "partial",
+      "closestMatches": ["rdc audit log [options]", "rdc audit trace <entityType> <entityId>"],
+      "referenceLinks": [
+        "/en/docs/cli-application-cloud#cli-cloud-audit-log",
+        "/en/docs/cli-application-cloud#cli-cloud-audit-trace"
+      ],
+      "capabilityNote": "Landing demo uses date-range filtering shorthand; current cloud audit commands require different invocation patterns.",
+      "implementationNote": "If date-range shorthand is needed, add explicit --from/--to support to audit log in CLI and regenerate reference docs."
+    }
+  ]
+}

@@ -1,5 +1,5 @@
-import type { IStoreAdapter, PullResult, PushResult } from './types.js';
 import type { RdcConfig } from '../types/index.js';
+import type { IStoreAdapter, PullResult, PushResult } from './types.js';
 
 /**
  * Wraps a store adapter with transparent AES-256-GCM encryption.

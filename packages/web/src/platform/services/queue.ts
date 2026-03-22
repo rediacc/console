@@ -3,9 +3,9 @@
  * Re-exports the shared QueueService with browser-specific configuration
  */
 
+import { QueueService as SharedQueueService } from '@rediacc/shared/services/queue';
 import { browserTimerProvider, isExtensionContext } from '@/platform/adapters/timer';
 import { encodeBase64 } from '@/platform/utils/encoding';
-import { QueueService as SharedQueueService } from '@rediacc/shared/services/queue';
 
 // Re-export types from shared for backward compatibility
 // Note: QueueItem is not exported from shared to avoid conflict with types/domain.ts

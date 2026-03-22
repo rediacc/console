@@ -1,7 +1,6 @@
 export * from './api/index.js';
 export * from './config/index.js';
 export * from './encryption/index.js';
-export * from './subscription/index.js';
 export * from './error-parser/index.js';
 export * from './formatters/index.js';
 export {
@@ -25,6 +24,7 @@ export {
 } from './queue/index.js';
 export * from './queue-vault/index.js';
 export * from './services/index.js';
+export * from './subscription/index.js';
 export * from './telemetry/index.js';
 export * from './types/index.js';
 export * from './utils/index.js';

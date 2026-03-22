@@ -1,8 +1,8 @@
 export type {
-  VMNetworkConfig,
-  RenetConfig,
-  SSHProvisioningConfig,
-  ProvisioningConfig,
   CommandResult,
   ExecutionResult,
+  ProvisioningConfig,
+  RenetConfig,
+  SSHProvisioningConfig,
+  VMNetworkConfig,
 } from './config';

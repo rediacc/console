@@ -1,0 +1,12 @@
+---
+import IntegrationsStrip from '../IntegrationsStrip.astro';
+import type { Language } from '../../i18n/types';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props as Props;
+---
+
+<IntegrationsStrip lang={lang} />

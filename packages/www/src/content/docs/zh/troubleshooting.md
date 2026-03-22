@@ -4,7 +4,7 @@ description: "SSH、设置、仓库、服务和Docker常见问题的解决方案
 category: "Guides"
 order: 10
 language: zh
-sourceHash: 4c3163007e6a3326
+sourceHash: "b392ab73d90c62e1"
 ---
 
 # 故障排除
@@ -14,7 +14,7 @@ sourceHash: 4c3163007e6a3326
 ## SSH连接失败
 
 - 验证您是否可以手动连接: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- 运行 `rdc config scan-keys server-1` 以刷新主机密钥
+- 运行 `rdc config machine scan-keys server-1` 以刷新主机密钥
 - 检查SSH端口是否匹配: `--port 22`
 - 使用简单命令测试: `rdc term server-1 -c "hostname"`
 
@@ -23,7 +23,7 @@ sourceHash: 4c3163007e6a3326
 如果服务器被重新安装或其SSH密钥已更改，您将看到 "host key verification failed"：
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 此命令获取新的主机密钥并更新您的配置。
@@ -32,7 +32,7 @@ rdc config scan-keys server-1
 
 - 确保SSH用户拥有无密码的sudo访问权限，或为所需命令配置 `NOPASSWD`
 - 检查服务器上的可用磁盘空间
-- 使用 `--debug` 运行以获取详细输出: `rdc config setup-machine server-1 --debug`
+- 使用 `--debug` 运行以获取详细输出: `rdc config machine setup server-1 --debug`
 
 ## 仓库创建失败
 
@@ -43,8 +43,8 @@ rdc config scan-keys server-1
 ## 服务启动失败
 
 - 检查Rediaccfile语法：必须是有效的Bash
-- 确保 `docker compose` 文件使用 `network_mode: host`
-- 验证Docker镜像是否可访问（考虑在 `prep()` 中使用 `docker compose pull`）
+- 确保你的Rediaccfile使用 `renet compose --`（而不是 `docker compose`）
+- 验证Docker镜像是否可访问（考虑在 `up()` 中使用 `renet compose -- pull`）
 - 通过仓库的Docker套接字检查容器日志:
 
 ```bash

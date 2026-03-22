@@ -31,13 +31,13 @@ import {
   getPerformanceAttributes,
   getPlatform,
 } from './telemetry/browserUtils';
-import { initializeWebVitals } from './telemetry/webVitals';
 import type {
   TelemetryConfig,
   TelemetryContext,
   UserContext,
   WebVitalsMetric,
 } from './telemetry/types';
+import { initializeWebVitals } from './telemetry/webVitals';
 
 class TelemetryService {
   private provider: WebTracerProvider | null = null;

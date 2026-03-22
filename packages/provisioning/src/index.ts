@@ -1,56 +1,54 @@
 // Types
-export type {
-  VMNetworkConfig,
-  RenetConfig,
-  SSHProvisioningConfig,
-  ProvisioningConfig,
-  CommandResult,
-  ExecutionResult,
-} from './types';
-
-// SSH utilities
-export {
-  SSHExecutor,
-  getSSHExecutor,
-  createSSHExecutor,
-  SSH_DEFAULTS,
-  getSSHOptions,
-  getSCPOptions,
-  isSSHKeyAvailable,
-  getSSHPrivateKeyPath,
-  getRenetDataDir,
-  setRenetDataDir,
-  type SSHConfig,
-  type SSHResult,
-  type SSHConfigOptions,
-} from './ssh';
-
-// Renet utilities
-export {
-  RenetResolver,
-  getRenetResolver,
-  createRenetResolver,
-  getRenetBinaryPath,
-  getRenetRoot,
-  getMonorepoRoot,
-  setMonorepoRoot,
-  type RenetResolution,
-} from './renet';
-
-// Ops utilities
-export {
-  OpsManager,
-  OpsCommandRunner,
-  OpsVMExecutor,
-  createOpsVMExecutor,
-  OpsVMLifecycle,
-} from './ops';
 
 // Factory functions
 export {
-  loadNetworkConfigFromEnv,
-  loadConfigFromEnv,
   createOpsManagerFromEnv,
   getOpsManager,
+  loadConfigFromEnv,
+  loadNetworkConfigFromEnv,
   resetOpsManager,
 } from './factories';
+// Ops utilities
+export {
+  createOpsVMExecutor,
+  OpsCommandRunner,
+  OpsManager,
+  OpsVMExecutor,
+  OpsVMLifecycle,
+} from './ops';
+
+// Renet utilities
+export {
+  createRenetResolver,
+  getMonorepoRoot,
+  getRenetBinaryPath,
+  getRenetResolver,
+  getRenetRoot,
+  type RenetResolution,
+  RenetResolver,
+  setMonorepoRoot,
+} from './renet';
+// SSH utilities
+export {
+  createSSHExecutor,
+  getRenetDataDir,
+  getSCPOptions,
+  getSSHExecutor,
+  getSSHOptions,
+  getSSHPrivateKeyPath,
+  isSSHKeyAvailable,
+  SSH_DEFAULTS,
+  type SSHConfig,
+  type SSHConfigOptions,
+  SSHExecutor,
+  type SSHResult,
+  setRenetDataDir,
+} from './ssh';
+export type {
+  CommandResult,
+  ExecutionResult,
+  ProvisioningConfig,
+  RenetConfig,
+  SSHProvisioningConfig,
+  VMNetworkConfig,
+} from './types';

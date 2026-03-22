@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { createTranslator } from './utils';
 import type { Language } from './types';
+import { createTranslator } from './utils';
 
 /**
  * React hook for using translations in React components

@@ -1,0 +1,43 @@
+{
+  "cast": "/assets/tutorials/setup-tutorial.cast",
+  "language": "en",
+  "version": 1,
+  "events": [
+    {
+      "id": "setup-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.50986,
+      "text": "Every machine connection begins with a configuration profile -- it holds SSH keys, server addresses, and infrastructure settings. We create a new profile now, linked to your private key."
+    },
+    {
+      "id": "setup-tutorial-02",
+      "markerIndex": 1,
+      "at": 10.605861,
+      "text": "Profile created. We verify it appears in the configuration list alongside any existing profiles, showing their adapter type and registered machine count."
+    },
+    {
+      "id": "setup-tutorial-03",
+      "markerIndex": 2,
+      "at": 17.961132,
+      "text": "To reach a remote server, we register it by IP address and SSH user. The CLI also fetches the server's host key fingerprint to prevent man-in-the-middle attacks."
+    },
+    {
+      "id": "setup-tutorial-04",
+      "markerIndex": 3,
+      "at": 31.651331,
+      "text": "Machine registered. We confirm the entry is stored correctly. You'll see all machines in this profile with their IP addresses and SSH connection details."
+    },
+    {
+      "id": "setup-tutorial-05",
+      "markerIndex": 4,
+      "at": 40.16275,
+      "text": "When managing a single server, a default machine eliminates repetitive targeting flags. Every command will route to this machine unless you override it explicitly."
+    },
+    {
+      "id": "setup-tutorial-06",
+      "markerIndex": 5,
+      "at": 48.29967,
+      "text": "Before deploying anything, we verify the SSH tunnel is functional. A remote hostname check proves the machine is reachable and the host key is trusted."
+    }
+  ]
+}

@@ -15,13 +15,12 @@ export {
 // Environment composition (ported from Python CLI)
 export {
   buildMachineEnvironment,
-  buildRemoteCommand,
   buildRepositoryEnvironment,
   composeEnvBlock,
-  composeSudoEnvCommand,
   formatBashExports,
   formatSSHSetEnv,
   needsUserSwitch,
+  shellEscapeForBashC,
 } from './envCompose.js';
 // Executable detection and launching
 export {
@@ -53,7 +52,7 @@ export {
   getVSCodeInsidersSettingsPath,
   getVSCodeSettingsPath,
   readVSCodeSettings,
-  removeHostFromRemotePlatform,
+  setHostRemotePlatform,
   setHostServerInstallPath,
   writeVSCodeSettings,
 } from './settings.js';

@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
 import type { FormInstance, Rule } from 'antd/es/form';
 import type { UploadFile } from 'antd/es/upload/interface';
+import type { ReactNode } from 'react';
 
 export interface ResourceFormWithVaultRef {
   submit: () => Promise<void>;

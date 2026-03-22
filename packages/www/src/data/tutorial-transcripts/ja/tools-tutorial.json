@@ -1,0 +1,13 @@
+{
+  "cast": "/assets/tutorials/tools-tutorial.cast",
+  "language": "ja",
+  "version": 1,
+  "events": [
+    {
+      "id": "tools-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.511459,
+      "text": "リモート シェル コマンドを開いて、ターゲット マシンの ID を確認します。"
+    }
+  ]
+}

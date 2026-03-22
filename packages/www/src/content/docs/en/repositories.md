@@ -4,6 +4,7 @@ description: "Create, manage, and operate LUKS-encrypted repositories on remote 
 category: "Guides"
 order: 4
 language: en
+sourceHash: "06b8912e9b65b720"
 ---
 
 # Repositories
@@ -44,7 +45,7 @@ rdc repo unmount my-app -m server-1     # Unmount and re-encrypt
 
 | Option | Description |
 |--------|-------------|
-| `--checkpoint` | Create a checkpoint before mount/unmount |
+| `--checkpoint` | Create a CRIU checkpoint before mount/unmount (for containers with `rediacc.checkpoint=true` label) |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Check Status
@@ -75,10 +76,10 @@ rdc repo expand my-app -m server-1 --size 5G      # Add 5G to current size
 Create a copy of an existing repository at its current state:
 
 ```bash
-rdc repo fork my-app -m server-1 --tag my-app-staging
+rdc repo fork my-app staging -m server-1
 ```
 
-This creates a new encrypted copy with its own GUID and network ID. The fork shares the same LUKS credential as the parent.
+Forks use the name:tag model: the resulting fork is named `my-app:staging`. This creates a new encrypted copy with its own GUID and network ID, while sharing the parent's name. The fork shares the same LUKS credential as the parent.
 
 ## Validate
 
@@ -101,16 +102,14 @@ The command automatically detects Docker container data directories (writable bi
 | Option | Description |
 |--------|-------------|
 | `--uid <uid>` | Set a custom UID instead of 7111 |
-| `--force` | Skip Docker volume detection and chown everything |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 To force ownership on all files, including container data:
 
 ```bash
-rdc repo ownership my-app -m server-1 --force
+rdc repo ownership my-app -m server-1
 ```
 
-> **Warning:** Using `--force` on running containers may break them. Stop services first with `rdc repo down` if needed.
 
 See the [Migration Guide](/en/docs/migration) for a complete walkthrough of when and how to use ownership during project migration.
 
@@ -131,3 +130,17 @@ rdc repo delete my-app -m server-1
 ```
 
 > This permanently destroys the encrypted disk image. This action cannot be undone.
+
+## Prune
+
+After deleting repositories or recovering from failed operations, orphaned mount directories, lock files, and immovable markers may remain. Prune removes these safely:
+
+```bash
+# Preview what would be removed
+rdc machine prune server-1 --dry-run
+
+# Remove orphaned resources
+rdc machine prune server-1
+```
+
+Only resources with no matching repository image are affected. Non-empty mount directories are never removed.

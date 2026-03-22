@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Fuse from 'fuse.js';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
 
@@ -81,6 +81,14 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
           .slice(0, 50) // Limit to 50 results
           .map((result) => result.item);
         setResults(searchResults);
+        if (value.trim().length >= 2) {
+          window.plausible('search_query', {
+            props: { query: value.trim(), results: String(searchResults.length) },
+          });
+          if (searchResults.length === 0) {
+            window.plausible('search_no_results', { props: { query: value.trim() } });
+          }
+        }
       } finally {
         setIsLoading(false);
       }
@@ -107,9 +115,19 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
 
   // Navigate to result
   const navigateToResult = (result: SearchItem) => {
+    window.plausible('search_result_click', {
+      props: { query: query.trim(), result_path: result.path, category: result.category },
+    });
     window.location.href = result.page;
     onClose();
   };
+
+  // Track search open
+  useEffect(() => {
+    if (isOpen) {
+      window.plausible('search_open', { props: { source: 'click' } });
+    }
+  }, [isOpen]);
 
   // Focus input and lock body scroll when modal opens
   useEffect(() => {
@@ -244,8 +262,10 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
             <button
               className="search-modal-close"
               onClick={onClose}
-              aria-label="Close search"
+              aria-label={t('common.search.closeModal')}
               type="button"
+              data-track="cta_click"
+              data-track-label="search-close"
             >
               <kbd>Esc</kbd>
             </button>
@@ -273,15 +293,12 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
           className="search-modal-results"
           ref={resultsContainerRef}
           role="listbox"
-          aria-label="Search results"
+          aria-label={t('common.search.results')}
         >
           {hasError && (
             <div className="search-modal-error" role="alert" aria-live="assertive">
-              <h3>Search Unavailable</h3>
-              <p>
-                Unable to load search index. Please try refreshing the page or contact support if
-                the issue persists.
-              </p>
+              <h3>{t('common.search.unavailable')}</h3>
+              <p>{t('common.search.unavailableMessage')}</p>
             </div>
           )}
 

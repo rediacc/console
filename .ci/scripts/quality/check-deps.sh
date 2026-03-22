@@ -99,8 +99,11 @@ else
     git config user.email "github-actions[bot]@users.noreply.github.com"
 fi
 
-# Handle submodule upgrades — commit inside each submodule and push to its main.
-# If main has diverged (push fails), skip the pointer update and warn instead.
+# Handle submodule upgrades — commit inside each submodule and push.
+# When the submodule HEAD is on main (or ancestor of main), push to main.
+# When the submodule HEAD is on a feature branch (ahead of main), push to
+# the feature branch instead — pushing to main would fast-forward main to
+# include all feature branch commits, effectively merging the submodule PR.
 SUBMODULE_PUSHED=()
 SUBMODULE_SKIPPED=()
 
@@ -110,6 +113,27 @@ for dir in "${SUBMODULE_DIRS_CHANGED[@]}"; do
 
     # Save original commit so we can reset if push fails
     ORIG_COMMIT=$(git -C "$dir" rev-parse HEAD 2>/dev/null)
+
+    # Determine push target: main if HEAD is on/behind main, feature branch otherwise
+    PUSH_TARGET="main"
+    SM_ORIGIN_MAIN=$(git -C "$dir" rev-parse origin/main 2>/dev/null || true)
+    if [[ -n "$SM_ORIGIN_MAIN" ]]; then
+        # If HEAD is NOT an ancestor of origin/main, it's ahead (on a feature branch)
+        if ! git -C "$dir" merge-base --is-ancestor "$ORIG_COMMIT" "$SM_ORIGIN_MAIN" 2>/dev/null; then
+            # HEAD is ahead of main — find the feature branch name
+            SM_BRANCH=$(git -C "$dir" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+            if [[ -n "$SM_BRANCH" && "$SM_BRANCH" != "HEAD" && "$SM_BRANCH" != "main" ]]; then
+                PUSH_TARGET="$SM_BRANCH"
+                log_info "$submodule_name: HEAD is on feature branch '$SM_BRANCH', pushing there instead of main"
+            else
+                # Detached HEAD on a feature branch commit — skip to avoid merging into main
+                log_warn "$submodule_name: HEAD is ahead of main but detached — skipping dep upgrade"
+                log_warn "Manually upgrade: cd private/$submodule_name && npm outdated && npm update"
+                SUBMODULE_SKIPPED+=("$submodule_name")
+                continue
+            fi
+        fi
+    fi
 
     PUSH_OK=false
     (
@@ -130,19 +154,19 @@ chore(deps): auto-upgrade dependencies
 Automatically upgraded by CI.
 SUBMSG
         )"
-        # Push to submodule main so the commit is on main and the submodule
-        # branches check passes (merge-base --is-ancestor check)
-        git push origin HEAD:main 2>/dev/null
+        git push origin "HEAD:$PUSH_TARGET" 2>/dev/null
     ) && PUSH_OK=true
 
     if [[ "$PUSH_OK" == "true" ]]; then
-        log_info "Pushed $submodule_name to main"
-        # Fetch the new main to update the submodule pointer
-        (cd "$dir" && git fetch origin main && git checkout origin/main 2>/dev/null)
+        log_info "Pushed $submodule_name to $PUSH_TARGET"
+        if [[ "$PUSH_TARGET" == "main" ]]; then
+            # Fetch the new main to update the submodule pointer
+            (cd "$dir" && git fetch origin main && git checkout origin/main 2>/dev/null)
+        fi
         git add "$dir"
         SUBMODULE_PUSHED+=("$submodule_name")
     else
-        log_warn "Could not push $submodule_name to main (diverged) — skipping pointer update"
+        log_warn "Could not push $submodule_name to $PUSH_TARGET (diverged) — skipping pointer update"
         log_warn "Manually upgrade: cd private/$submodule_name && npm outdated && npm update"
         # Reset submodule HEAD to original commit so the parent pointer stays unchanged
         (cd "$dir" && git reset --hard "$ORIG_COMMIT" 2>/dev/null) || true

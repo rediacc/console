@@ -1,0 +1,13 @@
+{
+  "cast": "/assets/tutorials/backup-tutorial.cast",
+  "language": "fr",
+  "version": 1,
+  "events": [
+    {
+      "id": "backup-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.510362,
+      "text": "Inspectez les destinations de sauvegarde actuellement configurées."
+    }
+  ]
+}

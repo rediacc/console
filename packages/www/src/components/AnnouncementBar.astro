@@ -1,0 +1,22 @@
+---
+import { createTranslator } from '../i18n/utils';
+import type { Language } from '../i18n/types';
+
+interface Props {
+  lang?: Language;
+}
+
+const { lang = 'en' } = Astro.props;
+const { t, to } = createTranslator(lang);
+const enabled = to('announcement.enabled');
+const text = t('announcement.text');
+const link = t('announcement.link');
+---
+
+{enabled && (
+  <div class="announcement-bar">
+    <a href={link}>
+      {text} <span class="announcement-bar-arrow">&rarr;</span>
+    </a>
+  </div>
+)}

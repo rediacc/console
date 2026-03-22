@@ -1,0 +1,57 @@
+#!/bin/bash
+
+# Observability stack management functions
+# IPs needed for template generation (before renet compose runs)
+
+export ALLOY_IP="$(renet network ip --name=observability-alloy)"
+export PROMETHEUS_IP="$(renet network ip --name=observability-prometheus)"
+export GRAFANA_IP="$(renet network ip --name=observability-grafana)"
+export LOKI_IP="$(renet network ip --name=observability-loki)"
+export TEMPO_IP="$(renet network ip --name=observability-tempo)"
+export PYROSCOPE_IP="$(renet network ip --name=observability-pyroscope)"
+export CADVISOR_IP="$(renet network ip --name=observability-cadvisor)"
+
+# Generate config files from templates (required for configs that don't support env vars)
+generate_configs() {
+  local config_dir="$(dirname "${BASH_SOURCE[0]}")/config"
+
+  # Generate Grafana datasources from template
+  if [[ -f "${config_dir}/grafana/provisioning/datasources/datasources.yml.template" ]]; then
+    envsubst < "${config_dir}/grafana/provisioning/datasources/datasources.yml.template" \
+      > "${config_dir}/grafana/provisioning/datasources/datasources.yml"
+  fi
+
+  # Generate Prometheus config from template
+  if [[ -f "${config_dir}/prometheus/prometheus.yml.template" ]]; then
+    envsubst < "${config_dir}/prometheus/prometheus.yml.template" \
+      > "${config_dir}/prometheus/prometheus.yml"
+  fi
+
+  # Generate Loki config from template
+  if [[ -f "${config_dir}/loki/local-config.yaml.template" ]]; then
+    envsubst < "${config_dir}/loki/local-config.yaml.template" \
+      > "${config_dir}/loki/local-config.yaml"
+  fi
+
+  # Generate Tempo config from template
+  if [[ -f "${config_dir}/tempo/tempo.yaml.template" ]]; then
+    envsubst < "${config_dir}/tempo/tempo.yaml.template" \
+      > "${config_dir}/tempo/tempo.yaml"
+  fi
+
+  # Generate Pyroscope config from template
+  if [[ -f "${config_dir}/pyroscope/pyroscope.yaml.template" ]]; then
+    envsubst < "${config_dir}/pyroscope/pyroscope.yaml.template" \
+      > "${config_dir}/pyroscope/pyroscope.yaml"
+  fi
+}
+
+
+up() {
+  generate_configs
+  renet compose -- up -d
+}
+
+down() {
+  renet compose -- down
+}

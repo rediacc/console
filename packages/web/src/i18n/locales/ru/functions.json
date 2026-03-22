@@ -26,7 +26,6 @@
   "checkboxOptions": {
     "mountRepoFirst": "Сначала смонтируйте репозиторий",
     "overrideExistingFile": "Переопределить существующий файл",
-    "preparationOnly": "Только подготовка",
     "unmountAfterStopping": "Размонтировать после остановки"
   },
   "configure": "Настроить",

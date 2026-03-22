@@ -1,88 +1,107 @@
 ---
 title: "Herramientas"
-description: "Observe y siga mientras usamos el terminal, la sincronización de archivos, la integración con VS Code y los comandos de actualización de CLI."
+description: "Use el acceso de terminal SSH, la sincronización de archivos, la integración con VS Code y los comandos de actualización de CLI."
 category: "Tutorials"
 order: 5
 language: es
-sourceHash: "6cf8e14712148f7f"
+sourceHash: "9391a34dfb244942"
 ---
 
-# Tutorial: Herramientas
+# Cómo usar las herramientas de terminal, sincronización y VS Code con Rediacc
 
-This tutorial demonstrates the productivity tools built into `rdc`: SSH terminal access, file synchronization, VS Code integration, and CLI updates.
+El CLI incluye herramientas de productividad para las operaciones diarias: acceso de terminal SSH, sincronización de archivos mediante rsync, desarrollo remoto con VS Code y actualizaciones del CLI. En este tutorial, ejecutará comandos remotos, sincronizará archivos con un repositorio, verificará la integración de VS Code y comprobará su versión del CLI.
 
 ## Requisitos previos
 
-- The `rdc` CLI installed with a config initialized
-- A provisioned machine with a running repository (see [Tutorial: Repository Lifecycle](/es/docs/tutorial-repos))
+- El CLI `rdc` instalado con una configuración inicializada
+- Una máquina aprovisionada con un repositorio en ejecución (ver [Tutorial: Ciclo de vida del repositorio](/es/docs/tutorial-repos))
 
 ## Grabación interactiva
 
 ![Tutorial: Tools](/assets/tutorials/tools-tutorial.cast)
 
-## Lo que verá
-
-The recording above walks through each step below. Use the playback bar to navigate between commands.
-
 ### Paso 1: Conectar a una máquina
+
+Ejecute comandos en línea en una máquina remota a través de SSH sin abrir una sesión interactiva.
 
 ```bash
 rdc term server-1 -c "hostname"
 rdc term server-1 -c "uptime"
 ```
 
-Run inline commands on a remote machine via SSH. The `-c` flag executes a single command and returns the output without opening an interactive session.
+El indicador `-c` ejecuta un solo comando y devuelve la salida. Omita `-c` para abrir una sesión SSH interactiva.
 
 ### Paso 2: Conectar a un repositorio
+
+Para ejecutar comandos dentro del entorno Docker aislado de un repositorio:
 
 ```bash
 rdc term server-1 my-app -c "docker ps"
 ```
 
-When connecting to a repository, `DOCKER_HOST` is automatically set to the repository's isolated Docker socket. Any Docker command runs against that repository's containers only.
+Al conectarse a un repositorio, `DOCKER_HOST` se configura automáticamente al socket Docker aislado del repositorio. Cualquier comando Docker se ejecuta solo contra los contenedores de ese repositorio.
 
-### Paso 3: Vista previa de sincronización (simulación)
+### Paso 3: Vista previa de sincronización de archivos (simulación)
+
+Antes de transferir archivos, previsualice qué cambiaría.
 
 ```bash
-rdc sync upload -m server-1 -r my-app --local ./src --dry-run
+rdc repo sync upload -m server-1 -r my-app --local ./src --dry-run
 ```
 
-The `--dry-run` flag previews what would be transferred without actually uploading files. Shows new files, changed files, and total transfer size.
+El indicador `--dry-run` muestra archivos nuevos, archivos modificados y el tamaño total de transferencia sin cargar nada realmente.
 
 ### Paso 4: Subir archivos
 
+Transfiera archivos desde su máquina local al punto de montaje del repositorio remoto.
+
 ```bash
-rdc sync upload -m server-1 -r my-app --local ./src
+rdc repo sync upload -m server-1 -r my-app --local ./src
 ```
 
-Transfers files from your local machine to the remote repository mount via rsync over SSH.
+Los archivos se transfieren mediante rsync a través de SSH. Solo se envían los archivos modificados en las cargas posteriores.
 
 ### Paso 5: Verificar archivos subidos
+
+Confirme que los archivos llegaron listando el directorio de montaje del repositorio.
 
 ```bash
 rdc term server-1 my-app -c "ls -la"
 ```
 
-Confirm the files arrived by listing the repository's mount directory.
-
 ### Paso 6: Verificación de integración VS Code
+
+Para desarrollar de forma remota con VS Code, verifique que los componentes necesarios estén instalados.
 
 ```bash
 rdc vscode check
 ```
 
-Verifies your VS Code installation, Remote SSH extension, and SSH configuration for remote development. Shows which settings need to be configured.
+Verifica su instalación de VS Code, la extensión Remote SSH y la configuración SSH. Siga la salida para resolver cualquier requisito faltante, luego conéctese con `rdc vscode <machine> [repo]`.
 
-### Paso 7: Verificar actualizaciones de CLI
+### Paso 7: Verificar actualizaciones del CLI
 
 ```bash
 rdc update --check-only
 ```
 
-Checks if a newer version of the `rdc` CLI is available without applying it. Use `rdc update` (without `--check-only`) to install the update.
+Informa si hay una versión más nueva del CLI disponible. Para instalar la actualización, ejecute `rdc update` sin `--check-only`.
+
+## Solución de problemas
+
+**"rsync: command not found" durante la sincronización de archivos**
+Instale rsync tanto en su máquina local como en el servidor remoto. En Debian/Ubuntu: `sudo apt install rsync`. En macOS: rsync está incluido por defecto.
+
+**"Permission denied" durante la carga de sincronización**
+Verifique que su usuario SSH tenga acceso de escritura al directorio de montaje del repositorio. Los montajes del repositorio pertenecen al usuario especificado durante el registro de la máquina.
+
+**"VS Code Remote SSH extension not found"**
+Instale la extensión desde el marketplace de VS Code: busque "Remote - SSH" de Microsoft. Después de instalar, reinicie VS Code y ejecute `rdc vscode check` nuevamente.
 
 ## Próximos pasos
 
-- [Tools](/es/docs/tools) — full reference for terminal, sync, VS Code, and update commands
-- [Tutorial: Backup & Restore](/es/docs/tutorial-backup) — backup, restore, and scheduled sync
-- [Services](/es/docs/services) — Rediaccfile reference and service networking
+Ha ejecutado comandos remotos, sincronizado archivos, verificado la integración de VS Code y comprobado actualizaciones del CLI. Para proteger sus datos:
+
+- [Tools](/es/docs/tools) — referencia completa para comandos de terminal, sincronización, VS Code y actualización
+- [Tutorial: Respaldo y redes](/es/docs/tutorial-backup) — programación de respaldos y configuración de red
+- [Services](/es/docs/services) — referencia de Rediaccfile y redes de servicios

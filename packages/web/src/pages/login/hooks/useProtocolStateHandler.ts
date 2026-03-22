@@ -1,7 +1,7 @@
+import type { FormInstance } from 'antd/es/form';
 import type { LoginFormValues } from '@/features/auth/types';
 import { showMessage } from '@/utils/messages';
 import { getVaultProtocolMessage, VaultProtocolState } from '@/utils/vaultProtocol';
-import type { FormInstance } from 'antd/es/form';
 
 const FIELD_FOCUS_DELAY_MS = 100;
 

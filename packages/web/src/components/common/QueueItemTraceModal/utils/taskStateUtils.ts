@@ -1,6 +1,6 @@
-import { normalizeToBoolean, normalizeToNumber, normalizeToString } from '@/platform';
 import { STALE_TASK_CONSTANTS } from '@rediacc/shared/queue';
 import type { GetTeamQueueItems_ResultSet1 } from '@rediacc/shared/types';
+import { normalizeToBoolean, normalizeToNumber, normalizeToString } from '@/platform';
 
 /**
  * Determines if a task is in a terminal state (completed, cancelled, or permanently failed).

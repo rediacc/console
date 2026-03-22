@@ -1,0 +1,31 @@
+{
+  "member": "founder",
+  "videoKey": "hero-intro",
+  "segments": [
+    { "start": 0.0, "end": 4.0, "text": "What happens when ransomware hits your server at 2 AM?" },
+    { "start": 4.0, "end": 7.5, "text": "Most teams panic. Their backups haven't been tested." },
+    {
+      "start": 7.5,
+      "end": 11.0,
+      "text": "Recovery takes hours. Sometimes it doesn't work at all."
+    },
+    { "start": 11.0, "end": 14.0, "text": "I'm Muhammed. I built Rediacc to fix this." },
+    {
+      "start": 14.0,
+      "end": 20.0,
+      "text": "Rediacc takes snapshots of your whole stack — databases, Docker services, configs."
+    },
+    { "start": 20.0, "end": 22.0, "text": "Immutable. On your hardware." },
+    {
+      "start": 22.0,
+      "end": 26.0,
+      "text": "When something breaks, you restore in minutes. Not hours."
+    },
+    { "start": 26.0, "end": 28.0, "text": "It's free to start." },
+    {
+      "start": 28.0,
+      "end": 31.0,
+      "text": "Install on your server in five minutes. Link's right below."
+    }
+  ]
+}

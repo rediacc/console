@@ -1,36 +1,34 @@
 ---
 title: "Мониторинг и диагностика"
-description: "Смотрите и повторяйте: проверка состояния машины, инспекция контейнеров, обзор служб и выполнение диагностики."
+description: "Проверка состояния машины, инспекция контейнеров, обзор служб systemd, сканирование ключей хоста и запуск диагностики среды."
 category: "Tutorials"
 order: 4
 language: ru
-sourceHash: "e121e29d9a6359bc"
+sourceHash: "af9f17a05dfb13b9"
 ---
 
-# Руководство: Мониторинг и диагностика
+# Как мониторить и диагностировать инфраструктуру с помощью Rediacc
 
-This tutorial demonstrates the monitoring and diagnostic commands available in `rdc`: health checks, container inspection, service status, vault overview, and environment diagnostics.
+Поддержание здоровой инфраструктуры требует видимости состояния машины, статуса контейнеров и состояния служб. В этом руководстве вы запустите диагностику среды, проверите состояние машины, инспектируете контейнеры и службы, просмотрите статус хранилища и проверите подключение. По завершении вы будете знать, как выявлять и исследовать проблемы в вашей инфраструктуре.
 
 ## Предварительные требования
 
-- The `rdc` CLI installed with a config initialized
-- A provisioned machine with at least one running repository (see [Tutorial: Repository Lifecycle](/ru/docs/tutorial-repos))
+- Установленная CLI `rdc` с инициализированной конфигурацией
+- Подготовленная машина с хотя бы одним запущенным репозиторием (см. [Руководство: Жизненный цикл репозитория](/ru/docs/tutorial-repos))
 
 ## Интерактивная запись
 
-![Tutorial: Monitoring & Diagnostics](/assets/tutorials/monitoring-tutorial.cast)
+![Руководство: Мониторинг и диагностика](/assets/tutorials/monitoring-tutorial.cast)
 
-## Что вы увидите
+### Шаг 1: Запуск диагностики
 
-The recording above walks through each step below. Use the playback bar to navigate between commands.
-
-### Шаг 1: Выполнение диагностики
+Начните с проверки локальной среды на наличие проблем конфигурации.
 
 ```bash
 rdc doctor
 ```
 
-Checks your local environment: Node.js, CLI version, renet binary, configuration, and virtualization support. Each check reports **OK**, **Warning**, or **Error**.
+Проверяет Node.js, версию CLI, бинарный файл renet, конфигурацию и поддержку виртуализации. Каждая проверка сообщает **OK**, **Warning** или **Error**.
 
 ### Шаг 2: Проверка состояния машины
 
@@ -38,7 +36,7 @@ Checks your local environment: Node.js, CLI version, renet binary, configuration
 rdc machine health server-1
 ```
 
-Получает подробный отчёт о состоянии, включая время работы системы, использование дисков, использование хранилища данных, количество контейнеров, статус SMART хранилища и выявленные проблемы.
+Получает подробный отчёт о состоянии удалённой машины: время работы системы, использование дисков, использование хранилища данных, количество контейнеров, статус SMART хранилища и выявленные проблемы.
 
 ### Шаг 3: Просмотр запущенных контейнеров
 
@@ -46,15 +44,17 @@ rdc machine health server-1
 rdc machine containers server-1
 ```
 
-Lists all running containers across all repositories on the machine, showing name, status, state, health, CPU usage, memory usage, and which repository owns each container.
+Выводит список всех запущенных контейнеров по всем репозиториям на машине, показывая имя, статус, состояние, здоровье, использование CPU, использование памяти и какому репозиторию принадлежит каждый контейнер.
 
 ### Шаг 4: Проверка служб systemd
+
+Чтобы увидеть базовые службы, обеспечивающие работу Docker daemon и сети каждого репозитория:
 
 ```bash
 rdc machine services server-1
 ```
 
-Lists Rediacc-related systemd services (Docker daemons, loopback aliases) with their state, sub-state, restart count, and memory usage.
+Выводит список служб systemd, связанных с Rediacc (Docker daemons, loopback-алиасы), с их состоянием, подсостоянием, количеством перезапусков и использованием памяти.
 
 ### Шаг 5: Обзор состояния хранилища
 
@@ -62,27 +62,44 @@ Lists Rediacc-related systemd services (Docker daemons, loopback aliases) with t
 rdc machine vault-status server-1
 ```
 
-Provides a high-level overview of the machine: hostname, uptime, memory, disk, datastore, and total repository counts.
+Предоставляет общий обзор машины: имя хоста, время работы, память, диск, хранилище данных и общее количество репозиториев.
 
 ### Шаг 6: Сканирование ключей хоста
 
+Если машина была переустановлена или её IP изменился, обновите сохранённый SSH-ключ хоста.
+
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
-Refreshes the SSH host key stored in your config for the machine. Useful after a machine rebuild or IP change.
+Получает текущие ключи хоста сервера и обновляет вашу конфигурацию. Это предотвращает ошибки "host key verification failed".
 
 ### Шаг 7: Проверка подключения
+
+Быстрая проверка SSH-подключения для подтверждения того, что машина доступна и отвечает.
 
 ```bash
 rdc term server-1 -c "hostname"
 rdc term server-1 -c "uptime"
 ```
 
-Quick SSH connectivity check by running inline commands on the remote machine.
+Имя хоста подтверждает подключение к правильному серверу. Время работы подтверждает нормальную работу системы.
+
+## Устранение неполадок
+
+**Проверка состояния завершается по таймауту или показывает "SSH connection failed"**
+Убедитесь, что машина онлайн и доступна: `ping <ip>`. Проверьте правильность настройки SSH-ключа с помощью `rdc term <machine> -c "echo ok"`.
+
+**"Service not found" в списке служб**
+Службы Rediacc появляются только после развёртывания хотя бы одного репозитория. Если репозиториев нет, список служб пуст.
+
+**Список контейнеров показывает устаревшие или остановленные контейнеры**
+Контейнеры от предыдущих развёртываний могут оставаться, если `repo down` не был выполнен корректно. Остановите их с помощью `rdc repo down <repo> -m <machine>` или проверьте напрямую через `rdc term <machine> <repo> -c "docker ps -a"`.
 
 ## Следующие шаги
 
-- [Monitoring](/ru/docs/monitoring) — full reference for all monitoring commands
-- [Troubleshooting](/ru/docs/troubleshooting) — common issues and solutions
-- [Tutorial: Tools](/ru/docs/tutorial-tools) — terminal, file sync, and VS Code integration
+Вы выполнили диагностику, проверили состояние машины, инспектировали контейнеры и службы, и проверили подключение. Для работы с вашими развёртываниями:
+
+- [Мониторинг](/ru/docs/monitoring) — полный справочник по всем командам мониторинга
+- [Устранение неполадок](/ru/docs/troubleshooting) — распространённые проблемы и решения
+- [Руководство: Инструменты](/ru/docs/tutorial-tools) — терминал, синхронизация файлов и интеграция с VS Code

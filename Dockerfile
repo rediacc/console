@@ -12,7 +12,7 @@
 
 # Base image ARGs must be declared before any FROM for multi-stage build
 ARG NODE_IMAGE=node:22-alpine
-ARG GO_IMAGE=golang:1.24-alpine
+ARG GO_IMAGE=golang:1.25-alpine
 
 # =============================================================================
 # Stage 1: CLI Builder (Node.js)

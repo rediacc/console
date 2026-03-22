@@ -1,8 +1,8 @@
-import rss from '@astrojs/rss';
 import { getCollection } from 'astro:content';
+import rss from '@astrojs/rss';
+import type { APIContext } from 'astro';
 import { SITE_URL } from '../config/constants';
 import { getBaseSlug } from '../utils/slug';
-import type { APIContext } from 'astro';
 
 export async function GET(context: APIContext) {
   const blog = await getCollection('blog');
@@ -19,7 +19,7 @@ export async function GET(context: APIContext) {
     items: englishPosts.map((post) => ({
       title: post.data.title,
       description: post.data.description,
-      link: `/en/blog/${getBaseSlug(post.slug)}`,
+      link: `/en/blog/${getBaseSlug(post.slug)}?utm_source=rss&utm_medium=feed&utm_campaign=blog`,
       pubDate: post.data.publishedDate,
       author: post.data.author,
       categories: [...post.data.tags, post.data.category],

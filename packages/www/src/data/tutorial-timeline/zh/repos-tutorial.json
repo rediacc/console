@@ -1,0 +1,22 @@
+{
+  "cast": "/assets/tutorials/repos-tutorial.cast",
+  "language": "zh",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "7c9ad67c516b29815e78742fab83c69bfc10d895cc518758fc0afbb899d3ad33",
+  "steps": [
+    {
+      "id": "repos-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508464,
+      "replayEndSec": 6.646665,
+      "narrationText": "创建具有定义的存储大小的加密存储库。",
+      "audioSrc": "/assets/tutorials/audio/zh/repos-tutorial/repos-tutorial-01.e87f00df.mp3",
+      "audioDurationSec": 3.709388
+    }
+  ]
+}

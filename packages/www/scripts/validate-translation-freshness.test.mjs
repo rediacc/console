@@ -52,64 +52,11 @@ test('fails when english changed but locales are not updated', () => {
   assert.ok(result.errors.some((e) => e.rule === 'translation-source-hash-mismatch'));
 });
 
-test('passes when translationPending has a reason', () => {
-  const { repoRoot } = setupFixture();
-
-  writeDoc(
-    repoRoot,
-    'en',
-    'pending-doc',
-    {
-      title: 'Pending',
-      description: 'desc',
-      category: 'Guides',
-      language: 'en',
-      translationPending: true,
-      translationPendingReason: 'Awaiting legal review across locales',
-    },
-    'Pending body'
-  );
-
-  const result = validateTranslationFreshness({
-    repoRoot,
-    changedFiles: ['packages/www/src/content/docs/en/pending-doc.md'],
-    languages: LANGS,
-  });
-
-  assert.equal(result.errors.length, 0);
-});
-
-test('fails when translationPending is true but reason is missing', () => {
-  const { repoRoot } = setupFixture();
-
-  writeDoc(
-    repoRoot,
-    'en',
-    'pending-without-reason',
-    {
-      title: 'Pending',
-      description: 'desc',
-      category: 'Guides',
-      language: 'en',
-      translationPending: true,
-    },
-    'Pending body'
-  );
-
-  const result = validateTranslationFreshness({
-    repoRoot,
-    changedFiles: ['packages/www/src/content/docs/en/pending-without-reason.md'],
-    languages: LANGS,
-  });
-
-  assert.ok(result.errors.some((e) => e.rule === 'translation-pending-reason'));
-});
-
 test('passes when locale files are updated with matching sourceHash', () => {
   const { repoRoot } = setupFixture();
 
   const enFrontmatter = { title: 'Fresh', description: 'desc', category: 'Guides', language: 'en' };
-  const enBody = 'Fresh body';
+  const enBody = 'Fresh body\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10';
   writeDoc(repoRoot, 'en', 'fresh-doc', enFrontmatter, enBody);
 
   const hash = computeSourceHash(enFrontmatter, enBody);
@@ -121,7 +68,7 @@ test('passes when locale files are updated with matching sourceHash', () => {
       category: 'Guides',
       language: lang,
       sourceHash: hash,
-    }, `Localized body ${lang}`);
+    }, `Localized body ${lang}\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10`);
   }
 
   const result = validateTranslationFreshness({
@@ -135,4 +82,113 @@ test('passes when locale files are updated with matching sourceHash', () => {
   });
 
   assert.equal(result.errors.length, 0);
+});
+
+test('translation-missing error includes section summary', () => {
+  const { repoRoot } = setupFixture();
+
+  const enFrontmatter = { title: 'Sections', description: 'desc', category: 'Guides', language: 'en' };
+  const enBody = '## Getting Started\n\nIntro text.\n\n## Configuration\n\nConfig details.';
+  writeDoc(repoRoot, 'en', 'sections-doc', enFrontmatter, enBody);
+
+  const result = validateTranslationFreshness({
+    repoRoot,
+    changedFiles: ['packages/www/src/content/docs/en/sections-doc.md'],
+    languages: LANGS,
+  });
+
+  const missingErrors = result.errors.filter((e) => e.rule === 'translation-missing');
+  assert.ok(missingErrors.length > 0, 'should have translation-missing errors');
+  // Suggestion should include section headings
+  assert.ok(missingErrors[0].suggestion.includes('## Getting Started'));
+  assert.ok(missingErrors[0].suggestion.includes('## Configuration'));
+});
+
+test('hash mismatch without sourceCommit gives fallback suggestion', () => {
+  const { repoRoot } = setupFixture();
+
+  const enFrontmatter = { title: 'Changed', description: 'new desc', category: 'Guides', language: 'en' };
+  writeDoc(repoRoot, 'en', 'changed-doc', enFrontmatter, 'New body content');
+
+  const hash = computeSourceHash(enFrontmatter, 'New body content');
+
+  for (const lang of LANGS) {
+    writeDoc(repoRoot, lang, 'changed-doc', {
+      title: 'Old title',
+      description: 'old desc',
+      category: 'Guides',
+      language: lang,
+      sourceHash: 'stale-hash',
+      // no sourceCommit — should get fallback message
+    }, 'Old body');
+  }
+
+  const result = validateTranslationFreshness({
+    repoRoot,
+    changedFiles: [
+      'packages/www/src/content/docs/en/changed-doc.md',
+      'packages/www/src/content/docs/de/changed-doc.md',
+      'packages/www/src/content/docs/es/changed-doc.md',
+    ],
+    languages: LANGS,
+  });
+
+  const mismatchErrors = result.errors.filter((e) => e.rule === 'translation-source-hash-mismatch');
+  assert.ok(mismatchErrors.length > 0);
+  // Without sourceCommit, suggestion should mention adding sourceCommit
+  assert.ok(mismatchErrors[0].suggestion.includes('sourceCommit'));
+  assert.ok(mismatchErrors[0].suggestion.includes(hash));
+});
+
+test('missing sourceHash gives suggestion with sourceHash value', () => {
+  const { repoRoot } = setupFixture();
+
+  const enFrontmatter = { title: 'NoHash', description: 'desc', category: 'Guides', language: 'en' };
+  writeDoc(repoRoot, 'en', 'no-hash', enFrontmatter, 'Body');
+
+  const hash = computeSourceHash(enFrontmatter, 'Body');
+
+  for (const lang of LANGS) {
+    writeDoc(repoRoot, lang, 'no-hash', {
+      title: 'Translated',
+      language: lang,
+      // no sourceHash at all
+    }, 'Translated body');
+  }
+
+  const result = validateTranslationFreshness({
+    repoRoot,
+    changedFiles: [
+      'packages/www/src/content/docs/en/no-hash.md',
+      'packages/www/src/content/docs/de/no-hash.md',
+      'packages/www/src/content/docs/es/no-hash.md',
+    ],
+    languages: LANGS,
+  });
+
+  const missingHash = result.errors.filter((e) => e.rule === 'translation-source-hash-missing');
+  assert.ok(missingHash.length > 0);
+  assert.ok(missingHash[0].suggestion.includes(hash));
+});
+
+test('orphaned translations detected in strict-all mode', () => {
+  const { repoRoot } = setupFixture();
+
+  // Create a translated file with no English source
+  writeDoc(repoRoot, 'de', 'deleted-doc', {
+    title: 'Gelöscht',
+    language: 'de',
+    sourceHash: 'abc123',
+  }, 'Orphaned content');
+
+  const result = validateTranslationFreshness({
+    repoRoot,
+    changedFiles: [],
+    strictAll: true,
+    languages: ['de'],
+  });
+
+  const orphanErrors = result.errors.filter((e) => e.rule === 'translation-orphaned');
+  assert.ok(orphanErrors.length > 0, 'should detect orphaned translation');
+  assert.ok(orphanErrors[0].file.includes('deleted-doc.md'));
 });

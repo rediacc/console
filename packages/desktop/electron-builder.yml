@@ -61,7 +61,7 @@ mac:
     - dmg
     - zip
   artifactName: rediacc-desktop-${version}-mac-${arch}.${ext}
-  icon: resources/icon.png
+  icon: resources/icon.icns
   category: public.app-category.developer-tools
   entitlementsInherit: resources/entitlements.mac.plist
   hardenedRuntime: true

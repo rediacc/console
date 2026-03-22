@@ -1,7 +1,7 @@
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { FormFieldConfig } from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault';
 import { featureFlags } from '@/config/featureFlags';
 import { conditionalRequired, validationRules } from '@/platform/utils/formValidation';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { ResourceType } from '../index';
 
 type ClusterOption = { clusterName: string };

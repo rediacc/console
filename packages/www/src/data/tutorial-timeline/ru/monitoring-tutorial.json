@@ -1,0 +1,40 @@
+{
+  "cast": "/assets/tutorials/monitoring-tutorial.cast",
+  "language": "ru",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "e4700e729aa4f291775cc1c02f45cbc8250ddd6cd8fe6629205c713d58228f03",
+  "steps": [
+    {
+      "id": "monitoring-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508759,
+      "replayEndSec": 9.844365,
+      "narrationText": "Запустите полную диагностику среды, чтобы выявить проблемы с базовыми показателями.",
+      "audioSrc": "/assets/tutorials/audio/ru/monitoring-tutorial/monitoring-tutorial-01.2d457507.mp3",
+      "audioDurationSec": 5.877551
+    },
+    {
+      "id": "monitoring-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 9.844365,
+      "replayEndSec": 18.393678,
+      "narrationText": "Проверьте индикаторы состояния удаленной машины.",
+      "audioSrc": "/assets/tutorials/audio/ru/monitoring-tutorial/monitoring-tutorial-02.80d43c2b.mp3",
+      "audioDurationSec": 4.362449
+    },
+    {
+      "id": "monitoring-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 18.393678,
+      "replayEndSec": 22.197305,
+      "narrationText": "Перечислите активные контейнеры на целевой машине.",
+      "audioSrc": "/assets/tutorials/audio/ru/monitoring-tutorial/monitoring-tutorial-03.47bea3d3.mp3",
+      "audioDurationSec": 3.239184
+    }
+  ]
+}

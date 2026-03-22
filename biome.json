@@ -53,8 +53,13 @@
       "scripts/**/*.js",
       "packages/**/*.ts",
       "packages/**/*.tsx",
-      "packages/**/*.js",
       "packages/**/*.jsx",
+      "packages/www/scripts/**/*.js",
+      "packages/www/public/**/*.js",
+      "packages/web/public/**/*.js",
+      "packages/desktop/*.js",
+      "packages/desktop/scripts/**/*.js",
+      "packages/e2e/scripts/**/*.js",
       "packages/**/*.json",
       "packages/**/*.css",
       "!**/node_modules/**",
@@ -65,9 +70,13 @@
       "!**/reports/**",
       "!**/screenshots/**",
       "!**/playwright-report/**",
+      "!packages/**/*.js.map",
+      "!packages/**/*.d.ts",
+      "!packages/**/*.d.ts.map",
       "!**/*.min.js",
       "!**/*.min.css",
       "!**/*.generated.ts",
+      "!**/queue-vault/data/*.schema.ts",
       "!**/search-index.json",
       "!**/*.astro",
       "private/account/src/**/*.ts",
@@ -85,7 +94,14 @@
       "linter": {
         "enabled": true,
         "rules": {
-          "recommended": true
+          "recommended": true,
+          "nursery": {
+            "noFloatingPromises": "error"
+          },
+          "a11y": {
+            "noAutofocus": "warn",
+            "noStaticElementInteractions": "warn"
+          }
         }
       },
       "assist": {

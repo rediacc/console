@@ -1,6 +1,6 @@
 import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import { showMessage } from './messages';
 import type { HookAPI as ModalHookAPI } from 'antd/es/modal/useModal';
+import { showMessage } from './messages';
 
 interface ConfirmDeleteConfig {
   modal: ModalHookAPI;

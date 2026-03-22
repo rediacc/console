@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: ru
-sourceHash: 4a0c6a695d72aa55
+sourceHash: "911dde41922454ec"
 ---
 
 # Сетевое взаимодействие
@@ -53,22 +53,40 @@ Internet → Traefik (ports 80/443/TCP/UDP)
 | `rediacc.service_name` | Идентификатор сервиса | `myapp` |
 | `rediacc.service_ip` | Назначенный loopback IP | `127.0.11.2` |
 | `rediacc.network_id` | Идентификатор демона репозитория | `2816` |
+| `rediacc.repo_name` | Repository name | `marketing` |
 | `rediacc.tcp_ports` | TCP ports the service listens on | `8080,8443` |
 | `rediacc.udp_ports` | UDP ports the service listens on | `53` |
 
-Когда контейнер имеет только метки `rediacc.*` (без `traefik.enable=true`), сервер маршрутов генерирует **автомаршрут**:
+Когда контейнер имеет только метки `rediacc.*` (без `traefik.enable=true`), сервер маршрутов генерирует **автомаршрут** с использованием имени репозитория и поддомена машины:
 
 ```
-{service}-{networkID}.{baseDomain}
+{service}.{repoName}.{machineName}.{baseDomain}
 ```
 
-Например, сервис с именем `myapp` в репозитории с идентификатором сети `2816` и базовым доменом `example.com` получит:
+Например, сервис с именем `myapp` в репозитории `marketing` на машине `server-1` с базовым доменом `example.com` получит:
 
 ```
-myapp-2816.example.com
+myapp.marketing.server-1.example.com
 ```
 
-Автомаршруты полезны для разработки и внутреннего доступа. Для продакшен-сервисов с пользовательскими доменами используйте метки уровня 2.
+Каждый репозиторий имеет свой собственный уровень поддомена, поэтому форки и разные репозитории никогда не пересекаются. При форке репозитория (например, `marketing-staging`) форк автоматически получает отдельные маршруты. Для сервисов с пользовательскими доменами используйте метки уровня 2 или метку `rediacc.domain`.
+
+#### Пользовательский домен через `rediacc.domain`
+
+Вы можете задать пользовательский домен для сервиса с помощью метки `rediacc.domain` в вашем `docker-compose.yml`. Поддерживаются как короткие имена, так и полные домены:
+
+```yaml
+labels:
+  # Короткое имя — преобразуется в cloud.example.com с использованием baseDomain машины
+  - "rediacc.domain=cloud"
+
+  # Полный домен — используется как есть
+  - "rediacc.domain=cloud.example.com"
+```
+
+Значение без точек обрабатывается как короткое имя, и `baseDomain` машины добавляется автоматически. Значение с точками используется как полный домен.
+
+Когда настроен `machineName`, сервисы с пользовательским доменом получают **два маршрута**: один на базовом домене (`cloud.example.com`) и один на поддомене машины (`cloud.server-1.example.com`).
 
 ### Уровень 2: Метки `traefik.*` (пользовательские)
 
@@ -94,13 +112,17 @@ labels:
 1. Настроенная инфраструктура на машине ([Настройка машины — Настройка инфраструктуры](/ru/docs/setup#настройка-инфраструктуры)):
 
    ```bash
-   rdc config set-infra server-1 \
-     --public-ipv4 203.0.113.50 \
-     --base-domain example.com \
+   # Общие учетные данные (один раз на конфигурацию, применяются ко всем машинам)
+   rdc config infra set server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
-   rdc config push-infra server-1
+   # Настройки конкретной машины
+   rdc config infra set server-1 \
+     --public-ipv4 203.0.113.50 \
+     --base-domain example.com
+
+   rdc config infra push server-1
    ```
 
 2. DNS-записи, указывающие ваш домен на публичный IP сервера (см. [Настройка DNS](#настройка-dns) ниже).
@@ -113,7 +135,6 @@ labels:
 services:
   myapp:
     image: myapp:latest
-    network_mode: host
     environment:
       - LISTEN_ADDR=${MYAPP_IP}:8080
     labels:
@@ -125,7 +146,6 @@ services:
 
   database:
     image: postgres:17
-    network_mode: host
     command: ["-c", "listen_addresses=${DATABASE_IP}"]
     # Без меток traefik — база данных только для внутреннего использования
 ```
@@ -144,21 +164,19 @@ services:
 
 ## TLS-сертификаты
 
-TLS-сертификаты получаются автоматически через Let's Encrypt с использованием DNS-01 проверки Cloudflare. Это настраивается один раз при настройке инфраструктуры:
+TLS-сертификаты получаются автоматически через Let's Encrypt с использованием DNS-01 проверки Cloudflare. Учетные данные настраиваются один раз на конфигурацию (общие для всех машин):
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
 
-Когда сервис имеет `traefik.http.routers.{name}.tls.certresolver=letsencrypt`, Traefik автоматически:
-1. Запрашивает сертификат у Let's Encrypt
-2. Подтверждает владение доменом через Cloudflare DNS
-3. Сохраняет сертификат локально
-4. Обновляет его до истечения срока действия
+Автомаршруты используют **wildcard-сертификаты** на уровне поддомена репозитория (`*.marketing.server-1.example.com`) вместо сертификатов для каждого сервиса. Это позволяет избежать ограничений скорости Let's Encrypt и ускоряет запуск. Маршруты с пользовательскими доменами используют wildcard на уровне машины (`*.server-1.example.com`).
 
-API-токен Cloudflare DNS должен иметь разрешение `Zone:DNS:Edit` для доменов, которые вы хотите защитить. Этот подход работает для любого домена, управляемого через Cloudflare, включая wildcard-сертификаты.
+Для маршрутов уровня 2 с `traefik.http.routers.{name}.tls.certresolver=letsencrypt` wildcard-домены SAN автоматически добавляются на основе имени хоста маршрута.
+
+API-токен Cloudflare DNS должен иметь разрешение `Zone:DNS:Edit` для доменов, которые вы хотите защитить.
 
 ## Проброс TCP/UDP-портов
 
@@ -169,11 +187,11 @@ API-токен Cloudflare DNS должен иметь разрешение `Zone
 Добавьте необходимые порты при настройке инфраструктуры:
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config push-infra server-1
+rdc config infra push server-1
 ```
 
 Это создает точки входа Traefik с именами `tcp-{port}` и `udp-{port}`.
@@ -186,7 +204,6 @@ To expose a database externally without TLS passthrough (Traefik forwards raw TC
 services:
   postgres:
     image: postgres:17
-    network_mode: host
     command: -c listen_addresses=${POSTGRES_IP} -c port=5432
     labels:
       - "traefik.enable=true"
@@ -199,7 +216,7 @@ Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
 
 > **Security note:** Exposing a database to the internet is a risk. Use this only when remote clients need direct access. For most setups, keep the database internal and connect through your application.
 
-> После добавления или удаления портов всегда повторно выполняйте `rdc config push-infra` для обновления конфигурации прокси.
+> После добавления или удаления портов всегда повторно выполняйте `rdc config infra push` для обновления конфигурации прокси.
 
 ### Шаг 2: Добавление TCP/UDP-меток
 
@@ -209,7 +226,6 @@ Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
 services:
   mail-server:
     image: ghcr.io/docker-mailserver/docker-mailserver:latest
-    network_mode: host
     labels:
       - "traefik.enable=true"
 
@@ -234,7 +250,7 @@ services:
 
 ### Предварительно настроенные порты
 
-Следующие TCP/UDP-порты имеют точки входа по умолчанию (не нужно добавлять через `--tcp-ports`):
+Следующие TCP/UDP-порты имеют точки входа по умолчанию (не нужно добавлять через `--tcp-ports`). Точки входа генерируются только для настроенных семейств адресов — точки входа IPv4 требуют `--public-ipv4`, точки входа IPv6 требуют `--public-ipv6`:
 
 | Порт | Протокол | Типичное использование |
 |------|----------|----------------------|
@@ -252,29 +268,41 @@ services:
 
 ## Настройка DNS
 
-Направьте ваши домены на публичные IP-адреса сервера, настроенные в `set-infra`:
+### Автоматический DNS (Cloudflare)
 
-### Домены отдельных сервисов
+Когда настроен `--cf-dns-token`, `rdc config infra push` автоматически создает необходимые DNS-записи в Cloudflare:
 
-Создайте A (IPv4) и/или AAAA (IPv6) записи для каждого сервиса:
+| Запись | Тип | Содержимое | Создано |
+|--------|-----|------------|---------|
+| `server-1.example.com` | A / AAAA | Публичный IP машины | `push-infra` |
+| `*.server-1.example.com` | A / AAAA | Публичный IP машины | `push-infra` |
+| `*.marketing.server-1.example.com` | A / AAAA | Публичный IP машины | `repo up` |
+
+Записи уровня машины создаются командой `push-infra` и покрывают маршруты с пользовательскими доменами (`rediacc.domain`). Wildcard-записи для каждого репозитория создаются автоматически командой `repo up` и покрывают автомаршруты этого репозитория.
+
+Это идемпотентно — существующие записи обновляются при изменении IP и остаются без изменений, если уже корректны.
+
+Wildcard базового домена (`*.example.com`) необходимо создать вручную, если вы используете пользовательские метки домена, например `rediacc.domain=erp`.
+
+### Ручная настройка DNS
+
+Если вы не используете Cloudflare или управляете DNS вручную, создайте A (IPv4) и/или AAAA (IPv6) записи:
 
 ```
-app.example.com      A     203.0.113.50
-app.example.com      AAAA  2001:db8::1
-gitlab.example.com   A     203.0.113.50
-mail.example.com     A     203.0.113.50
+# Поддомен машины (для маршрутов с пользовательским доменом, например rediacc.domain=erp)
+server-1.example.com           A     203.0.113.50
+*.server-1.example.com         A     203.0.113.50
+*.server-1.example.com         AAAA  2001:db8::1
+
+# Wildcard для каждого репозитория (для автомаршрутов вроде myapp.marketing.server-1.example.com)
+*.marketing.server-1.example.com    A     203.0.113.50
+*.marketing.server-1.example.com    AAAA  2001:db8::1
+
+# Wildcard базового домена (для сервисов с пользовательским доменом, например rediacc.domain=erp)
+*.example.com                  A     203.0.113.50
 ```
 
-### Wildcard для автомаршрутов
-
-Если вы используете автомаршруты (уровень 1), создайте wildcard DNS-запись:
-
-```
-*.example.com   A     203.0.113.50
-*.example.com   AAAA  2001:db8::1
-```
-
-Это направляет все поддомены на ваш сервер, а Traefik сопоставляет их с правильным сервисом на основе правила `Host()` или имени хоста автомаршрута.
+При настроенном Cloudflare DNS wildcard-записи для каждого репозитория создаются автоматически командой `repo up`. При наличии нескольких машин каждая машина получает собственные DNS-записи, указывающие на её собственный IP.
 
 ## Middleware
 
@@ -344,7 +372,7 @@ curl -s http://127.0.0.1:7111/ports | python3 -m json.tool
 | Сервис не отображается в маршрутах | Контейнер не запущен или отсутствуют метки | Проверьте с помощью `docker ps` на демоне репозитория; проверьте метки |
 | Сертификат не выпущен | DNS не указывает на сервер или невалидный токен Cloudflare | Проверьте разрешение DNS; проверьте разрешения API-токена Cloudflare |
 | 502 Bad Gateway | Приложение не слушает на объявленном порту | Убедитесь, что приложение привязано к `{SERVICE}_IP` и порт совпадает с `loadbalancer.server.port` |
-| TCP-порт недоступен | Порт не зарегистрирован в инфраструктуре | Выполните `rdc config set-infra --tcp-ports ...` и `push-infra` |
+| TCP-порт недоступен | Порт не зарегистрирован в инфраструктуре | Выполните `rdc config infra set --tcp-ports ...` и `push-infra` |
 
 ## Полный пример
 
@@ -356,8 +384,6 @@ curl -s http://127.0.0.1:7111/ports | python3 -m json.tool
 services:
   webapp:
     image: myregistry/webapp:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
       LISTEN_ADDR: ${WEBAPP_IP}:3000
@@ -374,8 +400,6 @@ services:
 
   postgres:
     image: postgres:17
-    network_mode: host
-    restart: unless-stopped
     environment:
       POSTGRES_DB: webapp
       POSTGRES_USER: app
@@ -391,12 +415,8 @@ services:
 ```bash
 #!/bin/bash
 
-prep() {
-    mkdir -p data/postgres
-    renet compose -- pull
-}
-
 up() {
+    mkdir -p data/postgres
     renet compose -- up -d
 }
 

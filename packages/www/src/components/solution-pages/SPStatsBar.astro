@@ -1,0 +1,29 @@
+---
+import { getIcon } from './icons';
+
+interface StatItem {
+  number: string;
+  label: string;
+  icon: string;
+}
+
+interface Props {
+  stats: StatItem[];
+}
+
+const { stats } = Astro.props;
+---
+
+<section class="sp-stats">
+  <div class="sp-stats-inner">
+    {stats.map((stat) => (
+      <div class="sp-stat">
+        <div class="sp-stat-icon">
+          <Fragment set:html={getIcon(stat.icon)} />
+        </div>
+        <div class="sp-stat-number">{stat.number}</div>
+        <div class="sp-stat-label">{stat.label}</div>
+      </div>
+    ))}
+  </div>
+</section>

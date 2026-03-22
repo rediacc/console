@@ -1,9 +1,9 @@
-import React from 'react';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import { Alert, Button, Flex, Form, Input, QRCode, Space, Tabs, Typography } from 'antd';
+import type { FormInstance } from 'antd/es/form';
+import React from 'react';
 import { OTPCodeField } from '@/features/settings/components/profile/OTPCodeField';
 import { CopyOutlined, SafetyCertificateOutlined } from '@/utils/optimizedIcons';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import type { FormInstance } from 'antd/es/form';
 
 const { Title, Paragraph } = Typography;
 

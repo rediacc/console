@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import { Flex, type MenuProps, Space, Tag, Typography } from 'antd';
+import React, { useMemo } from 'react';
 import { MobileCard } from '@/components/common/MobileCard';
 import { ResourceActionsDropdown } from '@/components/common/ResourceActionsDropdown';
 import { isFork as coreIsFork } from '@/platform';
@@ -14,7 +15,6 @@ import {
   PauseCircleOutlined,
   PlayCircleOutlined,
 } from '@/utils/optimizedIcons';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { Repository, RepositoryTableRow } from '../types';
 
 interface RepositoryMobileCardProps {

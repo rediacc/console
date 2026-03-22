@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: es
-sourceHash: "50f5168f0effbc44"
+sourceHash: "9331a5f415a76278"
 ---
 
 # Arquitectura
@@ -58,7 +58,7 @@ Se activa automáticamente cuando una configuración contiene los campos `apiUrl
 - Consola web para gestión visual
 - Se configura con `rdc auth login`
 
-> **Nota:** Los comandos del adaptador cloud son experimentales. Habilítelos con `rdc --experimental <command>` o configurando `REDIACC_EXPERIMENTAL=1`.
+> **Nota:** Los comandos del adaptador cloud son experimentales. Habilítelos configurando `REDIACC_EXPERIMENTAL=1`.
 
 ### Estado de Recursos S3 (Opcional)
 
@@ -73,7 +73,7 @@ Todos los adaptadores usan los mismos comandos de CLI. El adaptador solo afecta 
 
 ## El Usuario rediacc
 
-Cuando ejecuta `rdc config setup-machine`, renet crea un usuario del sistema llamado `rediacc` en el servidor remoto:
+Cuando ejecuta `rdc config machine setup`, renet crea un usuario del sistema llamado `rediacc` en el servidor remoto:
 
 - **UID**: 7111
 - **Shell**: `/sbin/nologin` (no puede iniciar sesión vía SSH)
@@ -83,7 +83,7 @@ El usuario `rediacc` no puede accederse directamente vía SSH. En su lugar, rdc 
 
 1. Su usuario SSH necesita privilegios de `sudo`
 2. Todos los datos del repositorio son propiedad de `rediacc`, no de su usuario SSH
-3. Las funciones del Rediaccfile (`prep()`, `up()`, `down()`) se ejecutan como `rediacc`
+3. Las funciones del Rediaccfile (`up()`, `down()`) se ejecutan como `rediacc`
 
 Esta separación asegura que los datos del repositorio tengan una propiedad consistente independientemente de qué usuario SSH los gestione.
 

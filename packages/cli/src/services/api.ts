@@ -1,4 +1,3 @@
-import axios from 'axios';
 import {
   ApiClientError,
   createApiClient,
@@ -10,7 +9,7 @@ import {
 } from '@rediacc/shared/api';
 import { createVaultEncryptor } from '@rediacc/shared/encryption';
 import type { ApiResponse } from '@rediacc/shared/types';
-import { configService } from './config-resources.js';
+import axios from 'axios';
 import {
   configFileStorage,
   errorHandler,
@@ -19,8 +18,9 @@ import {
   tokenAdapter,
   urlAdapter,
 } from '../adapters/index.js';
-import { EXIT_CODES } from '../types/index.js';
 import type { ErrorCode } from '../types/errors.js';
+import { EXIT_CODES } from '../types/index.js';
+import { configService } from './config-resources.js';
 
 // Create axios instance
 const axiosInstance = axios.create({

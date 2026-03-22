@@ -1,5 +1,6 @@
-import React from 'react';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import { Card, Flex, List, type ListProps, Tag, Typography } from 'antd';
+import React from 'react';
 import {
   DetailPanelDivider,
   DetailPanelFieldLabel,
@@ -8,7 +9,6 @@ import {
   DetailPanelTitleGroup,
 } from '@/components/resources/internal/detailPanelPrimitives';
 import { ContainerOutlined } from '@/utils/optimizedIcons';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import type { Container } from '../types';
 
 interface SystemContainersSectionProps {

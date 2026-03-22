@@ -4,7 +4,7 @@ description: "Soluciones para problemas comunes con SSH, configuración, reposit
 category: "Guides"
 order: 10
 language: es
-sourceHash: 4c3163007e6a3326
+sourceHash: "b392ab73d90c62e1"
 ---
 
 # Solución de problemas
@@ -14,7 +14,7 @@ Problemas comunes y sus soluciones. En caso de duda, comience con `rdc doctor` p
 ## Falla la conexión SSH
 
 - Verifique que puede conectarse manualmente: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Ejecute `rdc config scan-keys server-1` para actualizar las claves del host
+- Ejecute `rdc config machine scan-keys server-1` para actualizar las claves del host
 - Compruebe que el puerto SSH coincida: `--port 22`
 - Pruebe con un comando simple: `rdc term server-1 -c "hostname"`
 
@@ -23,7 +23,7 @@ Problemas comunes y sus soluciones. En caso de duda, comience con `rdc doctor` p
 Si un servidor fue reinstalado o sus claves SSH cambiaron, verá "host key verification failed":
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 Este comando obtiene claves de host nuevas y actualiza su configuración.
@@ -32,7 +32,7 @@ Este comando obtiene claves de host nuevas y actualiza su configuración.
 
 - Asegúrese de que el usuario SSH tenga acceso sudo sin contraseña, o configure `NOPASSWD` para los comandos requeridos
 - Verifique el espacio en disco disponible en el servidor
-- Ejecute con `--debug` para una salida detallada: `rdc config setup-machine server-1 --debug`
+- Ejecute con `--debug` para una salida detallada: `rdc config machine setup server-1 --debug`
 
 ## Falla la creación de repositorio
 
@@ -43,8 +43,8 @@ Este comando obtiene claves de host nuevas y actualiza su configuración.
 ## Los servicios no se inician
 
 - Verifique la sintaxis del Rediaccfile: debe ser Bash válido
-- Asegúrese de que los archivos `docker compose` usen `network_mode: host`
-- Verifique que las imágenes Docker sean accesibles (considere `docker compose pull` en `prep()`)
+- Asegúrese de que su Rediaccfile use `renet compose --` (no `docker compose`)
+- Verifique que las imágenes Docker sean accesibles (considere `renet compose -- pull` en `up()`)
 - Revise los registros del contenedor usando el socket Docker del repositorio:
 
 ```bash

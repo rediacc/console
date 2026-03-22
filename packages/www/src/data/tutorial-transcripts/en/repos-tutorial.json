@@ -1,0 +1,13 @@
+{
+  "cast": "/assets/tutorials/repos-tutorial.cast",
+  "language": "en",
+  "version": 1,
+  "events": [
+    {
+      "id": "repos-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.508464,
+      "text": "Each repository is a LUKS-encrypted BTRFS volume with its own Docker daemon and loopback subnet -- fully isolated. We create a two-gigabyte repository now."
+    }
+  ]
+}

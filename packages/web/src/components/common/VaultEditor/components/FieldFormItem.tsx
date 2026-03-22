@@ -1,7 +1,7 @@
-import React from 'react';
 import { Form } from 'antd';
-import { FieldLabel } from './FieldLabel';
+import React from 'react';
 import type { FieldFormItemProps } from '../types';
+import { FieldLabel } from './FieldLabel';
 
 export const FieldFormItem: React.FC<FieldFormItemProps> = ({
   name,

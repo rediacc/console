@@ -1,0 +1,13 @@
+{
+  "cast": "/assets/tutorials/tools-tutorial.cast",
+  "language": "en",
+  "version": 1,
+  "events": [
+    {
+      "id": "tools-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.511459,
+      "text": "Day-to-day operations rely on reliable SSH connectivity. We start by verifying the tunnel to the remote machine -- a hostname check confirms the connection target."
+    }
+  ]
+}

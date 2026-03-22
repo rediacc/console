@@ -1,93 +1,123 @@
 ---
 title: "バックアップとネットワーク"
-description: "バックアップスケジュール、ストレージプロバイダー、ネットワークインフラストラクチャの設定を一緒に見ていきましょう。"
+description: "自動バックアップスケジュールの設定、ストレージプロバイダーの管理、インフラストラクチャネットワークの構築、サービスポートの登録を行います。"
 category: "Tutorials"
 order: 6
 language: ja
-sourceHash: "d611f5597b819085"
+sourceHash: "14244f699c506ce9"
 ---
 
-# チュートリアル: バックアップとネットワーク
+# Rediaccでバックアップとネットワークを設定する方法
 
-This tutorial covers backup scheduling, storage configuration, and infrastructure networking setup: the commands you use to protect data and expose services.
+自動バックアップはリポジトリを保護し、インフラストラクチャネットワークはサービスを外部に公開します。このチュートリアルでは、ストレージプロバイダーを使ったバックアップスケジュールの設定、TLS証明書を使った公開ネットワークの構築、サービスポートの登録、設定の検証を行います。完了すると、マシンは本番トラフィックの受け入れ準備が整います。
 
 ## 前提条件
 
-- The `rdc` CLI installed with a config initialized
-- A provisioned machine (see [Tutorial: Machine Setup](/ja/docs/tutorial-setup))
+- 設定が初期化された`rdc` CLIがインストール済みであること
+- プロビジョニング済みのマシン（[チュートリアル: マシンセットアップ](/ja/docs/tutorial-setup)を参照）
 
 ## インタラクティブ録画
 
 ![Tutorial: Backup & Networking](/assets/tutorials/backup-tutorial.cast)
 
-## 内容の説明
-
-The recording above walks through each step below. Use the playback bar to navigate between commands.
-
 ### ステップ1: 現在のストレージを表示
 
+ストレージプロバイダー（S3、B2、Google Driveなど）はバックアップ先として機能します。設定済みのプロバイダーを確認します。
+
 ```bash
-rdc config storages
+rdc config storage list
 ```
 
-Lists all configured storage providers (S3, B2, Google Drive, etc.) imported from rclone configs. Storages are used as backup destinations.
+rclone設定からインポートされた全ての設定済みストレージプロバイダーを一覧表示します。空の場合は、まずストレージプロバイダーを追加してください — [バックアップとリストア](/ja/docs/backup-restore)を参照。
 
 ### ステップ2: バックアップスケジュールを設定
 
+cronスケジュールで実行される自動バックアップを設定します。
+
 ```bash
-rdc backup schedule set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
 ```
 
-Sets an automated backup schedule: push all repositories to the `my-s3` storage every day at 2 AM. The schedule is stored in your config and can be deployed to machines as a systemd timer.
+異なるスケジュールで複数の宛先を構成できます：
+
+```bash
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
+```
+
+これにより、午前2時に`my-s3`へ、午前6時に`azure-backup`へ毎日バックアップがスケジュールされます。各宛先には独自のスケジュールがあります。スケジュールは設定に保存され、systemdタイマーとしてマシンにデプロイできます。
 
 ### ステップ3: バックアップスケジュールを表示
 
+スケジュールが適用されたことを確認します。
+
 ```bash
-rdc backup schedule show
+rdc config backup-strategy show
 ```
 
-Shows the current backup schedule configuration: destination, cron expression, and enabled status.
+現在のバックアップ設定を表示します：宛先、cron式、有効化ステータス。
 
 ### ステップ4: インフラストラクチャを設定
 
+公開サービスの場合、マシンには外部IP、ベースドメイン、Let's Encrypt TLS用の証明書メールアドレスが必要です。
+
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com
 ```
 
-Configures the machine's public networking: its external IP, base domain for auto-routes, and email for Let's Encrypt TLS certificates.
+Rediaccはこれらの設定からTraefikリバースプロキシ設定を生成します。
 
 ### ステップ5: TCP/UDPポートを追加
 
+サービスが非HTTPポート（例：SMTP、DNS）を必要とする場合、Traefikエントリポイントとして登録します。
+
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 ```
 
-Registers additional TCP/UDP ports for the reverse proxy. These create Traefik entrypoints (`tcp-25`, `udp-53`, etc.) that can be referenced in Docker labels.
+Traefikエントリポイント（`tcp-25`、`udp-53`など）を作成し、Dockerサービスがラベルでリファレンスできるようにします。
 
 ### ステップ6: インフラストラクチャ設定を表示
 
+インフラストラクチャ設定の全体を確認します。
+
 ```bash
-rdc config show-infra server-1
+rdc config infra show server-1
 ```
 
-Displays the full infrastructure configuration for a machine: public IPs, domain, email, and registered ports.
+パブリックIP、ドメイン、証明書メールアドレス、登録済みの全ポートを表示します。
 
 ### ステップ7: バックアップスケジュールを無効化
 
+設定を削除せずに自動バックアップを停止するには：
+
 ```bash
-rdc backup schedule set --disable
-rdc backup schedule show
+rdc config backup-strategy set --disable
+rdc config backup-strategy show
 ```
 
-Disables the automated backup schedule. The configuration is preserved so it can be re-enabled later.
+設定は保持され、後で`--enable`で再度有効化できます。
+
+## トラブルシューティング
+
+**"Invalid cron expression"**
+cronのフォーマットは`minute hour day month weekday`です。一般的なスケジュール：`0 2 * * *`（毎日午前2時）、`0 */6 * * *`（6時間ごと）、`0 0 * * 0`（毎週日曜深夜）。
+
+**"Storage destination not found"**
+宛先名は設定済みのストレージプロバイダーと一致する必要があります。`rdc config storage list`を実行して利用可能な名前を確認してください。新しいプロバイダーはrclone設定で追加します。
+
+**デプロイ時の"Infrastructure config incomplete"**
+3つのフィールドすべてが必須です：`--public-ipv4`、`--base-domain`、`--cert-email`。`rdc config infra show <machine>`を実行して不足しているフィールドを確認してください。
 
 ## 次のステップ
 
-- [Backup & Restore](/ja/docs/backup-restore) — full reference for push, pull, list, and sync commands
-- [Networking](/ja/docs/networking) — Docker labels, TLS certificates, DNS, and TCP/UDP forwarding
-- [Tutorial: Machine Setup](/ja/docs/tutorial-setup) — initial configuration and provisioning
+自動バックアップの設定、インフラストラクチャネットワークの構築、サービスポートの登録、設定の検証が完了しました。バックアップを管理するには：
+
+- [バックアップとリストア](/ja/docs/backup-restore) — push、pull、list、syncコマンドの完全なリファレンス
+- [ネットワーク](/ja/docs/networking) — Dockerラベル、TLS証明書、DNS、TCP/UDP転送
+- [チュートリアル: マシンセットアップ](/ja/docs/tutorial-setup) — 初期設定とプロビジョニング

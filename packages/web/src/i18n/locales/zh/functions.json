@@ -26,7 +26,6 @@
   "checkboxOptions": {
     "mountRepoFirst": "首先挂载存储库",
     "overrideExistingFile": "覆盖现有文件",
-    "preparationOnly": "仅准备",
     "unmountAfterStopping": "停止后卸载"
   },
   "configure": "配置",
@@ -471,7 +470,7 @@
       "name": "启动",
       "params": {
         "option": {
-          "help": "选项（例如：prep-only）",
+          "help": "选项（例如：mount）",
           "label": "选项"
         },
         "repository": {

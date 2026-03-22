@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: cf186b18b0c50eba
+sourceHash: "bd53047cef737088"
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -22,7 +22,7 @@ Yedekleri göndermeden önce bir depolama sağlayıcısı kaydedin. Rediacc, rcl
 Zaten yapılandırılmış bir rclone uzak bağlantınız varsa:
 
 ```bash
-rdc config import-storage rclone.conf
+rdc config storage import rclone.conf
 ```
 
 Bu, bir rclone yapılandırma dosyasındaki depolama yapılandırmalarını mevcut yapılandırmaya aktarır. Desteklenen türler: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob ve Swift.
@@ -30,7 +30,7 @@ Bu, bir rclone yapılandırma dosyasındaki depolama yapılandırmalarını mevc
 ### Depolamaları Görüntüleme
 
 ```bash
-rdc config storages
+rdc config storage list
 ```
 
 ## Yedek Gönderme
@@ -38,7 +38,7 @@ rdc config storages
 Bir depo yedeğini harici depolamaya gönderin:
 
 ```bash
-rdc backup push my-app -m server-1 --to my-storage
+rdc repo push my-app -m server-1 --to my-storage
 ```
 
 | Seçenek | Açıklama |
@@ -46,7 +46,7 @@ rdc backup push my-app -m server-1 --to my-storage
 | `--to <storage>` | Hedef depolama konumu |
 | `--to-machine <machine>` | Makineden makineye yedekleme için hedef makine |
 | `--dest <filename>` | Özel hedef dosya adı |
-| `--checkpoint` | Göndermeden önce bir kontrol noktası oluştur |
+| `--checkpoint` | Göndermeden önce CRIU checkpoint oluştur (`rediacc.checkpoint=true` etiketli konteynerler için). Hedef `repo up` ile otomatik geri yüklenir |
 | `--force` | Mevcut bir yedeği geçersiz kıl |
 | `--tag <tag>` | Yedeği etiketle |
 | `-w, --watch` | İşlem ilerlemesini izle |
@@ -58,7 +58,7 @@ rdc backup push my-app -m server-1 --to my-storage
 Harici depolamadan bir depo yedeğini çekin:
 
 ```bash
-rdc backup pull my-app -m server-1 --from my-storage
+rdc repo pull my-app -m server-1 --from my-storage
 ```
 
 | Seçenek | Açıklama |
@@ -75,7 +75,7 @@ rdc backup pull my-app -m server-1 --from my-storage
 Bir depolama konumundaki mevcut yedekleri görüntüleyin:
 
 ```bash
-rdc backup list --from my-storage -m server-1
+rdc repo backup list --from my-storage -m server-1
 ```
 
 ## Toplu Senkronizasyon
@@ -85,13 +85,13 @@ Tüm depoları aynı anda gönderin veya çekin:
 ### Tümünü Depolamaya Gönder
 
 ```bash
-rdc backup sync --to my-storage -m server-1
+rdc repo push --to my-storage -m server-1
 ```
 
 ### Tümünü Depolamadan Çek
 
 ```bash
-rdc backup sync --from my-storage -m server-1
+rdc repo pull --from my-storage -m server-1
 ```
 
 | Seçenek | Açıklama |
@@ -110,12 +110,19 @@ Uzak makinede systemd zamanlayıcısı olarak çalışan bir cron zamanlamasıyl
 ### Zamanlama Ayarlama
 
 ```bash
-rdc backup schedule set --destination my-storage --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination my-storage --cron "0 2 * * *" --enable
+```
+
+Farklı zamanlamalarla birden fazla hedef yapılandırabilirsiniz:
+
+```bash
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
 ```
 
 | Seçenek | Açıklama |
 |---------|----------|
-| `--destination <storage>` | Varsayılan yedekleme hedefi |
+| `--destination <storage>` | Yedekleme hedefi (hedef başına ayarlanabilir) |
 | `--cron <expression>` | Cron ifadesi (ör. `"0 2 * * *"` günlük saat 02:00 için) |
 | `--enable` | Zamanlamayı etkinleştir |
 | `--disable` | Zamanlamayı devre dışı bırak |
@@ -125,13 +132,13 @@ rdc backup schedule set --destination my-storage --cron "0 2 * * *" --enable
 Zamanlama yapılandırmasını systemd zamanlayıcısı olarak bir makineye dağıtın:
 
 ```bash
-rdc backup schedule push server-1
+rdc machine deploy-backup server-1
 ```
 
 ### Zamanlamayı Görüntüleme
 
 ```bash
-rdc backup schedule show
+rdc config backup-strategy show
 ```
 
 ## Depolamayı Tarama
@@ -139,7 +146,7 @@ rdc backup schedule show
 Bir depolama konumunun içeriğini tarayın:
 
 ```bash
-rdc storage browse my-storage -m server-1
+rdc storage browse my-storage
 ```
 
 ## En İyi Uygulamalar

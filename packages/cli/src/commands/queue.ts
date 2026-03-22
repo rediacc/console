@@ -1,4 +1,3 @@
-import { Command } from 'commander';
 import { parseGetQueueItemTrace } from '@rediacc/shared/api';
 import { DEFAULTS } from '@rediacc/shared/config';
 import {
@@ -19,6 +18,7 @@ import {
   searchInFields,
   unescapeLogOutput,
 } from '@rediacc/shared/utils';
+import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { typedApi } from '../services/api.js';
@@ -26,6 +26,7 @@ import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
 import { queueService } from '../services/queue.js';
+import type { OutputFormat } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { formatLogOutput, getLogHeader } from '../utils/logFormatters.js';
 import {
@@ -37,7 +38,6 @@ import {
   formatStatus,
 } from '../utils/queueFormatters.js';
 import { startSpinner, stopSpinner, withSpinner } from '../utils/spinner.js';
-import type { OutputFormat } from '../types/index.js';
 
 function printTrace(trace: QueueTraceSummary, program: Command): void {
   const format = program.opts().output as OutputFormat;
@@ -121,7 +121,7 @@ export function parseParamOptions(paramOptions: string[] | undefined): Record<st
  */
 export function coerceCliParams(
   functionName: string,
-  params: Record<string, string>
+  params: Record<string, string | boolean | number>
 ): Record<string, unknown> {
   if (!isBridgeFunction(functionName)) return params;
   const def = FUNCTION_DEFINITIONS[functionName];
@@ -135,10 +135,10 @@ export function coerceCliParams(
     const paramDef = def.params[key];
     switch (paramDef.type) {
       case 'bool':
-        result[key] = value === 'true' || value === '1' || value === 'yes';
+        result[key] = value === true || value === 'true' || value === '1' || value === 'yes';
         break;
       case 'int':
-        result[key] = Number.parseInt(value, 10);
+        result[key] = typeof value === 'number' ? value : Number.parseInt(String(value), 10);
         break;
       default:
         result[key] = value;

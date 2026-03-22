@@ -28,6 +28,8 @@ const PlatformTabs = <T extends string>({
         aria-selected={activeTab === key}
         className={`platform-tab${activeTab === key ? ' platform-tab--active' : ''}`}
         onClick={() => onTabChange(key)}
+        data-track="cta_click"
+        data-track-label="platform-tab"
       >
         {Icon && <Icon />}
         <span>{label}</span>

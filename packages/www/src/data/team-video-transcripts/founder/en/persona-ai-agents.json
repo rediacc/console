@@ -1,0 +1,13 @@
+{
+  "member": "founder",
+  "videoKey": "persona-ai-agents",
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 5.0,
+      "text": "Your AI tools already write code. Now they can manage infrastructure too."
+    },
+    { "start": 5.0, "end": 9.0, "text": "Rediacc has a full CLI, MCP server, and JSON output." },
+    { "start": 9.0, "end": 13.0, "text": "Claude Code, Cursor, any agent — they just work." }
+  ]
+}

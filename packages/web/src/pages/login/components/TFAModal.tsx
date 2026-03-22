@@ -1,9 +1,9 @@
-import React from 'react';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import { Alert, Button, Flex, Form, Input, Modal, Typography } from 'antd';
+import type { FormInstance } from 'antd/es/form';
+import React from 'react';
 import { ModalSize } from '@/types/modal';
 import { SafetyCertificateOutlined } from '@/utils/optimizedIcons';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import type { FormInstance } from 'antd/es/form';
 
 interface TFAModalProps {
   open: boolean;

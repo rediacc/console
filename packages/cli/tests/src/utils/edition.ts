@@ -190,46 +190,24 @@ export const EditionErrorPatterns = {
 } as const;
 
 /**
- * Resource limits by edition, matching fn_GetPlanResources in SQL.
+ * Subscription limits by edition for CLI edition tests.
  */
-export const RESOURCE_LIMITS = {
+export const PLAN_LIMITS = {
   COMMUNITY: {
-    bridges: 0,
-    maxReservedJobs: 1,
-    jobTimeoutHours: 2,
     maxRepositorySizeGb: 10,
-    maxPendingPerUser: 5,
-    maxTasksPerMachine: 1,
-    maxJobsPerMonth: 500,
+    maxRepoLicenseIssuancesPerMonth: 500,
   },
   PROFESSIONAL: {
-    bridges: 1,
-    maxReservedJobs: 2,
-    jobTimeoutHours: 24,
     maxRepositorySizeGb: 100,
-    maxPendingPerUser: 10,
-    maxTasksPerMachine: 2,
-    maxJobsPerMonth: 5000,
+    maxRepoLicenseIssuancesPerMonth: 5000,
   },
   BUSINESS: {
-    bridges: 2,
-    maxReservedJobs: 3,
-    jobTimeoutHours: 72,
     maxRepositorySizeGb: 500,
-    maxPendingPerUser: 20,
-    maxTasksPerMachine: 3,
-    cephPoolsPerTeam: 1,
-    maxJobsPerMonth: 20000,
+    maxRepoLicenseIssuancesPerMonth: 20000,
   },
   ENTERPRISE: {
-    bridges: 10,
-    maxReservedJobs: 5,
-    jobTimeoutHours: 96,
     maxRepositorySizeGb: 1024,
-    maxPendingPerUser: 50,
-    maxTasksPerMachine: 5,
-    cephPoolsPerTeam: -1, // Unlimited
-    maxJobsPerMonth: 100000,
+    maxRepoLicenseIssuancesPerMonth: 100000,
   },
 } as const;
 
@@ -354,11 +332,11 @@ export function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Get resource limit for a specific plan and resource type
+ * Get a plan limit for a specific plan and limit type.
  */
-export function getResourceLimit(
+export function getPlanLimit(
   plan: SubscriptionPlan,
-  resource: keyof (typeof RESOURCE_LIMITS)['COMMUNITY']
+  limit: keyof (typeof PLAN_LIMITS)['COMMUNITY']
 ): number {
-  return RESOURCE_LIMITS[plan][resource];
+  return PLAN_LIMITS[plan][limit];
 }

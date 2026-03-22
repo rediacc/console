@@ -4,7 +4,7 @@ description: "创建配置、添加机器、配置服务器和设置基础设施
 category: "Guides"
 order: 3
 language: zh
-sourceHash: "0c725f9eb65e6c0f"
+sourceHash: "ebf1c9967814ec86"
 ---
 
 # 机器设置
@@ -33,7 +33,7 @@ rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 将您的远程服务器注册为配置中的机器：
 
 ```bash
-rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
+rdc config machine add server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | 选项 | 必填 | 默认值 | 描述 |
@@ -46,13 +46,13 @@ rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
 添加机器后，rdc 会自动运行 `ssh-keyscan` 获取服务器的主机密钥。您也可以手动运行：
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 查看所有已注册的机器：
 
 ```bash
-rdc config machines
+rdc config machine list
 ```
 
 ## 步骤 3：设置机器
@@ -60,7 +60,7 @@ rdc config machines
 为远程服务器安装所有必需的依赖项：
 
 ```bash
-rdc config setup-machine server-1
+rdc config machine setup server-1
 ```
 
 此命令将：
@@ -82,7 +82,7 @@ rdc config setup-machine server-1
 如果服务器的 SSH 主机密钥发生变化（例如重新安装后），刷新已存储的密钥：
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 此命令更新配置中该机器的 `knownHosts` 字段。
@@ -112,27 +112,29 @@ rdc doctor
 ### 设置基础设施
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
 
-| 选项 | 描述 |
-|--------|-------------|
-| `--public-ipv4 <ip>` | 用于外部访问的公网 IPv4 地址 |
-| `--public-ipv6 <ip>` | 用于外部访问的公网 IPv6 地址 |
-| `--base-domain <domain>` | 应用的基础域名（例如 `example.com`） |
-| `--cert-email <email>` | 用于 Let's Encrypt TLS 证书的电子邮件 |
-| `--cf-dns-token <token>` | 用于 ACME DNS-01 挑战的 Cloudflare DNS API 令牌 |
-| `--tcp-ports <ports>` | 逗号分隔的额外转发 TCP 端口（例如 `25,143,465,587,993`） |
-| `--udp-ports <ports>` | 逗号分隔的额外转发 UDP 端口（例如 `53`） |
+| 选项 | 范围 | 描述 |
+|--------|------|-------------|
+| `--public-ipv4 <ip>` | Machine | Public IPv4 address — proxy entrypoints are only created for configured address families |
+| `--public-ipv6 <ip>` | Machine | Public IPv6 address — proxy entrypoints are only created for configured address families |
+| `--base-domain <domain>` | Machine | 应用的基础域名（例如 `example.com`） |
+| `--cert-email <email>` | Config | 用于 Let's Encrypt TLS 证书的电子邮件（跨机器共享） |
+| `--cf-dns-token <token>` | Config | 用于 ACME DNS-01 挑战的 Cloudflare DNS API 令牌（跨机器共享） |
+| `--tcp-ports <ports>` | Machine | 逗号分隔的额外转发 TCP 端口（例如 `25,143,465,587,993`） |
+| `--udp-ports <ports>` | Machine | 逗号分隔的额外转发 UDP 端口（例如 `53`） |
+
+Machine 范围的选项按机器存储。Config 范围的选项（`--cert-email`、`--cf-dns-token`）在配置中的所有机器间共享 — 设置一次即可全局生效。
 
 ### 查看基础设施
 
 ```bash
-rdc config show-infra server-1
+rdc config infra show server-1
 ```
 
 ### 推送到服务器
@@ -140,10 +142,88 @@ rdc config show-infra server-1
 生成并部署 Traefik 反向代理配置到服务器：
 
 ```bash
-rdc config push-infra server-1
+rdc config infra push server-1
 ```
 
-此命令根据您的基础设施设置推送代理配置。Traefik 处理 TLS 终止、路由和端口转发。
+此命令：
+1. 将 renet 二进制文件部署到远程机器
+2. 配置 Traefik 反向代理、路由器和 systemd 服务
+3. 如果设置了 `--cf-dns-token`，则为机器子域名创建 Cloudflare DNS 记录（`server-1.example.com` 和 `*.server-1.example.com`）
+
+DNS 步骤是自动且幂等的 — 它会创建缺失的记录、更新 IP 已变更的记录，并跳过已经正确的记录。如果未配置 Cloudflare 令牌，则会跳过 DNS 并显示警告。 Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
+
+## 云端配置
+
+您可以配置云服务提供商，让 `rdc` 使用 [OpenTofu](https://opentofu.org/) 自动配置机器，而无需手动创建虚拟机。
+
+### 前提条件
+
+安装 OpenTofu: [opentofu.org/docs/intro/install](https://opentofu.org/docs/intro/install/)
+
+确保您的 SSH 配置包含公钥：
+
+```bash
+rdc config set ssh.privateKeyPath ~/.ssh/id_ed25519
+```
+
+### 添加云服务提供商
+
+```bash
+rdc config provider add my-linode \
+  --provider linode/linode \
+  --token $LINODE_API_TOKEN \
+  --region us-east \
+  --type g6-standard-2
+```
+
+| 选项 | 必填 | 描述 |
+|--------|----------|-------------|
+| `--provider <source>` | 是* | 已知的提供商来源（例如 `linode/linode`、`hetznercloud/hcloud`） |
+| `--source <source>` | 是* | 自定义 OpenTofu 提供商来源（用于未知提供商） |
+| `--token <token>` | 是 | 云服务提供商的 API 令牌 |
+| `--region <region>` | 否 | 新机器的默认区域 |
+| `--type <type>` | 否 | 默认实例类型/规格 |
+| `--image <image>` | 否 | 默认操作系统镜像 |
+| `--ssh-user <user>` | 否 | SSH 用户名（默认：`root`） |
+
+\* 必须提供 `--provider` 或 `--source` 之一。已知提供商（内置默认值）使用 `--provider`。自定义提供商使用 `--source` 并配合 `--resource`、`--ipv4-output`、`--ssh-key-attr` 等附加标志。
+
+### 配置机器
+
+```bash
+rdc machine provision prod-2 --provider my-linode
+```
+
+此单一命令将：
+1. 通过 OpenTofu 在云服务提供商上创建虚拟机
+2. 等待 SSH 连接就绪
+3. 将机器注册到您的配置中
+4. 安装 renet 和所有依赖项
+5. Configures Traefik proxy and Cloudflare DNS (auto-detects base domain from sibling machines, or pass `--base-domain` explicitly)
+
+| 选项 | 描述 |
+|--------|-------------|
+| `--provider <name>` | 云服务提供商名称（来自 `add-provider`） |
+| `--region <region>` | 覆盖提供商的默认区域 |
+| `--type <type>` | 覆盖默认实例类型 |
+| `--image <image>` | 覆盖默认操作系统镜像 |
+| `--base-domain <domain>` | Base domain for infrastructure. Auto-detected from sibling machines if not specified |
+| `--no-infra` | Skip infrastructure configuration (proxy + DNS) entirely |
+| `--debug` | 显示详细的配置输出 |
+
+### 取消配置机器
+
+```bash
+rdc machine deprovision prod-2
+```
+
+通过 OpenTofu 销毁虚拟机并将其从配置中移除。除非使用 `--force`，否则需要确认。仅适用于通过 `machine provision` 创建的机器。
+
+### 列出提供商
+
+```bash
+rdc config provider list
+```
 
 ## 设置默认值
 

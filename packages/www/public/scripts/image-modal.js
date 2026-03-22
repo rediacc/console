@@ -132,6 +132,7 @@ function openImageModal(imageSrc, _imageAlt) {
   const modal = document.getElementById('image-modal');
   showCurrentImage();
   modal.setAttribute('aria-hidden', 'false');
+  if (window.plausible) window.plausible('image_modal_open');
 
   // Prevent body scroll when modal is open
   document.body.style.overflow = 'hidden';

@@ -32,6 +32,14 @@ const MIN_STRING_LENGTH = 4; // Only check strings longer than this (skip "OK", 
 const ALLOWED_IDENTICAL = new Set([
   // Category names (kept in English across all locales for sidebar grouping)
   'Reference',
+  'Concepts',
+  'Guides',
+  'Tutorials',
+  'Volume',
+  'Downloads',
+  'Professional',
+  // Common loanwords used identically in many languages
+  'Newsletter',
   // Brand names
   'Rediacc',
   'Rediaccfile',
@@ -77,6 +85,10 @@ const ALLOWED_IDENTICAL = new Set([
   'Windows',
   'Ubuntu',
   'Debian',
+  // CLI command strings (not translatable)
+  'rdc subscription login',
+  // Status line format strings (placeholder-only)
+  '  - {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}',
   // Technical acronyms
   'SSH',
   'API',
@@ -168,6 +180,7 @@ const ALLOWED_IDENTICAL = new Set([
   'docker',
   'section',
   // International words identical across many languages
+  'Infrastructure',
   'Standard',
   'Binary',
   'Documentation',
@@ -176,6 +189,41 @@ const ALLOWED_IDENTICAL = new Set([
   'Priority',
   'Premium',
   'Enterprise',
+  'Multi-Cloud',
+  'MULTI-CLOUD',
+  // Solution page technical terms
+  'BTRFS COW',
+  'AES-256-GCM',
+  'SHA-256',
+  'AES-256',
+  'Live',
+  'Down',
+  // ROI calculator
+  'SMB',
+  'ROI Calculator',
+  'Mid-Market',
+  'Large Enterprise',
+  // Persona page identifiers
+  'CTO',
+  'ARCHITECTURE',
+  // Architecture / download labels (technical, not translated)
+  'Intel (x64)',
+  'ARM64',
+  'ARMv7',
+  'Apple Silicon (ARM64)',
+  'Rediacc Desktop & CLI',
+  // Package manager labels (brand names + OS names)
+  'Debian/Ubuntu (.deb)',
+  'APT (Debian / Ubuntu)',
+  'DNF (Fedora / RHEL)',
+  'Homebrew (macOS / Linux)',
+  // Platform/OS names (universally recognized, not translated)
+  'Linux',
+  'macOS',
+  'Windows',
+  'Binary',
+  'Enterprise',
+  'docker',
 ]);
 
 // Patterns for strings that should not be translated (placeholders, format strings)
@@ -188,7 +236,25 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
   /^ocid1\./, // Oracle Cloud IDs
   /^\/[a-z]+\//, // Paths
   /\.(json|yaml|xml|txt|log|conf)$/i, // File extensions
-  /^(docker|npm|git|ssh|curl|wget|sudo|rclone)\s/, // Commands
+  /^(docker|npm|git|ssh|curl|wget|sudo|rclone|rdc)\s/, // Commands
+  /\.id$/, // Section anchor IDs (e.g. sections.introduction.id = "introduction")
+  /\.cardClass$/, // CSS class names in solution pages
+  /\.icon$/, // Icon identifiers
+  /\.command$/, // CLI command strings in bottomCta/hero sections
+  /\.ctaSlug$/, // CTA slug identifiers for persona pages
+  /^~?\$[\d,.]+$/, // Dollar amounts ($0, $990, ~$200, $18,000)
+  /^@\w+$/, // Social handles (@rediacc)
+  /\.cloneVisual\.\w+\.title$/, // Visual diagram labels (dev-sarah, feature-auth-v2, etc.)
+  /\.cloneVisual\.\w+\.status$/, // Visual diagram status labels
+  /\.cloneVisual\.arrow\.(label|time)$/, // Visual arrow annotations
+  /\.cloneVisual\.\w+\.patchInfo$/, // Patch info strings in visual diagrams
+  /\.cloneVisual\.\w+\.size$/, // Size labels in visual diagrams
+  /\.calculator\.withResults\.\w+$/, // Calculator result values
+  /\.calculator\.withAnnual$/, // Annual calculator values
+  /\.techDiff\.rediaccLabel$/, // Rediacc label with technical suffix (brand + tech term)
+  /\.imageModal\.indicator$/, // Template format string {{current}} / {{total}}
+  /^[\d,]+$/, // Comma-separated numbers (5,000 etc.)
+  /\bRediacc\b.*\b(btrfs|CoW|Copy-on-Write|send\/receive)\b/, // Rediacc + technical term combos
   /^\{\{[^}]+\}\}$/, // Template-only strings
   /^[A-Z]\{\{/, // Format strings starting with letter + template
   /^v\{\{version\}\}$/, // Version format
@@ -229,6 +295,38 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
   /^\d+\.\s+\w+$/, // Numbered section titles like "1. Introduction", "1. Overview"
   /^~?\d+\s+minutes?$/, // Time durations like "~15 minutes", "30 minutes"
   /\.(rpo|rto)$/, // Recovery point/time objective values (technical metrics)
+  /\.cardClass$/, // CSS class identifiers (sealed, restored, verified, down, config, compliant)
+  /\.icon$/, // Icon identifiers (lock-arrow, refresh-arrow, etc.)
+  /\.command$/, // CLI command examples (rdc clone, rdc repo backup, etc.)
+  /^\d+\s*GB\s*·/, // Storage with annotation like "380 GB · locked"
+  /^~?\$[\d,]+$/, // Currency values like ~$200
+  /^\$[\d,]+\/mo$/, // Monthly prices like $4,500/mo, $1,440/mo, $33K/mo, $4.2K/mo
+  /^\$[\d,.]+K?\/mo$/, // Monthly prices with K suffix
+  /^<\d+\s+min$/, // Time values like <5 min, <4 min
+  /^\d+m\s+\d+s$/, // Duration values like 3m 47s, 4m 12s, 3m 12s
+  /^\d+\s+min$/, // Duration like 38 min
+  /^\d+x\/year$/, // Frequency like 1x/year, 52x/year
+  /^(Primary|Secondary)\s*\([a-z]+-[a-z]+-\d+\)$/, // Cloud region labels
+  /^(AWS|Hetzner)\s*\([a-z0-9-]+\)$/, // Cloud provider labels with region
+  /^(AES-256|SHA-256|AES-256-GCM)$/, // Encryption algorithm names
+  /^BTRFS\s+COW$/, // Technical label
+  /^Zero-knowledge$/, // Technical concept kept in English
+  /^daily-\d{4}-\d{2}-\d{2}$/, // Date-based snapshot names
+  /^\d{2}:\d{2}\s+UTC$/, // UTC timestamps
+  /\.cloneVisual\.arrow\.time$/, // Visual arrow timing values (technical)
+  /^Live$/, // Status labels kept short
+  /^Down$/, // Status labels kept short
+  /^brew$/, // Package manager command
+  /^\d+\/\d+\s+healthy$/, // Health status like 8/8 healthy
+  /^dev-sarah$/i, // Example dev environment name
+  /^Dev-Sarah$/i, // Example dev environment name
+  /^patch-test$/, // Example clone name
+  /^(sealed|restored|verified|down|config|compliant)$/, // CSS class values
+  /^24\/7$/, // Always-on indicator
+  /\.rediaccLabel$/, // Rediacc technical labels (e.g., "Rediacc (btrfs CoW)")
+  /^Rediacc\s+\(/, // Rediacc product labels with technical details
+  /^Rediacc\s+\w+$/, // Rediacc product sub-labels (e.g., "Rediacc Retention", "Rediacc Verification")
+  /\.patchInfo$/, // Patch info display strings (technical, kept in English)
 ];
 
 type TranslationValue = string | TranslationObject;
@@ -467,6 +565,52 @@ function main(): void {
   if (fs.existsSync(wwwLocales)) {
     console.log('Checking WWW translations...');
     const { errors, warnings, stats } = checkLocaleDir('www', wwwLocales, true);
+    allErrors.push(...errors);
+    allWarnings.push(...warnings);
+
+    if (stats) {
+      for (const [lang, data] of Object.entries(stats)) {
+        const status =
+          data.missing > 0 || Number.parseFloat(data.untranslatedPercent) > MAX_UNTRANSLATED_PERCENT
+            ? '\u001B[31m\u2717\u001B[0m'
+            : data.untranslated > 0
+              ? '\u001B[33m!\u001B[0m'
+              : '\u001B[32m\u2713\u001B[0m';
+        console.log(
+          `  ${status} ${lang}: ${data.untranslated} untranslated (${data.untranslatedPercent}%)`
+        );
+      }
+    }
+    console.log('');
+  }
+
+  const accountWebLocales = path.join(__dirname, '../private/account/web/src/i18n/locales');
+  if (fs.existsSync(accountWebLocales)) {
+    console.log('Checking account web translations...');
+    const { errors, warnings, stats } = checkLocaleDir('account-web', accountWebLocales);
+    allErrors.push(...errors);
+    allWarnings.push(...warnings);
+
+    if (stats) {
+      for (const [lang, data] of Object.entries(stats)) {
+        const status =
+          data.missing > 0 || Number.parseFloat(data.untranslatedPercent) > MAX_UNTRANSLATED_PERCENT
+            ? '\u001B[31m\u2717\u001B[0m'
+            : data.untranslated > 0
+              ? '\u001B[33m!\u001B[0m'
+              : '\u001B[32m\u2713\u001B[0m';
+        console.log(
+          `  ${status} ${lang}: ${data.untranslated} untranslated (${data.untranslatedPercent}%)`
+        );
+      }
+    }
+    console.log('');
+  }
+
+  const accountEmailLocales = path.join(__dirname, '../private/account/src/i18n/locales');
+  if (fs.existsSync(accountEmailLocales)) {
+    console.log('Checking account email translations...');
+    const { errors, warnings, stats } = checkLocaleDir('account-emails', accountEmailLocales);
     allErrors.push(...errors);
     allWarnings.push(...warnings);
 

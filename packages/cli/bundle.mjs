@@ -13,7 +13,7 @@ const nativeModulesPlugin = {
   },
 };
 
-await esbuild.build({
+const result = await esbuild.build({
   entryPoints: ['src/index.ts'],
   bundle: true,
   platform: 'node',
@@ -23,6 +23,21 @@ await esbuild.build({
   // Note: shebang comes from src/index.ts - no banner needed
   external: [],
   plugins: [nativeModulesPlugin],
+  logLevel: 'silent',
+  define: {
+    '__OTLP_AUTH_TOKEN__': JSON.stringify(process.env.OTLP_AUTH_TOKEN || ''),
+  },
 });
+
+if (result.warnings.length > 0) {
+  const formattedWarnings = await esbuild.formatMessages(result.warnings, {
+    kind: 'warning',
+    color: true,
+  });
+  for (const warning of formattedWarnings) {
+    console.error(warning);
+  }
+  process.exit(1);
+}
 
 console.log('✓ CLI bundled to dist/cli-bundle.cjs');

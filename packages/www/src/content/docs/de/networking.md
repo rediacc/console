@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: de
-sourceHash: 4a0c6a695d72aa55
+sourceHash: "911dde41922454ec"
 ---
 
 # Netzwerk
@@ -51,22 +51,40 @@ Diese Labels werden **automatisch** von `renet compose` beim Starten von Dienste
 | `rediacc.service_name` | Dienst-Identität | `myapp` |
 | `rediacc.service_ip` | Zugewiesene Loopback-IP | `127.0.11.2` |
 | `rediacc.network_id` | Docker-Daemon-ID des Repositories | `2816` |
+| `rediacc.repo_name` | Repository name | `marketing` |
 | `rediacc.tcp_ports` | TCP ports the service listens on | `8080,8443` |
 | `rediacc.udp_ports` | UDP ports the service listens on | `53` |
 
-Wenn ein Container nur `rediacc.*`-Labels hat (kein `traefik.enable=true`), generiert der Route Server eine **Auto-Route**:
+Wenn ein Container nur `rediacc.*`-Labels hat (kein `traefik.enable=true`), generiert der Route Server eine **Auto-Route** unter Verwendung des Repository-Namens und der Maschinen-Subdomain:
 
 ```
-{service}-{networkID}.{baseDomain}
+{service}.{repoName}.{machineName}.{baseDomain}
 ```
 
-Zum Beispiel erhält ein Dienst namens `myapp` in einem Repository mit Netzwerk-ID `2816` und Basis-Domain `example.com`:
+Zum Beispiel erhält ein Dienst namens `myapp` in einem Repository namens `marketing` auf Maschine `server-1` mit Basis-Domain `example.com`:
 
 ```
-myapp-2816.example.com
+myapp.marketing.server-1.example.com
 ```
 
-Auto-Routen sind nützlich für die Entwicklung und den internen Zugriff. Für Produktionsdienste mit eigenen Domains verwenden Sie Stufe-2-Labels.
+Jedes Repository hat seine eigene Subdomain-Ebene, sodass Forks und verschiedene Repos nie kollidieren. Wenn Sie ein Repository forken (z.B. `marketing-staging`), erhält der Fork automatisch eigene Routen. Für Dienste mit eigenen Domains verwenden Sie Stufe-2-Labels oder das `rediacc.domain`-Label.
+
+#### Benutzerdefinierte Domain via `rediacc.domain`
+
+Sie können eine benutzerdefinierte Domain für einen Dienst über das `rediacc.domain`-Label in Ihrer `docker-compose.yml` festlegen. Sowohl Kurznamen als auch vollständige Domains werden unterstützt:
+
+```yaml
+labels:
+  # Kurzname — wird zu cloud.example.com aufgelöst unter Verwendung der baseDomain der Maschine
+  - "rediacc.domain=cloud"
+
+  # Vollständige Domain — wird wie angegeben verwendet
+  - "rediacc.domain=cloud.example.com"
+```
+
+Ein Wert ohne Punkte wird als Kurzname behandelt und die `baseDomain` der Maschine wird automatisch angehängt. Ein Wert mit Punkten wird als vollständige Domain verwendet.
+
+Wenn `machineName` konfiguriert ist, erhalten Dienste mit benutzerdefinierter Domain **zwei Routen**: eine auf der Basis-Domain (`cloud.example.com`) und eine auf der Maschinen-Subdomain (`cloud.server-1.example.com`).
 
 ### Stufe 2: `traefik.*`-Labels (Benutzerdefiniert)
 
@@ -92,13 +110,17 @@ Diese verwenden die Standard-[Traefik v3 Label-Syntax](https://doc.traefik.io/tr
 1. Infrastruktur auf der Maschine konfiguriert ([Maschineneinrichtung -- Infrastruktur-Konfiguration](/de/docs/setup#infrastruktur-konfiguration)):
 
    ```bash
-   rdc config set-infra server-1 \
-     --public-ipv4 203.0.113.50 \
-     --base-domain example.com \
+   # Gemeinsame Zugangsdaten (einmal pro Konfiguration, gilt für alle Maschinen)
+   rdc config infra set server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
-   rdc config push-infra server-1
+   # Maschinenspezifische Einstellungen
+   rdc config infra set server-1 \
+     --public-ipv4 203.0.113.50 \
+     --base-domain example.com
+
+   rdc config infra push server-1
    ```
 
 2. DNS-Einträge, die Ihre Domain auf die öffentliche IP des Servers verweisen (siehe [DNS-Konfiguration](#dns-konfiguration) unten).
@@ -111,7 +133,6 @@ Fügen Sie `traefik.*`-Labels zu den Diensten hinzu, die Sie in Ihrer `docker-co
 services:
   myapp:
     image: myapp:latest
-    network_mode: host
     environment:
       - LISTEN_ADDR=${MYAPP_IP}:8080
     labels:
@@ -123,7 +144,6 @@ services:
 
   database:
     image: postgres:17
-    network_mode: host
     command: ["-c", "listen_addresses=${DATABASE_IP}"]
     # Keine Traefik-Labels — Datenbank ist nur intern
 ```
@@ -142,21 +162,19 @@ Der `{name}` in den Labels ist ein beliebiger Bezeichner -- er muss nur über zu
 
 ## TLS-Zertifikate
 
-TLS-Zertifikate werden automatisch über Let's Encrypt mittels der Cloudflare DNS-01-Challenge bezogen. Dies wird einmalig bei der Infrastruktureinrichtung konfiguriert:
+TLS-Zertifikate werden automatisch über Let's Encrypt mittels der Cloudflare DNS-01-Challenge bezogen. Die Zugangsdaten werden einmal pro Konfiguration eingerichtet (gemeinsam für alle Maschinen):
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
 
-Wenn ein Dienst `traefik.http.routers.{name}.tls.certresolver=letsencrypt` hat, führt Traefik automatisch folgende Schritte durch:
-1. Fordert ein Zertifikat von Let's Encrypt an
-2. Validiert die Domain-Eigentümerschaft über Cloudflare DNS
-3. Speichert das Zertifikat lokal
-4. Erneuert es vor dem Ablauf
+Auto-Routen verwenden **Wildcard-Zertifikate** auf Repository-Subdomain-Ebene (`*.marketing.server-1.example.com`) anstelle von Zertifikaten pro Dienst. Dies vermeidet Let's Encrypt-Ratenlimits und beschleunigt den Start. Routen mit benutzerdefinierten Domains verwenden Maschinen-Wildcards (`*.server-1.example.com`).
 
-Das Cloudflare DNS API-Token benötigt `Zone:DNS:Edit`-Berechtigung für die Domains, die Sie absichern möchten. Dieser Ansatz funktioniert für jede von Cloudflare verwaltete Domain, einschließlich Wildcard-Zertifikaten.
+Für Stufe-2-Routen mit `traefik.http.routers.{name}.tls.certresolver=letsencrypt` werden Wildcard-Domain-SANs automatisch basierend auf dem Hostnamen der Route injiziert.
+
+Das Cloudflare DNS API-Token benötigt `Zone:DNS:Edit`-Berechtigung für die Domains, die Sie absichern möchten.
 
 ## TCP/UDP-Portweiterleitung
 
@@ -167,11 +185,11 @@ Für Nicht-HTTP-Protokolle (Mailserver, DNS, extern bereitgestellte Datenbanken)
 Fügen Sie die erforderlichen Ports bei der Infrastruktur-Konfiguration hinzu:
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config push-infra server-1
+rdc config infra push server-1
 ```
 
 Dies erstellt Traefik-Einstiegspunkte namens `tcp-{port}` und `udp-{port}`.
@@ -184,7 +202,6 @@ To expose a database externally without TLS passthrough (Traefik forwards raw TC
 services:
   postgres:
     image: postgres:17
-    network_mode: host
     command: -c listen_addresses=${POSTGRES_IP} -c port=5432
     labels:
       - "traefik.enable=true"
@@ -197,7 +214,7 @@ Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
 
 > **Security note:** Exposing a database to the internet is a risk. Use this only when remote clients need direct access. For most setups, keep the database internal and connect through your application.
 
-> Nach dem Hinzufügen oder Entfernen von Ports führen Sie immer `rdc config push-infra` erneut aus, um die Proxy-Konfiguration zu aktualisieren.
+> Nach dem Hinzufügen oder Entfernen von Ports führen Sie immer `rdc config infra push` erneut aus, um die Proxy-Konfiguration zu aktualisieren.
 
 ### Schritt 2: TCP/UDP-Labels hinzufügen
 
@@ -207,7 +224,6 @@ Verwenden Sie `traefik.tcp.*`- oder `traefik.udp.*`-Labels in Ihrer Compose-Date
 services:
   mail-server:
     image: ghcr.io/docker-mailserver/docker-mailserver:latest
-    network_mode: host
     labels:
       - "traefik.enable=true"
 
@@ -232,7 +248,7 @@ Wichtige Konzepte:
 
 ### Vorkonfigurierte Ports
 
-Die folgenden TCP/UDP-Ports haben standardmäßig Einstiegspunkte (kein Hinzufügen über `--tcp-ports` erforderlich):
+Die folgenden TCP/UDP-Ports haben standardmäßig Einstiegspunkte (kein Hinzufügen über `--tcp-ports` erforderlich). Einstiegspunkte werden nur für konfigurierte Adressfamilien generiert — IPv4-Einstiegspunkte erfordern `--public-ipv4`, IPv6-Einstiegspunkte erfordern `--public-ipv6`:
 
 | Port | Protokoll | Häufige Verwendung |
 |------|----------|-------------------|
@@ -250,29 +266,41 @@ Die folgenden TCP/UDP-Ports haben standardmäßig Einstiegspunkte (kein Hinzufü
 
 ## DNS-Konfiguration
 
-Verweisen Sie Ihre Domains auf die öffentlichen IP-Adressen des Servers, die in `set-infra` konfiguriert wurden:
+### Automatisches DNS (Cloudflare)
 
-### Individuelle Dienst-Domains
+Wenn `--cf-dns-token` konfiguriert ist, erstellt `rdc config infra push` automatisch die erforderlichen DNS-Einträge in Cloudflare:
 
-Erstellen Sie A- (IPv4) und/oder AAAA- (IPv6) Einträge für jeden Dienst:
+| Eintrag | Typ | Inhalt | Erstellt von |
+|---------|-----|--------|-------------|
+| `server-1.example.com` | A / AAAA | Öffentliche IP der Maschine | `push-infra` |
+| `*.server-1.example.com` | A / AAAA | Öffentliche IP der Maschine | `push-infra` |
+| `*.marketing.server-1.example.com` | A / AAAA | Öffentliche IP der Maschine | `repo up` |
+
+Maschinen-Einträge werden von `push-infra` erstellt und decken Routen mit benutzerdefinierten Domains (`rediacc.domain`) ab. Pro-Repository-Wildcard-Einträge werden automatisch von `repo up` erstellt und decken Auto-Routen für dieses Repository ab.
+
+Dies ist idempotent — bestehende Einträge werden aktualisiert, wenn sich die IP ändert, und bleiben unverändert, wenn sie bereits korrekt sind.
+
+Der Basis-Domain-Wildcard (`*.example.com`) muss manuell erstellt werden, wenn Sie benutzerdefinierte Domain-Labels wie `rediacc.domain=erp` verwenden.
+
+### Manuelles DNS
+
+Wenn Sie Cloudflare nicht verwenden oder DNS manuell verwalten, erstellen Sie A- (IPv4) und/oder AAAA- (IPv6) Einträge:
 
 ```
-app.example.com      A     203.0.113.50
-app.example.com      AAAA  2001:db8::1
-gitlab.example.com   A     203.0.113.50
-mail.example.com     A     203.0.113.50
+# Maschinen-Subdomain (für Routen mit benutzerdefinierter Domain wie rediacc.domain=erp)
+server-1.example.com           A     203.0.113.50
+*.server-1.example.com         A     203.0.113.50
+*.server-1.example.com         AAAA  2001:db8::1
+
+# Pro-Repository-Wildcards (für Auto-Routen wie myapp.marketing.server-1.example.com)
+*.marketing.server-1.example.com    A     203.0.113.50
+*.marketing.server-1.example.com    AAAA  2001:db8::1
+
+# Basis-Domain-Wildcard (für Dienste mit benutzerdefinierter Domain wie rediacc.domain=erp)
+*.example.com                  A     203.0.113.50
 ```
 
-### Wildcard für Auto-Routen
-
-Wenn Sie Auto-Routen (Stufe 1) verwenden, erstellen Sie einen Wildcard-DNS-Eintrag:
-
-```
-*.example.com   A     203.0.113.50
-*.example.com   AAAA  2001:db8::1
-```
-
-Dies leitet alle Subdomains an Ihren Server weiter, und Traefik ordnet sie anhand der `Host()`-Regel oder des Auto-Routen-Hostnamens dem richtigen Dienst zu.
+Mit konfiguriertem Cloudflare DNS werden Pro-Repository-Wildcard-Einträge automatisch von `repo up` erstellt. Bei mehreren Maschinen erhält jede Maschine ihre eigenen DNS-Einträge, die auf ihre eigene IP verweisen.
 
 ## Middlewares
 
@@ -342,7 +370,7 @@ Zeigt TCP- und UDP-Port-Zuordnungen für dynamisch zugewiesene Ports.
 | Dienst nicht in Routen | Container läuft nicht oder Labels fehlen | Mit `docker ps` auf dem Repository-Daemon überprüfen; Labels prüfen |
 | Zertifikat nicht ausgestellt | DNS zeigt nicht auf den Server oder ungültiges Cloudflare-Token | DNS-Auflösung überprüfen; Cloudflare-API-Token-Berechtigungen prüfen |
 | 502 Bad Gateway | Anwendung lauscht nicht auf dem deklarierten Port | Überprüfen, ob die App an ihre `{SERVICE}_IP` gebunden ist und der Port mit `loadbalancer.server.port` übereinstimmt |
-| TCP-Port nicht erreichbar | Port nicht in der Infrastruktur registriert | `rdc config set-infra --tcp-ports ...` und `push-infra` ausführen |
+| TCP-Port nicht erreichbar | Port nicht in der Infrastruktur registriert | `rdc config infra set --tcp-ports ...` und `push-infra` ausführen |
 | Route server running old version | Binary was updated but service not restarted | Happens automatically on provisioning; manual: `sudo systemctl restart rediacc-router` |
 | STUN/TURN relay not reachable | Relay addresses cached at startup | Recreate the service after DNS or IP changes so it picks up the new network config |
 
@@ -356,8 +384,6 @@ Dieses Beispiel stellt eine Webanwendung mit einer PostgreSQL-Datenbank bereit. 
 services:
   webapp:
     image: myregistry/webapp:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
       LISTEN_ADDR: ${WEBAPP_IP}:3000
@@ -374,8 +400,6 @@ services:
 
   postgres:
     image: postgres:17
-    network_mode: host
-    restart: unless-stopped
     environment:
       POSTGRES_DB: webapp
       POSTGRES_USER: app
@@ -391,12 +415,8 @@ services:
 ```bash
 #!/bin/bash
 
-prep() {
-    mkdir -p data/postgres
-    renet compose -- pull
-}
-
 up() {
+    mkdir -p data/postgres
     renet compose -- up -d
 }
 

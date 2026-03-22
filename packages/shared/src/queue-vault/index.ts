@@ -3,14 +3,6 @@ export type { QueueVaultBuilderConfig } from './builders/index.js';
 
 // Builders
 export { QueueVaultBuilder } from './builders/index.js';
-// Data
-// Zod validation
-export {
-  FUNCTION_REQUIREMENTS,
-  getValidationErrors,
-  isValidParams,
-  safeValidateFunctionParams,
-} from './data/index.js';
 // Bridge Functions (generated)
 export {
   BRIDGE_FUNCTIONS,
@@ -24,7 +16,25 @@ export {
   queueFunctions,
   type TypedFunctionPayload,
 } from './data/functions.generated';
+// Data
+// Zod validation
+export {
+  FUNCTION_REQUIREMENTS,
+  getValidationErrors,
+  isValidParams,
+  safeValidateFunctionParams,
+} from './data/index.js';
 export { parseVaultContent, parseVaultContentOrEmpty } from './parsing';
+// Storage browser (types, parsers, rclone arg builder)
+export {
+  buildRcloneArgs,
+  detectGuidFiles,
+  FileListParserFactory,
+  type FileListParserOptions,
+  type RcloneArgs,
+  type RemoteFile,
+  resolveGuidFileNames,
+} from './storage-browser/index.js';
 // Type exports
 export type {
   // V2 Types
@@ -42,15 +52,6 @@ export type {
 } from './types/index.js';
 // Utils
 // Rclone config parsing
-export {
-  mapRcloneToStorageProvider,
-  parseRcloneConfig,
-  processConfigValue,
-  PROVIDER_MAPPING,
-  type RcloneConfig,
-  type RcloneConfigFields,
-  type RcloneConfigFieldValue,
-} from './utils/index.js';
 // IP/Port validation
 export {
   formatSizeBytes,
@@ -67,10 +68,17 @@ export {
   isValidSSHPrivateKey,
   // Network ID validation
   MIN_NETWORK_ID,
+  mapRcloneToStorageProvider,
   minifyJSON,
   NETWORK_ID_INCREMENT,
+  PROVIDER_MAPPING,
+  parseRcloneConfig,
   // Size format validation
   parseSize,
+  processConfigValue,
+  type RcloneConfig,
+  type RcloneConfigFields,
+  type RcloneConfigFieldValue,
   validateMachineVault,
   validateNetworkId,
   validateSize,
@@ -79,16 +87,6 @@ export {
   // SSH key format validation
   validateSSHPrivateKey,
 } from './utils/index.js';
-// Storage browser (types, parsers, rclone arg builder)
-export {
-  buildRcloneArgs,
-  detectGuidFiles,
-  FileListParserFactory,
-  type FileListParserOptions,
-  type RcloneArgs,
-  type RemoteFile,
-  resolveGuidFileNames,
-} from './storage-browser/index.js';
 // Validation
 export {
   assertBridgeFunction,

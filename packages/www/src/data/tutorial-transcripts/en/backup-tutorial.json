@@ -1,0 +1,13 @@
+{
+  "cast": "/assets/tutorials/backup-tutorial.cast",
+  "language": "en",
+  "version": 1,
+  "events": [
+    {
+      "id": "backup-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.510362,
+      "text": "Protecting repositories requires an external storage destination for incremental backup transfers. We start by checking which storage providers -- S3, B2, or remote machine -- are configured."
+    }
+  ]
+}

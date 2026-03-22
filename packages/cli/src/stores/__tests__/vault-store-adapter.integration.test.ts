@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
-import { describe, it, expect, afterAll, beforeAll } from 'vitest';
-import { VaultStoreAdapter } from '../vault-store-adapter.js';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { RdcConfig } from '../../types/index.js';
+import { VaultStoreAdapter } from '../vault-store-adapter.js';
 
 /**
  * Integration tests for VaultStoreAdapter.

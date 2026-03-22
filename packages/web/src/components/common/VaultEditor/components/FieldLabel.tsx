@@ -1,5 +1,5 @@
-import React from 'react';
 import { Flex, Tooltip } from 'antd';
+import React from 'react';
 import { InfoCircleOutlined } from '@/utils/optimizedIcons';
 import type { FieldLabelProps } from '../types';
 

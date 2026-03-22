@@ -1,0 +1,67 @@
+{
+  "cast": "/assets/tutorials/setup-tutorial.cast",
+  "language": "de",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "683e4c6d29dc89b1fc123e26b8eed7e67fa8e5e9fd49e4ebb9ce3b2234c8b5f8",
+  "steps": [
+    {
+      "id": "setup-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.50986,
+      "replayEndSec": 10.605861,
+      "narrationText": "Initialisieren Sie ein dediziertes Konfigurationsprofil für diese Umgebung.",
+      "audioSrc": "/assets/tutorials/audio/de/setup-tutorial/setup-tutorial-01.285d7e1f.mp3",
+      "audioDurationSec": 4.91102
+    },
+    {
+      "id": "setup-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.605861,
+      "replayEndSec": 17.961132,
+      "narrationText": "Überprüfen Sie die verfügbaren Konfigurationen und bestätigen Sie, dass das neue Profil vorhanden ist.",
+      "audioSrc": "/assets/tutorials/audio/de/setup-tutorial/setup-tutorial-02.2c8a6a5e.mp3",
+      "audioDurationSec": 6.19102
+    },
+    {
+      "id": "setup-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 17.961132,
+      "replayEndSec": 31.651331,
+      "narrationText": "Registrieren Sie einen Maschineneintrag mit Netzwerk- und Benutzerdetails.",
+      "audioSrc": "/assets/tutorials/audio/de/setup-tutorial/setup-tutorial-03.44b89d91.mp3",
+      "audioDurationSec": 4.832653
+    },
+    {
+      "id": "setup-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 31.651331,
+      "replayEndSec": 40.16275,
+      "narrationText": "Überprüfen Sie die konfigurierte Maschinenliste, um die Registrierung zu überprüfen.",
+      "audioSrc": "/assets/tutorials/audio/de/setup-tutorial/setup-tutorial-04.1f069688.mp3",
+      "audioDurationSec": 5.067755
+    },
+    {
+      "id": "setup-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 40.16275,
+      "replayEndSec": 48.29967,
+      "narrationText": "Legen Sie den Standardcomputer fest, um wiederholte Targeting-Flags zu reduzieren.",
+      "audioSrc": "/assets/tutorials/audio/de/setup-tutorial/setup-tutorial-05.7eda8e00.mp3",
+      "audioDurationSec": 4.832653
+    },
+    {
+      "id": "setup-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 48.29967,
+      "replayEndSec": 52.258257,
+      "narrationText": "Führen Sie eine grundlegende Remote-Hostprüfung durch, um die Konnektivität zu überprüfen.",
+      "audioSrc": "/assets/tutorials/audio/de/setup-tutorial/setup-tutorial-06.18268534.mp3",
+      "audioDurationSec": 5.146122
+    }
+  ]
+}

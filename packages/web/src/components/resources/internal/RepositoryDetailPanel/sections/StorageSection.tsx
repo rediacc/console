@@ -1,5 +1,7 @@
-import React from 'react';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import { Col, Flex, Progress, Row, Space, Typography } from 'antd';
+import React from 'react';
 import {
   DetailPanelDivider,
   DetailPanelFieldLabel,
@@ -8,8 +10,6 @@ import {
   DetailPanelSectionCard,
 } from '@/components/resources/internal/detailPanelPrimitives';
 import { DatabaseOutlined, InfoCircleOutlined } from '@/utils/optimizedIcons';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import type { RepositoryPanelData } from '../types';
 
 interface StorageSectionProps {

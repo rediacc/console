@@ -1,11 +1,11 @@
 /* eslint-disable no-console */
 
-import chalk from 'chalk';
-import Table from 'cli-table3';
-import { stringify as yamlStringify } from 'yaml';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { formatPropertyName, formatTimestampAsIs, formatValue } from '@rediacc/shared/formatters';
 import { escapeCSVValue } from '@rediacc/shared/utils';
+import chalk from 'chalk';
+import Table from 'cli-table3';
+import { stringify as yamlStringify } from 'yaml';
 import type { OutputFormat } from '../types/index.js';
 
 interface TableColumn {
@@ -18,9 +18,71 @@ interface TableColumn {
 
 class OutputService {
   private readonly colorEnabled: boolean;
+  private _quiet = false;
+  private _fields: string[] | null = null;
+  private _commandName: string | null = null;
+  private _startTime: number | null = null;
+  private _warnings: string[] = [];
+  private _operationDurationMs: number | null = null;
+  private _timelineRendered = false;
 
   constructor() {
     this.colorEnabled = !process.env.REDIACC_NO_COLOR && process.stdout.isTTY !== false;
+  }
+
+  setQuiet(quiet: boolean): void {
+    this._quiet = quiet;
+  }
+
+  setFields(fields: string): void {
+    this._fields = fields.split(',').map((f) => f.trim());
+  }
+
+  setCommandContext(name: string, startTime: number): void {
+    this._commandName = name;
+    this._startTime = startTime;
+    this._warnings = [];
+  }
+
+  getCommandName(): string | null {
+    return this._commandName;
+  }
+
+  getWarnings(): string[] {
+    return this._warnings;
+  }
+
+  getDurationMs(): number {
+    return this._startTime ? Date.now() - this._startTime : 0;
+  }
+
+  setOperationDuration(ms: number): void {
+    this._operationDurationMs = ms;
+  }
+
+  getOperationDurationMs(): number | null {
+    return this._operationDurationMs;
+  }
+
+  /** Mark that a timeline was rendered — suppresses the postAction "Completed" line */
+  setTimelineRendered(): void {
+    this._timelineRendered = true;
+  }
+
+  isTimelineRendered(): boolean {
+    return this._timelineRendered;
+  }
+
+  private applyFieldFilter<T extends Record<string, unknown>>(data: T | T[]): T | T[] {
+    if (!this._fields) return data;
+    const pick = (obj: T): T => {
+      const result: Record<string, unknown> = {};
+      for (const field of this._fields!) {
+        if (field in obj) result[field] = obj[field];
+      }
+      return result as T;
+    };
+    return Array.isArray(data) ? data.map(pick) : pick(data);
   }
 
   format<T extends Record<string, unknown>>(
@@ -28,21 +90,35 @@ class OutputService {
     format: OutputFormat = 'table',
     columns?: TableColumn[]
   ): string {
+    const filtered = this.applyFieldFilter(data);
     switch (format) {
       case 'json':
-        return this.formatJson(data);
+        return this.formatJson(filtered);
       case 'yaml':
-        return this.formatYaml(data);
+        return this.formatYaml(filtered);
       case 'csv':
-        return this.formatCsv(data, columns);
+        return this.formatCsv(filtered, columns);
       case 'table':
       default:
-        return this.formatTable(data, columns);
+        return this.formatTable(filtered, columns);
     }
   }
 
   formatJson<T>(data: T): string {
-    return JSON.stringify(data, null, 2);
+    const envelope = {
+      success: true,
+      command: this._commandName ?? DEFAULTS.TELEMETRY.UNKNOWN,
+      data,
+      errors: null,
+      warnings: this._warnings,
+      metrics: {
+        duration_ms: this.getDurationMs(),
+        ...(this._operationDurationMs != null && {
+          operation_duration_ms: this._operationDurationMs,
+        }),
+      },
+    };
+    return JSON.stringify(envelope, null, 2);
   }
 
   formatYaml<T>(data: T): string {
@@ -106,9 +182,10 @@ class OutputService {
     return lines.join('\n');
   }
 
-  // Convenience methods for colored output
+  // Convenience methods for colored output (stderr to avoid polluting data output)
   success(message: string): void {
-    console.log(this.colorEnabled ? chalk.green(message) : message);
+    if (this._quiet) return;
+    console.error(this.colorEnabled ? chalk.green(message) : message);
   }
 
   error(message: string): void {
@@ -116,11 +193,14 @@ class OutputService {
   }
 
   warn(message: string): void {
-    console.warn(this.colorEnabled ? chalk.yellow(message) : message);
+    this._warnings.push(message);
+    if (this._quiet) return;
+    console.error(this.colorEnabled ? chalk.yellow(message) : message);
   }
 
   info(message: string): void {
-    console.log(this.colorEnabled ? chalk.blue(message) : message);
+    if (this._quiet) return;
+    console.error(this.colorEnabled ? chalk.blue(message) : message);
   }
 
   dim(text: string): string {

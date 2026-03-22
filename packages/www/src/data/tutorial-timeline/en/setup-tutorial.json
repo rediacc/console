@@ -1,0 +1,67 @@
+{
+  "cast": "/assets/tutorials/setup-tutorial.cast",
+  "language": "en",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "2850529ae29c339b8141ffd20eef1f041e2f1d4cb0835dd862d4d9d04b461cb8",
+  "steps": [
+    {
+      "id": "setup-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.50986,
+      "replayEndSec": 10.605861,
+      "narrationText": "Every machine connection begins with a configuration profile -- it holds SSH keys, server addresses, and infrastructure settings. We create a new profile now, linked to your private key.",
+      "audioSrc": "/assets/tutorials/audio/en/setup-tutorial/setup-tutorial-01.e2e5e1be.mp3",
+      "audioDurationSec": 11.807347
+    },
+    {
+      "id": "setup-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.605861,
+      "replayEndSec": 17.961132,
+      "narrationText": "Profile created. We verify it appears in the configuration list alongside any existing profiles, showing their adapter type and registered machine count.",
+      "audioSrc": "/assets/tutorials/audio/en/setup-tutorial/setup-tutorial-02.c33cab9b.mp3",
+      "audioDurationSec": 9.560816
+    },
+    {
+      "id": "setup-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 17.961132,
+      "replayEndSec": 31.651331,
+      "narrationText": "To reach a remote server, we register it by IP address and SSH user. The CLI also fetches the server's host key fingerprint to prevent man-in-the-middle attacks.",
+      "audioSrc": "/assets/tutorials/audio/en/setup-tutorial/setup-tutorial-03.6a605b03.mp3",
+      "audioDurationSec": 10.370612
+    },
+    {
+      "id": "setup-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 31.651331,
+      "replayEndSec": 40.16275,
+      "narrationText": "Machine registered. We confirm the entry is stored correctly. You'll see all machines in this profile with their IP addresses and SSH connection details.",
+      "audioSrc": "/assets/tutorials/audio/en/setup-tutorial/setup-tutorial-04.1181e38d.mp3",
+      "audioDurationSec": 9.639184
+    },
+    {
+      "id": "setup-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 40.16275,
+      "replayEndSec": 48.29967,
+      "narrationText": "When managing a single server, a default machine eliminates repetitive targeting flags. Every command will route to this machine unless you override it explicitly.",
+      "audioSrc": "/assets/tutorials/audio/en/setup-tutorial/setup-tutorial-05.8d6c91ec.mp3",
+      "audioDurationSec": 9.639184
+    },
+    {
+      "id": "setup-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 48.29967,
+      "replayEndSec": 52.258257,
+      "narrationText": "Before deploying anything, we verify the SSH tunnel is functional. A remote hostname check proves the machine is reachable and the host key is trusted.",
+      "audioSrc": "/assets/tutorials/audio/en/setup-tutorial/setup-tutorial-06.972270a3.mp3",
+      "audioDurationSec": 8.437551
+    }
+  ]
+}

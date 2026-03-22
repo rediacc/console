@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
-import lockfile from 'proper-lockfile';
 import { getCacheDir, getStateDir } from '@rediacc/shared/paths';
+import lockfile from 'proper-lockfile';
 
 export const STAGED_UPDATE_DIR = join(getCacheDir(), 'staged-update');
 export const UPDATE_STATE_FILE = join(getStateDir(), 'update-state.json');

@@ -4,7 +4,7 @@ description: 開発環境を何日も待つ必要はありません。 オンデ
 category: Use Cases
 order: 10
 language: ja
-sourceHash: 6128ad0f1099ba85
+sourceHash: c13b017afc2c8371
 ---
 
 > **一時的な環境。 生産同等。 DevOps チケットはゼロです。**
@@ -215,7 +215,7 @@ Rediacc は、運用環境と同一の環境を 60 秒以内に作成します�
 
 * [**Time-Travel Recovery**](/en/docs/time-travel-recovery) - ポイントインタイムのインフラストラクチャ復元
  * [**リスクフリー アップグレード**](/en/docs/risk-free-upgrades) - リスクなしで OS の移行をテストします
- * [**災害復旧**](/en/solutions/disaster-recovery) - 実際に機能する検証済みのバックアップ
+ * [**災害復旧**](/en/solutions/backup-verification) - 実際に機能する検証済みのバックアップ
 
 ---
 

@@ -57,7 +57,7 @@ Activated automatically when a config contains `apiUrl` and `token` fields. Uses
 - Web console for visual management
 - Set up with `rdc auth login`
 
-> **Note:** Cloud adapter commands are experimental. Enable them with `rdc --experimental <command>` or by setting `REDIACC_EXPERIMENTAL=1`.
+> **Note:** Cloud adapter commands are experimental. Enable them by setting `REDIACC_EXPERIMENTAL=1`.
 
 ### S3 Resource State (Optional)
 
@@ -72,7 +72,7 @@ All adapters use the same CLI commands. The adapter only affects where state is 
 
 ## The rediacc User
 
-When you run `rdc config setup-machine`, renet creates a system user called `rediacc` on the remote server:
+When you run `rdc config machine setup`, renet creates a system user called `rediacc` on the remote server:
 
 - **UID**: 7111
 - **Shell**: `/sbin/nologin` (cannot log in via SSH)
@@ -82,7 +82,7 @@ The `rediacc` user cannot be accessed via SSH directly. Instead, rdc connects as
 
 1. Your SSH user needs `sudo` privileges
 2. All repository data is owned by `rediacc`, not your SSH user
-3. Rediaccfile functions (`prep()`, `up()`, `down()`) run as `rediacc`
+3. Rediaccfile functions (`up()`, `down()`) run as `rediacc`
 
 This separation ensures that repository data has consistent ownership regardless of which SSH user manages it.
 

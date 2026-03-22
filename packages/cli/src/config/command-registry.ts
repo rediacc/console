@@ -5,8 +5,10 @@
  * To change which modes a command supports, update its entry here.
  *
  * Commands marked `experimental: true` are hidden by default.
- * Enable with --experimental flag or REDIACC_EXPERIMENTAL=1 env var.
+ * Enable with REDIACC_EXPERIMENTAL=1 env var (blocked for AI agents).
  */
+import { isAgentEnvironment } from '../utils/agent-guard.js';
+
 export type CommandCategory = 'cloud' | 'local';
 export type ModeSet = readonly CommandCategory[];
 
@@ -43,8 +45,23 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
     modes: ALL_MODES,
     domain: 'INFRASTRUCTURE',
     subcommands: {
+      list: { modes: ALL_MODES },
+      create: { modes: ALL_MODES },
+      rename: { modes: ALL_MODES },
+      delete: { modes: ALL_MODES },
+      vault: { modes: ['cloud'] },
+      'vault-status': { modes: ['cloud'] },
       'assign-bridge': { modes: ['cloud'], experimental: true },
       'test-connection': { modes: ['cloud'], experimental: true },
+      query: { modes: SELF_HOSTED_MODES },
+      containers: { modes: ALL_MODES, experimental: true },
+      services: { modes: ALL_MODES, experimental: true },
+      repos: { modes: ALL_MODES, experimental: true },
+      health: { modes: ALL_MODES, experimental: true },
+      prune: { modes: SELF_HOSTED_MODES },
+      provision: { modes: SELF_HOSTED_MODES },
+      deprovision: { modes: SELF_HOSTED_MODES },
+      backup: { modes: SELF_HOSTED_MODES },
     },
   },
   {
@@ -52,27 +69,23 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
     modes: ALL_MODES,
     domain: 'INFRASTRUCTURE',
     subcommands: {
+      list: { modes: ALL_MODES },
+      create: { modes: ALL_MODES },
+      rename: { modes: ALL_MODES },
+      delete: { modes: ALL_MODES },
+      vault: { modes: ['cloud'] },
       browse: { modes: SELF_HOSTED_MODES },
-      pull: { modes: SELF_HOSTED_MODES },
+      prune: { modes: SELF_HOSTED_MODES },
     },
   },
   { name: 'region', modes: ['cloud'], domain: 'INFRASTRUCTURE', experimental: true },
   { name: 'bridge', modes: ['cloud'], domain: 'INFRASTRUCTURE', experimental: true },
   { name: 'ops', modes: SELF_HOSTED_MODES, domain: 'INFRASTRUCTURE' },
+  { name: 'datastore', modes: SELF_HOSTED_MODES, domain: 'INFRASTRUCTURE' },
 
   // ── Repositories ────────────────────────────────────────────────────
   { name: 'repository', modes: ['cloud'], domain: 'REPOSITORIES', experimental: true },
   { name: 'repo', modes: SELF_HOSTED_MODES, domain: 'REPOSITORIES' },
-  { name: 'snapshot', modes: SELF_HOSTED_MODES, domain: 'REPOSITORIES' },
-  {
-    name: 'backup',
-    modes: ALL_MODES,
-    domain: 'REPOSITORIES',
-    subcommands: {
-      sync: { modes: SELF_HOSTED_MODES },
-      schedule: { modes: SELF_HOSTED_MODES },
-    },
-  },
 
   // ── Execution ───────────────────────────────────────────────────────
   { name: 'run', modes: ALL_MODES, domain: 'EXECUTION' },
@@ -88,6 +101,9 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
   { name: 'audit', modes: ['cloud'], domain: 'ORGANIZATION', experimental: true },
   { name: 'ceph', modes: ['cloud'], domain: 'ORGANIZATION', experimental: true },
 
+  // ── Licensing ──────────────────────────────────────────────────────
+  { name: 'subscription', modes: SELF_HOSTED_MODES, domain: 'TOOLS' },
+
   // ── Tools ───────────────────────────────────────────────────────────
   {
     name: 'config',
@@ -97,8 +113,10 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
   { name: 'store', modes: ALL_MODES, domain: 'TOOLS' },
   { name: 'doctor', modes: ALL_MODES, domain: 'TOOLS' },
   { name: 'update', modes: ALL_MODES, domain: 'TOOLS' },
-  { name: 'protocol', modes: ALL_MODES, domain: 'TOOLS' },
+  { name: 'protocol', modes: ['cloud'], domain: 'TOOLS', experimental: true },
   { name: 'vscode', modes: ALL_MODES, domain: 'TOOLS' },
+  { name: 'agent', modes: ALL_MODES, domain: 'TOOLS' },
+  { name: 'mcp', modes: ALL_MODES, domain: 'TOOLS' },
 ] as const;
 
 /** Lookup a command definition by name. */
@@ -107,16 +125,9 @@ export function getCommandDef(commandName: string): CommandDef | undefined {
 }
 
 /**
- * Format a mode tag for display in help text.
- */
-export function formatModeTag(modes: ModeSet): string {
-  if (modes.length >= ALL_MODES.length) return '';
-  return `[${modes.join('|')}]`;
-}
-
-/**
- * Check if experimental mode is enabled via --experimental flag or REDIACC_EXPERIMENTAL=1 env var.
+ * Check if experimental mode is enabled via REDIACC_EXPERIMENTAL=1 env var.
  */
 export function isExperimentalEnabled(): boolean {
+  if (isAgentEnvironment()) return false;
   return process.env.REDIACC_EXPERIMENTAL === '1';
 }

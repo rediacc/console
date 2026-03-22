@@ -1,0 +1,43 @@
+{
+  "cast": "/assets/tutorials/setup-tutorial.cast",
+  "language": "ja",
+  "version": 1,
+  "events": [
+    {
+      "id": "setup-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.50986,
+      "text": "この環境専用の構成プロファイルを初期化します。"
+    },
+    {
+      "id": "setup-tutorial-02",
+      "markerIndex": 1,
+      "at": 10.605861,
+      "text": "利用可能な構成を確認し、新しいプロファイルが存在することを確認します。"
+    },
+    {
+      "id": "setup-tutorial-03",
+      "markerIndex": 2,
+      "at": 17.961132,
+      "text": "ネットワークとユーザーの詳細を含むマシンエントリを登録します。"
+    },
+    {
+      "id": "setup-tutorial-04",
+      "markerIndex": 3,
+      "at": 31.651331,
+      "text": "構成されたマシンのリストを調べて、登録を確認します。"
+    },
+    {
+      "id": "setup-tutorial-05",
+      "markerIndex": 4,
+      "at": 40.16275,
+      "text": "ターゲット フラグの繰り返しを減らすためにデフォルトのマシンを設定します。"
+    },
+    {
+      "id": "setup-tutorial-06",
+      "markerIndex": 5,
+      "at": 48.29967,
+      "text": "基本的なリモート ホスト チェックを実行して、接続を検証します。"
+    }
+  ]
+}

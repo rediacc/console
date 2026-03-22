@@ -1,0 +1,90 @@
+{
+  "member": "founder",
+  "videoKey": "our-story",
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 5.0,
+      "text": "Seventy percent of backup restores fail when you actually need them."
+    },
+    {
+      "start": 5.0,
+      "end": 10.0,
+      "text": "I've spent over a decade managing servers and infrastructure."
+    },
+    { "start": 10.0, "end": 14.0, "text": "I've watched backups fail during real incidents." },
+    {
+      "start": 14.0,
+      "end": 19.0,
+      "text": "I've seen a single config mistake take down production for eight hours."
+    },
+    {
+      "start": 19.0,
+      "end": 25.0,
+      "text": "I've been the person at 2 AM trying to recover a database from a backup that was never tested."
+    },
+    { "start": 25.0, "end": 30.0, "text": "The tools we have today weren't built for this." },
+    {
+      "start": 30.0,
+      "end": 35.0,
+      "text": "Backup software that can't prove its own restores work."
+    },
+    { "start": 35.0, "end": 39.0, "text": "Dev environments that look nothing like production." },
+    {
+      "start": 39.0,
+      "end": 45.0,
+      "text": "Security tests that happen once a quarter — if they happen at all. And every tool is a separate product, a separate vendor, a separate bill."
+    },
+    { "start": 45.0, "end": 49.0, "text": "Every hour your system is down costs money." },
+    {
+      "start": 49.0,
+      "end": 53.0,
+      "text": "Every untested backup is a bet you're making with your business."
+    },
+    {
+      "start": 53.0,
+      "end": 58.0,
+      "text": "Every dev environment that doesn't match production is a bug waiting to ship."
+    },
+    {
+      "start": 58.0,
+      "end": 65.0,
+      "text": "That's why I built Rediacc. One platform that handles protection, recovery, dev environments, and security testing."
+    },
+    {
+      "start": 65.0,
+      "end": 70.0,
+      "text": "Built on btrfs copy-on-write snapshots. Not bolted-on backups."
+    },
+    {
+      "start": 70.0,
+      "end": 80.0,
+      "text": "Rediacc takes immutable, encrypted snapshots of your entire stack and restores them in minutes. Not hours. Minutes."
+    },
+    {
+      "start": 80.0,
+      "end": 90.0,
+      "text": "Clone your production environment in sixty seconds. Full databases, Docker services, configs — all of it. Zero extra storage cost."
+    },
+    {
+      "start": 90.0,
+      "end": 98.0,
+      "text": "Run penetration tests on safe clones every day. Find the holes before attackers do."
+    },
+    {
+      "start": 98.0,
+      "end": 108.0,
+      "text": "Everything runs on your hardware. Your encryption keys. Your data never leaves your servers. No cloud lock-in. No vendor dependency."
+    },
+    {
+      "start": 108.0,
+      "end": 118.0,
+      "text": "A ten-terabyte database restores in four minutes. Ninety days of backup history stored in the space others need for seven days."
+    },
+    {
+      "start": 118.0,
+      "end": 125.0,
+      "text": "Start free. Install on your server in under five minutes. I'm Muhammed. Welcome to Rediacc."
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "cast": "/assets/tutorials/monitoring-tutorial.cast",
+  "language": "fr",
+  "version": 1,
+  "events": [
+    {
+      "id": "monitoring-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.508759,
+      "text": "Exécutez un diagnostic complet de l’environnement pour faire apparaître les problèmes de base."
+    },
+    {
+      "id": "monitoring-tutorial-02",
+      "markerIndex": 1,
+      "at": 9.844365,
+      "text": "Vérifiez les indicateurs d’état de la machine à distance."
+    },
+    {
+      "id": "monitoring-tutorial-03",
+      "markerIndex": 2,
+      "at": 18.393678,
+      "text": "Répertoriez les conteneurs actifs sur la machine cible."
+    }
+  ]
+}

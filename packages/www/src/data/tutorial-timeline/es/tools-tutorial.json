@@ -1,0 +1,22 @@
+{
+  "cast": "/assets/tutorials/tools-tutorial.cast",
+  "language": "es",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "35ced9632c1be790241de8bf8cc41990d53faea6b583367df8d97c2f5df2fa48",
+  "steps": [
+    {
+      "id": "tools-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.511459,
+      "replayEndSec": 5.270978,
+      "narrationText": "Abra un comando de shell remoto para verificar la identidad de la máquina de destino.",
+      "audioSrc": "/assets/tutorials/audio/es/tools-tutorial/tools-tutorial-01.742020fc.mp3",
+      "audioDurationSec": 5.407347
+    }
+  ]
+}

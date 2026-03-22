@@ -4,7 +4,7 @@ description: "Dosya senkronizasyonu, terminal erişimi, VS Code entegrasyonu ve 
 category: Guides
 order: 9
 language: tr
-sourceHash: 80ca3cd3e1a55d4b
+sourceHash: "b9aa7cdcf088b645"
 ---
 
 # Araçlar
@@ -18,19 +18,19 @@ SSH üzerinden rsync kullanarak iş istasyonunuz ile uzak depo arasında dosya a
 ### Dosya Yükleme
 
 ```bash
-rdc sync upload -m server-1 -r my-app --local ./src --remote /app/src
+rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
 ```
 
 ### Dosya İndirme
 
 ```bash
-rdc sync download -m server-1 -r my-app --remote /app/data --local ./data
+rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
 ```
 
 ### Senkronizasyon Durumunu Kontrol Etme
 
 ```bash
-rdc sync status -m server-1 -r my-app
+rdc repo sync status -m server-1 -r my-app
 ```
 
 ### Seçenekler

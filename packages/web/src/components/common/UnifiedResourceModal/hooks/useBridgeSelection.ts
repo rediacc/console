@@ -1,7 +1,7 @@
+import type { FormInstance } from 'antd/es/form';
 import { useCallback, useEffect } from 'react';
 import { featureFlags } from '@/config/featureFlags';
 import type { ResourceType } from '../index';
-import type { FormInstance } from 'antd/es/form';
 
 interface DropdownData {
   bridgesByRegion?: {

@@ -163,7 +163,22 @@ if [[ "$PLATFORM" == "mac" ]]; then
 fi
 npx postject "${POSTJECT_ARGS[@]}"
 
-# Step 7: Re-sign (macOS only)
+# Step 7: Embed icon (Windows only)
+if [[ "$PLATFORM" == "win" ]]; then
+    ICON_FILE="$REPO_ROOT/packages/desktop/resources/icon.ico"
+    if [[ -f "$ICON_FILE" ]]; then
+        log_step "Embedding icon into Windows executable..."
+        if timeout 60 node -e "require('rcedit').rcedit(process.argv[1], {icon: process.argv[2]}).then(() => console.log('Icon embedded')).catch(e => { console.error(e.message); process.exit(1) })" "$OUTPUT_DIR/$BINARY_NAME" "$ICON_FILE" 2>&1; then
+            log_info "Icon embedded from $ICON_FILE"
+        else
+            log_warn "Icon embedding timed out or failed (non-fatal, executable works without custom icon)"
+        fi
+    else
+        log_warn "Icon file not found at $ICON_FILE - skipping icon embedding"
+    fi
+fi
+
+# Step 8: Re-sign (macOS only)
 if [[ "$PLATFORM" == "mac" ]]; then
     log_step "Re-signing binary..."
     codesign -s - "$OUTPUT_DIR/$BINARY_NAME"

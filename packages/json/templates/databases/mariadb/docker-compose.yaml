@@ -2,7 +2,6 @@ services:
   db:
     image: mariadb:latest
     restart: unless-stopped
-    network_mode: "${NETWORK_MODE:-bridge}"
     env_file:
       - .env
     environment:
@@ -11,8 +10,7 @@ services:
       MARIADB_USER: ${MARIADB_USER}
       MARIADB_PASSWORD: ${MARIADB_PASSWORD}
       MARIADB_MYSQL_LOCALHOST_USER: ${MARIADB_MYSQL_LOCALHOST_USER}
-    ports:
-      - "3306"
+    command: ["sh", "-c", "exec docker-entrypoint.sh mariadbd --bind-address=$${SERVICE_IP:-0.0.0.0}"]
     volumes:
       # Data persistence - bind mount overrides the VOLUME declaration
       - ./data:/var/lib/mysql

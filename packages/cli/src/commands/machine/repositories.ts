@@ -1,17 +1,21 @@
-import { Command } from 'commander';
+import { getContainers, getServices } from '@rediacc/shared/queue-vault/data/list-types.generated';
 import { parseListResult } from '@rediacc/shared/services/machine';
+import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { getStateProvider } from '../../providers/index.js';
 import { authService } from '../../services/auth.js';
 import { configService } from '../../services/config-resources.js';
 import { outputService } from '../../services/output.js';
-import { handleError, ValidationError } from '../../utils/errors.js';
-import { withSpinner } from '../../utils/spinner.js';
 import type { OutputFormat } from '../../types/index.js';
+import { extractAutoRoute, extractCustomDomain } from '../../utils/domain-helpers.js';
+import { handleError, ValidationError } from '../../utils/errors.js';
+import { createGuidResolver, loadGuidMap } from '../../utils/guid-resolver.js';
+import { withSpinner } from '../../utils/spinner.js';
 
 export function registerRepositoriesCommand(machine: Command, program: Command): void {
   machine
     .command('repos <name>')
+    .summary(t('commands.machine.repos.descriptionShort'))
     .description(t('commands.machine.repos.description'))
     .option('-t, --team <name>', t('options.team'))
     .option('--search <text>', t('options.searchRepos'))
@@ -27,15 +31,20 @@ export function registerRepositoriesCommand(machine: Command, program: Command):
           throw new ValidationError(t('errors.teamRequired'));
         }
 
-        const machine = await withSpinner(
-          t('commands.machine.repos.fetching'),
-          () =>
-            provider.machines.getWithVaultStatus({
-              teamName: opts.team as string,
-              machineName: name,
-            }),
-          t('commands.machine.repos.fetched')
-        );
+        const [machine, guidMap, machineConfig] = await Promise.all([
+          withSpinner(
+            t('commands.machine.repos.fetching'),
+            () =>
+              provider.machines.getWithVaultStatus({
+                teamName: opts.team as string,
+                machineName: name,
+              }),
+            t('commands.machine.repos.fetched')
+          ),
+          loadGuidMap(),
+          configService.getLocalMachine(name).catch(() => undefined),
+        ]);
+        const resolve = createGuidResolver(guidMap);
 
         if (!machine) {
           throw new ValidationError(t('errors.machineNotFound', { name }));
@@ -58,6 +67,7 @@ export function registerRepositoriesCommand(machine: Command, program: Command):
           repositories = repositories.filter(
             (repository) =>
               repository.name.toLowerCase().includes(searchTerm) ||
+              resolve(repository.name).toLowerCase().includes(searchTerm) ||
               (repository.mount_path
                 ? repository.mount_path.toLowerCase().includes(searchTerm)
                 : false)
@@ -70,11 +80,37 @@ export function registerRepositoriesCommand(machine: Command, program: Command):
         }
 
         if (format === 'json') {
-          outputService.print(repositories, format);
+          const containers = getContainers(listResult);
+          const services = getServices(listResult);
+          const baseDomain = machineConfig?.infra?.baseDomain;
+
+          const enriched = repositories.map((repo) => ({
+            ...repo,
+            name: resolve(repo.name),
+            guid: repo.name,
+            containers: containers
+              .filter((c) => c.repository === repo.name)
+              .map((c) => ({
+                ...c,
+                repository: resolve(c.repository),
+                repository_guid: c.repository,
+                domain: extractCustomDomain(c.labels, baseDomain),
+                autoRoute: extractAutoRoute(c.labels, baseDomain, name),
+              })),
+            services: services
+              .filter((s) => s.repository === repo.name)
+              .map((s) => ({
+                ...s,
+                repository: resolve(s.repository),
+                repository_guid: s.repository,
+              })),
+          }));
+          outputService.print(enriched, format);
         } else {
           // Format for enhanced table output
           const tableData = repositories.map((r) => ({
-            name: r.name,
+            name: resolve(r.name),
+            guid: r.name,
             size: r.size_human,
             mounted: r.mounted ? 'Yes' : 'No',
             docker: r.docker_running ? 'Yes' : 'No',

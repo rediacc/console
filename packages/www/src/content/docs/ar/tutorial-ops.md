@@ -1,37 +1,35 @@
 ---
 title: "توفير الأجهزة الافتراضية المحلية"
-description: "شاهد وتابع أثناء توفير مجموعة أجهزة افتراضية محلية وتشغيل الأوامر عبر SSH وإزالتها."
+description: "توفير مجموعة أجهزة افتراضية محلية وتشغيل الأوامر عبر SSH وإزالتها باستخدام CLI."
 category: "Tutorials"
 order: 1
 language: ar
-sourceHash: "990c6fd433c7c847"
+sourceHash: "2fdc49f796b03e18"
 ---
 
-# درس تعليمي: توفير الأجهزة الافتراضية المحلية
+# كيفية توفير أجهزة افتراضية محلية باستخدام Rediacc
 
-This tutorial walks through the complete `rdc ops` workflow: checking system requirements, provisioning a minimal VM cluster, running commands on VMs over SSH, and tearing everything down.
+اختبار البنية التحتية محليًا قبل النشر في بيئة الإنتاج يوفر الوقت ويمنع الأخطاء في التكوين. في هذا الدرس، ستقوم بتوفير مجموعة أجهزة افتراضية بسيطة على محطة العمل الخاصة بك، والتحقق من الاتصال، وتشغيل الأوامر عبر SSH، وإزالة كل شيء. عند الانتهاء، سيكون لديك بيئة تطوير محلية قابلة للتكرار.
 
 ## المتطلبات الأساسية
 
-- A Linux or macOS workstation with hardware virtualization enabled
-- The `rdc` CLI installed and a config initialized with the local adapter
-- KVM/libvirt (Linux) or QEMU (macOS) installed — see [Experimental VMs](/ar/docs/experimental-vms) for setup instructions
+- محطة عمل Linux أو macOS مع تفعيل المحاكاة الافتراضية للأجهزة
+- تثبيت `rdc` CLI وتهيئة التكوين باستخدام المحول المحلي
+- تثبيت KVM/libvirt (Linux) أو QEMU (macOS) — راجع [الأجهزة الافتراضية التجريبية](/ar/docs/experimental-vms) لتعليمات الإعداد
 
 ## التسجيل التفاعلي
 
 ![Tutorial: rdc ops provisioning](/assets/tutorials/ops-tutorial.cast)
 
-## ما ستراه في هذا الدرس
-
-The recording above walks through each step below. Use the playback bar to navigate between commands.
-
 ### الخطوة 1: التحقق من متطلبات النظام
+
+قبل التوفير، تأكد من أن محطة العمل الخاصة بك تدعم المحاكاة الافتراضية وأن الحزم المطلوبة مثبتة.
 
 ```bash
 rdc ops check
 ```
 
-يتحقق من دعم المحاكاة الافتراضية للأجهزة والحزم المطلوبة (libvirt وQEMU) وتكوين الشبكة. يجب أن ينجح هذا قبل أن تتمكن من توفير الأجهزة الافتراضية.
+يتحقق Rediacc من المحاكاة الافتراضية للأجهزة (VT-x/AMD-V)، والحزم المطلوبة (libvirt وQEMU)، وتكوين الشبكة. يجب أن تنجح جميع الفحوصات قبل أن تتمكن من إنشاء الأجهزة الافتراضية.
 
 ### الخطوة 2: توفير مجموعة أجهزة افتراضية بسيطة
 
@@ -39,7 +37,9 @@ rdc ops check
 rdc ops up --basic --skip-orchestration
 ```
 
-Creates a two-VM cluster: a **bridge** VM (1 CPU, 1024 MB RAM, 8 GB disk) and a **worker** VM (2 CPU, 4096 MB RAM, 16 GB disk). The `--skip-orchestration` flag skips Rediacc platform provisioning, giving you bare VMs with SSH access only.
+ينشئ مجموعة من جهازين افتراضيين: جهاز **جسر** افتراضي (1 CPU، 1024 MB RAM، 8 GB قرص) وجهاز **عامل** افتراضي (2 CPU، 4096 MB RAM، 16 GB قرص). يتخطى خيار `--skip-orchestration` توفير منصة Rediacc، مما يمنحك أجهزة افتراضية عارية مع وصول SSH فقط.
+
+> **ملاحظة:** يقوم التوفير الأول بتنزيل الصور الأساسية، مما يستغرق وقتًا أطول. تستخدم عمليات التشغيل اللاحقة الصور المخزنة مؤقتًا.
 
 ### الخطوة 3: التحقق من حالة المجموعة
 
@@ -47,7 +47,7 @@ Creates a two-VM cluster: a **bridge** VM (1 CPU, 1024 MB RAM, 8 GB disk) and a 
 rdc ops status
 ```
 
-Shows the state of each VM in the cluster — IP addresses, resource allocation, and running status.
+يعرض حالة كل جهاز افتراضي في المجموعة — عناوين IP، وتخصيص الموارد، وحالة التشغيل. يجب أن يظهر كلا الجهازين الافتراضيين كقيد التشغيل.
 
 ### الخطوة 4: تشغيل الأوامر على جهاز افتراضي
 
@@ -56,18 +56,33 @@ rdc ops ssh 1 hostname
 rdc ops ssh 1 uname -a
 ```
 
-يشغّل الأوامر على جهاز الجسر الافتراضي (المعرف `1`) عبر SSH. يمكنك تمرير أي أمر بعد معرف الجهاز. للحصول على واجهة تفاعلية، احذف الأمر: `rdc ops ssh 1`.
+يشغّل الأوامر على جهاز الجسر الافتراضي (المعرف `1`) عبر SSH. مرر أي أمر بعد معرف الجهاز الافتراضي. للحصول على واجهة تفاعلية، احذف الأمر: `rdc ops ssh 1`.
 
 ### الخطوة 5: إزالة المجموعة
+
+عند الانتهاء، قم بتدمير جميع الأجهزة الافتراضية وتحرير الموارد.
 
 ```bash
 rdc ops down
 ```
 
-Destroys all VMs and cleans up resources. The cluster can be reprovisioned at any time with `rdc ops up`.
+يزيل جميع الأجهزة الافتراضية وينظف الشبكة. يمكن إعادة توفير المجموعة في أي وقت باستخدام `rdc ops up`.
+
+## استكشاف الأخطاء وإصلاحها
+
+**"KVM not available" أو "hardware virtualization not supported"**
+تحقق من تفعيل المحاكاة الافتراضية في إعدادات BIOS/UEFI. على Linux، تحقق باستخدام `lscpu | grep Virtualization`. على WSL2، تتطلب المحاكاة الافتراضية المتداخلة علامات نواة محددة.
+
+**"libvirt daemon not running"**
+ابدأ خدمة libvirt: `sudo systemctl start libvirtd`. على macOS، تحقق من تثبيت QEMU عبر Homebrew: `brew install qemu`.
+
+**"Insufficient memory for VM allocation"**
+تتطلب المجموعة الأساسية 6 GB على الأقل من ذاكرة RAM الحرة (1 GB جسر + 4 GB عامل + حمل إضافي). أغلق التطبيقات كثيفة الموارد أو قلل مواصفات الأجهزة الافتراضية.
 
 ## الخطوات التالية
 
-- [Experimental VMs](/ar/docs/experimental-vms) — full reference for `rdc ops` commands, VM configuration, and platform support
-- [Machine Setup](/ar/docs/setup) — add remote machines to your config and provision them
-- [Quick Start](/ar/docs/quick-start) — deploy a containerized service end-to-end
+لقد قمت بتوفير مجموعة أجهزة افتراضية محلية، وتشغيل الأوامر عبر SSH، وإزالتها. لنشر بنية تحتية حقيقية:
+
+- [الأجهزة الافتراضية التجريبية](/ar/docs/experimental-vms) — مرجع كامل لأوامر `rdc ops`، وتكوين الأجهزة الافتراضية، ودعم المنصات
+- [درس: إعداد الأجهزة](/ar/docs/tutorial-setup) — تسجيل الأجهزة البعيدة وتكوين البنية التحتية
+- [البدء السريع](/ar/docs/quick-start) — نشر خدمة حاوية من البداية إلى النهاية

@@ -4,7 +4,7 @@ description: "Bestehende Projekte in verschlüsselte Rediacc-Repositories migrie
 category: "Guides"
 order: 11
 language: de
-sourceHash: "5064d721c8cf32ff"
+sourceHash: fdecebe5bf7d4a86
 ---
 
 # Migrationsleitfaden
@@ -29,14 +29,14 @@ rdc repo create my-project -m server-1 --size 20G
 
 ## Schritt 2: Dateien hochladen
 
-Verwenden Sie `rdc sync upload`, um Ihre Projektdateien in das Repository zu übertragen.
+Verwenden Sie `rdc repo sync upload`, um Ihre Projektdateien in das Repository zu übertragen.
 
 ```bash
 # Vorschau der Übertragung (keine Änderungen)
-rdc sync upload -m server-1 -r my-project --local ./my-project --dry-run
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --dry-run
 
 # Dateien hochladen
-rdc sync upload -m server-1 -r my-project --local ./my-project
+rdc repo sync upload -m server-1 -r my-project --local ./my-project
 ```
 
 Das Repository muss vor dem Hochladen eingehängt sein. Falls es noch nicht eingehängt ist:
@@ -48,7 +48,7 @@ rdc repo mount my-project -m server-1
 Für nachfolgende Synchronisierungen, bei denen das Remote-Verzeichnis exakt Ihrem lokalen Verzeichnis entsprechen soll:
 
 ```bash
-rdc sync upload -m server-1 -r my-project --local ./my-project --mirror
+rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 ```
 
 > Das `--mirror`-Flag löscht Dateien auf dem Remote-Server, die lokal nicht existieren. Verwenden Sie zuerst `--dry-run` zur Überprüfung.
@@ -83,7 +83,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 Um die Docker-Volume-Erkennung zu überspringen und alles zu ändern, einschließlich Container-Datenverzeichnissen:
 
 ```bash
-rdc repo ownership my-project -m server-1 --force
+rdc repo ownership my-project -m server-1
 ```
 
 > **Warnung:** Dies kann laufende Container beschädigen. Stoppen Sie sie vorher mit `rdc repo down`, falls nötig.
@@ -98,21 +98,17 @@ rdc repo ownership my-project -m server-1 --uid 1000
 
 ## Schritt 4: Rediaccfile einrichten
 
-Erstellen Sie ein `Rediaccfile` im Stammverzeichnis Ihres Projekts. Dieses Bash-Skript definiert, wie Ihre Dienste vorbereitet, gestartet und gestoppt werden.
+Erstellen Sie ein `Rediaccfile` im Stammverzeichnis Ihres Projekts. Dieses Bash-Skript definiert, wie Ihre Dienste gestartet und gestoppt werden.
 
 ```bash
 #!/bin/bash
 
-prep() {
-    docker compose pull
-}
-
 up() {
-    docker compose up -d
+    renet compose -- up -d
 }
 
 down() {
-    docker compose down
+    renet compose -- down
 }
 ```
 
@@ -120,11 +116,12 @@ Die drei Lebenszyklus-Funktionen:
 
 | Funktion | Zweck | Fehlerverhalten |
 |----------|-------|-----------------|
-| `prep()` | Images herunterladen, Migrationen ausführen, Abhängigkeiten installieren | Sofortiger Abbruch: jeder Fehler stoppt alles |
 | `up()` | Dienste starten | Root-Fehler ist kritisch; Fehler in Unterverzeichnissen werden protokolliert und fortgesetzt |
 | `down()` | Dienste stoppen | Best-Effort: versucht immer alles |
 
-> **Wichtig:** Verwenden Sie `docker` direkt in Ihrem Rediaccfile — niemals `sudo docker`. Der Befehl `sudo` setzt Umgebungsvariablen zurück, wodurch `DOCKER_HOST` verloren geht und Container auf dem System-Docker-Daemon statt auf dem isolierten Daemon des Repositorys erstellt werden. Rediaccfile-Funktionen laufen bereits mit ausreichenden Berechtigungen. Siehe [Dienste](/de/docs/services#environment-variables) für Details.
+> **Wichtig:** Verwenden Sie in Ihrem Rediaccfile immer `renet compose --` anstelle von `docker compose`. Der `renet compose`-Wrapper erzwingt Host-Netzwerk, CRIU-Checkpoint/Restore-Fähigkeiten, IP-Zuweisung und Service-Discovery, die von renet-proxy benötigt werden. Die direkte Verwendung von `docker compose` umgeht all dies und wird bei der Validierung abgelehnt.
+>
+> Verwenden Sie auch niemals `sudo docker` — `sudo` setzt Umgebungsvariablen einschließlich `DOCKER_HOST` zurück, wodurch Container auf dem System-Docker-Daemon statt auf dem isolierten Daemon des Repositorys erstellt werden. Rediaccfile-Funktionen laufen bereits mit ausreichenden Berechtigungen.
 
 Siehe [Dienste](/de/docs/services) für vollständige Details zu Rediaccfiles, Multi-Service-Layouts und Ausführungsreihenfolge.
 
@@ -167,8 +164,6 @@ services:
 services:
   postgres:
     image: postgres:16
-    network_mode: host
-    restart: unless-stopped
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
@@ -177,14 +172,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    network_mode: host
-    restart: unless-stopped
     command: redis-server --bind ${REDIS_IP} --port 6379
 
   app:
     image: my-app:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://postgres:secret@${POSTGRES_IP}:5432/mydb
       REDIS_URL: redis://${REDIS_IP}:6379
@@ -193,10 +184,11 @@ services:
 
 Wichtige Änderungen:
 
-1. **`network_mode: host` hinzufügen** zu jedem Dienst
-2. **`ports:`-Zuordnungen entfernen** (nicht nötig bei Host-Netzwerk)
-3. **Dienste an `${SERVICE_IP}`-Umgebungsvariablen binden** (werden automatisch von Rediacc injiziert)
-4. **Andere Dienste über ihre IP referenzieren** statt über Docker-DNS-Namen (z. B. `${POSTGRES_IP}` statt `postgres`)
+1. **`ports:`-Zuordnungen entfernen** — `renet compose` verwendet Host-Netzwerk und entfernt Port-Zuordnungen automatisch
+2. **`network_mode: host` entfernen** — `renet compose` fügt dies automatisch hinzu
+3. **`restart: always` oder `restart: unless-stopped` entfernen** — diese konfligieren mit CRIU-Checkpoint/Restore (Docker startet Container automatisch, bevor Checkpoint-Restore ausgeführt werden kann). Verwenden Sie `restart: on-failure`, wenn Sie Neustart-Verhalten benötigen, oder lassen Sie es ganz weg — Rediaccfile `up()`/`down()` verwaltet den Container-Lebenszyklus
+4. **Dienste an `${SERVICE_IP}`-Umgebungsvariablen binden** (werden automatisch von Rediacc injiziert)
+5. **Andere Dienste über ihre IP referenzieren** statt über Docker-DNS-Namen (z. B. `${POSTGRES_IP}` statt `postgres`)
 
 Die `{SERVICE}_IP`-Variablen werden automatisch aus den Dienstnamen Ihrer Compose-Datei generiert. Die Namenskonvention: Großbuchstaben, Bindestriche durch Unterstriche ersetzen, Suffix `_IP`. Zum Beispiel wird `listmonk-app` zu `LISTMONK_APP_IP`.
 
@@ -214,8 +206,7 @@ Dies wird:
 1. Das verschlüsselte Repository einhängen
 2. Den isolierten Docker-Daemon starten
 3. `.rediacc.json` automatisch mit Dienst-IP-Zuweisungen generieren
-4. `prep()` aus allen Rediaccfiles ausführen
-5. `up()` aus allen Rediaccfiles ausführen
+4. `up()` aus allen Rediaccfiles ausführen
 
 Überprüfen Sie, ob Ihre Container laufen:
 
@@ -263,7 +254,7 @@ my-api/
 └── redis-data/             # Redis-Persistenz (UID 999 zur Laufzeit)
 ```
 
-1. Laden Sie Ihr Projekt hoch (erwägen Sie, `node_modules` auszuschließen und in `prep()` zu pullen)
+1. Laden Sie Ihr Projekt hoch (erwägen Sie, `node_modules` auszuschließen und in `up()` zu pullen)
 2. Führen Sie die Eigentümerschaftskorrektur aus, nachdem Container gestartet wurden
 
 ### Benutzerdefiniertes Docker-Projekt
@@ -304,7 +295,7 @@ Jedes Repository erhält einzigartige Loopback-IPs. Wenn Port-Konflikte auftrete
 
 ### Eigentümerschaftskorrektur beschädigt Container
 
-Wenn Sie `rdc repo ownership --force` ausgeführt haben und ein Container nicht mehr funktioniert, wurden die Datendateien des Containers geändert. Stoppen Sie den Container, löschen Sie sein Datenverzeichnis und starten Sie ihn neu — der Container erstellt es neu:
+Wenn Sie `rdc repo ownership` ausgeführt haben und ein Container nicht mehr funktioniert, wurden die Datendateien des Containers geändert. Stoppen Sie den Container, löschen Sie sein Datenverzeichnis und starten Sie ihn neu — der Container erstellt es neu:
 
 ```bash
 rdc repo down my-project -m server-1

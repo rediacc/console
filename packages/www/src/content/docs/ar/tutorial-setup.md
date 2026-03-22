@@ -1,78 +1,82 @@
 ---
 title: "إعداد الجهاز"
-description: "شاهد وتابع أثناء إنشاء إعداد وإضافة جهاز واختبار الاتصال وتشغيل التشخيصات وتكوين البنية التحتية."
+description: "إنشاء ملف تعريف التكوين، تسجيل جهاز بعيد، التحقق من اتصال SSH، وتكوين إعدادات البنية التحتية."
 category: "Tutorials"
 order: 2
 language: ar
-sourceHash: "743a5b6abe79a1af"
+sourceHash: "04756cddd86e097c"
 ---
 
-# درس تعليمي: إعداد الجهاز
+# كيفية إعداد جهاز باستخدام Rediacc
 
-This tutorial walks through the complete setup workflow: creating a config, registering a remote machine, verifying SSH connectivity, running diagnostics, and configuring infrastructure settings.
+يبدأ كل نشر Rediacc بملف تعريف تكوين وجهاز مسجل. في هذا الدرس التعليمي، ستقوم بإنشاء تكوين، وتسجيل خادم بعيد، والتحقق من اتصال SSH، وتشغيل تشخيصات البيئة، وتكوين شبكة البنية التحتية. عند الانتهاء، سيكون جهازك جاهزاً لنشر المستودعات.
 
 ## المتطلبات الأساسية
 
-- The `rdc` CLI installed
-- A remote server (or local VM) reachable via SSH
-- An SSH private key that can authenticate to the server
+- تثبيت أداة `rdc` CLI
+- خادم بعيد (أو جهاز افتراضي محلي) يمكن الوصول إليه عبر SSH
+- مفتاح SSH خاص يمكنه المصادقة على الخادم
 
 ## التسجيل التفاعلي
 
-![Tutorial: Machine setup and configuration](/assets/tutorials/setup-tutorial.cast)
+![درس تعليمي: إعداد الجهاز والتكوين](/assets/tutorials/setup-tutorial.cast)
 
-## ما ستراه في هذا الدرس
+### الخطوة 1: إنشاء تكوين جديد
 
-The recording above walks through each step below. Use the playback bar to navigate between commands.
-
-### الخطوة 1: إنشاء إعداد جديد
+يخزّن ملف تعريف التكوين تعريفات الأجهزة وبيانات اعتماد SSH وإعدادات البنية التحتية. أنشئ واحداً لهذه البيئة.
 
 ```bash
 rdc config init tutorial-demo --ssh-key ~/.ssh/id_ed25519
 ```
 
-Creates a named config file at `~/.config/rediacc/tutorial-demo.json`. Each config stores machine definitions, SSH credentials, and infrastructure settings.
+ينشئ هذا ملف تكوين مسمى في `~/.config/rediacc/tutorial-demo.json`.
 
-### الخطوة 2: عرض الإعدادات
+### الخطوة 2: عرض التكوينات
+
+تحقق من ظهور الملف التعريفي الجديد في قائمة التكوينات.
 
 ```bash
 rdc config list
 ```
 
-Lists all available configs with their adapter type (local or cloud) and machine count.
+يعرض جميع التكوينات المتاحة مع نوع المحول (محلي أو سحابي) وعدد الأجهزة.
 
 ### الخطوة 3: إضافة جهاز
 
-```bash
-rdc config add-machine bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
-```
+سجّل جهازاً بعنوان IP الخاص به ومستخدم SSH. يقوم CLI تلقائياً بجلب وتخزين مفاتيح المضيف للخادم عبر `ssh-keyscan`.
 
-Registers a machine in the config. The CLI automatically runs `ssh-keyscan` to fetch and store the server's host keys.
+```bash
+rdc config machine add bridge-vm --ip 192.168.111.1 --user muhammed --config tutorial-demo
+```
 
 ### الخطوة 4: عرض الأجهزة
 
+تأكد من تسجيل الجهاز بشكل صحيح.
+
 ```bash
-rdc config machines --config tutorial-demo
+rdc config machine list --config tutorial-demo
 ```
 
-Shows all machines in the current config with their connection details.
+يعرض جميع الأجهزة في التكوين الحالي مع تفاصيل الاتصال الخاصة بها.
 
 ### الخطوة 5: تعيين الجهاز الافتراضي
+
+تعيين جهاز افتراضي يغنيك عن تكرار `-m bridge-vm` في كل أمر.
 
 ```bash
 rdc config set machine bridge-vm --config tutorial-demo
 ```
 
-يعيّن جهازاً افتراضياً حتى تتمكن من حذف `-m bridge-vm` من الأوامر اللاحقة.
-
 ### الخطوة 6: اختبار الاتصال
+
+قبل نشر أي شيء، تحقق من إمكانية الوصول إلى الجهاز عبر SSH.
 
 ```bash
 rdc term bridge-vm -c "hostname"
 rdc term bridge-vm -c "uptime"
 ```
 
-Runs commands on the machine over SSH to verify connectivity is working.
+يعمل كلا الأمرين على الجهاز البعيد ويعيدان النتيجة فوراً. إذا فشل أي منهما، تحقق من صحة مفتاح SSH وإمكانية الوصول إلى الخادم.
 
 ### الخطوة 7: تشغيل التشخيصات
 
@@ -80,27 +84,42 @@ Runs commands on the machine over SSH to verify connectivity is working.
 rdc doctor
 ```
 
-Checks your environment: CLI version, Docker, renet binary, config status, SSH key, and virtualization prerequisites.
+يفحص بيئتك المحلية: إصدار CLI، وDocker، وملف renet الثنائي، وحالة التكوين، ومفتاح SSH، ومتطلبات المحاكاة الافتراضية. يُبلغ كل فحص عن **OK** أو **Warning** أو **Error**.
 
 ### الخطوة 8: تكوين البنية التحتية
 
+للخدمات العامة، يحتاج الجهاز إلى تكوين الشبكة — عنوان IP الخارجي، ونطاق أساسي، وبريد إلكتروني للشهادة لـ TLS.
+
 ```bash
-rdc config set-infra bridge-vm \
+rdc config infra set bridge-vm \
   --public-ipv4 192.168.111.1 \
   --base-domain test.local \
   --cert-email admin@test.local
 ```
 
-Sets the infrastructure configuration for public-facing services. After setting infra, view the configuration:
+تحقق من التكوين:
 
 ```bash
-rdc config show-infra bridge-vm
+rdc config infra show bridge-vm
 ```
 
-Deploy the generated Traefik proxy config to the server with `rdc config push-infra bridge-vm`.
+انشر تكوين وكيل Traefik المُنشأ إلى الخادم باستخدام `rdc config infra push bridge-vm`.
+
+## استكشاف الأخطاء وإصلاحها
+
+**"SSH key not found" أو "Permission denied (publickey)"**
+تحقق من وجود مسار المفتاح الذي تم تمريره إلى `config init` ومطابقته لـ `authorized_keys` على الخادم. تحقق من الأذونات: يجب أن يكون ملف المفتاح الخاص `600` (`chmod 600 ~/.ssh/id_ed25519`).
+
+**"Connection refused" عند أوامر SSH**
+تأكد من تشغيل الخادم وصحة عنوان IP. تحقق من أن المنفذ 22 مفتوح: `nc -zv <ip> 22`. إذا كنت تستخدم منفذاً غير قياسي، مرّر `--port` عند إضافة الجهاز.
+
+**"Host key verification failed"**
+المفتاح المخزن لا يتطابق مع مفتاح الخادم الحالي. يحدث هذا بعد إعادة بناء الخادم أو إعادة تعيين عنوان IP. شغّل `rdc config machine scan-keys <machine>` لتحديث المفتاح.
 
 ## الخطوات التالية
 
-- [Machine Setup](/ar/docs/setup) — full reference for all config and setup commands
-- [Quick Start](/ar/docs/quick-start) — deploy a containerized application end-to-end
-- [Tutorial: Repository Lifecycle](/ar/docs/tutorial-repos) — create, deploy, and manage repositories
+لقد أنشأت ملف تعريف تكوين، وسجلت جهازاً، وتحققت من الاتصال، وقمت بتكوين شبكة البنية التحتية. لنشر التطبيقات:
+
+- [إعداد الجهاز](/ar/docs/setup) — المرجع الكامل لجميع أوامر التكوين والإعداد
+- [درس تعليمي: دورة حياة المستودع](/ar/docs/tutorial-repos) — إنشاء المستودعات ونشرها وإدارتها
+- [البدء السريع](/ar/docs/quick-start) — نشر تطبيق محتوى من البداية إلى النهاية

@@ -117,11 +117,30 @@ require_cmd go
 
 cd "$RENET_DIR"
 
+# Inject license public key if available (from LICENSE_ED25519_PUBLIC_KEY env var)
+KEY_LDFLAGS=""
+if [[ -n "${LICENSE_ED25519_PUBLIC_KEY:-}" ]]; then
+    KEY_LDFLAGS="-X github.com/rediacc/renet/pkg/license/keys.ProductionPublicKey=${LICENSE_ED25519_PUBLIC_KEY}"
+    log_info "License public key injected from environment"
+fi
+
+# Inject OTLP auth credentials if available
+OTLP_LDFLAGS=""
+if [[ -n "${OTLP_AUTH_TOKEN:-}" ]]; then
+    OTLP_DECODED=$(echo "$OTLP_AUTH_TOKEN" | base64 -d 2>/dev/null || echo "")
+    OTLP_USER="${OTLP_DECODED%%:*}"
+    OTLP_PASS="${OTLP_DECODED#*:}"
+    if [[ -n "$OTLP_USER" && -n "$OTLP_PASS" ]]; then
+        OTLP_LDFLAGS="-X github.com/rediacc/renet/pkg/telemetry.otlpUser=${OTLP_USER} -X github.com/rediacc/renet/pkg/telemetry.otlpPass=${OTLP_PASS}"
+        log_info "OTLP auth credentials injected from environment"
+    fi
+fi
+
 for os in linux darwin; do
     for arch in amd64 arm64; do
         log_info "Building renet-$os-$arch..."
         CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build \
-            -ldflags="-s -w -X main.Version=$VERSION" \
+            -ldflags="-s -w -X main.Version=$VERSION $KEY_LDFLAGS $OTLP_LDFLAGS" \
             -o "$OUTPUT_DIR/renet-$os-$arch" ./cmd/renet
     done
 done
@@ -130,7 +149,7 @@ done
 for arch in amd64 arm64; do
     log_info "Building renet-windows-$arch..."
     CGO_ENABLED=0 GOOS=windows GOARCH=$arch go build \
-        -ldflags="-s -w -X main.Version=$VERSION" \
+        -ldflags="-s -w -X main.Version=$VERSION $KEY_LDFLAGS $OTLP_LDFLAGS" \
         -o "$OUTPUT_DIR/renet-windows-$arch.exe" ./cmd/renet
 done
 

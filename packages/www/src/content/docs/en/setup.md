@@ -32,7 +32,7 @@ This creates a config named `my-infra` and stores it in `~/.config/rediacc/my-in
 Register your remote server as a machine in the config:
 
 ```bash
-rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
+rdc config machine add server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | Option | Required | Default | Description |
@@ -45,13 +45,13 @@ rdc config add-machine server-1 --ip 203.0.113.50 --user deploy
 After adding the machine, rdc automatically runs `ssh-keyscan` to fetch the server's host keys. You can also run this manually:
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 To view all registered machines:
 
 ```bash
-rdc config machines
+rdc config machine list
 ```
 
 ## Step 3: Set Up the Machine
@@ -59,7 +59,7 @@ rdc config machines
 Provision the remote server with all required dependencies:
 
 ```bash
-rdc config setup-machine server-1
+rdc config machine setup server-1
 ```
 
 This command:
@@ -81,7 +81,7 @@ This command:
 If a server's SSH host key changes (e.g., after reinstallation), refresh the stored keys:
 
 ```bash
-rdc config scan-keys server-1
+rdc config machine scan-keys server-1
 ```
 
 This updates the `knownHosts` field in your config for that machine.
@@ -111,27 +111,29 @@ For machines that need to serve traffic publicly, configure infrastructure setti
 ### Set Infrastructure
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--public-ipv4 <ip>` | Public IPv4 address for external access |
-| `--public-ipv6 <ip>` | Public IPv6 address for external access |
-| `--base-domain <domain>` | Base domain for applications (e.g., `example.com`) |
-| `--cert-email <email>` | Email for Let's Encrypt TLS certificates |
-| `--cf-dns-token <token>` | Cloudflare DNS API token for ACME DNS-01 challenges |
-| `--tcp-ports <ports>` | Comma-separated additional TCP ports to forward (e.g., `25,143,465,587,993`) |
-| `--udp-ports <ports>` | Comma-separated additional UDP ports to forward (e.g., `53`) |
+| Option | Scope | Description |
+|--------|-------|-------------|
+| `--public-ipv4 <ip>` | Machine | Public IPv4 address — proxy entrypoints are only created for configured address families |
+| `--public-ipv6 <ip>` | Machine | Public IPv6 address — proxy entrypoints are only created for configured address families |
+| `--base-domain <domain>` | Machine | Base domain for applications (e.g., `example.com`) |
+| `--cert-email <email>` | Config | Email for Let's Encrypt TLS certificates (shared across machines) |
+| `--cf-dns-token <token>` | Config | Cloudflare DNS API token for ACME DNS-01 challenges (shared across machines) |
+| `--tcp-ports <ports>` | Machine | Comma-separated additional TCP ports to forward (e.g., `25,143,465,587,993`) |
+| `--udp-ports <ports>` | Machine | Comma-separated additional UDP ports to forward (e.g., `53`) |
+
+Machine-scoped options are stored per-machine. Config-scoped options (`--cert-email`, `--cf-dns-token`) are shared across all machines in the config — set them once and they apply everywhere.
 
 ### View Infrastructure
 
 ```bash
-rdc config show-infra server-1
+rdc config infra show server-1
 ```
 
 ### Push to Server
@@ -139,10 +141,88 @@ rdc config show-infra server-1
 Generate and deploy the Traefik reverse proxy configuration to the server:
 
 ```bash
-rdc config push-infra server-1
+rdc config infra push server-1
 ```
 
-This pushes the proxy configuration based on your infra settings. Traefik handles TLS termination, routing, and port forwarding.
+This command:
+1. Deploys the renet binary to the remote machine
+2. Configures Traefik reverse proxy, router, and systemd services
+3. Creates Cloudflare DNS records for the machine subdomain (`server-1.example.com` and `*.server-1.example.com`) if `--cf-dns-token` is set
+
+The DNS step is automatic and idempotent — it creates missing records, updates records with changed IPs, and skips records that are already correct. If no Cloudflare token is configured, DNS is skipped with a warning. Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
+
+## Cloud Provisioning
+
+Instead of manually creating VMs, you can configure a cloud provider and let `rdc` provision machines automatically using [OpenTofu](https://opentofu.org/).
+
+### Prerequisites
+
+Install OpenTofu: [opentofu.org/docs/intro/install](https://opentofu.org/docs/intro/install/)
+
+Ensure your SSH config includes a public key:
+
+```bash
+rdc config set ssh.privateKeyPath ~/.ssh/id_ed25519
+```
+
+### Add a Cloud Provider
+
+```bash
+rdc config provider add my-linode \
+  --provider linode/linode \
+  --token $LINODE_API_TOKEN \
+  --region us-east \
+  --type g6-standard-2
+```
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `--provider <source>` | Yes* | Known provider source (e.g., `linode/linode`, `hetznercloud/hcloud`) |
+| `--source <source>` | Yes* | Custom OpenTofu provider source (for unknown providers) |
+| `--token <token>` | Yes | API token for the cloud provider |
+| `--region <region>` | No | Default region for new machines |
+| `--type <type>` | No | Default instance type/size |
+| `--image <image>` | No | Default OS image |
+| `--ssh-user <user>` | No | SSH username (default: `root`) |
+
+\* Either `--provider` or `--source` is required. Use `--provider` for known providers (built-in defaults). Use `--source` with additional `--resource`, `--ipv4-output`, `--ssh-key-attr` flags for custom providers.
+
+### Provision a Machine
+
+```bash
+rdc machine provision prod-2 --provider my-linode
+```
+
+This single command:
+1. Creates a VM on the cloud provider via OpenTofu
+2. Waits for SSH connectivity
+3. Registers the machine in your config
+4. Installs renet and all dependencies
+5. Configures Traefik proxy and Cloudflare DNS (auto-detects base domain from sibling machines, or pass `--base-domain` explicitly)
+
+| Option | Description |
+|--------|-------------|
+| `--provider <name>` | Cloud provider name (from `add-provider`) |
+| `--region <region>` | Override the provider's default region |
+| `--type <type>` | Override the default instance type |
+| `--image <image>` | Override the default OS image |
+| `--base-domain <domain>` | Base domain for infrastructure. Auto-detected from sibling machines if not specified |
+| `--no-infra` | Skip infrastructure configuration (proxy + DNS) entirely |
+| `--debug` | Show detailed provisioning output |
+
+### Deprovision a Machine
+
+```bash
+rdc machine deprovision prod-2
+```
+
+Destroys the VM via OpenTofu and removes it from your config. Requires confirmation unless `--force` is used. Only works for machines created with `machine provision`.
+
+### List Providers
+
+```bash
+rdc config provider list
+```
 
 ## Setting Defaults
 

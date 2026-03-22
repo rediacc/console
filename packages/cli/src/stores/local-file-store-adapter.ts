@@ -1,8 +1,8 @@
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
-import type { IStoreAdapter, PullResult, PushResult } from './types.js';
 import type { RdcConfig } from '../types/index.js';
 import type { StoreEntry } from '../types/store.js';
+import type { IStoreAdapter, PullResult, PushResult } from './types.js';
 
 /**
  * Local file store adapter. Stores config files as JSON in a local directory.

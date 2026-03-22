@@ -9,7 +9,7 @@ import { CliTestRunner } from '../../src/utils/CliTestRunner';
  *
  * These tests verify the CLI commands work correctly through
  * the actual process execution. Tests the config init,
- * add-machine, remove-machine, machines, and run commands.
+ * machine add, machine remove, machine list, and run commands.
  *
  * NOTE: These tests don't need the master context - they create their own local contexts.
  */
@@ -136,14 +136,15 @@ test.describe('Local Context Commands @cli @core', () => {
     });
   });
 
-  test.describe('config add-machine', () => {
+  test.describe('config machine add', () => {
     test('should add a machine to the local context', async () => {
       const result = await runner.run(
         [
           '--config',
           testLocalContext,
           'config',
-          'add-machine',
+          'machine',
+          'add',
           testMachine,
           '--ip',
           '192.168.1.100',
@@ -164,7 +165,8 @@ test.describe('Local Context Commands @cli @core', () => {
           '--config',
           testLocalContext,
           'config',
-          'add-machine',
+          'machine',
+          'add',
           'full-machine',
           '--ip',
           '10.0.0.1',
@@ -183,7 +185,7 @@ test.describe('Local Context Commands @cli @core', () => {
 
     test('should fail without required --ip', async () => {
       const result = await runner.run(
-        ['--config', testLocalContext, 'config', 'add-machine', 'no-ip', '--user', 'testuser'],
+        ['--config', testLocalContext, 'config', 'machine', 'add', 'no-ip', '--user', 'testuser'],
         { skipJsonParse: true }
       );
 
@@ -193,7 +195,7 @@ test.describe('Local Context Commands @cli @core', () => {
 
     test('should fail without required --user', async () => {
       const result = await runner.run(
-        ['--config', testLocalContext, 'config', 'add-machine', 'no-user', '--ip', '10.0.0.1'],
+        ['--config', testLocalContext, 'config', 'machine', 'add', 'no-user', '--ip', '10.0.0.1'],
         { skipJsonParse: true }
       );
 
@@ -202,9 +204,9 @@ test.describe('Local Context Commands @cli @core', () => {
     });
   });
 
-  test.describe('config machines', () => {
+  test.describe('config machine list', () => {
     test('should list all machines', async () => {
-      const result = await runner.run(['--config', testLocalContext, 'config', 'machines']);
+      const result = await runner.run(['--config', testLocalContext, 'config', 'machine', 'list']);
 
       expect(result.success).toBe(true);
       expect(Array.isArray(result.json)).toBe(true);
@@ -218,7 +220,7 @@ test.describe('Local Context Commands @cli @core', () => {
     });
 
     test('should show machine details in table format', async () => {
-      const result = await runner.run(['--config', testLocalContext, 'config', 'machines'], {
+      const result = await runner.run(['--config', testLocalContext, 'config', 'machine', 'list'], {
         outputFormat: 'table',
       });
 
@@ -266,44 +268,10 @@ test.describe('Local Context Commands @cli @core', () => {
     });
   });
 
-  test.describe('config set-ssh', () => {
-    test('should update SSH configuration', async () => {
-      const result = await runner.run(
-        [
-          '--config',
-          testLocalContext,
-          'config',
-          'set-ssh',
-          '--private-key',
-          '~/.ssh/id_ed25519',
-          '--public-key',
-          '~/.ssh/id_ed25519.pub',
-        ],
-        { skipJsonParse: true }
-      );
+  // Note: config set-ssh and config set-renet commands were removed.
+  // SSH keys and renet path are now set via: config init --ssh-key ... --renet-path ...
 
-      expect(result.success).toBe(true);
-      expect(result.stdout).toContain('updated');
-    });
-  });
-
-  test.describe('config set-renet', () => {
-    test('should update renet path', async () => {
-      const result = await runner.run(
-        ['--config', testLocalContext, 'config', 'set-renet', '/usr/bin/renet'],
-        { skipJsonParse: true }
-      );
-
-      expect(result.success).toBe(true);
-      expect(result.stdout).toContain('set to');
-
-      // Verify in show
-      const showResult = await runner.run(['--config', testLocalContext, 'config', 'show']);
-      expect((showResult.json as { renetPath: string }).renetPath).toBe('/usr/bin/renet');
-    });
-  });
-
-  test.describe('config remove-machine', () => {
+  test.describe('config machine remove', () => {
     test('should remove a machine', async () => {
       // First add a machine to remove
       await runner.run(
@@ -311,7 +279,8 @@ test.describe('Local Context Commands @cli @core', () => {
           '--config',
           testLocalContext,
           'config',
-          'add-machine',
+          'machine',
+          'add',
           'to-remove',
           '--ip',
           '1.1.1.1',
@@ -322,7 +291,7 @@ test.describe('Local Context Commands @cli @core', () => {
       );
 
       const result = await runner.run(
-        ['--config', testLocalContext, 'config', 'remove-machine', 'to-remove'],
+        ['--config', testLocalContext, 'config', 'machine', 'remove', 'to-remove'],
         { skipJsonParse: true }
       );
 
@@ -330,14 +299,20 @@ test.describe('Local Context Commands @cli @core', () => {
       expect(result.stdout).toContain('removed');
 
       // Verify it's gone
-      const machinesResult = await runner.run(['--config', testLocalContext, 'config', 'machines']);
+      const machinesResult = await runner.run([
+        '--config',
+        testLocalContext,
+        'config',
+        'machine',
+        'list',
+      ]);
       const machines = runner.expectSuccessArray<{ name: string }>(machinesResult);
       expect(machines.find((m) => m.name === 'to-remove')).toBeUndefined();
     });
 
     test('should fail for non-existent machine', async () => {
       const result = await runner.run(
-        ['--config', testLocalContext, 'config', 'remove-machine', 'nonexistent'],
+        ['--config', testLocalContext, 'config', 'machine', 'remove', 'nonexistent'],
         { skipJsonParse: true }
       );
 
@@ -359,10 +334,7 @@ test.describe('Local Context Commands @cli @core', () => {
       if (!result.success) {
         const output = result.stdout + result.stderr;
         const isLocalModeAttempt =
-          output.includes('[local]') ||
-          output.includes('spawn') ||
-          output.includes('renet') ||
-          output.includes('SSH');
+          output.includes('spawn') || output.includes('renet') || output.includes('SSH');
         expect(isLocalModeAttempt).toBe(true);
       }
     });
@@ -494,7 +466,7 @@ test.describe('Local Storage Commands @cli @core', () => {
   });
 
   test('should show no storages on fresh context', async () => {
-    const result = await runner.run(['--config', storageContext, 'config', 'storages'], {
+    const result = await runner.run(['--config', storageContext, 'config', 'storage', 'list'], {
       skipJsonParse: true,
     });
 
@@ -507,7 +479,7 @@ test.describe('Local Storage Commands @cli @core', () => {
 
   test('should import all supported storages from rclone config', async () => {
     const result = await runner.run(
-      ['--config', storageContext, 'config', 'import-storage', rcloneConfigPath],
+      ['--config', storageContext, 'config', 'storage', 'import', rcloneConfigPath],
       { skipJsonParse: true }
     );
 
@@ -528,7 +500,7 @@ test.describe('Local Storage Commands @cli @core', () => {
     });
 
     const result = await runner.run(
-      ['--config', singleCtx, 'config', 'import-storage', rcloneConfigPath, '--name', 'my-s3'],
+      ['--config', singleCtx, 'config', 'storage', 'import', rcloneConfigPath, '--name', 'my-s3'],
       { skipJsonParse: true }
     );
 
@@ -536,7 +508,7 @@ test.describe('Local Storage Commands @cli @core', () => {
     expect(result.stdout).toContain('my-s3');
 
     // Verify only one storage was imported
-    const listResult = await runner.run(['--config', singleCtx, 'config', 'storages']);
+    const listResult = await runner.run(['--config', singleCtx, 'config', 'storage', 'list']);
     if (Array.isArray(listResult.json)) {
       expect(listResult.json).toHaveLength(1);
       expect((listResult.json[0] as { name: string }).name).toBe('my-s3');
@@ -552,7 +524,8 @@ test.describe('Local Storage Commands @cli @core', () => {
         '--config',
         storageContext,
         'config',
-        'import-storage',
+        'storage',
+        'import',
         rcloneConfigPath,
         '--name',
         'nonexistent',
@@ -566,7 +539,7 @@ test.describe('Local Storage Commands @cli @core', () => {
 
   test('should fail when file does not exist', async () => {
     const result = await runner.run(
-      ['--config', storageContext, 'config', 'import-storage', '/tmp/nonexistent-rclone.conf'],
+      ['--config', storageContext, 'config', 'storage', 'import', '/tmp/nonexistent-rclone.conf'],
       { skipJsonParse: true }
     );
 
@@ -578,7 +551,7 @@ test.describe('Local Storage Commands @cli @core', () => {
     fs.writeFileSync(emptyConf, '# only comments\n; nothing here\n');
 
     const result = await runner.run(
-      ['--config', storageContext, 'config', 'import-storage', emptyConf],
+      ['--config', storageContext, 'config', 'storage', 'import', emptyConf],
       { skipJsonParse: true }
     );
 
@@ -593,7 +566,7 @@ test.describe('Local Storage Commands @cli @core', () => {
   });
 
   test('should list imported storages with name and provider', async () => {
-    const result = await runner.run(['--config', storageContext, 'config', 'storages']);
+    const result = await runner.run(['--config', storageContext, 'config', 'storage', 'list']);
 
     expect(result.success).toBe(true);
     expect(Array.isArray(result.json)).toBe(true);
@@ -612,7 +585,7 @@ test.describe('Local Storage Commands @cli @core', () => {
 
   test('should remove a specific storage', async () => {
     const result = await runner.run(
-      ['--config', storageContext, 'config', 'remove-storage', 'my-drive'],
+      ['--config', storageContext, 'config', 'storage', 'remove', 'my-drive'],
       { skipJsonParse: true }
     );
 
@@ -620,7 +593,7 @@ test.describe('Local Storage Commands @cli @core', () => {
     expect(result.stdout).toContain('removed');
 
     // Verify it's gone
-    const listResult = await runner.run(['--config', storageContext, 'config', 'storages']);
+    const listResult = await runner.run(['--config', storageContext, 'config', 'storage', 'list']);
     if (Array.isArray(listResult.json)) {
       const names = (listResult.json as { name: string }[]).map((s) => s.name);
       expect(names).not.toContain('my-drive');
@@ -628,7 +601,7 @@ test.describe('Local Storage Commands @cli @core', () => {
   });
 
   test('should leave other storages intact after removal', async () => {
-    const listResult = await runner.run(['--config', storageContext, 'config', 'storages']);
+    const listResult = await runner.run(['--config', storageContext, 'config', 'storage', 'list']);
 
     expect(listResult.success).toBe(true);
     if (Array.isArray(listResult.json)) {
@@ -639,7 +612,7 @@ test.describe('Local Storage Commands @cli @core', () => {
 
   test('should fail for non-existent storage name on remove', async () => {
     const result = await runner.run(
-      ['--config', storageContext, 'config', 'remove-storage', 'nonexistent'],
+      ['--config', storageContext, 'config', 'storage', 'remove', 'nonexistent'],
       { skipJsonParse: true }
     );
 

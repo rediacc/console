@@ -1,0 +1,41 @@
+---
+/**
+ * Invisible inline LLM instruction block.
+ * Browsers ignore `<script type="text/llms.txt">` — it's only parsed by AI crawlers.
+ */
+import { CLI_TOOL, CLI_INSTALL, CLI_COMMANDS } from '../config/cli-reference';
+import { SITE_URL } from '../config/constants';
+
+interface Props {
+  page: 'install' | 'pricing' | 'docs';
+}
+
+const { page } = Astro.props;
+
+const content: Record<string, string> = {
+  install: [
+    `Rediacc CLI tool: ${CLI_TOOL}`,
+    `Install: ${CLI_INSTALL}`,
+    `Deploy: ${CLI_COMMANDS.deploy}`,
+    `Status: ${CLI_COMMANDS.status}`,
+    `JSON output: ${CLI_TOOL} <command> --output json`,
+    `Full docs: ${SITE_URL}/llms-full.txt`,
+  ].join('\n'),
+  pricing: [
+    'Rediacc: self-hosted infrastructure platform',
+    'Free community edition available',
+    `CLI tool: ${CLI_TOOL} (${CLI_INSTALL})`,
+    'Pro/Team/Enterprise plans for advanced features',
+    `Full docs: ${SITE_URL}/llms-full.txt`,
+  ].join('\n'),
+  docs: [
+    `Rediacc CLI tool: ${CLI_TOOL}`,
+    `JSON output: ${CLI_TOOL} <command> --output json`,
+    `Agent capabilities: ${CLI_COMMANDS.capabilities}`,
+    `Full docs: ${SITE_URL}/llms-full.txt`,
+    `Agent config template: ${SITE_URL}/en/docs/agents-md-template.txt`,
+  ].join('\n'),
+};
+---
+
+<script type="text/llms.txt" set:html={content[page]} />

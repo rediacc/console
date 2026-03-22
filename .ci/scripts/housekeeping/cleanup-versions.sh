@@ -562,6 +562,89 @@ cleanup_environments() {
 }
 
 # =============================================================================
+# PHASE 7: CLOUDFLARE D1 PREVIEW DATABASES
+# =============================================================================
+
+cleanup_d1_databases() {
+    log_step "Phase 7: Cleaning up orphaned D1 preview databases"
+
+    if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]] || [[ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+        log_warn "  CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID not set, skipping D1 cleanup"
+        return 0
+    fi
+
+    # List all D1 databases via CF REST API
+    local response
+    response="$(cf_api GET "/accounts/$CLOUDFLARE_ACCOUNT_ID/d1/database?per_page=100" 2>/dev/null || echo '{"success":false}')"
+
+    local success
+    success="$(echo "$response" | jq -r '.success // false')"
+    if [[ "$success" != "true" ]]; then
+        log_warn "  D1 list API request failed, skipping D1 cleanup"
+        return 0
+    fi
+
+    # Filter to only account-db-pr-N databases
+    local pr_databases
+    pr_databases="$(echo "$response" | jq -c '[.result[] | select(.name | test("^account-db-pr-[0-9]+$")) | {name: .name, uuid: .uuid}]')"
+
+    local total
+    total="$(echo "$pr_databases" | jq 'length')"
+
+    if [[ "$total" -eq 0 ]]; then
+        log_info "  No pr-* D1 databases found"
+        return 0
+    fi
+
+    log_debug "  Found $total pr-* D1 databases"
+
+    local deleted=0
+    local skipped=0
+
+    while IFS= read -r db_entry; do
+        [[ -z "$db_entry" ]] && continue
+
+        local db_name db_uuid pr_number
+        db_name="$(echo "$db_entry" | jq -r '.name')"
+        db_uuid="$(echo "$db_entry" | jq -r '.uuid')"
+        pr_number="${db_name#account-db-pr-}"
+
+        # Check if the PR is still open
+        local pr_state
+        pr_state="$(gh pr view "$pr_number" --repo "$RELEASE_REPO" --json state --jq '.state' 2>/dev/null || echo "UNKNOWN")"
+
+        if [[ "$pr_state" == "OPEN" ]]; then
+            log_debug "  Keeping D1 database: $db_name (PR #$pr_number is open)"
+            skipped=$((skipped + 1))
+            continue
+        fi
+
+        if [[ "$DRY_RUN" == "true" ]]; then
+            log_warn "  [DRY-RUN] Would delete D1 database: $db_name (PR #$pr_number state: $pr_state)"
+            deleted=$((deleted + 1))
+        else
+            local del_response
+            del_response="$(cf_api DELETE "/accounts/$CLOUDFLARE_ACCOUNT_ID/d1/database/$db_uuid" 2>/dev/null || echo '{"success":false}')"
+            local del_success
+            del_success="$(echo "$del_response" | jq -r '.success // false')"
+
+            if [[ "$del_success" == "true" ]]; then
+                log_info "  Deleted D1 database: $db_name (PR #$pr_number state: $pr_state)"
+                deleted=$((deleted + 1))
+            else
+                log_warn "  Failed to delete D1 database: $db_name"
+            fi
+        fi
+    done < <(echo "$pr_databases" | jq -c '.[]')
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "  D1 databases: would delete $deleted of $total ($skipped open PRs, skipped)"
+    else
+        log_info "  D1 databases: deleted $deleted of $total ($skipped open PRs, skipped)"
+    fi
+}
+
+# =============================================================================
 # MAIN
 # =============================================================================
 
@@ -583,6 +666,8 @@ echo ""
 cleanup_cf_pages
 echo ""
 cleanup_environments
+echo ""
+cleanup_d1_databases
 
 echo ""
 log_info "Housekeeping complete"

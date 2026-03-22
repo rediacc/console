@@ -1,4 +1,4 @@
-import React, { startTransition, useEffect, useMemo, useRef, useState } from 'react';
+import type { QueueFunction } from '@rediacc/shared/types';
 import {
   Alert,
   Button,
@@ -14,6 +14,7 @@ import {
   Tag,
   Typography,
 } from 'antd';
+import React, { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useGetTeamMachines,
@@ -25,7 +26,6 @@ import TemplatePreviewModal from '@/components/common/TemplatePreviewModal';
 import { FORM_LAYOUTS } from '@/config/formLayouts';
 import { useLocalizedFunctions } from '@/services/functionsService';
 import { ModalSize } from '@/types/modal';
-import type { QueueFunction } from '@rediacc/shared/types';
 import FunctionParameterField from './components/FunctionParameterField';
 import PrioritySelector from './components/PrioritySelector';
 import { useFunctionParameters } from './hooks/useFunctionParameters';

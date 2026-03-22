@@ -4,7 +4,7 @@ description: Différences entre rdc et renet, et à quel moment utiliser chacun 
 category: Concepts
 order: 1
 language: fr
-sourceHash: "d3e2a6750f95b6c1"
+sourceHash: "69cb9c27f7c3afaf"
 ---
 
 # rdc vs renet
@@ -36,7 +36,7 @@ Toutes les tâches courantes passent par `rdc` sur votre poste de travail :
 
 ```bash
 # Configurer un nouveau serveur
-rdc config setup-machine server-1
+rdc config machine setup server-1
 
 # Créer et démarrer un dépôt
 rdc repo create my-app -m server-1 --size 10G

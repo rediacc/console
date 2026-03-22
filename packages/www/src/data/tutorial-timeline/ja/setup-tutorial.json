@@ -1,0 +1,67 @@
+{
+  "cast": "/assets/tutorials/setup-tutorial.cast",
+  "language": "ja",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "2366b04397641c788ca785b2ee9dbed0f5938a3a3685d856064db513fe53e275",
+  "steps": [
+    {
+      "id": "setup-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.50986,
+      "replayEndSec": 10.605861,
+      "narrationText": "この環境専用の構成プロファイルを初期化します。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-tutorial-01.8877c2db.mp3",
+      "audioDurationSec": 3.709388
+    },
+    {
+      "id": "setup-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.605861,
+      "replayEndSec": 17.961132,
+      "narrationText": "利用可能な構成を確認し、新しいプロファイルが存在することを確認します。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-tutorial-02.77d219db.mp3",
+      "audioDurationSec": 6.034286
+    },
+    {
+      "id": "setup-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 17.961132,
+      "replayEndSec": 31.651331,
+      "narrationText": "ネットワークとユーザーの詳細を含むマシンエントリを登録します。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-tutorial-03.a274a84c.mp3",
+      "audioDurationSec": 3.866122
+    },
+    {
+      "id": "setup-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 31.651331,
+      "replayEndSec": 40.16275,
+      "narrationText": "構成されたマシンのリストを調べて、登録を確認します。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-tutorial-04.963d6069.mp3",
+      "audioDurationSec": 4.04898
+    },
+    {
+      "id": "setup-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 40.16275,
+      "replayEndSec": 48.29967,
+      "narrationText": "ターゲット フラグの繰り返しを減らすためにデフォルトのマシンを設定します。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-tutorial-05.7a498e4c.mp3",
+      "audioDurationSec": 5.067755
+    },
+    {
+      "id": "setup-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 48.29967,
+      "replayEndSec": 52.258257,
+      "narrationText": "基本的なリモート ホスト チェックを実行して、接続を検証します。",
+      "audioSrc": "/assets/tutorials/audio/ja/setup-tutorial/setup-tutorial-06.f06e3ef5.mp3",
+      "audioDurationSec": 4.832653
+    }
+  ]
+}

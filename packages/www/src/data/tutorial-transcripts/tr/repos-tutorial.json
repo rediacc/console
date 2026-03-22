@@ -1,0 +1,13 @@
+{
+  "cast": "/assets/tutorials/repos-tutorial.cast",
+  "language": "tr",
+  "version": 1,
+  "events": [
+    {
+      "id": "repos-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.508464,
+      "text": "Tanımlanmış bir depolama boyutuna sahip şifrelenmiş bir depo oluşturun."
+    }
+  ]
+}

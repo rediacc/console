@@ -1,4 +1,6 @@
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
 import { Badge, Space, Tag, Typography } from 'antd';
+import type { ColumnsType } from 'antd/es/table/interface';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import {
   createStatusColumn,
@@ -25,8 +27,6 @@ import {
   HistoryOutlined,
   WifiOutlined,
 } from '@/utils/optimizedIcons';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import type { ColumnsType } from 'antd/es/table/interface';
 
 type ExecutePingForMachineAndWait = ReturnType<
   typeof usePingFunction

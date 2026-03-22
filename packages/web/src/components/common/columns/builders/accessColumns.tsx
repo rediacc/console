@@ -1,4 +1,7 @@
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetOrganizationPermissionGroups_ResultSet1 } from '@rediacc/shared/types';
 import { Button, Popconfirm, Space, Tooltip, Typography } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup';
 import {
   DeleteOutlined,
@@ -7,11 +10,8 @@ import {
   SafetyOutlined,
   UserOutlined,
 } from '@/utils/optimizedIcons';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import type { GetOrganizationPermissionGroups_ResultSet1 } from '@rediacc/shared/types';
 import { RESPONSIVE_HIDE_XS } from '..';
 import { createActionColumn } from '../factories/action';
-import type { ColumnsType } from 'antd/es/table';
 
 interface BuildPermissionColumnsParams {
   t: TypedTFunction;

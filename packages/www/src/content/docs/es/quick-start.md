@@ -4,7 +4,7 @@ description: Ejecute un servicio en contenedores en su servidor en 5 minutos.
 category: Guides
 order: -1
 language: es
-sourceHash: b368b94e7064efe1
+sourceHash: "a67f1e8442eb492e"
 ---
 
 # Inicio rápido
@@ -20,7 +20,7 @@ Despliegue un entorno de contenedores cifrado y aislado en su propio servidor en
 ## 1. Instalar la CLI
 
 ```bash
-curl -fsSL https://get.rediacc.com | sh
+curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 ## 2. Crear una Configuración
@@ -32,13 +32,13 @@ rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ## 3. Agregar su servidor
 
 ```bash
-rdc config add-machine server-1 --ip <your-server-ip> --user <your-ssh-user>
+rdc config machine add server-1 --ip <your-server-ip> --user <your-ssh-user>
 ```
 
 ## 4. Aprovisionar el servidor
 
 ```bash
-rdc config setup-machine server-1
+rdc config machine setup server-1
 ```
 
 Esto instala Docker, cryptsetup y el binario renet en su servidor.

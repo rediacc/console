@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   mapRcloneToStorageProvider,
+  PROVIDER_MAPPING,
   parseRcloneConfig,
   processConfigValue,
-  PROVIDER_MAPPING,
   type RcloneConfig,
 } from '../rclone.js';
 

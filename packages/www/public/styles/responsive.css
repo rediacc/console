@@ -10,19 +10,6 @@
 
 /* Mobile adjustments */
 @media (max-width: 48rem) {
-  .hero-title {
-    font-size: var(--font-size-3xl);
-  }
-
-  .hero-subtitle {
-    font-size: var(--font-size-lg);
-  }
-
-  .hero {
-    min-height: 90vh;
-    padding: var(--space-16) 0;
-  }
-
   .section-title {
     font-size: var(--font-size-2xl);
   }
@@ -47,19 +34,10 @@
   .solution-benefits li {
     font-size: var(--font-size-base);
   }
-
-  .hero-cta {
-    flex-direction: column;
-  }
 }
 
 /* Small tablets (576px and up) */
 @media (min-width: 36rem) {
-  .hero-cta {
-    flex-direction: row;
-    justify-content: center;
-  }
-
   .footer-bottom {
     flex-wrap: nowrap;
   }
@@ -94,10 +72,6 @@
 @media (min-width: 90rem) {
   :root {
     --max-width: 1400px;
-  }
-
-  .hero-title {
-    font-size: 5rem;
   }
 
   .section-title {
@@ -141,6 +115,21 @@
 
   .image-indicator {
     top: var(--space-1);
+  }
+}
+
+/* Safe area insets for modern phones with notches/home indicators */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .nav {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .sidebar {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .footer {
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
 

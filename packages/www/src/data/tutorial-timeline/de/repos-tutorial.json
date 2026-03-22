@@ -1,0 +1,22 @@
+{
+  "cast": "/assets/tutorials/repos-tutorial.cast",
+  "language": "de",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "eac6a07ee250339d463c3c4bf549e0a12a66b6f6bea4bcd1c14ccc9621ad3e02",
+  "steps": [
+    {
+      "id": "repos-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508464,
+      "replayEndSec": 6.646665,
+      "narrationText": "Erstellen Sie ein verschlüsseltes Repository mit einer definierten Speichergröße.",
+      "audioSrc": "/assets/tutorials/audio/de/repos-tutorial/repos-tutorial-01.fb3ba956.mp3",
+      "audioDurationSec": 4.362449
+    }
+  ]
+}

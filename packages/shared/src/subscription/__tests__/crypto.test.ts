@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { PLAN_FEATURES, PLAN_RESOURCES } from '../constants.js';
+import { PLAN_FEATURES, PLAN_LIMITS } from '../constants.js';
 import {
   clearPublicKeys,
   createSignedSubscription,
@@ -14,8 +14,8 @@ import {
   verifyAndDecodeSubscription,
   verifySignature,
 } from '../crypto.js';
+import type { SignedSubscriptionBlob, SubscriptionData } from '../types.js';
 import { encodeSubscriptionPayload } from '../validation.js';
-import type { SubscriptionData, SignedSubscriptionBlob } from '../types.js';
 
 // Fixed test keys for deterministic tests (from account-server test helpers)
 const TEST_PUBLIC_KEY_SPKI = 'MCowBQYDK2VwAyEAqS7xKEfPYFtCWxOCRUvKG5N6peFHSAYBNMJqGRMHN5I=';
@@ -35,7 +35,8 @@ const createValidSubscriptionData = (
   expiresAt: '2027-01-01T00:00:00Z',
   lastCheckIn: new Date().toISOString(),
   gracePeriodEnds: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-  resources: PLAN_RESOURCES.PROFESSIONAL,
+  maxRepositorySizeGb: PLAN_LIMITS.PROFESSIONAL.maxRepositorySizeGb,
+  maxRepoLicenseIssuancesPerMonth: PLAN_LIMITS.PROFESSIONAL.maxRepoLicenseIssuancesPerMonth,
   features: PLAN_FEATURES.PROFESSIONAL,
   maxActivations: 5,
   activationCount: 1,

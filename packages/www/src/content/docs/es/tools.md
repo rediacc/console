@@ -4,7 +4,7 @@ description: "Sincronización de archivos, acceso por terminal, integración con
 category: Guides
 order: 9
 language: es
-sourceHash: 80ca3cd3e1a55d4b
+sourceHash: "b9aa7cdcf088b645"
 ---
 
 # Herramientas
@@ -18,19 +18,19 @@ Transfiera archivos entre su estación de trabajo y un repositorio remoto usando
 ### Subir Archivos
 
 ```bash
-rdc sync upload -m server-1 -r my-app --local ./src --remote /app/src
+rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
 ```
 
 ### Descargar Archivos
 
 ```bash
-rdc sync download -m server-1 -r my-app --remote /app/data --local ./data
+rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
 ```
 
 ### Verificar Estado de Sincronización
 
 ```bash
-rdc sync status -m server-1 -r my-app
+rdc repo sync status -m server-1 -r my-app
 ```
 
 ### Opciones

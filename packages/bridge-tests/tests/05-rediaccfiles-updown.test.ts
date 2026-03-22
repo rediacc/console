@@ -12,9 +12,8 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  *
  * Tests the Rediaccfile orchestration system that:
  * 1. Reads Rediaccfile from repository
- * 2. Executes prep() function on first up
- * 3. Executes up() function to start services
- * 4. Executes down() function to stop services
+ * 2. Executes up() function to start services
+ * 3. Executes down() function to stop services
  *
  * Functions tested:
  * - up (Rediaccfile orchestration)
@@ -28,11 +27,7 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  * ```bash
  * # === Renet Compose (Required) ===
  * _compose() {
- *   renet compose --network-id "$REPOSITORY_NETWORK_ID" -- "$@"
- * }
- *
- * prep() {
- *   docker pull nginx:alpine
+ *   renet compose --network-id "$REDIACC_NETWORK_ID" -- "$@"
  * }
  *
  * up() {
@@ -120,11 +115,10 @@ test.describe
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test('3. up: execute Rediaccfile prep() and up()', async () => {
+    test('3. up: execute Rediaccfile up()', async () => {
       // The up command:
       // 1. Checks for Rediaccfile
-      // 2. If first run, executes prep()
-      // 3. Executes up() function
+      // 2. Executes up() function
       // Note: Network ID required for daemon startup
       const result = await runner.repositoryUp(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
       expect(runner.isSuccess(result)).toBe(true);
@@ -274,7 +268,7 @@ test.describe('Rediaccfile with Daemons @bridge', () => {
  * Rediaccfile Real Execution Tests
  *
  * Tests actual Rediaccfile execution with nginx container.
- * Verifies prep(), up(), and down() functions work correctly.
+ * Verifies up() and down() functions work correctly.
  */
 test.describe
   .serial('Rediaccfile Real Execution @bridge @integration', () => {
@@ -333,7 +327,7 @@ test.describe
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test('4. up: execute Rediaccfile prep() and up()', async () => {
+    test('4. up: execute Rediaccfile up()', async () => {
       // Network ID required for daemon startup and renet compose
       const result = await runner.repositoryUp(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
       expect(runner.isSuccess(result)).toBe(true);

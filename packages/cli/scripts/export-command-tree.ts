@@ -14,7 +14,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { Command, Option, Argument } from 'commander';
+import type { Argument, Command, Option } from 'commander';
 import { cli } from '../src/cli.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

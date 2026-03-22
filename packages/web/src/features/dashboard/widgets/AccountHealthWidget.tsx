@@ -1,5 +1,6 @@
-import React from 'react';
+import type { OrganizationDashboardData } from '@rediacc/shared/types';
 import { Card, Empty, Flex, Tag, Typography } from 'antd';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   CheckCircleOutlined,
@@ -7,7 +8,6 @@ import {
   ExclamationCircleOutlined,
   SafetyCertificateOutlined,
 } from '@/utils/optimizedIcons';
-import type { OrganizationDashboardData } from '@rediacc/shared/types';
 
 interface AccountHealthWidgetProps {
   accountHealth?: OrganizationDashboardData['accountHealth'];

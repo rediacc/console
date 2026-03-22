@@ -1,7 +1,7 @@
 /**
  * Playwright CLI tests for S3 config commands.
  *
- * Exercises `config init` (with S3 flags), `config show`, `config add-machine`,
+ * Exercises `config init` (with S3 flags), `config show`, `config machine add`,
  * and `config list` against a real RustFS server.
  *
  * Tests both encrypted (with master password) and plaintext (without) modes.
@@ -99,7 +99,7 @@ test.describe('S3 Config Commands (with master password) @cli @s3', () => {
       credentials: { email: '', password: '', masterPassword: encMasterPassword },
     });
     const result = await ctxRunner.run(
-      ['config', 'add-machine', 'test-vm', '--ip', '192.168.1.100', '--user', 'root'],
+      ['config', 'machine', 'add', 'test-vm', '--ip', '192.168.1.100', '--user', 'root'],
       { skipJsonParse: true }
     );
 
@@ -147,7 +147,7 @@ test.describe('S3 Config Commands (with master password) @cli @s3', () => {
       context: encContextName,
       credentials: { email: '', password: '', masterPassword: encMasterPassword },
     });
-    const result = await ctxRunner.run(['config', 'machines']);
+    const result = await ctxRunner.run(['config', 'machine', 'list']);
 
     runner.expectSuccess(result);
     const machines = runner.expectSuccessArray<Record<string, unknown>>(result);
@@ -221,7 +221,7 @@ test.describe('S3 Config Commands (without master password) @cli @s3', () => {
   test('should add a machine to S3 config without master password', async () => {
     const ctxRunner = CliTestRunner.withContext(ptContextName);
     const result = await ctxRunner.run(
-      ['config', 'add-machine', 'test-vm', '--ip', '192.168.1.150', '--user', 'root'],
+      ['config', 'machine', 'add', 'test-vm', '--ip', '192.168.1.150', '--user', 'root'],
       { skipJsonParse: true }
     );
 
@@ -230,7 +230,7 @@ test.describe('S3 Config Commands (without master password) @cli @s3', () => {
 
   test('should show machines in plaintext config', async () => {
     const ctxRunner = CliTestRunner.withContext(ptContextName);
-    const result = await ctxRunner.run(['config', 'machines']);
+    const result = await ctxRunner.run(['config', 'machine', 'list']);
 
     runner.expectSuccess(result);
     const machines = runner.expectSuccessArray<Record<string, unknown>>(result);

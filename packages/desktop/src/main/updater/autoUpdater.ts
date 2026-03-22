@@ -1,13 +1,13 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import log from 'electron-log';
-import { autoUpdater, ProgressInfo, UpdateInfo } from 'electron-updater';
 import { UPDATE_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { getConfigDir } from '@rediacc/shared/paths';
 import { isCooldownExpired, UPDATE_STATE_DEFAULTS } from '@rediacc/shared/update';
-import { readDesktopUpdateState, writeDesktopUpdateState } from './update-state';
+import log from 'electron-log';
+import { autoUpdater, ProgressInfo, UpdateInfo } from 'electron-updater';
 import { sendToAllWindows } from '../ipc/updater';
 import { desktopTelemetryService } from '../services/telemetry';
+import { readDesktopUpdateState, writeDesktopUpdateState } from './update-state';
 
 // Configure logging
 autoUpdater.logger = log;

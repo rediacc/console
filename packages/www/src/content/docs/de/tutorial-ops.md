@@ -1,37 +1,35 @@
 ---
 title: "Lokale VM-Bereitstellung"
-description: "Sehen Sie zu und machen Sie mit, während wir einen lokalen VM-Cluster bereitstellen, Befehle über SSH ausführen und alles wieder abbauen."
+description: "Einen lokalen VM-Cluster bereitstellen, Befehle über SSH ausführen und alles über die CLI wieder abbauen."
 category: "Tutorials"
 order: 1
 language: de
-sourceHash: "990c6fd433c7c847"
+sourceHash: "2fdc49f796b03e18"
 ---
 
-# Tutorial: Lokale VM-Bereitstellung
+# So stellen Sie lokale VMs mit Rediacc bereit
 
-This tutorial walks through the complete `rdc ops` workflow: checking system requirements, provisioning a minimal VM cluster, running commands on VMs over SSH, and tearing everything down.
+Infrastruktur lokal zu testen, bevor Sie in die Produktion deployen, spart Zeit und verhindert Fehlkonfigurationen. In diesem Tutorial stellen Sie einen minimalen VM-Cluster auf Ihrer Workstation bereit, überprüfen die Konnektivität, führen Befehle über SSH aus und bauen alles wieder ab. Am Ende haben Sie eine wiederholbare lokale Entwicklungsumgebung.
 
 ## Voraussetzungen
 
-- A Linux or macOS workstation with hardware virtualization enabled
-- The `rdc` CLI installed and a config initialized with the local adapter
-- KVM/libvirt (Linux) or QEMU (macOS) installed — see [Experimental VMs](/de/docs/experimental-vms) for setup instructions
+- Eine Linux- oder macOS-Workstation mit aktivierter Hardware-Virtualisierung
+- Die `rdc` CLI installiert und eine Konfiguration mit dem lokalen Adapter initialisiert
+- KVM/libvirt (Linux) oder QEMU (macOS) installiert — siehe [Experimentelle VMs](/de/docs/experimental-vms) für Einrichtungsanweisungen
 
 ## Interaktive Aufzeichnung
 
 ![Tutorial: rdc ops provisioning](/assets/tutorials/ops-tutorial.cast)
 
-## Was Sie sehen werden
-
-The recording above walks through each step below. Use the playback bar to navigate between commands.
-
 ### Schritt 1: Systemanforderungen überprüfen
+
+Bevor Sie bereitstellen, stellen Sie sicher, dass Ihre Workstation Virtualisierungsunterstützung hat und die erforderlichen Pakete installiert sind.
 
 ```bash
 rdc ops check
 ```
 
-Prüft auf Hardware-Virtualisierungsunterstützung, benötigte Pakete (libvirt, QEMU) und Netzwerkkonfiguration. Dies muss erfolgreich sein, bevor Sie VMs bereitstellen können.
+Rediacc prüft auf Hardware-Virtualisierung (VT-x/AMD-V), erforderliche Pakete (libvirt, QEMU) und Netzwerkkonfiguration. Alle Prüfungen müssen bestanden werden, bevor Sie VMs erstellen können.
 
 ### Schritt 2: Minimalen VM-Cluster bereitstellen
 
@@ -39,7 +37,9 @@ Prüft auf Hardware-Virtualisierungsunterstützung, benötigte Pakete (libvirt, 
 rdc ops up --basic --skip-orchestration
 ```
 
-Creates a two-VM cluster: a **bridge** VM (1 CPU, 1024 MB RAM, 8 GB disk) and a **worker** VM (2 CPU, 4096 MB RAM, 16 GB disk). The `--skip-orchestration` flag skips Rediacc platform provisioning, giving you bare VMs with SSH access only.
+Erstellt einen Zwei-VM-Cluster: eine **Bridge**-VM (1 CPU, 1024 MB RAM, 8 GB Festplatte) und eine **Worker**-VM (2 CPU, 4096 MB RAM, 16 GB Festplatte). Das Flag `--skip-orchestration` überspringt die Rediacc-Plattformbereitstellung und gibt Ihnen reine VMs nur mit SSH-Zugang.
+
+> **Hinweis:** Die erste Bereitstellung lädt Basisimages herunter, was länger dauert. Nachfolgende Durchläufe verwenden zwischengespeicherte Images.
 
 ### Schritt 3: Cluster-Status prüfen
 
@@ -47,7 +47,7 @@ Creates a two-VM cluster: a **bridge** VM (1 CPU, 1024 MB RAM, 8 GB disk) and a 
 rdc ops status
 ```
 
-Shows the state of each VM in the cluster — IP addresses, resource allocation, and running status.
+Zeigt den Status jeder VM im Cluster an — IP-Adressen, Ressourcenzuweisung und Ausführungsstatus. Beide VMs sollten als laufend angezeigt werden.
 
 ### Schritt 4: Befehle auf einer VM ausführen
 
@@ -56,18 +56,33 @@ rdc ops ssh 1 hostname
 rdc ops ssh 1 uname -a
 ```
 
-Führt Befehle auf der Bridge-VM (ID `1`) über SSH aus. Sie können jeden Befehl nach der VM-ID übergeben. Für eine interaktive Shell lassen Sie den Befehl weg: `rdc ops ssh 1`.
+Führt Befehle auf der Bridge-VM (ID `1`) über SSH aus. Übergeben Sie einen beliebigen Befehl nach der VM-ID. Für eine interaktive Shell lassen Sie den Befehl weg: `rdc ops ssh 1`.
 
 ### Schritt 5: Cluster abbauen
+
+Wenn Sie fertig sind, zerstören Sie alle VMs und geben Ressourcen frei.
 
 ```bash
 rdc ops down
 ```
 
-Destroys all VMs and cleans up resources. The cluster can be reprovisioned at any time with `rdc ops up`.
+Entfernt alle VMs und bereinigt das Netzwerk. Der Cluster kann jederzeit mit `rdc ops up` neu bereitgestellt werden.
+
+## Fehlerbehebung
+
+**"KVM not available" oder "hardware virtualization not supported"**
+Überprüfen Sie, ob die Virtualisierung in Ihren BIOS/UEFI-Einstellungen aktiviert ist. Unter Linux prüfen Sie mit `lscpu | grep Virtualization`. Unter WSL2 erfordert verschachtelte Virtualisierung bestimmte Kernel-Flags.
+
+**"libvirt daemon not running"**
+Starten Sie den libvirt-Dienst: `sudo systemctl start libvirtd`. Unter macOS überprüfen Sie, ob QEMU über Homebrew installiert ist: `brew install qemu`.
+
+**"Insufficient memory for VM allocation"**
+Der Basiscluster benötigt mindestens 6 GB freien RAM (1 GB Bridge + 4 GB Worker + Overhead). Schließen Sie andere ressourcenintensive Anwendungen oder reduzieren Sie die VM-Spezifikationen.
 
 ## Nächste Schritte
 
-- [Experimental VMs](/de/docs/experimental-vms) — full reference for `rdc ops` commands, VM configuration, and platform support
-- [Machine Setup](/de/docs/setup) — add remote machines to your config and provision them
-- [Quick Start](/de/docs/quick-start) — deploy a containerized service end-to-end
+Sie haben einen lokalen VM-Cluster bereitgestellt, Befehle über SSH ausgeführt und ihn abgebaut. Um echte Infrastruktur zu deployen:
+
+- [Experimentelle VMs](/de/docs/experimental-vms) — vollständige Referenz für `rdc ops`-Befehle, VM-Konfiguration und Plattformunterstützung
+- [Tutorial: Maschinen-Einrichtung](/de/docs/tutorial-setup) — Remote-Maschinen registrieren und Infrastruktur konfigurieren
+- [Schnellstart](/de/docs/quick-start) — einen containerisierten Service End-to-End deployen

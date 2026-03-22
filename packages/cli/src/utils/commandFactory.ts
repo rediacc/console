@@ -1,4 +1,10 @@
 import { Command } from 'commander';
+import { t } from '../i18n/index.js';
+import { getStateProvider } from '../providers/index.js';
+import { authService } from '../services/auth.js';
+import { configService } from '../services/config-resources.js';
+import { outputService } from '../services/output.js';
+import type { OutputFormat } from '../types/index.js';
 import {
   addParentToPayload,
   applySearchFilter,
@@ -19,14 +25,19 @@ import {
   type VaultItem,
   validateJsonVault,
 } from './commandFactory-helpers.js';
-import { handleError } from './errors.js';
+import { getOutputFormat, handleError } from './errors.js';
 import { withSpinner } from './spinner.js';
-import { t } from '../i18n/index.js';
-import { getStateProvider } from '../providers/index.js';
-import { authService } from '../services/auth.js';
-import { configService } from '../services/config-resources.js';
-import { outputService } from '../services/output.js';
-import type { OutputFormat } from '../types/index.js';
+
+/**
+ * Hide the parent option (--team / --region) from help output.
+ * These options are only relevant for cloud adapter and clutter local help.
+ */
+function hideParentOption(cmd: Command, parentFlag: string): void {
+  const longFlag = /--([\w-]+)/.exec(parentFlag)?.[0];
+  if (!longFlag) return;
+  const opt = cmd.options.find((o) => o.long === longFlag);
+  if (opt) opt.hidden = true;
+}
 
 /**
  * Mode-aware authentication helper.
@@ -113,7 +124,10 @@ function setupListCommand(
   operations: ResourceCommandConfig['operations']
 ): void {
   const listCmd = resource.command('list').description(`List ${ctx.resourceNamePlural}`);
-  if (ctx.hasParent) listCmd.option(ctx.parentFlag, ctx.parentDesc);
+  if (ctx.hasParent) {
+    listCmd.option(ctx.parentFlag, ctx.parentDesc);
+    hideParentOption(listCmd, ctx.parentFlag);
+  }
   listCmd
     .option('--search <text>', t('options.searchInField', { field: ctx.nameField }))
     .option('--sort <field>', t('options.sortByField'))
@@ -152,7 +166,10 @@ function setupCreateCommand(
   const createCmd = resource
     .command('create <name>')
     .description(`Create a new ${ctx.resourceName}`);
-  if (ctx.hasParent) createCmd.option(ctx.parentFlag, ctx.parentDesc);
+  if (ctx.hasParent) {
+    createCmd.option(ctx.parentFlag, ctx.parentDesc);
+    hideParentOption(createCmd, ctx.parentFlag);
+  }
   createOptions?.forEach((opt) => createCmd.option(opt.flags, opt.description));
   createCmd.action(async (name, options) => {
     try {
@@ -195,7 +212,10 @@ function setupRenameCommand(
   const renameCmd = resource
     .command('rename <oldName> <newName>')
     .description(`Rename a ${ctx.resourceName}`);
-  if (ctx.hasParent) renameCmd.option(ctx.parentFlag, ctx.parentDesc);
+  if (ctx.hasParent) {
+    renameCmd.option(ctx.parentFlag, ctx.parentDesc);
+    hideParentOption(renameCmd, ctx.parentFlag);
+  }
   renameCmd.action(async (oldName, newName, options) => {
     try {
       await requireAuthForMode();
@@ -228,35 +248,50 @@ function setupDeleteCommand(
   operations: ResourceCommandConfig['operations']
 ): void {
   const deleteCmd = resource.command('delete <name>').description(`Delete a ${ctx.resourceName}`);
-  if (ctx.hasParent) deleteCmd.option(ctx.parentFlag, ctx.parentDesc);
-  deleteCmd.option('-f, --force', t('options.force')).action(async (name, options) => {
-    try {
-      await requireAuthForMode();
-      const opts = ctx.hasParent ? await configService.applyDefaults(options) : options;
-      if (!(await ctx.checkParent(opts))) process.exit(1);
-      if (!options.force) {
-        const { askConfirm } = await import('./prompt.js');
-        const confirm = await askConfirm(
-          `Delete ${ctx.resourceName} "${name}"? This cannot be undone.`
-        );
-        if (!confirm) {
-          outputService.info(t('status.cancelled'));
+  if (ctx.hasParent) {
+    deleteCmd.option(ctx.parentFlag, ctx.parentDesc);
+    hideParentOption(deleteCmd, ctx.parentFlag);
+  }
+  deleteCmd
+    .option('-f, --force', t('options.force'))
+    .option('--dry-run', t('options.dryRun'))
+    .action(async (name, options) => {
+      try {
+        await requireAuthForMode();
+        const opts = ctx.hasParent ? await configService.applyDefaults(options) : options;
+        if (!(await ctx.checkParent(opts))) process.exit(1);
+
+        const payload: Record<string, unknown> = { [ctx.nameField]: name };
+        addParentToPayload(payload, ctx.hasParent, ctx.parentOption, opts);
+
+        if (options.dryRun) {
+          outputService.print(
+            { dryRun: true, resource: ctx.resourceName, ...payload },
+            getOutputFormat()
+          );
           return;
         }
+
+        if (!options.force) {
+          const { askConfirm } = await import('./prompt.js');
+          const confirm = await askConfirm(
+            `Delete ${ctx.resourceName} "${name}"? This cannot be undone.`
+          );
+          if (!confirm) {
+            outputService.info(t('status.cancelled'));
+            return;
+          }
+        }
+
+        await withSpinner(
+          `Deleting ${ctx.resourceName} "${name}"...`,
+          () => operations.delete(payload),
+          `${capitalizeFirst(ctx.resourceName)} "${name}" deleted`
+        );
+      } catch (error) {
+        handleError(error);
       }
-
-      const payload: Record<string, unknown> = { [ctx.nameField]: name };
-      addParentToPayload(payload, ctx.hasParent, ctx.parentOption, opts);
-
-      await withSpinner(
-        `Deleting ${ctx.resourceName} "${name}"...`,
-        () => operations.delete(payload),
-        `${capitalizeFirst(ctx.resourceName)} "${name}" deleted`
-      );
-    } catch (error) {
-      handleError(error);
-    }
-  });
+    });
 }
 
 function setupVaultGetCommand(
@@ -268,7 +303,10 @@ function setupVaultGetCommand(
   const getCmd = vault
     .command(`get <${ctx.resourceName}Name>`)
     .description(`Get ${ctx.resourceName} vault data`);
-  if (ctx.hasParent) getCmd.option(ctx.parentFlag, ctx.parentDesc);
+  if (ctx.hasParent) {
+    getCmd.option(ctx.parentFlag, ctx.parentDesc);
+    hideParentOption(getCmd, ctx.parentFlag);
+  }
   getCmd.action(async (resourceItemName, options) => {
     try {
       await requireAuthForMode();
@@ -311,6 +349,7 @@ function setupVaultUpdateCommand(
 
   if (ctx.hasParent) {
     updateCmd.option(ctx.parentFlag, ctx.parentDesc);
+    hideParentOption(updateCmd, ctx.parentFlag);
   }
 
   updateCmd.action(async (resourceItemName, options) => {
@@ -408,7 +447,7 @@ export function createResourceCommands(program: Command, config: ResourceCommand
 
   const resource = program
     .command(resourceName)
-    .description(`${capitalizeFirst(resourceName)} management commands`);
+    .description(t(`commands.${resourceName}.description`));
 
   setupListCommand(resource, program, ctx, operations);
   setupCreateCommand(resource, ctx, operations, createOptions, transformCreatePayload);
@@ -417,59 +456,6 @@ export function createResourceCommands(program: Command, config: ResourceCommand
   setupVaultCommands(resource, program, ctx, config);
 
   return resource;
-}
-
-/**
- * Add a status command to an existing resource command
- */
-export function addStatusCommand(
-  resourceCommand: Command,
-  config: {
-    resourceName: string;
-    nameField: string;
-    parentOption: 'team' | 'region';
-    fetch: (params: Record<string, unknown>) => Promise<unknown>;
-  }
-): void {
-  const { resourceName, nameField, parentOption, fetch } = config;
-  const parentFlag = getParentFlag(parentOption);
-  const parentDesc = getParentDesc(parentOption);
-  const checkParent = createParentCheck(parentOption);
-
-  resourceCommand
-    .command('status <name>')
-    .description(`Get ${resourceName} status`)
-    .option(parentFlag, parentDesc)
-    .action(async (name, options) => {
-      try {
-        await requireAuthForMode();
-        const opts = await configService.applyDefaults(options);
-
-        if (!(await checkParent(opts))) {
-          process.exit(1);
-        }
-
-        const params = { [getParentKey(parentOption)]: getParentValue(opts, parentOption) };
-
-        const response = await withSpinner(
-          `Fetching ${resourceName} status...`,
-          () => fetch(params),
-          'Status fetched'
-        );
-
-        const items = extractItemsFromResponse(response);
-        const item = items.find((i) => i[nameField] === name);
-        const format = resourceCommand.parent?.opts().output as OutputFormat;
-
-        if (item) {
-          outputService.print(item, format);
-        } else {
-          outputService.error(`${capitalizeFirst(resourceName)} "${name}" not found`);
-        }
-      } catch (error) {
-        handleError(error);
-      }
-    });
 }
 
 /**
@@ -491,32 +477,33 @@ export function addAssignCommand(
   const parentDesc = getParentDesc(parentOption);
   const checkParent = createParentCheck(parentOption);
 
-  resourceCommand
+  const assignCmd = resourceCommand
     .command(`assign-${targetName} <${resourceName}Name> <${targetName}Name>`)
     .description(`Assign ${resourceName} to a ${targetName}`)
-    .option(parentFlag, parentDesc)
-    .action(async (resourceItemName, targetItemName, options) => {
-      try {
-        await requireAuthForMode();
-        const opts = await configService.applyDefaults(options);
+    .option(parentFlag, parentDesc);
+  hideParentOption(assignCmd, parentFlag);
+  assignCmd.action(async (resourceItemName, targetItemName, options) => {
+    try {
+      await requireAuthForMode();
+      const opts = await configService.applyDefaults(options);
 
-        if (!(await checkParent(opts))) {
-          process.exit(1);
-        }
-
-        const payload: Record<string, unknown> = {
-          [nameField]: resourceItemName,
-          [targetField]: targetItemName,
-          [getParentKey(parentOption)]: getParentValue(opts, parentOption),
-        };
-
-        await withSpinner(
-          `Assigning ${resourceName} "${resourceItemName}" to ${targetName} "${targetItemName}"...`,
-          () => perform(payload),
-          `${capitalizeFirst(resourceName)} assigned to ${targetName} "${targetItemName}"`
-        );
-      } catch (error) {
-        handleError(error);
+      if (!(await checkParent(opts))) {
+        process.exit(1);
       }
-    });
+
+      const payload: Record<string, unknown> = {
+        [nameField]: resourceItemName,
+        [targetField]: targetItemName,
+        [getParentKey(parentOption)]: getParentValue(opts, parentOption),
+      };
+
+      await withSpinner(
+        `Assigning ${resourceName} "${resourceItemName}" to ${targetName} "${targetItemName}"...`,
+        () => perform(payload),
+        `${capitalizeFirst(resourceName)} assigned to ${targetName} "${targetItemName}"`
+      );
+    } catch (error) {
+      handleError(error);
+    }
+  });
 }

@@ -44,10 +44,10 @@ export const EXTERNAL_LINKS = {
 } as const;
 
 /**
- * Get the console URL
- * Always returns '/console' to ensure consistent behavior across all environments
- * and to avoid language prefix interference (e.g., /en/console)
+ * Get the account URL
+ * Always returns '/account/' to ensure consistent behavior across all environments
+ * and to avoid language prefix interference (e.g., /en/account)
  */
-export function getConsoleUrl(_origin?: string): string {
-  return '/console';
+export function getAccountUrl(_origin?: string): string {
+  return '/account/';
 }

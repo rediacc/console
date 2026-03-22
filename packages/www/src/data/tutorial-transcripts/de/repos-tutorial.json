@@ -1,0 +1,13 @@
+{
+  "cast": "/assets/tutorials/repos-tutorial.cast",
+  "language": "de",
+  "version": 1,
+  "events": [
+    {
+      "id": "repos-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.508464,
+      "text": "Erstellen Sie ein verschlüsseltes Repository mit einer definierten Speichergröße."
+    }
+  ]
+}

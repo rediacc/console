@@ -1,0 +1,337 @@
+{
+  "cast": "/assets/tutorials/ops-tutorial.cast",
+  "language": "ru",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "aee2a5cbf9c3d21ae2332a4d223afd9089b53767b1fccfb11ae9479b7102467c",
+  "events": [
+    {
+      "id": "ops-01",
+      "markerIndex": 0,
+      "at": 1.508416,
+      "textHash": "75c5f4c63236cc8b7899323e6e0e8d5bfe27f48178f86fc69a0a4b7a911e80ba",
+      "audioSrc": "/assets/tutorials/audio/ru/ops-tutorial/ops-01.75c5f4c6.mp3",
+      "duration": 4.362449,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 1.36,
+          "startChar": 6,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.92,
+          "startChar": 21,
+          "endChar": 30
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.56,
+          "startChar": 31,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.2,
+          "startChar": 41,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.28,
+          "startChar": 52,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 4.32,
+          "startChar": 54,
+          "endChar": 67
+        }
+      ]
+    },
+    {
+      "id": "ops-02",
+      "markerIndex": 1,
+      "at": 8.415797,
+      "textHash": "47daed6eba9058da2640eb5b3ae5e2cfe31f1f3678e7071091b1b66d35afb5be",
+      "audioSrc": "/assets/tutorials/audio/ru/ops-tutorial/ops-02.47daed6e.mp3",
+      "duration": 3.552653,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.2,
+          "startChar": 10,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.68,
+          "startChar": 22,
+          "endChar": 29
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.24,
+          "startChar": 30,
+          "endChar": 41
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.64,
+          "startChar": 42,
+          "endChar": 47
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.8,
+          "startChar": 48,
+          "endChar": 51
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.44,
+          "startChar": 52,
+          "endChar": 65
+        }
+      ]
+    },
+    {
+      "id": "ops-03",
+      "markerIndex": 2,
+      "at": 31.165622,
+      "textHash": "8bb7d56d96feac6296efcef56a0988a8df6f1e79c26d9d43e62d35786afb9d55",
+      "audioSrc": "/assets/tutorials/audio/ru/ops-tutorial/ops-03.8bb7d56d.mp3",
+      "duration": 3.552653,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.12,
+          "startChar": 10,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.76,
+          "startChar": 20,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.16,
+          "startChar": 29,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.8,
+          "startChar": 31,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.44,
+          "startChar": 43,
+          "endChar": 49
+        }
+      ]
+    },
+    {
+      "id": "ops-04",
+      "markerIndex": 3,
+      "at": 38.114749,
+      "textHash": "6d5a9f257823fb0013c717dc88b54b3818f10f49016a257e623f6a12202bbbd7",
+      "audioSrc": "/assets/tutorials/audio/ru/ops-tutorial/ops-04.6d5a9f25.mp3",
+      "duration": 4.832653,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.12,
+          "startChar": 10,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.68,
+          "startChar": 18,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.08,
+          "startChar": 27,
+          "endChar": 32
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.56,
+          "startChar": 33,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.12,
+          "startChar": 39,
+          "endChar": 41
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.6,
+          "startChar": 42,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.16,
+          "startChar": 52,
+          "endChar": 63
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.72,
+          "startChar": 64,
+          "endChar": 70
+        }
+      ]
+    },
+    {
+      "id": "ops-05",
+      "markerIndex": 4,
+      "at": 43.322534,
+      "textHash": "839238bf6552d96a8c97464d32256fd01033d055bc5adbf10681c199795d5e2e",
+      "audioSrc": "/assets/tutorials/audio/ru/ops-tutorial/ops-05.839238bf.mp3",
+      "duration": 3.970612,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.72,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.12,
+          "startChar": 10,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.84,
+          "startChar": 17,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.4,
+          "startChar": 25,
+          "endChar": 32
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.88,
+          "startChar": 33,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.44,
+          "startChar": 39,
+          "endChar": 50
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.92,
+          "startChar": 51,
+          "endChar": 57
+        }
+      ]
+    },
+    {
+      "id": "ops-06",
+      "markerIndex": 5,
+      "at": 50.493824,
+      "textHash": "2b5707dfea4413fd1e42073c260b0155d0a3f009f3a809835e93fb7f34bf84fb",
+      "audioSrc": "/assets/tutorials/audio/ru/ops-tutorial/ops-06.2b5707df.mp3",
+      "duration": 4.127347,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.72,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.2,
+          "startChar": 10,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.28,
+          "startChar": 17,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.92,
+          "startChar": 19,
+          "endChar": 27
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.4,
+          "startChar": 28,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.88,
+          "startChar": 38,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.52,
+          "startChar": 46,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 4.0,
+          "startChar": 58,
+          "endChar": 63
+        }
+      ]
+    }
+  ]
+}

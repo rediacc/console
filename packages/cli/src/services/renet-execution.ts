@@ -7,14 +7,14 @@ import { execSync } from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { DEFAULTS, NETWORK_DEFAULTS, PROCESS_DEFAULTS } from '@rediacc/shared/config';
 import type { BridgeFunctionName } from '@rediacc/shared/queue-vault/data/functions.generated';
 import { FUNCTION_REQUIREMENTS } from '@rediacc/shared/queue-vault/data/functions.generated';
+import { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import type { MachineConfig } from '../types/index.js';
 import { extractRenetToLocal, isSEA } from './embedded-assets.js';
 import { outputService } from './output.js';
 import { renetProvisioner } from './renet-provisioner.js';
-import type { MachineConfig } from '../types/index.js';
 
 /** Setup marker file created by `renet setup` on successful completion */
 const SETUP_MARKER_PATH = '/var/lib/rediacc/setup_7111_completed';
@@ -33,7 +33,7 @@ export interface RenetSpawnOptions {
   json?: boolean;
   /** Timeout in milliseconds (default: 10 minutes) */
   timeout?: number;
-  /** Skip restarting the rediacc-router service after binary update */
+  /** Skip restarting machine-managed services after binary update */
   skipRouterRestart?: boolean;
 }
 
@@ -71,6 +71,11 @@ export async function getLocalRenetPath(config: { renetPath: string }): Promise<
   return extractRenetToLocal();
 }
 
+export interface RenetProvisionResult {
+  remotePath: string;
+  uploaded: boolean;
+}
+
 /**
  * Provision renet binary to the remote machine.
  */
@@ -78,8 +83,9 @@ export async function provisionRenetToRemote(
   config: { renetPath: string },
   machine: MachineConfig,
   sshPrivateKey: string,
-  options: Pick<RenetSpawnOptions, 'debug' | 'skipRouterRestart'> & { restartServices?: boolean }
-): Promise<void> {
+  options: Pick<RenetSpawnOptions, 'debug' | 'skipRouterRestart'> & { restartServices?: boolean },
+  sftp?: SFTPClient
+): Promise<RenetProvisionResult> {
   let localBinaryPath: string | undefined;
   if (!isSEA()) {
     localBinaryPath = config.renetPath.startsWith('/')
@@ -87,10 +93,11 @@ export async function provisionRenetToRemote(
       : execSync(`which ${config.renetPath}`, { encoding: 'utf-8' }).trim();
   }
 
-  // --skip-router-restart flag or RDC_SKIP_ROUTER_RESTART env var
+  // Service restarts are opt-in for versioned remote installs.
   const skipRestart = options.skipRouterRestart ?? !!process.env.RDC_SKIP_ROUTER_RESTART;
-  const restartServices = skipRestart ? false : options.restartServices;
+  const restartServices = skipRestart ? false : (options.restartServices ?? false);
 
+  const start = Date.now();
   const result = await renetProvisioner.provision(
     {
       host: machine.ip,
@@ -98,21 +105,25 @@ export async function provisionRenetToRemote(
       username: machine.user,
       privateKey: sshPrivateKey,
     },
-    { localBinaryPath, restartServices }
+    { localBinaryPath, restartServices, debug: options.debug },
+    sftp
   );
+  const elapsed = ((Date.now() - start) / 1000).toFixed(1);
 
   if (!result.success) {
     throw new Error(result.error ?? PROCESS_DEFAULTS.RENET_PROVISION_ERROR);
   }
 
   if (result.action === 'uploaded') {
-    if (options.debug) {
-      outputService.info(`[local] Provisioned renet (${result.arch}) to ${machine.ip}`);
-    }
+    outputService.info(`Renet updated on ${machine.ip} (${result.arch}) in ${elapsed}s`);
     if (result.servicesRestarted) {
       outputService.info(`Restarted rediacc-router on ${machine.ip}`);
     }
+  } else if (options.debug) {
+    outputService.info(`Renet verified on ${machine.ip} (${elapsed}s)`);
   }
+
+  return { remotePath: result.remotePath, uploaded: result.action === 'uploaded' };
 }
 
 /** Check whether a bridge function requires the BTRFS datastore. */
@@ -134,7 +145,8 @@ function functionRequiresDatastore(functionName: string): boolean {
 export async function verifyMachineSetup(
   machine: MachineConfig,
   sshPrivateKey: string,
-  options: Pick<RenetSpawnOptions, 'debug'> & { functionName?: string }
+  options: Pick<RenetSpawnOptions, 'debug'> & { functionName?: string },
+  sharedSftp?: SFTPClient
 ): Promise<void> {
   if (process.env.RDC_SKIP_SETUP_CHECK) return;
 
@@ -151,20 +163,23 @@ export async function verifyMachineSetup(
   const cached = setupCache.get(cacheKey);
   if (cached && Date.now() - cached < SETUP_CACHE_TTL_MS) return;
 
-  const sftp = new SFTPClient({
-    host: machine.ip,
-    port: machine.port ?? DEFAULTS.SSH.PORT,
-    username: machine.user,
-    privateKey: sshPrivateKey,
-  });
+  const sftp =
+    sharedSftp ??
+    new SFTPClient({
+      host: machine.ip,
+      port: machine.port ?? DEFAULTS.SSH.PORT,
+      username: machine.user,
+      privateKey: sshPrivateKey,
+    });
+  const ownsConnection = !sharedSftp;
 
   try {
-    await sftp.connect();
+    if (ownsConnection) await sftp.connect();
     const result = await sftp.exec(`test -f ${SETUP_MARKER_PATH} && echo OK || echo MISSING`);
     if (result.trim() !== 'OK') {
       throw new Error(
         `Machine '${machine.ip}' has not been set up. ` +
-          `Run 'rdc config setup-machine <name>' or 'sudo renet setup --auto' directly on the machine.`
+          `Run 'rdc config machine setup <name>' or 'sudo renet setup --auto' directly on the machine.`
       );
     }
 
@@ -180,16 +195,16 @@ export async function verifyMachineSetup(
     if (fsCheck.trim() !== 'btrfs') {
       throw new Error(
         `Machine '${machine.ip}' datastore at ${datastorePath} is not BTRFS (found: ${fsCheck.trim()}). ` +
-          `Run 'rdc config setup-machine <name>' to initialize the BTRFS datastore.`
+          `Run 'rdc config machine setup <name>' to initialize the BTRFS datastore.`
       );
     }
 
     setupCache.set(cacheKey, Date.now());
     if (options.debug) {
-      outputService.info(`[local] Setup verified on ${machine.ip}`);
+      outputService.info(`Setup verified on ${machine.ip}`);
     }
   } finally {
-    sftp.close();
+    if (ownsConnection) sftp.close();
   }
 }
 
@@ -201,14 +216,16 @@ interface BuildLocalVaultOptions {
   sshPublicKey: string;
   sshKnownHosts: string;
   params: Record<string, unknown>;
-  extraMachines?: Record<string, { ip: string; port?: number; user: string }>;
+  extraMachines?: Record<string, { ip: string; port?: number; user: string; datastore?: string }>;
   storages?: Record<string, { vaultContent: Record<string, unknown> }>;
   repositoryCredentials?: Record<string, string>;
   repositoryConfigs?: Record<string, { guid: string; name: string; networkId?: number }>;
 }
 
 function buildExtraMachines(
-  machines: Record<string, { ip: string; port?: number; user: string }> | undefined,
+  machines:
+    | Record<string, { ip: string; port?: number; user: string; datastore?: string }>
+    | undefined,
   sshKnownHosts: string,
   sshPrivateKey: string,
   sshPublicKey: string
@@ -220,7 +237,7 @@ function buildExtraMachines(
       ip: cfg.ip,
       user: cfg.user,
       port: cfg.port ?? DEFAULTS.SSH.PORT,
-      datastore: NETWORK_DEFAULTS.DATASTORE_PATH,
+      datastore: cfg.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH,
       known_hosts: sshKnownHosts,
       ssh: {
         private_key: sshPrivateKey,
@@ -274,7 +291,7 @@ function buildSingleRepoEntry(
 ): Record<string, unknown> {
   const repoConfig = repositoryConfigs?.[repoName];
   const repoEntry: Record<string, unknown> = {
-    guid: repoConfig?.guid ?? repoName,
+    guid: repoConfig?.guid ?? (typeof params.guid === 'string' ? params.guid : repoName),
     name: repoName,
   };
   const networkId = repoConfig?.networkId ?? params.network_id;

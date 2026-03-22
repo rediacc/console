@@ -178,8 +178,13 @@ export class CliTestRunner {
     }
     console.warn(`[EXIT] ${exitCode}`);
 
+    // Combine stdout + stderr for result.stdout so tests can find human-readable
+    // messages regardless of stream. CLI outputs JSON data to stdout and status
+    // messages (success/info/warn) to stderr. Parse JSON from raw stdout only.
+    const combinedOutput = [stderr, stdout].filter(Boolean).join('\n');
+
     return {
-      stdout,
+      stdout: combinedOutput,
       stderr,
       exitCode,
       json: options.skipJsonParse ? null : this.tryParseJson(stdout),
@@ -569,10 +574,11 @@ export class CliTestRunner {
   }
 
   /**
-   * Get combined output (stdout + stderr) for logging
+   * Get combined output (stdout + stderr) for logging.
+   * Note: result.stdout already includes stderr content for assertion convenience.
    */
   getCombinedOutput(result: CliResult): string {
-    return [result.stdout, result.stderr].filter(Boolean).join('\n');
+    return result.stdout;
   }
 
   /**
@@ -672,6 +678,38 @@ export class CliTestRunner {
   // ===========================================================================
 
   /**
+   * Unwrap CLI JSON envelope if present.
+   * Success envelopes: {success: true, data: ...} → extracts data
+   * Error envelopes: {success: false, errors: [...]} → converts to
+   *   {success: false, error: {code, message, ...}} for isJsonErrorResponse()
+   */
+  private unwrapEnvelope(parsed: unknown): unknown {
+    if (
+      typeof parsed === 'object' &&
+      !Array.isArray(parsed) &&
+      parsed !== null &&
+      'success' in parsed &&
+      'command' in parsed &&
+      'data' in parsed
+    ) {
+      const envelope = parsed as Record<string, unknown>;
+
+      // Error envelope: preserve error info in a format getErrorMessage() can use
+      if (envelope.success === false) {
+        const errors = envelope.errors as Record<string, unknown>[] | undefined;
+        if (errors && errors.length > 0) {
+          return { success: false, error: errors[0] };
+        }
+        return { success: false, error: { message: 'Unknown error' } };
+      }
+
+      // Success envelope: extract the data payload
+      return envelope.data;
+    }
+    return parsed;
+  }
+
+  /**
    * Try to parse JSON from CLI output.
    * Handles spinner output by finding JSON array or object.
    */
@@ -680,7 +718,7 @@ export class CliTestRunner {
 
     // First try direct parse
     try {
-      return JSON.parse(str);
+      return this.unwrapEnvelope(JSON.parse(str));
     } catch {
       // Continue to regex extraction
     }
@@ -689,12 +727,12 @@ export class CliTestRunner {
     try {
       const arrayMatch = /\[[\s\S]*\]/.exec(str);
       if (arrayMatch) {
-        return JSON.parse(arrayMatch[0]);
+        return this.unwrapEnvelope(JSON.parse(arrayMatch[0]));
       }
 
       const objectMatch = /\{[\s\S]*\}/.exec(str);
       if (objectMatch) {
-        return JSON.parse(objectMatch[0]);
+        return this.unwrapEnvelope(JSON.parse(objectMatch[0]));
       }
     } catch {
       // JSON extraction failed

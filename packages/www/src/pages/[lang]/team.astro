@@ -4,6 +4,7 @@ import { createTranslator } from '../../i18n/utils';
 import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
 import { EXTERNAL_LINKS } from '../../config/constants';
+import { TEAM_MEMBERS } from '../../config/team-videos';
 
 export const getStaticPaths = getLanguagePaths;
 
@@ -24,37 +25,49 @@ const teamMembers = [
     name: 'Muhammed Fatih Bayraktar',
     role: 'Founder',
     image: '/assets/images/profiles/mfb.jpeg',
-    linkedin: 'https://www.linkedin.com/in/muhammed-fatih-bayraktar/'
+    linkedin: 'https://www.linkedin.com/in/muhammed-fatih-bayraktar/',
+    github: 'mfbayraktar',
+    email: 'muhammed@rediacc.com'
   },
   {
     name: 'Yüksel Demirel',
     role: 'System And DevOps Engineer',
     image: '/assets/images/profiles/yd.jpeg',
-    linkedin: 'https://www.linkedin.com/in/yüksel-demirel-92065749/'
+    linkedin: 'https://www.linkedin.com/in/yüksel-demirel-92065749/',
+    github: '04yuksel05',
+    email: 'yuksel@rediacc.com'
   },
   {
     name: 'Mehmet Helveci',
     role: 'Frontend Architect',
     image: '/assets/images/profiles/mh.jpeg',
-    linkedin: 'https://www.linkedin.com/in/mehmethelveci/'
+    linkedin: 'https://www.linkedin.com/in/mehmethelveci/',
+    github: 'mehmethelveci',
+    email: 'mehmet@rediacc.com'
   },
   {
     name: 'Ömer İ.',
     role: 'Software Developer',
     image: '/assets/images/profiles/oi.jpeg',
-    linkedin: null
+    linkedin: null,
+    github: 'oiseguven',
+    email: 'omer@rediacc.com'
   },
   {
     name: 'Hasan Anıl Kartal',
     role: 'Software Test & Quality Expert',
     image: '/assets/images/profiles/hak.jpeg',
-    linkedin: 'https://www.linkedin.com/in/hasananilkartal/'
+    linkedin: 'https://www.linkedin.com/in/hasananilkartal/',
+    github: 'anilkartal',
+    email: 'anil@rediacc.com'
   },
   {
     name: 'Hamza Özsaraç',
     role: 'Full Stack Developer',
     image: '/assets/images/profiles/hmz.jpeg',
-    linkedin: 'https://www.linkedin.com/in/hamza-ozsarac/'
+    linkedin: 'https://www.linkedin.com/in/hamza-ozsarac/',
+    github: 'HamzaOzsarac',
+    email: 'hamza@rediacc.com'
   }
 ];
 ---
@@ -79,20 +92,13 @@ const teamMembers = [
   }}
 >
   <article class="team-page">
-    <!-- Hero Section -->
+    <!-- Hero + Team Section -->
     <section id="about" class="team-hero">
       <div class="container">
         <h1>{t('pages.team.hero.title')}</h1>
         <p class="hero-subtitle">{t('pages.team.hero.subtitle')}</p>
-      </div>
-    </section>
 
-    <!-- Team Section -->
-    <section id="team" class="team-section">
-      <div class="container">
-        <h2>{t('pages.team.team.title')}</h2>
-
-        <div class="team-grid">
+        <div id="team" class="team-grid">
           {teamMembers.map((member) => (
             <div class="team-member">
               <div class="member-image">
@@ -107,19 +113,41 @@ const teamMembers = [
               </div>
               <h3>{member.name}</h3>
               <p class="member-role">{member.role}</p>
-              {member.linkedin && (
+              <div class="member-socials">
+                {member.linkedin && (
+                  <a
+                    href={member.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="member-social-link"
+                    aria-label={`LinkedIn profile of ${member.name} (${t('common.aria.opensInNewTab')})`}
+                  >
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
+                      <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                    </svg>
+                  </a>
+                )}
                 <a
-                  href={member.linkedin}
+                  href={`https://github.com/${member.github}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="member-linkedin"
-                  aria-label={`LinkedIn profile of ${member.name} (${t('common.aria.opensInNewTab')})`}
+                  class="member-social-link"
+                  aria-label={`GitHub profile of ${member.name} (${t('common.aria.opensInNewTab')})`}
                 >
                   <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
-                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                    <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
                   </svg>
                 </a>
-              )}
+                <a
+                  href={`mailto:${member.email}`}
+                  class="member-social-link"
+                  aria-label={`Email ${member.name}`}
+                >
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
+                    <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                  </svg>
+                </a>
+              </div>
             </div>
           ))}
         </div>
@@ -156,31 +184,42 @@ const teamMembers = [
     <!-- Story Section -->
     <section id="story" class="story-section">
       <div class="container">
-        <div class="story-content">
-          <h2>{t('pages.team.story.title')}</h2>
-
-          <div class="story-chapter">
-            <h3>{t('pages.team.story.beginning.title')}</h3>
-            <p>{t('pages.team.story.beginning.paragraph1')}</p>
-            <p>{t('pages.team.story.beginning.paragraph2')}</p>
-            <p>{t('pages.team.story.beginning.paragraph3')}</p>
+        <h2 class="story-heading">{t('pages.team.story.title')}</h2>
+        <div class="story-layout">
+          <div class="story-photo">
+            <img
+              src={TEAM_MEMBERS['founder']?.photos.standing ?? '/media/founder/photos/standing.jpg'}
+              alt={TEAM_MEMBERS['founder']?.name ?? 'Founder'}
+              class="story-photo-img"
+              loading="lazy"
+              decoding="async"
+            />
           </div>
 
-          <div class="story-chapter">
-            <h3>{t('pages.team.story.turningPoint.title')}</h3>
-            <p>{t('pages.team.story.turningPoint.paragraph1')}</p>
-            <p>{t('pages.team.story.turningPoint.paragraph2')}</p>
-            <p>{t('pages.team.story.turningPoint.paragraph3')}</p>
-          </div>
+          <div class="story-content">
+            <div class="story-chapter">
+              <h3>{t('pages.team.story.beginning.title')}</h3>
+              <p>{t('pages.team.story.beginning.paragraph1')}</p>
+              <p>{t('pages.team.story.beginning.paragraph2')}</p>
+              <p>{t('pages.team.story.beginning.paragraph3')}</p>
+            </div>
 
-          <div class="story-chapter">
-            <h3>{t('pages.team.story.birth.title')}</h3>
-            <p>{t('pages.team.story.birth.paragraph1')}</p>
-            <p>{t('pages.team.story.birth.paragraph2')}</p>
+            <div class="story-chapter">
+              <h3>{t('pages.team.story.turningPoint.title')}</h3>
+              <p>{t('pages.team.story.turningPoint.paragraph1')}</p>
+              <p>{t('pages.team.story.turningPoint.paragraph2')}</p>
+              <p>{t('pages.team.story.turningPoint.paragraph3')}</p>
+            </div>
 
-            <blockquote class="story-quote">
-              {t('pages.team.story.birth.quote')}
-            </blockquote>
+            <div class="story-chapter">
+              <h3>{t('pages.team.story.birth.title')}</h3>
+              <p>{t('pages.team.story.birth.paragraph1')}</p>
+              <p>{t('pages.team.story.birth.paragraph2')}</p>
+
+              <blockquote class="story-quote">
+                {t('pages.team.story.birth.quote')}
+              </blockquote>
+            </div>
           </div>
         </div>
       </div>
@@ -209,9 +248,9 @@ const teamMembers = [
   color: var(--color-text);
 }
 
-/* Hero Section */
+/* Hero + Team Section */
 .team-hero {
-  padding: var(--space-20) 0 var(--space-12);
+  padding: var(--space-16) 0 var(--space-12);
   background: var(--color-bg-alt);
   border-bottom: 1px solid var(--color-border);
   text-align: center;
@@ -220,7 +259,7 @@ const teamMembers = [
 .team-hero h1 {
   font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-bold);
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-4);
   color: var(--color-text);
 }
 
@@ -228,26 +267,13 @@ const teamMembers = [
   font-size: var(--font-size-xl);
   color: var(--color-text-secondary);
   max-width: var(--container-md);
-  margin: 0 auto;
-}
-
-/* Team Section */
-.team-section {
-  padding: var(--space-16) 0;
-  background: var(--color-bg);
-}
-
-.team-section h2 {
-  font-size: var(--font-size-3xl);
-  margin-bottom: var(--space-12);
-  text-align: center;
-  color: var(--color-text);
+  margin: 0 auto var(--space-12);
 }
 
 .team-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--space-12);
+  gap: var(--space-10);
   max-width: var(--container-lg);
   margin: 0 auto;
 }
@@ -283,20 +309,27 @@ const teamMembers = [
   font-weight: var(--font-weight-semibold);
 }
 
-.member-linkedin {
+.member-socials {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.member-social-link {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   min-width: var(--touch-target-min);
   min-height: var(--touch-target-min);
   color: var(--color-brand-primary);
   transition: color var(--transition-duration-base) ease;
 }
 
-.member-linkedin:hover {
+.member-social-link:hover {
   color: var(--color-brand-dark);
 }
 
-.member-linkedin:focus-visible {
+.member-social-link:focus-visible {
   outline: 2px solid var(--color-brand-primary);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
@@ -377,20 +410,44 @@ const teamMembers = [
   background: var(--color-bg-alt);
 }
 
-.story-content {
-  max-width: var(--container-md);
-  margin: 0 auto;
-}
-
-.story-section h2 {
+.story-heading {
   font-size: var(--font-size-3xl);
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--space-12);
   text-align: center;
   color: var(--color-text);
 }
 
+.story-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: var(--space-12);
+  max-width: var(--container-lg);
+  margin: 0 auto;
+  align-items: start;
+}
+
+.story-photo {
+  position: sticky;
+  top: var(--space-8);
+}
+
+.story-photo-img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: var(--radius-lg);
+}
+
+.story-content {
+  min-width: 0;
+}
+
 .story-chapter {
   margin-bottom: var(--space-8);
+}
+
+.story-chapter:first-child h3 {
+  margin-top: 0;
 }
 
 .story-chapter h3 {
@@ -462,7 +519,22 @@ const teamMembers = [
     grid-template-columns: 1fr;
   }
 
-  .story-section h2,
+  .story-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-8);
+  }
+
+  .story-photo {
+    position: static;
+    display: flex;
+    justify-content: center;
+  }
+
+  .story-photo-img {
+    width: 200px;
+  }
+
+  .story-heading,
   .mission-section h2,
   .values-section h2,
   .team-cta h2 {

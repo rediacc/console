@@ -1,8 +1,9 @@
-import React, { useCallback } from 'react';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { Alert, Flex, Form, Row } from 'antd';
+import type { UploadFile } from 'antd/es/upload/interface';
+import React, { useCallback } from 'react';
 import { FORM_LAYOUTS } from '@/config/formLayouts';
 import { useMessage } from '@/hooks';
-import { DEFAULTS } from '@rediacc/shared/config';
 import { useVaultEditorState } from './hooks/useVaultEditorState';
 import {
   VaultEditorExtraFields,
@@ -13,14 +14,13 @@ import {
   VaultEditorSystemCompatibility,
   VaultEditorTestConnection,
 } from './sections';
+import type { VaultEditorProps, VaultFormValues } from './types';
 import {
   type FieldMovements,
   handleExport,
   handleImport,
   handleRawJsonChange,
 } from './utils/index';
-import type { VaultEditorProps, VaultFormValues } from './types';
-import type { UploadFile } from 'antd/es/upload/interface';
 
 const VaultEditor: React.FC<VaultEditorProps> = (props) => {
   const {

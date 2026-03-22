@@ -70,6 +70,13 @@ vi.mock('../../services/queue.js', () => ({
   queueService: { buildQueueVault: vi.fn() },
 }));
 
+// Disable agent detection so experimental commands are not blocked
+vi.mock('../../utils/agent-guard.js', () => ({
+  isAgentEnvironment: vi.fn().mockReturnValue(false),
+  assertAgentMachineAccess: vi.fn(),
+  assertAgentRepoCreate: vi.fn(),
+}));
+
 // Enable experimental mode so cloud-only commands are visible in help
 process.env.REDIACC_EXPERIMENTAL = '1';
 
@@ -107,68 +114,16 @@ describe('Command mode guards and tags', () => {
     'update',
   ];
 
-  describe('[cloud] tag column in help', () => {
-    for (const cmdName of cloudOnlyCommands) {
-      it(`"${cmdName}" should show [cloud] tag in help output`, () => {
-        // Match the line containing this command and verify [cloud] appears
-        const pattern = new RegExp(`^\\s+${cmdName}\\b.*\\[cloud\\]`, 'm');
-        expect(rootHelp).toMatch(pattern);
-      });
-    }
-  });
-
-  describe('[local] tag column in help', () => {
-    for (const cmdName of localOnlyCommands) {
-      it(`"${cmdName}" should show [local] tag in help output`, () => {
-        const pattern = new RegExp(`^\\s+${cmdName}\\b.*\\[local\\]`, 'm');
-        expect(rootHelp).toMatch(pattern);
-      });
-    }
-  });
-
-  describe('all-mode commands have no mode tag in help', () => {
-    for (const cmdName of allModeCommands) {
+  describe('no mode tags in help', () => {
+    const allCommands = [...cloudOnlyCommands, ...localOnlyCommands, ...allModeCommands];
+    for (const cmdName of allCommands) {
       it(`"${cmdName}" should not show a mode tag in help output`, () => {
-        // All-mode commands should NOT have [cloud] or [local] tags
         const cloudTag = new RegExp(`^\\s+${cmdName}\\b.*\\[cloud\\]`, 'm');
         const localTag = new RegExp(`^\\s+${cmdName}\\b.*\\[local\\]`, 'm');
         expect(rootHelp).not.toMatch(cloudTag);
         expect(rootHelp).not.toMatch(localTag);
       });
     }
-  });
-
-  describe('descriptions are unmodified', () => {
-    it('cloud-only commands have clean descriptions (no tags in description)', () => {
-      for (const cmdName of cloudOnlyCommands) {
-        const cmd = cli.commands.find((c) => c.name() === cmdName);
-        if (cmd) {
-          expect(cmd.description()).not.toMatch(/\[cloud\]|\[local/);
-        }
-      }
-    });
-  });
-
-  describe('Machine subcommand tags', () => {
-    it('"assign-bridge" should show [cloud] in machine help', () => {
-      const machineCmd = cli.commands.find((c) => c.name() === 'machine')!;
-      const machineHelp = machineCmd.helpInformation();
-      expect(machineHelp).toMatch(/assign-bridge.*\[cloud\]/);
-    });
-
-    it('"test-connection" should show [cloud] in machine help', () => {
-      const machineCmd = cli.commands.find((c) => c.name() === 'machine')!;
-      const machineHelp = machineCmd.helpInformation();
-      expect(machineHelp).toMatch(/test-connection.*\[cloud\]/);
-    });
-  });
-
-  describe('Storage subcommand tags', () => {
-    it('"browse" should show [local] in storage help', () => {
-      const storageCmd = cli.commands.find((c) => c.name() === 'storage')!;
-      const storageHelp = storageCmd.helpInformation();
-      expect(storageHelp).toMatch(/browse.*\[local\]/);
-    });
   });
 
   describe('Domain grouping', () => {

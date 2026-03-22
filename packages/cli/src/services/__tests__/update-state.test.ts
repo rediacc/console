@@ -1,6 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CliUpdateState } from '@rediacc/shared/update';
 import { isCooldownExpired } from '@rediacc/shared/update';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   cleanupStaleStagedFiles,
   getStagedBinaryPath,

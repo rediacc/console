@@ -1,0 +1,12 @@
+---
+import Testimonials from '../Testimonials';
+import type { Language } from '../../i18n/types';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props as Props;
+---
+
+<Testimonials client:visible lang={lang} />

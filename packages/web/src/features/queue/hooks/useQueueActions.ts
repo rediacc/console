@@ -1,7 +1,7 @@
+import type { HookAPI } from 'antd/es/modal/useModal';
 import { useTranslation } from 'react-i18next';
 import { useCancelQueueItem } from '@/api/api-hooks.generated';
 import { confirmAction } from '@/utils/confirmations';
-import type { HookAPI } from 'antd/es/modal/useModal';
 
 export const useQueueActions = (modal: HookAPI) => {
   const { t } = useTranslation(['queue', 'common']);

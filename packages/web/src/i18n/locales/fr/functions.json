@@ -26,7 +26,6 @@
   "checkboxOptions": {
     "mountRepoFirst": "Monter le référentiel en premier",
     "overrideExistingFile": "Remplacer le fichier existant",
-    "preparationOnly": "Préparation uniquement",
     "unmountAfterStopping": "Démonter après l'arrêt"
   },
   "configure": "Configurer",

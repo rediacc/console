@@ -1,14 +1,14 @@
 import { DEFAULTS } from '@rediacc/shared/config';
+import { configFileStorage } from '../adapters/config-file-storage.js';
+import type { RdcConfig, S3Config } from '../types/index.js';
+import { hasCloudCredentials } from '../types/index.js';
 import {
   detectSystemLanguage,
   getSupportedLanguages as getSupportedLanguagesList,
   isLanguageSupported as isLanguageSupportedCheck,
   normalizeLanguage,
 } from './context-language.js';
-import { configFileStorage } from '../adapters/config-file-storage.js';
-import { hasCloudCredentials } from '../types/index.js';
 import type { ResourceState } from './resource-state.js';
-import type { RdcConfig, S3Config } from '../types/index.js';
 
 const DEFAULT_API_URL = 'https://www.rediacc.com/api';
 
@@ -210,18 +210,12 @@ export class ConfigServiceBase {
     return config?.bridge;
   }
 
-  async getMachine(): Promise<string | undefined> {
-    if (process.env.REDIACC_MACHINE) return process.env.REDIACC_MACHINE;
-    const config = await this.getCurrent();
-    return config?.machine;
-  }
-
-  async set(key: 'team' | 'region' | 'bridge' | 'machine', value: string): Promise<void> {
+  async set(key: 'team' | 'region' | 'bridge' | 'datastoreSize', value: string): Promise<void> {
     const name = this.getEffectiveConfigName();
     await this.update(name, { [key]: value });
   }
 
-  async remove(key: 'team' | 'region' | 'bridge' | 'machine'): Promise<void> {
+  async remove(key: 'team' | 'region' | 'bridge' | 'datastoreSize'): Promise<void> {
     const name = this.getEffectiveConfigName();
     await this.update(name, { [key]: undefined });
   }
@@ -232,7 +226,6 @@ export class ConfigServiceBase {
       team: undefined,
       region: undefined,
       bridge: undefined,
-      machine: undefined,
     });
   }
 
@@ -272,7 +265,6 @@ export class ConfigServiceBase {
     result.team ??= await this.getTeam();
     result.region ??= await this.getRegion();
     result.bridge ??= await this.getBridge();
-    result.machine ??= await this.getMachine();
     return result;
   }
 

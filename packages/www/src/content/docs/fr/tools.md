@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: fr
-sourceHash: 80ca3cd3e1a55d4b
+sourceHash: "b9aa7cdcf088b645"
 ---
 
 # Outils
@@ -20,19 +20,19 @@ Transférez des fichiers entre votre poste de travail et un dépôt distant via 
 ### Envoyer des fichiers
 
 ```bash
-rdc sync upload -m server-1 -r my-app --local ./src --remote /app/src
+rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
 ```
 
 ### Télécharger des fichiers
 
 ```bash
-rdc sync download -m server-1 -r my-app --remote /app/data --local ./data
+rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
 ```
 
 ### Vérifier l'état de la synchronisation
 
 ```bash
-rdc sync status -m server-1 -r my-app
+rdc repo sync status -m server-1 -r my-app
 ```
 
 ### Options

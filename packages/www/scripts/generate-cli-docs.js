@@ -16,6 +16,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  CLOUD_GROUPS,
+  LOCAL_GROUPS,
+  toAnchorId,
+  toGroupAnchorId,
+} from './lib/cli-reference-catalog.js';
 import { computeSourceHash } from './validate-translation-freshness.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -35,42 +41,18 @@ function getOutputPath(lang, docType = 'local') {
 
 // ── Command ordering (split by adapter scope) ───────────────────────────
 // Local / all-mode commands (main reference)
-const LOCAL_COMMAND_ORDER = [
-  'config',
-  'store',
-  'machine',
-  'repo',
-  'storage',
-  'sync',
-  'vscode',
-  'term',
-  'protocol',
-  'snapshot',
-  'backup',
-  'shortcuts',
-  'subscription',
-  'update',
-  'doctor',
-  'ops',
-];
+const LOCAL_COMMAND_ORDER = [...LOCAL_GROUPS];
 
 // Cloud-only / experimental commands
-const CLOUD_COMMAND_ORDER = [
-  'auth',
-  'organization',
-  'user',
-  'team',
-  'permission',
-  'region',
-  'bridge',
-  'repository',
-  'queue',
-  'ceph',
-  'audit',
-];
+const CLOUD_COMMAND_ORDER = [...CLOUD_GROUPS];
 
 // Combined for validation
 const COMMAND_ORDER = [...LOCAL_COMMAND_ORDER, ...CLOUD_COMMAND_ORDER];
+
+// i18n-only groups: keys that exist in cli.json commands but are NOT standalone
+// top-level commands. They provide translations used by subcommands of other groups
+// (e.g. "sync" translations are used by "repo sync", "backup" by "repo push/pull").
+const I18N_ONLY_GROUPS = new Set(['sync', 'backup', 'snapshot']);
 
 // Validate COMMAND_ORDER against actual command groups in cli.json
 function validateCommandOrder(commands) {
@@ -78,6 +60,7 @@ function validateCommandOrder(commands) {
   const orderedGroups = new Set(COMMAND_ORDER);
 
   for (const group of allGroups) {
+    if (I18N_ONLY_GROUPS.has(group)) continue;
     if (!orderedGroups.has(group)) {
       throw new Error(
         `Command group "${group}" exists in cli.json but is missing from COMMAND_ORDER in generate-cli-docs.js. ` +
@@ -281,6 +264,7 @@ function yamlQuote(value) {
  */
 export function generate(lang, cliJsonEn, { sourceHash, docType = 'local' } = {}) {
   const isCloud = docType === 'cloud';
+  const scope = isCloud ? 'cloud' : 'local';
   const commandOrder = isCloud ? CLOUD_COMMAND_ORDER : LOCAL_COMMAND_ORDER;
   const fmKey = isCloud ? 'cloudFrontmatter' : 'frontmatter';
   const pageTitleKey = isCloud ? 'cloudPageTitle' : 'pageTitle';
@@ -369,6 +353,7 @@ export function generate(lang, cliJsonEn, { sourceHash, docType = 'local' } = {}
     sectionNum++;
 
     // H2 for command group — use {{t:}} key for section title
+    lines.push(`<a id="${toGroupAnchorId(scope, group)}"></a>`);
     lines.push(`## ${sectionNum}. {{t:cli.docs.sectionTitles.${group}}}`);
     lines.push('');
 
@@ -391,6 +376,7 @@ export function generate(lang, cliJsonEn, { sourceHash, docType = 'local' } = {}
 
     // Standalone command (no sub-commands, e.g., update, doctor)
     if (subKeys.length === 0) {
+      lines.push(`<a id="${toAnchorId(scope, group)}"></a>`);
       lines.push('```bash');
       lines.push(buildEnrichedSyntax(group));
       lines.push('```');
@@ -403,6 +389,7 @@ export function generate(lang, cliJsonEn, { sourceHash, docType = 'local' } = {}
       subNum++;
 
       if (hasSubCommands(subData)) {
+        lines.push(`<a id="${toAnchorId(scope, `${group} ${toKebab(subKey)}`)}"></a>`);
         // This is a sub-group (e.g., auth.tfa, auth.token, team.member, permission.group, organization.vault)
         lines.push(`### ${sectionNum}.${subNum} ${toKebab(subKey)}`);
         lines.push('');
@@ -435,6 +422,9 @@ export function generate(lang, cliJsonEn, { sourceHash, docType = 'local' } = {}
             const level3Keys = getSubCommandKeys(nestedData);
             for (const l3Key of level3Keys) {
               const commandPath = `${group}.${subKey}.${nestedKey}.${l3Key}`;
+              lines.push(
+                `<a id="${toAnchorId(scope, `${group} ${toKebab(subKey)} ${toKebab(nestedKey)} ${toKebab(l3Key)}`)}"></a>`
+              );
               lines.push(`**${toKebab(l3Key)}:**`);
               lines.push('');
               lines.push(`{{t:cli.commands.${commandPath}.description}}`);
@@ -456,6 +446,9 @@ export function generate(lang, cliJsonEn, { sourceHash, docType = 'local' } = {}
           } else {
             // Leaf command within a sub-group
             const commandPath = `${group}.${subKey}.${nestedKey}`;
+            lines.push(
+              `<a id="${toAnchorId(scope, `${group} ${toKebab(subKey)} ${toKebab(nestedKey)}`)}"></a>`
+            );
             lines.push(`#### ${toKebab(nestedKey)}`);
             lines.push('');
             lines.push(`{{t:cli.commands.${commandPath}.description}}`);
@@ -486,6 +479,7 @@ export function generate(lang, cliJsonEn, { sourceHash, docType = 'local' } = {}
       } else {
         // Leaf command directly under group (e.g., auth.login, machine.list)
         const commandPath = `${group}.${subKey}`;
+        lines.push(`<a id="${toAnchorId(scope, `${group} ${toKebab(subKey)}`)}"></a>`);
         lines.push(`### ${sectionNum}.${subNum} ${toKebab(subKey)}`);
         lines.push('');
         lines.push(`{{t:cli.commands.${commandPath}.description}}`);

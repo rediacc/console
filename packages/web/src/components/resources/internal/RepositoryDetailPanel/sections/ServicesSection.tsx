@@ -1,12 +1,12 @@
-import React from 'react';
+import type { TypedTFunction } from '@rediacc/shared/i18n/types';
+import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import { Card, Col, Flex, Row, Tag, Typography } from 'antd';
+import React from 'react';
 import {
   DetailPanelDivider,
   DetailPanelFieldValue,
 } from '@/components/resources/internal/detailPanelPrimitives';
 import { CodeOutlined } from '@/utils/optimizedIcons';
-import type { TypedTFunction } from '@rediacc/shared/i18n/types';
-import type { GetTeamRepositories_ResultSet1 } from '@rediacc/shared/types';
 import type { RepositoryPanelData } from '../types';
 
 interface ServicesSectionProps {

@@ -1,9 +1,9 @@
-import { useMemo, useEffect, useRef } from 'react';
+import type { GetOrganizationTeams_ResultSet1 } from '@rediacc/shared/types';
+import { useEffect, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useGetOrganizationTeams } from '@/api/api-hooks.generated';
 import { RootState } from '@/store/store';
 import { initializeTeam, setTeam } from '@/store/teamSelection/teamSelectionSlice';
-import type { GetOrganizationTeams_ResultSet1 } from '@rediacc/shared/types';
 
 export interface UseTeamSelectionOptions {
   /** Required page identifier for per-page isolation */

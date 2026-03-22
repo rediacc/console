@@ -15,8 +15,6 @@ const blogCollection = defineCollection({
     image: z.string().optional(),
     language: z.enum(LANGUAGES).default('en'),
     sourceHash: z.string().optional(),
-    translationPending: z.boolean().optional(),
-    translationPendingReason: z.string().optional(),
   }),
 });
 
@@ -30,8 +28,6 @@ const docsCollection = defineCollection({
     toc: z.boolean().default(true),
     language: z.enum(LANGUAGES).default('en'),
     sourceHash: z.string().optional(),
-    translationPending: z.boolean().optional(),
-    translationPendingReason: z.string().optional(),
   }),
 });
 

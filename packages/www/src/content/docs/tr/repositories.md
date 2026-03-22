@@ -4,7 +4,7 @@ description: 'Uzak makinelerde LUKS ile şifrelenmiş depoları oluşturma, yön
 category: Guides
 order: 4
 language: tr
-sourceHash: 04fe287348176b64
+sourceHash: "5faf701157696057"
 ---
 
 # Depolar
@@ -76,10 +76,10 @@ rdc repo expand my-app -m server-1 --size 5G      # Mevcut boyuta 5G ekle
 Mevcut bir deponun güncel durumunun bir kopyasını oluşturun:
 
 ```bash
-rdc repo fork my-app -m server-1 --tag my-app-staging
+rdc repo fork my-app staging -m server-1
 ```
 
-Bu, kendi GUID'i ve ağ kimliğine sahip yeni bir şifrelenmiş kopya oluşturur. Çatal (fork), üst depo ile aynı LUKS kimlik bilgisini paylaşır.
+Çatallar name:tag modelini kullanır: ortaya çıkan çatal `my-app:staging` olarak adlandırılır. Bu, kendi GUID'i ve ağ kimliğine sahip yeni bir şifrelenmiş kopya oluşturur ve üst deponun adını paylaşır. Çatal (fork), üst depo ile aynı LUKS kimlik bilgisini paylaşır.
 
 ## Doğrulama
 
@@ -102,16 +102,14 @@ Komut, Docker konteyner veri dizinlerini (yazılabilir bind bağlamaları) otoma
 | Seçenek | Açıklama |
 |---------|----------|
 | `--uid <uid>` | 7111 yerine özel bir UID ayarla |
-| `--force` | Docker birim algılamayı atla ve her şeyi sahiplendir |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 Tüm dosyalar üzerinde sahipliği zorlamak için (konteyner verileri dahil):
 
 ```bash
-rdc repo ownership my-app -m server-1 --force
+rdc repo ownership my-app -m server-1
 ```
 
-> **Uyarı:** Çalışan konteynerlerde `--force` kullanmak onları bozabilir. Gerekiyorsa önce `rdc repo down` ile servisleri durdurun.
 
 Sahipliğin ne zaman ve nasıl kullanılacağına dair eksiksiz bir yol haritası için [Taşıma Rehberi](/tr/docs/migration) sayfasına bakın.
 

@@ -1,0 +1,25 @@
+{
+  "cast": "/assets/tutorials/monitoring-tutorial.cast",
+  "language": "ja",
+  "version": 1,
+  "events": [
+    {
+      "id": "monitoring-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.508759,
+      "text": "完全な環境診断を実行して、ベースラインの問題を明らかにします。"
+    },
+    {
+      "id": "monitoring-tutorial-02",
+      "markerIndex": 1,
+      "at": 9.844365,
+      "text": "リモート マシンの健全性インジケーターを確認します。"
+    },
+    {
+      "id": "monitoring-tutorial-03",
+      "markerIndex": 2,
+      "at": 18.393678,
+      "text": "ターゲット マシン上のアクティブなコンテナを一覧表示します。"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "cast": "/assets/tutorials/repos-tutorial.cast",
+  "language": "es",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "5ab31eeb92ec5b7f5385a506fc8f904c7862b75f704b1af4d903d4a02bfe40b1",
+  "steps": [
+    {
+      "id": "repos-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508464,
+      "replayEndSec": 6.646665,
+      "narrationText": "Cree un repositorio cifrado con un tamaño de almacenamiento definido.",
+      "audioSrc": "/assets/tutorials/audio/es/repos-tutorial/repos-tutorial-01.076d814f.mp3",
+      "audioDurationSec": 4.362449
+    }
+  ]
+}

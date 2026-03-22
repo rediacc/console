@@ -1,0 +1,43 @@
+{
+  "cast": "/assets/tutorials/setup-tutorial.cast",
+  "language": "tr",
+  "version": 1,
+  "events": [
+    {
+      "id": "setup-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.50986,
+      "text": "Bu ortam için özel bir yapılandırma profili başlatın."
+    },
+    {
+      "id": "setup-tutorial-02",
+      "markerIndex": 1,
+      "at": 10.605861,
+      "text": "Mevcut yapılandırmaları inceleyin ve yeni profilin mevcut olduğunu onaylayın."
+    },
+    {
+      "id": "setup-tutorial-03",
+      "markerIndex": 2,
+      "at": 17.961132,
+      "text": "Ağ ve kullanıcı ayrıntılarını içeren bir makine girişini kaydedin."
+    },
+    {
+      "id": "setup-tutorial-04",
+      "markerIndex": 3,
+      "at": 31.651331,
+      "text": "Kaydı doğrulamak için yapılandırılmış makine listesini inceleyin."
+    },
+    {
+      "id": "setup-tutorial-05",
+      "markerIndex": 4,
+      "at": 40.16275,
+      "text": "Tekrarlanan hedefleme işaretlerini azaltmak için varsayılan makineyi ayarlayın."
+    },
+    {
+      "id": "setup-tutorial-06",
+      "markerIndex": 5,
+      "at": 48.29967,
+      "text": "Bağlantıyı doğrulamak için temel bir uzak ana bilgisayar kontrolü çalıştırın."
+    }
+  ]
+}

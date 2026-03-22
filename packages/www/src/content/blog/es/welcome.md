@@ -9,7 +9,7 @@ tags:
   - welcome
 featured: true
 language: es
-sourceHash: "1a84feb14d8b2654"
+sourceHash: "a292e24968f4bc9b"
 ---
 
 # Bienvenido al Blog de Rediacc
@@ -23,4 +23,4 @@ sourceHash: "1a84feb14d8b2654"
 - **Casos de estudio**: Ejemplos reales de Rediacc en acción
 - **Mejores prácticas**: Consejos y trucos de nuestro equipo
 
-¡Mantente atento para más contenido próximamente!
+¡Vuelve regularmente para ver nuevo contenido!

@@ -1,9 +1,9 @@
-import React from 'react';
+import type { FormInstance } from 'antd';
 import { Col } from 'antd';
+import React from 'react';
 import { MACHINE_BASIC_FIELD_ORDER } from '../constants';
 import { VaultFieldRenderer } from '../fieldRenderers';
 import type { FieldDefinition, VaultFormValues } from '../types';
-import type { FormInstance } from 'antd';
 
 interface VaultEditorRequiredFieldsProps {
   entityType: string;

@@ -52,6 +52,12 @@ on:
     secrets:
       APP_PRIVATE_KEY:
         required: false
+      AWS_SES_ACCESS_KEY_ID:
+        required: false
+      AWS_SES_SECRET_ACCESS_KEY:
+        required: false
+      AWS_SES_REGION:
+        required: false
   workflow_dispatch:
     inputs:
       run-name:
@@ -145,7 +151,7 @@ jobs:
         with:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth
+          repositories: console,middleware,renet,account,sql,elite,homebrew-tap,growth,generative
 
       - name: Checkout with Submodules
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
@@ -248,6 +254,32 @@ jobs:
             echo "::warning::Cloudflare tunnel failed — services available only via localhost"
           fi
 
+      - name: Send Access Information Email
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_SES_REGION }}
+          SES_FROM: ${{ vars.AWS_SES_FROM }}
+        run: |
+          .ci/scripts/infra/send-access-email.sh \
+            --actor "${{ github.actor }}" \
+            --tag "${{ env.TAG }}" \
+            --duration "${{ inputs.duration }}" \
+            --run-name "${{ inputs.run-name || 'Manual Service Run' }}" \
+            --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --tunnel-url "${{ steps.tunnel.outputs.tunnel-url }}" \
+            --desktop-env "${{ inputs.desktop-environment }}" \
+            --desktop-res "${{ inputs.desktop-resolution }}" \
+            --vm-os "${{ matrix.vm-os }}" \
+            --vm-kvm "${{ steps.vms.outputs.kvm-available }}" \
+            --vm-user "${{ steps.vms.outputs.machine-user }}" \
+            --vm-pass "${{ steps.vms.outputs.machine-password }}" \
+            --bridge-ip "${{ steps.vms.outputs.bridge-ip }}" \
+            --worker-ips "${{ steps.vms.outputs.worker-ips }}" \
+            --connection-string "${{ env.CONNECTION_STRING }}" \
+            --debug-ssh "${{ steps.tmate.outputs.ssh-connection }}" \
+            --debug-web "${{ steps.tmate.outputs.web-url }}"
+
       - name: Display Access Information and Keep Services Alive
         run: |
           # Display Access Information
@@ -262,62 +294,92 @@ jobs:
           echo "📦 DOCKER IMAGE VERSION: ${{ env.TAG }}"
           echo "⏱️  DURATION: ${DURATION_MIN} minutes"
           echo ""
-          echo "🌐 WEB ACCESS:"
-          echo "   • Cloudflare Tunnel: ${TUNNEL_URL}"
-          if [ "${{ inputs.desktop-environment }}" != "none" ]; then
-            echo "   • Desktop (noVNC): ${TUNNEL_URL}/desktop"
-            echo "   • Environment: ${{ inputs.desktop-environment }}"
-            echo "   • Resolution: ${{ inputs.desktop-resolution }}"
-          fi
-          echo ""
 
-          # Display VM infrastructure details if enabled
-          if [ "${{ matrix.vm-os }}" != "none" ] && [ "${{ steps.vms.outputs.kvm-available }}" == "true" ]; then
-            echo "🖥️  VM INFRASTRUCTURE:"
-            echo "   • Provider: KVM"
-            echo "   • OS: ${{ matrix.vm-os }}"
-            echo "   • Bridge IP: ${{ steps.vms.outputs.bridge-ip }}"
-            echo "   • Worker IPs: ${{ steps.vms.outputs.worker-ips }}"
+          if [ "${EMAIL_SENT}" == "true" ]; then
+            # Show tunnel URLs in logs, redact credentials
+            echo "🌐 WEB ACCESS:"
+            echo "   • Cloudflare Tunnel: ${TUNNEL_URL}"
+            if [ "${{ inputs.desktop-environment }}" != "none" ]; then
+              echo "   • Desktop (noVNC): ${TUNNEL_URL}/desktop"
+              echo "   • Environment: ${{ inputs.desktop-environment }}"
+              echo "   • Resolution: ${{ inputs.desktop-resolution }}"
+            fi
             echo ""
-            echo "📍 VM SERVICE URLS:"
-            echo "   • API: http://${{ steps.vms.outputs.bridge-ip }}"
-            echo "   • Web UI: http://${{ steps.vms.outputs.bridge-ip }}"
-            echo "   • Registry: ${{ steps.vms.outputs.bridge-ip }}:5000"
+            if [ "${{ matrix.vm-os }}" != "none" ] && [ "${{ steps.vms.outputs.kvm-available }}" == "true" ]; then
+              echo "🖥️  VM INFRASTRUCTURE:"
+              echo "   • Provider: KVM"
+              echo "   • OS: ${{ matrix.vm-os }}"
+              echo ""
+              echo "🔐 VM CREDENTIALS: [sent via email]"
+              echo "🔑 SSH ACCESS: [sent via email]"
+              echo ""
+            fi
+            echo "🐳 LOCAL SERVICES:"
+            echo "   • Web UI:  http://localhost"
+            echo "   • API:     http://localhost/api"
+            if [ "${{ inputs.desktop-environment }}" != "none" ]; then
+              echo "   • Desktop: http://localhost:6080/vnc.html"
+              echo "   • Gateway: http://localhost:8080"
+            fi
             echo ""
-            echo "🔐 VM CREDENTIALS:"
-            echo "   • Username: ${{ steps.vms.outputs.machine-user }}"
-            echo "   • Password: ${{ steps.vms.outputs.machine-password }}"
+            echo "🗄️  DATABASE: [sent via email]"
             echo ""
-            echo "🔑 SSH ACCESS TO VMS:"
-            echo "   • Bridge:  ssh ${{ steps.vms.outputs.machine-user }}@${{ steps.vms.outputs.bridge-ip }}"
-
-            # Parse and display worker IPs
-            IFS=',' read -ra WORKER_ARRAY <<< "${{ steps.vms.outputs.worker-ips }}"
-            for i in "${!WORKER_ARRAY[@]}"; do
-              echo "   • Worker $((i+1)): ssh ${{ steps.vms.outputs.machine-user }}@${WORKER_ARRAY[$i]}"
-            done
+            if [ "${{ inputs.enable-debug }}" == "true" ]; then
+              echo "🔧 DEBUG ACCESS: [sent via email]"
+              echo ""
+            fi
+            echo "📧 Sensitive details have been sent to your email."
+          else
+            # Full output — fallback when email was not sent
+            echo "🌐 WEB ACCESS:"
+            echo "   • Cloudflare Tunnel: ${TUNNEL_URL}"
+            if [ "${{ inputs.desktop-environment }}" != "none" ]; then
+              echo "   • Desktop (noVNC): ${TUNNEL_URL}/desktop"
+              echo "   • Environment: ${{ inputs.desktop-environment }}"
+              echo "   • Resolution: ${{ inputs.desktop-resolution }}"
+            fi
             echo ""
-          fi
-
-          echo "🐳 LOCAL SERVICES:"
-          echo "   • Web UI:  http://localhost"
-          echo "   • API:     http://localhost/api"
-          if [ "${{ inputs.desktop-environment }}" != "none" ]; then
-            echo "   • Desktop: http://localhost:6080/vnc.html"
-            echo "   • Gateway: http://localhost:8080"
-          fi
-          echo ""
-
-          echo "🗄️  DATABASE:"
-          echo "   • SQL Server: ${{ env.CONNECTION_STRING }}"
-          echo ""
-
-          # Display debug access if enabled
-          if [ "${{ inputs.enable-debug }}" == "true" ]; then
-            echo "🔧 DEBUG ACCESS:"
-            echo "   • SSH: ${{ steps.tmate.outputs.ssh-connection }}"
-            echo "   • Web: ${{ steps.tmate.outputs.web-url }}"
+            if [ "${{ matrix.vm-os }}" != "none" ] && [ "${{ steps.vms.outputs.kvm-available }}" == "true" ]; then
+              echo "🖥️  VM INFRASTRUCTURE:"
+              echo "   • Provider: KVM"
+              echo "   • OS: ${{ matrix.vm-os }}"
+              echo "   • Bridge IP: ${{ steps.vms.outputs.bridge-ip }}"
+              echo "   • Worker IPs: ${{ steps.vms.outputs.worker-ips }}"
+              echo ""
+              echo "📍 VM SERVICE URLS:"
+              echo "   • API: http://${{ steps.vms.outputs.bridge-ip }}"
+              echo "   • Web UI: http://${{ steps.vms.outputs.bridge-ip }}"
+              echo "   • Registry: ${{ steps.vms.outputs.bridge-ip }}:5000"
+              echo ""
+              echo "🔐 VM CREDENTIALS:"
+              echo "   • Username: ${{ steps.vms.outputs.machine-user }}"
+              echo "   • Password: ${{ steps.vms.outputs.machine-password }}"
+              echo ""
+              echo "🔑 SSH ACCESS TO VMS:"
+              echo "   • Bridge:  ssh ${{ steps.vms.outputs.machine-user }}@${{ steps.vms.outputs.bridge-ip }}"
+              IFS=',' read -ra WORKER_ARRAY <<< "${{ steps.vms.outputs.worker-ips }}"
+              for i in "${!WORKER_ARRAY[@]}"; do
+                echo "   • Worker $((i+1)): ssh ${{ steps.vms.outputs.machine-user }}@${WORKER_ARRAY[$i]}"
+              done
+              echo ""
+            fi
+            echo "🐳 LOCAL SERVICES:"
+            echo "   • Web UI:  http://localhost"
+            echo "   • API:     http://localhost/api"
+            if [ "${{ inputs.desktop-environment }}" != "none" ]; then
+              echo "   • Desktop: http://localhost:6080/vnc.html"
+              echo "   • Gateway: http://localhost:8080"
+            fi
             echo ""
+            echo "🗄️  DATABASE:"
+            echo "   • SQL Server: ${{ env.CONNECTION_STRING }}"
+            echo ""
+            if [ "${{ inputs.enable-debug }}" == "true" ]; then
+              echo "🔧 DEBUG ACCESS:"
+              echo "   • SSH: ${{ steps.tmate.outputs.ssh-connection }}"
+              echo "   • Web: ${{ steps.tmate.outputs.web-url }}"
+              echo ""
+            fi
           fi
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

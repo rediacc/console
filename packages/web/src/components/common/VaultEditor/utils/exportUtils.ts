@@ -1,6 +1,6 @@
-import { encodeBase64 } from '../utils';
-import type { FieldDefinition, VaultFormValues } from '../types';
 import type { FormInstance } from 'antd';
+import type { FieldDefinition, VaultFormValues } from '../types';
+import { encodeBase64 } from '../utils';
 
 export const buildExportData = (
   formData: VaultFormValues,

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: tr
-sourceHash: 4a0c6a695d72aa55
+sourceHash: "911dde41922454ec"
 ---
 
 # Ağ
@@ -51,22 +51,40 @@ Bu etiketler, servisler başlatılırken `renet compose` tarafından **otomatik 
 | `rediacc.service_name` | Servis kimliği | `myapp` |
 | `rediacc.service_ip` | Atanmış geri döngü IP'si | `127.0.11.2` |
 | `rediacc.network_id` | Deponun daemon ID'si | `2816` |
+| `rediacc.repo_name` | Repository name | `marketing` |
 | `rediacc.tcp_ports` | TCP ports the service listens on | `8080,8443` |
 | `rediacc.udp_ports` | UDP ports the service listens on | `53` |
 
-Bir konteyner yalnızca `rediacc.*` etiketlerine sahipken (`traefik.enable=true` yokken), route server bir **otomatik yönlendirme** oluşturur:
+Bir konteyner yalnızca `rediacc.*` etiketlerine sahipken (`traefik.enable=true` yokken), route server depo adını ve makinenin alt alan adını kullanarak bir **otomatik yönlendirme** oluşturur:
 
 ```
-{service}-{networkID}.{baseDomain}
+{service}.{repoName}.{machineName}.{baseDomain}
 ```
 
-Örneğin, ağ ID'si `2816` ve temel alan adı `example.com` olan bir depodaki `myapp` adlı servis şunu alır:
+Örneğin, `server-1` makinesinde `marketing` adlı bir depodaki `myapp` adlı servis, temel alan adı `example.com` ile şunu alır:
 
 ```
-myapp-2816.example.com
+myapp.marketing.server-1.example.com
 ```
 
-Otomatik yönlendirmeler geliştirme ve dahili erişim için kullanışlıdır. Özel alan adlarına sahip üretim servisleri için Seviye 2 etiketlerini kullanın.
+Her deponun kendi alt alan adı seviyesi vardır, bu nedenle çatallamalar ve farklı depolar asla çakışmaz. Bir depoyu çatalladığınızda (ör. `marketing-staging`), çatal otomatik olarak farklı yönlendirmeler alır. Özel alan adlarına sahip servisler için Seviye 2 etiketlerini veya `rediacc.domain` etiketini kullanın.
+
+#### `rediacc.domain` ile Özel Alan Adı
+
+`docker-compose.yml` dosyanızdaki `rediacc.domain` etiketini kullanarak bir servis için özel alan adı belirleyebilirsiniz. Hem kısa adlar hem de tam alan adları desteklenir:
+
+```yaml
+labels:
+  # Kısa ad — makinenin baseDomain'i kullanılarak cloud.example.com olarak çözümlenir
+  - "rediacc.domain=cloud"
+
+  # Tam alan adı — olduğu gibi kullanılır
+  - "rediacc.domain=cloud.example.com"
+```
+
+Nokta içermeyen değer kısa ad olarak değerlendirilir ve makinenin `baseDomain`'i otomatik olarak eklenir. Nokta içeren değer tam alan adı olarak kullanılır.
+
+`machineName` yapılandırıldığında, özel alan adlı servisler **iki yönlendirme** alır: biri temel alan adında (`cloud.example.com`) ve biri makine alt alan adında (`cloud.server-1.example.com`).
 
 ### Seviye 2: `traefik.*` Etiketleri (Kullanıcı Tanımlı)
 
@@ -92,13 +110,17 @@ Bunlar standart [Traefik v3 etiket sözdizimini](https://doc.traefik.io/traefik/
 1. Makinede yapılandırılmış altyapı ([Makine Kurulumu — Altyapı Yapılandırması](/tr/docs/setup#infrastructure-configuration)):
 
    ```bash
-   rdc config set-infra server-1 \
-     --public-ipv4 203.0.113.50 \
-     --base-domain example.com \
+   # Paylaşılan kimlik bilgileri (yapılandırma başına bir kez, tüm makinelere uygulanır)
+   rdc config infra set server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
-   rdc config push-infra server-1
+   # Makineye özel ayarlar
+   rdc config infra set server-1 \
+     --public-ipv4 203.0.113.50 \
+     --base-domain example.com
+
+   rdc config infra push server-1
    ```
 
 2. Alan adınızı sunucunun genel IP'sine yönlendiren DNS kayıtları (aşağıdaki [DNS Yapılandırması](#dns-yapılandırması) bölümüne bakın).
@@ -111,7 +133,6 @@ Dışarıya açmak istediğiniz servislere `docker-compose.yml` dosyanızda `tra
 services:
   myapp:
     image: myapp:latest
-    network_mode: host
     environment:
       - LISTEN_ADDR=${MYAPP_IP}:8080
     labels:
@@ -123,7 +144,6 @@ services:
 
   database:
     image: postgres:17
-    network_mode: host
     command: ["-c", "listen_addresses=${DATABASE_IP}"]
     # Traefik etiketi yok — veritabanı yalnızca dahili
 ```
@@ -142,21 +162,19 @@ Etiketlerdeki `{name}` rastgele bir tanımlayıcıdır — sadece ilgili router/
 
 ## TLS Sertifikaları
 
-TLS sertifikaları, Cloudflare DNS-01 doğrulaması kullanılarak Let's Encrypt aracılığıyla otomatik olarak alınır. Bu, altyapı kurulumu sırasında bir kez yapılandırılır:
+TLS sertifikaları, Cloudflare DNS-01 doğrulaması kullanılarak Let's Encrypt aracılığıyla otomatik olarak alınır. Kimlik bilgileri yapılandırma başına bir kez ayarlanır (tüm makineler arasında paylaşılır):
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
 
-Bir servis `traefik.http.routers.{name}.tls.certresolver=letsencrypt` etiketine sahip olduğunda, Traefik otomatik olarak:
-1. Let's Encrypt'ten bir sertifika talep eder
-2. Cloudflare DNS üzerinden alan adı sahipliğini doğrular
-3. Sertifikayı yerel olarak saklar
-4. Süresi dolmadan yeniler
+Otomatik yönlendirmeler, servis başına sertifika yerine depo alt alan adı seviyesinde **joker sertifikalar** (`*.marketing.server-1.example.com`) kullanır. Bu, Let's Encrypt hız sınırlarını önler ve başlatmayı hızlandırır. Özel alan adlı yönlendirmeler makine seviyesi joker sertifikalar (`*.server-1.example.com`) kullanır.
 
-Cloudflare DNS API token'ının, güvence altına almak istediğiniz alan adları için `Zone:DNS:Edit` iznine sahip olması gerekir. Bu yaklaşım, joker sertifikalar dahil Cloudflare tarafından yönetilen herhangi bir alan adı için çalışır.
+`traefik.http.routers.{name}.tls.certresolver=letsencrypt` içeren Seviye 2 yönlendirmeler için, joker alan adı SAN'ları yönlendirmenin ana bilgisayar adına göre otomatik olarak enjekte edilir.
+
+Cloudflare DNS API token'ının, güvence altına almak istediğiniz alan adları için `Zone:DNS:Edit` iznine sahip olması gerekir.
 
 ## TCP/UDP Port Yönlendirme
 
@@ -167,11 +185,11 @@ HTTP dışı protokoller (posta sunucuları, DNS, dışarıya açılan veritaban
 Altyapı yapılandırması sırasında gerekli portları ekleyin:
 
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config push-infra server-1
+rdc config infra push server-1
 ```
 
 Bu, `tcp-{port}` ve `udp-{port}` adlı Traefik giriş noktaları oluşturur.
@@ -184,7 +202,6 @@ To expose a database externally without TLS passthrough (Traefik forwards raw TC
 services:
   postgres:
     image: postgres:17
-    network_mode: host
     command: -c listen_addresses=${POSTGRES_IP} -c port=5432
     labels:
       - "traefik.enable=true"
@@ -197,7 +214,7 @@ Port 5432 is pre-configured (see below), so no `--tcp-ports` setup is needed.
 
 > **Security note:** Exposing a database to the internet is a risk. Use this only when remote clients need direct access. For most setups, keep the database internal and connect through your application.
 
-> Port ekledikten veya kaldırdıktan sonra, proxy yapılandırmasını güncellemek için her zaman `rdc config push-infra` komutunu yeniden çalıştırın.
+> Port ekledikten veya kaldırdıktan sonra, proxy yapılandırmasını güncellemek için her zaman `rdc config infra push` komutunu yeniden çalıştırın.
 
 ### Adım 2: TCP/UDP Etiketleri Ekleme
 
@@ -207,7 +224,6 @@ Compose dosyanızda `traefik.tcp.*` veya `traefik.udp.*` etiketlerini kullanın:
 services:
   mail-server:
     image: ghcr.io/docker-mailserver/docker-mailserver:latest
-    network_mode: host
     labels:
       - "traefik.enable=true"
 
@@ -232,7 +248,7 @@ Temel kavramlar:
 
 ### Önceden Yapılandırılmış Portlar
 
-Aşağıdaki TCP/UDP portları varsayılan olarak giriş noktalarına sahiptir (`--tcp-ports` ile eklemeye gerek yoktur):
+Aşağıdaki TCP/UDP portları varsayılan olarak giriş noktalarına sahiptir (`--tcp-ports` ile eklemeye gerek yoktur). Giriş noktaları yalnızca yapılandırılmış adres aileleri için oluşturulur — IPv4 giriş noktaları `--public-ipv4`, IPv6 giriş noktaları `--public-ipv6` gerektirir:
 
 | Port | Protokol | Yaygın Kullanım |
 |------|----------|-----------------|
@@ -250,29 +266,41 @@ Aşağıdaki TCP/UDP portları varsayılan olarak giriş noktalarına sahiptir (
 
 ## DNS Yapılandırması
 
-Alan adlarınızı `set-infra` ile yapılandırılan sunucunun genel IP adreslerine yönlendirin:
+### Otomatik DNS (Cloudflare)
 
-### Bireysel Servis Alan Adları
+`--cf-dns-token` yapılandırıldığında, `rdc config infra push` gerekli DNS kayıtlarını Cloudflare'de otomatik olarak oluşturur:
 
-Her servis için A (IPv4) ve/veya AAAA (IPv6) kayıtları oluşturun:
+| Kayıt | Tür | İçerik | Oluşturan |
+|-------|-----|--------|-----------|
+| `server-1.example.com` | A / AAAA | Makinenin genel IP'si | `push-infra` |
+| `*.server-1.example.com` | A / AAAA | Makinenin genel IP'si | `push-infra` |
+| `*.marketing.server-1.example.com` | A / AAAA | Makinenin genel IP'si | `repo up` |
+
+Makine seviyesi kayıtlar `push-infra` tarafından oluşturulur ve özel alan adlı yönlendirmeleri (`rediacc.domain`) kapsar. Depo başına joker kayıtlar `repo up` tarafından otomatik olarak oluşturulur ve o deponun otomatik yönlendirmelerini kapsar.
+
+Bu idempotent bir işlemdir — IP değişirse mevcut kayıtlar güncellenir, zaten doğruysa değiştirilmez.
+
+Temel alan adı joker kaydı (`*.example.com`), `rediacc.domain=erp` gibi özel alan adı etiketleri kullanıyorsanız manuel olarak oluşturulmalıdır.
+
+### Manuel DNS
+
+Cloudflare kullanmıyorsanız veya DNS'i manuel yönetiyorsanız, A (IPv4) ve/veya AAAA (IPv6) kayıtları oluşturun:
 
 ```
-app.example.com      A     203.0.113.50
-app.example.com      AAAA  2001:db8::1
-gitlab.example.com   A     203.0.113.50
-mail.example.com     A     203.0.113.50
+# Makine alt alan adı (rediacc.domain=erp gibi özel alan adlı yönlendirmeler için)
+server-1.example.com           A     203.0.113.50
+*.server-1.example.com         A     203.0.113.50
+*.server-1.example.com         AAAA  2001:db8::1
+
+# Depo başına joker kayıtlar (myapp.marketing.server-1.example.com gibi otomatik yönlendirmeler için)
+*.marketing.server-1.example.com    A     203.0.113.50
+*.marketing.server-1.example.com    AAAA  2001:db8::1
+
+# Temel alan adı joker kaydı (rediacc.domain=erp gibi özel alan adlı servisler için)
+*.example.com                  A     203.0.113.50
 ```
 
-### Otomatik Yönlendirmeler İçin Joker
-
-Otomatik yönlendirmeleri (Seviye 1) kullanıyorsanız, bir joker DNS kaydı oluşturun:
-
-```
-*.example.com   A     203.0.113.50
-*.example.com   AAAA  2001:db8::1
-```
-
-Bu, tüm alt alan adlarını sunucunuza yönlendirir ve Traefik bunları `Host()` kuralına veya otomatik yönlendirme ana bilgisayar adına göre doğru servisle eşleştirir.
+Cloudflare DNS yapılandırıldığında, depo başına joker kayıtlar `repo up` tarafından otomatik olarak oluşturulur. Birden fazla makine ile her makine kendi IP'sine işaret eden kendi DNS kayıtlarını alır.
 
 ## Ara Yazılımlar
 
@@ -342,7 +370,7 @@ Dinamik olarak atanan portlar için TCP ve UDP port eşlemelerini gösterir.
 | Servis yönlendirmelerde yok | Konteyner çalışmıyor veya etiketler eksik | Deponun daemon'unda `docker ps` ile doğrulayın; etiketleri kontrol edin |
 | Sertifika verilmedi | DNS sunucuya yönlenmiyor veya geçersiz Cloudflare token'ı | DNS çözümlemesini doğrulayın; Cloudflare API token izinlerini kontrol edin |
 | 502 Bad Gateway | Uygulama belirtilen portta dinlemiyor | Uygulamanın `{SERVICE}_IP`'sine bağlı olduğunu ve portun `loadbalancer.server.port` ile eşleştiğini doğrulayın |
-| TCP portu erişilemiyor | Port altyapıda kayıtlı değil | `rdc config set-infra --tcp-ports ...` ve `push-infra` çalıştırın |
+| TCP portu erişilemiyor | Port altyapıda kayıtlı değil | `rdc config infra set --tcp-ports ...` ve `push-infra` çalıştırın |
 | Route server running old version | Binary was updated but service not restarted | Happens automatically on provisioning; manual: `sudo systemctl restart rediacc-router` |
 | STUN/TURN relay not reachable | Relay addresses cached at startup | Recreate the service after DNS or IP changes so it picks up the new network config |
 
@@ -356,8 +384,6 @@ Bu, PostgreSQL veritabanı ile bir web uygulamasını dağıtır. Uygulama `app.
 services:
   webapp:
     image: myregistry/webapp:latest
-    network_mode: host
-    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://app:changeme@${POSTGRES_IP}:5432/webapp
       LISTEN_ADDR: ${WEBAPP_IP}:3000
@@ -374,8 +400,6 @@ services:
 
   postgres:
     image: postgres:17
-    network_mode: host
-    restart: unless-stopped
     environment:
       POSTGRES_DB: webapp
       POSTGRES_USER: app
@@ -391,12 +415,8 @@ services:
 ```bash
 #!/bin/bash
 
-prep() {
-    mkdir -p data/postgres
-    renet compose -- pull
-}
-
 up() {
+    mkdir -p data/postgres
     renet compose -- up -d
 }
 

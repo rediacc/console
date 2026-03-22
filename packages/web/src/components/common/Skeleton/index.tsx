@@ -1,6 +1,6 @@
-import React from 'react';
-import { Flex } from 'antd';
 import { DEFAULTS, UI_SIZING } from '@rediacc/shared/config';
+import { Flex } from 'antd';
+import React from 'react';
 
 /**
  * Skeleton Loader Components

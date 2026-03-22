@@ -1,8 +1,8 @@
+import type { ErrorHandler } from '@rediacc/shared/api';
 import i18n from '@/i18n/config';
 import { logout, showSessionExpiredModal } from '@/store/auth/authSlice';
 import { store } from '@/store/store';
 import { showMessage } from '@/utils/messages';
-import type { ErrorHandler } from '@rediacc/shared/api';
 
 /**
  * Web error handler with Redux integration and UI messages.

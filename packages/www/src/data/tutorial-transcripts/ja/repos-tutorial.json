@@ -1,0 +1,13 @@
+{
+  "cast": "/assets/tutorials/repos-tutorial.cast",
+  "language": "ja",
+  "version": 1,
+  "events": [
+    {
+      "id": "repos-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.508464,
+      "text": "定義されたストレージ サイズで暗号化されたリポジトリを作成します。"
+    }
+  ]
+}

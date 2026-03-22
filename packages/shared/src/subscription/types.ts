@@ -16,30 +16,6 @@ export type PlanCode = 'COMMUNITY' | 'PROFESSIONAL' | 'BUSINESS' | 'ENTERPRISE';
 export type SubscriptionStatus = 'ACTIVE' | 'INACTIVE' | 'EXPIRED' | 'SUSPENDED' | 'GRACE';
 
 /**
- * Resource limits per subscription plan.
- * A value of -1 indicates unlimited.
- * A value of 0 indicates none/blocked.
- */
-export interface ResourceLimits {
-  /** Number of customer-created bridges allowed. 0 = none, -1 = unlimited */
-  bridges: number;
-  /** Reserved job slots */
-  maxReservedJobs: number;
-  /** Maximum job timeout in hours */
-  jobTimeoutHours: number;
-  /** Maximum repository size in GB */
-  maxRepositorySizeGb: number;
-  /** Maximum jobs per month */
-  maxJobsPerMonth: number;
-  /** Maximum pending queue items per user */
-  maxPendingPerUser: number;
-  /** Maximum concurrent tasks per machine */
-  maxTasksPerMachine: number;
-  /** Ceph pools per team. 0 = none, -1 = unlimited */
-  cephPoolsPerTeam: number;
-}
-
-/**
  * Feature availability flags per subscription plan.
  */
 export interface FeatureFlags {
@@ -92,8 +68,10 @@ export interface SubscriptionData {
   gracePeriodEnds: string;
 
   // Limits & Features
-  /** Resource limits for this plan */
-  resources: ResourceLimits;
+  /** Maximum repository size in GB */
+  maxRepositorySizeGb: number;
+  /** Maximum successful repo-license issuances per UTC calendar month */
+  maxRepoLicenseIssuancesPerMonth: number;
   /** Feature flags for this plan */
   features: FeatureFlags;
 
@@ -102,6 +80,12 @@ export interface SubscriptionData {
   maxActivations: number;
   /** Current activation count */
   activationCount: number;
+
+  // Attribution
+  /** Email of the account holder who issued this license */
+  issuedByEmail?: string;
+  /** Company/organization name */
+  companyName?: string;
 }
 
 /**
@@ -117,28 +101,29 @@ export interface SignedSubscriptionBlob {
   publicKeyId: string;
 }
 
-/**
- * Machine license payload.
- * Short-lived (1 hour), machine-specific, signed by account server.
- */
-export interface MachineLicense {
+export type RepoLicenseKind = 'grand' | 'fork';
+
+export interface RepoLicense {
   version: 1;
   subscriptionId: string;
   machineId: string;
+  clientMachineId: string;
+  repositoryGuid: string;
+  grandGuid: string;
+  kind: RepoLicenseKind;
   planCode: PlanCode;
   status: SubscriptionStatus;
-  resources: ResourceLimits;
-  features: FeatureFlags;
+  maxRepositorySizeGb: number;
+  luksUuid?: string;
+  storageFingerprint?: string;
   issuedAt: string;
-  expiresAt: string;
-  sequenceNumber: number;
-  ipAddress: string;
+  refreshRecommendedAt: string;
+  hardExpiresAt: string;
+  issuedByEmail?: string;
+  companyName?: string;
 }
 
-/**
- * Signed machine license blob (Ed25519).
- */
-export interface SignedMachineLicense {
+export interface SignedRepoLicense {
   payload: string;
   signature: string;
   publicKeyId: string;
@@ -158,12 +143,14 @@ export interface ApiToken {
   name: string;
   tokenHash: string;
   subscriptionId: string;
+  teamId: string | null;
   scopes: ApiTokenScope[];
   boundIp: string | null;
   createdAt: string;
   expiresAt: string | null;
   lastUsedAt: string | null;
   revokedAt: string | null;
+  createdByUserId?: string | null;
 }
 
 /**
@@ -176,7 +163,8 @@ export interface OrganizationSubscription {
   cachedData: {
     planCode: PlanCode;
     status: SubscriptionStatus;
-    resources: ResourceLimits;
+    maxRepositorySizeGb: number;
+    maxRepoLicenseIssuancesPerMonth: number;
     features: FeatureFlags;
     expiresAt: string;
     gracePeriodEnds: string;

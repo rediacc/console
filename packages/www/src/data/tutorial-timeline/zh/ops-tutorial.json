@@ -1,0 +1,67 @@
+{
+  "cast": "/assets/tutorials/ops-tutorial.cast",
+  "language": "zh",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "5eef66a502b9e85f7dbe923479f756f633f5fd58aaf8203814bda4bd1cbea861",
+  "steps": [
+    {
+      "id": "ops-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508295,
+      "replayEndSec": 8.986537,
+      "narrationText": "在配置之前验证本地虚拟化要求。",
+      "audioSrc": "/assets/tutorials/audio/zh/ops-tutorial/ops-tutorial-01.9ddab1fc.mp3",
+      "audioDurationSec": 2.847347
+    },
+    {
+      "id": "ops-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 8.986537,
+      "replayEndSec": 17.752282,
+      "narrationText": "启动一个最小的虚拟机集群进行实验。",
+      "audioSrc": "/assets/tutorials/audio/zh/ops-tutorial/ops-tutorial-02.46469dc7.mp3",
+      "audioDurationSec": 3.160816
+    },
+    {
+      "id": "ops-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 17.752282,
+      "replayEndSec": 25.263372,
+      "narrationText": "检查集群状态和机器可用性。",
+      "audioSrc": "/assets/tutorials/audio/zh/ops-tutorial/ops-tutorial-03.acbbc162.mp3",
+      "audioDurationSec": 2.690612
+    },
+    {
+      "id": "ops-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 25.263372,
+      "replayEndSec": 31.160484,
+      "narrationText": "对选定的虚拟机运行快速主机名检查。",
+      "audioSrc": "/assets/tutorials/audio/zh/ops-tutorial/ops-tutorial-04.8a50cccf.mp3",
+      "audioDurationSec": 3.63102
+    },
+    {
+      "id": "ops-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 31.160484,
+      "replayEndSec": 39.121485,
+      "narrationText": "从 VM 环境内部检查系统详细信息。",
+      "audioSrc": "/assets/tutorials/audio/zh/ops-tutorial/ops-tutorial-05.b70c840e.mp3",
+      "audioDurationSec": 3.787755
+    },
+    {
+      "id": "ops-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 39.121485,
+      "replayEndSec": 46.501637,
+      "narrationText": "关闭并清理临时虚拟机集群。",
+      "audioSrc": "/assets/tutorials/audio/zh/ops-tutorial/ops-tutorial-06.6fc65434.mp3",
+      "audioDurationSec": 3.239184
+    }
+  ]
+}

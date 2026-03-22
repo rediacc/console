@@ -1,37 +1,35 @@
 ---
 title: "Aprovisionamiento de VM local"
-description: "Observe y siga mientras aprovisionamos un clúster de VM local, ejecutamos comandos por SSH y lo eliminamos todo."
+description: "Aprovisionar un clúster de VM local, ejecutar comandos por SSH y eliminarlo usando la CLI."
 category: "Tutorials"
 order: 1
 language: es
-sourceHash: "990c6fd433c7c847"
+sourceHash: "2fdc49f796b03e18"
 ---
 
-# Tutorial: Aprovisionamiento de VM local
+# Cómo aprovisionar VMs locales con Rediacc
 
-This tutorial walks through the complete `rdc ops` workflow: checking system requirements, provisioning a minimal VM cluster, running commands on VMs over SSH, and tearing everything down.
+Probar la infraestructura localmente antes de desplegar en producción ahorra tiempo y previene errores de configuración. En este tutorial, aprovisionará un clúster de VM mínimo en su estación de trabajo, verificará la conectividad, ejecutará comandos por SSH y eliminará todo. Al finalizar, tendrá un entorno de desarrollo local repetible.
 
 ## Requisitos previos
 
-- A Linux or macOS workstation with hardware virtualization enabled
-- The `rdc` CLI installed and a config initialized with the local adapter
-- KVM/libvirt (Linux) or QEMU (macOS) installed — see [Experimental VMs](/es/docs/experimental-vms) for setup instructions
+- Una estación de trabajo Linux o macOS con virtualización de hardware habilitada
+- La CLI `rdc` instalada y una configuración inicializada con el adaptador local
+- KVM/libvirt (Linux) o QEMU (macOS) instalado — consulte [VMs experimentales](/es/docs/experimental-vms) para instrucciones de configuración
 
 ## Grabación interactiva
 
 ![Tutorial: rdc ops provisioning](/assets/tutorials/ops-tutorial.cast)
 
-## Lo que verá
-
-The recording above walks through each step below. Use the playback bar to navigate between commands.
-
 ### Paso 1: Verificar requisitos del sistema
+
+Antes de aprovisionar, confirme que su estación de trabajo tiene soporte de virtualización y los paquetes requeridos instalados.
 
 ```bash
 rdc ops check
 ```
 
-Verifica el soporte de virtualización de hardware, los paquetes requeridos (libvirt, QEMU) y la configuración de red. Esto debe pasar antes de poder aprovisionar VMs.
+Rediacc verifica la virtualización de hardware (VT-x/AMD-V), los paquetes requeridos (libvirt, QEMU) y la configuración de red. Todas las verificaciones deben pasar antes de poder crear VMs.
 
 ### Paso 2: Aprovisionar un clúster de VM mínimo
 
@@ -39,7 +37,9 @@ Verifica el soporte de virtualización de hardware, los paquetes requeridos (lib
 rdc ops up --basic --skip-orchestration
 ```
 
-Creates a two-VM cluster: a **bridge** VM (1 CPU, 1024 MB RAM, 8 GB disk) and a **worker** VM (2 CPU, 4096 MB RAM, 16 GB disk). The `--skip-orchestration` flag skips Rediacc platform provisioning, giving you bare VMs with SSH access only.
+Crea un clúster de dos VMs: una VM **puente** (1 CPU, 1024 MB RAM, 8 GB disco) y una VM **trabajador** (2 CPU, 4096 MB RAM, 16 GB disco). La opción `--skip-orchestration` omite el aprovisionamiento de la plataforma Rediacc, proporcionando VMs básicas solo con acceso SSH.
+
+> **Nota:** El primer aprovisionamiento descarga imágenes base, lo que tarda más. Las ejecuciones posteriores reutilizan imágenes en caché.
 
 ### Paso 3: Verificar estado del clúster
 
@@ -47,7 +47,7 @@ Creates a two-VM cluster: a **bridge** VM (1 CPU, 1024 MB RAM, 8 GB disk) and a 
 rdc ops status
 ```
 
-Shows the state of each VM in the cluster — IP addresses, resource allocation, and running status.
+Muestra el estado de cada VM en el clúster — direcciones IP, asignación de recursos y estado de ejecución. Ambas VMs deberían aparecer como en ejecución.
 
 ### Paso 4: Ejecutar comandos en una VM
 
@@ -56,18 +56,33 @@ rdc ops ssh 1 hostname
 rdc ops ssh 1 uname -a
 ```
 
-Ejecuta comandos en la VM puente (ID `1`) por SSH. Puede pasar cualquier comando después del ID de la VM. Para una sesión interactiva, omita el comando: `rdc ops ssh 1`.
+Ejecuta comandos en la VM puente (ID `1`) por SSH. Pase cualquier comando después del ID de la VM. Para una sesión interactiva, omita el comando: `rdc ops ssh 1`.
 
 ### Paso 5: Eliminar el clúster
+
+Cuando haya terminado, destruya todas las VMs y libere recursos.
 
 ```bash
 rdc ops down
 ```
 
-Destroys all VMs and cleans up resources. The cluster can be reprovisioned at any time with `rdc ops up`.
+Elimina todas las VMs y limpia la red. El clúster puede ser reaprovisionado en cualquier momento con `rdc ops up`.
+
+## Solución de problemas
+
+**"KVM not available" o "hardware virtualization not supported"**
+Verifique que la virtualización esté habilitada en la configuración de su BIOS/UEFI. En Linux, compruebe con `lscpu | grep Virtualization`. En WSL2, la virtualización anidada requiere flags de kernel específicos.
+
+**"libvirt daemon not running"**
+Inicie el servicio libvirt: `sudo systemctl start libvirtd`. En macOS, verifique que QEMU esté instalado vía Homebrew: `brew install qemu`.
+
+**"Insufficient memory for VM allocation"**
+El clúster básico requiere al menos 6 GB de RAM libre (1 GB puente + 4 GB trabajador + sobrecarga). Cierre otras aplicaciones que consuman muchos recursos o reduzca las especificaciones de las VMs.
 
 ## Próximos pasos
 
-- [Experimental VMs](/es/docs/experimental-vms) — full reference for `rdc ops` commands, VM configuration, and platform support
-- [Machine Setup](/es/docs/setup) — add remote machines to your config and provision them
-- [Quick Start](/es/docs/quick-start) — deploy a containerized service end-to-end
+Aprovisionó un clúster de VM local, ejecutó comandos por SSH y lo eliminó. Para desplegar infraestructura real:
+
+- [VMs experimentales](/es/docs/experimental-vms) — referencia completa para comandos `rdc ops`, configuración de VM y soporte de plataformas
+- [Tutorial: Configuración de máquinas](/es/docs/tutorial-setup) — registrar máquinas remotas y configurar infraestructura
+- [Inicio rápido](/es/docs/quick-start) — desplegar un servicio contenerizado de principio a fin

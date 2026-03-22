@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
 import { Button, Checkbox, Flex, Form, Input, Radio, Tabs, Typography } from 'antd';
+import type { CheckboxChangeEvent } from 'antd/es/checkbox';
+import type { RadioChangeEvent } from 'antd/es/radio';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator';
 import { SizedModal } from '@/components/common/SizedModal';
@@ -15,8 +17,6 @@ import {
   FileTextOutlined,
   WindowsOutlined,
 } from '@/utils/optimizedIcons';
-import type { CheckboxChangeEvent } from 'antd/es/checkbox';
-import type { RadioChangeEvent } from 'antd/es/radio';
 
 type CommandTab = 'vscode' | 'terminal' | 'file-manager';
 type OperatingSystem = 'unix' | 'windows';

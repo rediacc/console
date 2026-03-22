@@ -1,4 +1,4 @@
-import { SSHExecutor, getSSHExecutor, SSH_DEFAULTS, type SSHConfigOptions } from '../ssh';
+import { getSSHExecutor, SSH_DEFAULTS, type SSHConfigOptions, SSHExecutor } from '../ssh';
 import type { CommandResult } from '../types';
 
 /**

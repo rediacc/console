@@ -1,0 +1,25 @@
+{
+  "cast": "/assets/tutorials/monitoring-tutorial.cast",
+  "language": "de",
+  "version": 1,
+  "events": [
+    {
+      "id": "monitoring-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.508759,
+      "text": "Führen Sie eine vollständige Umgebungsdiagnose durch, um grundlegende Probleme aufzudecken."
+    },
+    {
+      "id": "monitoring-tutorial-02",
+      "markerIndex": 1,
+      "at": 9.844365,
+      "text": "Überprüfen Sie die Gesundheitsindikatoren der Remote-Maschine."
+    },
+    {
+      "id": "monitoring-tutorial-03",
+      "markerIndex": 2,
+      "at": 18.393678,
+      "text": "Aktive Container auf dem Zielcomputer auflisten."
+    }
+  ]
+}

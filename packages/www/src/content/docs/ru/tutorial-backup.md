@@ -1,93 +1,123 @@
 ---
 title: "Резервное копирование и сеть"
-description: "Смотрите и повторяйте: настройка расписаний резервного копирования, провайдеров хранения и сетевой инфраструктуры."
+description: "Настройте автоматические расписания резервного копирования, управляйте провайдерами хранения, настройте сетевую инфраструктуру и зарегистрируйте порты сервисов."
 category: "Tutorials"
 order: 6
 language: ru
-sourceHash: "d611f5597b819085"
+sourceHash: "14244f699c506ce9"
 ---
 
-# Руководство: Резервное копирование и сеть
+# Как настроить резервное копирование и сеть с Rediacc
 
-This tutorial covers backup scheduling, storage configuration, and infrastructure networking setup: the commands you use to protect data and expose services.
+Автоматическое резервное копирование защищает ваши репозитории, а сетевая инфраструктура делает сервисы доступными извне. В этом руководстве вы настроите расписания резервного копирования с провайдерами хранения, настроите публичную сеть с TLS-сертификатами, зарегистрируете порты сервисов и проверите конфигурацию. По завершении ваша машина будет готова к продуктивному трафику.
 
 ## Предварительные требования
 
-- The `rdc` CLI installed with a config initialized
-- A provisioned machine (see [Tutorial: Machine Setup](/ru/docs/tutorial-setup))
+- Установленный CLI `rdc` с инициализированной конфигурацией
+- Подготовленная машина (см. [Руководство: Настройка машины](/ru/docs/tutorial-setup))
 
 ## Интерактивная запись
 
 ![Tutorial: Backup & Networking](/assets/tutorials/backup-tutorial.cast)
 
-## Что вы увидите
-
-The recording above walks through each step below. Use the playback bar to navigate between commands.
-
 ### Шаг 1: Просмотр текущих хранилищ
 
+Провайдеры хранения (S3, B2, Google Drive и др.) служат местами назначения для резервных копий. Проверьте, какие провайдеры настроены.
+
 ```bash
-rdc config storages
+rdc config storage list
 ```
 
-Lists all configured storage providers (S3, B2, Google Drive, etc.) imported from rclone configs. Storages are used as backup destinations.
+Выводит список всех настроенных провайдеров хранения, импортированных из конфигураций rclone. Если список пуст, сначала добавьте провайдера хранения — см. [Резервное копирование и восстановление](/ru/docs/backup-restore).
 
 ### Шаг 2: Настройка расписания резервного копирования
 
+Настройте автоматическое резервное копирование, выполняемое по расписанию cron.
+
 ```bash
-rdc backup schedule set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
 ```
 
-Sets an automated backup schedule: push all repositories to the `my-s3` storage every day at 2 AM. The schedule is stored in your config and can be deployed to machines as a systemd timer.
+Вы можете настроить несколько хранилищ с разными расписаниями:
+
+```bash
+rdc config backup-strategy set --destination my-s3 --cron "0 2 * * *" --enable
+rdc config backup-strategy set --destination azure-backup --cron "0 6 * * *" --enable
+```
+
+Это создаёт ежедневное расписание резервного копирования в 2 часа ночи в `my-s3` и в 6 часов утра в `azure-backup`. Каждое хранилище имеет собственное расписание. Расписания сохраняются в конфигурации и могут быть развёрнуты на машинах как таймеры systemd.
 
 ### Шаг 3: Просмотр расписания резервного копирования
 
+Убедитесь, что расписание было применено.
+
 ```bash
-rdc backup schedule show
+rdc config backup-strategy show
 ```
 
-Shows the current backup schedule configuration: destination, cron expression, and enabled status.
+Показывает текущую конфигурацию резервного копирования: место назначения, выражение cron и статус активации.
 
 ### Шаг 4: Настройка инфраструктуры
 
+Для публичных сервисов машине необходим внешний IP-адрес, базовый домен и адрес электронной почты для сертификатов Let's Encrypt TLS.
+
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com
 ```
 
-Configures the machine's public networking: its external IP, base domain for auto-routes, and email for Let's Encrypt TLS certificates.
+Rediacc генерирует конфигурацию обратного прокси Traefik из этих настроек.
 
 ### Шаг 5: Добавление портов TCP/UDP
 
+Если вашим сервисам нужны не-HTTP порты (например, SMTP, DNS), зарегистрируйте их как точки входа Traefik.
+
 ```bash
-rdc config set-infra server-1 \
+rdc config infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 ```
 
-Registers additional TCP/UDP ports for the reverse proxy. These create Traefik entrypoints (`tcp-25`, `udp-53`, etc.) that can be referenced in Docker labels.
+Это создаёт точки входа Traefik (`tcp-25`, `udp-53` и т.д.), на которые Docker-сервисы могут ссылаться через метки.
 
 ### Шаг 6: Просмотр конфигурации инфраструктуры
 
+Проверьте полную конфигурацию инфраструктуры.
+
 ```bash
-rdc config show-infra server-1
+rdc config infra show server-1
 ```
 
-Displays the full infrastructure configuration for a machine: public IPs, domain, email, and registered ports.
+Показывает публичные IP-адреса, домен, адрес электронной почты для сертификатов и все зарегистрированные порты.
 
 ### Шаг 7: Отключение расписания резервного копирования
 
+Чтобы остановить автоматическое резервное копирование без удаления конфигурации:
+
 ```bash
-rdc backup schedule set --disable
-rdc backup schedule show
+rdc config backup-strategy set --disable
+rdc config backup-strategy show
 ```
 
-Disables the automated backup schedule. The configuration is preserved so it can be re-enabled later.
+Конфигурация сохраняется и может быть повторно активирована позже с помощью `--enable`.
+
+## Устранение неполадок
+
+**"Invalid cron expression"**
+Формат cron: `minute hour day month weekday`. Распространённые расписания: `0 2 * * *` (ежедневно в 2 ночи), `0 */6 * * *` (каждые 6 часов), `0 0 * * 0` (еженедельно в полночь воскресенья).
+
+**"Storage destination not found"**
+Имя назначения должно совпадать с настроенным провайдером хранения. Выполните `rdc config storage list`, чтобы увидеть доступные имена. Добавляйте новых провайдеров через конфигурацию rclone.
+
+**"Infrastructure config incomplete" при развёртывании**
+Все три поля обязательны: `--public-ipv4`, `--base-domain` и `--cert-email`. Выполните `rdc config infra show <machine>`, чтобы проверить, какие поля отсутствуют.
 
 ## Следующие шаги
 
-- [Backup & Restore](/ru/docs/backup-restore) — full reference for push, pull, list, and sync commands
-- [Networking](/ru/docs/networking) — Docker labels, TLS certificates, DNS, and TCP/UDP forwarding
-- [Tutorial: Machine Setup](/ru/docs/tutorial-setup) — initial configuration and provisioning
+Вы настроили автоматическое резервное копирование, сетевую инфраструктуру, зарегистрировали порты сервисов и проверили конфигурацию. Для управления резервными копиями:
+
+- [Резервное копирование и восстановление](/ru/docs/backup-restore) — полный справочник по командам push, pull, list и sync
+- [Сеть](/ru/docs/networking) — метки Docker, TLS-сертификаты, DNS и перенаправление TCP/UDP
+- [Руководство: Настройка машины](/ru/docs/tutorial-setup) — начальная настройка и подготовка

@@ -1,0 +1,642 @@
+{
+  "aliyun/alicloud": {
+    "defaults": {
+      "availability_zone": "cn-hangzhou-h",
+      "instance_type": "ecs.g6.large"
+    },
+    "firewall": {
+      "linkAttr": "security_groups",
+      "linkRef": "${alicloud_security_group.machine.id}",
+      "resource": "alicloud_security_group"
+    },
+    "imageAttr": "image_id",
+    "ipv4Output": "public_ip",
+    "labelAttr": "instance_name",
+    "regionAttr": "availability_zone",
+    "resource": "alicloud_instance",
+    "sizeAttr": "instance_type",
+    "sshKey": {
+      "attr": "key_name",
+      "format": "resource_id",
+      "keyResource": "alicloud_ecs_key_pair"
+    },
+    "tokenAttr": "access_key",
+    "version": "~> 1.230"
+  },
+  "anexia-it/anxcloud": {
+    "defaults": {
+      "cpus": "2",
+      "location_id": "ANX04",
+      "memory": "8192"
+    },
+    "imageAttr": "template_id",
+    "ipv4Output": "info.0.network.0.ips.0.address",
+    "labelAttr": "hostname",
+    "regionAttr": "location_id",
+    "resource": "anxcloud_virtual_server",
+    "sizeAttr": "memory",
+    "sshKey": {
+      "attr": "ssh_key",
+      "format": "inline_list"
+    },
+    "tokenAttr": "token",
+    "version": "~> 0.7"
+  },
+  "bizflycloud/bizflycloud": {
+    "defaults": {
+      "availability_zone": "HN1",
+      "category": "premium",
+      "flavor_name": "2c_8g"
+    },
+    "imageAttr": "os_id",
+    "ipv4Output": "default_public_ipv4.0.address",
+    "labelAttr": "name",
+    "regionAttr": "availability_zone",
+    "resource": "bizflycloud_server",
+    "sizeAttr": "flavor_name",
+    "sshKey": {
+      "attr": "ssh_key",
+      "format": "inline_list"
+    },
+    "tokenAttr": "auth_method",
+    "version": "~> 0.1"
+  },
+  "bpg/proxmox": {
+    "defaults": {
+      "memory.0.dedicated": "8192",
+      "node_name": "pve"
+    },
+    "imageAttr": "clone.0.vm_id",
+    "ipv4Output": "ipv4_addresses.1.0",
+    "ipv6Output": "ipv6_addresses.1.0",
+    "labelAttr": "name",
+    "regionAttr": "node_name",
+    "resource": "proxmox_virtual_environment_vm",
+    "sizeAttr": "memory.0.dedicated",
+    "sshKey": {
+      "attr": "initialization.0.user_account.0.keys",
+      "format": "inline_list"
+    },
+    "tokenAttr": "api_token",
+    "version": "~> 0.70"
+  },
+  "brightbox/brightbox": {
+    "defaults": {
+      "type": "4gb.ssd",
+      "zone": "gb1-a"
+    },
+    "firewall": {
+      "linkAttr": "server_groups",
+      "linkRef": "${brightbox_server_group.machine.id}",
+      "resource": "brightbox_server_group"
+    },
+    "imageAttr": "image",
+    "ipv4Output": "ipv4_address",
+    "ipv6Output": "ipv6_address",
+    "labelAttr": "name",
+    "regionAttr": "zone",
+    "resource": "brightbox_server",
+    "sizeAttr": "type",
+    "sshKey": {
+      "attr": "user_data",
+      "format": "inline_list"
+    },
+    "tokenAttr": "apiclient",
+    "version": "~> 3.0"
+  },
+  "cherryservers/cherryservers": {
+    "defaults": {
+      "image": "ubuntu_24_04",
+      "plan": "cloud_vps_3",
+      "region": "eu_nord_1"
+    },
+    "imageAttr": "image",
+    "ipv4Output": "primary_ip",
+    "labelAttr": "hostname",
+    "regionAttr": "region",
+    "resource": "cherryservers_server",
+    "sizeAttr": "plan",
+    "sshKey": {
+      "attr": "ssh_key_ids",
+      "format": "resource_id",
+      "keyResource": "cherryservers_ssh_key"
+    },
+    "tokenAttr": "api_key",
+    "version": "~> 0.1"
+  },
+  "civo/civo": {
+    "defaults": {
+      "disk_image": "ubuntu-noble",
+      "region": "nyc1",
+      "size": "g3.large"
+    },
+    "firewall": {
+      "linkAttr": "firewall_id",
+      "linkRef": "${civo_firewall.machine.id}",
+      "resource": "civo_firewall"
+    },
+    "imageAttr": "disk_image",
+    "ipv4Output": "public_ip",
+    "labelAttr": "hostname",
+    "regionAttr": "region",
+    "resource": "civo_instance",
+    "sizeAttr": "size",
+    "sshKey": {
+      "attr": "sshkey_id",
+      "format": "resource_id",
+      "keyResource": "civo_ssh_key"
+    },
+    "tokenAttr": "token",
+    "version": "~> 1.1"
+  },
+  "cloudscale-ch/cloudscale": {
+    "defaults": {
+      "flavor_slug": "flex-8-4",
+      "image_slug": "ubuntu-24.04",
+      "zone_slug": "rma1"
+    },
+    "imageAttr": "image_slug",
+    "ipv4Output": "public_ipv4_address",
+    "ipv6Output": "public_ipv6_address",
+    "labelAttr": "name",
+    "regionAttr": "zone_slug",
+    "resource": "cloudscale_server",
+    "sizeAttr": "flavor_slug",
+    "sshKey": {
+      "attr": "ssh_keys",
+      "format": "inline_list"
+    },
+    "tokenAttr": "token",
+    "version": "~> 4.0"
+  },
+  "contabo/contabo": {
+    "defaults": {
+      "product_id": "V45",
+      "region": "EU"
+    },
+    "imageAttr": "image_id",
+    "ipv4Output": "ip_config.0.v4.0.ip",
+    "ipv6Output": "ip_config.0.v6.0.ip",
+    "labelAttr": "display_name",
+    "regionAttr": "region",
+    "resource": "contabo_instance",
+    "sizeAttr": "product_id",
+    "sshKey": {
+      "attr": "ssh_keys",
+      "format": "inline_list"
+    },
+    "tokenAttr": "oauth2_client_id",
+    "version": "~> 0.1"
+  },
+  "digitalocean/digitalocean": {
+    "defaults": {
+      "image": "ubuntu-24-04-x64",
+      "region": "nyc1",
+      "size": "s-2vcpu-8gb"
+    },
+    "firewall": {
+      "linkAttr": "droplet_ids",
+      "linkRef": "${digitalocean_droplet.machine.id}",
+      "resource": "digitalocean_firewall"
+    },
+    "imageAttr": "image",
+    "ipv4Output": "ipv4_address",
+    "ipv6Output": "ipv6_address",
+    "labelAttr": "name",
+    "regionAttr": "region",
+    "resource": "digitalocean_droplet",
+    "sizeAttr": "size",
+    "sshKey": {
+      "attr": "ssh_keys",
+      "format": "resource_id",
+      "keyResource": "digitalocean_ssh_key"
+    },
+    "tokenAttr": "token",
+    "version": "~> 2.0"
+  },
+  "equinix/equinix": {
+    "defaults": {
+      "metro": "da",
+      "operating_system": "ubuntu_24_04",
+      "plan": "m3.small.x86"
+    },
+    "imageAttr": "operating_system",
+    "ipv4Output": "access_public_ipv4",
+    "ipv6Output": "access_public_ipv6",
+    "labelAttr": "hostname",
+    "regionAttr": "metro",
+    "resource": "equinix_metal_device",
+    "sizeAttr": "plan",
+    "sshKey": {
+      "attr": "project_ssh_key_ids",
+      "format": "resource_id",
+      "keyResource": "equinix_metal_project_ssh_key"
+    },
+    "tokenAttr": "auth_token",
+    "version": "~> 2.0"
+  },
+  "exoscale/exoscale": {
+    "defaults": {
+      "type": "standard.large",
+      "zone": "ch-gva-2"
+    },
+    "firewall": {
+      "linkAttr": "security_group_ids",
+      "linkRef": "${exoscale_security_group.machine.id}",
+      "resource": "exoscale_security_group"
+    },
+    "imageAttr": "template_id",
+    "ipv4Output": "public_ip_address",
+    "ipv6Output": "ipv6_address",
+    "labelAttr": "name",
+    "regionAttr": "zone",
+    "resource": "exoscale_compute_instance",
+    "sizeAttr": "type",
+    "sshKey": {
+      "attr": "ssh_key",
+      "format": "inline_list"
+    },
+    "tokenAttr": "key",
+    "version": "~> 0.62"
+  },
+  "glesys/glesys": {
+    "defaults": {
+      "bandwidth": "100",
+      "cpu": "2",
+      "datacenter": "Stockholm",
+      "memory": "8192",
+      "platform": "KVM",
+      "storage": "50",
+      "template": "Ubuntu 24.04 LTS (Noble Numbat)"
+    },
+    "imageAttr": "template",
+    "ipv4Output": "ipv4_address",
+    "ipv6Output": "ipv6_address",
+    "labelAttr": "hostname",
+    "regionAttr": "datacenter",
+    "resource": "glesys_server",
+    "sizeAttr": "memory",
+    "sshKey": {
+      "attr": "user.0.publickeys",
+      "format": "inline_list"
+    },
+    "tokenAttr": "token",
+    "version": "~> 0.13"
+  },
+  "hashicorp/aws": {
+    "defaults": {
+      "availability_zone": "us-east-1a",
+      "instance_type": "t3.large"
+    },
+    "firewall": {
+      "linkAttr": "vpc_security_group_ids",
+      "linkRef": "${aws_security_group.machine.id}",
+      "resource": "aws_security_group"
+    },
+    "imageAttr": "ami",
+    "ipv4Output": "public_ip",
+    "labelAttr": "tags.Name",
+    "regionAttr": "availability_zone",
+    "resource": "aws_instance",
+    "sizeAttr": "instance_type",
+    "sshKey": {
+      "attr": "key_name",
+      "format": "resource_id",
+      "keyResource": "aws_key_pair"
+    },
+    "tokenAttr": "region",
+    "version": "~> 5.0"
+  },
+  "hashicorp/azurerm": {
+    "defaults": {
+      "location": "eastus",
+      "size": "Standard_B2ms"
+    },
+    "imageAttr": "source_image_reference.0.offer",
+    "ipv4Output": "public_ip_address",
+    "ipv6Output": "private_ip_address",
+    "labelAttr": "name",
+    "regionAttr": "location",
+    "resource": "azurerm_linux_virtual_machine",
+    "sizeAttr": "size",
+    "sshKey": {
+      "attr": "admin_ssh_key.0.public_key",
+      "format": "inline_list"
+    },
+    "tokenAttr": "features",
+    "version": "~> 4.0"
+  },
+  "hashicorp/google": {
+    "defaults": {
+      "boot_disk.0.initialize_params.0.image": "ubuntu-os-cloud/ubuntu-2404-lts",
+      "machine_type": "e2-standard-2",
+      "zone": "us-central1-a"
+    },
+    "firewall": {
+      "linkAttr": "target_tags",
+      "linkRef": "machine",
+      "resource": "google_compute_firewall"
+    },
+    "imageAttr": "boot_disk.0.initialize_params.0.image",
+    "ipv4Output": "network_interface.0.access_config.0.nat_ip",
+    "labelAttr": "name",
+    "regionAttr": "zone",
+    "resource": "google_compute_instance",
+    "sizeAttr": "machine_type",
+    "sshKey": {
+      "attr": "metadata.ssh-keys",
+      "format": "inline_list"
+    },
+    "tokenAttr": "project",
+    "version": "~> 6.0"
+  },
+  "hetznercloud/hcloud": {
+    "defaults": {
+      "image": "ubuntu-24.04",
+      "location": "fsn1",
+      "server_type": "cx32"
+    },
+    "firewall": {
+      "attachResource": "hcloud_firewall_attachment",
+      "resource": "hcloud_firewall"
+    },
+    "imageAttr": "image",
+    "ipv4Output": "ipv4_address",
+    "ipv6Output": "ipv6_address",
+    "labelAttr": "name",
+    "regionAttr": "location",
+    "resource": "hcloud_server",
+    "sizeAttr": "server_type",
+    "sshKey": {
+      "attr": "ssh_keys",
+      "format": "resource_id",
+      "keyResource": "hcloud_ssh_key"
+    },
+    "tokenAttr": "token",
+    "version": "~> 1.49"
+  },
+  "huaweicloud/huaweicloud": {
+    "defaults": {
+      "availability_zone": "cn-north-4a",
+      "flavor_id": "s6.large.2"
+    },
+    "imageAttr": "image_id",
+    "ipv4Output": "access_ip_v4",
+    "ipv6Output": "access_ip_v6",
+    "labelAttr": "name",
+    "regionAttr": "availability_zone",
+    "resource": "huaweicloud_compute_instance",
+    "sizeAttr": "flavor_id",
+    "sshKey": {
+      "attr": "key_pair",
+      "format": "resource_id",
+      "keyResource": "huaweicloud_kps_keypair"
+    },
+    "tokenAttr": "access_key",
+    "version": "~> 1.70"
+  },
+  "IBM-Cloud/ibm": {
+    "defaults": {
+      "profile": "bx2-2x8",
+      "zone": "us-south-1"
+    },
+    "imageAttr": "image",
+    "ipv4Output": "primary_network_interface.0.primary_ip.0.address",
+    "labelAttr": "name",
+    "regionAttr": "zone",
+    "resource": "ibm_is_instance",
+    "sizeAttr": "profile",
+    "sshKey": {
+      "attr": "keys",
+      "format": "resource_id",
+      "keyResource": "ibm_is_ssh_key"
+    },
+    "tokenAttr": "ibmcloud_api_key",
+    "version": "~> 1.70"
+  },
+  "ionos-cloud/ionoscloud": {
+    "defaults": {
+      "availability_zone": "ZONE_1",
+      "cores": "2",
+      "image_name": "ubuntu:24.04"
+    },
+    "imageAttr": "image_name",
+    "ipv4Output": "primary_ip",
+    "labelAttr": "name",
+    "regionAttr": "availability_zone",
+    "resource": "ionoscloud_server",
+    "sizeAttr": "cores",
+    "sshKey": {
+      "attr": "ssh_keys",
+      "format": "inline_list"
+    },
+    "tokenAttr": "token",
+    "version": "~> 6.0"
+  },
+  "Kamatera/kamatera": {
+    "defaults": {
+      "cpu_cores": "2",
+      "cpu_type": "B",
+      "datacenter_id": "EU",
+      "ram_mb": "8192"
+    },
+    "imageAttr": "image_id",
+    "ipv4Output": "public_ips.0",
+    "labelAttr": "name",
+    "regionAttr": "datacenter_id",
+    "resource": "kamatera_server",
+    "sizeAttr": "cpu_cores",
+    "sshKey": {
+      "attr": "ssh_pubkey",
+      "format": "inline_list"
+    },
+    "tokenAttr": "api_client_id",
+    "version": "~> 0.8"
+  },
+  "linode/linode": {
+    "defaults": {
+      "image": "linode/ubuntu24.04",
+      "region": "us-east",
+      "type": "g6-standard-4"
+    },
+    "firewall": {
+      "linkAttr": "linodes",
+      "linkRef": "${linode_instance.machine.id}",
+      "resource": "linode_firewall"
+    },
+    "imageAttr": "image",
+    "ipv4Output": "ip_address",
+    "ipv6Output": "ipv6",
+    "labelAttr": "label",
+    "regionAttr": "region",
+    "resource": "linode_instance",
+    "sizeAttr": "type",
+    "sshKey": {
+      "attr": "authorized_keys",
+      "format": "inline_list"
+    },
+    "tokenAttr": "token",
+    "version": "~> 3.0"
+  },
+  "oracle/oci": {
+    "defaults": {
+      "shape": "VM.Standard.E4.Flex"
+    },
+    "imageAttr": "source_details.0.source_id",
+    "ipv4Output": "public_ip",
+    "labelAttr": "display_name",
+    "regionAttr": "availability_domain",
+    "resource": "oci_core_instance",
+    "sizeAttr": "shape",
+    "sshKey": {
+      "attr": "metadata.ssh_authorized_keys",
+      "format": "inline_list"
+    },
+    "tokenAttr": "tenancy_ocid",
+    "version": "~> 6.0"
+  },
+  "ovh/ovh": {
+    "defaults": {
+      "region": "GRA11"
+    },
+    "imageAttr": "image_id",
+    "ipv4Output": "addresses.0.ip",
+    "labelAttr": "name",
+    "regionAttr": "region",
+    "resource": "ovh_cloud_project_instance",
+    "sizeAttr": "flavor_id",
+    "sshKey": {
+      "attr": "ssh_key",
+      "format": "inline_list"
+    },
+    "tokenAttr": "application_key",
+    "version": "~> 1.0"
+  },
+  "scaleway/scaleway": {
+    "defaults": {
+      "image": "ubuntu_noble",
+      "type": "DEV1-L",
+      "zone": "fr-par-1"
+    },
+    "firewall": {
+      "linkAttr": "security_group_id",
+      "linkRef": "${scaleway_instance_security_group.machine.id}",
+      "resource": "scaleway_instance_security_group"
+    },
+    "imageAttr": "image",
+    "ipv4Output": "public_ips.0.address",
+    "labelAttr": "name",
+    "regionAttr": "zone",
+    "resource": "scaleway_instance_server",
+    "sizeAttr": "type",
+    "sshKey": {
+      "attr": "ip_id",
+      "format": "inline_list"
+    },
+    "tokenAttr": "secret_key",
+    "version": "~> 2.0"
+  },
+  "serverscom/serverscom": {
+    "defaults": {
+      "flavor": "SSD.50",
+      "image": "Ubuntu 24.04-LTS 64-bit",
+      "region": "NLD"
+    },
+    "imageAttr": "image",
+    "ipv4Output": "public_ipv4_address",
+    "ipv6Output": "public_ipv6_address",
+    "labelAttr": "name",
+    "regionAttr": "region",
+    "resource": "serverscom_cloud_computing_instance",
+    "sizeAttr": "flavor",
+    "sshKey": {
+      "attr": "ssh_key_fingerprint",
+      "format": "inline_list"
+    },
+    "tokenAttr": "token",
+    "version": "~> 0.4"
+  },
+  "tencentcloudstack/tencentcloud": {
+    "defaults": {
+      "availability_zone": "ap-guangzhou-3",
+      "instance_type": "S5.MEDIUM8"
+    },
+    "imageAttr": "image_id",
+    "ipv4Output": "public_ip",
+    "labelAttr": "instance_name",
+    "regionAttr": "availability_zone",
+    "resource": "tencentcloud_instance",
+    "sizeAttr": "instance_type",
+    "sshKey": {
+      "attr": "key_ids",
+      "format": "resource_id",
+      "keyResource": "tencentcloud_key_pair"
+    },
+    "tokenAttr": "secret_id",
+    "version": "~> 1.81"
+  },
+  "UpCloudLtd/upcloud": {
+    "defaults": {
+      "plan": "2xCPU-8GB",
+      "template.0.storage": "Ubuntu Server 24.04 LTS (Noble Numbat)",
+      "zone": "de-fra1"
+    },
+    "imageAttr": "template.0.storage",
+    "ipv4Output": "network_interface.0.ip_address",
+    "ipv6Output": "network_interface.1.ip_address",
+    "labelAttr": "hostname",
+    "regionAttr": "zone",
+    "resource": "upcloud_server",
+    "sizeAttr": "plan",
+    "sshKey": {
+      "attr": "login.0.keys",
+      "format": "inline_list"
+    },
+    "tokenAttr": "username",
+    "version": "~> 5.0"
+  },
+  "vultr/vultr": {
+    "defaults": {
+      "os_id": "2284",
+      "plan": "vc2-2c-8gb",
+      "region": "ewr"
+    },
+    "firewall": {
+      "linkAttr": "firewall_group_id",
+      "linkRef": "${vultr_firewall_group.machine.id}",
+      "resource": "vultr_firewall_group"
+    },
+    "imageAttr": "os_id",
+    "ipv4Output": "main_ip",
+    "ipv6Output": "v6_main_ip",
+    "labelAttr": "label",
+    "regionAttr": "region",
+    "resource": "vultr_instance",
+    "sizeAttr": "plan",
+    "sshKey": {
+      "attr": "ssh_key_ids",
+      "format": "resource_id",
+      "keyResource": "vultr_ssh_key"
+    },
+    "tokenAttr": "api_key",
+    "version": "~> 2.0"
+  },
+  "yandex-cloud/yandex": {
+    "defaults": {
+      "platform_id": "standard-v3",
+      "zone": "ru-central1-a"
+    },
+    "imageAttr": "boot_disk.0.initialize_params.0.image_id",
+    "ipv4Output": "network_interface.0.nat_ip_address",
+    "labelAttr": "name",
+    "regionAttr": "zone",
+    "resource": "yandex_compute_instance",
+    "sizeAttr": "platform_id",
+    "sshKey": {
+      "attr": "metadata.ssh-keys",
+      "format": "inline_list"
+    },
+    "tokenAttr": "token",
+    "version": "~> 0.130"
+  }
+}

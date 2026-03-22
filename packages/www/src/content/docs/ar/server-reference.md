@@ -4,7 +4,8 @@ description: "تخطيط المجلدات، وأوامر renet، وخدمات sy
 category: "Concepts"
 order: 3
 language: ar
-sourceHash: "fdfadf580c39b1fe"
+sourceHash: "07b8aba408085eab"
+sourceCommit: "ecb32701b07b8536282aea0d26f58ef06296288b"
 ---
 
 # مرجع الخادم
@@ -24,19 +25,18 @@ sourceHash: "fdfadf580c39b1fe"
 ├── mounts/                            # Mount points for decrypted repos
 │   └── {uuid}/
 │       ├── .rediacc.json              # Service → IP slot mapping
+│       ├── .rediacc/docker/           # Docker daemon data (images, containers)
 │       └── {service-name}/            # Service directory
 │           ├── docker-compose.yml     # Compose definition
 │           ├── Rediaccfile            # Lifecycle hooks (bash)
 │           └── data/                  # Persistent data
-├── interim/                           # Docker overlay2 data (per-repo)
-│   └── {uuid}/docker/data/
 ├── immovable/                         # Read-only shared content
 ├── .credentials/                      # Encrypted secrets
 └── .backup-*/                         # BTRFS snapshots
 
 /opt/rediacc/proxy/                    # Traefik reverse proxy
 ├── docker-compose.yml
-├── config.env                         # BASE_DOMAIN, CERTBOT_EMAIL, CF_DNS_API_TOKEN
+├── config.env                         # CERTBOT_EMAIL, CF_DNS_API_TOKEN
 ├── letsencrypt/                       # ACME certificates
 └── traefik/dynamic/                   # Dynamic route files
 
@@ -82,10 +82,10 @@ renet repository delete --name {uuid} --network-id {id}
 تنفيذ أوامر compose على عملية Docker daemon الخاصة بمستودع معين:
 
 ```bash
-sudo renet compose --network-id {id} -- up -d
-sudo renet compose --network-id {id} -- down
-sudo renet compose --network-id {id} -- logs -f
-sudo renet compose --network-id {id} -- config
+sudo renet compose -- up -d
+sudo renet compose -- down
+sudo renet compose -- logs -f
+sudo renet compose -- config
 ```
 
 تنفيذ أوامر Docker مباشرة:
@@ -103,6 +103,18 @@ DOCKER_HOST=unix:///run/rediacc/docker-{id}.sock docker ps
 ```
 
 > قم دائمًا بتشغيل compose من المجلد الذي يحتوي على `docker-compose.yml`، وإلا لن يتمكن Docker من العثور على الملف.
+
+### عزل نظام الملفات
+
+```bash
+# التحقق من دعم Landlock
+renet sandbox-exec --detect
+
+# تشغيل أمر داخل عزل Landlock (يُستخدم داخليًا بواسطة renet)
+renet sandbox-exec --allow-rw /path --allow-ro /usr --allow-exec /bin -- command
+```
+
+يطبق `sandbox-exec` قيود نظام الملفات الخاصة بـ Landlock LSM على أمر ما. لا يمكن للعملية المعزولة الوصول إلا إلى المسارات المسموح بها صراحةً، بينما يمنع النواة أي وصول آخر إلى نظام الملفات. يُستخدم هذا داخليًا في renet لعزل تنفيذ Rediaccfile وعمليات compose وأوامر SSH ضمن مسار تثبيت المستودع الخاص بها.
 
 ### الوكيل والتوجيه
 
@@ -159,7 +171,7 @@ renet backup pull --name {uuid} --network-id {id} --source machine \
 renet backup list --source machine --src-host {host} --src-user {user} --src-path /mnt/rediacc
 ```
 
-> يجب على معظم المستخدمين استخدام `rdc backup push/pull` بدلاً من ذلك. تتعامل أوامر `rdc` مع بيانات الاعتماد وتحليل الأجهزة تلقائيًا.
+> يجب على معظم المستخدمين استخدام `rdc repo push/pull` بدلاً من ذلك. تتعامل أوامر `rdc` مع بيانات الاعتماد وتحليل الأجهزة تلقائيًا.
 
 ### نقاط التحقق (CRIU)
 
@@ -230,7 +242,7 @@ done
 ### إعادة إنشاء خدمة بعد تغيير التكوين
 
 ```bash
-sudo renet compose --network-id {id} -- up -d
+sudo renet compose -- up -d
 ```
 
 قم بتشغيل هذا من المجلد الذي يحتوي على `docker-compose.yml`. يتم إعادة إنشاء الحاويات المُعدّلة تلقائيًا.

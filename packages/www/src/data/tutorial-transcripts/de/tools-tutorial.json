@@ -1,0 +1,13 @@
+{
+  "cast": "/assets/tutorials/tools-tutorial.cast",
+  "language": "de",
+  "version": 1,
+  "events": [
+    {
+      "id": "tools-tutorial-01",
+      "markerIndex": 0,
+      "at": 1.511459,
+      "text": "Öffnen Sie einen Remote-Shell-Befehl, um die Identität des Zielcomputers zu überprüfen."
+    }
+  ]
+}

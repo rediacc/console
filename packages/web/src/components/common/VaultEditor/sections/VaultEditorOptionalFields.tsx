@@ -1,8 +1,8 @@
-import React from 'react';
+import type { FormInstance } from 'antd';
 import { Col, Divider, Flex, Form } from 'antd';
+import React from 'react';
 import { VaultFieldRenderer } from '../fieldRenderers';
 import type { FieldDefinition, VaultFormValues } from '../types';
-import type { FormInstance } from 'antd';
 
 interface VaultEditorOptionalFieldsProps {
   entityType: string;

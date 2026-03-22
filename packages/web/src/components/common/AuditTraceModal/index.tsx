@@ -1,5 +1,5 @@
-import React, { lazy, Suspense } from 'react';
 import { Flex } from 'antd';
+import React, { lazy, Suspense } from 'react';
 import LoadingWrapper from '@/components/common/LoadingWrapper';
 import type { AuditTraceModalProps } from './AuditTraceModal';
 

@@ -1,0 +1,22 @@
+{
+  "cast": "/assets/tutorials/repos-tutorial.cast",
+  "language": "ru",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "2f806d0bc691e38b580e19bbdcaee3a856c3633986db29d93223f8dcc4e19328",
+  "steps": [
+    {
+      "id": "repos-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508464,
+      "replayEndSec": 6.646665,
+      "narrationText": "Создайте зашифрованный репозиторий с определенным размером хранилища.",
+      "audioSrc": "/assets/tutorials/audio/ru/repos-tutorial/repos-tutorial-01.a1dfea45.mp3",
+      "audioDurationSec": 4.675918
+    }
+  ]
+}

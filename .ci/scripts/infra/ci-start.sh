@@ -176,7 +176,7 @@ wait_for_sql || {
 
 wait_for_account_server || {
     echo "Service startup failed: Account Server"
-    docker compose logs account-server account-rustfs
+    docker compose logs account-server
     exit 1
 }
 

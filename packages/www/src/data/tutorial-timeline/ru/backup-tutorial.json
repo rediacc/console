@@ -1,0 +1,22 @@
+{
+  "cast": "/assets/tutorials/backup-tutorial.cast",
+  "language": "ru",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "349ff987f41a52ad0fb22a34efb55d6845e9f7472ee4209150ec96cc0a60ad59",
+  "steps": [
+    {
+      "id": "backup-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.510362,
+      "replayEndSec": 5.406939,
+      "narrationText": "Проверьте текущие настроенные места назначения резервного копирования.",
+      "audioSrc": "/assets/tutorials/audio/ru/backup-tutorial/backup-tutorial-01.a17a414f.mp3",
+      "audioDurationSec": 4.284082
+    }
+  ]
+}

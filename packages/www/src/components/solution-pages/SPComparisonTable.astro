@@ -1,0 +1,77 @@
+---
+interface Feature {
+  name: string;
+  values: string[];
+  refs?: number[];
+}
+
+interface ReferenceItem {
+  text: string;
+  url: string;
+}
+
+interface Props {
+  comparison: {
+    overline: string;
+    title: string;
+    description: string;
+    capabilityLabel: string;
+    features: Feature[];
+  };
+  competitors: string[];
+  referenceItems?: ReferenceItem[];
+}
+
+const { comparison, competitors, referenceItems = [] } = Astro.props;
+
+function renderValue(val: string, ref?: number) {
+  let refHtml = '';
+  if (ref && ref > 0) {
+    const item = referenceItems[ref - 1];
+    const url = item?.url;
+    if (url) {
+      refHtml = `<a href="${url}" target="_blank" rel="noopener noreferrer" class="sp-ref-link"><sup class="sp-ref-num">[${ref}]</sup></a>`;
+    } else {
+      refHtml = `<sup class="sp-ref-num">[${ref}]</sup>`;
+    }
+  }
+  if (val === 'check') return `<span class="sp-comparison-check">&#10003;</span>${refHtml}`;
+  if (val === 'cross') return `<span class="sp-comparison-cross">&#10007;</span>${refHtml}`;
+  if (val === 'rediacc') return `<span class="sp-comparison-rediacc">&#10003;</span>${refHtml}`;
+  // Text values like "Minutes", "<60s"
+  if (val.startsWith('<')) return `<span class="sp-comparison-rediacc">${val}</span>${refHtml}`;
+  return `${val}${refHtml}`;
+}
+---
+
+<section class="sp-comparison-section">
+  <div class="sp-comparison-section-inner">
+    <div class="sp-overline">{comparison.overline}</div>
+    <h2>{comparison.title}</h2>
+    <p>{comparison.description}</p>
+
+    <table class="sp-comparison-table">
+      <thead>
+        <tr>
+          <th>{comparison.capabilityLabel}</th>
+          {competitors.map((name) => (
+            <th>{name}</th>
+          ))}
+          <th>Rediacc</th>
+        </tr>
+      </thead>
+      <tbody>
+        {comparison.features.map((feature) => (
+          <tr>
+            <td>{feature.name}</td>
+            {feature.values.map((val, i) => (
+              <td>
+                <Fragment set:html={renderValue(val, feature.refs?.[i])} />
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</section>

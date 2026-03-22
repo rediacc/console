@@ -1,0 +1,67 @@
+{
+  "cast": "/assets/tutorials/ops-tutorial.cast",
+  "language": "en",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "51d26ab3aa78833ad01c0f6809119d05303b4ab15c92f7aa1ccc65f817f8dbc1",
+  "steps": [
+    {
+      "id": "ops-tutorial-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.508295,
+      "replayEndSec": 8.986537,
+      "narrationText": "Testing infrastructure locally prevents production misconfigurations. We verify that your workstation has KVM support, libvirt, QEMU, and cloud-init tools installed for virtual machine provisioning.",
+      "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-tutorial-01.c8159fa6.mp3",
+      "audioDurationSec": 13.244082
+    },
+    {
+      "id": "ops-tutorial-02",
+      "markerIndex": 1,
+      "replayStartSec": 8.986537,
+      "replayEndSec": 17.752282,
+      "narrationText": "All prerequisites pass. We provision a minimal two-VM cluster on a virtual network -- a bridge node and a worker node -- with SSH access ready.",
+      "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-tutorial-02.68ff6a26.mp3",
+      "audioDurationSec": 9.090612
+    },
+    {
+      "id": "ops-tutorial-03",
+      "markerIndex": 2,
+      "replayStartSec": 17.752282,
+      "replayEndSec": 25.263372,
+      "narrationText": "Cluster provisioning complete. We check that both VMs are running, with their assigned IP addresses, CPU allocation, and memory visible in the status table.",
+      "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-tutorial-03.dbb384ff.mp3",
+      "audioDurationSec": 9.090612
+    },
+    {
+      "id": "ops-tutorial-04",
+      "markerIndex": 3,
+      "replayStartSec": 25.263372,
+      "replayEndSec": 31.160484,
+      "narrationText": "Both VMs are online. We verify SSH access to the bridge node by running a remote command. You'll see its hostname returned, confirming the tunnel works.",
+      "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-tutorial-04.3f800299.mp3",
+      "audioDurationSec": 9.717551
+    },
+    {
+      "id": "ops-tutorial-05",
+      "markerIndex": 4,
+      "replayStartSec": 31.160484,
+      "replayEndSec": 39.121485,
+      "narrationText": "SSH confirmed. This time we pull full system details -- kernel version, architecture, and OS release -- to verify the VM environment matches expectations.",
+      "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-tutorial-05.86c0f56f.mp3",
+      "audioDurationSec": 10.527347
+    },
+    {
+      "id": "ops-tutorial-06",
+      "markerIndex": 5,
+      "replayStartSec": 39.121485,
+      "replayEndSec": 46.501637,
+      "narrationText": "When testing is complete, we tear down the cluster. This destroys both VMs and frees all CPU, memory, and disk resources. You can reprovision at any time.",
+      "audioSrc": "/assets/tutorials/audio/en/ops-tutorial/ops-tutorial-06.9df944cd.mp3",
+      "audioDurationSec": 10.527347
+    }
+  ]
+}

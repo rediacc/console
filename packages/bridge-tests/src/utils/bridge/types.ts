@@ -56,8 +56,6 @@ export interface TestFunctionOptions {
   installAmdDriver?: 'auto' | 'true' | 'false';
   installNvidiaDriver?: 'auto' | 'true' | 'false';
   installCriu?: 'auto' | 'true' | 'false' | 'manual';
-  // Repository prep-only option
-  prepOnly?: boolean;
 }
 
 /**
