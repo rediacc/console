@@ -93,7 +93,7 @@ fi
 
 if [[ -z "$ARTIFACT_ID" ]]; then
     log_warn "No e2e video artifact found — placeholders will be shown on the docs site"
-    exit 1
+    exit 0
 fi
 
 log_info "Found artifact ID: $ARTIFACT_ID"
