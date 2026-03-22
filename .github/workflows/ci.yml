@@ -401,7 +401,7 @@ jobs:
     needs: [initialize, quality]
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    if: always() && needs.initialize.result == 'success' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') && needs.initialize.outputs.is_fork != 'true'
+    if: always() && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') && needs.initialize.outputs.is_fork != 'true'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
 
@@ -453,7 +453,7 @@ jobs:
   tests:
     name: Tests + Infra
     needs: [initialize, build-docker]
-    if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success'
+    if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success'
     uses: ./.github/workflows/ct-tests.yml
     with:
       api_tag: ${{ needs.initialize.outputs.api_tag }}
