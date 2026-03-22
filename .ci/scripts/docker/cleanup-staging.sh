@@ -80,38 +80,30 @@ delete_staging_tag() {
     fi
 
     # Get version ID for the tag using GitHub API
-    # First, list all versions and find the one with matching tag
-    local version_id api_error
-    api_error=$(mktemp)
-    version_id=$(gh api \
+    local api_response version_id
+    api_response=$(gh api \
         "/orgs/${ORG}/packages/container/${package_name}/versions" \
-        --paginate \
-        --jq ".[] | select(.metadata.container.tags | index(\"${STAGING_TAG}\")) | .id" \
-        2>"$api_error" || true)
+        --paginate 2>&1) || true
 
-    if [[ -z "$version_id" ]]; then
-        if [[ -s "$api_error" ]]; then
-            log_error "Failed to list package versions for $image_name: $(cat "$api_error")"
-            rm -f "$api_error"
-            return 1
-        fi
-        log_warn "Staging tag not found for $image_name:$STAGING_TAG (may already be deleted)"
-        rm -f "$api_error"
+    # Validate we got JSON array, not an error response
+    if ! echo "$api_response" | jq -e 'type == "array"' >/dev/null 2>&1; then
+        log_warn "Package $package_name not found or not accessible (may not exist yet)"
         return 0
     fi
-    rm -f "$api_error"
 
-    # Delete the version
-    # NOTE: Requires a token with delete:packages scope (GITHUB_TOKEN packages:write is NOT sufficient)
-    local delete_error
-    delete_error=$(mktemp)
-    if gh api -X DELETE "/orgs/${ORG}/packages/container/${package_name}/versions/${version_id}" 2>"$delete_error"; then
+    version_id=$(echo "$api_response" |
+        jq -r ".[] | select(.metadata.container.tags | index(\"${STAGING_TAG}\")) | .id" 2>/dev/null || true)
+
+    if [[ -z "$version_id" ]]; then
+        log_warn "Staging tag not found for $image_name:$STAGING_TAG (may already be deleted)"
+        return 0
+    fi
+
+    # Delete the version (app token with packages:write is sufficient)
+    if gh api -X DELETE "/orgs/${ORG}/packages/container/${package_name}/versions/${version_id}" 2>/dev/null; then
         log_info "Deleted staging tag: $full_image"
-        rm -f "$delete_error"
     else
-        log_error "Failed to delete staging tag for $image_name: $(cat "$delete_error")"
-        log_error "Ensure GH_TOKEN has 'delete:packages' scope (GITHUB_TOKEN packages:write is not sufficient)"
-        rm -f "$delete_error"
+        log_error "Failed to delete staging tag for $image_name"
         return 1
     fi
 }
